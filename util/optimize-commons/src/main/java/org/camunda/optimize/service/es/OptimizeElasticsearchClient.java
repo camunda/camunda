@@ -91,6 +91,7 @@ import java.io.IOException;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.EnumSet;
+import java.util.List;
 
 /**
  * This Client serves as the main elasticsearch client to be used from application code.
@@ -180,11 +181,17 @@ public class OptimizeElasticsearchClient implements ConfigurationReloadable {
     return highLevelClient.delete(deleteRequest, requestOptions());
   }
 
-  public final BulkByScrollResponse deleteByQuery(final DeleteByQueryRequest deleteByQueryRequest)
-    throws IOException {
+  public final List<String> getAllIndexNames() throws IOException {
+    return Arrays.asList(highLevelClient.indices().get(
+      new GetIndexRequest(convertToPrefixedAliasNames(
+        new GetIndexRequest("*").indices())).indicesOptions(INDICES_EXIST_OPTIONS), requestOptions()
+    ).getIndices());
+  }
+
+  public final void deleteByQuery(final DeleteByQueryRequest deleteByQueryRequest) throws IOException {
     applyIndexPrefixes(deleteByQueryRequest);
 
-    return highLevelClient.deleteByQuery(deleteByQueryRequest, requestOptions());
+    highLevelClient.deleteByQuery(deleteByQueryRequest, requestOptions());
   }
 
   public final GetAliasesResponse getAlias(final GetAliasesRequest getAliasesRequest)

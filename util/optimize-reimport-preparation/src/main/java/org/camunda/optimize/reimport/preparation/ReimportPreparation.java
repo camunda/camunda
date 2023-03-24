@@ -17,29 +17,33 @@ import org.camunda.optimize.service.es.schema.OptimizeIndexNameService;
 import org.camunda.optimize.service.es.schema.RequestOptionsProvider;
 import org.camunda.optimize.service.es.schema.index.BusinessKeyIndex;
 import org.camunda.optimize.service.es.schema.index.DecisionDefinitionIndex;
-import org.camunda.optimize.service.es.schema.index.DecisionInstanceIndex;
 import org.camunda.optimize.service.es.schema.index.ExternalProcessVariableIndex;
 import org.camunda.optimize.service.es.schema.index.ProcessDefinitionIndex;
-import org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex;
 import org.camunda.optimize.service.es.schema.index.TenantIndex;
 import org.camunda.optimize.service.es.schema.index.VariableUpdateInstanceIndex;
-import org.camunda.optimize.service.es.schema.index.events.CamundaActivityEventIndex;
 import org.camunda.optimize.service.es.schema.index.events.EventProcessDefinitionIndex;
-import org.camunda.optimize.service.es.schema.index.events.EventProcessInstanceIndex;
 import org.camunda.optimize.service.es.schema.index.events.EventProcessPublishStateIndex;
-import org.camunda.optimize.service.es.schema.index.events.EventSequenceCountIndex;
-import org.camunda.optimize.service.es.schema.index.events.EventTraceStateIndex;
 import org.camunda.optimize.service.es.schema.index.index.ImportIndexIndex;
 import org.camunda.optimize.service.es.schema.index.index.TimestampBasedImportIndex;
+import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.ConfigurationServiceBuilder;
 import org.camunda.optimize.upgrade.es.ElasticsearchHighLevelRestClientBuilder;
 import org.camunda.optimize.util.jetty.LoggingConfigurationReader;
 import org.elasticsearch.client.RestHighLevelClient;
+import org.jetbrains.annotations.NotNull;
 
+import java.io.IOException;
 import java.util.List;
 
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.CAMUNDA_ACTIVITY_EVENT_INDEX_PREFIX;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_INSTANCE_INDEX_PREFIX;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EVENT_PROCESS_INSTANCE_INDEX_PREFIX;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EVENT_SEQUENCE_COUNT_INDEX_PREFIX;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EVENT_TRACE_STATE_INDEX_PREFIX;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EXTERNAL_EVENTS_INDEX_SUFFIX;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_ARCHIVE_INDEX_PREFIX;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_INDEX_PREFIX;
 
 /**
  * Deletes all engine data and the import indexes from Elasticsearch such that Optimize reimports all data from the
@@ -62,16 +66,6 @@ public class ReimportPreparation {
     new EventProcessPublishStateIndex(),
     new ExternalProcessVariableIndex()
   );
-  private static final List<IndexMappingCreator> DYNAMIC_EVENT_INDICES_TO_DELETE = List.of(
-    new EventProcessInstanceIndex("*"),
-    new CamundaActivityEventIndex("*")
-  );
-  private static final List<IndexMappingCreator> DYNAMIC_EVENT_TRACE_INDICES_TO_DELETE = List.of(
-    new EventSequenceCountIndex("*"),
-    new EventTraceStateIndex("*")
-  );
-  private static final IndexMappingCreator DYNAMIC_PROCESS_INSTANCE_INDEX_TO_DELETE = new ProcessInstanceIndex("*");
-  private static final IndexMappingCreator DYNAMIC_DECISION_INSTANCE_INDEX_TO_DELETE = new DecisionInstanceIndex("*");
 
   public static void main(String[] args) {
     log.info("Start to prepare Elasticsearch such that Optimize reimports engine data!");
@@ -116,30 +110,57 @@ public class ReimportPreparation {
     log.info("Finished deleting import and engine data indices from Elasticsearch.");
 
     log.info("Deleting process instance indices from Elasticsearch...");
-    prefixAwareClient.deleteIndex(DYNAMIC_PROCESS_INSTANCE_INDEX_TO_DELETE);
+    deleteIndices(
+      prefixAwareClient,
+      getAllIndices(prefixAwareClient).stream()
+        .filter(index -> index.contains(PROCESS_INSTANCE_INDEX_PREFIX) || index.contains(PROCESS_INSTANCE_ARCHIVE_INDEX_PREFIX))
+        .toArray(String[]::new)
+    );
     log.info("Finished deleting process instance indices from Elasticsearch.");
 
     log.info("Deleting event process indices and Camunda event data from Elasticsearch...");
-    DYNAMIC_EVENT_INDICES_TO_DELETE.forEach(prefixAwareClient::deleteIndex);
+    deleteIndices(
+      prefixAwareClient,
+      getAllIndices(prefixAwareClient).stream()
+        .filter(index -> index.contains(EVENT_PROCESS_INSTANCE_INDEX_PREFIX)
+          || index.contains(CAMUNDA_ACTIVITY_EVENT_INDEX_PREFIX)).toArray(String[]::new)
+    );
     log.info("Finished deleting event process indices and Camunda event data from Elasticsearch.");
 
     log.info("Deleting decision instance indices from Elasticsearch...");
-    prefixAwareClient.deleteIndex(DYNAMIC_DECISION_INSTANCE_INDEX_TO_DELETE);
+    deleteIndices(
+      prefixAwareClient,
+      getAllIndices(prefixAwareClient).stream()
+        .filter(index -> index.contains(DECISION_INSTANCE_INDEX_PREFIX))
+        .toArray(String[]::new)
+    );
     log.info("Finished deleting decision instance indices from Elasticsearch.");
 
     log.info("Deleting Camunda event count/trace indices from Elasticsearch...");
-    DYNAMIC_EVENT_TRACE_INDICES_TO_DELETE.forEach(index -> prefixAwareClient.deleteIndexByRawIndexNames(
-      createIndexPatternExcludingExternalEventIndexVariant(prefixAwareClient, index)
-    ));
+    deleteIndices(
+      prefixAwareClient,
+      getAllIndices(prefixAwareClient).stream().filter(index -> !index.contains(EXTERNAL_EVENTS_INDEX_SUFFIX) &&
+        (index.contains(EVENT_SEQUENCE_COUNT_INDEX_PREFIX) || index.contains(EVENT_TRACE_STATE_INDEX_PREFIX))
+      ).toArray(String[]::new)
+    );
     log.info("Finished Camunda event count/trace indices from Elasticsearch.");
   }
 
-  private static String createIndexPatternExcludingExternalEventIndexVariant(final OptimizeElasticsearchClient prefixAwareClient,
-                                                                             final IndexMappingCreator index) {
-    return prefixAwareClient.getIndexNameService().getOptimizeIndexNameWithVersionWithWildcardSuffix(index)
-      + ",-"
-      + prefixAwareClient.getIndexNameService().getOptimizeIndexAliasForIndex(index.getIndexName())
-      + EXTERNAL_EVENTS_INDEX_SUFFIX + "*";
+  @NotNull
+  private static List<String> getAllIndices(final OptimizeElasticsearchClient prefixAwareClient) {
+    List<String> indices;
+    try {
+      indices = prefixAwareClient.getAllIndexNames();
+    } catch (IOException e) {
+      throw new OptimizeRuntimeException("Error while fetching indices. Could not perform Reimport", e);
+    }
+    return indices;
+  }
+
+  private static void deleteIndices(final OptimizeElasticsearchClient prefixAwareClient, String[] indexNames) {
+    if (indexNames.length > 0) {
+      prefixAwareClient.deleteIndexByRawIndexNames(indexNames);
+    }
   }
 
   private static void recreateStaticIndices(final OptimizeElasticsearchClient prefixAwareClient,
