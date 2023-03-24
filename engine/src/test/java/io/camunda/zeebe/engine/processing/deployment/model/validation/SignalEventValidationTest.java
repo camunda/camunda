@@ -24,6 +24,7 @@ import io.camunda.zeebe.protocol.record.value.DeploymentRecordValue;
 import io.camunda.zeebe.test.util.Strings;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import org.junit.ClassRule;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -105,7 +106,7 @@ public final class SignalEventValidationTest {
   }
 
   @Test
-  public void shouldDeploySignalEndEvent() {
+  public void shouldRejectSignalEndEvent() {
     // given
     final String processId = Strings.newRandomValidBpmnId();
 
@@ -113,17 +114,22 @@ public final class SignalEventValidationTest {
     final BpmnModelInstance processDefinition =
         Bpmn.createExecutableProcess(processId)
             .startEvent("start")
-            .endEvent()
+            .endEvent("signal_end_event")
             .signal("signalName")
             .done();
 
     final Record<DeploymentRecordValue> deployment =
-        ENGINE.deployment().withXmlResource(processDefinition).deploy();
+        ENGINE.deployment().withXmlResource(processDefinition).expectRejection().deploy();
 
     // then
-    assertThat(deployment.getKey())
-        .describedAs("Support signal end event process deployment")
-        .isNotNegative();
+    Assertions.assertThat(deployment)
+        .hasRejectionType(RejectionType.INVALID_ARGUMENT)
+        .hasRejectionReason(
+            """
+            Expected to deploy new resources, but encountered the following errors:
+            'process.xml': - Element: signal_end_event
+                - ERROR: Elements of type signal end event are currently not supported
+            """);
   }
 
   @Test
@@ -155,7 +161,7 @@ public final class SignalEventValidationTest {
   }
 
   @Test
-  public void shouldDeploySignalThrowEvent() {
+  public void shouldRejectSignalThrowEvent() {
     // given
     final String processId = Strings.newRandomValidBpmnId();
 
@@ -163,18 +169,23 @@ public final class SignalEventValidationTest {
     final BpmnModelInstance processDefinition =
         Bpmn.createExecutableProcess(processId)
             .startEvent("start")
-            .intermediateThrowEvent()
+            .intermediateThrowEvent("signal_throw_event")
             .signal("signalName")
             .endEvent()
             .done();
 
     final Record<DeploymentRecordValue> deployment =
-        ENGINE.deployment().withXmlResource(processDefinition).deploy();
+        ENGINE.deployment().withXmlResource(processDefinition).expectRejection().deploy();
 
     // then
-    assertThat(deployment.getKey())
-        .describedAs("Support signal throw event process deployment")
-        .isNotNegative();
+    Assertions.assertThat(deployment)
+        .hasRejectionType(RejectionType.INVALID_ARGUMENT)
+        .hasRejectionReason(
+            """
+            Expected to deploy new resources, but encountered the following errors:
+            'process.xml': - Element: signal_throw_event
+                - ERROR: Elements of type signal throw event are currently not supported
+            """);
   }
 
   @Test
@@ -193,7 +204,7 @@ public final class SignalEventValidationTest {
   }
 
   @Test
-  public void shouldDeploySignalBoundaryEvent() {
+  public void shouldRejectSignalBoundaryEvent() {
     // given
     final String processId = Strings.newRandomValidBpmnId();
 
@@ -202,19 +213,25 @@ public final class SignalEventValidationTest {
         Bpmn.createExecutableProcess(processId)
             .startEvent()
             .manualTask()
-            .boundaryEvent("boundary-1", b -> b.signal(m -> m.name("signalName")))
+            .boundaryEvent("signal_boundary_event", b -> b.signal(m -> m.name("signalName")))
             .endEvent()
             .done();
 
     final Record<DeploymentRecordValue> deployment =
-        ENGINE.deployment().withXmlResource(processDefinition).deploy();
+        ENGINE.deployment().withXmlResource(processDefinition).expectRejection().deploy();
 
     // then
-    assertThat(deployment.getKey())
-        .describedAs("Support signal boundary event process deployment")
-        .isNotNegative();
+    Assertions.assertThat(deployment)
+        .hasRejectionType(RejectionType.INVALID_ARGUMENT)
+        .hasRejectionReason(
+            """
+            Expected to deploy new resources, but encountered the following errors:
+            'process.xml': - Element: signal_boundary_event
+                - ERROR: Elements of type signal boundary event are currently not supported
+            """);
   }
 
+  @Ignore("Should be re-enabled when signal boundary events are supported")
   @Test
   public void shouldDeploySignalStartAndMultipleBoundaryEvents() {
     // given
@@ -243,6 +260,8 @@ public final class SignalEventValidationTest {
         .isNotNegative();
   }
 
+  @Ignore(
+      "Should be re-enabled when signal event-subprocess & signal boundary events are supported")
   @Test
   public void shouldDeployEventSubProcessWithMultipleSignalEvents() {
     // given
@@ -261,7 +280,7 @@ public final class SignalEventValidationTest {
   }
 
   @Test
-  public void shouldDeploySignalIntermediateCatchEvent() {
+  public void shouldRejectSignalIntermediateCatchEvent() {
     // given
     final String processId = Strings.newRandomValidBpmnId();
 
@@ -269,19 +288,53 @@ public final class SignalEventValidationTest {
     final BpmnModelInstance processDefinition =
         Bpmn.createExecutableProcess(processId)
             .startEvent()
-            .intermediateCatchEvent("foo")
+            .intermediateCatchEvent("signal_catch_event")
             .signal("signalName")
             .done();
 
     final Record<DeploymentRecordValue> deployment =
-        ENGINE.deployment().withXmlResource(processDefinition).deploy();
+        ENGINE.deployment().withXmlResource(processDefinition).expectRejection().deploy();
 
     // then
-    assertThat(deployment.getKey())
-        .describedAs("Support signal intermediate catch event process deployment")
-        .isNotNegative();
+    Assertions.assertThat(deployment)
+        .hasRejectionType(RejectionType.INVALID_ARGUMENT)
+        .hasRejectionReason(
+            """
+            Expected to deploy new resources, but encountered the following errors:
+            'process.xml': - Element: signal_catch_event
+                - ERROR: Elements of type signal intermediate catch event are currently not supported
+            """);
   }
 
+  @Test
+  public void shouldRejectSignalEventSubprocess() {
+    // given
+    final String processId = Strings.newRandomValidBpmnId();
+
+    // when
+    final BpmnModelInstance processDefinition =
+        Bpmn.createExecutableProcess(processId)
+            .eventSubProcess(
+                "signal_event_subprocess",
+                sub -> sub.startEvent("signal_event", s -> s.signal("signal")))
+            .startEvent()
+            .done();
+
+    final Record<DeploymentRecordValue> deployment =
+        ENGINE.deployment().withXmlResource(processDefinition).expectRejection().deploy();
+
+    // then
+    Assertions.assertThat(deployment)
+        .hasRejectionType(RejectionType.INVALID_ARGUMENT)
+        .hasRejectionReason(
+            """
+            Expected to deploy new resources, but encountered the following errors:
+            'process.xml': - Element: signal_event_subprocess
+                - ERROR: Elements of type signal event subprocess are currently not supported
+            """);
+  }
+
+  @Ignore("Should be re-enabled when signal boundary events are supported")
   @Test
   public void shouldDeploySignalStartAndBoundaryEventEvenWithSameSignal() {
     // given
