@@ -30,6 +30,9 @@ export async function login(t, userHandle = 'user1') {
     .typeText('input[name="username"]', user.username)
     .typeText('input[name="password"]', user.password)
     .click('.primary');
+
+  // wait for page to fully load
+  await t.expect(Selector('.LoadingIndicator').exists).notOk({timeout: 5000});
 }
 
 export function getUser(t, userHandle) {
