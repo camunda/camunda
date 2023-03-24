@@ -10,15 +10,13 @@ package io.camunda.zeebe.engine.processing.job;
 import static io.camunda.zeebe.protocol.record.intent.JobIntent.TIMED_OUT;
 import static org.mockito.internal.verification.VerificationModeFactory.times;
 
+import io.camunda.zeebe.engine.processing.streamprocessor.JobStreamer;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.value.JobBatchRecordValue;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
-import io.camunda.zeebe.stream.api.ActivatedJob;
-import io.camunda.zeebe.stream.api.GatewayStreamer;
-import io.camunda.zeebe.stream.api.JobActivationProperties;
 import io.camunda.zeebe.test.util.Strings;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
@@ -44,11 +42,7 @@ public final class ActivatableJobsNotificationTests {
               .endEvent("end")
               .done();
 
-  @SuppressWarnings("unchecked")
-  private static final GatewayStreamer<JobActivationProperties, ActivatedJob>
-      JOB_AVAILABLE_CALLBACK =
-          (GatewayStreamer<JobActivationProperties, ActivatedJob>)
-              Mockito.spy(GatewayStreamer.class);
+  private static final JobStreamer JOB_AVAILABLE_CALLBACK = Mockito.spy(JobStreamer.class);
 
   @ClassRule
   public static final EngineRule ENGINE =

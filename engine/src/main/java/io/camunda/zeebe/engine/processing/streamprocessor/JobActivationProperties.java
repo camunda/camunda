@@ -5,10 +5,10 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.camunda.zeebe.stream.api;
+package io.camunda.zeebe.engine.processing.streamprocessor;
 
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
-import io.camunda.zeebe.stream.api.GatewayStreamer.Metadata;
+import io.camunda.zeebe.util.buffer.BufferReader;
 import java.util.Collection;
 import org.agrona.DirectBuffer;
 
@@ -16,7 +16,7 @@ import org.agrona.DirectBuffer;
  * {@link JobActivationProperties} represents the minimum set of properties required to activate a
  * {@link io.camunda.zeebe.protocol.record.value.JobRecordValue} in the engine.
  */
-public interface JobActivationProperties extends Metadata {
+public interface JobActivationProperties extends BufferReader {
 
   /**
    * Returns the name of the worker. This is mostly used for debugging purposes.

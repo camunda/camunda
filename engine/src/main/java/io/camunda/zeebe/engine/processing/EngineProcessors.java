@@ -29,6 +29,7 @@ import io.camunda.zeebe.engine.processing.message.MessageEventProcessors;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
 import io.camunda.zeebe.engine.processing.resource.ResourceDeletionProcessor;
 import io.camunda.zeebe.engine.processing.signal.SignalBroadcastProcessor;
+import io.camunda.zeebe.engine.processing.streamprocessor.JobStreamer;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessorContext;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
@@ -59,12 +60,16 @@ public final class EngineProcessors {
       final int partitionsCount,
       final SubscriptionCommandSender subscriptionCommandSender,
       final InterPartitionCommandSender interPartitionCommandSender,
-      final FeatureFlags featureFlags) {
+      final FeatureFlags featureFlags,
+      final JobStreamer jobStreamer) {
 
     final var processingState = typedRecordProcessorContext.getProcessingState();
     final var writers = typedRecordProcessorContext.getWriters();
     final TypedRecordProcessors typedRecordProcessors =
         TypedRecordProcessors.processors(processingState.getKeyGenerator(), writers);
+
+    // TODO: use streamer in processors instead of state
+    processingState.getJobState().setJobStreamer(jobStreamer);
 
     // register listener that handles migrations immediately, so it is the first to be called
     typedRecordProcessors.withListener(new DbMigrationController(processingState));

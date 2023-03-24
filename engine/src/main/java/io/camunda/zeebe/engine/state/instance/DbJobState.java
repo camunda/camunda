@@ -17,15 +17,14 @@ import io.camunda.zeebe.db.impl.DbNil;
 import io.camunda.zeebe.db.impl.DbString;
 import io.camunda.zeebe.engine.Loggers;
 import io.camunda.zeebe.engine.metrics.JobMetrics;
+import io.camunda.zeebe.engine.processing.streamprocessor.JobStreamer;
 import io.camunda.zeebe.engine.state.immutable.JobState;
 import io.camunda.zeebe.engine.state.mutable.MutableJobState;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
-import io.camunda.zeebe.stream.api.ActivatedJob;
-import io.camunda.zeebe.stream.api.GatewayStreamer;
-import io.camunda.zeebe.stream.api.JobActivationProperties;
 import io.camunda.zeebe.util.EnsureUtil;
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import java.util.Objects;
 import java.util.function.BiFunction;
 import java.util.function.BiPredicate;
 import org.agrona.DirectBuffer;
@@ -69,14 +68,12 @@ public final class DbJobState implements JobState, MutableJobState {
 
   private final JobMetrics metrics;
 
-  private final GatewayStreamer<JobActivationProperties, ActivatedJob> jobStreamer;
+  private JobStreamer jobStreamer = JobStreamer.noop();
 
   public DbJobState(
       final ZeebeDb<ZbColumnFamilies> zeebeDb,
       final TransactionContext transactionContext,
-      final int partitionId,
-      final GatewayStreamer<JobActivationProperties, ActivatedJob> jobStreamer) {
-    this.jobStreamer = jobStreamer;
+      final int partitionId) {
 
     jobKey = new DbLong();
     fkJob = new DbForeignKey<>(jobKey, ZbColumnFamilies.JOBS);
@@ -222,6 +219,11 @@ public final class DbJobState implements JobState, MutableJobState {
     return job;
   }
 
+  @Override
+  public void setJobStreamer(final JobStreamer jobStreamer) {
+    this.jobStreamer = Objects.requireNonNull(jobStreamer, "must specify a job streamer");
+  }
+
   private void createJob(final long key, final JobRecord record, final DirectBuffer type) {
     createJobRecord(key, record);
     initializeJobState();
@@ -345,11 +347,7 @@ public final class DbJobState implements JobState, MutableJobState {
   }
 
   private void notifyJobAvailable(final DirectBuffer jobType) {
-    if (jobStreamer != null) {
-      // TODO: remove the cloneBuffer eventually, but it's required now due to the
-      //  ActivatableJobsNotificationTests
-      jobStreamer.notifyWorkAvailable(BufferUtil.bufferAsString(jobType));
-    }
+    jobStreamer.notifyWorkAvailable(BufferUtil.bufferAsString(jobType));
   }
 
   private void createJobRecord(final long key, final JobRecord record) {

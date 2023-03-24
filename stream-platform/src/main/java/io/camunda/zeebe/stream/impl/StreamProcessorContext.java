@@ -13,11 +13,8 @@ import io.camunda.zeebe.logstreams.log.LogStreamReader;
 import io.camunda.zeebe.logstreams.log.LogStreamWriter;
 import io.camunda.zeebe.logstreams.log.LoggedEvent;
 import io.camunda.zeebe.scheduler.ActorControl;
-import io.camunda.zeebe.stream.api.ActivatedJob;
 import io.camunda.zeebe.stream.api.CommandResponseWriter;
-import io.camunda.zeebe.stream.api.GatewayStreamer;
 import io.camunda.zeebe.stream.api.InterPartitionCommandSender;
-import io.camunda.zeebe.stream.api.JobActivationProperties;
 import io.camunda.zeebe.stream.api.ReadonlyStreamProcessorContext;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.scheduling.ProcessingScheduleService;
@@ -59,7 +56,6 @@ public final class StreamProcessorContext implements ReadonlyStreamProcessorCont
   private volatile StreamProcessor.Phase phase = Phase.INITIAL;
   private KeyGeneratorControls keyGeneratorControls;
   private int maxCommandsInBatch = DEFAULT_MAX_COMMANDS_IN_BATCH;
-  private GatewayStreamer<JobActivationProperties, ActivatedJob> jobStreamer;
 
   public StreamProcessorContext actor(final ActorControl actor) {
     this.actor = actor;
@@ -209,15 +205,5 @@ public final class StreamProcessorContext implements ReadonlyStreamProcessorCont
 
   public int getMaxCommandsInBatch() {
     return maxCommandsInBatch;
-  }
-
-  public StreamProcessorContext jobStreamer(
-      final GatewayStreamer<JobActivationProperties, ActivatedJob> jobStreamer) {
-    this.jobStreamer = jobStreamer;
-    return this;
-  }
-
-  public GatewayStreamer<JobActivationProperties, ActivatedJob> getJobStreamer() {
-    return jobStreamer;
   }
 }

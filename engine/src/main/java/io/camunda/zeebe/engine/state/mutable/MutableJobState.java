@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.state.mutable;
 
+import io.camunda.zeebe.engine.processing.streamprocessor.JobStreamer;
 import io.camunda.zeebe.engine.state.immutable.JobState;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 
@@ -35,4 +36,7 @@ public interface MutableJobState extends JobState {
   void resolve(long key, JobRecord updatedValue);
 
   JobRecord updateJobRetries(long jobKey, int retries);
+
+  // TODO: stop using job streamer on state
+  void setJobStreamer(final JobStreamer jobStreamer);
 }

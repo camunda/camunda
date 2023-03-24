@@ -7,21 +7,21 @@
  */
 package io.camunda.zeebe.broker.jobstream;
 
+import io.camunda.zeebe.engine.processing.streamprocessor.ActivatedJob;
+import io.camunda.zeebe.engine.processing.streamprocessor.JobActivationProperties;
+import io.camunda.zeebe.engine.processing.streamprocessor.JobStreamer;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
-import io.camunda.zeebe.stream.api.ActivatedJob;
-import io.camunda.zeebe.stream.api.GatewayStreamer;
-import io.camunda.zeebe.stream.api.JobActivationProperties;
 import io.camunda.zeebe.transport.stream.api.RemoteStreamService;
 import java.util.Objects;
 
 public record JobStreamService(
     RemoteStreamService<JobActivationProperties, ActivatedJob> remoteStreamService,
-    GatewayStreamer<JobActivationProperties, ActivatedJob> jobStreamer) {
+    JobStreamer jobStreamer) {
 
   public JobStreamService(
       final RemoteStreamService<JobActivationProperties, ActivatedJob> remoteStreamService,
-      final GatewayStreamer<JobActivationProperties, ActivatedJob> jobStreamer) {
+      final JobStreamer jobStreamer) {
     this.remoteStreamService =
         Objects.requireNonNull(remoteStreamService, "must provide a stream remoteStreamService");
     this.jobStreamer = Objects.requireNonNull(jobStreamer, "must provide a job streamer");

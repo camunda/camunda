@@ -47,16 +47,14 @@ import io.camunda.zeebe.broker.transport.commandapi.CommandApiService;
 import io.camunda.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory;
 import io.camunda.zeebe.engine.processing.EngineProcessors;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
+import io.camunda.zeebe.engine.processing.streamprocessor.JobStreamer;
 import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.startup.StartupStep;
 import io.camunda.zeebe.snapshots.ConstructableSnapshotStore;
 import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotStoreFactory;
-import io.camunda.zeebe.stream.api.ActivatedJob;
-import io.camunda.zeebe.stream.api.GatewayStreamer;
 import io.camunda.zeebe.stream.api.InterPartitionCommandSender;
-import io.camunda.zeebe.stream.api.JobActivationProperties;
 import io.camunda.zeebe.transport.impl.AtomixServerTransport;
 import io.camunda.zeebe.util.FeatureFlags;
 import io.camunda.zeebe.util.FileUtil;
@@ -97,7 +95,7 @@ final class PartitionFactory {
   private final BrokerHealthCheckService healthCheckService;
   private final DiskSpaceUsageMonitor diskSpaceUsageMonitor;
   private final AtomixServerTransport gatewayBrokerTransport;
-  private final GatewayStreamer<JobActivationProperties, ActivatedJob> jobStreamer;
+  private final JobStreamer jobStreamer;
 
   PartitionFactory(
       final ActorSchedulingService actorSchedulingService,
@@ -110,7 +108,7 @@ final class PartitionFactory {
       final BrokerHealthCheckService healthCheckService,
       final DiskSpaceUsageMonitor diskSpaceUsageMonitor,
       final AtomixServerTransport gatewayBrokerTransport,
-      final GatewayStreamer<JobActivationProperties, ActivatedJob> jobStreamer) {
+      final JobStreamer jobStreamer) {
     this.actorSchedulingService = actorSchedulingService;
     this.brokerCfg = brokerCfg;
     this.localBroker = localBroker;
@@ -131,7 +129,6 @@ final class PartitionFactory {
       final FeatureFlags featureFlags) {
     final var partitions = new ArrayList<ZeebePartition>();
     final var communicationService = clusterServices.getCommunicationService();
-    final var eventService = clusterServices.getEventService();
     final var membershipService = clusterServices.getMembershipService();
 
     final MemberId nodeId = membershipService.getLocalMember().id();
@@ -172,8 +169,7 @@ final class PartitionFactory {
               new PartitionProcessingState(owningPartition),
               diskSpaceUsageMonitor,
               gatewayBrokerTransport,
-              topologyManager,
-              jobStreamer);
+              topologyManager);
 
       final PartitionTransition newTransitionBehavior =
           new PartitionTransitionImpl(TRANSITION_STEPS);
@@ -234,7 +230,8 @@ final class PartitionFactory {
           localBroker.getPartitionsCount(),
           subscriptionCommandSender,
           partitionCommandSender,
-          featureFlags);
+          featureFlags,
+          jobStreamer);
     };
   }
 }
