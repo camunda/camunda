@@ -96,14 +96,13 @@ public class InstantPreviewDashboardService {
     final InstantDashboardDataDto instantDashboardDataDto = new InstantDashboardDataDto();
     instantDashboardDataDto.setTemplateName(emptySafeDashboardTemplate);
     instantDashboardDataDto.setProcessDefinitionKey(processDefinitionKey);
-    final Optional<String> dashboardIdMaybe =
-      setupInstantPreviewDashboard(instantDashboardDataDto.getTemplateName(), processDefinitionKey);
-    return dashboardIdMaybe.map(dashboardId -> {
-      instantDashboardDataDto.setDashboardId(dashboardId);
-      instantDashboardDataDto.setTemplateHash(templateChecksums.get(emptySafeDashboardTemplate));
-      instantDashboardMetadataWriter.saveInstantDashboard(instantDashboardDataDto);
-      return instantDashboardDataDto;
-    });
+    return setupInstantPreviewDashboard(instantDashboardDataDto.getTemplateName(), processDefinitionKey)
+      .map(dashboardId -> {
+        instantDashboardDataDto.setDashboardId(dashboardId);
+        instantDashboardDataDto.setTemplateHash(templateChecksums.get(emptySafeDashboardTemplate));
+        instantDashboardMetadataWriter.saveInstantDashboard(instantDashboardDataDto);
+        return instantDashboardDataDto;
+      });
   }
 
   private Optional<String> setupInstantPreviewDashboard(final String dashboardJsonTemplate,
@@ -127,8 +126,8 @@ public class InstantPreviewDashboardService {
               SingleProcessReportDefinitionExportDto singleReport =
                 ((SingleProcessReportDefinitionExportDto) reportEntity);
               singleReport.getData().setDefinitions(
-                List.of(new ReportDataDefinitionDto(processDefinitionKey,
-                                                    List.of(ALL_VERSIONS), processDefinition.getTenantIds()
+                List.of(new ReportDataDefinitionDto(
+                  processDefinitionKey, List.of(ALL_VERSIONS), processDefinition.getTenantIds()
                 )));
               singleReport.getData().setInstantPreviewReport(true);
             }),

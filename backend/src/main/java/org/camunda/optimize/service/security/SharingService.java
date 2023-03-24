@@ -136,8 +136,8 @@ public class SharingService implements ReportReferencingService, DashboardRefere
     try {
       DashboardDefinitionRestDto dashboardDefinition =
         dashboardService.getDashboardDefinition(dashboardId, userId).getDefinitionDto();
-      if (dashboardDefinition.isManagementDashboard()) {
-        throw new OptimizeValidationException("Management Dashboards cannot be shared");
+      if (dashboardDefinition.isManagementDashboard() || dashboardDefinition.isInstantPreviewDashboard()) {
+        throw new OptimizeValidationException("Management Dashboards or Instant Preview Dashboards cannot be shared");
       }
 
       final Set<String> authorizedReportIdsOnDashboard = reportService.filterAuthorizedReportIds(
