@@ -8,6 +8,7 @@
 import {Mixpanel} from 'mixpanel-browser';
 import {getStage} from './getStage';
 import {User} from 'modules/types';
+import {TaskFilters} from 'modules/hooks/useTaskFilters';
 
 const EVENT_PREFIX = 'tasklist:';
 type Events =
@@ -18,11 +19,12 @@ type Events =
       eventName: 'task-completed';
       isCamundaForm: boolean;
       hasRemainingTasks: boolean;
-      filter: string;
+      filter: TaskFilters['filter'];
     }
   | {
       eventName: 'tasks-filtered';
-      filter: string;
+      filter: TaskFilters['filter'];
+      sorting: TaskFilters['sortBy'];
     }
   | {
       eventName: 'navigation';

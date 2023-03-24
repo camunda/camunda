@@ -53,6 +53,7 @@ const Filters: React.FC<Props> = ({disabled}) => {
           tracking.track({
             eventName: 'tasks-filtered',
             filter: values.filter,
+            sorting: values.sortBy,
           });
 
           if (!IS_SORTING_ENABLED) {
