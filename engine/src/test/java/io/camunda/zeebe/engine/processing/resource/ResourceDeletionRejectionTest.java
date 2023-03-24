@@ -12,9 +12,11 @@ import static io.camunda.zeebe.protocol.record.RecordAssert.assertThat;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.test.util.BrokerClassRuleHelper;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 
+@Ignore("Resoure deletion is disabled for version 8.2")
 public class ResourceDeletionRejectionTest {
 
   @Rule public final EngineRule engine = EngineRule.singlePartition();
