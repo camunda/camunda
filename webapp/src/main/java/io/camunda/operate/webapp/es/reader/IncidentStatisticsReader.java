@@ -32,6 +32,8 @@ import io.camunda.operate.webapp.rest.dto.incidents.IncidentByProcessStatisticsD
 import io.camunda.operate.webapp.rest.dto.incidents.IncidentsByErrorMsgStatisticsDto;
 import io.camunda.operate.webapp.rest.dto.incidents.IncidentsByProcessGroupStatisticsDto;
 import io.camunda.operate.util.ConversionUtils;
+import io.camunda.operate.webapp.security.identity.IdentityPermission;
+import io.camunda.operate.webapp.security.identity.PermissionsService;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
@@ -75,6 +77,9 @@ public class IncidentStatisticsReader extends AbstractReader {
 
   @Autowired
   private ProcessReader processReader;
+
+  @Autowired(required = false)
+  private PermissionsService permissionsService;
 
   public static final AggregationBuilder COUNT_PROCESS_KEYS = terms(PROCESS_KEYS)
                                                         .field(ListViewTemplate.PROCESS_KEY)
@@ -214,9 +219,11 @@ public class IncidentStatisticsReader extends AbstractReader {
             .subAggregation(cardinality(UNIQ_PROCESS_INSTANCES)
                 .field(IncidentTemplate.PROCESS_INSTANCE_KEY)));
 
+    QueryBuilder query = (permissionsService == null) ? ACTIVE_INCIDENT_QUERY :
+        joinWithAnd(ACTIVE_INCIDENT_QUERY, permissionsService.createQueryForProcessesByPermission(IdentityPermission.READ));
     final SearchRequest searchRequest = ElasticsearchUtil.createSearchRequest(incidentTemplate, ONLY_RUNTIME)
         .source(new SearchSourceBuilder()
-            .query(ACTIVE_INCIDENT_QUERY)
+            .query(query)
             .aggregation(aggregation)
             .size(0));
 

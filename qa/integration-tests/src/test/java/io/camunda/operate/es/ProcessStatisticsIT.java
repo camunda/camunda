@@ -6,14 +6,19 @@
  */
 package io.camunda.operate.es;
 
+import static io.camunda.operate.qa.util.RestAPITestUtil.createGetAllProcessInstancesRequest;
 import static org.assertj.core.api.Assertions.assertThat;
 import static io.camunda.operate.util.TestUtil.createFlowNodeInstanceWithIncident;
 import static io.camunda.operate.util.TestUtil.createProcessInstance;
 import static org.junit.Assert.assertEquals;
+import static org.mockito.Mockito.when;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import io.camunda.operate.qa.util.RestAPITestUtil;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
+import java.util.Set;
 
 import io.camunda.operate.entities.FlowNodeState;
 import io.camunda.operate.entities.FlowNodeType;
@@ -28,9 +33,14 @@ import io.camunda.operate.webapp.rest.dto.listview.ListViewQueryDto;
 import io.camunda.operate.util.CollectionUtil;
 import io.camunda.operate.util.ElasticsearchTestRule;
 import io.camunda.operate.util.OperateIntegrationTest;
+import io.camunda.operate.webapp.rest.dto.listview.ListViewRequestDto;
+import io.camunda.operate.webapp.security.identity.IdentityPermission;
+import io.camunda.operate.webapp.security.identity.PermissionsService;
 import org.junit.Rule;
 import org.junit.Test;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.web.servlet.MvcResult;
+import org.testcontainers.shaded.com.fasterxml.jackson.databind.ObjectMapper;
 
 /**
  * Tests Elasticsearch query for process statistics.
@@ -42,6 +52,9 @@ public class ProcessStatisticsIT extends OperateIntegrationTest {
 
   private static final Long PROCESS_KEY_DEMO_PROCESS = 42L;
   private static final Long PROCESS_KEY_OTHER_PROCESS = 27L;
+
+  @MockBean
+  private PermissionsService permissionsService;
 
   @Rule
   public ElasticsearchTestRule elasticsearchTestRule = new ElasticsearchTestRule();
@@ -160,6 +173,111 @@ public class ProcessStatisticsIT extends OperateIntegrationTest {
     assertEquals(coreStatistics.getActive().longValue(), 6L);
     assertEquals(coreStatistics.getRunning().longValue(), 12L);
     assertEquals(coreStatistics.getWithIncidents().longValue(), 6L);
+  }
+
+  @Test
+  public void testStatisticsWithPermisssionWhenAllowed() throws Exception {
+
+    // given
+    Long processDefinitionKey = PROCESS_KEY_DEMO_PROCESS;
+
+    List<OperateEntity> entities = new ArrayList<>();
+    ProcessInstanceForListViewEntity processInstance = createProcessInstance(ProcessInstanceState.ACTIVE, processDefinitionKey);
+    entities.add(TestUtil.createFlowNodeInstance(processInstance.getProcessInstanceKey(), FlowNodeState.COMPLETED, "start", null));
+    entities.add(TestUtil.createFlowNodeInstance(processInstance.getProcessInstanceKey(), FlowNodeState.ACTIVE, "taskA", null));
+    entities.add(TestUtil.createFlowNodeInstance(processInstance.getProcessInstanceKey(), FlowNodeState.ACTIVE, "taskB", null));
+    entities.add(processInstance);
+    elasticsearchTestRule.persistNew(entities.toArray(new OperateEntity[entities.size()]));
+
+    ListViewQueryDto queryRequest = createGetAllProcessInstancesQuery(processDefinitionKey);
+
+    // when
+    when(permissionsService.getProcessesWithPermission(IdentityPermission.READ)).thenReturn(
+        PermissionsService.ResourcesAllowed.withIds(Set.of(processInstance.getBpmnProcessId())));
+    when(permissionsService.createQueryForProcessesByPermission(IdentityPermission.READ)).thenCallRealMethod();
+    MvcResult mvcResult = postRequest(QUERY_PROCESS_STATISTICS_URL, queryRequest);
+
+    // then
+    Collection<FlowNodeStatisticsDto> response = mockMvcTestRule.fromResponse(mvcResult, new TypeReference<>() {
+    });
+
+    assertThat(response.size()).isEqualTo(2);
+  }
+
+  @Test
+  public void testStatisticsWithPermisssionWhenNotAllowed() throws Exception {
+
+    // given
+    Long processDefinitionKey = PROCESS_KEY_DEMO_PROCESS;
+
+    List<OperateEntity> entities = new ArrayList<>();
+    ProcessInstanceForListViewEntity processInstance = createProcessInstance(ProcessInstanceState.ACTIVE, processDefinitionKey);
+    entities.add(TestUtil.createFlowNodeInstance(processInstance.getProcessInstanceKey(), FlowNodeState.COMPLETED, "start", null));
+    entities.add(TestUtil.createFlowNodeInstance(processInstance.getProcessInstanceKey(), FlowNodeState.ACTIVE, "taskA", null));
+    entities.add(TestUtil.createFlowNodeInstance(processInstance.getProcessInstanceKey(), FlowNodeState.ACTIVE, "taskB", null));
+    entities.add(processInstance);
+    elasticsearchTestRule.persistNew(entities.toArray(new OperateEntity[entities.size()]));
+
+    ListViewQueryDto queryRequest = createGetAllProcessInstancesQuery(processDefinitionKey);
+
+    // when
+    when(permissionsService.getProcessesWithPermission(IdentityPermission.READ)).thenReturn(PermissionsService.ResourcesAllowed.withIds(Set.of()));
+    when(permissionsService.createQueryForProcessesByPermission(IdentityPermission.READ)).thenCallRealMethod();
+    MvcResult mvcResult = postRequest(QUERY_PROCESS_STATISTICS_URL, queryRequest);
+
+    // then
+    Collection<FlowNodeStatisticsDto> response = mockMvcTestRule.fromResponse(mvcResult, new TypeReference<>() {
+    });
+
+    assertThat(response).isEmpty();
+  }
+
+  @Test
+  public void testCoreStatisticsWithPermisssionWhenAllowed() throws Exception {
+    // given
+    String bpmnProcessId1 = "bpmnProcessId1";
+    String bpmnProcessId2 = "bpmnProcessId2";
+    String bpmnProcessId3 = "bpmnProcessId3";
+    final ProcessInstanceForListViewEntity processInstance1 = createProcessInstance(ProcessInstanceState.ACTIVE).setBpmnProcessId(bpmnProcessId1);
+    final ProcessInstanceForListViewEntity processInstance2 = createProcessInstance(ProcessInstanceState.ACTIVE).setBpmnProcessId(bpmnProcessId2);
+    final ProcessInstanceForListViewEntity processInstance3 = createProcessInstance(ProcessInstanceState.ACTIVE).setBpmnProcessId(bpmnProcessId3);
+    elasticsearchTestRule.persistNew(processInstance1, processInstance2, processInstance3);
+
+    ListViewRequestDto queryRequest = createGetAllProcessInstancesRequest();
+
+    // when
+    when(permissionsService.getProcessesWithPermission(IdentityPermission.READ)).thenReturn(PermissionsService.ResourcesAllowed.all());
+    when(permissionsService.createQueryForProcessesByPermission(IdentityPermission.READ)).thenCallRealMethod();
+
+    // then
+    ProcessInstanceCoreStatisticsDto coreStatistics = mockMvcTestRule.fromResponse(getRequest(QUERY_PROCESS_CORE_STATISTICS_URL),
+        ProcessInstanceCoreStatisticsDto.class);
+
+    assertThat(coreStatistics.getActive()).isEqualTo(3);
+  }
+
+  @Test
+  public void testCoreStatisticsWithPermisssionWhenNotAllowed() throws Exception {
+    // given
+    String bpmnProcessId1 = "bpmnProcessId1";
+    String bpmnProcessId2 = "bpmnProcessId2";
+    String bpmnProcessId3 = "bpmnProcessId3";
+    final ProcessInstanceForListViewEntity processInstance1 = createProcessInstance(ProcessInstanceState.ACTIVE).setBpmnProcessId(bpmnProcessId1);
+    final ProcessInstanceForListViewEntity processInstance2 = createProcessInstance(ProcessInstanceState.ACTIVE).setBpmnProcessId(bpmnProcessId2);
+    final ProcessInstanceForListViewEntity processInstance3 = createProcessInstance(ProcessInstanceState.ACTIVE).setBpmnProcessId(bpmnProcessId3);
+    elasticsearchTestRule.persistNew(processInstance1, processInstance2, processInstance3);
+
+    ListViewRequestDto queryRequest = createGetAllProcessInstancesRequest();
+
+    // when
+    when(permissionsService.getProcessesWithPermission(IdentityPermission.READ)).thenReturn(PermissionsService.ResourcesAllowed.withIds(Set.of()));
+    when(permissionsService.createQueryForProcessesByPermission(IdentityPermission.READ)).thenCallRealMethod();
+
+    // then
+    ProcessInstanceCoreStatisticsDto coreStatistics = mockMvcTestRule.fromResponse(getRequest(QUERY_PROCESS_CORE_STATISTICS_URL),
+        ProcessInstanceCoreStatisticsDto.class);
+
+    assertThat(coreStatistics.getActive()).isEqualTo(0);
   }
 
   private ListViewQueryDto createGetAllProcessInstancesQuery(Long... processDefinitionKeys) {

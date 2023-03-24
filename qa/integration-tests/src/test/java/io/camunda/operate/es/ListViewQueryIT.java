@@ -14,6 +14,7 @@ import static io.camunda.operate.util.TestUtil.createProcessInstance;
 import static io.camunda.operate.util.TestUtil.createVariableForListView;
 import static io.camunda.operate.webapp.rest.ProcessInstanceRestService.PROCESS_INSTANCE_URL;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -42,8 +43,15 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Set;
+
+import io.camunda.operate.webapp.security.identity.IdentityPermission;
+import io.camunda.operate.webapp.security.identity.PermissionsService;
+import org.elasticsearch.index.query.QueryBuilder;
+import org.elasticsearch.index.query.QueryBuilders;
 import org.junit.Rule;
 import org.junit.Test;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 
@@ -53,6 +61,9 @@ import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilde
 public class ListViewQueryIT extends OperateIntegrationTest {
 
   private static final String QUERY_INSTANCES_URL = PROCESS_INSTANCE_URL;
+
+  @MockBean
+  private PermissionsService permissionsService;
 
   @Rule
   public ElasticsearchTestRule elasticsearchTestRule = new ElasticsearchTestRule();
@@ -1097,6 +1108,89 @@ public class ListViewQueryIT extends OperateIntegrationTest {
     assertThat(response.getProcessInstances()).allMatch((pi) -> !pi.getState().equals(ProcessInstanceStateDto.INCIDENT));
 
   }
+
+  @Test
+  public void testQueryWithPermisssionForAllProcesses() throws Exception {
+    // given
+    String bpmnProcessId1 = "bpmnProcessId1";
+    String bpmnProcessId2 = "bpmnProcessId2";
+    String bpmnProcessId3 = "bpmnProcessId3";
+    final ProcessInstanceForListViewEntity processInstance1 = createProcessInstance(ProcessInstanceState.ACTIVE).setBpmnProcessId(bpmnProcessId1);
+    final ProcessInstanceForListViewEntity processInstance2 = createProcessInstance(ProcessInstanceState.CANCELED).setBpmnProcessId(bpmnProcessId2);
+    final ProcessInstanceForListViewEntity processInstance3 = createProcessInstance(ProcessInstanceState.COMPLETED).setBpmnProcessId(bpmnProcessId3);
+    elasticsearchTestRule.persistNew(processInstance1, processInstance2, processInstance3);
+
+    ListViewRequestDto query = createGetAllProcessInstancesRequest();
+
+    // when
+    when(permissionsService.getProcessesWithPermission(IdentityPermission.READ)).thenReturn(
+        PermissionsService.ResourcesAllowed.all());
+    when(permissionsService.createQueryForProcessesByPermission(IdentityPermission.READ)).thenCallRealMethod();
+    MvcResult mvcResult = postRequest(query(),query);
+
+    // then
+    ListViewResponseDto response = mockMvcTestRule.fromResponse(mvcResult, new TypeReference<>() {
+    });
+
+    assertThat(response.getProcessInstances()).hasSize(3);
+    assertThat(response.getProcessInstances()).extracting(ListViewTemplate.ID)
+        .containsExactlyInAnyOrder(processInstance1.getId(),processInstance2.getId(),processInstance3.getId());
+  }
+
+  @Test
+  public void testQueryWithPermisssionForNoProcesses() throws Exception {
+    // given
+    String bpmnProcessId1 = "bpmnProcessId1";
+    String bpmnProcessId2 = "bpmnProcessId2";
+    String bpmnProcessId3 = "bpmnProcessId3";
+    final ProcessInstanceForListViewEntity processInstance1 = createProcessInstance(ProcessInstanceState.ACTIVE).setBpmnProcessId(bpmnProcessId1);
+    final ProcessInstanceForListViewEntity processInstance2 = createProcessInstance(ProcessInstanceState.CANCELED).setBpmnProcessId(bpmnProcessId2);
+    final ProcessInstanceForListViewEntity processInstance3 = createProcessInstance(ProcessInstanceState.COMPLETED).setBpmnProcessId(bpmnProcessId3);
+    elasticsearchTestRule.persistNew(processInstance1, processInstance2, processInstance3);
+
+    ListViewRequestDto query = createGetAllProcessInstancesRequest();
+
+    // when
+    when(permissionsService.getProcessesWithPermission(IdentityPermission.READ)).thenReturn(
+        PermissionsService.ResourcesAllowed.withIds(Set.of()));
+    when(permissionsService.createQueryForProcessesByPermission(IdentityPermission.READ)).thenCallRealMethod();
+    MvcResult mvcResult = postRequest(query(),query);
+
+    // then
+    ListViewResponseDto response = mockMvcTestRule.fromResponse(mvcResult, new TypeReference<>() {
+    });
+
+    assertThat(response.getProcessInstances()).isEmpty();
+  }
+
+  @Test
+  public void testQueryWithPermisssionForSpecificProcesses() throws Exception {
+    // given
+    String bpmnProcessId1 = "bpmnProcessId1";
+    String bpmnProcessId2 = "bpmnProcessId2";
+    String bpmnProcessId3 = "bpmnProcessId3";
+    final ProcessInstanceForListViewEntity processInstance1 = createProcessInstance(ProcessInstanceState.ACTIVE).setBpmnProcessId(bpmnProcessId1);
+    final ProcessInstanceForListViewEntity processInstance2 = createProcessInstance(ProcessInstanceState.CANCELED).setBpmnProcessId(bpmnProcessId2);
+    final ProcessInstanceForListViewEntity processInstance3 = createProcessInstance(ProcessInstanceState.COMPLETED).setBpmnProcessId(bpmnProcessId3);
+    elasticsearchTestRule.persistNew(processInstance1, processInstance2, processInstance3);
+
+    ListViewRequestDto query = createGetAllProcessInstancesRequest();
+
+    // when
+    when(permissionsService.getProcessesWithPermission(IdentityPermission.READ)).thenReturn(
+        PermissionsService.ResourcesAllowed.withIds(Set.of(bpmnProcessId1, bpmnProcessId2)));
+    when(permissionsService.createQueryForProcessesByPermission(IdentityPermission.READ)).thenCallRealMethod();
+    MvcResult mvcResult = postRequest(query(),query);
+
+    // then
+    ListViewResponseDto response = mockMvcTestRule.fromResponse(mvcResult, new TypeReference<>() {
+    });
+
+    assertThat(response.getProcessInstances()).hasSize(2);
+    assertThat(response.getProcessInstances()).extracting(ListViewTemplate.ID)
+        .containsExactlyInAnyOrder(processInstance1.getId(),processInstance2.getId());
+  }
+
 //
 //  @Test
 //  public void testGetProcessInstanceById() throws Exception {

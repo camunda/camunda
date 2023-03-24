@@ -172,20 +172,15 @@ public abstract class TestUtil {
     return createFlowNodeInstance(processInstanceKey, state, activityId, FlowNodeType.SERVICE_TASK);
   }
 
-
-  public static ProcessInstanceForListViewEntity createProcessInstanceEntity(ProcessInstanceState state) {
-    return createProcessInstanceEntity(state, null);
+  public static ProcessInstanceForListViewEntity createProcessInstanceEntity(ProcessInstanceState state, Long processDefinitionKey, String bpmnProcessId) {
+    return createProcessInstanceEntity(state, processDefinitionKey, bpmnProcessId, false);
   }
 
-  public static ProcessInstanceForListViewEntity createProcessInstanceEntity(ProcessInstanceState state, Long processDefinitionKey) {
-    return createProcessInstanceEntity(state, processDefinitionKey, false);
-  }
-
-  public static ProcessInstanceForListViewEntity createProcessInstanceEntity(ProcessInstanceState state, Long processDefinitionKey,
+  public static ProcessInstanceForListViewEntity createProcessInstanceEntity(ProcessInstanceState state, Long processDefinitionKey, String bpmnProcessId,
       boolean incident) {
     ProcessInstanceForListViewEntity processInstance = createProcessInstanceEntityWithIds();
     final int i = random.nextInt(10);
-    processInstance.setBpmnProcessId("testProcess" + i);
+    processInstance.setBpmnProcessId(bpmnProcessId);
     processInstance.setProcessName("Test process" + i);
     processInstance.setProcessVersion(i);
     processInstance.setStartDate(DateUtil.getRandomStartDate());

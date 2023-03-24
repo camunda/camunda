@@ -27,6 +27,9 @@ import io.camunda.operate.webapp.es.reader.ProcessReader;
 import io.camunda.operate.webapp.rest.dto.ProcessGroupDto;
 import io.camunda.operate.webapp.rest.dto.dmn.DecisionGroupDto;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewProcessInstanceDto;
+import org.elasticsearch.index.query.MatchAllQueryBuilder;
+import org.elasticsearch.index.query.QueryBuilder;
+import org.elasticsearch.index.query.TermsQueryBuilder;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mockito;
@@ -55,7 +58,6 @@ public class PermissionsIT {
   private static final String DELETE = "DELETE";
   private static final String UPDATE = "UPDATE";
 
-
   @MockBean
   private OperateProperties operateProperties;
 
@@ -70,7 +72,6 @@ public class PermissionsIT {
 
   @Test
   public void testProcessesGrouped() {
-
     // given
     final String demoProcessId = "demoProcess";
     final String orderProcessId = "orderProcess";
@@ -107,7 +108,6 @@ public class PermissionsIT {
 
   @Test
   public void testProcessesGroupedWithWildcardPermission() {
-
     // given
     final String demoProcessId = "demoProcess";
     final String orderProcessId = "orderProcess";
@@ -147,7 +147,6 @@ public class PermissionsIT {
 
   @Test
   public void testDecisionsGrouped() {
-
     // given
     final String demoDecisionId = "demoDecision";
     final String orderDecisionId = "orderDecision";
@@ -184,7 +183,6 @@ public class PermissionsIT {
 
   @Test
   public void testDecisionsGroupedWithWildcardPermission() {
-
     // given
     final String demoDecisionId = "demoDecision";
     final String orderDecisionId = "orderDecision";
@@ -224,7 +222,6 @@ public class PermissionsIT {
 
   @Test
   public void testProcessInstances() {
-
     // given
     final String demoProcessId = "demoProcess";
 
@@ -245,7 +242,6 @@ public class PermissionsIT {
 
   @Test
   public void testProcessInstancesWithWildcardPermission() {
-
     // given
     final String demoProcessId = "demoProcess";
 
@@ -267,8 +263,7 @@ public class PermissionsIT {
   }
 
   @Test
-  public void testHasPermissionForProcessWhenPermissionsDisabled()
-  {
+  public void testHasPermissionForProcessWhenPermissionsDisabled() {
     // given
     String bpmnProcessId = "processId";
     IdentityPermission permission = IdentityPermission.READ;
@@ -282,8 +277,7 @@ public class PermissionsIT {
   }
 
   @Test
-  public void testNoPermissionForProcessWhenPermissionsNotFound()
-  {
+  public void testNoPermissionForProcessWhenPermissionsNotFound() {
     // given
     String bpmnProcessId = "processId";
     IdentityPermission permission = IdentityPermission.READ;
@@ -298,8 +292,7 @@ public class PermissionsIT {
   }
 
   @Test
-  public void testHasPermissionForProcessWhenPermissionsFound()
-  {
+  public void testHasPermissionForProcessWhenPermissionsFound() {
     // given
     String bpmnProcessId = "processId";
     IdentityPermission permission = IdentityPermission.READ;
@@ -316,8 +309,7 @@ public class PermissionsIT {
   }
 
   @Test
-  public void testHasPermissionForDecisionWhenPermissionsDisabled()
-  {
+  public void testHasPermissionForDecisionWhenPermissionsDisabled() {
     // given
     String bpmnDecisionId = "decisionId";
     IdentityPermission permission = IdentityPermission.READ;
@@ -331,8 +323,7 @@ public class PermissionsIT {
   }
 
   @Test
-  public void testNoPermissionForDecisionWhenPermissionsNotFound()
-  {
+  public void testNoPermissionForDecisionWhenPermissionsNotFound() {
     // given
     String bpmnDecisionId = "decisionId";
     IdentityPermission permission = IdentityPermission.READ;
@@ -347,8 +338,7 @@ public class PermissionsIT {
   }
 
   @Test
-  public void testHasPermissionForDecisionWhenPermissionsFound()
-  {
+  public void testHasPermissionForDecisionWhenPermissionsFound() {
     // given
     String bpmnDecisionId = "decisionId";
     IdentityPermission permission = IdentityPermission.READ;
@@ -362,6 +352,99 @@ public class PermissionsIT {
 
     // then
     assertThat(hasPermission).isTrue();
+  }
+
+  @Test
+  public void testGetProcessesWithPermissionWhenPermissionsDisabled() {
+    // given
+    String bpmnProcessId = "processId";
+    IdentityPermission permission = IdentityPermission.READ;
+
+    // when
+    Mockito.when(operateProperties.getIdentity()).thenReturn(new IdentityProperties().setResourcePermissionsEnabled(false));
+    registerAuthorizations(List.of(
+        new IdentityAuthorization().setResourceKey(bpmnProcessId).setResourceType(PermissionsService.RESOURCE_TYPE_PROCESS_DEFINITION)
+            .setPermissions(new HashSet<>(List.of(READ)))));
+    PermissionsService.ResourcesAllowed resourcesAllowed = permissionsService.getProcessesWithPermission(permission);
+
+    // then
+    assertThat(resourcesAllowed.isAll()).isTrue();
+  }
+
+  @Test
+  public void testGetProcessesWithPermissionWhenAllProcessesAllowed() {
+    // given
+    IdentityPermission permission = IdentityPermission.READ;
+
+    // when
+    Mockito.when(operateProperties.getIdentity()).thenReturn(new IdentityProperties().setResourcePermissionsEnabled(true));
+    registerAuthorizations(List.of(
+        new IdentityAuthorization().setResourceKey(PermissionsService.RESOURCE_KEY_ALL).setResourceType(PermissionsService.RESOURCE_TYPE_PROCESS_DEFINITION)
+            .setPermissions(new HashSet<>(List.of(READ)))));
+    PermissionsService.ResourcesAllowed resourcesAllowed = permissionsService.getProcessesWithPermission(permission);
+
+    // then
+    assertThat(resourcesAllowed.isAll()).isTrue();
+  }
+
+  @Test
+  public void testGetProcessesWithPermissionWhenSpecificProcessesAllowed() {
+    // given
+    String bpmnProcessId1 = "processId1";
+    String bpmnProcessId2 = "processId2";
+    String bpmnProcessId3 = "processId3";
+    IdentityPermission permission = IdentityPermission.READ;
+
+    // when
+    Mockito.when(operateProperties.getIdentity()).thenReturn(new IdentityProperties().setResourcePermissionsEnabled(true));
+    registerAuthorizations(List.of(
+        new IdentityAuthorization().setResourceKey(bpmnProcessId1).setResourceType(PermissionsService.RESOURCE_TYPE_PROCESS_DEFINITION)
+            .setPermissions(new HashSet<>(List.of(READ))),
+        new IdentityAuthorization().setResourceKey(bpmnProcessId2).setResourceType(PermissionsService.RESOURCE_TYPE_PROCESS_DEFINITION)
+            .setPermissions(new HashSet<>(List.of(READ, UPDATE))),
+        new IdentityAuthorization().setResourceKey(bpmnProcessId3).setResourceType(PermissionsService.RESOURCE_TYPE_PROCESS_DEFINITION)
+            .setPermissions(new HashSet<>(List.of(DELETE)))));
+    PermissionsService.ResourcesAllowed resourcesAllowed = permissionsService.getProcessesWithPermission(permission);
+
+    // then
+    assertThat(resourcesAllowed.isAll()).isFalse();
+    assertThat(resourcesAllowed.getIds()).containsExactlyInAnyOrder(bpmnProcessId1, bpmnProcessId2);
+  }
+
+  @Test
+  public void testCreateQueryForProcessesByPermissionWhenAllProcessesAllowed() {
+    // given
+    PermissionsService.ResourcesAllowed resourcesAllowed = PermissionsService.ResourcesAllowed.all();
+    IdentityPermission permission = IdentityPermission.READ;
+
+    // when
+    Mockito.when(operateProperties.getIdentity()).thenReturn(new IdentityProperties().setResourcePermissionsEnabled(false));
+    QueryBuilder query = permissionsService.createQueryForProcessesByPermission(permission);
+
+    // then
+    assertThat(query instanceof MatchAllQueryBuilder).isTrue();
+  }
+
+  @Test
+  public void testCreateQueryForProcessesByPermissionWhenSpecificProcessesAllowed() {
+    // given
+    String bpmnProcessId1 = "processId1";
+    String bpmnProcessId2 = "processId2";
+    IdentityPermission permission = IdentityPermission.READ;
+
+    // when
+    Mockito.when(operateProperties.getIdentity()).thenReturn(new IdentityProperties().setResourcePermissionsEnabled(true));
+    registerAuthorizations(List.of(
+        new IdentityAuthorization().setResourceKey(bpmnProcessId1).setResourceType(PermissionsService.RESOURCE_TYPE_PROCESS_DEFINITION)
+            .setPermissions(new HashSet<>(List.of(READ))),
+        new IdentityAuthorization().setResourceKey(bpmnProcessId2).setResourceType(PermissionsService.RESOURCE_TYPE_PROCESS_DEFINITION)
+            .setPermissions(new HashSet<>(List.of(READ)))));
+    QueryBuilder query = permissionsService.createQueryForProcessesByPermission(permission);
+
+    // then
+    assertThat(query instanceof TermsQueryBuilder).isTrue();
+    assertThat(((TermsQueryBuilder)query).fieldName()).isEqualTo("bpmnProcessId");
+    assertThat(((TermsQueryBuilder)query).values()).containsExactlyInAnyOrder(bpmnProcessId1, bpmnProcessId2);
   }
 
   private void registerAuthorizations(List<IdentityAuthorization> authorizations) {

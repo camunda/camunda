@@ -27,6 +27,8 @@ import io.camunda.operate.webapp.rest.dto.listview.ListViewProcessInstanceDto;
 import io.camunda.operate.webapp.rest.dto.listview.VariablesQueryDto;
 import io.camunda.operate.webapp.rest.exception.InvalidRequestException;
 import io.camunda.operate.util.CollectionUtil;
+import io.camunda.operate.webapp.security.identity.IdentityPermission;
+import io.camunda.operate.webapp.security.identity.PermissionsService;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
@@ -101,6 +103,9 @@ public class ListViewReader {
 
   @Autowired
   private OperationReader operationReader;
+
+  @Autowired(required = false)
+  private PermissionsService permissionsService;
 
   /**
    * Queries process instances by different criteria (with pagination).
@@ -258,8 +263,13 @@ public class ListViewReader {
         createExcludeIdsQuery(query),
         createVariablesQuery(query),
         createBatchOperatioIdQuery(query),
-        createParentInstanceIdQuery(query)
+        createParentInstanceIdQuery(query),
+        createReadPermissionQuery()
     );
+  }
+
+  private QueryBuilder createReadPermissionQuery() {
+    return permissionsService == null ? null : permissionsService.createQueryForProcessesByPermission(IdentityPermission.READ);
   }
 
   private QueryBuilder createBatchOperatioIdQuery(ListViewQueryDto query) {

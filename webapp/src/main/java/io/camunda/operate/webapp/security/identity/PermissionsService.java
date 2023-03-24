@@ -7,7 +7,10 @@
 package io.camunda.operate.webapp.security.identity;
 
 import io.camunda.operate.property.OperateProperties;
+import io.camunda.operate.schema.templates.ListViewTemplate;
 import io.camunda.operate.webapp.security.OperateProfileService;
+import org.elasticsearch.index.query.QueryBuilder;
+import org.elasticsearch.index.query.QueryBuilders;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,6 +24,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 @Profile(OperateProfileService.IDENTITY_AUTH_PROFILE)
 @Component
@@ -153,5 +157,80 @@ public class PermissionsService {
 
   private boolean permissionsEnabled() {
     return operateProperties.getIdentity().isResourcePermissionsEnabled();
+  }
+
+  /**
+   * createQueryForProcessesByPermission
+   * @return query that matches the processes for which the user has the given permission
+   */
+  public QueryBuilder createQueryForProcessesByPermission(IdentityPermission permission) {
+    ResourcesAllowed allowed = getProcessesWithPermission(permission);
+    return allowed.isAll() ? QueryBuilders.matchAllQuery() : QueryBuilders.termsQuery(ListViewTemplate.BPMN_PROCESS_ID, allowed.getIds());
+  }
+
+  /**
+   * getProcessesWithPermission
+   * @return processes for which the user has the given permission; the result matches either all processes, or a list of bpmnProcessId
+   */
+  public ResourcesAllowed getProcessesWithPermission(IdentityPermission permission) {
+    if (permission == null) {
+      throw new IllegalStateException("Identity permission can't be null");
+    }
+
+    if (permissionsEnabled()) {
+      List<IdentityAuthorization> processAuthorizations = getIdentityAuthorizations().stream()
+          .filter(x -> Objects.equals(x.getResourceType(), RESOURCE_TYPE_PROCESS_DEFINITION)).collect(Collectors.toList());
+      Set<String> ids = new HashSet<>();
+      for (IdentityAuthorization authorization : processAuthorizations) {
+        if (authorization.getPermissions() != null && authorization.getPermissions().contains(permission.name())) {
+          if (RESOURCE_KEY_ALL.equals(authorization.getResourceKey())) {
+            return ResourcesAllowed.all();
+          }
+          ids.add(authorization.getResourceKey());
+        }
+      }
+      return ResourcesAllowed.withIds(ids);
+    }
+    return ResourcesAllowed.all();
+  }
+
+  /**
+   * ResourcesAllowed
+   */
+  public static class ResourcesAllowed {
+
+    private boolean all;
+    private Set<String> ids;
+
+    /**
+     * isAll
+     *
+     * @return true if all resources are allowed, false if only the ids are allowed
+     */
+    public boolean isAll() {
+      return all;
+    }
+
+    /**
+     * getIds
+     *
+     * @return ids of resources allowed in case not all are allowed
+     */
+    public Set<String> getIds() {
+      return ids;
+    }
+
+    private ResourcesAllowed(boolean all, Set<String> ids) {
+      this.all = all;
+      this.ids = ids;
+    }
+
+    public static ResourcesAllowed all() {
+      return new ResourcesAllowed(true, null);
+    }
+
+    public static ResourcesAllowed withIds(Set<String> ids) {
+      return new ResourcesAllowed(false, ids);
+    }
   }
 }

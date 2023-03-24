@@ -11,6 +11,8 @@ import io.camunda.operate.entities.ProcessEntity;
 import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.schema.indices.ProcessIndex;
 import io.camunda.operate.webapp.rest.exception.NotFoundException;
+import io.camunda.operate.webapp.security.identity.IdentityPermission;
+import io.camunda.operate.webapp.security.identity.PermissionsService;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
@@ -36,6 +38,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 @Component
 public class ProcessReader extends AbstractReader {
@@ -44,6 +47,9 @@ public class ProcessReader extends AbstractReader {
 
   @Autowired
   private ProcessIndex processType;
+
+  @Autowired(required = false)
+  private PermissionsService permissionsService;
 
   /**
    * Gets the process diagram XML as a string.
@@ -124,10 +130,13 @@ public class ProcessReader extends AbstractReader {
             .size(ElasticsearchUtil.TOPHITS_AGG_SIZE)
             .sort(ProcessIndex.VERSION, SortOrder.DESC));
 
-    final SearchRequest searchRequest = new SearchRequest(processType.getAlias())
-      .source(new SearchSourceBuilder()
+    SearchSourceBuilder sourceBuilder = new SearchSourceBuilder()
         .aggregation(agg)
-        .size(0));
+        .size(0);
+    if(permissionsService != null) {
+      sourceBuilder.query(permissionsService.createQueryForProcessesByPermission(IdentityPermission.READ));
+    }
+    final SearchRequest searchRequest = new SearchRequest(processType.getAlias()).source(sourceBuilder);
 
     try {
       final SearchResponse searchResponse = esClient.search(searchRequest, RequestOptions.DEFAULT);
@@ -185,10 +194,13 @@ public class ProcessReader extends AbstractReader {
   public Map<Long, ProcessEntity> getProcessesWithFields(int maxSize,String ...fields) {
     final Map<Long, ProcessEntity> map = new HashMap<>();
 
-    final SearchRequest searchRequest = new SearchRequest(processType.getAlias())
-      .source(new SearchSourceBuilder()
-          .size(maxSize)
-          .fetchSource(fields,null));
+    SearchSourceBuilder sourceBuilder = new SearchSourceBuilder()
+        .size(maxSize)
+        .fetchSource(fields,null);
+    if(permissionsService != null) {
+      sourceBuilder.query(permissionsService.createQueryForProcessesByPermission(IdentityPermission.READ));
+    }
+    final SearchRequest searchRequest = new SearchRequest(processType.getAlias()).source(sourceBuilder);
 
     try {
       final SearchResponse response = esClient.search(searchRequest, RequestOptions.DEFAULT);
