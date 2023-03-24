@@ -119,6 +119,7 @@ public final class ManifestManager {
         throw new UnexpectedManifestState(
             ERROR_MSG_MANIFEST_MODIFICATION.formatted(completed.id()));
       }
+      throw e;
     } catch (final JsonProcessingException e) {
       throw new RuntimeException(e);
     }
