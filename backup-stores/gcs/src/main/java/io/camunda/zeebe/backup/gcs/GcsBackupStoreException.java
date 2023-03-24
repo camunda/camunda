@@ -35,18 +35,18 @@ public abstract class GcsBackupStoreException extends RuntimeException {
   }
 
   public static class ConfigurationException extends GcsBackupStoreException {
-    public ConfigurationException(String message) {
+    public ConfigurationException(final String message) {
       super(message);
     }
 
-    public ConfigurationException(String message, Exception cause) {
+    public ConfigurationException(final String message, final Exception cause) {
       super(message, cause);
     }
 
-    public static final class BucketDoesNotExistException extends ConfigurationException {
+    public static final class CouldNotAccessBucketException extends ConfigurationException {
 
-      public BucketDoesNotExistException(String bucketName) {
-        super("Bucket %s does not exist".formatted(bucketName));
+      public CouldNotAccessBucketException(final String bucketName, final Exception cause) {
+        super("Bucket %s does not exist".formatted(bucketName), cause);
       }
     }
   }

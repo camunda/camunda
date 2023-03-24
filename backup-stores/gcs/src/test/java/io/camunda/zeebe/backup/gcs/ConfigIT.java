@@ -8,7 +8,7 @@
 package io.camunda.zeebe.backup.gcs;
 
 import com.google.cloud.storage.BucketInfo;
-import io.camunda.zeebe.backup.gcs.GcsBackupStoreException.ConfigurationException.BucketDoesNotExistException;
+import io.camunda.zeebe.backup.gcs.GcsBackupStoreException.ConfigurationException.CouldNotAccessBucketException;
 import io.camunda.zeebe.backup.gcs.util.GcsContainer;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.assertj.core.api.Assertions;
@@ -53,7 +53,7 @@ public class ConfigIT {
 
     // then
     Assertions.assertThatThrownBy(() -> GcsBackupStore.validateConfig(config))
-        .isInstanceOf(BucketDoesNotExistException.class)
+        .isInstanceOf(CouldNotAccessBucketException.class)
         .hasMessageContaining(config.bucketName());
   }
 }

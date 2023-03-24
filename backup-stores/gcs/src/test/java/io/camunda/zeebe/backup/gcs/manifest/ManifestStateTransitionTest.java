@@ -25,7 +25,7 @@ final class ManifestStateTransitionTest {
 
     // when
     final var manifest =
-        Manifest.create(
+        Manifest.createInProgress(
             new BackupImpl(
                 new BackupIdentifierImpl(1, 2, 43),
                 new BackupDescriptorImpl(Optional.empty(), 2345234L, 3, "1.2.0-SNAPSHOT"),
@@ -43,7 +43,7 @@ final class ManifestStateTransitionTest {
   public void shouldUpdateManifestToCompleted() {
     // given
     final var created =
-        Manifest.create(
+        Manifest.createInProgress(
             new BackupImpl(
                 new BackupIdentifierImpl(1, 2, 43),
                 new BackupDescriptorImpl(Optional.empty(), 2345234L, 3, "1.2.0-SNAPSHOT"),
@@ -66,7 +66,7 @@ final class ManifestStateTransitionTest {
   public void shouldUpdateManifestToFailed() {
     // given
     final var created =
-        Manifest.create(
+        Manifest.createInProgress(
             new BackupImpl(
                 new BackupIdentifierImpl(1, 2, 43),
                 new BackupDescriptorImpl(Optional.empty(), 2345234L, 3, "1.2.0-SNAPSHOT"),
@@ -90,7 +90,7 @@ final class ManifestStateTransitionTest {
   public void shouldUpdateManifestFromCompletedToFailed() {
     // given
     final var created =
-        Manifest.create(
+        Manifest.createInProgress(
             new BackupImpl(
                 new BackupIdentifierImpl(1, 2, 43),
                 new BackupDescriptorImpl(Optional.empty(), 2345234L, 3, "1.2.0-SNAPSHOT"),

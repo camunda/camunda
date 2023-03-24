@@ -30,7 +30,6 @@ public class GcsBackupStoreIT implements BackupStoreTestKit {
     final var config =
         new GcsBackupConfig.Builder()
             .withBucketName(BUCKET_NAME)
-            .withBasePath(RandomStringUtils.randomAlphabetic(10).toLowerCase())
             .withHost(GCS.externalEndpoint())
             .withoutAuthentication()
             .build();
