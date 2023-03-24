@@ -110,6 +110,7 @@ final class ClientStreamRequestManager<M extends BufferWriter, P extends BufferR
             // TODO: use backoff delay
             executor.schedule(RETRY_DELAY, () -> doRemove(request, brokerId, clientStream));
           } else {
+            LOG.debug("Removed stream {} to node {}", clientStream, brokerId);
             clientStream.remove(brokerId);
           }
         },
