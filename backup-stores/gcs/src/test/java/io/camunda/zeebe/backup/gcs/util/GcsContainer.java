@@ -15,15 +15,29 @@ import org.testcontainers.utility.DockerImageName;
 public final class GcsContainer extends GenericContainer<GcsContainer> {
   private static final DockerImageName IMAGE = DockerImageName.parse("fsouza/fake-gcs-server");
   private static final int PORT = 4443;
+
+  /**
+   * This uses a common testcontainers hack to start the server with an external url that is only
+   * available once the container is already started. Similar to the MongoDB and Kafka
+   * testcontainers, we start the container with a script that waits for the existence of
+   * `STARTER_SCRIPT` and runs it once available. The file is created in `containerIsStarting` and
+   * contains the real invocation of fake-gcs-server with external url set. This is necessary
+   * because the gcs api responds with a continuation url for multi-part uploads which the client
+   * then uses regardless of any configured host.
+   *
+   * @see <a
+   *     href="https://github.com/testcontainers/testcontainers-java/blob/522f36f8507ee6ab97e951ca0580c4f419b0bb4c/modules/mongodb/src/main/java/org/testcontainers/containers/MongoDBContainer.java#L33">MongoDB
+   *     testcontainer</a>
+   */
   private static final String STARTER_SCRIPT = "/testcontainers_start.sh";
 
   public GcsContainer() {
     this("1");
   }
 
-  public GcsContainer(String version) {
+  public GcsContainer(final String version) {
     super(IMAGE.withTag(version));
-    this.withExposedPorts(PORT)
+    withExposedPorts(PORT)
         .withCreateContainerCmdModifier(cmd -> cmd.withEntrypoint("sh"))
         .withCommand(
             "-c", "while [ ! -f " + STARTER_SCRIPT + " ]; do sleep 0.1; done; " + STARTER_SCRIPT);
