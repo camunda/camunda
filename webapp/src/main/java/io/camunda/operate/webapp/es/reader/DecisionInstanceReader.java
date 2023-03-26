@@ -23,9 +23,7 @@ import static io.camunda.operate.util.ElasticsearchUtil.QueryType.ALL;
 import static io.camunda.operate.util.ElasticsearchUtil.createMatchNoneQuery;
 import static io.camunda.operate.util.ElasticsearchUtil.joinWithAnd;
 import static io.camunda.operate.webapp.rest.dto.dmn.list.DecisionInstanceListRequestDto.SORT_BY_PROCESS_INSTANCE_ID;
-import static java.util.function.UnaryOperator.identity;
 import static java.util.stream.Collectors.groupingBy;
-import static java.util.stream.Collectors.reducing;
 import static org.elasticsearch.index.query.QueryBuilders.constantScoreQuery;
 import static org.elasticsearch.index.query.QueryBuilders.idsQuery;
 import static org.elasticsearch.index.query.QueryBuilders.matchAllQuery;
@@ -54,6 +52,9 @@ import java.time.format.DateTimeFormatter;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+
+import io.camunda.operate.webapp.security.identity.IdentityPermission;
+import io.camunda.operate.webapp.security.identity.PermissionsService;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
@@ -84,6 +85,9 @@ public class DecisionInstanceReader extends AbstractReader {
 
   @Autowired
   private OperateProperties operateProperties;
+
+  @Autowired(required = false)
+  protected PermissionsService permissionsService;
 
   public DecisionInstanceDto getDecisionInstance(String decisionInstanceId) {
     final QueryBuilder query = joinWithAnd(
@@ -232,12 +236,17 @@ public class DecisionInstanceReader extends AbstractReader {
         createDecisionDefinitionIdsQuery(query),
         createIdsQuery(query),
         createProcessInstanceIdQuery(query),
-        createEvaluationDateQuery(query)
+        createEvaluationDateQuery(query),
+        createReadPermissionQuery()
     );
     if (queryBuilder == null) {
       queryBuilder = matchAllQuery();
     }
     return queryBuilder;
+  }
+
+  private QueryBuilder createReadPermissionQuery() {
+    return permissionsService == null ? null : permissionsService.createQueryForDecisionsByPermission(IdentityPermission.READ);
   }
 
   private QueryBuilder createEvaluationDateQuery(final DecisionInstanceListQueryDto query) {

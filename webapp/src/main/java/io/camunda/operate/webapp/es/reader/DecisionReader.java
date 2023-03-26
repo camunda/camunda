@@ -23,6 +23,9 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import io.camunda.operate.webapp.security.identity.IdentityPermission;
+import io.camunda.operate.webapp.security.identity.PermissionsService;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
@@ -48,6 +51,9 @@ public class DecisionReader extends AbstractReader {
 
   @Autowired
   private DecisionRequirementsIndex decisionRequirementsIndex;
+
+  @Autowired(required = false)
+  private PermissionsService permissionsService;
 
   private DecisionDefinitionEntity fromSearchHit(String processString) {
     return ElasticsearchUtil
@@ -143,10 +149,13 @@ public class DecisionReader extends AbstractReader {
             .size(ElasticsearchUtil.TOPHITS_AGG_SIZE)
             .sort(DecisionIndex.VERSION, SortOrder.DESC));
 
-    final SearchRequest searchRequest = new SearchRequest(decisionIndex.getAlias())
-      .source(new SearchSourceBuilder()
+    SearchSourceBuilder sourceBuilder = new SearchSourceBuilder()
         .aggregation(agg)
-        .size(0));
+        .size(0);
+    if(permissionsService != null) {
+      sourceBuilder.query(permissionsService.createQueryForDecisionsByPermission(IdentityPermission.READ));
+    }
+    final SearchRequest searchRequest = new SearchRequest(decisionIndex.getAlias()).source(sourceBuilder);
 
     try {
       final SearchResponse searchResponse = esClient.search(searchRequest, RequestOptions.DEFAULT);

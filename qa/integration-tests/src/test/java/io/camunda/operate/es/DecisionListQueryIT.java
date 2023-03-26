@@ -21,6 +21,7 @@ import static io.camunda.operate.webapp.rest.dto.dmn.list.DecisionInstanceListRe
 import static io.camunda.operate.webapp.rest.dto.dmn.list.DecisionInstanceListRequestDto.SORT_BY_PROCESS_INSTANCE_ID;
 import static java.util.Arrays.asList;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -40,10 +41,16 @@ import io.camunda.operate.webapp.rest.dto.dmn.list.DecisionInstanceListResponseD
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.Comparator;
+import java.util.Set;
+import java.util.stream.Collectors;
+
+import io.camunda.operate.webapp.security.identity.IdentityPermission;
+import io.camunda.operate.webapp.security.identity.PermissionsService;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Rule;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 
@@ -59,6 +66,9 @@ public class DecisionListQueryIT extends OperateIntegrationTest {
 
   @Autowired
   private DecisionDataUtil testDataUtil;
+
+  @MockBean
+  private PermissionsService permissionsService;
 
   @Test
   public void testVariousQueries() throws Exception {
@@ -457,6 +467,73 @@ public class DecisionListQueryIT extends OperateIntegrationTest {
     // then
     assertErrorMessageContains(
         mvcResult, "SortBy parameter has invalid value: " + wrongSortParameter);
+  }
+
+  @Test
+  public void testQueryWithPermisssionForAllDecisions() throws Exception {
+
+    // given
+    createData();
+
+    // when
+    when(permissionsService.getDecisionsWithPermission(IdentityPermission.READ)).thenReturn(PermissionsService.ResourcesAllowed.all());
+    when(permissionsService.createQueryForDecisionsByPermission(IdentityPermission.READ)).thenCallRealMethod();
+
+    DecisionInstanceListRequestDto query = createGetAllDecisionInstancesRequest();
+    MvcResult mvcResult = postRequest(query(), query);
+
+    // then
+    DecisionInstanceListResponseDto response = mockMvcTestRule.fromResponse(mvcResult, new TypeReference<>() {
+    });
+
+    assertThat(response.getDecisionInstances().size()).isEqualTo(5);
+    assertThat(response.getTotalCount()).isEqualTo(5);
+  }
+
+  @Test
+  public void testQueryWithPermisssionForNoDecisions() throws Exception {
+
+    // given
+    createData();
+
+    // when
+    when(permissionsService.getDecisionsWithPermission(IdentityPermission.READ)).thenReturn(PermissionsService.ResourcesAllowed.withIds(Set.of()));
+    when(permissionsService.createQueryForDecisionsByPermission(IdentityPermission.READ)).thenCallRealMethod();
+
+    DecisionInstanceListRequestDto query = createGetAllDecisionInstancesRequest();
+    MvcResult mvcResult = postRequest(query(), query);
+
+    // then
+    DecisionInstanceListResponseDto response = mockMvcTestRule.fromResponse(mvcResult, new TypeReference<>() {
+    });
+
+    assertThat(response.getDecisionInstances().isEmpty());
+    assertThat(response.getTotalCount()).isEqualTo(0);
+  }
+
+  @Test
+  public void testQueryWithPermisssionForSpecificDecisions() throws Exception {
+
+    // given
+    String decisionId = "invoiceClassification";
+    String decisionName = "Invoice Classification";
+    createData();
+
+    // when
+    when(permissionsService.getDecisionsWithPermission(IdentityPermission.READ)).thenReturn(PermissionsService.ResourcesAllowed.withIds(Set.of(decisionId)));
+    when(permissionsService.createQueryForDecisionsByPermission(IdentityPermission.READ)).thenCallRealMethod();
+
+    DecisionInstanceListRequestDto query = createGetAllDecisionInstancesRequest();
+    MvcResult mvcResult = postRequest(query(), query);
+
+    // then
+    DecisionInstanceListResponseDto response = mockMvcTestRule.fromResponse(mvcResult, new TypeReference<>() {
+    });
+
+    assertThat(response.getDecisionInstances().size()).isEqualTo(3);
+    assertThat(response.getTotalCount()).isEqualTo(3);
+    assertThat(response.getDecisionInstances().stream().map(DecisionInstanceForListDto::getDecisionName).collect(Collectors.toList()))
+        .containsExactlyInAnyOrder(decisionName, decisionName, decisionName);
   }
 
   protected void createData() throws PersistenceException {

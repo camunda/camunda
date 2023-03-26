@@ -447,6 +447,99 @@ public class PermissionsIT {
     assertThat(((TermsQueryBuilder)query).values()).containsExactlyInAnyOrder(bpmnProcessId1, bpmnProcessId2);
   }
 
+  @Test
+  public void testGetDecisionsWithPermissionWhenPermissionsDisabled() {
+    // given
+    String decisionId = "decisionId";
+    IdentityPermission permission = IdentityPermission.READ;
+
+    // when
+    Mockito.when(operateProperties.getIdentity()).thenReturn(new IdentityProperties().setResourcePermissionsEnabled(false));
+    registerAuthorizations(List.of(
+        new IdentityAuthorization().setResourceKey(decisionId).setResourceType(PermissionsService.RESOURCE_TYPE_DECISION_DEFINITION)
+            .setPermissions(new HashSet<>(List.of(READ)))));
+    PermissionsService.ResourcesAllowed resourcesAllowed = permissionsService.getDecisionsWithPermission(permission);
+
+    // then
+    assertThat(resourcesAllowed.isAll()).isTrue();
+  }
+
+  @Test
+  public void testGetDecisionsWithPermissionWhenAllDecisionsAllowed() {
+    // given
+    IdentityPermission permission = IdentityPermission.READ;
+
+    // when
+    Mockito.when(operateProperties.getIdentity()).thenReturn(new IdentityProperties().setResourcePermissionsEnabled(true));
+    registerAuthorizations(List.of(
+        new IdentityAuthorization().setResourceKey(PermissionsService.RESOURCE_KEY_ALL).setResourceType(PermissionsService.RESOURCE_TYPE_DECISION_DEFINITION)
+            .setPermissions(new HashSet<>(List.of(READ)))));
+    PermissionsService.ResourcesAllowed resourcesAllowed = permissionsService.getDecisionsWithPermission(permission);
+
+    // then
+    assertThat(resourcesAllowed.isAll()).isTrue();
+  }
+
+  @Test
+  public void testGetDecisionsWithPermissionWhenSpecificDecisionsAllowed() {
+    // given
+    String decisionId1 = "decisionId1";
+    String decisionId2 = "decisionId2";
+    String decisionId3 = "decisionId3";
+    IdentityPermission permission = IdentityPermission.READ;
+
+    // when
+    Mockito.when(operateProperties.getIdentity()).thenReturn(new IdentityProperties().setResourcePermissionsEnabled(true));
+    registerAuthorizations(List.of(
+        new IdentityAuthorization().setResourceKey(decisionId1).setResourceType(PermissionsService.RESOURCE_TYPE_DECISION_DEFINITION)
+            .setPermissions(new HashSet<>(List.of(READ))),
+        new IdentityAuthorization().setResourceKey(decisionId2).setResourceType(PermissionsService.RESOURCE_TYPE_DECISION_DEFINITION)
+            .setPermissions(new HashSet<>(List.of(READ, UPDATE))),
+        new IdentityAuthorization().setResourceKey(decisionId3).setResourceType(PermissionsService.RESOURCE_TYPE_DECISION_DEFINITION)
+            .setPermissions(new HashSet<>(List.of(DELETE)))));
+    PermissionsService.ResourcesAllowed resourcesAllowed = permissionsService.getDecisionsWithPermission(permission);
+
+    // then
+    assertThat(resourcesAllowed.isAll()).isFalse();
+    assertThat(resourcesAllowed.getIds()).containsExactlyInAnyOrder(decisionId1, decisionId2);
+  }
+
+  @Test
+  public void testCreateQueryForDecisionsByPermissionWhenAllDecisionsAllowed() {
+    // given
+    PermissionsService.ResourcesAllowed resourcesAllowed = PermissionsService.ResourcesAllowed.all();
+    IdentityPermission permission = IdentityPermission.READ;
+
+    // when
+    Mockito.when(operateProperties.getIdentity()).thenReturn(new IdentityProperties().setResourcePermissionsEnabled(false));
+    QueryBuilder query = permissionsService.createQueryForDecisionsByPermission(permission);
+
+    // then
+    assertThat(query instanceof MatchAllQueryBuilder).isTrue();
+  }
+
+  @Test
+  public void testCreateQueryForDecisionsByPermissionWhenSpecificDecisionsAllowed() {
+    // given
+    String decisionId1 = "decisionId1";
+    String decisionId2 = "decisionId2";
+    IdentityPermission permission = IdentityPermission.READ;
+
+    // when
+    Mockito.when(operateProperties.getIdentity()).thenReturn(new IdentityProperties().setResourcePermissionsEnabled(true));
+    registerAuthorizations(List.of(
+        new IdentityAuthorization().setResourceKey(decisionId1).setResourceType(PermissionsService.RESOURCE_TYPE_DECISION_DEFINITION)
+            .setPermissions(new HashSet<>(List.of(READ))),
+        new IdentityAuthorization().setResourceKey(decisionId2).setResourceType(PermissionsService.RESOURCE_TYPE_DECISION_DEFINITION)
+            .setPermissions(new HashSet<>(List.of(READ)))));
+    QueryBuilder query = permissionsService.createQueryForDecisionsByPermission(permission);
+
+    // then
+    assertThat(query instanceof TermsQueryBuilder).isTrue();
+    assertThat(((TermsQueryBuilder)query).fieldName()).isEqualTo("decisionId");
+    assertThat(((TermsQueryBuilder)query).values()).containsExactlyInAnyOrder(decisionId1, decisionId2);
+  }
+
   private void registerAuthorizations(List<IdentityAuthorization> authorizations) {
 
     IdentityAuthentication authentication = Mockito.mock(IdentityAuthentication.class);

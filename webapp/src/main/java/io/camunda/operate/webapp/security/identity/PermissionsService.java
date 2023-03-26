@@ -7,6 +7,7 @@
 package io.camunda.operate.webapp.security.identity;
 
 import io.camunda.operate.property.OperateProperties;
+import io.camunda.operate.schema.indices.DecisionIndex;
 import io.camunda.operate.schema.templates.ListViewTemplate;
 import io.camunda.operate.webapp.security.OperateProfileService;
 import org.elasticsearch.index.query.QueryBuilder;
@@ -182,6 +183,41 @@ public class PermissionsService {
           .filter(x -> Objects.equals(x.getResourceType(), RESOURCE_TYPE_PROCESS_DEFINITION)).collect(Collectors.toList());
       Set<String> ids = new HashSet<>();
       for (IdentityAuthorization authorization : processAuthorizations) {
+        if (authorization.getPermissions() != null && authorization.getPermissions().contains(permission.name())) {
+          if (RESOURCE_KEY_ALL.equals(authorization.getResourceKey())) {
+            return ResourcesAllowed.all();
+          }
+          ids.add(authorization.getResourceKey());
+        }
+      }
+      return ResourcesAllowed.withIds(ids);
+    }
+    return ResourcesAllowed.all();
+  }
+
+  /**
+   * createQueryForDecisionsByPermission
+   * @return query that matches the decisions for which the user has the given permission
+   */
+  public QueryBuilder createQueryForDecisionsByPermission(IdentityPermission permission) {
+    ResourcesAllowed allowed = getDecisionsWithPermission(permission);
+    return allowed.isAll() ? QueryBuilders.matchAllQuery() : QueryBuilders.termsQuery(DecisionIndex.DECISION_ID, allowed.getIds());
+  }
+
+  /**
+   * getDecisionsWithPermission
+   * @return decisions for which the user has the given permission; the result matches either all decisions, or a list of decisionId
+   */
+  public ResourcesAllowed getDecisionsWithPermission(IdentityPermission permission) {
+    if (permission == null) {
+      throw new IllegalStateException("Identity permission can't be null");
+    }
+
+    if (permissionsEnabled()) {
+      List<IdentityAuthorization> decisionAuthorizations = getIdentityAuthorizations().stream()
+          .filter(x -> Objects.equals(x.getResourceType(), RESOURCE_TYPE_DECISION_DEFINITION)).collect(Collectors.toList());
+      Set<String> ids = new HashSet<>();
+      for (IdentityAuthorization authorization : decisionAuthorizations) {
         if (authorization.getPermissions() != null && authorization.getPermissions().contains(permission.name())) {
           if (RESOURCE_KEY_ALL.equals(authorization.getResourceKey())) {
             return ResourcesAllowed.all();
