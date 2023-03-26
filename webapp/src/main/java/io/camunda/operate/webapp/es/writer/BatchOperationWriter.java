@@ -13,6 +13,8 @@ import static io.camunda.operate.util.CollectionUtil.map;
 import static io.camunda.operate.util.CollectionUtil.toSafeArrayOfStrings;
 import static io.camunda.operate.util.ConversionUtils.toLongOrNull;
 import static io.camunda.operate.util.ElasticsearchUtil.UPDATE_RETRY_COUNT;
+import static io.camunda.operate.util.ElasticsearchUtil.joinWithAnd;
+import static org.elasticsearch.index.query.QueryBuilders.constantScoreQuery;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -53,6 +55,8 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
+import io.camunda.operate.webapp.security.identity.IdentityPermission;
+import io.camunda.operate.webapp.security.identity.PermissionsService;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.search.SearchRequest;
@@ -60,6 +64,7 @@ import org.elasticsearch.action.support.WriteRequest;
 import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
+import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.xcontent.XContentType;
 import org.elasticsearch.index.query.ConstantScoreQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
@@ -110,6 +115,9 @@ public class BatchOperationWriter {
 
   @Autowired
   private ProcessInstanceReader processInstanceReader;
+
+  @Autowired(required = false)
+  private PermissionsService permissionsService;
 
   /**
    * Finds operation, which are scheduled or locked with expired timeout, in the amount of configured batch size, and locks them.
@@ -182,6 +190,12 @@ public class BatchOperationWriter {
       //create single operations
       final int batchSize = operateProperties.getElasticsearch().getBatchSize();
       ConstantScoreQueryBuilder query = listViewReader.createProcessInstancesQuery(batchOperationRequest.getQuery());
+      if(permissionsService != null) {
+        IdentityPermission permission = batchOperationRequest.getOperationType().equals(OperationType.DELETE_PROCESS_INSTANCE) ?
+            IdentityPermission.DELETE_PROCESS_INSTANCE : IdentityPermission.UPDATE_PROCESS_INSTANCE;
+        QueryBuilder permissionQuery = permissionsService.createQueryForProcessesByPermission(permission);
+        query = constantScoreQuery(joinWithAnd(query, permissionQuery));
+      }
       QueryType queryType = QueryType.ONLY_RUNTIME;
       if (batchOperationRequest.getOperationType().equals(OperationType.DELETE_PROCESS_INSTANCE)) {
         queryType = QueryType.ALL;
