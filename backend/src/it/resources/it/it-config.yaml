@@ -48,4 +48,4 @@ plugin:
 
 telemetry:
   # Telemetry endpoint to send data to (integration environment)
-  telemetryEndpoint: 'https://api.int.telemetry.camunda.cloud/pings'
+  telemetryEndpoint: 'https://api.dev.telemetry.camunda.cloud/pings'
