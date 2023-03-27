@@ -33,6 +33,7 @@ import org.junit.jupiter.api.Test;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.Network;
 import org.testcontainers.containers.wait.strategy.HttpWaitStrategy;
+import org.testcontainers.images.PullPolicy;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.utility.DockerImageName;
@@ -44,6 +45,7 @@ public class GatewayAuthenticationIdentityIT {
   public static final String KEYCLOAK_PASSWORD = "admin";
   // with authentication enabled, the first grpc response includes the warmup of the identity sdk
   public static final Duration FIRST_REQUEST_TIMEOUT = Duration.ofSeconds(5);
+  public static final String SNAPSHOT_TAG = "SNAPSHOT";
   private static final String KEYCLOAK_PATH_CAMUNDA_REALM = "/realms/camunda-platform";
   private static final String ZEEBE_CLIENT_ID = "zeebe";
   private static final String ZEEBE_CLIENT_AUDIENCE = "zeebe-api";
@@ -71,6 +73,11 @@ public class GatewayAuthenticationIdentityIT {
   private static final GenericContainer<?> IDENTITY =
       new GenericContainer<>(
               DockerImageName.parse("camunda/identity").withTag(getIdentityImageTag()))
+          // in case we use SNAPSHOT images they always should get pulled
+          .withImagePullPolicy(
+              SNAPSHOT_TAG.equals(getIdentityImageTag())
+                  ? PullPolicy.alwaysPull()
+                  : PullPolicy.defaultPolicy())
           .dependsOn(KEYCLOAK)
           .withEnv("KEYCLOAK_URL", "http://keycloak:8080")
           .withEnv(
@@ -219,7 +226,7 @@ public class GatewayAuthenticationIdentityIT {
   }
 
   private static String getIdentityImageTag() {
-    return System.getProperty("identity.docker.image.version", "SNAPSHOT");
+    return System.getProperty("identity.docker.image.version", SNAPSHOT_TAG);
   }
 
   private static class InvalidAuthTokenProvider implements CredentialsProvider {
