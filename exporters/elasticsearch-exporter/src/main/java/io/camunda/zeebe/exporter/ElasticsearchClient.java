@@ -55,7 +55,7 @@ class ElasticsearchClient implements AutoCloseable {
         bulkIndexRequest,
         RestClientFactory.of(configuration),
         new RecordIndexRouter(configuration.index),
-        new TemplateReader(configuration.index),
+        new TemplateReader(configuration),
         null);
   }
 

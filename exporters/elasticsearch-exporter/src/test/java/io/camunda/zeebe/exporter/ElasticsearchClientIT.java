@@ -46,7 +46,7 @@ final class ElasticsearchClientIT {
   private final ProtocolFactory recordFactory = new ProtocolFactory();
   private final ElasticsearchExporterConfiguration config =
       new ElasticsearchExporterConfiguration();
-  private final TemplateReader templateReader = new TemplateReader(config.index);
+  private final TemplateReader templateReader = new TemplateReader(config);
   private final RecordIndexRouter indexRouter = new RecordIndexRouter(config.index);
   private final BulkIndexRequest bulkRequest = new BulkIndexRequest();
 

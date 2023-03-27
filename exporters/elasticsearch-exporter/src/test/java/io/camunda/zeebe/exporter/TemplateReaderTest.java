@@ -9,7 +9,6 @@ package io.camunda.zeebe.exporter;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.zeebe.exporter.ElasticsearchExporterConfiguration.IndexConfiguration;
 import io.camunda.zeebe.protocol.record.ValueType;
 import java.util.Collections;
 import java.util.Map;
@@ -19,7 +18,8 @@ import org.junit.jupiter.api.parallel.ExecutionMode;
 
 @Execution(ExecutionMode.CONCURRENT)
 final class TemplateReaderTest {
-  private final IndexConfiguration config = new IndexConfiguration();
+  private final ElasticsearchExporterConfiguration config =
+      new ElasticsearchExporterConfiguration();
   private final TemplateReader templateReader = new TemplateReader(config);
 
   @Test
@@ -50,7 +50,7 @@ final class TemplateReaderTest {
   @Test
   void shouldSetNumberOfShardsInComponentTemplate() {
     // given
-    config.setNumberOfShards(30);
+    config.index.setNumberOfShards(30);
 
     // when
     final var template = templateReader.readComponentTemplate();
@@ -64,7 +64,7 @@ final class TemplateReaderTest {
   @Test
   void shouldSetNumberOfReplicasInComponentTemplate() {
     // given
-    config.setNumberOfReplicas(20);
+    config.index.setNumberOfReplicas(20);
 
     // when
     final var template = templateReader.readComponentTemplate();
@@ -79,7 +79,7 @@ final class TemplateReaderTest {
   void shouldSetNumberOfShardsInIndexTemplate() {
     // given
     final var valueType = ValueType.VARIABLE;
-    config.setNumberOfShards(43);
+    config.index.setNumberOfShards(43);
 
     // when
     final var template = templateReader.readIndexTemplate(valueType, "searchPattern", "alias");
@@ -94,7 +94,7 @@ final class TemplateReaderTest {
   void shouldSetNumberOfReplicasInIndexTemplate() {
     // given
     final var valueType = ValueType.VARIABLE;
-    config.setNumberOfReplicas(10);
+    config.index.setNumberOfReplicas(10);
 
     // when
     final var template = templateReader.readIndexTemplate(valueType, "searchPattern", "alias");
@@ -116,7 +116,7 @@ final class TemplateReaderTest {
     // then
     assertThat(template.composedOf())
         .as("index template is composed of the component template")
-        .containsExactly(config.prefix);
+        .containsExactly(config.index.prefix);
     assertThat(template.patterns()).containsExactly("searchPattern");
     assertThat(template.template().aliases())
         .containsExactlyEntriesOf(Map.of("alias", Collections.emptyMap()));
@@ -130,13 +130,14 @@ final class TemplateReaderTest {
   @Test
   void shouldReadIndexTemplateWithDifferentPrefix() {
     // given
-    config.prefix = "foo-bar";
+    config.index.prefix = "foo-bar";
     final var valueType = ValueType.VARIABLE;
 
     // when
     final var template = templateReader.readIndexTemplate(valueType, "searchPattern", "alias");
 
     // then
-    assertThat(template.composedOf()).allMatch(composedOf -> composedOf.equals(config.prefix));
+    assertThat(template.composedOf())
+        .allMatch(composedOf -> composedOf.equals(config.index.prefix));
   }
 }

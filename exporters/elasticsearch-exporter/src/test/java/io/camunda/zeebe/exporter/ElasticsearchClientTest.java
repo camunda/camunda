@@ -56,7 +56,7 @@ final class ElasticsearchClientTest {
       new ElasticsearchExporterConfiguration();
   private final BulkIndexRequest bulkRequest = new BulkIndexRequest();
   private final RecordIndexRouter indexRouter = new RecordIndexRouter(config.index);
-  private final TemplateReader templateReader = new TemplateReader(config.index);
+  private final TemplateReader templateReader = new TemplateReader(config);
 
   private final ElasticsearchClient client =
       new ElasticsearchClient(
