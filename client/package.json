@@ -15,7 +15,7 @@
     "graphql": "16.6.0",
     "mixpanel-browser": "2.46.0",
     "mobx": "6.9.0",
-    "mobx-react-lite": "3.4.3",
+    "mobx-react-lite": "4.0.2",
     "polished": "4.2.2",
     "react": "18.2.0",
     "react-dom": "18.2.0",
