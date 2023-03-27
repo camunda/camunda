@@ -6,14 +6,17 @@
  */
 package io.camunda.tasklist.util;
 
-import java.time.Clock;
-import java.time.Instant;
-import java.time.OffsetDateTime;
-import java.time.ZoneId;
+import java.time.*;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 import java.time.temporal.ChronoUnit;
 import java.util.Random;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public abstract class DateUtil {
+
+  private static final Logger LOGGER = LoggerFactory.getLogger(DateUtil.class);
 
   private static final Random RANDOM = new Random();
 
@@ -44,5 +47,25 @@ public abstract class DateUtil {
 
   public static OffsetDateTime toOffsetDateTime(Instant timestamp) {
     return OffsetDateTime.ofInstant(timestamp, ZoneId.systemDefault());
+  }
+
+  public static OffsetDateTime toOffsetDateTime(String timestamp) {
+    return toOffsetDateTime(timestamp, DateTimeFormatter.ISO_OFFSET_DATE_TIME);
+  }
+
+  public static OffsetDateTime toOffsetDateTime(String timestamp, String pattern) {
+    return toOffsetDateTime(timestamp, DateTimeFormatter.ofPattern(pattern));
+  }
+
+  public static OffsetDateTime toOffsetDateTime(
+      String timestamp, DateTimeFormatter dateTimeFormatter) {
+    try {
+      final ZonedDateTime zonedDateTime = ZonedDateTime.parse(timestamp, dateTimeFormatter);
+      return OffsetDateTime.ofInstant(zonedDateTime.toInstant(), ZoneId.systemDefault());
+    } catch (DateTimeParseException e) {
+      LOGGER.error(String.format("Cannot parse date from %s - %s", timestamp, e.getMessage()), e);
+    }
+
+    return null;
   }
 }

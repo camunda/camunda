@@ -25,6 +25,9 @@ public class TaskQueryDTO {
   private String[] searchAfterOrEqual;
   private String[] searchBefore;
   private String[] searchBeforeOrEqual;
+  private DateFilterDTO followUpDate;
+  private DateFilterDTO dueDate;
+  private TaskOrderByDTO[] sort;
 
   public TaskState getState() {
     return state;
@@ -155,5 +158,32 @@ public class TaskQueryDTO {
         .setSearchBeforeOrEqual(this.searchBeforeOrEqual)
         .setState(this.state)
         .setCandidateGroup(this.candidateGroup);
+  }
+
+  public DateFilterDTO getFollowUpDate() {
+    return followUpDate;
+  }
+
+  public TaskQueryDTO setFollowUpDate(DateFilterDTO followUpDate) {
+    this.followUpDate = followUpDate;
+    return this;
+  }
+
+  public DateFilterDTO getDueDate() {
+    return dueDate;
+  }
+
+  public TaskQueryDTO setDueDate(DateFilterDTO dueDate) {
+    this.dueDate = dueDate;
+    return this;
+  }
+
+  public TaskOrderByDTO[] getSort() {
+    return sort;
+  }
+
+  public TaskQueryDTO setSort(TaskOrderByDTO[] sort) {
+    this.sort = sort;
+    return this;
   }
 }

@@ -24,6 +24,8 @@ public class TaskEntity extends TasklistZeebeEntity<TaskEntity> {
   private String[] candidateGroups;
   private String[] candidateUsers;
   private String formKey;
+  private OffsetDateTime followUpDate;
+  private OffsetDateTime dueDate;
 
   public String getBpmnProcessId() {
     return bpmnProcessId;
@@ -124,6 +126,24 @@ public class TaskEntity extends TasklistZeebeEntity<TaskEntity> {
     return this;
   }
 
+  public OffsetDateTime getFollowUpDate() {
+    return followUpDate;
+  }
+
+  public TaskEntity setFollowUpDate(OffsetDateTime followUpDate) {
+    this.followUpDate = followUpDate;
+    return this;
+  }
+
+  public OffsetDateTime getDueDate() {
+    return dueDate;
+  }
+
+  public TaskEntity setDueDate(OffsetDateTime dueDate) {
+    this.dueDate = dueDate;
+    return this;
+  }
+
   public String[] getCandidateUsers() {
     return candidateUsers;
   }
@@ -154,6 +174,8 @@ public class TaskEntity extends TasklistZeebeEntity<TaskEntity> {
         && state == that.state
         && Objects.equals(assignee, that.assignee)
         && Arrays.equals(candidateGroups, that.candidateGroups)
+        && Objects.equals(followUpDate, that.followUpDate)
+        && Objects.equals(dueDate, that.dueDate)
         && Arrays.equals(candidateUsers, that.candidateUsers)
         && Objects.equals(formKey, that.formKey);
   }
@@ -172,7 +194,9 @@ public class TaskEntity extends TasklistZeebeEntity<TaskEntity> {
             completionTime,
             state,
             assignee,
-            formKey);
+            formKey,
+            followUpDate,
+            dueDate);
     result = 31 * result + Arrays.hashCode(candidateGroups);
     result = 31 * result + Arrays.hashCode(candidateUsers);
     return result;

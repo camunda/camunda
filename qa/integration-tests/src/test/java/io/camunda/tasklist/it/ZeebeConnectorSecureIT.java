@@ -10,6 +10,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.property.ZeebeProperties;
+import io.camunda.tasklist.util.ZeebeVersionsUtil;
 import io.camunda.tasklist.zeebe.ZeebeConnector;
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.client.api.response.BrokerInfo;
@@ -24,6 +25,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.testcontainers.containers.wait.strategy.LogMessageWaitStrategy;
+import org.testcontainers.utility.DockerImageName;
 import org.testcontainers.utility.MountableFile;
 
 @SpringBootTest(
@@ -37,12 +39,18 @@ public class ZeebeConnectorSecureIT {
 
   private static final String CERTIFICATE_FILE = "zeebe-test-chain.cert.pem";
   private static final String PRIVATE_KEY_FILE = "zeebe-test-server.key.pem";
+
+  private static final DockerImageName ZEEBE_DOCKER_IMAGE =
+      DockerImageName.parse("camunda/zeebe")
+          .withTag(
+              ZeebeVersionsUtil.readProperty(
+                  ZeebeVersionsUtil.ZEEBE_CURRENTVERSION_DOCKER_PROPERTY_NAME));
   @Autowired ZeebeConnector zeebeConnector;
   private final MountableFile certsDir = MountableFile.forClasspathResource("certs");
 
   @Rule
   public ZeebeContainer zeebeContainer =
-      new ZeebeContainer()
+      new ZeebeContainer(ZEEBE_DOCKER_IMAGE)
           .withFileSystemBind(certsDir.getFilesystemPath(), "/usr/local/zeebe/certs")
           .withEnv(
               Map.of(

@@ -25,6 +25,7 @@ import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.record.Record;
 import java.io.IOException;
 import java.time.Instant;
+import java.time.OffsetDateTime;
 import java.util.HashMap;
 import java.util.Map;
 import org.elasticsearch.action.bulk.BulkRequest;
@@ -67,6 +68,25 @@ public class JobZeebeRecordProcessor {
             .setProcessInstanceId(String.valueOf(recordValue.getProcessInstanceKey()))
             .setBpmnProcessId(recordValue.getBpmnProcessId())
             .setProcessDefinitionId(processDefinitionId);
+
+    final String dueDate =
+        recordValue.getCustomHeaders().get(Protocol.USER_TASK_DUE_DATE_HEADER_NAME);
+    if (dueDate != null) {
+      final OffsetDateTime offSetDueDate = DateUtil.toOffsetDateTime(dueDate);
+      if (offSetDueDate != null) {
+        entity.setDueDate(offSetDueDate);
+      }
+    }
+
+    final String followUpDate =
+        recordValue.getCustomHeaders().get(Protocol.USER_TASK_FOLLOW_UP_DATE_HEADER_NAME);
+    if (followUpDate != null) {
+      final OffsetDateTime offSetFollowUpDate = DateUtil.toOffsetDateTime(followUpDate);
+      if (offSetFollowUpDate != null) {
+        entity.setFollowUpDate(offSetFollowUpDate);
+      }
+    }
+
     final String formKey =
         recordValue.getCustomHeaders().get(Protocol.USER_TASK_FORM_KEY_HEADER_NAME);
     entity.setFormKey(formKey);

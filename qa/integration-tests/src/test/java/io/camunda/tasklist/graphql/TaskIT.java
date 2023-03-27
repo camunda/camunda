@@ -20,6 +20,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.graphql.spring.boot.test.GraphQLResponse;
 import io.camunda.tasklist.entities.TaskState;
+import io.camunda.tasklist.util.DateUtil;
 import io.camunda.tasklist.util.ElasticsearchChecks.TestCheck;
 import io.camunda.tasklist.util.TasklistZeebeIntegrationTest;
 import io.camunda.tasklist.webapp.graphql.entity.TaskDTO;
@@ -29,9 +30,8 @@ import io.camunda.tasklist.webapp.security.Permission;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.Comparator;
-import java.util.List;
+import java.text.SimpleDateFormat;
+import java.util.*;
 import org.junit.Before;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -44,6 +44,8 @@ public class TaskIT extends TasklistZeebeIntegrationTest {
   public static final String TASK_RESULT_PATTERN = "{id name assignee}";
   public static final String CLAIM_TASK_MUTATION_PATTERN =
       "mutation {claimTask(taskId: \"%s\")" + TASK_RESULT_PATTERN + "}";
+  private static final SimpleDateFormat SIMPLE_DATE_FORMAT =
+      new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSXXX");
 
   @Autowired
   @Qualifier(TASK_IS_CREATED_BY_FLOW_NODE_BPMN_ID_CHECK)
@@ -877,5 +879,275 @@ public class TaskIT extends TasklistZeebeIntegrationTest {
         .taskIsCreated(ELEMENT_ID)
         .getTasksByQuery(
             "{tasks(query: {candidateUser: \"" + candidateUserQuery + "\"}) {id candidateUsers}}");
+  }
+
+  @Test
+  public void startProcessWithDueAndFollowUpDates() throws IOException {
+    final Calendar c = Calendar.getInstance();
+    c.setTime(new Date());
+
+    c.add(Calendar.DATE, 3);
+    final Date dueDate = c.getTime();
+    c.add(Calendar.DATE, 1);
+    final Date followUpDate = c.getTime();
+
+    final BpmnModelInstance model = getModelForDueAndFollowUpDates(dueDate, followUpDate);
+
+    final GraphQLResponse response =
+        tester
+            .having()
+            .deployProcess(model, "testProcess.bpmn")
+            .waitUntil()
+            .processIsDeployed()
+            .and()
+            .startProcessInstance(BPMN_PROCESS_ID)
+            .waitUntil()
+            .taskIsCreated(ELEMENT_ID)
+            .getAllTasks();
+
+    assertEquals("1", response.get("$.data.tasks.length()"));
+    assertEquals(
+        DateUtil.toOffsetDateTime(SIMPLE_DATE_FORMAT.format(dueDate)),
+        DateUtil.toOffsetDateTime(response.get("$.data.tasks[0].dueDate")));
+    assertEquals(
+        DateUtil.toOffsetDateTime(SIMPLE_DATE_FORMAT.format(followUpDate)),
+        DateUtil.toOffsetDateTime(response.get("$.data.tasks[0].followUpDate")));
+  }
+
+  private BpmnModelInstance getModelForDueAndFollowUpDates(Date dueDate, Date followUpDate) {
+    final String dueDateString = SIMPLE_DATE_FORMAT.format(dueDate);
+    final String followUpDateString = SIMPLE_DATE_FORMAT.format(followUpDate);
+
+    final BpmnModelInstance model =
+        Bpmn.createExecutableProcess(BPMN_PROCESS_ID)
+            .startEvent("start")
+            .userTask(
+                ELEMENT_ID,
+                task -> {
+                  task.zeebeDueDate(dueDateString);
+                  task.zeebeFollowUpDate(followUpDateString);
+                })
+            .endEvent()
+            .done();
+    return model;
+  }
+
+  @Test
+  public void shouldReturnWithDueDatesFilter() {
+    final Calendar c = Calendar.getInstance();
+    c.setTime(new Date());
+
+    c.add(Calendar.DATE, 2);
+    final Date dueDateFrom = c.getTime();
+    c.add(Calendar.DATE, 1);
+    final Date dueDate = c.getTime();
+    c.add(Calendar.DATE, 1);
+    final Date followUpDate = c.getTime();
+    c.add(Calendar.DATE, 1);
+    final Date dueDateTo = c.getTime();
+
+    final BpmnModelInstance model = getModelForDueAndFollowUpDates(dueDate, followUpDate);
+    final GraphQLResponse response =
+        tester
+            .having()
+            .deployProcess(model, "testProcess.bpmn")
+            .waitUntil()
+            .processIsDeployed()
+            .and()
+            .startProcessInstance(BPMN_PROCESS_ID)
+            .waitUntil()
+            .taskIsCreated(ELEMENT_ID)
+            .getGraphTasksByQuery(
+                "{tasks(query:{dueDate:{"
+                    + "from : \""
+                    + SIMPLE_DATE_FORMAT.format(dueDateFrom)
+                    + "\","
+                    + "to:  \""
+                    + SIMPLE_DATE_FORMAT.format(dueDateTo)
+                    + "\""
+                    + "}"
+                    + "}){id dueDate}}");
+
+    assertTrue(response.isOk());
+    assertEquals("1", response.get("$.data.tasks.length()"));
+    assertEquals(
+        DateUtil.toOffsetDateTime(SIMPLE_DATE_FORMAT.format(dueDate)),
+        DateUtil.toOffsetDateTime(response.get("$.data.tasks[0].dueDate")));
+  }
+
+  @Test
+  public void shouldNotReturnWithDueDateFilter() {
+    final Calendar c = Calendar.getInstance();
+    c.setTime(new Date());
+
+    c.add(Calendar.DATE, 1);
+    final Date dueDate = c.getTime();
+
+    c.add(Calendar.DATE, 2);
+    final Date dueDateFrom = c.getTime();
+
+    c.add(Calendar.DATE, 2);
+    final Date followUpDate = c.getTime();
+
+    c.add(Calendar.DATE, -1);
+    final Date dueDateTo = c.getTime();
+
+    final BpmnModelInstance model = getModelForDueAndFollowUpDates(dueDate, followUpDate);
+    final GraphQLResponse response =
+        tester
+            .having()
+            .deployProcess(model, "testProcess.bpmn")
+            .waitUntil()
+            .processIsDeployed()
+            .and()
+            .startProcessInstance(BPMN_PROCESS_ID)
+            .waitUntil()
+            .taskIsCreated(ELEMENT_ID)
+            .getGraphTasksByQuery(
+                "{tasks(query:{dueDate:{"
+                    + "from : \""
+                    + SIMPLE_DATE_FORMAT.format(dueDateFrom)
+                    + "\","
+                    + "to:  \""
+                    + SIMPLE_DATE_FORMAT.format(dueDateTo)
+                    + "\""
+                    + "}"
+                    + "}){id dueDate}}");
+
+    assertTrue(response.isOk());
+    assertEquals("0", response.get("$.data.tasks.length()"));
+  }
+
+  @Test
+  public void shouldReturnWithFollowUpDatesFilter() {
+    final Calendar c = Calendar.getInstance();
+    c.setTime(new Date());
+
+    c.add(Calendar.DATE, 2);
+    final Date followUpDateFrom = c.getTime();
+    c.add(Calendar.DATE, 1);
+    final Date dueDate = c.getTime();
+    c.add(Calendar.DATE, 1);
+    final Date followUpDate = c.getTime();
+    c.add(Calendar.DATE, 1);
+    final Date followUpDateTo = c.getTime();
+
+    final BpmnModelInstance model = getModelForDueAndFollowUpDates(dueDate, followUpDate);
+    final GraphQLResponse response =
+        tester
+            .having()
+            .deployProcess(model, "testProcess.bpmn")
+            .waitUntil()
+            .processIsDeployed()
+            .and()
+            .startProcessInstance(BPMN_PROCESS_ID)
+            .waitUntil()
+            .taskIsCreated(ELEMENT_ID)
+            .getGraphTasksByQuery(
+                "{tasks(query:{followUpDate:{"
+                    + "from : \""
+                    + SIMPLE_DATE_FORMAT.format(followUpDateFrom)
+                    + "\","
+                    + "to:  \""
+                    + SIMPLE_DATE_FORMAT.format(followUpDateTo)
+                    + "\""
+                    + "}"
+                    + "}){id followUpDate}}");
+
+    assertTrue(response.isOk());
+    assertEquals("1", response.get("$.data.tasks.length()"));
+    assertEquals(
+        DateUtil.toOffsetDateTime(SIMPLE_DATE_FORMAT.format(followUpDate)),
+        DateUtil.toOffsetDateTime(response.get("$.data.tasks[0].followUpDate")));
+  }
+
+  @Test
+  public void shouldNotReturnWithFollowUpDatesFilter() {
+    final Calendar c = Calendar.getInstance();
+    c.setTime(new Date());
+
+    c.add(Calendar.DATE, 1);
+    final Date dueDate = c.getTime();
+
+    c.add(Calendar.DATE, 1);
+    final Date followUpDate = c.getTime();
+
+    c.add(Calendar.DATE, 2);
+    final Date followUpDateFrom = c.getTime();
+    c.add(Calendar.DATE, 1);
+    final Date followUpDateTo = c.getTime();
+
+    final BpmnModelInstance model = getModelForDueAndFollowUpDates(dueDate, followUpDate);
+    final GraphQLResponse response =
+        tester
+            .having()
+            .deployProcess(model, "testProcess.bpmn")
+            .waitUntil()
+            .processIsDeployed()
+            .and()
+            .startProcessInstance(BPMN_PROCESS_ID)
+            .waitUntil()
+            .taskIsCreated(ELEMENT_ID)
+            .getGraphTasksByQuery(
+                "{tasks(query:{followUpDate:{"
+                    + "from : \""
+                    + SIMPLE_DATE_FORMAT.format(followUpDateFrom)
+                    + "\","
+                    + "to:  \""
+                    + SIMPLE_DATE_FORMAT.format(followUpDateTo)
+                    + "\""
+                    + "}"
+                    + "}){id followUpDate}}");
+
+    assertTrue(response.isOk());
+    assertEquals("0", response.get("$.data.tasks.length()"));
+  }
+
+  @Test
+  public void startProcessWithDueAndFollowUpDatesAsExpressions() throws IOException {
+    final Calendar c = Calendar.getInstance();
+    c.setTime(new Date());
+    c.add(Calendar.DATE, 3);
+    final String dueDate = SIMPLE_DATE_FORMAT.format(c.getTime());
+
+    c.add(Calendar.DATE, 1);
+    final String followUpDate = SIMPLE_DATE_FORMAT.format(c.getTime());
+
+    final BpmnModelInstance model =
+        Bpmn.createExecutableProcess(BPMN_PROCESS_ID)
+            .startEvent("start")
+            .userTask(
+                ELEMENT_ID,
+                task -> {
+                  task.zeebeDueDateExpression("=dueDate");
+                  task.zeebeFollowUpDateExpression("=followUpDate");
+                })
+            .endEvent()
+            .done();
+
+    final String payload =
+        "{\"dueDate\": \"" + dueDate + "\", \"followUpDate\" : \"" + followUpDate + "\"}";
+
+    final GraphQLResponse response =
+        tester
+            .having()
+            .deployProcess(model, "testProcess.bpmn")
+            .waitUntil()
+            .processIsDeployed()
+            .and()
+            .startProcessInstance(BPMN_PROCESS_ID, payload)
+            .waitUntil()
+            .taskIsCreated(ELEMENT_ID)
+            .getAllTasks();
+
+    assertTrue(response.isOk());
+
+    assertEquals("1", response.get("$.data.tasks.length()"));
+    assertEquals(
+        DateUtil.toOffsetDateTime(dueDate),
+        DateUtil.toOffsetDateTime(response.get("$.data.tasks[0].dueDate")));
+    assertEquals(
+        DateUtil.toOffsetDateTime(followUpDate),
+        DateUtil.toOffsetDateTime(response.get("$.data.tasks[0].followUpDate")));
   }
 }

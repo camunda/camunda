@@ -11,6 +11,7 @@ import static io.camunda.tasklist.util.CollectionUtil.toArrayOfStrings;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.tasklist.entities.TaskEntity;
 import io.camunda.tasklist.entities.TaskState;
+import java.time.OffsetDateTime;
 import java.util.Arrays;
 import java.util.Objects;
 
@@ -39,6 +40,10 @@ public final class TaskDTO {
   private boolean isFirst = false;
 
   private String formKey;
+
+  private OffsetDateTime dueDate;
+
+  private OffsetDateTime followUpDate;
 
   public String getId() {
     return id;
@@ -179,6 +184,24 @@ public final class TaskDTO {
     return this;
   }
 
+  public OffsetDateTime getDueDate() {
+    return dueDate;
+  }
+
+  public TaskDTO setDueDate(OffsetDateTime dueDate) {
+    this.dueDate = dueDate;
+    return this;
+  }
+
+  public OffsetDateTime getFollowUpDate() {
+    return followUpDate;
+  }
+
+  public TaskDTO setFollowUpDate(OffsetDateTime followUpDate) {
+    this.followUpDate = followUpDate;
+    return this;
+  }
+
   public static TaskDTO createFrom(TaskEntity taskEntity, ObjectMapper objectMapper) {
     return createFrom(taskEntity, null, objectMapper);
   }
@@ -200,7 +223,10 @@ public final class TaskDTO {
             .setFlowNodeInstanceId(taskEntity.getFlowNodeInstanceId())
             .setFormKey(taskEntity.getFormKey())
             .setCandidateGroups(taskEntity.getCandidateGroups())
+            .setFollowUpDate(taskEntity.getFollowUpDate())
+            .setDueDate(taskEntity.getDueDate())
             .setCandidateUsers(taskEntity.getCandidateUsers());
+
     if (sortValues != null) {
       taskDTO.setSortValues(toArrayOfStrings(sortValues));
     }
@@ -230,7 +256,9 @@ public final class TaskDTO {
         && Arrays.equals(candidateUsers, taskDTO.candidateUsers)
         && taskState == taskDTO.taskState
         && Arrays.equals(sortValues, taskDTO.sortValues)
-        && Objects.equals(formKey, taskDTO.formKey);
+        && Objects.equals(formKey, taskDTO.formKey)
+        && Objects.equals(dueDate, taskDTO.dueDate)
+        && Objects.equals(followUpDate, taskDTO.followUpDate);
   }
 
   @Override
@@ -248,7 +276,9 @@ public final class TaskDTO {
             assignee,
             taskState,
             isFirst,
-            formKey);
+            formKey,
+            dueDate,
+            followUpDate);
     result = 31 * result + Arrays.hashCode(candidateGroups);
     result = 31 * result + Arrays.hashCode(candidateUsers);
     result = 31 * result + Arrays.hashCode(sortValues);
@@ -294,6 +324,11 @@ public final class TaskDTO {
         + ", formId='"
         + formKey
         + '\''
+        + ", followUpDate='"
+        + followUpDate
+        + '\''
+        + ", dueDate='"
+        + dueDate
         + ", candidateUsers='"
         + candidateUsers
         + '\''

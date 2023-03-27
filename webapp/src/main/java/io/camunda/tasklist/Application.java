@@ -91,7 +91,8 @@ public class Application {
     // Exception handler is enabled
     return Map.of(
         "graphql.playground.enabled", "false",
-        "graphql.servlet.exception-handlers-enabled", "true");
+        "graphql.servlet.exception-handlers-enabled", "true",
+        "graphql.extended-scalars", "DateTime");
   }
 
   private static Map<String, Object> getWebProperties() {

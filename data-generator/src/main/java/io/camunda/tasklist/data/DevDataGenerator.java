@@ -19,6 +19,9 @@ import io.camunda.tasklist.util.PayloadUtil;
 import io.camunda.tasklist.util.ZeebeTestUtil;
 import io.camunda.zeebe.client.ZeebeClient;
 import java.io.IOException;
+import java.text.SimpleDateFormat;
+import java.util.Calendar;
+import java.util.Date;
 import java.util.List;
 import java.util.Random;
 import java.util.concurrent.ExecutorService;
@@ -219,8 +222,27 @@ public class DevDataGenerator implements DataGenerator {
   }
 
   private void startFlightRegistrationProcess() {
+    final SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssXXX");
+
+    final Calendar calendar = Calendar.getInstance();
+    calendar.setTime(new Date());
+
+    calendar.add(Calendar.DATE, 5);
+    final String dueDate = sdf.format(calendar.getTime());
+
+    calendar.add(Calendar.DATE, 1);
+    final String followUpDate = sdf.format(calendar.getTime());
+
     final String payload =
-        "{\"candidateGroups\": [\"group1\", \"group2\"]," + "\"assignee\": \"demo\"}";
+        "{\"candidateGroups\": [\"group1\", \"group2\"],"
+            + "\"assignee\": \"demo\", "
+            + "\"taskDueDate\" : \""
+            + dueDate
+            + "\", "
+            + "\"taskFollowUpDate\" : \""
+            + followUpDate
+            + "\"}";
+
     ZeebeTestUtil.startProcessInstance(zeebeClient, "flightRegistration", payload);
   }
 

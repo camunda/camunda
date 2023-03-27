@@ -28,6 +28,8 @@ public class TaskTemplate extends AbstractTemplateDescriptor
   public static final String CANDIDATE_USERS = "candidateUsers";
   public static final String BPMN_PROCESS_ID = "bpmnProcessId";
   public static final String PROCESS_DEFINITION_ID = "processDefinitionId";
+  public static final String DUE_DATE = "dueDate";
+  public static final String FOLLOW_UP_DATE = "followUpDate";
 
   @Override
   public String getIndexName() {

@@ -12,6 +12,8 @@ query getTask($taskId: String!){
         taskState
         candidateGroups
         candidateUsers
+        dueDate
+        followUpDate
         processDefinitionId
         processInstanceId
     }

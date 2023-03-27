@@ -51,8 +51,17 @@
 			},
 			"formKey": {
 				"type": "keyword"
+			},
+			"followUpDate" : {
+				"format": "date_time || epoch_millis",
+				"type": "date",
+				"ignore_malformed": true
+			},
+			"dueDate" : {
+				"format": "date_time || epoch_millis",
+				"type": "date",
+				"ignore_malformed": true
 			}
-
 		}
 	}
 }

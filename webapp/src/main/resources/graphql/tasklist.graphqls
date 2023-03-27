@@ -1,3 +1,5 @@
+scalar DateTime
+
 # Describes the User task.
 type Task {
     # The unique identifier of the task
@@ -30,6 +32,10 @@ type Task {
     processInstanceId: String
     #Candidate groups
     candidateGroups: [String!]
+    #Follow-up Date for Task
+    followUpDate: DateTime
+    #Due date for Task
+    dueDate: DateTime
     #Candidate users
     candidateUsers: [String!]
 }
@@ -50,6 +56,13 @@ type Process {
     processDefinitionId: String
     version:Int
 }
+
+input DateFilter {
+    from: DateTime!
+    to: DateTime!
+}
+
+
 
 #Task query - query to get one page of tasks.
 input TaskQuery {
@@ -79,13 +92,38 @@ input TaskQuery {
     searchBefore: [String!]
     #Array of values copied from `sortValues` of one of the tasks, query will return page of tasks going directly before this values.
     searchBeforeOrEqual: [String!]
+    #Follow-up Date for Task
+    followUpDate: DateFilter
+    #Due Date for Task
+    dueDate: DateFilter
+    #order
+    sort: [TaskOrderBy]
 }
+
+input TaskOrderBy {
+    field: TaskSortFields!
+    order: Sort!
+}
+
+enum Sort {
+    ASC,
+    DESC
+}
+
+enum TaskSortFields{
+    creationTime,
+    completionTime,
+    followUpDate,
+    dueDate
+}
+
 # State of the task.
 enum TaskState {
     CREATED,
     COMPLETED,
     CANCELED
 }
+
 # Variable used in task.
 type Variable {
     id: ID!

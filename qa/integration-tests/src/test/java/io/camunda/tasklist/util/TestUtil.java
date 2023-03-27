@@ -20,6 +20,7 @@ import org.slf4j.LoggerFactory;
 
 public abstract class TestUtil {
 
+  public static final String DATE_TIME_GRAPHQL_PATTERN = "yyyy-MM-dd'T'HH:mm:ss.SSSxxxx";
   private static final Logger LOGGER = LoggerFactory.getLogger(TestUtil.class);
 
   public static String createRandomString(int length) {

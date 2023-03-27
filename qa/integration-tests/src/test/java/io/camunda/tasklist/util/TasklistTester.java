@@ -176,6 +176,10 @@ public class TasklistTester {
     return getTasksByPath("$.data.tasks");
   }
 
+  public GraphQLResponse getGraphTasksByQuery(String query) {
+    return graphQLTestTemplate.postMultipart(query, "{}");
+  }
+
   public GraphQLResponse getTaskById(String taskId) throws IOException {
     return getTaskById(taskId, GRAPHQL_DEFAULT_VARIABLE_FRAGMENT);
   }

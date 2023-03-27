@@ -11,7 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.github.dockerjava.api.command.CreateContainerCmd;
 import io.camunda.tasklist.qa.util.TestContainerUtil;
 import io.camunda.tasklist.qa.util.TestContext;
-import io.camunda.zeebe.client.ZeebeClient;
+import io.camunda.tasklist.util.ZeebeVersionsUtil;
 import org.junit.After;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -48,7 +48,8 @@ public class StartupIT {
     testContainerUtil.startElasticsearch(testContext);
 
     testContainerUtil.startZeebe(
-        ZeebeClient.class.getPackage().getImplementationVersion(), testContext);
+        ZeebeVersionsUtil.readProperty(ZeebeVersionsUtil.ZEEBE_CURRENTVERSION_DOCKER_PROPERTY_NAME),
+        testContext);
 
     tasklistContainer =
         testContainerUtil

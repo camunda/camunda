@@ -12,12 +12,7 @@ import static io.camunda.tasklist.util.CollectionUtil.getOrDefaultFromMap;
 import static io.camunda.tasklist.util.ElasticsearchUtil.fromSearchHit;
 import static io.camunda.tasklist.util.ElasticsearchUtil.joinWithAnd;
 import static org.elasticsearch.action.support.WriteRequest.RefreshPolicy.WAIT_UNTIL;
-import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
-import static org.elasticsearch.index.query.QueryBuilders.constantScoreQuery;
-import static org.elasticsearch.index.query.QueryBuilders.existsQuery;
-import static org.elasticsearch.index.query.QueryBuilders.idsQuery;
-import static org.elasticsearch.index.query.QueryBuilders.matchAllQuery;
-import static org.elasticsearch.index.query.QueryBuilders.termQuery;
+import static org.elasticsearch.index.query.QueryBuilders.*;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.tasklist.entities.TaskEntity;
@@ -26,9 +21,7 @@ import io.camunda.tasklist.exceptions.TasklistRuntimeException;
 import io.camunda.tasklist.schema.templates.TaskTemplate;
 import io.camunda.tasklist.util.ElasticsearchUtil;
 import io.camunda.tasklist.util.ElasticsearchUtil.QueryType;
-import io.camunda.tasklist.webapp.graphql.entity.TaskDTO;
-import io.camunda.tasklist.webapp.graphql.entity.TaskQueryDTO;
-import io.camunda.tasklist.webapp.graphql.entity.UserDTO;
+import io.camunda.tasklist.webapp.graphql.entity.*;
 import io.camunda.tasklist.webapp.rest.exception.NotFoundException;
 import java.io.IOException;
 import java.time.OffsetDateTime;
@@ -340,6 +333,22 @@ public class TaskReaderWriter {
           termQuery(TaskTemplate.PROCESS_DEFINITION_ID, query.getProcessDefinitionId());
     }
 
+    QueryBuilder followUpQ = null;
+    if (query.getFollowUpDate() != null) {
+      followUpQ =
+          rangeQuery(TaskTemplate.FOLLOW_UP_DATE)
+              .from(query.getFollowUpDate().getFrom())
+              .to(query.getFollowUpDate().getTo());
+    }
+
+    QueryBuilder dueDateQ = null;
+    if (query.getDueDate() != null) {
+      dueDateQ =
+          rangeQuery(TaskTemplate.DUE_DATE)
+              .from(query.getDueDate().getFrom())
+              .to(query.getDueDate().getTo());
+    }
+
     QueryBuilder jointQ =
         joinWithAnd(
             stateQ,
@@ -350,7 +359,9 @@ public class TaskReaderWriter {
             candidateGroupQ,
             candidateUserQ,
             processInstanceIdQ,
-            processDefinitionIdQ);
+            processDefinitionIdQ,
+            followUpQ,
+            dueDateQ);
     if (jointQ == null) {
       jointQ = matchAllQuery();
     }
@@ -365,20 +376,17 @@ public class TaskReaderWriter {
    */
   private void applySorting(SearchSourceBuilder searchSourceBuilder, TaskQueryDTO query) {
 
+    final boolean isSortOnRequest;
+    if (query.getSort() != null) {
+      isSortOnRequest = true;
+    } else {
+      isSortOnRequest = false;
+    }
+
     final boolean directSorting =
         query.getSearchAfter() != null
             || query.getSearchAfterOrEqual() != null
             || (query.getSearchBefore() == null && query.getSearchBeforeOrEqual() == null);
-
-    final String sort1Field =
-        getOrDefaultFromMap(SORT_FIELD_PER_STATE, query.getState(), DEFAULT_SORT_FIELD);
-
-    final SortBuilder sort1;
-    if (directSorting) {
-      sort1 = SortBuilders.fieldSort(sort1Field).order(SortOrder.DESC).missing("_last");
-    } else {
-      sort1 = SortBuilders.fieldSort(sort1Field).order(SortOrder.ASC).missing("_first");
-    }
 
     final SortBuilder sort2;
     Object[] querySearchAfter = null; // may be null
@@ -399,7 +407,30 @@ public class TaskReaderWriter {
       }
     }
 
-    searchSourceBuilder.sort(sort1).sort(sort2);
+    if (isSortOnRequest) {
+      for (int i = 0; i < query.getSort().length; i++) {
+        final TaskOrderByDTO orderByDTO = query.getSort()[i];
+        final String field = orderByDTO.getField().toString();
+        final SortOrder sortOrder =
+            orderByDTO.getOrder().equals(Sort.DESC) ? SortOrder.DESC : SortOrder.ASC;
+        final SortBuilder sortBuilder =
+            SortBuilders.fieldSort(field).order(sortOrder).missing("_last");
+        searchSourceBuilder.sort(sortBuilder);
+      }
+    } else {
+      final String sort1Field;
+      final SortBuilder sort1;
+
+      sort1Field = getOrDefaultFromMap(SORT_FIELD_PER_STATE, query.getState(), DEFAULT_SORT_FIELD);
+      if (directSorting) {
+        sort1 = SortBuilders.fieldSort(sort1Field).order(SortOrder.DESC).missing("_last");
+      } else {
+        sort1 = SortBuilders.fieldSort(sort1Field).order(SortOrder.ASC).missing("_first");
+      }
+      searchSourceBuilder.sort(sort1);
+    }
+
+    searchSourceBuilder.sort(sort2);
     // for searchBefore[orEqual] we will increase size by 1 to fill ou isFirst flag
     if (query.getSearchBefore() != null || query.getSearchBeforeOrEqual() != null) {
       searchSourceBuilder.size(query.getPageSize() + 1);
