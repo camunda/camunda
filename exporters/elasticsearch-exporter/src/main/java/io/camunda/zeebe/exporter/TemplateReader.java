@@ -83,6 +83,11 @@ final class TemplateReader {
     if (numberOfReplicas != null) {
       settings.put("number_of_replicas", numberOfReplicas);
     }
+
+    // update index.lifecycle in template in case a policy was configured configuration
+    if (config.retention.minimumAge != null) {
+      settings.put("index.lifecycle.name", config.retention.policyName);
+    }
   }
 
   private Template getTemplateFromClasspath(final String filename) {
