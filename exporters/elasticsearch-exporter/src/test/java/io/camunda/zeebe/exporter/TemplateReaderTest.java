@@ -140,4 +140,18 @@ final class TemplateReaderTest {
     assertThat(template.composedOf())
         .allMatch(composedOf -> composedOf.equals(config.index.prefix));
   }
+
+  @Test
+  void shouldReadIndexTemplateWithIndexLifecycleManagementPolicy() {
+    // given
+    config.retention.setEnabled(true);
+    config.retention.setPolicyName("auto-trash");
+    final var valueType = ValueType.VARIABLE;
+
+    // when
+    final var template = templateReader.readIndexTemplate(valueType, "searchPattern", "alias");
+
+    // then
+    assertThat(template.template().settings()).containsEntry("index.lifecycle.name", "auto-trash");
+  }
 }
