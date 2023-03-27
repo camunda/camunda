@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.exporter;
 
+import static io.camunda.zeebe.exporter.ElasticsearchClient.buildPutIndexLifecycleManagementPolicyRequest;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.mockito.ArgumentMatchers.any;
@@ -16,6 +17,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.zeebe.exporter.dto.BulkIndexResponse;
 import io.camunda.zeebe.exporter.dto.PutIndexTemplateResponse;
@@ -25,6 +27,7 @@ import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import org.apache.http.entity.BasicHttpEntity;
@@ -98,6 +101,33 @@ final class ElasticsearchClientTest {
     final var request = requestCaptor.getValue();
     final var template = MAPPER.readValue(request.getEntity().getContent(), Template.class);
     assertThat(template).isEqualTo(expectedTemplate);
+  }
+
+  @Test
+  void shouldBuildPutIndexLifecycleManagementPolicyRequestCorrectly()
+      throws JsonProcessingException {
+    assertThat(
+            MAPPER.writeValueAsString(
+                buildPutIndexLifecycleManagementPolicyRequest(Duration.ofDays(300).plusSeconds(3))))
+        .describedAs("Expect that request is mapped to json correctly")
+        .isEqualTo(
+            // Mapped from Object to make sure produced JSON string is formatted the same way
+            MAPPER.writeValueAsString(
+                MAPPER.readValue(
+                    """
+                    {
+                      "policy": {
+                        "phases": {
+                          "delete": {
+                            "min_age": "300d3s",
+                            "actions": {
+                              "delete": {}
+                            }
+                          }
+                        }
+                      }
+                    }""",
+                    Object.class)));
   }
 
   private <T> ArgumentCaptor<Request> mockClientResponse(final T content) throws IOException {
