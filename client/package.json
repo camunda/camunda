@@ -44,7 +44,7 @@
     "postinstall": "cd .. && husky install",
     "analyze-bundle": "yarn build && source-map-explorer 'build/static/js/*.js'",
     "playwright": "playwright test",
-    "start-visual-regression-docker": "docker run --rm --network host -v $(pwd):/work/ -w /work/ -it mcr.microsoft.com/playwright:v1.32.0-focal /bin/bash",
+    "start-visual-regression-docker": "docker run --rm --network host -v $(pwd):/work/ -w /work/ -it mcr.microsoft.com/playwright:v1.32.1-focal /bin/bash",
     "start:visual-regression": "serve build/ -p 8080 -n -s -L"
   },
   "browserslist": [
@@ -55,7 +55,7 @@
   ],
   "devDependencies": {
     "@axe-core/playwright": "4.6.0",
-    "@playwright/test": "1.32.0",
+    "@playwright/test": "1.32.1",
     "@testing-library/jest-dom": "5.16.5",
     "@testing-library/react": "14.0.0",
     "@testing-library/testcafe": "5.0.0",
@@ -64,8 +64,8 @@
     "@types/carbon__elements": "11.10.0",
     "@types/jest": "29.5.0",
     "@types/mixpanel-browser": "2.38.1",
-    "@types/node": "18.15.7",
-    "@types/react": "18.0.28",
+    "@types/node": "18.15.10",
+    "@types/react": "18.0.29",
     "@types/react-dom": "18.0.11",
     "@types/react-transition-group": "4.4.5",
     "@types/styled-components": "5.1.26",
@@ -85,7 +85,7 @@
     "testcafe": "2.4.0",
     "ts-toolbelt": "9.6.0",
     "typescript": "5.0.2",
-    "zeebe-node": "8.1.6"
+    "zeebe-node": "8.1.8"
   },
   "lint-staged": {
     "*": [
