@@ -10,6 +10,7 @@ package io.camunda.zeebe.exporter;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
+import java.time.Duration;
 
 public class ElasticsearchExporterConfiguration {
 
@@ -23,6 +24,7 @@ public class ElasticsearchExporterConfiguration {
 
   public final IndexConfiguration index = new IndexConfiguration();
   public final BulkConfiguration bulk = new BulkConfiguration();
+  public final RetentionConfiguration retention = new RetentionConfiguration();
   private final AuthenticationConfiguration authentication = new AuthenticationConfiguration();
 
   public boolean hasAuthenticationPresent() {
@@ -45,6 +47,8 @@ public class ElasticsearchExporterConfiguration {
         + index
         + ", bulk="
         + bulk
+        + ", retention="
+        + retention
         + ", authentication="
         + authentication
         + '}';
@@ -312,6 +316,38 @@ public class ElasticsearchExporterConfiguration {
     public String toString() {
       // we don't want to expose this information
       return "AuthenticationConfiguration{Confidential information}";
+    }
+  }
+
+  public static class RetentionConfiguration {
+    public Duration minimumAge = null;
+    public String policyName = "zeebe-record-retention-policy";
+
+    public Duration getMinimumAge() {
+      return minimumAge;
+    }
+
+    public void setMinimumAge(final Duration minimumAge) {
+      this.minimumAge = minimumAge;
+    }
+
+    public String getPolicyName() {
+      return policyName;
+    }
+
+    public void setPolicyName(final String policyName) {
+      this.policyName = policyName;
+    }
+
+    @Override
+    public String toString() {
+      return "RetentionConfiguration{"
+          + "minimumAge="
+          + minimumAge
+          + ", policyName='"
+          + policyName
+          + '\''
+          + '}';
     }
   }
 }
