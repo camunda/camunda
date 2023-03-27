@@ -21,7 +21,6 @@ import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.Optional;
 import org.agrona.DirectBuffer;
@@ -29,11 +28,8 @@ import org.camunda.dmn.Audit.AuditLog;
 import org.camunda.dmn.DmnEngine;
 import org.camunda.dmn.DmnEngine.EvalFailure;
 import org.camunda.dmn.DmnEngine.EvalResult;
-import org.camunda.dmn.DmnEngine.Failure;
-import org.camunda.dmn.parser.ParsedDmn;
 import org.camunda.feel.syntaxtree.Val;
 import scala.util.Either;
-import scala.util.Left;
 
 /**
  * A wrapper around the DMN-Scala decision engine.
@@ -98,7 +94,9 @@ public final class DmnScalaDecisionEngine implements DecisionEngine {
     }
 
     final var parsedDmn = ((ParsedDmnScalaDrg) decisionRequirementsGraph).getParsedDmn();
-    final Either<EvalFailure, EvalResult> result = tryEval(decisionId, parsedDmn, evalContext);
+    // todo(#8092): pass in context that allows fetching variable by name (lazy)
+    final Either<EvalFailure, EvalResult> result =
+        dmnEngine.eval(parsedDmn, decisionId, evalContext.toMap());
     final AuditLog auditLog =
         result.map(EvalResult::auditLog).getOrElse(() -> result.left().get().auditLog());
     final var evaluatedDecisions =
@@ -135,24 +133,6 @@ public final class DmnScalaDecisionEngine implements DecisionEngine {
         String.format(
             "Expected DMN evaluation result to be of type '%s' but was '%s'",
             Val.class, output.getClass()));
-  }
-
-  private Either<EvalFailure, EvalResult> tryEval(
-      final String decisionId, final ParsedDmn parsedDmn, final DecisionContext context) {
-    try {
-      // todo(#8092): pass in context that allows fetching variable by name (lazy)
-      return dmnEngine.eval(parsedDmn, decisionId, context.toMap());
-
-    } catch (final NoSuchElementException e) {
-      if (e.getMessage().equals("last of empty list")) {
-        // workaround for: https://github.com/camunda-community-hub/dmn-scala/issues/135
-        final var message = String.format("no decision found for '%s'", decisionId);
-        return Left.apply(new EvalFailure(new Failure(message), null));
-
-      } else {
-        throw e;
-      }
-    }
   }
 
   private List<EvaluatedDecision> getEvaluatedDecisions(final AuditLog auditLog) {
