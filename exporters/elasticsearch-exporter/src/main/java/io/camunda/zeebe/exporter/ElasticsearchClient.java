@@ -209,12 +209,12 @@ class ElasticsearchClient implements AutoCloseable {
     }
   }
 
-  public boolean putIndexLifecycleManagementPolicy(
-      final String policyName, final Duration minimumAge) {
+  public boolean putIndexLifecycleManagementPolicy() {
     try {
-      final var request = new Request("PUT", "/_ilm/policy/" + policyName);
-      request.setJsonEntity(
-          MAPPER.writeValueAsString(buildPutIndexLifecycleManagementPolicyRequest(minimumAge)));
+      final var request = new Request("PUT", "/_ilm/policy/" + configuration.retention.policyName);
+      final var requestEntity =
+          buildPutIndexLifecycleManagementPolicyRequest(configuration.retention.minimumAge);
+      request.setJsonEntity(MAPPER.writeValueAsString(requestEntity));
       final var response = sendRequest(request, PutIndexLifecycleManagementPolicyResponse.class);
       return response.acknowledged();
     } catch (final IOException e) {

@@ -84,8 +84,8 @@ final class TemplateReader {
       settings.put("number_of_replicas", numberOfReplicas);
     }
 
-    // update index.lifecycle in template in case a policy was configured configuration
-    if (config.retention.minimumAge != null) {
+    // update index.lifecycle in template in case a retention policy is configured
+    if (config.retention.isEnabled()) {
       settings.put("index.lifecycle.name", config.retention.policyName);
     }
   }

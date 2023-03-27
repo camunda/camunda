@@ -189,10 +189,8 @@ public class ElasticsearchExporter implements Exporter {
   }
 
   private void createIndexTemplates() {
-    final var minimumAge = configuration.retention.minimumAge;
-    if (minimumAge != null) {
-      final String policyName = configuration.retention.policyName;
-      createIndexLifecycleManagementPolicy(policyName, minimumAge);
+    if (configuration.retention.isEnabled()) {
+      createIndexLifecycleManagementPolicy();
     }
 
     final IndexConfiguration index = configuration.index;
@@ -286,9 +284,8 @@ public class ElasticsearchExporter implements Exporter {
     indexTemplatesCreated = true;
   }
 
-  private void createIndexLifecycleManagementPolicy(
-      final String policyName, final Duration minimumAge) {
-    if (!client.putIndexLifecycleManagementPolicy(policyName, minimumAge)) {
+  private void createIndexLifecycleManagementPolicy() {
+    if (!client.putIndexLifecycleManagementPolicy()) {
       log.warn(
           "Failed to acknowledge the creation or update of the Index Lifecycle Management Policy");
     }
