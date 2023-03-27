@@ -140,7 +140,7 @@
     <plugin.version.proto-backwards-compatibility>1.0.7</plugin.version.proto-backwards-compatibility>
     <plugin.version.protobuf-maven-plugin>0.6.1</plugin.version.protobuf-maven-plugin>
     <plugin.version.replacer>1.5.3</plugin.version.replacer>
-    <plugin.version.resources>3.3.0</plugin.version.resources>
+    <plugin.version.resources>3.3.1</plugin.version.resources>
     <plugin.version.revapi>0.14.7</plugin.version.revapi>
     <plugin.version.scala>4.6.3</plugin.version.scala>
     <plugin.version.shade>3.2.4</plugin.version.shade>
