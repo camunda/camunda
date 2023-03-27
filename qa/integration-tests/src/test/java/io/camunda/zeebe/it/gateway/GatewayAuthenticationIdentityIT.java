@@ -14,8 +14,6 @@ import io.camunda.zeebe.client.CredentialsProvider;
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.client.ZeebeClientBuilder;
 import io.camunda.zeebe.client.impl.oauth.OAuthCredentialsProviderBuilder;
-import io.camunda.zeebe.model.bpmn.Bpmn;
-import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.qa.util.testcontainers.ZeebeTestContainerDefaults;
 import io.grpc.Metadata;
 import io.grpc.Metadata.Key;
@@ -35,6 +33,7 @@ import org.junit.jupiter.api.Test;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.Network;
 import org.testcontainers.containers.wait.strategy.HttpWaitStrategy;
+import org.testcontainers.images.PullPolicy;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.utility.DockerImageName;
@@ -44,13 +43,14 @@ public class GatewayAuthenticationIdentityIT {
 
   public static final String KEYCLOAK_USER = "admin";
   public static final String KEYCLOAK_PASSWORD = "admin";
-  public static final BpmnModelInstance PROCESS_MODEL =
-      Bpmn.createExecutableProcess("model").startEvent().endEvent().done();
+  // with authentication enabled, the first grpc response includes the warmup of the identity sdk
+  public static final Duration FIRST_REQUEST_TIMEOUT = Duration.ofSeconds(5);
+  public static final String SNAPSHOT_TAG = "SNAPSHOT";
   private static final String KEYCLOAK_PATH_CAMUNDA_REALM = "/realms/camunda-platform";
   private static final String ZEEBE_CLIENT_ID = "zeebe";
   private static final String ZEEBE_CLIENT_AUDIENCE = "zeebe-api";
   private static final String ZEEBE_CLIENT_SECRET = "zecret";
-  private static final Network NETWORK = Network.newNetwork();
+  private static final Network NETWORK = Network.builder().enableIpv6(false).build();
 
   @Container
   private static final GenericContainer KEYCLOAK =
@@ -73,6 +73,11 @@ public class GatewayAuthenticationIdentityIT {
   private static final GenericContainer<?> IDENTITY =
       new GenericContainer<>(
               DockerImageName.parse("camunda/identity").withTag(getIdentityImageTag()))
+          // in case we use SNAPSHOT images they always should get pulled
+          .withImagePullPolicy(
+              SNAPSHOT_TAG.equals(getIdentityImageTag())
+                  ? PullPolicy.alwaysPull()
+                  : PullPolicy.defaultPolicy())
           .dependsOn(KEYCLOAK)
           .withEnv("KEYCLOAK_URL", "http://keycloak:8080")
           .withEnv(
@@ -113,20 +118,15 @@ public class GatewayAuthenticationIdentityIT {
               ZEEBE_CLIENT_AUDIENCE);
 
   @Test
-  void deployModelFailsWithoutAuthToken() {
+  void getTopologyRequestFailsWithoutAuthToken() {
     // given
     try (final var client = createZeebeClientBuilder().build()) {
       // when
-      final var deploymentFuture =
-          client
-              .newDeployResourceCommand()
-              .addProcessModel(PROCESS_MODEL, "model.bpmn")
-              .send()
-              .toCompletableFuture();
+      final var topologyFuture = client.newTopologyRequest().send().toCompletableFuture();
 
       // then
-      assertThat(deploymentFuture)
-          .failsWithin(Duration.ofSeconds(1))
+      assertThat(topologyFuture)
+          .failsWithin(FIRST_REQUEST_TIMEOUT)
           .withThrowableOfType(ExecutionException.class)
           .withCauseInstanceOf(StatusRuntimeException.class)
           .extracting(
@@ -143,21 +143,16 @@ public class GatewayAuthenticationIdentityIT {
   }
 
   @Test
-  void deployModelFailsWithInvalidAuthToken() {
+  void getTopologyRequestFailsWithInvalidAuthToken() {
     // given
     try (final var client =
         createZeebeClientBuilder().credentialsProvider(new InvalidAuthTokenProvider()).build()) {
       // when
-      final var deploymentFuture =
-          client
-              .newDeployResourceCommand()
-              .addProcessModel(PROCESS_MODEL, "model.bpmn")
-              .send()
-              .toCompletableFuture();
+      final var topologyFuture = client.newTopologyRequest().send().toCompletableFuture();
 
       // then
-      assertThat(deploymentFuture)
-          .failsWithin(Duration.ofSeconds(1))
+      assertThat(topologyFuture)
+          .failsWithin(FIRST_REQUEST_TIMEOUT)
           .withThrowableOfType(ExecutionException.class)
           .withCauseInstanceOf(StatusRuntimeException.class)
           .extracting(
@@ -173,7 +168,7 @@ public class GatewayAuthenticationIdentityIT {
   }
 
   @Test
-  void deployModelSucceedsWithValidAuthToken() {
+  void getTopologyRequestSucceedsWithValidAuthToken() {
     // given
     awaitCamundaRealmAvailabilityOnKeycloak();
 
@@ -189,15 +184,13 @@ public class GatewayAuthenticationIdentityIT {
                     .build())
             .build()) {
       // when
-      final var deploymentFuture =
-          client
-              .newDeployResourceCommand()
-              .addProcessModel(PROCESS_MODEL, "model.bpmn")
-              .send()
-              .toCompletableFuture();
+      final var topologyFuture = client.newTopologyRequest().send().toCompletableFuture();
 
       // then
-      assertThat(deploymentFuture).succeedsWithin(Duration.ofSeconds(1));
+      assertThat(topologyFuture).succeedsWithin(FIRST_REQUEST_TIMEOUT);
+      // second request should be faster, given the first request warmed up the token validation
+      assertThat(client.newTopologyRequest().send().toCompletableFuture())
+          .succeedsWithin(Duration.ofSeconds(1));
     }
   }
 
@@ -233,7 +226,7 @@ public class GatewayAuthenticationIdentityIT {
   }
 
   private static String getIdentityImageTag() {
-    return System.getProperty("identity.docker.image.version", "SNAPSHOT");
+    return System.getProperty("identity.docker.image.version", SNAPSHOT_TAG);
   }
 
   private static class InvalidAuthTokenProvider implements CredentialsProvider {
