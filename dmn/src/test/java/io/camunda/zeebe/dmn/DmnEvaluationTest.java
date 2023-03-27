@@ -50,7 +50,7 @@ class DmnEvaluationTest {
         .isNotNull()
         .describedAs(
             "Expect that the evaluation failed because the DRG does not contain the referred decision")
-        .contains("no decision found for 'not_in_drg'");
+        .contains("no decision found with id 'not_in_drg'");
 
     assertThat(result.getFailedDecisionId())
         .describedAs(
