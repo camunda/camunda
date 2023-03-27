@@ -157,7 +157,7 @@ data:
       initializeTelemetry: false
       # Interval for telemetry reporting, defaults to every 24 hours.
       reportingIntervalInHours: 24
-      # Telemetry endpoint to send data to integration environment
+      # Telemetry endpoint to send data to development environment
       telemetryEndpoint: 'https://api.dev.telemetry.camunda.cloud/pings'
 
     analytics:
@@ -437,7 +437,7 @@ data:
       initializeTelemetry: false
       # Interval for telemetry reporting, defaults to every 24 hours.
       reportingIntervalInHours: 24
-      # Telemetry endpoint to send data to integration environment
+      # Telemetry endpoint to send data to development environment
       telemetryEndpoint: 'https://api.dev.telemetry.camunda.cloud/pings'
 
   ######################## CAM BPM ########################
