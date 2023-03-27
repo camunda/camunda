@@ -39,10 +39,14 @@ public class ElasticsearchExporterConfiguration {
         + "url='"
         + url
         + '\''
+        + ", requestTimeoutMs="
+        + requestTimeoutMs
         + ", index="
         + index
         + ", bulk="
         + bulk
+        + ", authentication="
+        + authentication
         + '}';
   }
 
@@ -190,7 +194,7 @@ public class ElasticsearchExporterConfiguration {
     @Override
     public String toString() {
       return "IndexConfiguration{"
-          + "indexPrefix='"
+          + "prefix='"
           + prefix
           + '\''
           + ", createTemplate="
@@ -201,24 +205,28 @@ public class ElasticsearchExporterConfiguration {
           + event
           + ", rejection="
           + rejection
-          + ", error="
-          + error
+          + ", decision="
+          + decision
+          + ", decisionEvaluation="
+          + decisionEvaluation
+          + ", decisionRequirements="
+          + decisionRequirements
           + ", deployment="
           + deployment
-          + ", process="
-          + process
+          + ", error="
+          + error
           + ", incident="
           + incident
           + ", job="
           + job
+          + ", jobBatch="
+          + jobBatch
           + ", message="
           + message
           + ", messageSubscription="
           + messageSubscription
-          + ", variable="
-          + variable
-          + ", variableDocument="
-          + variableDocument
+          + ", process="
+          + process
           + ", processInstance="
           + processInstance
           + ", processInstanceCreation="
@@ -227,12 +235,10 @@ public class ElasticsearchExporterConfiguration {
           + processInstanceModification
           + ", processMessageSubscription="
           + processMessageSubscription
-          + ", decisionRequirements="
-          + decisionRequirements
-          + ", decision="
-          + decision
-          + ", decisionEvaluation="
-          + decisionEvaluation
+          + ", variable="
+          + variable
+          + ", variableDocument="
+          + variableDocument
           + ", checkpoint="
           + checkpoint
           + ", timer="
@@ -251,7 +257,7 @@ public class ElasticsearchExporterConfiguration {
           + signalSubscription
           + ", resourceDeletion="
           + resourceDeletion
-          + ", recordDistribution="
+          + ", commandDistribution="
           + commandDistribution
           + '}';
     }
