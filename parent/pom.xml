@@ -99,7 +99,7 @@
     <version.concurrentunit>0.4.6</version.concurrentunit>
     <version.kryo>5.4.0</version.kryo>
     <version.failsafe>2.4.4</version.failsafe>
-    <version.jetbrains-annotations>17.0.0</version.jetbrains-annotations>
+    <version.jetbrains-annotations>24.0.1</version.jetbrains-annotations>
     <version.jqwik>1.7.3</version.jqwik>
     <version.jmock>2.12.0</version.jmock>
     <version.json-smart>2.4.8</version.json-smart>
