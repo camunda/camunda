@@ -649,6 +649,11 @@
         #     timer: true
         #     variable: true
         #     variableDocument: true
+        #
+        #   retention:
+        #     enabled: false
+        #     minimumAge: 30d
+        #     policyName: zeebe-record-retention-policy
 
       # Opensearch Exporter ----------
       # An example configuration for the opensearch exporter:
