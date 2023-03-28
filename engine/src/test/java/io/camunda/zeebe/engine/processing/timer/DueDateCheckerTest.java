@@ -19,6 +19,7 @@ import io.camunda.zeebe.stream.api.ReadonlyStreamProcessorContext;
 import io.camunda.zeebe.stream.api.scheduling.ProcessingScheduleService;
 import io.camunda.zeebe.stream.api.scheduling.Task;
 import java.time.Duration;
+import java.time.InstantSource;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
@@ -27,7 +28,7 @@ public class DueDateCheckerTest {
   @Test
   public void shouldNotScheduleTwoTasks() {
     // given
-    final var dueDateChecker = new DueDateChecker(100, (builder) -> 0L);
+    final var dueDateChecker = new DueDateChecker(100, (builder) -> 0L, InstantSource.system());
     final var mockContext = mock(ReadonlyStreamProcessorContext.class);
     final var mockScheduleService = mock(ProcessingScheduleService.class);
 
@@ -48,7 +49,7 @@ public class DueDateCheckerTest {
   @Test
   public void shouldScheduleForAnEarlierTasks() {
     // given
-    final var dueDateChecker = new DueDateChecker(100, (builder) -> 0L);
+    final var dueDateChecker = new DueDateChecker(100, (builder) -> 0L, InstantSource.system());
     final var mockContext = mock(ReadonlyStreamProcessorContext.class);
     final var mockScheduleService = mock(ProcessingScheduleService.class);
 

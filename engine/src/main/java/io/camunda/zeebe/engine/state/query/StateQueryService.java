@@ -17,6 +17,7 @@ import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
+import java.time.InstantSource;
 import java.util.Optional;
 import org.agrona.DirectBuffer;
 
@@ -24,9 +25,11 @@ public final class StateQueryService implements QueryService {
   private volatile boolean isClosed;
   private ProcessingState state;
   private final ZeebeDb<ZbColumnFamilies> zeebeDb;
+  private final InstantSource clock;
 
-  public StateQueryService(final ZeebeDb<ZbColumnFamilies> zeebeDb) {
+  public StateQueryService(final ZeebeDb<ZbColumnFamilies> zeebeDb, final InstantSource clock) {
     this.zeebeDb = zeebeDb;
+    this.clock = clock;
   }
 
   @Override
@@ -73,7 +76,8 @@ public final class StateQueryService implements QueryService {
               zeebeDb.createContext(),
               () -> {
                 throw new UnsupportedOperationException("Not allowed to generate a new key");
-              });
+              },
+              clock);
     }
   }
 }

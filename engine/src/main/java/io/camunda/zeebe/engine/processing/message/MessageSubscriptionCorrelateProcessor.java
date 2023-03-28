@@ -20,6 +20,7 @@ import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import java.time.InstantSource;
 
 public final class MessageSubscriptionCorrelateProcessor
     implements TypedRecordProcessor<MessageSubscriptionRecord> {
@@ -39,14 +40,15 @@ public final class MessageSubscriptionCorrelateProcessor
       final MessageState messageState,
       final MessageSubscriptionState subscriptionState,
       final SubscriptionCommandSender commandSender,
-      final Writers writers) {
+      final Writers writers,
+      final InstantSource clock) {
     this.partitionId = partitionId;
     this.subscriptionState = subscriptionState;
     stateWriter = writers.state();
     rejectionWriter = writers.rejection();
     messageCorrelator =
         new MessageCorrelator(
-            partitionId, messageState, commandSender, stateWriter, writers.sideEffect());
+            partitionId, messageState, commandSender, stateWriter, writers.sideEffect(), clock);
   }
 
   @Override

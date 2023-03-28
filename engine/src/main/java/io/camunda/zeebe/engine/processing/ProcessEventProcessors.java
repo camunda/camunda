@@ -40,6 +40,7 @@ import io.camunda.zeebe.protocol.record.intent.ProcessMessageSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.TimerIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableDocumentIntent;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
+import java.time.InstantSource;
 import java.util.Arrays;
 
 public final class ProcessEventProcessors {
@@ -50,7 +51,8 @@ public final class ProcessEventProcessors {
       final TypedRecordProcessors typedRecordProcessors,
       final SubscriptionCommandSender subscriptionCommandSender,
       final DueDateTimerChecker timerChecker,
-      final Writers writers) {
+      final Writers writers,
+      final InstantSource clock) {
     final MutableProcessMessageSubscriptionState subscriptionState =
         processingState.getProcessMessageSubscriptionState();
     final var keyGenerator = processingState.getKeyGenerator();
@@ -70,7 +72,8 @@ public final class ProcessEventProcessors {
         subscriptionCommandSender,
         bpmnBehaviors,
         processingState,
-        writers);
+        writers,
+        clock);
     addTimerStreamProcessors(
         typedRecordProcessors, timerChecker, processingState, bpmnBehaviors, writers);
     addVariableDocumentStreamProcessors(
@@ -121,7 +124,8 @@ public final class ProcessEventProcessors {
       final SubscriptionCommandSender subscriptionCommandSender,
       final BpmnBehaviors bpmnBehaviors,
       final MutableProcessingState processingState,
-      final Writers writers) {
+      final Writers writers,
+      final InstantSource clock) {
     typedRecordProcessors
         .onCommand(
             ValueType.PROCESS_MESSAGE_SUBSCRIPTION,
@@ -144,7 +148,8 @@ public final class ProcessEventProcessors {
         .withListener(
             new PendingProcessMessageSubscriptionChecker(
                 subscriptionCommandSender,
-                processingState.getPendingProcessMessageSubscriptionState()));
+                processingState.getPendingProcessMessageSubscriptionState(),
+                clock));
   }
 
   private static void addTimerStreamProcessors(

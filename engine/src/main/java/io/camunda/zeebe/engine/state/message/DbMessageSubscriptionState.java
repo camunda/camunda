@@ -21,6 +21,7 @@ import io.camunda.zeebe.protocol.impl.record.value.message.MessageSubscriptionRe
 import io.camunda.zeebe.stream.api.ReadonlyStreamProcessorContext;
 import io.camunda.zeebe.stream.api.StreamProcessorLifecycleAware;
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import java.time.InstantSource;
 import org.agrona.DirectBuffer;
 
 public final class DbMessageSubscriptionState
@@ -44,11 +45,14 @@ public final class DbMessageSubscriptionState
   private final ColumnFamily<DbCompositeKey<DbCompositeKey<DbString, DbString>, DbLong>, DbNil>
       messageNameAndCorrelationKeyColumnFamily;
 
-  private final PendingMessageSubscriptionState transientState =
-      new PendingMessageSubscriptionState(this);
+  private final InstantSource clock;
+  private final PendingMessageSubscriptionState transientState;
 
   public DbMessageSubscriptionState(
-      final ZeebeDb<ZbColumnFamilies> zeebeDb, final TransactionContext transactionContext) {
+      final ZeebeDb<ZbColumnFamilies> zeebeDb,
+      final TransactionContext transactionContext,
+      final InstantSource clock) {
+    this.clock = clock;
 
     elementInstanceKey = new DbLong();
     messageName = new DbString();
@@ -71,6 +75,7 @@ public final class DbMessageSubscriptionState
             transactionContext,
             nameCorrelationAndElementInstanceKey,
             DbNil.INSTANCE);
+    transientState = new PendingMessageSubscriptionState(this, clock);
   }
 
   @Override

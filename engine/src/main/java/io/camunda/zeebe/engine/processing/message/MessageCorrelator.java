@@ -14,7 +14,7 @@ import io.camunda.zeebe.engine.state.immutable.MessageState;
 import io.camunda.zeebe.engine.state.message.StoredMessage;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageSubscriptionRecord;
 import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
-import io.camunda.zeebe.scheduler.clock.ActorClock;
+import java.time.InstantSource;
 import org.agrona.collections.MutableBoolean;
 
 public final class MessageCorrelator {
@@ -24,18 +24,21 @@ public final class MessageCorrelator {
   private final StateWriter stateWriter;
   private final SideEffectWriter sideEffectWriter;
   private final int currentPartitionId;
+  private final InstantSource clock;
 
   public MessageCorrelator(
       final int currentPartitionId,
       final MessageState messageState,
       final SubscriptionCommandSender commandSender,
       final StateWriter stateWriter,
-      final SideEffectWriter sideEffectWriter) {
+      final SideEffectWriter sideEffectWriter,
+      final InstantSource clock) {
     this.currentPartitionId = currentPartitionId;
     this.messageState = messageState;
     this.commandSender = commandSender;
     this.stateWriter = stateWriter;
     this.sideEffectWriter = sideEffectWriter;
+    this.clock = clock;
   }
 
   public boolean correlateNextMessage(
@@ -65,7 +68,7 @@ public final class MessageCorrelator {
     final var message = storedMessage.getMessage();
 
     final boolean correlateMessage =
-        message.getDeadline() > ActorClock.currentTimeMillis()
+        message.getDeadline() > clock.millis()
             && !messageState.existMessageCorrelation(
                 messageKey, subscriptionRecord.getBpmnProcessIdBuffer());
 

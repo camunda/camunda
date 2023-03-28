@@ -7,8 +7,6 @@
  */
 package io.camunda.zeebe.engine.processing.job;
 
-import static io.camunda.zeebe.scheduler.clock.ActorClock.currentTimeMillis;
-
 import io.camunda.zeebe.engine.state.immutable.JobState;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.stream.api.ReadonlyStreamProcessorContext;
@@ -17,6 +15,7 @@ import io.camunda.zeebe.stream.api.scheduling.Task;
 import io.camunda.zeebe.stream.api.scheduling.TaskResult;
 import io.camunda.zeebe.stream.api.scheduling.TaskResultBuilder;
 import java.time.Duration;
+import java.time.InstantSource;
 
 public final class JobTimeoutTrigger implements StreamProcessorLifecycleAware {
   public static final Duration TIME_OUT_POLLING_INTERVAL = Duration.ofSeconds(30);
@@ -26,9 +25,11 @@ public final class JobTimeoutTrigger implements StreamProcessorLifecycleAware {
 
   private ReadonlyStreamProcessorContext processingContext;
   private final Task deactivateTimedOutJobs;
+  private final InstantSource clock;
 
-  public JobTimeoutTrigger(final JobState state) {
+  public JobTimeoutTrigger(final JobState state, final InstantSource clock) {
     this.state = state;
+    this.clock = clock;
     deactivateTimedOutJobs = new DeactivateTimeOutJobs();
   }
 
@@ -76,7 +77,7 @@ public final class JobTimeoutTrigger implements StreamProcessorLifecycleAware {
 
     @Override
     public TaskResult execute(final TaskResultBuilder taskResultBuilder) {
-      final long now = currentTimeMillis();
+      final long now = clock.millis();
       state.forEachTimedOutEntry(
           now,
           (key, record) -> taskResultBuilder.appendCommandRecord(key, JobIntent.TIME_OUT, record));

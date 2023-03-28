@@ -73,7 +73,8 @@ public final class MessageStreamProcessorTest {
               spySubscriptionCommandSender,
               processingContext.getWriters(),
               DEFAULT_ENGINE_CONFIGURATION,
-              FeatureFlags.createDefault());
+              FeatureFlags.createDefault(),
+              processingContext.getClock());
           return typedRecordProcessors;
         });
   }

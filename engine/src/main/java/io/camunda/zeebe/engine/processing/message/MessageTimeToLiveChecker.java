@@ -11,12 +11,12 @@ import io.camunda.zeebe.engine.state.immutable.MessageState;
 import io.camunda.zeebe.engine.state.immutable.MessageState.Index;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageRecord;
 import io.camunda.zeebe.protocol.record.intent.MessageIntent;
-import io.camunda.zeebe.scheduler.clock.ActorClock;
 import io.camunda.zeebe.stream.api.scheduling.ProcessingScheduleService;
 import io.camunda.zeebe.stream.api.scheduling.Task;
 import io.camunda.zeebe.stream.api.scheduling.TaskResult;
 import io.camunda.zeebe.stream.api.scheduling.TaskResultBuilder;
 import java.time.Duration;
+import java.time.InstantSource;
 import org.agrona.collections.MutableInteger;
 
 /**
@@ -51,24 +51,28 @@ public final class MessageTimeToLiveChecker implements Task {
   /** Keeps track of where to continue between iterations. */
   private MessageState.Index lastIndex;
 
+  private final InstantSource clock;
+
   public MessageTimeToLiveChecker(
       final Duration executionInterval,
       final int batchLimit,
       final boolean enableMessageTtlCheckerAsync,
       final ProcessingScheduleService scheduleService,
-      final MessageState messageState) {
+      final MessageState messageState,
+      final InstantSource clock) {
     this.executionInterval = executionInterval;
     this.batchLimit = batchLimit;
     this.enableMessageTtlCheckerAsync = enableMessageTtlCheckerAsync;
     this.messageState = messageState;
     this.scheduleService = scheduleService;
+    this.clock = clock;
     lastIndex = null;
   }
 
   @Override
   public TaskResult execute(final TaskResultBuilder taskResultBuilder) {
     if (currentTimestamp == -1) {
-      currentTimestamp = ActorClock.currentTimeMillis();
+      currentTimestamp = clock.millis();
     }
 
     final var counter = new MutableInteger(0);

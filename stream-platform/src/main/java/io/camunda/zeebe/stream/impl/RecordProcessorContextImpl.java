@@ -15,6 +15,7 @@ import io.camunda.zeebe.stream.api.StreamProcessorLifecycleAware;
 import io.camunda.zeebe.stream.api.scheduling.ProcessingScheduleService;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.stream.api.state.KeyGeneratorControls;
+import java.time.InstantSource;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -28,19 +29,23 @@ public final class RecordProcessorContextImpl implements RecordProcessorContext 
   private final InterPartitionCommandSender partitionCommandSender;
   private final KeyGenerator keyGenerator;
 
+  private final InstantSource clock;
+
   public RecordProcessorContextImpl(
       final int partitionId,
       final ProcessingScheduleService scheduleService,
       final ZeebeDb zeebeDb,
       final TransactionContext transactionContext,
       final InterPartitionCommandSender partitionCommandSender,
-      final KeyGeneratorControls keyGeneratorControls) {
+      final KeyGeneratorControls keyGeneratorControls,
+      final InstantSource clock) {
     this.partitionId = partitionId;
     this.scheduleService = scheduleService;
     this.zeebeDb = zeebeDb;
     this.transactionContext = transactionContext;
     this.partitionCommandSender = partitionCommandSender;
     keyGenerator = keyGeneratorControls;
+    this.clock = clock;
   }
 
   @Override
@@ -81,5 +86,10 @@ public final class RecordProcessorContextImpl implements RecordProcessorContext 
   @Override
   public KeyGenerator getKeyGenerator() {
     return keyGenerator;
+  }
+
+  @Override
+  public InstantSource getClock() {
+    return clock;
   }
 }

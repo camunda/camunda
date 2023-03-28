@@ -51,6 +51,7 @@ import io.camunda.zeebe.engine.state.variable.DbVariableState;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.stream.api.ReadonlyStreamProcessorContext;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
+import java.time.InstantSource;
 import java.util.Objects;
 import java.util.function.BiConsumer;
 
@@ -84,7 +85,8 @@ public class ProcessingDbState implements MutableProcessingState {
       final int partitionId,
       final ZeebeDb<ZbColumnFamilies> zeebeDb,
       final TransactionContext transactionContext,
-      final KeyGenerator keyGenerator) {
+      final KeyGenerator keyGenerator,
+      final InstantSource clock) {
     this.partitionId = partitionId;
     this.zeebeDb = zeebeDb;
     this.keyGenerator = Objects.requireNonNull(keyGenerator);
@@ -98,11 +100,11 @@ public class ProcessingDbState implements MutableProcessingState {
     deploymentState = new DbDeploymentState(zeebeDb, transactionContext);
     jobState = new DbJobState(zeebeDb, transactionContext, partitionId);
     messageState = new DbMessageState(zeebeDb, transactionContext);
-    messageSubscriptionState = new DbMessageSubscriptionState(zeebeDb, transactionContext);
+    messageSubscriptionState = new DbMessageSubscriptionState(zeebeDb, transactionContext, clock);
     messageStartEventSubscriptionState =
         new DbMessageStartEventSubscriptionState(zeebeDb, transactionContext);
     processMessageSubscriptionState =
-        new DbProcessMessageSubscriptionState(zeebeDb, transactionContext);
+        new DbProcessMessageSubscriptionState(zeebeDb, transactionContext, clock);
     incidentState = new DbIncidentState(zeebeDb, transactionContext, partitionId);
     blackListState = new DbBlackListState(zeebeDb, transactionContext, partitionId);
     decisionState = new DbDecisionState(zeebeDb, transactionContext);

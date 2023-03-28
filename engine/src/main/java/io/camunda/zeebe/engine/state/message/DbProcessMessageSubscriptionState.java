@@ -19,6 +19,7 @@ import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.impl.record.value.message.ProcessMessageSubscriptionRecord;
 import io.camunda.zeebe.stream.api.ReadonlyStreamProcessorContext;
 import io.camunda.zeebe.stream.api.StreamProcessorLifecycleAware;
+import java.time.InstantSource;
 import java.util.function.Consumer;
 import org.agrona.DirectBuffer;
 
@@ -35,11 +36,12 @@ public final class DbProcessMessageSubscriptionState
   private final ColumnFamily<DbCompositeKey<DbLong, DbString>, ProcessMessageSubscription>
       subscriptionColumnFamily;
 
-  private final PendingProcessMessageSubscriptionState transientState =
-      new PendingProcessMessageSubscriptionState(this);
+  private final PendingProcessMessageSubscriptionState transientState;
 
   public DbProcessMessageSubscriptionState(
-      final ZeebeDb<ZbColumnFamilies> zeebeDb, final TransactionContext transactionContext) {
+      final ZeebeDb<ZbColumnFamilies> zeebeDb,
+      final TransactionContext transactionContext,
+      final InstantSource clock) {
     elementInstanceKey = new DbLong();
     messageName = new DbString();
     elementKeyAndMessageName = new DbCompositeKey<>(elementInstanceKey, messageName);
@@ -51,6 +53,7 @@ public final class DbProcessMessageSubscriptionState
             transactionContext,
             elementKeyAndMessageName,
             processMessageSubscription);
+    transientState = new PendingProcessMessageSubscriptionState(this, clock);
   }
 
   @Override

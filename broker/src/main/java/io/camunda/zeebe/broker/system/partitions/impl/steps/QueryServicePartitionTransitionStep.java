@@ -12,6 +12,7 @@ import io.camunda.zeebe.broker.system.partitions.PartitionTransitionContext;
 import io.camunda.zeebe.broker.system.partitions.PartitionTransitionStep;
 import io.camunda.zeebe.engine.state.QueryService;
 import io.camunda.zeebe.engine.state.query.StateQueryService;
+import io.camunda.zeebe.scheduler.clock.ActorClock;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import org.agrona.CloseHelper;
@@ -44,7 +45,7 @@ public final class QueryServicePartitionTransitionStep implements PartitionTrans
     if (targetRole != Role.INACTIVE
         && (currentRole == Role.LEADER || context.getQueryService() == null)) {
       try {
-        final var service = new StateQueryService(context.getZeebeDb());
+        final var service = new StateQueryService(context.getZeebeDb(), ActorClock.current());
         context.setQueryService(service);
         return CompletableActorFuture.completed(null);
       } catch (final Exception e) {

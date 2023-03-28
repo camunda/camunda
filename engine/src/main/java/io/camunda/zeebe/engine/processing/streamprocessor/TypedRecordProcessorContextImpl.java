@@ -14,6 +14,7 @@ import io.camunda.zeebe.engine.state.ScheduledTaskDbState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.stream.api.InterPartitionCommandSender;
 import io.camunda.zeebe.stream.api.scheduling.ProcessingScheduleService;
+import java.time.InstantSource;
 
 public class TypedRecordProcessorContextImpl implements TypedRecordProcessorContext {
 
@@ -25,6 +26,8 @@ public class TypedRecordProcessorContextImpl implements TypedRecordProcessorCont
   private final InterPartitionCommandSender partitionCommandSender;
   private final EngineConfiguration config;
 
+  private final InstantSource clock;
+
   public TypedRecordProcessorContextImpl(
       final int partitionId,
       final ProcessingScheduleService scheduleService,
@@ -32,7 +35,8 @@ public class TypedRecordProcessorContextImpl implements TypedRecordProcessorCont
       final ScheduledTaskDbState scheduledTaskDbState,
       final Writers writers,
       final InterPartitionCommandSender partitionCommandSender,
-      final EngineConfiguration config) {
+      final EngineConfiguration config,
+      final InstantSource clock) {
     this.partitionId = partitionId;
     this.scheduleService = scheduleService;
     this.processingState = processingState;
@@ -40,6 +44,7 @@ public class TypedRecordProcessorContextImpl implements TypedRecordProcessorCont
     this.writers = writers;
     this.partitionCommandSender = partitionCommandSender;
     this.config = config;
+    this.clock = clock;
   }
 
   @Override
@@ -75,5 +80,10 @@ public class TypedRecordProcessorContextImpl implements TypedRecordProcessorCont
   @Override
   public EngineConfiguration getConfig() {
     return config;
+  }
+
+  @Override
+  public InstantSource getClock() {
+    return clock;
   }
 }

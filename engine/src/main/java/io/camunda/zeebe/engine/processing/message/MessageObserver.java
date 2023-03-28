@@ -13,6 +13,7 @@ import io.camunda.zeebe.engine.state.mutable.MutablePendingMessageSubscriptionSt
 import io.camunda.zeebe.stream.api.ReadonlyStreamProcessorContext;
 import io.camunda.zeebe.stream.api.StreamProcessorLifecycleAware;
 import java.time.Duration;
+import java.time.InstantSource;
 
 public final class MessageObserver implements StreamProcessorLifecycleAware {
 
@@ -25,6 +26,7 @@ public final class MessageObserver implements StreamProcessorLifecycleAware {
   private final int messagesTtlCheckerBatchLimit;
   private final Duration messagesTtlCheckerInterval;
   private final boolean enableMessageTtlCheckerAsync;
+  private final InstantSource clock;
 
   public MessageObserver(
       final MessageState messageState,
@@ -32,13 +34,15 @@ public final class MessageObserver implements StreamProcessorLifecycleAware {
       final SubscriptionCommandSender subscriptionCommandSender,
       final Duration messagesTtlCheckerInterval,
       final int messagesTtlCheckerBatchLimit,
-      final boolean enableMessageTtlCheckerAsync) {
+      final boolean enableMessageTtlCheckerAsync,
+      final InstantSource clock) {
     this.subscriptionCommandSender = subscriptionCommandSender;
     this.messageState = messageState;
     this.pendingState = pendingState;
     this.messagesTtlCheckerInterval = messagesTtlCheckerInterval;
     this.messagesTtlCheckerBatchLimit = messagesTtlCheckerBatchLimit;
     this.enableMessageTtlCheckerAsync = enableMessageTtlCheckerAsync;
+    this.clock = clock;
   }
 
   @Override
@@ -50,7 +54,8 @@ public final class MessageObserver implements StreamProcessorLifecycleAware {
             messagesTtlCheckerBatchLimit,
             enableMessageTtlCheckerAsync,
             scheduleService,
-            messageState);
+            messageState,
+            clock);
     if (enableMessageTtlCheckerAsync) {
       scheduleService.runDelayedAsync(messagesTtlCheckerInterval, timeToLiveChecker);
     } else {
@@ -59,7 +64,7 @@ public final class MessageObserver implements StreamProcessorLifecycleAware {
 
     final var pendingSubscriptionChecker =
         new PendingMessageSubscriptionChecker(
-            subscriptionCommandSender, pendingState, SUBSCRIPTION_TIMEOUT.toMillis());
+            subscriptionCommandSender, pendingState, SUBSCRIPTION_TIMEOUT.toMillis(), clock);
     scheduleService.runAtFixedRate(SUBSCRIPTION_CHECK_INTERVAL, pendingSubscriptionChecker);
   }
 }

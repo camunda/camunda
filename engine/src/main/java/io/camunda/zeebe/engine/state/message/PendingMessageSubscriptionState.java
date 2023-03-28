@@ -12,8 +12,8 @@ import io.camunda.zeebe.engine.state.immutable.MessageSubscriptionState.MessageS
 import io.camunda.zeebe.engine.state.message.TransientSubscriptionCommandState.CommandEntry;
 import io.camunda.zeebe.engine.state.mutable.MutablePendingMessageSubscriptionState;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageSubscriptionRecord;
-import io.camunda.zeebe.scheduler.clock.ActorClock;
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import java.time.InstantSource;
 
 final class PendingMessageSubscriptionState implements MutablePendingMessageSubscriptionState {
 
@@ -21,9 +21,12 @@ final class PendingMessageSubscriptionState implements MutablePendingMessageSubs
       new TransientSubscriptionCommandState();
 
   private final MessageSubscriptionState persistentState;
+  private final InstantSource clock;
 
-  PendingMessageSubscriptionState(final MessageSubscriptionState persistentState) {
+  PendingMessageSubscriptionState(
+      final MessageSubscriptionState persistentState, final InstantSource clock) {
     this.persistentState = persistentState;
+    this.clock = clock;
   }
 
   @Override
@@ -50,7 +53,7 @@ final class PendingMessageSubscriptionState implements MutablePendingMessageSubs
   }
 
   final void add(final MessageSubscriptionRecord record) {
-    add(record, ActorClock.currentTimeMillis());
+    add(record, clock.millis());
   }
 
   final void add(final MessageSubscriptionRecord record, final long commandSentTime) {

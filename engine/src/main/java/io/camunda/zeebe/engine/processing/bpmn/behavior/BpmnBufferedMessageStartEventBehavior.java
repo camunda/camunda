@@ -17,8 +17,8 @@ import io.camunda.zeebe.engine.state.immutable.MessageState;
 import io.camunda.zeebe.engine.state.immutable.ProcessState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageStartEventSubscriptionRecord;
-import io.camunda.zeebe.scheduler.clock.ActorClock;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
+import java.time.InstantSource;
 import java.util.Optional;
 import org.agrona.DirectBuffer;
 
@@ -29,16 +29,19 @@ public final class BpmnBufferedMessageStartEventBehavior {
   private final MessageStartEventSubscriptionState messageStartEventSubscriptionState;
 
   private final EventHandle eventHandle;
+  private final InstantSource clock;
 
   public BpmnBufferedMessageStartEventBehavior(
       final ProcessingState processingState,
       final KeyGenerator keyGenerator,
       final EventTriggerBehavior eventTriggerBehavior,
       final BpmnStateBehavior stateBehavior,
-      final Writers writers) {
+      final Writers writers,
+      final InstantSource clock) {
     messageState = processingState.getMessageState();
     processState = processingState.getProcessState();
     messageStartEventSubscriptionState = processingState.getMessageStartEventSubscriptionState();
+    this.clock = clock;
 
     eventHandle =
         new EventHandle(
@@ -102,7 +105,7 @@ public final class BpmnBufferedMessageStartEventBehavior {
               correlationKey,
               storedMessage -> {
                 // correlate the first message with same correlation key that was not correlated yet
-                if (storedMessage.getMessage().getDeadline() > ActorClock.currentTimeMillis()
+                if (storedMessage.getMessage().getDeadline() > clock.millis()
                     && !messageState.existMessageCorrelation(
                         storedMessage.getMessageKey(), process.getBpmnProcessId())) {
 

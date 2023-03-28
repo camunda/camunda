@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.engine.processing.scheduled;
 
-import io.camunda.zeebe.scheduler.clock.ActorClock;
 import io.camunda.zeebe.stream.api.ReadonlyStreamProcessorContext;
 import io.camunda.zeebe.stream.api.StreamProcessorLifecycleAware;
 import io.camunda.zeebe.stream.api.scheduling.ProcessingScheduleService;
@@ -15,6 +14,7 @@ import io.camunda.zeebe.stream.api.scheduling.Task;
 import io.camunda.zeebe.stream.api.scheduling.TaskResult;
 import io.camunda.zeebe.stream.api.scheduling.TaskResultBuilder;
 import java.time.Duration;
+import java.time.InstantSource;
 import java.util.function.Function;
 
 public final class DueDateChecker implements StreamProcessorLifecycleAware {
@@ -28,11 +28,15 @@ public final class DueDateChecker implements StreamProcessorLifecycleAware {
   private final long timerResolution;
   private final Function<TaskResultBuilder, Long> nextDueDateSupplier;
   private final TriggerEntitiesTask triggerEntitiesTask;
+  private final InstantSource clock;
 
   public DueDateChecker(
-      final long timerResolution, final Function<TaskResultBuilder, Long> nextDueDateFunction) {
+      final long timerResolution,
+      final Function<TaskResultBuilder, Long> nextDueDateFunction,
+      final InstantSource clock) {
     this.timerResolution = timerResolution;
     nextDueDateSupplier = nextDueDateFunction;
+    this.clock = clock;
     triggerEntitiesTask = new TriggerEntitiesTask();
   }
 
@@ -78,7 +82,7 @@ public final class DueDateChecker implements StreamProcessorLifecycleAware {
    * @return delay to hit the next due date; will be {@code >= timerResolution}
    */
   private Duration calculateDelayForNextRun(final long dueDate) {
-    return Duration.ofMillis(Math.max(dueDate - ActorClock.currentTimeMillis(), timerResolution));
+    return Duration.ofMillis(Math.max(dueDate - clock.millis(), timerResolution));
   }
 
   @Override

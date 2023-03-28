@@ -8,8 +8,10 @@
 package io.camunda.zeebe.scheduler.clock;
 
 import io.camunda.zeebe.scheduler.ActorThread;
+import java.time.Instant;
+import java.time.InstantSource;
 
-public interface ActorClock {
+public interface ActorClock extends InstantSource {
   boolean update();
 
   long getTimeMillis();
@@ -17,6 +19,11 @@ public interface ActorClock {
   long getNanosSinceLastMillisecond();
 
   long getNanoTime();
+
+  @Override
+  default Instant instant() {
+    return Instant.ofEpochMilli(getTimeMillis());
+  }
 
   static ActorClock current() {
     final ActorThread current = ActorThread.current();

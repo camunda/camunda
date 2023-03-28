@@ -23,6 +23,7 @@ import io.camunda.zeebe.protocol.record.intent.MessageIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.util.FeatureFlags;
+import java.time.InstantSource;
 
 public final class MessageEventProcessors {
 
@@ -34,7 +35,8 @@ public final class MessageEventProcessors {
       final SubscriptionCommandSender subscriptionCommandSender,
       final Writers writers,
       final EngineConfiguration config,
-      final FeatureFlags featureFlags) {
+      final FeatureFlags featureFlags,
+      final InstantSource clock) {
 
     final MutableMessageState messageState = processingState.getMessageState();
     final MutableMessageSubscriptionState subscriptionState =
@@ -73,7 +75,8 @@ public final class MessageEventProcessors {
                 subscriptionState,
                 subscriptionCommandSender,
                 writers,
-                keyGenerator))
+                keyGenerator,
+                clock))
         .onCommand(
             ValueType.MESSAGE_SUBSCRIPTION,
             MessageSubscriptionIntent.CORRELATE,
@@ -82,7 +85,8 @@ public final class MessageEventProcessors {
                 messageState,
                 subscriptionState,
                 subscriptionCommandSender,
-                writers))
+                writers,
+                clock))
         .onCommand(
             ValueType.MESSAGE_SUBSCRIPTION,
             MessageSubscriptionIntent.DELETE,
@@ -100,6 +104,7 @@ public final class MessageEventProcessors {
                 subscriptionCommandSender,
                 config.getMessagesTtlCheckerInterval(),
                 config.getMessagesTtlCheckerBatchLimit(),
-                featureFlags.enableMessageTTLCheckerAsync()));
+                featureFlags.enableMessageTTLCheckerAsync(),
+                clock));
   }
 }

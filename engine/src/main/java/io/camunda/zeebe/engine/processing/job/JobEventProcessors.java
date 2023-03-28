@@ -16,6 +16,7 @@ import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.JobBatchIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
+import java.time.InstantSource;
 
 public final class JobEventProcessors {
 
@@ -24,7 +25,8 @@ public final class JobEventProcessors {
       final MutableProcessingState processingState,
       final BpmnBehaviors bpmnBehaviors,
       final Writers writers,
-      final JobMetrics jobMetrics) {
+      final JobMetrics jobMetrics,
+      final InstantSource clock) {
 
     final var jobState = processingState.getJobState();
     final var keyGenerator = processingState.getKeyGenerator();
@@ -38,7 +40,7 @@ public final class JobEventProcessors {
             bpmnBehaviors.eventTriggerBehavior(),
             bpmnBehaviors.stateBehavior());
 
-    final var jobBackoffChecker = new JobBackoffChecker(jobState);
+    final var jobBackoffChecker = new JobBackoffChecker(jobState, clock);
     typedRecordProcessors
         .onCommand(
             ValueType.JOB,
@@ -75,7 +77,7 @@ public final class JobEventProcessors {
             JobBatchIntent.ACTIVATE,
             new JobBatchActivateProcessor(
                 writers, processingState, processingState.getKeyGenerator(), jobMetrics))
-        .withListener(new JobTimeoutTrigger(jobState))
+        .withListener(new JobTimeoutTrigger(jobState, clock))
         .withListener(jobBackoffChecker);
   }
 }

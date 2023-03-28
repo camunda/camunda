@@ -11,8 +11,8 @@ import io.camunda.zeebe.engine.state.immutable.ProcessMessageSubscriptionState;
 import io.camunda.zeebe.engine.state.immutable.ProcessMessageSubscriptionState.ProcessMessageSubscriptionVisitor;
 import io.camunda.zeebe.engine.state.message.TransientSubscriptionCommandState.CommandEntry;
 import io.camunda.zeebe.protocol.impl.record.value.message.ProcessMessageSubscriptionRecord;
-import io.camunda.zeebe.scheduler.clock.ActorClock;
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import java.time.InstantSource;
 
 final class PendingProcessMessageSubscriptionState {
 
@@ -20,9 +20,12 @@ final class PendingProcessMessageSubscriptionState {
       new TransientSubscriptionCommandState();
 
   private final ProcessMessageSubscriptionState persistentState;
+  private final InstantSource clock;
 
-  PendingProcessMessageSubscriptionState(final ProcessMessageSubscriptionState persistentState) {
+  PendingProcessMessageSubscriptionState(
+      final ProcessMessageSubscriptionState persistentState, final InstantSource clock) {
     this.persistentState = persistentState;
+    this.clock = clock;
   }
 
   final void visitSubscriptionBefore(
@@ -47,7 +50,7 @@ final class PendingProcessMessageSubscriptionState {
   }
 
   final void add(final ProcessMessageSubscriptionRecord record) {
-    add(record, ActorClock.currentTimeMillis());
+    add(record, clock.millis());
   }
 
   final void add(final ProcessMessageSubscriptionRecord record, final long commandSentTime) {

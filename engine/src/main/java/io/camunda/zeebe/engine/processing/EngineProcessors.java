@@ -50,6 +50,7 @@ import io.camunda.zeebe.protocol.record.intent.SignalIntent;
 import io.camunda.zeebe.stream.api.InterPartitionCommandSender;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.util.FeatureFlags;
+import java.time.InstantSource;
 
 public final class EngineProcessors {
 
@@ -80,7 +81,8 @@ public final class EngineProcessors {
     final var config = typedRecordProcessorContext.getConfig();
 
     final DueDateTimerChecker timerChecker =
-        new DueDateTimerChecker(processingState.getTimerState(), featureFlags);
+        new DueDateTimerChecker(
+            processingState.getTimerState(), featureFlags, typedRecordProcessorContext.getClock());
 
     final var jobMetrics = new JobMetrics(partitionId);
     final var processEngineMetrics = new ProcessEngineMetrics(processingState.getPartitionId());
@@ -90,6 +92,7 @@ public final class EngineProcessors {
     final var decisionBehavior =
         new DecisionBehavior(
             DecisionEngineFactory.createDecisionEngine(), processingState, processEngineMetrics);
+    final InstantSource clock = typedRecordProcessorContext.getClock();
     final BpmnBehaviorsImpl bpmnBehaviors =
         createBehaviors(
             processingState,
@@ -98,7 +101,8 @@ public final class EngineProcessors {
             partitionsCount,
             timerChecker,
             jobMetrics,
-            decisionBehavior);
+            decisionBehavior,
+            clock);
 
     final DeploymentDistributionCommandSender deploymentDistributionCommandSender =
         new DeploymentDistributionCommandSender(
@@ -129,7 +133,8 @@ public final class EngineProcessors {
         typedRecordProcessors,
         writers,
         config,
-        featureFlags);
+        featureFlags,
+        clock);
 
     final TypedRecordProcessor<ProcessInstanceRecord> bpmnStreamProcessor =
         addProcessProcessors(
@@ -138,12 +143,13 @@ public final class EngineProcessors {
             typedRecordProcessors,
             subscriptionCommandSender,
             writers,
-            timerChecker);
+            timerChecker,
+            clock);
 
     addDecisionProcessors(typedRecordProcessors, decisionBehavior, writers, processingState);
 
     JobEventProcessors.addJobProcessors(
-        typedRecordProcessors, processingState, bpmnBehaviors, writers, jobMetrics);
+        typedRecordProcessors, processingState, bpmnBehaviors, writers, jobMetrics, clock);
 
     addIncidentProcessors(processingState, bpmnStreamProcessor, typedRecordProcessors, writers);
     addResourceDeletionProcessors(typedRecordProcessors, writers, processingState);
@@ -160,7 +166,8 @@ public final class EngineProcessors {
       final int partitionsCount,
       final DueDateTimerChecker timerChecker,
       final JobMetrics jobMetrics,
-      final DecisionBehavior decisionBehavior) {
+      final DecisionBehavior decisionBehavior,
+      final InstantSource clock) {
     return new BpmnBehaviorsImpl(
         processingState,
         writers,
@@ -168,7 +175,8 @@ public final class EngineProcessors {
         decisionBehavior,
         subscriptionCommandSender,
         partitionsCount,
-        timerChecker);
+        timerChecker,
+        clock);
   }
 
   private static TypedRecordProcessor<ProcessInstanceRecord> addProcessProcessors(
@@ -177,14 +185,16 @@ public final class EngineProcessors {
       final TypedRecordProcessors typedRecordProcessors,
       final SubscriptionCommandSender subscriptionCommandSender,
       final Writers writers,
-      final DueDateTimerChecker timerChecker) {
+      final DueDateTimerChecker timerChecker,
+      final InstantSource clock) {
     return ProcessEventProcessors.addProcessProcessors(
         processingState,
         bpmnBehaviors,
         typedRecordProcessors,
         subscriptionCommandSender,
         timerChecker,
-        writers);
+        writers,
+        clock);
   }
 
   private static void addDeploymentRelatedProcessorAndServices(
@@ -247,7 +257,8 @@ public final class EngineProcessors {
       final TypedRecordProcessors typedRecordProcessors,
       final Writers writers,
       final EngineConfiguration config,
-      final FeatureFlags featureFlags) {
+      final FeatureFlags featureFlags,
+      final InstantSource clock) {
     MessageEventProcessors.addMessageProcessors(
         bpmnBehaviors,
         typedRecordProcessors,
@@ -256,7 +267,8 @@ public final class EngineProcessors {
         subscriptionCommandSender,
         writers,
         config,
-        featureFlags);
+        featureFlags,
+        clock);
   }
 
   private static void addDecisionProcessors(
