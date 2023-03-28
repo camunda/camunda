@@ -98,7 +98,7 @@ follow the following steps:
 
 1. Check that a [GitHub issue][issues] exists for the task you want to work on.
    If one does not, create one. Refer to the [issue guidelines](#github-issue-guidelines).
-2. Check that no one is already working on the issue, and make sure the team would accept a pull request for this topic. Some topics are complex in nature that touches many [Camunda's Component](https://docs.camunda.io/docs/components/) and requires internal coordnation.
+2. Check that no one is already working on the issue, and make sure the team would accept a pull request for this topic. Some topics are complex in nature and may touch multiple of [Camunda's Components](https://docs.camunda.io/docs/components/), requiring internal coordination.
 3. Checkout the `main` branch and pull the latest changes.
 
    ```
