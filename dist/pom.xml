@@ -5,7 +5,7 @@
   <parent>
     <groupId>io.camunda</groupId>
     <artifactId>zeebe-parent</artifactId>
-    <version>8.2.0-SNAPSHOT</version>
+    <version>8.2.0-rc1</version>
     <relativePath>../parent/pom.xml</relativePath>
   </parent>
 
@@ -320,7 +320,7 @@
               <goal>assemble</goal>
             </goals>
             <phase>package</phase>
-            <configuration></configuration>
+            <configuration />
           </execution>
         </executions>
       </plugin>
@@ -336,17 +336,10 @@
             <configuration>
               <target>
                 <?SORTPOM IGNORE?> <!-- ordering is important here, chmod needs to run after copying -->
-                <copy failonerror="${zbctl.force}"
-                  file="${zbctl.rootDir}/clients/go/cmd/zbctl/dist/zbctl.exe"
-                  tofile="${project.build.directory}/camunda-zeebe/bin/zbctl.exe"/>
-                <copy failonerror="${zbctl.force}"
-                  file="${zbctl.rootDir}/clients/go/cmd/zbctl/dist/zbctl.darwin"
-                  tofile="${project.build.directory}/camunda-zeebe/bin/zbctl.darwin"/>
-                <copy failonerror="${zbctl.force}"
-                  file="${zbctl.rootDir}/clients/go/cmd/zbctl/dist/zbctl"
-                  tofile="${project.build.directory}/camunda-zeebe/bin/zbctl"/>
-                <chmod dir="${project.build.directory}/camunda-zeebe/bin"
-                  failonerror="${zbctl.force}" includes="zbctl*" perm="ugo+rx"/>
+                <copy failonerror="${zbctl.force}" file="${zbctl.rootDir}/clients/go/cmd/zbctl/dist/zbctl.exe" tofile="${project.build.directory}/camunda-zeebe/bin/zbctl.exe" />
+                <copy failonerror="${zbctl.force}" file="${zbctl.rootDir}/clients/go/cmd/zbctl/dist/zbctl.darwin" tofile="${project.build.directory}/camunda-zeebe/bin/zbctl.darwin" />
+                <copy failonerror="${zbctl.force}" file="${zbctl.rootDir}/clients/go/cmd/zbctl/dist/zbctl" tofile="${project.build.directory}/camunda-zeebe/bin/zbctl" />
+                <chmod dir="${project.build.directory}/camunda-zeebe/bin" failonerror="${zbctl.force}" includes="zbctl*" perm="ugo+rx" />
                 <?SORTPOM RESUME?>
               </target>
             </configuration>
