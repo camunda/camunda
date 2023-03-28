@@ -14,7 +14,7 @@ updates:
       prefix: "deps(maven): "
     labels:
       - "dependencies"
-    open-pull-requests-limit: 5
+    open-pull-requests-limit: 25
     target-branch: main
     ignore:
       # we will always manually update ES dependencies to minor or major releases
@@ -33,7 +33,7 @@ updates:
       prefix: "deps(go): "
     labels:
       - "dependencies"
-    open-pull-requests-limit: 5
+    open-pull-requests-limit: 10
     target-branch: main
 
   # Enable version updates for the github actions
@@ -47,7 +47,7 @@ updates:
       prefix: "deps(.github): "
     labels:
       - "dependencies"
-    open-pull-requests-limit: 5
+    open-pull-requests-limit: 10
     target-branch: main
 
   ##############
@@ -64,7 +64,7 @@ updates:
       prefix: "deps(maven): "
     labels:
       - "dependencies"
-    open-pull-requests-limit: 5
+    open-pull-requests-limit: 25
     target-branch: "stable/8.1"
     ignore:
       # Ignore major and minor updates, for stable branches we only want to get patches
@@ -85,7 +85,7 @@ updates:
       prefix: "deps(go): "
     labels:
       - "dependencies"
-    open-pull-requests-limit: 5
+    open-pull-requests-limit: 10
     target-branch: "stable/8.1"
     ignore:
       # Ignore major and minor updates, for stable branches we only want to get patches
@@ -103,7 +103,7 @@ updates:
       prefix: "deps(.github): "
     labels:
       - "dependencies"
-    open-pull-requests-limit: 5
+    open-pull-requests-limit: 10
     target-branch: "stable/8.1"
     ignore:
       # Ignore major and minor updates, for stable branches we only want to get patches
@@ -124,7 +124,7 @@ updates:
       prefix: "deps(maven): "
     labels:
       - "dependencies"
-    open-pull-requests-limit: 5
+    open-pull-requests-limit: 25
     target-branch: "stable/8.0"
     ignore:
       # Ignore major and minor updates, for stable branches we only want to get patches
@@ -145,7 +145,7 @@ updates:
       prefix: "deps(go): "
     labels:
       - "dependencies"
-    open-pull-requests-limit: 5
+    open-pull-requests-limit: 10
     target-branch: "stable/8.0"
     ignore:
       # Ignore major and minor updates, for stable branches we only want to get patches
@@ -163,7 +163,7 @@ updates:
       prefix: "deps(.github): "
     labels:
       - "dependencies"
-    open-pull-requests-limit: 5
+    open-pull-requests-limit: 10
     target-branch: "stable/8.0"
     ignore:
       # Ignore major and minor updates, for stable branches we only want to get patches
