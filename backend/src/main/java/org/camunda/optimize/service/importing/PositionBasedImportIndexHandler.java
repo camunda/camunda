@@ -49,6 +49,7 @@ public abstract class PositionBasedImportIndexHandler
     indexToStore.setPositionOfLastEntity(persistedPositionOfLastEntity);
     indexToStore.setSequenceOfLastEntity(persistedSequenceOfLastEntity);
     indexToStore.setTimestampOfLastEntity(timestampOfLastPersistedEntity);
+    indexToStore.setHasSeenSequenceField(hasSeenSequenceField);
     indexToStore.setEsTypeIndexRefersTo(getElasticsearchDocID());
     return indexToStore;
   }
@@ -102,8 +103,6 @@ public abstract class PositionBasedImportIndexHandler
     this.persistedPositionOfLastEntity = position;
     this.persistedSequenceOfLastEntity = sequence;
     if (!hasSeenSequenceField && persistedSequenceOfLastEntity > 0) {
-      log.info("First Zeebe record with sequence field for import type {} has been imported." +
-                 " Zeebe records will now be fetched based on sequence.", getElasticsearchDocID());
       hasSeenSequenceField = true;
     }
   }
@@ -111,6 +110,11 @@ public abstract class PositionBasedImportIndexHandler
   public void updatePendingLastEntityPositionAndSequence(final long position, final long sequence) {
     this.pendingPositionOfLastEntity = position;
     this.pendingSequenceOfLastEntity = sequence;
+    if (!hasSeenSequenceField && pendingSequenceOfLastEntity > 0) {
+      log.info("First Zeebe record with sequence field for import type {} has been imported." +
+                 " Zeebe records will now be fetched based on sequence.", getElasticsearchDocID());
+      hasSeenSequenceField = true;
+    }
   }
 
   public void updateLastImportExecutionTimestamp(final OffsetDateTime timestamp) {

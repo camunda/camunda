@@ -61,6 +61,7 @@ public class PositionBasedImportIndexIT extends AbstractZeebeIT {
         assertThat(handler.getPendingSequenceOfLastEntity()).isZero();
         assertThat(handler.getTimestampOfLastPersistedEntity()).isEqualTo(BEGINNING_OF_TIME);
         assertThat(handler.getLastImportExecutionTimestamp()).isEqualTo(BEGINNING_OF_TIME);
+        assertThat(handler.isHasSeenSequenceField()).isFalse();
       });
   }
 
@@ -114,6 +115,9 @@ public class PositionBasedImportIndexIT extends AbstractZeebeIT {
       .anySatisfy(sequence -> assertThat(sequence).isPositive())
       .isEqualTo(sequencesBeforeRestart);
     assertThat(getLastImportedEntityTimestamps()).isEqualTo(lastImportedEntityTimestamps);
+    assertThat(embeddedOptimizeExtension.getAllPositionBasedImportHandlers())
+      .filteredOn(handler -> handler.getPersistedSequenceOfLastEntity() > 0)
+      .anySatisfy(handler -> assertThat(handler.isHasSeenSequenceField()).isTrue());
   }
 
   @Test
@@ -135,6 +139,8 @@ public class PositionBasedImportIndexIT extends AbstractZeebeIT {
     assertThat(getCurrentHandlerSequences()).allSatisfy(sequence -> assertThat(sequence).isZero());
     assertThat(getLastImportedEntityTimestamps())
       .allSatisfy(timestamp -> assertThat(timestamp).isEqualTo(BEGINNING_OF_TIME));
+    assertThat(embeddedOptimizeExtension.getAllPositionBasedImportHandlers())
+      .allSatisfy(handler -> assertThat(handler.isHasSeenSequenceField()).isFalse());
   }
 
   // this test is disabled for versions pre 8.2.0 because it relies on the sequence field being present in zeebe records
@@ -178,7 +184,8 @@ public class PositionBasedImportIndexIT extends AbstractZeebeIT {
         .containsExactly(START_EVENT, null));
     // and it was logged that the importer has seen a sequence field
     logCapturer.assertContains(
-      "First Zeebe record with sequence field has been imported. Zeebe records will now be fetched based on sequence");
+      "First Zeebe record with sequence field for import type zeebeProcessInstanceImportIndex has been imported. " +
+        "Zeebe records will now be fetched based on sequence.");
 
     // when
     importAllZeebeEntitiesFromLastIndex();  // start event activated - fetched but not imported

@@ -15,10 +15,13 @@ import org.camunda.optimize.dto.optimize.DataImportSourceType;
 import org.camunda.optimize.dto.optimize.DefinitionOptimizeResponseDto;
 import org.camunda.optimize.dto.optimize.DefinitionType;
 import org.camunda.optimize.dto.optimize.FlowNodeDataDto;
+import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledIf;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.util.ZeebeBpmnModels.END_EVENT;
@@ -117,7 +120,6 @@ public class ZeebeProcessDefinitionImportIT extends AbstractZeebeIT {
       .containsExactlyInAnyOrder(firstProcessName, secondProcessName);
   }
 
-
   @Test
   @SneakyThrows
   public void importZeebeProcess_multipleProcessesDeployedOnDifferentDays() {
@@ -184,6 +186,41 @@ public class ZeebeProcessDefinitionImportIT extends AbstractZeebeIT {
     assertThat(elasticSearchIntegrationTestExtension.getAllProcessDefinitions()).hasSize(2)
       .extracting(DefinitionOptimizeResponseDto::getName)
       .containsExactlyInAnyOrder(firstProcessName, secondProcessName);
+  }
+
+  @DisabledIf("isZeebeVersionPre82")
+  @Test
+  public void importZeebeProcess_processContainsNewBpmnElementsIntroducedWith820() {
+    // given a process that contains the following:
+    // data stores, date objects, link events, escalation events, undefined tasks
+    final BpmnModelInstance model = readProcessDiagramAsInstance("/bpmn/compatibility/adventure.bpmn");
+    final String processId = zeebeExtension.deployProcess(model).getBpmnProcessId();
+    zeebeExtension.startProcessInstanceWithVariables(
+      processId,
+      Map.of("space", true, "time", true)
+    );
+
+    // when
+    waitUntilNumberOfDefinitionsExported(1);
+    importAllZeebeEntitiesFromScratch();
+
+    // then
+    assertThat(elasticSearchIntegrationTestExtension.getAllProcessDefinitions())
+      .singleElement()
+      .extracting(ProcessDefinitionOptimizeDto::getFlowNodeData)
+      .satisfies(flowNodeDataDtos -> assertThat(flowNodeDataDtos).extracting(FlowNodeDataDto::getId)
+        .contains(
+          "signalStartEventId",
+          "linkIntermediateThrowEventId",
+          "linkIntermediateCatchEventId",
+          "undefinedTaskId",
+          "escalationIntermediateThrowEventId",
+          "escalationNonInterruptingBoundaryEventId",
+          "escalationBoundaryEventId",
+          "escalationNonInterruptingStartEventId",
+          "escalationStartEventId",
+          "escalationEndEventId"
+        ));
   }
 
   private Process deployProcessAndStartInstance(final BpmnModelInstance simpleProcess) {

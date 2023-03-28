@@ -7,6 +7,7 @@ package org.camunda.optimize.service.importing;
 
 import io.camunda.zeebe.client.api.response.Process;
 import io.camunda.zeebe.client.api.response.ProcessInstanceEvent;
+import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import lombok.SneakyThrows;
@@ -25,6 +26,7 @@ import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledIf;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 
 import java.time.Instant;
@@ -496,6 +498,41 @@ public class ZeebeProcessInstanceImportIT extends AbstractZeebeIT {
       });
   }
 
+  @DisabledIf("isZeebeVersionPre82")
+  @Test
+  public void importZeebeProcess_processContainsNewBpmnElementsIntroducedWith820() {
+    // given a process that contains the following:
+    // data stores, date objects, link events, escalation events, undefined tasks
+    final BpmnModelInstance model = readProcessDiagramAsInstance("/bpmn/compatibility/adventure.bpmn");
+    final String processId = zeebeExtension.deployProcess(model).getBpmnProcessId();
+    zeebeExtension.startProcessInstanceWithVariables(
+      processId,
+      Map.of("space", true, "time", true)
+    );
+
+    // when
+    waitUntilInstanceRecordWithIdExported("milkAdventureEndEventId", 10);
+    importAllZeebeEntitiesFromScratch();
+
+    // then all new events were imported
+    assertThat(elasticSearchIntegrationTestExtension.getAllProcessInstances())
+      .singleElement()
+      .satisfies(instance -> assertThat(instance.getFlowNodeInstances())
+        .extracting(FlowNodeInstanceDto::getFlowNodeId)
+        .contains(
+          "signalStartEventId",
+          "linkIntermediateThrowEventId",
+          "linkIntermediateCatchEventId",
+          "undefinedTaskId",
+          "escalationIntermediateThrowEventId",
+          "escalationNonInterruptingBoundaryEventId",
+          "escalationBoundaryEventId",
+          "escalationNonInterruptingStartEventId",
+          "escalationStartEventId",
+          "escalationEndEventId"
+        ));
+  }
+
   private FlowNodeInstanceDto createFlowNodeInstance(final ProcessInstanceEvent deployedInstance,
                                                      final Map<String, List<ZeebeProcessInstanceRecordDto>> events,
                                                      final String eventId,
@@ -529,10 +566,10 @@ public class ZeebeProcessInstanceImportIT extends AbstractZeebeIT {
                 .size(100));
     final SearchResponse searchResponse = esClient.searchWithoutPrefixing(searchRequest);
     return ElasticsearchReaderUtil.mapHits(
-      searchResponse.getHits(),
-      ZeebeProcessInstanceRecordDto.class,
-      embeddedOptimizeExtension.getObjectMapper()
-    ).stream()
+        searchResponse.getHits(),
+        ZeebeProcessInstanceRecordDto.class,
+        embeddedOptimizeExtension.getObjectMapper()
+      ).stream()
       .collect(Collectors.groupingBy(event -> event.getValue().getElementId()));
   }
 

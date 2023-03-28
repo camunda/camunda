@@ -24,6 +24,7 @@ import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -131,6 +132,11 @@ public class BpmnModelUtil {
       flowNodeNames.put(flowNode.getId(), flowNode.getName());
     }
     return flowNodeNames;
+  }
+
+  public BpmnModelInstance readProcessDiagramAsInstance(final String diagramPath) {
+    InputStream inputStream = getClass().getResourceAsStream(diagramPath);
+    return Bpmn.readModelFromStream(inputStream);
   }
 
 }
