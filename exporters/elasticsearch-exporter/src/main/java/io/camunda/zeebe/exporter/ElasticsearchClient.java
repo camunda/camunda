@@ -23,9 +23,7 @@ import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.prometheus.client.Histogram;
 import java.io.IOException;
-import java.time.Duration;
 import java.util.ArrayList;
-import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import org.apache.http.entity.EntityTemplate;
@@ -224,43 +222,9 @@ class ElasticsearchClient implements AutoCloseable {
   }
 
   static PutIndexLifecycleManagementPolicyRequest buildPutIndexLifecycleManagementPolicyRequest(
-      final Duration minimumAge) {
+      final String minimumAge) {
     return new PutIndexLifecycleManagementPolicyRequest(
-        new Policy(
-            new Phases(new Delete(formatDuration(minimumAge), new Actions(new ObjectMapper())))));
-  }
-
-  /**
-   * Format defined by
-   * https://www.elastic.co/guide/en/elasticsearch/reference/master/api-conventions.html#time-units
-   */
-  static String formatDuration(final Duration duration) {
-    final List<String> parts = new ArrayList<>();
-    final long days = duration.toDaysPart();
-    if (days > 0) {
-      parts.add(days + "d");
-    }
-    final int hours = duration.toHoursPart();
-    if (hours > 0) {
-      parts.add(hours + "h");
-    }
-    final int minutes = duration.toMinutesPart();
-    if (minutes > 0) {
-      parts.add(minutes + "m");
-    }
-    final int seconds = duration.toSecondsPart();
-    if (seconds > 0) {
-      parts.add(seconds + "s");
-    }
-    final var millis = duration.toMillisPart();
-    if (millis > 0) {
-      parts.add(millis + "ms");
-    }
-    final var nanos = duration.toNanosPart();
-    if (nanos > 0) {
-      parts.add(nanos + "nanos");
-    }
-    return String.join("", parts);
+        new Policy(new Phases(new Delete(minimumAge, new Actions(new ObjectMapper())))));
   }
 
   private <T> T sendRequest(final Request request, final Class<T> responseType) throws IOException {

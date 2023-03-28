@@ -10,7 +10,6 @@ package io.camunda.zeebe.exporter;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
-import java.time.Duration;
 
 public class ElasticsearchExporterConfiguration {
 
@@ -322,7 +321,7 @@ public class ElasticsearchExporterConfiguration {
   public static class RetentionConfiguration {
 
     public boolean isEnabled = false;
-    public Duration minimumAge = Duration.ofDays(30);
+    public String minimumAge = "30d";
     public String policyName = "zeebe-record-retention-policy";
 
     public boolean isEnabled() {
@@ -333,11 +332,11 @@ public class ElasticsearchExporterConfiguration {
       isEnabled = enabled;
     }
 
-    public Duration getMinimumAge() {
+    public String getMinimumAge() {
       return minimumAge;
     }
 
-    public void setMinimumAge(final Duration minimumAge) {
+    public void setMinimumAge(final String minimumAge) {
       this.minimumAge = minimumAge;
     }
 

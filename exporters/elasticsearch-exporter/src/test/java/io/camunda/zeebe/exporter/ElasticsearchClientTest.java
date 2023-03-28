@@ -27,7 +27,6 @@ import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
-import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import org.apache.http.entity.BasicHttpEntity;
@@ -106,9 +105,7 @@ final class ElasticsearchClientTest {
   @Test
   void shouldBuildPutIndexLifecycleManagementPolicyRequestCorrectly()
       throws JsonProcessingException {
-    assertThat(
-            MAPPER.writeValueAsString(
-                buildPutIndexLifecycleManagementPolicyRequest(Duration.ofDays(300).plusSeconds(3))))
+    assertThat(MAPPER.writeValueAsString(buildPutIndexLifecycleManagementPolicyRequest("300d3s")))
         .describedAs("Expect that request is mapped to json correctly")
         .isEqualTo(
             // Mapped from Object to make sure produced JSON string is formatted the same way
