@@ -98,20 +98,21 @@ follow the following steps:
 
 1. Check that a [GitHub issue][issues] exists for the task you want to work on.
    If one does not, create one. Refer to the [issue guidelines](#github-issue-guidelines).
-2. Checkout the `main` branch and pull the latest changes.
+2. Check that no one is already working on the issue, and make sure the team would accept a pull request for this topic. Some topics are complex in nature that touches many [Camunda's Component](https://docs.camunda.io/docs/components/) and requires internal coordnation.
+3. Checkout the `main` branch and pull the latest changes.
 
    ```
    git checkout main
    git pull
    ```
-3. Create a new branch with the naming scheme `issueId-description`.
+4. Create a new branch with the naming scheme `issueId-description`.
 
    ```
    git checkout -b 123-adding-bpel-support`
    ```
-4. Follow the [Google Java Format](https://github.com/google/google-java-format#intellij-android-studio-and-other-jetbrains-ides)
+5. Follow the [Google Java Format](https://github.com/google/google-java-format#intellij-android-studio-and-other-jetbrains-ides)
    and [Zeebe Code Style](https://github.com/zeebe-io/zeebe/wiki/Code-Style) while coding.
-5. Implement the required changes on your branch and regularly push your
+6. Implement the required changes on your branch and regularly push your
    changes to the origin so that the CI can run. Code formatting, style and
    license header are fixed automatically by running maven. Checkstyle
    violations have to be fixed manually.
@@ -120,7 +121,7 @@ follow the following steps:
    git commit -am 'feat(broker): bpel support'
    git push -u origin 123-adding-bpel-support
    ```
-6. If you think you finished the issue please prepare the branch for reviewing.
+7. If you think you finished the issue please prepare the branch for reviewing.
    Please consider our [pull requests and code
    reviews](https://github.com/camunda/zeebe/wiki/Pull-Requests-and-Code-Reviews)
    guide, before requesting a review. In general the commits should be squashed
@@ -129,7 +130,7 @@ follow the following steps:
    it would be best if they are split up into another commit. Rule of thumb is
    that you should think about how a reviewer can best understand your changes.
    Please follow the [commit message guidelines](#commit-message-guidelines).
-7. After finishing up the squashing force push your changes to your branch.
+8. After finishing up the squashing force push your changes to your branch.
 
    ```
    git push --force-with-lease
