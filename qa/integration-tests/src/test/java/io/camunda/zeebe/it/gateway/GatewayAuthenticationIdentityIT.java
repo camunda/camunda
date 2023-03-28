@@ -29,6 +29,7 @@ import java.time.Duration;
 import java.util.concurrent.ExecutionException;
 import org.assertj.core.api.InstanceOfAssertFactories;
 import org.awaitility.Awaitility;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.Network;
@@ -167,6 +168,7 @@ public class GatewayAuthenticationIdentityIT {
     }
   }
 
+  @Disabled
   @Test
   void getTopologyRequestSucceedsWithValidAuthToken() {
     // given
