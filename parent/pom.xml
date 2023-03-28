@@ -85,7 +85,7 @@
     <version.scala-parser>2.1.1</version.scala-parser>
     <version.scala>2.13.10</version.scala>
     <version.slf4j>1.7.36</version.slf4j>
-    <version.snakeyaml>1.33</version.snakeyaml>
+    <version.snakeyaml>2.0</version.snakeyaml>
     <version.javax>1.3.2</version.javax>
     <version.wiremock>2.32.0</version.wiremock>
     <version.conscrypt>2.5.2</version.conscrypt>
