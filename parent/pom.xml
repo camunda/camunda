@@ -40,7 +40,7 @@
     <version.awaitility>4.2.0</version.awaitility>
     <version.bouncycastle>1.70</version.bouncycastle>
     <version.camunda>7.18.0</version.camunda>
-    <version.checkstyle>10.8.0</version.checkstyle>
+    <version.checkstyle>10.9.3</version.checkstyle>
     <version.commons-lang>3.12.0</version.commons-lang>
     <version.commons-logging>1.2</version.commons-logging>
     <version.commons-math>3.6.1</version.commons-math>
@@ -48,11 +48,11 @@
     <version.commons-compress>1.22</version.commons-compress>
     <version.zstd-jni>1.5.4-2</version.zstd-jni>
     <version.commons-text>1.10.0</version.commons-text>
-    <version.cron-utils>9.2.0</version.cron-utils>
+    <version.cron-utils>9.2.1</version.cron-utils>
     <version.docker-java-api>3.2.14</version.docker-java-api>
     <version.elasticsearch>7.17.9</version.elasticsearch>
     <version.error-prone>2.18.0</version.error-prone>
-    <version.grpc>1.53.0</version.grpc>
+    <version.grpc>1.54.0</version.grpc>
     <version.gson>2.10.1</version.gson>
     <version.guava>31.1-jre</version.guava>
     <version.hamcrest>2.2</version.hamcrest>
