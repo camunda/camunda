@@ -66,8 +66,8 @@ jobs:
         run: echo "BUILD_OUTPUT_FILE_PATH=$(mktemp)" >> $GITHUB_ENV
       - name: Maven Test Build
         run: >
-          ./mvnw -B -T2 --no-snapshot-updates
-          -D forkCount=5
+          ./mvnw -B -T4 --no-snapshot-updates
+          -D forkCount=12
           -D maven.javadoc.skip=true
           -D skipUTs -D skipChecks
           -D failsafe.rerunFailingTestsCount=3 -D flaky.test.reportDir=failsafe-reports
