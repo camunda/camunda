@@ -73,10 +73,10 @@
     <version.netty>4.1.89.Final</version.netty>
     <version.objenesis>3.3</version.objenesis>
     <version.opensearch>2.6.0</version.opensearch>
-    <version.opensearch-java>2.2.0</version.opensearch-java>
+    <version.opensearch-java>2.3.0</version.opensearch-java>
     <version.opensearch.testcontainers>2.0.0</version.opensearch.testcontainers>
     <version.prometheus>0.16.0</version.prometheus>
-    <version.protobuf>3.21.11</version.protobuf>
+    <version.protobuf>3.22.2</version.protobuf>
     <version.protobuf-common>2.14.3</version.protobuf-common>
     <version.micrometer>1.10.5</version.micrometer>
     <version.rocksdbjni>7.10.2</version.rocksdbjni>
@@ -122,7 +122,7 @@
     <version.awssdk>2.20.14</version.awssdk>
     <version.toxiproxy>2.1.7</version.toxiproxy>
     <version.validation-api>3.0.2</version.validation-api>
-    <version.jackson-databind-nullable>0.2.5</version.jackson-databind-nullable>
+    <version.jackson-databind-nullable>0.2.6</version.jackson-databind-nullable>
     <version.jackson-annotations>2.14.2</version.jackson-annotations>
     <version.swagger-annotations>2.2.9</version.swagger-annotations>
     <version.checker-qual>3.32.0</version.checker-qual>
@@ -146,7 +146,7 @@
     <plugin.version.replacer>1.5.3</plugin.version.replacer>
     <plugin.version.resources>3.3.1</plugin.version.resources>
     <plugin.version.revapi>0.15.0</plugin.version.revapi>
-    <plugin.version.scala>4.8.0</plugin.version.scala>
+    <plugin.version.scala>4.8.1</plugin.version.scala>
     <plugin.version.shade>3.4.1</plugin.version.shade>
     <plugin.version.sonar>3.9.1.2184</plugin.version.sonar>
     <plugin.version.spotbugs>4.7.3.3</plugin.version.spotbugs>
