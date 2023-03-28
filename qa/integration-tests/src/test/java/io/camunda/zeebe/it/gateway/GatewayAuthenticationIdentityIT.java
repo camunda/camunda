@@ -14,6 +14,7 @@ import io.camunda.zeebe.client.CredentialsProvider;
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.client.ZeebeClientBuilder;
 import io.camunda.zeebe.client.impl.oauth.OAuthCredentialsProviderBuilder;
+import io.camunda.zeebe.qa.util.testcontainers.ContainerLogsDumper;
 import io.camunda.zeebe.qa.util.testcontainers.ZeebeTestContainerDefaults;
 import io.grpc.Metadata;
 import io.grpc.Metadata.Key;
@@ -26,11 +27,13 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.net.http.HttpResponse.BodyHandlers;
 import java.time.Duration;
+import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import org.assertj.core.api.InstanceOfAssertFactories;
 import org.awaitility.Awaitility;
-import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.Network;
 import org.testcontainers.containers.wait.strategy.HttpWaitStrategy;
@@ -51,10 +54,10 @@ public class GatewayAuthenticationIdentityIT {
   private static final String ZEEBE_CLIENT_ID = "zeebe";
   private static final String ZEEBE_CLIENT_AUDIENCE = "zeebe-api";
   private static final String ZEEBE_CLIENT_SECRET = "zecret";
-  private static final Network NETWORK = Network.builder().enableIpv6(false).build();
+  private static final Network NETWORK = Network.newNetwork();
 
   @Container
-  private static final GenericContainer KEYCLOAK =
+  private static final GenericContainer<?> KEYCLOAK =
       new GenericContainer<>("quay.io/keycloak/keycloak:19.0.3")
           .withEnv("KC_HEALTH_ENABLED", "true")
           .withEnv("KEYCLOAK_ADMIN", KEYCLOAK_USER)
@@ -109,6 +112,7 @@ public class GatewayAuthenticationIdentityIT {
   private static final ZeebeContainer ZEEBE =
       new ZeebeContainer(ZeebeTestContainerDefaults.defaultTestImage())
           .withNetwork(NETWORK)
+          .dependsOn(KEYCLOAK, IDENTITY)
           .withoutTopologyCheck()
           .withEnv("ZEEBE_BROKER_GATEWAY_SECURITY_AUTHENTICATION_MODE", "identity")
           .withEnv(
@@ -117,6 +121,17 @@ public class GatewayAuthenticationIdentityIT {
           .withEnv(
               "ZEEBE_BROKER_GATEWAY_SECURITY_AUTHENTICATION_IDENTITY_AUDIENCE",
               ZEEBE_CLIENT_AUDIENCE);
+
+  @SuppressWarnings("unused")
+  @RegisterExtension
+  final ContainerLogsDumper logsWatcher =
+      new ContainerLogsDumper(
+          () -> Map.of("keycloak", KEYCLOAK, "identity", IDENTITY, "zeebe", ZEEBE));
+
+  @BeforeAll
+  static void beforeAll() {
+    awaitCamundaRealmAvailabilityOnKeycloak();
+  }
 
   @Test
   void getTopologyRequestFailsWithoutAuthToken() {
@@ -168,12 +183,9 @@ public class GatewayAuthenticationIdentityIT {
     }
   }
 
-  @Disabled
   @Test
   void getTopologyRequestSucceedsWithValidAuthToken() {
     // given
-    awaitCamundaRealmAvailabilityOnKeycloak();
-
     try (final var client =
         createZeebeClientBuilder()
             .credentialsProvider(
@@ -197,13 +209,16 @@ public class GatewayAuthenticationIdentityIT {
   }
 
   /**
-   * Awaits the presence of the Camunda realm on the keycloak container. Once Keycloak and Identity
-   * booted up, Identity will eventually configure the Camunda Realm on Keycloak.
+   * Awaits the presence of the Camunda realm and openid keys on the keycloak container. Once
+   * Keycloak and Identity booted up, Identity will eventually configure the Camunda Realm on
+   * Keycloak.
    */
   private static void awaitCamundaRealmAvailabilityOnKeycloak() {
     final var httpClient = HttpClient.newHttpClient();
     final HttpRequest request =
-        HttpRequest.newBuilder().uri(URI.create(getKeycloakRealmAddress())).build();
+        HttpRequest.newBuilder()
+            .uri(URI.create(getKeycloakRealmAddress() + "/protocol/openid-connect/certs"))
+            .build();
     Awaitility.await()
         .atMost(Duration.ofSeconds(120))
         .pollInterval(Duration.ofSeconds(5))
