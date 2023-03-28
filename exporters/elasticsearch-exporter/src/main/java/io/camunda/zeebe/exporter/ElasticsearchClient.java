@@ -209,9 +209,10 @@ class ElasticsearchClient implements AutoCloseable {
 
   public boolean putIndexLifecycleManagementPolicy() {
     try {
-      final var request = new Request("PUT", "/_ilm/policy/" + configuration.retention.policyName);
+      final var request =
+          new Request("PUT", "/_ilm/policy/" + configuration.retention.getPolicyName());
       final var requestEntity =
-          buildPutIndexLifecycleManagementPolicyRequest(configuration.retention.minimumAge);
+          buildPutIndexLifecycleManagementPolicyRequest(configuration.retention.getMinimumAge());
       request.setJsonEntity(MAPPER.writeValueAsString(requestEntity));
       final var response = sendRequest(request, PutIndexLifecycleManagementPolicyResponse.class);
       return response.acknowledged();

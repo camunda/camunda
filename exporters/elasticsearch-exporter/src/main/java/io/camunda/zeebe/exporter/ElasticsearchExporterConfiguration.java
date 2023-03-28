@@ -320,9 +320,9 @@ public class ElasticsearchExporterConfiguration {
 
   public static class RetentionConfiguration {
 
-    public boolean enabled = false;
-    public String minimumAge = "30d";
-    public String policyName = "zeebe-record-retention-policy";
+    private boolean enabled = false;
+    private String minimumAge = "30d";
+    private String policyName = "zeebe-record-retention-policy";
 
     public boolean isEnabled() {
       return enabled;

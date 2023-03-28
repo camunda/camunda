@@ -176,8 +176,8 @@ final class ElasticsearchClientIT {
         testClient
             .getEsClient()
             .ilm()
-            .getLifecycle(GetLifecycleRequest.of(b -> b.name(config.retention.policyName)))
-            .get(config.retention.policyName);
+            .getLifecycle(GetLifecycleRequest.of(b -> b.name(config.retention.getPolicyName())))
+            .get(config.retention.getPolicyName());
     assertThat(lifecycle.policy().phases().delete()).isNotNull();
     assertThat(lifecycle.policy().phases().delete().minAge()).isNotNull();
     assertThat(lifecycle.policy().phases().delete().minAge().time()).isEqualTo("30d");

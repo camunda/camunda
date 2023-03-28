@@ -86,7 +86,7 @@ final class TemplateReader {
 
     // update index.lifecycle in template in case a retention policy is configured
     if (config.retention.isEnabled()) {
-      settings.put("index.lifecycle.name", config.retention.policyName);
+      settings.put("index.lifecycle.name", config.retention.getPolicyName());
     }
   }
 
