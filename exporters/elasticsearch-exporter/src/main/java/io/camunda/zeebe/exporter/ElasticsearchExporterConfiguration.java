@@ -320,16 +320,16 @@ public class ElasticsearchExporterConfiguration {
 
   public static class RetentionConfiguration {
 
-    public boolean isEnabled = false;
+    public boolean enabled = false;
     public String minimumAge = "30d";
     public String policyName = "zeebe-record-retention-policy";
 
     public boolean isEnabled() {
-      return isEnabled;
+      return enabled;
     }
 
     public void setEnabled(final boolean enabled) {
-      isEnabled = enabled;
+      this.enabled = enabled;
     }
 
     public String getMinimumAge() {
@@ -352,7 +352,7 @@ public class ElasticsearchExporterConfiguration {
     public String toString() {
       return "RetentionConfiguration{"
           + "isEnabled="
-          + isEnabled
+          + enabled
           + ", minimumAge="
           + minimumAge
           + ", policyName='"
