@@ -8,7 +8,6 @@
 package io.camunda.zeebe.exporter;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.zeebe.exporter.ElasticsearchExporterConfiguration.IndexConfiguration;
 import io.camunda.zeebe.exporter.dto.Template;
 import io.camunda.zeebe.protocol.record.ValueType;
 import java.io.IOException;
@@ -25,9 +24,9 @@ final class TemplateReader {
   private static final String ZEEBE_RECORD_TEMPLATE_JSON = "/zeebe-record-template.json";
   private static final ObjectMapper MAPPER = new ObjectMapper();
 
-  private final ElasticsearchExporterConfiguration.IndexConfiguration config;
+  private final ElasticsearchExporterConfiguration config;
 
-  public TemplateReader(final IndexConfiguration config) {
+  public TemplateReader(final ElasticsearchExporterConfiguration config) {
     this.config = config;
   }
 
@@ -46,7 +45,7 @@ final class TemplateReader {
     final Template template = readTemplate(findResourceForTemplate(valueType));
 
     // update prefix in template in case it was changed in configuration
-    template.composedOf().set(0, config.prefix);
+    template.composedOf().set(0, config.index.prefix);
 
     template.patterns().set(0, searchPattern);
     template.template().aliases().clear();
@@ -74,15 +73,20 @@ final class TemplateReader {
 
   private void substituteConfiguration(final Map<String, Object> settings) {
     // update number of shards in template in case it was changed in configuration
-    final Integer numberOfShards = config.getNumberOfShards();
+    final Integer numberOfShards = config.index.getNumberOfShards();
     if (numberOfShards != null) {
       settings.put("number_of_shards", numberOfShards);
     }
 
     // update number of replicas in template in case it was changed in configuration
-    final Integer numberOfReplicas = config.getNumberOfReplicas();
+    final Integer numberOfReplicas = config.index.getNumberOfReplicas();
     if (numberOfReplicas != null) {
       settings.put("number_of_replicas", numberOfReplicas);
+    }
+
+    // update index.lifecycle in template in case a retention policy is configured
+    if (config.retention.isEnabled()) {
+      settings.put("index.lifecycle.name", config.retention.getPolicyName());
     }
   }
 

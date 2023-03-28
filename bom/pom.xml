@@ -42,7 +42,7 @@
     <!-- Zeebe Community License v1.1 header -->
     <license.header>${maven.multiModuleProjectDirectory}/parent/COPYING-HEADER.txt</license.header>
 
-    <plugin.version.flatten>1.3.0</plugin.version.flatten>
+    <plugin.version.flatten>1.4.1</plugin.version.flatten>
     <plugin.version.javadoc>3.5.0</plugin.version.javadoc>
     <plugin.version.license>4.2</plugin.version.license>
     <plugin.version.spotless>2.35.0</plugin.version.spotless>

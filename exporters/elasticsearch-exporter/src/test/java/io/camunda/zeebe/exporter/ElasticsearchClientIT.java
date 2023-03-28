@@ -11,6 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import co.elastic.clients.elasticsearch._types.Refresh;
+import co.elastic.clients.elasticsearch.ilm.GetLifecycleRequest;
 import io.camunda.zeebe.exporter.TestClient.ComponentTemplatesDto.ComponentTemplateWrapper;
 import io.camunda.zeebe.exporter.TestClient.IndexTemplatesDto.IndexTemplateWrapper;
 import io.camunda.zeebe.exporter.dto.Template;
@@ -46,7 +47,7 @@ final class ElasticsearchClientIT {
   private final ProtocolFactory recordFactory = new ProtocolFactory();
   private final ElasticsearchExporterConfiguration config =
       new ElasticsearchExporterConfiguration();
-  private final TemplateReader templateReader = new TemplateReader(config.index);
+  private final TemplateReader templateReader = new TemplateReader(config);
   private final RecordIndexRouter indexRouter = new RecordIndexRouter(config.index);
   private final BulkIndexRequest bulkRequest = new BulkIndexRequest();
 
@@ -160,6 +161,30 @@ final class ElasticsearchClientIT {
 
     // then
     assertThat(testClient.getComponentTemplate()).isPresent();
+  }
+
+  @Test
+  void shouldPutIndexLifecycleManagementPolicy() throws IOException {
+    // given
+    config.retention.setEnabled(true);
+
+    // when
+    client.putIndexLifecycleManagementPolicy();
+
+    // then
+    final var lifecycle =
+        testClient
+            .getEsClient()
+            .ilm()
+            .getLifecycle(GetLifecycleRequest.of(b -> b.name(config.retention.getPolicyName())))
+            .get(config.retention.getPolicyName());
+    assertThat(lifecycle.policy().phases().delete()).isNotNull();
+    assertThat(lifecycle.policy().phases().delete().minAge()).isNotNull();
+    assertThat(lifecycle.policy().phases().delete().minAge().time()).isEqualTo("30d");
+    assertThat(lifecycle.policy().phases().delete().actions()).isNotNull();
+    assertThat(lifecycle.policy().phases().delete().actions().toString())
+        .describedAs("Expect that the policy's action is to delete")
+        .contains("delete");
   }
 
   private void assertIndexTemplate(final Template actualTemplate, final Template expectedTemplate) {

@@ -11,6 +11,12 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.zeebe.exporter.dto.BulkIndexAction;
 import io.camunda.zeebe.exporter.dto.BulkIndexResponse;
 import io.camunda.zeebe.exporter.dto.BulkIndexResponse.Error;
+import io.camunda.zeebe.exporter.dto.PutIndexLifecycleManagementPolicyRequest;
+import io.camunda.zeebe.exporter.dto.PutIndexLifecycleManagementPolicyRequest.Actions;
+import io.camunda.zeebe.exporter.dto.PutIndexLifecycleManagementPolicyRequest.Delete;
+import io.camunda.zeebe.exporter.dto.PutIndexLifecycleManagementPolicyRequest.Phases;
+import io.camunda.zeebe.exporter.dto.PutIndexLifecycleManagementPolicyRequest.Policy;
+import io.camunda.zeebe.exporter.dto.PutIndexLifecycleManagementPolicyResponse;
 import io.camunda.zeebe.exporter.dto.PutIndexTemplateResponse;
 import io.camunda.zeebe.exporter.dto.Template;
 import io.camunda.zeebe.protocol.record.Record;
@@ -47,7 +53,7 @@ class ElasticsearchClient implements AutoCloseable {
         bulkIndexRequest,
         RestClientFactory.of(configuration),
         new RecordIndexRouter(configuration.index),
-        new TemplateReader(configuration.index),
+        new TemplateReader(configuration),
         null);
   }
 
@@ -199,6 +205,27 @@ class ElasticsearchClient implements AutoCloseable {
     } catch (final IOException e) {
       throw new ElasticsearchExporterException("Failed to put component template", e);
     }
+  }
+
+  public boolean putIndexLifecycleManagementPolicy() {
+    try {
+      final var request =
+          new Request("PUT", "/_ilm/policy/" + configuration.retention.getPolicyName());
+      final var requestEntity =
+          buildPutIndexLifecycleManagementPolicyRequest(configuration.retention.getMinimumAge());
+      request.setJsonEntity(MAPPER.writeValueAsString(requestEntity));
+      final var response = sendRequest(request, PutIndexLifecycleManagementPolicyResponse.class);
+      return response.acknowledged();
+    } catch (final IOException e) {
+      throw new ElasticsearchExporterException(
+          "Failed to put index lifecycle management policy", e);
+    }
+  }
+
+  static PutIndexLifecycleManagementPolicyRequest buildPutIndexLifecycleManagementPolicyRequest(
+      final String minimumAge) {
+    return new PutIndexLifecycleManagementPolicyRequest(
+        new Policy(new Phases(new Delete(minimumAge, new Actions(new ObjectMapper())))));
   }
 
   private <T> T sendRequest(final Request request, final Class<T> responseType) throws IOException {
