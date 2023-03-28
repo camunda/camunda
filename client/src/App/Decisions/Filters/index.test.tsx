@@ -97,8 +97,7 @@ describe('<Filters />', () => {
     ).not.toBeInTheDocument();
   });
 
-  //TODO: will be fixed with https://github.com/camunda/operate/issues/3827
-  it.skip('should write filters to url', async () => {
+  it('should write filters to url', async () => {
     const {user} = render(<Filters />, {
       wrapper: getWrapper(),
     });

@@ -50,8 +50,7 @@ describe('Filters', () => {
     jest.useRealTimers();
   });
 
-  //TODO: will be fixed with https://github.com/camunda/operate/issues/3827
-  it.skip('should load the process and version fields', async () => {
+  it('should load the process and version fields', async () => {
     jest.useFakeTimers();
     const {user} = render(<Filters />, {
       wrapper: getWrapper(),
@@ -353,8 +352,7 @@ describe('Filters', () => {
     ).toBeInTheDocument();
   });
 
-  //TODO: will be fixed with https://github.com/camunda/operate/issues/3827
-  it.skip('should enable the reset button', async () => {
+  it('should enable the reset button', async () => {
     jest.useFakeTimers();
 
     const {user} = render(<Filters />, {
