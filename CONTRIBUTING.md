@@ -80,7 +80,7 @@ If you are reporting a bug, please help to speed up problem diagnosis by
 providing as much information as possible. Ideally, that would include a small
 [sample project][sample] that reproduces the problem.
 
-If you have a general usage question please ask on the [forum][] or [slack][] channel.
+If you have a general usage question please ask on the [forum](forum.camunda.io/) or [Slack](http://www.camunda.com/slack) channel.
 
 ## GitHub Issue Guidelines
 
