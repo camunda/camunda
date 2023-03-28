@@ -5,7 +5,9 @@
  * except in compliance with the proprietary license.
  */
 
+import {InitialConfigType} from '@lexical/react/LexicalComposer';
 import {shallow} from 'enzyme';
+import {SerializedEditorState} from 'lexical';
 
 import TextEditor from './TextEditor';
 
@@ -35,9 +37,9 @@ describe('TextEditor', () => {
         ],
         type: 'root',
       },
-    };
+    } as unknown as SerializedEditorState;
 
-    node.find('Editor').prop('onChange')(newValue);
+    node.find('Editor').prop<(value: SerializedEditorState) => void>('onChange')?.(newValue);
     const toolbar = node.find('.toolbar');
 
     expect(spy).toHaveBeenCalledWith(newValue);
@@ -47,7 +49,9 @@ describe('TextEditor', () => {
   it('should handle read only mode', () => {
     const node = shallow(<TextEditor />);
 
-    expect(node.find('LexicalComposer').prop('initialConfig').editable).toBe(false);
+    expect(node.find('LexicalComposer').prop<InitialConfigType>('initialConfig').editable).toBe(
+      false
+    );
     expect(node.find('.toolbar')).not.toExist();
   });
 
@@ -67,7 +71,7 @@ describe('TextEditor', () => {
         ],
         type: 'root',
       },
-    };
+    } as unknown as SerializedEditorState;
 
     const node = shallow(<TextEditor initialValue={editorState} />);
 
@@ -77,7 +81,18 @@ describe('TextEditor', () => {
 
 describe('TextEditor.getEditorStateLength', () => {
   it('should count editor text length', () => {
-    expect(TextEditor.getEditorStateLength('')).toBe(0);
+    expect(
+      TextEditor.getEditorStateLength({
+        root: {
+          children: [],
+          direction: 'ltr',
+          format: 'start',
+          type: 'paragraph',
+          version: 1,
+          indent: 0,
+        },
+      })
+    ).toBe(0);
 
     const editorState = {
       root: {
@@ -94,7 +109,7 @@ describe('TextEditor.getEditorStateLength', () => {
         ],
         type: 'root',
       },
-    };
+    } as unknown as SerializedEditorState;
 
     expect(TextEditor.getEditorStateLength(editorState)).toBe(9);
   });
@@ -117,7 +132,7 @@ describe('TextEditor.CharCount', () => {
         ],
         type: 'root',
       },
-    };
+    } as unknown as SerializedEditorState;
     const node = shallow(<TextEditor.CharCount editorState={editorState} />);
 
     expect(node.text()).toBe('9/3000');
@@ -139,7 +154,7 @@ describe('TextEditor.CharCount', () => {
         ],
         type: 'root',
       },
-    };
+    } as unknown as SerializedEditorState;
     const node = shallow(<TextEditor.CharCount editorState={editorState} />);
 
     expect(node.text()).toBe('3001/3000');

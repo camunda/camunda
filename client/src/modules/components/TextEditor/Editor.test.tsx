@@ -6,6 +6,7 @@
  */
 
 import {shallow} from 'enzyme';
+import {EditorState} from 'lexical';
 import Editor from './Editor';
 
 jest.mock('@lexical/react/LexicalOnChangePlugin', () => ({
@@ -13,7 +14,7 @@ jest.mock('@lexical/react/LexicalOnChangePlugin', () => ({
 }));
 
 jest.mock('./plugins', () => {
-  const plugins = [];
+  const plugins = [] as any;
   plugins.ToolbarPlugin = () => <div />;
   return plugins;
 });
@@ -74,7 +75,9 @@ it('should trim empty paragraphs', function () {
     },
   };
 
-  node.find('OnChangePlugin').prop('onChange')({toJSON: () => newValue});
+  node.find('OnChangePlugin').prop<(editorState: EditorState) => void>('onChange')?.({
+    toJSON: () => newValue,
+  } as unknown as EditorState);
 
   expect(spy).toHaveBeenCalledWith({
     root: {

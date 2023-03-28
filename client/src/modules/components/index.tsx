@@ -16,3 +16,4 @@ export {Tooltip} from './Tooltip';
 export {Modal} from './Modal';
 export {Dropdown} from './Dropdown';
 export {Select} from './Select';
+export {TextEditor} from './TextEditor';

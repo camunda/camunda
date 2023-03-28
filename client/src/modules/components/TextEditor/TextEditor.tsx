@@ -6,7 +6,8 @@
  */
 
 import classnames from 'classnames';
-import {LexicalComposer} from '@lexical/react/LexicalComposer';
+import {SerializedEditorState, SerializedLexicalNode} from 'lexical';
+import {InitialConfigType, LexicalComposer} from '@lexical/react/LexicalComposer';
 
 import {isTextReportTooLong, TEXT_REPORT_MAX_CHARACTERS} from 'services';
 
@@ -15,18 +16,14 @@ import Editor from './Editor';
 
 import './TextEditor.scss';
 
-function onError(error) {
+function onError(error: Error) {
   console.error(error);
 }
 
-const emptyState = {
+const emptyState: SerializedEditorState = {
   root: {
     children: [
       {
-        children: [],
-        direction: null,
-        format: '',
-        indent: 0,
         type: 'paragraph',
         version: 1,
       },
@@ -55,8 +52,14 @@ const theme = {
   },
 };
 
-export default function TextEditor({onChange, initialValue = emptyState}) {
-  const initialConfig = {
+export default function TextEditor({
+  onChange,
+  initialValue = emptyState,
+}: {
+  onChange?: (value: SerializedEditorState) => void;
+  initialValue?: SerializedEditorState;
+}) {
+  const initialConfig: InitialConfigType = {
     editorState: JSON.stringify(initialValue),
     editable: !!onChange,
     namespace: 'Editor',
@@ -82,9 +85,16 @@ export default function TextEditor({onChange, initialValue = emptyState}) {
   );
 }
 
-function reduceChildren(children, initial = 0) {
-  return children.reduce((sum, curr) => {
-    sum += curr?.text?.length || 0 + curr?.url?.length || 0 + curr?.src?.length || 0;
+interface SerializedNode extends SerializedLexicalNode {
+  text?: string;
+  url?: string;
+  src?: string;
+  children?: SerializedNode[];
+}
+
+function reduceChildren(children: SerializedNode[], initial = 0): number {
+  return children.reduce<number>((sum, curr) => {
+    sum += (curr?.text?.length || 0) + (curr?.url?.length || 0) + (curr?.src?.length || 0);
 
     if (curr?.children) {
       return reduceChildren(curr.children, sum);
@@ -93,7 +103,7 @@ function reduceChildren(children, initial = 0) {
   }, initial);
 }
 
-TextEditor.getEditorStateLength = function (editorState) {
+TextEditor.getEditorStateLength = function (editorState: SerializedEditorState): number {
   let length = 0;
 
   if (editorState?.root?.children) {
@@ -103,7 +113,7 @@ TextEditor.getEditorStateLength = function (editorState) {
   return length;
 };
 
-TextEditor.CharCount = function ({editorState}) {
+TextEditor.CharCount = function ({editorState}: {editorState: SerializedEditorState}) {
   const textLenght = TextEditor.getEditorStateLength(editorState);
   return (
     <div

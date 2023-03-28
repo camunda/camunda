@@ -7,6 +7,7 @@
 
 import {useCallback} from 'react';
 import classnames from 'classnames';
+import {EditorState, SerializedEditorState, SerializedLexicalNode} from 'lexical';
 import {RichTextPlugin} from '@lexical/react/LexicalRichTextPlugin';
 import {ContentEditable} from '@lexical/react/LexicalContentEditable';
 import LexicalErrorBoundary from '@lexical/react/LexicalErrorBoundary';
@@ -17,11 +18,17 @@ import editorPlugins, {ToolbarPlugin} from './plugins';
 
 import './Editor.scss';
 
-export default function Editor({onChange, error}) {
+export default function Editor({
+  onChange,
+  error,
+}: {
+  onChange?: (value: SerializedEditorState) => void;
+  error?: boolean;
+}) {
   const contentEditable = <ContentEditable className={classnames('editor', {error})} />;
 
   const onEditorChange = useCallback(
-    (editorState) => {
+    (editorState: EditorState) => {
       onChange?.(sanitizeEditorState(editorState.toJSON()));
     },
     [onChange]
@@ -43,7 +50,11 @@ export default function Editor({onChange, error}) {
   );
 }
 
-function trimChildrenEmptyParagraphs(children = []) {
+interface SerializedNode extends SerializedLexicalNode {
+  children?: SerializedNode[];
+}
+
+function trimChildrenEmptyParagraphs(children: SerializedNode[] = []) {
   let newChildren = [...children];
 
   while (isEmptyParagraph(newChildren[newChildren.length - 1])) {
@@ -64,11 +75,11 @@ function trimChildrenEmptyParagraphs(children = []) {
   return newChildren;
 }
 
-function isEmptyParagraph(child) {
-  return child?.type === 'paragraph' && !child?.children.length;
+function isEmptyParagraph(child?: SerializedNode) {
+  return child?.type === 'paragraph' && !child?.children?.length;
 }
 
-function sanitizeEditorState(editorState) {
+function sanitizeEditorState(editorState: SerializedEditorState) {
   if (!editorState?.root?.children.length) {
     return editorState;
   }
