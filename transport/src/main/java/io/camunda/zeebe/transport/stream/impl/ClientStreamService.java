@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.transport.stream.impl;
 
+import io.atomix.cluster.MemberId;
 import io.atomix.cluster.messaging.ClusterCommunicationService;
 import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
@@ -73,5 +74,9 @@ public class ClientStreamService<M extends BufferWriter> extends Actor
   @Override
   public ActorFuture<Void> remove(final UUID streamId) {
     return actor.call(() -> clientStreamManager.remove(streamId));
+  }
+
+  public void onServerJoined(final MemberId memberId) {
+    actor.run(() -> clientStreamManager.onServerJoined(memberId));
   }
 }
