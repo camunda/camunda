@@ -8,6 +8,7 @@ package io.camunda.operate.rest;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import io.camunda.operate.JacksonConfig;
+import io.camunda.operate.entities.BatchOperationEntity;
 import io.camunda.operate.entities.OperationType;
 import io.camunda.operate.entities.listview.ProcessInstanceForListViewEntity;
 import io.camunda.operate.property.OperateProperties;
@@ -46,6 +47,7 @@ import javax.validation.ConstraintViolationException;
 
 import java.util.List;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.*;
 
 @SpringBootTest(
@@ -344,7 +346,7 @@ public class ProcessInstanceRestServiceTest extends OperateIntegrationTest {
     when(permissionsService.hasPermissionForProcess(bpmnProcessId, IdentityPermission.READ)).thenReturn(false);
     MvcResult mvcResult = getRequestShouldFailWithNoAuthorization(getInstanceByIdUrl(processInstanceId));
     // then
-    assertErrorMessageContains(mvcResult, "No read permission for process instance");
+    assertErrorMessageContains(mvcResult, "No READ permission for process instance");
   }
 
   @Test
@@ -357,7 +359,7 @@ public class ProcessInstanceRestServiceTest extends OperateIntegrationTest {
     when(permissionsService.hasPermissionForProcess(bpmnProcessId, IdentityPermission.READ)).thenReturn(false);
     MvcResult mvcResult = getRequestShouldFailWithNoAuthorization(getIncidentsByIdUrl(processInstanceId));
     // then
-    assertErrorMessageContains(mvcResult, "No read permission for process instance");
+    assertErrorMessageContains(mvcResult, "No READ permission for process instance");
   }
 
   @Test
@@ -370,7 +372,7 @@ public class ProcessInstanceRestServiceTest extends OperateIntegrationTest {
     when(permissionsService.hasPermissionForProcess(bpmnProcessId, IdentityPermission.READ)).thenReturn(false);
     MvcResult mvcResult = getRequestShouldFailWithNoAuthorization(getSequenceFlowsByIdUrl(processInstanceId));
     // then
-    assertErrorMessageContains(mvcResult, "No read permission for process instance");
+    assertErrorMessageContains(mvcResult, "No READ permission for process instance");
   }
 
   @Test
@@ -383,7 +385,7 @@ public class ProcessInstanceRestServiceTest extends OperateIntegrationTest {
     when(permissionsService.hasPermissionForProcess(bpmnProcessId, IdentityPermission.READ)).thenReturn(false);
     MvcResult mvcResult = postRequestShouldFailWithNoAuthorization(getVariablesByIdUrl(processInstanceId), new VariableRequestDto());
     // then
-    assertErrorMessageContains(mvcResult, "No read permission for process instance");
+    assertErrorMessageContains(mvcResult, "No READ permission for process instance");
   }
 
   @Test
@@ -396,7 +398,7 @@ public class ProcessInstanceRestServiceTest extends OperateIntegrationTest {
     when(permissionsService.hasPermissionForProcess(bpmnProcessId, IdentityPermission.READ)).thenReturn(false);
     MvcResult mvcResult = getRequestShouldFailWithNoAuthorization(getFlowNodeStatesByIdUrl(processInstanceId));
     // then
-    assertErrorMessageContains(mvcResult, "No read permission for process instance");
+    assertErrorMessageContains(mvcResult, "No READ permission for process instance");
   }
 
   @Test
@@ -409,7 +411,7 @@ public class ProcessInstanceRestServiceTest extends OperateIntegrationTest {
     when(permissionsService.hasPermissionForProcess(bpmnProcessId, IdentityPermission.READ)).thenReturn(false);
     MvcResult mvcResult = getRequestShouldFailWithNoAuthorization(getFlowNodeStatisticsByIdUrl(processInstanceId));
     // then
-    assertErrorMessageContains(mvcResult, "No read permission for process instance");
+    assertErrorMessageContains(mvcResult, "No READ permission for process instance");
   }
 
   @Test
@@ -422,7 +424,40 @@ public class ProcessInstanceRestServiceTest extends OperateIntegrationTest {
     when(permissionsService.hasPermissionForProcess(bpmnProcessId, IdentityPermission.READ)).thenReturn(false);
     MvcResult mvcResult = postRequestShouldFailWithNoAuthorization(getFlowNodeMetadataByIdUrl(processInstanceId), new FlowNodeMetadataRequestDto());
     // then
-    assertErrorMessageContains(mvcResult, "No read permission for process instance");
+    assertErrorMessageContains(mvcResult, "No READ permission for process instance");
+  }
+
+  @Test
+  public void testProcessInstanceDeleteOperationFailsWhenNoPermissions() throws Exception {
+    // given
+    String processInstanceId = "123";
+    String bpmnProcessId = "processId";
+    CreateOperationRequestDto request = new CreateOperationRequestDto().setOperationType(OperationType.DELETE_PROCESS_INSTANCE);
+    // when
+    when(processInstanceReader.getProcessInstanceByKey(Long.valueOf(processInstanceId))).thenReturn(
+        new ProcessInstanceForListViewEntity().setBpmnProcessId(bpmnProcessId));
+    when(permissionsService.hasPermissionForProcess(bpmnProcessId, IdentityPermission.DELETE_PROCESS_INSTANCE)).thenReturn(false);
+    MvcResult mvcResult = postRequestShouldFailWithNoAuthorization(getOperationUrl(processInstanceId), request);
+    // then
+    assertErrorMessageContains(mvcResult, "No DELETE_PROCESS_INSTANCE permission for process instance");
+  }
+
+  @Test
+  public void testProcessInstanceDeleteOperationOkWhenHasPermissions() throws Exception {
+    // given
+    String processInstanceId = "123";
+    String bpmnProcessId = "processId";
+    CreateOperationRequestDto request = new CreateOperationRequestDto().setOperationType(OperationType.DELETE_PROCESS_INSTANCE);
+    // when
+    when(processInstanceReader.getProcessInstanceByKey(Long.valueOf(processInstanceId))).thenReturn(
+        new ProcessInstanceForListViewEntity().setBpmnProcessId(bpmnProcessId));
+    when(permissionsService.hasPermissionForProcess(bpmnProcessId, IdentityPermission.DELETE_PROCESS_INSTANCE)).thenReturn(true);
+    when(batchOperationWriter.scheduleSingleOperation(Long.parseLong(processInstanceId), request)).thenReturn(new BatchOperationEntity());
+    MvcResult mvcResult = postRequest(getOperationUrl(processInstanceId), request);
+    // then
+    final BatchOperationEntity response = mockMvcTestRule.fromResponse(mvcResult, new TypeReference<>() {
+    });
+    assertThat(response).isNotNull();
   }
 
   public String getBatchOperationUrl() {
@@ -431,6 +466,10 @@ public class ProcessInstanceRestServiceTest extends OperateIntegrationTest {
 
   public String getOperationUrl() {
     return ProcessInstanceRestService.PROCESS_INSTANCE_URL + "/111/operation";
+  }
+
+  public String getOperationUrl(String id) {
+    return ProcessInstanceRestService.PROCESS_INSTANCE_URL + "/" + id + "/operation";
   }
 
   public String getInstanceByIdUrl(String id) {

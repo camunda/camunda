@@ -12,6 +12,7 @@ import static io.camunda.operate.webapp.rest.ProcessInstanceRestService.PROCESS_
 
 import io.camunda.operate.Metrics;
 import io.camunda.operate.entities.BatchOperationEntity;
+import io.camunda.operate.entities.OperationType;
 import io.camunda.operate.entities.SequenceFlowEntity;
 import io.camunda.operate.util.CollectionUtil;
 import io.camunda.operate.util.rest.ValidLongId;
@@ -128,7 +129,10 @@ public class ProcessInstanceRestService extends InternalAPIErrorController {
   public BatchOperationEntity operation(@PathVariable @ValidLongId String id,
       @RequestBody CreateOperationRequestDto operationRequest) {
     validate(operationRequest, id);
-    return batchOperationWriter.scheduleSingleOperation(Long.valueOf(id), operationRequest);
+    if(operationRequest.getOperationType() == OperationType.DELETE_PROCESS_INSTANCE) {
+      checkIdentityPermission(Long.valueOf(id), IdentityPermission.DELETE_PROCESS_INSTANCE);
+    }
+    return batchOperationWriter.scheduleSingleOperation(Long.parseLong(id), operationRequest);
   }
 
   @Operation(summary = "Perform modify process instance operation")
@@ -290,8 +294,13 @@ public class ProcessInstanceRestService extends InternalAPIErrorController {
   }
 
   private void checkIdentityReadPermission(Long processInstanceKey) {
-    if (permissionsService != null && !permissionsService.hasPermissionForProcess(processInstanceReader.getProcessInstanceByKey(processInstanceKey).getBpmnProcessId(), IdentityPermission.READ)) {
-      throw new NotAuthorizedException(String.format("No read permission for process instance %s", processInstanceKey));
+    checkIdentityPermission(processInstanceKey, IdentityPermission.READ);
+  }
+
+  private void checkIdentityPermission(Long processInstanceKey, IdentityPermission permission) {
+    if (permissionsService != null &&
+        !permissionsService.hasPermissionForProcess(processInstanceReader.getProcessInstanceByKey(processInstanceKey).getBpmnProcessId(), permission)) {
+      throw new NotAuthorizedException(String.format("No %s permission for process instance %s", permission, processInstanceKey));
     }
   }
 }
