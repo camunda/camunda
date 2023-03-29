@@ -132,6 +132,9 @@ public class ProcessInstanceRestService extends InternalAPIErrorController {
     if(operationRequest.getOperationType() == OperationType.DELETE_PROCESS_INSTANCE) {
       checkIdentityPermission(Long.valueOf(id), IdentityPermission.DELETE_PROCESS_INSTANCE);
     }
+    else {
+      checkIdentityPermission(Long.valueOf(id), IdentityPermission.UPDATE_PROCESS_INSTANCE);
+    }
     return batchOperationWriter.scheduleSingleOperation(Long.parseLong(id), operationRequest);
   }
 
@@ -142,6 +145,7 @@ public class ProcessInstanceRestService extends InternalAPIErrorController {
       @RequestBody ModifyProcessInstanceRequestDto modifyRequest) {
     modifyRequest.setProcessInstanceKey(id);
     modifyProcessInstanceRequestValidator.validate(modifyRequest);
+    checkIdentityPermission(Long.valueOf(id), IdentityPermission.UPDATE_PROCESS_INSTANCE);
     return batchOperationWriter.scheduleModifyProcessInstance(modifyRequest);
   }
 

@@ -46,6 +46,7 @@ import org.springframework.test.web.servlet.MvcResult;
 import jakarta.validation.ConstraintViolationException;
 
 import java.util.List;
+import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.*;
@@ -460,6 +461,78 @@ public class ProcessInstanceRestServiceTest extends OperateIntegrationTest {
     assertThat(response).isNotNull();
   }
 
+  @Test
+  public void testProcessInstanceUpdateOperationFailsWhenNoPermissions() throws Exception {
+    // given
+    String processInstanceId = "123";
+    String bpmnProcessId = "processId";
+    CreateOperationRequestDto request = new CreateOperationRequestDto().setOperationType(OperationType.CANCEL_PROCESS_INSTANCE);
+    // when
+    when(processInstanceReader.getProcessInstanceByKey(Long.valueOf(processInstanceId))).thenReturn(
+        new ProcessInstanceForListViewEntity().setBpmnProcessId(bpmnProcessId));
+    when(permissionsService.hasPermissionForProcess(bpmnProcessId, IdentityPermission.UPDATE_PROCESS_INSTANCE)).thenReturn(false);
+    MvcResult mvcResult = postRequestShouldFailWithNoAuthorization(getOperationUrl(processInstanceId), request);
+    // then
+    assertErrorMessageContains(mvcResult, "No UPDATE_PROCESS_INSTANCE permission for process instance");
+  }
+
+  @Test
+  public void testProcessInstanceUpdateOperationOkWhenHasPermissions() throws Exception {
+    // given
+    String processInstanceId = "123";
+    String bpmnProcessId = "processId";
+    CreateOperationRequestDto request = new CreateOperationRequestDto().setOperationType(OperationType.CANCEL_PROCESS_INSTANCE);
+    // when
+    when(processInstanceReader.getProcessInstanceByKey(Long.valueOf(processInstanceId))).thenReturn(
+        new ProcessInstanceForListViewEntity().setBpmnProcessId(bpmnProcessId));
+    when(permissionsService.hasPermissionForProcess(bpmnProcessId, IdentityPermission.UPDATE_PROCESS_INSTANCE)).thenReturn(true);
+    when(batchOperationWriter.scheduleSingleOperation(Long.parseLong(processInstanceId), request)).thenReturn(new BatchOperationEntity());
+    MvcResult mvcResult = postRequest(getOperationUrl(processInstanceId), request);
+    // then
+    final BatchOperationEntity response = mockMvcTestRule.fromResponse(mvcResult, new TypeReference<>() {
+    });
+    assertThat(response).isNotNull();
+  }
+
+  @Test
+  public void testProcessInstanceModifyOperationFailsWhenNoPermissions() throws Exception {
+    // given
+    String processInstanceId = "123";
+    String bpmnProcessId = "processId";
+    ModifyProcessInstanceRequestDto.Modification modification = new Modification()
+        .setModification(Modification.Type.ADD_VARIABLE)
+        .setVariables(Map.of("var",11));
+    ModifyProcessInstanceRequestDto request = new ModifyProcessInstanceRequestDto().setModifications(List.of(modification));
+    // when
+    when(processInstanceReader.getProcessInstanceByKey(Long.valueOf(processInstanceId))).thenReturn(
+        new ProcessInstanceForListViewEntity().setBpmnProcessId(bpmnProcessId));
+    when(permissionsService.hasPermissionForProcess(bpmnProcessId, IdentityPermission.UPDATE_PROCESS_INSTANCE)).thenReturn(false);
+    MvcResult mvcResult = postRequestShouldFailWithNoAuthorization(getModificationUrl(processInstanceId), request);
+    // then
+    assertErrorMessageContains(mvcResult, "No UPDATE_PROCESS_INSTANCE permission for process instance");
+  }
+
+  @Test
+  public void testProcessInstanceModifyOperationOkWhenHasPermissions() throws Exception {
+    // given
+    String processInstanceId = "123";
+    String bpmnProcessId = "processId";
+    ModifyProcessInstanceRequestDto.Modification modification = new Modification()
+        .setModification(Modification.Type.ADD_VARIABLE)
+        .setVariables(Map.of("var",11));
+    ModifyProcessInstanceRequestDto request = new ModifyProcessInstanceRequestDto().setModifications(List.of(modification));
+    // when
+    when(processInstanceReader.getProcessInstanceByKey(Long.valueOf(processInstanceId))).thenReturn(
+        new ProcessInstanceForListViewEntity().setBpmnProcessId(bpmnProcessId));
+    when(permissionsService.hasPermissionForProcess(bpmnProcessId, IdentityPermission.UPDATE_PROCESS_INSTANCE)).thenReturn(true);
+    when(batchOperationWriter.scheduleModifyProcessInstance(any())).thenReturn(new BatchOperationEntity());
+    MvcResult mvcResult = postRequest(getModificationUrl(processInstanceId), request);
+    // then
+    final BatchOperationEntity response = mockMvcTestRule.fromResponse(mvcResult, new TypeReference<>() {
+    });
+    assertThat(response).isNotNull();
+  }
+
   public String getBatchOperationUrl() {
     return ProcessInstanceRestService.PROCESS_INSTANCE_URL + "/batch-operation";
   }
@@ -470,6 +543,10 @@ public class ProcessInstanceRestServiceTest extends OperateIntegrationTest {
 
   public String getOperationUrl(String id) {
     return ProcessInstanceRestService.PROCESS_INSTANCE_URL + "/" + id + "/operation";
+  }
+
+  public String getModificationUrl(String id) {
+    return ProcessInstanceRestService.PROCESS_INSTANCE_URL + "/" + id + "/modify";
   }
 
   public String getInstanceByIdUrl(String id) {
