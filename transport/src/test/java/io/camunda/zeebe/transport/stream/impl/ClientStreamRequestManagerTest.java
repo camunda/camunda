@@ -87,8 +87,9 @@ class ClientStreamRequestManagerTest {
     // given
     final MemberId server1 = MemberId.from("1");
     final MemberId server2 = MemberId.from("2");
+    clientStream.add(server1);
+    clientStream.add(server2);
     final var servers = Set.of(server1, server2);
-    requestManager.openStream(clientStream, servers);
 
     // when
     requestManager.removeStream(clientStream, servers);
@@ -107,15 +108,14 @@ class ClientStreamRequestManagerTest {
   void shouldRetryWhenRemoveRequestFails() {
     // given
     final MemberId server = MemberId.from("1");
-    final var servers = Set.of(server);
-    requestManager.openStream(clientStream, servers);
+    clientStream.add(server);
 
     when(mockTransport.send(any(), any(), any(), any(), any(), any()))
         .thenReturn(CompletableFuture.failedFuture(new RuntimeException("Expected")))
         .thenReturn(CompletableFuture.completedFuture(null));
 
     // when
-    requestManager.removeStream(clientStream, servers);
+    requestManager.removeStream(clientStream, Set.of(server));
 
     // then
     verify(mockTransport, times(2))
