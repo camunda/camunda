@@ -124,12 +124,7 @@ final class ClientStreamRequestManager<M extends BufferWriter, P extends BufferR
 
   private void doRemoveAll(final MemberId brokerId) {
     // Do not wait for response, as this is expected to be called while shutting down.
-    communicationService.send(
-        StreamTopics.REMOVE_ALL.topic(),
-        REMOVE_ALL_REQUEST,
-        Function.identity(),
-        Function.identity(),
-        brokerId,
-        REQUEST_TIMEOUT);
+    communicationService.unicast(
+        StreamTopics.REMOVE_ALL.topic(), REMOVE_ALL_REQUEST, Function.identity(), brokerId, true);
   }
 }
