@@ -99,7 +99,6 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
   private final String actorName;
   private LogStreamReader logStreamReader;
   private ProcessingStateMachine processingStateMachine;
-  private ProcessingStateMachine replayStateMachine;
 
   private CompletableActorFuture<Void> openFuture;
   private final CompletableActorFuture<Void> closeFuture = new CompletableActorFuture<>();
@@ -445,9 +444,7 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
   public ActorFuture<Long> getLastProcessedPositionAsync() {
     return actor.call(
         () -> {
-          if (isInReplayOnlyMode()) {
-            return replayStateMachine.getLastSuccessfulProcessedRecordPosition();
-          } else if (processingStateMachine == null) {
+          if (processingStateMachine == null) {
             // StreamProcessor is still replay mode
             return StreamProcessor.UNSET_POSITION;
           } else {
@@ -463,9 +460,7 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
   public ActorFuture<Long> getLastWrittenPositionAsync() {
     return actor.call(
         () -> {
-          if (isInReplayOnlyMode()) {
-            return replayStateMachine.getLastWrittenPosition();
-          } else if (processingStateMachine == null) {
+          if (processingStateMachine == null) {
             // StreamProcessor is still replay mode
             return StreamProcessor.UNSET_POSITION;
           } else {
@@ -543,20 +538,14 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
           if (!shouldProcess) {
             shouldProcess = true;
 
-            if (isInReplayOnlyMode() || !replayCompletedFuture.isDone()) {
-              streamProcessorContext.streamProcessorPhase(Phase.REPLAY);
-              actor.submit(replayStateMachine::readNextRecord);
-              LOG.debug("Resumed replay for partition {}", partitionId);
-            } else {
-              // we only want to call the lifecycle listeners on processing resume
-              // since the listeners are not recovered yet
-              lifecycleAwareListeners.forEach(StreamProcessorLifecycleAware::onResumed);
-              streamProcessorContext.streamProcessorPhase(Phase.PROCESSING);
-              if (processingStateMachine != null) {
-                actor.submit(processingStateMachine::readNextRecord);
-              }
-              LOG.debug("Resumed processing for partition {}", partitionId);
+            // we only want to call the lifecycle listeners on processing resume
+            // since the listeners are not recovered yet
+            lifecycleAwareListeners.forEach(StreamProcessorLifecycleAware::onResumed);
+            streamProcessorContext.streamProcessorPhase(Phase.PROCESSING);
+            if (processingStateMachine != null) {
+              actor.submit(processingStateMachine::readNextRecord);
             }
+            LOG.debug("Resumed processing for partition {}", partitionId);
           }
         });
   }
