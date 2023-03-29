@@ -10,12 +10,10 @@ package io.camunda.zeebe.transport.stream.impl;
 import io.atomix.cluster.MemberId;
 import io.atomix.cluster.messaging.ClusterCommunicationService;
 import io.camunda.zeebe.scheduler.Actor;
-import io.camunda.zeebe.transport.stream.impl.messages.AddStreamRequest;
-import io.camunda.zeebe.transport.stream.impl.messages.RemoveStreamRequest;
+import io.camunda.zeebe.transport.stream.impl.messages.MessageUtil;
 import io.camunda.zeebe.transport.stream.impl.messages.StreamTopics;
 import io.camunda.zeebe.util.buffer.BufferReader;
 import java.util.function.Function;
-import org.agrona.concurrent.UnsafeBuffer;
 
 public final class RemoteStreamEndpoint<M extends BufferReader> extends Actor {
   private final ClusterCommunicationService transport;
@@ -34,9 +32,12 @@ public final class RemoteStreamEndpoint<M extends BufferReader> extends Actor {
   @Override
   protected void onActorStarting() {
     transport.subscribe(
-        StreamTopics.ADD.topic(), this::parseAddRequest, requestHandler::add, actor::run);
+        StreamTopics.ADD.topic(), MessageUtil::parseAddRequest, requestHandler::add, actor::run);
     transport.subscribe(
-        StreamTopics.REMOVE.topic(), this::parseRemoveRequest, requestHandler::remove, actor::run);
+        StreamTopics.REMOVE.topic(),
+        MessageUtil::parseRemoveRequest,
+        requestHandler::remove,
+        actor::run);
     transport.subscribe(
         StreamTopics.REMOVE_ALL.topic(), Function.identity(), this::onRemoveAll, actor::run);
   }
@@ -51,20 +52,5 @@ public final class RemoteStreamEndpoint<M extends BufferReader> extends Actor {
 
   private void onRemoveAll(final MemberId sender, final byte[] ignored) {
     requestHandler.removeAll(sender);
-  }
-
-  private RemoveStreamRequest parseRemoveRequest(final byte[] bytes) {
-    return parseRequest(bytes, new RemoveStreamRequest());
-  }
-
-  private AddStreamRequest parseAddRequest(final byte[] bytes) {
-    return parseRequest(bytes, new AddStreamRequest());
-  }
-
-  private <R extends BufferReader> R parseRequest(final byte[] bytes, final R request) {
-    final var buffer = new UnsafeBuffer(bytes);
-    request.wrap(buffer, 0, buffer.capacity());
-
-    return request;
   }
 }
