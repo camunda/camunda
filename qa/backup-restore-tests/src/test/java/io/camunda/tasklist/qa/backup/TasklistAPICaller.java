@@ -130,7 +130,7 @@ public class TasklistAPICaller {
     return graphQLTestTemplate;
   }
 
-  public TakeBackupResponseDto backup(String backupId) {
+  public TakeBackupResponseDto backup(Integer backupId) {
     final TakeBackupRequestDto takeBackupRequest = new TakeBackupRequestDto().setBackupId(backupId);
     return statefulRestTemplate.postForObject(
         statefulRestTemplate.getURL("actuator/backups"),
@@ -138,7 +138,7 @@ public class TasklistAPICaller {
         TakeBackupResponseDto.class);
   }
 
-  public GetBackupStateResponseDto getBackupState(String backupId) {
+  public GetBackupStateResponseDto getBackupState(Integer backupId) {
     return statefulRestTemplate.getForObject(
         statefulRestTemplate.getURL("actuator/backups/" + backupId),
         GetBackupStateResponseDto.class);

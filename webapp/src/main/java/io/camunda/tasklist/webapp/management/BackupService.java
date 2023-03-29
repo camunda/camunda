@@ -48,7 +48,8 @@ public class BackupService extends ManagementAPIErrorController {
   }
 
   @GetMapping("/{backupId}")
-  public GetBackupStateResponseDto getBackupState(@PathVariable String backupId) {
+  public GetBackupStateResponseDto getBackupState(@PathVariable Integer backupId) {
+    validateBackupId(backupId);
     validateRepositoryNameIsConfigured();
     return backupManager.getBackupState(backupId);
   }
@@ -61,9 +62,9 @@ public class BackupService extends ManagementAPIErrorController {
 
   @DeleteMapping("/{backupId}")
   @ResponseStatus(HttpStatus.NO_CONTENT)
-  public void deleteBackup(@PathVariable String backupId) {
-    validateRepositoryNameIsConfigured();
+  public void deleteBackup(@PathVariable Integer backupId) {
     validateBackupId(backupId);
+    validateRepositoryNameIsConfigured();
     backupManager.deleteBackup(backupId);
   }
 
@@ -74,10 +75,10 @@ public class BackupService extends ManagementAPIErrorController {
     validateBackupId(request.getBackupId());
   }
 
-  private void validateBackupId(String backupId) {
-    if (!pattern.matcher(backupId).matches()) {
+  private void validateBackupId(Integer backupId) {
+    if (backupId < 0) {
       throw new InvalidRequestException(
-          "BackupId must not contain any uppercase letters or any of [ , \", *, \\, <, |, ,, >, /, ?, _, ].");
+          "BackupId must be a non-negative Integer. Received value: " + backupId);
     }
   }
 }
