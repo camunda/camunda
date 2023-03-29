@@ -12,15 +12,14 @@ import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.transport.stream.api.ClientStreamConsumer;
 import io.camunda.zeebe.transport.stream.api.ClientStreamer;
-import io.camunda.zeebe.util.buffer.BufferReader;
 import io.camunda.zeebe.util.buffer.BufferWriter;
 import java.util.UUID;
 import org.agrona.DirectBuffer;
 
-public class ClientStreamService<M extends BufferWriter, P extends BufferReader> extends Actor
-    implements ClientStreamer<M, P> {
+public class ClientStreamService<M extends BufferWriter> extends Actor
+    implements ClientStreamer<M> {
 
-  private final ClientStreamManager<M, P> clientStreamManager;
+  private final ClientStreamManager<M> clientStreamManager;
 
   public ClientStreamService(final ClusterCommunicationService communicationService) {
     // ClientStreamRequestManager must use same actor as this because it is mutating shared
@@ -35,7 +34,7 @@ public class ClientStreamService<M extends BufferWriter, P extends BufferReader>
   public ActorFuture<UUID> add(
       final DirectBuffer streamType,
       final M metadata,
-      final ClientStreamConsumer<P> clientStreamConsumer) {
+      final ClientStreamConsumer clientStreamConsumer) {
     return actor.call(() -> clientStreamManager.add(streamType, metadata, clientStreamConsumer));
   }
 

@@ -15,7 +15,6 @@ import static org.mockito.Mockito.when;
 import io.atomix.cluster.MemberId;
 import io.atomix.cluster.messaging.ClusterCommunicationService;
 import io.camunda.zeebe.scheduler.testing.TestConcurrencyControl;
-import io.camunda.zeebe.util.buffer.BufferReader;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import io.camunda.zeebe.util.buffer.BufferWriter;
 import java.util.concurrent.CompletableFuture;
@@ -27,10 +26,9 @@ class ClientStreamManagerTest {
 
   private final DirectBuffer streamType = BufferUtil.wrapString("foo");
   private final BufferWriter metadata = mock(BufferWriter.class);
-  private final ClientStreamRegistry<BufferWriter, BufferReader> registry =
-      new ClientStreamRegistry<>();
+  private final ClientStreamRegistry<BufferWriter> registry = new ClientStreamRegistry<>();
   private final ClusterCommunicationService mockTransport = mock(ClusterCommunicationService.class);
-  private final ClientStreamManager<BufferWriter, BufferReader> clientStreamManager =
+  private final ClientStreamManager<BufferWriter> clientStreamManager =
       new ClientStreamManager<>(
           registry, new ClientStreamRequestManager<>(mockTransport, new TestConcurrencyControl()));
 

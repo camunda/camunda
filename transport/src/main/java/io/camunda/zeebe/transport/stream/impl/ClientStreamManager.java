@@ -9,7 +9,6 @@ package io.camunda.zeebe.transport.stream.impl;
 
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.transport.stream.api.ClientStreamConsumer;
-import io.camunda.zeebe.util.buffer.BufferReader;
 import io.camunda.zeebe.util.buffer.BufferWriter;
 import java.util.Collections;
 import java.util.HashSet;
@@ -17,14 +16,13 @@ import java.util.Set;
 import java.util.UUID;
 import org.agrona.DirectBuffer;
 
-final class ClientStreamManager<M extends BufferWriter, P extends BufferReader> {
-  private final ClientStreamRegistry<M, P> registry;
-  private final ClientStreamRequestManager<M, P> requestManager;
+final class ClientStreamManager<M extends BufferWriter> {
+  private final ClientStreamRegistry<M> registry;
+  private final ClientStreamRequestManager<M> requestManager;
   private final Set<MemberId> servers = new HashSet<>();
 
   ClientStreamManager(
-      final ClientStreamRegistry<M, P> registry,
-      final ClientStreamRequestManager<M, P> requestManager) {
+      final ClientStreamRegistry<M> registry, final ClientStreamRequestManager<M> requestManager) {
     this.registry = registry;
     this.requestManager = requestManager;
   }
@@ -43,7 +41,7 @@ final class ClientStreamManager<M extends BufferWriter, P extends BufferReader> 
   UUID add(
       final DirectBuffer streamType,
       final M metadata,
-      final ClientStreamConsumer<P> clientStreamConsumer) {
+      final ClientStreamConsumer clientStreamConsumer) {
     final var streamId = UUID.randomUUID();
     final var clientStreamMeta =
         new ClientStream<>(streamId, streamType, metadata, clientStreamConsumer);

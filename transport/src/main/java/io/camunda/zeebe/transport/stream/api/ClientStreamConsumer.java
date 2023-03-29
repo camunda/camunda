@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.transport.stream.api;
 
-import io.camunda.zeebe.util.buffer.BufferReader;
+import org.agrona.DirectBuffer;
 
 /**
  * Represents a consumer of a stream which can consume data of type P. The data is typically pushed
@@ -15,7 +15,7 @@ import io.camunda.zeebe.util.buffer.BufferReader;
  *
  * @param <P> the payload type that can be pushed to the stream
  */
-public interface ClientStreamConsumer<P extends BufferReader> {
+public interface ClientStreamConsumer {
 
   /**
    * Consumes the payload received from the server to the client. Implementation of this method can
@@ -23,5 +23,5 @@ public interface ClientStreamConsumer<P extends BufferReader> {
    *
    * @param payload the data to be consumed by the client
    */
-  void push(P payload);
+  void push(DirectBuffer payload);
 }

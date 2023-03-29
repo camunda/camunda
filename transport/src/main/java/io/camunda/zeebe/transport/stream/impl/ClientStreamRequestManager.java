@@ -13,7 +13,6 @@ import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.transport.stream.impl.messages.AddStreamRequest;
 import io.camunda.zeebe.transport.stream.impl.messages.RemoveStreamRequest;
 import io.camunda.zeebe.transport.stream.impl.messages.StreamTopics;
-import io.camunda.zeebe.util.buffer.BufferReader;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import io.camunda.zeebe.util.buffer.BufferWriter;
 import java.time.Duration;
@@ -24,7 +23,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /** Handles sending add/remove stream request to the servers. */
-final class ClientStreamRequestManager<M extends BufferWriter, P extends BufferReader> {
+final class ClientStreamRequestManager<M extends BufferWriter> {
 
   private static final Logger LOG = LoggerFactory.getLogger(ClientStreamRequestManager.class);
   private static final byte[] REMOVE_ALL_REQUEST = new byte[0];
@@ -39,7 +38,7 @@ final class ClientStreamRequestManager<M extends BufferWriter, P extends BufferR
     this.executor = executor;
   }
 
-  void openStream(final ClientStream<M, P> clientStream, final Collection<MemberId> servers) {
+  void openStream(final ClientStream<M> clientStream, final Collection<MemberId> servers) {
     final var request =
         new AddStreamRequest()
             .streamType(clientStream.getStreamType())
@@ -50,9 +49,7 @@ final class ClientStreamRequestManager<M extends BufferWriter, P extends BufferR
   }
 
   private void doAdd(
-      final AddStreamRequest request,
-      final MemberId brokerId,
-      final ClientStream<M, P> clientStream) {
+      final AddStreamRequest request, final MemberId brokerId, final ClientStream<M> clientStream) {
     if (clientStream.isConnected(brokerId)) {
       return;
     }
@@ -86,7 +83,7 @@ final class ClientStreamRequestManager<M extends BufferWriter, P extends BufferR
         executor::run);
   }
 
-  void removeStream(final ClientStream<M, P> clientStream, final Collection<MemberId> servers) {
+  void removeStream(final ClientStream<M> clientStream, final Collection<MemberId> servers) {
     final var request = new RemoveStreamRequest().streamId(clientStream.getStreamId());
     servers.forEach(brokerId -> executor.run(() -> doRemove(request, brokerId, clientStream)));
   }
@@ -94,7 +91,7 @@ final class ClientStreamRequestManager<M extends BufferWriter, P extends BufferR
   private void doRemove(
       final RemoveStreamRequest request,
       final MemberId brokerId,
-      final ClientStream<M, P> clientStream) {
+      final ClientStream<M> clientStream) {
 
     final CompletableFuture<byte[]> result =
         communicationService.send(
