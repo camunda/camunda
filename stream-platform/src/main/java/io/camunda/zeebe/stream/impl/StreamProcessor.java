@@ -18,6 +18,7 @@ import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.ActorControl;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.scheduler.clock.ActorClock;
+import io.camunda.zeebe.scheduler.clock.ControlledActorClock;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.stream.api.RecordProcessor;
@@ -122,6 +123,7 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
             .getProcessingContext()
             .eventCache(new RecordValues())
             .actor(actor)
+            .clock(new ControlledActorClock())
             .abortCondition(this::isClosed);
     logStream = streamProcessorContext.getLogStream();
     partitionId = logStream.getPartitionId();
@@ -364,7 +366,7 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
             streamProcessorContext.getTransactionContext(),
             streamProcessorContext.getPartitionCommandSender(),
             streamProcessorContext.getKeyGeneratorControls(),
-            ActorClock.current());
+            streamProcessorContext.getClock());
 
     recordProcessors.forEach(processor -> processor.init(processorContext));
 

@@ -251,6 +251,7 @@ public final class ProcessingStateMachine {
 
     metadata.reset();
     loggedEvent.readMetadata(metadata);
+    context.getClock().setCurrentTime(loggedEvent.getTimestamp());
 
     try {
       // Here we need to get the current time, since we want to calculate
