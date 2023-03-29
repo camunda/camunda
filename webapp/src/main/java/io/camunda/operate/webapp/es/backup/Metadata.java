@@ -6,13 +6,18 @@
  */
 package io.camunda.operate.webapp.es.backup;
 
+import io.camunda.operate.exceptions.OperateRuntimeException;
+
 import java.util.Objects;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class Metadata {
 
   public final static String SNAPSHOT_NAME_PREFIX = "camunda_operate_";
   private final static String SNAPSHOT_NAME_PATTERN = "{prefix}{version}_part_{index}_of_{count}";
   private final static String SNAPSHOT_NAME_PREFIX_PATTERN = SNAPSHOT_NAME_PREFIX + "{backupId}_";
+  private final static Pattern BACKUPID_PATTERN = Pattern.compile(SNAPSHOT_NAME_PREFIX + "(\\d*)_.*");
 
   private Integer backupId;
   private String version;
@@ -64,7 +69,17 @@ public class Metadata {
   }
 
   public static String buildSnapshotNamePrefix(Integer backupId) {
-  return SNAPSHOT_NAME_PREFIX_PATTERN.replace("{backupId}", String.valueOf(backupId));
+    return SNAPSHOT_NAME_PREFIX_PATTERN.replace("{backupId}", String.valueOf(backupId));
+  }
+
+  //backward compatibility with v. 8.1
+  public static Integer extractBackupIdFromSnapshotName(String snapshotName) {
+    Matcher matcher = BACKUPID_PATTERN.matcher(snapshotName);
+    if (matcher.matches()) {
+      return Integer.valueOf(matcher.group(1));
+    } else {
+      throw new OperateRuntimeException("Unable to extract backupId. Snapshot name: " + snapshotName);
+    }
   }
 
   @Override public boolean equals(Object o) {

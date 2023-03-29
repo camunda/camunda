@@ -595,6 +595,38 @@ public class BackupServiceTest {
     assertBackupDetails(List.of(snapshotInfo1_1, snapshotInfo1_2), backup1);
   }
 
+  @Test
+  public void shouldReturnVersion8_1Backup() throws IOException {
+    String repoName = "repoName";
+    Integer backupId1 = 123;
+    when(operateProperties.getBackup()).thenReturn(new BackupProperties().setRepositoryName(repoName));
+    //COMPLETED
+    Metadata metadata1 = new Metadata().setBackupId(backupId1).setVersion("8.8.8").setPartNo(1).setPartCount(2);
+    SnapshotInfo snapshotInfo1_1 = createSnapshotInfoMock(metadata1, UUID.randomUUID().toString(),
+        SnapshotState.SUCCESS);
+    //remove backupId from metadata
+    metadata1.setBackupId(null);
+    when(snapshotInfo1_1.userMetadata()).thenReturn(objectMapper.convertValue(metadata1, new TypeReference<>(){}));
+
+    Metadata metadata2 = new Metadata().setBackupId(backupId1).setVersion("8.8.8").setPartNo(2).setPartCount(2);
+    SnapshotInfo snapshotInfo1_2 = createSnapshotInfoMock(metadata2, UUID.randomUUID().toString(),
+        SnapshotState.SUCCESS);
+    metadata2.setBackupId(null);
+    when(snapshotInfo1_2.userMetadata()).thenReturn(objectMapper.convertValue(metadata2, new TypeReference<>(){}));
+    List<SnapshotInfo> snapshotInfos = asList(
+        new SnapshotInfo[] { snapshotInfo1_1, snapshotInfo1_2 });
+    when(snapshotClient.get(any(), any())).thenReturn(new GetSnapshotsResponse(snapshotInfos, null, null, 6, 1));
+    when(esClient.snapshot()).thenReturn(snapshotClient);
+
+    List<GetBackupStateResponseDto> backups = backupService.getBackups();
+    assertThat(backups).hasSize(1);
+    GetBackupStateResponseDto backup1 = backups.get(0);
+    assertThat(backup1.getState()).isEqualTo(COMPLETED);
+    assertThat(backup1.getBackupId()).isEqualTo(backupId1);
+    assertThat(backup1.getFailureReason()).isNull();
+    assertBackupDetails(List.of(snapshotInfo1_1, snapshotInfo1_2), backup1);
+  }
+
 
   private void assertBackupDetails(List<SnapshotInfo> snapshotInfos, GetBackupStateResponseDto backupState) {
     assertThat(backupState.getDetails()).hasSize(snapshotInfos.size());

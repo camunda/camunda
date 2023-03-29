@@ -426,7 +426,12 @@ public class BackupManager {
 
       LinkedHashMap<Integer, List<SnapshotInfo>> groupedSnapshotInfos = snapshots.stream().collect(groupingBy(si -> {
         Metadata metadata = objectMapper.convertValue(si.userMetadata(), Metadata.class);
-        return metadata.getBackupId();
+        Integer backupId = metadata.getBackupId();
+        //backward compatibility with v. 8.1
+        if (backupId == null) {
+          backupId = Metadata.extractBackupIdFromSnapshotName(si.snapshotId().getName());
+        }
+        return backupId;
       }, LinkedHashMap::new, toList()));
 
       List<GetBackupStateResponseDto> responses = groupedSnapshotInfos.entrySet().stream()
