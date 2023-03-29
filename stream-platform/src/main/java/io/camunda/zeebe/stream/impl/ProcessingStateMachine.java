@@ -608,14 +608,15 @@ public final class ProcessingStateMachine {
     // which is equal to the last processed position
     // we need to seek to the next record after that position where the processing should start
     // Be aware on processing we ignore events, so we will process the next command
-    final var lastProcessedPosition = lastProcessingPositions.getLastProcessedPosition();
+    final var lastProcessedPosition =
+        context.getLastProcessedPositionState().getLastSuccessfulProcessedRecordPosition();
     logStreamReader.seekToNextEvent(lastProcessedPosition);
     if (lastSuccessfulProcessedRecordPosition == StreamProcessor.UNSET_POSITION) {
       lastSuccessfulProcessedRecordPosition = lastProcessedPosition;
     }
 
     if (lastWrittenPosition == StreamProcessor.UNSET_POSITION) {
-      lastWrittenPosition = lastProcessingPositions.getLastWrittenPosition();
+      // lastWrittenPosition = lastProcessingPositions.getLastWrittenPosition();
     }
 
     actor.submit(this::readNextRecord);

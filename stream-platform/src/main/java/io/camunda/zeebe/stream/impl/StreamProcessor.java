@@ -99,7 +99,7 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
   private final String actorName;
   private LogStreamReader logStreamReader;
   private ProcessingStateMachine processingStateMachine;
-  private ReplayStateMachine replayStateMachine;
+  private ProcessingStateMachine replayStateMachine;
 
   private CompletableActorFuture<Void> openFuture;
   private final CompletableActorFuture<Void> closeFuture = new CompletableActorFuture<>();
@@ -185,11 +185,8 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
 
       healthCheckTick();
 
-      replayStateMachine =
-          new ReplayStateMachine(recordProcessors, streamProcessorContext, this::shouldProcessNext);
-
       openFuture.complete(null);
-      replayCompletedFuture = replayStateMachine.startRecover(snapshotPosition);
+      replayCompletedFuture = CompletableActorFuture.completed(null);
 
       if (!shouldProcess) {
         setStateToPausedAndNotifyListeners();
@@ -274,7 +271,7 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
     asyncScheduleService.close();
     streamProcessorContext.getLogStreamReader().close();
     logStream.removeRecordAvailableListener(this);
-    replayStateMachine.close();
+    // replayStateMachine.close();
   }
 
   private void healthCheckTick() {
@@ -449,7 +446,7 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
     return actor.call(
         () -> {
           if (isInReplayOnlyMode()) {
-            return replayStateMachine.getLastSourceEventPosition();
+            return replayStateMachine.getLastSuccessfulProcessedRecordPosition();
           } else if (processingStateMachine == null) {
             // StreamProcessor is still replay mode
             return StreamProcessor.UNSET_POSITION;
@@ -467,7 +464,7 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
     return actor.call(
         () -> {
           if (isInReplayOnlyMode()) {
-            return replayStateMachine.getLastReplayedEventPosition();
+            return replayStateMachine.getLastWrittenPosition();
           } else if (processingStateMachine == null) {
             // StreamProcessor is still replay mode
             return StreamProcessor.UNSET_POSITION;
@@ -548,7 +545,7 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
 
             if (isInReplayOnlyMode() || !replayCompletedFuture.isDone()) {
               streamProcessorContext.streamProcessorPhase(Phase.REPLAY);
-              actor.submit(replayStateMachine::replayNextEvent);
+              actor.submit(replayStateMachine::readNextRecord);
               LOG.debug("Resumed replay for partition {}", partitionId);
             } else {
               // we only want to call the lifecycle listeners on processing resume
