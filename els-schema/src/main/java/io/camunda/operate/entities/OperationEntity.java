@@ -13,7 +13,13 @@ import java.util.UUID;
 public class OperationEntity extends OperateEntity<OperationEntity> {
 
   private Long processInstanceKey;
+  /**
+   * Attention! This field will be filled in only for data imported after v. 8.2.0.
+   */
   private Long processDefinitionKey;
+  /**
+   * Attention! This field will be filled in only for data imported after v. 8.2.0.
+   */
   private String bpmnProcessId;
   private Long incidentKey;
   private Long scopeKey;

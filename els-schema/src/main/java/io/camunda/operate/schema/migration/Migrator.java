@@ -6,6 +6,7 @@
  */
 package io.camunda.operate.schema.migration;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.es.RetryElasticsearchClient;
 import io.camunda.operate.exceptions.MigrationException;
 import io.camunda.operate.property.MigrationProperties;
@@ -13,6 +14,7 @@ import io.camunda.operate.property.OperateElasticsearchProperties;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.schema.IndexSchemaValidator;
 import io.camunda.operate.schema.indices.IndexDescriptor;
+import io.camunda.operate.schema.templates.ListViewTemplate;
 import io.camunda.operate.schema.templates.TemplateDescriptor;
 import java.util.HashMap;
 import org.elasticsearch.common.settings.Settings;
@@ -55,6 +57,9 @@ public class Migrator{
   private List<IndexDescriptor> indexDescriptors;
 
   @Autowired
+  private ListViewTemplate listViewTemplate;
+
+  @Autowired
   private OperateProperties operateProperties;
 
   @Autowired
@@ -68,6 +73,9 @@ public class Migrator{
 
   @Autowired
   private IndexSchemaValidator indexSchemaValidator;
+
+  @Autowired
+  private ObjectMapper objectMapper;
 
   @Bean("migrationThreadPoolExecutor")
   public ThreadPoolTaskExecutor getTaskExecutor() {
@@ -173,6 +181,8 @@ public class Migrator{
 
     logger.info("Refresh index {}", indexDescriptor.getDerivedIndexNamePattern());
     retryElasticsearchClient.refresh(indexDescriptor.getDerivedIndexNamePattern());
+
+    plan.validateMigrationResults(retryElasticsearchClient);
   }
 
   private Map<String, String> getIndexSettingsOrDefaultsFor(final IndexDescriptor indexDescriptor, OperateElasticsearchProperties elsConfig) {
@@ -184,7 +194,7 @@ public class Migrator{
     return settings;
   }
 
-  protected Plan createPlanFor(final String indexName, final String srcVersion, final String dstVersion, final List<Step> steps) {
+  protected Plan createPlanFor(final String indexName, final String srcVersion, final String dstVersion, final List<Step> steps) throws MigrationException{
     final SemanticVersion sourceVersion = SemanticVersion.fromVersion(srcVersion);
     final SemanticVersion destinationVersion = SemanticVersion.fromVersion(dstVersion);
 
@@ -197,10 +207,38 @@ public class Migrator{
     final String srcIndex = String.format("%s-%s-%s", indexPrefix, indexName, srcVersion);
     final String dstIndex = String.format("%s-%s-%s", indexPrefix, indexName, dstVersion);
 
-    return Plan.forReindex()
-        .setBatchSize(migrationProperties.getReindexBatchSize())
-        .setSlices(migrationProperties.getSlices())
-        .setSrcIndex(srcIndex).setDstIndex(dstIndex)
-        .setSteps(onlyAffectedVersions);
+    //forbid migration when migration steps can't be combined
+    if (onlyAffectedVersions.stream().anyMatch(s -> s instanceof ProcessorStep) && onlyAffectedVersions.stream().anyMatch(s -> s instanceof SetBpmnProcessIdStep)) {
+      throw new MigrationException("Migration plan contains steps that can't be applied together. Check your upgrade path.");
+    }
+    if (onlyAffectedVersions.size() == 0) {
+      return Plan.forReindex()
+          .setBatchSize(migrationProperties.getReindexBatchSize())
+          .setSlices(migrationProperties.getSlices())
+          .setSrcIndex(srcIndex).setDstIndex(dstIndex);
+    } else if (onlyAffectedVersions.get(0) instanceof ProcessorStep) {
+      return Plan.forReindex()
+          .setBatchSize(migrationProperties.getReindexBatchSize())
+          .setSlices(migrationProperties.getSlices())
+          .setSrcIndex(srcIndex)
+          .setDstIndex(dstIndex)
+          .setSteps(onlyAffectedVersions);
+    } else if (onlyAffectedVersions.get(0) instanceof SetBpmnProcessIdStep && onlyAffectedVersions.size() == 1) {
+      //we don't include version in list-view index name, as we can't know which version we have - older or newer
+      final String listViewIndexName = String.format("%s-%s", indexPrefix, listViewTemplate.getIndexName());
+      return Plan.forReindexWithQueryAndScriptPlan()
+          .setBatchSize(migrationProperties.getReindexBatchSize())
+          .setSlices(migrationProperties.getSlices())
+          .setSrcIndex(srcIndex)
+          .setDstIndex(dstIndex)
+          .setListViewIndexName(listViewIndexName)
+          .setSteps(onlyAffectedVersions)
+          .setMigrationProperties(migrationProperties)
+          .setObjectMapper(objectMapper);
+    } else if (onlyAffectedVersions.get(0) instanceof SetBpmnProcessIdStep && onlyAffectedVersions.size() > 1) {
+      throw new MigrationException("Unexpected migration plan: only one SetBpmnProcessIdStep must be present.");
+    } else {
+      throw new MigrationException("Unexpected migration plan.");
+    }
   }
 }

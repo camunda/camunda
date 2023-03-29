@@ -319,7 +319,7 @@ public class RetryElasticsearchClient {
     reindex(reindexRequest, true);
   }
 
-  public void reindex(final ReindexRequest reindexRequest,boolean checkDocumentCount) {
+  public void reindex(final ReindexRequest reindexRequest, boolean checkDocumentCount) {
     executeWithRetries("Reindex " + Arrays.asList(reindexRequest.getSearchRequest().indices()) + " -> " + reindexRequest.getDestination().index(),
         () -> {
           String srcIndices = reindexRequest.getSearchRequest().indices()[0];
@@ -334,10 +334,33 @@ public class RetryElasticsearchClient {
           }
           String taskId = esClient.submitReindexTask(reindexRequest, requestOptions).getTask();
           TimeUnit.of(ChronoUnit.MILLIS).sleep(2_000);
-          return waitUntilTaskIsCompleted(taskId, srcCount);
+          if (checkDocumentCount) {
+            return waitUntilTaskIsCompleted(taskId, srcCount);
+          } else {
+            return waitUntilTaskIsCompleted(taskId);
+          }
         },
         done -> !done
     );
+  }
+
+  private boolean waitUntilTaskIsCompleted(String taskId) {
+    final String[] taskIdParts = taskId.split(":");
+    final String nodeId = taskIdParts[0];
+    final Long smallTaskId = Long.parseLong(taskIdParts[1]);
+    Optional<GetTaskResponse> taskResponse = executeWithGivenRetries(Integer.MAX_VALUE ,"GetTaskInfo{" + nodeId + "},{" + smallTaskId + "}",
+        () -> {
+            elasticsearchTask.checkForErrorsOrFailures(nodeId, smallTaskId.intValue());
+            return esClient.tasks().get(new GetTaskRequest(nodeId, smallTaskId), requestOptions);
+        }, elasticsearchTask::needsToPollAgain);
+    if (taskResponse.isPresent()) {
+      final long total = elasticsearchTask.getTotal(taskResponse.get());
+      logger.info("Migrated docs: {}", total);
+      return taskResponse.get().isCompleted();
+    } else {
+      // need to reindex again
+      return false;
+    }
   }
 
   // Returns if task is completed under this conditions:
@@ -350,8 +373,8 @@ public class RetryElasticsearchClient {
     final Long smallTaskId = Long.parseLong(taskIdParts[1]);
     Optional<GetTaskResponse> taskResponse = executeWithGivenRetries(Integer.MAX_VALUE ,"GetTaskInfo{" + nodeId + "},{" + smallTaskId + "}",
         () -> {
-            elasticsearchTask.checkForErrorsOrFailures(nodeId, smallTaskId.intValue());
-            return esClient.tasks().get(new GetTaskRequest(nodeId, smallTaskId), requestOptions);
+          elasticsearchTask.checkForErrorsOrFailures(nodeId, smallTaskId.intValue());
+          return esClient.tasks().get(new GetTaskRequest(nodeId, smallTaskId), requestOptions);
         }, elasticsearchTask::needsToPollAgain);
     if (taskResponse.isPresent()) {
       final long total = elasticsearchTask.getTotal(taskResponse.get());
@@ -455,4 +478,9 @@ public class RetryElasticsearchClient {
               delayIntervalInSeconds + " seconds waiting.", e);
     }
   }
+
+  public RestHighLevelClient getEsClient() {
+    return esClient;
+  }
+
 }

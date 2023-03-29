@@ -11,7 +11,13 @@ import java.util.Objects;
 public class SequenceFlowEntity extends OperateEntity<SequenceFlowEntity> {
 
   private Long processInstanceKey;
+  /**
+   * Attention! This field will be filled in only for data imported after v. 8.2.0.
+   */
   private Long processDefinitionKey;
+  /**
+   * Attention! This field will be filled in only for data imported after v. 8.2.0.
+   */
   private String bpmnProcessId;
   private String activityId;
 

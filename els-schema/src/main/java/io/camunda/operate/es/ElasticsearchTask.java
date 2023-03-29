@@ -7,20 +7,25 @@
 package io.camunda.operate.es;
 
 import io.camunda.operate.exceptions.OperateRuntimeException;
-import java.io.IOException;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
 import org.elasticsearch.action.get.GetRequest;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.client.tasks.GetTaskResponse;
 import org.elasticsearch.tasks.RawTaskStatus;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import java.io.IOException;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+
 @Component
 public class ElasticsearchTask {
+
+  private static final Logger logger = LoggerFactory.getLogger(ElasticsearchTask.class);
 
   public static final String ERROR = "error";
   public static final String REASON = "reason";
@@ -46,6 +51,7 @@ public class ElasticsearchTask {
   private void checkForErrors(final Map<String, Object> taskStatus) {
     if (taskStatus!= null && !taskStatus.isEmpty() && taskStatus.containsKey(ERROR)) {
       final Map<String, String> taskError = (Map<String, String>) taskStatus.get(ERROR);
+      logger.error("Task status contains error: " + taskError);
       throw new OperateRuntimeException(taskError.get(REASON));
     }
   }

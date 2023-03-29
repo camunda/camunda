@@ -469,6 +469,40 @@ public abstract class ElasticsearchUtil {
       return result;
   }
 
+  public static void scroll(SearchRequest searchRequest, Consumer<SearchHits> searchHitsProcessor,
+      RestHighLevelClient esClient) throws IOException {
+    scroll(searchRequest, searchHitsProcessor, esClient, TimeValue.timeValueMillis(SCROLL_KEEP_ALIVE_MS));
+  }
+
+  public static void scroll(SearchRequest searchRequest, Consumer<SearchHits> searchHitsProcessor,
+      RestHighLevelClient esClient, TimeValue scrollKeepAlive) throws IOException {
+
+    searchRequest.scroll(scrollKeepAlive);
+    SearchResponse response = esClient.search(searchRequest, RequestOptions.DEFAULT);
+
+    String scrollId = response.getScrollId();
+    SearchHits hits = response.getHits();
+
+    while (hits.getHits().length != 0) {
+
+      //call response processor
+      if (searchHitsProcessor != null) {
+        searchHitsProcessor.accept(response.getHits());
+      }
+
+      SearchScrollRequest scrollRequest = new SearchScrollRequest(scrollId);
+      scrollRequest.scroll(scrollKeepAlive);
+
+      response = esClient
+          .scroll(scrollRequest, RequestOptions.DEFAULT);
+
+      scrollId = response.getScrollId();
+      hits = response.getHits();
+    }
+
+    clearScroll(scrollId, esClient);
+  }
+
   public static void scrollWith(SearchRequest searchRequest, RestHighLevelClient esClient,
       Consumer<SearchHits> searchHitsProcessor) throws IOException {
     scrollWith(searchRequest, esClient, searchHitsProcessor,
@@ -512,7 +546,7 @@ public abstract class ElasticsearchUtil {
     clearScroll(scrollId, esClient);
   }
 
-  private static void clearScroll(String scrollId, RestHighLevelClient esClient) {
+  public static void clearScroll(String scrollId, RestHighLevelClient esClient) {
     if (scrollId != null) {
       //clear the scroll
       ClearScrollRequest clearScrollRequest = new ClearScrollRequest();

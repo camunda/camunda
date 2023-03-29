@@ -6,7 +6,9 @@
  */
 package io.camunda.operate.util;
 
-public final class Tuple<L, R> {
+import java.io.Serializable;
+
+public final class Tuple<L, R> implements Serializable {
 
   private L left;
   private R right;

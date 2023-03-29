@@ -18,8 +18,14 @@ import java.util.List;
  */
 public interface Plan {
 
+  String PRESERVE_INDEX_SUFFIX_SCRIPT = "ctx._index = params.dstIndex+'_' + (ctx._index.substring(ctx._index.indexOf('_') + 1, ctx._index.length()));";
+
   static ReindexPlan forReindex() {
     return new ReindexPlan();
+  }
+
+  static ReindexWithQueryAndScriptPlan forReindexWithQueryAndScriptPlan() {
+    return new ReindexWithQueryAndScriptPlan();
   }
 
   default List<Step> getSteps() {
@@ -27,5 +33,9 @@ public interface Plan {
   }
 
   void executeOn(final RetryElasticsearchClient retryElasticsearchClient) throws IOException, MigrationException;
+
+  default void validateMigrationResults(final RetryElasticsearchClient retryElasticsearchClient)
+      throws MigrationException {
+  }
 
 }

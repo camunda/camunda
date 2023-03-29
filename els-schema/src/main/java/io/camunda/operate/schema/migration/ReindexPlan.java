@@ -29,8 +29,6 @@ public class ReindexPlan implements Plan {
 
   private static final Logger logger = LoggerFactory.getLogger(ReindexPlan.class);
 
-  private static final String DEFAULT_SCRIPT = "ctx._index = params.dstIndex+'_' + (ctx._index.substring(ctx._index.indexOf('_') + 1, ctx._index.length()))";
-
   private List<Step> steps = List.of();
   private Script script;
   private String srcIndex;
@@ -86,14 +84,14 @@ public class ReindexPlan implements Plan {
     final ReindexRequest reindexRequest = new ReindexRequest()
           .setSourceIndices(srcIndex + "_*")
           .setDestIndex(dstIndex + "_")
-          .setSlices(slices) // Useful if there more than 1 shard per index
+          .setSlices(slices) // Useful if there are more than 1 shard per index
           .setSourceBatchSize(reindexBatchSize);
 
     final Optional<String> pipelineName = createPipelineFromSteps(retryElasticsearchClient);
 
     pipelineName.ifPresent(reindexRequest::setDestPipeline);
     if (script == null) {
-      buildScript(DEFAULT_SCRIPT, Map.of("dstIndex", dstIndex));
+      buildScript(PRESERVE_INDEX_SUFFIX_SCRIPT, Map.of("dstIndex", dstIndex));
     }
     reindexRequest.setScript(script);
 

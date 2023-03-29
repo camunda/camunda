@@ -95,10 +95,10 @@ public class BasicProcessTest extends AbstractMigrationTest {
   public void testFlowNodeInstances() {
     SearchRequest searchRequest = new SearchRequest(flowNodeInstanceTemplate.getAlias());
     searchRequest.source().query(termsQuery(FlowNodeInstanceTemplate.PROCESS_INSTANCE_KEY, processInstanceIds));
-    List<FlowNodeInstanceEntity> activityInstances = entityReader.searchEntitiesFor(searchRequest, FlowNodeInstanceEntity.class);
-    assertThat(activityInstances.size()).isEqualTo(BasicProcessDataGenerator.PROCESS_INSTANCE_COUNT * 3);
-    assertThat(activityInstances.stream().allMatch( a -> a.getType() != null)).as("All flow node instances have a type").isTrue();
-    assertThat(activityInstances.stream().allMatch( a -> a.getState()!= null)).as("All flow node instances have a state").isTrue();
+    List<FlowNodeInstanceEntity> flowNodeInstances = entityReader.searchEntitiesFor(searchRequest, FlowNodeInstanceEntity.class);
+    assertThat(flowNodeInstances.size()).isEqualTo(BasicProcessDataGenerator.PROCESS_INSTANCE_COUNT * 3);
+    assertThat(flowNodeInstances.stream().allMatch( a -> a.getType() != null)).as("All flow node instances have a type").isTrue();
+    assertThat(flowNodeInstances.stream().allMatch( a -> a.getState()!= null)).as("All flow node instances have a state").isTrue();
   }
 
   @Test
@@ -169,6 +169,8 @@ public class BasicProcessTest extends AbstractMigrationTest {
       assertThat(inc).matches(i -> i.getTreePath().equals(
           "PI_" + i.getProcessInstanceKey() + "/FN_" + i.getFlowNodeId() + "/FNI_" + i
               .getFlowNodeInstanceKey()));
+      assertThat(inc.getBpmnProcessId()).isNotNull();
+      assertThat(inc.getProcessDefinitionKey()).isNotNull();
     });
   }
 

@@ -25,6 +25,9 @@ public class DecisionInstanceEntity extends OperateZeebeEntity<DecisionInstanceE
   private String decisionRequirementsId;
   private long processDefinitionKey;
   private long processInstanceKey;
+  /**
+   * Attention! This field will be filled in only for data imported after v. 8.2.0.
+   */
   private String bpmnProcessId;
   private long elementInstanceKey;
   private String elementId;
