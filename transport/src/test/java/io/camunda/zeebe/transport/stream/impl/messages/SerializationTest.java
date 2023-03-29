@@ -10,7 +10,9 @@ package io.camunda.zeebe.transport.stream.impl.messages;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import io.camunda.zeebe.util.buffer.DirectBufferWriter;
 import java.util.UUID;
+import org.agrona.DirectBuffer;
 import org.agrona.ExpandableArrayBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.junit.jupiter.api.Test;
@@ -27,6 +29,28 @@ final class SerializationTest {
             .streamId(streamId)
             .streamType(BufferUtil.wrapString("foo"))
             .metadata(BufferUtil.wrapString("bar"));
+
+    // when
+    request.write(buffer, 0);
+    final var deserialized = new AddStreamRequest();
+    deserialized.wrap(buffer, 0, request.getLength());
+
+    // then
+    assertThat(deserialized.streamId()).isEqualTo(streamId);
+    assertThat(deserialized.streamType()).isEqualTo(BufferUtil.wrapString("foo"));
+    assertThat(deserialized.metadata()).isEqualTo(BufferUtil.wrapString("bar"));
+  }
+
+  @Test
+  void shouldSerializeAddStreamRequestWithMetadataWriter() {
+    // given
+    final var streamId = UUID.randomUUID();
+    final DirectBuffer metadata = BufferUtil.wrapString("bar");
+    final var request =
+        new AddStreamRequest()
+            .streamId(streamId)
+            .streamType(BufferUtil.wrapString("foo"))
+            .metadata(new DirectBufferWriter().wrap(metadata));
 
     // when
     request.write(buffer, 0);
