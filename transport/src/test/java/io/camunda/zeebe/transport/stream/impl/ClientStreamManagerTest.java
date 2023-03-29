@@ -54,9 +54,9 @@ class ClientStreamManagerTest {
   void shouldOpenStreamToExistingServers() {
     // given
     final MemberId server1 = MemberId.from("1");
-    clientStreamManager.onServeJoined(server1);
+    clientStreamManager.onServerJoined(server1);
     final MemberId server2 = MemberId.from("2");
-    clientStreamManager.onServeJoined(server2);
+    clientStreamManager.onServerJoined(server2);
 
     // when
     final var uuid = clientStreamManager.add(streamType, metadata, p -> {});
@@ -76,7 +76,7 @@ class ClientStreamManagerTest {
 
     // when
     final MemberId server = MemberId.from("3");
-    clientStreamManager.onServeJoined(server);
+    clientStreamManager.onServerJoined(server);
 
     // then
     assertThat(clientStream.isConnected(server)).isTrue();
@@ -90,7 +90,7 @@ class ClientStreamManagerTest {
 
     // when
     final MemberId server = MemberId.from("3");
-    clientStreamManager.onServeJoined(server);
+    clientStreamManager.onServerJoined(server);
 
     // then
     assertThat(registry.get(stream1).isConnected(server)).isTrue();

@@ -35,7 +35,7 @@ final class ClientStreamManager<M extends BufferWriter, P extends BufferReader> 
    *
    * @param serverId id of the server that is added or restarted
    */
-  void onServeJoined(final MemberId serverId) {
+  void onServerJoined(final MemberId serverId) {
     servers.add(serverId);
     registry.list().forEach(c -> requestManager.openStream(c, Collections.singleton(serverId)));
   }
