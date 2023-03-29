@@ -94,7 +94,7 @@ const Filters: React.FC<Props> = ({disabled}) => {
               <Field<FormValues['sortBy']> name="sortBy">
                 {({input}) => (
                   <OverflowMenu
-                    ariaLabel="Sort tasks"
+                    aria-label="Sort tasks"
                     iconDescription="Sort tasks"
                     renderIcon={SortAscending}
                     size="md"

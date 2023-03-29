@@ -6,7 +6,7 @@
  */
 
 import {Details} from '.';
-import {render, screen, waitFor} from 'modules/testing-library';
+import {render, screen} from 'modules/testing-library';
 import {Route, MemoryRouter, Routes} from 'react-router-dom';
 import {
   mockGetTaskUnclaimed,
@@ -26,12 +26,17 @@ import {
   mockGetCurrentUser,
   mockGetCurrentRestrictedUser,
 } from 'modules/queries/get-current-user';
+import noop from 'lodash/noop';
 
 const UserName = () => {
   const {data} = useQuery<GetCurrentUser>(GET_CURRENT_USER);
 
   return <div>{data?.currentUser.displayName}</div>;
 };
+
+const MOCK_TASK_CLAIMED = mockGetTaskClaimed().result.data.task;
+const MOCK_TASK_COMPLETED = mockGetTaskCompleted().result.data.task;
+const MOCK_UNCLAIMED_TASK = mockGetTaskUnclaimed().result.data.task;
 
 const getWrapper = (id: string = '0') => {
   const Wrapper: React.FC<{
@@ -75,28 +80,21 @@ describe('<Details />', () => {
       graphql.query('GetCurrentUser', (_, res, ctx) => {
         return res.once(ctx.data(mockGetCurrentUser));
       }),
-      graphql.query('GetTask', (_, res, ctx) => {
-        return res.once(ctx.data(mockGetTaskCompleted().result.data));
-      }),
     );
 
-    render(<Details />, {
+    render(<Details task={MOCK_TASK_COMPLETED} onAssigmentError={noop} />, {
       wrapper: getWrapper(),
     });
 
-    expect(await screen.findByText('My Task')).toBeInTheDocument();
+    expect(screen.getByText('My Task')).toBeInTheDocument();
     expect(screen.getByText('Nice Process')).toBeInTheDocument();
-    expect(screen.getByTestId('assignee-task-details')).toHaveTextContent(
-      'demo',
-    );
+    expect(screen.getByText('Assigned')).toBeInTheDocument();
     expect(
       screen.queryByRole('button', {name: /^unclaim$/i}),
     ).not.toBeInTheDocument();
     expect(screen.getByText('01 Jan 2019 - 12:00 AM')).toBeInTheDocument();
     expect(screen.getByText('01 Jan 2020 - 12:00 AM')).toBeInTheDocument();
-    expect(screen.getByTestId('assignee-task-details')).not.toHaveTextContent(
-      'Unassigned - claim task to work on this task.',
-    );
+    expect(screen.getByText('No candidates')).toBeInTheDocument();
   });
 
   it('should render unclaimed task details', async () => {
@@ -104,12 +102,9 @@ describe('<Details />', () => {
       graphql.query('GetCurrentUser', (_, res, ctx) => {
         return res.once(ctx.data(mockGetCurrentUser));
       }),
-      graphql.query('GetTask', (_, res, ctx) => {
-        return res.once(ctx.data(mockGetTaskUnclaimed().result.data));
-      }),
     );
 
-    render(<Details />, {
+    render(<Details task={MOCK_UNCLAIMED_TASK} onAssigmentError={noop} />, {
       wrapper: getWrapper(),
     });
 
@@ -119,14 +114,11 @@ describe('<Details />', () => {
     ).toBeInTheDocument();
 
     expect(screen.getByText('Nice Process')).toBeInTheDocument();
-    expect(screen.getByTestId('assignee-task-details')).toHaveTextContent(
-      'Unassigned - claim task to work on this task.',
-    );
+    expect(screen.getByText('Unassigned')).toBeInTheDocument();
     expect(screen.getByText('01 Jan 2019 - 12:00 AM')).toBeInTheDocument();
-    expect(screen.queryByText('Completion Time')).not.toBeInTheDocument();
-    expect(screen.getByTestId('assignee-task-details')).toHaveTextContent(
-      'Unassigned - claim task to work on this task.',
-    );
+    expect(screen.getByText('Pending task')).toBeInTheDocument();
+    expect(screen.getByText('accounting candidate')).toBeInTheDocument();
+    expect(screen.getByText('jane candidate')).toBeInTheDocument();
   });
 
   it('should render unclaimed task and claim it', async () => {
@@ -134,25 +126,23 @@ describe('<Details />', () => {
       graphql.query('GetCurrentUser', (_, res, ctx) => {
         return res.once(ctx.data(mockGetCurrentUser));
       }),
-      graphql.query('GetTask', (_, res, ctx) => {
-        return res.once(ctx.data(mockGetTaskUnclaimed().result.data));
-      }),
       graphql.mutation('ClaimTask', (_, res, ctx) => {
         return res.once(ctx.data(mockClaimTask.result.data));
       }),
     );
 
-    const {user} = render(<Details />, {
-      wrapper: getWrapper(),
-    });
-
-    await waitFor(() =>
-      expect(screen.getByTestId('assignee-task-details')).toHaveTextContent(
-        'Unassigned - claim task to work on this task.',
-      ),
+    const {user, rerender} = render(
+      <Details task={MOCK_UNCLAIMED_TASK} onAssigmentError={noop} />,
+      {
+        wrapper: getWrapper(),
+      },
     );
 
-    await user.click(await screen.findByRole('button', {name: /^claim$/i}));
+    await user.click(
+      await screen.findByRole('button', {
+        name: 'Claim',
+      }),
+    );
 
     expect(
       screen.queryByRole('button', {name: /^claim$/i}),
@@ -160,16 +150,14 @@ describe('<Details />', () => {
     expect(screen.getByText('Claiming...')).toBeInTheDocument();
     expect(await screen.findByText('Claiming successful')).toBeInTheDocument();
     expect(screen.queryByText('Claiming...')).not.toBeInTheDocument();
+
+    rerender(<Details task={MOCK_TASK_CLAIMED} onAssigmentError={noop} />);
+
     expect(
       await screen.findByRole('button', {name: /^unclaim$/i}),
     ).toBeInTheDocument();
     expect(screen.queryByText('Claiming successful')).not.toBeInTheDocument();
-    expect(screen.getByTestId('assignee-task-details')).toHaveTextContent(
-      'demo',
-    );
-    expect(screen.getByTestId('assignee-task-details')).not.toHaveTextContent(
-      'Unassigned - claim task to work on this task.',
-    );
+    expect(screen.getByText('Assigned')).toBeInTheDocument();
   });
 
   it('should render claimed task and unclaim it', async () => {
@@ -177,24 +165,22 @@ describe('<Details />', () => {
       graphql.query('GetCurrentUser', (_, res, ctx) => {
         return res.once(ctx.data(mockGetCurrentUser));
       }),
-      graphql.query('GetTask', (_, res, ctx) => {
-        return res.once(ctx.data(mockGetTaskClaimed().result.data));
-      }),
       graphql.mutation('UnclaimTask', (_, res, ctx) => {
         return res.once(ctx.data(mockUnclaimTask.result.data));
       }),
     );
 
-    const {user} = render(<Details />, {
-      wrapper: getWrapper(),
-    });
+    const {user, rerender} = render(
+      <Details task={MOCK_TASK_CLAIMED} onAssigmentError={noop} />,
+      {
+        wrapper: getWrapper(),
+      },
+    );
 
     expect(
       await screen.findByRole('button', {name: /^unclaim$/i}),
     ).toBeInTheDocument();
-    expect(screen.getByTestId('assignee-task-details')).not.toHaveTextContent(
-      'Unassigned - claim task to work on this task.',
-    );
+    expect(screen.getByText('Assigned')).toBeInTheDocument();
 
     await user.click(screen.getByRole('button', {name: /^unclaim$/i}));
 
@@ -202,6 +188,9 @@ describe('<Details />', () => {
     expect(
       await screen.findByText('Unclaiming successful'),
     ).toBeInTheDocument();
+
+    rerender(<Details task={MOCK_UNCLAIMED_TASK} onAssigmentError={noop} />);
+
     expect(
       await screen.findByRole('button', {name: /^claim$/i}),
     ).toBeInTheDocument();
@@ -210,58 +199,48 @@ describe('<Details />', () => {
     expect(
       screen.queryByRole('button', {name: /^unclaim$/i}),
     ).not.toBeInTheDocument();
-    expect(screen.getByTestId('assignee-task-details')).toHaveTextContent(
-      'Unassigned - claim task to work on this task.',
-    );
+    expect(screen.getByText('Unassigned')).toBeInTheDocument();
   });
 
-  it('should not render `unclaim task` for restricted users', async () => {
+  it('should not render assignment button on claimed tasks', async () => {
     nodeMockServer.use(
       graphql.query('GetCurrentUser', (_, res, ctx) => {
         return res.once(ctx.data(mockGetCurrentRestrictedUser));
-      }),
-      graphql.query('GetTask', (_, res, ctx) => {
-        return res.once(ctx.data(mockGetTaskClaimed().result.data));
       }),
       graphql.mutation('UnclaimTask', (_, res, ctx) => {
         return res.once(ctx.data(mockUnclaimTask.result.data));
       }),
     );
 
-    render(<Details />, {
+    render(<Details task={MOCK_TASK_CLAIMED} onAssigmentError={noop} />, {
       wrapper: getWrapper(),
     });
 
-    expect(await screen.findByText('Nice Process')).toBeInTheDocument();
-    expect(await screen.findByText('demo')).toBeInTheDocument();
-
+    expect(screen.getByText('Nice Process')).toBeInTheDocument();
+    expect(screen.getByText('Assigned')).toBeInTheDocument();
     expect(
       screen.queryByRole('button', {name: /^unclaim$/i}),
     ).not.toBeInTheDocument();
   });
 
-  it('should not render `claim task` for restricted users', async () => {
+  it('should not render assignment on unclaimed tasks', async () => {
     nodeMockServer.use(
       graphql.query('GetCurrentUser', (_, res, ctx) => {
         return res.once(ctx.data(mockGetCurrentRestrictedUser));
-      }),
-      graphql.query('GetTask', (_, res, ctx) => {
-        return res.once(ctx.data(mockGetTaskUnclaimed().result.data));
       }),
       graphql.mutation('ClaimTask', (_, res, ctx) => {
         return res.once(ctx.data(mockClaimTask.result.data));
       }),
     );
 
-    render(<Details />, {
+    render(<Details task={MOCK_UNCLAIMED_TASK} onAssigmentError={noop} />, {
       wrapper: getWrapper(),
     });
 
-    expect(await screen.findByText('Nice Process')).toBeInTheDocument();
-    expect(await screen.findByText('Demo User')).toBeInTheDocument();
+    expect(screen.getByText('Nice Process')).toBeInTheDocument();
+    expect(screen.getByText('Unassigned')).toBeInTheDocument();
     expect(
       screen.queryByRole('button', {name: /^claim$/i}),
     ).not.toBeInTheDocument();
-    expect(screen.getByTestId('assignee-task-details')).toHaveTextContent('--');
   });
 });

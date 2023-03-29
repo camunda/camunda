@@ -6,21 +6,22 @@
  */
 
 import {useMutation} from '@apollo/client';
-import {useParams} from 'react-router-dom';
-import {GetTask, useTask} from 'modules/queries/get-task';
+import {GetTask} from 'modules/queries/get-task';
 import {CLAIM_TASK, ClaimTaskVariables} from 'modules/mutations/claim-task';
 import {
   UNCLAIM_TASK,
   UnclaimTaskVariables,
 } from 'modules/mutations/unclaim-task';
-import {Table, LeftTD, RightTD, TR} from 'modules/components/Table';
 import {formatDate} from 'modules/utils/formatDate';
 import {TaskStates} from 'modules/constants/taskStates';
 import {
-  Assignee,
+  Aside,
   ClaimButtonContainer,
-  HelperText,
-  AssigneeText,
+  Container,
+  Content,
+  Header,
+  HeaderLeftContainer,
+  HeaderRightContainer,
 } from './styled';
 import {shouldFetchMore} from './shouldFetchMore';
 import {shouldDisplayNotification} from './shouldDisplayNotification';
@@ -30,6 +31,8 @@ import {tracking} from 'modules/tracking';
 import {useState} from 'react';
 import {notificationsStore} from 'modules/stores/notifications';
 import {AsyncActionButton} from 'modules/components/AsyncActionButton';
+import {BodyCompact, Label} from 'modules/components/FontTokens';
+import {ContainedList, ContainedListItem, Tag} from '@carbon/react';
 
 type AssignmentStatus =
   | 'off'
@@ -45,8 +48,28 @@ const ASSIGNMENT_TOGGLE_LABEL = {
   unclaimingSuccessful: 'Unclaiming successful',
 } as const;
 
-const Details: React.FC = () => {
-  const {id = ''} = useParams<{id: string}>();
+type Props = {
+  children?: React.ReactNode;
+  task: GetTask['task'];
+  onAssigmentError: () => void;
+};
+
+const Details: React.FC<Props> = ({children, onAssigmentError, task}) => {
+  const {
+    id,
+    name,
+    processName,
+    creationTime,
+    completionTime,
+    dueDate,
+    followUpDate,
+    assignee,
+    taskState,
+    candidateUsers,
+    candidateGroups,
+  } = task;
+  const candidates = [...(candidateUsers ?? []), ...(candidateGroups ?? [])];
+  const isAssigned = assignee !== null;
   const [assignmentStatus, setAssignmentStatus] =
     useState<AssignmentStatus>('off');
   const [claimTask, {loading: claimLoading}] = useMutation<
@@ -55,35 +78,17 @@ const Details: React.FC = () => {
   >(CLAIM_TASK, {
     variables: {id},
   });
-
   const [unclaimTask, {loading: unclaimLoading}] = useMutation<
     GetTask,
     UnclaimTaskVariables
   >(UNCLAIM_TASK, {
     variables: {id},
   });
-
-  const {data, fetchMore} = useTask(id);
   const isLoading = (claimLoading || unclaimLoading) ?? false;
-
-  if (data === undefined) {
-    return null;
-  }
-
-  const {
-    task: {
-      name,
-      processName,
-      creationTime,
-      completionTime,
-      assignee,
-      taskState,
-    },
-  } = data;
 
   const handleClick = async () => {
     try {
-      if (assignee !== null) {
+      if (isAssigned) {
         setAssignmentStatus('unclaiming');
         await unclaimTask();
         setAssignmentStatus('unclaimingSuccessful');
@@ -102,7 +107,7 @@ const Details: React.FC = () => {
       if (shouldDisplayNotification(errorMessage)) {
         notificationsStore.displayNotification({
           kind: 'error',
-          title: assignee
+          title: isAssigned
             ? 'Task could not be unclaimed'
             : 'Task could not be claimed',
           subtitle: getTaskAssignmentChangeErrorMessage(errorMessage),
@@ -112,7 +117,7 @@ const Details: React.FC = () => {
 
       // TODO: this does not have to be a separate function, once we are able to use error codes we can move this inside getTaskAssigmentChangeErrorMessage
       if (shouldFetchMore(errorMessage)) {
-        fetchMore({variables: {id}});
+        onAssigmentError();
       }
     }
   };
@@ -128,87 +133,99 @@ const Details: React.FC = () => {
   }
 
   return (
-    <div>
-      <Table data-testid="details-table">
-        <tbody>
-          <TR>
-            <LeftTD>Task Name</LeftTD>
-            <RightTD>{name}</RightTD>
-          </TR>
-          <TR>
-            <LeftTD>Process Name</LeftTD>
-            <RightTD>{processName}</RightTD>
-          </TR>
-          <TR>
-            <LeftTD>Creation Date</LeftTD>
-            <RightTD>{formatDate(creationTime)}</RightTD>
-          </TR>
-          {completionTime && (
-            <TR>
-              <LeftTD>Completion Date</LeftTD>
-              <RightTD>{formatDate(completionTime)}</RightTD>
-            </TR>
-          )}
-
-          <TR>
-            <LeftTD>Assignee</LeftTD>
-            <RightTD>
-              <Assignee data-testid="assignee-task-details">
-                <AssigneeText>
-                  {assignee ? (
-                    assignee
-                  ) : (
-                    <Restricted scopes={['write']} fallback="--">
-                      <>
-                        Unassigned
-                        <HelperText>
-                          &nbsp;- claim task to work on this task.
-                        </HelperText>
-                      </>
-                    </Restricted>
-                  )}
-                </AssigneeText>
-                {taskState === TaskStates.Created && (
-                  <Restricted scopes={['write']}>
-                    <ClaimButtonContainer>
-                      <AsyncActionButton
-                        inlineLoadingProps={{
-                          description:
-                            assignmentStatus === 'off'
-                              ? undefined
-                              : ASSIGNMENT_TOGGLE_LABEL[assignmentStatus],
-                          'aria-live': ['claiming', 'unclaiming'].includes(
-                            assignmentStatus,
-                          )
-                            ? 'assertive'
-                            : 'polite',
-                          onSuccess: () => {
-                            setAssignmentStatus('off');
-                          },
-                        }}
-                        buttonProps={{
-                          kind: assignee ? 'ghost' : 'primary',
-                          size: 'sm',
-                          type: 'button',
-                          onClick: handleClick,
-                          disabled: isLoading,
-                          autoFocus: true,
-                          id: 'main-content',
-                        }}
-                        status={getAsyncActionButtonStatus()}
-                        key={id}
-                      >
-                        {assignee ? 'Unclaim' : 'Claim'}
-                      </AsyncActionButton>
-                    </ClaimButtonContainer>
-                  </Restricted>
-                )}
-              </Assignee>
-            </RightTD>
-          </TR>
-        </tbody>
-      </Table>
-    </div>
+    <Container data-testid="details-info">
+      <Content level={4}>
+        <Header as="header" title="Task details header">
+          <HeaderLeftContainer>
+            <BodyCompact $variant="02">{name}</BodyCompact>
+            <Label $color="secondary">{processName}</Label>
+          </HeaderLeftContainer>
+          <HeaderRightContainer>
+            <Label $color="secondary">
+              {isAssigned ? 'Assigned' : 'Unassigned'}
+            </Label>
+            {taskState === TaskStates.Created && (
+              <Restricted scopes={['write']}>
+                <ClaimButtonContainer>
+                  <AsyncActionButton
+                    inlineLoadingProps={{
+                      description:
+                        assignmentStatus === 'off'
+                          ? undefined
+                          : ASSIGNMENT_TOGGLE_LABEL[assignmentStatus],
+                      'aria-live': ['claiming', 'unclaiming'].includes(
+                        assignmentStatus,
+                      )
+                        ? 'assertive'
+                        : 'polite',
+                      onSuccess: () => {
+                        setAssignmentStatus('off');
+                      },
+                    }}
+                    buttonProps={{
+                      kind: isAssigned ? 'ghost' : 'primary',
+                      size: 'sm',
+                      type: 'button',
+                      onClick: handleClick,
+                      disabled: isLoading,
+                      autoFocus: true,
+                      id: 'main-content',
+                    }}
+                    status={getAsyncActionButtonStatus()}
+                    key={id}
+                  >
+                    {isAssigned ? 'Unclaim' : 'Claim'}
+                  </AsyncActionButton>
+                </ClaimButtonContainer>
+              </Restricted>
+            )}
+          </HeaderRightContainer>
+        </Header>
+        {children}
+      </Content>
+      <Aside>
+        <ContainedList label="Details" kind="disclosed">
+          <ContainedListItem>
+            <BodyCompact $color="secondary">Creation date</BodyCompact>
+            <br />
+            <BodyCompact>{formatDate(creationTime)}</BodyCompact>
+          </ContainedListItem>
+          <ContainedListItem>
+            <BodyCompact $color="secondary">Candidates</BodyCompact>
+            <br />
+            {candidates.length === 0 ? (
+              <BodyCompact>No candidates</BodyCompact>
+            ) : null}
+            {candidates.map((candidate) => (
+              <Tag size="sm" type="gray" key={candidate}>
+                {candidate}
+              </Tag>
+            ))}
+          </ContainedListItem>
+          <ContainedListItem>
+            <BodyCompact $color="secondary">Completion date</BodyCompact>
+            <br />
+            <BodyCompact>
+              {completionTime ? formatDate(completionTime) : 'Pending task'}
+            </BodyCompact>
+          </ContainedListItem>
+          <ContainedListItem>
+            <BodyCompact $color="secondary">Due date</BodyCompact>
+            <br />
+            <BodyCompact>
+              {dueDate ? formatDate(dueDate) : 'No due date'}
+            </BodyCompact>
+          </ContainedListItem>
+          <ContainedListItem>
+            <BodyCompact $color="secondary">Follow up date</BodyCompact>
+            <br />
+            <BodyCompact>
+              {followUpDate ? formatDate(followUpDate) : 'No follow up date'}
+            </BodyCompact>
+          </ContainedListItem>
+        </ContainedList>
+      </Aside>
+    </Container>
   );
 };
 

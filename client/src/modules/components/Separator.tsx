@@ -5,13 +5,15 @@
  * except in compliance with the proprietary license.
  */
 
-import styled, {css} from 'styled-components';
+import styled from 'styled-components';
 
-const PanelTitle = styled.h3`
-  ${({theme}) => css`
-    color: var(--cds-text-primary);
-    ${theme.productiveHeading03};
-  `}
+const Separator = styled.hr`
+  width: 100%;
+  max-height: 1px;
+  margin: 0;
+  padding: 0;
+  border: none;
+  border-bottom: 1px solid var(--cds-border-subtle);
 `;
 
-export {PanelTitle};
+export {Separator};

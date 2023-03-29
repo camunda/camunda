@@ -5,20 +5,36 @@
  * except in compliance with the proprietary license.
  */
 
-import {rem} from '@carbon/elements';
-import styled, {css} from 'styled-components';
+import styled from 'styled-components';
+import {TaskDetailsRow as BaseTaskDetailsRow} from './TaskDetailsLayout';
 
-const DetailsFooter = styled.div`
-  ${({theme}) => css`
-    text-align: right;
-    padding: ${theme.spacing03} ${theme.spacing05};
-    background-color: var(--cds-background);
-    border-top: 1px solid var(--cds-border-subtle);
-    display: flex;
-    align-items: center;
-    justify-content: end;
-    min-height: ${rem(62)};
-  `}
+const Container = styled.div`
+  width: 100%;
+  height: 100%;
+  background-color: var(--cds-background);
+  display: flex;
+  justify-content: center;
+  align-items: center;
 `;
+
+const TaskDetailsRow = styled(BaseTaskDetailsRow)`
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: end;
+  text-align: right;
+`;
+
+type Props = {
+  children: React.ReactNode;
+};
+
+const DetailsFooter: React.FC<Props> = ({children}) => {
+  return (
+    <Container>
+      <TaskDetailsRow>{children}</TaskDetailsRow>
+    </Container>
+  );
+};
 
 export {DetailsFooter};

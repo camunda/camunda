@@ -26,6 +26,8 @@ const tasks: ReadonlyArray<Task> = [
     processDefinitionId: null,
     followUpDate: null,
     dueDate: null,
+    candidateGroups: [],
+    candidateUsers: [],
   },
   {
     __typename: 'Task',
@@ -58,6 +60,8 @@ const tasks: ReadonlyArray<Task> = [
     processDefinitionId: null,
     followUpDate: null,
     dueDate: null,
+    candidateGroups: [],
+    candidateUsers: [],
   },
   {
     __typename: 'Task',
@@ -75,6 +79,8 @@ const tasks: ReadonlyArray<Task> = [
     processDefinitionId: null,
     followUpDate: null,
     dueDate: null,
+    candidateGroups: [],
+    candidateUsers: [],
   },
 ];
 
@@ -111,6 +117,8 @@ const generateTask = (id: string, name?: string): Task => {
     completionTime: null,
     formKey: null,
     variables: [],
+    candidateGroups: [],
+    candidateUsers: [],
   };
 };
 

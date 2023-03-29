@@ -5,9 +5,8 @@
  * except in compliance with the proprietary license.
  */
 
-import styled, {css, createGlobalStyle} from 'styled-components';
+import {css, createGlobalStyle} from 'styled-components';
 import {rem} from '@carbon/elements';
-import {Layer} from '@carbon/react';
 
 function getSelectArrowSvg(color: string) {
   return `url('data:image/svg+xml;base64,${window.btoa(
@@ -26,27 +25,6 @@ function getNumberInputPlusSvg(color: string) {
     `<svg focusable="false" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg" fill="${color}" width="16" height="16" viewBox="0 0 32 32" aria-hidden="true"><path d="M17 15L17 8 15 8 15 15 8 15 8 17 15 17 15 24 17 24 17 17 24 17 24 15z" /></svg>`,
   )}')`;
 }
-
-type ContainerProps = {
-  $hasFooter?: boolean;
-};
-
-const Container = styled(Layer)<ContainerProps>`
-  ${({$hasFooter}) => css`
-    display: grid;
-    grid-template-columns: 100%;
-    grid-template-rows: ${$hasFooter ? css`auto 1fr ${rem(62)}` : 'auto 1fr'};
-    overflow-y: hidden;
-  `}
-`;
-
-const FormContainer = styled.div`
-  ${({theme}) => css`
-    overflow-y: auto;
-    padding-left: ${theme.spacing05};
-    padding-right: ${theme.spacing05};
-  `}
-`;
 
 const getBaseInputStyles = ({height}: {height: string}) => css`
   ${({theme}) => css`
@@ -984,8 +962,8 @@ const FormCustomStyling = createGlobalStyle`
   ${SELECT_STYLES}
 
   .fjs-container {
+    width: 100%;
     height: min-content;
-    max-width: ${rem(900)};
 
     .fjs-form {
       background-color: transparent;
@@ -1008,4 +986,4 @@ const FormCustomStyling = createGlobalStyle`
   }
 `;
 
-export {Container, FormCustomStyling, FormContainer};
+export {FormCustomStyling};

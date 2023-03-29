@@ -25,45 +25,34 @@ fixture('Task details')
 const getURL = ClientFunction(() => window.location.href);
 
 test('load task details when a task is selected', async (t) => {
-  const withinExpandedPanel = within(screen.getByTitle('Left panel'));
-
   await t.click(
-    withinExpandedPanel.getAllByText('usertask_to_be_completed').nth(0),
+    within(screen.getByTitle('Left panel'))
+      .getAllByText('usertask_to_be_completed')
+      .nth(0),
   );
 
-  await t.expect(screen.queryByTestId('details-table').exists).ok();
-
-  const withinDetailsTable = within(screen.getByTestId('details-table'));
+  const taskDetailsHeader = within(screen.getByTitle('Task details header'));
 
   await t
-    .expect(withinDetailsTable.getByRole('cell', {name: 'Task Name'}).exists)
+    .expect(taskDetailsHeader.queryByText('Some user activity').exists)
     .ok()
-    .expect(
-      withinDetailsTable.getByRole('cell', {name: 'Some user activity'}).exists,
-    )
+    .expect(taskDetailsHeader.getByText('usertask_to_be_completed').exists)
+    .ok()
+    .expect(taskDetailsHeader.getByText('Unassigned').exists)
+    .ok()
+    .expect(taskDetailsHeader.getByRole('button', {name: 'Claim'}).exists)
     .ok();
 
-  await t
-    .expect(withinDetailsTable.getByRole('cell', {name: 'Process Name'}).exists)
-    .ok()
-    .expect(
-      withinDetailsTable.getByRole('cell', {name: 'usertask_to_be_completed'})
-        .exists,
-    )
-    .ok();
+  const withinDetailsPanel = within(screen.getByLabelText('Details'));
 
   await t
-    .expect(
-      withinDetailsTable.getByRole('cell', {name: 'Creation Date'}).exists,
-    )
-    .ok();
-
-  await t
-    .expect(withinDetailsTable.getByRole('cell', {name: 'Assignee'}).exists)
+    .expect(withinDetailsPanel.getByText('Creation date').exists)
     .ok()
-    .expect(withinDetailsTable.getByRole('button', {name: 'Claim'}).exists)
+    .expect(withinDetailsPanel.getByText('Completion date').exists)
     .ok()
-    .expect(withinDetailsTable.getByText('Unassigned').exists)
+    .expect(withinDetailsPanel.getByText('Due date').exists)
+    .ok()
+    .expect(withinDetailsPanel.getByText('Follow up date').exists)
     .ok();
 });
 
@@ -74,54 +63,59 @@ test('claim and unclaim task', async (t) => {
       .nth(0),
   );
 
+  const taskDetailsHeader = within(screen.getByTitle('Task details header'));
+
   await t
-    .expect(screen.queryByTestId('details-table').exists)
-    .ok()
     .expect(screen.getByRole('button', {name: 'Claim'}).exists)
     .ok()
-    .expect(screen.queryByRole('button', {name: 'Complete Task'}).exists)
-    .notOk()
+    .expect(
+      screen
+        .queryByRole('button', {name: 'Complete Task'})
+        .hasAttribute('disabled'),
+    )
+    .ok()
     .click(screen.getByRole('button', {name: 'Claim'}))
     .expect(screen.queryByRole('button', {name: 'Unclaim'}).exists)
     .ok()
+    .expect(taskDetailsHeader.getByText('Assigned').exists)
+    .ok()
     .expect(
-      within(screen.getByTestId('assignee-task-details')).getByText('demo')
-        .exists,
+      screen
+        .getByRole('button', {name: 'Complete Task'})
+        .hasAttribute('disabled'),
     )
-    .ok()
-    .expect(screen.getByRole('button', {name: 'Complete Task'}).exists)
-    .ok()
+    .notOk()
     .click(screen.getByRole('button', {name: 'Unclaim'}))
     .expect(screen.queryByRole('button', {name: 'Claim'}).exists)
     .ok()
-    .expect(
-      within(screen.queryByTestId('details-table')).getByText('Unassigned')
-        .exists,
-    )
+    .expect(taskDetailsHeader.getByText('Unassigned').exists)
     .ok()
-    .expect(screen.queryByRole('button', {name: 'Complete Task'}).exists)
-    .notOk();
+    .expect(
+      screen
+        .queryByRole('button', {name: 'Complete Task'})
+        .hasAttribute('disabled'),
+    )
+    .ok();
 });
 
 test('complete task', async (t) => {
-  const withinExpandedPanel = within(screen.getByTitle('Left panel'));
-
-  await t.click(withinExpandedPanel.getByText('usertask_to_be_completed'));
-
-  await t.expect(screen.queryByTestId('details-table').exists).ok();
-
-  const withinDetailsTable = within(screen.getByTestId('details-table'));
+  await t.click(
+    within(screen.getByTitle('Left panel')).getByText(
+      'usertask_to_be_completed',
+    ),
+  );
 
   await t
     .expect(
-      withinDetailsTable.queryByRole('cell', {name: 'Completion Date'}).exists,
+      within(screen.queryByLabelText('Details')).queryByText('Pending task')
+        .exists,
     )
-    .notOk();
+    .ok();
 
   const currentUrl = await getURL();
 
   await t
-    .click(withinDetailsTable.getByRole('button', {name: 'Claim'}))
+    .click(screen.getByRole('button', {name: 'Claim'}))
     .click(screen.getByRole('button', {name: 'Complete Task'}));
 
   await t
@@ -132,13 +126,14 @@ test('complete task', async (t) => {
 
   await t.navigateTo(currentUrl);
 
-  await t.expect(screen.queryByTestId('details-table').exists).ok();
-
   await t
+    .expect(screen.queryByLabelText('Details').exists)
+    .ok()
     .expect(
-      withinDetailsTable.getByRole('cell', {name: 'Completion Date'}).exists,
+      within(screen.queryByLabelText('Details')).queryByText('Pending task')
+        .exists,
     )
-    .ok();
+    .notOk();
 });
 
 test('task completion with form', async (t) => {

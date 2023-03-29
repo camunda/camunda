@@ -117,10 +117,10 @@ describe('<FormJS />', () => {
     expect(screen.getByLabelText(/my variable/i)).toBeDisabled();
     expect(screen.getByLabelText(/is cool\?/i)).toBeDisabled();
     expect(
-      screen.queryByRole('button', {
+      screen.getByRole('button', {
         name: /complete task/i,
       }),
-    ).not.toBeInTheDocument();
+    ).toBeDisabled();
   });
 
   it('should render form for claimed task', async () => {

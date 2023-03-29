@@ -29,7 +29,7 @@ const Tasks: React.FC = () => {
           tasks={tasks}
         />
       </TasksPanel>
-      <DetailsPanel title="Details" variant="layer">
+      <DetailsPanel>
         <Routes>
           <Route
             index

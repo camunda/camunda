@@ -17,7 +17,6 @@ import {getCompleteTaskErrorMessage} from './getCompleteTaskErrorMessage';
 import {shouldFetchMore} from './shouldFetchMore';
 import {Variables} from './Variables';
 import {Details} from './Details';
-import {Container} from './styled';
 import {
   GetCurrentUser,
   GET_CURRENT_USER,
@@ -27,9 +26,9 @@ import {Task as TaskType, Variable} from 'modules/types';
 import {FormJS} from './FormJS';
 import {tracking} from 'modules/tracking';
 import {notificationsStore} from 'modules/stores/notifications';
-import {Skeleton} from './Skeleton';
 import {storeStateLocally} from 'modules/utils/localStorage';
 import {useTaskFilters} from 'modules/hooks/useTaskFilters';
+import {DetailsSkeleton} from './Details/DetailsSkeleton';
 
 const CAMUNDA_FORMS_PREFIX = 'camunda-forms:bpmn:';
 
@@ -50,10 +49,8 @@ const Task: React.FC<Props> = ({hasRemainingTasks, onCompleted}) => {
   const {id = ''} = useParams<'id'>();
   const navigate = useNavigate();
   const location = useLocation();
-  const {fetchMore, data, loading} = useTask(id);
-
+  const {fetchMore, data} = useTask(id);
   const {data: userData} = useQuery<GetCurrentUser>(GET_CURRENT_USER);
-
   const [completeTask] = useMutation<GetTask, CompleteTaskVariables>(
     COMPLETE_TASK,
     {
@@ -62,6 +59,10 @@ const Task: React.FC<Props> = ({hasRemainingTasks, onCompleted}) => {
   );
   const {filter} = useTaskFilters();
   const {formKey, processDefinitionId, id: taskId} = data?.task ?? {};
+  const isFormAvailable =
+    typeof formKey === 'string' &&
+    typeof processDefinitionId === 'string' &&
+    isCamundaForms(formKey);
 
   useEffect(() => {
     tracking.track({
@@ -116,38 +117,43 @@ const Task: React.FC<Props> = ({hasRemainingTasks, onCompleted}) => {
     }
   }
 
+  if (data === undefined || userData === undefined) {
+    return <DetailsSkeleton data-testid="details-skeleton" />;
+  }
+
   return (
-    <Container>
-      {loading && <Skeleton data-testid="details-skeleton" />}
-      {data !== undefined && userData !== undefined && (
-        <>
-          <Details />
-          {typeof formKey === 'string' &&
-          typeof processDefinitionId === 'string' &&
-          isCamundaForms(formKey) ? (
-            <FormJS
-              key={data.task.id}
-              task={data.task}
-              id={getFormId(formKey)}
-              user={userData.currentUser}
-              onSubmit={handleSubmission}
-              onSubmitSuccess={handleSubmissionSuccess}
-              onSubmitFailure={handleSubmissionFailure}
-              processDefinitionId={processDefinitionId}
-            />
-          ) : (
-            <Variables
-              key={data.task.id}
-              task={data.task}
-              user={userData.currentUser}
-              onSubmit={handleSubmission}
-              onSubmitSuccess={handleSubmissionSuccess}
-              onSubmitFailure={handleSubmissionFailure}
-            />
-          )}
-        </>
+    <Details
+      task={data.task}
+      onAssigmentError={() => {
+        fetchMore({
+          variables: {
+            id,
+          },
+        });
+      }}
+    >
+      {isFormAvailable ? (
+        <FormJS
+          key={data.task.id}
+          task={data.task}
+          id={getFormId(formKey)}
+          user={userData.currentUser}
+          onSubmit={handleSubmission}
+          onSubmitSuccess={handleSubmissionSuccess}
+          onSubmitFailure={handleSubmissionFailure}
+          processDefinitionId={processDefinitionId}
+        />
+      ) : (
+        <Variables
+          key={data.task.id}
+          task={data.task}
+          user={userData.currentUser}
+          onSubmit={handleSubmission}
+          onSubmitSuccess={handleSubmissionSuccess}
+          onSubmitFailure={handleSubmissionFailure}
+        />
       )}
-    </Container>
+    </Details>
   );
 };
 

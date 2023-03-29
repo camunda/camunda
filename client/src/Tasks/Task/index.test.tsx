@@ -103,7 +103,7 @@ describe('<Task />', () => {
       wrapper: getWrapper(['/0']),
     });
 
-    expect(await screen.findByTestId('details-table')).toBeInTheDocument();
+    expect(await screen.findByTestId('details-info')).toBeInTheDocument();
     expect(await screen.findByTestId('variables-table')).toBeInTheDocument();
     expect(screen.getByText('Complete Task')).toBeInTheDocument();
   });
@@ -132,7 +132,7 @@ describe('<Task />', () => {
       screen.getByTestId('details-skeleton'),
     );
 
-    expect(screen.getByTestId('details-table')).toBeInTheDocument();
+    expect(screen.getByTestId('details-info')).toBeInTheDocument();
     expect(screen.getByTestId('embedded-form')).toBeInTheDocument();
     expect(
       await screen.findByRole('button', {name: /complete task/i}),
@@ -156,9 +156,9 @@ describe('<Task />', () => {
       wrapper: getWrapper(['/0']),
     });
 
-    expect(await screen.findByTestId('details-table')).toBeInTheDocument();
+    expect(await screen.findByTestId('details-info')).toBeInTheDocument();
     expect(await screen.findByTestId('variables-table')).toBeInTheDocument();
-    expect(screen.queryByText('Complete Task')).not.toBeInTheDocument();
+    expect(screen.getByText('Complete Task')).toBeDisabled();
   });
 
   it('should render completed task with embedded form', async () => {
@@ -181,9 +181,9 @@ describe('<Task />', () => {
       wrapper: getWrapper(['/0']),
     });
 
-    expect(await screen.findByTestId('details-table')).toBeInTheDocument();
+    expect(await screen.findByTestId('details-info')).toBeInTheDocument();
     expect(await screen.findByTestId('embedded-form')).toBeInTheDocument();
-    expect(screen.queryByText('Complete Task')).not.toBeInTheDocument();
+    expect(screen.getByText('Complete Task')).toBeDisabled();
   });
 
   it('should complete task without variables', async () => {
@@ -283,7 +283,7 @@ describe('<Task />', () => {
       screen.getByTestId('details-skeleton'),
     );
 
-    expect(screen.getByTestId('details-table')).toBeInTheDocument();
+    expect(screen.getByTestId('details-info')).toBeInTheDocument();
   });
 
   it('should reset variables', async () => {
@@ -352,7 +352,7 @@ describe('<Task />', () => {
       wrapper: getWrapper(['/0']),
     });
 
-    expect(await screen.findByTestId('details-table')).toBeInTheDocument();
+    expect(await screen.findByTestId('details-info')).toBeInTheDocument();
     expect(await screen.findByTestId('variables-table')).toBeInTheDocument();
     expect(notificationsStore.displayNotification).toHaveBeenCalledWith({
       kind: 'error',

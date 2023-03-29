@@ -24,6 +24,8 @@ const unclaimedTask = (id = '0'): Omit<Task, 'variables'> => ({
   processDefinitionId: null,
   followUpDate: null,
   dueDate: null,
+  candidateGroups: ['accounting candidate'],
+  candidateUsers: ['jane candidate'],
 });
 
 const unclaimedTaskWithForm = (id = '0'): Omit<Task, 'variables'> => ({
@@ -41,6 +43,8 @@ const unclaimedTaskWithForm = (id = '0'): Omit<Task, 'variables'> => ({
   processDefinitionId: 'process',
   followUpDate: null,
   dueDate: null,
+  candidateGroups: [],
+  candidateUsers: [],
 });
 
 const completedTask = (id = '0'): Omit<Task, 'variables'> => ({
@@ -58,6 +62,8 @@ const completedTask = (id = '0'): Omit<Task, 'variables'> => ({
   processDefinitionId: null,
   followUpDate: null,
   dueDate: null,
+  candidateGroups: [],
+  candidateUsers: [],
 });
 
 const completedTaskWithForm = (id = '0'): Omit<Task, 'variables'> => ({
@@ -75,6 +81,8 @@ const completedTaskWithForm = (id = '0'): Omit<Task, 'variables'> => ({
   processDefinitionId: 'process',
   followUpDate: null,
   dueDate: null,
+  candidateGroups: [],
+  candidateUsers: [],
 });
 
 const claimedTask = (id = '0'): Omit<Task, 'variables'> => ({
@@ -92,6 +100,8 @@ const claimedTask = (id = '0'): Omit<Task, 'variables'> => ({
   processDefinitionId: null,
   followUpDate: null,
   dueDate: null,
+  candidateGroups: [],
+  candidateUsers: [],
 });
 
 const claimedTaskWithForm = (id = '0'): Omit<Task, 'variables'> => ({
@@ -109,6 +119,8 @@ const claimedTaskWithForm = (id = '0'): Omit<Task, 'variables'> => ({
   processDefinitionId: 'process',
   followUpDate: null,
   dueDate: null,
+  candidateGroups: [],
+  candidateUsers: [],
 });
 
 export {

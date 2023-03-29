@@ -48,6 +48,8 @@ type Task = Readonly<{
   isFirst: boolean;
   formKey: string | null;
   processDefinitionId: string | null;
+  candidateGroups: ReadonlyArray<string>;
+  candidateUsers: ReadonlyArray<string>;
 }>;
 
 type Form = Readonly<{

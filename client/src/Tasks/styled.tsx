@@ -7,7 +7,6 @@
 
 import {rem} from '@carbon/elements';
 import styled, {css} from 'styled-components';
-import {Panel} from 'modules/components/Panel';
 import {Stack} from '@carbon/react';
 
 const Container = styled.main`
@@ -26,7 +25,8 @@ const TasksPanel = styled(Stack)`
   `}
 `;
 
-const DetailsPanel = styled(Panel)`
+const DetailsPanel = styled.section`
+  background-color: var(--cds-layer);
   border-left: 1px solid var(--cds-border-subtle);
   width: 100%;
   height: 100%;

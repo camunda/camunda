@@ -14,15 +14,19 @@ import {getSchemaVariables} from '@bpmn-io/form-js-viewer';
 import '@bpmn-io/form-js-viewer/dist/assets/form-js.css';
 import {DetailsFooter} from 'modules/components/DetailsFooter';
 import {InlineLoadingStatus} from '@carbon/react';
-import {Container, FormContainer, FormCustomStyling} from './styled';
-import {PanelTitle} from 'modules/components/PanelTitle';
-import {PanelHeader} from 'modules/components/PanelHeader';
+import {FormCustomStyling} from './styled';
 import {useSelectedVariables} from 'modules/queries/get-selected-variables';
 import {usePermissions} from 'modules/hooks/usePermissions';
 import {notificationsStore} from 'modules/stores/notifications';
 import {AsyncActionButton} from 'modules/components/AsyncActionButton';
 import {getCompletionButtonDescription} from 'modules/utils/getCompletionButtonDescription';
 import {formManager} from './formManager';
+import {
+  ScrollableContent,
+  TaskDetailsContainer,
+  TaskDetailsRow,
+} from 'modules/components/TaskDetailsLayout';
+import {Separator} from 'modules/components/Separator';
 
 function formatVariablesToFormData(variables: ReadonlyArray<Variable>) {
   return variables.reduce(
@@ -176,44 +180,47 @@ const FormJS: React.FC<Props> = ({
   }, [task.id]);
 
   return (
-    <Container $hasFooter={canCompleteTask} data-testid="embedded-form">
-      <PanelHeader>
-        <PanelTitle>Task Form</PanelTitle>
-      </PanelHeader>
-      <FormCustomStyling />
-      <FormContainer ref={containerRef} tabIndex={-1} />
-      {(canCompleteTask || submissionState === 'finished') && (
-        <DetailsFooter>
-          <AsyncActionButton
-            inlineLoadingProps={{
-              description: getCompletionButtonDescription(submissionState),
-              'aria-live': ['error', 'finished'].includes(submissionState)
-                ? 'assertive'
-                : 'polite',
-              onSuccess: () => {
-                onSubmitSuccess();
+    <>
+      <Separator />
+      <ScrollableContent data-testid="embedded-form">
+        <TaskDetailsContainer>
+          <FormCustomStyling />
+          <TaskDetailsRow ref={containerRef} tabIndex={-1} />
+          <DetailsFooter>
+            <AsyncActionButton
+              inlineLoadingProps={{
+                description: getCompletionButtonDescription(submissionState),
+                'aria-live': ['error', 'finished'].includes(submissionState)
+                  ? 'assertive'
+                  : 'polite',
+                onSuccess: () => {
+                  onSubmitSuccess();
+                  setSubmissionState('inactive');
+                },
+              }}
+              buttonProps={{
+                size: 'md',
+                type: 'submit',
+                disabled: submissionState === 'active' || !canCompleteTask,
+                onClick: () => {
+                  setSubmissionState('active');
+                  formManager.submit();
+                },
+                title: canCompleteTask
+                  ? undefined
+                  : 'You must first claim this task to complete it',
+              }}
+              status={submissionState}
+              onError={() => {
                 setSubmissionState('inactive');
-              },
-            }}
-            buttonProps={{
-              size: 'md',
-              type: 'submit',
-              disabled: submissionState === 'active',
-              onClick: () => {
-                setSubmissionState('active');
-                formManager.submit();
-              },
-            }}
-            status={submissionState}
-            onError={() => {
-              setSubmissionState('inactive');
-            }}
-          >
-            Complete Task
-          </AsyncActionButton>
-        </DetailsFooter>
-      )}
-    </Container>
+              }}
+            >
+              Complete Task
+            </AsyncActionButton>
+          </DetailsFooter>
+        </TaskDetailsContainer>
+      </ScrollableContent>
+    </>
   );
 };
 

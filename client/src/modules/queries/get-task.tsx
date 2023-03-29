@@ -32,6 +32,10 @@ interface GetTask {
     | 'completionTime'
     | 'formKey'
     | 'processDefinitionId'
+    | 'dueDate'
+    | 'followUpDate'
+    | 'candidateGroups'
+    | 'candidateUsers'
   >;
 }
 
@@ -47,6 +51,8 @@ const GET_TASK = gql`
       processName
       creationTime
       completionTime
+      candidateGroups
+      candidateUsers
     }
   }
 `;

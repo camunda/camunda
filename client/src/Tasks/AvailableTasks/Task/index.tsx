@@ -6,7 +6,7 @@
  */
 
 import React from 'react';
-import {Row, Name, Label, TaskLink, Stack, Container, Tag} from './styled';
+import {Row, Label, TaskLink, Stack, Container, Tag} from './styled';
 import {Pages} from 'modules/constants/pages';
 import {formatDate} from 'modules/utils/formatDate';
 import {Task as TaskType} from 'modules/types';
@@ -18,6 +18,7 @@ import {
 } from 'modules/queries/get-current-user';
 import {useTaskFilters} from 'modules/hooks/useTaskFilters';
 import {IS_SORTING_ENABLED} from 'modules/featureFlags';
+import {BodyCompact} from 'modules/components/FontTokens';
 
 type Props = {
   taskId: TaskType['id'];
@@ -49,7 +50,7 @@ const Task = React.forwardRef<HTMLElement, Props>(
     const location = useLocation();
     const isActive = match?.params?.id === taskId;
     const {sortBy} = useTaskFilters();
-    const showFolloupDate =
+    const showFollowupDate =
       IS_SORTING_ENABLED &&
       followUpDate !== null &&
       formatDate(followUpDate) !== '' &&
@@ -68,7 +69,7 @@ const Task = React.forwardRef<HTMLElement, Props>(
           }}
           aria-label={
             isUnassigned
-              ? `Unassgined task: ${name}`
+              ? `Unassigned task: ${name}`
               : `${
                   isAssignedToMe ? `Task assigned to me` : 'Assigned task'
                 }: ${name}`
@@ -76,7 +77,7 @@ const Task = React.forwardRef<HTMLElement, Props>(
         >
           <Stack data-testid={`task-${taskId}`} gap={3} ref={ref}>
             <Row>
-              <Name>{name}</Name>
+              <BodyCompact $variant="02">{name}</BodyCompact>
               <Label $variant="secondary">{processName}</Label>
             </Row>
             <Row>
@@ -110,7 +111,7 @@ const Task = React.forwardRef<HTMLElement, Props>(
                   {formatDate(creationTime)}
                 </Label>
               )}
-              {showFolloupDate ? (
+              {showFollowupDate ? (
                 <Label
                   $variant="primary"
                   title={`Follow-up at ${formatDate(followUpDate!, false)}`}

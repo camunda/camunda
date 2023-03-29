@@ -5,68 +5,104 @@
  * except in compliance with the proprietary license.
  */
 
-import {rem} from '@carbon/elements';
+import {TaskDetailsRow} from 'modules/components/TaskDetailsLayout';
 import styled, {css} from 'styled-components';
 import {IconButton} from './IconButton';
+import {
+  StructuredListWrapper as BaseStructuredListWrapper,
+  StructuredListCell as BaseStructuredListCell,
+} from '@carbon/react';
+import {rem} from '@carbon/elements';
 
-const Container = styled.div`
-  display: grid;
-  grid-template-rows: auto 1fr;
-  overflow-y: hidden;
+const Form = styled.form`
+  width: 100%;
+  height: 100%;
 `;
 
-const TableContainer = styled.div`
-  overflow-y: auto;
-`;
-
-const Body = styled.div`
-  display: flex;
-  flex-direction: column;
-  overflow-y: hidden;
-`;
-
-const EmptyMessage = styled.div`
-  ${({theme}) =>
-    css`
-      margin: ${theme.spacing03} 0 0 ${theme.spacing05};
-      color: var(--cds-text-primary);
-      ${theme.bodyShort02};
-    `}
-`;
-
-const IconContainer = styled.div`
-  height: ${rem(36)};
-  min-width: ${rem(70)};
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-`;
-
-type FormProps = {
-  hasFooter?: boolean;
-  children: React.ReactNode;
-};
-
-const Form = styled.form<FormProps>`
-  display: grid;
-  grid-template-columns: 100%;
-  grid-template-rows: ${({hasFooter}) => (hasFooter ? '1fr auto' : '1fr')};
-  overflow-y: hidden;
+const Container = styled(TaskDetailsRow)`
+  padding: 0;
+  padding-bottom: var(--cds-spacing-05);
 `;
 
 const EmptyFieldsInformationIcon = styled(IconButton)`
-  ${({theme}) =>
-    css`
-      margin-right: ${theme.spacing01};
-    `}
+  margin-right: var(--cds-spacing-01);
+`;
+
+const StructuredListWrapper = styled(BaseStructuredListWrapper)`
+  height: min-content;
+`;
+
+const StructuredListCell = styled(BaseStructuredListCell)`
+  vertical-align: middle;
+`;
+
+const OuterScrollableCellContent = styled.div`
+  height: min-content;
+  overflow-y: auto;
+`;
+
+const InnerScrollableCellContent = styled.div`
+  max-height: 100px;
+  height: min(min-content, 100%);
+  overflow-y: auto;
+`;
+
+const ScrollableCellContent: React.FC<{
+  children: React.ReactNode;
+}> = ({children}) => {
+  return (
+    <OuterScrollableCellContent>
+      <InnerScrollableCellContent>{children}</InnerScrollableCellContent>
+    </OuterScrollableCellContent>
+  );
+};
+
+type IconButtonsContainerProps = {
+  $showExtraPadding?: boolean;
+};
+
+const IconButtonsContainer = styled.div<IconButtonsContainerProps>`
+  ${({$showExtraPadding = false}) => css`
+    display: flex;
+    flex-direction: row;
+    justify-content: flex-end;
+    padding-right: ${$showExtraPadding
+      ? css`calc(var(--cds-spacing-03) + 32px)`
+      : css`var(--cds-spacing-03)`};
+  `}
+`;
+
+const VariableNameCell = styled(StructuredListCell)`
+  width: 200px;
+`;
+
+const VariableValueCell = styled(StructuredListCell)`
+  overflow-y: hidden;
+  word-break: break-all;
+  height: min(100px, min-content);
+`;
+
+const ControlsCell = styled(StructuredListCell)`
+  width: 80px;
+`;
+
+const PanelHeader = styled(TaskDetailsRow)`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  min-height: ${rem(32)};
 `;
 
 export {
-  Container,
-  Body,
-  TableContainer,
-  EmptyMessage,
-  IconContainer,
   Form,
   EmptyFieldsInformationIcon,
+  Container,
+  StructuredListWrapper,
+  StructuredListCell,
+  ScrollableCellContent,
+  IconButtonsContainer,
+  VariableNameCell,
+  VariableValueCell,
+  ControlsCell,
+  PanelHeader,
 };

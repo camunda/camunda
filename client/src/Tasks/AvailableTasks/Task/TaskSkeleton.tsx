@@ -5,17 +5,18 @@
  * except in compliance with the proprietary license.
  */
 
-import {Label, SkeletonContainer, Name, Row} from './styled';
+import {Label, SkeletonContainer, Row} from './styled';
 import {SkeletonText, Stack} from '@carbon/react';
+import {BodyCompact} from 'modules/components/FontTokens';
 
 const TaskSkeleton: React.FC = () => {
   return (
     <SkeletonContainer>
       <Stack gap={3}>
         <Row>
-          <Name>
+          <BodyCompact>
             <SkeletonText width="250px" />
-          </Name>
+          </BodyCompact>
           <Label $variant="secondary">
             <SkeletonText width="200px" />
           </Label>

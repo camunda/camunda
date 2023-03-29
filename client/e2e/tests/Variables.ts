@@ -31,7 +31,7 @@ test('display info message when task has no variables', async (t) => {
       .getAllByText('usertask_without_variables')
       .nth(0),
   );
-  await t.expect(screen.queryByText('Task has no Variables').exists).ok();
+  await t.expect(screen.queryByText('Task has no variables').exists).ok();
 });
 
 test('display variables when task has variables', async (t) => {
@@ -40,7 +40,7 @@ test('display variables when task has variables', async (t) => {
       .getAllByText('usertask_with_variables')
       .nth(0),
   );
-  await t.expect(screen.queryByText('Task has no Variables').exists).notOk();
+  await t.expect(screen.queryByText('Task has no variables').exists).notOk();
 
   const withinVariablesTable = within(screen.getByTestId('variables-table'));
   await t
@@ -75,8 +75,12 @@ test.after(async (t) => {
         .getAllByText('usertask_with_variables')
         .nth(0),
     )
-    .expect(screen.queryByRole('button', {name: 'Add Variable'}).exists)
-    .notOk()
+    .expect(
+      screen
+        .queryByRole('button', {name: 'Add Variable'})
+        .hasAttribute('disabled'),
+    )
+    .ok()
     .click(screen.getByRole('button', {name: 'Claim'}))
     .click(screen.getByRole('button', {name: 'Add Variable'}));
 

@@ -25,6 +25,8 @@ type PolymorphicComponentPropWithRef<
   Props = {},
 > = PolymorphicComponentProp<C, Props> & {ref?: PolymorphicRef<C>};
 
+type Size = 'sm' | 'md' | 'lg' | 'xl';
+
 declare module '@carbon/react' {
   type ThemeType = 'white' | 'g10' | 'g90' | 'g100';
 
@@ -125,7 +127,7 @@ declare module '@carbon/react' {
 
   export const ActionableNotification: React.FunctionComponent<{
     actionButtonLabel: string;
-    ariaLabel?: string;
+    'aria-label'?: string;
     caption?: string;
     children?: React.ReactNode;
     className?: string;
@@ -148,6 +150,44 @@ declare module '@carbon/react' {
     statusIconDescription?: string;
     subtitle?: string;
     title?: string;
+  }>;
+
+  export const ContainedList: React.FunctionComponent<{
+    action?: React.ReactNode;
+    children?: React.ReactNode;
+    className?: string;
+    isInset?: boolean;
+    kind?: 'on-page' | 'disclosed';
+    label: string | React.ReactNode;
+    size?: Size;
+  }>;
+
+  export const ContainedListItem: React.FunctionComponent<{
+    action?: React.ReactNode;
+    children?: React.ReactNode;
+    className?: string;
+    disabled?: boolean;
+    onClick?: () => void;
+    renderIcon?: (() => void) | object;
+  }>;
+
+  type SectionProps<C extends React.ElementType> =
+    PolymorphicComponentPropWithRef<
+      C,
+      {
+        children?: React.ReactNode;
+        className?: string;
+        level?: 1 | 2 | 3 | 4 | 5 | 6;
+      }
+    >;
+
+  export const Section: <C extends React.ElementType = 'section'>(
+    props: SectionProps<C>,
+  ) => React.ReactElement | null;
+
+  export const Heading: React.FunctionComponent<{
+    children?: React.ReactNode;
+    className?: string;
   }>;
 
   export const useTheme: () => {theme: ThemeType};

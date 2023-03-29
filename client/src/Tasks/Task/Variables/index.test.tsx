@@ -115,7 +115,7 @@ describe('<Variables />', () => {
     );
 
     expect(
-      await screen.findByText('Task has no Variables'),
+      await screen.findByText('Task has no variables'),
     ).toBeInTheDocument();
     expect(
       screen.queryByTestId('variables-form-table'),
@@ -548,7 +548,7 @@ describe('<Variables />', () => {
   });
 
   it('should not be able to change variable, add variable and complete task if user has no permission', async () => {
-    const UserName = () => {
+    const UserName: React.FC = () => {
       const {data} = useQuery<GetCurrentUser>(GET_CURRENT_USER);
 
       return <div>{data?.currentUser.displayName}</div>;
@@ -584,9 +584,9 @@ describe('<Variables />', () => {
     expect(await screen.findByText('Demo User')).toBeInTheDocument();
     expect(await screen.findByText(/myVar/)).toBeInTheDocument();
 
-    expect(screen.queryByText(/add variable/i)).not.toBeInTheDocument();
+    expect(screen.getByText(/add variable/i)).toBeDisabled();
     expect(screen.queryByLabelText('myVar')).not.toBeInTheDocument();
-    expect(screen.queryByText(/complete task/i)).not.toBeInTheDocument();
+    expect(screen.getByText(/complete task/i)).toBeDisabled();
   });
 
   it('should add new variable and complete task', async () => {

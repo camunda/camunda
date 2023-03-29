@@ -35,14 +35,6 @@ function getEntryPadding(options?: {
   `;
 }
 
-const Name = styled.span`
-  ${({theme}) =>
-    css`
-      color: var(--cds-text-primary);
-      ${theme.bodyShort02};
-    `}
-`;
-
 type LabelProps = {
   $variant: 'primary' | 'secondary';
 };
@@ -170,4 +162,4 @@ const Tag = styled(BaseTag)`
   cursor: pointer;
 `;
 
-export {Row, Name, Label, TaskLink, Stack, Container, SkeletonContainer, Tag};
+export {Row, Label, TaskLink, Stack, Container, SkeletonContainer, Tag};
