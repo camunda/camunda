@@ -66,7 +66,7 @@ final class ClientStreamRequestManager<M extends BufferWriter, P extends BufferR
             brokerId,
             REQUEST_TIMEOUT);
 
-    result.whenComplete(
+    result.whenCompleteAsync(
         (ignored, error) -> {
           if (error != null) {
             LOG.warn(
@@ -82,7 +82,8 @@ final class ClientStreamRequestManager<M extends BufferWriter, P extends BufferR
             LOG.debug("Opened stream {} to node {}", clientStream, brokerId);
             clientStream.add(brokerId);
           }
-        });
+        },
+        executor::run);
   }
 
   void removeStream(final ClientStream<M, P> clientStream, final Collection<MemberId> servers) {
