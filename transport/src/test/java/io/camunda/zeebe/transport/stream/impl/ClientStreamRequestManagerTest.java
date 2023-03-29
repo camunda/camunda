@@ -9,6 +9,7 @@ package io.camunda.zeebe.transport.stream.impl;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
@@ -121,6 +122,23 @@ class ClientStreamRequestManagerTest {
     verify(mockTransport, times(2))
         .send(eq(StreamTopics.REMOVE.topic()), any(), any(), any(), eq(server), any());
     assertThat(clientStream.isConnected(server)).isFalse();
+  }
+
+  @Test
+  void shouldSendRemoveAllRequestToAllServers() {
+    // given
+    final MemberId server1 = MemberId.from("1");
+    final MemberId server2 = MemberId.from("2");
+    final var servers = Set.of(server1, server2);
+
+    // when
+    requestManager.removeAll(servers);
+
+    // then
+    verify(mockTransport)
+        .unicast(eq(StreamTopics.REMOVE_ALL.topic()), any(), any(), eq(server1), anyBoolean());
+    verify(mockTransport)
+        .unicast(eq(StreamTopics.REMOVE_ALL.topic()), any(), any(), eq(server2), anyBoolean());
   }
 
   private static class TestMetadata implements BufferWriter {
