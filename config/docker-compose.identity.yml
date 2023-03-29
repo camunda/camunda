@@ -62,7 +62,7 @@ services:
     depends_on:
       - elasticsearch
     container_name: zeebe
-    image: camunda/zeebe:8.2.0-alpha5
+    image: camunda/zeebe:8.2.0-rc1
     environment:
       - "JAVA_TOOL_OPTIONS=-Xms512m -Xmx512m"
       - ZEEBE_HOST=${ZEEBE_HOST:-}
