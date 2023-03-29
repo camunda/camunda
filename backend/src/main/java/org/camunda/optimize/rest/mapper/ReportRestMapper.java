@@ -28,7 +28,6 @@ import org.camunda.optimize.service.identity.AbstractIdentityService;
 import org.camunda.optimize.util.SuppressionConstants;
 import org.springframework.stereotype.Component;
 
-import java.io.IOException;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -137,24 +136,16 @@ public class ReportRestMapper {
   private void localizeReportNames(final ReportDefinitionDto<?> reportDefinitionDto, final String locale) {
     if (isManagementOrInstantPreviewReport(reportDefinitionDto)) {
       final String validLocale = localizationService.validateAndReturnValidLocale(locale);
-      try {
-        if (((SingleProcessReportDefinitionRequestDto) reportDefinitionDto).getData().isManagementReport()) {
-          Optional.ofNullable(localizationService.getLocalizationForManagementReportCode(
-            validLocale,
-            reportDefinitionDto.getName()
-          )).ifPresent(reportDefinitionDto::setName);
-        } else {
-          Optional.ofNullable(localizationService.getLocalizationForInstantPreviewReportCode(
-            validLocale,
-            reportDefinitionDto.getName()
-          )).ifPresent(reportDefinitionDto::setName);
-        }
-      } catch (IOException e) {
-        log.error(
-          "Failed to localize Report for Report with name [{}] for locale [{}]",
-          reportDefinitionDto.getName(),
-          validLocale
-        );
+      if (((SingleProcessReportDefinitionRequestDto) reportDefinitionDto).getData().isManagementReport()) {
+        Optional.ofNullable(localizationService.getLocalizationForManagementReportCode(
+          validLocale,
+          reportDefinitionDto.getName()
+        )).ifPresent(reportDefinitionDto::setName);
+      } else {
+        Optional.ofNullable(localizationService.getLocalizationForInstantPreviewReportCode(
+          validLocale,
+          reportDefinitionDto.getName()
+        )).ifPresent(reportDefinitionDto::setName);
       }
     }
   }

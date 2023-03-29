@@ -322,36 +322,20 @@ public class EntitiesReader {
 
 
   private String getLocalizedDashboardName(final DashboardDefinitionRestDto dashboardEntity, final String locale) {
-    try {
-      if (dashboardEntity.isInstantPreviewDashboard()) {
-        return localizationService.getLocalizationForInstantPreviewDashboardCode(locale, dashboardEntity.getName());
-      } else if (dashboardEntity.isManagementDashboard()) {
-        return localizationService.getLocalizationForManagementDashboardCode(locale, dashboardEntity.getName());
-      }
-    } catch (IOException e) {
-      log.error(
-        "Failed to localize name for Management or Instant Preview Dashboard with ID [{}] and name [{}]",
-        dashboardEntity.getId(),
-        dashboardEntity.getName()
-      );
+    if (dashboardEntity.isInstantPreviewDashboard()) {
+      return localizationService.getLocalizationForInstantPreviewDashboardCode(locale, dashboardEntity.getName());
+    } else if (dashboardEntity.isManagementDashboard()) {
+      return localizationService.getLocalizationForManagementDashboardCode(locale, dashboardEntity.getName());
     }
     return dashboardEntity.getName();
   }
 
   private String getLocalizedReportName(final CollectionEntity reportEntity, final String locale) {
     if (reportEntity instanceof SingleProcessReportDefinitionRequestDto) {
-      try {
-        if (((SingleProcessReportDefinitionRequestDto) reportEntity).getData().isInstantPreviewReport()) {
-          return localizationService.getLocalizationForInstantPreviewReportCode(locale, reportEntity.getName());
-        } else if (((SingleProcessReportDefinitionRequestDto) reportEntity).getData().isManagementReport()) {
-          return localizationService.getLocalizationForManagementReportCode(locale, reportEntity.getName());
-        }
-      } catch (IOException e) {
-        log.error(
-          "Failed to localize name for Management or Instant Preview Report with ID [{}] and name [{}]",
-          reportEntity.getId(),
-          reportEntity.getName()
-        );
+      if (((SingleProcessReportDefinitionRequestDto) reportEntity).getData().isInstantPreviewReport()) {
+        return localizationService.getLocalizationForInstantPreviewReportCode(locale, reportEntity.getName());
+      } else if (((SingleProcessReportDefinitionRequestDto) reportEntity).getData().isManagementReport()) {
+        return localizationService.getLocalizationForManagementReportCode(locale, reportEntity.getName());
       }
     }
     return reportEntity.getName();

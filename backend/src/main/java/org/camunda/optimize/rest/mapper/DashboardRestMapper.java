@@ -13,7 +13,6 @@ import org.camunda.optimize.service.LocalizationService;
 import org.camunda.optimize.service.identity.AbstractIdentityService;
 import org.springframework.stereotype.Component;
 
-import java.io.IOException;
 import java.util.Optional;
 
 @Slf4j
@@ -45,24 +44,16 @@ public class DashboardRestMapper {
   private void localizeDashboard(final DashboardDefinitionRestDto dashboardDefinition, final String locale) {
     if (dashboardDefinition.isManagementDashboard() || dashboardDefinition.isInstantPreviewDashboard()) {
       final String validLocale = localizationService.validateAndReturnValidLocale(locale);
-      try {
-        if (dashboardDefinition.isManagementDashboard()) {
-          Optional.ofNullable(localizationService.getLocalizationForManagementDashboardCode(
-            validLocale,
-            dashboardDefinition.getName()
-          )).ifPresent(dashboardDefinition::setName);
-        } else {
-          Optional.ofNullable(localizationService.getLocalizationForInstantPreviewDashboardCode(
-            validLocale,
-            dashboardDefinition.getName()
-          )).ifPresent(dashboardDefinition::setName);
-        }
-      } catch (IOException e) {
-        log.error(
-          "Failed to localize Dashboard for Dashboard with name [{}] for locale [{}]",
-          dashboardDefinition.getName(),
-          validLocale
-        );
+      if (dashboardDefinition.isManagementDashboard()) {
+        Optional.ofNullable(localizationService.getLocalizationForManagementDashboardCode(
+          validLocale,
+          dashboardDefinition.getName()
+        )).ifPresent(dashboardDefinition::setName);
+      } else {
+        Optional.ofNullable(localizationService.getLocalizationForInstantPreviewDashboardCode(
+          validLocale,
+          dashboardDefinition.getName()
+        )).ifPresent(dashboardDefinition::setName);
       }
     }
   }
