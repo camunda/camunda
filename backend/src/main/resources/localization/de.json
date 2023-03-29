@@ -209,7 +209,7 @@
     "createDashboardMessage": "Für diesen Prozess gibt es noch kein Dashboard. Möchten Sie, dass Optimize automatisch ein Dashboard basierend auf einer Prozessvorlage für Sie erstellt?",
     "emailDigest": "Email Digest",
     "digestInfo": "Der Prozess Digest sendet regelmäßige E-Mails mit dem KPI-Status an den Prozesseigentümer. Standardmäßig wird der Digest jeden Montag um 9:00 Uhr versendet (wenn Sie die Standardversandzeit ändern möchten, wenden Sie sich bitte an Ihren Administrator).",
-    "digestConfigured": "Ihr Prozess Digest wurde erfolgreich konfiguriert. Eine E-Mail wurde an {Name} gesendet.",
+    "digestConfigured": "Ihr Prozess Digest wurde erfolgreich konfiguriert. Eine E-Mail wurde an {name} gesendet.",
     "configureKpis": "Erfahren Sie mehr über KPIs",
     "analysing": "<b>{count}</b> {label} analysiert.",
     "processesListed": "{total} {label} aufgelistet",
