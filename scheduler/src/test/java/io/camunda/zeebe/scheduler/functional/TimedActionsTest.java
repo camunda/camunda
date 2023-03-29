@@ -34,7 +34,7 @@ public final class TimedActionsTest {
         new Actor() {
           @Override
           protected void onActorStarted() {
-            actor.runDelayed(Duration.ofMillis(10), action);
+            actor.schedule(Duration.ofMillis(10), action);
           }
         };
 
@@ -55,7 +55,7 @@ public final class TimedActionsTest {
         new Actor() {
           @Override
           protected void onActorStarted() {
-            actor.runDelayed(Duration.ofMillis(10), action);
+            actor.schedule(Duration.ofMillis(10), action);
           }
         };
 
@@ -105,7 +105,7 @@ public final class TimedActionsTest {
     // given
     final Runnable action = mock(Runnable.class);
     final TimerActor actor =
-        new TimerActor(actorControl -> actorControl.runDelayed(Duration.ofMillis(10), action));
+        new TimerActor(actorControl -> actorControl.schedule(Duration.ofMillis(10), action));
 
     // when
     schedulerRule.getClock().setCurrentTime(100);
@@ -125,7 +125,7 @@ public final class TimedActionsTest {
     // given
     final Runnable action = mock(Runnable.class);
     final var actor =
-        new TimerActor(actorControl -> actorControl.runDelayed(Duration.ofMillis(10), action));
+        new TimerActor(actorControl -> actorControl.schedule(Duration.ofMillis(10), action));
 
     // when
     schedulerRule.getClock().setCurrentTime(100);

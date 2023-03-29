@@ -284,7 +284,7 @@ public final class ProcessingStateMachine {
           loggedEvent,
           metadata,
           recoverableException);
-      actor.runDelayed(PROCESSING_RETRY_DELAY, () -> processCommand(currentRecord));
+      actor.schedule(PROCESSING_RETRY_DELAY, () -> processCommand(currentRecord));
     } catch (final UnrecoverableException unrecoverableException) {
       throw unrecoverableException;
     } catch (final ExceededBatchRecordSizeException exceededBatchRecordSizeException) {

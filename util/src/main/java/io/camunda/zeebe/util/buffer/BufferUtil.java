@@ -186,6 +186,16 @@ public final class BufferUtil {
     return array;
   }
 
+  public static byte[] bufferAsArray(final BufferWriter buffer) {
+
+    final var bytes = new byte[buffer.getLength()];
+    final var writeBuffer = new UnsafeBuffer();
+    writeBuffer.wrap(bytes);
+
+    buffer.write(writeBuffer, 0);
+    return bytes;
+  }
+
   public static MutableDirectBuffer wrapArray(final byte[] array) {
     return new UnsafeBuffer(array);
   }

@@ -47,7 +47,7 @@ public class ProcessingScheduleServiceImpl
 
   @Override
   public void runDelayed(final Duration delay, final Runnable followUpTask) {
-    useActorControl(() -> actorControl.runDelayed(delay, followUpTask));
+    useActorControl(() -> actorControl.schedule(delay, followUpTask));
   }
 
   @Override

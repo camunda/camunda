@@ -265,7 +265,7 @@ public final class LongPollingActivateJobsHandler implements ActivateJobsHandler
       final InflightActivateJobsRequest request) {
     final Duration requestTimeout = request.getLongPollingTimeout(longPollingTimeout);
     final ScheduledTimer timeout =
-        actor.runDelayed(
+        actor.schedule(
             requestTimeout,
             () -> {
               request.timeout();

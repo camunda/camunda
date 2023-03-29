@@ -304,6 +304,18 @@ class ProcessingScheduleServiceTest {
     }
 
     @Override
+    protected void onActorStarting() {
+      final var openFuture = processingScheduleService.open(actor);
+      actor.runOnCompletionBlockingCurrentPhase(
+          openFuture,
+          (v, t) -> {
+            if (t != null) {
+              actor.fail(t);
+            }
+          });
+    }
+
+    @Override
     public void runDelayed(final Duration delay, final Runnable task) {
       actor.submit(() -> processingScheduleService.runDelayed(delay, task));
     }
@@ -316,18 +328,6 @@ class ProcessingScheduleServiceTest {
     @Override
     public void runAtFixedRate(final Duration delay, final Task task) {
       actor.submit(() -> processingScheduleService.runAtFixedRate(delay, task));
-    }
-
-    @Override
-    protected void onActorStarting() {
-      final var openFuture = processingScheduleService.open(actor);
-      actor.runOnCompletionBlockingCurrentPhase(
-          openFuture,
-          (v, t) -> {
-            if (t != null) {
-              actor.fail(t);
-            }
-          });
     }
   }
 

@@ -15,6 +15,7 @@ import io.camunda.zeebe.transport.stream.api.RemoteStreamer;
 import io.camunda.zeebe.transport.stream.impl.messages.PushStreamRequest;
 import io.camunda.zeebe.transport.stream.impl.messages.StreamTopics;
 import io.camunda.zeebe.util.buffer.BufferReader;
+import io.camunda.zeebe.util.buffer.BufferUtil;
 import io.camunda.zeebe.util.buffer.BufferWriter;
 import java.time.Duration;
 import java.util.Objects;
@@ -65,19 +66,10 @@ public final class RemoteStreamerImpl<M extends BufferReader, P extends BufferWr
         .send(
             StreamTopics.PUSH.topic(),
             request,
-            this::serialize,
+            BufferUtil::bufferAsArray,
             Function.identity(),
             receiver,
             REQUEST_TIMEOUT)
         .thenApply(ok -> null);
-  }
-
-  private byte[] serialize(final BufferWriter payload) {
-    final var bytes = new byte[payload.getLength()];
-    final var writeBuffer = new UnsafeBuffer();
-    writeBuffer.wrap(bytes);
-
-    payload.write(writeBuffer, 0);
-    return bytes;
   }
 }

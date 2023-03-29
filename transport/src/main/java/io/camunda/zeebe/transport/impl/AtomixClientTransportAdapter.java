@@ -83,7 +83,7 @@ public final class AtomixClientTransportAdapter extends Actor implements ClientT
             timeout);
     actor.call(
         () -> {
-          final var scheduledTimer = actor.runDelayed(timeout, () -> timeoutFuture(requestContext));
+          final var scheduledTimer = actor.schedule(timeout, () -> timeoutFuture(requestContext));
           requestContext.setScheduledTimer(scheduledTimer);
           tryToSend(requestContext);
         });
@@ -132,7 +132,7 @@ public final class AtomixClientTransportAdapter extends Actor implements ClientT
               requestContext.hashCode(),
               RETRY_DELAY);
         }
-        actor.runDelayed(RETRY_DELAY, () -> tryToSend(requestContext));
+        actor.schedule(RETRY_DELAY, () -> tryToSend(requestContext));
       } else {
         if (LOG.isTraceEnabled()) {
           LOG.trace(
@@ -187,7 +187,7 @@ public final class AtomixClientTransportAdapter extends Actor implements ClientT
               RETRY_DELAY);
         }
         // no valid response - retry in respect of the timeout
-        actor.runDelayed(RETRY_DELAY, () -> tryToSend(requestContext));
+        actor.schedule(RETRY_DELAY, () -> tryToSend(requestContext));
       }
     } else {
       // normally the root exception is a completion exception
@@ -205,7 +205,7 @@ public final class AtomixClientTransportAdapter extends Actor implements ClientT
         }
 
         // no registered subscription yet
-        actor.runDelayed(RETRY_DELAY, () -> tryToSend(requestContext));
+        actor.schedule(RETRY_DELAY, () -> tryToSend(requestContext));
       } else {
         if (LOG.isTraceEnabled()) {
           LOG.trace(

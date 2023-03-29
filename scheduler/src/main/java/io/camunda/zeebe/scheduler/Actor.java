@@ -9,9 +9,11 @@ package io.camunda.zeebe.scheduler;
 
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.util.Loggers;
+import java.time.Duration;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
@@ -130,6 +132,16 @@ public abstract class Actor implements AutoCloseable, AsyncClosable, Concurrency
   @Override
   public void run(final Runnable action) {
     actor.run(action);
+  }
+
+  @Override
+  public <T> ActorFuture<T> call(final Callable<T> callable) {
+    return actor.call(callable);
+  }
+
+  @Override
+  public ScheduledTimer schedule(final Duration delay, final Runnable runnable) {
+    return actor.schedule(delay, runnable);
   }
 
   public static ActorBuilder newActor() {

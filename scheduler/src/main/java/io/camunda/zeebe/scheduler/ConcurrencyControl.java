@@ -9,6 +9,8 @@ package io.camunda.zeebe.scheduler;
 
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
+import java.time.Duration;
+import java.util.concurrent.Callable;
 import java.util.function.BiConsumer;
 
 /**
@@ -32,6 +34,18 @@ public interface ConcurrencyControl {
    * @param action action to be invoked
    */
   void run(final Runnable action);
+
+  /**
+   * Schedules a callable to be executed
+   *
+   * @param callable callable to be executed
+   * @return a future with the result
+   * @param <T> type of the result
+   */
+  <T> ActorFuture<T> call(final Callable<T> callable);
+
+  /** Schedule a task to be executed after a delay */
+  ScheduledTimer schedule(final Duration delay, final Runnable runnable);
 
   /**
    * Create a new future object

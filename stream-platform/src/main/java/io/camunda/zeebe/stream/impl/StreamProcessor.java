@@ -277,7 +277,7 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
 
   private void healthCheckTick() {
     lastTickTime = ActorClock.currentTimeMillis();
-    actor.runDelayed(HEALTH_CHECK_TICK_DURATION, this::healthCheckTick);
+    actor.schedule(HEALTH_CHECK_TICK_DURATION, this::healthCheckTick);
   }
 
   private void chainSteps(final int index, final Step[] steps, final Runnable last) {

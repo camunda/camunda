@@ -7,8 +7,10 @@
  */
 package io.camunda.zeebe.transport.stream.impl.messages;
 
+import io.camunda.zeebe.util.SbeUtil;
 import io.camunda.zeebe.util.buffer.BufferReader;
 import io.camunda.zeebe.util.buffer.BufferWriter;
+import io.camunda.zeebe.util.buffer.DirectBufferWriter;
 import java.util.Objects;
 import java.util.UUID;
 import org.agrona.DirectBuffer;
@@ -23,15 +25,17 @@ public final class AddStreamRequest implements BufferReader, BufferWriter {
   private final AddStreamRequestDecoder messageDecoder = new AddStreamRequestDecoder();
 
   private final DirectBuffer streamType = new UnsafeBuffer();
-  private final DirectBuffer metadata = new UnsafeBuffer();
 
   private UUID streamId;
+  private final DirectBuffer metadataReader = new UnsafeBuffer();
+  private BufferWriter metadataWriter = new DirectBufferWriter().wrap(metadataReader);
 
   @Override
   public void wrap(final DirectBuffer buffer, final int offset, final int length) {
     messageDecoder.wrapAndApplyHeader(buffer, offset, headerDecoder);
     messageDecoder.wrapStreamType(streamType);
-    messageDecoder.wrapMetadata(metadata);
+    messageDecoder.wrapMetadata(metadataReader);
+    metadataWriter = new DirectBufferWriter().wrap(metadataReader);
     streamId = new UUID(messageDecoder.id().high(), messageDecoder.id().low());
   }
 
@@ -42,15 +46,20 @@ public final class AddStreamRequest implements BufferReader, BufferWriter {
         + AddStreamRequestEncoder.streamTypeHeaderLength()
         + streamType.capacity()
         + AddStreamRequestEncoder.metadataHeaderLength()
-        + metadata.capacity();
+        + metadataWriter.getLength();
   }
 
   @Override
   public void write(final MutableDirectBuffer buffer, final int offset) {
     messageEncoder
         .wrapAndApplyHeader(buffer, offset, headerEncoder)
-        .putStreamType(streamType, 0, streamType.capacity())
-        .putMetadata(metadata, 0, metadata.capacity());
+        .putStreamType(streamType, 0, streamType.capacity());
+
+    SbeUtil.writeNested(
+        metadataWriter,
+        AddStreamRequestEncoder.metadataHeaderLength(),
+        messageEncoder,
+        AddStreamRequestEncoder.BYTE_ORDER);
 
     if (streamId != null) {
       messageEncoder
@@ -70,11 +79,18 @@ public final class AddStreamRequest implements BufferReader, BufferWriter {
   }
 
   public DirectBuffer metadata() {
-    return metadata;
+    return metadataReader;
   }
 
   public AddStreamRequest metadata(final DirectBuffer metadata) {
-    this.metadata.wrap(metadata);
+    metadataReader.wrap(metadata);
+    metadataWriter = new DirectBufferWriter().wrap(metadata);
+    return this;
+  }
+
+  public AddStreamRequest metadata(final BufferWriter metadataWriter) {
+    this.metadataWriter = metadataWriter;
+    metadataReader.wrap(0, 0);
     return this;
   }
 
@@ -89,7 +105,7 @@ public final class AddStreamRequest implements BufferReader, BufferWriter {
 
   @Override
   public int hashCode() {
-    return Objects.hash(streamType, metadata, streamId);
+    return Objects.hash(streamType, metadataReader, streamId);
   }
 
   @Override
@@ -104,7 +120,7 @@ public final class AddStreamRequest implements BufferReader, BufferWriter {
 
     final AddStreamRequest that = (AddStreamRequest) o;
     return streamType.equals(that.streamType)
-        && metadata.equals(that.metadata)
+        && metadataReader.equals(that.metadataReader)
         && Objects.equals(streamId, that.streamId);
   }
 
@@ -114,7 +130,7 @@ public final class AddStreamRequest implements BufferReader, BufferWriter {
         + "streamType="
         + streamType
         + ", metadata="
-        + metadata
+        + metadataReader
         + ", streamId="
         + streamId
         + '}';
