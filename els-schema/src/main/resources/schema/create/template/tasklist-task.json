@@ -55,12 +55,14 @@
 			"followUpDate" : {
 				"format": "date_time || epoch_millis",
 				"type": "date",
-				"ignore_malformed": true
+				"ignore_malformed": true,
+				"null_value" : "1900-01-01T00:00:00.000+0100"
 			},
 			"dueDate" : {
 				"format": "date_time || epoch_millis",
 				"type": "date",
-				"ignore_malformed": true
+				"ignore_malformed": true,
+				"null_value" : "1900-01-01T00:00:00.000+0100"
 			}
 		}
 	}

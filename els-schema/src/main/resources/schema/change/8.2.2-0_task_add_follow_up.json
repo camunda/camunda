@@ -4,5 +4,5 @@
   "indexName": "task",
   "version": "8.2.2",
   "order": 0,
-  "content": "{\"set\": {\"field\": \"followUpDate\", \"value\": \"\"}}"
+  "content": "{\"script\": {\"lang\": \"painless\",\"source\": \"ctx.followUpDate = null;\"}}"
 }
