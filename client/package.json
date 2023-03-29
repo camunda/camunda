@@ -85,7 +85,7 @@
     "testcafe": "2.4.0",
     "ts-toolbelt": "9.6.0",
     "typescript": "5.0.2",
-    "zeebe-node": "8.1.8"
+    "zeebe-node": "8.2.0"
   },
   "lint-staged": {
     "*": [
