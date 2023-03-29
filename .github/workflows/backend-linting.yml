@@ -21,6 +21,6 @@ jobs:
       - uses: actions/setup-java@v3
         with:
           distribution: "adopt"
-          java-version: "11"
+          java-version: "17"
       - run: mvn -q license:check -Dlicense.header=license/license-header
         name: Check license header

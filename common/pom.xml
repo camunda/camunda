@@ -67,16 +67,21 @@
 			<artifactId>snakeyaml</artifactId>
 		</dependency>
 
+		<dependency>
+			<groupId>org.apache.httpcomponents.client5</groupId>
+			<artifactId>httpclient5</artifactId>
+		</dependency>
+
 		<!-- ZEEBE -->
 		<dependency>
 			<groupId>io.camunda</groupId>
 			<artifactId>zeebe-client-java</artifactId>
 		</dependency>
 
-		<!-- https://mvnrepository.com/artifact/org.glassfish/javax.json -->
+		<!-- https://mvnrepository.com/artifact/org.glassfish/jakarta.json -->
 		<dependency>
 			<groupId>org.glassfish</groupId>
-			<artifactId>javax.json</artifactId>
+			<artifactId>jakarta.json</artifactId>
 		</dependency>
 
 		<!-- Micrometer Prometheus -->

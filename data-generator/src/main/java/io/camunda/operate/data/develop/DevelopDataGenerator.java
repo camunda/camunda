@@ -27,7 +27,7 @@ import java.util.Map;
 import java.util.Random;
 import java.util.UUID;
 import java.util.function.BiFunction;
-import javax.annotation.PostConstruct;
+import jakarta.annotation.PostConstruct;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.common.Strings;
 import org.elasticsearch.xcontent.XContentBuilder;

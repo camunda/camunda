@@ -6,7 +6,7 @@
  */
 package io.camunda.operate.webapp.zeebe.operation;
 
-import javax.annotation.PreDestroy;
+import jakarta.annotation.PreDestroy;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;

@@ -8,8 +8,8 @@ package io.camunda.operate.util.rest;
 
 import java.net.URI;
 
-import org.apache.http.client.HttpClient;
-import org.apache.http.protocol.HttpContext;
+import org.apache.hc.client5.http.classic.HttpClient;
+import org.apache.hc.core5.http.protocol.HttpContext;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
 

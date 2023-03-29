@@ -11,6 +11,7 @@ import static io.camunda.operate.schema.indices.OperateWebSessionIndex.CREATION_
 import static io.camunda.operate.schema.indices.OperateWebSessionIndex.ID;
 import static io.camunda.operate.schema.indices.OperateWebSessionIndex.LAST_ACCESSED_TIME;
 import static io.camunda.operate.schema.indices.OperateWebSessionIndex.MAX_INACTIVE_INTERVAL_IN_SECONDS;
+import static org.springframework.security.web.context.HttpSessionSecurityContextRepository.SPRING_SECURITY_CONTEXT_KEY;
 
 import io.camunda.operate.es.RetryElasticsearchClient;
 import io.camunda.operate.schema.indices.OperateWebSessionIndex;
@@ -23,8 +24,8 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
-import javax.annotation.PostConstruct;
-import javax.annotation.PreDestroy;
+import jakarta.annotation.PostConstruct;
+import jakarta.annotation.PreDestroy;
 import org.elasticsearch.action.search.SearchRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -38,7 +39,7 @@ import org.springframework.core.serializer.support.DeserializingConverter;
 import org.springframework.core.serializer.support.SerializingConverter;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.context.SecurityContext;
 import org.springframework.session.MapSession;
 import org.springframework.session.Session;
 import org.springframework.session.SessionRepository;
@@ -112,6 +113,10 @@ public class ElasticsearchSessionRepository implements SessionRepository<Elastic
     });
   }
 
+  private boolean shouldDeleteSession(final ElasticsearchSession session) {
+    return session.isExpired() || (session.containsAuthentication() && !session.isAuthenticated());
+  }
+
   @Override
   public ElasticsearchSession createSession() {
     // Frontend e2e tests are relying on this pattern
@@ -125,7 +130,7 @@ public class ElasticsearchSessionRepository implements SessionRepository<Elastic
   @Override
   public void save(ElasticsearchSession session) {
     logger.debug("Save session {}", session);
-    if (session.isExpired()) {
+    if (shouldDeleteSession(session)) {
       deleteById(session.getId());
       return;
     }
@@ -163,7 +168,7 @@ public class ElasticsearchSessionRepository implements SessionRepository<Elastic
     }
 
     final ElasticsearchSession session = maybeSession.get();
-    if (session.isExpired()) {
+    if (shouldDeleteSession(session)) {
       deleteById(session.getId());
       return null;
     } else {
@@ -320,8 +325,29 @@ public class ElasticsearchSessionRepository implements SessionRepository<Elastic
     }
 
     public boolean isExpired() {
-      final Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-      return delegate.isExpired() || (authentication != null && !authentication.isAuthenticated());
+      return delegate.isExpired();
+    }
+
+    public boolean containsAuthentication() {
+      return getAuthentication() != null;
+    }
+
+    public boolean isAuthenticated() {
+      final var authentication = getAuthentication();
+      return (authentication != null && authentication.isAuthenticated());
+    }
+
+    private  Authentication getAuthentication() {
+      final var securityContext = (SecurityContext) delegate.getAttribute(SPRING_SECURITY_CONTEXT_KEY);
+      final Authentication authentication;
+
+      if (securityContext != null) {
+        authentication = securityContext.getAuthentication();
+      } else {
+        authentication = null;
+      }
+
+      return authentication;
     }
 
     @Override

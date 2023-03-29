@@ -6,8 +6,8 @@
  */
 package io.camunda.operate.webapp;
 
-import javax.annotation.PostConstruct;
-import javax.annotation.PreDestroy;
+import jakarta.annotation.PostConstruct;
+import jakarta.annotation.PreDestroy;
 
 import io.camunda.operate.data.DataGenerator;
 import io.camunda.operate.es.ElasticsearchConnector;

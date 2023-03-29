@@ -6,8 +6,8 @@
  */
 package io.camunda.operate.util.rest;
 
-import javax.validation.ConstraintValidator;
-import javax.validation.ConstraintValidatorContext;
+import jakarta.validation.ConstraintValidator;
+import jakarta.validation.ConstraintValidatorContext;
 
 public class ValidLongIdValidator implements ConstraintValidator<ValidLongId, String> {
   @Override

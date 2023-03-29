@@ -16,7 +16,7 @@ import io.camunda.identity.sdk.exception.IdentityException;
 import io.camunda.operate.util.RetryOperation;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Profile;

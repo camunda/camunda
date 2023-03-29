@@ -60,7 +60,7 @@ spec:
         readOnly: true
   containers:
     - name: maven
-      image: maven:3.6.1-jdk-11
+      image: maven:3-openjdk-17
       command: ["cat"]
       tty: true
       env:

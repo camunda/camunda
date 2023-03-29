@@ -11,6 +11,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.BDDMockito.given;
 
+import io.camunda.operate.es.ElasticsearchConnector;
 import io.camunda.operate.es.ElasticsearchTask;
 import io.camunda.operate.es.RetryElasticsearchClient;
 import io.camunda.operate.property.OperateProperties;
@@ -54,7 +55,8 @@ import org.springframework.test.context.junit4.SpringRunner;
       ElasticsearchSessionRepository.class,
       RetryElasticsearchClient.class,
       OperateWebSessionIndex.class,
-      OperateProfileService.class
+      OperateProfileService.class,
+      ElasticsearchConnector.class
   },
   webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT
 )

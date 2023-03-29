@@ -29,19 +29,20 @@ public class IdentityWebSecurityConfig extends BaseWebConfigurer {
   protected IdentityOAuth2WebConfigurer oAuth2WebConfigurer;
 
   @Override
-  protected void configure(HttpSecurity http) throws Exception {
-    configureSecurityHeaders(http);
-    http.csrf().disable()
-        .authorizeRequests()
-        .antMatchers(AUTH_WHITELIST).permitAll()
-        .antMatchers(API, PUBLIC_API, ROOT).authenticated()
-        .and().exceptionHandling()
-        .authenticationEntryPoint(this::failureHandler);
-    configureOAuth2(http);
+  protected void applySecurityFilterSettings(final HttpSecurity http) throws Exception {
+    http.csrf((csrf) -> csrf.disable())
+      .authorizeRequests((authorize) -> {
+        authorize
+          .requestMatchers(AUTH_WHITELIST).permitAll()
+          .requestMatchers(API, PUBLIC_API, ROOT).authenticated();
+      })
+      .exceptionHandling((handling) -> {
+        handling.authenticationEntryPoint(this::failureHandler);
+      });
   }
 
   @Override
-  protected void configureOAuth2(HttpSecurity http) throws Exception {
+  protected void applyOAuth2Settings(final HttpSecurity http) throws Exception {
     oAuth2WebConfigurer.configure(http);
   }
 

@@ -21,6 +21,7 @@
     <module>webapp</module>
     <module>qa</module>
     <module>distro</module>
+    <module>mvc-auth-commons</module>
   </modules>
 
   <properties>
@@ -32,31 +33,43 @@
     <version.identity>8.2.0-alpha5</version.identity>
     <version.log4j>2.17.2</version.log4j>
     <version.elasticsearch>7.17.9</version.elasticsearch>
-    <version.spring.boot>2.7.6</version.spring.boot>
+    <version.spring.boot>3.0.5</version.spring.boot>
     <version.junit>4.13.2</version.junit>
-    <version.springdoc>1.6.15</version.springdoc>
-    <version.javax.json>1.1.4</version.javax.json>
+    <version.springdoc>2.0.4</version.springdoc>
+    <version.jakarta.json>2.0.1</version.jakarta.json>
     <version.micrometer>1.10.3</version.micrometer>
     <version.mockito>5.2.0</version.mockito>
     <version.assertj-core>3.24.2</version.assertj-core>
     <version.jackson>2.14.2</version.jackson>
-    <version.auth0>1.9.4</version.auth0>
-    <version.auth0.jwt>4.3.0</version.auth0.jwt>
     <version.gson>2.10.1</version.gson>
     <version.node>v16.18.1</version.node>
     <version.yarn>v1.22.10</version.yarn>
     <version.snakeyaml>1.33</version.snakeyaml>
+    <version.apache.http5>5.2.1</version.apache.http5>
 
     <zeebe-test-container.version>3.5.2</zeebe-test-container.version>
     <elasticsearch-test-container.version>1.17.6</elasticsearch-test-container.version>
 
-    <maven.compiler.target>11</maven.compiler.target>
-    <maven.compiler.source>11</maven.compiler.source>
+    <maven.compiler.target>17</maven.compiler.target>
+    <maven.compiler.source>17</maven.compiler.source>
 
     <skip.fe.build>false</skip.fe.build>
 
     <plugin.version.license>4.1</plugin.version.license>
     <license.header>${project.baseUri}/../license/license-header</license.header>
+
+    <!-- Auth0 Dependencies -->
+    <!-- If any of the following version changes, -->
+    <!-- please check if they are compatible with "mvc-auth-commons" -->
+    <version.auth0>1.44.2</version.auth0>
+    <version.auth0.commons>1.9.4</version.auth0.commons>
+    <version.auth0.jwt>4.3.0</version.auth0.jwt>
+    <version.jakarta.servlet>6.0.0</version.jakarta.servlet>
+    <version.jwks-rsa>0.21.3</version.jwks-rsa>
+    <version.commons.lang>3.12.0</version.commons.lang>
+    <version.guava.annotations>r03</version.guava.annotations>
+    <version.commons.codec>1.15</version.commons.codec>
+
   </properties>
 
   <dependencyManagement>
@@ -125,13 +138,13 @@
 
       <dependency>
         <groupId>org.glassfish</groupId>
-        <artifactId>javax.json</artifactId>
-        <version>${version.javax.json}</version>
+        <artifactId>jakarta.json</artifactId>
+        <version>${version.jakarta.json}</version>
       </dependency>
 
       <dependency>
         <groupId>org.springdoc</groupId>
-        <artifactId>springdoc-openapi-ui</artifactId>
+        <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
         <version>${version.springdoc}</version>
       </dependency>
 
@@ -201,23 +214,65 @@
         <version>${version.assertj-core}</version>
       </dependency>
 
-      <!-- Auth0 -->
       <dependency>
-        <groupId>com.auth0</groupId>
-        <artifactId>mvc-auth-commons</artifactId>
-        <version>${version.auth0}</version>
+        <groupId>com.google.code.gson</groupId>
+        <artifactId>gson</artifactId>
+        <version>${version.gson}</version>
       </dependency>
 
       <dependency>
+        <groupId>org.apache.httpcomponents.client5</groupId>
+        <artifactId>httpclient5</artifactId>
+        <version>${version.apache.http5}</version>
+      </dependency>
+
+      <!-- Auth0 and it's direct dependencies -->
+      <dependency>
+        <groupId>com.auth0</groupId>
+        <artifactId>mvc-auth-commons</artifactId>
+        <version>${version.auth0.commons}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>com.auth0</groupId>
+        <artifactId>auth0</artifactId>
+        <version>${version.auth0}</version>
+      </dependency>
+
+     <dependency>
         <groupId>com.auth0</groupId>
         <artifactId>java-jwt</artifactId>
         <version>${version.auth0.jwt}</version>
       </dependency>
 
       <dependency>
-        <groupId>com.google.code.gson</groupId>
-        <artifactId>gson</artifactId>
-        <version>${version.gson}</version>
+        <groupId>com.auth0</groupId>
+        <artifactId>jwks-rsa</artifactId>
+        <version>${version.jwks-rsa}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>jakarta.servlet</groupId>
+        <artifactId>jakarta.servlet-api</artifactId>
+        <version>${version.jakarta.servlet}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.apache.commons</groupId>
+        <artifactId>commons-lang3</artifactId>
+        <version>${version.commons.lang}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>com.google.guava</groupId>
+        <artifactId>guava-annotations</artifactId>
+        <version>${version.guava.annotations}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>commons-codec</groupId>
+        <artifactId>commons-codec</artifactId>
+        <version>${version.commons.codec}</version>
       </dependency>
 
     </dependencies>

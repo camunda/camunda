@@ -19,9 +19,9 @@ import io.camunda.operate.webapp.security.sso.model.ClusterInfo;
 
 import java.util.List;
 import java.util.concurrent.TimeUnit;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+
 import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -29,7 +29,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Profile;
 import org.springframework.http.*;
 import org.springframework.security.authentication.InsufficientAuthenticationException;
-import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
 
@@ -66,15 +66,14 @@ public class Auth0Service {
   @Qualifier("auth0_restTemplate")
   private RestTemplate restTemplate;
 
-  public void authenticate(final HttpServletRequest req, final HttpServletResponse res)
+  public Authentication authenticate(final HttpServletRequest req, final HttpServletResponse res)
       throws Auth0ServiceException {
     try {
       final Tokens tokens = retrieveTokens(req, res);
       final TokenAuthentication authentication = beanFactory.getBean(TokenAuthentication.class);
       authentication.authenticate(tokens.getIdToken(), tokens.getRefreshToken(), tokens.getAccessToken());
       checkPermission(authentication, tokens.getAccessToken());
-      SecurityContextHolder.getContext().setAuthentication(authentication);
-      sessionExpiresWhenAuthenticationExpires(req);
+      return authentication;
     } catch (Exception e) {
       throw new Auth0ServiceException(e);
     }
@@ -107,10 +106,6 @@ public class Auth0Service {
         && operatePermissions.getUpdate()) {
       authentication.addPermission(Permission.WRITE);
     }
-  }
-
-  private void sessionExpiresWhenAuthenticationExpires(final HttpServletRequest req) {
-    req.getSession().setMaxInactiveInterval(-1);
   }
 
   public String getAuthorizeUrl(final HttpServletRequest req, final HttpServletResponse res) {

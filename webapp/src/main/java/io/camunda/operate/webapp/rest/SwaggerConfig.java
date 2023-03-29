@@ -9,7 +9,8 @@ package io.camunda.operate.webapp.rest;
 import io.swagger.v3.oas.models.info.Contact;
 import io.swagger.v3.oas.models.info.Info;
 import io.swagger.v3.oas.models.info.License;
-import org.springdoc.core.GroupedOpenApi;
+
+import org.springdoc.core.models.GroupedOpenApi;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
@@ -21,7 +22,7 @@ public class SwaggerConfig {
   public GroupedOpenApi internalAPI() {
     return GroupedOpenApi.builder()
         .group("internal-api")
-        .addOpenApiCustomiser(openApi -> openApi.info(getInternalAPIInfo()))
+        .addOpenApiCustomizer(openApi -> openApi.info(getInternalAPIInfo()))
         .pathsToMatch("/api/*")
         .build();
   }

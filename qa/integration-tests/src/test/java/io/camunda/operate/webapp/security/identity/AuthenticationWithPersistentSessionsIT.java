@@ -16,6 +16,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
+import io.camunda.operate.es.ElasticsearchConnector;
 import io.camunda.operate.es.ElasticsearchTask;
 import io.camunda.operate.es.RetryElasticsearchClient;
 import io.camunda.operate.property.OperateProperties;
@@ -40,7 +41,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.boot.test.web.client.TestRestTemplate;
-import org.springframework.boot.web.server.LocalServerPort;
+import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
@@ -72,7 +73,8 @@ import org.springframework.test.context.junit4.SpringRunner;
         OperateWebSessionIndex.class,
         RetryElasticsearchClient.class,
         ElasticsearchTask.class,
-        SameSiteCookieTomcatContextCustomizer.class
+        SameSiteCookieTomcatContextCustomizer.class,
+        ElasticsearchConnector.class
     },
     properties = {
         "server.servlet.context-path=" + AuthenticationWithPersistentSessionsIT.CONTEXT_PATH,

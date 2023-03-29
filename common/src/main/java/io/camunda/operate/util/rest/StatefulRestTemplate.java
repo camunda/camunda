@@ -18,13 +18,13 @@ import java.net.URL;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
-import org.apache.http.client.CookieStore;
-import org.apache.http.client.HttpClient;
-import org.apache.http.client.protocol.HttpClientContext;
-import org.apache.http.impl.client.BasicCookieStore;
-import org.apache.http.impl.client.HttpClientBuilder;
-import org.apache.http.protocol.BasicHttpContext;
-import org.apache.http.protocol.HttpContext;
+import org.apache.hc.client5.http.cookie.CookieStore;
+import org.apache.hc.client5.http.classic.HttpClient;
+import org.apache.hc.client5.http.protocol.HttpClientContext;
+import org.apache.hc.client5.http.cookie.BasicCookieStore;
+import org.apache.hc.client5.http.impl.classic.HttpClientBuilder;
+import org.apache.hc.core5.http.protocol.BasicHttpContext;
+import org.apache.hc.core5.http.protocol.HttpContext;
 import org.elasticsearch.ElasticsearchException;
 import org.springframework.context.annotation.Scope;
 import org.springframework.http.HttpHeaders;
@@ -150,7 +150,16 @@ public class StatefulRestTemplate extends RestTemplate {
 
   public URI getURL(String urlPart) {
     try {
-      return new URL(String.format("http://%s:%s%s", host, port, contextPath + urlPart)).toURI();
+
+      final String path;
+      if (contextPath.endsWith("/") && urlPart.startsWith("/")) {
+        final var subUrlPart = urlPart.substring(1);
+        path = contextPath + subUrlPart;
+      } else {
+        path = contextPath + urlPart;
+      }
+
+      return new URL(String.format("http://%s:%s%s", host, port, path)).toURI();
     } catch (URISyntaxException | MalformedURLException e) {
       throw new RuntimeException("Error occurred while constructing URL", e);
     }

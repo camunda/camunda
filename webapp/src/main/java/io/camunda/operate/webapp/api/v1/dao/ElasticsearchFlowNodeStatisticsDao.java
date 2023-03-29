@@ -28,7 +28,7 @@ import io.camunda.operate.util.ElasticsearchUtil;
 import io.camunda.operate.webapp.api.v1.entities.FlowNodeStatistics;
 import io.camunda.operate.webapp.api.v1.entities.Query;
 
-import java.io.IOException;;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;

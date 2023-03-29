@@ -13,7 +13,7 @@ import static org.elasticsearch.index.reindex.AbstractBulkByScrollRequest.AUTO_S
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
-import javax.annotation.PostConstruct;
+import jakarta.annotation.PostConstruct;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.Metrics;

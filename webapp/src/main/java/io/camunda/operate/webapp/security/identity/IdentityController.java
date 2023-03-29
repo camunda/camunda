@@ -7,21 +7,23 @@
 package io.camunda.operate.webapp.security.identity;
 
 import io.camunda.identity.sdk.authentication.dto.AuthCodeDto;
-import io.camunda.identity.sdk.Identity;
 import io.camunda.operate.property.OperateProperties;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Profile;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.context.SecurityContextHolderStrategy;
+import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
+import org.springframework.security.web.context.SecurityContextRepository;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.ResponseBody;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 
 import static io.camunda.operate.webapp.security.OperateProfileService.IDENTITY_AUTH_PROFILE;
@@ -39,6 +41,11 @@ public class IdentityController {
   @Autowired
   private IdentityService identityService;
 
+  private SecurityContextRepository securityContextRepository =
+      new HttpSessionSecurityContextRepository();
+
+  private final SecurityContextHolderStrategy securityContextHolderStrategy =
+      SecurityContextHolder.getContextHolderStrategy();
 
   /**
    * Initiates user login - the user will be redirected to Camunda Account
@@ -72,7 +79,12 @@ public class IdentityController {
     try {
       final IdentityAuthentication authentication =
           identityService.getAuthenticationFor(req, authCodeDto);
-      SecurityContextHolder.getContext().setAuthentication(authentication);
+
+      final var context = securityContextHolderStrategy.createEmptyContext();
+      context.setAuthentication(authentication);
+      securityContextHolderStrategy.setContext(context);
+      securityContextRepository.saveContext(context, req, res);
+
       redirectToPage(req, res);
     } catch (Exception iae) {
       clearContextAndRedirectToNoPermission(req, res, iae);
@@ -127,6 +139,11 @@ public class IdentityController {
 
   protected void cleanup(HttpServletRequest req) {
     req.getSession().invalidate();
-    SecurityContextHolder.clearContext();
+
+    final var context = securityContextHolderStrategy.getContext();
+    if (context != null) {
+      context.setAuthentication(null);
+      securityContextHolderStrategy.clearContext();
+    }
   }
 }

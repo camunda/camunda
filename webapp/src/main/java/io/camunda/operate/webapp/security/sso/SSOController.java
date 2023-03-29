@@ -16,8 +16,8 @@ import static io.camunda.operate.webapp.security.OperateProfileService.SSO_AUTH_
 
 import com.auth0.IdentityVerificationException;
 import java.io.IOException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -25,6 +25,9 @@ import org.springframework.context.annotation.Profile;
 import org.springframework.security.authentication.InsufficientAuthenticationException;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.context.SecurityContextHolderStrategy;
+import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
+import org.springframework.security.web.context.SecurityContextRepository;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -40,6 +43,12 @@ public class SSOController {
   @Autowired
   private Auth0Service auth0Service;
 
+  private SecurityContextRepository securityContextRepository =
+      new HttpSessionSecurityContextRepository();
+
+  private final SecurityContextHolderStrategy securityContextHolderStrategy =
+      SecurityContextHolder.getContextHolderStrategy();
+
   @RequestMapping(value = LOGIN_RESOURCE, method = { RequestMethod.GET, RequestMethod.POST })
   public String login(final HttpServletRequest req,final HttpServletResponse res) {
     final String authorizeUrl = auth0Service.getAuthorizeUrl(req, res);
@@ -51,7 +60,15 @@ public class SSOController {
   public void loggedInCallback(final HttpServletRequest req, final HttpServletResponse res) throws IOException {
     logger.debug("Called back by auth0 with {} {} and SessionId: {}", req.getRequestURI(), req.getQueryString(), req.getSession().getId());
     try {
-      auth0Service.authenticate(req, res);
+      final var authentication = auth0Service.authenticate(req, res);
+
+      final var context = securityContextHolderStrategy.createEmptyContext();
+      context.setAuthentication(authentication);
+      securityContextHolderStrategy.setContext(context);
+      securityContextRepository.saveContext(context, req, res);
+
+      sessionExpiresWhenAuthenticationExpires(req);
+
       redirectToPage(req, res);
     } catch (InsufficientAuthenticationException iae) {
       // remove logout, user might just not be allowed to access. Redirect to no permission
@@ -125,11 +142,20 @@ public class SSOController {
 
   protected void cleanup(HttpServletRequest req) {
     req.getSession().invalidate();
-    SecurityContextHolder.clearContext();
+
+    final var context = securityContextHolderStrategy.getContext();
+    if (context != null) {
+      context.setAuthentication(null);
+      securityContextHolderStrategy.clearContext();
+    }
   }
 
   protected void logoutFromAuth0(HttpServletResponse res, String returnTo) throws IOException {
     res.sendRedirect(auth0Service.getLogoutUrlFor(returnTo));
+  }
+
+  private void sessionExpiresWhenAuthenticationExpires(final HttpServletRequest req) {
+    req.getSession().setMaxInactiveInterval(-1);
   }
 
 }

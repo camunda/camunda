@@ -16,7 +16,7 @@ import java.nio.file.Path;
 import java.time.Duration;
 import java.util.Properties;
 import java.util.concurrent.TimeUnit;
-import javax.annotation.PreDestroy;
+import jakarta.annotation.PreDestroy;
 
 import io.zeebe.containers.ZeebeContainer;
 import io.zeebe.containers.ZeebePort;

@@ -6,7 +6,7 @@
  */
 package io.camunda.operate.archiver;
 
-import javax.annotation.PreDestroy;
+import jakarta.annotation.PreDestroy;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;

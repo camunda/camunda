@@ -6,6 +6,7 @@
  */
 package io.camunda.operate.webapp.security.ldap;
 
+import io.camunda.operate.es.ElasticsearchConnector;
 import io.camunda.operate.es.ElasticsearchTask;
 import io.camunda.operate.es.RetryElasticsearchClient;
 import io.camunda.operate.property.OperateProperties;
@@ -55,7 +56,8 @@ import static org.assertj.core.api.Assertions.assertThat;
         ElasticsearchTask.class,
         ElasticsearchSessionRepository.class,
         OperateWebSessionIndex.class,
-        OperateProfileService.class
+        OperateProfileService.class,
+        ElasticsearchConnector.class
     },
     properties = {
         "camunda.operate.ldap.baseDn=dc=planetexpress,dc=com",

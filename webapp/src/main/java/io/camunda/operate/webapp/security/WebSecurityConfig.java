@@ -31,12 +31,13 @@ public class WebSecurityConfig extends BaseWebConfigurer {
   private UserDetailsService userDetailsService;
 
   @Override
-  public void configure(AuthenticationManagerBuilder builder) throws Exception {
+  protected void applyAuthenticationSettings(final AuthenticationManagerBuilder builder) throws Exception {
     builder.userDetailsService(userDetailsService);
   }
 
   @Override
-  protected void configureOAuth2(HttpSecurity http) throws Exception {
+  protected void applyOAuth2Settings(final HttpSecurity http) throws Exception {
     oAuth2WebConfigurer.configure(http);
   }
+
 }

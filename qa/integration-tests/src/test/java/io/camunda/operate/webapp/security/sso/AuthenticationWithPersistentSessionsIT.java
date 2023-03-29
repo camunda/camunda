@@ -26,6 +26,8 @@ import com.auth0.AuthenticationController;
 import com.auth0.AuthorizeUrl;
 import com.auth0.IdentityVerificationException;
 import com.auth0.Tokens;
+
+import io.camunda.operate.es.ElasticsearchConnector;
 import io.camunda.operate.es.ElasticsearchTask;
 import io.camunda.operate.es.RetryElasticsearchClient;
 import io.camunda.operate.management.ElsIndicesCheck;
@@ -66,7 +68,7 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.boot.test.web.client.TestRestTemplate;
-import org.springframework.boot.web.server.LocalServerPort;
+import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
@@ -100,7 +102,8 @@ import org.springframework.web.client.RestTemplate;
         OperateWebSessionIndex.class,
         RetryElasticsearchClient.class,
         ElasticsearchTask.class,
-        OperateProfileService.class
+        OperateProfileService.class,
+        ElasticsearchConnector.class
     },
     properties = {
         "server.servlet.context-path=" + AuthenticationWithPersistentSessionsIT.CONTEXT_PATH,

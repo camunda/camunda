@@ -25,10 +25,10 @@
       <version>${version.zeebe}</version>
     </dependency>
 
-    <!-- https://mvnrepository.com/artifact/org.glassfish/javax.json -->
+    <!-- https://mvnrepository.com/artifact/org.glassfish/jakarta.json -->
     <dependency>
       <groupId>org.glassfish</groupId>
-      <artifactId>javax.json</artifactId>
+      <artifactId>jakarta.json</artifactId>
     </dependency>
     <dependency>
       <groupId>com.fasterxml.jackson.core</groupId>

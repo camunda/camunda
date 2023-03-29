@@ -14,20 +14,23 @@ import static org.springframework.http.HttpStatus.UNAUTHORIZED;
 import io.camunda.operate.property.OperateProperties;
 import java.io.IOException;
 import java.io.PrintWriter;
-import javax.json.Json;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import jakarta.json.Json;
+
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
 import io.camunda.operate.property.WebSecurityProperties;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Bean;
+import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
-import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
+import org.springframework.security.web.SecurityFilterChain;
 
-public abstract class BaseWebConfigurer extends WebSecurityConfigurerAdapter {
+public abstract class BaseWebConfigurer {
 
   protected final Logger logger = LoggerFactory.getLogger(this.getClass());
 
@@ -37,33 +40,19 @@ public abstract class BaseWebConfigurer extends WebSecurityConfigurerAdapter {
   @Autowired
   OperateProfileService errorMessageService;
 
-  @Override
-  protected void configure(HttpSecurity http) throws Exception {
-    configureSecurityHeaders(http);
-    http.csrf().disable()
-        .authorizeRequests()
-        .antMatchers(AUTH_WHITELIST).permitAll()
-        .antMatchers(API , PUBLIC_API).authenticated()
-        .and()
-        .formLogin()
-        .loginProcessingUrl(LOGIN_RESOURCE)
-        .successHandler(this::successHandler)
-        .failureHandler(this::failureHandler)
-        .permitAll()
-        .and()
-        .logout()
-        .logoutUrl(LOGOUT_RESOURCE)
-        .logoutSuccessHandler(this::logoutSuccessHandler)
-        .permitAll()
-        .deleteCookies(COOKIE_JSESSIONID)
-        .clearAuthentication(true)
-        .invalidateHttpSession(true)
-        .and()
-        .exceptionHandling().authenticationEntryPoint(this::failureHandler);
-    configureOAuth2(http);
+  @Bean
+  public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+    final var authenticationManagerBuilder = http.getSharedObject(AuthenticationManagerBuilder.class);
+
+    applySecurityHeadersSettings(http);
+    applySecurityFilterSettings(http);
+    applyAuthenticationSettings(authenticationManagerBuilder);
+    applyOAuth2Settings(http);
+
+    return http.build();
   }
 
-  protected void configureSecurityHeaders(HttpSecurity http) throws Exception {
+  protected void applySecurityHeadersSettings(HttpSecurity http) throws Exception {
     final WebSecurityProperties webSecurityConfig = operateProperties.getWebSecurity();
     http.headers()
         .contentSecurityPolicy(webSecurityConfig.getContentSecurityPolicy())
@@ -73,7 +62,44 @@ public abstract class BaseWebConfigurer extends WebSecurityConfigurerAdapter {
           .includeSubDomains(webSecurityConfig.getHttpStrictTransportSecurityIncludeSubDomains());
   }
 
-  protected abstract void configureOAuth2(HttpSecurity http) throws Exception;
+  protected void applySecurityFilterSettings(final HttpSecurity http) throws Exception {
+    defaultFilterSettings(http);
+  }
+
+  private void defaultFilterSettings(final HttpSecurity http) throws Exception {
+    http
+      .csrf((csrf) -> csrf.disable())
+      .authorizeRequests((authorize) -> {
+        authorize
+          .requestMatchers(AUTH_WHITELIST).permitAll()
+          .requestMatchers(API, PUBLIC_API).authenticated();
+      })
+      .formLogin((login) -> {
+        login
+          .loginProcessingUrl(LOGIN_RESOURCE)
+          .successHandler(this::successHandler)
+          .failureHandler(this::failureHandler)
+          .permitAll();
+      })
+      .logout((logout) -> {
+        logout
+          .logoutUrl(LOGOUT_RESOURCE)
+          .logoutSuccessHandler(this::logoutSuccessHandler)
+          .permitAll()
+          .deleteCookies(COOKIE_JSESSIONID)
+          .clearAuthentication(true)
+          .invalidateHttpSession(true);
+      })
+      .exceptionHandling((handling) -> {
+        handling.authenticationEntryPoint(this::failureHandler);
+      });
+  }
+
+  protected void applyAuthenticationSettings(final AuthenticationManagerBuilder builder) throws Exception {
+    // noop
+  }
+
+  protected abstract void applyOAuth2Settings(final HttpSecurity http) throws Exception;
 
   protected void logoutSuccessHandler(HttpServletRequest request, HttpServletResponse response,
       Authentication authentication) {

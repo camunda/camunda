@@ -27,6 +27,7 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
@@ -74,11 +75,11 @@ public class IncidentNotifier {
 
   public void notifyOnIncidents(List<IncidentEntity> incidents) {
     try {
-      HttpStatus status = notifyOnIncidents(incidents, m2mTokenManager.getToken());
+      HttpStatusCode status = notifyOnIncidents(incidents, m2mTokenManager.getToken());
 
       if (status.is2xxSuccessful()) {
         logger.debug("Incident notification is sent");
-      } else if (status.equals(HttpStatus.UNAUTHORIZED)) {
+      } else if (status.isSameCodeAs(HttpStatus.UNAUTHORIZED)) {
         logger.debug("Incident notification recieved 401 response");
         //retry
         status = notifyOnIncidents(incidents, m2mTokenManager.getToken(true));
@@ -97,7 +98,7 @@ public class IncidentNotifier {
     }
   }
 
-  private HttpStatus notifyOnIncidents(List<IncidentEntity> incidents, String m2mToken)
+  private HttpStatusCode notifyOnIncidents(List<IncidentEntity> incidents, String m2mToken)
       throws JsonProcessingException {
     final String webhookURL = operateProperties.getAlert().getWebhook();
     final String payload = getIncidentsAsJSON(incidents);
