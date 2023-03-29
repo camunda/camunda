@@ -10,8 +10,8 @@
 import {gql} from '@apollo/client';
 import {
   tasks,
-  tasksClaimedByDemoUser,
-  unclaimedTasks,
+  tasksAssignedToDemoUser,
+  unassignedTasks,
   completedTasks,
 } from 'modules/mock-schema/mocks/tasks';
 import {Task} from 'modules/types';
@@ -127,10 +127,10 @@ const GET_TASKS = IS_SORTING_ENABLED
     `;
 
 const mockGetAllOpenTasks: ReadonlyArray<QueryTask> = tasks;
-const mockGetAllOpenTasksUnclaimed: ReadonlyArray<QueryTask> = unclaimedTasks;
+const mockGetAllOpenTasksUnassigned: ReadonlyArray<QueryTask> = unassignedTasks;
 const mockGetEmptyTasks: ReadonlyArray<QueryTask> = [];
-const mockGetClaimedByMe: ReadonlyArray<QueryTask> = tasksClaimedByDemoUser;
-const mockGetUnclaimed: ReadonlyArray<QueryTask> = unclaimedTasks;
+const mockGetClaimedByMe: ReadonlyArray<QueryTask> = tasksAssignedToDemoUser;
+const mockGetUnassigned: ReadonlyArray<QueryTask> = unassignedTasks;
 const mockGetCompleted: ReadonlyArray<QueryTask> = completedTasks;
 
 export type {GetTasks, GetTasksVariables, QueryTask};
@@ -139,7 +139,7 @@ export {
   mockGetAllOpenTasks,
   mockGetEmptyTasks,
   mockGetClaimedByMe,
-  mockGetUnclaimed,
+  mockGetUnassigned,
   mockGetCompleted,
-  mockGetAllOpenTasksUnclaimed,
+  mockGetAllOpenTasksUnassigned,
 };

@@ -55,7 +55,7 @@ describe('FirstTimeModal', () => {
     ).toBeInTheDocument();
     expect(
       screen.getByText(
-        'By starting processes on demand you are able to trigger tasks and directly start claiming these.',
+        'By starting processes on demand you are able to trigger tasks and directly start assigning these.',
       ),
     ).toBeInTheDocument();
     expect(

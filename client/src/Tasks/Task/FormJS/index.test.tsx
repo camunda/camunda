@@ -7,8 +7,8 @@
 
 import {render, screen, waitFor} from 'modules/testing-library';
 import {
-  claimedTaskWithForm,
-  unclaimedTaskWithForm,
+  assignedTaskWithForm,
+  unassignedTaskWithForm,
 } from 'modules/mock-schema/mocks/task';
 import {mockGetCurrentUser} from 'modules/queries/get-current-user';
 import {mockGetDynamicForm, mockGetForm} from 'modules/queries/get-form';
@@ -71,7 +71,7 @@ describe('<FormJS />', () => {
     jest.useRealTimers();
   });
 
-  it('should render form for unclaimed task', async () => {
+  it('should render form for unassigned task', async () => {
     nodeMockServer.use(
       graphql.query('GetSelectedVariables', (req, res, ctx) => {
         if (
@@ -97,7 +97,7 @@ describe('<FormJS />', () => {
       <FormJS
         id="form-0"
         processDefinitionId="process"
-        task={unclaimedTaskWithForm()}
+        task={unassignedTaskWithForm()}
         user={mockGetCurrentUser.currentUser}
         onSubmit={() => Promise.resolve()}
         onSubmitFailure={noop}
@@ -123,7 +123,7 @@ describe('<FormJS />', () => {
     ).toBeDisabled();
   });
 
-  it('should render form for claimed task', async () => {
+  it('should render form for assigned task', async () => {
     nodeMockServer.use(
       graphql.query('GetSelectedVariables', (req, res, ctx) => {
         if (
@@ -149,7 +149,7 @@ describe('<FormJS />', () => {
       <FormJS
         id="form-0"
         processDefinitionId="process"
-        task={claimedTaskWithForm()}
+        task={assignedTaskWithForm()}
         user={mockGetCurrentUser.currentUser}
         onSubmit={() => Promise.resolve()}
         onSubmitFailure={noop}
@@ -200,7 +200,7 @@ describe('<FormJS />', () => {
       <FormJS
         id="form-0"
         processDefinitionId="process"
-        task={claimedTaskWithForm()}
+        task={assignedTaskWithForm()}
         user={mockGetCurrentUser.currentUser}
         onSubmit={() => Promise.resolve()}
         onSubmitFailure={noop}
@@ -249,7 +249,7 @@ describe('<FormJS />', () => {
       <FormJS
         id="form-0"
         processDefinitionId="process"
-        task={claimedTaskWithForm()}
+        task={assignedTaskWithForm()}
         user={mockGetCurrentUser.currentUser}
         onSubmit={mockOnSubmit}
         onSubmitFailure={noop}
@@ -313,7 +313,7 @@ describe('<FormJS />', () => {
       <FormJS
         id="form-0"
         processDefinitionId="process"
-        task={claimedTaskWithForm()}
+        task={assignedTaskWithForm()}
         user={mockGetCurrentUser.currentUser}
         onSubmit={mockOnSubmit}
         onSubmitFailure={noop}
@@ -386,7 +386,7 @@ describe('<FormJS />', () => {
       <FormJS
         id="form-0"
         processDefinitionId="process"
-        task={claimedTaskWithForm()}
+        task={assignedTaskWithForm()}
         user={mockGetCurrentUser.currentUser}
         onSubmit={() => Promise.resolve()}
         onSubmitFailure={noop}

@@ -124,7 +124,7 @@ const Task: React.FC<Props> = ({hasRemainingTasks, onCompleted}) => {
   return (
     <Details
       task={data.task}
-      onAssigmentError={() => {
+      onAssignmentError={() => {
         fetchMore({
           variables: {
             id,

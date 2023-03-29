@@ -25,7 +25,7 @@ import {
 } from 'modules/queries/get-task-variables';
 import {MockThemeProvider} from 'modules/theme/MockProvider';
 import {Variables} from './index';
-import {claimedTask, unclaimedTask} from 'modules/mock-schema/mocks/task';
+import {assignedTask, unassignedTask} from 'modules/mock-schema/mocks/task';
 import {ApolloProvider, useQuery} from '@apollo/client';
 import {client} from 'modules/apollo-client';
 import {nodeMockServer} from 'modules/mockServer/nodeMockServer';
@@ -76,7 +76,7 @@ describe('<Variables />', () => {
 
     render(
       <Variables
-        task={unclaimedTask()}
+        task={unassignedTask()}
         user={currentUser}
         onSubmit={() => Promise.resolve()}
         onSubmitFailure={noop}
@@ -103,7 +103,7 @@ describe('<Variables />', () => {
 
     render(
       <Variables
-        task={claimedTask()}
+        task={assignedTask()}
         user={currentUser}
         onSubmit={() => Promise.resolve()}
         onSubmitFailure={noop}
@@ -131,7 +131,7 @@ describe('<Variables />', () => {
 
     const {user} = render(
       <Variables
-        task={claimedTask()}
+        task={assignedTask()}
         user={currentUser}
         onSubmit={() => Promise.resolve()}
         onSubmitFailure={noop}
@@ -164,7 +164,7 @@ describe('<Variables />', () => {
 
     const {user} = render(
       <Variables
-        task={claimedTask()}
+        task={assignedTask()}
         user={currentUser}
         onSubmit={() => Promise.resolve()}
         onSubmitFailure={noop}
@@ -211,7 +211,7 @@ describe('<Variables />', () => {
 
     const {user} = render(
       <Variables
-        task={claimedTask()}
+        task={assignedTask()}
         user={currentUser}
         onSubmit={() => Promise.resolve()}
         onSubmitFailure={noop}
@@ -239,7 +239,7 @@ describe('<Variables />', () => {
 
     const {user} = render(
       <Variables
-        task={claimedTask()}
+        task={assignedTask()}
         user={currentUser}
         onSubmit={() => Promise.resolve()}
         onSubmitFailure={noop}
@@ -272,7 +272,7 @@ describe('<Variables />', () => {
 
     const {user} = render(
       <Variables
-        task={claimedTask()}
+        task={assignedTask()}
         user={currentUser}
         onSubmit={() => Promise.resolve()}
         onSubmitFailure={noop}
@@ -318,7 +318,7 @@ describe('<Variables />', () => {
 
     const {user} = render(
       <Variables
-        task={claimedTask()}
+        task={assignedTask()}
         user={currentUser}
         onSubmit={() => Promise.resolve()}
         onSubmitFailure={noop}
@@ -348,7 +348,7 @@ describe('<Variables />', () => {
 
     const {user} = render(
       <Variables
-        task={claimedTask()}
+        task={assignedTask()}
         user={currentUser}
         onSubmit={() => Promise.resolve()}
         onSubmitFailure={noop}
@@ -385,7 +385,7 @@ describe('<Variables />', () => {
 
     const {user} = render(
       <Variables
-        task={claimedTask()}
+        task={assignedTask()}
         user={currentUser}
         onSubmit={() => Promise.resolve()}
         onSubmitFailure={noop}
@@ -431,7 +431,7 @@ describe('<Variables />', () => {
     const {rerender, user} = render(
       <Variables
         key="id_0"
-        task={claimedTask()}
+        task={assignedTask()}
         user={currentUser}
         onSubmit={mockOnSubmit}
         onSubmitFailure={noop}
@@ -476,7 +476,7 @@ describe('<Variables />', () => {
     rerender(
       <Variables
         key="id_1"
-        task={claimedTask()}
+        task={assignedTask()}
         user={currentUser}
         onSubmit={mockOnSubmit}
         onSubmitFailure={noop}
@@ -518,7 +518,7 @@ describe('<Variables />', () => {
 
     const {user} = render(
       <Variables
-        task={claimedTask()}
+        task={assignedTask()}
         user={currentUser}
         onSubmit={mockOnSubmit}
         onSubmitFailure={noop}
@@ -569,7 +569,7 @@ describe('<Variables />', () => {
       <>
         <UserName />
         <Variables
-          task={claimedTask()}
+          task={assignedTask()}
           user={currentUser}
           onSubmit={mockOnSubmit}
           onSubmitFailure={noop}
@@ -600,7 +600,7 @@ describe('<Variables />', () => {
 
     const {user} = render(
       <Variables
-        task={claimedTask()}
+        task={assignedTask()}
         user={currentUser}
         onSubmit={mockOnSubmit}
         onSubmitFailure={noop}
@@ -645,7 +645,7 @@ describe('<Variables />', () => {
 
     const {user} = render(
       <Variables
-        task={claimedTask()}
+        task={assignedTask()}
         user={currentUser}
         onSubmit={() => Promise.resolve()}
         onSubmitFailure={noop}
@@ -676,7 +676,7 @@ describe('<Variables />', () => {
 
     const {user} = render(
       <Variables
-        task={claimedTask()}
+        task={assignedTask()}
         user={currentUser}
         onSubmit={() => Promise.resolve()}
         onSubmitFailure={noop}
@@ -711,7 +711,7 @@ describe('<Variables />', () => {
 
     const {user} = render(
       <Variables
-        task={claimedTask()}
+        task={assignedTask()}
         user={currentUser}
         onSubmit={() => Promise.resolve()}
         onSubmitFailure={noop}
@@ -744,7 +744,7 @@ describe('<Variables />', () => {
     const mockOnSubmit = jest.fn();
     const {user} = render(
       <Variables
-        task={claimedTask()}
+        task={assignedTask()}
         user={currentUser}
         onSubmit={mockOnSubmit}
         onSubmitFailure={noop}
@@ -807,7 +807,7 @@ describe('<Variables />', () => {
     );
     const {user} = render(
       <Variables
-        task={claimedTask()}
+        task={assignedTask()}
         user={currentUser}
         onSubmit={() => Promise.resolve()}
         onSubmitFailure={noop}
@@ -849,7 +849,7 @@ describe('<Variables />', () => {
 
       const {user} = render(
         <Variables
-          task={claimedTask()}
+          task={assignedTask()}
           user={currentUser}
           onSubmit={() => Promise.resolve()}
           onSubmitFailure={noop}
@@ -882,7 +882,7 @@ describe('<Variables />', () => {
 
       const {user} = render(
         <Variables
-          task={claimedTask()}
+          task={assignedTask()}
           user={currentUser}
           onSubmit={() => Promise.resolve()}
           onSubmitFailure={noop}
@@ -938,7 +938,7 @@ describe('<Variables />', () => {
 
       const {user} = render(
         <Variables
-          task={claimedTask()}
+          task={assignedTask()}
           user={currentUser}
           onSubmit={() => Promise.resolve()}
           onSubmitFailure={noop}
@@ -983,7 +983,7 @@ describe('<Variables />', () => {
 
       const {user} = render(
         <Variables
-          task={claimedTask()}
+          task={assignedTask()}
           user={currentUser}
           onSubmit={() => Promise.resolve()}
           onSubmitFailure={noop}

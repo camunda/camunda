@@ -86,7 +86,7 @@ const FirstTimeModal: React.FC = () => {
             <br />
             <p>
               By starting processes on demand you are able to trigger tasks and
-              directly start claiming these.
+              directly start assigning these.
             </p>
           </div>
           <ActionableNotification

@@ -7,16 +7,16 @@
 
 import {useMutation} from '@apollo/client';
 import {GetTask} from 'modules/queries/get-task';
-import {CLAIM_TASK, ClaimTaskVariables} from 'modules/mutations/claim-task';
+import {ASSIGN_TASK, AssignTaskVariables} from 'modules/mutations/assign-task';
 import {
-  UNCLAIM_TASK,
-  UnclaimTaskVariables,
-} from 'modules/mutations/unclaim-task';
+  UNASSIGN_TASK,
+  UnassignTaskVariables,
+} from 'modules/mutations/unassign-task';
 import {formatDate} from 'modules/utils/formatDate';
 import {TaskStates} from 'modules/constants/taskStates';
 import {
   Aside,
-  ClaimButtonContainer,
+  AssignButtonContainer,
   Container,
   Content,
   Header,
@@ -36,25 +36,25 @@ import {ContainedList, ContainedListItem, Tag} from '@carbon/react';
 
 type AssignmentStatus =
   | 'off'
-  | 'claiming'
-  | 'unclaiming'
-  | 'claimingSuccessful'
-  | 'unclaimingSuccessful';
+  | 'assigning'
+  | 'unassigning'
+  | 'assignmentSuccessful'
+  | 'unassignmentSuccessful';
 
 const ASSIGNMENT_TOGGLE_LABEL = {
-  claiming: 'Claiming...',
-  unclaiming: 'Unclaiming...',
-  claimingSuccessful: 'Claiming successful',
-  unclaimingSuccessful: 'Unclaiming successful',
+  assigning: 'Assigning...',
+  unassigning: 'Unassigning...',
+  assignmentSuccessful: 'Assignment successful',
+  unassignmentSuccessful: 'Unassignment successful',
 } as const;
 
 type Props = {
   children?: React.ReactNode;
   task: GetTask['task'];
-  onAssigmentError: () => void;
+  onAssignmentError: () => void;
 };
 
-const Details: React.FC<Props> = ({children, onAssigmentError, task}) => {
+const Details: React.FC<Props> = ({children, onAssignmentError, task}) => {
   const {
     id,
     name,
@@ -72,32 +72,32 @@ const Details: React.FC<Props> = ({children, onAssigmentError, task}) => {
   const isAssigned = assignee !== null;
   const [assignmentStatus, setAssignmentStatus] =
     useState<AssignmentStatus>('off');
-  const [claimTask, {loading: claimLoading}] = useMutation<
+  const [assignTask, {loading: assignLoading}] = useMutation<
     GetTask,
-    ClaimTaskVariables
-  >(CLAIM_TASK, {
+    AssignTaskVariables
+  >(ASSIGN_TASK, {
     variables: {id},
   });
-  const [unclaimTask, {loading: unclaimLoading}] = useMutation<
+  const [unassignTask, {loading: unassignLoading}] = useMutation<
     GetTask,
-    UnclaimTaskVariables
-  >(UNCLAIM_TASK, {
+    UnassignTaskVariables
+  >(UNASSIGN_TASK, {
     variables: {id},
   });
-  const isLoading = (claimLoading || unclaimLoading) ?? false;
+  const isLoading = (assignLoading || unassignLoading) ?? false;
 
   const handleClick = async () => {
     try {
       if (isAssigned) {
-        setAssignmentStatus('unclaiming');
-        await unclaimTask();
-        setAssignmentStatus('unclaimingSuccessful');
-        tracking.track({eventName: 'task-unclaimed'});
+        setAssignmentStatus('unassigning');
+        await unassignTask();
+        setAssignmentStatus('unassignmentSuccessful');
+        tracking.track({eventName: 'task-unassigned'});
       } else {
-        setAssignmentStatus('claiming');
-        await claimTask();
-        setAssignmentStatus('claimingSuccessful');
-        tracking.track({eventName: 'task-claimed'});
+        setAssignmentStatus('assigning');
+        await assignTask();
+        setAssignmentStatus('assignmentSuccessful');
+        tracking.track({eventName: 'task-assigned'});
       }
     } catch (error) {
       const errorMessage = (error as Error).message ?? '';
@@ -108,23 +108,23 @@ const Details: React.FC<Props> = ({children, onAssigmentError, task}) => {
         notificationsStore.displayNotification({
           kind: 'error',
           title: isAssigned
-            ? 'Task could not be unclaimed'
-            : 'Task could not be claimed',
+            ? 'Task could not be unassigned'
+            : 'Task could not be assigned',
           subtitle: getTaskAssignmentChangeErrorMessage(errorMessage),
           isDismissable: true,
         });
       }
 
-      // TODO: this does not have to be a separate function, once we are able to use error codes we can move this inside getTaskAssigmentChangeErrorMessage
+      // TODO: this does not have to be a separate function, once we are able to use error codes we can move this inside getTaskAssignmentChangeErrorMessage
       if (shouldFetchMore(errorMessage)) {
-        onAssigmentError();
+        onAssignmentError();
       }
     }
   };
 
   function getAsyncActionButtonStatus() {
     if (isLoading || assignmentStatus !== 'off') {
-      const ACTIVE_STATES: AssignmentStatus[] = ['claiming', 'unclaiming'];
+      const ACTIVE_STATES: AssignmentStatus[] = ['assigning', 'unassigning'];
 
       return ACTIVE_STATES.includes(assignmentStatus) ? 'active' : 'finished';
     }
@@ -146,14 +146,14 @@ const Details: React.FC<Props> = ({children, onAssigmentError, task}) => {
             </Label>
             {taskState === TaskStates.Created && (
               <Restricted scopes={['write']}>
-                <ClaimButtonContainer>
+                <AssignButtonContainer>
                   <AsyncActionButton
                     inlineLoadingProps={{
                       description:
                         assignmentStatus === 'off'
                           ? undefined
                           : ASSIGNMENT_TOGGLE_LABEL[assignmentStatus],
-                      'aria-live': ['claiming', 'unclaiming'].includes(
+                      'aria-live': ['assigning', 'unassigning'].includes(
                         assignmentStatus,
                       )
                         ? 'assertive'
@@ -174,9 +174,9 @@ const Details: React.FC<Props> = ({children, onAssigmentError, task}) => {
                     status={getAsyncActionButtonStatus()}
                     key={id}
                   >
-                    {isAssigned ? 'Unclaim' : 'Claim'}
+                    {isAssigned ? 'Unassign' : 'Assign to me'}
                   </AsyncActionButton>
-                </ClaimButtonContainer>
+                </AssignButtonContainer>
               </Restricted>
             )}
           </HeaderRightContainer>

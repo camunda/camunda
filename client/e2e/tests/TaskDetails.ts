@@ -40,7 +40,9 @@ test('load task details when a task is selected', async (t) => {
     .ok()
     .expect(taskDetailsHeader.getByText('Unassigned').exists)
     .ok()
-    .expect(taskDetailsHeader.getByRole('button', {name: 'Claim'}).exists)
+    .expect(
+      taskDetailsHeader.getByRole('button', {name: 'Assign to me'}).exists,
+    )
     .ok();
 
   const withinDetailsPanel = within(screen.getByLabelText('Details'));
@@ -56,7 +58,7 @@ test('load task details when a task is selected', async (t) => {
     .ok();
 });
 
-test('claim and unclaim task', async (t) => {
+test('assign and unassign task', async (t) => {
   await t.click(
     within(screen.getByTitle('Left panel'))
       .getAllByText('usertask_to_be_completed')
@@ -66,7 +68,7 @@ test('claim and unclaim task', async (t) => {
   const taskDetailsHeader = within(screen.getByTitle('Task details header'));
 
   await t
-    .expect(screen.getByRole('button', {name: 'Claim'}).exists)
+    .expect(screen.getByRole('button', {name: 'Assign to me'}).exists)
     .ok()
     .expect(
       screen
@@ -74,8 +76,8 @@ test('claim and unclaim task', async (t) => {
         .hasAttribute('disabled'),
     )
     .ok()
-    .click(screen.getByRole('button', {name: 'Claim'}))
-    .expect(screen.queryByRole('button', {name: 'Unclaim'}).exists)
+    .click(screen.getByRole('button', {name: 'Assign to me'}))
+    .expect(screen.queryByRole('button', {name: 'Unassign'}).exists)
     .ok()
     .expect(taskDetailsHeader.getByText('Assigned').exists)
     .ok()
@@ -85,8 +87,8 @@ test('claim and unclaim task', async (t) => {
         .hasAttribute('disabled'),
     )
     .notOk()
-    .click(screen.getByRole('button', {name: 'Unclaim'}))
-    .expect(screen.queryByRole('button', {name: 'Claim'}).exists)
+    .click(screen.getByRole('button', {name: 'Unassign'}))
+    .expect(screen.queryByRole('button', {name: 'Assign to me'}).exists)
     .ok()
     .expect(taskDetailsHeader.getByText('Unassigned').exists)
     .ok()
@@ -115,7 +117,7 @@ test('complete task', async (t) => {
   const currentUrl = await getURL();
 
   await t
-    .click(screen.getByRole('button', {name: 'Claim'}))
+    .click(screen.getByRole('button', {name: 'Assign to me'}))
     .click(screen.getByRole('button', {name: 'Complete Task'}));
 
   await t
@@ -139,7 +141,7 @@ test('complete task', async (t) => {
 test('task completion with form', async (t) => {
   await t
     .click(screen.queryAllByText(/^user registration$/i).nth(0))
-    .click(screen.queryByRole('button', {name: /claim/i}))
+    .click(screen.queryByRole('button', {name: /assign/i}))
     .typeText(screen.queryByLabelText(/name/i), 'Jon')
     .typeText(screen.queryByLabelText(/address/i), 'Earth')
     .typeText(screen.queryByLabelText(/age/i), '21')
@@ -155,10 +157,10 @@ test('task completion with form', async (t) => {
     .eql('21');
 });
 
-test('task completion with form on Claimed by Me filter', async (t) => {
+test('task completion with form on Assigned to Me filter', async (t) => {
   await t
     .click(screen.queryByText(/^user registration$/i))
-    .click(screen.queryByRole('button', {name: /claim/i}))
+    .click(screen.queryByRole('button', {name: /assign/i}))
     .expect(
       screen
         .getByRole('button', {name: /complete task/i})
@@ -166,7 +168,7 @@ test('task completion with form on Claimed by Me filter', async (t) => {
     )
     .notOk()
     .click(screen.queryByText('All open'))
-    .click(screen.queryByText('Claimed by me'))
+    .click(screen.queryByText('Assigned to me'))
     .click(
       within(screen.getByTitle('Left panel')).queryByText(
         /^user registration$/i,
@@ -183,7 +185,7 @@ test('task completion with form on Claimed by Me filter', async (t) => {
 test('task completion with prefilled form', async (t) => {
   await t
     .click(screen.queryByText(/user registration with vars/i))
-    .click(screen.queryByRole('button', {name: /claim/i}))
+    .click(screen.queryByRole('button', {name: /assign/i}))
     .typeText(screen.queryByDisplayValue(/jane/i), 'Jon', {replace: true})
     .typeText(screen.queryByLabelText(/address/i), 'Earth')
     .typeText(screen.queryByDisplayValue(/50/i), '21', {replace: true})

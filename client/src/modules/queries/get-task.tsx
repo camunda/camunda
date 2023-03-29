@@ -9,11 +9,11 @@ import {gql, useApolloClient, useQuery} from '@apollo/client';
 import {Task} from 'modules/types';
 
 import {
-  unclaimedTask,
+  unassignedTask,
   completedTask,
-  claimedTask,
-  unclaimedTaskWithForm,
-  claimedTaskWithForm,
+  assignedTask,
+  unassignedTaskWithForm,
+  assignedTaskWithForm,
   completedTaskWithForm,
 } from 'modules/mock-schema/mocks/task';
 import {useEffect, useState} from 'react';
@@ -57,7 +57,7 @@ const GET_TASK = gql`
   }
 `;
 
-const mockGetTaskUnclaimed = (id = '0') => ({
+const mockGetTaskUnassigned = (id = '0') => ({
   request: {
     query: GET_TASK,
     variables: {
@@ -66,12 +66,12 @@ const mockGetTaskUnclaimed = (id = '0') => ({
   },
   result: {
     data: {
-      task: unclaimedTask(id),
+      task: unassignedTask(id),
     },
   },
 });
 
-const mockGetTaskUnclaimedWithForm = (id = '0') => ({
+const mockGetTaskUnassignedWithForm = (id = '0') => ({
   request: {
     query: GET_TASK,
     variables: {
@@ -80,7 +80,7 @@ const mockGetTaskUnclaimedWithForm = (id = '0') => ({
   },
   result: {
     data: {
-      task: unclaimedTaskWithForm(id),
+      task: unassignedTaskWithForm(id),
     },
   },
 });
@@ -99,7 +99,7 @@ const mockGetTaskCompleted = (id = '0') => ({
   },
 });
 
-const mockGetTaskClaimed = (id = '0') => ({
+const mockGetTaskAssigned = (id = '0') => ({
   request: {
     query: GET_TASK,
     variables: {
@@ -108,12 +108,12 @@ const mockGetTaskClaimed = (id = '0') => ({
   },
   result: {
     data: {
-      task: claimedTask(id),
+      task: assignedTask(id),
     },
   },
 });
 
-const mockGetTaskClaimedWithForm = (id = '0') => ({
+const mockGetTaskAssignedWithForm = (id = '0') => ({
   request: {
     query: GET_TASK,
     variables: {
@@ -122,7 +122,7 @@ const mockGetTaskClaimedWithForm = (id = '0') => ({
   },
   result: {
     data: {
-      task: claimedTaskWithForm(id),
+      task: assignedTaskWithForm(id),
     },
   },
 });
@@ -207,11 +207,11 @@ function useRemoveFormReference(task: GetTask['task']) {
 export type {GetTask, TaskQueryVariables};
 export {
   GET_TASK,
-  mockGetTaskUnclaimed,
+  mockGetTaskUnassigned,
   mockGetTaskCompleted,
-  mockGetTaskClaimed,
-  mockGetTaskUnclaimedWithForm,
-  mockGetTaskClaimedWithForm,
+  mockGetTaskAssigned,
+  mockGetTaskUnassignedWithForm,
+  mockGetTaskAssignedWithForm,
   mockGetTaskCompletedWithForm,
   useTask,
   useRemoveFormReference,

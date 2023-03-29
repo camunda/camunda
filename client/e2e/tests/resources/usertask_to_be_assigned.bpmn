@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" id="Definitions_190h7pv" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Zeebe Modeler" exporterVersion="0.9.1">
-  <bpmn:process id="usertask_to_be_claimed" isExecutable="true">
+  <bpmn:process id="usertask_to_be_assigned" isExecutable="true">
     <bpmn:startEvent id="StartEvent_1" name="Start">
       <bpmn:outgoing>Flow_0u665te</bpmn:outgoing>
     </bpmn:startEvent>
@@ -15,7 +15,7 @@
     </bpmn:userTask>
   </bpmn:process>
   <bpmndi:BPMNDiagram id="BPMNDiagram_1">
-    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="usertask_to_be_claimed">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="usertask_to_be_assigned">
       <bpmndi:BPMNEdge id="Flow_1mtspc2_di" bpmnElement="Flow_1mtspc2">
         <di:waypoint x="370" y="117" />
         <di:waypoint x="482" y="117" />

@@ -10,13 +10,13 @@ import {getCompleteTaskErrorMessage} from './getCompleteTaskErrorMessage';
 describe('getCompleteTaskErrorMessage', () => {
   it('should return an error message for unassigned task', () => {
     expect(getCompleteTaskErrorMessage('Task is not assigned')).toBe(
-      'Task is not claimed',
+      'Task is not assigned',
     );
   });
 
   it('should return an error message for a task assigned to other user', () => {
     expect(getCompleteTaskErrorMessage('Task is not assigned to demo')).toBe(
-      'Task claimed by another user',
+      'Task assigned to another user',
     );
   });
 

@@ -8,7 +8,7 @@
 import {deploy, createInstances} from './utils/zeebeUtilities';
 export async function setup() {
   await Promise.all([
-    deploy('./e2e/tests/resources/usertask_to_be_claimed.bpmn'),
+    deploy('./e2e/tests/resources/usertask_to_be_assigned.bpmn'),
     deploy('./e2e/tests/resources/usertask_for_scrolling_1.bpmn'),
     deploy('./e2e/tests/resources/usertask_for_scrolling_2.bpmn'),
     deploy('./e2e/tests/resources/usertask_for_scrolling_3.bpmn'),
@@ -20,5 +20,5 @@ export async function setup() {
   await createInstances('usertask_for_scrolling_2', 1, 50);
   await createInstances('usertask_for_scrolling_2', 1, 50);
   await createInstances('usertask_for_scrolling_1', 1, 1);
-  await createInstances('usertask_to_be_claimed', 1, 1); // this task will be seen on top since it is created last
+  await createInstances('usertask_to_be_assigned', 1, 1); // this task will be seen on top since it is created last
 }

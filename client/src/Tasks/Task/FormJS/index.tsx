@@ -93,7 +93,7 @@ const FormJS: React.FC<Props> = ({
     task.id,
     extractVariablesFromFormSchema(schema),
   );
-  const isClaimed = user.userId === assignee;
+  const isAssignedToMe = user.userId === assignee;
   const canCompleteTask =
     user.userId === assignee && taskState === 'CREATED' && hasPermission;
   const {removeFormReference} = useRemoveFormReference(task);
@@ -101,10 +101,10 @@ const FormJS: React.FC<Props> = ({
   useEffect(() => {
     formManager.setReadOnly(!canCompleteTask);
 
-    if (!isClaimed) {
+    if (!isAssignedToMe) {
       formManager.reset();
     }
-  }, [canCompleteTask, isClaimed]);
+  }, [canCompleteTask, isAssignedToMe]);
 
   useEffect(() => {
     const container = containerRef.current;
@@ -208,7 +208,7 @@ const FormJS: React.FC<Props> = ({
                 },
                 title: canCompleteTask
                   ? undefined
-                  : 'You must first claim this task to complete it',
+                  : 'You must first assign this task to complete it',
               }}
               status={submissionState}
               onError={() => {

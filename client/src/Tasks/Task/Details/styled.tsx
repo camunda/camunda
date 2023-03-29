@@ -10,7 +10,7 @@ import {TaskDetailsRow} from 'modules/components/TaskDetailsLayout';
 import styled, {css} from 'styled-components';
 import {SkeletonText as BaseSkeletonText, Section} from '@carbon/react';
 
-const ClaimButtonContainer = styled.span`
+const AssignButtonContainer = styled.span`
   flex-shrink: 0;
   display: flex;
   align-items: center;
@@ -75,7 +75,7 @@ const SkeletonText = styled(BaseSkeletonText)<SkeletonTextProps>`
 `;
 
 export {
-  ClaimButtonContainer,
+  AssignButtonContainer,
   Container,
   Header,
   HeaderLeftContainer,

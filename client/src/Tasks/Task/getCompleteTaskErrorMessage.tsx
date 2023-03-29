@@ -7,11 +7,11 @@
 
 function getCompleteTaskErrorMessage(code: string) {
   if (code === 'Task is not assigned') {
-    return 'Task is not claimed';
+    return 'Task is not assigned';
   }
 
   if (code.includes('Task is not assigned to')) {
-    return 'Task claimed by another user';
+    return 'Task assigned to another user';
   }
 
   if (code === 'Task is not active') {

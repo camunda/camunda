@@ -188,7 +188,7 @@ const Variables: React.FC<Props> = ({
               title={
                 canCompleteTask
                   ? undefined
-                  : 'You must claim the task to add variables'
+                  : 'You must assign the task to add variables'
               }
             >
               Add Variable
@@ -454,7 +454,7 @@ const Variables: React.FC<Props> = ({
                         !canCompleteTask,
                       title: canCompleteTask
                         ? undefined
-                        : 'You must first claim this task to complete it',
+                        : 'You must first assign this task to complete it',
                     }}
                     status={submissionState}
                     onError={() => {

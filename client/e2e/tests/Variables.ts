@@ -65,8 +65,8 @@ test('display variables when task has variables', async (t) => {
 
 test.after(async (t) => {
   await t
-    .click(screen.getByRole('button', {name: 'Unclaim'}))
-    .expect(screen.queryByRole('button', {name: 'Claim'}).exists)
+    .click(screen.getByRole('button', {name: 'Unassign'}))
+    .expect(screen.queryByRole('button', {name: 'Assign to me'}).exists)
     .ok();
 })('new variable disappears after refresh', async (t) => {
   await t
@@ -81,7 +81,7 @@ test.after(async (t) => {
         .hasAttribute('disabled'),
     )
     .ok()
-    .click(screen.getByRole('button', {name: 'Claim'}))
+    .click(screen.getByRole('button', {name: 'Assign to me'}))
     .click(screen.getByRole('button', {name: 'Add Variable'}));
 
   await t.typeText(
@@ -118,7 +118,7 @@ test.skip('new variable still exists after refresh if task is completed', async 
     )
     .expect(screen.queryByRole('button', {name: 'Add Variable'}).exists)
     .notOk()
-    .click(screen.getByRole('button', {name: 'Claim'}))
+    .click(screen.getByRole('button', {name: 'Assign to me'}))
     .click(screen.getByRole('button', {name: 'Add Variable'}));
 
   await t.typeText(
@@ -157,8 +157,8 @@ test.skip('new variable still exists after refresh if task is completed', async 
 
 test.after(async (t) => {
   await t
-    .click(screen.getByRole('button', {name: 'Unclaim'}))
-    .expect(screen.queryByRole('button', {name: 'Claim'}).exists)
+    .click(screen.getByRole('button', {name: 'Unassign'}))
+    .expect(screen.queryByRole('button', {name: 'Assign to me'}).exists)
     .ok();
 })('edited variable is not saved after refresh', async (t) => {
   await t
@@ -167,7 +167,7 @@ test.after(async (t) => {
         .getAllByText('usertask_with_variables')
         .nth(0),
     )
-    .click(screen.getByRole('button', {name: 'Claim'}))
+    .click(screen.getByRole('button', {name: 'Assign to me'}))
     .expect(screen.queryByDisplayValue('"something"').exists)
     .ok()
     .selectText(screen.queryByLabelText(/testdata value/i))
@@ -188,7 +188,7 @@ test('edited variable is saved after refresh if task is completed', async (t) =>
         .getAllByText('usertask_with_variables')
         .nth(0),
     )
-    .click(screen.getByRole('button', {name: 'Claim'}))
+    .click(screen.getByRole('button', {name: 'Assign to me'}))
     .expect(screen.queryByDisplayValue('"something"').exists)
     .ok()
     .selectText(screen.queryByLabelText(/testdata value/i))

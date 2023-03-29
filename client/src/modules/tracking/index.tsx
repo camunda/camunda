@@ -13,7 +13,7 @@ import {TaskFilters} from 'modules/hooks/useTaskFilters';
 const EVENT_PREFIX = 'tasklist:';
 type Events =
   | {
-      eventName: 'task-opened' | 'task-unclaimed' | 'task-claimed';
+      eventName: 'task-opened' | 'task-unassigned' | 'task-assigned';
     }
   | {
       eventName: 'task-completed';

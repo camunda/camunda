@@ -9,13 +9,13 @@
 
 import gql from 'graphql-tag';
 import {Task} from 'modules/types';
-import {claimedTask} from 'modules/mock-schema/mocks/task';
+import {assignedTask} from 'modules/mock-schema/mocks/task';
 
-type ClaimTaskVariables = {
+type AssignTaskVariables = {
   id: Task['id'];
 };
 
-const CLAIM_TASK = gql`
+const ASSIGN_TASK = gql`
   mutation ClaimTask($id: String!) {
     claimTask(taskId: $id) {
       id
@@ -24,17 +24,17 @@ const CLAIM_TASK = gql`
   }
 `;
 
-const mockClaimTask = {
+const mockAssignTask = {
   request: {
-    query: CLAIM_TASK,
+    query: ASSIGN_TASK,
     variables: {id: '0'},
   },
   result: {
     data: {
-      claimTask: claimedTask(),
+      claimTask: assignedTask(),
     },
   },
 };
 
-export type {ClaimTaskVariables};
-export {CLAIM_TASK, mockClaimTask};
+export type {AssignTaskVariables};
+export {ASSIGN_TASK, mockAssignTask};

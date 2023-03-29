@@ -9,7 +9,7 @@ import {Task} from 'modules/types';
 import {TaskStates} from 'modules/constants/taskStates';
 import {currentUser} from 'modules/mock-schema/mocks/current-user';
 
-const unclaimedTask = (id = '0'): Omit<Task, 'variables'> => ({
+const unassignedTask = (id = '0'): Omit<Task, 'variables'> => ({
   __typename: 'Task',
   id,
   name: 'My Task',
@@ -28,7 +28,7 @@ const unclaimedTask = (id = '0'): Omit<Task, 'variables'> => ({
   candidateUsers: ['jane candidate'],
 });
 
-const unclaimedTaskWithForm = (id = '0'): Omit<Task, 'variables'> => ({
+const unassignedTaskWithForm = (id = '0'): Omit<Task, 'variables'> => ({
   __typename: 'Task',
   id,
   name: 'My Task',
@@ -85,7 +85,7 @@ const completedTaskWithForm = (id = '0'): Omit<Task, 'variables'> => ({
   candidateUsers: [],
 });
 
-const claimedTask = (id = '0'): Omit<Task, 'variables'> => ({
+const assignedTask = (id = '0'): Omit<Task, 'variables'> => ({
   __typename: 'Task',
   id,
   name: 'My Task',
@@ -104,7 +104,7 @@ const claimedTask = (id = '0'): Omit<Task, 'variables'> => ({
   candidateUsers: [],
 });
 
-const claimedTaskWithForm = (id = '0'): Omit<Task, 'variables'> => ({
+const assignedTaskWithForm = (id = '0'): Omit<Task, 'variables'> => ({
   __typename: 'Task',
   id,
   name: 'My Task',
@@ -124,10 +124,10 @@ const claimedTaskWithForm = (id = '0'): Omit<Task, 'variables'> => ({
 });
 
 export {
-  unclaimedTask,
+  unassignedTask,
   completedTask,
-  claimedTask,
-  unclaimedTaskWithForm,
-  claimedTaskWithForm,
+  assignedTask,
+  unassignedTaskWithForm,
+  assignedTaskWithForm,
   completedTaskWithForm,
 };

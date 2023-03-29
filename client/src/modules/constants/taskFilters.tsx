@@ -10,13 +10,13 @@ const taskFilters = {
     id: 'all-open',
     text: 'All open',
   },
-  'claimed-by-me': {
-    id: 'claimed-by-me',
-    text: 'Claimed by me',
+  'assigned-to-me': {
+    id: 'assigned-to-me',
+    text: 'Assigned to me',
   },
-  unclaimed: {
-    id: 'unclaimed',
-    text: 'Unclaimed',
+  unassigned: {
+    id: 'unassigned',
+    text: 'Unassigned',
   },
   completed: {
     id: 'completed',

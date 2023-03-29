@@ -31,7 +31,7 @@ function createWrapper(
           state={{
             referrer: {
               pathname: '/1',
-              search: '?filter=unclaimed',
+              search: '?filter=unassigned',
             },
           }}
         >
@@ -102,7 +102,7 @@ describe('<Login />', () => {
     await waitFor(() =>
       expect(screen.getByTestId('pathname')).toHaveTextContent('/1'),
     );
-    expect(screen.getByTestId('search')).toHaveTextContent('filter=unclaimed');
+    expect(screen.getByTestId('search')).toHaveTextContent('filter=unassigned');
   });
 
   it('should show an error for wrong credentials', async () => {

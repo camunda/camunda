@@ -84,12 +84,12 @@ const tasks: ReadonlyArray<Task> = [
   },
 ];
 
-const tasksClaimedByDemoUser: ReadonlyArray<Task> = tasks.map((task) => ({
+const tasksAssignedToDemoUser: ReadonlyArray<Task> = tasks.map((task) => ({
   ...task,
   assignee: currentUser.userId,
 }));
 
-const unclaimedTasks: ReadonlyArray<Task> = tasks.map((task) => ({
+const unassignedTasks: ReadonlyArray<Task> = tasks.map((task) => ({
   ...task,
   assignee: null,
 }));
@@ -124,8 +124,8 @@ const generateTask = (id: string, name?: string): Task => {
 
 export {
   tasks,
-  tasksClaimedByDemoUser,
-  unclaimedTasks,
+  tasksAssignedToDemoUser,
+  unassignedTasks,
   completedTasks,
   generateTask,
 };

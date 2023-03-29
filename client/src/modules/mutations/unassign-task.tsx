@@ -8,15 +8,14 @@
 /* istanbul ignore file */
 
 import gql from 'graphql-tag';
-import {unclaimedTask} from 'modules/mock-schema/mocks/task';
-
+import {unassignedTask} from 'modules/mock-schema/mocks/task';
 import {Task} from 'modules/types';
 
-type UnclaimTaskVariables = {
+type UnassignTaskVariables = {
   id: Task['id'];
 };
 
-const UNCLAIM_TASK = gql`
+const UNASSIGN_TASK = gql`
   mutation UnclaimTask($id: String!) {
     unclaimTask(taskId: $id) {
       id
@@ -25,17 +24,17 @@ const UNCLAIM_TASK = gql`
   }
 `;
 
-const mockUnclaimTask = {
+const mockUnassignTask = {
   request: {
-    query: UNCLAIM_TASK,
+    query: UNASSIGN_TASK,
     variables: {id: '0'},
   },
   result: {
     data: {
-      unclaimTask: unclaimedTask(),
+      unclaimTask: unassignedTask(),
     },
   },
 };
 
-export type {UnclaimTaskVariables};
-export {UNCLAIM_TASK, mockUnclaimTask};
+export type {UnassignTaskVariables};
+export {UNASSIGN_TASK, mockUnassignTask};

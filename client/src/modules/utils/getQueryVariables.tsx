@@ -41,7 +41,7 @@ const getQueryVariables = (
   } as const;
 
   switch (filter) {
-    case 'claimed-by-me': {
+    case 'assigned-to-me': {
       return {
         ...BASE_QUERY_VARIABLES,
         assigned: true,
@@ -49,7 +49,7 @@ const getQueryVariables = (
         state: TaskStates.Created,
       };
     }
-    case 'unclaimed': {
+    case 'unassigned': {
       return {
         ...BASE_QUERY_VARIABLES,
         assigned: false,

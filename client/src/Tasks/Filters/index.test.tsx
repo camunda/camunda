@@ -43,9 +43,11 @@ describe('<Filters />', () => {
 
     expect(screen.getByRole('option', {name: 'All open'})).toBeInTheDocument();
     expect(
-      screen.getByRole('option', {name: 'Claimed by me'}),
+      screen.getByRole('option', {name: 'Assigned to me'}),
     ).toBeInTheDocument();
-    expect(screen.getByRole('option', {name: 'Unclaimed'})).toBeInTheDocument();
+    expect(
+      screen.getByRole('option', {name: 'Unassigned'}),
+    ).toBeInTheDocument();
     expect(screen.getByRole('option', {name: 'Completed'})).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('button', {name: 'Sort tasks'}));
@@ -73,13 +75,12 @@ describe('<Filters />', () => {
     });
 
     fireEvent.click(screen.getByRole('button', {name: 'Filter options'}));
-    fireEvent.click(screen.getByRole('option', {name: 'Claimed by me'}));
-
+    fireEvent.click(screen.getByRole('option', {name: 'Assigned to me'}));
     fireEvent.click(screen.getByRole('button', {name: 'Sort tasks'}));
     fireEvent.click(screen.getByText('Due date'));
 
     expect(screen.getByTestId('search')).toHaveTextContent(
-      '?filter=claimed-by-me&sortBy=due',
+      '?filter=assigned-to-me&sortBy=due',
     );
   });
 
@@ -90,5 +91,25 @@ describe('<Filters />', () => {
 
     expect(screen.getByRole('button', {name: 'Filter options'})).toBeDisabled();
     expect(screen.getByRole('button', {name: 'Sort tasks'})).toBeDisabled();
+  });
+
+  it('should replace old claimed by me param', () => {
+    render(<Filters disabled={false} />, {
+      wrapper: createWrapper(['/?filter=claimed-by-me']),
+    });
+
+    expect(screen.getByTestId('search')).toHaveTextContent(
+      '?filter=assigned-to-me',
+    );
+  });
+
+  it('should replace old unclaimed param', () => {
+    render(<Filters disabled={false} />, {
+      wrapper: createWrapper(['/?filter=unclaimed']),
+    });
+
+    expect(screen.getByTestId('search')).toHaveTextContent(
+      '?filter=unassigned',
+    );
   });
 });

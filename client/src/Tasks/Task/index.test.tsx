@@ -14,16 +14,16 @@ import {
   waitForElementToBeRemoved,
 } from 'modules/testing-library';
 import {
-  mockGetTaskClaimed,
+  mockGetTaskAssigned,
   mockGetTaskCompletedWithForm,
-  mockGetTaskClaimedWithForm,
+  mockGetTaskAssignedWithForm,
   mockGetTaskCompleted,
 } from 'modules/queries/get-task';
 import {MockThemeProvider} from 'modules/theme/MockProvider';
 import {mockGetCurrentUser} from 'modules/queries/get-current-user';
 import {mockCompleteTask} from 'modules/mutations/complete-task';
-import {mockClaimTask} from 'modules/mutations/claim-task';
-import {mockUnclaimTask} from 'modules/mutations/unclaim-task';
+import {mockAssignTask} from 'modules/mutations/assign-task';
+import {mockUnassignTask} from 'modules/mutations/unassign-task';
 import {mockGetForm, mockGetInvalidForm} from 'modules/queries/get-form';
 import {
   mockGetTaskVariables,
@@ -89,7 +89,7 @@ describe('<Task />', () => {
   it('should render created task', async () => {
     nodeMockServer.use(
       graphql.query('GetTask', (_, res, ctx) => {
-        return res.once(ctx.data(mockGetTaskClaimed().result.data));
+        return res.once(ctx.data(mockGetTaskAssigned().result.data));
       }),
       graphql.query('GetCurrentUser', (_, res, ctx) => {
         return res.once(ctx.data(mockGetCurrentUser));
@@ -111,7 +111,7 @@ describe('<Task />', () => {
   it('should render created task with embedded form', async () => {
     nodeMockServer.use(
       graphql.query('GetTask', (_, res, ctx) => {
-        return res.once(ctx.data(mockGetTaskClaimedWithForm().result.data));
+        return res.once(ctx.data(mockGetTaskAssignedWithForm().result.data));
       }),
       graphql.query('GetCurrentUser', (_, res, ctx) => {
         return res.once(ctx.data(mockGetCurrentUser));
@@ -189,7 +189,7 @@ describe('<Task />', () => {
   it('should complete task without variables', async () => {
     nodeMockServer.use(
       graphql.query('GetTask', (_, res, ctx) => {
-        return res.once(ctx.data(mockGetTaskClaimed().result.data));
+        return res.once(ctx.data(mockGetTaskAssigned().result.data));
       }),
       graphql.query('GetCurrentUser', (_, res, ctx) => {
         return res.once(ctx.data(mockGetCurrentUser));
@@ -224,7 +224,7 @@ describe('<Task />', () => {
   it('should get error on complete task', async () => {
     nodeMockServer.use(
       graphql.query('GetTask', (_, res, ctx) => {
-        return res.once(ctx.data(mockGetTaskClaimed().result.data));
+        return res.once(ctx.data(mockGetTaskAssigned().result.data));
       }),
       graphql.query('GetCurrentUser', (_, res, ctx) => {
         return res.once(ctx.data(mockGetCurrentUser));
@@ -265,7 +265,7 @@ describe('<Task />', () => {
   it('should show a skeleton while loading', async () => {
     nodeMockServer.use(
       graphql.query('GetTask', (_, res, ctx) => {
-        return res.once(ctx.data(mockGetTaskClaimed().result.data));
+        return res.once(ctx.data(mockGetTaskAssigned().result.data));
       }),
       graphql.query('GetCurrentUser', (_, res, ctx) => {
         return res.once(ctx.data(mockGetCurrentUser));
@@ -289,7 +289,7 @@ describe('<Task />', () => {
   it('should reset variables', async () => {
     nodeMockServer.use(
       graphql.query('GetTask', (_, res, ctx) => {
-        return res.once(ctx.data(mockGetTaskClaimed().result.data));
+        return res.once(ctx.data(mockGetTaskAssigned().result.data));
       }),
       graphql.query('GetCurrentUser', (_, res, ctx) => {
         return res.once(ctx.data(mockGetCurrentUser));
@@ -298,13 +298,13 @@ describe('<Task />', () => {
         return res.once(ctx.data(mockGetTaskEmptyVariables().result.data));
       }),
       graphql.mutation('UnclaimTask', (_, res, ctx) => {
-        return res.once(ctx.data(mockUnclaimTask.result.data));
+        return res.once(ctx.data(mockUnassignTask.result.data));
       }),
       graphql.mutation('ClaimTask', (_, res, ctx) => {
-        return res.once(ctx.data(mockClaimTask.result.data));
+        return res.once(ctx.data(mockAssignTask.result.data));
       }),
       graphql.query('GetTask', (_, res, ctx) => {
-        return res.once(ctx.data(mockGetTaskClaimed().result.data));
+        return res.once(ctx.data(mockGetTaskAssigned().result.data));
       }),
       graphql.query('GetTaskVariables', (_, res, ctx) => {
         return res.once(ctx.data(mockGetTaskEmptyVariables().result.data));
@@ -323,11 +323,13 @@ describe('<Task />', () => {
       screen.getByLabelText(/1st variable value/i),
       '"valid_value"',
     );
-    await user.click(screen.getByRole('button', {name: /^unclaim$/i}));
-    await user.click(await screen.findByRole('button', {name: /^claim$/i}));
+    await user.click(screen.getByRole('button', {name: /^unassign$/i}));
+    await user.click(
+      await screen.findByRole('button', {name: /^assign to me$/i}),
+    );
 
     expect(
-      await screen.findByRole('button', {name: /^unclaim$/i}),
+      await screen.findByRole('button', {name: /^unassign$/i}),
     ).toBeInTheDocument();
     expect(screen.getByText(/task has no variables/i)).toBeInTheDocument();
   });
@@ -338,7 +340,7 @@ describe('<Task />', () => {
         res.once(ctx.data(mockGetCurrentUser)),
       ),
       graphql.query('GetTask', (_, res, ctx) =>
-        res.once(ctx.data(mockGetTaskClaimedWithForm().result.data)),
+        res.once(ctx.data(mockGetTaskAssignedWithForm().result.data)),
       ),
       graphql.query('GetForm', (_, res, ctx) =>
         res.once(ctx.data(mockGetInvalidForm.result.data)),

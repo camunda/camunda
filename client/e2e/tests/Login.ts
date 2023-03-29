@@ -85,8 +85,8 @@ test('show error message on login failure', async (t) => {
 
 test('redirect to the correct URL after login', async (t) => {
   const selectedTaskURL = '/123';
-  const selectedFilterUrl = '/?filter=unclaimed';
-  const selectedTaskAndFilterURL = '/123?filter=unclaimed';
+  const selectedFilterUrl = '/?filter=unassigned';
+  const selectedTaskAndFilterURL = '/123?filter=unassigned';
 
   await t
     .navigateTo(selectedTaskURL)
