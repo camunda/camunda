@@ -110,7 +110,7 @@
     <dependency>
       <groupId>com.ethlo.time</groupId>
       <artifactId>itu</artifactId>
-      <version>1.7.0</version>
+      <version>1.7.2</version>
     </dependency>
     <dependency>
       <groupId>net.jodah</groupId>
