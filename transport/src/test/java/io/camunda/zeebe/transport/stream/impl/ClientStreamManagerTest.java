@@ -15,10 +15,15 @@ import static org.mockito.Mockito.when;
 import io.atomix.cluster.MemberId;
 import io.atomix.cluster.messaging.ClusterCommunicationService;
 import io.camunda.zeebe.scheduler.testing.TestConcurrencyControl;
+import io.camunda.zeebe.transport.stream.impl.messages.PushStreamRequest;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import io.camunda.zeebe.util.buffer.BufferWriter;
+import java.time.Duration;
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 import org.agrona.DirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -105,5 +110,39 @@ class ClientStreamManagerTest {
 
     // then
     assertThat(registry.get(uuid)).isNull();
+  }
+
+  @Test
+  void shouldPushPayloadToClient() {
+    // given
+    final DirectBuffer payloadReceived = new UnsafeBuffer();
+    final var streamId = clientStreamManager.add(streamType, metadata, payloadReceived::wrap);
+
+    // when
+    final var payloadPushed = BufferUtil.wrapString("data");
+    final var request = new PushStreamRequest().streamId(streamId).payload(payloadPushed);
+    final CompletableFuture<Void> future = new CompletableFuture<>();
+    clientStreamManager.onPayloadReceived(request, future);
+
+    // then
+    assertThat(future).succeedsWithin(Duration.ofMillis(100));
+    assertThat(payloadReceived).isEqualTo(payloadPushed);
+  }
+
+  @Test
+  void shouldNotPushIfNoStream() {
+    // given -- no stream registered
+
+    // when
+    final var payloadPushed = BufferUtil.wrapString("data");
+    final var request = new PushStreamRequest().streamId(UUID.randomUUID()).payload(payloadPushed);
+    final CompletableFuture<Void> future = new CompletableFuture<>();
+    clientStreamManager.onPayloadReceived(request, future);
+
+    // then
+    assertThat(future)
+        .failsWithin(Duration.ofMillis(100))
+        .withThrowableOfType(ExecutionException.class)
+        .withCauseInstanceOf(StreamDoesNotExistException.class);
   }
 }

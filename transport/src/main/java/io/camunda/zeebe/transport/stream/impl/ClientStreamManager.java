@@ -9,11 +9,13 @@ package io.camunda.zeebe.transport.stream.impl;
 
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.transport.stream.api.ClientStreamConsumer;
+import io.camunda.zeebe.transport.stream.impl.messages.PushStreamRequest;
 import io.camunda.zeebe.util.buffer.BufferWriter;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 import org.agrona.DirectBuffer;
 
 final class ClientStreamManager<M extends BufferWriter> {
@@ -60,5 +62,23 @@ final class ClientStreamManager<M extends BufferWriter> {
 
   void removeAll() {
     requestManager.removeAll(servers);
+  }
+
+  public void onPayloadReceived(
+      final PushStreamRequest pushStreamRequest, final CompletableFuture<Void> responseFuture) {
+    final var streamId = pushStreamRequest.streamId();
+    final var payload = pushStreamRequest.payload();
+
+    final ClientStream<M> clientStream = registry.get(streamId);
+    if (clientStream != null) {
+      clientStream.getClientStreamConsumer().push(payload);
+      responseFuture.complete(null);
+    } else {
+      // Stream does not exist. We expect to have already sent remove request to all servers. But
+      // just in case that request is lost, we send remove request again. To keep it simple, we do
+      // not retry. Otherwise, it is possible that we send it multiple times unnecessary.
+      requestManager.removeStreamUnreliable(streamId, servers);
+      responseFuture.completeExceptionally(new StreamDoesNotExistException());
+    }
   }
 }

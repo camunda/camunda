@@ -17,6 +17,7 @@ import io.camunda.zeebe.util.buffer.BufferUtil;
 import io.camunda.zeebe.util.buffer.BufferWriter;
 import java.time.Duration;
 import java.util.Collection;
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 import org.slf4j.Logger;
@@ -123,5 +124,14 @@ final class ClientStreamRequestManager<M extends BufferWriter> {
     // Do not wait for response, as this is expected to be called while shutting down.
     communicationService.unicast(
         StreamTopics.REMOVE_ALL.topic(), REMOVE_ALL_REQUEST, Function.identity(), brokerId, true);
+  }
+
+  /** Send remove stream request to servers without waiting for ack and without retry * */
+  void removeStreamUnreliable(final UUID streamId, final Collection<MemberId> servers) {
+    final var request = new RemoveStreamRequest().streamId(streamId);
+    servers.forEach(
+        serverId ->
+            communicationService.unicast(
+                StreamTopics.REMOVE.topic(), request, BufferUtil::bufferAsArray, serverId, true));
   }
 }
