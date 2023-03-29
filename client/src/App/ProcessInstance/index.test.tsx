@@ -302,8 +302,10 @@ describe('Instance', () => {
     await user.click(screen.getByTestId('discard-all-button'));
     await user.click(await screen.findByTestId('discard-button'));
 
-    await waitForElementToBeRemoved(() =>
-      screen.getByText('Process Instance Modification Mode')
+    await waitFor(() =>
+      expect(
+        screen.queryByText('Process Instance Modification Mode')
+      ).not.toBeInTheDocument()
     );
 
     expect(screen.queryByTestId('discard-all-button')).not.toBeInTheDocument();

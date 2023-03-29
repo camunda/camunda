@@ -15,6 +15,10 @@ import {Checkbox as MockCheckbox} from 'modules/mocks/common-ui/Checkbox';
 import {Select as MockSelect} from 'modules/mocks/common-ui/Select';
 import {Dropdown as MockDropdown} from 'modules/mocks/common-ui/Dropdown';
 import MockSplitter from 'modules/mocks/Splitter';
+import {Text as MockText} from 'modules/mocks/common-ui/Text';
+import {CheckboxGroup as MockCheckboxGroup} from 'modules/mocks/common-ui/CheckboxGroup';
+import {Icon as MockIcon} from 'modules/mocks/common-ui/Icon';
+import {Button as MockButton} from 'modules/mocks/common-ui/Button';
 
 global.ResizeObserver = require('resize-observer-polyfill');
 
@@ -40,6 +44,10 @@ jest.mock('@camunda-cloud/common-ui-react', () => {
     CmCheckbox: MockCheckbox,
     CmSelect: MockSelect,
     CmDropdown: MockDropdown,
+    CmText: MockText,
+    CmCheckboxGroup: MockCheckboxGroup,
+    CmIcon: MockIcon,
+    CmButton: MockButton,
   };
 });
 
