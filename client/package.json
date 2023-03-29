@@ -54,7 +54,7 @@
     "not op_mini all"
   ],
   "devDependencies": {
-    "@axe-core/playwright": "4.6.0",
+    "@axe-core/playwright": "4.6.1",
     "@playwright/test": "1.32.1",
     "@testing-library/jest-dom": "5.16.5",
     "@testing-library/react": "14.0.0",
@@ -64,8 +64,8 @@
     "@types/carbon__elements": "11.10.0",
     "@types/jest": "29.5.0",
     "@types/mixpanel-browser": "2.38.1",
-    "@types/node": "18.15.10",
-    "@types/react": "18.0.29",
+    "@types/node": "18.15.11",
+    "@types/react": "18.0.31",
     "@types/react-dom": "18.0.11",
     "@types/react-transition-group": "4.4.5",
     "@types/styled-components": "5.1.26",
