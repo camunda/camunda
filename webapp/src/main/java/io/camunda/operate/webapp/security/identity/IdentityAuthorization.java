@@ -8,13 +8,16 @@ package io.camunda.operate.webapp.security.identity;
 
 import io.camunda.identity.sdk.authorizations.dto.Authorization;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-public class IdentityAuthorization {
+public class IdentityAuthorization implements Serializable {
+
+  private static final long serialVersionUID = 1L;
 
   private String resourceKey;
   private String resourceType;

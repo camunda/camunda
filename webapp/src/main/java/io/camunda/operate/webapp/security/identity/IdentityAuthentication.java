@@ -17,6 +17,7 @@ import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.util.SpringContextHolder;
 import io.camunda.operate.webapp.security.Permission;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -27,9 +28,11 @@ import org.springframework.security.authentication.AbstractAuthenticationToken;
 import org.springframework.security.authentication.InsufficientAuthenticationException;
 import org.springframework.util.StringUtils;
 
-public class IdentityAuthentication extends AbstractAuthenticationToken {
+public class IdentityAuthentication extends AbstractAuthenticationToken implements Serializable {
 
-  protected final Logger logger = LoggerFactory.getLogger(this.getClass());
+  private static final long serialVersionUID = 1L;
+
+  private static final Logger logger = LoggerFactory.getLogger(IdentityAuthentication.class);
 
   private Tokens tokens;
   private String id;
