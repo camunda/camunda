@@ -36,8 +36,10 @@ import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.index.query.IdsQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
+import org.elasticsearch.script.Script;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
+import org.elasticsearch.search.sort.ScriptSortBuilder;
 import org.elasticsearch.search.sort.SortBuilder;
 import org.elasticsearch.search.sort.SortBuilders;
 import org.elasticsearch.search.sort.SortOrder;
@@ -406,13 +408,36 @@ public class TaskReaderWriter {
         final String field = orderByDTO.getField().toString();
         final SortOrder sortOrder;
         final SortBuilder sortBuilder;
+
+        final String nullDate;
+        if (orderByDTO.getOrder().equals(Sort.ASC)) {
+          nullDate = "2099-12-31";
+        } else {
+          nullDate = "1900-01-01";
+        }
+        final Script script =
+            new Script(
+                "def sf = new SimpleDateFormat(\"yyyy-MM-dd\"); "
+                    + "def nullDate=sf.parse('"
+                    + nullDate
+                    + "');"
+                    + "if(doc['"
+                    + field
+                    + "'].size() == 0){"
+                    + "nullDate.getTime().toString()"
+                    + "}else{"
+                    + "doc['"
+                    + field
+                    + "'].value.getMillis().toString()"
+                    + "}");
         if (directSorting) {
           sortOrder = orderByDTO.getOrder().equals(Sort.DESC) ? SortOrder.DESC : SortOrder.ASC;
-
         } else {
           sortOrder = orderByDTO.getOrder().equals(Sort.DESC) ? SortOrder.ASC : SortOrder.DESC;
         }
-        sortBuilder = SortBuilders.fieldSort(field).order(sortOrder).missing("_last");
+        sortBuilder =
+            SortBuilders.scriptSort(script, ScriptSortBuilder.ScriptSortType.STRING)
+                .order(sortOrder);
         searchSourceBuilder.sort(sortBuilder);
       }
     } else {
