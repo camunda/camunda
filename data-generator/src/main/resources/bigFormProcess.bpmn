@@ -7,7 +7,10 @@
     {
       "text": "# Title 1\n## Title 2\n### Title 3\n#### Title 4\n##### Title 5\n###### Title 6\n\n<br />\n\n- list\n- list\n\n1. foo\n2. foo\n\nFoo _italic_ **bold**\n\n> Multiline code\nLorem ipsum dolor sit amet, consectetur adipiscing elit. Vivamus auctor sodales pretium. Donec id volutpat quam, sit amet elementum lectus. \n\nInline `code`\n\n```\nMultiline code\nLorem ipsum dolor sit amet, consectetur adipiscing elit. Vivamus auctor sodales pretium. Donec id volutpat quam, sit amet elementum lectus. \n```\n\n[Link](https://camunda.com)\n",
       "type": "text",
-      "id": "Field_1bbbwwg"
+      "id": "Field_1bbbwwg",
+      "layout": {
+        "row": "Row_0lqavz4"
+      }
     },
     {
       "label": "I am a texfield",
@@ -18,7 +21,11 @@
       "validate": {
         "required": true
       },
-      "defaultValue": "value"
+      "defaultValue": "value",
+      "layout": {
+        "row": "Row_14setyc",
+        "columns": 10
+      }
     },
     {
       "label": "I am a disabled texfield",
@@ -27,7 +34,11 @@
       "key": "disabled_textfield",
       "description": "I am a disabled texfield description",
       "disabled": true,
-      "defaultValue": "value"
+      "defaultValue": "value",
+      "layout": {
+        "row": "Row_14setyc",
+        "columns": 6
+      }
     },
     {
       "label": "I am a number field",
@@ -38,7 +49,11 @@
       "validate": {
         "required": true
       },
-      "defaultValue": 1
+      "defaultValue": 1,
+      "layout": {
+        "row": "Row_0m8z1wj",
+        "columns": 8
+      }
     },
     {
       "label": "I am a number field",
@@ -47,7 +62,11 @@
       "key": "disabled_number_field",
       "description": "I am a disabled number field description",
       "disabled": true,
-      "defaultValue": 1
+      "defaultValue": 1,
+      "layout": {
+        "row": "Row_0m8z1wj",
+        "columns": 8
+      }
     },
     {
       "label": "I am checkbox",
@@ -55,7 +74,10 @@
       "id": "Field_0jqueb7",
       "key": "checkbox",
       "description": "I am checkbox description",
-      "defaultValue": false
+      "defaultValue": false,
+      "layout": {
+        "row": "Row_0l2l6gv"
+      }
     },
     {
       "label": "I am disabled checked checkbox",
@@ -64,7 +86,10 @@
       "key": "disabled_checked_checkbox",
       "disabled": true,
       "defaultValue": true,
-      "description": "I am disabled checked checkbox description"
+      "description": "I am disabled checked checkbox description",
+      "layout": {
+        "row": "Row_0l2l6gv"
+      }
     },
     {
       "label": "I am disabled checkbox",
@@ -72,7 +97,10 @@
       "id": "Field_01h0ngn",
       "key": "disabled_checkbox",
       "description": "I am disabled checkbox description",
-      "disabled": true
+      "disabled": true,
+      "layout": {
+        "row": "Row_0l2l6gv"
+      }
     },
     {
       "values": [
@@ -89,7 +117,11 @@
       "type": "checklist",
       "id": "Field_1d5nfix",
       "key": "checklist",
-      "description": "I am checklist description"
+      "description": "I am checklist description",
+      "layout": {
+        "row": "Row_0luakh3",
+        "columns": 8
+      }
     },
     {
       "values": [
@@ -107,7 +139,11 @@
       "id": "Field_0l0y6cf",
       "key": "disabled_checklist",
       "description": "I am disabled checklist description",
-      "disabled": true
+      "disabled": true,
+      "layout": {
+        "row": "Row_0luakh3",
+        "columns": 8
+      }
     },
     {
       "values": [
@@ -128,7 +164,10 @@
       "type": "taglist",
       "id": "Field_07zrh4q",
       "key": "taglist",
-      "description": "I am a taglist description"
+      "description": "I am a taglist description",
+      "layout": {
+        "row": "Row_05mdvfz"
+      }
     },
     {
       "values": [
@@ -150,7 +189,10 @@
       "id": "Field_0hm9hgj",
       "key": "disabled_taglist",
       "description": "I am a disabled taglist description",
-      "disabled": true
+      "disabled": true,
+      "layout": {
+        "row": "Row_0w9nbyn"
+      }
     },
     {
       "values": [
@@ -174,6 +216,9 @@
       "description": "I am a radio description",
       "validate": {
         "required": true
+      },
+      "layout": {
+        "row": "Row_0xpl64i"
       }
     },
     {
@@ -199,7 +244,10 @@
       "validate": {
         "required": false
       },
-      "disabled": true
+      "disabled": true,
+      "layout": {
+        "row": "Row_0xpl64i"
+      }
     },
     {
       "values": [
@@ -224,7 +272,11 @@
       "validate": {
         "required": true
       },
-      "defaultValue": "option_1"
+      "defaultValue": "option_1",
+      "layout": {
+        "row": "Row_084h2jt",
+        "columns": 6
+      }
     },
     {
       "values": [
@@ -247,7 +299,11 @@
       "key": "disabled_select",
       "description": "I am a select description",
       "disabled": true,
-      "defaultValue": "option_2"
+      "defaultValue": "option_2",
+      "layout": {
+        "row": "Row_084h2jt",
+        "columns": 10
+      }
     },
     {
       "values": [
@@ -273,6 +329,9 @@
       "defaultValue": "option_1",
       "validate": {
         "required": true
+      },
+      "layout": {
+        "row": "Row_1cn6eez"
       }
     },
     {
@@ -297,12 +356,18 @@
       "description": "I am a disabled searcheable select description",
       "searchable": true,
       "defaultValue": "option_2",
-      "disabled": true
+      "disabled": true,
+      "layout": {
+        "row": "Row_0benm2m"
+      }
     },
     {
       "type": "image",
       "id": "Field_1mv8qs4",
-      "source": "https://via.placeholder.com/150C"
+      "source": "https://via.placeholder.com/150C",
+      "layout": {
+        "row": "Row_069d2ee"
+      }
     },
     {
       "label": "I am a text area",
@@ -312,6 +377,9 @@
       "description": "I am a text area description",
       "validate": {
         "required": true
+      },
+      "layout": {
+        "row": "Row_16ga9gy"
       }
     },
     {
@@ -320,7 +388,10 @@
       "id": "Field_1ae1pqq",
       "key": "disabled_textarea",
       "description": "I am a disabled text area description",
-      "disabled": true
+      "disabled": true,
+      "layout": {
+        "row": "Row_00hoio8"
+      }
     },
     {
       "subtype": "date",
@@ -331,6 +402,9 @@
       "description": "I am a date field description",
       "validate": {
         "required": true
+      },
+      "layout": {
+        "row": "Row_0ld8s6t"
       }
     },
     {
@@ -340,7 +414,10 @@
       "id": "Field_09ff8mv",
       "key": "disabled_date_field",
       "description": "I am a disabled date field description",
-      "disabled": true
+      "disabled": true,
+      "layout": {
+        "row": "Row_0b0kl2l"
+      }
     },
     {
       "label": "I am an adorned field",
@@ -350,6 +427,9 @@
       "description": "I am an adorned field description",
       "appearance": {
         "prefixAdorner": "camunda.com/"
+      },
+      "layout": {
+        "row": "Row_0zjfzza"
       }
     },
     {
@@ -360,6 +440,10 @@
       "description": "I am an adorned field description",
       "appearance": {
         "suffixAdorner": "@gmail.com"
+      },
+      "layout": {
+        "row": "Row_1gcsy5f",
+        "columns": 16
       }
     },
     {
@@ -371,6 +455,10 @@
       "appearance": {
         "prefixAdorner": "✨",
         "suffixAdorner": "🚀"
+      },
+      "layout": {
+        "row": "Row_0xojlc6",
+        "columns": null
       }
     },
     {
@@ -378,7 +466,10 @@
       "label": "reset",
       "type": "button",
       "id": "Field_1ydujqw",
-      "key": "field_1yi6q4r"
+      "key": "field_1yi6q4r",
+      "layout": {
+        "row": "Row_06ecoa2"
+      }
     }
   ],
   "type": "default",
@@ -387,9 +478,9 @@
   "executionPlatformVersion": "8.2.0",
   "exporter": {
     "name": "Camunda Modeler",
-    "version": "5.8.0-nightly.20230201"
+    "version": "5.10.0-dev"
   },
-  "schemaVersion": 6
+  "schemaVersion": 8
 }
 </zeebe:userTaskForm>
     </bpmn:extensionElements>

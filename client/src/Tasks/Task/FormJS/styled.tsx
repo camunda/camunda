@@ -5,8 +5,9 @@
  * except in compliance with the proprietary license.
  */
 
-import {css, createGlobalStyle} from 'styled-components';
+import styled, {css, createGlobalStyle} from 'styled-components';
 import {rem} from '@carbon/elements';
+import {TaskDetailsRow} from 'modules/components/TaskDetailsLayout';
 
 function getSelectArrowSvg(color: string) {
   return `url('data:image/svg+xml;base64,${window.btoa(
@@ -185,6 +186,8 @@ const DISABLED_STYLES = css`
       &.fjs-form-field-select .fjs-input-group.disabled .fjs-select-display,
       &.fjs-form-field-select .fjs-input-group.disabled .fjs-input,
       &.fjs-form-field .fjs-form-field-label,
+      &.fjs-form-field.fjs-form-field-radio .fjs-form-field-label,
+      &.fjs-form-field.fjs-form-field-checklist .fjs-form-field-label,
       & .fjs-form-field-description {
         color: var(--cds-text-disabled);
         cursor: not-allowed;
@@ -370,10 +373,12 @@ const CHECKBOX_STYLES = css`
 
       .fjs-form-field-checklist .fjs-form-field-label:not(:first-of-type) {
         ${theme.bodyShort01};
+        color: var(--cds-text-primary);
       }
 
       .fjs-form-field-checkbox .fjs-form-field-label {
         ${theme.bodyShort01};
+        color: var(--cds-text-primary);
       }
     }
   `}
@@ -393,7 +398,10 @@ const TAGLIST_STYLES = css`
       }
 
       .fjs-taglist .fjs-taglist-input {
-        color: var(--cds-text-primary);
+        &,
+        &::placeholder {
+          color: var(--cds-text-primary);
+        }
       }
 
       .fjs-taglist .fjs-taglist-tag {
@@ -431,6 +439,11 @@ const TAGLIST_STYLES = css`
           background-color: transparent;
           color: currentColor;
           cursor: pointer;
+        }
+
+        & .fjs-taglist-tag-remove svg {
+          all: unset;
+          color: var(--cds-icon-inverse);
         }
 
         & .fjs-taglist-tag-remove:hover {
@@ -495,6 +508,7 @@ const RADIO_STYLES = css`
 
       .fjs-form-field-label:not(:first-of-type) {
         ${theme.bodyShort01};
+        color: var(--cds-text-primary);
       }
     }
   `}
@@ -634,7 +648,11 @@ const DATETIME_INPUTS = css`
           width: 100%;
           height: 100%;
           border: none;
-          color: var(--cds-text-primary);
+
+          &,
+          &::placeholder {
+            color: var(--cds-text-primary);
+          }
         }
 
         .fjs-input.flatpickr-input:disabled {
@@ -642,11 +660,11 @@ const DATETIME_INPUTS = css`
         }
 
         .fjs-input.flatpickr-input:disabled::placeholder {
-          color: var(--cds-text-placeholder);
+          color: var(--cds-text-disabled);
         }
 
         .fjs-input.flatpickr-input:disabled::placeholder {
-          color: var(--cds-text-placeholder);
+          color: var(--cds-text-disabled);
         }
 
         select {
@@ -970,8 +988,19 @@ const FormCustomStyling = createGlobalStyle`
       color: var(--cds-text-primary);
     }
 
-    .fjs-form-field {
+    .fjs-layout-column:not(:first-of-type) .fjs-form-field {
+      margin-left: 8px;
+    }
+
+    .fjs-layout-column:not(:last-of-type) .fjs-form-field {
+      margin-right: 8px;
+    }
+
+    .fjs-layout-column:first-of-type .fjs-form-field {
       margin-left: 0;
+    }
+
+    .fjs-layout-column:last-of-type .fjs-form-field {
       margin-right: 0;
     }
 
@@ -986,4 +1015,8 @@ const FormCustomStyling = createGlobalStyle`
   }
 `;
 
-export {FormCustomStyling};
+const Container = styled(TaskDetailsRow)`
+  padding: 0;
+`;
+
+export {FormCustomStyling, Container};

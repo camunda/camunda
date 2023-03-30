@@ -85,7 +85,10 @@ afterEach(async () => {
 
 afterAll(() => nodeMockServer.close());
 
-jest.mock('@bpmn-io/form-js-viewer/dist/assets/form-js.css', () => undefined);
+jest.mock(
+  '@bpmn-io/form-js-viewer/dist/assets/form-js-base.css',
+  () => undefined,
+);
 
 configure({
   asyncUtilTimeout: 7000,

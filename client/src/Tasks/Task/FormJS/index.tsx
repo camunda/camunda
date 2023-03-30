@@ -11,10 +11,10 @@ import {GET_FORM, GetForm, FormQueryVariables} from 'modules/queries/get-form';
 import {Form, Variable, User} from 'modules/types';
 import {GetTask, useRemoveFormReference} from 'modules/queries/get-task';
 import {getSchemaVariables} from '@bpmn-io/form-js-viewer';
-import '@bpmn-io/form-js-viewer/dist/assets/form-js.css';
+import '@bpmn-io/form-js-viewer/dist/assets/form-js-base.css';
 import {DetailsFooter} from 'modules/components/DetailsFooter';
 import {InlineLoadingStatus} from '@carbon/react';
-import {FormCustomStyling} from './styled';
+import {Container, FormCustomStyling} from './styled';
 import {useSelectedVariables} from 'modules/queries/get-selected-variables';
 import {usePermissions} from 'modules/hooks/usePermissions';
 import {notificationsStore} from 'modules/stores/notifications';
@@ -24,7 +24,6 @@ import {formManager} from './formManager';
 import {
   ScrollableContent,
   TaskDetailsContainer,
-  TaskDetailsRow,
 } from 'modules/components/TaskDetailsLayout';
 import {Separator} from 'modules/components/Separator';
 
@@ -182,10 +181,10 @@ const FormJS: React.FC<Props> = ({
   return (
     <>
       <Separator />
-      <ScrollableContent data-testid="embedded-form">
+      <ScrollableContent data-testid="embedded-form" tabIndex={-1}>
         <TaskDetailsContainer>
           <FormCustomStyling />
-          <TaskDetailsRow ref={containerRef} tabIndex={-1} />
+          <Container ref={containerRef} />
           <DetailsFooter>
             <AsyncActionButton
               inlineLoadingProps={{
