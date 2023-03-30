@@ -229,7 +229,7 @@ public class EntityNamesRestServiceIT extends AbstractEntitiesRestServiceIT {
       ),
       Arguments.of(
         "de",
-        "Anzahl der ausgeführten Prozesseinstanzen"
+        "Anzahl der ausgeführten Prozessinstanzen"
       )
     );
   }

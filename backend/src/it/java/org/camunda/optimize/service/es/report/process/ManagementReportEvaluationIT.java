@@ -484,7 +484,7 @@ public class ManagementReportEvaluationIT extends AbstractProcessDefinitionIT {
       Arguments.of(
         "de",
         Set.of(
-          "Anzahl der ausgeführten Prozesseinstanzen",
+          "Anzahl der ausgeführten Prozessinstanzen",
           "Prozessausführungen ohne Zwischenfälle",
           "Automatisierungsrate (< 1 Stunde)",
           "Lang laufende Prozessinstanzen",
