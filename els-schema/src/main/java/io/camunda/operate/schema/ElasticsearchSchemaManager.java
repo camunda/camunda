@@ -18,6 +18,7 @@ import io.camunda.operate.schema.indices.AbstractIndexDescriptor;
 import io.camunda.operate.schema.indices.IndexDescriptor;
 import io.camunda.operate.schema.templates.TemplateDescriptor;
 import org.elasticsearch.action.admin.indices.alias.Alias;
+import org.elasticsearch.client.indexlifecycle.*;
 import org.elasticsearch.client.indices.CreateIndexRequest;
 import org.elasticsearch.client.indices.PutComponentTemplateRequest;
 import org.elasticsearch.client.indices.PutComposableIndexTemplateRequest;
@@ -29,6 +30,7 @@ import org.elasticsearch.cluster.metadata.Template;
 import org.elasticsearch.common.compress.CompressedXContent;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.xcontent.XContentHelper;
+import org.elasticsearch.core.TimeValue;
 import org.elasticsearch.xcontent.XContentType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -44,7 +46,9 @@ public class ElasticsearchSchemaManager {
 
   private static final String NUMBER_OF_SHARDS = "index.number_of_shards";
   private static final String NUMBER_OF_REPLICAS = "index.number_of_replicas";
-  private static final String ALIASES = "aliases";
+  public static final String OPERATE_DELETE_ARCHIVED_INDICES = "operate_delete_archived_indices";
+  public static final String INDEX_LIFECYCLE_NAME = "index.lifecycle.name";
+  public static final String DELETE_PHASE = "delete";
 
   @Autowired
   private List<AbstractIndexDescriptor> indexDescriptors;
@@ -59,6 +63,9 @@ public class ElasticsearchSchemaManager {
   protected OperateProperties operateProperties;
 
   public void createSchema() {
+    if(operateProperties.getArchiver().isIlmEnabled()) {
+      createIndexLifeCycles();
+    }
     createDefaults();
     createTemplates();
     createIndices();
@@ -92,6 +99,23 @@ public class ElasticsearchSchemaManager {
         .name(settingsTemplate)
         .componentTemplate(componentTemplate);
     retryElasticsearchClient.createComponentTemplate(request);
+  }
+
+  private void createIndexLifeCycles() {
+    final TimeValue timeValue = TimeValue.parseTimeValue(
+        operateProperties.getArchiver().getIlmMinAgeForDeleteArchivedIndices(),
+        "IndexLifeCycle " + INDEX_LIFECYCLE_NAME);
+    logger.info("Create Index Lifecycle {} for min age of {} ", OPERATE_DELETE_ARCHIVED_INDICES, timeValue.getStringRep());
+    Map<String, Phase> phases = new HashMap<>();
+    Map<String, LifecycleAction> deleteActions =
+        Collections.singletonMap(DeleteAction.NAME, new DeleteAction());
+    phases.put(DELETE_PHASE, new Phase(DELETE_PHASE, timeValue, deleteActions));
+
+    LifecyclePolicy policy = new LifecyclePolicy(OPERATE_DELETE_ARCHIVED_INDICES,
+        phases);
+    PutLifecyclePolicyRequest request =
+        new PutLifecyclePolicyRequest(policy);
+    retryElasticsearchClient.putLifeCyclePolicy(request);
   }
 
   private void createIndices() {

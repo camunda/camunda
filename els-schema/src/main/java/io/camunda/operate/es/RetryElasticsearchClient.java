@@ -45,6 +45,7 @@ import org.elasticsearch.action.support.IndicesOptions;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.client.core.CountRequest;
+import org.elasticsearch.client.indexlifecycle.PutLifecyclePolicyRequest;
 import org.elasticsearch.client.indices.ComposableIndexTemplateExistRequest;
 import org.elasticsearch.client.indices.CreateIndexRequest;
 import org.elasticsearch.client.indices.DeleteComposableIndexTemplateRequest;
@@ -483,4 +484,10 @@ public class RetryElasticsearchClient {
     return esClient;
   }
 
+
+  public boolean putLifeCyclePolicy(final PutLifecyclePolicyRequest putLifecyclePolicyRequest) {
+    return executeWithRetries(String.format("Put LifeCyclePolicy %s ", putLifecyclePolicyRequest.getName()),
+        () -> esClient.indexLifecycle().putLifecyclePolicy(putLifecyclePolicyRequest , requestOptions).isAcknowledged()
+    , null);
+  }
 }
