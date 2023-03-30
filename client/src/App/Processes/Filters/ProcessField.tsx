@@ -24,32 +24,39 @@ const ProcessField: React.FC = observer(() => {
 
   return (
     <Field name="process">
-      {({input}) => (
-        <Select
-          label="Name"
-          data-testid="filter-process-name"
-          disabled={processes.length === 0}
-          onCmInput={(event) => {
-            const [selectedOptions] = event.detail.selectedOptions;
-            const versions =
-              selectedOptions === undefined
-                ? []
-                : versionsByProcess[selectedOptions];
-            const initialVersionSelection =
-              versions === undefined
-                ? undefined
-                : versions[versions.length - 1]?.version;
+      {({input}) => {
+        const isSelectedValueValid =
+          processes.find(({value}) => value === input.value) !== undefined;
 
-            input.onChange(event.detail.selectedOptions[0]);
-            form.change('version', initialVersionSelection);
-            form.change('flowNodeId', undefined);
-          }}
-          options={options}
-          selectedOptions={
-            processes.length > 0 && input.value ? [input.value] : ['']
-          }
-        />
-      )}
+        return (
+          <Select
+            label="Name"
+            data-testid="filter-process-name"
+            disabled={processes.length === 0}
+            onCmInput={(event) => {
+              const [selectedOptions] = event.detail.selectedOptions;
+              const versions =
+                selectedOptions === undefined
+                  ? []
+                  : versionsByProcess[selectedOptions];
+              const initialVersionSelection =
+                versions === undefined
+                  ? undefined
+                  : versions[versions.length - 1]?.version;
+
+              input.onChange(event.detail.selectedOptions[0]);
+              form.change('version', initialVersionSelection);
+              form.change('flowNodeId', undefined);
+            }}
+            options={options}
+            selectedOptions={
+              processes.length > 0 && isSelectedValueValid
+                ? [input.value]
+                : ['']
+            }
+          />
+        );
+      }}
     </Field>
   );
 });
