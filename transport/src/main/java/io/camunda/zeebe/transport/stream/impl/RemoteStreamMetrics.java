@@ -7,46 +7,17 @@
  */
 package io.camunda.zeebe.transport.stream.impl;
 
-import io.prometheus.client.Counter;
-import io.prometheus.client.Gauge;
+public interface RemoteStreamMetrics {
 
-public class RemoteStreamMetrics {
-  private static final String NAMESPACE = "zeebe";
+  /** Invoked after a stream is successfully added to the registry */
+  default void addStream() {}
 
-  private static final Gauge STREAM_COUNT =
-      Gauge.build()
-          .namespace(NAMESPACE)
-          .name("broker_open_stream_count")
-          .help("Number of open job streams in broker")
-          .register();
+  /** Invoked after a stream is removed from registry */
+  default void removeStream() {}
 
-  private static final Counter PUSH_SUCCESS_COUNT =
-      Counter.build()
-          .namespace(NAMESPACE)
-          .name("broker_stream_pushed_count")
-          .help("Total number of jobs pushed to all streams")
-          .register();
+  /** Invoked after a payload is successfully pushed to a stream */
+  default void pushSucceeded() {}
 
-  private static final Counter PUSH_FAILED_COUNT =
-      Counter.build()
-          .namespace(NAMESPACE)
-          .name("broker_stream_push_fail_count")
-          .help("Total number of failures when pushing jobs to the streams")
-          .register();
-
-  void addStream() {
-    STREAM_COUNT.inc();
-  }
-
-  void removeStream() {
-    STREAM_COUNT.dec();
-  }
-
-  void pushSucceeded() {
-    PUSH_SUCCESS_COUNT.inc();
-  }
-
-  void pushFailed() {
-    PUSH_FAILED_COUNT.inc();
-  }
+  /** Invoked if pushing a payload to a stream failed */
+  default void pushFailed() {}
 }

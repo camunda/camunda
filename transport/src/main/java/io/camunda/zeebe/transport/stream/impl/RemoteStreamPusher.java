@@ -26,13 +26,18 @@ import org.slf4j.LoggerFactory;
  */
 final class RemoteStreamPusher<P extends BufferWriter> {
   private static final Logger LOG = LoggerFactory.getLogger(RemoteStreamPusher.class);
-  private final RemoteStreamMetrics metrics = new RemoteStreamMetrics();
+  private final RemoteStreamMetrics metrics;
 
   private final StreamId streamId;
   private final Transport transport;
   private final Executor executor;
 
-  RemoteStreamPusher(final StreamId streamId, final Transport transport, final Executor executor) {
+  RemoteStreamPusher(
+      final StreamId streamId,
+      final Transport transport,
+      final Executor executor,
+      final RemoteStreamMetrics metrics) {
+    this.metrics = metrics;
     this.streamId = Objects.requireNonNull(streamId, "must specify a target stream ID");
     this.transport = Objects.requireNonNull(transport, "must provide a network transport");
     this.executor = Objects.requireNonNull(executor, "must provide an asynchronous executor");

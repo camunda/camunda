@@ -29,12 +29,16 @@ import org.agrona.concurrent.UnsafeBuffer;
  * @param <M> the type of the properties of the stream.
  */
 public class RemoteStreamRegistry<M> implements ImmutableStreamRegistry<M> {
-  private final RemoteStreamMetrics metrics = new RemoteStreamMetrics();
+  private final RemoteStreamMetrics metrics;
 
   // Needs to be thread-safe for readers
   private final ConcurrentMap<UnsafeBuffer, Set<StreamConsumer<M>>> typeToConsumers =
       new ConcurrentHashMap<>();
   private final Map<StreamId, StreamConsumer<M>> idToConsumer = new HashMap<>();
+
+  public RemoteStreamRegistry(final RemoteStreamMetrics metrics) {
+    this.metrics = metrics;
+  }
 
   /**
    * Adds a stream receiver that can receive data from the stream with the given streamType.

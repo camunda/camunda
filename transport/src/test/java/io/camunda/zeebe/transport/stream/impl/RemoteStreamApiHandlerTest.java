@@ -29,7 +29,8 @@ final class RemoteStreamApiHandlerTest {
   private static final UnsafeBuffer SERIALIZED_METADATA =
       new UnsafeBuffer(ByteBuffer.allocate(4).order(ByteOrder.nativeOrder()).putInt(0, 1));
 
-  private final RemoteStreamRegistry<TestMetadata> registry = new RemoteStreamRegistry<>();
+  private final RemoteStreamRegistry<TestMetadata> registry =
+      new RemoteStreamRegistry<>(new RemoteStreamMetrics() {});
   private final RemoteStreamApiHandler<TestMetadata> server =
       new RemoteStreamApiHandler<>(registry, TestMetadata::new);
 
