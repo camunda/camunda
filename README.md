@@ -59,7 +59,7 @@ To learn more about what we're currently working on, check the [GitHub issues](h
 * [Documentation Home](https://docs.camunda.io)
 * [Issue Tracker](https://github.com/camunda/zeebe/issues)
 * [User Forum](https://forum.camunda.io)
-* [Slack Channel](https://zeebe-slack-invite.herokuapp.com/)
+* [Slack Channel](https://www.camunda.com/slack)
 * [Contribution Guidelines](/CONTRIBUTING.md)
 
 ## Recommended Docs Entries for New Users
