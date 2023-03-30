@@ -12,6 +12,11 @@ import org.springframework.context.annotation.FullyQualifiedAnnotationBeanNameGe
 
 @Configuration
 @ComponentScan(
-    basePackages = "io.camunda.tasklist.qa",
+    basePackages = {
+      "io.camunda.tasklist.qa",
+      "io.camunda.tasklist.schema.templates",
+      "io.camunda.tasklist.property",
+      "io.camunda.tasklist.schema.indices"
+    },
     nameGenerator = FullyQualifiedAnnotationBeanNameGenerator.class)
 public class TestConfig {}

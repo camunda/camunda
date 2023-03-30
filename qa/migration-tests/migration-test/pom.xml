@@ -18,6 +18,13 @@
   <dependencies>
     <dependency>
       <groupId>io.camunda</groupId>
+      <artifactId>tasklist-webapp</artifactId>
+      <version>${project.version}</version>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
       <artifactId>tasklist-qa-util</artifactId>
       <version>${project.version}</version>
       <scope>test</scope>

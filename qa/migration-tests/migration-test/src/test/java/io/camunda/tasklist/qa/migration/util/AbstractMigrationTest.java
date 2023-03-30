@@ -21,9 +21,10 @@ import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.TestExecutionListeners;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.test.context.support.AnnotationConfigContextLoader;
 
 @RunWith(SpringRunner.class)
-@ContextConfiguration(classes = TestConfig.class)
+@ContextConfiguration(classes = TestConfig.class, loader = AnnotationConfigContextLoader.class)
 @TestPropertySource(locations = "/test.properties")
 @TestExecutionListeners(
     listeners = DependencyInjectionTestExecutionListener.class,
