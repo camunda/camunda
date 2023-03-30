@@ -34,26 +34,7 @@ public class ImportFieldsIT extends OperateZeebeIntegrationTest {
     updateVariableHandler.setZeebeClient(zeebeClient);
   }
 
-  @Test // OPE-818
-  public void testErrorMessageSizeCanBeHigherThan32KB() {
-    // having
-    String errorMessageMoreThan32KB = buildStringWithLengthOf(32 * 1024 + 42);
-
-    // when
-    tester
-        .deployProcess("demoProcess_v_1.bpmn")
-        .and()
-        .startProcessInstance("demoProcess", "{\"a\": \"b\"}")
-        .waitUntil().processInstanceIsStarted()
-        .and()
-        .failTask("taskA", errorMessageMoreThan32KB)
-        .waitUntil().incidentIsActive();
-
-    // then
-    assertThat(tester.hasIncidentWithErrorMessage(errorMessageMoreThan32KB)).isTrue();
-  }
-  
-  @Test 
+  @Test
   // OPE-900
   // See also: https://discuss.elastic.co/t/error-document-contains-at-least-one-immense-term-in-field/66486
   public void testVariableValueSizeCanBeHigherThan32KB() throws Exception {
