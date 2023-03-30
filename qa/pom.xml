@@ -13,7 +13,7 @@
 
     <!-- properties for ImportSeveralVersionsTest and import-old-zeebe-tests module -->
     <version.zeebe.old>8.1.0</version.zeebe.old>
-    <version.zeebe.docker.current>8.2.0-alpha5</version.zeebe.docker.current>
+    <version.zeebe.docker.current>8.2.0-rc1</version.zeebe.docker.current>
 
   </properties>
 
