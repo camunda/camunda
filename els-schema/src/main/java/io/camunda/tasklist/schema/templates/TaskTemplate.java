@@ -38,7 +38,7 @@ public class TaskTemplate extends AbstractTemplateDescriptor
 
   @Override
   public String getVersion() {
-    return "8.2.3";
+    return "8.2.2";
   }
 
   @Override

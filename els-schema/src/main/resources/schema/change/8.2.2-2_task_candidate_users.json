@@ -2,7 +2,7 @@
   "description": "Add field version ",
   "@type": "processorStep",
   "indexName": "task",
-  "version": "8.2.3",
-  "order": 0,
+  "version": "8.2.2",
+  "order": 2,
   "content": "{\"append\": {\"field\": \"candidateUsers\", \"value\":[]}}"
 }
