@@ -6,8 +6,7 @@
  */
 package io.camunda.tasklist.webapp.es;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
@@ -50,7 +49,7 @@ class VariableReaderWriterTest {
   @Spy private VariableIndex variableIndex = new VariableIndex();
   @Spy private TaskVariableTemplate taskVariableTemplate = new TaskVariableTemplate();
   @Spy private TasklistProperties tasklistProperties = new TasklistProperties();
-  @Spy private ObjectMapper objectMapper = CommonUtils.getObjectMapper();
+  @Spy private ObjectMapper objectMapper = CommonUtils.OBJECT_MAPPER;
 
   @InjectMocks private VariableReaderWriter instance;
 
@@ -82,10 +81,9 @@ class VariableReaderWriterTest {
     verify(esClient, never()).scroll(any(SearchScrollRequest.class), any(RequestOptions.class));
 
     final SearchRequest capturedSearchRequest = searchRequestCaptor.getValue();
-    assertEquals(1, capturedSearchRequest.indices().length, "indices count is wrong");
     final String expectedAlias = "tasklist-flownode-instance-1.0.0_alias";
-    assertEquals(expectedAlias, capturedSearchRequest.indices()[0], "search index is wrong");
-    assertEquals(200, capturedSearchRequest.source().size(), "batch size is wrong");
-    assertTrue(result.isEmpty(), "result is not empty");
+    assertThat(capturedSearchRequest.indices()).containsExactly(expectedAlias);
+    assertThat(capturedSearchRequest.source().size()).isEqualTo(200);
+    assertThat(result).isEmpty();
   }
 }

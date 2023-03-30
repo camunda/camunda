@@ -6,6 +6,7 @@
  */
 package io.camunda.tasklist.webapp.es.dao;
 
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -18,7 +19,6 @@ import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.xcontent.XContentType;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -35,35 +35,38 @@ public class GenericDAOTest {
 
   @Test
   public void instantiateWithoutObjectMapperThrowsException() {
-    Assertions.assertThrows(
-        IllegalStateException.class,
-        () ->
-            new GenericDAO.Builder<MetricEntity, MetricIndex>()
-                .esClient(esClient)
-                .index(index)
-                .build());
+    assertThatThrownBy(
+            () ->
+                new GenericDAO.Builder<MetricEntity, MetricIndex>()
+                    .esClient(esClient)
+                    .index(index)
+                    .build())
+        .isInstanceOf(IllegalStateException.class)
+        .hasMessage("ObjectMapper can't be null");
   }
 
   @Test
   public void instantiateWithoutESClientThrowsException() {
-    Assertions.assertThrows(
-        IllegalStateException.class,
-        () ->
-            new GenericDAO.Builder<MetricEntity, MetricIndex>()
-                .objectMapper(objectMapper)
-                .index(index)
-                .build());
+    assertThatThrownBy(
+            () ->
+                new GenericDAO.Builder<MetricEntity, MetricIndex>()
+                    .objectMapper(objectMapper)
+                    .index(index)
+                    .build())
+        .isInstanceOf(IllegalStateException.class)
+        .hasMessage("ES Client can't be null");
   }
 
   @Test
   public void instantiateWithoutIndexThrowsException() {
-    Assertions.assertThrows(
-        IllegalStateException.class,
-        () ->
-            new GenericDAO.Builder<MetricEntity, MetricIndex>()
-                .objectMapper(objectMapper)
-                .esClient(esClient)
-                .build());
+    assertThatThrownBy(
+            () ->
+                new GenericDAO.Builder<MetricEntity, MetricIndex>()
+                    .objectMapper(objectMapper)
+                    .esClient(esClient)
+                    .build())
+        .isInstanceOf(IllegalStateException.class)
+        .hasMessage("Index can't be null");
   }
 
   @Test

@@ -11,6 +11,7 @@ import static io.camunda.tasklist.util.CollectionUtil.asMap;
 import static io.camunda.tasklist.webapp.security.TasklistProfileService.SSO_AUTH_PROFILE;
 import static io.camunda.tasklist.webapp.security.TasklistURIs.*;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.AssertionsForClassTypes.tuple;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.*;
@@ -25,6 +26,7 @@ import com.graphql.spring.boot.test.GraphQLResponse;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.util.apps.sso.AuthSSOApplication;
 import io.camunda.tasklist.webapp.graphql.entity.C8AppLink;
+import io.camunda.tasklist.webapp.graphql.entity.UserDTO;
 import io.camunda.tasklist.webapp.security.AssigneeMigrator;
 import io.camunda.tasklist.webapp.security.AuthenticationTestable;
 import io.camunda.tasklist.webapp.security.Permission;
@@ -51,6 +53,7 @@ import org.springframework.boot.test.mock.mockito.SpyBean;
 import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.boot.web.server.LocalServerPort;
 import org.springframework.http.*;
+import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.rules.SpringClassRule;
 import org.springframework.test.context.junit4.rules.SpringMethodRule;
@@ -325,18 +328,20 @@ public class AuthenticationIT implements AuthenticationTestable {
   }
 
   @Test
-  public void testLoginToAPIResource() throws Exception {
+  @DirtiesContext
+  public void testLoginAndUsageOfGraphQlApi() throws Exception {
     // Step 1: try to access current user
-    ResponseEntity<String> response = getCurrentUserByGraphQL(new HttpEntity<>(new HttpHeaders()));
-    final HttpEntity<?> cookies = httpEntityWithCookie(response);
+    final ResponseEntity<String> currentUserResponse =
+        getCurrentUserByGraphQL(new HttpEntity<>(new HttpHeaders()));
+    final HttpEntity<?> cookies = httpEntityWithCookie(currentUserResponse);
 
-    assertThatUnauthorizedIsReturned(response);
+    assertThatUnauthorizedIsReturned(currentUserResponse);
 
     // Step 2: Get Login provider url
     mockPermissionAllowed();
 
-    response = get(LOGIN_RESOURCE, cookies);
-    assertThat(redirectLocationIn(response))
+    final ResponseEntity<String> loginResponse = get(LOGIN_RESOURCE, cookies);
+    assertThat(redirectLocationIn(loginResponse))
         .contains(
             tasklistProperties.getAuth0().getDomain(),
             SSO_CALLBACK,
@@ -382,6 +387,60 @@ public class AuthenticationIT implements AuthenticationTestable {
             new C8AppLink().setName("modeler").setLink("https://modeler.audience/org/3"),
             new C8AppLink().setName("tasklist").setLink("http://tasklist-url"),
             new C8AppLink().setName("zeebe").setLink("grpc://zeebe-url"));
+  }
+
+  @Test
+  @DirtiesContext
+  public void testLoginAndUsageOfRestApi() throws Exception {
+    // Step 1: try to access current user
+    final ResponseEntity<String> currentUserResponse =
+        getCurrentUserByRestApi(new HttpEntity<>(new HttpHeaders()));
+    final HttpEntity<?> cookies = httpEntityWithCookie(currentUserResponse);
+    assertThatUnauthorizedIsReturned(currentUserResponse);
+
+    // Step 2: Get Login provider url
+    mockPermissionAllowed();
+
+    final ResponseEntity<String> loginResponse = get(LOGIN_RESOURCE, cookies);
+    assertThat(redirectLocationIn(loginResponse))
+        .contains(
+            tasklistProperties.getAuth0().getDomain(),
+            SSO_CALLBACK,
+            tasklistProperties.getAuth0().getClientId(),
+            tasklistProperties.getAuth0().getDomain());
+    // Step 3 Call back uri with valid userinfos
+    // mock building tokens
+    given(authenticationController.handle(isNotNull(), isNotNull()))
+        .willReturn(
+            orgExtractor.apply(
+                tasklistProperties.getAuth0().getClaimName(),
+                tasklistProperties.getAuth0().getOrganization()));
+
+    // Test with ClusterMetadata
+    mockClusterMetadata();
+
+    // when
+    final ResponseEntity<String> currentUserResponseAfterLogin =
+        getCurrentUserByRestApi(loginWithSSO());
+    final UserDTO currentUserAfterLogin =
+        objectMapper.readValue(currentUserResponseAfterLogin.getBody(), UserDTO.class);
+
+    // then
+    assertThat(currentUserResponseAfterLogin.getStatusCode()).isEqualTo(HttpStatus.OK);
+    assertThat(currentUserAfterLogin.getUserId()).isEqualTo(TASKLIST_TESTUSER_EMAIL);
+    assertThat(currentUserAfterLogin.getDisplayName()).isEqualTo(TASKLIST_TESTUSER);
+    assertThat(currentUserAfterLogin.getSalesPlanType())
+        .isEqualTo(TASKLIST_TEST_SALESPLAN.getType());
+    assertThat(currentUserAfterLogin.getRoles()).isEqualTo(TASKLIST_TEST_ROLES);
+    assertThat(currentUserAfterLogin.getC8Links())
+        .extracting("name", "link")
+        .containsExactly(
+            tuple("console", "https://console.audience/org/3/cluster/test-clusterId"),
+            tuple("operate", "http://operate-url"),
+            tuple("optimize", "http://optimize-url"),
+            tuple("modeler", "https://modeler.audience/org/3"),
+            tuple("tasklist", "http://tasklist-url"),
+            tuple("zeebe", "grpc://zeebe-url"));
   }
 
   @Test

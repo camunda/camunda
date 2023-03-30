@@ -7,12 +7,15 @@
 package io.camunda.tasklist.webapp.security.identity;
 
 import static io.camunda.tasklist.webapp.security.TasklistProfileService.IDENTITY_AUTH_PROFILE;
+import static io.camunda.tasklist.webapp.security.TasklistURIs.ALL_REST_V1_API;
 import static io.camunda.tasklist.webapp.security.TasklistURIs.AUTH_WHITELIST;
 import static io.camunda.tasklist.webapp.security.TasklistURIs.ERROR_URL;
 import static io.camunda.tasklist.webapp.security.TasklistURIs.GRAPHQL_URL;
 import static io.camunda.tasklist.webapp.security.TasklistURIs.LOGIN_RESOURCE;
 import static io.camunda.tasklist.webapp.security.TasklistURIs.REQUESTED_URL;
+import static io.camunda.tasklist.webapp.security.TasklistURIs.REST_V1_API;
 import static io.camunda.tasklist.webapp.security.TasklistURIs.ROOT_URL;
+import static org.apache.commons.lang3.StringUtils.containsAny;
 
 import io.camunda.tasklist.webapp.security.BaseWebConfigurer;
 import io.camunda.tasklist.webapp.security.oauth.IdentityOAuth2WebConfigurer;
@@ -49,7 +52,7 @@ public class IdentityWebSecurityConfig extends BaseWebConfigurer {
         .authorizeRequests()
         .antMatchers(AUTH_WHITELIST)
         .permitAll()
-        .antMatchers(GRAPHQL_URL, ROOT_URL, ERROR_URL)
+        .antMatchers(GRAPHQL_URL, ALL_REST_V1_API, ROOT_URL, ERROR_URL)
         .authenticated()
         .and()
         .exceptionHandling()
@@ -64,7 +67,7 @@ public class IdentityWebSecurityConfig extends BaseWebConfigurer {
       requestedUrl = requestedUrl + "?" + req.getQueryString();
     }
 
-    if (requestedUrl.toLowerCase().contains(GRAPHQL_URL)) {
+    if (containsAny(requestedUrl.toLowerCase(), GRAPHQL_URL, REST_V1_API)) {
       sendJSONErrorMessage(res, ex.getMessage());
     } else {
       logger.debug("Try to access protected resource {}. Save it for later redirect", requestedUrl);

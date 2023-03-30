@@ -80,7 +80,6 @@ public class VariableIT extends TasklistZeebeIntegrationTest {
   @Before
   public void before() {
     super.before();
-    taskMutationResolver.setZeebeClient(super.getClient());
   }
 
   @Test

@@ -16,6 +16,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Random;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -166,6 +167,6 @@ public abstract class CollectionUtil {
   }
 
   public static long countNonNullObjects(Object... objects) {
-    return Arrays.stream(objects).filter(o -> o != null).count();
+    return Arrays.stream(objects).filter(Objects::nonNull).count();
   }
 }

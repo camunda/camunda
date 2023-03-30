@@ -13,6 +13,8 @@ import static io.camunda.tasklist.webapp.es.MetricReaderWriter.ASSIGNEE;
 import static io.camunda.tasklist.webapp.es.MetricReaderWriter.EVENT_TASK_COMPLETED_BY_ASSIGNEE;
 import static io.camunda.tasklist.webapp.es.dao.Query.range;
 import static io.camunda.tasklist.webapp.es.dao.Query.whereEquals;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -25,10 +27,8 @@ import io.camunda.tasklist.webapp.es.dao.UsageMetricDAO;
 import io.camunda.tasklist.webapp.es.dao.response.AggregationResponse;
 import io.camunda.tasklist.webapp.es.dao.response.InsertResponse;
 import io.camunda.tasklist.webapp.management.dto.UsageMetricDTO;
-import java.io.IOException;
 import java.time.OffsetDateTime;
 import java.util.List;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -40,10 +40,10 @@ public class MetricReaderWriterTest {
 
   @Mock private UsageMetricDAO dao;
 
-  @InjectMocks private MetricReaderWriter subject;
+  @InjectMocks private MetricReaderWriter instance;
 
   @Test
-  public void verifyRegisterEventWasCalledWithRightArgument() throws IOException {
+  public void verifyRegisterEventWasCalledWithRightArgument() {
     // Given
     final OffsetDateTime now = OffsetDateTime.now();
     final String assignee = "John Lennon";
@@ -51,7 +51,7 @@ public class MetricReaderWriterTest {
 
     // When
     when(dao.insert(any())).thenReturn(InsertResponse.success());
-    subject.registerTaskCompleteEvent(task);
+    instance.registerTaskCompleteEvent(task);
 
     // Then
     final MetricEntity expectedEntry = new MetricEntity();
@@ -64,6 +64,7 @@ public class MetricReaderWriterTest {
 
   @Test
   public void exceptionIsNotHandledOnReaderWriterLevel() {
+    // Given
     final OffsetDateTime now = OffsetDateTime.now();
     final OffsetDateTime oneHourBefore = OffsetDateTime.now().withHour(1);
 
@@ -74,13 +75,14 @@ public class MetricReaderWriterTest {
 
     when(dao.searchWithAggregation(query)).thenThrow(new TasklistRuntimeException("issue"));
 
-    Assertions.assertThrows(
-        TasklistRuntimeException.class,
-        () -> subject.retrieveDistinctAssigneesBetweenDates(oneHourBefore, now));
+    // When - Then
+    assertThatThrownBy(() -> instance.retrieveDistinctAssigneesBetweenDates(oneHourBefore, now))
+        .isInstanceOf(TasklistRuntimeException.class);
   }
 
   @Test
   public void throwErrorWhenErrorResponse() {
+    // Given
     final OffsetDateTime now = OffsetDateTime.now();
     final OffsetDateTime oneHourBefore = OffsetDateTime.now().withHour(1);
 
@@ -92,13 +94,15 @@ public class MetricReaderWriterTest {
     final AggregationResponse response = new AggregationResponse(true);
     when(dao.searchWithAggregation(query)).thenReturn(response);
 
-    Assertions.assertThrows(
-        TasklistRuntimeException.class,
-        () -> subject.retrieveDistinctAssigneesBetweenDates(oneHourBefore, now));
+    // When - Then
+    assertThatThrownBy(() -> instance.retrieveDistinctAssigneesBetweenDates(oneHourBefore, now))
+        .isInstanceOf(TasklistRuntimeException.class)
+        .hasMessage("Error while retrieving assigned users between dates");
   }
 
   @Test
   public void expectedResponseWhenResultsAreEmpty() {
+    // Given
     final OffsetDateTime now = OffsetDateTime.now();
     final OffsetDateTime oneHourBefore = OffsetDateTime.now().withHour(1);
 
@@ -110,14 +114,18 @@ public class MetricReaderWriterTest {
     final AggregationResponse elsResponse = new AggregationResponse(false, List.of());
     when(dao.searchWithAggregation(query)).thenReturn(elsResponse);
 
+    // When
     final UsageMetricDTO response =
-        subject.retrieveDistinctAssigneesBetweenDates(oneHourBefore, now);
+        instance.retrieveDistinctAssigneesBetweenDates(oneHourBefore, now);
+
+    // Then
     final UsageMetricDTO expectedResponse = new UsageMetricDTO(List.of());
-    Assertions.assertEquals(expectedResponse, response);
+    assertThat(response).isEqualTo(expectedResponse);
   }
 
   @Test
   public void expectedResponseWhenResultsAreReturned() {
+    // Given
     final OffsetDateTime now = OffsetDateTime.now();
     final OffsetDateTime oneHourBefore = OffsetDateTime.now().withHour(1);
 
@@ -130,9 +138,12 @@ public class MetricReaderWriterTest {
         new AggregationResponse(false, List.of(new AggregationResponse.AggregationValue("key", 0)));
     when(dao.searchWithAggregation(query)).thenReturn(elsResponse);
 
+    // When
     final UsageMetricDTO response =
-        subject.retrieveDistinctAssigneesBetweenDates(oneHourBefore, now);
+        instance.retrieveDistinctAssigneesBetweenDates(oneHourBefore, now);
+
+    // Then
     final UsageMetricDTO expectedResponse = new UsageMetricDTO(List.of("key"));
-    Assertions.assertEquals(expectedResponse, response);
+    assertThat(response).isEqualTo(expectedResponse);
   }
 }

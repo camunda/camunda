@@ -14,6 +14,13 @@ public final class TasklistURIs {
   public static final String ROOT = ROOT_URL;
   public static final String ERROR_URL = "/error";
   public static final String GRAPHQL_URL = "/graphql";
+  public static final String REST_V1_API = "/v1/";
+  public static final String ALL_REST_V1_API = "/v1/**";
+  public static final String TASKS_URL_V1 = "/v1/tasks";
+  public static final String VARIABLES_URL_V1 = "/v1/variables";
+  public static final String FORMS_URL_V1 = "/v1/forms";
+  public static final String USERS_URL_V1 = "/v1/internal/users";
+  public static final String PROCESSES_URL_V1 = "/v1/internal/processes";
 
   public static final String LOGIN_RESOURCE = "/api/login";
   public static final String LOGOUT_RESOURCE = "/api/logout";
@@ -29,6 +36,7 @@ public final class TasklistURIs {
   public static final String[] AUTH_WHITELIST = {
     "/webjars/**", CLIENT_CONFIG_RESOURCE, ERROR_URL, NO_PERMISSION, LOGIN_RESOURCE, LOGOUT_RESOURCE
   };
+
   // Used as constants class
   private TasklistURIs() {}
 }

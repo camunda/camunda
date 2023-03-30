@@ -6,6 +6,7 @@
  */
 package io.camunda.tasklist.webapp.security;
 
+import static io.camunda.tasklist.webapp.security.TasklistURIs.ALL_REST_V1_API;
 import static io.camunda.tasklist.webapp.security.TasklistURIs.AUTH_WHITELIST;
 import static io.camunda.tasklist.webapp.security.TasklistURIs.COOKIE_JSESSIONID;
 import static io.camunda.tasklist.webapp.security.TasklistURIs.ERROR_URL;
@@ -62,7 +63,7 @@ public abstract class BaseWebConfigurer extends WebSecurityConfigurerAdapter {
         .authorizeRequests()
         .antMatchers(AUTH_WHITELIST)
         .permitAll()
-        .antMatchers(GRAPHQL_URL, ERROR_URL)
+        .antMatchers(GRAPHQL_URL, ALL_REST_V1_API, ERROR_URL)
         .authenticated()
         .and()
         .formLogin()

@@ -29,7 +29,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import org.apache.commons.lang3.StringUtils;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.update.UpdateRequest;
@@ -55,12 +54,9 @@ public class TaskReaderWriter {
 
   private static final Map<TaskState, String> SORT_FIELD_PER_STATE =
       Map.of(
-          TaskState.CREATED,
-          TaskTemplate.CREATION_TIME,
-          TaskState.COMPLETED,
-          TaskTemplate.COMPLETION_TIME,
-          TaskState.CANCELED,
-          TaskTemplate.COMPLETION_TIME);
+          TaskState.CREATED, TaskTemplate.CREATION_TIME,
+          TaskState.COMPLETED, TaskTemplate.COMPLETION_TIME,
+          TaskState.CANCELED, TaskTemplate.COMPLETION_TIME);
   private static final String DEFAULT_SORT_FIELD = TaskTemplate.CREATION_TIME;
 
   @Autowired private RestHighLevelClient esClient;
@@ -95,7 +91,7 @@ public class TaskReaderWriter {
   }
 
   @NotNull
-  public SearchHit getTaskRawResponse(final String id) throws IOException {
+  private SearchHit getTaskRawResponse(final String id) throws IOException {
 
     final QueryBuilder query = idsQuery().addIds(id);
 
@@ -234,10 +230,7 @@ public class TaskReaderWriter {
     final SearchRequest searchRequest =
         ElasticsearchUtil.createSearchRequest(
                 taskTemplate, getQueryTypeByTaskState(query.getState()))
-            .source(
-                sourceBuilder
-                //  .fetchSource(fieldNames.toArray(String[]::new), null)
-                );
+            .source(sourceBuilder);
     try {
       final SearchResponse response = esClient.search(searchRequest, RequestOptions.DEFAULT);
       final List<TaskDTO> tasks = mapTasksFromEntity(response);
@@ -449,19 +442,23 @@ public class TaskReaderWriter {
 
   /**
    * Persist that task is completed even before the corresponding events are imported from Zeebe.
-   *
-   * @param taskBeforeSearchHit
    */
-  public TaskEntity persistTaskCompletion(SearchHit taskBeforeSearchHit) {
-    final TaskEntity taskBefore =
-        fromSearchHit(taskBeforeSearchHit.getSourceAsString(), objectMapper, TaskEntity.class);
-    taskBefore.setState(TaskState.COMPLETED);
-    taskBefore.setCompletionTime(OffsetDateTime.now());
+  public TaskEntity persistTaskCompletion(final TaskEntity taskBefore) {
+    final SearchHit taskBeforeSearchHit;
+    try {
+      taskBeforeSearchHit = this.getTaskRawResponse(taskBefore.getId());
+    } catch (IOException e) {
+      throw new TasklistRuntimeException(e.getMessage(), e);
+    }
+
+    final TaskEntity completedTask =
+        taskBefore.makeCopy().setState(TaskState.COMPLETED).setCompletionTime(OffsetDateTime.now());
+
     try {
       // update task with optimistic locking
       final Map<String, Object> updateFields = new HashMap<>();
-      updateFields.put(TaskTemplate.STATE, taskBefore.getState());
-      updateFields.put(TaskTemplate.COMPLETION_TIME, taskBefore.getCompletionTime());
+      updateFields.put(TaskTemplate.STATE, completedTask.getState());
+      updateFields.put(TaskTemplate.COMPLETION_TIME, completedTask.getCompletionTime());
 
       // format date fields properly
       final Map<String, Object> jsonMap =
@@ -479,51 +476,26 @@ public class TaskReaderWriter {
       // we're OK with not updating the task here, it will be marked as completed within import
       LOGGER.error(e.getMessage(), e);
     }
-    return taskBefore;
+    return completedTask;
   }
 
-  public void persistTaskClaim(
-      TaskDTO task, final UserDTO currentUser, String assignee, boolean allowOverrideAssignment) {
-    if (StringUtils.isEmpty(assignee) && currentUser.isApiUser()) {
-      throw new TasklistRuntimeException("Assignee must be specified");
-    }
-    if (StringUtils.isNotEmpty(assignee)
-        && !currentUser.isApiUser()
-        && !assignee.equals(currentUser.getUserId())) {
-      throw new TasklistRuntimeException(
-          "User doesn't have the permission to assign another user to this task");
-    }
+  public TaskEntity persistTaskClaim(TaskEntity taskBefore, String assignee) {
 
-    if (StringUtils.isEmpty(assignee) && !currentUser.isApiUser()) {
-      assignee = currentUser.getUserId();
-    }
+    updateTask(taskBefore.getId(), asMap(TaskTemplate.ASSIGNEE, assignee));
 
-    task.setAssignee(assignee);
-    updateTask(
-        task.getId(),
-        currentUser,
-        TaskValidator.CAN_CLAIM,
-        asMap(TaskTemplate.ASSIGNEE, assignee),
-        allowOverrideAssignment);
+    return taskBefore.makeCopy().setAssignee(assignee);
   }
 
-  public void persistTaskUnclaim(TaskDTO task) {
-    updateTask(task.getId(), null, TaskValidator.CAN_UNCLAIM, asMap(TaskTemplate.ASSIGNEE, null));
+  public TaskEntity persistTaskUnclaim(TaskEntity task) {
+    updateTask(task.getId(), asMap(TaskTemplate.ASSIGNEE, null));
+    return task.makeCopy().setAssignee(null);
   }
 
-  private void updateTask(
-      final String taskId,
-      final UserDTO currentUser,
-      final TaskValidator taskValidator,
-      final Map<String, Object> updateFields,
-      final Object... validatorParams) {
+  private void updateTask(final String taskId, final Map<String, Object> updateFields) {
     try {
       final SearchHit searchHit = getTaskRawResponse(taskId);
-      final TaskEntity taskBefore =
-          fromSearchHit(searchHit.getSourceAsString(), objectMapper, TaskEntity.class);
       // update task with optimistic locking
       // format date fields properly
-      taskValidator.validate(taskBefore, currentUser, validatorParams);
       final Map<String, Object> jsonMap =
           objectMapper.readValue(objectMapper.writeValueAsString(updateFields), HashMap.class);
       final UpdateRequest updateRequest =

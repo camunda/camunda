@@ -18,6 +18,8 @@ import io.camunda.tasklist.webapp.es.cache.ProcessCache;
 import io.camunda.tasklist.webapp.graphql.entity.UserDTO;
 import io.camunda.tasklist.webapp.security.Permission;
 import io.camunda.tasklist.webapp.security.UserReader;
+import io.camunda.tasklist.webapp.service.ProcessService;
+import io.camunda.tasklist.webapp.service.TaskService;
 import io.camunda.tasklist.zeebe.PartitionHolder;
 import io.camunda.tasklist.zeebeimport.ImportPositionHolder;
 import io.camunda.zeebe.client.ZeebeClient;
@@ -40,6 +42,7 @@ import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.security.test.context.support.WithMockUser;
+import org.springframework.test.util.ReflectionTestUtils;
 
 @WithMockUser(DEFAULT_USER_ID)
 public abstract class TasklistZeebeIntegrationTest extends TasklistIntegrationTest {
@@ -61,6 +64,8 @@ public abstract class TasklistZeebeIntegrationTest extends TasklistIntegrationTe
   protected TasklistTester tester;
   @MockBean protected UserReader userReader;
   @Autowired private ProcessCache processCache;
+  @Autowired private TaskService taskService;
+  @Autowired private ProcessService processService;
   private String workerName;
   @Autowired private MeterRegistry meterRegistry;
   @Autowired private ObjectMapper objectMapper;
@@ -87,7 +92,9 @@ public abstract class TasklistZeebeIntegrationTest extends TasklistIntegrationTe
     importPositionHolder.cancelScheduledImportPositionUpdateTask().join();
     importPositionHolder.clearCache();
     importPositionHolder.scheduleImportPositionUpdateTask();
-    partitionHolder.setZeebeClient(getClient());
+    ReflectionTestUtils.setField(partitionHolder, "zeebeClient", getClient());
+    ReflectionTestUtils.setField(taskService, "zeebeClient", getClient());
+    ReflectionTestUtils.setField(processService, "zeebeClient", getClient());
 
     setDefaultCurrentUser();
   }

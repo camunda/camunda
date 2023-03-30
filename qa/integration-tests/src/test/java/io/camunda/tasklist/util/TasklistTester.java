@@ -28,6 +28,7 @@ import io.camunda.tasklist.entities.TaskState;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.util.ElasticsearchChecks.TestCheck;
 import io.camunda.tasklist.webapp.graphql.entity.TaskDTO;
+import io.camunda.tasklist.webapp.graphql.entity.VariableDTO;
 import io.camunda.tasklist.webapp.graphql.entity.VariableInputDTO;
 import io.camunda.tasklist.webapp.graphql.mutation.TaskMutationResolver;
 import io.camunda.zeebe.client.ZeebeClient;
@@ -238,6 +239,17 @@ public class TasklistTester {
 
   public GraphQLResponse getVariablesByTaskIdAndNames(ObjectNode variables) throws IOException {
     return getVariablesByTaskIdAndNames(variables, GRAPHQL_DEFAULT_VARIABLE_FRAGMENT);
+  }
+
+  public List<VariableDTO> getTaskVariables() throws IOException {
+    assertThat(this.taskId).isNotNull();
+    return getTaskVariablesByTaskId(this.taskId).getList("$.data.variables", VariableDTO.class);
+  }
+
+  public GraphQLResponse getTaskVariablesByTaskId(String taskId) throws IOException {
+    final ObjectNode variablesQ = objectMapper.createObjectNode();
+    variablesQ.put("taskId", taskId).putArray("variableNames");
+    return getVariablesByTaskIdAndNames(variablesQ);
   }
 
   public GraphQLResponse getVariablesByTaskIdAndNames(ObjectNode variables, String fragmentResource)

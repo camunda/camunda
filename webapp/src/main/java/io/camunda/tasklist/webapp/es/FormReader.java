@@ -13,6 +13,7 @@ import io.camunda.tasklist.entities.FormEntity;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
 import io.camunda.tasklist.schema.indices.FormIndex;
 import io.camunda.tasklist.webapp.graphql.entity.FormDTO;
+import io.camunda.tasklist.webapp.rest.exception.NotFoundException;
 import java.io.IOException;
 import org.elasticsearch.action.get.GetRequest;
 import org.elasticsearch.action.get.GetResponse;
@@ -42,7 +43,7 @@ public class FormReader {
             fromSearchHit(response.getSourceAsString(), objectMapper, FormEntity.class);
         return FormDTO.createFrom(formEntity);
       } else {
-        throw new IllegalArgumentException("No task form found with id " + id);
+        throw new NotFoundException("No task form found with id " + id);
       }
     } catch (IOException e) {
       throw new TasklistRuntimeException(e.getMessage(), e);

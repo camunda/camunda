@@ -7,10 +7,12 @@
 package io.camunda.tasklist.webapp.rest;
 
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
+import io.camunda.tasklist.webapp.rest.exception.APIException;
 import io.camunda.tasklist.webapp.rest.exception.Error;
-import io.camunda.tasklist.webapp.rest.exception.InternalAPIException;
+import io.camunda.tasklist.webapp.rest.exception.ForbiddenActionException;
 import io.camunda.tasklist.webapp.rest.exception.NotFoundException;
 import io.camunda.tasklist.webapp.security.TasklistProfileService;
+import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -40,8 +42,8 @@ public abstract class InternalAPIErrorController {
   }
 
   @ResponseStatus(HttpStatus.BAD_REQUEST)
-  @ExceptionHandler(InternalAPIException.class)
-  public ResponseEntity<Error> handleInternalAPIException(InternalAPIException exception) {
+  @ExceptionHandler(APIException.class)
+  public ResponseEntity<Error> handleInternalAPIException(APIException exception) {
     LOGGER.warn(String.format("Instance: %s; %s", exception.getInstance(), exception.getMessage()));
     final Error error =
         new Error()
@@ -49,6 +51,20 @@ public abstract class InternalAPIErrorController {
             .setInstance(exception.getInstance())
             .setMessage(tasklistProfileService.getMessageByProfileFor(exception));
     return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .body(error);
+  }
+
+  @ResponseStatus(HttpStatus.FORBIDDEN)
+  @ExceptionHandler(ForbiddenActionException.class)
+  public ResponseEntity<Error> handleAccessDeniedException(ForbiddenActionException exception) {
+    LOGGER.warn(exception.getMessage(), exception);
+    final Error error =
+        new Error()
+            .setInstance(UUID.randomUUID().toString())
+            .setStatus(HttpStatus.FORBIDDEN.value())
+            .setMessage(exception.getMessage());
+    return ResponseEntity.status(HttpStatus.FORBIDDEN)
         .contentType(MediaType.APPLICATION_PROBLEM_JSON)
         .body(error);
   }

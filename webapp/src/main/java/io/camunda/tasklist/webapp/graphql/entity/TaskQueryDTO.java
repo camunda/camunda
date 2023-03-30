@@ -7,10 +7,12 @@
 package io.camunda.tasklist.webapp.graphql.entity;
 
 import io.camunda.tasklist.entities.TaskState;
+import java.util.Arrays;
+import java.util.Objects;
 
 public class TaskQueryDTO {
 
-  private static final int DEFAULT_PAGE_SIZE = 50;
+  public static final int DEFAULT_PAGE_SIZE = 50;
 
   private TaskState state;
   private Boolean assigned;
@@ -185,5 +187,53 @@ public class TaskQueryDTO {
   public TaskQueryDTO setSort(TaskOrderByDTO[] sort) {
     this.sort = sort;
     return this;
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final TaskQueryDTO that = (TaskQueryDTO) o;
+    return pageSize == that.pageSize
+        && state == that.state
+        && Objects.equals(assigned, that.assigned)
+        && Objects.equals(assignee, that.assignee)
+        && Objects.equals(taskDefinitionId, that.taskDefinitionId)
+        && Objects.equals(candidateGroup, that.candidateGroup)
+        && Objects.equals(processDefinitionId, that.processDefinitionId)
+        && Objects.equals(processInstanceId, that.processInstanceId)
+        && Objects.equals(followUpDate, that.followUpDate)
+        && Objects.equals(dueDate, that.dueDate)
+        && Arrays.equals(sort, that.sort)
+        && Arrays.equals(searchAfter, that.searchAfter)
+        && Arrays.equals(searchAfterOrEqual, that.searchAfterOrEqual)
+        && Arrays.equals(searchBefore, that.searchBefore)
+        && Arrays.equals(searchBeforeOrEqual, that.searchBeforeOrEqual);
+  }
+
+  @Override
+  public int hashCode() {
+    int result =
+        Objects.hash(
+            state,
+            assigned,
+            assignee,
+            taskDefinitionId,
+            candidateGroup,
+            processDefinitionId,
+            processInstanceId,
+            pageSize,
+            followUpDate,
+            dueDate);
+    result = 31 * result + Arrays.hashCode(sort);
+    result = 31 * result + Arrays.hashCode(searchAfter);
+    result = 31 * result + Arrays.hashCode(searchAfterOrEqual);
+    result = 31 * result + Arrays.hashCode(searchBefore);
+    result = 31 * result + Arrays.hashCode(searchBeforeOrEqual);
+    return result;
   }
 }

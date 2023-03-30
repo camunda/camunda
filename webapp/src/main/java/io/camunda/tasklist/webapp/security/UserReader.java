@@ -8,6 +8,7 @@ package io.camunda.tasklist.webapp.security;
 
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
 import io.camunda.tasklist.webapp.graphql.entity.UserDTO;
+import io.camunda.tasklist.webapp.rest.exception.UnauthenticatedUserException;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
@@ -23,15 +24,15 @@ public interface UserReader {
   default UserDTO getCurrentUser() {
     final Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
     if (authentication instanceof AnonymousAuthenticationToken) {
-      throw new TasklistRuntimeException("User is not authenticated");
+      throw new UnauthenticatedUserException("User is not authenticated");
     }
-    final Optional<UserDTO> maybeUserDTO = getCurrentUserBy(authentication);
-    return maybeUserDTO.orElseThrow(
-        () ->
-            new TasklistRuntimeException(
-                String.format(
-                    "Could not build UserDTO from authentication authentication %s",
-                    authentication)));
+
+    return getCurrentUserBy(authentication)
+        .orElseThrow(
+            () ->
+                new TasklistRuntimeException(
+                    String.format(
+                        "Could not build UserDTO from authentication %s", authentication)));
   }
 
   Optional<UserDTO> getCurrentUserBy(final Authentication authentication);

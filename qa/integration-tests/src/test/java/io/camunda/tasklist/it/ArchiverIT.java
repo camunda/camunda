@@ -94,7 +94,6 @@ public class ArchiverIT extends TasklistZeebeIntegrationTest {
     archiverJob = beanFactory.getBean(TaskArchiverJob.class, partitionHolder.getPartitionIds());
     processInstanceArchiverJob =
         beanFactory.getBean(ProcessInstanceArchiverJob.class, partitionHolder.getPartitionIds());
-    taskMutationResolver.setZeebeClient(super.getClient());
     clearMetrics();
   }
 

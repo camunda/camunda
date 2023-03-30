@@ -20,6 +20,8 @@ import org.springframework.http.converter.json.Jackson2ObjectMapperBuilder;
 
 public final class CommonUtils {
 
+  public static final ObjectMapper OBJECT_MAPPER = getObjectMapper();
+
   public static ObjectMapper getObjectMapper() {
     final JavaTimeModule javaTimeModule = new JavaTimeModule();
     final DateTimeFormatter dateTimeFormatter =

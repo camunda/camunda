@@ -6,7 +6,7 @@
  */
 package io.camunda.tasklist.webapp.es;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -58,7 +58,7 @@ class TaskReaderWriterTest {
 
   @Spy private TaskTemplate taskTemplate = new TaskTemplate();
 
-  @Spy private ObjectMapper objectMapper = CommonUtils.getObjectMapper();
+  @Spy private ObjectMapper objectMapper = CommonUtils.OBJECT_MAPPER;
 
   @InjectMocks private TaskReaderWriter instance;
 
@@ -93,9 +93,8 @@ class TaskReaderWriterTest {
     final List<TaskDTO> result = instance.getTasks(taskQuery, FIELD_NAMES);
 
     // Then
-    assertEquals(1, searchRequestCaptor.getValue().indices().length, "indices count is wrong");
-    assertEquals(expectedIndexName, searchRequestCaptor.getValue().indices()[0], "index is wrong");
-    assertEquals(1, result.size());
+    assertThat(searchRequestCaptor.getValue().indices()).containsExactly(expectedIndexName);
+    assertThat(result).hasSize(1);
   }
 
   private static String getTaskExampleAsString(TaskState taskState) {

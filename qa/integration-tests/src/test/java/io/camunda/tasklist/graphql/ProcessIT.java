@@ -12,15 +12,12 @@ import com.graphql.spring.boot.test.GraphQLResponse;
 import io.camunda.tasklist.util.ElasticsearchChecks;
 import io.camunda.tasklist.util.TasklistZeebeIntegrationTest;
 import io.camunda.tasklist.util.ZeebeTestUtil;
-import io.camunda.tasklist.webapp.graphql.mutation.ProcessMutationResolver;
 import java.io.IOException;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 
 public class ProcessIT extends TasklistZeebeIntegrationTest {
-
-  @Autowired private ProcessMutationResolver processMutationResolver;
 
   @Autowired
   @Qualifier("processIsDeployedCheck")
@@ -29,7 +26,6 @@ public class ProcessIT extends TasklistZeebeIntegrationTest {
   @Override
   public void before() {
     super.before();
-    processMutationResolver.setZeebeClient(super.getClient());
   }
 
   @Test
@@ -131,7 +127,7 @@ public class ProcessIT extends TasklistZeebeIntegrationTest {
   }
 
   @Test
-  public void shouldStartProcess() throws IOException {
+  public void shouldStartProcess() {
     tester.deployProcess("simple_process.bpmn").waitUntil().processIsDeployed();
 
     final GraphQLResponse response = tester.startProcess("Process_1g4wt4m");

@@ -8,67 +8,65 @@ package io.camunda.tasklist.webapp.es;
 
 import io.camunda.tasklist.entities.TaskEntity;
 import io.camunda.tasklist.entities.TaskState;
-import io.camunda.tasklist.exceptions.TaskValidationException;
 import io.camunda.tasklist.webapp.graphql.entity.UserDTO;
+import io.camunda.tasklist.webapp.rest.exception.InvalidRequestException;
+import io.camunda.tasklist.webapp.security.UserReader;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 
-public interface TaskValidator {
+@Component
+public class TaskValidator {
 
-  TaskValidator CAN_COMPLETE =
-      (taskBefore, currentUser, params) -> {
-        if (!taskBefore.getState().equals(TaskState.CREATED)) {
-          throw new TaskValidationException("Task is not active");
-        }
+  @Autowired private UserReader userReader;
 
-        if (currentUser.isApiUser()) {
-          // JWT Token/API users are allowed to complete any task
-          return;
-        }
-        if (taskBefore.getAssignee() == null) {
-          throw new TaskValidationException("Task is not assigned");
-        }
-        if (!taskBefore.getAssignee().equals(currentUser.getUserId())) {
-          throw new TaskValidationException("Task is not assigned to " + currentUser.getUserId());
-        }
-      };
+  public void validateCanComplete(final TaskEntity taskBefore) {
+    validateTaskIsActive(taskBefore);
 
-  TaskValidator CAN_CLAIM =
-      (taskBefore, currentUser, params) -> {
-        if (!taskBefore.getState().equals(TaskState.CREATED)) {
-          throw new TaskValidationException("Task is not active");
-        }
+    final UserDTO currentUser = getCurrentUser();
+    if (currentUser.isApiUser()) {
+      // JWT Token/API users are allowed to complete task assigned to anyone
+      return;
+    }
 
-        if (currentUser.isApiUser()) {
-          boolean allowOverrideAssignment = true;
+    validateTaskIsNotAssigned(taskBefore);
+    if (!taskBefore.getAssignee().equals(currentUser.getUserId())) {
+      throw new InvalidRequestException("Task is not assigned to " + currentUser.getUserId());
+    }
+  }
 
-          if (params.length > 0) {
-            if (!(params[0] instanceof Boolean)) {
-              throw new IllegalArgumentException(
-                  "Expected parameter to be of type boolean, but got "
-                      + params[0].getClass().toString());
-            }
-            allowOverrideAssignment = (boolean) params[0];
-          }
+  public void validateCanAssign(final TaskEntity taskBefore, boolean allowOverrideAssignment) {
 
-          if (allowOverrideAssignment) {
-            return;
-          }
-        }
+    validateTaskIsActive(taskBefore);
 
-        if (taskBefore.getAssignee() != null) {
-          throw new TaskValidationException("Task is already assigned");
-        }
-      };
+    if (getCurrentUser().isApiUser() && allowOverrideAssignment) {
+      // JWT Token/API users can reassign task
+      return;
+    }
 
-  TaskValidator CAN_UNCLAIM =
-      (taskBefore, currentUser, params) -> {
-        if (!taskBefore.getState().equals(TaskState.CREATED)) {
-          throw new TaskValidationException("Task is not active");
-        }
-        if (taskBefore.getAssignee() == null) {
-          throw new TaskValidationException("Task is not assigned");
-        }
-      };
+    if (taskBefore.getAssignee() != null) {
+      throw new InvalidRequestException("Task is already assigned");
+    }
+  }
 
-  void validate(final TaskEntity taskBefore, final UserDTO currentUser, final Object... params)
-      throws TaskValidationException;
+  public void validateCanUnassign(final TaskEntity taskBefore) {
+    validateTaskIsActive(taskBefore);
+
+    validateTaskIsNotAssigned(taskBefore);
+  }
+
+  private static void validateTaskIsActive(final TaskEntity taskBefore) {
+    if (!taskBefore.getState().equals(TaskState.CREATED)) {
+      throw new InvalidRequestException("Task is not active");
+    }
+  }
+
+  private static void validateTaskIsNotAssigned(final TaskEntity taskBefore) {
+    if (taskBefore.getAssignee() == null) {
+      throw new InvalidRequestException("Task is not assigned");
+    }
+  }
+
+  private UserDTO getCurrentUser() {
+    return userReader.getCurrentUser();
+  }
 }

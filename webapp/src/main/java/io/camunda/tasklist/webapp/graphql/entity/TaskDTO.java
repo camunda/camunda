@@ -222,11 +222,10 @@ public final class TaskDTO {
             .setFlowNodeBpmnId(taskEntity.getFlowNodeBpmnId())
             .setFlowNodeInstanceId(taskEntity.getFlowNodeInstanceId())
             .setFormKey(taskEntity.getFormKey())
-            .setCandidateGroups(taskEntity.getCandidateGroups())
             .setFollowUpDate(taskEntity.getFollowUpDate())
             .setDueDate(taskEntity.getDueDate())
+            .setCandidateGroups(taskEntity.getCandidateGroups())
             .setCandidateUsers(taskEntity.getCandidateUsers());
-
     if (sortValues != null) {
       taskDTO.setSortValues(toArrayOfStrings(sortValues));
     }
@@ -319,6 +318,10 @@ public final class TaskDTO {
         + taskState
         + ", sortValues="
         + Arrays.toString(sortValues)
+        + ", candidateGroups="
+        + Arrays.toString(candidateGroups)
+        + ", candidateGroups="
+        + Arrays.toString(candidateUsers)
         + ", isFirst="
         + isFirst
         + ", formId='"
@@ -329,11 +332,6 @@ public final class TaskDTO {
         + '\''
         + ", dueDate='"
         + dueDate
-        + ", candidateUsers='"
-        + candidateUsers
-        + '\''
-        + ", candidateGroups='"
-        + candidateGroups
         + '\''
         + '}';
   }

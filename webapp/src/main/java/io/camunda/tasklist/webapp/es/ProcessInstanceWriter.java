@@ -17,6 +17,7 @@ import io.camunda.tasklist.schema.indices.ProcessInstanceDependant;
 import io.camunda.tasklist.schema.indices.ProcessInstanceIndex;
 import io.camunda.tasklist.schema.templates.TaskVariableTemplate;
 import io.camunda.tasklist.util.ElasticsearchUtil;
+import io.camunda.tasklist.webapp.es.enums.DeletionStatus;
 import java.io.IOException;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -35,7 +36,7 @@ public class ProcessInstanceWriter {
 
   @Autowired RetryElasticsearchClient retryElasticsearchClient;
 
-  public boolean deleteProcessInstance(final String processInstanceId) {
+  public DeletionStatus deleteProcessInstance(final String processInstanceId) {
     // Don't need to validate for canceled/completed process instances
     // because only completed will be imported by ProcessInstanceZeebeRecordProcessor
     final boolean processInstanceWasDeleted =
@@ -45,11 +46,11 @@ public class ProcessInstanceWriter {
     if (processInstanceWasDeleted) {
       return deleteProcessInstanceDependantsFor(processInstanceId);
     } else {
-      return false;
+      return DeletionStatus.NOT_FOUND;
     }
   }
 
-  private boolean deleteProcessInstanceDependantsFor(String processInstanceId) {
+  private DeletionStatus deleteProcessInstanceDependantsFor(String processInstanceId) {
     final List<String> dependantTaskIds = getDependantTasksIdsFor(processInstanceId);
     boolean deleted = false;
     for (ProcessInstanceDependant dependant : processInstanceDependants) {
@@ -61,9 +62,9 @@ public class ProcessInstanceWriter {
     }
     if (deleted) {
       deleteVariablesFor(dependantTaskIds);
-      return true;
+      return DeletionStatus.DELETED;
     }
-    return false;
+    return DeletionStatus.FAILED;
   }
 
   private List<String> getDependantTasksIdsFor(final String processInstanceId) {

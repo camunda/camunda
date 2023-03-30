@@ -6,21 +6,16 @@
  */
 package io.camunda.tasklist.webapp.rest.exception;
 
-import java.util.UUID;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.annotation.ResponseStatus;
 
-public abstract class InternalAPIException extends RuntimeException {
-
-  private final String instance = UUID.randomUUID().toString();
-
-  protected InternalAPIException(final String message) {
+@ResponseStatus(HttpStatus.UNAUTHORIZED)
+public class UnauthenticatedUserException extends APIException {
+  public UnauthenticatedUserException(String message) {
     super(message);
   }
 
-  protected InternalAPIException(final String message, final Throwable cause) {
+  public UnauthenticatedUserException(String message, Throwable cause) {
     super(message, cause);
-  }
-
-  public String getInstance() {
-    return instance;
   }
 }

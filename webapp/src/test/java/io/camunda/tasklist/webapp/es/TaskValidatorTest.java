@@ -6,262 +6,218 @@
  */
 package io.camunda.tasklist.webapp.es;
 
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.when;
+
 import io.camunda.tasklist.entities.TaskEntity;
 import io.camunda.tasklist.entities.TaskState;
-import io.camunda.tasklist.exceptions.TaskValidationException;
 import io.camunda.tasklist.webapp.graphql.entity.UserDTO;
-import org.junit.jupiter.api.Assertions;
+import io.camunda.tasklist.webapp.rest.exception.InvalidRequestException;
+import io.camunda.tasklist.webapp.security.UserReader;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
+@ExtendWith(MockitoExtension.class)
 public class TaskValidatorTest {
 
   public static final String TEST_USER = "TestUser";
 
-  public TaskValidatorTest() {}
+  @Mock private UserReader userReader;
 
-  @Test
-  public void userCanNotCompleteTaskIfNotInCompletedState() throws TaskValidationException {
-    final TaskValidationException exception =
-        Assertions.assertThrows(
-            TaskValidationException.class,
-            () -> {
-              final UserDTO user = getTestUser().setApiUser(false);
-              final TaskEntity task =
-                  new TaskEntity().setAssignee(TEST_USER).setState(TaskState.COMPLETED);
-              TaskValidator.CAN_COMPLETE.validate(task, user);
-            });
-    Assertions.assertEquals("Task is not active", exception.getMessage());
+  @InjectMocks private TaskValidator instance;
+
+  @ParameterizedTest
+  @EnumSource(
+      value = TaskState.class,
+      names = {"COMPLETED", "CANCELED"})
+  public void userShouldNotBeAbleToCompleteIfTaskIsNotAcitve(TaskState taskState) {
+    // given
+    final TaskEntity task = new TaskEntity().setAssignee(TEST_USER).setState(taskState);
+
+    // when - then
+    verifyNoInteractions(userReader);
+    assertThatThrownBy(() -> instance.validateCanComplete(task))
+        .isInstanceOf(InvalidRequestException.class)
+        .hasMessage("Task is not active");
   }
 
   @Test
-  public void userCanNotCompleteTaskIfNotInCanceledState() throws TaskValidationException {
-    final TaskValidationException exception =
-        Assertions.assertThrows(
-            TaskValidationException.class,
-            () -> {
-              final UserDTO user = getTestUser().setApiUser(false);
-              final TaskEntity task =
-                  new TaskEntity().setAssignee(TEST_USER).setState(TaskState.CANCELED);
-              TaskValidator.CAN_COMPLETE.validate(task, user);
-            });
-    Assertions.assertEquals("Task is not active", exception.getMessage());
-  }
-
-  @Test
-  public void userCanNotCompleteTaskIfAssignedToAnotherPerson() throws TaskValidationException {
-    final TaskValidationException exception =
-        Assertions.assertThrows(
-            TaskValidationException.class,
-            () -> {
-              final UserDTO user =
-                  new UserDTO().setUserId(TEST_USER).setDisplayName(TEST_USER).setApiUser(false);
-              final TaskEntity task =
-                  new TaskEntity().setAssignee("AnotherTestUser").setState(TaskState.CREATED);
-              TaskValidator.CAN_COMPLETE.validate(task, user);
-            });
-    Assertions.assertEquals("Task is not assigned to TestUser", exception.getMessage());
-  }
-
-  @Test
-  public void userCanNotCompleteTaskIfAssigneeIsNull() throws TaskValidationException {
-    final TaskValidationException exception =
-        Assertions.assertThrows(
-            TaskValidationException.class,
-            () -> {
-              final UserDTO user =
-                  new UserDTO().setUserId(TEST_USER).setDisplayName(TEST_USER).setApiUser(false);
-              final TaskEntity task =
-                  new TaskEntity().setAssignee(null).setState(TaskState.CREATED);
-              TaskValidator.CAN_COMPLETE.validate(task, user);
-            });
-    Assertions.assertEquals("Task is not assigned", exception.getMessage());
-  }
-
-  @Test
-  public void userCanCompleteTheirOwnTask() throws TaskValidationException {
+  public void userCanNotCompleteTaskIfAssignedToAnotherPerson() {
+    // given
     final UserDTO user =
         new UserDTO().setUserId(TEST_USER).setDisplayName(TEST_USER).setApiUser(false);
-    final TaskEntity task = new TaskEntity().setAssignee(TEST_USER).setState(TaskState.CREATED);
-    TaskValidator.CAN_COMPLETE.validate(task, user);
-  }
-
-  @Test
-  public void apiUserShouldBeAbleToCompleteOtherPersonTask() throws TaskValidationException {
-    final UserDTO user =
-        new UserDTO().setUserId(TEST_USER).setDisplayName(TEST_USER).setApiUser(true);
+    when(userReader.getCurrentUser()).thenReturn(user);
     final TaskEntity task =
         new TaskEntity().setAssignee("AnotherTestUser").setState(TaskState.CREATED);
-    TaskValidator.CAN_COMPLETE.validate(task, user);
+
+    // when - then
+    assertThatThrownBy(() -> instance.validateCanComplete(task))
+        .isInstanceOf(InvalidRequestException.class)
+        .hasMessage("Task is not assigned to TestUser");
   }
 
   @Test
-  public void apiUserShouldNotBeAbleToCompleteCompletedTasks() throws TaskValidationException {
-    final TaskValidationException exception =
-        Assertions.assertThrows(
-            TaskValidationException.class,
-            () -> {
-              final UserDTO user =
-                  new UserDTO().setUserId(TEST_USER).setDisplayName(TEST_USER).setApiUser(true);
-              final TaskEntity task =
-                  new TaskEntity().setAssignee("AnotherTestUser").setState(TaskState.COMPLETED);
-              TaskValidator.CAN_COMPLETE.validate(task, user);
-            });
-    Assertions.assertEquals("Task is not active", exception.getMessage());
+  public void userCanNotCompleteTaskIfAssigneeIsNull() {
+    // given
+    final UserDTO user =
+        new UserDTO().setUserId(TEST_USER).setDisplayName(TEST_USER).setApiUser(false);
+    when(userReader.getCurrentUser()).thenReturn(user);
+    final TaskEntity task = new TaskEntity().setAssignee(null).setState(TaskState.CREATED);
+
+    // when - then
+    assertThatThrownBy(() -> instance.validateCanComplete(task))
+        .isInstanceOf(InvalidRequestException.class)
+        .hasMessage("Task is not assigned");
   }
 
   @Test
-  public void apiUserShouldNotBeAbleToCompleteCanceledTasks() throws TaskValidationException {
-    final TaskValidationException exception =
-        Assertions.assertThrows(
-            TaskValidationException.class,
-            () -> {
-              final UserDTO user = getTestUser().setApiUser(true);
-              final TaskEntity task =
-                  new TaskEntity().setAssignee("AnotherTestUser").setState(TaskState.CANCELED);
-              TaskValidator.CAN_COMPLETE.validate(task, user);
-            });
-    Assertions.assertEquals("Task is not active", exception.getMessage());
+  public void userCanCompleteTheirOwnTask() {
+    // given
+    final UserDTO user =
+        new UserDTO().setUserId(TEST_USER).setDisplayName(TEST_USER).setApiUser(false);
+    when(userReader.getCurrentUser()).thenReturn(user);
+    final TaskEntity task = new TaskEntity().setAssignee(TEST_USER).setState(TaskState.CREATED);
+
+    // when - then
+    assertDoesNotThrow(() -> instance.validateCanComplete(task));
   }
 
   @Test
-  public void apiUserShouldBeAbleToAssignToDifferentUsers() throws TaskValidationException {
+  public void apiUserShouldBeAbleToCompleteOtherPersonTask() {
+    // given
+    final UserDTO user =
+        new UserDTO().setUserId(TEST_USER).setDisplayName(TEST_USER).setApiUser(true);
+    when(userReader.getCurrentUser()).thenReturn(user);
+    final TaskEntity task =
+        new TaskEntity().setAssignee("AnotherTestUser").setState(TaskState.CREATED);
+
+    // when - then
+    assertDoesNotThrow(() -> instance.validateCanComplete(task));
+  }
+
+  @Test
+  public void apiUserShouldBeAbleToAssignToDifferentUsers() {
+    // given
     final UserDTO user = getTestUser().setApiUser(true);
+    when(userReader.getCurrentUser()).thenReturn(user);
     final TaskEntity taskBefore = new TaskEntity().setAssignee(null).setState(TaskState.CREATED);
-    TaskValidator.CAN_CLAIM.validate(taskBefore, user);
+
+    // when - then
+    assertDoesNotThrow(() -> instance.validateCanAssign(taskBefore, true));
   }
 
   @Test
-  public void apiUserShouldBeAbleToReassignToAnotherUser() throws TaskValidationException {
+  public void apiUserShouldBeAbleToReassignToAnotherUser() {
+    // given
     final UserDTO user = getTestUser().setApiUser(true);
+    when(userReader.getCurrentUser()).thenReturn(user);
     final TaskEntity taskBefore =
         new TaskEntity().setAssignee("previously assigned user").setState(TaskState.CREATED);
-    TaskValidator.CAN_CLAIM.validate(taskBefore, user);
+
+    // when - then
+    assertDoesNotThrow(() -> instance.validateCanAssign(taskBefore, true));
   }
 
   @Test
-  public void apiUserShouldBeAbleToReassignToAnotherUserWhenOverrideAllowed()
-      throws TaskValidationException {
+  public void apiUserShouldBeAbleToReassignToAnotherUserWhenOverrideAllowed() {
+    // given
     final UserDTO user = getTestUser().setApiUser(true);
+    when(userReader.getCurrentUser()).thenReturn(user);
     final TaskEntity taskBefore =
         new TaskEntity().setAssignee("previously assigned user").setState(TaskState.CREATED);
-    TaskValidator.CAN_CLAIM.validate(taskBefore, user, true);
+
+    // when - then
+    assertDoesNotThrow(() -> instance.validateCanAssign(taskBefore, true));
   }
 
   @Test
-  public void apiUserShouldNoBeAbleToReassignToAnotherUserWhenOverrideForbidden()
-      throws TaskValidationException {
-    final TaskValidationException exception =
-        Assertions.assertThrows(
-            TaskValidationException.class,
-            () -> {
-              final UserDTO user = getTestUser().setApiUser(true);
-              final TaskEntity taskBefore =
-                  new TaskEntity()
-                      .setAssignee("previously assigned user")
-                      .setState(TaskState.CREATED);
-              TaskValidator.CAN_CLAIM.validate(taskBefore, user, false);
-            });
-    Assertions.assertEquals("Task is already assigned", exception.getMessage());
+  public void apiUserShouldNoBeAbleToReassignToAnotherUserWhenOverrideForbidden() {
+    // given
+    final UserDTO user = getTestUser().setApiUser(true);
+    when(userReader.getCurrentUser()).thenReturn(user);
+    final TaskEntity taskBefore =
+        new TaskEntity().setAssignee("previously assigned user").setState(TaskState.CREATED);
+
+    // when - then
+    assertThatThrownBy(() -> instance.validateCanAssign(taskBefore, false))
+        .isInstanceOf(InvalidRequestException.class)
+        .hasMessage("Task is already assigned");
+  }
+
+  @ParameterizedTest
+  @EnumSource(
+      value = TaskState.class,
+      names = {"COMPLETED", "CANCELED"})
+  public void userShouldNotBeAbleToClaimTaskIfTaskIsNotActive(TaskState taskState) {
+    // given
+    final TaskEntity task = new TaskEntity().setAssignee("AnotherTestUser").setState(taskState);
+
+    // when - then
+    assertThatThrownBy(() -> instance.validateCanAssign(task, true))
+        .isInstanceOf(InvalidRequestException.class)
+        .hasMessage("Task is not active");
   }
 
   @Test
-  public void apiUserShouldNotBeAbleToClaimTaskIfTaskIsCompleted() throws TaskValidationException {
-    final TaskValidationException exception =
-        Assertions.assertThrows(
-            TaskValidationException.class,
-            () -> {
-              final UserDTO user = getTestUser().setApiUser(true);
-              final TaskEntity task =
-                  new TaskEntity().setAssignee("AnotherTestUser").setState(TaskState.COMPLETED);
-              TaskValidator.CAN_CLAIM.validate(task, user);
-            });
-    Assertions.assertEquals("Task is not active", exception.getMessage());
-  }
+  public void nonApiUserShouldNotBeAbleToReassignToAnotherUser() {
+    // given
+    final UserDTO user = getTestUser().setApiUser(false);
+    when(userReader.getCurrentUser()).thenReturn(user);
+    final TaskEntity task =
+        new TaskEntity().setAssignee("AnotherTestUser").setState(TaskState.CREATED);
 
-  @Test
-  public void apiUserShouldNotBeAbleToClaimTaskIfTaskIsCanceled() throws TaskValidationException {
-    final TaskValidationException exception =
-        Assertions.assertThrows(
-            TaskValidationException.class,
-            () -> {
-              final UserDTO user = getTestUser().setApiUser(true);
-              final TaskEntity task =
-                  new TaskEntity().setAssignee("AnotherTestUser").setState(TaskState.CANCELED);
-              TaskValidator.CAN_CLAIM.validate(task, user);
-            });
-    Assertions.assertEquals("Task is not active", exception.getMessage());
-  }
-
-  @Test
-  public void nonApiUserShouldNotBeAbleToReassignToAnotherUser() throws TaskValidationException {
-    final TaskValidationException exception =
-        Assertions.assertThrows(
-            TaskValidationException.class,
-            () -> {
-              final UserDTO user = getTestUser().setApiUser(false);
-              final TaskEntity task =
-                  new TaskEntity().setAssignee("AnotherTestUser").setState(TaskState.CREATED);
-              TaskValidator.CAN_CLAIM.validate(task, user);
-            });
-    Assertions.assertEquals("Task is already assigned", exception.getMessage());
+    // when - then
+    assertThatThrownBy(() -> instance.validateCanAssign(task, true))
+        .isInstanceOf(InvalidRequestException.class)
+        .hasMessage("Task is already assigned");
   }
 
   /** allowOverrideAssignment works only for API user case. */
   @Test
-  public void nonApiUserShouldNotBeAbleToReassignToAnotherUserWhenOverrideAllowed()
-      throws TaskValidationException {
-    final TaskValidationException exception =
-        Assertions.assertThrows(
-            TaskValidationException.class,
-            () -> {
-              final UserDTO user = getTestUser().setApiUser(false);
-              final TaskEntity task =
-                  new TaskEntity().setAssignee("AnotherTestUser").setState(TaskState.CREATED);
-              TaskValidator.CAN_CLAIM.validate(task, user, true);
-            });
-    Assertions.assertEquals("Task is already assigned", exception.getMessage());
+  public void nonApiUserShouldNotBeAbleToReassignToAnotherUserWhenOverrideAllowed() {
+    // given
+    final UserDTO user = getTestUser().setApiUser(false);
+    when(userReader.getCurrentUser()).thenReturn(user);
+    final TaskEntity task =
+        new TaskEntity().setAssignee("AnotherTestUser").setState(TaskState.CREATED);
+
+    // when - then
+    assertThatThrownBy(() -> instance.validateCanAssign(task, true))
+        .isInstanceOf(InvalidRequestException.class)
+        .hasMessage("Task is already assigned");
   }
 
   @Test
-  public void usersShouldNotBeAbleToUnclaimNotClaimed() throws TaskValidationException {
-    final TaskValidationException exception =
-        Assertions.assertThrows(
-            TaskValidationException.class,
-            () -> {
-              final UserDTO user = getTestUser().setApiUser(false);
-              final TaskEntity task =
-                  new TaskEntity().setAssignee(null).setState(TaskState.CREATED);
-              TaskValidator.CAN_UNCLAIM.validate(task, user);
-            });
-    Assertions.assertEquals("Task is not assigned", exception.getMessage());
+  public void usersShouldNotBeAbleToUnassignNotAssignedTask() {
+    // given
+    final TaskEntity task = new TaskEntity().setAssignee(null).setState(TaskState.CREATED);
+
+    // when - then
+    verifyNoInteractions(userReader);
+    assertThatThrownBy(() -> instance.validateCanUnassign(task))
+        .isInstanceOf(InvalidRequestException.class)
+        .hasMessage("Task is not assigned");
   }
 
-  @Test
-  public void usersShouldNotBeAbleToUnclaimTaskIfTaskIsCanceled() throws TaskValidationException {
-    final TaskValidationException exception =
-        Assertions.assertThrows(
-            TaskValidationException.class,
-            () -> {
-              final UserDTO user = getTestUser().setApiUser(false);
-              final TaskEntity task =
-                  new TaskEntity().setAssignee("AnotherTestUser").setState(TaskState.CANCELED);
-              TaskValidator.CAN_UNCLAIM.validate(task, user);
-            });
-    Assertions.assertEquals("Task is not active", exception.getMessage());
-  }
+  @ParameterizedTest
+  @EnumSource(
+      value = TaskState.class,
+      names = {"COMPLETED", "CANCELED"})
+  public void userShouldNotBeAbleToUnassignTaskIfTaskIsNotActive(TaskState taskState) {
+    // given
+    final TaskEntity task = new TaskEntity().setAssignee("AnotherTestUser").setState(taskState);
 
-  @Test
-  public void usersShouldNotBeAbleToUnclaimTaskIfTaskIsCompleted() throws TaskValidationException {
-    final TaskValidationException exception =
-        Assertions.assertThrows(
-            TaskValidationException.class,
-            () -> {
-              final UserDTO user = getTestUser().setApiUser(false);
-              final TaskEntity task =
-                  new TaskEntity().setAssignee("AnotherTestUser").setState(TaskState.COMPLETED);
-              TaskValidator.CAN_UNCLAIM.validate(task, user);
-            });
-    Assertions.assertEquals("Task is not active", exception.getMessage());
+    // when - then
+    assertThatThrownBy(() -> instance.validateCanUnassign(task))
+        .isInstanceOf(InvalidRequestException.class)
+        .hasMessage("Task is not active");
   }
 
   protected UserDTO getTestUser() {

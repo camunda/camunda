@@ -148,8 +148,28 @@ public class TaskEntity extends TasklistZeebeEntity<TaskEntity> {
     return candidateUsers;
   }
 
-  public void setCandidateUsers(String[] candidateUsers) {
+  public TaskEntity setCandidateUsers(String[] candidateUsers) {
     this.candidateUsers = candidateUsers;
+    return this;
+  }
+
+  public TaskEntity makeCopy() {
+    return new TaskEntity()
+        .setId(this.getId())
+        .setKey(this.getKey())
+        .setPartitionId(this.getPartitionId())
+        .setBpmnProcessId(this.getBpmnProcessId())
+        .setProcessDefinitionId(this.getProcessDefinitionId())
+        .setFlowNodeBpmnId(this.getFlowNodeBpmnId())
+        .setFlowNodeInstanceId(this.getFlowNodeInstanceId())
+        .setProcessInstanceId(this.getProcessInstanceId())
+        .setCreationTime(this.getCreationTime())
+        .setCompletionTime(this.getCompletionTime())
+        .setState(this.getState())
+        .setAssignee(this.getAssignee())
+        .setCandidateGroups(this.getCandidateGroups())
+        .setCandidateUsers(this.getCandidateUsers())
+        .setFormKey(this.getFormKey());
   }
 
   @Override

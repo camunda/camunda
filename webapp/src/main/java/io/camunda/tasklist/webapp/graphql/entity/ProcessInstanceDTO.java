@@ -6,6 +6,8 @@
  */
 package io.camunda.tasklist.webapp.graphql.entity;
 
+import java.util.Objects;
+
 public class ProcessInstanceDTO {
 
   private Long id;
@@ -17,5 +19,22 @@ public class ProcessInstanceDTO {
   public ProcessInstanceDTO setId(Long id) {
     this.id = id;
     return this;
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final ProcessInstanceDTO that = (ProcessInstanceDTO) o;
+    return Objects.equals(id, that.id);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(id);
   }
 }

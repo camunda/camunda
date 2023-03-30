@@ -13,6 +13,7 @@
 
   <properties>
     <mvc-auth-commons.version>1.9.4</mvc-auth-commons.version>
+    <springdoc-openapi.version>1.6.14</springdoc-openapi.version>
   </properties>
   
   <dependencies>
@@ -135,6 +136,13 @@
       <groupId>org.springframework.security</groupId>
       <artifactId>spring-security-oauth2-jose</artifactId>
     </dependency>
+    
+    <!-- OpenAPI -->
+    <dependency>
+      <groupId>org.springdoc</groupId>
+      <artifactId>springdoc-openapi-ui</artifactId>
+      <version>${springdoc-openapi.version}</version>
+    </dependency>
 
     <!-- GraphQL -->
     <dependency>
@@ -200,7 +208,7 @@
           </execution>
         </executions>
       </plugin>
-
+      
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-surefire-plugin</artifactId>

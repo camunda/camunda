@@ -11,9 +11,9 @@ import static io.camunda.tasklist.webapp.graphql.TasklistGraphQLContextBuilder.V
 import graphql.kickstart.tools.GraphQLResolver;
 import graphql.schema.DataFetchingEnvironment;
 import graphql.schema.SelectedField;
-import io.camunda.tasklist.webapp.es.cache.ProcessCache;
 import io.camunda.tasklist.webapp.graphql.entity.TaskDTO;
 import io.camunda.tasklist.webapp.graphql.entity.VariableDTO;
+import io.camunda.tasklist.webapp.mapper.TaskMapper;
 import io.camunda.tasklist.webapp.service.VariableService.GetVariablesRequest;
 import java.util.List;
 import java.util.Set;
@@ -26,7 +26,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class TaskResolver implements GraphQLResolver<TaskDTO> {
 
-  @Autowired private ProcessCache processCache;
+  @Autowired private TaskMapper taskMapper;
 
   public CompletableFuture<List<VariableDTO>> getVariables(
       TaskDTO task, DataFetchingEnvironment dfe) {
@@ -36,27 +36,18 @@ public class TaskResolver implements GraphQLResolver<TaskDTO> {
   }
 
   public String getProcessName(TaskDTO task) {
-    final String processName = processCache.getProcessName(task.getProcessDefinitionId());
-    if (processName == null) {
-      return task.getBpmnProcessId();
-    }
-    return processName;
+    return taskMapper.getProcessName(task);
   }
 
   public String getName(TaskDTO task) {
-    final String taskName =
-        processCache.getTaskName(task.getProcessDefinitionId(), task.getFlowNodeBpmnId());
-    if (taskName == null) {
-      return task.getFlowNodeBpmnId();
-    }
-    return taskName;
+    return taskMapper.getName(task);
   }
 
   public String getTaskDefinitionId(TaskDTO task) {
     return task.getFlowNodeBpmnId();
   }
 
-  private Set<String> getFieldNames(DataFetchingEnvironment dataFetchingEnvironment) {
+  private static Set<String> getFieldNames(DataFetchingEnvironment dataFetchingEnvironment) {
     return dataFetchingEnvironment.getSelectionSet().getFields().stream()
         .map(SelectedField::getName)
         .collect(Collectors.toSet());

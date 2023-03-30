@@ -10,6 +10,7 @@ import static io.camunda.tasklist.webapp.security.TasklistURIs.COOKIE_JSESSIONID
 import static io.camunda.tasklist.webapp.security.TasklistURIs.GRAPHQL_URL;
 import static io.camunda.tasklist.webapp.security.TasklistURIs.LOGIN_RESOURCE;
 import static io.camunda.tasklist.webapp.security.TasklistURIs.LOGOUT_RESOURCE;
+import static io.camunda.tasklist.webapp.security.TasklistURIs.USERS_URL_V1;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.http.MediaType.APPLICATION_FORM_URLENCODED;
 import static org.springframework.http.MediaType.APPLICATION_JSON;
@@ -79,6 +80,15 @@ public interface AuthenticationTestable {
             GRAPHQL_URL,
             HttpMethod.POST,
             prepareRequestWithCookies(cookies.getHeaders(), CURRENT_USER_QUERY),
+            String.class);
+  }
+
+  default ResponseEntity<String> getCurrentUserByRestApi(final HttpEntity<?> cookies) {
+    return getTestRestTemplate()
+        .exchange(
+            USERS_URL_V1.concat("/current"),
+            HttpMethod.GET,
+            prepareRequestWithCookies(cookies.getHeaders(), null),
             String.class);
   }
 

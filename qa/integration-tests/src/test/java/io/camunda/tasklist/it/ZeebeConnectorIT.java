@@ -28,6 +28,7 @@ import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.ContextConfiguration;
+import org.springframework.test.util.ReflectionTestUtils;
 
 @SpringBootTest(
     classes = {TestApplication.class},
@@ -99,7 +100,7 @@ public class ZeebeConnectorIT extends TasklistIntegrationTest {
     tasklistZeebeRule.setZeebeEsClient(zeebeEsClient);
     tasklistZeebeRule.starting(null);
     tasklistProperties.getZeebeElasticsearch().setPrefix(tasklistZeebeRule.getPrefix());
-    partitionHolder.setZeebeClient(tasklistZeebeRule.getClient());
+    ReflectionTestUtils.setField(partitionHolder, "zeebeClient", tasklistZeebeRule.getClient());
   }
 
   @Test

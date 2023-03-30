@@ -8,6 +8,7 @@ package io.camunda.tasklist.webapp.rest;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.swagger.v3.oas.annotations.Hidden;
 import javax.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -33,6 +34,7 @@ public class ClientConfigRestService {
     }
   }
 
+  @Hidden
   @GetMapping(path = CLIENT_CONFIG_RESOURCE, produces = "text/javascript")
   public String getClientConfig() {
     return clientConfigAsJS;

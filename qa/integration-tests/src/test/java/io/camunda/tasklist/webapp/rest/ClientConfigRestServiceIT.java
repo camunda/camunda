@@ -4,7 +4,7 @@
  * See the License.txt file for more information. You may not use this file
  * except in compliance with the proprietary license.
  */
-package io.camunda.tasklist.webapp;
+package io.camunda.tasklist.webapp.rest;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -13,8 +13,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.util.apps.nobeans.TestApplicationWithNoBeans;
-import io.camunda.tasklist.webapp.rest.ClientConfig;
-import io.camunda.tasklist.webapp.rest.ClientConfigRestService;
 import io.camunda.tasklist.webapp.security.TasklistProfileService;
 import org.junit.Before;
 import org.junit.Test;
@@ -46,7 +44,7 @@ import org.springframework.web.context.WebApplicationContext;
       "CAMUNDA_TASKLIST_CLOUD_MIXPANELAPIHOST=https://fake.mixpanel.com"
     },
     webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-public class ClientConfigRestServiceTest {
+public class ClientConfigRestServiceIT {
 
   @Autowired private WebApplicationContext context;
 

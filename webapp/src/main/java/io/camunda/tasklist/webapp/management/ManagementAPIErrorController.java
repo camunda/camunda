@@ -8,8 +8,8 @@ package io.camunda.tasklist.webapp.management;
 
 import io.camunda.tasklist.exceptions.TasklistElasticsearchConnectionException;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
+import io.camunda.tasklist.webapp.rest.exception.APIException;
 import io.camunda.tasklist.webapp.rest.exception.Error;
-import io.camunda.tasklist.webapp.rest.exception.InternalAPIException;
 import io.camunda.tasklist.webapp.rest.exception.NotFoundException;
 import io.camunda.tasklist.webapp.security.TasklistProfileService;
 import org.slf4j.Logger;
@@ -41,8 +41,8 @@ public abstract class ManagementAPIErrorController {
   }
 
   @ResponseStatus(HttpStatus.BAD_REQUEST)
-  @ExceptionHandler(InternalAPIException.class)
-  public ResponseEntity<Error> handleInternalAPIException(InternalAPIException exception) {
+  @ExceptionHandler(APIException.class)
+  public ResponseEntity<Error> handleInternalAPIException(APIException exception) {
     LOGGER.error(
         String.format("Instance: %s; %s", exception.getInstance(), exception.getMessage()));
     final Error error =
