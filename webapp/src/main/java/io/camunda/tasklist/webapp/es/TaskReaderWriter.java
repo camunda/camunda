@@ -411,10 +411,15 @@ public class TaskReaderWriter {
       for (int i = 0; i < query.getSort().length; i++) {
         final TaskOrderByDTO orderByDTO = query.getSort()[i];
         final String field = orderByDTO.getField().toString();
-        final SortOrder sortOrder =
-            orderByDTO.getOrder().equals(Sort.DESC) ? SortOrder.DESC : SortOrder.ASC;
-        final SortBuilder sortBuilder =
-            SortBuilders.fieldSort(field).order(sortOrder).missing("_last");
+        final SortOrder sortOrder;
+        final SortBuilder sortBuilder;
+        if (directSorting) {
+          sortOrder = orderByDTO.getOrder().equals(Sort.DESC) ? SortOrder.DESC : SortOrder.ASC;
+
+        } else {
+          sortOrder = orderByDTO.getOrder().equals(Sort.DESC) ? SortOrder.ASC : SortOrder.DESC;
+        }
+        sortBuilder = SortBuilders.fieldSort(field).order(sortOrder).missing("_last");
         searchSourceBuilder.sort(sortBuilder);
       }
     } else {
