@@ -8,7 +8,7 @@
 import React, {runLastEffect} from 'react';
 import {shallow} from 'enzyme';
 
-import {UserTypeahead, Button} from 'components';
+import {UserTypeahead, CarbonModal as Modal} from 'components';
 
 import {AssigneeFilter} from './AssigneeFilter';
 import {loadUsersByDefinition, loadUsersByReportIds, getUsersById} from './service';
@@ -77,7 +77,7 @@ it('should add/remove a role', async () => {
     {id: 'USER:demo', identity: {id: 'demo', name: 'Demo Demo'}},
   ]);
 
-  node.find({primary: true}).simulate('click');
+  node.find(Modal.Footer).prop('onRequestSubmit')();
   expect(spy).toHaveBeenCalledWith({
     data: {operator: 'in', values: [null, 'demo']},
     type: 'assignee',
@@ -90,7 +90,7 @@ it('should add/remove a role', async () => {
     {id: 'USER:null', identity: {id: null, name: 'Unassigned'}},
   ]);
 
-  node.find({primary: true}).simulate('click');
+  node.find(Modal.Footer).prop('onRequestSubmit')();
   expect(spy).toHaveBeenCalledWith({
     data: {operator: 'in', values: [null]},
     type: 'assignee',
@@ -133,9 +133,9 @@ it('should allow rendering a posttext if provided', async () => {
 it('should allow forcing the add button to be enabled', () => {
   const node = shallow(<AssigneeFilter {...props} />);
 
-  expect(node.find(Button).last()).toBeDisabled();
+  expect(node.find(Modal.Footer).prop('primaryButtonDisabled')).toBe(true);
 
   node.setProps({forceEnabled: () => true});
 
-  expect(node.find(Button).last()).not.toBeDisabled();
+  expect(node.find(Modal.Footer).prop('primaryButtonDisabled')).toBe(false);
 });

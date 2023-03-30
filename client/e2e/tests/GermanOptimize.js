@@ -27,7 +27,7 @@ test('Create a report in the german version of optimize', async (t) => {
 
   await t.click(e.templateModalProcessField);
   await t.click(e.firstTypeaheadOption);
-  await t.click(e.confirmButton);
+  await t.click(e.carbonModalConfirmBtn);
 
   await save(t);
 });

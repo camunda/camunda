@@ -6,8 +6,9 @@
  */
 
 import React from 'react';
+import {Button} from '@carbon/react';
 
-import {Button, LabeledInput, Modal, Form, Message} from 'components';
+import {LabeledInput, CarbonModal as Modal, Form, Message} from 'components';
 import {t} from 'translation';
 import MoveCopy from './MoveCopy';
 
@@ -79,20 +80,18 @@ export default class CopyModal extends React.Component {
             )}
           </Form>
         </Modal.Content>
-        <Modal.Actions>
-          <Button main className="cancel" onClick={onClose}>
+        <Modal.Footer>
+          <Button kind="secondary" className="cancel" onClick={onClose}>
             {t('common.cancel')}
           </Button>
           <Button
-            main
             disabled={!name || (moving && !collection)}
-            primary
             className="confirm"
             onClick={this.onConfirm}
           >
             {t('common.copy')}
           </Button>
-        </Modal.Actions>
+        </Modal.Footer>
       </Modal>
     );
   }

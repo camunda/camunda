@@ -29,7 +29,7 @@ test('create a report from a template', async (t) => {
   await t.takeScreenshot('img/reportTemplate.png', {fullPage: true});
   await t.maximizeWindow();
 
-  await t.click(e.modalConfirmbutton);
+  await t.click(Homepage.carbonModalConfirmBtn);
 
   await t.expect(e.nameEditField.value).eql('Heatmap: Flownode count');
   await t.expect(e.groupbyDropdownButton.textContent).contains('Flow Nodes');
@@ -865,7 +865,7 @@ test('deleting', async (t) => {
 
   await u.save(t);
   await t.click(e.deleteButton);
-  await t.click(e.modalConfirmbutton);
+  await t.click(Homepage.carbonModalConfirmBtn);
 
   await t.expect(e.report.exists).notOk();
 });

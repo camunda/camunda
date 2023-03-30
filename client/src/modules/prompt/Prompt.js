@@ -6,8 +6,9 @@
  */
 
 import React, {useState} from 'react';
+import {Button} from '@carbon/react';
 
-import {Modal, Button} from 'components';
+import {CarbonModal as Modal} from 'components';
 
 import './Prompt.scss';
 
@@ -24,14 +25,12 @@ export default function Prompt() {
       <Modal className="Prompt" open={!!text.title} onClose={() => setText({})}>
         <Modal.Header>{text.title}</Modal.Header>
         <Modal.Content>{text.body}</Modal.Content>
-        <Modal.Actions>
-          <Button main disabled={loading} onClick={() => setText({})}>
+        <Modal.Footer>
+          <Button kind="secondary" disabled={loading} onClick={() => setText({})}>
             {text.no}
           </Button>
           <Button
-            main
             disabled={loading}
-            primary
             onClick={async () => {
               setLoading(true);
               await callback();
@@ -41,7 +40,7 @@ export default function Prompt() {
           >
             {text.yes}
           </Button>
-        </Modal.Actions>
+        </Modal.Footer>
       </Modal>
     </>
   );

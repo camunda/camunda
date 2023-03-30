@@ -7,8 +7,9 @@
 
 import React from 'react';
 import {Prompt} from 'react-router-dom';
+import {Button} from '@carbon/react';
 
-import {Modal, Button} from 'components';
+import {CarbonModal as Modal} from 'components';
 import {addHandler, removeHandler} from 'request';
 import {t} from 'translation';
 
@@ -91,17 +92,15 @@ export default class SaveGuard extends React.Component {
     return (
       <>
         <Prompt message="" when={dirty} />
-        <Modal open={dirty && confirm} onClose={this.abortNavigation}>
+        <Modal open={!!(dirty && confirm)} onClose={this.abortNavigation}>
           <Modal.Header>{t('saveGuard.header')}</Modal.Header>
           <Modal.Content>{t('saveGuard.text', {label})}</Modal.Content>
-          <Modal.Actions>
-            <Button main onClick={this.proceed}>
+          <Modal.Footer>
+            <Button kind="secondary" onClick={this.proceed}>
               {t('saveGuard.no')}
             </Button>
-            <Button main primary onClick={this.saveAndProceed}>
-              {t('saveGuard.yes')}
-            </Button>
-          </Modal.Actions>
+            <Button onClick={this.saveAndProceed}>{t('saveGuard.yes')}</Button>
+          </Modal.Footer>
         </Modal>
       </>
     );

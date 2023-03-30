@@ -164,7 +164,7 @@ it('should only select the tenant used in filtering', async () => {
     .prop('head')[0]
     .label.props.onChange({target: {checked: true}});
 
-  node.find('[primary]').simulate('click');
+  node.find('.confirm').simulate('click');
 
   expect(spy).toHaveBeenCalledWith([
     {definitionKey: 'def1', definitionType: 'process', tenants: ['engineering']},

@@ -13,7 +13,7 @@ export {Form} from './Form';
 export {Input} from './Input';
 export {Labeled} from './Labeled';
 export {Tooltip} from './Tooltip';
-export {Modal} from './Modal';
+export {Modal, CarbonModal} from './Modal';
 export {Dropdown} from './Dropdown';
 export {Select} from './Select';
 export {TextEditor} from './TextEditor';

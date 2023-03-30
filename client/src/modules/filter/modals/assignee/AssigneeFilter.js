@@ -8,7 +8,7 @@
 import React, {useEffect, useState} from 'react';
 import classnames from 'classnames';
 
-import {Modal, Button, ButtonGroup, Labeled, Form, UserTypeahead} from 'components';
+import {CarbonModal as Modal, Button, ButtonGroup, Labeled, Form, UserTypeahead} from 'components';
 import {t} from 'translation';
 import {showError} from 'notifications';
 import {withErrorHandling} from 'HOC';
@@ -82,7 +82,12 @@ export function AssigneeFilter({
   };
 
   return (
-    <Modal open onClose={close} className={classnames('AssigneeFilter', className)}>
+    <Modal
+      open
+      onClose={close}
+      className={classnames('AssigneeFilter', className)}
+      isOverflowVisible
+    >
       <Modal.Header>
         {t('common.filter.modalHeader', {
           type: t(`common.filter.types.${filterType}`),
@@ -148,19 +153,15 @@ export function AssigneeFilter({
         </Form>
         {getPosttext?.(users, operator)}
       </Modal.Content>
-      <Modal.Actions>
-        <Button main onClick={close}>
-          {t('common.cancel')}
-        </Button>
-        <Button
-          main
-          primary
-          onClick={confirm}
-          disabled={users.length === 0 && !forceEnabled?.(users, operator)}
-        >
-          {filterData ? t('common.filter.updateFilter') : t('common.filter.addFilter')}
-        </Button>
-      </Modal.Actions>
+      <Modal.Footer
+        primaryButtonText={
+          filterData ? t('common.filter.updateFilter') : t('common.filter.addFilter')
+        }
+        primaryButtonDisabled={users.length === 0 && !forceEnabled?.(users, operator)}
+        onRequestSubmit={confirm}
+        onRequestClose={close}
+        secondaryButtonText={t('common.cancel')}
+      />
     </Modal>
   );
 }

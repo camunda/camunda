@@ -6,7 +6,9 @@
  */
 
 import React, {useState} from 'react';
-import {Modal, Button} from 'components';
+import {Button} from '@carbon/react';
+
+import {CarbonModal as Modal} from 'components';
 import {t} from 'translation';
 
 export default function ConflictModal({conflict, onClose, onConfirm}) {
@@ -36,21 +38,21 @@ export default function ConflictModal({conflict, onClose, onConfirm}) {
                     <li key={id}>'{name || id}'</li>
                   ))}
                 </ul>
-                <p>
+                <p className="conflictMessage">
                   <b>{t(`report.saveConflict.${type}.message`)}</b>
                 </p>
               </div>
             );
           })}
       </Modal.Content>
-      <Modal.Actions>
-        <Button main disabled={loading} className="close" onClick={onClose}>
+      <Modal.Footer>
+        <Button kind="secondary" disabled={loading} className="close" onClick={onClose}>
           {t('saveGuard.no')}
         </Button>
-        <Button main disabled={loading} primary className="confirm" onClick={confirm}>
+        <Button disabled={loading} className="confirm" onClick={confirm}>
           {t('saveGuard.yes')}
         </Button>
-      </Modal.Actions>
+      </Modal.Footer>
     </Modal>
   );
 }

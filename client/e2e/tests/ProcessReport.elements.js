@@ -8,10 +8,9 @@
 import {Selector} from 'testcafe';
 
 export const nameEditField = Selector('.EntityNameForm .name-input');
-export const templateModalNameField = Selector('.Modal .FormGroup .Input');
-export const templateModalProcessField = Selector('.Modal .MultiSelect');
+export const templateModalProcessField = Selector('.CarbonModal .MultiSelect');
 export const templateOption = (text) =>
-  Selector('.Modal .templateContainer .Button').withText(text);
+  Selector('.TemplateModal .templateContainer .Button').withText(text);
 export const reportName = Selector('.ReportView .name');
 export const reportRenderer = Selector('.ReportRenderer');
 export const report = Selector('.ListItem.report');

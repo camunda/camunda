@@ -6,9 +6,10 @@
  */
 
 import React from 'react';
+import {Button} from '@carbon/react';
 
 import {withErrorHandling} from 'HOC';
-import {Button, Modal, LoadingIndicator} from 'components';
+import {CarbonModal as Modal, LoadingIndicator} from 'components';
 import {showError} from 'notifications';
 import {deleteEntity} from 'services';
 import {t} from 'translation';
@@ -135,20 +136,20 @@ export default withErrorHandling(
               </>
             )}
           </Modal.Content>
-          <Modal.Actions>
+          <Modal.Footer>
             <Button
-              main
               disabled={loading}
               className="close"
               onClick={this.close}
               ref={this.cancelButton}
+              kind="secondary"
             >
               {t('common.cancel')}
             </Button>
-            <Button main disabled={loading} warning className="confirm" onClick={this.delete}>
+            <Button kind="danger" disabled={loading} className="confirm" onClick={this.delete}>
               {deleteButtonText || deleteText || t('common.deleteEntity', {entity: translatedType})}
             </Button>
-          </Modal.Actions>
+          </Modal.Footer>
         </Modal>
       );
     }

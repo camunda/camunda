@@ -18,10 +18,14 @@ exports[`should match snapshot 1`] = `
     }
   }
 >
-  <Component>
+  <ForwardRef(ModalHeader)
+    buttonOnClick={[Function]}
+    closeModal={[Function]}
+    iconDescription="Close"
+  >
     Destructive Changes
-  </Component>
-  <Component>
+  </ForwardRef(ModalHeader)>
+  <ForwardRef(ModalBody)>
     <div
       key="alert"
     >
@@ -37,31 +41,35 @@ exports[`should match snapshot 1`] = `
           '
         </li>
       </ul>
-      <p>
+      <p
+        className="conflictMessage"
+      >
         <b>
           Warning: Saving will delete the Alert(s).
         </b>
       </p>
     </div>
-  </Component>
-  <Component>
-    <ForwardRef(Button)
+  </ForwardRef(ModalBody)>
+  <ForwardRef(ModalFooter)
+    closeModal={[Function]}
+    onRequestClose={[Function]}
+    onRequestSubmit={[Function]}
+  >
+    <Button
       className="close"
       disabled={false}
-      main={true}
+      kind="secondary"
       onClick={[MockFunction]}
     >
       Don't Save
-    </ForwardRef(Button)>
-    <ForwardRef(Button)
+    </Button>
+    <Button
       className="confirm"
       disabled={false}
-      main={true}
       onClick={[Function]}
-      primary={true}
     >
       Save Changes
-    </ForwardRef(Button)>
-  </Component>
+    </Button>
+  </ForwardRef(ModalFooter)>
 </Modal>
 `;

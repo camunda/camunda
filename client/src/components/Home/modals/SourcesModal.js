@@ -7,10 +7,10 @@
 
 import {useState, useEffect} from 'react';
 import classnames from 'classnames';
+import {Button} from '@carbon/react';
 
 import {
-  Button,
-  Modal,
+  CarbonModal as Modal,
   Table,
   Input,
   TenantPopover,
@@ -128,7 +128,7 @@ export function SourcesModal({onClose, onConfirm, mightFail, confirmText, preSel
   }
 
   return (
-    <Modal open onClose={onClose} size="large" className="SourcesModal">
+    <Modal open onClose={onClose} size="lg" className="SourcesModal">
       <Modal.Header>{t('home.sources.add')}</Modal.Header>
       <Modal.Content>
         <div className="header">
@@ -165,6 +165,7 @@ export function SourcesModal({onClose, onConfirm, mightFail, confirmText, preSel
               onClear={() => {
                 setQuery('');
               }}
+              data-modal-primary-focus
             />
             {selected.length > 0 && (
               <Tag onRemove={() => setSelected([])}>
@@ -198,25 +199,29 @@ export function SourcesModal({onClose, onConfirm, mightFail, confirmText, preSel
 
             if (tenants.length !== 0) {
               body.push(
-                <TenantPopover
-                  tenants={def.tenants}
-                  selected={selectedDefinition?.tenants || ['']}
-                  disabled={!selectedDefinition}
-                  onChange={(newTenants) => {
-                    setSelected(
-                      selected.map((selectedDefinition) => {
-                        if (def.key === selectedDefinition.definitionKey) {
-                          return {
-                            ...selectedDefinition,
-                            tenants: newTenants.length === 0 ? [def.tenants[0].id] : newTenants,
-                          };
-                        }
-                        return selectedDefinition;
-                      })
-                    );
-                  }}
-                  renderInPortal="sourcesModalTenantPopover"
-                />
+                // the propagation stop is needed to stop the modal from closing when
+                // clicking inside the popover
+                <div onMouseDown={(evt) => evt.stopPropagation()}>
+                  <TenantPopover
+                    tenants={def.tenants}
+                    selected={selectedDefinition?.tenants || ['']}
+                    disabled={!selectedDefinition}
+                    onChange={(newTenants) => {
+                      setSelected(
+                        selected.map((selectedDefinition) => {
+                          if (def.key === selectedDefinition.definitionKey) {
+                            return {
+                              ...selectedDefinition,
+                              tenants: newTenants.length === 0 ? [def.tenants[0].id] : newTenants,
+                            };
+                          }
+                          return selectedDefinition;
+                        })
+                      );
+                    }}
+                    renderInPortal="sourcesModalTenantPopover"
+                  />
+                </div>
               );
             }
 
@@ -228,14 +233,14 @@ export function SourcesModal({onClose, onConfirm, mightFail, confirmText, preSel
           allowLocalSorting
         />
       </Modal.Content>
-      <Modal.Actions>
-        <Button main className="cancel" onClick={onClose}>
+      <Modal.Footer>
+        <Button kind="secondary" className="cancel" onClick={onClose}>
           {t('common.cancel')}
         </Button>
-        <Button main primary className="confirm" onClick={createCollection}>
+        <Button className="confirm" onClick={createCollection}>
           {confirmText}
         </Button>
-      </Modal.Actions>
+      </Modal.Footer>
     </Modal>
   );
 }

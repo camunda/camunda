@@ -7,8 +7,9 @@
 
 import {useState} from 'react';
 import {Redirect} from 'react-router-dom';
+import {Button} from '@carbon/react';
 
-import {Button, LabeledInput, Modal, Form} from 'components';
+import {LabeledInput, CarbonModal as Modal, Form} from 'components';
 import {t} from 'translation';
 import {withErrorHandling} from 'HOC';
 import {showError} from 'notifications';
@@ -93,18 +94,19 @@ export function CollectionModal({
                 onChange={({target: {value}}) => setName(value)}
                 disabled={loading}
                 autoComplete="off"
+                data-modal-primary-focus
               />
             </Form.Group>
           </Form>
         </Modal.Content>
-        <Modal.Actions>
-          <Button main className="cancel" onClick={onClose} disabled={loading}>
+        <Modal.Footer>
+          <Button kind="secondary" className="cancel" onClick={onClose} disabled={loading}>
             {t('common.cancel')}
           </Button>
-          <Button main primary className="confirm" disabled={!name || loading} onClick={confirm}>
+          <Button className="confirm" disabled={!name || loading} onClick={confirm}>
             {showSourcesModal ? t('common.collection.modal.addDataSources') : confirmText}
           </Button>
-        </Modal.Actions>
+        </Modal.Footer>
       </Modal>
       {displaySourcesModal && (
         <SourcesModal

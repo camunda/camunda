@@ -8,7 +8,7 @@
 import React, {runAllEffects} from 'react';
 import {shallow} from 'enzyme';
 
-import {DefinitionSelection, Button, BPMNDiagram} from 'components';
+import {DefinitionSelection, Button, BPMNDiagram, CarbonModal as Modal} from 'components';
 import {loadProcessDefinitionXml} from 'services';
 
 import {TemplateModal} from './TemplateModal';
@@ -113,8 +113,10 @@ it('should include the selected parameters in the link state when creating a rep
 
   node.find('.templateContainer').find(Button).at(1).simulate('click');
 
-  expect(node.find('.Button.primary').prop('disabled')).toBe(false);
-  expect(node.find('.Button.primary').prop('to')).toMatchSnapshot();
+  const confirmButton = node.find(Modal.Footer).find('Button').at(1);
+
+  expect(confirmButton.prop('disabled')).toBe(false);
+  expect(confirmButton.prop('to')).toMatchSnapshot();
 });
 
 it('should call the templateToState prop to determine link state', async () => {
@@ -147,7 +149,9 @@ it('should call the templateToState prop to determine link state', async () => {
     template: props.templateGroups[1].templates[0].config,
     xml: 'processXML',
   });
-  expect(node.find('.confirm.Button').prop('to').state).toEqual({data: 'stateData'});
+
+  const confirmButton = node.find(Modal.Footer).find('Button').at(1);
+  expect(confirmButton.prop('to').state).toEqual({data: 'stateData'});
 });
 
 it('should show templates with subTitles', () => {

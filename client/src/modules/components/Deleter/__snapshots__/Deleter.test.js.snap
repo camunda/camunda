@@ -1,7 +1,7 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
 exports[`should accept a custom name formatter 1`] = `
-<Component>
+<ForwardRef(ModalBody)>
   <p>
     The 'cool name' Report will be permanently deleted.
   </p>
@@ -10,7 +10,7 @@ exports[`should accept a custom name formatter 1`] = `
       Warning: This action cannot be undone.
     </b>
   </p>
-</Component>
+</ForwardRef(ModalBody)>
 `;
 
 exports[`should not render anything when no entity is set 1`] = `""`;
@@ -22,10 +22,14 @@ exports[`should show the confirmation modal when entity is set 1`] = `
   onConfirm={[Function]}
   open={true}
 >
-  <Component>
+  <ForwardRef(ModalHeader)
+    buttonOnClick={[Function]}
+    closeModal={[Function]}
+    iconDescription="Close"
+  >
     Delete Report
-  </Component>
-  <Component>
+  </ForwardRef(ModalHeader)>
+  <ForwardRef(ModalBody)>
     <p>
       The 'Doomed Report' Report will be permanently deleted.
     </p>
@@ -34,26 +38,29 @@ exports[`should show the confirmation modal when entity is set 1`] = `
         Warning: This action cannot be undone.
       </b>
     </p>
-  </Component>
-  <Component>
-    <ForwardRef(Button)
+  </ForwardRef(ModalBody)>
+  <ForwardRef(ModalFooter)
+    closeModal={[Function]}
+    onRequestClose={[Function]}
+    onRequestSubmit={[Function]}
+  >
+    <Button
       className="close"
       disabled={false}
-      main={true}
+      kind="secondary"
       onClick={[Function]}
     >
       Cancel
-    </ForwardRef(Button)>
-    <ForwardRef(Button)
+    </Button>
+    <Button
       className="confirm"
       disabled={false}
-      main={true}
+      kind="danger"
       onClick={[Function]}
-      warning={true}
     >
       Delete Report
-    </ForwardRef(Button)>
-  </Component>
+    </Button>
+  </ForwardRef(ModalFooter)>
 </Modal>
 `;
 
@@ -64,10 +71,14 @@ exports[`should use provided delete text for title and button 1`] = `
   onConfirm={[Function]}
   open={true}
 >
-  <Component>
+  <ForwardRef(ModalHeader)
+    buttonOnClick={[Function]}
+    closeModal={[Function]}
+    iconDescription="Close"
+  >
     Remove entity
-  </Component>
-  <Component>
+  </ForwardRef(ModalHeader)>
+  <ForwardRef(ModalBody)>
     <p>
       The 'Doomed Report' Report will be permanently deleted.
     </p>
@@ -76,25 +87,28 @@ exports[`should use provided delete text for title and button 1`] = `
         Warning: This action cannot be undone.
       </b>
     </p>
-  </Component>
-  <Component>
-    <ForwardRef(Button)
+  </ForwardRef(ModalBody)>
+  <ForwardRef(ModalFooter)
+    closeModal={[Function]}
+    onRequestClose={[Function]}
+    onRequestSubmit={[Function]}
+  >
+    <Button
       className="close"
       disabled={false}
-      main={true}
+      kind="secondary"
       onClick={[Function]}
     >
       Cancel
-    </ForwardRef(Button)>
-    <ForwardRef(Button)
+    </Button>
+    <Button
       className="confirm"
       disabled={false}
-      main={true}
+      kind="danger"
       onClick={[Function]}
-      warning={true}
     >
       Remove entity
-    </ForwardRef(Button)>
-  </Component>
+    </Button>
+  </ForwardRef(ModalFooter)>
 </Modal>
 `;

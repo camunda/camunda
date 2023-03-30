@@ -29,6 +29,6 @@ test('create a report from a template', async (t) => {
   await t.click(Homepage.createNewMenu);
   await t.click(Homepage.option('Report'));
   await t.click(e.emptyTemplate);
-  await t.click(Homepage.modalConfirmbutton);
+  await t.click(Homepage.carbonModalConfirmBtn);
   await u.save(t);
 });

@@ -8,8 +8,9 @@
 import React from 'react';
 import {shallow} from 'enzyme';
 import {Prompt} from 'react-router-dom';
+import {Button} from '@carbon/react';
 
-import {Modal, Button} from 'components';
+import {CarbonModal as Modal} from 'components';
 import {default as SaveGuard, nowDirty} from './SaveGuard';
 
 it('should pass dirty state to Prompt', () => {

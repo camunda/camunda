@@ -48,7 +48,7 @@ export const deleteButton = Selector('.delete-button');
 export const autoRefreshButton = Selector('.tools .Dropdown').withText('Auto Refresh');
 export const modalConfirmbutton = Selector('.Modal .confirm.Button');
 export const reportModal = Selector('.ReportModal');
-export const reportModalConfirmButton = Selector('.ReportModal .primary.confirm.Button');
+export const reportModalConfirmButton = Selector('.ReportModal button.confirm');
 export const reportModalOptionsButton = Selector('.ReportModal .optionsButton');
 export const reportModalDropdownOption = Selector('.ReportModal .DropdownOption');
 export const addFilterButton = Selector('.Button').withText('Add a filter');
@@ -57,11 +57,10 @@ export const instanceStateFilter = Selector('.InstanceStateFilter .Popover .Butt
 export const selectionFilter = Selector('.SelectionFilter .Popover .Button');
 export const switchElement = (text) => Selector('.Switch').withText(text);
 export const dashboardContainer = Selector('.Dashboard');
-export const templateModalNameField = Selector('.Modal .FormGroup .Input');
-export const templateModalProcessField = Selector('.Modal .MultiSelect');
-export const templateModalProcessTag = Selector('.Modal .Tag');
+export const templateModalProcessField = Selector('.TemplateModal .MultiSelect');
+export const templateModalProcessTag = Selector('.TemplateModal .Tag');
 export const templateOption = (text) =>
-  Selector('.Modal .templateContainer .Button').withText(text);
+  Selector('.CarbonModal .templateContainer .Button').withText(text);
 export const reportTile = Selector('.OptimizeReport');
 export const customValueAddButton = Selector('.customValueAddButton');
 export const typeahead = Selector('.Typeahead');

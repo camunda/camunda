@@ -19,8 +19,8 @@ fixture('Alerts').page(config.endpoint).beforeEach(u.login).afterEach(cleanEntit
 test('create, edit, copy and remove an alert', async (t) => {
   await t.click(Homepage.createNewMenu).click(Homepage.option('Collection'));
   await t.typeText(Homepage.modalNameInput, 'Test Collection', {replace: true});
-  await t.click(Homepage.confirmButton);
-  await t.click(Homepage.confirmButton);
+  await t.click(Homepage.carbonModalConfirmBtn);
+  await t.click(Homepage.carbonModalConfirmBtn);
 
   await u.createNewReport(t);
   await u.selectReportDefinition(t, 'Lead Qualification');
@@ -94,7 +94,7 @@ test('create, edit, copy and remove an alert', async (t) => {
   await t.click(Homepage.contextMenu(Alert.listItem));
   await t.click(Homepage.del(Alert.listItem));
 
-  await t.click(Alert.modalDeleteButton);
+  await t.click(Homepage.carbonModalConfirmBtn);
 
   await t.expect(Alert.list.textContent).notContains('Saved Alert');
 });

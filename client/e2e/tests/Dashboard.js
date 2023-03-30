@@ -19,8 +19,8 @@ fixture('Dashboard').page(config.endpoint).beforeEach(u.login).afterEach(cleanEn
 
 test('create a dashboard and reports from a template', async (t) => {
   await t.click(Homepage.createNewMenu).click(Homepage.option('Collection'));
-  await t.click(Homepage.confirmButton);
-  await t.click(Homepage.confirmButton);
+  await t.click(Homepage.carbonModalConfirmBtn);
+  await t.click(Homepage.carbonModalConfirmBtn);
 
   await t.resizeWindow(1300, 750);
   await t.click(Homepage.createNewMenu);
@@ -33,7 +33,7 @@ test('create a dashboard and reports from a template', async (t) => {
   await t.takeScreenshot('img/dashboardTemplate.png', {fullPage: true});
   await t.resizeWindow(1200, 600);
 
-  await t.click(e.modalConfirmbutton);
+  await t.click(Homepage.carbonModalConfirmBtn);
 
   await t.takeScreenshot('img/dashboard-dashboardEditActions.png', {fullPage: true});
 
@@ -141,7 +141,7 @@ test('sharing', async (t) => {
 
   await t.click(e.templateModalProcessField);
   await t.click(e.option('Invoice Receipt with alternative correlation variable'));
-  await t.click(e.modalConfirmbutton);
+  await t.click(Homepage.carbonModalConfirmBtn);
 
   await u.save(t);
 
@@ -298,7 +298,7 @@ test('deleting', async (t) => {
   await u.save(t);
 
   await t.click(e.deleteButton);
-  await t.click(e.modalConfirmbutton);
+  await t.click(Homepage.carbonModalConfirmBtn);
 
   await t.expect(e.dashboard.exists).notOk();
 });
@@ -387,8 +387,8 @@ test('filters', async (t) => {
 
 test('version selection', async (t) => {
   await t.click(Homepage.createNewMenu).click(Homepage.option('Collection'));
-  await t.click(Homepage.confirmButton);
-  await t.click(Homepage.confirmButton);
+  await t.click(Homepage.carbonModalConfirmBtn);
+  await t.click(Homepage.carbonModalConfirmBtn);
 
   await u.createNewReport(t);
   await t.typeText(e.nameEditField, 'Number Report', {replace: true});
@@ -422,7 +422,7 @@ test('version selection', async (t) => {
   await t.click(e.alertsDropdown);
   await t.click(e.option('another alert name'));
   await t.click(e.alertDeleteButton);
-  await t.click(e.modalConfirmbutton);
+  await t.click(Homepage.carbonModalConfirmBtn);
   await t.click(e.notificationCloseButton);
   await t.click(e.alertsDropdown);
   await t.expect(e.option('Test alert').exists).notOk();
@@ -435,11 +435,14 @@ test('add a report from the dashboard', async (t) => {
     .click(e.addButton)
     .click(e.reportModalOptionsButton)
     .click(e.reportModalDropdownOption.withText('New Report from a template'))
-    .click(e.addTileButton)
+    .click(e.addTileButton);
+
+  await t.debug();
+  await t
     .click(e.templateModalProcessField)
     .click(e.option('Invoice Receipt with alternative correlation variable'))
     .click(e.blankReportButton)
-    .click(e.modalConfirmbutton)
+    .click(Homepage.carbonModalConfirmBtn)
     .click('.DashboardRenderer');
 
   await t
@@ -455,7 +458,7 @@ test('add a report from the dashboard', async (t) => {
     )
     .ok();
 
-  await t.click(e.modalConfirmbutton).click('.DashboardRenderer');
+  await t.click(Homepage.carbonModalConfirmBtn).click('.DashboardRenderer');
 
   await u.save(t);
 

@@ -8,10 +8,12 @@
 import {Selector} from 'testcafe';
 
 export const typeahead = Selector('.Modal__content .Typeahead');
-export const multiSelect = Selector('.Modal__content .MultiSelect');
+export const multiSelect = Selector('.CarbonModal .MultiSelect');
 export const typeaheadInput = Selector('.Modal__content .Typeahead .Input');
 export const typeaheadOption = (text) => typeahead.find('.DropdownOption').withText(text);
-export const multiSelectOption = (text) => multiSelect.find('.DropdownOption').withText(text);
+export const stateFilterMultiSelect = Selector('.Modal__content .MultiSelect');
+export const stateFilterMultiSelectOption = (text) =>
+  stateFilterMultiSelect.find('.DropdownOption').withText(text);
 export const multiSelectOptionNumber = (idx) => multiSelect.find('.DropdownOption').nth(idx);
 export const variableFilterOperatorButton = (text) =>
   Selector('.Modal .buttonRow .Button').withText(text);

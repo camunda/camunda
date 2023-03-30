@@ -8,7 +8,7 @@
 import React, {runLastEffect} from 'react';
 import {shallow} from 'enzyme';
 
-import {LabeledInput} from 'components';
+import {CarbonModal as Modal, LabeledInput} from 'components';
 import {loadConfig} from 'config';
 
 import {updateTelemetry} from './service';
@@ -45,7 +45,7 @@ it('should update the telemetry when applying the changes', async () => {
   await runLastEffect();
 
   node.find(LabeledInput).simulate('change', {target: {checked: false}});
-  node.find('[primary]').simulate('click');
+  node.find(Modal.Footer).prop('onRequestSubmit')();
 
   expect(updateTelemetry).toHaveBeenCalledWith(false);
   expect(loadConfig).toHaveBeenCalled();

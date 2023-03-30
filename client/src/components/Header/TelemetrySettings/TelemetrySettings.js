@@ -7,7 +7,7 @@
 
 import React, {useState, useEffect} from 'react';
 
-import {Button, Modal, LabeledInput, DocsLink} from 'components';
+import {CarbonModal as Modal, LabeledInput, DocsLink} from 'components';
 import {t} from 'translation';
 import {withErrorHandling} from 'HOC';
 import {showError, addNotification} from 'notifications';
@@ -77,14 +77,13 @@ export function TelemetrySettings({onClose, mightFail}) {
           })}
         </p>
       </Modal.Content>
-      <Modal.Actions>
-        <Button main className="close" onClick={onClose}>
-          {t('common.cancel')}
-        </Button>
-        <Button main primary className="apply" disabled={isLoading} onClick={submit}>
-          {t('common.save')}
-        </Button>
-      </Modal.Actions>
+      <Modal.Footer
+        primaryButtonText={t('common.save')}
+        primaryButtonDisabled={isLoading}
+        onRequestSubmit={submit}
+        onRequestClose={onClose}
+        secondaryButtonText={t('common.cancel')}
+      />
     </Modal>
   );
 }

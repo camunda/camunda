@@ -72,7 +72,7 @@ test('complex Homepage actions', async (t) => {
   await t.click(e.submenuOption('Process Report'));
   await t.click(e.templateModalProcessField);
   await t.click(e.firstTypeaheadOption);
-  await t.click(e.confirmButton);
+  await t.click(e.carbonModalConfirmBtn);
 
   await t.typeText(Report.nameEditField, 'Invoice Evaluation Count', {replace: true});
   await save(t);
@@ -82,7 +82,7 @@ test('complex Homepage actions', async (t) => {
   await t.click(e.submenuOption('Process Report'));
   await t.click(e.templateModalProcessField);
   await t.click(e.firstTypeaheadOption);
-  await t.click(e.confirmButton);
+  await t.click(e.carbonModalConfirmBtn);
 
   await t.typeText(Report.nameEditField, 'Monthly Sales From Marketing', {replace: true});
   await save(t);
@@ -117,8 +117,8 @@ test('complex Homepage actions', async (t) => {
 
   await t.click(e.createNewMenu).click(e.option('Collection'));
   await t.typeText(e.modalNameInput, 'Marketing', {replace: true});
-  await t.click(e.confirmButton);
-  await t.click(e.confirmButton);
+  await t.click(e.carbonModalConfirmBtn);
+  await t.click(e.carbonModalConfirmBtn);
 
   await createNewDashboard(t);
   await save(t);
@@ -127,14 +127,14 @@ test('complex Homepage actions', async (t) => {
 
   await t.click(e.createNewMenu).click(e.option('Collection'));
   await t.typeText(e.modalNameInput, 'Sales', {replace: true});
-  await t.click(e.confirmButton);
-  await t.click(e.confirmButton);
+  await t.click(e.carbonModalConfirmBtn);
+  await t.click(e.carbonModalConfirmBtn);
 
   await t.click(e.createNewMenu).hover(e.newReportOption);
   await t.click(e.submenuOption('Process Report'));
   await t.click(e.templateModalProcessField);
   await t.click(e.firstTypeaheadOption);
-  await t.click(e.confirmButton);
+  await t.click(e.carbonModalConfirmBtn);
 
   await t.typeText(Report.nameEditField, 'Incoming Leads', {replace: true});
   await save(t);
@@ -144,7 +144,7 @@ test('complex Homepage actions', async (t) => {
   await t.click(e.submenuOption('Process Report'));
   await t.click(e.templateModalProcessField);
   await t.click(e.firstTypeaheadOption);
-  await t.click(e.confirmButton);
+  await t.click(e.carbonModalConfirmBtn);
 
   await t.typeText(Report.nameEditField, 'Sales Goal this Quarter', {replace: true});
   await save(t);
@@ -235,7 +235,7 @@ test('multi definition selection', async (t) => {
     .typeText(e.templateModalProcessField, secondDefinition, {replace: true})
     .click(e.option(secondDefinition));
 
-  await t.click(e.confirmButton);
+  await t.click(e.carbonModalConfirmBtn);
 });
 
 test('create new dashboard from an empty state component', async (t) => {
@@ -244,7 +244,7 @@ test('create new dashboard from an empty state component', async (t) => {
   await t.click(e.createNewDashboardButton);
   await t.click(e.blankDashboardButton);
 
-  await t.click(e.modalConfirmbutton);
+  await t.click(e.carbonModalConfirmBtn);
 
   await save(t);
 

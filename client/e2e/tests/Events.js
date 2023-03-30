@@ -162,5 +162,5 @@ test('delete multiple external events', async (t) => {
   await t.takeScreenshot('additional-features/img/deleting-events.png', {fullPage: true});
 
   await t.click(e.dropdownOption('Delete'));
-  await t.click(e.confirmModalButton);
+  await t.click(Homepage.carbonModalConfirmBtn);
 });

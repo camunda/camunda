@@ -30,9 +30,6 @@ export async function login(t, userHandle = 'user1') {
     .typeText('input[name="username"]', user.username)
     .typeText('input[name="password"]', user.password)
     .click('.primary');
-
-  // wait for page to fully load
-  await t.expect(Selector('.LoadingIndicator').exists).notOk({timeout: 5000});
 }
 
 export function getUser(t, userHandle) {
@@ -51,7 +48,7 @@ export async function createNewReport(t) {
   await t.click(Selector('.Submenu').withText('Report'));
   await t.click(Selector('.Submenu .DropdownOption').withText('Process Report'));
   await t.click(Selector('.Button').withText('Blank report'));
-  await t.click(Selector('.Modal .primary.confirm.Button'));
+  await t.click(Selector(Homepage.carbonModalConfirmBtn));
   await toggleReportAutoPreviewUpdate(t);
 }
 
@@ -156,7 +153,7 @@ export async function createNewDashboard(t) {
   await t.click('.CreateNewButton');
   await t.click(Selector('.DropdownOption').withText('Dashboard'));
   await t.click(Homepage.blankDashboardButton);
-  await t.click(Homepage.modalConfirmbutton);
+  await t.click(Homepage.carbonModalConfirmBtn);
 }
 
 export async function addReportToDashboard(t, name) {
@@ -173,7 +170,7 @@ export async function bulkDeleteAllItems(t) {
   await t.click(Homepage.selectAllCheckbox);
   await t.click(Homepage.bulkMenu);
   await t.click(Homepage.del(Homepage.bulkMenu));
-  await t.click(Homepage.modalConfirmbutton);
+  await t.click(Homepage.carbonModalConfirmBtn);
 }
 
 export async function toggleReportAutoPreviewUpdate(t) {

@@ -1,4 +1,10 @@
-.ConflictModal ul {
-  list-style: none;
-  padding: 0;
+.ConflictModal {
+  ul {
+    list-style: none;
+    padding: 0;
+  }
+
+  .conflictMessage {
+    margin: 0;
+  }
 }

@@ -11,6 +11,7 @@ import * as u from '../utils';
 
 import * as Report from './ProcessReport.elements.js';
 import * as Filter from './Filter.elements.js';
+import * as Homepage from './Homepage.elements';
 
 fixture('Process Report Filter').page(config.endpoint).beforeEach(u.login).afterEach(cleanEntities);
 
@@ -286,7 +287,7 @@ test('add assignee filter', async (t) => {
 
   await t.takeElementScreenshot(Report.modalContainer, 'process-analysis/img/assignee-filter.png');
 
-  await t.click(Report.primaryModalButton);
+  await t.click(Homepage.carbonModalConfirmBtn);
   await t.expect(Report.reportRenderer.visible).ok();
 });
 
@@ -444,10 +445,10 @@ test('multi definition filters', async (t) => {
 
   await t.click(Report.modalOption('Running'));
   await t.click(Filter.removeButtonFor('All included processes'));
-  await t.click(Filter.multiSelect);
-  await t.click(Filter.multiSelectOption('Hiring Demo 5 Tenants'));
-  await t.click(Filter.multiSelect);
-  await t.click(Filter.multiSelectOption('Book Request One Tenant'));
+  await t.click(Filter.stateFilterMultiSelect);
+  await t.click(Filter.stateFilterMultiSelectOption('Hiring Demo 5 Tenants'));
+  await t.click(Filter.stateFilterMultiSelect);
+  await t.click(Filter.stateFilterMultiSelectOption('Book Request One Tenant'));
 
   await t.click(Report.primaryModalButton);
 

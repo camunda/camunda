@@ -16,7 +16,6 @@
   --z-notification: 1000;
   --z-login: 900;
   --z-tooltip: 800;
-  --z-modal-popup: 700;
   --z-modal: 600;
   --z-popup: 500; //popovers, dropdowns, ...
   --z-header: 400;
@@ -150,4 +149,9 @@ section h1 {
 a[disabled] {
   // support to disable links: https://github.com/ReactTraining/react-router/issues/1082
   pointer-events: none;
+}
+
+// TODO: Remove this style once optimize is carbonised
+a.cds--btn:visited {
+  color: var(--cds-text-on-color, #ffffff);
 }

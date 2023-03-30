@@ -7,10 +7,14 @@ exports[`should hide option to move the copy for collection entities 1`] = `
   onConfirm={[Function]}
   open={true}
 >
-  <Component>
+  <ForwardRef(ModalHeader)
+    buttonOnClick={[Function]}
+    closeModal={[Function]}
+    iconDescription="Close"
+  >
     Copy collection
-  </Component>
-  <Component>
+  </ForwardRef(ModalHeader)>
+  <ForwardRef(ModalBody)>
     <Form>
       <FormGroup>
         <ForwardRef(LabeledInput)
@@ -25,25 +29,27 @@ exports[`should hide option to move the copy for collection entities 1`] = `
         All items and users will be copied.
       </Message>
     </Form>
-  </Component>
-  <Component>
-    <ForwardRef(Button)
+  </ForwardRef(ModalBody)>
+  <ForwardRef(ModalFooter)
+    closeModal={[Function]}
+    onRequestClose={[Function]}
+    onRequestSubmit={[Function]}
+  >
+    <Button
       className="cancel"
-      main={true}
+      kind="secondary"
       onClick={[MockFunction]}
     >
       Cancel
-    </ForwardRef(Button)>
-    <ForwardRef(Button)
+    </Button>
+    <Button
       className="confirm"
       disabled={false}
-      main={true}
       onClick={[Function]}
-      primary={true}
     >
       Copy
-    </ForwardRef(Button)>
-  </Component>
+    </Button>
+  </ForwardRef(ModalFooter)>
 </Modal>
 `;
 
@@ -54,10 +60,14 @@ exports[`should match snapshot 1`] = `
   onConfirm={[Function]}
   open={true}
 >
-  <Component>
+  <ForwardRef(ModalHeader)
+    buttonOnClick={[Function]}
+    closeModal={[Function]}
+    iconDescription="Close"
+  >
     Copy Test Dashboard
-  </Component>
-  <Component>
+  </ForwardRef(ModalHeader)>
+  <ForwardRef(ModalBody)>
     <Form>
       <FormGroup>
         <ForwardRef(LabeledInput)
@@ -87,24 +97,26 @@ exports[`should match snapshot 1`] = `
         setMoving={[Function]}
       />
     </Form>
-  </Component>
-  <Component>
-    <ForwardRef(Button)
+  </ForwardRef(ModalBody)>
+  <ForwardRef(ModalFooter)
+    closeModal={[Function]}
+    onRequestClose={[Function]}
+    onRequestSubmit={[Function]}
+  >
+    <Button
       className="cancel"
-      main={true}
+      kind="secondary"
       onClick={[MockFunction]}
     >
       Cancel
-    </ForwardRef(Button)>
-    <ForwardRef(Button)
+    </Button>
+    <Button
       className="confirm"
       disabled={false}
-      main={true}
       onClick={[Function]}
-      primary={true}
     >
       Copy
-    </ForwardRef(Button)>
-  </Component>
+    </Button>
+  </ForwardRef(ModalFooter)>
 </Modal>
 `;
