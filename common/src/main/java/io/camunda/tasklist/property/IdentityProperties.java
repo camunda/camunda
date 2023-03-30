@@ -8,6 +8,7 @@ package io.camunda.tasklist.property;
 
 public class IdentityProperties {
   private String issuerUrl;
+  private String baseUrl;
   private String issuerBackendUrl;
   private String clientId;
   private String clientSecret;
@@ -51,5 +52,14 @@ public class IdentityProperties {
 
   public void setAudience(final String audience) {
     this.audience = audience;
+  }
+
+  public String getBaseUrl() {
+    return baseUrl;
+  }
+
+  public IdentityProperties setBaseUrl(String baseUrl) {
+    this.baseUrl = baseUrl;
+    return this;
   }
 }

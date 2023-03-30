@@ -7,12 +7,18 @@
 package io.camunda.tasklist.webapp.es.cache;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.identity.sdk.Identity;
 import io.camunda.tasklist.entities.ProcessEntity;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
+import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.schema.indices.ProcessIndex;
 import io.camunda.tasklist.util.ElasticsearchUtil;
+import io.camunda.tasklist.util.SpringContextHolder;
 import io.camunda.tasklist.webapp.graphql.entity.ProcessDTO;
+import io.camunda.tasklist.webapp.security.identity.IdentityAuthentication;
+import io.camunda.tasklist.webapp.security.identity.IdentityAuthorization;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
@@ -27,6 +33,9 @@ import org.elasticsearch.search.sort.SortOrder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -41,6 +50,8 @@ public class ProcessReader {
   @Autowired private RestHighLevelClient esClient;
 
   @Autowired private ObjectMapper objectMapper;
+
+  @Autowired private TasklistProperties tasklistProperties;
 
   /** Gets the process by id. */
   public ProcessEntity getProcess(String processId) {
@@ -73,14 +84,45 @@ public class ProcessReader {
   }
 
   public List<ProcessDTO> getProcesses() {
+    final QueryBuilder qb;
+    final List<String> processDefinitions;
 
-    final QueryBuilder qb =
-        QueryBuilders.boolQuery()
-            .must(QueryBuilders.existsQuery(ProcessIndex.PROCESS_DEFINITION_ID))
-            .mustNot(QueryBuilders.termQuery(ProcessIndex.PROCESS_DEFINITION_ID, ""));
+    processDefinitions = getProcessDefinitionsFromAuthorization();
+
+    if (tasklistProperties.isSelfManaged()) {
+
+      if (processDefinitions.size() == 0) {
+        return new ArrayList<ProcessDTO>();
+      }
+
+      if (processDefinitions.contains(IdentityAuthorization.ALL_RESOURCES)) {
+        qb =
+            QueryBuilders.boolQuery()
+                .must(QueryBuilders.existsQuery(ProcessIndex.PROCESS_DEFINITION_ID))
+                .mustNot(QueryBuilders.termQuery(ProcessIndex.PROCESS_DEFINITION_ID, ""));
+      } else {
+
+        qb =
+            QueryBuilders.boolQuery()
+                .must(
+                    QueryBuilders.termsQuery(
+                        ProcessIndex.PROCESS_DEFINITION_ID, processDefinitions))
+                .must(QueryBuilders.existsQuery(ProcessIndex.PROCESS_DEFINITION_ID))
+                .mustNot(QueryBuilders.termQuery(ProcessIndex.PROCESS_DEFINITION_ID, ""));
+      }
+
+    } else {
+      if (tasklistProperties.isAlphaVersion()) {
+        qb =
+            QueryBuilders.boolQuery()
+                .must(QueryBuilders.existsQuery(ProcessIndex.PROCESS_DEFINITION_ID))
+                .mustNot(QueryBuilders.termQuery(ProcessIndex.PROCESS_DEFINITION_ID, ""));
+      } else {
+        return new ArrayList<ProcessDTO>();
+      }
+    }
 
     final SearchRequest searchRequest = getSearchRequestUniqueByProcessDefinitionId(qb);
-
     final SearchResponse response;
     try {
       response = esClient.search(searchRequest, RequestOptions.DEFAULT);
@@ -92,26 +134,86 @@ public class ProcessReader {
     }
   }
 
+  private List<String> getProcessDefinitionsFromAuthorization() {
+    final Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+    if (authentication instanceof IdentityAuthentication) {
+      final IdentityAuthentication identityAuthentication = (IdentityAuthentication) authentication;
+      return identityAuthentication.getAuthorizations().getProcessesAllowedToStart();
+    } else if (authentication instanceof JwtAuthenticationToken) {
+      final JwtAuthenticationToken jwtAuthenticationToken = (JwtAuthenticationToken) authentication;
+      final Identity identity = SpringContextHolder.getBean(Identity.class);
+      return new IdentityAuthorization(
+              identity.authorizations().forToken(jwtAuthenticationToken.getToken().getTokenValue()))
+          .getProcessesAllowedToStart();
+    }
+    return new ArrayList<String>();
+  }
+
   public List<ProcessDTO> getProcesses(String search) {
 
     if (search == null || search.isBlank()) {
       return getProcesses();
     }
 
+    final QueryBuilder qb;
+    final List<String> processDefinitions = getProcessDefinitionsFromAuthorization();
     final String regexSearch = String.format(".*%s.*", search);
 
-    final QueryBuilder qb =
-        QueryBuilders.boolQuery()
-            .should(QueryBuilders.termQuery(ProcessIndex.ID, search))
-            .should(
-                QueryBuilders.regexpQuery(ProcessIndex.NAME, regexSearch)
-                    .caseInsensitive(CASE_INSENSITIVE))
-            .should(
-                QueryBuilders.regexpQuery(ProcessIndex.PROCESS_DEFINITION_ID, regexSearch)
-                    .caseInsensitive(CASE_INSENSITIVE))
-            .must(QueryBuilders.existsQuery(ProcessIndex.PROCESS_DEFINITION_ID))
-            .mustNot(QueryBuilders.termQuery(ProcessIndex.PROCESS_DEFINITION_ID, ""))
-            .minimumShouldMatch(1);
+    if (tasklistProperties.isSelfManaged()) {
+
+      if (processDefinitions.size() == 0) {
+        return new ArrayList<ProcessDTO>();
+      }
+
+      if (processDefinitions.contains(IdentityAuthorization.ALL_RESOURCES)) {
+        qb =
+            QueryBuilders.boolQuery()
+                .should(QueryBuilders.termQuery(ProcessIndex.ID, search))
+                .should(
+                    QueryBuilders.regexpQuery(ProcessIndex.NAME, regexSearch)
+                        .caseInsensitive(CASE_INSENSITIVE))
+                .should(
+                    QueryBuilders.regexpQuery(ProcessIndex.PROCESS_DEFINITION_ID, regexSearch)
+                        .caseInsensitive(CASE_INSENSITIVE))
+                .must(QueryBuilders.existsQuery(ProcessIndex.PROCESS_DEFINITION_ID))
+                .mustNot(QueryBuilders.termQuery(ProcessIndex.PROCESS_DEFINITION_ID, ""))
+                .minimumShouldMatch(1);
+      } else {
+        qb =
+            QueryBuilders.boolQuery()
+                .should(QueryBuilders.termQuery(ProcessIndex.ID, search))
+                .should(
+                    QueryBuilders.regexpQuery(ProcessIndex.NAME, regexSearch)
+                        .caseInsensitive(CASE_INSENSITIVE))
+                .should(
+                    QueryBuilders.regexpQuery(ProcessIndex.PROCESS_DEFINITION_ID, regexSearch)
+                        .caseInsensitive(CASE_INSENSITIVE))
+                .must(
+                    QueryBuilders.termsQuery(
+                        ProcessIndex.PROCESS_DEFINITION_ID, processDefinitions))
+                .must(QueryBuilders.existsQuery(ProcessIndex.PROCESS_DEFINITION_ID))
+                .mustNot(QueryBuilders.termQuery(ProcessIndex.PROCESS_DEFINITION_ID, ""))
+                .minimumShouldMatch(1);
+      }
+
+    } else {
+      if (tasklistProperties.isAlphaVersion()) {
+        qb =
+            QueryBuilders.boolQuery()
+                .should(QueryBuilders.termQuery(ProcessIndex.ID, search))
+                .should(
+                    QueryBuilders.regexpQuery(ProcessIndex.NAME, regexSearch)
+                        .caseInsensitive(CASE_INSENSITIVE))
+                .should(
+                    QueryBuilders.regexpQuery(ProcessIndex.PROCESS_DEFINITION_ID, regexSearch)
+                        .caseInsensitive(CASE_INSENSITIVE))
+                .must(QueryBuilders.existsQuery(ProcessIndex.PROCESS_DEFINITION_ID))
+                .mustNot(QueryBuilders.termQuery(ProcessIndex.PROCESS_DEFINITION_ID, ""))
+                .minimumShouldMatch(1);
+      } else {
+        return new ArrayList<ProcessDTO>();
+      }
+    }
 
     final SearchRequest searchRequest = getSearchRequestUniqueByProcessDefinitionId(qb);
 

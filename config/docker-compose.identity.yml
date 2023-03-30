@@ -1,6 +1,19 @@
 version: "3.6"
 
 services:
+  postgres:
+    container_name: postgres
+    image: postgres:15.2-alpine
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: identity
+      POSTGRES_USER: identity
+      POSTGRES_PASSWORD: "t2L@!AqSMg8%I%NmHM"
+    networks:
+      - identity-network
+
+
   elasticsearch:
     image: docker.elastic.co/elasticsearch/elasticsearch:7.17.4
     container_name: elasticsearch
@@ -34,18 +47,25 @@ services:
       KEYCLOAK_PASSWORD: admin
     networks:
       - identity-network
+
   identity:
     depends_on:
       - keycloak
     restart: on-failure
     container_name: identity
-    image: camunda/identity:8.2.0-alpha5
+    image: camunda/identity:latest
     ports:
       - "8084:8084"
+
     environment:
       SERVER_PORT: 8084
       KEYCLOAK_URL: http://keycloak:8080/auth
       IDENTITY_AUTH_PROVIDER_BACKEND_URL: http://keycloak:8080/auth/realms/camunda-platform
+      IDENTITY_DATABASE_HOST: postgres
+      IDENTITY_DATABASE_PORT: 5432
+      IDENTITY_DATABASE_NAME: identity
+      IDENTITY_DATABASE_USERNAME: identity
+      IDENTITY_DATABASE_PASSWORD: "t2L@!AqSMg8%I%NmHM"
       KEYCLOAK_INIT_OPERATE_SECRET: the-cake-is-alive
       KEYCLOAK_INIT_OPERATE_ROOT_URL: http://localhost:8081
       KEYCLOAK_INIT_TASKLIST_SECRET: the-cake-is-alive
@@ -55,6 +75,8 @@ services:
       KEYCLOAK_USERS_0_ROLES_0: "Identity"
       KEYCLOAK_USERS_0_ROLES_1: "Tasklist"
       KEYCLOAK_USERS_0_ROLES_2: "Operate"
+      RESOURCE_PERMISSIONS_ENABLED: true
+      IDENTITY_LOG_LEVEL: DEBUG
     networks:
       - identity-network
 

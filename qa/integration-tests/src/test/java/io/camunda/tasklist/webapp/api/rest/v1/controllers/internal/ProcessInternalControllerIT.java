@@ -15,6 +15,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.util.ElasticsearchChecks;
 import io.camunda.tasklist.util.MockMvcHelper;
 import io.camunda.tasklist.util.TasklistZeebeIntegrationTest;
@@ -27,6 +28,8 @@ import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.HttpStatus;
+import org.springframework.test.context.DynamicPropertyRegistry;
+import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.context.WebApplicationContext;
 
@@ -40,7 +43,15 @@ public class ProcessInternalControllerIT extends TasklistZeebeIntegrationTest {
 
   @Autowired private ObjectMapper objectMapper;
 
+  @Autowired private TasklistProperties tasklistProperties;
+
   private MockMvcHelper mockMvcHelper;
+
+  @DynamicPropertySource
+  static void registerProperties(DynamicPropertyRegistry registry) {
+    registry.add("camunda.tasklist.cloud.clusterId", () -> "449ac2ad-d3c6-4c73-9c68-7752e39ae616");
+    registry.add("camunda.tasklist.client.clusterId", () -> "449ac2ad-d3c6-4c73-9c68-7752e39ae616");
+  }
 
   @Before
   public void setUp() {
@@ -50,6 +61,7 @@ public class ProcessInternalControllerIT extends TasklistZeebeIntegrationTest {
 
   @Test
   public void searchProcessesByProcessId() {
+    tasklistProperties.setVersion(TasklistProperties.ALPHA_RELEASES_SUFIX);
     // given
     final String processId1 = ZeebeTestUtil.deployProcess(zeebeClient, "simple_process.bpmn");
     final String processId2 = ZeebeTestUtil.deployProcess(zeebeClient, "simple_process_2.bpmn");
@@ -79,6 +91,7 @@ public class ProcessInternalControllerIT extends TasklistZeebeIntegrationTest {
 
   @Test
   public void searchProcessesWhenEmptyQueryProvidedThenAllProcessesReturned() {
+    tasklistProperties.setVersion(tasklistProperties.ALPHA_RELEASES_SUFIX);
     // given
     final String processId1 = ZeebeTestUtil.deployProcess(zeebeClient, "simple_process.bpmn");
     final String processId2 = ZeebeTestUtil.deployProcess(zeebeClient, "simple_process_2.bpmn");

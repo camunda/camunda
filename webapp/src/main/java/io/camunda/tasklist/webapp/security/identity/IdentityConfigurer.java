@@ -23,12 +23,15 @@ public class IdentityConfigurer {
 
   @Bean
   public Identity getIdentity() {
-    return new Identity(
+    final IdentityConfiguration ic =
         new IdentityConfiguration(
+            tasklistProperties.getIdentity().getBaseUrl(),
             tasklistProperties.getIdentity().getIssuerUrl(),
             tasklistProperties.getIdentity().getIssuerBackendUrl(),
             tasklistProperties.getIdentity().getClientId(),
             tasklistProperties.getIdentity().getClientSecret(),
-            tasklistProperties.getIdentity().getAudience()));
+            tasklistProperties.getIdentity().getAudience(),
+            IdentityConfiguration.Type.KEYCLOAK.toString());
+    return new Identity(ic);
   }
 }

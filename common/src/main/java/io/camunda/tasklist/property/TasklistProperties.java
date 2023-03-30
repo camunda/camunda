@@ -22,6 +22,7 @@ import org.springframework.stereotype.Component;
 public class TasklistProperties {
 
   public static final String PREFIX = "camunda.tasklist";
+  public static final String ALPHA_RELEASES_SUFIX = "alpha";
   public static final long BATCH_OPERATION_MAX_SIZE_DEFAULT = 1_000_000L;
 
   private static final String UNKNOWN_VERSION = "unknown-version";
@@ -107,6 +108,14 @@ public class TasklistProperties {
 
   public void setBatchOperationMaxSize(Long batchOperationMaxSize) {
     this.batchOperationMaxSize = batchOperationMaxSize;
+  }
+
+  public boolean isAlphaVersion() {
+    return getVersion().toLowerCase().contains(TasklistProperties.ALPHA_RELEASES_SUFIX);
+  }
+
+  public boolean isSelfManaged() {
+    return getCloud().getClusterId() == null;
   }
 
   @Deprecated

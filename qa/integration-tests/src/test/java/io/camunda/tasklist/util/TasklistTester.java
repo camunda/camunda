@@ -218,8 +218,23 @@ public class TasklistTester {
     return this.getProcessesByQuery(query);
   }
 
+  public GraphQLResponse getAllProcessesWithBearerAuth(String search, String token)
+      throws IOException {
+    final ObjectNode query = objectMapper.createObjectNode().put("search", search);
+    return this.getProcessesByQueryWithBearerAuth(query, token);
+  }
+
   public GraphQLResponse getProcessesByQuery(ObjectNode variables) throws IOException {
     graphQLResponse = graphQLTestTemplate.perform("graphql/get-processes.graphql", variables);
+    return graphQLResponse;
+  }
+
+  public GraphQLResponse getProcessesByQueryWithBearerAuth(ObjectNode variables, String token)
+      throws IOException {
+    graphQLResponse =
+        graphQLTestTemplate
+            .withBearerAuth(token)
+            .perform("graphql/get-processes.graphql", variables);
     return graphQLResponse;
   }
 

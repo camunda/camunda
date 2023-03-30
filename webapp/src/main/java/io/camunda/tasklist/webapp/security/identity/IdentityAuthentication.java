@@ -33,6 +33,7 @@ public class IdentityAuthentication extends AbstractAuthenticationToken
   private List<String> permissions;
   private String subject;
   private Date expires;
+  private IdentityAuthorization authorization;
 
   public IdentityAuthentication() {
     super(null);
@@ -113,6 +114,9 @@ public class IdentityAuthentication extends AbstractAuthenticationToken
     if (!getPermissions().contains(Permission.READ)) {
       throw new InsufficientAuthenticationException("No read permissions");
     }
+    authorization =
+        new IdentityAuthorization(
+            getIdentity().authorizations().forToken(this.tokens.getAccessToken()));
     subject = accessToken.getToken().getSubject();
     expires = accessToken.getToken().getExpiresAt();
     if (!hasExpired()) {
@@ -152,5 +156,14 @@ public class IdentityAuthentication extends AbstractAuthenticationToken
   @Override
   public String getOldName() {
     return getId();
+  }
+
+  public IdentityAuthorization getAuthorizations() {
+    return authorization;
+  }
+
+  public IdentityAuthentication setAuthorizations(IdentityAuthorization authorization) {
+    this.authorization = authorization;
+    return this;
   }
 }
