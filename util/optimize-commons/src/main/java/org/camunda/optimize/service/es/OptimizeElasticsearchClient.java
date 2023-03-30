@@ -92,6 +92,7 @@ import java.time.Duration;
 import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.List;
+import java.util.Set;
 
 /**
  * This Client serves as the main elasticsearch client to be used from application code.
@@ -288,8 +289,23 @@ public class OptimizeElasticsearchClient implements ConfigurationReloadable {
   }
 
   public void deleteIndex(final IndexMappingCreator indexMappingCreator) {
-    String indexName = indexNameService.getOptimizeIndexNameWithVersionForAllIndicesOf(indexMappingCreator);
-    deleteIndexByRawIndexNames(indexName);
+    final String indexAlias = indexNameService.getOptimizeIndexAliasForIndex(indexMappingCreator);
+    final String[] allIndicesForAlias = getAllIndicesForAlias(indexAlias).toArray(String[]::new);
+    deleteIndexByRawIndexNames(allIndicesForAlias);
+  }
+
+  public Set<String> getAllIndicesForAlias(final String aliasName) {
+    GetAliasesRequest aliasesRequest = new GetAliasesRequest().aliases(aliasName);
+    try {
+      return highLevelClient
+        .indices()
+        .getAlias(aliasesRequest, requestOptions())
+        .getAliases()
+        .keySet();
+    } catch (Exception e) {
+      String message = String.format("Could not retrieve index names for alias {%s}.", aliasName);
+      throw new OptimizeRuntimeException(message, e);
+    }
   }
 
   public void refresh(final RefreshRequest refreshRequest) {

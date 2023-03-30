@@ -51,7 +51,8 @@ public class OptimizeIndexNameService implements ConfigurationReloadable {
   }
 
   /**
-   * This will suffix the wildcard for any indices that get rolled over, which is not compatible with all ES APIs
+   * This will suffix the wildcard for any indices that get rolled over, which is not compatible with all ES APIs. This cannot be
+   * used for Index deletion as wildcard index deletion is prohibited from ES8+
    */
   public String getOptimizeIndexNameWithVersionForAllIndicesOf(final IndexMappingCreator indexMappingCreator) {
     if (StringUtils.isNotEmpty(indexMappingCreator.getIndexNameInitialSuffix())) {
