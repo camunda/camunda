@@ -80,7 +80,7 @@ If you are reporting a bug, please help to speed up problem diagnosis by
 providing as much information as possible. Ideally, that would include a small
 [sample project][sample] that reproduces the problem.
 
-If you have a general usage question please ask on the [forum](forum.camunda.io/) or [Slack](http://www.camunda.com/slack) channel.
+If you have a general usage question please ask on the [forum](http://forum.camunda.io/) or [Slack](https://www.camunda.com/slack) channel.
 
 ## GitHub Issue Guidelines
 
@@ -305,7 +305,7 @@ unacceptable behavior as soon as possible.
 
 [issues]: https://github.com/zeebe-io/zeebe/issues
 [forum]: https://forum.zeebe.io/
-[slack]: https://zeebe-slack-invite.herokuapp.com/
+[slack]: https://www.camunda.com/slack
 [sample]: https://github.com/zeebe-io/zeebe-test-template-java
 [status]: https://github.com/zeebe-io/zeebe/labels?q=Type
 [planned]: https://github.com/zeebe-io/zeebe/labels/Type%3A%20Enhancement
