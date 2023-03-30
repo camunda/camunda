@@ -689,7 +689,7 @@
     "toggleTheme": "Design wechseln",
     "enterFullscreen": "Vollbildmodus aktivieren",
     "leaveFullscreen": "Vollbildmodus verlassen",
-    "autoRefresh": "Aktualisierunsrate",
+    "autoRefresh": "Aktualisierungsrate",
     "saveModal": {
       "unsaved": "Ungespeichertes Dashboard",
       "text": "Zum Fortfahren muss das Dashboard gespeichert werden.\nDabei werden auch alle Berichte gespeichert."
@@ -1544,7 +1544,7 @@
   "managementDashboard": {
     "dashboardName": "Adoption Dashboard",
     "report": {
-      "processInstanceUsage": "Anzahl der ausgeführten Prozesseinstanzen",
+      "processInstanceUsage": "Anzahl der ausgeführten Prozessinstanzen",
       "incidentFreeRate": "Prozessausführungen ohne Zwischenfälle",
       "automationRate": "Automatisierungsrate (< 1 Stunde)",
       "longRunningInstances": "Lang laufende Prozessinstanzen",
