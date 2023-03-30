@@ -19,6 +19,7 @@ import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.scheduler.ActorControl;
 import io.camunda.zeebe.scheduler.clock.ActorClock;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
+import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.scheduler.retry.AbortableRetryStrategy;
 import io.camunda.zeebe.scheduler.retry.RecoverableRetryStrategy;
 import io.camunda.zeebe.scheduler.retry.RetryStrategy;
@@ -32,6 +33,7 @@ import io.camunda.zeebe.stream.api.RecordProcessor;
 import io.camunda.zeebe.stream.api.records.ExceededBatchRecordSizeException;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.MutableLastProcessedPositionState;
+import io.camunda.zeebe.stream.impl.StreamProcessor.Phase;
 import io.camunda.zeebe.stream.impl.metrics.ProcessingMetrics;
 import io.camunda.zeebe.stream.impl.metrics.StreamProcessorMetrics;
 import io.camunda.zeebe.stream.impl.records.RecordValues;
@@ -450,6 +452,11 @@ public final class ProcessingStateMachine {
   }
 
   private void writeRecords() {
+    if (context.getStreamProcessorPhase() == Phase.REPLAY) {
+      updateState();
+      return;
+    }
+
     final var sourceRecordPosition = typedCommand.getPosition();
 
     final ActorFuture<Boolean> retryFuture =
@@ -524,31 +531,37 @@ public final class ProcessingStateMachine {
   }
 
   private void executeSideEffects() {
-    final ActorFuture<Boolean> retryFuture =
-        sideEffectsRetryStrategy.runWithRetry(
-            () -> {
-              // TODO refactor this into two parallel tasks, which are then combined, and on the
-              // completion of which the process continues
-              for (final var processingResponse : pendingResponses) {
-                final var responseWriter = context.getCommandResponseWriter();
+    final ActorFuture<Boolean> retryFuture;
 
-                final var responseValue = processingResponse.responseValue();
-                final var recordMetadata = responseValue.recordMetadata();
-                responseWriter
-                    .intent(recordMetadata.getIntent())
-                    .key(responseValue.key())
-                    .recordType(recordMetadata.getRecordType())
-                    .rejectionReason(BufferUtil.wrapString(recordMetadata.getRejectionReason()))
-                    .rejectionType(recordMetadata.getRejectionType())
-                    .partitionId(context.getPartitionId())
-                    .valueType(recordMetadata.getValueType())
-                    .valueWriter(responseValue.recordValue())
-                    .tryWriteResponse(
-                        processingResponse.requestStreamId(), processingResponse.requestId());
-              }
-              return executePostCommitTasks();
-            },
-            abortCondition);
+    if (context.getStreamProcessorPhase() == Phase.REPLAY) {
+      retryFuture = CompletableActorFuture.completed(true);
+    } else {
+      retryFuture =
+          sideEffectsRetryStrategy.runWithRetry(
+              () -> {
+                // TODO refactor this into two parallel tasks, which are then combined, and on the
+                // completion of which the process continues
+                for (final var processingResponse : pendingResponses) {
+                  final var responseWriter = context.getCommandResponseWriter();
+
+                  final var responseValue = processingResponse.responseValue();
+                  final var recordMetadata = responseValue.recordMetadata();
+                  responseWriter
+                      .intent(recordMetadata.getIntent())
+                      .key(responseValue.key())
+                      .recordType(recordMetadata.getRecordType())
+                      .rejectionReason(BufferUtil.wrapString(recordMetadata.getRejectionReason()))
+                      .rejectionType(recordMetadata.getRejectionType())
+                      .partitionId(context.getPartitionId())
+                      .valueType(recordMetadata.getValueType())
+                      .valueWriter(responseValue.recordValue())
+                      .tryWriteResponse(
+                          processingResponse.requestStreamId(), processingResponse.requestId());
+                }
+                return executePostCommitTasks();
+              },
+              abortCondition);
+    }
 
     actor.runOnCompletion(
         retryFuture,
