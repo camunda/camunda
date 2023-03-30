@@ -15,10 +15,9 @@ import io.camunda.tasklist.schema.indices.IndexDescriptor;
 import io.camunda.tasklist.schema.templates.TemplateDescriptor;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import org.elasticsearch.action.admin.indices.alias.Alias;
+import org.elasticsearch.client.indexlifecycle.*;
 import org.elasticsearch.client.indices.CreateIndexRequest;
 import org.elasticsearch.client.indices.PutComponentTemplateRequest;
 import org.elasticsearch.client.indices.PutComposableIndexTemplateRequest;
@@ -30,6 +29,7 @@ import org.elasticsearch.cluster.metadata.Template;
 import org.elasticsearch.common.compress.CompressedXContent;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.xcontent.XContentHelper;
+import org.elasticsearch.core.TimeValue;
 import org.elasticsearch.xcontent.XContentType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -40,6 +40,10 @@ import org.springframework.stereotype.Component;
 @Component("schemaManager")
 @Profile("!test")
 public class ElasticsearchSchemaManager {
+
+  public static final String TASKLIST_DELETE_ARCHIVED_INDICES = "tasklist_delete_archived_indices";
+  public static final String INDEX_LIFECYCLE_NAME = "index.lifecycle.name";
+  public static final String DELETE_PHASE = "delete";
 
   private static final Logger LOGGER = LoggerFactory.getLogger(ElasticsearchSchemaManager.class);
 
@@ -55,6 +59,9 @@ public class ElasticsearchSchemaManager {
   @Autowired private List<TemplateDescriptor> templateDescriptors;
 
   public void createSchema() {
+    if (tasklistProperties.getArchiver().isIlmEnabled()) {
+      createIndexLifeCycles();
+    }
     createDefaults();
     createTemplates();
     createIndices();
@@ -92,6 +99,24 @@ public class ElasticsearchSchemaManager {
             .componentTemplate(settingsTemplate);
 
     retryElasticsearchClient.createComponentTemplate(request);
+  }
+
+  private void createIndexLifeCycles() {
+    final TimeValue timeValue =
+        TimeValue.parseTimeValue(
+            tasklistProperties.getArchiver().getIlmMinAgeForDeleteArchivedIndices(),
+            "IndexLifeCycle " + INDEX_LIFECYCLE_NAME);
+    LOGGER.info(
+        "Create Index Lifecycle {} for min age of {} ",
+        TASKLIST_DELETE_ARCHIVED_INDICES,
+        timeValue.getStringRep());
+    final Map<String, Phase> phases = new HashMap<>();
+    final Map<String, LifecycleAction> deleteActions =
+        Collections.singletonMap(DeleteAction.NAME, new DeleteAction());
+    phases.put(DELETE_PHASE, new Phase(DELETE_PHASE, timeValue, deleteActions));
+
+    final LifecyclePolicy policy = new LifecyclePolicy(TASKLIST_DELETE_ARCHIVED_INDICES, phases);
+    retryElasticsearchClient.putLifeCyclePolicy(new PutLifecyclePolicyRequest(policy));
   }
 
   private void createIndices() {

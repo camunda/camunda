@@ -35,6 +35,10 @@ public class ArchiverProperties {
 
   private String waitPeriodBeforeArchiving = "1h";
 
+  private boolean ilmEnabled = false; // default due to usage of curator
+
+  private String ilmMinAgeForDeleteArchivedIndices = "30d";
+
   /**
    * In case archiver runs without delays, two subsequent runs may try to process the same process
    * entities (because of Elasticsearch refresh behaviour). In general, it's fine, but there are two
@@ -42,6 +46,22 @@ public class ArchiverProperties {
    * become incorrect, as it's not possible to distinguish such (duplicated) calls from normal ones.
    */
   private int delayBetweenRuns = 2000;
+
+  public String getIlmMinAgeForDeleteArchivedIndices() {
+    return ilmMinAgeForDeleteArchivedIndices;
+  }
+
+  public void setIlmMinAgeForDeleteArchivedIndices(String ilmMinAgeForDeleteArchivedIndices) {
+    this.ilmMinAgeForDeleteArchivedIndices = ilmMinAgeForDeleteArchivedIndices;
+  }
+
+  public boolean isIlmEnabled() {
+    return ilmEnabled;
+  }
+
+  public void setIlmEnabled(boolean ilmEnabled) {
+    this.ilmEnabled = ilmEnabled;
+  }
 
   public boolean isRolloverEnabled() {
     return rolloverEnabled;

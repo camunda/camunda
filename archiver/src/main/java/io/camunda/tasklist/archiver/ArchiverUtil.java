@@ -6,6 +6,8 @@
  */
 package io.camunda.tasklist.archiver;
 
+import static io.camunda.tasklist.schema.ElasticsearchSchemaManager.INDEX_LIFECYCLE_NAME;
+import static io.camunda.tasklist.schema.ElasticsearchSchemaManager.TASKLIST_DELETE_ARCHIVED_INDICES;
 import static io.camunda.tasklist.util.ElasticsearchUtil.INTERNAL_SCROLL_KEEP_ALIVE_MS;
 import static io.camunda.tasklist.util.ElasticsearchUtil.UPDATE_RETRY_COUNT;
 import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
@@ -14,12 +16,16 @@ import static org.elasticsearch.index.reindex.AbstractBulkByScrollRequest.AUTO_S
 import io.camunda.tasklist.Metrics;
 import io.camunda.tasklist.exceptions.ArchiverException;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
+import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.util.Either;
 import io.camunda.tasklist.util.ElasticsearchUtil;
 import io.micrometer.core.instrument.Timer;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import org.elasticsearch.action.admin.indices.settings.put.UpdateSettingsRequest;
+import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
+import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.core.TimeValue;
 import org.elasticsearch.index.reindex.AbstractBulkByScrollRequest;
 import org.elasticsearch.index.reindex.BulkByScrollResponse;
@@ -46,6 +52,8 @@ public class ArchiverUtil {
 
   @Autowired private Metrics metrics;
 
+  @Autowired private TasklistProperties tasklistProperties;
+
   public CompletableFuture<Void> moveDocuments(
       final String sourceIndexName,
       final String idFieldName,
@@ -55,7 +63,11 @@ public class ArchiverUtil {
     final var destinationIndexName = getDestinationIndexName(sourceIndexName, finishDate);
 
     reindexDocuments(sourceIndexName, destinationIndexName, idFieldName, ids)
-        .thenCompose((ignore) -> deleteDocuments(sourceIndexName, idFieldName, ids))
+        .thenCompose(
+            (ignore) -> {
+              setIndexLifeCycle(destinationIndexName);
+              return deleteDocuments(sourceIndexName, idFieldName, ids);
+            })
         .whenComplete(
             (ignore, e) -> {
               if (e != null) {
@@ -66,6 +78,28 @@ public class ArchiverUtil {
             });
 
     return moveDocumentsFuture;
+  }
+
+  private void setIndexLifeCycle(final String destinationIndexName) {
+    try {
+      if (tasklistProperties.getArchiver().isIlmEnabled()) {
+        esClient
+            .indices()
+            .putSettings(
+                new UpdateSettingsRequest(destinationIndexName)
+                    .settings(
+                        Settings.builder()
+                            .put(INDEX_LIFECYCLE_NAME, TASKLIST_DELETE_ARCHIVED_INDICES)
+                            .build()),
+                RequestOptions.DEFAULT);
+      }
+    } catch (Exception e) {
+      LOGGER.warn(
+          "Could not set ILM policy {} for index {}: {}",
+          TASKLIST_DELETE_ARCHIVED_INDICES,
+          destinationIndexName,
+          e.getMessage());
+    }
   }
 
   public String getDestinationIndexName(String sourceIndexName, String finishDate) {
