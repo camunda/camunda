@@ -35,6 +35,7 @@ import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.report.MinMaxStatDto;
 import org.camunda.optimize.service.es.schema.IndexMappingCreator;
 import org.camunda.optimize.service.es.schema.OptimizeIndexNameService;
+import org.camunda.optimize.service.es.schema.index.ExternalProcessVariableIndex;
 import org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex;
 import org.camunda.optimize.service.es.schema.index.VariableUpdateInstanceIndex;
 import org.camunda.optimize.service.es.schema.index.events.CamundaActivityEventIndex;
@@ -500,6 +501,12 @@ public class ElasticSearchIntegrationTestExtension implements BeforeEachCallback
   public void deleteAllVariableUpdateInstanceIndices() {
     final String[] indexNames = getOptimizeElasticClient().getAllIndicesForAlias(
       getIndexNameService().getOptimizeIndexAliasForIndex(new VariableUpdateInstanceIndex())).toArray(String[]::new);
+    getOptimizeElasticClient().deleteIndexByRawIndexNames(indexNames);
+  }
+
+  public void deleteAllExternalVariableIndices() {
+    final String[] indexNames = getOptimizeElasticClient().getAllIndicesForAlias(
+      getIndexNameService().getOptimizeIndexAliasForIndex(new ExternalProcessVariableIndex())).toArray(String[]::new);
     getOptimizeElasticClient().deleteIndexByRawIndexNames(indexNames);
   }
 
