@@ -20,6 +20,8 @@ import {mockFetchProcessInstancesStatistics} from 'modules/mocks/api/processInst
 import {mockFetchProcessXML} from 'modules/mocks/api/processes/fetchProcessXML';
 import {pickDateTimeRange} from 'modules/testUtils/dateTimeRange';
 
+jest.unmock('modules/utils/date/formatDate');
+
 describe('Filters', () => {
   beforeAll(() => {
     //@ts-ignore

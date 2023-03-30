@@ -11,7 +11,7 @@ function parseDate(dateString: string | Date) {
   return typeof dateString === 'string' ? parseISO(dateString) : dateString;
 }
 
-export function formatDate(
+function formatDate(
   dateString: string | Date | null,
   placeholder: string | null = '--'
 ) {
@@ -19,3 +19,5 @@ export function formatDate(
     ? format(parseDate(dateString), 'yyyy-MM-dd HH:mm:ss')
     : placeholder;
 }
+
+export {parseDate, formatDate};

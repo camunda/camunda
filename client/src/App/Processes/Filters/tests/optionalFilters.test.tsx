@@ -20,6 +20,8 @@ import {mockFetchGroupedProcesses} from 'modules/mocks/api/processes/fetchGroupe
 import {mockFetchProcessInstancesStatistics} from 'modules/mocks/api/processInstances/fetchProcessInstancesStatistics';
 import {mockFetchProcessXML} from 'modules/mocks/api/processes/fetchProcessXML';
 
+jest.unmock('modules/utils/date/formatDate');
+
 describe('Optional Filters', () => {
   beforeAll(() => {
     //@ts-ignore

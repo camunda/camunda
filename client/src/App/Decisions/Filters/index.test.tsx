@@ -22,6 +22,8 @@ import {Filters} from './index';
 import {mockFetchGroupedDecisions} from 'modules/mocks/api/decisions/fetchGroupedDecisions';
 import {pickDateTimeRange} from 'modules/testUtils/dateTimeRange';
 
+jest.unmock('modules/utils/date/formatDate');
+
 function reset() {
   jest.clearAllTimers();
   jest.useRealTimers();

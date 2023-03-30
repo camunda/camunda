@@ -13,6 +13,8 @@ import {
 import {getWrapper, MockDateRangeField} from './mocks';
 import {tracking} from 'modules/tracking';
 
+jest.unmock('modules/utils/date/formatDate');
+
 describe('Date Range - tracking', () => {
   let trackSpy: jest.SpyInstance;
   let user: UserEvent;

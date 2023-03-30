@@ -5,12 +5,10 @@
  * except in compliance with the proprietary license.
  */
 
-import {isValid, parseISO} from 'date-fns';
+const mockMeta = {
+  blur: jest.fn(),
+  change: jest.fn(),
+  focus: jest.fn(),
+};
 
-export function isValidDate(dateString: any) {
-  if (typeof dateString !== 'string') {
-    throw new TypeError('please provide date as string');
-  }
-
-  return isValid(parseISO(dateString));
-}
+export {mockMeta};

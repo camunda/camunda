@@ -23,7 +23,8 @@ import {
   validatesDecisionIdsComplete,
   validateTimeComplete,
   validateTimeCharacters,
-} from './validators';
+} from '../index';
+import {mockMeta} from './mocks';
 
 const TIME_ERROR = 'Time has to be in format hh:mm:ss';
 
@@ -241,12 +242,6 @@ describe('validators', () => {
   });
 
   it('should validate variable name characters without delay', () => {
-    const mockMeta = {
-      blur: jest.fn(),
-      change: jest.fn(),
-      focus: jest.fn(),
-    };
-
     ['abc', '123'].forEach((variableName) => {
       expect(
         validateVariableNameCharacters(

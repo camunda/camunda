@@ -15,6 +15,7 @@ import {
 } from 'modules/utils/filter';
 import {promisifyValidator} from 'modules/utils/validators/promisifyValidator';
 import {isValid} from 'date-fns';
+import {parseDate} from '../utils/date/formatDate';
 
 const ERRORS = {
   decisionsIds:
@@ -23,6 +24,7 @@ const ERRORS = {
   parentInstanceId: 'Key has to be a 16 to 19 digit number',
   date: 'Date has to be in format YYYY-MM-DD hh:mm:ss',
   time: 'Time has to be in format hh:mm:ss',
+  timeRange: '"From time" is after "To time"',
   operationId: 'Id has to be a UUID',
   variables: {
     nameUnfilled: 'Name has to be filled',
@@ -139,6 +141,41 @@ const validateTimeComplete = promisifyValidator((value = '') => {
   }
 }, VALIDATION_TIMEOUT);
 
+const validateTimeRange = promisifyValidator(
+  (
+    _,
+    allValues: {
+      fromDate?: string;
+      toDate?: string;
+      fromTime?: string;
+      toTime?: string;
+    },
+    meta
+  ) => {
+    const {fromDate, toDate, fromTime, toTime} = allValues;
+
+    if (
+      fromDate === undefined ||
+      toDate === undefined ||
+      fromTime === undefined ||
+      toTime === undefined
+    ) {
+      return undefined;
+    }
+
+    const parsedFromDate = parseDate(fromDate).getTime();
+    const parsedToDate = parseDate(toDate).getTime();
+    const parsedFromTime = parseFilterTime(fromTime.trim())?.getTime() ?? 0;
+    const parsedToTime = parseFilterTime(toTime.trim())?.getTime() ?? 0;
+
+    if (parsedFromDate === parsedToDate && parsedFromTime > parsedToTime) {
+      // ' ' allows the field to have error indicators without error message
+      return meta?.name === 'fromTime' ? ERRORS.timeRange : ' ';
+    }
+  },
+  VALIDATION_TIMEOUT
+);
+
 const validateTimeCharacters = (value = '') => {
   if (value !== '' && value.replace(/[0-9]|:/g, '') !== '') {
     return ERRORS.time;
@@ -234,4 +271,5 @@ export {
   validateDecisionIdsCharacters,
   validateDecisionIdsLength,
   validatesDecisionIdsComplete,
+  validateTimeRange,
 };

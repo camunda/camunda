@@ -6,4 +6,3 @@
  */
 
 export {formatDate} from './formatDate';
-export {isValidDate} from './isValidDate';

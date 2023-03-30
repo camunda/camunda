@@ -12,6 +12,8 @@ import {
 } from 'modules/testUtils/dateTimeRange';
 import {getWrapper, MockDateRangeField} from './mocks';
 
+jest.unmock('modules/utils/date/formatDate');
+
 describe('Date Range', () => {
   beforeAll(() => {
     //@ts-ignore
