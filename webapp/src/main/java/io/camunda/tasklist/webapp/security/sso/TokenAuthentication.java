@@ -202,11 +202,12 @@ public class TokenAuthentication extends AbstractAuthenticationToken implements 
         }
       }
     } catch (Exception e) {
-      logger.error(
-          String.format(
-              "Couldn't extract roles for organization '%s' in JWT claims. Return empty roles list.",
-              organization),
-          e);
+      getLogger()
+          .error(
+              String.format(
+                  "Couldn't extract roles for organization '%s' in JWT claims. Return empty roles list.",
+                  organization),
+              e);
     }
     return List.of();
   }
