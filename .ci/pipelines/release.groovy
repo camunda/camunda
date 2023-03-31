@@ -166,13 +166,14 @@ pipeline {
             poll: false
 
         container('maven') {
-          sh ('''
+          sh ("""
             # git is required for maven release
             apt-get update && apt-get install -y git
 
+            git config --global --add safe.directory "\$PWD"
             git config --global user.email "ci@operate.camunda.cloud"
             git config --global user.name "github-operate-app"
-          ''')
+          """)
         }
       }
     }
