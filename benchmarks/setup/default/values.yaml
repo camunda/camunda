@@ -1,25 +1,92 @@
+# Default values for Zeebe Benchmark Helm chart.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+# The values file follows helm best practices https://helm.sh/docs/chart_best_practices/values/
+#
+# This means:
+#   * Variable names should begin with a lowercase letter, and words should be separated with camelcase.
+#   * Every defined property in values.yaml should be documented. The documentation string should begin with the name of the property that it describes, and then give at least a one-sentence description
+#
+# Furthermore, we try to apply the following pattern: # [VarName] [conjunction] [definition]
+#
+# VarName:
+#
+#  * In the documentation the variable name is started with a big letter, similar to kubernetes resource documentation.
+#  * If the variable is part of a subsection/object we use a json path expression (to make it more clear where the variable belongs to).
+#    The root (chart name) is omitted (e.g. zeebe). This is useful for using --set in helm.
+#
+# Conjunction:
+#   * [defines] for mandatory configuration
+#   * [can be used] for optional configuration
+#   * [if true] for toggles
+#   * [configuration] for section/group of variables
+
+# Global configuration for variables which can be accessed by all sub charts
 global:
+
+  # Image configuration to be used in each sub chart
   image:
-    # Image.repository used by worker and starter
+    # Image.repository defines the repository from which to fetch the docker images
     repository: "gcr.io/zeebe-io"
+    # Image.tag defines the tag / version which should be used in the chart
     tag: SNAPSHOT
+    # Image.pullPolicy defines the image pull policy which should be used https://kubernetes.io/docs/concepts/containers/images/#image-pull-policy
     pullPolicy: Always
 
+# Worker configuration for the to be deployed worker application
 worker:
+  # Worker.replicas defines how many replicas of the worker application should be deployed
   replicas: 3
+  # Worker.capacity defines how many jobs the worker should activate and work on
   capacity: 60
 
+# Starter configuration for the to be deployed starter application
 starter:
+  # Starter.replicas defines how many replicas of the application should be deployed
   replicas: 1
-  rate: 75
+  # Starter.rate defines with which rate process instances should be created by the starter
+  rate: 150
 
+# Publisher configuration for the to be deployed publisher application
 publisher:
+  # Publisher.replicas defines how many replicas of the application should be deployed
   replicas: 0
+  # Publisher.rate defines with which rate message should be published
   rate: 25
 
+# Timer configuration for the to be deployed timer application
 timer:
+  # Timer.replicas defines how many replicas of the application should be deployed
   replicas: 0
+  # Timer.rate defines with which rate process instances with timers should be created
   rate: 25
+
+# LeaderBalanacing configuration for the auto rebalancing feature, which allows to rebalance periodically the zeebe cluster
+# For more details see https://docs.camunda.io/docs/self-managed/zeebe-deployment/operations/rebalancing/
+leaderBalancing:
+  # LeaderBalancing.enabled if true, enables the auto leader rebalancing
+  enabled: true
+  # LeaderBalancing.schedule defines the schedule of the auto leader rebalancing feature.
+  schedule: "*/15 * * * *"
+
+# Zeebe configuration to configure Zeebe and Gateway
+zeebe:
+  # Zeebe.config can be used to configure Zeebe Broker and Gateway additional without the need of overwriting all
+  # environment variables from the dependency chart.
+  # Allows to set configurations via --set, like --set zeebe.config.zeebe.broker.cluster.replicationFactor=3
+  config:
+    zeebe.gateway.monitoring.enabled: "true"
+    zeebe.gateway.threads.managementThreads: "1"
+    zeebe.broker.experimental.consistencyChecks.enablePreconditions: "true"
+    zeebe.broker.experimental.consistencyChecks.enableForeignKeyChecks: "true"
+    zeebe.broker.executionMetricsExporterEnabled: "true"
+    zeebe.broker.data.diskUsageCommandWatermark: "0.8"
+    zeebe.broker.data.diskUsageReplicationWatermark: "0.9"
+  # Zeebe.profiling configuration for pyroscope profiling
+  profiling:
+    # Zeebe.profiling.enabled if true, enables the pyroscope profiling
+    enabled: false
 
 camunda-platform:
   enabled: true
@@ -59,8 +126,40 @@ camunda-platform:
       -XX:ErrorFile=/usr/local/zeebe/data/zeebe_error%p.log
       -Xlog:gc*:file=/usr/local/zeebe/data/gc.log:time:filecount=7,filesize=8M
 
+    # Zeebe config
+    extraVolumes:
+      - name: zeebe-config
+        configMap:
+          name: zeebe-config
+          defaultMode: 0754
+      - name: pyroscope
+        emptyDir: {}
+
+    extraVolumeMounts:
+      - name: zeebe-config
+        mountPath: /usr/local/zeebe/config/application.yaml
+        subPath: application.yml
+      - name: pyroscope
+        mountPath: /pyroscope
+
+    extraInitContainers:
+      - name: pyroscope
+        image: alpine
+        command: ['wget', 'https://github.com/pyroscope-io/pyroscope-java/releases/latest/download/pyroscope.jar', '-O', '/pyroscope/pyroscope.jar']
+        volumeMounts:
+          - name: pyroscope
+            mountPath: /pyroscope
+
     # Environment variables
     env:
+      - name: K8S_NAMESPACE
+        valueFrom:
+          fieldRef:
+            fieldPath: metadata.namespace
+      - name: K8S_NAME
+        valueFrom:
+          fieldRef:
+            fieldPath: metadata.name
       # Enable JSON logging for google cloud stackdriver
       - name: ZEEBE_LOG_APPENDER
         value: Stackdriver
@@ -70,20 +169,10 @@ camunda-platform:
         valueFrom:
           fieldRef:
             fieldPath: metadata.namespace
-      - name: ZEEBE_BROKER_EXECUTION_METRICS_EXPORTER_ENABLED
-        value: "true"
       - name: ATOMIX_LOG_LEVEL
         value: INFO
       - name: ZEEBE_LOG_LEVEL
         value: DEBUG
-      - name: ZEEBE_BROKER_DATA_DISKUSAGECOMMANDWATERMARK
-        value: "0.8"
-      - name: ZEEBE_BROKER_DATA_DISKUSAGEREPLICATIONWATERMARK
-        value: "0.9"
-      - name: ZEEBE_BROKER_EXPERIMENTAL_CONSISTENCYCHECKS_ENABLEPRECONDITIONS
-        value: "true"
-      - name: ZEEBE_BROKER_EXPERIMENTAL_CONSISTENCYCHECKS_ENABLEFOREIGNKEYCHECKS
-        value: "true"
       - name: PYROSCOPE_SERVER_ADDRESS
         value: "http://pyroscope.pyroscope.svc.cluster.local:4040"
       - name: PYROSCOPE_APPLICATION_NAME
@@ -100,6 +189,13 @@ camunda-platform:
         value: "0"
       - name: PYROSCOPE_LABELS
         value: "namespace=$(K8S_NAMESPACE), pod=$(K8S_NAME)"
+      - name: JAVA_OPTS
+        valueFrom:
+          configMapKeyRef:
+            name: zeebe-config
+            key: java-opts
+            optional: true
+
 
     # Enable metrics collections
     podLabels:
@@ -135,6 +231,29 @@ camunda-platform:
     # LogLevel defines the log level which is used by the gateway
     logLevel: debug
 
+    extraVolumes:
+      - name: zeebe-config
+        configMap:
+          name: zeebe-config
+          defaultMode: 0754
+      - name: pyroscope
+        emptyDir: {}
+
+    extraVolumeMounts:
+      - name: pyroscope
+        mountPath: /pyroscope
+      - name: zeebe-config
+        mountPath: /usr/local/zeebe/config/application.yaml
+        subPath: application.yml
+
+    extraInitContainers:
+      - name: pyroscope
+        image: alpine
+        command: ['wget', 'https://github.com/pyroscope-io/pyroscope-java/releases/latest/download/pyroscope.jar', '-O', '/pyroscope/pyroscope.jar']
+        volumeMounts:
+          - name: pyroscope
+            mountPath: /pyroscope
+
     # Env can be used to set extra environment variables in each gateway container
     env:
       - name: ZEEBE_LOG_APPENDER
@@ -149,10 +268,29 @@ camunda-platform:
         value: INFO
       - name: ZEEBE_LOG_LEVEL
         value: DEBUG
-      - name: ZEEBE_GATEWAY_MONITORING_ENABLED
-        value: "true"
-      - name: ZEEBE_GATEWAY_THREADS_MANAGEMENTTHREADS
-        value: "1"
+      - name: PYROSCOPE_SERVER_ADDRESS
+        value: "http://pyroscope.pyroscope.svc.cluster.local:4040"
+      - name: PYROSCOPE_APPLICATION_NAME
+        value: "io.camunda.zeebe.gateway"
+      - name: PYROSCOPE_LOG_LEVEL
+        value: "debug"
+      - name: PYROSCOPE_FORMAT
+        value: "jfr"
+      - name: PYROSCOPE_PROFILER_EVENT
+        value: "cpu"
+      - name: PYROSCOPE_PROFILER_ALLOC
+        value: "0"
+      - name: PYROSCOPE_PROFILER_LOCK
+        value: "0"
+      - name: PYROSCOPE_LABELS
+        value: "namespace=$(K8S_NAMESPACE), pod=$(K8S_NAME)"
+      - name: JAVA_OPTS
+        valueFrom:
+          configMapKeyRef:
+            name: zeebe-config
+            key: java-opts
+            optional: true
+
 
     # Enable metrics collections
     podLabels:
