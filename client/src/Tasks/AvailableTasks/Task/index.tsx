@@ -17,7 +17,6 @@ import {
   GET_CURRENT_USER,
 } from 'modules/queries/get-current-user';
 import {useTaskFilters} from 'modules/hooks/useTaskFilters';
-import {IS_SORTING_ENABLED} from 'modules/featureFlags';
 import {BodyCompact} from 'modules/components/FontTokens';
 
 type Props = {
@@ -51,15 +50,11 @@ const Task = React.forwardRef<HTMLElement, Props>(
     const isActive = match?.params?.id === taskId;
     const {sortBy} = useTaskFilters();
     const showFollowupDate =
-      IS_SORTING_ENABLED &&
       followUpDate !== null &&
       formatDate(followUpDate) !== '' &&
       sortBy === 'follow-up';
     const showDueDate =
-      IS_SORTING_ENABLED &&
-      dueDate !== null &&
-      formatDate(dueDate) !== '' &&
-      sortBy !== 'follow-up';
+      dueDate !== null && formatDate(dueDate) !== '' && sortBy !== 'follow-up';
     return (
       <Container className={isActive ? 'active' : undefined}>
         <TaskLink

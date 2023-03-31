@@ -14,7 +14,6 @@ import {Dropdown, OverflowMenu, OverflowMenuItem} from '@carbon/react';
 import {SortAscending, Checkmark} from '@carbon/react/icons';
 import {useRef} from 'react';
 import {useTaskFilters, TaskFilters} from 'modules/hooks/useTaskFilters';
-import {IS_SORTING_ENABLED} from 'modules/featureFlags';
 
 type FormValues = Pick<TaskFilters, 'filter' | 'sortBy'>;
 
@@ -37,7 +36,7 @@ const Filters: React.FC<Props> = ({disabled}) => {
   const [searchParams, setSearchParams] = useSearchParams();
   const {filter, sortBy} = useTaskFilters();
   const dropdownRef = useRef<null | HTMLButtonElement>(null);
-  const initialValues = IS_SORTING_ENABLED ? {filter, sortBy} : {filter};
+  const initialValues = {filter, sortBy};
 
   return (
     <Container title="Filters">
@@ -55,10 +54,6 @@ const Filters: React.FC<Props> = ({disabled}) => {
             filter: values.filter,
             sorting: values.sortBy,
           });
-
-          if (!IS_SORTING_ENABLED) {
-            updatedParams.delete('sortBy');
-          }
 
           setSearchParams(updatedParams);
         }}
@@ -90,44 +85,42 @@ const Filters: React.FC<Props> = ({disabled}) => {
                 />
               )}
             </Field>
-            {IS_SORTING_ENABLED ? (
-              <Field<FormValues['sortBy']> name="sortBy">
-                {({input}) => (
-                  <OverflowMenu
-                    aria-label="Sort tasks"
-                    iconDescription="Sort tasks"
-                    renderIcon={SortAscending}
-                    size="md"
-                    onFocus={input.onFocus}
-                    onBlur={input.onBlur}
-                    disabled={disabled}
-                  >
-                    {SORTING_OPTIONS_ORDER.map((id) => (
-                      <OverflowMenuItem
-                        key={id}
-                        itemText={
-                          <SortItemContainer>
-                            <Checkmark
-                              aria-label=""
-                              size={20}
-                              style={{
-                                visibility:
-                                  input.value === id ? undefined : 'hidden',
-                              }}
-                            />
-                            {SORTING_OPTIONS[id]}
-                          </SortItemContainer>
-                        }
-                        onClick={() => {
-                          input.onChange(id);
-                          form.submit();
-                        }}
-                      />
-                    ))}
-                  </OverflowMenu>
-                )}
-              </Field>
-            ) : null}
+            <Field<FormValues['sortBy']> name="sortBy">
+              {({input}) => (
+                <OverflowMenu
+                  aria-label="Sort tasks"
+                  iconDescription="Sort tasks"
+                  renderIcon={SortAscending}
+                  size="md"
+                  onFocus={input.onFocus}
+                  onBlur={input.onBlur}
+                  disabled={disabled}
+                >
+                  {SORTING_OPTIONS_ORDER.map((id) => (
+                    <OverflowMenuItem
+                      key={id}
+                      itemText={
+                        <SortItemContainer>
+                          <Checkmark
+                            aria-label=""
+                            size={20}
+                            style={{
+                              visibility:
+                                input.value === id ? undefined : 'hidden',
+                            }}
+                          />
+                          {SORTING_OPTIONS[id]}
+                        </SortItemContainer>
+                      }
+                      onClick={() => {
+                        input.onChange(id);
+                        form.submit();
+                      }}
+                    />
+                  ))}
+                </OverflowMenu>
+              )}
+            </Field>
           </FormElement>
         )}
       </Form>

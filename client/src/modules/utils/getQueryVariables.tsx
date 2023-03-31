@@ -9,6 +9,12 @@ import {TaskStates} from 'modules/constants/taskStates';
 import {TaskFilters} from 'modules/hooks/useTaskFilters';
 import {GetTasksVariables} from 'modules/queries/get-tasks';
 
+const SORT_BY_FIELD: Record<TaskFilters['sortBy'], string> = {
+  creation: 'creationTime',
+  due: 'dueDate',
+  'follow-up': 'followUpDate',
+} as const;
+
 const getQueryVariables = (
   filters: TaskFilters,
   {
@@ -29,8 +35,8 @@ const getQueryVariables = (
   const BASE_QUERY_VARIABLES = {
     sort: [
       {
-        field: sortBy,
-        order: sortOrder,
+        field: SORT_BY_FIELD[sortBy],
+        order: sortOrder.toUpperCase(),
       },
     ],
     sortOrder,

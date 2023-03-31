@@ -53,6 +53,8 @@ const GET_TASK = gql`
       completionTime
       candidateGroups
       candidateUsers
+      dueDate
+      followUpDate
     }
   }
 `;
