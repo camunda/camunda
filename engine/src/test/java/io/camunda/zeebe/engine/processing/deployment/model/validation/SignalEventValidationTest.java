@@ -106,7 +106,7 @@ public final class SignalEventValidationTest {
   }
 
   @Test
-  public void shouldRejectSignalEndEvent() {
+  public void shouldDeploySignalEndEvent() {
     // given
     final String processId = Strings.newRandomValidBpmnId();
 
@@ -119,17 +119,12 @@ public final class SignalEventValidationTest {
             .done();
 
     final Record<DeploymentRecordValue> deployment =
-        ENGINE.deployment().withXmlResource(processDefinition).expectRejection().deploy();
+        ENGINE.deployment().withXmlResource(processDefinition).deploy();
 
     // then
-    Assertions.assertThat(deployment)
-        .hasRejectionType(RejectionType.INVALID_ARGUMENT)
-        .hasRejectionReason(
-            """
-            Expected to deploy new resources, but encountered the following errors:
-            'process.xml': - Element: signal_end_event
-                - ERROR: Elements of type signal end event are currently not supported
-            """);
+    assertThat(deployment.getKey())
+        .describedAs("Support signal end event process deployment")
+        .isNotNegative();
   }
 
   @Test
