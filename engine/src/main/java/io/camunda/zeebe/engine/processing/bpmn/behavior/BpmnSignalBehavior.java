@@ -13,7 +13,6 @@ import static io.camunda.zeebe.util.EnsureUtil.ensureNotNullOrEmpty;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContext;
 import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
 import io.camunda.zeebe.engine.processing.common.Failure;
-import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableEndEvent;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableSignal;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
@@ -46,9 +45,8 @@ public final class BpmnSignalBehavior {
   }
 
   public Either<Failure, ?> broadcastNewSignal(
-      final BpmnElementContext context, final ExecutableEndEvent element) {
+      final BpmnElementContext context, final ExecutableSignal signal) {
 
-    final var signal = element.getSignal();
     final var variables =
         variableState.getVariablesLocalAsDocument(context.getElementInstanceKey());
 

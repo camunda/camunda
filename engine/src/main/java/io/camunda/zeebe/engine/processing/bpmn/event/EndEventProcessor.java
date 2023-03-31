@@ -280,7 +280,7 @@ public final class EndEventProcessor implements BpmnElementProcessor<ExecutableE
     public void onActivate(final ExecutableEndEvent element, final BpmnElementContext activating) {
       variableMappingBehavior
           .applyInputMappings(activating, element)
-          .flatMap(ok -> signalBehavior.broadcastNewSignal(activating, element))
+          .flatMap(ok -> signalBehavior.broadcastNewSignal(activating, element.getSignal()))
           .ifRightOrLeft(
               ok -> {
                 final var activated = stateTransitionBehavior.transitionToActivated(activating);
