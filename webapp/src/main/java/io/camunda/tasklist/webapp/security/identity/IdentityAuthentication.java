@@ -114,9 +114,15 @@ public class IdentityAuthentication extends AbstractAuthenticationToken
     if (!getPermissions().contains(Permission.READ)) {
       throw new InsufficientAuthenticationException("No read permissions");
     }
-    authorization =
-        new IdentityAuthorization(
-            getIdentity().authorizations().forToken(this.tokens.getAccessToken()));
+
+    try {
+      authorization =
+          new IdentityAuthorization(
+              getIdentity().authorizations().forToken(this.tokens.getAccessToken()));
+    } catch (io.camunda.identity.sdk.exception.InvalidConfigurationException ice) {
+      LOGGER.debug(
+          "Base URL is not provided so it's not possible to get authorizations from Identity");
+    }
     subject = accessToken.getToken().getSubject();
     expires = accessToken.getToken().getExpiresAt();
     if (!hasExpired()) {

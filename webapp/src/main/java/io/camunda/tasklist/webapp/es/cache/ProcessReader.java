@@ -135,16 +135,22 @@ public class ProcessReader {
   }
 
   private List<String> getProcessDefinitionsFromAuthorization() {
-    final Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-    if (authentication instanceof IdentityAuthentication) {
-      final IdentityAuthentication identityAuthentication = (IdentityAuthentication) authentication;
-      return identityAuthentication.getAuthorizations().getProcessesAllowedToStart();
-    } else if (authentication instanceof JwtAuthenticationToken) {
-      final JwtAuthenticationToken jwtAuthenticationToken = (JwtAuthenticationToken) authentication;
-      final Identity identity = SpringContextHolder.getBean(Identity.class);
-      return new IdentityAuthorization(
-              identity.authorizations().forToken(jwtAuthenticationToken.getToken().getTokenValue()))
-          .getProcessesAllowedToStart();
+    if (tasklistProperties.getIdentity().getBaseUrl() != null) {
+      final Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+      if (authentication instanceof IdentityAuthentication) {
+        final IdentityAuthentication identityAuthentication =
+            (IdentityAuthentication) authentication;
+        return identityAuthentication.getAuthorizations().getProcessesAllowedToStart();
+      } else if (authentication instanceof JwtAuthenticationToken) {
+        final JwtAuthenticationToken jwtAuthenticationToken =
+            (JwtAuthenticationToken) authentication;
+        final Identity identity = SpringContextHolder.getBean(Identity.class);
+        return new IdentityAuthorization(
+                identity
+                    .authorizations()
+                    .forToken(jwtAuthenticationToken.getToken().getTokenValue()))
+            .getProcessesAllowedToStart();
+      }
     }
     return new ArrayList<String>();
   }
