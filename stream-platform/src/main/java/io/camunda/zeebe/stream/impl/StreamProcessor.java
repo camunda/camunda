@@ -193,28 +193,17 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
         streamProcessorContext.streamProcessorPhase(Phase.REPLAY);
       }
 
-      if (isInReplayOnlyMode()) {
-        replayCompletedFuture.onComplete(
-            (v, error) -> {
-              if (error != null) {
-                LOG.error("The replay of events failed.", error);
-                onFailure(error);
-              }
-            });
-
-      } else {
-        replayCompletedFuture.onComplete(
-            (lastProcessingPositions, error) -> {
-              if (error != null) {
-                LOG.error("The replay of events failed.", error);
-                onFailure(error);
-              } else {
-                onRecovered(lastProcessingPositions);
-                // observe recovery time
-                startRecoveryTimer.close();
-              }
-            });
-      }
+      replayCompletedFuture.onComplete(
+          (lastProcessingPositions, error) -> {
+            if (error != null) {
+              LOG.error("The replay of events failed.", error);
+              onFailure(error);
+            } else {
+              onRecovered(lastProcessingPositions);
+              // observe recovery time
+              startRecoveryTimer.close();
+            }
+          });
     } catch (final RuntimeException e) {
       onFailure(e);
     }
@@ -304,7 +293,11 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
     if (errorOnReceivingWriter == null) {
       streamProcessorContext.logStreamWriter(writer);
 
-      streamProcessorContext.streamProcessorPhase(Phase.PROCESSING);
+      if (isInReplayOnlyMode()) {
+        streamProcessorContext.streamProcessorPhase(Phase.REPLAY);
+      } else {
+        streamProcessorContext.streamProcessorPhase(Phase.PROCESSING);
+      }
 
       chainSteps(
           0,
