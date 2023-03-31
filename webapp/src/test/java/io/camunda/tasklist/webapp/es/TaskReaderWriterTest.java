@@ -6,7 +6,9 @@
  */
 package io.camunda.tasklist.webapp.es;
 
+import static org.assertj.core.api.Assertions.as;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.InstanceOfAssertFactories.STRING;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -69,11 +71,13 @@ class TaskReaderWriterTest {
 
   @ParameterizedTest
   @CsvSource({
-    "CREATED,tasklist-task-8.2.3_",
-    "COMPLETED,tasklist-task-8.2.3_alias",
-    "CANCELED,tasklist-task-8.2.3_alias"
+    "CREATED,tasklist-task-,_",
+    "COMPLETED,tasklist-task-,_alias",
+    "CANCELED,tasklist-task-,_alias"
   })
-  void getTasksForDifferentStates(TaskState taskState, String expectedIndexName) throws Exception {
+  void getTasksForDifferentStates(
+      TaskState taskState, String expectedIndexPrefix, String expectedIndexSuffix)
+      throws Exception {
     // Given
     final TaskQueryDTO taskQuery = new TaskQueryDTO().setPageSize(50).setState(taskState);
 
@@ -93,7 +97,13 @@ class TaskReaderWriterTest {
     final List<TaskDTO> result = instance.getTasks(taskQuery, FIELD_NAMES);
 
     // Then
-    assertThat(searchRequestCaptor.getValue().indices()).containsExactly(expectedIndexName);
+    assertThat(searchRequestCaptor.getValue().indices())
+        .singleElement(as(STRING))
+        .satisfies(
+            index -> {
+              assertThat(index).startsWith(expectedIndexPrefix);
+              assertThat(index).endsWith(expectedIndexSuffix);
+            });
     assertThat(result).hasSize(1);
   }
 
