@@ -19,7 +19,7 @@
     <dependency>
       <groupId>org.codehaus.groovy</groupId>
       <artifactId>groovy-all</artifactId>
-      <version>3.0.16</version>
+      <version>3.0.17</version>
       <type>pom</type>
       <scope>test</scope>
     </dependency>
