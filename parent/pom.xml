@@ -35,7 +35,7 @@
     <spotbugs.exclude>spotbugs/spotbugs-exclude.xml</spotbugs.exclude>
 
     <!-- EXTERNAL LIBS -->
-    <version.agrona>1.17.1</version.agrona>
+    <version.agrona>1.18.0</version.agrona>
     <version.assertj>3.24.2</version.assertj>
     <version.awaitility>4.2.0</version.awaitility>
     <version.bouncycastle>1.70</version.bouncycastle>
@@ -103,7 +103,7 @@
     <version.jqwik>1.7.3</version.jqwik>
     <version.jmock>2.12.0</version.jmock>
     <version.json-smart>2.4.8</version.json-smart>
-    <version.byte-buddy>1.14.2</version.byte-buddy>
+    <version.byte-buddy>1.14.3</version.byte-buddy>
     <version.revapi>0.28.1</version.revapi>
     <version.commons-io>2.11.0</version.commons-io>
     <version.immutables>2.9.3</version.immutables>
