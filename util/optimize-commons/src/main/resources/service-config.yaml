@@ -191,7 +191,7 @@ zeebe:
   # The number of partitions configured for the Zeebe record source
   partitionCount: ${CAMUNDA_OPTIMIZE_ZEEBE_PARTITION_COUNT:1}
   # The max page size for importing Zeebe data
-  maxImportPageSize: ${CAMUNDA_OPTIMIZE_ZEEBE_MAX_IMPORT_PAGE_SIZE:10000}
+  maxImportPageSize: ${CAMUNDA_OPTIMIZE_ZEEBE_MAX_IMPORT_PAGE_SIZE:200}
   # Determines whether Optimize should convert and store object variables from Zeebe
   includeObjectVariableValue: ${CAMUNDA_OPTIMIZE_ZEEBE_INCLUDE_OBJECT_VARIABLE:true}
 
