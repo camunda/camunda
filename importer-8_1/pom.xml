@@ -3,7 +3,7 @@
   <parent>
     <artifactId>operate-parent</artifactId>
     <groupId>io.camunda</groupId>
-    <version>8.2.0-SNAPSHOT</version>
+    <version>8.2.0-rc1</version>
   </parent>
   <modelVersion>4.0.0</modelVersion>
 
