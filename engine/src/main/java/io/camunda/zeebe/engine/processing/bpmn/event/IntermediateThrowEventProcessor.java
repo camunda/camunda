@@ -15,6 +15,7 @@ import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnEventPublicationBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnIncidentBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnJobBehavior;
+import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnSignalBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateTransitionBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnVariableMappingBehavior;
 import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
@@ -32,7 +33,8 @@ public class IntermediateThrowEventProcessor
           new NoneIntermediateThrowEventBehavior(),
           new MessageIntermediateThrowEventBehavior(),
           new LinkIntermediateThrowEventBehavior(),
-          new EscalationIntermediateThrowEventBehavior());
+          new EscalationIntermediateThrowEventBehavior(),
+          new SignalIntermediateThrowEventBehavior());
 
   private final BpmnVariableMappingBehavior variableMappingBehavior;
   private final BpmnStateTransitionBehavior stateTransitionBehavior;
@@ -40,6 +42,7 @@ public class IntermediateThrowEventProcessor
   private final BpmnJobBehavior jobBehavior;
   private final BpmnEventPublicationBehavior eventPublicationBehavior;
   private final ExpressionProcessor expressionProcessor;
+  private final BpmnSignalBehavior signalBehavior;
 
   public IntermediateThrowEventProcessor(
       final BpmnBehaviors bpmnBehaviors,
@@ -50,6 +53,7 @@ public class IntermediateThrowEventProcessor
     jobBehavior = bpmnBehaviors.jobBehavior();
     eventPublicationBehavior = bpmnBehaviors.eventPublicationBehavior();
     expressionProcessor = bpmnBehaviors.expressionBehavior();
+    signalBehavior = bpmnBehaviors.signalBehavior();
   }
 
   @Override
@@ -245,6 +249,38 @@ public class IntermediateThrowEventProcessor
 
       return expressionProcessor.evaluateStringExpressionAsDirectBuffer(
           escalation.getEscalationCodeExpression(), context.getElementInstanceKey());
+    }
+  }
+
+  private class SignalIntermediateThrowEventBehavior implements IntermediateThrowEventBehavior {
+    @Override
+    public boolean isSuitableForEvent(final ExecutableIntermediateThrowEvent element) {
+      return element.isSignalThrowEvent();
+    }
+
+    @Override
+    public void onActivate(
+        final ExecutableIntermediateThrowEvent element, final BpmnElementContext activating) {
+      variableMappingBehavior
+          .applyInputMappings(activating, element)
+          .flatMap(ok -> signalBehavior.broadcastNewSignal(activating, element.getSignal()))
+          .ifRightOrLeft(
+              ok -> {
+                final var activated = stateTransitionBehavior.transitionToActivated(activating);
+                stateTransitionBehavior.completeElement(activated);
+              },
+              failure -> incidentBehavior.createIncident(failure, activating));
+    }
+
+    @Override
+    public void onComplete(
+        final ExecutableIntermediateThrowEvent element, final BpmnElementContext completing) {
+      variableMappingBehavior
+          .applyOutputMappings(completing, element)
+          .flatMap(ok -> stateTransitionBehavior.transitionToCompleted(element, completing))
+          .ifRightOrLeft(
+              completed -> stateTransitionBehavior.takeOutgoingSequenceFlows(element, completed),
+              failure -> incidentBehavior.createIncident(failure, completing));
     }
   }
 }
