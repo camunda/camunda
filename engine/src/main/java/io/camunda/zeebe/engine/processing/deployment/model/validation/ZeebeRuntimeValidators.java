@@ -182,8 +182,6 @@ public final class ZeebeRuntimeValidators {
         new UnsupportedSignalIntermediateCatchEventValidator(),
         // Check that unsupported signal event subprocess cannot be deployed
         new UnsupportedSignalEventSubprocessValidator(),
-        // Check that unsupported signal end events cannot be deployed
-        new UnsupportedSignalEndEventValidator(),
         // Check that unsupported signal throw events cannot be deployed
         new UnsupportedSignalThrowEventValidator());
   }
