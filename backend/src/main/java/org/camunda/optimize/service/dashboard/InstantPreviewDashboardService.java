@@ -11,6 +11,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.camunda.optimize.dto.optimize.query.EntityIdResponseDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionRestDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.InstantDashboardDataDto;
+import org.camunda.optimize.dto.optimize.query.dashboard.tile.DashboardTileType;
 import org.camunda.optimize.dto.optimize.query.definition.DefinitionWithTenantIdsDto;
 import org.camunda.optimize.dto.optimize.query.entity.EntityType;
 import org.camunda.optimize.dto.optimize.query.report.single.ReportDataDefinitionDto;
@@ -23,6 +24,7 @@ import org.camunda.optimize.service.entities.EntityImportService;
 import org.camunda.optimize.service.es.reader.InstantDashboardMetadataReader;
 import org.camunda.optimize.service.es.writer.InstantDashboardMetadataWriter;
 import org.camunda.optimize.service.report.ReportService;
+import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
@@ -42,8 +44,10 @@ import java.util.zip.CRC32;
 import java.util.zip.CheckedInputStream;
 import java.util.zip.Checksum;
 
+import static org.camunda.optimize.OptimizeJettyServerCustomizer.EXTERNAL_SUB_PATH;
 import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
 import static org.camunda.optimize.dto.optimize.query.dashboard.InstantDashboardDataDto.INSTANT_DASHBOARD_DEFAULT_TEMPLATE;
+import static org.camunda.optimize.jetty.OptimizeResourceConstants.STATIC_RESOURCE_PATH;
 
 @Slf4j
 @AllArgsConstructor
@@ -51,6 +55,12 @@ import static org.camunda.optimize.dto.optimize.query.dashboard.InstantDashboard
 public class InstantPreviewDashboardService {
 
   public static final String INSTANT_PREVIEW_DASHBOARD_TEMPLATES_PATH = "instant_preview_dashboards/";
+  public static final String EXTERNAL_STATIC_RESOURCES_SUBPATH = EXTERNAL_SUB_PATH + STATIC_RESOURCE_PATH +
+    "/" + INSTANT_PREVIEW_DASHBOARD_TEMPLATES_PATH;
+  public static final String SRC_FIELD = "src";
+  public static final String ALTTEXT_FIELD = "altText";
+  public static final String TYPE_FIELD = "type";
+  public static final String TYPE_IMAGE_VALUE = "image";
 
   private final DashboardService dashboardService;
   private final ReportService reportService;
@@ -58,7 +68,13 @@ public class InstantPreviewDashboardService {
   private final InstantDashboardMetadataWriter instantDashboardMetadataWriter;
   private final EntityImportService entityImportService;
   private final DefinitionService definitionService;
+  protected final ConfigurationService configurationService;
   private HashMap<String, Long> templateChecksums;
+
+  @FunctionalInterface
+  public interface BiConsumerWithParameters<T, U> {
+    void accept(T t, U u);
+  }
 
   public AuthorizedDashboardDefinitionResponseDto getInstantPreviewDashboard(final String processDefinitionKey,
                                                                              final String dashboardJsonTemplate,
@@ -105,6 +121,43 @@ public class InstantPreviewDashboardService {
       });
   }
 
+  /**
+   * This method scans recursively through all the components of a Dashboard Tile of the type "text" and performs a
+   * conversion on the target sub-component passed under fieldType. The conversion itself is accomplished by the
+   * 'converter', which is the method reference passed under transformFunction. Moreover, the additionalParameter
+   * value is also passed onto the converter.
+   * @param node Node with which the recursion is started, in the beginning it is the root node of the Dashboard tile
+   * @param fieldType Which node type do we want to transform? E.g. "image", "text", etc
+   * @param transformFunction Once a node of the type "fieldType" is found, this function performs the necessary
+   *                          conversion
+   * @param additionalParameterValue An additional string that is used by the converter. In the case of an image node
+   *                                this is e.g. the clusterId, in the case of a text node it is e.g. the locale
+   */
+  public static void findAndConvertTileContent(Object node,
+                                               String fieldType,
+                                               BiConsumerWithParameters<HashMap<String, Object>, String> transformFunction,
+                                               String additionalParameterValue) {
+    if (node instanceof HashMap) {
+      HashMap<String, Object> tileConfigurationElement = (HashMap<String, Object>) node;
+      if (fieldType.equals(tileConfigurationElement.getOrDefault(TYPE_FIELD, ""))) {
+        // Found the leaf of the type I'm looking for, so perform the transformation
+        transformFunction.accept(tileConfigurationElement, additionalParameterValue);
+      } else {
+        // Not yet what I'm looking for, so keep recursing into the children objects
+        tileConfigurationElement
+          .forEach((key, value) -> findAndConvertTileContent(value,
+                                                             fieldType,
+                                                             transformFunction,
+                                                             additionalParameterValue));
+      }
+    } else if (node instanceof ArrayList) {
+      // A list typically happens when I find the "children" node, we want to perform the transformation in each of
+      // the children as well
+      ArrayList<Object> list = (ArrayList<Object>) node;
+      list.forEach(item -> findAndConvertTileContent(item, fieldType, transformFunction, additionalParameterValue));
+    }
+  }
+
   private Optional<String> setupInstantPreviewDashboard(final String dashboardJsonTemplate,
                                                         final String processDefinitionKey) {
     Optional<Set<OptimizeEntityExportDto>> exportDtos = readAndProcessDashboardTemplate(dashboardJsonTemplate);
@@ -138,6 +191,7 @@ public class InstantPreviewDashboardService {
       .filter(DashboardDefinitionExportDto.class::isInstance)
       .forEach(dashboardEntity -> {
         DashboardDefinitionExportDto dashboardData = ((DashboardDefinitionExportDto) dashboardEntity);
+        processAllImageUrlsInTiles(dashboardData);
         dashboardData.setInstantPreviewDashboard(true);
       });
 
@@ -151,6 +205,37 @@ public class InstantPreviewDashboardService {
       .filter(entity -> entity.getEntityType() == EntityType.DASHBOARD)
       .findFirst()
       .map(EntityIdResponseDto::getId);
+  }
+
+  private void processAllImageUrlsInTiles(final DashboardDefinitionExportDto dashboardData) {
+    dashboardData.getTiles().forEach(tile -> {
+      if (tile.getType() == DashboardTileType.TEXT) {
+        final HashMap<String, Object> textTileConfiguration = (HashMap<String, Object>) tile.getConfiguration();
+        // The cluster ID is necessary to calculate the appropriate relative URL
+        String clusterId = configurationService.getAuthConfiguration().getCloudAuthConfiguration().getClusterId();
+        if (!clusterId.isEmpty()) {
+          // If we have a clusterId, we need to add it to the URL with a leading slash
+          clusterId = "/" + clusterId;
+        }
+        findAndConvertTileContent(textTileConfiguration, TYPE_IMAGE_VALUE, this::convertAbsoluteUrlsToRelative, clusterId);
+      }
+    });
+  }
+
+  private void convertAbsoluteUrlsToRelative(HashMap<String, Object> textTileConfigElement, String clusterId) {
+    // If working in cloud mode, the relative URL needs to include the cluster ID for it to work properly
+    String srcValue = (String) textTileConfigElement.get(SRC_FIELD);
+    String altTextValue = (String) textTileConfigElement.get(ALTTEXT_FIELD);
+    // Extract the file name from the absolute path and put it at the end of the relative path. If working in
+    // cloud mode, the relative URL needs to include the cluster ID for it to work properly, since the instant preview
+    // dashboard image urls from the template are static and need to be transformed into a relative path that
+    // includes the current cluster ID so that e.g. https://www.anyOldUrl.com/MyImage.png becomes
+    // /<CLUSTER_ID>/external/static/instant_preview_dashboards/MyImage.png
+    // TODO When implementing OPT-6752 check that the file name below actually exists in the internal folder
+    String srcValueFileName = srcValue.substring((srcValue).lastIndexOf('/') + 1);
+    textTileConfigElement.put(SRC_FIELD, clusterId + EXTERNAL_STATIC_RESOURCES_SUBPATH + srcValueFileName);
+    String altTextValueFileName = altTextValue.substring((altTextValue).lastIndexOf('/') + 1);
+    textTileConfigElement.put(ALTTEXT_FIELD, clusterId + EXTERNAL_STATIC_RESOURCES_SUBPATH + altTextValueFileName);
   }
 
   private Optional<Set<OptimizeEntityExportDto>> readAndProcessDashboardTemplate(
@@ -188,7 +273,6 @@ public class InstantPreviewDashboardService {
    */
   public void scanForTemplateChanges() {
     // Generate the hashes for the current templates deployed
-
     String currentTemplate = INSTANT_DASHBOARD_DEFAULT_TEMPLATE;
     List<Long> fileChecksums = new ArrayList<>();
     InputStream templateInputStream = getClass().getClassLoader()
