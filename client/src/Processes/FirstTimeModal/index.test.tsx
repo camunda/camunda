@@ -32,6 +32,10 @@ describe('FirstTimeModal', () => {
   });
 
   it('should render an alpha notice modal', async () => {
+    window.clientConfig = {
+      ...window.clientConfig,
+      organizationId: '1-1-1',
+    };
     render(<FirstTimeModal />, {
       wrapper: Wrapper,
     });
@@ -71,7 +75,24 @@ describe('FirstTimeModal', () => {
     expect(screen.getByRole('button', {name: 'Continue'})).toBeInTheDocument();
   });
 
+  it('should render process modal without alpha labels for SM', async () => {
+    window.clientConfig = {
+      ...window.clientConfig,
+      organizationId: null,
+    };
+    render(<FirstTimeModal />, {
+      wrapper: Wrapper,
+    });
+
+    expect(screen.getByTestId('alpha-warning-modal-image')).toBeInTheDocument();
+    expect(screen.queryByLabelText('This is an alpha feature')).toBeNull();
+  });
+
   it('should open the alpha consent', async () => {
+    window.clientConfig = {
+      ...window.clientConfig,
+      organizationId: '1-1-1',
+    };
     Object.defineProperty(window, 'open', {
       writable: true,
       value: jest.fn(),

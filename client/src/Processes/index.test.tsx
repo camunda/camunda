@@ -52,6 +52,82 @@ const Wrapper: React.FC<Props> = ({children}) => {
 describe('Processes', () => {
   afterEach(() => {
     mockedNotificationsStore.displayNotification.mockClear();
+    process.env.REACT_APP_VERSION = '1.2.3';
+  });
+
+  it('should render alpha feature warning', async () => {
+    process.env.REACT_APP_VERSION = '0.0.0-alpha0';
+    window.clientConfig = {
+      ...window.clientConfig,
+      organizationId: '1-1-1',
+    };
+    window.localStorage.setItem('hasConsentedToStartProcess', 'true');
+    nodeMockServer.use(
+      graphql.query<GetProcesses, GetProcessesVariables>(
+        'GetProcesses',
+        (_, res, ctx) => {
+          return res(
+            ctx.data({
+              processes: [],
+            }),
+          );
+        },
+      ),
+    );
+
+    render(<Processes />, {
+      wrapper: Wrapper,
+    });
+
+    await waitForElementToBeRemoved(() =>
+      screen.getAllByTestId('process-skeleton'),
+    );
+
+    expect(
+      screen.getByRole('alert', {
+        name: 'This feature is only available for alpha releases',
+      }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', {
+        name: 'Give us your feedback',
+      }),
+    ).toBeInTheDocument();
+  });
+
+  it('should not render alpha feature warning', async () => {
+    window.localStorage.setItem('hasConsentedToStartProcess', 'true');
+    nodeMockServer.use(
+      graphql.query<GetProcesses, GetProcessesVariables>(
+        'GetProcesses',
+        (_, res, ctx) => {
+          return res(
+            ctx.data({
+              processes: [],
+            }),
+          );
+        },
+      ),
+    );
+
+    render(<Processes />, {
+      wrapper: Wrapper,
+    });
+
+    await waitForElementToBeRemoved(() =>
+      screen.getAllByTestId('process-skeleton'),
+    );
+
+    expect(
+      screen.queryByRole('alert', {
+        name: 'This feature is only available for alpha releases',
+      }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', {
+        name: 'Give us your feedback',
+      }),
+    ).not.toBeInTheDocument();
   });
 
   it('should render an empty state message', async () => {

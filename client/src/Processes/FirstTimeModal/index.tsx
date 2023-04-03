@@ -17,6 +17,7 @@ import {tracking} from 'modules/tracking';
 const FirstTimeModal: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
+  const IS_SAAS = typeof window.clientConfig?.organizationId === 'string';
   const [isOpen, setIsOpen] = useState(
     !Boolean(getStateLocally('hasConsentedToStartProcess') ?? false),
   );
@@ -40,14 +41,18 @@ const FirstTimeModal: React.FC = () => {
       aria-label="Start your process on demand"
       modalHeading={
         <>
-          <Tag
-            size="sm"
-            type="high-contrast"
-            aria-label="This is an alpha feature"
-          >
-            Alpha
-          </Tag>
-          <br />
+          {IS_SAAS ? (
+            <>
+              <Tag
+                size="sm"
+                type="high-contrast"
+                aria-label="This is an alpha feature"
+              >
+                Alpha
+              </Tag>
+              <br />
+            </>
+          ) : null}
           Start your process on demand
         </>
       }
@@ -89,26 +94,28 @@ const FirstTimeModal: React.FC = () => {
               directly start assigning these.
             </p>
           </div>
-          <ActionableNotification
-            actionButtonLabel="Read consent"
-            title="Alpha feature"
-            subtitle="this feature is only available for alpha releases."
-            hideCloseButton
-            kind="info"
-            role="alert"
-            lowContrast
-            inline
-            onActionButtonClick={() => {
-              tracking.track({
-                eventName: 'processes-alpha-consent-link-clicked',
-              });
-              window.open(
-                'https://docs.camunda.io/docs/reference/early-access/#alpha',
-                '_blank',
-                'noopener noreferrer',
-              );
-            }}
-          />
+          {IS_SAAS ? (
+            <ActionableNotification
+              actionButtonLabel="Read consent"
+              title="Alpha feature"
+              subtitle="this feature is only available for alpha releases."
+              hideCloseButton
+              kind="info"
+              role="alert"
+              lowContrast
+              inline
+              onActionButtonClick={() => {
+                tracking.track({
+                  eventName: 'processes-alpha-consent-link-clicked',
+                });
+                window.open(
+                  'https://docs.camunda.io/docs/reference/early-access/#alpha',
+                  '_blank',
+                  'noopener noreferrer',
+                );
+              }}
+            />
+          ) : null}
         </Container>
       ) : null}
     </Modal>

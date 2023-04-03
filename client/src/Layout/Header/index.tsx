@@ -36,6 +36,9 @@ type AppSwitcherElementType = NonNullable<
 >[number];
 
 const Header: React.FC = observer(() => {
+  const APP_VERSION = process.env.REACT_APP_VERSION ?? '';
+  const IS_SAAS = typeof window.clientConfig?.organizationId === 'string';
+  const IS_ENTERPRISE = window.clientConfig?.isEnterprise === true;
   const location = useLocation();
   const isProcessesPage =
     matchPath(Pages.Processes, location.pathname) !== null;
@@ -69,8 +72,9 @@ const Header: React.FC = observer(() => {
     )
     .filter((entry): entry is AppSwitcherElementType => entry !== undefined);
   const isProcessesPageEnabled =
-    (process.env.REACT_APP_VERSION?.includes('alpha') ||
-      process.env.REACT_APP_VERSION?.includes('SNAPSHOT')) &&
+    (!IS_SAAS ||
+      APP_VERSION.includes('alpha') ||
+      APP_VERSION.includes('SNAPSHOT')) &&
     hasPermission;
 
   useEffect(() => {
@@ -130,8 +134,7 @@ const Header: React.FC = observer(() => {
             ]
           : [],
         tags:
-          window.clientConfig?.isEnterprise === true ||
-          window.clientConfig?.organizationId
+          IS_ENTERPRISE || IS_SAAS
             ? []
             : [
                 {
@@ -170,7 +173,7 @@ const Header: React.FC = observer(() => {
         type: 'app',
         ariaLabel: 'App Panel',
         isOpen: false,
-        elements: window.clientConfig?.organizationId ? switcherElements : [],
+        elements: IS_SAAS ? switcherElements : [],
         elementClicked: (app: string) => {
           tracking.track({
             eventName: 'app-switcher-item-clicked',

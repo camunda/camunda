@@ -35,6 +35,11 @@ import {NewProcessInstanceTasksPolling} from './NewProcessInstanceTasksPolling';
 import {tracking} from 'modules/tracking';
 
 const Processes: React.FC = observer(() => {
+  const APP_VERSION = process.env.REACT_APP_VERSION ?? '';
+  const IS_SAAS = typeof window.clientConfig?.organizationId === 'string';
+  const IS_WARNING_VISIBLE =
+    (APP_VERSION.includes('alpha') && IS_SAAS) ||
+    APP_VERSION.includes('SNAPSHOT');
   const {instance} = newProcessInstance;
   const location = useLocation();
   const navigate = useNavigate();
@@ -98,29 +103,31 @@ const Processes: React.FC = observer(() => {
     <>
       <NewProcessInstanceTasksPolling />
       <Stack as={Container} gap={6} className="cds--content">
-        <NotificationContainer>
-          <ActionableNotification
-            actionButtonLabel="Give us your feedback"
-            title="This feature is only available for alpha releases"
-            subtitle="try our new feature and give us your feedback!"
-            hideCloseButton
-            kind="info"
-            role="alert"
-            lowContrast
-            inline
-            onActionButtonClick={() => {
-              tracking.track({
-                eventName: 'early-access-feedback-link-clicked',
-                feature: 'start-process',
-              });
-              window.open(
-                'https://forum.camunda.io/c/camunda-platform-8-topics/camunda-platform-8-user-feedback/41',
-                '_blank',
-                'noopener noreferrer',
-              );
-            }}
-          />
-        </NotificationContainer>
+        {IS_WARNING_VISIBLE ? (
+          <NotificationContainer>
+            <ActionableNotification
+              actionButtonLabel="Give us your feedback"
+              title="This feature is only available for alpha releases"
+              subtitle="try our new feature and give us your feedback!"
+              hideCloseButton
+              kind="info"
+              role="alert"
+              lowContrast
+              inline
+              onActionButtonClick={() => {
+                tracking.track({
+                  eventName: 'early-access-feedback-link-clicked',
+                  feature: 'start-process',
+                });
+                window.open(
+                  'https://forum.camunda.io/c/camunda-platform-8-topics/camunda-platform-8-user-feedback/41',
+                  '_blank',
+                  'noopener noreferrer',
+                );
+              }}
+            />
+          </NotificationContainer>
+        ) : null}
 
         <SearchContainer>
           <Search
