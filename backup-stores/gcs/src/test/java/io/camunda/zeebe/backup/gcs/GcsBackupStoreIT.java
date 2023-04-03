@@ -15,50 +15,89 @@ import io.camunda.zeebe.backup.testkit.BackupStoreTestKit;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Nested;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 @Testcontainers
-public class GcsBackupStoreIT implements BackupStoreTestKit {
+public class GcsBackupStoreIT {
   @Container private static final GcsContainer GCS = new GcsContainer();
-  private static final String BUCKET_NAME = RandomStringUtils.randomAlphabetic(10).toLowerCase();
 
-  private GcsBackupStore store;
+  @Nested
+  final class WithBasePath implements BackupStoreTestKit {
+    private static final String BUCKET_NAME = RandomStringUtils.randomAlphabetic(10).toLowerCase();
 
-  @BeforeAll
-  static void createBucket() {
-    final var config =
-        new GcsBackupConfig.Builder()
-            .withBucketName(BUCKET_NAME)
-            .withHost(GCS.externalEndpoint())
-            .withoutAuthentication()
-            .build();
-    try (final var client = GcsBackupStore.buildClient(config)) {
-      client.create(BucketInfo.of(BUCKET_NAME));
-    } catch (final Exception e) {
-      throw new RuntimeException(e);
+    private GcsBackupStore store;
+
+    @BeforeAll
+    static void createBucket() {
+      final var config =
+          new GcsBackupConfig.Builder()
+              .withBucketName(BUCKET_NAME)
+              .withHost(GCS.externalEndpoint())
+              .withoutAuthentication()
+              .build();
+      try (final var client = GcsBackupStore.buildClient(config)) {
+        client.create(BucketInfo.of(BUCKET_NAME));
+      } catch (final Exception e) {
+        throw new RuntimeException(e);
+      }
+    }
+
+    @BeforeEach
+    void setup() {
+      store =
+          new GcsBackupStore(
+              new GcsBackupConfig.Builder()
+                  .withBucketName(BUCKET_NAME)
+                  .withBasePath(RandomStringUtils.randomAlphabetic(10).toLowerCase())
+                  .withHost(GCS.externalEndpoint())
+                  .withoutAuthentication()
+                  .build());
+    }
+
+    @Override
+    public BackupStore getStore() {
+      return store;
+    }
+
+    @Override
+    public Class<? extends Exception> getBackupInInvalidStateExceptionClass() {
+      return UnexpectedManifestState.class;
     }
   }
 
-  @BeforeEach
-  void setup() {
-    store =
-        new GcsBackupStore(
-            new GcsBackupConfig.Builder()
-                .withBucketName(BUCKET_NAME)
-                .withBasePath(RandomStringUtils.randomAlphabetic(10).toLowerCase())
-                .withHost(GCS.externalEndpoint())
-                .withoutAuthentication()
-                .build());
-  }
+  @Nested
+  final class WithoutBasePath implements BackupStoreTestKit {
 
-  @Override
-  public BackupStore getStore() {
-    return store;
-  }
+    private GcsBackupStore store;
 
-  @Override
-  public Class<? extends Exception> getBackupInInvalidStateExceptionClass() {
-    return UnexpectedManifestState.class;
+    @BeforeEach
+    void setup() throws Exception {
+      final var bucketName = RandomStringUtils.randomAlphabetic(10).toLowerCase();
+
+      final var config =
+          new GcsBackupConfig.Builder()
+              .withBucketName(bucketName)
+              .withHost(GCS.externalEndpoint())
+              .withoutAuthentication()
+              .build();
+
+      try (final var client = GcsBackupStore.buildClient(config)) {
+        client.create(BucketInfo.of(bucketName));
+      }
+
+      store = new GcsBackupStore(config);
+    }
+
+    @Override
+    public BackupStore getStore() {
+      return store;
+    }
+
+    @Override
+    public Class<? extends Exception> getBackupInInvalidStateExceptionClass() {
+      return UnexpectedManifestState.class;
+    }
   }
 }
