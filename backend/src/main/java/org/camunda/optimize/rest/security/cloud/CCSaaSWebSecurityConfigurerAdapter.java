@@ -48,7 +48,6 @@ import org.springframework.web.util.UriComponentsBuilder;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import java.time.Instant;
@@ -188,14 +187,9 @@ public class CCSaaSWebSecurityConfigurerAdapter extends WebSecurityConfigurerAda
         final Instant cookieExpiryDate = determineCookieExpiryDate(sessionToken, serviceAccessToken)
           .orElseThrow(() -> new OptimizeRuntimeException(
             "Could not determine a cookie expiry date. This is likely a bug, please report."));
-        response.addHeader(
-          HttpHeaders.SET_COOKIE,
-          authCookieService.createOptimizeServiceTokenCookie(serviceAccessToken, cookieExpiryDate, request.getScheme())
-        );
-        response.addHeader(
-          HttpHeaders.SET_COOKIE,
-          authCookieService.createNewOptimizeAuthCookie(sessionToken, cookieExpiryDate, request.getScheme())
-        );
+        authCookieService.createOptimizeServiceTokenCookies(serviceAccessToken, cookieExpiryDate, request.getScheme())
+          .forEach(response::addCookie);
+        response.addCookie(authCookieService.createOptimizeAuthCookie(sessionToken, cookieExpiryDate, request.getScheme()));
 
         // we can't redirect to the previously accesses path or the root of the application as the Optimize Cookie
         // won't be sent by the browser in this case. This is because the chain of requests that lead to the

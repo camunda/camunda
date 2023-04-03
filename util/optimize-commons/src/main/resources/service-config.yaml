@@ -24,6 +24,9 @@ security:
         # decides if the Optimize auth cookie has the same site cookie flag set
         enabled: ${CAMUNDA_OPTIMIZE_SECURITY_AUTH_COOKIE_SAME_SITE_ENABLED:true}
       secure: auto
+      # browser cookies can have a maximum of 4096 bytes, we deduct 128 to make place for overhead
+      # information (expiration information, etc.)
+      maxSize: ${CAMUNDA_OPTIMIZE_SECURITY_AUTH_COOKIE_MAX_SIZE:3968}
     token:
       # Optimize uses token-based authentication to keep track of which users are
       # logged in. Define when a token is supposed to expire.
