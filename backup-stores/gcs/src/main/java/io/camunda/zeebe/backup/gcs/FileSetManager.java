@@ -28,14 +28,14 @@ final class FileSetManager {
    *
    * <ul>
    *   <li>{@code basePath}
-   *   <li>"contents
+   *   <li>{@code "contents"}
    *   <li>{@code partitionId}
    *   <li>{@code checkpointId}
    *   <li>{@code nodeId}
    *   <li>{@code fileSetName}
    * </ul>
    */
-  private static final String PATH_FORMAT = "%s/contents/%s/%s/%s/%s/";
+  private static final String PATH_FORMAT = "%scontents/%s/%s/%s/%s/";
 
   private final Storage client;
   private final BucketInfo bucketInfo;
