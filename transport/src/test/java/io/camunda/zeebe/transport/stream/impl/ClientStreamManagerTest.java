@@ -65,7 +65,7 @@ class ClientStreamManagerTest {
     final var uuid = clientStreamManager.add(streamType, metadata, p -> {});
 
     // then
-    final var clientStream = registry.get(uuid);
+    final var clientStream = registry.get(uuid).orElseThrow();
 
     assertThat(clientStream.isConnected(server1)).isTrue();
     assertThat(clientStream.isConnected(server2)).isTrue();
@@ -75,7 +75,7 @@ class ClientStreamManagerTest {
   void shouldOpenStreamToNewlyAddedServer() {
     // given
     final var uuid = clientStreamManager.add(streamType, metadata, p -> {});
-    final var clientStream = registry.get(uuid);
+    final var clientStream = registry.get(uuid).orElseThrow();
 
     // when
     final MemberId server = MemberId.from("3");
@@ -96,8 +96,8 @@ class ClientStreamManagerTest {
     clientStreamManager.onServerJoined(server);
 
     // then
-    assertThat(registry.get(stream1).isConnected(server)).isTrue();
-    assertThat(registry.get(stream2).isConnected(server)).isTrue();
+    assertThat(registry.get(stream1).orElseThrow().isConnected(server)).isTrue();
+    assertThat(registry.get(stream2).orElseThrow().isConnected(server)).isTrue();
   }
 
   @Test
@@ -109,7 +109,7 @@ class ClientStreamManagerTest {
     clientStreamManager.remove(uuid);
 
     // then
-    assertThat(registry.get(uuid)).isNull();
+    assertThat(registry.get(uuid)).isEmpty();
   }
 
   @Test

@@ -11,6 +11,7 @@ import io.camunda.zeebe.util.buffer.BufferWriter;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 
 /** A registry to keeps tracks of all open streams. */
@@ -24,12 +25,12 @@ final class ClientStreamRegistry<M extends BufferWriter> {
     streams.put(clientStream.getStreamId(), clientStream);
   }
 
-  ClientStream<M> get(final UUID streamId) {
-    return streams.get(streamId);
+  Optional<ClientStream<M>> get(final UUID streamId) {
+    return Optional.ofNullable(streams.get(streamId));
   }
 
-  ClientStream<M> remove(final UUID streamId) {
-    return streams.remove(streamId);
+  Optional<ClientStream<M>> remove(final UUID streamId) {
+    return Optional.ofNullable(streams.remove(streamId));
   }
 
   Collection<ClientStream<M>> list() {

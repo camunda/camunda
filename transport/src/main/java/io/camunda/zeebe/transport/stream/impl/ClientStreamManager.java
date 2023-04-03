@@ -57,7 +57,7 @@ final class ClientStreamManager<M extends BufferWriter> {
 
   void remove(final UUID streamId) {
     final var clientStream = registry.remove(streamId);
-    requestManager.removeStream(clientStream, servers);
+    clientStream.ifPresent(stream -> requestManager.removeStream(stream, servers));
   }
 
   void removeAll() {
@@ -69,16 +69,18 @@ final class ClientStreamManager<M extends BufferWriter> {
     final var streamId = pushStreamRequest.streamId();
     final var payload = pushStreamRequest.payload();
 
-    final ClientStream<M> clientStream = registry.get(streamId);
-    if (clientStream != null) {
-      clientStream.getClientStreamConsumer().push(payload);
-      responseFuture.complete(null);
-    } else {
-      // Stream does not exist. We expect to have already sent remove request to all servers. But
-      // just in case that request is lost, we send remove request again. To keep it simple, we do
-      // not retry. Otherwise, it is possible that we send it multiple times unnecessary.
-      requestManager.removeStreamUnreliable(streamId, servers);
-      responseFuture.completeExceptionally(new StreamDoesNotExistException());
-    }
+    final var clientStream = registry.get(streamId);
+    clientStream.ifPresentOrElse(
+        stream -> {
+          stream.getClientStreamConsumer().push(payload);
+          responseFuture.complete(null);
+        },
+        () -> {
+          // Stream does not exist. We expect to have already sent remove request to all servers.
+          // But just in case that request is lost, we send remove request again. To keep it simple,
+          // we do not retry. Otherwise, it is possible that we send it multiple times unnecessary.
+          requestManager.removeStreamUnreliable(streamId, servers);
+          responseFuture.completeExceptionally(new StreamDoesNotExistException());
+        });
   }
 }
