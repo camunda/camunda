@@ -41,6 +41,20 @@ final class ConfigTest {
   }
 
   @Test
+  void shouldAcceptSingleSlashAsBasePath() {
+    // given
+    final var bucketName = "test";
+    final var basePath = "/";
+
+    // when
+    final var config =
+        new GcsBackupConfig.Builder().withBucketName(bucketName).withBasePath(basePath).build();
+
+    // then
+    Assertions.assertThat(config.basePath()).isNull();
+  }
+
+  @Test
   void shouldRemoveLeadingSlashesFromBasePath() {
     // given
     final var bucketName = "test";
