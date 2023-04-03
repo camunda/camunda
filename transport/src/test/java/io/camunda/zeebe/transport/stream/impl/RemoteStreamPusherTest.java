@@ -29,7 +29,7 @@ final class RemoteStreamPusherTest {
   private final TestTransport transport = new TestTransport();
   private final Executor executor = Runnable::run;
   private final RemoteStreamPusher<Payload> pusher =
-      new RemoteStreamPusher<>(streamId, transport, executor);
+      new RemoteStreamPusher<>(streamId, transport, executor, RemoteStreamMetrics.noop());
 
   @Test
   void shouldPushPayload() {
