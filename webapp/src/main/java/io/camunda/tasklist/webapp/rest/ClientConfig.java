@@ -38,6 +38,9 @@ public class ClientConfig {
   @Value("${CAMUNDA_TASKLIST_CLOUD_MIXPANELAPIHOST:#{null}}")
   public String mixpanelAPIHost;
 
+  @Value("${CAMUNDA_TASKLIST_IDENTITY_RESOURCE_PERMISSIONS_ENABLED:#{false}}")
+  public boolean isResourcePermissionsEnabled;
+
   @Autowired private TasklistProfileService profileService;
   @Autowired private TasklistProperties tasklistProperties;
   @Autowired private ServletContext context;

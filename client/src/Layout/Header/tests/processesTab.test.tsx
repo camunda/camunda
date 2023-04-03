@@ -31,6 +31,11 @@ describe('processes tab', () => {
   });
 
   it('should render for self managed user when stable', async () => {
+    window.clientConfig = {
+      ...window.clientConfig,
+      isResourcePermissionsEnabled: true,
+    };
+
     render(<Header />, {
       wrapper: Wrapper,
     });
@@ -49,6 +54,10 @@ describe('processes tab', () => {
   });
 
   it('should render for self managed users when alpha', async () => {
+    window.clientConfig = {
+      ...window.clientConfig,
+      isResourcePermissionsEnabled: true,
+    };
     process.env.REACT_APP_VERSION = '0.0.0-alpha0';
 
     nodeMockServer.use(
@@ -75,6 +84,10 @@ describe('processes tab', () => {
   });
 
   it('should not render for self managed users when restricted', async () => {
+    window.clientConfig = {
+      ...window.clientConfig,
+      isResourcePermissionsEnabled: true,
+    };
     nodeMockServer.use(
       graphql.query('GetCurrentUser', (_, res, ctx) => {
         return res.once(ctx.data(mockGetCurrentRestrictedUser));
@@ -100,11 +113,39 @@ describe('processes tab', () => {
     ).not.toBeInTheDocument();
   });
 
+  it('should not render for self managed without resource permissions', async () => {
+    window.clientConfig = {
+      ...window.clientConfig,
+      isResourcePermissionsEnabled: false,
+    };
+    process.env.REACT_APP_VERSION = '0.0.0';
+
+    render(<Header />, {
+      wrapper: Wrapper,
+    });
+
+    expect(await screen.findByText('Demo User')).toBeInTheDocument();
+
+    const withinNavigation = within(
+      screen.getByRole('navigation', {
+        name: 'Camunda Tasklist',
+      }),
+    );
+
+    expect(
+      withinNavigation.queryByRole('link', {
+        name: 'Processes',
+      }),
+    ).not.toBeInTheDocument();
+  });
+
   it('should render for saas users when alpha', async () => {
     window.clientConfig = {
       ...window.clientConfig,
       organizationId: '1-1-1',
+      isResourcePermissionsEnabled: true,
     };
+
     process.env.REACT_APP_VERSION = '0.0.0-alpha0';
 
     render(<Header />, {
@@ -128,6 +169,7 @@ describe('processes tab', () => {
     window.clientConfig = {
       ...window.clientConfig,
       organizationId: '1-1-1',
+      isResourcePermissionsEnabled: true,
     };
     process.env.REACT_APP_VERSION = '0.0.0';
 
@@ -154,6 +196,7 @@ describe('processes tab', () => {
     window.clientConfig = {
       ...window.clientConfig,
       organizationId: '1-1-1',
+      isResourcePermissionsEnabled: true,
     };
     process.env.REACT_APP_VERSION = '0.0.0-alpha0';
 
@@ -180,5 +223,29 @@ describe('processes tab', () => {
         name: 'Processes',
       }),
     ).not.toBeInTheDocument();
+  });
+
+  it('should not care about resource permissions on saas', async () => {
+    window.clientConfig = {
+      ...window.clientConfig,
+      isResourcePermissionsEnabled: false,
+    };
+    process.env.REACT_APP_VERSION = '0.0.0';
+
+    render(<Header />, {
+      wrapper: Wrapper,
+    });
+
+    expect(await screen.findByText('Demo User')).toBeInTheDocument();
+
+    expect(
+      within(
+        screen.getByRole('navigation', {
+          name: 'Camunda Tasklist',
+        }),
+      ).getByRole('link', {
+        name: 'Processes',
+      }),
+    ).toBeInTheDocument();
   });
 });

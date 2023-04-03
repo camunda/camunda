@@ -39,6 +39,8 @@ const Header: React.FC = observer(() => {
   const APP_VERSION = process.env.REACT_APP_VERSION ?? '';
   const IS_SAAS = typeof window.clientConfig?.organizationId === 'string';
   const IS_ENTERPRISE = window.clientConfig?.isEnterprise === true;
+  const IS_RESOURCE_PERMISSIONS_ENABLED =
+    window.clientConfig?.isResourcePermissionsEnabled === true;
   const location = useLocation();
   const isProcessesPage =
     matchPath(Pages.Processes, location.pathname) !== null;
@@ -72,11 +74,10 @@ const Header: React.FC = observer(() => {
     )
     .filter((entry): entry is AppSwitcherElementType => entry !== undefined);
   const isProcessesPageEnabled =
-    (!IS_SAAS ||
+    ((!IS_SAAS && IS_RESOURCE_PERMISSIONS_ENABLED) ||
       APP_VERSION.includes('alpha') ||
       APP_VERSION.includes('SNAPSHOT')) &&
     hasPermission;
-
   useEffect(() => {
     if (data?.currentUser) {
       tracking.identifyUser(data?.currentUser);

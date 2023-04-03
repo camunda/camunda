@@ -13,6 +13,7 @@ public class IdentityProperties {
   private String clientId;
   private String clientSecret;
   private String audience;
+  private boolean resourcePermissionsEnabled = false;
 
   public String getIssuerUrl() {
     return issuerUrl;
@@ -60,6 +61,15 @@ public class IdentityProperties {
 
   public IdentityProperties setBaseUrl(String baseUrl) {
     this.baseUrl = baseUrl;
+    return this;
+  }
+
+  public boolean isResourcePermissionsEnabled() {
+    return resourcePermissionsEnabled;
+  }
+
+  public IdentityProperties setResourcePermissionsEnabled(boolean resourcePermissionsEnabled) {
+    this.resourcePermissionsEnabled = resourcePermissionsEnabled;
     return this;
   }
 }
