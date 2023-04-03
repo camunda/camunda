@@ -61,6 +61,10 @@ public abstract class AbstractZeebeRecordFetcher<T extends ZeebeRecordDto> {
     SearchResponse searchResponse;
     try {
       searchResponse = esClient.searchWithoutPrefixing(searchRequest);
+      if (searchResponse.getFailedShards() > 0
+        || (searchResponse.getTotalShards() > (searchResponse.getFailedShards() + searchResponse.getSuccessfulShards()))) {
+        throw new OptimizeRuntimeException("Not all shards could be searched successfully");
+      }
     } catch (IOException | ElasticsearchStatusException e) {
       final String errorMessage =
         String.format("Was not able to retrieve zeebe records of type: %s", getBaseIndexName());
