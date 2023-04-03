@@ -10,12 +10,13 @@ package io.camunda.zeebe.it.backup;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import com.google.cloud.storage.BucketInfo;
 import feign.FeignException;
-import io.camunda.zeebe.backup.s3.S3BackupConfig.Builder;
-import io.camunda.zeebe.backup.s3.S3BackupStore;
+import io.camunda.zeebe.backup.gcs.GcsBackupConfig;
+import io.camunda.zeebe.backup.gcs.GcsBackupStore;
 import io.camunda.zeebe.qa.util.actuator.BackupActuator;
 import io.camunda.zeebe.qa.util.testcontainers.ContainerLogsDumper;
-import io.camunda.zeebe.qa.util.testcontainers.MinioContainer;
+import io.camunda.zeebe.qa.util.testcontainers.GcsContainer;
 import io.camunda.zeebe.qa.util.testcontainers.ZeebeTestContainerDefaults;
 import io.camunda.zeebe.shared.management.openapi.models.BackupInfo;
 import io.camunda.zeebe.shared.management.openapi.models.PartitionBackupInfo;
@@ -34,8 +35,7 @@ import org.assertj.core.api.InstanceOfAssertFactories;
 import org.assertj.core.groups.Tuple;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.testcontainers.containers.Network;
@@ -54,15 +54,14 @@ import org.testcontainers.junit.jupiter.Testcontainers;
  * maintain consistency via checkpoint records. Other test suites should be set up for this.
  */
 @Testcontainers
-final class BackupAcceptanceIT {
+final class GcsBackupAcceptanceIT {
   private static final Network NETWORK = Network.newNetwork();
 
-  private final String bucketName = RandomStringUtils.randomAlphabetic(10).toLowerCase();
+  private static final String BUCKET_NAME = RandomStringUtils.randomAlphabetic(10).toLowerCase();
 
-  @Container
-  private final MinioContainer minio =
-      new MinioContainer().withNetwork(NETWORK).withDomain("minio.local", bucketName);
+  @Container private static final GcsContainer GCS = new GcsContainer(NETWORK, "gcs.local");
 
+  private final String basePath = RandomStringUtils.randomAlphabetic(10).toLowerCase();
   private final ZeebeCluster cluster =
       ZeebeCluster.builder()
           .withImage(ZeebeTestContainerDefaults.defaultTestImage())
@@ -88,34 +87,23 @@ final class BackupAcceptanceIT {
           .withCluster(cluster)
           .build();
 
-  private S3BackupStore store;
-
   @AfterAll
   static void afterAll() {
     CloseHelper.quietCloseAll(NETWORK);
   }
 
-  @BeforeEach
-  void beforeEach() {
+  @BeforeAll
+  static void beforeAll() throws Exception {
     final var config =
-        new Builder()
-            .withBucketName(bucketName)
-            .withEndpoint(minio.externalEndpoint())
-            .withRegion(minio.region())
-            .withCredentials(minio.accessKey(), minio.secretKey())
-            .withApiCallTimeout(Duration.ofSeconds(25))
-            .forcePathStyleAccess(true)
+        new GcsBackupConfig.Builder()
+            .withoutAuthentication()
+            .withHost(GCS.externalEndpoint())
+            .withBucketName(BUCKET_NAME)
             .build();
-    store = new S3BackupStore(config);
 
-    try (final var client = S3BackupStore.buildClient(config)) {
-      client.createBucket(builder -> builder.bucket(config.bucketName()).build()).join();
+    try (final var client = GcsBackupStore.buildClient(config)) {
+      client.create(BucketInfo.of(BUCKET_NAME));
     }
-  }
-
-  @AfterEach
-  void afterEach() {
-    CloseHelper.quietCloseAll(() -> store.closeAsync().join());
   }
 
   @Test
@@ -199,17 +187,15 @@ final class BackupAcceptanceIT {
 
   private void configureBroker(final ZeebeBrokerNode<?> broker) {
     broker
-        .withEnv("ZEEBE_BROKER_DATA_BACKUP_STORE", "S3")
-        .withEnv("ZEEBE_BROKER_DATA_BACKUP_S3_BUCKETNAME", bucketName)
-        .withEnv("ZEEBE_BROKER_DATA_BACKUP_S3_ENDPOINT", minio.internalEndpoint())
-        .withEnv("ZEEBE_BROKER_DATA_BACKUP_S3_REGION", minio.region())
-        .withEnv("ZEEBE_BROKER_DATA_BACKUP_S3_ACCESSKEY", minio.accessKey())
-        .withEnv("ZEEBE_BROKER_DATA_BACKUP_S3_SECRETKEY", minio.secretKey())
-        .withEnv("ZEEBE_BROKER_DATA_BACKUP_S3_FORCEPATHSTYLEACCESS", "true");
+        .withEnv("ZEEBE_BROKER_DATA_BACKUP_STORE", "GCS")
+        .withEnv("ZEEBE_BROKER_DATA_BACKUP_GCS_BUCKETNAME", BUCKET_NAME)
+        .withEnv("ZEEBE_BROKER_DATA_BACKUP_GCS_BASEPATH", basePath)
+        .withEnv("ZEEBE_BROKER_DATA_BACKUP_GCS_AUTH", "none")
+        .withEnv("ZEEBE_BROKER_DATA_BACKUP_GCS_HOST", GCS.internalEndpoint());
   }
 
   private void configureNode(final ZeebeNode<?> node) {
-    node.withEnv("MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE", "*").dependsOn(minio);
+    node.withEnv("MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE", "*").dependsOn(GCS);
     node.addExposedPort(ZeebePort.MONITORING.getPort());
   }
 }

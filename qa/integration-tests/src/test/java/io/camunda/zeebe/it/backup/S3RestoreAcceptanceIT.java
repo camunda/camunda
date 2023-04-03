@@ -37,7 +37,7 @@ import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 @Testcontainers
-final class RestoreAcceptanceIT {
+final class S3RestoreAcceptanceIT {
   private static final Network NETWORK = Network.newNetwork();
   private static final String BUCKET_NAME = RandomStringUtils.randomAlphabetic(10).toLowerCase();
 
