@@ -14,6 +14,7 @@ import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessorFa
 import io.camunda.zeebe.engine.state.DefaultZeebeDbFactory;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.util.StreamProcessingComposite.StreamProcessorTestFactory;
+import io.camunda.zeebe.engine.util.client.CommandWriter;
 import io.camunda.zeebe.logstreams.log.LogStreamWriter;
 import io.camunda.zeebe.logstreams.util.ListLogStorage;
 import io.camunda.zeebe.logstreams.util.SynchronousLogStream;
@@ -42,7 +43,7 @@ import org.junit.runners.model.Statement;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public final class StreamProcessorRule implements TestRule {
+public final class StreamProcessorRule implements TestRule, CommandWriter {
 
   private static final Logger LOG = LoggerFactory.getLogger("io.camunda.zeebe.broker.test");
 
@@ -189,30 +190,35 @@ public final class StreamProcessorRule implements TestRule {
     return streamProcessingComposite.writeBatch(recordToWrites);
   }
 
-  public long writeCommandOnPartition(
-      final int partition, final Intent intent, final UnifiedRecordValue value) {
-    return streamProcessingComposite.writeCommandOnPartition(partition, intent, value);
-  }
-
-  public long writeCommandOnPartition(
-      final int partition, final long key, final Intent intent, final UnifiedRecordValue value) {
-    return streamProcessingComposite.writeCommandOnPartition(partition, key, intent, value);
-  }
-
-  public long writeCommand(final long key, final Intent intent, final UnifiedRecordValue value) {
-    return streamProcessingComposite.writeCommand(key, intent, value);
-  }
-
+  @Override
   public long writeCommand(final Intent intent, final UnifiedRecordValue value) {
     return streamProcessingComposite.writeCommand(intent, value);
   }
 
+  @Override
+  public long writeCommand(final long key, final Intent intent, final UnifiedRecordValue value) {
+    return streamProcessingComposite.writeCommand(key, intent, value);
+  }
+
+  @Override
   public long writeCommand(
       final int requestStreamId,
       final long requestId,
       final Intent intent,
       final UnifiedRecordValue value) {
     return streamProcessingComposite.writeCommand(requestStreamId, requestId, intent, value);
+  }
+
+  @Override
+  public long writeCommandOnPartition(
+      final int partition, final Intent intent, final UnifiedRecordValue value) {
+    return streamProcessingComposite.writeCommandOnPartition(partition, intent, value);
+  }
+
+  @Override
+  public long writeCommandOnPartition(
+      final int partition, final long key, final Intent intent, final UnifiedRecordValue value) {
+    return streamProcessingComposite.writeCommandOnPartition(partition, key, intent, value);
   }
 
   public void snapshot() {

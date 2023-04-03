@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.engine.util.client;
 
-import io.camunda.zeebe.engine.util.StreamProcessorRule;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.record.value.incident.IncidentRecord;
 import io.camunda.zeebe.protocol.record.Record;
@@ -17,28 +16,27 @@ import io.camunda.zeebe.test.util.record.RecordingExporter;
 
 public final class IncidentClient {
 
-  private final StreamProcessorRule environmentRule;
+  private final CommandWriter writer;
 
-  public IncidentClient(final StreamProcessorRule environmentRule) {
-    this.environmentRule = environmentRule;
+  public IncidentClient(final CommandWriter writer) {
+    this.writer = writer;
   }
 
   public ResolveIncidentClient ofInstance(final long processInstanceKey) {
-    return new ResolveIncidentClient(environmentRule, processInstanceKey);
+    return new ResolveIncidentClient(writer, processInstanceKey);
   }
 
   public static class ResolveIncidentClient {
     private static final long DEFAULT_KEY = -1L;
 
-    private final StreamProcessorRule environmentRule;
+    private final CommandWriter writer;
     private final long processInstanceKey;
     private final IncidentRecord incidentRecord;
 
     private long incidentKey = DEFAULT_KEY;
 
-    public ResolveIncidentClient(
-        final StreamProcessorRule environmentRule, final long processInstanceKey) {
-      this.environmentRule = environmentRule;
+    public ResolveIncidentClient(final CommandWriter writer, final long processInstanceKey) {
+      this.writer = writer;
       this.processInstanceKey = processInstanceKey;
       incidentRecord = new IncidentRecord();
     }
@@ -58,7 +56,7 @@ public final class IncidentClient {
       }
 
       final long position =
-          environmentRule.writeCommandOnPartition(
+          writer.writeCommandOnPartition(
               Protocol.decodePartitionId(incidentKey),
               incidentKey,
               IncidentIntent.RESOLVE,

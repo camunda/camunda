@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.engine.util.client;
 
-import io.camunda.zeebe.engine.util.StreamProcessorRule;
 import io.camunda.zeebe.protocol.impl.SubscriptionUtil;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageRecord;
@@ -46,15 +45,15 @@ public final class PublishMessageClient {
                   .getFirst();
 
   private final MessageRecord messageRecord;
-  private final StreamProcessorRule enviromentRule;
+  private final CommandWriter writer;
   private final int partitionCount;
 
   private Function<Message, Record<MessageRecordValue>> expectation =
       SUCCESSFUL_EXPECTATION_SUPPLIER;
   private int partitionId = DEFAULT_VALUE;
 
-  public PublishMessageClient(final StreamProcessorRule environmentRule, final int partitionCount) {
-    enviromentRule = environmentRule;
+  public PublishMessageClient(final CommandWriter environmentRule, final int partitionCount) {
+    writer = environmentRule;
     this.partitionCount = partitionCount;
 
     messageRecord = new MessageRecord();
@@ -118,7 +117,7 @@ public final class PublishMessageClient {
     }
 
     final long position =
-        enviromentRule.writeCommandOnPartition(partitionId, MessageIntent.PUBLISH, messageRecord);
+        writer.writeCommandOnPartition(partitionId, MessageIntent.PUBLISH, messageRecord);
 
     return expectation.apply(new Message(partitionId, messageRecord.getCorrelationKey(), position));
   }

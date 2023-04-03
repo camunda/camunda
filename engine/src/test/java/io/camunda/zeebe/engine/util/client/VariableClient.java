@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.engine.util.client;
 
-import io.camunda.zeebe.engine.util.StreamProcessorRule;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.value.variable.VariableDocumentRecord;
 import io.camunda.zeebe.protocol.record.Record;
@@ -39,13 +38,13 @@ public final class VariableClient {
                   .getFirst();
 
   private final VariableDocumentRecord variableDocumentRecord;
-  private final StreamProcessorRule environmentRule;
+  private final CommandWriter writer;
 
   private LongFunction<Record<VariableDocumentRecordValue>> expectation =
       SUCCESSFUL_EXPECTATION_SUPPLIER;
 
-  public VariableClient(final StreamProcessorRule environmentRule) {
-    this.environmentRule = environmentRule;
+  public VariableClient(final CommandWriter writer) {
+    this.writer = writer;
     variableDocumentRecord = new VariableDocumentRecord();
   }
 
@@ -81,7 +80,7 @@ public final class VariableClient {
 
   public Record<VariableDocumentRecordValue> update() {
     final long position =
-        environmentRule.writeCommand(VariableDocumentIntent.UPDATE, variableDocumentRecord);
+        writer.writeCommand(VariableDocumentIntent.UPDATE, variableDocumentRecord);
     return expectation.apply(position);
   }
 }

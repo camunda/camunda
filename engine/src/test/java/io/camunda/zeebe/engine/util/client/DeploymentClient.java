@@ -10,7 +10,6 @@ package io.camunda.zeebe.engine.util.client;
 import static io.camunda.zeebe.util.buffer.BufferUtil.wrapArray;
 import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 
-import io.camunda.zeebe.engine.util.StreamProcessorRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.protocol.Protocol;
@@ -72,7 +71,7 @@ public final class DeploymentClient {
                   .withPartitionId(Protocol.DEPLOYMENT_PARTITION)
                   .getFirst();
 
-  private final StreamProcessorRule environmentRule;
+  private final CommandWriter writer;
   private final DeploymentRecord deploymentRecord;
   private final Consumer<Consumer<Integer>> forEachPartition;
 
@@ -80,9 +79,8 @@ public final class DeploymentClient {
       SUCCESS_EXPECTATION;
 
   public DeploymentClient(
-      final StreamProcessorRule environmentRule,
-      final Consumer<Consumer<Integer>> forEachPartition) {
-    this.environmentRule = environmentRule;
+      final CommandWriter writer, final Consumer<Consumer<Integer>> forEachPartition) {
+    this.writer = writer;
     this.forEachPartition = forEachPartition;
     deploymentRecord = new DeploymentRecord();
   }
@@ -137,7 +135,7 @@ public final class DeploymentClient {
   }
 
   public Record<DeploymentRecordValue> deploy() {
-    final long position = environmentRule.writeCommand(DeploymentIntent.CREATE, deploymentRecord);
+    final long position = writer.writeCommand(DeploymentIntent.CREATE, deploymentRecord);
 
     return expectation.apply(position, forEachPartition);
   }

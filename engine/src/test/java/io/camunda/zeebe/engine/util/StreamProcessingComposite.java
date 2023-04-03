@@ -12,6 +12,7 @@ import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessorCo
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessorFactory;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
+import io.camunda.zeebe.engine.util.client.CommandWriter;
 import io.camunda.zeebe.logstreams.log.LogStreamWriter;
 import io.camunda.zeebe.logstreams.util.SynchronousLogStream;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
@@ -26,7 +27,7 @@ import java.util.Arrays;
 import java.util.Optional;
 import java.util.concurrent.Callable;
 
-public class StreamProcessingComposite {
+public class StreamProcessingComposite implements CommandWriter {
 
   private static final String STREAM_NAME = "stream-";
 
@@ -136,6 +137,47 @@ public class StreamProcessingComposite {
     return writeActor.submit(() -> writer.tryWrite(Arrays.asList(recordsToWrite)).get()).join();
   }
 
+  @Override
+  public long writeCommand(final Intent intent, final UnifiedRecordValue value) {
+    final var writer =
+        streams
+            .newRecord(getLogName(partitionId))
+            .recordType(RecordType.COMMAND)
+            .intent(intent)
+            .event(value);
+    return writeActor.submit(writer::write).join();
+  }
+
+  @Override
+  public long writeCommand(final long key, final Intent intent, final UnifiedRecordValue value) {
+    final var writer =
+        streams
+            .newRecord(getLogName(partitionId))
+            .recordType(RecordType.COMMAND)
+            .key(key)
+            .intent(intent)
+            .event(value);
+    return writeActor.submit(writer::write).join();
+  }
+
+  @Override
+  public long writeCommand(
+      final int requestStreamId,
+      final long requestId,
+      final Intent intent,
+      final UnifiedRecordValue value) {
+    final var writer =
+        streams
+            .newRecord(getLogName(partitionId))
+            .recordType(RecordType.COMMAND)
+            .requestId(requestId)
+            .requestStreamId(requestStreamId)
+            .intent(intent)
+            .event(value);
+    return writeActor.submit(writer::write).join();
+  }
+
+  @Override
   public long writeCommandOnPartition(
       final int partition, final Intent intent, final UnifiedRecordValue value) {
 
@@ -148,6 +190,7 @@ public class StreamProcessingComposite {
     return writeActor.submit(writer::write).join();
   }
 
+  @Override
   public long writeCommandOnPartition(
       final int partition, final long key, final Intent intent, final UnifiedRecordValue value) {
     final var writer =
@@ -155,43 +198,6 @@ public class StreamProcessingComposite {
             .newRecord(getLogName(partition))
             .key(key)
             .recordType(RecordType.COMMAND)
-            .intent(intent)
-            .event(value);
-    return writeActor.submit(writer::write).join();
-  }
-
-  public long writeCommand(final long key, final Intent intent, final UnifiedRecordValue value) {
-    final var writer =
-        streams
-            .newRecord(getLogName(partitionId))
-            .recordType(RecordType.COMMAND)
-            .key(key)
-            .intent(intent)
-            .event(value);
-    return writeActor.submit(writer::write).join();
-  }
-
-  public long writeCommand(final Intent intent, final UnifiedRecordValue value) {
-    final var writer =
-        streams
-            .newRecord(getLogName(partitionId))
-            .recordType(RecordType.COMMAND)
-            .intent(intent)
-            .event(value);
-    return writeActor.submit(writer::write).join();
-  }
-
-  public long writeCommand(
-      final int requestStreamId,
-      final long requestId,
-      final Intent intent,
-      final UnifiedRecordValue value) {
-    final var writer =
-        streams
-            .newRecord(getLogName(partitionId))
-            .recordType(RecordType.COMMAND)
-            .requestId(requestId)
-            .requestStreamId(requestStreamId)
             .intent(intent)
             .event(value);
     return writeActor.submit(writer::write).join();

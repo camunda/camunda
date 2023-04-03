@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.engine.util.client;
 
-import io.camunda.zeebe.engine.util.StreamProcessorRule;
 import io.camunda.zeebe.msgpack.value.StringValue;
 import io.camunda.zeebe.msgpack.value.ValueArray;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobBatchRecord;
@@ -43,15 +42,15 @@ public final class JobActivationClient {
                   .withSourceRecordPosition(position)
                   .getFirst();
 
-  private final StreamProcessorRule environmentRule;
+  private final CommandWriter writer;
   private final JobBatchRecord jobBatchRecord;
 
   private int partitionId;
   private BiFunction<Integer, Long, Record<JobBatchRecordValue>> expectation =
       SUCCESS_EXPECTATION_SUPPLIER;
 
-  public JobActivationClient(final StreamProcessorRule environmentRule) {
-    this.environmentRule = environmentRule;
+  public JobActivationClient(final CommandWriter writer) {
+    this.writer = writer;
 
     jobBatchRecord = new JobBatchRecord();
     jobBatchRecord.setTimeout(DEFAULT_TIMEOUT).setMaxJobsToActivate(DEFAULT_MAX_ACTIVATE);
@@ -102,8 +101,7 @@ public final class JobActivationClient {
 
   public Record<JobBatchRecordValue> activate() {
     final long position =
-        environmentRule.writeCommandOnPartition(
-            partitionId, JobBatchIntent.ACTIVATE, jobBatchRecord);
+        writer.writeCommandOnPartition(partitionId, JobBatchIntent.ACTIVATE, jobBatchRecord);
 
     return expectation.apply(partitionId, position);
   }

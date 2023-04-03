@@ -9,7 +9,6 @@ package io.camunda.zeebe.engine.util.client;
 
 import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 
-import io.camunda.zeebe.engine.util.StreamProcessorRule;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.record.Record;
@@ -37,14 +36,14 @@ public final class JobClient {
               .getFirst();
 
   private final JobRecord jobRecord;
-  private final StreamProcessorRule environmentRule;
+  private final CommandWriter writer;
   private long processInstanceKey;
   private long jobKey = DEFAULT_KEY;
 
   private Function<Long, Record<JobRecordValue>> expectation = SUCCESS_SUPPLIER;
 
-  public JobClient(final StreamProcessorRule environmentRule) {
-    this.environmentRule = environmentRule;
+  public JobClient(final CommandWriter writer) {
+    this.writer = writer;
     jobRecord = new JobRecord();
   }
 
@@ -125,33 +124,33 @@ public final class JobClient {
 
   public Record<JobRecordValue> complete() {
     final long jobKey = findJobKey();
-    final long position = environmentRule.writeCommand(jobKey, JobIntent.COMPLETE, jobRecord);
+    final long position = writer.writeCommand(jobKey, JobIntent.COMPLETE, jobRecord);
     return expectation.apply(position);
   }
 
   public Record<JobRecordValue> fail() {
     final long jobKey = findJobKey();
-    final long position = environmentRule.writeCommand(jobKey, JobIntent.FAIL, jobRecord);
+    final long position = writer.writeCommand(jobKey, JobIntent.FAIL, jobRecord);
 
     return expectation.apply(position);
   }
 
   public Record<JobRecordValue> yield() {
     final long jobKey = findJobKey();
-    final long position = environmentRule.writeCommand(jobKey, JobIntent.YIELD, jobRecord);
+    final long position = writer.writeCommand(jobKey, JobIntent.YIELD, jobRecord);
 
     return expectation.apply(position);
   }
 
   public Record<JobRecordValue> updateRetries() {
     final long jobKey = findJobKey();
-    final long position = environmentRule.writeCommand(jobKey, JobIntent.UPDATE_RETRIES, jobRecord);
+    final long position = writer.writeCommand(jobKey, JobIntent.UPDATE_RETRIES, jobRecord);
     return expectation.apply(position);
   }
 
   public Record<JobRecordValue> throwError() {
     final long jobKey = findJobKey();
-    final long position = environmentRule.writeCommand(jobKey, JobIntent.THROW_ERROR, jobRecord);
+    final long position = writer.writeCommand(jobKey, JobIntent.THROW_ERROR, jobRecord);
 
     return expectation.apply(position);
   }

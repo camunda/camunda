@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.engine.util.client;
 
-import io.camunda.zeebe.engine.util.StreamProcessorRule;
 import io.camunda.zeebe.protocol.impl.record.value.resource.ResourceDeletionRecord;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.ResourceDeletionIntent;
@@ -30,12 +29,12 @@ public class ResourceDeletionClient {
               .withSourceRecordPosition(position)
               .getFirst();
 
-  private final StreamProcessorRule environmentRule;
+  private final CommandWriter writer;
   private final ResourceDeletionRecord resourceDeletionRecord = new ResourceDeletionRecord();
   private Function<Long, Record<ResourceDeletionRecordValue>> expectation = SUCCESS_EXPECTATION;
 
-  public ResourceDeletionClient(final StreamProcessorRule environmentRule) {
-    this.environmentRule = environmentRule;
+  public ResourceDeletionClient(final CommandWriter writer) {
+    this.writer = writer;
   }
 
   public ResourceDeletionClient withResourceKey(final long resourceKey) {
@@ -45,7 +44,7 @@ public class ResourceDeletionClient {
 
   public Record<ResourceDeletionRecordValue> delete() {
     final long position =
-        environmentRule.writeCommand(ResourceDeletionIntent.DELETE, resourceDeletionRecord);
+        writer.writeCommand(ResourceDeletionIntent.DELETE, resourceDeletionRecord);
     return expectation.apply(position);
   }
 
