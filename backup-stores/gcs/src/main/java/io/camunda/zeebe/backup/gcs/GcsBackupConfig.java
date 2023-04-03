@@ -27,16 +27,20 @@ public record GcsBackupConfig(String bucketName, String basePath, GcsConnectionC
   }
 
   private static String sanitizeBasePath(final String basePath) {
-    if (basePath == null || basePath.isBlank()) {
+    if (basePath == null) {
+      return null;
+    }
+
+    var sanitized = basePath.trim();
+    if (sanitized.isEmpty() || sanitized.equals("/")) {
       return null;
     }
 
     // Remove one leading and one trailing slash if present.
-    String sanitized = basePath;
-    if (basePath.startsWith("/")) {
-      sanitized = basePath.substring(1);
+    while (sanitized.startsWith("/")) {
+      sanitized = sanitized.substring(1);
     }
-    if (basePath.endsWith("/")) {
+    while (sanitized.endsWith("/")) {
       sanitized = sanitized.substring(0, sanitized.length() - 1);
     }
 
