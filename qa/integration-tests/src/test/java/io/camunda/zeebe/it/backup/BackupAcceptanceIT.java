@@ -209,9 +209,7 @@ final class BackupAcceptanceIT {
   }
 
   private void configureNode(final ZeebeNode<?> node) {
-    node.withEnv("MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE", "*")
-        .withEnv("MANAGEMENT_ENDPOINTS_BACKUPS_ENABLED", "true")
-        .dependsOn(minio);
+    node.withEnv("MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE", "*").dependsOn(minio);
     node.addExposedPort(ZeebePort.MONITORING.getPort());
   }
 }
