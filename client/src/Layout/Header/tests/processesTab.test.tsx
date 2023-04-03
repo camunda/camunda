@@ -230,7 +230,7 @@ describe('processes tab', () => {
       ...window.clientConfig,
       isResourcePermissionsEnabled: false,
     };
-    process.env.REACT_APP_VERSION = '0.0.0';
+    process.env.REACT_APP_VERSION = '0.0.0-alpha0';
 
     render(<Header />, {
       wrapper: Wrapper,

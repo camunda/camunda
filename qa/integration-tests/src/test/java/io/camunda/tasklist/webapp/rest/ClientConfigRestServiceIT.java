@@ -78,7 +78,7 @@ public class ClientConfigRestServiceIT {
                 + "\"clusterId\":null,"
                 + "\"stage\":\"stage\","
                 + "\"mixpanelToken\":\"i-am-a-token\","
-                + "\"mixpanelAPIHost\":\"https://fake.mixpanel.com\""
-                + "};");
+                + "\"mixpanelAPIHost\":\"https://fake.mixpanel.com\","
+                + "\"isResourcePermissionsEnabled\":false};");
   }
 }
