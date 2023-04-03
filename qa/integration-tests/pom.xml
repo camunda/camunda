@@ -422,8 +422,7 @@
           <systemProperties>
             <property>
               <name>identity.docker.image.version</name>
-              <!-- Can be set to ${version.identity} after 8.2.0. -->
-              <value>SNAPSHOT</value>
+              <value>${version.identity}</value>
             </property>
           </systemProperties>
         </configuration>
