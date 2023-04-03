@@ -31,7 +31,7 @@ import org.springframework.stereotype.Component;
  * operations will result in a 403 response.
  */
 @Component
-@WebEndpoint(id = "clock", enableByDefault = false)
+@WebEndpoint(id = "clock")
 public class ActorClockEndpoint {
   private static final String PATH_PIN = "pin";
   private static final String PATH_ADD = "add";

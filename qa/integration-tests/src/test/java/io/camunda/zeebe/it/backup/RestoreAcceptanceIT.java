@@ -54,7 +54,6 @@ final class RestoreAcceptanceIT {
           .dependsOn(MINIO)
           .withoutTopologyCheck()
           .withEnv("MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE", "*")
-          .withEnv("MANAGEMENT_ENDPOINTS_BACKUPS_ENABLED", "true")
           .withEnv("ZEEBE_BROKER_DATA_BACKUP_STORE", "S3")
           .withEnv("ZEEBE_BROKER_DATA_BACKUP_S3_BUCKETNAME", BUCKET_NAME)
           .withEnv("ZEEBE_BROKER_DATA_BACKUP_S3_ENDPOINT", MINIO.internalEndpoint())
