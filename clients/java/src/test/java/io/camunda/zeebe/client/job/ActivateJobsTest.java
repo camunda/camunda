@@ -21,6 +21,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.zeebe.client.api.command.ClientException;
 import io.camunda.zeebe.client.api.response.ActivateJobsResponse;
+import io.camunda.zeebe.client.api.response.ActivatedJob;
 import io.camunda.zeebe.client.impl.ZeebeObjectMapper;
 import io.camunda.zeebe.client.impl.response.ActivatedJobImpl;
 import io.camunda.zeebe.client.util.ClientTest;

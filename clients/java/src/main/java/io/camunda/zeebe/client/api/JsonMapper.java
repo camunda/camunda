@@ -16,6 +16,7 @@
 package io.camunda.zeebe.client.api;
 
 import java.io.InputStream;
+import java.lang.reflect.Type;
 import java.util.Map;
 
 /**
@@ -64,6 +65,8 @@ public interface JsonMapper {
    *     serialization/deserialization error
    */
   <T> T fromJson(final String json, final Class<T> typeClass);
+
+  <T> T fromJson(final String json, final Type type);
 
   /**
    * Deserializes a JSON string into a string to object map.

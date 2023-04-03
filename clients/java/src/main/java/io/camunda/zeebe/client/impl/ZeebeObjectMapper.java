@@ -18,12 +18,14 @@ package io.camunda.zeebe.client.impl;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import io.camunda.zeebe.client.api.JsonMapper;
 import io.camunda.zeebe.client.api.command.InternalClientException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.reflect.Type;
 import java.util.Map;
 
 public final class ZeebeObjectMapper implements JsonMapper {
@@ -40,7 +42,7 @@ public final class ZeebeObjectMapper implements JsonMapper {
     this(new ObjectMapper());
   }
 
-  public ZeebeObjectMapper(ObjectMapper objectMapper) {
+  public ZeebeObjectMapper(final ObjectMapper objectMapper) {
     this.objectMapper = objectMapper;
     this.objectMapper
         .configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false)
@@ -54,6 +56,18 @@ public final class ZeebeObjectMapper implements JsonMapper {
     } catch (final IOException e) {
       throw new InternalClientException(
           String.format("Failed to deserialize json '%s' to class '%s'", json, typeClass), e);
+    }
+  }
+
+  @Override
+  public <T> T fromJson(final String json,final Type type){
+
+    final JavaType objJavaType = objectMapper.constructType(type);
+    try {
+      return objectMapper.readValue(json, objJavaType);
+    } catch (final IOException e) {
+      throw new InternalClientException(
+          String.format("Failed to deserialize json '%s' to class '%s'", json, objJavaType), e);
     }
   }
 
