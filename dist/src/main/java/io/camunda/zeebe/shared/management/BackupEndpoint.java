@@ -40,7 +40,7 @@ import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Component;
 
 @Component
-@WebEndpoint(id = "backups", enableByDefault = false)
+@WebEndpoint(id = "backups")
 public final class BackupEndpoint {
   private final BackupApi api;
 
