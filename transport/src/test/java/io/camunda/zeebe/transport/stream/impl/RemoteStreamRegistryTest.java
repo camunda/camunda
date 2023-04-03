@@ -20,7 +20,7 @@ import org.junit.jupiter.api.Test;
 final class RemoteStreamRegistryTest {
 
   private final RemoteStreamRegistry<Integer> streamRegistry =
-      new RemoteStreamRegistry<>(new RemoteStreamMetrics() {});
+      new RemoteStreamRegistry<>(RemoteStreamMetrics.noop());
   private final MemberId gateway = MemberId.from("gateway");
   private final MemberId otherGateway = MemberId.from("gateway-other");
   private final UnsafeBuffer typeBar = new UnsafeBuffer(BufferUtil.wrapString("bar"));

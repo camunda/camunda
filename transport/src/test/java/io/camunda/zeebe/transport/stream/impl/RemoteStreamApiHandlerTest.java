@@ -30,7 +30,7 @@ final class RemoteStreamApiHandlerTest {
       new UnsafeBuffer(ByteBuffer.allocate(4).order(ByteOrder.nativeOrder()).putInt(0, 1));
 
   private final RemoteStreamRegistry<TestMetadata> registry =
-      new RemoteStreamRegistry<>(new RemoteStreamMetrics() {});
+      new RemoteStreamRegistry<>(RemoteStreamMetrics.noop());
   private final RemoteStreamApiHandler<TestMetadata> server =
       new RemoteStreamApiHandler<>(registry, TestMetadata::new);
 

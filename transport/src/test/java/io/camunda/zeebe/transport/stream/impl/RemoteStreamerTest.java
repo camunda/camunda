@@ -41,7 +41,7 @@ final class RemoteStreamerTest {
   private final TestRegistry registry = new TestRegistry();
 
   private final RemoteStreamerImpl<TestMetadata, TestPayload> streamer =
-      new RemoteStreamerImpl<>(communicationService, registry, new RemoteStreamMetrics() {});
+      new RemoteStreamerImpl<>(communicationService, registry, RemoteStreamMetrics.noop());
 
   @RegisterExtension
   private final ControlledActorSchedulerExtension scheduler =
