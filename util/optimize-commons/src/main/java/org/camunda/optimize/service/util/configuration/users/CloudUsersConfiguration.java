@@ -10,9 +10,10 @@ import lombok.Data;
 
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class CloudAccountsConfiguration {
+public class CloudUsersConfiguration {
 
   private String accountsUrl;
+  private String notificationsUrl;
 
   // Only here for backwards compatibility as the param got renamed to accountsUrl
   @Deprecated

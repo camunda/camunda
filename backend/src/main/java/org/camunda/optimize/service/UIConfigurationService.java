@@ -78,7 +78,10 @@ public class UIConfigurationService {
     onboarding.setClusterId(configurationService.getOnboarding().getProperties().getClusterId());
 
     cloudSaasMetaInfoService.flatMap(CloudSaasMetaInfoService::getSalesPlanType).ifPresent(onboarding::setSalesPlanType);
-    cloudSaasMetaInfoService.ifPresent(service -> uiConfigurationDto.setWebappsLinks(service.getWebappsLinks()));
+    cloudSaasMetaInfoService.ifPresent(service -> {
+      uiConfigurationDto.setWebappsLinks(service.getWebappsLinks());
+      uiConfigurationDto.setNotificationsUrl(configurationService.getUsersConfiguration().getCloud().getNotificationsUrl());
+    });
 
     return uiConfigurationDto;
   }

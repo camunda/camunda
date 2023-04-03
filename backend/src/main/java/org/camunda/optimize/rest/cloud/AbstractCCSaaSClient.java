@@ -14,7 +14,7 @@ import org.apache.http.impl.client.HttpClientBuilder;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.condition.CCSaaSCondition;
 import org.camunda.optimize.service.util.configuration.security.CloudAuthConfiguration;
-import org.camunda.optimize.service.util.configuration.users.CloudAccountsConfiguration;
+import org.camunda.optimize.service.util.configuration.users.CloudUsersConfiguration;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
@@ -73,7 +73,7 @@ public abstract class AbstractCCSaaSClient {
     return httpClient.execute(request);
   }
 
-  protected CloudAccountsConfiguration getCloudUsersConfiguration() {
+  protected CloudUsersConfiguration getCloudUsersConfiguration() {
     return configurationService.getUsersConfiguration().getCloud();
   }
 

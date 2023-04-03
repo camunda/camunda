@@ -120,6 +120,7 @@ container:
 users:
   cloud:
     accountsUrl: ${CAMUNDA_OPTIMIZE_M2M_ACCOUNTS_URL:}
+    notificationsUrl: ${CAMUNDA_OPTIMIZE_NOTIFICATIONS_URL:}
 
 # Configuration for engines used to import data. Please note that you have to have at
 # least one engine configured at all times.

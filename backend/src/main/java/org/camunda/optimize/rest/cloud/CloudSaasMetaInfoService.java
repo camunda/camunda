@@ -27,7 +27,7 @@ public class CloudSaasMetaInfoService {
   private final CCSaasClusterClient clusterClient;
 
   public Optional<String> getSalesPlanType() {
-    final Optional<String> accessToken = accessTokenProvider.getCurrentUsersAccessToken();
+    final Optional<String> accessToken = getCurrentUserServiceToken();
     if (accessToken.isPresent()) {
       try {
         return organizationsClient.getSalesPlanType(accessToken.get());
@@ -42,7 +42,7 @@ public class CloudSaasMetaInfoService {
   }
 
   public Map<AppName, String> getWebappsLinks() {
-    final Optional<String> accessToken = accessTokenProvider.getCurrentUsersAccessToken();
+    final Optional<String> accessToken = getCurrentUserServiceToken();
     if (accessToken.isPresent()) {
       try {
         return clusterClient.getWebappLinks(accessToken.get());
@@ -54,6 +54,10 @@ public class CloudSaasMetaInfoService {
       log.warn("No user access token found, will not retrieve links to other webapps.");
       return Collections.emptyMap();
     }
+  }
+
+  public Optional<String> getCurrentUserServiceToken() {
+    return accessTokenProvider.getCurrentUsersAccessToken();
   }
 
 }
