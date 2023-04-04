@@ -1,5 +1,6 @@
 ## Instant preview dashboard
-Für jeden Prozess bietet Optimize ein vorbereitetes Dashboard. Das Dashboard bietet neuen Nutzern einen Überblick zu den Status- und Ausführungsmetriken eines Prozesses.
+"Für jeden Prozess bietet Optimize ein vorgefertigtes Dashboard. Das Dashboard bietet neuen Nutzern einen Überblick 
+über die Status- und Ausführungsmetriken des Prozesses."
 
 ## Textberichte
 
