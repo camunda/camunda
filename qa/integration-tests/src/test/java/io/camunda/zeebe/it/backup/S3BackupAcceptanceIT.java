@@ -54,7 +54,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
  * maintain consistency via checkpoint records. Other test suites should be set up for this.
  */
 @Testcontainers
-final class BackupAcceptanceIT {
+final class S3BackupAcceptanceIT {
   private static final Network NETWORK = Network.newNetwork();
 
   private final String bucketName = RandomStringUtils.randomAlphabetic(10).toLowerCase();
