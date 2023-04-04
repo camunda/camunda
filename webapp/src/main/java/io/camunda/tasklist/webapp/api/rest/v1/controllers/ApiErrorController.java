@@ -20,7 +20,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
@@ -91,7 +90,7 @@ public abstract class ApiErrorController {
 
   @Hidden
   @ResponseStatus(HttpStatus.UNAUTHORIZED)
-  @ExceptionHandler(AccessDeniedException.class)
+  @ExceptionHandler(UnauthenticatedUserException.class)
   public ResponseEntity<Error> handleUnauthenticatedUserException(
       UnauthenticatedUserException exception) {
     logger.warn(exception.getMessage(), exception);

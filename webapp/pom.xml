@@ -11,6 +11,7 @@
   <name>Tasklist Webapp</name>
   <artifactId>tasklist-webapp</artifactId>
 
+
   <properties>
     <mvc-auth-commons.version>1.9.4</mvc-auth-commons.version>
     <springdoc-openapi.version>1.6.14</springdoc-openapi.version>
@@ -90,10 +91,10 @@
       <artifactId>elasticsearch-rest-high-level-client</artifactId>
     </dependency>
 
-    <!-- https://mvnrepository.com/artifact/org.glassfish/javax.json -->
+    <!-- https://mvnrepository.com/artifact/org.glassfish/jakarta.json -->
     <dependency>
       <groupId>org.glassfish</groupId>
-      <artifactId>javax.json</artifactId>
+      <artifactId>jakarta.json</artifactId>
     </dependency>
 
     <!-- WEBJAR -->
@@ -116,9 +117,9 @@
 
     <!-- OAuth0 -->
     <dependency>
-      <groupId>com.auth0</groupId>
-      <artifactId>mvc-auth-commons</artifactId>
-      <version>${mvc-auth-commons.version}</version>
+      <groupId>io.camunda</groupId>
+      <artifactId>tasklist-mvc-auth-commons</artifactId>
+      <version>${project.version}</version>
     </dependency>
 
     <!-- OAuth2 token authorization -->

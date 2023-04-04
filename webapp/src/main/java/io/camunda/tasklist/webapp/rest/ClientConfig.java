@@ -8,8 +8,8 @@ package io.camunda.tasklist.webapp.rest;
 
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.webapp.security.TasklistProfileService;
-import javax.annotation.PostConstruct;
-import javax.servlet.ServletContext;
+import jakarta.annotation.PostConstruct;
+import jakarta.servlet.ServletContext;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;

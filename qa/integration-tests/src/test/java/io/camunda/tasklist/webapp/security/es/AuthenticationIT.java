@@ -182,7 +182,7 @@ public class AuthenticationIT extends TasklistIntegrationTest implements Authent
     ResponseEntity<String> response =
         testRestTemplate.getForEntity("/actuator/loggers/io.camunda.tasklist", String.class);
     assertThat(response.getStatusCodeValue()).isEqualTo(200);
-    assertThat(response.getBody()).contains("\"configuredLevel\" : \"DEBUG\"");
+    assertThat(response.getBody()).contains("\"configuredLevel\":\"DEBUG\"");
 
     final HttpHeaders headers = new HttpHeaders();
     headers.setContentType(MediaType.APPLICATION_JSON);
@@ -195,7 +195,7 @@ public class AuthenticationIT extends TasklistIntegrationTest implements Authent
 
     response = testRestTemplate.getForEntity("/actuator/loggers/io.camunda.tasklist", String.class);
     assertThat(response.getStatusCodeValue()).isEqualTo(200);
-    assertThat(response.getBody()).contains("\"configuredLevel\" : \"TRACE\"");
+    assertThat(response.getBody()).contains("\"configuredLevel\":\"TRACE\"");
   }
 
   @Override

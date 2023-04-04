@@ -7,7 +7,6 @@
 package io.camunda.tasklist.webapp.security.sso;
 
 import static io.camunda.tasklist.webapp.security.TasklistProfileService.SSO_AUTH_PROFILE;
-import static io.camunda.tasklist.webapp.security.TasklistURIs.ALL_REST_V1_API;
 import static io.camunda.tasklist.webapp.security.TasklistURIs.AUTH_WHITELIST;
 import static io.camunda.tasklist.webapp.security.TasklistURIs.ERROR_URL;
 import static io.camunda.tasklist.webapp.security.TasklistURIs.GRAPHQL_URL;
@@ -20,9 +19,9 @@ import static org.apache.commons.lang3.StringUtils.containsAny;
 import com.auth0.AuthenticationController;
 import io.camunda.tasklist.webapp.security.BaseWebConfigurer;
 import io.camunda.tasklist.webapp.security.oauth.OAuth2WebConfigurer;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -32,6 +31,7 @@ import org.springframework.context.annotation.Profile;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.core.AuthenticationException;
+import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 import org.springframework.stereotype.Component;
 
 @Profile(SSO_AUTH_PROFILE)
@@ -54,22 +54,29 @@ public class SSOWebSecurityConfig extends BaseWebConfigurer {
   }
 
   @Override
-  protected void configureOAuth2(HttpSecurity http) throws Exception {
+  protected void applyOAuth2Settings(HttpSecurity http) throws Exception {
     oAuth2WebConfigurer.configure(http);
   }
 
   @Override
-  protected void configureCsrf(HttpSecurity http) throws Exception {
-    http.csrf()
-        .disable()
-        .authorizeRequests()
-        .antMatchers(AUTH_WHITELIST)
-        .permitAll()
-        .antMatchers(GRAPHQL_URL, ALL_REST_V1_API, ROOT_URL, ERROR_URL)
-        .authenticated()
-        .and()
-        .exceptionHandling()
-        .authenticationEntryPoint(this::authenticationEntry);
+  protected void applySecurityFilterSettings(HttpSecurity http) throws Exception {
+    http.csrf((csrf) -> csrf.disable())
+        .authorizeRequests(
+            (authorize) -> {
+              authorize
+                  .requestMatchers(AUTH_WHITELIST)
+                  .permitAll()
+                  .requestMatchers(
+                      AntPathRequestMatcher.antMatcher(GRAPHQL_URL),
+                      AntPathRequestMatcher.antMatcher(ERROR_URL))
+                  .authenticated()
+                  .requestMatchers(ROOT_URL)
+                  .authenticated();
+            })
+        .exceptionHandling(
+            (handling) -> {
+              handling.authenticationEntryPoint(this::authenticationEntry);
+            });
   }
 
   protected void authenticationEntry(

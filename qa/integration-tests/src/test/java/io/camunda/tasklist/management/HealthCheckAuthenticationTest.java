@@ -11,6 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.BDDMockito.given;
 
+import io.camunda.tasklist.es.ElasticsearchConnector;
 import io.camunda.tasklist.es.ElasticsearchTask;
 import io.camunda.tasklist.es.RetryElasticsearchClient;
 import io.camunda.tasklist.management.HealthCheckTest.AddManagementPropertiesInitializer;
@@ -45,7 +46,8 @@ import org.springframework.test.context.junit4.SpringRunner;
       ElasticsearchSessionRepository.class,
       RetryElasticsearchClient.class,
       ElasticsearchTask.class,
-      TasklistProperties.class
+      TasklistProperties.class,
+      ElasticsearchConnector.class
     },
     webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ContextConfiguration(initializers = AddManagementPropertiesInitializer.class)

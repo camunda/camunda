@@ -7,10 +7,10 @@
 package io.camunda.tasklist.zeebeimport;
 
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
+import jakarta.annotation.PostConstruct;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import javax.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 

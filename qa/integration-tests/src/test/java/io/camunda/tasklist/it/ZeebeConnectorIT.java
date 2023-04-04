@@ -16,7 +16,7 @@ import io.camunda.tasklist.util.TasklistZeebeRule;
 import io.camunda.tasklist.util.TestApplication;
 import io.camunda.tasklist.zeebe.PartitionHolder;
 import io.camunda.tasklist.zeebeimport.ZeebeImporter;
-import org.apache.http.HttpStatus;
+import org.apache.hc.core5.http.HttpStatus;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.junit.After;
 import org.junit.Rule;

@@ -13,12 +13,12 @@ import static io.camunda.tasklist.webapp.security.es.Role.OWNER;
 import static io.camunda.tasklist.webapp.security.es.Role.READER;
 
 import io.camunda.tasklist.webapp.security.Permission;
+import jakarta.annotation.PostConstruct;
 import java.util.Collection;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
-import javax.annotation.PostConstruct;
 import org.springframework.stereotype.Component;
 
 @Component

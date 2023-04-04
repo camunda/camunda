@@ -16,6 +16,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import io.camunda.tasklist.Application;
+import io.camunda.tasklist.es.ElasticsearchConnector;
 import io.camunda.tasklist.es.ElasticsearchTask;
 import io.camunda.tasklist.es.RetryElasticsearchClient;
 import io.camunda.tasklist.management.HealthCheckTest.AddManagementPropertiesInitializer;
@@ -32,6 +33,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.actuate.health.Health;
+import org.springframework.boot.test.autoconfigure.actuate.observability.AutoConfigureObservability;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.boot.test.util.TestPropertyValues;
@@ -43,6 +45,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.context.WebApplicationContext;
 
+@AutoConfigureObservability(tracing = false)
 @RunWith(SpringRunner.class)
 @SpringBootTest(
     classes = {
@@ -53,7 +56,8 @@ import org.springframework.web.context.WebApplicationContext;
       ElasticsearchSessionRepository.class,
       RetryElasticsearchClient.class,
       ElasticsearchTask.class,
-      TasklistProperties.class
+      TasklistProperties.class,
+      ElasticsearchConnector.class
     },
     webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ContextConfiguration(initializers = AddManagementPropertiesInitializer.class)

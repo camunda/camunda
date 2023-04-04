@@ -21,7 +21,7 @@ jobs:
       - uses: actions/setup-java@v3
         with:
           distribution: 'adopt'
-          java-version: '11'
+          java-version: '17'
       - run: mvn -q checkstyle:check
         name: Check style
       - run: mvn -q com.coveo:fmt-maven-plugin:check

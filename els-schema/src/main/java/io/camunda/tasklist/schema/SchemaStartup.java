@@ -10,7 +10,7 @@ import io.camunda.tasklist.exceptions.MigrationException;
 import io.camunda.tasklist.property.MigrationProperties;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.schema.migration.Migrator;
-import javax.annotation.PostConstruct;
+import jakarta.annotation.PostConstruct;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
