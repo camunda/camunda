@@ -22,7 +22,6 @@ import io.camunda.zeebe.shared.management.openapi.models.BackupInfo;
 import io.camunda.zeebe.shared.management.openapi.models.PartitionBackupInfo;
 import io.camunda.zeebe.shared.management.openapi.models.StateCode;
 import io.camunda.zeebe.shared.management.openapi.models.TakeBackupResponse;
-import io.camunda.zeebe.test.util.socket.SocketUtil;
 import io.zeebe.containers.ZeebeBrokerNode;
 import io.zeebe.containers.ZeebeNode;
 import io.zeebe.containers.ZeebePort;
@@ -80,12 +79,7 @@ final class GcsBackupAcceptanceIT {
   final ContainerLogsDumper logsWatcher = new ContainerLogsDumper(cluster::getNodes);
 
   @Container
-  private final ContainerEngine engine =
-      ContainerEngine.builder()
-          .withDebugReceiverPort(SocketUtil.getNextAddress().getPort())
-          .withAutoAcknowledge(true)
-          .withCluster(cluster)
-          .build();
+  private final ContainerEngine engine = ContainerEngine.builder().withCluster(cluster).build();
 
   @AfterAll
   static void afterAll() {
