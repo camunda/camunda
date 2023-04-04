@@ -7,6 +7,7 @@
 
 import React, {runLastEffect} from 'react';
 import {shallow} from 'enzyme';
+import {C3Navigation} from '@camunda/camunda-composite-components';
 
 import {track} from 'tracking';
 import {getOptimizeProfile, isEnterpriseMode} from 'config';
@@ -28,10 +29,13 @@ jest.mock('config', () => ({
     operate: 'http://operate.com',
     optimize: 'http://optimize.com',
   }),
+  getOnboardingConfig: jest.fn().mockReturnValue({orgId: 'orgId'}),
+  getNotificationsUrl: jest.fn().mockReturnValue('notificationsUrl'),
 }));
 
 jest.mock('./service', () => ({
   isEventBasedProcessEnabled: jest.fn().mockReturnValue(true),
+  getUserToken: jest.fn().mockReturnValue('userToken'),
 }));
 
 jest.mock('react-router', () => ({
@@ -44,7 +48,7 @@ jest.mock('react-router', () => ({
 jest.mock('tracking', () => ({track: jest.fn()}));
 
 function getNavItem(node, key) {
-  const navItems = node.find('C3Navigation').prop('navbar').elements;
+  const navItems = node.find(C3Navigation).prop('navbar').elements;
   return navItems.find((item) => item.key === key);
 }
 
@@ -99,7 +103,7 @@ it('should show license warning if enterpriseMode is not set', async () => {
   await runLastEffect();
   await node.update();
 
-  const tags = node.find('C3Navigation').prop('navbar').tags;
+  const tags = node.find(C3Navigation).prop('navbar').tags;
   expect(tags.find((tag) => tag.key === 'licenseWarning')).toBeDefined();
 });
 
@@ -108,7 +112,7 @@ it('should open the whatsNewDialog on option click', async () => {
 
   expect(node.find(WhatsNewModal).prop('open')).toBe(false);
 
-  const sideBarEleemnts = node.find('C3Navigation').prop('infoSideBar').elements;
+  const sideBarEleemnts = node.find(C3Navigation).prop('infoSideBar').elements;
   sideBarEleemnts.find((el) => el.key === 'whatsNew').onClick();
 
   expect(node.find(WhatsNewModal).prop('open')).toBe(true);
@@ -117,9 +121,9 @@ it('should open the whatsNewDialog on option click', async () => {
 it('should no display navbar and sidebar is noAction prop is specified', () => {
   const node = shallow(<Header noActions />);
 
-  expect(node.find('C3Navigation').prop('navbar')).toEqual({elements: []});
-  expect(node.find('C3Navigation').prop('infoSideBar')).not.toBeDefined();
-  expect(node.find('C3Navigation').prop('userSideBar')).not.toBeDefined();
+  expect(node.find(C3Navigation).prop('navbar')).toEqual({elements: []});
+  expect(node.find(C3Navigation).prop('infoSideBar')).not.toBeDefined();
+  expect(node.find(C3Navigation).prop('userSideBar')).not.toBeDefined();
 });
 
 it('should render sidebar links', async () => {
@@ -128,7 +132,7 @@ it('should render sidebar links', async () => {
   runLastEffect();
   await flushPromises();
 
-  expect(node.find('C3Navigation').prop('appBar').elements).toEqual([
+  expect(node.find(C3Navigation).prop('appBar').elements).toEqual([
     {
       active: false,
       href: 'http://zeebe.com',
@@ -161,7 +165,29 @@ it('should render sidebar links', async () => {
 it('should track app clicks from the app switcher', async () => {
   const node = shallow(<Header {...props} />);
 
-  node.find('C3Navigation').prop('appBar').elementClicked('modeler');
+  node.find(C3Navigation).prop('appBar').elementClicked('modeler');
 
   expect(track).toHaveBeenCalledWith('modeler:open');
+});
+
+it('should display the notifications component in cloud mode', async () => {
+  getOptimizeProfile.mockReturnValueOnce('cloud');
+
+  const node = shallow(<Header {...props} />);
+
+  await runLastEffect();
+  await node.update();
+
+  expect(node.find('C3UserConfigurationProvider').props()).toEqual({
+    endpoints: {notifications: 'notificationsUrl'},
+    activeOrganizationId: 'orgId',
+    userToken: 'userToken',
+    getNewUserToken: expect.any(Function),
+    children: expect.any(Array),
+  });
+  expect(node.find(C3Navigation).prop('notificationSideBar')).toEqual({
+    ariaLabel: 'Notifications',
+    isOpen: false,
+    key: 'notifications',
+  });
 });

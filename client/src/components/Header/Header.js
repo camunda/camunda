@@ -7,16 +7,22 @@
 
 import React, {useEffect, useState} from 'react';
 import {Link, useLocation} from 'react-router-dom';
-import {C3Navigation} from '@camunda/camunda-composite-components';
+import {C3Navigation, C3UserConfigurationProvider} from '@camunda/camunda-composite-components';
 
 import {Tooltip, NavItem} from 'components';
-import {getOptimizeProfile, isEnterpriseMode, getWebappLinks} from 'config';
+import {
+  getOptimizeProfile,
+  isEnterpriseMode,
+  getWebappLinks,
+  getOnboardingConfig,
+  getNotificationsUrl,
+} from 'config';
 import {withDocs, withErrorHandling, withUser} from 'HOC';
 import {showError} from 'notifications';
 import {t} from 'translation';
 import {track} from 'tracking';
 
-import {isEventBasedProcessEnabled} from './service';
+import {isEventBasedProcessEnabled, getUserToken} from './service';
 import WhatsNewModal from './WhatsNewModal';
 import {TelemetrySettings} from './TelemetrySettings';
 import useUserMenu from './useUserMenu';
@@ -30,6 +36,10 @@ export function Header({user, mightFail, docsLink, noActions}) {
   const [whatsNewOpen, setWhatsNewOpen] = useState(false);
   const [telemetrySettingsOpen, setTelemetrySettingsOpen] = useState(false);
   const location = useLocation();
+  const [organizationId, setOrganizationId] = useState();
+  const [optimizeProfile, setOptimizeProfile] = useState();
+  const [userToken, setUserToken] = useState(null);
+  const [notificationsUrl, setNotificationsUrl] = useState();
   const userSideBar = useUserMenu({user, mightFail, setTelemetrySettingsOpen});
 
   useEffect(() => {
@@ -39,11 +49,26 @@ export function Header({user, mightFail, docsLink, noActions}) {
         getOptimizeProfile(),
         isEnterpriseMode(),
         getWebappLinks(),
+        getOnboardingConfig(),
+        getUserToken(),
+        getNotificationsUrl(),
       ]),
-      ([enabled, optimizeProfile, isEnterpriseMode, webappLinks]) => {
+      ([
+        enabled,
+        optimizeProfile,
+        isEnterpriseMode,
+        webappLinks,
+        onboardingConfig,
+        userToken,
+        notificationsUrl,
+      ]) => {
         setShowEventBased(enabled && optimizeProfile === 'platform');
         setEnterpiseMode(isEnterpriseMode);
         setwebappLinks(webappLinks);
+        setOptimizeProfile(optimizeProfile);
+        setOrganizationId(onboardingConfig.orgId);
+        setUserToken(userToken);
+        setNotificationsUrl(notificationsUrl);
       },
       showError
     );
@@ -61,14 +86,31 @@ export function Header({user, mightFail, docsLink, noActions}) {
     props.userSideBar = userSideBar;
   }
 
+  const isCloud = optimizeProfile === 'cloud';
+  if (isCloud) {
+    props.notificationSideBar = {
+      key: 'notifications',
+      isOpen: false,
+      ariaLabel: 'Notifications',
+    };
+  }
+
   return (
-    <>
+    <C3UserConfigurationProvider
+      {...getNavigationConfiguration(
+        isCloud,
+        organizationId,
+        userToken,
+        getUserToken,
+        notificationsUrl
+      )}
+    >
       <C3Navigation {...props} />
       <WhatsNewModal open={whatsNewOpen} onClose={() => setWhatsNewOpen(false)} />
       {telemetrySettingsOpen && (
         <TelemetrySettings onClose={() => setTelemetrySettingsOpen(false)} />
       )}
-    </>
+    </C3UserConfigurationProvider>
   );
 }
 
@@ -251,6 +293,23 @@ function createInfoSideBarProps(setWhatsNewOpen, docsLink, enterpriseMode) {
       },
     ],
   };
+}
+
+function getNavigationConfiguration(
+  isCloud,
+  activeOrganizationId,
+  userToken,
+  getNewUserToken,
+  notificationsUrl
+) {
+  return isCloud && userToken && notificationsUrl
+    ? {
+        endpoints: {notifications: notificationsUrl},
+        userToken,
+        getNewUserToken,
+        activeOrganizationId,
+      }
+    : {};
 }
 
 export default withUser(withDocs(withErrorHandling(Header)));
