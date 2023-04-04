@@ -5,7 +5,6 @@
  * except in compliance with the proprietary license.
  */
 
-import React from 'react';
 import {shallow} from 'enzyme';
 import {Button} from '@carbon/react';
 
@@ -27,7 +26,7 @@ it('should not show an open Modal when mounted', () => {
 it('should open a modal with custom text when calling showPrompt', () => {
   const node = shallow(<Prompt />);
 
-  showPrompt(promptText, () => {});
+  showPrompt(promptText, async () => {});
 
   expect(node.find('Modal').prop('open')).toBe(true);
 });

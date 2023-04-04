@@ -5,28 +5,38 @@
  * except in compliance with the proprietary license.
  */
 
-import React, {useState} from 'react';
+import {useState} from 'react';
 import {Button} from '@carbon/react';
 
 import {CarbonModal as Modal} from 'components';
 import {t} from 'translation';
 
-export default function ConflictModal({conflict, onClose, onConfirm}) {
-  const [loading, setLoading] = useState(false);
+interface ConflictModalProps {
+  conflict?: Record<string, {id: string; name: string}[]>;
+  onClose: () => void;
+  onConfirm: () => Promise<void>;
+}
 
-  const confirm = async () => {
+export default function ConflictModal({
+  conflict,
+  onClose,
+  onConfirm,
+}: ConflictModalProps): JSX.Element {
+  const [loading, setLoading] = useState<boolean>(false);
+
+  const confirm = async (): Promise<void> => {
     setLoading(true);
     await onConfirm();
     setLoading(false);
   };
 
   return (
-    <Modal open={conflict} onClose={onClose} onConfirm={confirm} className="ConflictModal">
+    <Modal open={!!conflict} onClose={onClose} className="ConflictModal">
       <Modal.Header>{t('report.saveConflict.header')}</Modal.Header>
       <Modal.Content>
         {conflict &&
           ['combined_report', 'alert'].map((type) => {
-            if (conflict[type].length === 0) {
+            if (conflict[type]?.length === 0) {
               return null;
             }
 
@@ -34,7 +44,7 @@ export default function ConflictModal({conflict, onClose, onConfirm}) {
               <div key={type}>
                 <p>{t(`report.saveConflict.${type}.header`)}</p>
                 <ul>
-                  {conflict[type].map(({id, name}) => (
+                  {conflict[type]?.map(({id, name}: {id: string; name: string}) => (
                     <li key={id}>'{name || id}'</li>
                   ))}
                 </ul>

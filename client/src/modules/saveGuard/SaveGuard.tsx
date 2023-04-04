@@ -5,7 +5,7 @@
  * except in compliance with the proprietary license.
  */
 
-import React from 'react';
+import {Component} from 'react';
 import {Prompt} from 'react-router-dom';
 import {Button} from '@carbon/react';
 
@@ -13,10 +13,17 @@ import {CarbonModal as Modal} from 'components';
 import {addHandler, removeHandler} from 'request';
 import {t} from 'translation';
 
-let instance = null;
+interface State {
+  dirty: boolean;
+  confirm: ((allow: boolean) => void) | null;
+  label: string;
+  saveHandler: (() => Promise<void>) | null;
+}
 
-export default class SaveGuard extends React.Component {
-  state = {
+let instance: SaveGuard | null = null;
+
+export default class SaveGuard extends Component<{}, State> {
+  state: State = {
     dirty: false,
     confirm: null,
     label: '',
@@ -35,22 +42,21 @@ export default class SaveGuard extends React.Component {
     removeHandler(this.handleUnauthorized);
   }
 
-  handleUnauthorized = (response) => {
+  handleUnauthorized = async (response: Response) => {
     const {dirty, confirm} = this.state;
 
     if (response.status === 401 && dirty && confirm) {
-      // the private route will show a login screen before the save operation
-      // is officially finished. We are still awaiting the saveHandler in the
-      // saveAndProceed function, but want to hide the modal now to allow the
-      // user to login again
-
       this.setState({confirm: null});
     }
 
     return response;
   };
 
-  setDirty = (dirty, label = '', saveHandler = null) => {
+  setDirty = (
+    dirty: boolean,
+    label: string = '',
+    saveHandler: (() => Promise<void>) | null = null
+  ) => {
     this.setState({dirty, label, saveHandler}, () => {
       if (!dirty && this.state.confirm) {
         this.proceed();
@@ -58,31 +64,29 @@ export default class SaveGuard extends React.Component {
     });
   };
 
-  unloadHandler = (evt) => {
+  unloadHandler = (evt: BeforeUnloadEvent) => {
     if (this.state.dirty) {
       evt.preventDefault();
-
-      // Chrome requires returnValue to be set
       evt.returnValue = '';
     }
   };
 
   abortNavigation = () => {
-    this.state.confirm(false);
+    this.state.confirm?.(false);
     this.setState({confirm: null});
   };
 
   saveAndProceed = async () => {
     const {saveHandler, confirm} = this.state;
 
-    await saveHandler();
-    confirm(true);
+    await saveHandler?.();
+    confirm?.(true);
 
     this.setState({confirm: null, dirty: false, saveHandler: null});
   };
 
   proceed = () => {
-    this.state.confirm(true);
+    this.state.confirm?.(true);
     this.setState({confirm: null, dirty: false, saveHandler: null});
   };
 
@@ -106,19 +110,19 @@ export default class SaveGuard extends React.Component {
     );
   }
 
-  static getUserConfirmation = (msg, cb) => {
-    instance.setState({confirm: cb});
+  static getUserConfirmation = (msg: string, cb: (allow: boolean) => void) => {
+    instance?.setState({confirm: cb});
   };
 }
 
-export function nowDirty(label, saveHandler) {
-  instance.setDirty(true, label, saveHandler);
+export function nowDirty(label?: string, saveHandler?: () => Promise<void>) {
+  instance?.setDirty(true, label, saveHandler);
 }
 
 export function nowPristine() {
-  instance.setDirty(false);
+  instance?.setDirty(false);
 }
 
 export function isDirty() {
-  return instance.state.dirty;
+  return instance?.state.dirty ?? false;
 }

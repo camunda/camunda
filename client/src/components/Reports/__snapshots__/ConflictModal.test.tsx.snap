@@ -4,19 +4,7 @@ exports[`should match snapshot 1`] = `
 <Modal
   className="ConflictModal"
   onClose={[MockFunction]}
-  onConfirm={[Function]}
-  open={
-    Object {
-      "alert": Array [
-        Object {
-          "id": "1",
-          "name": "alert",
-          "type": "alert",
-        },
-      ],
-      "combined_report": Array [],
-    }
-  }
+  open={true}
 >
   <ForwardRef(ModalHeader)
     buttonOnClick={[Function]}

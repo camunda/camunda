@@ -5,18 +5,27 @@
  * except in compliance with the proprietary license.
  */
 
-import React, {useState} from 'react';
+import {useState, Dispatch, SetStateAction} from 'react';
 import {Button} from '@carbon/react';
 
 import {CarbonModal as Modal} from 'components';
 
 import './Prompt.scss';
 
-let textState, callback;
+interface PromptText {
+  title?: string;
+  body?: string;
+  yes?: string;
+  no?: string;
+}
 
-export default function Prompt() {
-  textState = useState({});
-  const [loading, setLoading] = useState(false);
+type TextStateType = [PromptText, Dispatch<SetStateAction<PromptText>>];
+
+let textState: TextStateType, callback: () => Promise<void>;
+
+export default function Prompt(): JSX.Element {
+  textState = useState<PromptText>({});
+  const [loading, setLoading] = useState<boolean>(false);
 
   const [text, setText] = textState;
 
@@ -46,7 +55,7 @@ export default function Prompt() {
   );
 }
 
-export function showPrompt(text, cb) {
+export function showPrompt(text: PromptText, cb: () => Promise<void>): void {
   textState[1](text);
   callback = cb;
 }

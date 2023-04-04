@@ -5,7 +5,6 @@
  * except in compliance with the proprietary license.
  */
 
-import React from 'react';
 import {shallow} from 'enzyme';
 import {Prompt} from 'react-router-dom';
 import {Button} from '@carbon/react';
@@ -58,7 +57,7 @@ it('should allow abortion of navigation', () => {
   nowDirty('report', save);
   SaveGuard.getUserConfirmation('', cb);
 
-  node.find(Modal).prop('onClose')();
+  node.find(Modal).simulate('close');
 
   expect(save).not.toHaveBeenCalled();
   expect(cb).toHaveBeenCalledWith(false);
