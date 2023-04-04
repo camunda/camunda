@@ -14,8 +14,8 @@ const Forbidden: React.FC = () => {
       heading="403 - You do not have permission to view this information"
       description="Contact your administrator to get access."
       link={{
-        label: 'Learn more about Operate',
-        href: 'https://docs.camunda.io/docs/components/operate/operate-introduction/',
+        label: 'Learn more about permissions',
+        href: 'https://docs.camunda.io/docs/self-managed/operate-deployment/operate-authentication/#resource-based-permissions',
       }}
     />
   );

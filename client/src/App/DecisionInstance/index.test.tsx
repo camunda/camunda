@@ -286,10 +286,10 @@ describe('<DecisionInstance />', () => {
     ).toBeInTheDocument();
 
     expect(
-      screen.getByRole('link', {name: 'Learn more about Operate'})
+      screen.getByRole('link', {name: 'Learn more about permissions'})
     ).toHaveAttribute(
       'href',
-      'https://docs.camunda.io/docs/components/operate/operate-introduction/'
+      'https://docs.camunda.io/docs/self-managed/operate-deployment/operate-authentication/#resource-based-permissions'
     );
   });
 });
