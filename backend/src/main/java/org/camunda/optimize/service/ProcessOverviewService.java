@@ -54,7 +54,7 @@ public class ProcessOverviewService {
   private final CollectionService collectionService;
   private final DigestService digestService;
 
-  public List<ProcessOverviewResponseDto> getAllProcessOverviews(final String userId) {
+  public List<ProcessOverviewResponseDto> getAllProcessOverviews(final String userId, final String locale) {
     final Map<String, String> procDefKeysAndName = definitionService.getAllDefinitionsWithTenants(PROCESS)
       .stream()
       .filter(def -> !def.getIsEventProcess())
@@ -88,7 +88,9 @@ public class ProcessOverviewService {
           ).orElse(new ProcessOwnerResponseDto()),
           overviewForKey.map(ProcessOverviewDto::getDigest)
             .orElse(new ProcessDigestDto(false, new HashMap<>())),
-          overviewForKey.map(kpiService::extractKpiResultsForProcessDefinition).orElse(Collections.emptyList())
+          overviewForKey.map(processOverviewDto ->
+                               kpiService.extractKpiResultsForProcessDefinition(processOverviewDto, locale))
+                            .orElse(Collections.emptyList())
         );
       }).collect(Collectors.toList());
   }

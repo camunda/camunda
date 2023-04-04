@@ -81,6 +81,24 @@ public class ReportRestMapper {
     resolveOwnerAndModifierNames(authorizedReportDefinitionDto.getDefinitionDto());
   }
 
+  public static void localizeReportNames(final ReportDefinitionDto<?> reportDefinitionDto, final String locale,
+                                         LocalizationService localizationService) {
+    if (isManagementOrInstantPreviewReport(reportDefinitionDto)) {
+      final String validLocale = localizationService.validateAndReturnValidLocale(locale);
+      if (((SingleProcessReportDefinitionRequestDto) reportDefinitionDto).getData().isManagementReport()) {
+        Optional.ofNullable(localizationService.getLocalizationForManagementReportCode(
+          validLocale,
+          reportDefinitionDto.getName()
+        )).ifPresent(reportDefinitionDto::setName);
+      } else {
+        Optional.ofNullable(localizationService.getLocalizationForInstantPreviewReportCode(
+          validLocale,
+          reportDefinitionDto.getName()
+        )).ifPresent(reportDefinitionDto::setName);
+      }
+    }
+  }
+
   private <T> AuthorizedProcessReportEvaluationResponseDto<T> mapToAuthorizedProcessReportEvaluationResponseDto(
     final SingleReportEvaluationResult<T> singleReportEvaluationResult) {
     return new AuthorizedProcessReportEvaluationResponseDto<>(
@@ -99,7 +117,7 @@ public class ReportRestMapper {
       (ReportResultResponseDto<T>) mapToReportResultResponseDto(evaluationResult),
       (R) evaluationResult.getReportDefinition()
     );
-    localizeReportNames(mappedResult.getReportDefinition(), locale);
+    localizeReportNames(mappedResult.getReportDefinition(), locale, localizationService);
     return mappedResult;
   }
 
@@ -133,24 +151,7 @@ public class ReportRestMapper {
       .ifPresent(reportDefinitionDto::setLastModifier);
   }
 
-  private void localizeReportNames(final ReportDefinitionDto<?> reportDefinitionDto, final String locale) {
-    if (isManagementOrInstantPreviewReport(reportDefinitionDto)) {
-      final String validLocale = localizationService.validateAndReturnValidLocale(locale);
-      if (((SingleProcessReportDefinitionRequestDto) reportDefinitionDto).getData().isManagementReport()) {
-        Optional.ofNullable(localizationService.getLocalizationForManagementReportCode(
-          validLocale,
-          reportDefinitionDto.getName()
-        )).ifPresent(reportDefinitionDto::setName);
-      } else {
-        Optional.ofNullable(localizationService.getLocalizationForInstantPreviewReportCode(
-          validLocale,
-          reportDefinitionDto.getName()
-        )).ifPresent(reportDefinitionDto::setName);
-      }
-    }
-  }
-
-  private boolean isManagementOrInstantPreviewReport(final ReportDefinitionDto<?> reportDefinitionDto) {
+  private static boolean isManagementOrInstantPreviewReport(final ReportDefinitionDto<?> reportDefinitionDto) {
     return reportDefinitionDto instanceof SingleProcessReportDefinitionRequestDto
       && (((SingleProcessReportDefinitionRequestDto) reportDefinitionDto).getData().isManagementReport()
       || ((SingleProcessReportDefinitionRequestDto) reportDefinitionDto).getData().isInstantPreviewReport());
