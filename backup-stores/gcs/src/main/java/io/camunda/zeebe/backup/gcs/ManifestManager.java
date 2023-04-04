@@ -60,7 +60,7 @@ public final class ManifestManager {
    *   <li>{@code "manifests"}
    * </ul>
    */
-  private static final String MANIFESTS_ROOT_PATH_FORMAT = "%s/manifests/";
+  private static final String MANIFESTS_ROOT_PATH_FORMAT = "%smanifests/";
   /**
    * The path format consists of the following elements:
    *
