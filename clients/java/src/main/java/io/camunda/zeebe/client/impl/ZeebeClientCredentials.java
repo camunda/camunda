@@ -18,12 +18,14 @@ package io.camunda.zeebe.client.impl;
 import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonGetter;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonSetter;
 import java.time.Instant;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Objects;
 
+@JsonIgnoreProperties(ignoreUnknown = true)
 public final class ZeebeClientCredentials {
 
   @JsonAlias({"accesstoken", "access_token"})
@@ -51,11 +53,6 @@ public final class ZeebeClientCredentials {
     return tokenType;
   }
 
-  @JsonSetter("expiry")
-  public void setExpiry(final String expiry) {
-    this.expiry = ZonedDateTime.parse(expiry);
-  }
-
   @JsonSetter("expires_in")
   public void setExpiresIn(final String expiresIn) {
     expiry = ZonedDateTime.now().plusSeconds(Long.parseLong(expiresIn));
@@ -64,6 +61,11 @@ public final class ZeebeClientCredentials {
   @JsonGetter("expiry")
   public String getExpiry() {
     return expiry.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME);
+  }
+
+  @JsonSetter("expiry")
+  public void setExpiry(final String expiry) {
+    this.expiry = ZonedDateTime.parse(expiry);
   }
 
   @JsonIgnore
