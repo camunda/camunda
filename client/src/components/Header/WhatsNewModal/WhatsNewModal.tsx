@@ -5,12 +5,12 @@
  * except in compliance with the proprietary license.
  */
 
-import React, {useState, useEffect} from 'react';
+import {useState, useEffect} from 'react';
 import ReactMarkdown from 'react-markdown';
 import {Button} from '@carbon/react';
 
 import {CarbonModal as Modal, LoadingIndicator} from 'components';
-import {withErrorHandling} from 'HOC';
+import {withErrorHandling, WithErrorHandlingProps} from 'HOC';
 import {t, getLanguage} from 'translation';
 import {showError} from 'notifications';
 import {getOptimizeVersion} from 'config';
@@ -19,10 +19,15 @@ import {isChangeLogSeen, setChangeLogAsSeen, getMarkdownText} from './service';
 
 import './WhatsNewModal.scss';
 
-export function WhatsNewModal({open, onClose, mightFail}) {
-  const [optimizeVersion, setOptimizeVersion] = useState(null);
-  const [seen, setSeen] = useState(true);
-  const [modalContent, setModalContent] = useState('');
+interface WhatsNewModalProps extends WithErrorHandlingProps {
+  open: boolean;
+  onClose: () => void;
+}
+
+export function WhatsNewModal({open, onClose, mightFail}: WhatsNewModalProps) {
+  const [optimizeVersion, setOptimizeVersion] = useState<string | null>(null);
+  const [seen, setSeen] = useState<boolean>(true);
+  const [modalContent, setModalContent] = useState<string>('');
 
   useEffect(() => {
     mightFail(isChangeLogSeen(), ({seen}) => setSeen(seen), showError);

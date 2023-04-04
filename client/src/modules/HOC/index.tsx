@@ -6,5 +6,4 @@
  */
 
 export {default as withErrorHandling} from './withErrorHandling';
-
 export type {WithErrorHandlingProps} from './withErrorHandling';

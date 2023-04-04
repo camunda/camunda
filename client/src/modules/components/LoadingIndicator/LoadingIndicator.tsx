@@ -5,10 +5,15 @@
  * except in compliance with the proprietary license.
  */
 
-import React from 'react';
-import './LoadingIndicator.scss';
+import {ComponentPropsWithoutRef} from 'react';
 import classnames from 'classnames';
 
-export default function LoadingIndicator({small, className, ...props}) {
+import './LoadingIndicator.scss';
+
+interface LoadingIndicatorProps extends ComponentPropsWithoutRef<'div'> {
+  small?: boolean;
+}
+
+export default function LoadingIndicator({small, className, ...props}: LoadingIndicatorProps) {
   return <div {...props} className={classnames('LoadingIndicator', className, {small})} />;
 }

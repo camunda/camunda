@@ -5,74 +5,67 @@
  * except in compliance with the proprietary license.
  */
 
-import React, {ComponentType} from 'react';
+import {ComponentType, useCallback, useRef} from 'react';
+import {useState} from 'react';
+import {useEffect} from 'react';
 
-export interface WithErrorHandlingProps {
+export interface WithErrorHandlingProps<T = any> {
   mightFail: (
-    retriever: Promise<any>,
-    cb: ((response: any) => void) | undefined,
+    retriever: Promise<T>,
+    cb: ((response: any) => T) | undefined,
     errorHandler?: ((error: any) => void) | undefined
-  ) => void;
+  ) => Promise<T>;
   error?: any;
   resetError?: () => void;
 }
 
-export default function withErrorHandling<P extends object>(Component: ComponentType<P>) {
-  class WithErrorHandling extends React.Component<
-    Omit<P, keyof WithErrorHandlingProps>,
-    {error?: any}
-  > {
-    mounted = false;
+export default function withErrorHandling<P extends object>(
+  Component: ComponentType<P>
+): ComponentType<Omit<P, keyof WithErrorHandlingProps>> {
+  const Wrapper = (props: Omit<P, keyof WithErrorHandlingProps>) => {
+    const [error, setError] = useState<any>(undefined);
+    const mounted = useRef<boolean>();
 
-    constructor(props: P) {
-      super(props);
-      this.state = {
-        error: undefined,
+    const mightFail = useCallback(
+      async (
+        retriever: Promise<any>,
+        cb?: (response: any) => void,
+        errorHandler?: (error: any) => void
+      ) => {
+        try {
+          const response = await retriever;
+          if (mounted.current) {
+            return cb?.(response);
+          }
+        } catch (error) {
+          if (mounted.current) {
+            errorHandler?.(error);
+            setError(error);
+          }
+        }
+      },
+      []
+    );
+
+    const resetError = useCallback(() => {
+      setError(undefined);
+    }, []);
+
+    useEffect(() => {
+      mounted.current = true;
+      return () => {
+        mounted.current = false;
       };
-    }
+    }, []);
 
-    componentDidMount() {
-      this.mounted = true;
-    }
+    return (
+      <Component mightFail={mightFail} error={error} resetError={resetError} {...(props as P)} />
+    );
+  };
 
-    componentWillUnmount() {
-      this.mounted = false;
-    }
+  Wrapper.displayName = `${Component.displayName || Component.name || 'Component'}ErrorHandler`;
 
-    mightFail: WithErrorHandlingProps['mightFail'] = async (retriever, cb, errorHandler) => {
-      try {
-        const response = await retriever;
-        if (this.mounted) {
-          return cb && cb(response);
-        }
-      } catch (error) {
-        if (this.mounted) {
-          errorHandler && errorHandler(error);
-          this.setState({error});
-        }
-      }
-    };
+  Wrapper.WrappedComponent = Component;
 
-    resetError: WithErrorHandlingProps['resetError'] = () => {
-      this.setState({error: undefined});
-    };
-
-    render() {
-      const {error} = this.state;
-      return (
-        <Component
-          mightFail={this.mightFail}
-          error={error}
-          resetError={this.resetError}
-          {...(this.props as P)}
-        />
-      );
-    }
-
-    static displayName = `${Component.displayName || Component.name || 'Component'}ErrorHandler`;
-
-    static WrappedComponent = Component;
-  }
-
-  return WithErrorHandling;
+  return Wrapper;
 }

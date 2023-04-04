@@ -5,7 +5,7 @@
  * except in compliance with the proprietary license.
  */
 
-import {runAllEffects} from 'react';
+import {runAllEffects} from '__mocks__/react';
 import {shallow} from 'enzyme';
 
 import {WhatsNewModal} from './WhatsNewModal';
@@ -19,6 +19,8 @@ jest.mock('./service', () => ({
 
 const props = {
   mightFail: jest.fn().mockImplementation((data, cb) => cb(data)),
+  onClose: jest.fn(),
+  open: false,
 };
 
 it('should show whats new text', () => {
@@ -40,7 +42,7 @@ it('should show optimize version', async () => {
 });
 
 it('should not show the modal if it is seen before', () => {
-  isChangeLogSeen.mockReturnValueOnce({seen: true});
+  (isChangeLogSeen as jest.Mock).mockReturnValueOnce({seen: true});
   const node = shallow(<WhatsNewModal {...props} />);
 
   runAllEffects();
@@ -54,7 +56,7 @@ it('should call onClose when closing modal', () => {
 
   runAllEffects();
 
-  node.find('Modal').prop('onClose')();
+  node.find('Modal').simulate('close');
 
   expect(spy).toHaveBeenCalled();
 });
@@ -64,7 +66,7 @@ it('should set status as seen when closing the whats new modal', () => {
 
   runAllEffects();
 
-  node.find('Modal').prop('onClose')();
+  node.find('Modal').simulate('close');
 
   expect(setChangeLogAsSeen).toHaveBeenCalled();
 });
