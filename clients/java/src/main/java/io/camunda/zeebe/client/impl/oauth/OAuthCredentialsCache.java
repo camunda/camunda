@@ -17,6 +17,7 @@ package io.camunda.zeebe.client.impl.oauth;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonGetter;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -134,6 +135,7 @@ public final class OAuthCredentialsCache {
     }
   }
 
+  @JsonIgnoreProperties(ignoreUnknown = true)
   private static final class OAuthCachedCredentials {
 
     private final ZeebeClientCredentials credentials;

@@ -79,13 +79,13 @@
     <version.prometheus>0.15.0</version.prometheus>
     <version.protobuf>3.19.6</version.protobuf>
     <version.protobuf-common>2.8.4</version.protobuf-common>
-    <version.micrometer>1.8.13</version.micrometer>
+    <version.micrometer>1.9.9</version.micrometer>
     <version.rocksdbjni>6.28.2</version.rocksdbjni>
     <version.sbe>1.25.3</version.sbe>
     <version.scala-parser>2.1.1</version.scala-parser>
     <version.scala>2.13.10</version.scala>
     <version.slf4j>1.7.36</version.slf4j>
-    <version.snakeyaml>1.33</version.snakeyaml>
+    <version.snakeyaml>2.0</version.snakeyaml>
     <version.javax>1.3.2</version.javax>
     <version.wiremock>2.32.0</version.wiremock>
     <version.conscrypt>2.5.2</version.conscrypt>
@@ -97,7 +97,7 @@
     <version.dmn-scala>1.7.4</version.dmn-scala>
     <version.rest-assured>4.5.1</version.rest-assured>
     <version.spring>5.3.26</version.spring>
-    <version.spring-boot>2.6.6</version.spring-boot>
+    <version.spring-boot>2.7.10</version.spring-boot>
     <version.concurrentunit>0.4.6</version.concurrentunit>
     <version.config>1.4.2</version.config>
     <version.kryo>5.3.0</version.kryo>
