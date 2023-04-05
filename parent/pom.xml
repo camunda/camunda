@@ -942,24 +942,6 @@
         <scope>import</scope>
       </dependency>
 
-      <!--
-        Sad workaround for https://github.com/testcontainers/testcontainers-java/issues/4279; when
-        this is not needed and removed, make sure to remove it from child modules including this as
-        well
-      -->
-      <dependency>
-        <groupId>com.amazonaws</groupId>
-        <artifactId>aws-java-sdk-core</artifactId>
-        <version>1.12.450</version>
-        <scope>test</scope>
-        <exclusions>
-          <exclusion>
-            <groupId>*</groupId>
-            <artifactId>*</artifactId>
-          </exclusion>
-        </exclusions>
-      </dependency>
-
       <!-- Dependencies present for convergence only -->
       <!-- between log4j2 and commons-compress (from testcontainers) -->
       <dependency>

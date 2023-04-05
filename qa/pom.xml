@@ -60,16 +60,6 @@
           <skip>true</skip>
         </configuration>
       </plugin>
-
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-dependency-plugin</artifactId>
-        <configuration>
-          <ignoredUnusedDeclaredDependencies>
-            <dep>com.amazonaws:aws-java-sdk-core</dep>
-          </ignoredUnusedDeclaredDependencies>
-        </configuration>
-      </plugin>
     </plugins>
   </build>
 </project>
