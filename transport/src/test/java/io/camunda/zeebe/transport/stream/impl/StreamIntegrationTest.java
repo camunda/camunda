@@ -25,6 +25,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicReference;
+import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.awaitility.Awaitility;
@@ -111,14 +112,7 @@ class StreamIntegrationTest {
   @AfterEach
   void tearDown() {
     Collections.reverse(closeables);
-    closeables.forEach(
-        c -> {
-          try {
-            c.close();
-          } catch (final Exception e) {
-            throw new RuntimeException(e);
-          }
-        });
+    CloseHelper.closeAll(closeables);
   }
 
   @Test
