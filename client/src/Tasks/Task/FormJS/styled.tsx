@@ -6,7 +6,7 @@
  */
 
 import styled, {css, createGlobalStyle} from 'styled-components';
-import {rem} from '@carbon/elements';
+import {rem, breakpoints} from '@carbon/elements';
 import {TaskDetailsRow} from 'modules/components/TaskDetailsLayout';
 
 function getSelectArrowSvg(color: string) {
@@ -92,6 +92,7 @@ const MARKDOWN_STYLES = css`
 
       & code {
         ${theme.code02};
+        white-space: pre-wrap;
       }
 
       & blockquote {
@@ -964,55 +965,56 @@ const ADORNMENTS_STYLES = css`
 `;
 
 const FormCustomStyling = createGlobalStyle`
-  ${MARKDOWN_STYLES}
-  ${ANCHOR_STYLES}
-  ${DISABLED_STYLES}
-  ${LABEL_DESCRIPTION_ERROR_STYLES}
-  ${CHECKBOX_STYLES}
-  ${TAGLIST_STYLES}
-  ${RADIO_STYLES}
-  ${BUTTON_STYLES}
-  ${NUMBER_INPUTS}
-  ${DATETIME_INPUTS}
-  ${REMAINING_INPUTS}
-  ${ADORNMENTS_STYLES}
-  ${DROPDOWN_STYLES}
-  ${SELECT_STYLES}
+  ${() => css`
+    ${MARKDOWN_STYLES}
+    ${ANCHOR_STYLES}
+    ${DISABLED_STYLES}
+    ${LABEL_DESCRIPTION_ERROR_STYLES}
+    ${CHECKBOX_STYLES}
+    ${TAGLIST_STYLES}
+    ${RADIO_STYLES}
+    ${BUTTON_STYLES}
+    ${NUMBER_INPUTS}
+    ${DATETIME_INPUTS}
+    ${REMAINING_INPUTS}
+    ${ADORNMENTS_STYLES}
+    ${DROPDOWN_STYLES}
+    ${SELECT_STYLES}
 
   .fjs-container {
-    width: 100%;
-    height: min-content;
+      width: 100%;
+      height: min-content;
 
-    .fjs-form {
-      background-color: transparent;
-      color: var(--cds-text-primary);
-    }
+      .fjs-form {
+        background-color: transparent;
+        color: var(--cds-text-primary);
+      }
 
-    .fjs-layout-column:not(:first-of-type) .fjs-form-field {
-      margin-left: 8px;
-    }
+      .fjs-layout-column:first-of-type .fjs-form-field {
+        margin-left: 0;
+      }
 
-    .fjs-layout-column:not(:last-of-type) .fjs-form-field {
-      margin-right: 8px;
-    }
+      .fjs-layout-column:last-of-type .fjs-form-field {
+        margin-right: 0;
+      }
 
-    .fjs-layout-column:first-of-type .fjs-form-field {
-      margin-left: 0;
-    }
+      @media (width < ${breakpoints.lg.width}) {
+        .fjs-layout-column .fjs-form-field {
+          margin-left: 0;
+          margin-right: 0;
+        }
+      }
 
-    .fjs-layout-column:last-of-type .fjs-form-field {
-      margin-right: 0;
-    }
+      .fjs-input-group {
+        margin: 0;
+      }
 
-    .fjs-input-group {
-      margin: 0;
+      .fjs-powered-by,
+      .fjs-form-field button[type='submit'] {
+        display: none;
+      }
     }
-
-    .fjs-powered-by,
-    .fjs-form-field button[type='submit'] {
-      display: none;
-    }
-  }
+  `}
 `;
 
 const Container = styled(TaskDetailsRow)`

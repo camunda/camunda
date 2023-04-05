@@ -10,7 +10,9 @@ import styled, {css} from 'styled-components';
 import {Stack} from '@carbon/react';
 
 const Container = styled.main`
-  display: flex;
+  display: grid;
+  grid-template-columns: ${rem(300)} 1fr;
+  grid-template-rows: 100%;
   height: 100%;
   padding-top: ${rem(48)};
   box-sizing: border-box;

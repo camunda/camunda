@@ -22,11 +22,6 @@ const GlobalStyle = createGlobalStyle`
       padding: 0;
     }
 
-    #root{
-      min-width: 960px;
-      min-height: 540px;
-    }
-
     svg {
       fill: currentColor;
     }

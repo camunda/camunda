@@ -11,10 +11,8 @@ import {Layer} from '@carbon/react';
 
 const ScrollableContent = styled(Layer)`
   width: 100%;
-  max-width: 100%;
   height: 100%;
-  overflow-x: hidden;
-  overflow-y: auto;
+  overflow: auto;
 `;
 
 type TaskDetailsRowProps = {
