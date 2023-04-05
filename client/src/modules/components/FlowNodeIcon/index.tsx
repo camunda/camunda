@@ -76,6 +76,7 @@ import {ReactComponent as FlowNodeEscalationStartEvent} from 'modules/components
 
 import {ReactComponent as FlowNodeLinkEventIntermediateCatch} from 'modules/components/Icon/flow-node-link-event-intermediate-catch.svg';
 import {ReactComponent as FlowNodeLinkEventIntermediateThrow} from 'modules/components/Icon/flow-node-link-event-intermediate-throw.svg';
+import {ReactComponent as FlowNodeEventSignalStart} from 'modules/components/Icon/flow-node-event-signal-start.svg';
 
 const getSVGComponent = (
   businessObject: BusinessObject,
@@ -175,6 +176,8 @@ const getSVGComponent = (
               return FlowNodeEscalationBoundaryNonInterruptingEvent;
           }
       }
+    case 'bpmn:SignalEventDefinition':
+      return FlowNodeEventSignalStart;
   }
 
   switch (businessObject.$type) {

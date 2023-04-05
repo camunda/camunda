@@ -147,13 +147,13 @@ public abstract class ZeebeTestUtil {
       failCommand.send().join();
     })).get(0);
   }
-  
+
   public static Long throwErrorInTask(ZeebeClient client, String jobType, String workerName, int numberOfFailures, String errorCode,String errorMessage) {
     return handleTasks(client, jobType, workerName, numberOfFailures, ((jobClient, job) -> {
       jobClient.newThrowErrorCommand(job.getKey()).errorCode(errorCode).errorMessage(errorMessage).send().join();
     })).get(0);
   }
-  
+
   private static List<Long> handleTasks(ZeebeClient client, String jobType, String workerName, int jobCount, BiConsumer<JobClient, ActivatedJob> jobHandler) {
     final List<Long> jobKeys = new ArrayList<>();
     while (jobKeys.size() < jobCount) {
@@ -190,6 +190,15 @@ public abstract class ZeebeTestUtil {
           .variables(payload)
           .timeToLive(Duration.ofSeconds(30))
           .messageId(UUID.randomUUID().toString())
+          .send().join();
+    }
+  }
+
+  public static void sendSignal(ZeebeClient client, String signalName, String payload, int count) {
+    for (int i = 0; i<count; i++) {
+      client.newBroadcastSignalCommand()
+          .signalName(signalName)
+          .variables(payload)
           .send().join();
     }
   }

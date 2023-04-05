@@ -31,7 +31,8 @@ declare module 'bpmn-js/lib/NavigatedViewer' {
     | 'TimerEventDefinition'
     | 'TerminateEventDefinition'
     | 'LinkEventDefinition'
-    | 'EscalationEventDefinition'}`;
+    | 'EscalationEventDefinition'
+    | 'SignalEventDefinition'}`;
 
   export type FlowNodeType = `bpmn:${
     | 'StartEvent'

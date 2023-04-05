@@ -423,6 +423,8 @@ public class DevelopDataGenerator extends UserTestDataGenerator {
     ZeebeTestUtil.deployProcess(client, "develop/linkEvents.bpmn");
 
     ZeebeTestUtil.deployProcess(client, "develop/escalationEvents_v_1.bpmn");
+
+    ZeebeTestUtil.deployProcess(client, "develop/signalEvent.bpmn");
   }
 
   @Override
@@ -486,6 +488,7 @@ public class DevelopDataGenerator extends UserTestDataGenerator {
     }
     if (version == 1) {
       processInstanceKeys.add(ZeebeTestUtil.startProcessInstance(client, "timerProcess", null));
+      startSignalEventsProcess(instancesCount);
     }
   }
 
@@ -538,6 +541,10 @@ public class DevelopDataGenerator extends UserTestDataGenerator {
 
     ZeebeTestUtil.deployProcess(client, "develop/calledProcess_v_2.bpmn");
 
+  }
+
+  private void startSignalEventsProcess(int count) {
+    ZeebeTestUtil.sendSignal(client, "startSignal1", "{\"signalNumber\": " + random.nextInt(100) + "}", count);
   }
 
   public void setClient(ZeebeClient client) {
