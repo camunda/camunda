@@ -228,13 +228,13 @@ Commit messages use [Conventional Commits](https://www.conventionalcommits.org/e
 
 ```
 <header>
-<BLANK LINE>
-<body>
+<BLANK LINE> (optional - mandatory with body)
+<body> (optional)
 <BLANK LINE> (optional - mandatory with footer)
 <footer> (optional)
 ```
 
-Zeebe uses a bot which will check your commit messages when a pull request is
+Zeebe uses a GitHub Actions workflow checking your commit messages when a pull request is
 submitted. Please make sure to address any hints from the bot.
 
 ### Commit message header
@@ -270,6 +270,9 @@ The commit header should be kept short, preferably under 72 chars but we allow a
 ### Commit message body
 
 Should describe the motivation for the change.
+This is optional, but encouraged.
+Good commit messages explain what changed AND why you changed it.
+See [I've written a clear changelist description](https://github.com/camunda/zeebe/wiki/Pull-Requests-and-Code-Reviews#ive-written-a-clear-changelist-description).
 
 ## Contributor License Agreement
 
