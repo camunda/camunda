@@ -13,8 +13,7 @@
 
 
   <properties>
-    <mvc-auth-commons.version>1.9.4</mvc-auth-commons.version>
-    <springdoc-openapi.version>1.6.14</springdoc-openapi.version>
+    <springdoc-openapi-starter.version>2.1.0</springdoc-openapi-starter.version>
   </properties>
   
   <dependencies>
@@ -141,8 +140,8 @@
     <!-- OpenAPI -->
     <dependency>
       <groupId>org.springdoc</groupId>
-      <artifactId>springdoc-openapi-ui</artifactId>
-      <version>${springdoc-openapi.version}</version>
+      <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
+      <version>${springdoc-openapi-starter.version}</version>
     </dependency>
 
     <!-- GraphQL -->

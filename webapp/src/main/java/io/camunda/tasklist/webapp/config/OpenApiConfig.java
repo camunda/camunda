@@ -12,7 +12,9 @@ import io.swagger.v3.oas.models.info.Info;
 import io.swagger.v3.oas.models.info.License;
 import io.swagger.v3.oas.models.security.SecurityRequirement;
 import io.swagger.v3.oas.models.security.SecurityScheme;
-import org.springdoc.core.GroupedOpenApi;
+import org.springdoc.core.models.GroupedOpenApi;
+import org.springdoc.core.properties.SpringDocConfigProperties;
+import org.springdoc.core.providers.ObjectMapperProvider;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
@@ -45,7 +47,7 @@ public class OpenApiConfig {
   private GroupedOpenApi versionedInternalApi(final String version) {
     return GroupedOpenApi.builder()
         .group("internal-api")
-        .addOpenApiCustomiser(
+        .addOpenApiCustomizer(
             openApi -> {
               openApi
                   .info(
@@ -76,7 +78,7 @@ public class OpenApiConfig {
   private GroupedOpenApi versionedPublicApi(final String version) {
     return GroupedOpenApi.builder()
         .group(version)
-        .addOpenApiCustomiser(
+        .addOpenApiCustomizer(
             openApi -> {
               openApi
                   .info(
@@ -102,5 +104,17 @@ public class OpenApiConfig {
         .pathsToMatch(String.format("/%s/**", version))
         .pathsToExclude(String.format("/%s/internal/**", version))
         .build();
+  }
+
+  /**
+   * This bean is declared explicitly in order to resolve {@code BeanDefinitionOverrideException}
+   * Spring exception because of the bean with the same name configured by GraphQL dependency:
+   * {@link
+   * graphql.kickstart.autoconfigure.web.servlet.GraphQLWebAutoConfiguration#objectMapperProvider}
+   */
+  @Bean("springdocObjectMapperProvider")
+  public ObjectMapperProvider objectMapperProvider(
+      SpringDocConfigProperties springDocConfigProperties) {
+    return new ObjectMapperProvider(springDocConfigProperties);
   }
 }
