@@ -183,6 +183,9 @@ public class InstantPreviewDashboardService {
                   processDefinitionKey, List.of(ALL_VERSIONS), processDefinition.getTenantIds()
                 )));
               singleReport.getData().setInstantPreviewReport(true);
+              // We need to enforce that instant preview reports do not contain KPIs, since we will run into issues
+              // down the line whenever the KpiEvaluationSchedulerService tries to evaluate them
+              singleReport.getData().getConfiguration().getTargetValue().setIsKpi(false);
             }),
         () -> log.warn("Could not retrieve process definition data for {}", processDefinitionKey)
       );
