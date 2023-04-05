@@ -9,7 +9,6 @@ package io.camunda.zeebe.transport.stream.impl;
 
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.transport.stream.api.ClientStreamConsumer;
-import io.camunda.zeebe.util.buffer.BufferReader;
 import io.camunda.zeebe.util.buffer.BufferWriter;
 import java.util.HashSet;
 import java.util.Set;
@@ -17,18 +16,18 @@ import java.util.UUID;
 import org.agrona.DirectBuffer;
 
 /** Represents a registered client stream. * */
-final class ClientStream<M extends BufferWriter, P extends BufferReader> {
+final class ClientStream<M extends BufferWriter> {
   private final UUID streamId;
   private final DirectBuffer streamType;
   private final M metadata;
-  private final ClientStreamConsumer<P> streamConsumer;
+  private final ClientStreamConsumer streamConsumer;
   private final Set<MemberId> liveConnections = new HashSet<>();
 
   ClientStream(
       final UUID streamId,
       final DirectBuffer streamType,
       final M metadata,
-      final ClientStreamConsumer<P> clientStreamConsumer) {
+      final ClientStreamConsumer clientStreamConsumer) {
     this.streamId = streamId;
     this.streamType = streamType;
     this.metadata = metadata;
@@ -47,7 +46,7 @@ final class ClientStream<M extends BufferWriter, P extends BufferReader> {
     return metadata;
   }
 
-  ClientStreamConsumer<P> getClientStreamConsumer() {
+  ClientStreamConsumer getClientStreamConsumer() {
     return streamConsumer;
   }
 

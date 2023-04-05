@@ -8,7 +8,6 @@
 package io.camunda.zeebe.transport.stream.api;
 
 import io.camunda.zeebe.scheduler.future.ActorFuture;
-import io.camunda.zeebe.util.buffer.BufferReader;
 import io.camunda.zeebe.util.buffer.BufferWriter;
 import java.util.UUID;
 import org.agrona.DirectBuffer;
@@ -17,9 +16,9 @@ import org.agrona.DirectBuffer;
  * Allows to add and remove client streams.
  *
  * <p>When a client stream is added, it opens a stream to all servers. When a server pushes data to
- * this stream, the client receives it via {@link ClientStreamConsumer#push(BufferReader)}
+ * this stream, the client receives it via {@link ClientStreamConsumer#push(DirectBuffer)}
  */
-public interface ClientStreamer<M extends BufferWriter, P extends BufferReader> {
+public interface ClientStreamer<M extends BufferWriter> {
 
   /**
    * Registers a client and opens a stream for the given streamType and associated Metadata with all
@@ -37,7 +36,7 @@ public interface ClientStreamer<M extends BufferWriter, P extends BufferReader> 
   ActorFuture<UUID> add(
       final DirectBuffer streamType,
       final M metadata,
-      final ClientStreamConsumer<P> clientStreamConsumer);
+      final ClientStreamConsumer clientStreamConsumer);
 
   /**
    * Removes a stream that is added via {@link ClientStreamer#add(DirectBuffer, BufferWriter,

@@ -20,7 +20,6 @@ import io.atomix.cluster.MemberId;
 import io.atomix.cluster.messaging.ClusterCommunicationService;
 import io.camunda.zeebe.scheduler.testing.TestConcurrencyControl;
 import io.camunda.zeebe.transport.stream.impl.messages.StreamTopics;
-import io.camunda.zeebe.util.buffer.BufferReader;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import io.camunda.zeebe.util.buffer.BufferWriter;
 import java.util.Set;
@@ -33,10 +32,10 @@ import org.junit.jupiter.api.Test;
 class ClientStreamRequestManagerTest {
 
   private final ClusterCommunicationService mockTransport = mock(ClusterCommunicationService.class);
-  private final ClientStreamRequestManager<BufferWriter, BufferReader> requestManager =
+  private final ClientStreamRequestManager<BufferWriter> requestManager =
       new ClientStreamRequestManager<>(mockTransport, new TestConcurrencyControl());
 
-  private final ClientStream<BufferWriter, BufferReader> clientStream =
+  private final ClientStream<BufferWriter> clientStream =
       new ClientStream<>(
           UUID.randomUUID(), BufferUtil.wrapString("foo"), new TestMetadata(), p -> {});
 
