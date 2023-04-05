@@ -17,8 +17,11 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import org.agrona.DirectBuffer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 final class ClientStreamManager<M extends BufferWriter> {
+  private static final Logger LOG = LoggerFactory.getLogger(ClientStreamManager.class);
   private final ClientStreamRegistry<M> registry;
   private final ClientStreamRequestManager<M> requestManager;
   private final Set<MemberId> servers = new HashSet<>();
@@ -80,6 +83,7 @@ final class ClientStreamManager<M extends BufferWriter> {
           // But just in case that request is lost, we send remove request again. To keep it simple,
           // we do not retry. Otherwise, it is possible that we send it multiple times unnecessary.
           requestManager.removeStreamUnreliable(streamId, servers);
+          LOG.warn("Expected to push payload to stream {}, but no stream found.", streamId);
           responseFuture.completeExceptionally(new NoSuchStreamException());
         });
   }
