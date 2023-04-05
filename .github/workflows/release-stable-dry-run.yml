@@ -14,7 +14,7 @@ jobs:
       fail-fast: false
     with:
       releaseBranch: stable/8.2
-      releaseVersion: 0.8.1
+      releaseVersion: 0.8.2
       nextDevelopmentVersion: 0.0.0-SNAPSHOT
       isLatest: true
       dryRun: true
