@@ -14,6 +14,7 @@ import io.camunda.zeebe.model.bpmn.instance.EscalationEventDefinition;
 import io.camunda.zeebe.model.bpmn.instance.IntermediateThrowEvent;
 import io.camunda.zeebe.model.bpmn.instance.LinkEventDefinition;
 import io.camunda.zeebe.model.bpmn.instance.MessageEventDefinition;
+import io.camunda.zeebe.model.bpmn.instance.SignalEventDefinition;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskDefinition;
 import io.camunda.zeebe.protocol.record.value.BpmnEventType;
 
@@ -45,6 +46,8 @@ public final class IntermediateThrowEventTransformer
       transformLinkEventDefinition(element, context, throwEvent);
     } else if (isEscalationEvent(element)) {
       transformEscalationEventDefinition(element, context);
+    } else if (isSignalEvent(element)) {
+      transformSignalEventDefinition(element, context);
     }
   }
 
@@ -60,6 +63,10 @@ public final class IntermediateThrowEventTransformer
   private boolean isEscalationEvent(final IntermediateThrowEvent element) {
     return element.getEventDefinitions().stream()
         .anyMatch(EscalationEventDefinition.class::isInstance);
+  }
+
+  private boolean isSignalEvent(final IntermediateThrowEvent element) {
+    return element.getEventDefinitions().stream().anyMatch(SignalEventDefinition.class::isInstance);
   }
 
   private boolean hasTaskDefinition(final IntermediateThrowEvent element) {
@@ -92,5 +99,19 @@ public final class IntermediateThrowEventTransformer
     final var executableEscalation = context.getEscalation(escalation.getId());
     executableElement.setEscalation(executableEscalation);
     executableElement.setEventType(BpmnEventType.ESCALATION);
+  }
+
+  private void transformSignalEventDefinition(
+      final IntermediateThrowEvent element, final TransformContext context) {
+    final var currentProcess = context.getCurrentProcess();
+    final var executableElement =
+        currentProcess.getElementById(element.getId(), ExecutableIntermediateThrowEvent.class);
+
+    final var eventDefinition =
+        (SignalEventDefinition) element.getEventDefinitions().iterator().next();
+    final var signal = eventDefinition.getSignal();
+    final var executableSignal = context.getSignal(signal.getId());
+    executableElement.setSignal(executableSignal);
+    executableElement.setEventType(BpmnEventType.SIGNAL);
   }
 }
