@@ -208,6 +208,22 @@ public final class TimerValidationTest {
                                         .endEvent())
                             .startEvent()
                             .endEvent()
+                            .done())),
+            Arguments.of(
+                "event sub-process",
+                "date",
+                processBuilder(
+                    expression ->
+                        Bpmn.createExecutableProcess("process")
+                            .eventSubProcess(
+                                "sub-process",
+                                subProcess ->
+                                    subProcess
+                                        .startEvent()
+                                        .timerWithDateExpression(expression)
+                                        .endEvent())
+                            .startEvent()
+                            .endEvent()
                             .done())));
     return Stream.concat(timerStartEventsWithExpression(), otherTimerEventsWithExpressions);
   }
