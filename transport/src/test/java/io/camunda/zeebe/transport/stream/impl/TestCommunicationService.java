@@ -61,9 +61,12 @@ final class TestCommunicationService implements ClusterCommunicationService {
       final String subject,
       final M message,
       final Function<M, byte[]> encoder,
-      final MemberId memberId,
+      final MemberId toMemberId,
       final boolean reliable) {
-    // Do nothing
+    final var subscriber = cluster.get(toMemberId).subscribers.get(subject);
+    if (subscriber != null) {
+      subscriber.apply(memberId, encoder.apply(message));
+    }
   }
 
   @Override
