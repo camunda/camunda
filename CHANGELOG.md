@@ -1,3 +1,91 @@
+# v8.2.0
+## 🚀 New Features
+* adding flag RESOURCE_PERMISSIONS_ENABLED ([#2727](https://github.com/camunda/tasklist/issues/2727))
+* Enable processes tab for self managed users ([#2716](https://github.com/camunda/tasklist/issues/2716))
+* Remove feature flag (Enable follow up and due dates and candidate groups) ([#2701](https://github.com/camunda/tasklist/issues/2701))
+* tasks REST API ([#2583](https://github.com/camunda/tasklist/issues/2583))
+* GetProcesses returning based on Identity ([#2671](https://github.com/camunda/tasklist/issues/2671))
+* **backend**: add ILM deletion policy for archived indices ([#2679](https://github.com/camunda/tasklist/issues/2679))
+* Remove claimed by me wording ([#2683](https://github.com/camunda/tasklist/issues/2683))
+* Implement new details layout ([#2674](https://github.com/camunda/tasklist/issues/2674))
+* Due and Follow-up Dates ([#2664](https://github.com/camunda/tasklist/issues/2664))
+* Update alpha feedback link ([#2659](https://github.com/camunda/tasklist/issues/2659))
+* Candidate Users ([#2640](https://github.com/camunda/tasklist/issues/2640))
+* Add sorting button to left panel ([#2578](https://github.com/camunda/tasklist/issues/2578))
+
+## 💊 Bugfixes
+* **backend**: upgrade `springdoc` to support SpringBoot v3 ([#2742](https://github.com/camunda/tasklist/issues/2742))
+* Use image tags that exist ([#2741](https://github.com/camunda/tasklist/issues/2741))
+* Fix overflow form-js overflow on small screens ([#2733](https://github.com/camunda/tasklist/issues/2733))
+* versions for TaskTemplate ([#2729](https://github.com/camunda/tasklist/issues/2729))
+* fixing failing tests on master ([#2730](https://github.com/camunda/tasklist/issues/2730))
+* when no BaseURL is configured is not possible to reach identity ([#2723](https://github.com/camunda/tasklist/issues/2723))
+* fix broken Unit tests ([#2717](https://github.com/camunda/tasklist/issues/2717))
+* migration tests failing ([#2715](https://github.com/camunda/tasklist/issues/2715))
+* fixing scripts ([#2713](https://github.com/camunda/tasklist/issues/2713))
+* fixing ascending ordenation ([#2712](https://github.com/camunda/tasklist/issues/2712))
+* **deps**: update dependency @bpmn-io/form-js-viewer to v0.13.1 ([#2706](https://github.com/camunda/tasklist/issues/2706))
+* **deps**: update dependency react-router-dom to v6.10.0 ([#2708](https://github.com/camunda/tasklist/issues/2708))
+* sorting order using before and after ([#2705](https://github.com/camunda/tasklist/issues/2705))
+* **auth**: Avoid NullPointerException when storing session in ELS ([#2703](https://github.com/camunda/tasklist/issues/2703))
+* **sso**: Add app name connectors to cluster metadata ([#2702](https://github.com/camunda/tasklist/issues/2702))
+* **backend**: change type of backupId to Integer ([#2680](https://github.com/camunda/tasklist/issues/2680))
+* due and follow-up dates null indexation ([#2700](https://github.com/camunda/tasklist/issues/2700))
+* **deps**: update all non-major dependencies ([#2681](https://github.com/camunda/tasklist/issues/2681))
+* **deps**: update dependency mobx-react-lite to v4 ([#2685](https://github.com/camunda/tasklist/issues/2685))
+* **deps**: update dependency mobx to v6.9.0 ([#2684](https://github.com/camunda/tasklist/issues/2684))
+* **deps**: update all non-major dependencies ([#2663](https://github.com/camunda/tasklist/issues/2663))
+* **deps**: update dependency sass to v1.60.0 ([#2672](https://github.com/camunda/tasklist/issues/2672))
+* **deps**: update dependency mixpanel-browser to v2.46.0 ([#2673](https://github.com/camunda/tasklist/issues/2673))
+* zeebe endpoints with / in the end don't work after spring version upgrade ([#2660](https://github.com/camunda/tasklist/issues/2660))
+* Date time calendar columns ([#2650](https://github.com/camunda/tasklist/issues/2650))
+* **deps**: update dependency @carbon/react to v1.25.0 ([#2648](https://github.com/camunda/tasklist/issues/2648))
+* **deps**: update all non-major dependencies ([#2630](https://github.com/camunda/tasklist/issues/2630))
+* **deps**: update dependency zod to v3.21.4 ([#2632](https://github.com/camunda/tasklist/issues/2632))
+* Replace community Slack link ([#2623](https://github.com/camunda/tasklist/issues/2623))
+* **deps**: update dependency @carbon/react to v1.24.0 ([#2588](https://github.com/camunda/tasklist/issues/2588))
+* **deps**: update dependency @carbon/elements to v11.20.0 ([#2587](https://github.com/camunda/tasklist/issues/2587))
+* **deps**: update dependency react-router-dom to v6.9.0 ([#2618](https://github.com/camunda/tasklist/issues/2618))
+* **deps**: update dependency sass to v1.59.2 ([#2619](https://github.com/camunda/tasklist/issues/2619))
+* **chore**: fix apt-get cmdline
+* **chore**: fix apt-get cmdline
+* **chore**: add git config ([#2608](https://github.com/camunda/tasklist/issues/2608))
+
+## 🧹 Chore
+* fixing docker version for zeebe ([#2745](https://github.com/camunda/tasklist/issues/2745))
+* Update form-js to 0.14.0 ([#2743](https://github.com/camunda/tasklist/issues/2743))
+* **backend**: update Zeebe and Identity to 8.2.0 ([#2740](https://github.com/camunda/tasklist/issues/2740))
+* **deps**: Update Spring Boot version to 3.0.5 ([#2698](https://github.com/camunda/tasklist/issues/2698))
+* Update Zeebe ([#2707](https://github.com/camunda/tasklist/issues/2707))
+* **deps**: update all non-major dependencies ([#2689](https://github.com/camunda/tasklist/issues/2689))
+* **deps**: update dependency zeebe-node to v8.2.0 ([#2691](https://github.com/camunda/tasklist/issues/2691))
+* **deps**: update hashicorp/vault-action digest to c253c15 ([#2697](https://github.com/camunda/tasklist/issues/2697))
+* Add tracking for sorting ([#2682](https://github.com/camunda/tasklist/issues/2682))
+* Update mockServiceWorker format
+* **deps**: update dependency @playwright/test to v1.32.0 ([#2661](https://github.com/camunda/tasklist/issues/2661))
+* **deps**: update dlavrenuek/conventional-changelog-action action to v1.2.3 ([#2658](https://github.com/camunda/tasklist/issues/2658))
+* Remove unused dep
+* Remove unused dep
+* **deps**: update dependency prettier to v2.8.6 ([#2657](https://github.com/camunda/tasklist/issues/2657))
+* **deps**: update all non-major dependencies ([#2652](https://github.com/camunda/tasklist/issues/2652))
+* **deps**: update actions/add-to-project digest to e78e561 ([#2654](https://github.com/camunda/tasklist/issues/2654))
+* **deps**: update dependency eslint-config-prettier to v8.8.0 ([#2655](https://github.com/camunda/tasklist/issues/2655))
+* **deps**: update dependency prettier to v2.8.5 ([#2649](https://github.com/camunda/tasklist/issues/2649))
+* **deps**: update dependency @types/jest to v29.5.0 ([#2645](https://github.com/camunda/tasklist/issues/2645))
+* **deps**: update dependency typescript to v5 ([#2646](https://github.com/camunda/tasklist/issues/2646))
+* add a11y integration test ([#2439](https://github.com/camunda/tasklist/issues/2439))
+* Fix tests
+* Remove unnecessary ignores from eslint
+* Make eslint config more general
+* Fix prettier linting on eslint
+* Split instance creation for E2E tests ([#2628](https://github.com/camunda/tasklist/issues/2628))
+* adding OCI and OpenShift labels ([#2602](https://github.com/camunda/tasklist/issues/2602))
+* **deps**: update dependency lint-staged to v13.2.0 ([#2613](https://github.com/camunda/tasklist/issues/2613))
+* **deps**: update dependency @types/node to v18.15.1 ([#2609](https://github.com/camunda/tasklist/issues/2609))
+* **deps**: update actions/add-to-project digest to 097fa05 ([#2616](https://github.com/camunda/tasklist/issues/2616))
+* **deps**: update all non-major dependencies ([#2582](https://github.com/camunda/tasklist/issues/2582))
+* **deps**: update dependency eslint-config-prettier to v8.7.0 ([#2590](https://github.com/camunda/tasklist/issues/2590))
+* update CHANGELOG.md
 # v8.2.0-alpha5
 ## 🚀 New Features
 * **backend**: use sequence field for import ([#2512](https://github.com/camunda/tasklist/issues/2512))
