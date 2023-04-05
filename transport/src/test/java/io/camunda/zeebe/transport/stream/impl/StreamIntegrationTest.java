@@ -173,7 +173,7 @@ class StreamIntegrationTest {
 
     // then
     latch.await();
-    assertThat(error.get()).hasCauseInstanceOf(StreamDoesNotExistException.class);
+    assertThat(error.get()).hasCauseInstanceOf(NoSuchStreamException.class);
   }
 
   private void pushPayload(final SerializableData data) {

@@ -7,4 +7,4 @@
  */
 package io.camunda.zeebe.transport.stream.impl;
 
-public class StreamDoesNotExistException extends RuntimeException {}
+public class NoSuchStreamException extends RuntimeException {}

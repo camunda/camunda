@@ -80,7 +80,7 @@ final class ClientStreamManager<M extends BufferWriter> {
           // But just in case that request is lost, we send remove request again. To keep it simple,
           // we do not retry. Otherwise, it is possible that we send it multiple times unnecessary.
           requestManager.removeStreamUnreliable(streamId, servers);
-          responseFuture.completeExceptionally(new StreamDoesNotExistException());
+          responseFuture.completeExceptionally(new NoSuchStreamException());
         });
   }
 }

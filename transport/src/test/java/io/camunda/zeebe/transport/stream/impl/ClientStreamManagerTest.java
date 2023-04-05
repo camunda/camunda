@@ -143,6 +143,6 @@ class ClientStreamManagerTest {
     assertThat(future)
         .failsWithin(Duration.ofMillis(100))
         .withThrowableOfType(ExecutionException.class)
-        .withCauseInstanceOf(StreamDoesNotExistException.class);
+        .withCauseInstanceOf(NoSuchStreamException.class);
   }
 }
