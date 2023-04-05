@@ -77,7 +77,7 @@ func (fi bindataFileInfo) Sys() interface{} {
 	return nil
 }
 
-var _version = []byte("\x1f\x8b\x08\x00\x00\x00\x00\x00\x00\xff\xb2\xd0\x33\xd2\x33\xd0\x0d\xf6\x73\x0c\x08\xf6\xf0\x0f\xe1\x02\x04\x00\x00\xff\xff\x3b\x75\x03\x2b\x0f\x00\x00\x00")
+var _version = []byte("\x1f\x8b\x08\x00\x00\x00\x00\x00\x00\xff\xb2\xd0\x33\xd2\x33\xe0\x02\x04\x00\x00\xff\xff\x2b\x31\x78\x70\x06\x00\x00\x00")
 
 func versionBytes() ([]byte, error) {
 	return bindataRead(
@@ -92,7 +92,7 @@ func version() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "VERSION", size: 15, mode: os.FileMode(420), modTime: time.Unix(1664864759, 0)}
+	info := bindataFileInfo{name: "VERSION", size: 6, mode: os.FileMode(420), modTime: time.Unix(1680680715, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -193,7 +193,7 @@ type bintree struct {
 }
 
 var _bintree = &bintree{nil, map[string]*bintree{
-	"VERSION": {version, map[string]*bintree{}},
+	"VERSION": &bintree{version, map[string]*bintree{}},
 }}
 
 // RestoreAsset restores an asset under the given directory
