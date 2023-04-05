@@ -1,16 +1,16 @@
 # This workflow builds the release, triggered by our engineering process automation cluster. It creates the release based on the
 # given input.
 #
-name: Repo dispatch Release 8.2
+name: Repo dispatch Release 8.3
 
 on:
-  repository_dispatch: 
-    types: [trigger_release_8_2]
+  repository_dispatch:
+    types: [trigger_release_8_3]
 
 jobs:
   run-release:
     name: "Release ${{ github.event.client_payload.releaseVersion }}"
-    uses: camunda/zeebe/.github/workflows/release.yml@stable/8.2
+    uses: ./.github/workflows/release.yml
     secrets: inherit
     with:
       releaseVersion: ${{ github.event.client_payload.releaseVersion }}
