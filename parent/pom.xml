@@ -1007,24 +1007,6 @@
         <scope>import</scope>
       </dependency>
 
-      <!--
-        Sad workaround for https://github.com/testcontainers/testcontainers-java/issues/4279; when
-        this is not needed and removed, make sure to remove it from child modules including this as
-        well
-      -->
-      <dependency>
-        <groupId>com.amazonaws</groupId>
-        <artifactId>aws-java-sdk-core</artifactId>
-        <version>1.12.446</version>
-        <scope>test</scope>
-        <exclusions>
-          <exclusion>
-            <groupId>*</groupId>
-            <artifactId>*</artifactId>
-          </exclusion>
-        </exclusions>
-      </dependency>
-
       <!-- Dependencies present for convergence only -->
       <!-- between duct-tape (from testcontainers) and kotlin-stdlib (from identity-sdk) -->
       <dependency>
