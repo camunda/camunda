@@ -27,7 +27,7 @@ import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 
-public class SignalThrowEventTest {
+public class SignalIntermediateThrowEventTest {
 
   @ClassRule public static final EngineRule ENGINE = EngineRule.singlePartition();
   private static final String SIGNAL_NAME_1 = "signalName";
@@ -39,7 +39,7 @@ public class SignalThrowEventTest {
       new RecordingExporterTestWatcher();
 
   @Test
-  public void shouldBroadcastSignalEndEvent() {
+  public void shouldBroadcastSignalIntermediateThrowEvent() {
     // given
     final var process =
         Bpmn.createExecutableProcess(PROCESS)
