@@ -88,7 +88,7 @@
     <version.wiremock>2.35.0</version.wiremock>
     <version.conscrypt>2.5.2</version.conscrypt>
     <version.asm>9.3</version.asm>
-    <version.testcontainers>1.17.6</version.testcontainers>
+    <version.testcontainers>1.18.0</version.testcontainers>
     <version.netflix.concurrency>0.4.0</version.netflix.concurrency>
     <version.zeebe-test-container>3.5.2</version.zeebe-test-container>
     <version.feel-scala>1.16.0</version.feel-scala>
@@ -1005,24 +1005,6 @@
         <version>${version.awssdk}</version>
         <type>pom</type>
         <scope>import</scope>
-      </dependency>
-
-      <!--
-        Sad workaround for https://github.com/testcontainers/testcontainers-java/issues/4279; when
-        this is not needed and removed, make sure to remove it from child modules including this as
-        well
-      -->
-      <dependency>
-        <groupId>com.amazonaws</groupId>
-        <artifactId>aws-java-sdk-core</artifactId>
-        <version>1.12.441</version>
-        <scope>test</scope>
-        <exclusions>
-          <exclusion>
-            <groupId>*</groupId>
-            <artifactId>*</artifactId>
-          </exclusion>
-        </exclusions>
       </dependency>
 
       <!-- Dependencies present for convergence only -->

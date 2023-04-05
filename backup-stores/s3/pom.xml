@@ -145,12 +145,6 @@
     </dependency>
 
     <dependency>
-      <groupId>com.amazonaws</groupId>
-      <artifactId>aws-java-sdk-core</artifactId>
-      <scope>test</scope>
-    </dependency>
-
-    <dependency>
       <groupId>org.mockito</groupId>
       <artifactId>mockito-core</artifactId>
       <scope>test</scope>
@@ -170,7 +164,6 @@
         <artifactId>maven-dependency-plugin</artifactId>
         <configuration>
           <ignoredUnusedDeclaredDependencies>
-            <dep>com.amazonaws:aws-java-sdk-core</dep>
             <dep>com.github.luben:zstd-jni</dep>
           </ignoredUnusedDeclaredDependencies>
         </configuration>
