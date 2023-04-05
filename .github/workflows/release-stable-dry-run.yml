@@ -6,6 +6,18 @@ on:
     - cron: '0 2 * * 1-5'
 
 jobs:
+  dry-run-release-82:
+    name: "Release from stable/8.2"
+    uses: camunda/zeebe/.github/workflows/release.yml@stable/8.2
+    secrets: inherit
+    strategy:
+      fail-fast: false
+    with:
+      releaseBranch: stable/8.2
+      releaseVersion: 0.8.1
+      nextDevelopmentVersion: 0.0.0-SNAPSHOT
+      isLatest: true
+      dryRun: true
   dry-run-release-81:
     name: "Release from stable/8.1"
     uses: camunda/zeebe/.github/workflows/release.yml@stable/8.1
@@ -33,7 +45,7 @@ jobs:
   notify:
     name: Send slack notification
     runs-on: ubuntu-latest
-    needs: [ dry-run-release-80, dry-run-release-81 ]
+    needs: [ dry-run-release-80, dry-run-release-81, dry-run-release-82 ]
     if: ${{ always() }}
     env:
       SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
@@ -42,7 +54,7 @@ jobs:
       - id: slack-notify-failure
         name: Send failure slack notification
         uses: slackapi/slack-github-action@v1.23.0
-        if: ${{ always() && (needs.dry-run-release-80.result != 'success' || needs.dry-run-release-81.result != 'success') }}
+        if: ${{ always() && (needs.dry-run-release-80.result != 'success' || needs.dry-run-release-81.result != 'success' || needs.dry-run-release-82.result != 'success') }}
         with:
           # For posting a rich message using Block Kit
           payload: |
@@ -67,7 +79,7 @@ jobs:
       - id: slack-notify-success
         name: Send success slack notification
         uses: slackapi/slack-github-action@v1.23.0
-        if: ${{ always() && needs.dry-run-release-80.result == 'success' && needs.dry-run-release-81.result == 'success' }}
+        if: ${{ always() && needs.dry-run-release-80.result == 'success' && needs.dry-run-release-81.result == 'success' && needs.dry-run-release-82.result == 'success' }}
         with:
           # For posting a rich message using Block Kit
           payload: |
