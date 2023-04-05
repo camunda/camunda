@@ -11,7 +11,7 @@
   <properties>
     <license.header>${project.baseUri}/../../license/license-header</license.header>
 
-    <version.zeebe.docker.current>SNAPSHOT</version.zeebe.docker.current>
+    <version.zeebe.docker.current>${version.zeebe}</version.zeebe.docker.current>
   </properties>
 
   <name>Tasklist QA</name>

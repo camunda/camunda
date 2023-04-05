@@ -90,7 +90,7 @@ public class TestContainerUtil {
 
     LOGGER.info("************ Starting Identity ************");
     identityContainer =
-        new GenericContainer<>(String.format("%s:%s", "camunda/identity", "SNAPSHOT"))
+        new GenericContainer<>(String.format("%s:%s", "camunda/identity", "8.2.0"))
             .withExposedPorts(IDENTITY_PORT)
             .withNetwork(getNetwork());
 
