@@ -10,10 +10,8 @@ package io.camunda.zeebe.transport.stream.api;
 import org.agrona.DirectBuffer;
 
 /**
- * Represents a consumer of a stream which can consume data of type P. The data is typically pushed
- * from a broker, and consumed by gateway.
- *
- * @param <P> the payload type that can be pushed to the stream
+ * Represents a consumer of a stream which can consume data pushed from the server. The data is
+ * typically pushed from a broker, and consumed by gateway.
  */
 public interface ClientStreamConsumer {
 
