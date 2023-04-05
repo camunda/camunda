@@ -38,7 +38,7 @@ spec:
         name: configdir
   containers:
     - name: maven
-      image: maven:3.6.1-jdk-17
+      image: maven:3-openjdk-17
       command: ["cat"]
       tty: true
       env:
