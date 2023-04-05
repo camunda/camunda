@@ -65,12 +65,14 @@ updates:
     labels:
       - "dependencies"
     open-pull-requests-limit: 25
-    target-branch: stable/8.2
+    target-branch: "stable/8.2"
     ignore:
-      # we will always manually update ES dependencies to minor or major releases
-      # as we need to sync with the other teams before doing that
-      - dependency-name: org.elasticsearch.client:*
+      # Ignore major and minor updates, for stable branches we only want to get patches
+      - dependency-name: "*"
         update-types: [ "version-update:semver-major", "version-update:semver-minor" ]
+    allow:
+      # Allow only production dependency updates for maintenance branches
+      - dependency-type: "production"
 
   # Enable version updates for the go client
   - package-ecosystem: "gomod"
@@ -84,7 +86,11 @@ updates:
     labels:
       - "dependencies"
     open-pull-requests-limit: 10
-    target-branch: stable/8.2
+    target-branch: "stable/8.2"
+    ignore:
+      # Ignore major and minor updates, for stable branches we only want to get patches
+      - dependency-name: "*"
+        update-types: [ "version-update:semver-major", "version-update:semver-minor" ]
 
   # Enable version updates for the github actions
   - package-ecosystem: "github-actions"
@@ -98,7 +104,11 @@ updates:
     labels:
       - "dependencies"
     open-pull-requests-limit: 10
-    target-branch: stable/8.2
+    target-branch: "stable/8.2"
+    ignore:
+      # Ignore major and minor updates, for stable branches we only want to get patches
+      - dependency-name: "*"
+        update-types: [ "version-update:semver-major", "version-update:semver-minor" ]
 
   ##############
   # stable/8.1 #
