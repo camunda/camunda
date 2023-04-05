@@ -1133,10 +1133,10 @@
     "@codemirror/language" "^6.2.1"
     lezer-feel "^0.15.0"
 
-"@bpmn-io/form-js-viewer@0.13.1":
-  version "0.13.1"
-  resolved "https://registry.yarnpkg.com/@bpmn-io/form-js-viewer/-/form-js-viewer-0.13.1.tgz#cac2477bf4e8ad3ec26632f23836bcd6bfd747d5"
-  integrity sha512-oRsKW4sOsMJTmTINgJIsZkX45oXwNtEDuzv17amaQneVAFzrBq9Z6HOYxud+pl8nggC7JgfNnbct1H+r8IE+DA==
+"@bpmn-io/form-js-viewer@0.14.0":
+  version "0.14.0"
+  resolved "https://registry.yarnpkg.com/@bpmn-io/form-js-viewer/-/form-js-viewer-0.14.0.tgz#2f81a7e3a5dd9ff47bc3383066c88e10d25c379a"
+  integrity sha512-p0oaljQH2mQJksNPGj1fMG0VmKKyOaE5ODdfBFAzUZZCKC16gQwfjD0Iw4PMxvxTS3PONPyFvI2pAwuL5FXm9g==
   dependencies:
     "@carbon/grid" "^11.11.0"
     big.js "^6.2.1"
