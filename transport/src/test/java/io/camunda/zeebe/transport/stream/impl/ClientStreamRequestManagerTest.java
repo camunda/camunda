@@ -83,6 +83,23 @@ class ClientStreamRequestManagerTest {
   }
 
   @Test
+  void shouldSendAddRequestAgainAfterAServerIsReAdded() {
+    // given
+    final MemberId server = MemberId.from("1");
+    requestManager.openStream(clientStream, Set.of(server));
+
+    // when
+    clientStream.remove(server);
+    requestManager.openStream(clientStream, Set.of(server));
+
+    // then
+    verify(mockTransport, times(2))
+        .send(eq(StreamTopics.ADD.topic()), any(), any(), any(), eq(server), any());
+
+    assertThat(clientStream.isConnected(server)).isTrue();
+  }
+
+  @Test
   void shouldSendRemoveRequestToAllServers() {
     // given
     final MemberId server1 = MemberId.from("1");
