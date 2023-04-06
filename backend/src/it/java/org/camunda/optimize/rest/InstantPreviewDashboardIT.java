@@ -640,7 +640,50 @@ public class InstantPreviewDashboardIT extends AbstractDashboardRestServiceIT {
         assertThat(resultDto.getInstanceCountWithoutFilters()).isEqualTo(1L);
       }
     });
+  }
 
+  @ParameterizedTest
+  @MethodSource("templates")
+  public void enforceInstantPreviewReportsHaveNoKPIs(String dashboardJsonTemplateFilename) {
+    // Instant Preview Reports cannot contain KPIs, because the KPIService is using PlainReportEvaluationHandler which
+    // always returns VIEWER for getAuthorizedRole. However, an issue arises because we use a nonexistent
+    // userID in setDataSourcesForSystemGeneratedReports to retrieve all definitions/tenants the "current user" is
+    // allowed to see. If an instant preview dashboard falsely included a KPI report,
+    // setDataSourcesForSystemGeneratedReports gets called causing an exception potentially blocking evaluation of
+    // further KPI reports.
+
+    // given
+    final InstantPreviewDashboardService instantPreviewDashboardService =
+      embeddedOptimizeExtension.getInstantPreviewDashboardService();
+    String processDefKey = "dummy";
+    engineIntegrationExtension.deployAndStartProcess(getSimpleBpmnDiagram(processDefKey));
+    importAllEngineEntitiesFromScratch();
+
+    // when
+    final Optional<InstantDashboardDataDto> instantPreviewDashboard =
+      instantPreviewDashboardService.createInstantPreviewDashboard(processDefKey, dashboardJsonTemplateFilename);
+
+    // then
+    assertThat(instantPreviewDashboard).isPresent();
+    final InstantDashboardDataDto instantPreviewDashboardDto = instantPreviewDashboard.get();
+
+    // when
+    DashboardDefinitionRestDto returnedDashboard = dashboardClient.getInstantPreviewDashboard(
+      processDefKey,
+      dashboardJsonTemplateFilename
+    );
+
+    // then
+    assertThat(returnedDashboard).isNotNull();
+    assertThat(returnedDashboard.getId()).isEqualTo(instantPreviewDashboardDto.getDashboardId());
+    final DashboardDefinitionRestDto dashboard = dashboardClient.getDashboard(returnedDashboard.getId());
+    assertThat(dashboard).isNotNull();
+    final Set<ProcessReportDataDto> reportDataSet = dashboard.getTileIds().stream()
+      .map(tileId -> reportClient.evaluateReport(tileId)
+        .getReportDefinition()
+        .getData())
+      .collect(toSet());
+    reportDataSet.forEach(reportData -> assertThat(reportData.getConfiguration().getTargetValue().getIsKpi()).isFalse());
   }
 
   @NotNull
@@ -658,20 +701,20 @@ public class InstantPreviewDashboardIT extends AbstractDashboardRestServiceIT {
     HashMap<String, List<String>> expectedStrings = new HashMap<>();
     expectedStrings.put("de", List.of("Instant Preview Dashboard",
                                       "KPI Dashboard",
-                                      "Überwache die Gesundheit von Prozessen in near realtime.",
+                                      "Überwache echzeitnah die Gesundheit von Prozessen.",
                                       "Das Betriebsdashboard erlaubt es, alle wichtigen Prozessemetriken zu überwachen.",
                                       "Mögliche nächste Schritte:",
                                       "- Gehe zur Sammlung und erstelle ein eigenes Dashboard.",
                                       "- Definiere einen Alarm für eine Sammlung und erhalte Alarmbenachrichtigungen per Email.",
                                       "Berichte Geschäftsmetriken an Stakeholder.",
-                                      "Das Betriebsreporting enthält Prozesskennzahlen um ein Unternehmen zu steuern.",
+                                      "Das Betriebsreporting enthält Prozesskennzahlen um eine Abteilung zu steuern.",
                                       "- Gehe zur Sammlung und erstelle ein eigenes Dashboard.",
-                                      "- Gehe zu einem Report und definiere KPIs.",
-                                      "- Gehe zu den Dashboards und abonniere eine Zusammenfassung per Email.",
+                                      "- Gehe zu einem Bericht und definiere KPIs.",
+                                      "- Gehe zu den Dashboards und abonniere einen Prozess Digest.",
                                       "Analytische Werkzeuge um Prozessverbesserungen zu identifizieren.",
                                       "Die angebotenen Werkzeuge zur Prozess- und Regelanalyse helfen dabei, Engpässe und ungenutzte Prozesszweige zu finden.",
                                       "Mögliche nächste Schritte:",
-                                      "- Gehe zur Sammlung und erstelle einen Report.",
+                                      "- Gehe zur Sammlung und erstelle einen Bericht.",
                                       "- Gehe zu den Analysen und führe eine Prozesszweiganalyse durch.",
                                       "- Gehe zu den Analysen und führe eine Ausreißeranalyse durch.",
                                       "Aktuell laufend",
@@ -799,5 +842,9 @@ public class InstantPreviewDashboardIT extends AbstractDashboardRestServiceIT {
         "de"
         )
       );
+  }
+  @SuppressWarnings(UNUSED)
+  private static Stream<String> templates() {
+    return Stream.of("template1.json", "template2.json", "template3.json");
   }
 }

@@ -125,6 +125,13 @@
     </profile>
 
     <profile>
+      <id>engine-7.19</id>
+      <properties>
+        <camunda.engine.version>7.19.0</camunda.engine.version>
+      </properties>
+    </profile>
+
+    <profile>
       <id>engine-7.18</id>
       <properties>
         <camunda.engine.version>7.18.0</camunda.engine.version>

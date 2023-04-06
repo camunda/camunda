@@ -39,6 +39,7 @@ public class EngineVersionChecker {
   static {
     supportedEngines.add("7.17.0");
     supportedEngines.add("7.18.0");
+    supportedEngines.add("7.19.0");
   }
 
   public static void checkEngineVersionSupport(final Client engineClient,

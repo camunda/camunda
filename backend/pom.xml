@@ -14,9 +14,9 @@
     <jetty.version>9.4.51.v20230217</jetty.version>
     <jersey.version>2.35</jersey.version>
     <spring.security.version>5.8.2</spring.security.version>
-    <it.test.excludedGroups/>
-    <it.test.includedGroups/>
-    <test.forkCount/>
+    <it.test.excludedGroups />
+    <it.test.includedGroups />
+    <test.forkCount />
 
     <sonar.coverage.jacoco.xmlReportPaths>${basedir}/../${aggregate.report.dir}</sonar.coverage.jacoco.xmlReportPaths>
   </properties>
@@ -596,15 +596,15 @@
                 <configuration>
                   <skip>${skip.docker}</skip>
                   <target name="check-cambpm-is-running" description="Check whether Camunda Platform is running">
-                    <echo message="Check Camunda Platform Tomcat is running..."/>
+                    <echo message="Check Camunda Platform Tomcat is running..." />
                     <waitfor maxwait="30" maxwaitunit="second" checkevery="1" checkeveryunit="second">
-                      <socket server="localhost" port="${tomcat.connector.http.port}"/>
+                      <socket server="localhost" port="${tomcat.connector.http.port}" />
                     </waitfor>
-                    <echo message="Camunda Platform Tomcat socket is open. Checking for manager app to become available..."/>
+                    <echo message="Camunda Platform Tomcat socket is open. Checking for manager app to become available..." />
                     <waitfor maxwait="30" maxwaitunit="second" checkevery="1" checkeveryunit="second">
-                      <http url="http://admin:admin@localhost:${tomcat.connector.http.port}/manager/text/list"/>
+                      <http url="http://admin:admin@localhost:${tomcat.connector.http.port}/manager/text/list" />
                     </waitfor>
-                    <echo message="Camunda Platform Tomcat manager app is running."/>
+                    <echo message="Camunda Platform Tomcat manager app is running." />
                   </target>
                 </configuration>
                 <goals>

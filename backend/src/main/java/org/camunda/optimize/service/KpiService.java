@@ -40,6 +40,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.filter.Runn
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.RunningInstancesOnlyFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.SuspendedInstancesOnlyFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.VariableFilterDto;
+import org.camunda.optimize.rest.mapper.ReportRestMapper;
 import org.camunda.optimize.service.es.report.PlainReportEvaluationHandler;
 import org.camunda.optimize.service.es.report.ReportEvaluationInfo;
 import org.camunda.optimize.service.report.ReportService;
@@ -60,6 +61,7 @@ import static java.util.stream.Collectors.toList;
 public class KpiService {
 
   private final ReportService reportService;
+  private final LocalizationService localizationService;
   private final PlainReportEvaluationHandler reportEvaluationHandler;
 
   public List<String> getKpisForProcessDefinition(final String processDefinitionKey) {
@@ -94,13 +96,15 @@ public class KpiService {
     return kpiResponseDtos;
   }
 
-  public List<KpiResultDto> extractKpiResultsForProcessDefinition(final ProcessOverviewDto processOverviewDto) {
+  public List<KpiResultDto> extractKpiResultsForProcessDefinition(final ProcessOverviewDto processOverviewDto,
+                                                                  final String locale) {
     final List<KpiResultDto> kpiResponseDtos = new ArrayList<>();
     final List<SingleProcessReportDefinitionRequestDto> kpiReports = getKpiReportsForProcessDefinition(
       processOverviewDto.getProcessDefinitionKey());
     final Map<String, String> lastKpiEvaluationResults =
       Optional.ofNullable(processOverviewDto.getLastKpiEvaluationResults()).orElse(Collections.emptyMap());
     for (SingleProcessReportDefinitionRequestDto report : kpiReports) {
+      ReportRestMapper.localizeReportNames(report, locale, localizationService);
       KpiResultDto kpiResponseDto = new KpiResultDto();
       if (lastKpiEvaluationResults.containsKey(report.getId())) {
         kpiResponseDto.setValue(lastKpiEvaluationResults.get(report.getId()));

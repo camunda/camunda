@@ -53,6 +53,7 @@ type Config = {
   logoutHidden: boolean;
   exportCsvLimit: number;
   onboarding: Onboarding;
+  notificationsUrl: string;
 };
 
 let config: Record<string, unknown>;
@@ -104,5 +105,6 @@ export const isLogoutHidden = createAccessorFunction<boolean>('logoutHidden');
 export const getExportCsvLimit = createAccessorFunction<number>('exportCsvLimit');
 export const isEnterpriseMode = createAccessorFunction<boolean>('enterpriseMode');
 export const getOnboardingConfig = createAccessorFunction<Onboarding>('onboarding');
+export const getNotificationsUrl = createAccessorFunction<string>('notificationsUrl');
 
 export {default as newReport} from './newReport.json';

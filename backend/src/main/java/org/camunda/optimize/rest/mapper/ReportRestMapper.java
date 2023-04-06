@@ -81,6 +81,24 @@ public class ReportRestMapper {
     resolveOwnerAndModifierNames(authorizedReportDefinitionDto.getDefinitionDto());
   }
 
+  public static void localizeReportNames(final ReportDefinitionDto<?> reportDefinitionDto, final String locale,
+                                         LocalizationService localizationService) {
+    if (isManagementOrInstantPreviewReport(reportDefinitionDto)) {
+      final String validLocale = localizationService.validateAndReturnValidLocale(locale);
+      if (((SingleProcessReportDefinitionRequestDto) reportDefinitionDto).getData().isManagementReport()) {
+        Optional.ofNullable(localizationService.getLocalizationForManagementReportCode(
+          validLocale,
+          reportDefinitionDto.getName()
+        )).ifPresent(reportDefinitionDto::setName);
+      } else {
+        Optional.ofNullable(localizationService.getLocalizationForInstantPreviewReportCode(
+          validLocale,
+          reportDefinitionDto.getName()
+        )).ifPresent(reportDefinitionDto::setName);
+      }
+    }
+  }
+
   private <T> AuthorizedProcessReportEvaluationResponseDto<T> mapToAuthorizedProcessReportEvaluationResponseDto(
     final SingleReportEvaluationResult<T> singleReportEvaluationResult) {
     return new AuthorizedProcessReportEvaluationResponseDto<>(
@@ -99,7 +117,7 @@ public class ReportRestMapper {
       (ReportResultResponseDto<T>) mapToReportResultResponseDto(evaluationResult),
       (R) evaluationResult.getReportDefinition()
     );
-    localizeReportNames(mappedResult.getReportDefinition(), locale);
+    localizeReportNames(mappedResult.getReportDefinition(), locale, localizationService);
     return mappedResult;
   }
 
@@ -125,32 +143,19 @@ public class ReportRestMapper {
   }
 
   private void resolveOwnerAndModifierNames(ReportDefinitionDto<?> reportDefinitionDto) {
+    // We are assuming that if the owner/last modifier field contains empty spaces, that we already have the
+    // display name (and not the user ID), therefore no transformation necessary, so we're filtering it out
     Optional.ofNullable(reportDefinitionDto.getOwner())
+      .filter(owner -> !owner.contains(" "))
       .flatMap(identityService::getIdentityNameById)
       .ifPresent(reportDefinitionDto::setOwner);
     Optional.ofNullable(reportDefinitionDto.getLastModifier())
+      .filter(lastModifier-> !lastModifier.contains(" "))
       .flatMap(identityService::getIdentityNameById)
       .ifPresent(reportDefinitionDto::setLastModifier);
   }
 
-  private void localizeReportNames(final ReportDefinitionDto<?> reportDefinitionDto, final String locale) {
-    if (isManagementOrInstantPreviewReport(reportDefinitionDto)) {
-      final String validLocale = localizationService.validateAndReturnValidLocale(locale);
-      if (((SingleProcessReportDefinitionRequestDto) reportDefinitionDto).getData().isManagementReport()) {
-        Optional.ofNullable(localizationService.getLocalizationForManagementReportCode(
-          validLocale,
-          reportDefinitionDto.getName()
-        )).ifPresent(reportDefinitionDto::setName);
-      } else {
-        Optional.ofNullable(localizationService.getLocalizationForInstantPreviewReportCode(
-          validLocale,
-          reportDefinitionDto.getName()
-        )).ifPresent(reportDefinitionDto::setName);
-      }
-    }
-  }
-
-  private boolean isManagementOrInstantPreviewReport(final ReportDefinitionDto<?> reportDefinitionDto) {
+  private static boolean isManagementOrInstantPreviewReport(final ReportDefinitionDto<?> reportDefinitionDto) {
     return reportDefinitionDto instanceof SingleProcessReportDefinitionRequestDto
       && (((SingleProcessReportDefinitionRequestDto) reportDefinitionDto).getData().isManagementReport()
       || ((SingleProcessReportDefinitionRequestDto) reportDefinitionDto).getData().isInstantPreviewReport());

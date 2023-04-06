@@ -32,6 +32,8 @@ import javax.ws.rs.core.MediaType;
 import java.util.List;
 import java.util.Optional;
 
+import static org.camunda.optimize.rest.constants.RestConstants.X_OPTIMIZE_CLIENT_LOCALE;
+
 @AllArgsConstructor
 @Path("/process")
 @Component
@@ -47,7 +49,7 @@ public class ProcessOverviewRestService {
                                                               @BeanParam final ProcessOverviewSorter processOverviewSorter) {
     final String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
     List<ProcessOverviewResponseDto> processOverviewResponseDtos =
-      processOverviewService.getAllProcessOverviews(userId);
+      processOverviewService.getAllProcessOverviews(userId, requestContext.getHeaderString(X_OPTIMIZE_CLIENT_LOCALE));
     return processOverviewSorter.applySort(processOverviewResponseDtos);
   }
 

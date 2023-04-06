@@ -79,6 +79,7 @@ public class DigestService implements ConfigurationReloadable {
   private static final String HTTPS_PREFIX = "https://";
   private static final String UTM_SOURCE = "digest";
   private static final String UTM_MEDIUM = "email";
+  private static final String DEFAULT_LOCALE = "en";
 
   @PostConstruct
   public void init() {
@@ -166,7 +167,8 @@ public class DigestService implements ConfigurationReloadable {
   }
 
   private void sendDigestAndUpdateLatestKpiResults(final ProcessOverviewDto overviewDto) {
-    final List<KpiResultDto> currentKpiReportResults = kpiService.extractKpiResultsForProcessDefinition(overviewDto);
+    final List<KpiResultDto> currentKpiReportResults = kpiService.extractKpiResultsForProcessDefinition(overviewDto,
+                                                                                                        DEFAULT_LOCALE);
 
     try {
       composeAndSendDigestEmail(overviewDto, currentKpiReportResults);
