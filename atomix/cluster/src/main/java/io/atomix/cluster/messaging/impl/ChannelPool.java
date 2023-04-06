@@ -105,10 +105,24 @@ class ChannelPool {
         if (channelFuture == null || channelFuture.isCompletedExceptionally()) {
           LOGGER.debug("Connecting to {}", address);
           channelFuture = factory.apply(address);
+          final var finalFuture = channelFuture;
           channelFuture.whenComplete(
               (channel, error) -> {
                 if (error == null) {
                   LOGGER.debug("Connected to {}", channel.remoteAddress());
+                  // Remove channel from the pool when it is closed
+                  channel
+                      .closeFuture()
+                      .addListener(
+                          closed -> {
+                            synchronized (channelPool) {
+                              // Remove channel from the pool after it is closed.
+                              final var currentFuture = channelPool.get(offset);
+                              if (finalFuture == currentFuture) {
+                                channelPool.set(offset, null);
+                              }
+                            }
+                          });
                 } else {
                   LOGGER.debug("Failed to connect to {}", address, error);
                 }
