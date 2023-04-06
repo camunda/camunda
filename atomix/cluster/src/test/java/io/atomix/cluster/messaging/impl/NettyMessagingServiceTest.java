@@ -640,11 +640,11 @@ public class NettyMessagingServiceTest {
         .withMessageContaining("timed out in");
 
     // when
+    verify(channelRef.get(), timeout(1000).atLeast(1)).close();
     nettyWithOwnPool.sendAndReceive(address2, subject, "fail".getBytes());
 
     // then
     // closing causes an CloseException which causes another close
-    verify(channelRef.get(), timeout(1000).atLeast(1)).close();
     Awaitility.await("channels should be recreated").until(channelsOpen::get, c -> c == 2);
   }
 
