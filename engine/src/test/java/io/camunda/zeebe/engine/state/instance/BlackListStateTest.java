@@ -134,6 +134,28 @@ public final class BlackListStateTest {
     assertThat(blackListState.isOnBlacklist(differentProcessInstanceRecord)).isFalse();
   }
 
+  @Test
+  public void blacklistIsEmptyIsTrueIfNothingIsBlacklisted() {
+    // given
+
+    // when
+    final boolean blackListIsEmpty = blackListState.isEmpty();
+
+    // then
+    assertThat(blackListIsEmpty).isTrue();
+  }
+
+  @Test
+  public void blacklistIsEmptyIsFalseIfSomethingGotBlacklisted() {
+    // given
+
+    // when
+    blackListState.blacklistProcessInstance(1001);
+
+    // then
+    assertThat(blackListState.isEmpty()).isFalse();
+  }
+
   private TypedRecordImpl createRecord() {
     return createRecord(1000L);
   }
