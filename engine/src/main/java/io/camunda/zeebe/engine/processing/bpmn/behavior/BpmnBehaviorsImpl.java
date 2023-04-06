@@ -133,6 +133,7 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
             expressionBehavior,
             stateBehavior,
             incidentBehavior,
+            jobActivationBehavior,
             jobMetrics);
 
     multiInstanceOutputCollectionBehavior =

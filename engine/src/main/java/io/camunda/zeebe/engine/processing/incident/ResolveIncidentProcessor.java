@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.incident;
 
+import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnJobActivationBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
@@ -40,17 +41,20 @@ public final class ResolveIncidentProcessor implements TypedRecordProcessor<Inci
   private final IncidentState incidentState;
   private final ElementInstanceState elementInstanceState;
   private final TypedResponseWriter responseWriter;
+  private final BpmnJobActivationBehavior jobActivationBehavior;
 
   public ResolveIncidentProcessor(
       final ProcessingState processingState,
       final TypedRecordProcessor<ProcessInstanceRecord> bpmnStreamProcessor,
-      final Writers writers) {
+      final Writers writers,
+      final BpmnJobActivationBehavior jobActivationBehavior) {
     this.bpmnStreamProcessor = bpmnStreamProcessor;
     stateWriter = writers.state();
     rejectionWriter = writers.rejection();
     responseWriter = writers.response();
     incidentState = processingState.getIncidentState();
     elementInstanceState = processingState.getElementInstanceState();
+    this.jobActivationBehavior = jobActivationBehavior;
   }
 
   @Override
@@ -66,6 +70,7 @@ public final class ResolveIncidentProcessor implements TypedRecordProcessor<Inci
 
     stateWriter.appendFollowUpEvent(key, IncidentIntent.RESOLVED, incident);
     responseWriter.writeEventOnCommand(key, IncidentIntent.RESOLVED, incident, command);
+    // TODO: call JobActivationbehavior#publishWork
 
     // if it fails, a new incident is raised
     attemptToContinueProcessProcessing(command, incident);

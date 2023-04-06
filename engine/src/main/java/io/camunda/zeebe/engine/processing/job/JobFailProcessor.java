@@ -11,6 +11,8 @@ import static io.camunda.zeebe.util.StringUtil.limitString;
 import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 
 import io.camunda.zeebe.engine.metrics.JobMetrics;
+import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
+import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnJobActivationBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.CommandProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.SideEffectWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
@@ -41,6 +43,7 @@ public final class JobFailProcessor implements CommandProcessor<JobRecord> {
   private final JobMetrics jobMetrics;
   private final JobBackoffChecker jobBackoffChecker;
   private final VariableBehavior variableBehavior;
+  private final BpmnJobActivationBehavior jobActivationBehavior;
   private final SideEffectWriter sideEffectWriter;
 
   public JobFailProcessor(
@@ -49,14 +52,15 @@ public final class JobFailProcessor implements CommandProcessor<JobRecord> {
       final KeyGenerator keyGenerator,
       final JobMetrics jobMetrics,
       final JobBackoffChecker jobBackoffChecker,
-      final VariableBehavior variableBehavior) {
+      final BpmnBehaviors bpmnBehaviors) {
     jobState = state.getJobState();
     this.keyGenerator = keyGenerator;
     this.jobBackoffChecker = jobBackoffChecker;
     defaultProcessor =
         new DefaultJobCommandPreconditionGuard("fail", jobState, this::acceptCommand);
     this.jobMetrics = jobMetrics;
-    this.variableBehavior = variableBehavior;
+    variableBehavior = bpmnBehaviors.variableBehavior();
+    jobActivationBehavior = bpmnBehaviors.jobActivationBehavior();
     sideEffectWriter = writers.sideEffect();
   }
 
@@ -131,6 +135,7 @@ public final class JobFailProcessor implements CommandProcessor<JobRecord> {
           });
     }
     commandControl.accept(JobIntent.FAILED, failedJob);
+    // TODO: call JobActivationbehavior#publishWork
     jobMetrics.jobFailed(failedJob.getType());
   }
 }
