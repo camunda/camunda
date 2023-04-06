@@ -38,6 +38,7 @@ import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.jupiter.api.condition.EnabledIf;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
@@ -60,6 +61,9 @@ public class NonInterruptingEventSubprocessTest {
   @Parameterized.Parameter(2)
   public Consumer<Long> triggerEventSubprocess;
 
+  @Parameterized.Parameter(3)
+  public static Boolean cyclic;
+
   private ProcessMetadataValue currentProcess;
   private String correlationKey;
 
@@ -67,7 +71,37 @@ public class NonInterruptingEventSubprocessTest {
   public static Object[][] parameters() {
     return new Object[][] {
       {
-        "timer",
+        "timer with duration",
+        eventSubprocess(s -> s.timerWithDuration("PT60S")),
+        eventTrigger(
+            key -> {
+              assertThat(
+                      RecordingExporter.timerRecords(TimerIntent.CREATED)
+                          .withProcessInstanceKey(key)
+                          .exists())
+                  .describedAs("Expected timer to exist")
+                  .isTrue();
+              ENGINE.increaseTime(Duration.ofSeconds(60));
+            }),
+        false
+      },
+      {
+        "timer with date",
+        eventSubprocess(s -> s.timerWithDateExpression("now() + duration(\"PT1M\")")),
+        eventTrigger(
+            key -> {
+              assertThat(
+                      RecordingExporter.timerRecords(TimerIntent.CREATED)
+                          .withProcessInstanceKey(key)
+                          .exists())
+                  .describedAs("Expected timer to exist")
+                  .isTrue();
+              ENGINE.increaseTime(Duration.ofSeconds(60));
+            }),
+        false
+      },
+      {
+        "timer with cycle",
         eventSubprocess(s -> s.timerWithCycle("R/PT60S")),
         eventTrigger(
             key -> {
@@ -78,7 +112,8 @@ public class NonInterruptingEventSubprocessTest {
                   .describedAs("Expected timer to exist")
                   .isTrue();
               ENGINE.increaseTime(Duration.ofSeconds(60));
-            })
+            }),
+        true
       },
       {
         "message",
@@ -95,7 +130,8 @@ public class NonInterruptingEventSubprocessTest {
                   .withName(messageName)
                   .withCorrelationKey("message-" + CORRELATION_KEY)
                   .publish();
-            })
+            }),
+        true
       },
     };
   }
@@ -148,6 +184,9 @@ public class NonInterruptingEventSubprocessTest {
 
   @Test
   public void shouldTriggerEventSubprocessTwice() {
+    // Only run test if test-case is cyclic
+    org.junit.Assume.assumeTrue(cyclic);
+
     // given
     final BpmnModelInstance model = eventSubprocModel(builder);
     final long processInstanceKey = createInstanceAndTriggerEvent(model);
@@ -198,6 +237,9 @@ public class NonInterruptingEventSubprocessTest {
 
   @Test
   public void shouldTriggerEventSubprocessTwiceWithOwnLocalScopeVariable() {
+    // Only run test if test-case is cyclic
+    org.junit.Assume.assumeTrue(cyclic);
+
     // given
     final BpmnModelInstance model = eventSubprocModelWithLocalScopeVariable(builder);
     final long processInstanceKey = createInstanceAndTriggerEvent(model);

@@ -70,8 +70,22 @@ public class InterruptingEventSubprocessTest {
   public static Object[][] parameters() {
     return new Object[][] {
       {
-        "timer",
+        "timer duration",
         eventSubprocess(s -> s.timerWithDuration("PT60S")),
+        eventTrigger(
+            key -> {
+              assertThat(
+                      RecordingExporter.timerRecords(TimerIntent.CREATED)
+                          .withProcessInstanceKey(key)
+                          .exists())
+                  .describedAs("Expected timer to exist")
+                  .isTrue();
+              ENGINE.increaseTime(Duration.ofSeconds(60));
+            })
+      },
+      {
+        "timer timedate",
+        eventSubprocess(s -> s.timerWithDateExpression("now() + duration(\"PT1M\")")),
         eventTrigger(
             key -> {
               assertThat(
