@@ -25,12 +25,9 @@ env:
 jobs:
   integration-tests:
     name: Integration tests
-    runs-on: [ self-hosted, linux, amd64, "8" ]
+    runs-on: [ self-hosted, linux, amd64, "16" ]
     timeout-minutes: 45
     env:
-      TC_CLOUD_LOGS_VERBOSE: true
-      TC_CLOUD_TOKEN: ${{ secrets.TC_CLOUD_TOKEN }}
-      TC_CLOUD_CONCURRENCY: 2
       ZEEBE_TEST_DOCKER_IMAGE: localhost:5000/camunda/zeebe:current-test
     services:
       registry:
@@ -55,13 +52,6 @@ jobs:
           version: current-test
           push: true
           distball: ${{ steps.build-zeebe.outputs.distball }}
-      - name: Prepare Testcontainers Cloud agent
-        if: env.TC_CLOUD_TOKEN != ''
-        run: |
-          curl -L -o agent https://app.testcontainers.cloud/download/testcontainers-cloud-agent_linux_x86-64
-          chmod +x agent
-          ./agent --private-registry-url=http://localhost:5000 '--private-registry-allowed-image-name-globs=*,*/*' > .testcontainers-agent.log 2>&1 &
-          ./agent wait
       - name: Create build output log file
         run: echo "BUILD_OUTPUT_FILE_PATH=$(mktemp)" >> $GITHUB_ENV
       - name: Maven Test Build
@@ -86,12 +76,9 @@ jobs:
           name: Integration Tests
   qa-update-tests:
     name: QA Update tests
-    runs-on: [ self-hosted, linux, amd64, "8" ]
+    runs-on: [ self-hosted, linux, amd64, "16" ]
     timeout-minutes: 45
     env:
-      TC_CLOUD_LOGS_VERBOSE: true
-      TC_CLOUD_TOKEN: ${{ secrets.TC_CLOUD_TOKEN }}
-      TC_CLOUD_CONCURRENCY: 2
       ZEEBE_TEST_DOCKER_IMAGE: localhost:5000/camunda/zeebe:current-test
     services:
       registry:
@@ -116,13 +103,6 @@ jobs:
           version: current-test
           push: true
           distball: ${{ steps.build-zeebe.outputs.distball }}
-      - name: Prepare Testcontainers Cloud agent
-        if: env.TC_CLOUD_TOKEN != ''
-        run: |
-          curl -L -o agent https://app.testcontainers.cloud/download/testcontainers-cloud-agent_linux_x86-64
-          chmod +x agent
-          ./agent --private-registry-url=http://localhost:5000 '--private-registry-allowed-image-name-globs=*,*/*' > .testcontainers-agent.log 2>&1 &
-          ./agent wait
       - name: Create build output log file
         run: echo "BUILD_OUTPUT_FILE_PATH=$(mktemp)" >> $GITHUB_ENV
       - name: Maven Test Build
