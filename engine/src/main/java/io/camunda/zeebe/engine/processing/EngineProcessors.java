@@ -97,6 +97,7 @@ public final class EngineProcessors {
             subscriptionCommandSender,
             partitionsCount,
             timerChecker,
+            jobStreamer,
             jobMetrics,
             decisionBehavior);
 
@@ -159,6 +160,7 @@ public final class EngineProcessors {
       final SubscriptionCommandSender subscriptionCommandSender,
       final int partitionsCount,
       final DueDateTimerChecker timerChecker,
+      final JobStreamer jobStreamer,
       final JobMetrics jobMetrics,
       final DecisionBehavior decisionBehavior) {
     return new BpmnBehaviorsImpl(
@@ -168,7 +170,8 @@ public final class EngineProcessors {
         decisionBehavior,
         subscriptionCommandSender,
         partitionsCount,
-        timerChecker);
+        timerChecker,
+        jobStreamer);
   }
 
   private static TypedRecordProcessor<ProcessInstanceRecord> addProcessProcessors(
