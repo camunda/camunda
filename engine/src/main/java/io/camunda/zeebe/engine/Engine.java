@@ -29,6 +29,8 @@ import io.camunda.zeebe.protocol.impl.record.value.error.ErrorRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.ErrorIntent;
+import io.camunda.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
+import io.camunda.zeebe.protocol.record.intent.ProcessInstanceRelatedIntent;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRelated;
 import java.util.EnumSet;
 import java.util.Objects;
@@ -130,9 +132,13 @@ public class Engine implements RecordProcessor {
         return processingResultBuilder.build();
       }
 
-      final boolean isNotOnBlacklist =
-          !processingState.getBlackListState().isOnBlacklist(typedCommand);
-      if (isNotOnBlacklist) {
+      // There is no blacklist check needed if the intent is not instance related
+      // nor if the intent is to create new instances, which can't be blacklisted yet
+      final boolean noBlacklistCheckNeeded =
+          !(record.getIntent() instanceof ProcessInstanceRelatedIntent)
+              || record.getIntent() instanceof ProcessInstanceCreationIntent;
+      if (noBlacklistCheckNeeded
+          || !processingState.getBlackListState().isOnBlacklist(typedCommand)) {
         currentProcessor.processRecord(record);
       }
     }
