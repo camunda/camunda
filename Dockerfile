@@ -33,6 +33,9 @@ ENV ZB_HOME=/usr/local/zeebe \
     ZEEBE_BROKER_GATEWAY_NETWORK_HOST=0.0.0.0 \
     ZEEBE_STANDALONE_GATEWAY=false
 ENV PATH "${ZB_HOME}/bin:${PATH}"
+# Disable RocksDB runtime check for musl, which launches `ldd` as a shell process
+# We know there's no need to check for musl on this image
+ENV ROCKSDB_MUSL_LIBC=false
 
 WORKDIR ${ZB_HOME}
 EXPOSE 26500 26501 26502
