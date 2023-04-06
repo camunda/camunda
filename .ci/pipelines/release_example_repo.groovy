@@ -195,7 +195,7 @@ pipeline {
             # git config
             git config --global user.email "ci_automation@camunda.com"
             git config --global user.name "${optimizeUtils.defaultCredentialsId()}"
-            git config --global --add safe.directory "\\$PWD"
+            git config --global --add safe.directory "\$PWD"
           """)
         }
       }
