@@ -1710,10 +1710,10 @@
   resolved "https://registry.yarnpkg.com/@ibm/plex/-/plex-6.0.0-next.6.tgz#5b4ab81a84ddb06651fdf684521927cdce135b79"
   integrity sha512-B3uGruTn2rS5gweynLmfSe7yCawSRsJguJJQHVQiqf4rh2RNgJFu8YLE2Zd/JHV0ZXoVMOslcXP2k3hMkxKEyA==
 
-"@ibm/plex@^6.1.1":
-  version "6.1.1"
-  resolved "https://registry.yarnpkg.com/@ibm/plex/-/plex-6.1.1.tgz#eddfd98fe86ecafc74bc8ec7595e7615bb88eb34"
-  integrity sha512-b2z/Gsc8KHOVrYo/yPauRvRDNMwF6zhEZZsvogs1rCmmyfVXBTY9uUkf6TyplhQs/L4UcjBus8R/RDp7yASTBA==
+"@ibm/plex@^6.2.0":
+  version "6.2.0"
+  resolved "https://registry.yarnpkg.com/@ibm/plex/-/plex-6.2.0.tgz#990ecb1c2a259529ef0e1ddadebb66b9a3c24158"
+  integrity sha512-0ddHQTHN2/LqGC9jahnb7+kR7Cq+EmI1Z+SUVmpehilMu0QZ6hNBU/lOM0O2as5pwZt8xMejKZw4qCMRW9vDLg==
 
 "@istanbuljs/load-nyc-config@^1.0.0":
   version "1.1.0"
