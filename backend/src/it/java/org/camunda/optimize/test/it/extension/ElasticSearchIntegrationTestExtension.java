@@ -35,9 +35,11 @@ import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.report.MinMaxStatDto;
 import org.camunda.optimize.service.es.schema.IndexMappingCreator;
 import org.camunda.optimize.service.es.schema.OptimizeIndexNameService;
-import org.camunda.optimize.service.es.schema.index.DecisionInstanceIndex;
+import org.camunda.optimize.service.es.schema.index.ExternalProcessVariableIndex;
 import org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex;
+import org.camunda.optimize.service.es.schema.index.VariableUpdateInstanceIndex;
 import org.camunda.optimize.service.es.schema.index.events.CamundaActivityEventIndex;
+import org.camunda.optimize.service.es.schema.index.events.EventIndex;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.EsHelper;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
@@ -47,7 +49,6 @@ import org.camunda.optimize.service.util.mapper.CustomOffsetDateTimeSerializer;
 import org.camunda.optimize.upgrade.es.ElasticsearchHighLevelRestClientBuilder;
 import org.elasticsearch.ElasticsearchStatusException;
 import org.elasticsearch.action.admin.cluster.settings.ClusterUpdateSettingsRequest;
-import org.elasticsearch.action.admin.indices.delete.DeleteIndexRequest;
 import org.elasticsearch.action.admin.indices.refresh.RefreshRequest;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.get.GetRequest;
@@ -89,6 +90,7 @@ import java.io.IOException;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -100,6 +102,7 @@ import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
 import static org.camunda.optimize.rest.RestTestConstants.DEFAULT_USERNAME;
+import static org.camunda.optimize.service.es.OptimizeElasticsearchClient.INDICES_EXIST_OPTIONS;
 import static org.camunda.optimize.service.es.reader.ElasticsearchReaderUtil.mapHits;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.FLOW_NODE_INSTANCES;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.FLOW_NODE_TOTAL_DURATION;
@@ -113,6 +116,7 @@ import static org.camunda.optimize.service.util.ProcessVariableHelper.getNestedV
 import static org.camunda.optimize.service.util.importing.EngineConstants.FLOW_NODE_TYPE_USER_TASK;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.CAMUNDA_ACTIVITY_EVENT_INDEX_PREFIX;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_DEFINITION_INDEX_NAME;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_INSTANCE_INDEX_PREFIX;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_INSTANCE_MULTI_ALIAS;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EVENT_PROCESS_DEFINITION_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EVENT_PROCESS_INSTANCE_INDEX_PREFIX;
@@ -125,6 +129,7 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_R
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.OPTIMIZE_DATE_FORMAT;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_DEFINITION_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_ARCHIVE_INDEX_PREFIX;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_INDEX_PREFIX;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_MULTI_ALIAS;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.TENANT_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.TIMESTAMP_BASED_IMPORT_INDEX_NAME;
@@ -462,16 +467,14 @@ public class ElasticSearchIntegrationTestExtension implements BeforeEachCallback
     }
   }
 
+  @SneakyThrows
   public void deleteAllDecisionInstanceIndices() {
-    getOptimizeElasticClient().deleteIndexByRawIndexNames(
-      getIndexNameService().getOptimizeIndexAliasForIndex(new DecisionInstanceIndex("*"))
-    );
+    deleteAllIndicesContainingTerm(DECISION_INSTANCE_INDEX_PREFIX);
   }
 
+  @SneakyThrows
   public void deleteAllProcessInstanceIndices() {
-    getOptimizeElasticClient().deleteIndexByRawIndexNames(
-      getIndexNameService().getOptimizeIndexAliasForIndex(new ProcessInstanceIndex("*"))
-    );
+    deleteAllIndicesContainingTerm(PROCESS_INSTANCE_INDEX_PREFIX);
   }
 
   public void deleteAllDocsInIndex(final IndexMappingCreator index) {
@@ -496,9 +499,15 @@ public class ElasticSearchIntegrationTestExtension implements BeforeEachCallback
   }
 
   public void deleteAllVariableUpdateInstanceIndices() {
-    getOptimizeElasticClient().deleteIndexByRawIndexNames(
-      getIndexNameService().getOptimizeIndexAliasForIndex(VARIABLE_UPDATE_INSTANCE_INDEX_NAME + "*")
-    );
+    final String[] indexNames = getOptimizeElasticClient().getAllIndicesForAlias(
+      getIndexNameService().getOptimizeIndexAliasForIndex(new VariableUpdateInstanceIndex())).toArray(String[]::new);
+    getOptimizeElasticClient().deleteIndexByRawIndexNames(indexNames);
+  }
+
+  public void deleteAllExternalVariableIndices() {
+    final String[] indexNames = getOptimizeElasticClient().getAllIndicesForAlias(
+      getIndexNameService().getOptimizeIndexAliasForIndex(new ExternalProcessVariableIndex())).toArray(String[]::new);
+    getOptimizeElasticClient().deleteIndexByRawIndexNames(indexNames);
   }
 
   public boolean indexExists(final String indexOrAliasName) {
@@ -649,16 +658,24 @@ public class ElasticSearchIntegrationTestExtension implements BeforeEachCallback
   }
 
   public void deleteAllExternalEventIndices() {
-    getOptimizeElasticClient().deleteIndexByRawIndexNames(
-      getIndexNameService().getOptimizeIndexAliasForIndex(EXTERNAL_EVENTS_INDEX_NAME + "_*")
-    );
+    final String eventIndexAlias = getIndexNameService().getOptimizeIndexAliasForIndex(new EventIndex());
+    final String[] eventIndices = getOptimizeElasticClient().getAllIndicesForAlias(eventIndexAlias).toArray(String[]::new);
+    getOptimizeElasticClient().deleteIndexByRawIndexNames(eventIndices);
   }
 
   @SneakyThrows
   public void deleteAllZeebeRecordsForPrefix(final String zeebeRecordPrefix) {
-    getOptimizeElasticClient().getHighLevelClient()
-      .indices()
-      .delete(new DeleteIndexRequest(zeebeRecordPrefix + "*"), getOptimizeElasticClient().requestOptions());
+    final String[] indicesToDelete = Arrays.stream(
+        getOptimizeElasticClient().getHighLevelClient().indices().get(
+            new GetIndexRequest("*").indicesOptions(INDICES_EXIST_OPTIONS),
+            getOptimizeElasticClient().requestOptions()
+          )
+          .getIndices())
+      .filter(indexName -> indexName.contains(zeebeRecordPrefix))
+      .toArray(String[]::new);
+    if (indicesToDelete.length > 1) {
+      getOptimizeElasticClient().deleteIndexByRawIndexNames(indicesToDelete);
+    }
   }
 
   @SneakyThrows
@@ -668,7 +685,7 @@ public class ElasticSearchIntegrationTestExtension implements BeforeEachCallback
       .setQuery(updateQuery)
       .setScript(new Script(ScriptType.INLINE, Script.DEFAULT_SCRIPT_LANG, updateScript, Collections.emptyMap()))
       .setMaxRetries(NUMBER_OF_RETRIES_ON_CONFLICT)
-      .setRefresh(true);;
+      .setRefresh(true);
     getOptimizeElasticClient().getHighLevelClient().updateByQuery(update, getOptimizeElasticClient().requestOptions());
   }
 
@@ -708,23 +725,28 @@ public class ElasticSearchIntegrationTestExtension implements BeforeEachCallback
   }
 
   private void deleteCamundaEventIndicesAndEventCountsAndTraces() {
-    getOptimizeElasticClient().deleteIndexByRawIndexNames(
-      getIndexNameService().getOptimizeIndexAliasForIndex(CAMUNDA_ACTIVITY_EVENT_INDEX_PREFIX + "*"),
-      getIndexNameService().getOptimizeIndexAliasForIndex(EVENT_SEQUENCE_COUNT_INDEX_PREFIX + "*"),
-      getIndexNameService().getOptimizeIndexAliasForIndex(EVENT_TRACE_STATE_INDEX_PREFIX + "*")
-    );
+    deleteIndicesStartWithTerm(CAMUNDA_ACTIVITY_EVENT_INDEX_PREFIX);
+    deleteIndicesStartWithTerm(EVENT_SEQUENCE_COUNT_INDEX_PREFIX);
+    deleteIndicesStartWithTerm(EVENT_TRACE_STATE_INDEX_PREFIX);
   }
 
   private void deleteAllProcessInstanceArchiveIndices() {
-    getOptimizeElasticClient().deleteIndexByRawIndexNames(
-      getIndexNameService().getOptimizeIndexAliasForIndex(PROCESS_INSTANCE_ARCHIVE_INDEX_PREFIX + "*")
-    );
+    deleteIndicesStartWithTerm(PROCESS_INSTANCE_ARCHIVE_INDEX_PREFIX);
   }
 
   private void deleteAllEventProcessInstanceIndices() {
-    getOptimizeElasticClient().deleteIndexByRawIndexNames(
-      getIndexNameService().getOptimizeIndexAliasForIndex(EVENT_PROCESS_INSTANCE_INDEX_PREFIX + "*")
-    );
+    deleteIndicesStartWithTerm(EVENT_PROCESS_INSTANCE_INDEX_PREFIX);
+  }
+
+  @SneakyThrows
+  private void deleteIndicesStartWithTerm(final String term) {
+    final String[] indicesToDelete = getOptimizeElasticClient().getAllIndexNames()
+      .stream()
+      .filter(indexName -> indexName.startsWith(getIndexNameService().getIndexPrefix() + "-" + term))
+      .toArray(String[]::new);
+    if (indicesToDelete.length > 0) {
+      getOptimizeElasticClient().deleteIndexByRawIndexNames(indicesToDelete);
+    }
   }
 
   private void initEsClient() {
@@ -817,6 +839,15 @@ public class ElasticSearchIntegrationTestExtension implements BeforeEachCallback
       prefixAwareRestHighLevelClient.getLowLevelClient().performRequest(request);
     } catch (IOException e) {
       throw new OptimizeRuntimeException("Could not update cluster settings!", e);
+    }
+  }
+
+  private void deleteAllIndicesContainingTerm(final String indexTerm) throws IOException {
+    final String[] indicesToDelete = getOptimizeElasticClient().getAllIndexNames().stream()
+      .filter(index -> index.contains(indexTerm))
+      .toArray(String[]::new);
+    if (indicesToDelete.length > 0) {
+      getOptimizeElasticClient().deleteIndexByRawIndexNames(indicesToDelete);
     }
   }
 

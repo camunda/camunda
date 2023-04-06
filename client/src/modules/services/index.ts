@@ -8,3 +8,8 @@
 export function getRandomId() {
   return Math.random().toString(36).slice(2);
 }
+
+export {TEXT_REPORT_MAX_CHARACTERS, isTextReportTooLong, isTextReportValid} from './reportService';
+export {default as getScreenBounds} from './getScreenBounds';
+export {default as ignoreFragments} from './ignoreFragments';
+export {default as isReactElement} from './isReactElement';

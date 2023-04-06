@@ -7,10 +7,14 @@ package org.camunda.optimize.rest;
 
 import lombok.SneakyThrows;
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionRestDto;
+import org.camunda.optimize.dto.optimize.query.dashboard.InstantDashboardDataDto;
+import org.camunda.optimize.dto.optimize.query.dashboard.tile.DashboardReportTileDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
 import org.camunda.optimize.dto.optimize.query.sharing.DashboardShareRestDto;
 import org.camunda.optimize.dto.optimize.query.sharing.ReportShareRestDto;
+import org.camunda.optimize.exception.OptimizeIntegrationTestException;
+import org.camunda.optimize.service.dashboard.InstantPreviewDashboardService;
 import org.camunda.optimize.service.sharing.AbstractSharingIT;
 import org.camunda.optimize.service.util.TemplatedProcessReportDataBuilder;
 import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
@@ -27,6 +31,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.service.util.ProcessReportDataType.PROC_INST_FREQ_GROUP_BY_NONE;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DASHBOARD_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_RETRIES_ON_CONFLICT;
+import static org.camunda.optimize.util.BpmnModels.getSimpleBpmnDiagram;
 
 public class SharingRestServiceIT extends AbstractSharingIT {
 
@@ -130,13 +135,57 @@ public class SharingRestServiceIT extends AbstractSharingIT {
   }
 
   @Test
-  public void createNewReportShareForManagementDashboard() {
+  public void createNewDashboardShareForManagementDashboard() {
     // given
     String dashboardId = createManagementDashboard();
     final DashboardShareRestDto dashboardShareDto = createDashboardShareDto(dashboardId);
 
     // when
     Response response = sharingClient.createDashboardShareResponse(dashboardShareDto);
+
+    // then
+    assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
+  }
+
+  @Test
+  public void createNewDashboardShareForInstantPreviewDashboard() {
+    // given
+    final InstantPreviewDashboardService instantPreviewDashboardService =
+      embeddedOptimizeExtension.getInstantPreviewDashboardService();
+    String processDefKey = "dummy";
+    String dashboardJsonTemplateFilename = "template2.json";
+    engineIntegrationExtension.deployAndStartProcess(getSimpleBpmnDiagram(processDefKey));
+    importAllEngineEntitiesFromScratch();
+    InstantDashboardDataDto instantPreviewDashboard = instantPreviewDashboardService.createInstantPreviewDashboard(
+        processDefKey, dashboardJsonTemplateFilename)
+      .orElseThrow(() -> new OptimizeIntegrationTestException("Could not get instant dashboard"));
+    final DashboardShareRestDto dashboardShareDto = createDashboardShareDto(instantPreviewDashboard.getDashboardId());
+
+    // when
+    Response response = sharingClient.createDashboardShareResponse(dashboardShareDto);
+
+    // then
+    assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
+  }
+
+  @Test
+  public void createNewReportShareForInstantPreviewDashboardReport() {
+    // given
+    final InstantPreviewDashboardService instantPreviewDashboardService =
+      embeddedOptimizeExtension.getInstantPreviewDashboardService();
+    String processDefKey = "dummy";
+    String dashboardJsonTemplateFilename = "template2.json";
+    engineIntegrationExtension.deployAndStartProcess(getSimpleBpmnDiagram(processDefKey));
+    importAllEngineEntitiesFromScratch();
+    InstantDashboardDataDto instantPreviewDashboard = instantPreviewDashboardService.createInstantPreviewDashboard(
+        processDefKey, dashboardJsonTemplateFilename)
+      .orElseThrow(() -> new OptimizeIntegrationTestException("Could not get instant dashboard"));
+    final DashboardDefinitionRestDto dashboard = dashboardClient.getDashboard(instantPreviewDashboard.getDashboardId());
+    final DashboardReportTileDto instantPreviewReport = dashboard.getTiles().get(0);
+    final ReportShareRestDto reportShare = createReportShare(instantPreviewReport.getId());
+
+    // when
+    Response response = sharingClient.createReportShareResponse(reportShare);
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());

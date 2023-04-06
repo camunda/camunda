@@ -26,11 +26,8 @@ public class ExternalVariableCleanupRolloverIT extends AbstractCleanupIT {
 
   @BeforeEach
   @AfterEach
-  public void after() {
-    elasticSearchIntegrationTestExtension.getOptimizeElasticClient().deleteIndexByRawIndexNames(
-      elasticSearchIntegrationTestExtension.getIndexNameService()
-        .getOptimizeIndexAliasForIndex(EXTERNAL_PROCESS_VARIABLE_INDEX_NAME + "_*")
-    );
+  public void cleanUpExternalVariableIndices() {
+    elasticSearchIntegrationTestExtension.deleteAllExternalVariableIndices();
     embeddedOptimizeExtension.getElasticSearchSchemaManager().createOrUpdateOptimizeIndex(
       embeddedOptimizeExtension.getOptimizeElasticClient(),
       new ExternalProcessVariableIndex()

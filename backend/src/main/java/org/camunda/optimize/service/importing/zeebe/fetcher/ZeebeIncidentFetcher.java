@@ -21,7 +21,6 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.ZEEBE_INCID
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class ZeebeIncidentFetcher extends AbstractZeebeRecordFetcher<ZeebeIncidentRecordDto> {
 
-
   public ZeebeIncidentFetcher(final int partitionId,
                               final OptimizeElasticsearchClient esClient,
                               final ObjectMapper objectMapper,

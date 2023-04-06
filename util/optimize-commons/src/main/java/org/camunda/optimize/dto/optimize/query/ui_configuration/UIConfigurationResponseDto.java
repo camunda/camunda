@@ -25,6 +25,7 @@ public class UIConfigurationResponseDto {
   private String optimizeProfile;
   private Map<String, WebappsEndpointDto> webappsEndpoints;
   private Map<AppName, String> webappsLinks; // links for the app switcher
+  private String notificationsUrl;
   private List<String> webhooks;
   private boolean logoutHidden;
   private Integer exportCsvLimit;

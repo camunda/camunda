@@ -1,0 +1,131 @@
+name: e2e tests browserstack
+
+on:
+  schedule:
+    - cron: "0 23 * * 1-5"
+
+permissions:
+  contents: read  # for git clone
+  id-token: write # for authenticating with GCP
+
+jobs:
+  e2e-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Import secrets
+      id: secrets
+      uses: hashicorp/vault-action@v2.5.0
+      with:
+        url: ${{ secrets.VAULT_ADDR }}
+        method: approle
+        roleId: ${{ secrets.VAULT_ROLE_ID }}
+        secretId: ${{ secrets.VAULT_SECRET_ID }}
+        secrets: |
+          secret/data/products/optimize/ci/optimize NEXUS_USERNAME;
+          secret/data/products/optimize/ci/optimize NEXUS_PASSWORD;
+          secret/data/products/optimize/ci/jenkins AUTH0_CLIENTSECRET;
+          secret/data/products/optimize/ci/jenkins AUTH0_USEREMAIL;
+          secret/data/products/optimize/ci/jenkins AUTH0_USERPASSWORD;
+          secret/data/products/optimize/ci/jenkins BROWSERSTACK_USERNAME;
+          secret/data/products/optimize/ci/jenkins BROWSERSTACK_ACCESS_KEY;
+          secret/data/products/cawemo/ci/common CAMUNDA_CONTAINER_REGISTRY_PASSWORD;
+          secret/data/products/cawemo/ci/common CAMUNDA_CONTAINER_REGISTRY_USER;
+          secret/data/products/optimize/ci/camunda-optimize CI_SERVICE_ACCOUNT | GCP_CREDENTIALS;
+
+    - name: Login to Harbor docker registery
+      uses: docker/login-action@v2
+      with:
+        registry: registry.camunda.cloud
+        username: ${{ steps.secrets.outputs.CAMUNDA_CONTAINER_REGISTRY_USER }}
+        password: ${{ steps.secrets.outputs.CAMUNDA_CONTAINER_REGISTRY_PASSWORD }}
+
+    - name: Install Maven
+      uses: actions/setup-java@v3
+      with:
+        distribution: "adopt"
+        java-version: "11"
+        cache: "maven"
+
+    - name: Setup yarn cache
+      uses: actions/setup-node@v3
+      with:
+        node-version: "16"
+        cache: "yarn"
+        cache-dependency-path: client/yarn.lock
+        
+    - name: Install node dependencies
+      working-directory: ./client
+      run: yarn install
+
+    # SET UP MAVEN XML
+    - name: Create settings.xml
+      uses: s4u/maven-settings-action@v2.8.0
+      with:
+        githubServer: false
+        servers: |
+          [{
+            "id": "camunda-nexus",
+            "username": "${{ steps.secrets.outputs.NEXUS_USERNAME }}",
+            "password": "${{ steps.secrets.outputs.NEXUS_PASSWORD }}"
+          }]
+        mirrors: '[{"url": "https://repository.nexus.camunda.cloud/content/groups/internal/", "id": "camunda-nexus", "mirrorOf": "*", "name": "camunda Nexus"}]'
+
+    - name: Build backend & frontend
+      run: mvn clean install -DskipTests -Dskip.docker -pl backend,qa/data-generation -am
+
+    - name: Start elastic, postgres and c7 engine
+      run: docker compose --profile platform -f "client/docker-compose.yml" up -d
+
+    - id: auth
+      name: Authenticate to Google Cloud
+      uses: google-github-actions/auth@v1
+      with:
+        credentials_json: ${{ steps.secrets.outputs.GCP_CREDENTIALS }}
+
+    - name: Configure Google SDK
+      uses: google-github-actions/setup-gcloud@v1.1.0
+      with:
+        project_id: ci-30-162810
+        install_components: gke-gcloud-auth-plugin, kubectl
+        
+    - name: download dump
+      run: gsutil -q -m cp gs://optimize-data/optimize_data-e2e.sqlc dump.sqlc
+
+    - name: restore dump
+      run: cat dump.sqlc | docker exec -i postgres pg_restore --clean -U camunda -d engine        
+
+    - name: create backend logs file
+      run: mkdir -p ./client/build && touch ./client/build/backendLogs.log
+
+    - name: 'start backend'
+      working-directory: ./client
+      run: |
+        yarn run start-backend ci &> ./build/backendLogs.log &
+
+    - name: Start front-end app
+      working-directory: ./client
+      run: yarn start &
+
+    - name: Wait for import to complete
+      run: ./.github/scripts/wait-for.sh http://localhost:8100/api/importCompleted
+
+    - name: Wait for frontend app to start
+      run: ./.github/scripts/wait-for.sh http://localhost:3000/ready
+
+    - name: 'start e2e test'
+      working-directory: ./client
+      env:
+        BROWSERSTACK_USERNAME: "${{ steps.secrets.outputs.BROWSERSTACK_USERNAME }}"
+        BROWSERSTACK_ACCESS_KEY: "${{ steps.secrets.outputs.BROWSERSTACK_ACCESS_KEY }}"
+      run: yarn run e2e:ci-browserstack
+
+    - uses: actions/upload-artifact@v3
+      if: always()
+      with:
+        name: logs
+        path: ./client/build/*.log

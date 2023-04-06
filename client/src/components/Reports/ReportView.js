@@ -61,10 +61,11 @@ export class ReportView extends React.Component {
   };
 
   render() {
-    const {report, error} = this.props;
+    const {report, error, user, loadReport} = this.props;
     const {redirect, sharingEnabled, optimizeProfile, deleting} = this.state;
 
-    const {id, name, currentUserRole} = report;
+    const {id, name, currentUserRole, data} = report;
+    const isInstantPreviewReport = data?.instantPreviewReport;
 
     if (redirect) {
       return <Redirect to={redirect} />;
@@ -76,7 +77,7 @@ export class ReportView extends React.Component {
           <div className="head">
             <EntityName details={<ReportDetails report={report} />}>{name}</EntityName>
             <div className="tools">
-              {currentUserRole === 'editor' && (
+              {!isInstantPreviewReport && currentUserRole === 'editor' && (
                 <>
                   <Link className="tool-button edit-button" to="edit">
                     <Button main tabIndex="-1">
@@ -94,32 +95,32 @@ export class ReportView extends React.Component {
                   </Button>
                 </>
               )}
-              <Popover
-                main
-                className="tool-button share-button"
-                icon="share"
-                title={t('common.sharing.buttonTitle')}
-                tooltip={!sharingEnabled ? t('common.sharing.disabled') : ''}
-                disabled={!sharingEnabled}
-              >
-                <ShareEntity
-                  type="report"
-                  resourceId={id}
-                  shareEntity={shareReport}
-                  revokeEntitySharing={revokeReportSharing}
-                  getSharedEntity={getSharedReport}
-                />
-              </Popover>
+              {!isInstantPreviewReport && (
+                <Popover
+                  main
+                  className="tool-button share-button"
+                  icon="share"
+                  title={t('common.sharing.buttonTitle')}
+                  tooltip={!sharingEnabled ? t('common.sharing.disabled') : ''}
+                  disabled={!sharingEnabled}
+                >
+                  <ShareEntity
+                    type="report"
+                    resourceId={id}
+                    shareEntity={shareReport}
+                    revokeEntitySharing={revokeReportSharing}
+                    getSharedEntity={getSharedReport}
+                  />
+                </Popover>
+              )}
               {(optimizeProfile === 'cloud' || optimizeProfile === 'platform') &&
-                report?.data?.visualization === 'number' && (
-                  <AlertsDropdown numberReport={report} />
-                )}
+                data?.visualization === 'number' && <AlertsDropdown numberReport={report} />}
               {this.shouldShowCSVDownload() && (
                 <DownloadButton
                   main
                   href={this.constructCSVDownloadLink()}
                   totalCount={calculateTotalEntries(report)}
-                  user={this.props.user}
+                  user={user}
                 >
                   <Icon type="save" />
                   {t('report.downloadCSV')}
@@ -131,7 +132,7 @@ export class ReportView extends React.Component {
         </div>
         <div className="Report__view">
           <div className="Report__content">
-            <ReportRenderer error={error} report={report} loadReport={this.props.loadReport} />
+            <ReportRenderer error={error} report={report} loadReport={loadReport} />
           </div>
         </div>
         <Deleter

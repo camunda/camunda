@@ -187,7 +187,9 @@ public class EmbeddedOptimizeExtension
       objectMapper = getBean(ObjectMapper.class);
       requestExecutor =
         new OptimizeRequestExecutor(
-          DEFAULT_USERNAME, DEFAULT_PASSWORD, IntegrationTestConfigurationUtil.getEmbeddedOptimizeRestApiEndpoint(applicationContext)
+          DEFAULT_USERNAME,
+          DEFAULT_PASSWORD,
+          IntegrationTestConfigurationUtil.getEmbeddedOptimizeRestApiEndpoint(applicationContext)
         ).initAuthCookie();
       if (isResetImportOnStart()) {
         resetImportStartIndexes();

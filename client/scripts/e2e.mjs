@@ -10,7 +10,6 @@ import createTestCafe from 'testcafe';
 import chalk from 'chalk';
 
 import {spawn} from 'child_process';
-import kill from 'tree-kill';
 import {createWriteStream, chmodSync} from 'fs';
 import {pipeline} from 'stream';
 import {resolve as _resolve, dirname} from 'path';
@@ -18,7 +17,6 @@ import {fileURLToPath} from 'url';
 
 // argument to determine if we are in CI mode
 const ciMode = process.argv.indexOf('ci') > -1;
-const cloudMode = process.argv.indexOf('cloud') > -1;
 
 // argument to determine if we want to use headlessChrome instead of default Browserstack
 const chromeheadlessMode = process.argv.indexOf('chromeheadless') > -1;
@@ -76,21 +74,6 @@ const browsers = chromeheadlessMode
   ? ['chrome:headless']
   : ['browserstack:Edge', 'browserstack:Firefox', 'browserstack:Chrome'];
 
-const backendProcess = spawn('yarn', [
-  'run',
-  cloudMode ? 'start-backend-cloud' : 'start-backend',
-  ciMode ? 'ci' : undefined,
-]);
-const frontendProcess = spawn('yarn', ['start']);
-
-if (ciMode) {
-  backendProcess.stderr.on('data', (data) => console.error(data.toString()));
-
-  const logStream = createWriteStream('./build/backendLogs.log', {flags: 'a'});
-  backendProcess.stdout.pipe(logStream);
-  backendProcess.stderr.pipe(logStream);
-}
-
 let dataInterval;
 const connectionInterval = setInterval(async () => {
   const backendDone = await checkHttpPort(8090);
@@ -107,11 +90,7 @@ const connectionInterval = setInterval(async () => {
   if (backendDone && frontendDone) {
     console.log(chalk.green.bold('Servers Started!'));
     clearInterval(connectionInterval);
-    if (cloudMode) {
-      startTest();
-    } else {
-      dataInterval = setInterval(waitForData, 1000);
-    }
+    dataInterval = setInterval(waitForData, 1000);
   }
 }, 5000);
 
@@ -162,7 +141,7 @@ async function startTest() {
       if (
         await testCafe
           .createRunner()
-          .src(cloudMode ? 'e2e/cloud-tests/smokeTest.js' : 'e2e/tests/*.js')
+          .src('e2e/tests/*.js')
           .browsers(browsers[i])
           .run({
             skipJsErrors: true,
@@ -170,7 +149,7 @@ async function startTest() {
             concurrency: 3,
             assertionTimeout: 40000,
             pageLoadTimeout: 40000,
-            quarantineMode: chromeheadlessMode ? undefined : {successThreshold: 1, attemptLimit: 3},
+            quarantineMode: {successThreshold: 1, attemptLimit: 3},
           })
       ) {
         hasFailures = true;
@@ -189,11 +168,7 @@ async function startTest() {
         }
       );
     }
-    kill(frontendProcess.pid, () => {
-      kill(backendProcess.pid, () => {
-        process.exit(hasFailures ? 3 : 0);
-      });
-    });
+    process.exit(hasFailures ? 3 : 0);
   }
 }
 

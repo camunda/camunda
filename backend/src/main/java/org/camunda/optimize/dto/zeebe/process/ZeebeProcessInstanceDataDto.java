@@ -6,6 +6,7 @@
 package org.camunda.optimize.dto.zeebe.process;
 
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
+import io.camunda.zeebe.protocol.record.value.BpmnEventType;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -31,4 +32,8 @@ public class ZeebeProcessInstanceDataDto implements ProcessInstanceRecordValue {
     throw new UnsupportedOperationException("Operation not supported");
   }
 
+  @Override
+  public BpmnEventType getBpmnEventType() {
+    throw new UnsupportedOperationException("Operation not supported");
+  }
 }

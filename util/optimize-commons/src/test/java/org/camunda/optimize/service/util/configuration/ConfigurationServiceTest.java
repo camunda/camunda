@@ -479,7 +479,7 @@ public class ConfigurationServiceTest {
     assertThat(underTest.getConfiguredZeebe().isEnabled()).isFalse();
     assertThat(underTest.getConfiguredZeebe().getName()).isEqualTo("zeebe-record");
     assertThat(underTest.getConfiguredZeebe().getPartitionCount()).isEqualTo(1);
-    assertThat(underTest.getConfiguredZeebe().getMaxImportPageSize()).isEqualTo(10000);
+    assertThat(underTest.getConfiguredZeebe().getMaxImportPageSize()).isEqualTo(200);
     assertThat(underTest.getElasticsearchSecurityUsername()).isNull();
     assertThat(underTest.getElasticsearchSecurityPassword()).isNull();
     assertThat(underTest.getElasticsearchSecuritySSLCertificate()).isNull();

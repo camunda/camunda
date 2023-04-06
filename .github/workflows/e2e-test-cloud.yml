@@ -1,0 +1,96 @@
+name: e2e cloud test
+
+on: [push]
+
+jobs:
+  e2e-cloud-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    services:
+      elasticsearch:
+        image: docker.elastic.co/elasticsearch/elasticsearch:7.17.9
+        env:
+          discovery.type: single-node
+          ES_JAVA_OPTS: -Xms1024m -Xmx1024m
+        ports:
+          - 9200:9200
+          - 9300:9300
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Import secrets
+      id: secrets
+      uses: hashicorp/vault-action@1d767e395771e6ba668c266c24b01a662fca35a9
+      with:
+        url: ${{ secrets.VAULT_ADDR }}
+        method: approle
+        roleId: ${{ secrets.VAULT_ROLE_ID }}
+        secretId: ${{ secrets.VAULT_SECRET_ID }}
+        secrets: |
+          secret/data/products/optimize/ci/optimize NEXUS_USERNAME;
+          secret/data/products/optimize/ci/optimize NEXUS_PASSWORD;
+          secret/data/products/optimize/ci/jenkins AUTH0_CLIENTSECRET;
+          secret/data/products/optimize/ci/jenkins AUTH0_USEREMAIL;
+          secret/data/products/optimize/ci/jenkins AUTH0_USERPASSWORD;
+
+    - name: Install Chrome
+      uses: browser-actions/setup-chrome@v1
+
+    - name: Install Maven
+      uses: actions/setup-java@v3
+      with:
+        distribution: "adopt"
+        java-version: "11"
+        cache: "maven"
+
+    - name: Setup yarn cache
+      uses: actions/setup-node@v3
+      with:
+        node-version: "16"
+        cache: "yarn"
+        cache-dependency-path: client/yarn.lock
+        
+    - name: Install node dependencies
+      working-directory: ./client
+      run: yarn install
+
+    # SET UP MAVEN XML
+    - name: 'Create settings.xml'
+      uses: s4u/maven-settings-action@v2.8.0
+      with:
+        githubServer: false
+        servers: |
+          [{
+            "id": "camunda-nexus",
+            "username": "${{ steps.secrets.outputs.NEXUS_USERNAME }}",
+            "password": "${{ steps.secrets.outputs.NEXUS_PASSWORD }}"
+          }]
+        mirrors: '[{"url": "https://repository.nexus.camunda.cloud/content/groups/internal/", "id": "camunda-nexus", "mirrorOf": "*", "name": "camunda Nexus"}]'
+
+    - name: 'build backend & frontend'
+      run: mvn clean install -DskipTests -Dskip.docker -pl backend,qa/data-generation -am
+
+    - name: 'start backend'
+      working-directory: ./client
+      run: |
+        yarn run start-backend-cloud ci &
+
+    - name: Start frontend app
+      working-directory: ./client
+      run: yarn start &
+
+    - name: Wait for backend to start
+      run: ./.github/scripts/wait-for.sh http://localhost:8090/api/readyz
+
+    - name: Wait for frontend to start
+      run: ./.github/scripts/wait-for.sh http://localhost:3000/ready
+
+    - name: 'start e2e test'
+      working-directory: ./client
+      env:
+        AUTH0_CLIENTSECRET: "${{ steps.secrets.outputs.AUTH0_CLIENTSECRET }}"
+        AUTH0_USEREMAIL: "${{ steps.secrets.outputs.AUTH0_USEREMAIL }}"
+        AUTH0_USERPASSWORD: "${{ steps.secrets.outputs.AUTH0_USERPASSWORD }}"
+      run: yarn run e2e:ci:cloud:headless

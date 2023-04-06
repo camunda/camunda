@@ -9,5 +9,5 @@ import lombok.Data;
 
 @Data
 public class UsersConfiguration {
-  private CloudAccountsConfiguration cloud;
+  private CloudUsersConfiguration cloud;
 }

@@ -192,6 +192,7 @@ pipeline {
         script {
           env.CAMBPM_7_17_VERSION = getCamBpmVersion('engine-7.17')
           env.CAMBPM_7_18_VERSION = getCamBpmVersion('engine-7.18')
+          env.CAMBPM_7_19_VERSION = getCamBpmVersion('engine-7.19')
         }
       }
     }
@@ -247,6 +248,32 @@ pipeline {
                 sh 'kubectl logs -l jenkins/label=$LABEL -c elasticsearch-9200 > elasticsearch_cambpm718.log'
               }
               archiveArtifacts artifacts: 'elasticsearch_cambpm718.log', onlyIfSuccessful: false
+            }
+          }
+        }
+        stage('IT 7.19') {
+          agent {
+            kubernetes {
+              cloud 'optimize-ci'
+              label "optimize-ci-build-it-7.19_${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(10)}-${env.BUILD_ID}"
+              defaultContainer 'jnlp'
+              yaml integrationTestPodSpec(env.CAMBPM_7_19_VERSION, env.ES_VERSION)
+            }
+          }
+          environment {
+            LABEL = "optimize-ci-build-it-7.19_${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(10)}-${env.BUILD_ID}"
+          }
+          steps {
+            integrationTestSteps('7.19')
+          }
+          post {
+            always {
+              junit testResults: 'backend/target/failsafe-reports/**/*.xml', allowEmptyResults: true, keepLongStdio: true
+              container('gcloud'){
+                sh 'apt-get install kubectl'
+                sh 'kubectl logs -l jenkins/label=$LABEL -c elasticsearch-9200 > elasticsearch_cambpm719.log'
+              }
+              archiveArtifacts artifacts: 'elasticsearch_cambpm719.log', onlyIfSuccessful: false
             }
           }
         }

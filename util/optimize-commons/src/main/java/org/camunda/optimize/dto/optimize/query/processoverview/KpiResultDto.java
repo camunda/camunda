@@ -10,6 +10,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.FieldNameConstants;
+import org.apache.commons.lang3.StringUtils;
 import org.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.target_value.TargetValueUnit;
 
@@ -36,6 +37,9 @@ public class KpiResultDto {
 
   @JsonIgnore
   public boolean isTargetMet() {
+    if (StringUtils.isBlank(value) || StringUtils.isBlank(target)) {
+      return false;
+    }
     final double doubleValue = Double.parseDouble(value);
     final double doubleTarget = Double.parseDouble(target);
     if (isBelow) {

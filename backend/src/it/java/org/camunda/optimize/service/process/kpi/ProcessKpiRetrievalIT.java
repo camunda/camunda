@@ -358,14 +358,13 @@ public class ProcessKpiRetrievalIT extends AbstractIT {
     expectedKpiResponseDto.setMeasure(ViewProperty.DURATION);
     expectedKpiResponseDto.setUnit(TargetValueUnit.HOURS);
 
-    assertThat(processes).hasSize(1)
-      .extracting(ProcessOverviewResponseDto::getProcessDefinitionKey, ProcessOverviewResponseDto::getKpis)
-      .containsExactlyInAnyOrder(
-        Tuple.tuple(
-          PROCESS_DEFINITION_KEY,
-          List.of(expectedKpiResponseDto)
-        )
-      );
+    assertThat(processes).singleElement()
+      .satisfies(overviewDto -> {
+        assertThat(overviewDto.getProcessDefinitionKey()).isEqualTo(PROCESS_DEFINITION_KEY);
+        assertThat(overviewDto.getKpis()).singleElement()
+          .isEqualTo(expectedKpiResponseDto)
+          .satisfies(kpi -> assertThat(kpi.isTargetMet()).isFalse());
+      });
   }
 
   @Test
@@ -415,7 +414,7 @@ public class ProcessKpiRetrievalIT extends AbstractIT {
 
     // then
     assertThat(processes).hasSize(1);
-    assertThat(processes.get(0).getKpis()).hasSize(1);
+    assertThat(processes.get(0).getKpis()).singleElement().satisfies(kpiResult -> assertThat(kpiResult.isTargetMet()).isFalse());
   }
 
   @Test

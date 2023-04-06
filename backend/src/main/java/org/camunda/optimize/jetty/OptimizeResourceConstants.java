@@ -29,6 +29,7 @@ public class OptimizeResourceConstants implements ConfigurationReloadable {
       .add(INDEX_HTML_PAGE)
       .build();
   public static final String ACTUATOR_PORT_PROPERTY_KEY = "management.server.port";
+  public static final String ACTUATOR_PORT_DEFAULT = "8092";
   public static String ACTUATOR_ENDPOINT;
   public static int ACTUATOR_PORT;
 
@@ -37,13 +38,13 @@ public class OptimizeResourceConstants implements ConfigurationReloadable {
     OptimizeResourceConstants.ACTUATOR_ENDPOINT = endpoint;
   }
 
-  @Value("${management.server.port:8092}")
+  @Value("${" + ACTUATOR_PORT_PROPERTY_KEY + ":" + ACTUATOR_PORT_DEFAULT + "}")
   public void setActuatorPortStatic(int port) {
     OptimizeResourceConstants.ACTUATOR_PORT = port;
   }
 
   @Override
   public void reloadConfiguration(ApplicationContext context) {
-    setActuatorPortStatic(Integer.parseInt(context.getEnvironment().getProperty("management.server.port")));
+    setActuatorPortStatic(Integer.parseInt(context.getEnvironment().getProperty(ACTUATOR_PORT_PROPERTY_KEY, ACTUATOR_PORT_DEFAULT)));
   }
 }

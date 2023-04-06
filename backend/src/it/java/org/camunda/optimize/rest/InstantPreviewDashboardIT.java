@@ -9,6 +9,7 @@ import org.assertj.core.groups.Tuple;
 import org.camunda.optimize.dto.optimize.RoleType;
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionRestDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.InstantDashboardDataDto;
+import org.camunda.optimize.dto.optimize.query.dashboard.tile.DashboardTileType;
 import org.camunda.optimize.dto.optimize.query.report.single.ReportDataDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
@@ -30,6 +31,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 import javax.ws.rs.core.Response;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -55,6 +57,7 @@ public class InstantPreviewDashboardIT extends AbstractDashboardRestServiceIT {
   private static final String FIRST_TENANT = "firstTenant";
   private static final String FIRST_DEF_KEY = "someDef";
   private static final String SECOND_DEF_KEY = "otherDef";
+  private static final String TEXT_FIELD = "text";
 
   @Test
   public void instantPreviewDashboardHappyCase() {
@@ -124,7 +127,7 @@ public class InstantPreviewDashboardIT extends AbstractDashboardRestServiceIT {
     assertThat(returnedDashboard.getId()).isEqualTo(instantPreviewDashboardDto.getDashboardId());
     final DashboardDefinitionRestDto dashboard = dashboardClient.getDashboard(returnedDashboard.getId());
     assertThat(dashboard).isNotNull();
-    assertThat(dashboard.getTiles()).hasSize(12);
+    assertThat(dashboard.getTiles()).hasSize(18);
   }
 
   @Test
@@ -161,7 +164,7 @@ public class InstantPreviewDashboardIT extends AbstractDashboardRestServiceIT {
     final InstantPreviewDashboardService instantPreviewDashboardService =
       embeddedOptimizeExtension.getInstantPreviewDashboardService();
     String processDefKey = "dummy";
-    String dashboardJsonTemplate = "template1.json";
+    String dashboardJsonTemplate = "template3.json";
     engineIntegrationExtension.deployAndStartProcess(getSimpleBpmnDiagram(processDefKey));
     importAllEngineEntitiesFromScratch();
 
@@ -210,7 +213,7 @@ public class InstantPreviewDashboardIT extends AbstractDashboardRestServiceIT {
     final InstantPreviewDashboardService instantPreviewDashboardService =
       embeddedOptimizeExtension.getInstantPreviewDashboardService();
     String processDefKey = "dummy";
-    String dashboardJsonTemplate = "template1.json";
+    String dashboardJsonTemplate = "template3.json";
     engineIntegrationExtension.deployAndStartProcess(getSimpleBpmnDiagram(processDefKey));
     importAllEngineEntitiesFromScratch();
 
@@ -250,7 +253,7 @@ public class InstantPreviewDashboardIT extends AbstractDashboardRestServiceIT {
     final InstantPreviewDashboardService instantPreviewDashboardService =
       embeddedOptimizeExtension.getInstantPreviewDashboardService();
     String processDefKey = "dummy";
-    String dashboardJsonTemplate = "template1.json";
+    String dashboardJsonTemplate = "template3.json";
     engineIntegrationExtension.deployAndStartProcess(getSimpleBpmnDiagram(processDefKey));
     importAllEngineEntitiesFromScratch();
 
@@ -289,7 +292,7 @@ public class InstantPreviewDashboardIT extends AbstractDashboardRestServiceIT {
     final InstantPreviewDashboardService instantPreviewDashboardService =
       embeddedOptimizeExtension.getInstantPreviewDashboardService();
     String processDefKey = "dummy";
-    String dashboardJsonTemplate = "template1.json";
+    String dashboardJsonTemplate = "template3.json";
     engineIntegrationExtension.deployAndStartProcess(getSimpleBpmnDiagram(processDefKey));
     importAllEngineEntitiesFromScratch();
 
@@ -326,7 +329,7 @@ public class InstantPreviewDashboardIT extends AbstractDashboardRestServiceIT {
   }
 
   private Set<String> getInstantPreviewReportIDsForProcess(final String processDefKey) {
-    String dashboardJsonTemplate = "template1.json";
+    String dashboardJsonTemplate = "template3.json";
     DashboardDefinitionRestDto originalDashboard =
       dashboardClient.getInstantPreviewDashboard(processDefKey, dashboardJsonTemplate);
     final Set<String> reportIds = originalDashboard.getTileIds();
@@ -361,7 +364,7 @@ public class InstantPreviewDashboardIT extends AbstractDashboardRestServiceIT {
     updatedDashboard.setInstantPreviewDashboard(true);
     DashboardDefinitionRestDto originalDashboard = dashboardClient.getInstantPreviewDashboard(
       processDefKey,
-      "template1.json"
+      "template3.json"
     );
     final Optional<String> instantReportId = originalDashboard.getTileIds().stream().findFirst();
     assertThat(instantReportId).isPresent();
@@ -389,7 +392,7 @@ public class InstantPreviewDashboardIT extends AbstractDashboardRestServiceIT {
     importAllEngineEntitiesFromScratch();
     DashboardDefinitionRestDto originalDashboard = dashboardClient.getInstantPreviewDashboard(
       processDefKey,
-      "template1.json"
+      "template3.json"
     );
     final Optional<String> instantReportId = originalDashboard.getTileIds().stream().findFirst();
     assertThat(instantReportId).isPresent();
@@ -411,7 +414,7 @@ public class InstantPreviewDashboardIT extends AbstractDashboardRestServiceIT {
     importAllEngineEntitiesFromScratch();
     DashboardDefinitionRestDto originalDashboard = dashboardClient.getInstantPreviewDashboard(
       processDefKey,
-      "template1.json"
+      "template3.json"
     );
     final DashboardDefinitionExportDto dashboardExport = new DashboardDefinitionExportDto(originalDashboard);
     dashboardExport.setInstantPreviewDashboard(true);
@@ -436,7 +439,7 @@ public class InstantPreviewDashboardIT extends AbstractDashboardRestServiceIT {
     importAllEngineEntitiesFromScratch();
     DashboardDefinitionRestDto originalDashboard = dashboardClient.getInstantPreviewDashboard(
       processDefKey,
-      "template1.json"
+      "template3.json"
     );
     final Optional<String> instantReportId = originalDashboard.getTileIds().stream().findFirst();
     assertThat(instantReportId).isPresent();
@@ -481,6 +484,39 @@ public class InstantPreviewDashboardIT extends AbstractDashboardRestServiceIT {
     // then
     assertThat(localizedDashboard.getName()).isEqualTo(expectedDashboardName);
     assertThat(reportNames).containsExactlyInAnyOrderElementsOf(expectedReportNames);
+  }
+
+  @ParameterizedTest
+  @MethodSource("templateAndLocales")
+  public void checkLocalizationFromTextTileTexts(String template, String locale) {
+    // given
+    final InstantPreviewDashboardService instantPreviewDashboardService =
+      embeddedOptimizeExtension.getInstantPreviewDashboardService();
+    String processDefKey = "dummy";
+    engineIntegrationExtension.deployAndStartProcess(getSimpleBpmnDiagram(processDefKey));
+    importAllEngineEntitiesFromScratch();
+
+    // when
+    final Optional<InstantDashboardDataDto> instantPreviewDashboard =
+      instantPreviewDashboardService.createInstantPreviewDashboard(processDefKey, template);
+
+    // then
+    assertThat(instantPreviewDashboard).isPresent();
+
+    // when
+    final DashboardDefinitionRestDto dashboardData =
+      dashboardClient.getInstantPreviewDashboardLocalized(processDefKey, template, locale);
+
+    dashboardData.getTiles().forEach(tile -> {
+      if (tile.getType() == DashboardTileType.TEXT) {
+        final HashMap<String, Object> textTileConfiguration = (HashMap<String, Object>) tile.getConfiguration();
+        InstantPreviewDashboardService.
+          findAndConvertTileContent(textTileConfiguration,
+                                    TEXT_FIELD,
+                                    this::assertTileTranslation,
+                                    locale);
+      }
+    });
   }
 
   @Test
@@ -604,7 +640,50 @@ public class InstantPreviewDashboardIT extends AbstractDashboardRestServiceIT {
         assertThat(resultDto.getInstanceCountWithoutFilters()).isEqualTo(1L);
       }
     });
+  }
 
+  @ParameterizedTest
+  @MethodSource("templates")
+  public void enforceInstantPreviewReportsHaveNoKPIs(String dashboardJsonTemplateFilename) {
+    // Instant Preview Reports cannot contain KPIs, because the KPIService is using PlainReportEvaluationHandler which
+    // always returns VIEWER for getAuthorizedRole. However, an issue arises because we use a nonexistent
+    // userID in setDataSourcesForSystemGeneratedReports to retrieve all definitions/tenants the "current user" is
+    // allowed to see. If an instant preview dashboard falsely included a KPI report,
+    // setDataSourcesForSystemGeneratedReports gets called causing an exception potentially blocking evaluation of
+    // further KPI reports.
+
+    // given
+    final InstantPreviewDashboardService instantPreviewDashboardService =
+      embeddedOptimizeExtension.getInstantPreviewDashboardService();
+    String processDefKey = "dummy";
+    engineIntegrationExtension.deployAndStartProcess(getSimpleBpmnDiagram(processDefKey));
+    importAllEngineEntitiesFromScratch();
+
+    // when
+    final Optional<InstantDashboardDataDto> instantPreviewDashboard =
+      instantPreviewDashboardService.createInstantPreviewDashboard(processDefKey, dashboardJsonTemplateFilename);
+
+    // then
+    assertThat(instantPreviewDashboard).isPresent();
+    final InstantDashboardDataDto instantPreviewDashboardDto = instantPreviewDashboard.get();
+
+    // when
+    DashboardDefinitionRestDto returnedDashboard = dashboardClient.getInstantPreviewDashboard(
+      processDefKey,
+      dashboardJsonTemplateFilename
+    );
+
+    // then
+    assertThat(returnedDashboard).isNotNull();
+    assertThat(returnedDashboard.getId()).isEqualTo(instantPreviewDashboardDto.getDashboardId());
+    final DashboardDefinitionRestDto dashboard = dashboardClient.getDashboard(returnedDashboard.getId());
+    assertThat(dashboard).isNotNull();
+    final Set<ProcessReportDataDto> reportDataSet = dashboard.getTileIds().stream()
+      .map(tileId -> reportClient.evaluateReport(tileId)
+        .getReportDefinition()
+        .getData())
+      .collect(toSet());
+    reportDataSet.forEach(reportData -> assertThat(reportData.getConfiguration().getTargetValue().getIsKpi()).isFalse());
   }
 
   @NotNull
@@ -618,6 +697,67 @@ public class InstantPreviewDashboardIT extends AbstractDashboardRestServiceIT {
     }
   }
 
+  private void assertTileTranslation(HashMap<String, Object> textTileConfiguration, String locale) {
+    HashMap<String, List<String>> expectedStrings = new HashMap<>();
+    expectedStrings.put("de", List.of("Instant Preview Dashboard",
+                                      "KPI Dashboard",
+                                      "Überwache echzeitnah die Gesundheit von Prozessen.",
+                                      "Das Betriebsdashboard erlaubt es, alle wichtigen Prozessemetriken zu überwachen.",
+                                      "Mögliche nächste Schritte:",
+                                      "- Gehe zur Sammlung und erstelle ein eigenes Dashboard.",
+                                      "- Definiere einen Alarm für eine Sammlung und erhalte Alarmbenachrichtigungen per Email.",
+                                      "Berichte Geschäftsmetriken an Stakeholder.",
+                                      "Das Betriebsreporting enthält Prozesskennzahlen um eine Abteilung zu steuern.",
+                                      "- Gehe zur Sammlung und erstelle ein eigenes Dashboard.",
+                                      "- Gehe zu einem Bericht und definiere KPIs.",
+                                      "- Gehe zu den Dashboards und abonniere einen Prozess Digest.",
+                                      "Analytische Werkzeuge um Prozessverbesserungen zu identifizieren.",
+                                      "Die angebotenen Werkzeuge zur Prozess- und Regelanalyse helfen dabei, Engpässe und ungenutzte Prozesszweige zu finden.",
+                                      "Mögliche nächste Schritte:",
+                                      "- Gehe zur Sammlung und erstelle einen Bericht.",
+                                      "- Gehe zu den Analysen und führe eine Prozesszweiganalyse durch.",
+                                      "- Gehe zu den Analysen und führe eine Ausreißeranalyse durch.",
+                                      "Aktuell laufend",
+                                      "In den letzten 7 Tagen gestartet",
+                                      "In den letzten 7 Tagen beendet",
+                                      "Aufgaben mit Zwischenfällen",
+                                      "Anzahl offener Zwischenfälle",
+                                      "In den letzten 7 Tagen gestartet",
+                                      "Anzahl abgeschlossener Prozesse pro Monat",
+                                      "Welche Aufgaben benötigen die meiste Zeit und sind daher Automatisierungskandidaten"
+                                    ));
+    expectedStrings.put("en", List.of("Instant Preview Dashboard",
+                                      "KPI Dashboard",
+                                      "Monitor process health in near realtime.",
+                                      "The business operations dashboard provides you with an overview of the health of your process.",
+                                      "Next steps:",
+                                      "- Go to Collections and create your own Dashboard.",
+                                      "- Define Alerts for the Collection and get notified via email.",
+                                      "Report business metrics to stakeholders.",
+                                      "The business reporting dashboards provide process metrics to manage and report a business.",
+                                      "Next steps:",
+                                      "- Go to Collections and create your own dashboard.",
+                                      "- Go to a Report and change it to a KPI.",
+                                      "- Go to Dashboards and subscribe to an email Digest.",
+                                      "Analytic tools to find process improvements.",
+                                      "The tools provided for process and rules analytics help to find bottlenecks and unused branches to reduce complexity and increase performance.",
+                                      "Next steps:",
+                                      "- Go to Collections and build your own Reports.",
+                                      "- Go to Analysis and perform a Branch Analysis.",
+                                      "- Go to Analysis and perform an Outlier Analysis.",
+                                      "Currently running",
+                                      "Started in the last 7 days",
+                                      "Ended in the last 7 days",
+                                      "Tasks with Incidents",
+                                      "Number of running incidents",
+                                      "Started in the last 7 days",
+                                      "Number of processes completed per month",
+                                      "Which tasks take the most time and are candidates for automation"
+                                    ));
+    String textContent = (String) textTileConfiguration.get(TEXT_FIELD);
+    assertThat(expectedStrings.get(locale)).contains(textContent);
+  }
+
   @SuppressWarnings(UNUSED)
   public static Stream<String> emptyTemplates() {
     return Stream.of("", null);
@@ -627,9 +767,9 @@ public class InstantPreviewDashboardIT extends AbstractDashboardRestServiceIT {
   private static Stream<Arguments> templateAndExpectedLocalizedNames() {
     return Stream.of(
       Arguments.of(
-        "template1.json",
+        "template3.json",
         "en",
-        "Process performance overview",
+        "Instant Preview Dashboard",
         Set.of(
           "% SLA Met",
           "Which process steps take too much time? (To Do: Add Target values for these process steps)",
@@ -646,9 +786,9 @@ public class InstantPreviewDashboardIT extends AbstractDashboardRestServiceIT {
         )
       ),
       Arguments.of(
-        "template1.json",
+        "template3.json",
         "de",
-        "Prozessleistungsübersicht",
+        "Instant Preview Dashboard",
         Set.of(
           "% SLA erfüllt",
           "Welche Prozessschritte benötigen zu viel Zeit? (To Do: Ziellaufzeit festlegen)",
@@ -689,5 +829,22 @@ public class InstantPreviewDashboardIT extends AbstractDashboardRestServiceIT {
         )
       )
     );
+  }
+  @SuppressWarnings(UNUSED)
+  private static Stream<Arguments> templateAndLocales() {
+    return Stream.of(
+      Arguments.of(
+        "template1.json",
+        "en"
+        ),
+      Arguments.of(
+        "template1.json",
+        "de"
+        )
+      );
+  }
+  @SuppressWarnings(UNUSED)
+  private static Stream<String> templates() {
+    return Stream.of("template1.json", "template2.json", "template3.json");
   }
 }

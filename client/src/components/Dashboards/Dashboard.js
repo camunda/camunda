@@ -124,6 +124,7 @@ export class Dashboard extends React.Component {
           tiles,
           availableFilters,
           refreshRateSeconds,
+          instantPreviewDashboard,
         } = response;
 
         this.setState({
@@ -138,6 +139,7 @@ export class Dashboard extends React.Component {
           availableFilters: availableFilters || [],
           isAuthorizedToShare: await isAuthorizedToShareDashboard(id),
           refreshRateSeconds,
+          instantPreviewDashboard,
         });
       },
       (err) => {
@@ -314,6 +316,7 @@ export class Dashboard extends React.Component {
       tiles,
       availableFilters,
       refreshRateSeconds,
+      instantPreviewDashboard,
     } = this.state;
 
     if (serverError) {
@@ -351,6 +354,7 @@ export class Dashboard extends React.Component {
         ) : (
           <DashboardView
             {...commonProps}
+            sharingHidden={instantPreviewDashboard}
             sharingEnabled={sharingEnabled}
             isAuthorizedToShare={isAuthorizedToShare}
             loadDashboard={this.loadDashboard}

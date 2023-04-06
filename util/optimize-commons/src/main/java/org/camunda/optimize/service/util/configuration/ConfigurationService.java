@@ -161,6 +161,7 @@ public class ConfigurationService {
   private String containerKeystorePassword;
   private String containerKeystoreLocation;
   private Integer containerHttpsPort;
+  private Integer actuatorPort;
 
   // we use optional field here in order to allow restoring defaults with BeanUtils.copyProperties
   // if only the getter is of type Optional the value won't get reset properly
@@ -223,13 +224,8 @@ public class ConfigurationService {
 
   private OnboardingConfiguration onboarding;
 
-  /**
-   * This method is needed so jackson can deserialize/serialize
-   * the service configuration.
-   * See TestEmbeddedCamundaOptimize for where it's being used.
-   */
   @JsonCreator
-  static ConfigurationService createDefault() {
+  public static ConfigurationService createDefault() {
     return ConfigurationServiceBuilder.createDefaultConfiguration();
   }
 
@@ -801,6 +797,18 @@ public class ConfigurationService {
       }
     }
     return containerHttpsPort;
+  }
+
+  public Integer getActuatorPort() {
+    if (actuatorPort == null) {
+      actuatorPort = configJsonContext.read(
+        ConfigurationServiceConstants.CONTAINER_ACTUATOR_PORT, Integer.class
+      );
+      if (actuatorPort == null) {
+        throw new OptimizeConfigurationException("Optimize actuator port is not allowed to be null!");
+      }
+    }
+    return actuatorPort;
   }
 
   public Optional<Integer> getContainerHttpPort() {

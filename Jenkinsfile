@@ -29,6 +29,7 @@ String storeNumOfArtifacts() {
   isMainOrMaintenanceBranch() ? '5' : '1'
 }
 
+ES_8_TEST_VERSION_POM_PROPERTY = "elasticsearch8.test.version"
 ES_TEST_VERSION_POM_PROPERTY = "elasticsearch.test.version"
 PREV_ES_TEST_VERSION_POM_PROPERTY = "previous.optimize.elasticsearch.version"
 CAMBPM_LATEST_VERSION_POM_PROPERTY = "camunda.engine.version"
@@ -234,8 +235,6 @@ String elasticSearchContainerSpec(String esVersion, Integer cpuLimit = 4, Intege
         value: elasticsearch
       - name: xpack.security.enabled
         value: false
-      - name: action.destructive_requires_name
-        value: false
       # We usually run our integration tests concurrently, as some cleanup methods like #deleteAllOptimizeData
       # internally make usage of scroll contexts this lead to hits on the scroll limit.
       # Thus this increased scroll context limit.
@@ -287,50 +286,6 @@ String elasticSearchUpgradeContainerSpec(String esVersion) {
       - name: path.repo
         value: /var/tmp
    """
-}
-
-String postgresContainerSpec() {
-  return """
-  - name: postgresql
-    image: postgres:11.2
-    env:
-      - name: POSTGRES_USER
-        value: camunda
-      - name: POSTGRES_PASSWORD
-        value: camunda
-      - name: POSTGRES_DB
-        value: engine
-    resources:
-      limits:
-        cpu: 1
-        memory: 512Mi
-      requests:
-        cpu: 1
-        memory: 512Mi
-    volumeMounts:
-    - name: gcloud2postgres
-      mountPath: /db_dump/
-  """
-}
-
-String gcloudContainerSpec() {
-  return """
-  - name: gcloud
-    image: gcr.io/google.com/cloudsdktool/cloud-sdk:slim
-    imagePullPolicy: Always
-    command: ["cat"]
-    tty: true
-    resources:
-      limits:
-        cpu: 1
-        memory: 512Mi
-      requests:
-        cpu: 1
-        memory: 512Mi
-    volumeMounts:
-    - name: gcloud2postgres
-      mountPath: /db_dump/
-  """
 }
 
 String smoketestPodSpec(String camBpmVersion, String esVersion) {
@@ -474,6 +429,12 @@ String itLatestPodSpec(String camBpmVersion, String esVersion) {
       elasticSearchContainerSpec(esVersion, 4, 8)
 }
 
+String itLatestPodSpecES8(String camBpmVersion, String esVersion) {
+  return basePodSpec(4, 4) +
+      camBpmContainerSpec(camBpmVersion, false, 6, 6) +
+      elasticSearchContainerSpec(esVersion, 8, 16)
+}
+
 String itZeebePodSpec(String camBpmVersion, String esVersion) {
    return basePodSpec(6, 6) +
           camBpmContainerSpec(camBpmVersion, false, 2, 4) +
@@ -481,26 +442,11 @@ String itZeebePodSpec(String camBpmVersion, String esVersion) {
           dockerInDockerSpec(12);
 }
 
-String e2eTestPodSpec(String camBpmVersion, String esVersion) {
-  // use Docker image with preinstalled headless Chrome and Maven
-  return basePodSpec(3, 6, 'markhobson/maven-chrome:jdk-11') +
-      camBpmContainerSpec(camBpmVersion, true, 2, 4, false) +
-      elasticSearchContainerSpec(esVersion) +
-      postgresContainerSpec() +
-      gcloudContainerSpec()
-}
-
-String e2eCloudTestPodSpec(String esVersion) {
-  // use Docker image with preinstalled headless Chrome and Maven
-  return basePodSpec(1, 6, 'markhobson/maven-chrome:jdk-11') +
-      elasticSearchContainerSpec(esVersion)
-}
-
 pipeline {
   agent {
     kubernetes {
       cloud 'optimize-ci'
-      inheritFrom "optimize-ci-build_${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(20)}-${env.BUILD_ID}"
+      label "optimize-ci-build_${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(20)}-${env.BUILD_ID}"
       defaultContainer 'jnlp'
       yamlFile '.ci/podSpecs/builderAgent.yml'
     }
@@ -513,11 +459,9 @@ pipeline {
     GCR_REGISTRY = credentials('docker-registry-ci3')
     def mavenProps = readMavenPom().getProperties()
     ES_VERSION = mavenProps.getProperty(ES_TEST_VERSION_POM_PROPERTY)
+    ES8_VERSION = mavenProps.getProperty(ES_8_TEST_VERSION_POM_PROPERTY)
     PREV_ES_VERSION = mavenProps.getProperty(PREV_ES_TEST_VERSION_POM_PROPERTY)
     CAMBPM_VERSION = mavenProps.getProperty(CAMBPM_LATEST_VERSION_POM_PROPERTY)
-    AUTH0_CLIENTSECRET = credentials('auth0-clientsecret')
-    AUTH0_USEREMAIL = credentials('auth0-useremail')
-    AUTH0_USERPASSWORD = credentials('auth0-userpassword')
   }
 
   options {
@@ -590,7 +534,7 @@ pipeline {
           agent {
             kubernetes {
               cloud 'optimize-ci'
-              inheritFrom "optimize-ci-build-it-static-analysis_${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(10)}-${env.BUILD_ID}"
+              label "optimize-ci-build-it-static-analysis_${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(10)}-${env.BUILD_ID}"
               defaultContainer 'jnlp'
               yaml basePodSpec(1, 3)
             }
@@ -621,7 +565,7 @@ pipeline {
           agent {
             kubernetes {
               cloud 'optimize-ci'
-              inheritFrom "optimize-ci-build-it-migration_${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(10)}-${env.BUILD_ID}"
+              label "optimize-ci-build-it-migration_${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(10)}-${env.BUILD_ID}"
               defaultContainer 'jnlp'
               yaml upgradeTestPodSpec(env.CAMBPM_VERSION, env.ES_VERSION, env.PREV_ES_VERSION)
             }
@@ -645,7 +589,7 @@ pipeline {
           agent {
             kubernetes {
               cloud 'optimize-ci'
-              inheritFrom "optimize-ci-build-it-data-upgrade_${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(10)}-${env.BUILD_ID}"
+              label "optimize-ci-build-it-data-upgrade_${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(10)}-${env.BUILD_ID}"
               defaultContainer 'jnlp'
               yaml upgradeTestPodSpec(env.CAMBPM_VERSION, env.ES_VERSION, env.PREV_ES_VERSION)
             }
@@ -665,9 +609,29 @@ pipeline {
           agent {
             kubernetes {
               cloud 'optimize-ci'
-              inheritFrom "optimize-ci-build-it-latest_${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(10)}-${env.BUILD_ID}"
+              label "optimize-ci-build-it-latest_${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(10)}-${env.BUILD_ID}"
               defaultContainer 'jnlp'
               yaml itLatestPodSpec(env.CAMBPM_VERSION, env.ES_VERSION)
+            }
+          }
+          steps {
+            unstash name: "optimize-stash-client"
+            // Exclude all Zeebe tests
+            integrationTestSteps('latest', 'Zeebe-test', '')
+          }
+          post {
+            always {
+              junit testResults: 'backend/target/failsafe-reports/**/*.xml', allowEmptyResults: false, keepLongStdio: true
+            }
+          }
+        }
+        stage('C7 IT Latest using ES8') {
+          agent {
+            kubernetes {
+              cloud 'optimize-ci'
+              label "optimize-ci-build-it-latest_${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(10)}-${env.BUILD_ID}"
+              defaultContainer 'jnlp'
+              yaml itLatestPodSpecES8(env.CAMBPM_VERSION, env.ES8_VERSION)
             }
           }
           steps {
@@ -685,7 +649,7 @@ pipeline {
           agent {
             kubernetes {
               cloud 'optimize-ci'
-              inheritFrom "optimize-ci-build-it-zeebe_${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(10)}-${env.BUILD_ID}"
+              label "optimize-ci-build-it-zeebe_${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(10)}-${env.BUILD_ID}"
               defaultContainer 'jnlp'
               yaml itZeebePodSpec(env.CAMBPM_VERSION, env.ES_VERSION)
             }
@@ -700,45 +664,22 @@ pipeline {
             }
           }
         }
-        stage('E2E') {
+        stage('C7 IT Zeebe Latest ES8') {
           agent {
             kubernetes {
               cloud 'optimize-ci'
-              inheritFrom "optimize-ci-build-e2e_${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(10)}-${env.BUILD_ID}"
+              label "optimize-ci-build-it-zeebe-es8_${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(10)}-${env.BUILD_ID}"
               defaultContainer 'jnlp'
-              yaml e2eTestPodSpec(env.CAMBPM_VERSION, env.ES_VERSION)
+              yaml itZeebePodSpec(env.CAMBPM_VERSION, env.ES8_VERSION)
             }
           }
           steps {
-            unstash name: 'optimize-stash-client'
-            unstash name: 'optimize-stash-backend'
-            e2eTestSteps()
+            unstash name: "optimize-stash-client"
+            integrationTestSteps('latest', '', 'Zeebe-test')
           }
           post {
             always {
-              archiveArtifacts artifacts: 'client/build/*.log'
-            }
-          }
-        }
-        stage('E2E-cloud') {
-          agent {
-            kubernetes {
-              cloud 'optimize-ci'
-              inheritFrom "optimize-ci-build-e2e-cloud_${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(10)}-${env.BUILD_ID}"
-              defaultContainer 'jnlp'
-              yaml e2eCloudTestPodSpec(env.ES_VERSION)
-            }
-          }
-          steps {
-            unstash name: 'optimize-stash-client'
-            unstash name: 'optimize-stash-backend'
-            container('maven') {
-              runMaven('test -pl client -Pclient.e2etests-cloud-chromeheadless -Dskip.yarn.build')
-            }
-          }
-          post {
-            always {
-              archiveArtifacts artifacts: 'client/build/*.log'
+              junit testResults: 'backend/target/failsafe-reports/**/*.xml', allowEmptyResults: false, keepLongStdio: true
             }
           }
         }
@@ -948,18 +889,6 @@ void dataUpgradeTestSteps() {
   container('maven') {
     runMaven("install -Dskip.docker -Dskip.fe.build -DskipTests -pl backend,upgrade,qa/data-generation,qa/optimize-data-generator -am -Pengine-latest")
     runMaven("verify -Dskip.docker -Dskip.fe.build -f qa/upgrade-tests -Pupgrade-optimize-data")
-  }
-}
-
-void e2eTestSteps() {
-  container('gcloud') {
-    sh 'gsutil -q -m cp gs://optimize-data/optimize_data-e2e.sqlc /db_dump/dump.sqlc'
-  }
-  container('postgresql') {
-    sh 'pg_restore --clean --if-exists -v -h localhost -U camunda -d engine /db_dump/dump.sqlc || true'
-  }
-  container('maven') {
-    runMaven('test -pl client -Pclient.e2etests-chromeheadless -Dskip.yarn.build')
   }
 }
 

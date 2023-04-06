@@ -4,7 +4,7 @@
 
   <groupId>org.camunda.optimize</groupId>
   <artifactId>parent</artifactId>
-  <version>3.10.0-SNAPSHOT</version>
+  <version>3.11.0</version>
   <packaging>pom</packaging>
   <name>Camunda Optimize</name>
 
@@ -23,24 +23,26 @@
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-    <project.previousVersion>3.9.0</project.previousVersion>
+    <project.previousVersion>3.10.0</project.previousVersion>
 
     <camunda.engine.version>7.18.0</camunda.engine.version>
     <camunda.maven.artifacts.version>7.18.0-ee</camunda.maven.artifacts.version>
 
     <!-- We use this version to compile but run IT against containers with zeebe.docker.version -->
-    <zeebe.version>8.1.9</zeebe.version>
-    <identity.version>8.1.9</identity.version>
+    <zeebe.version>8.2.0</zeebe.version>
+    <identity.version>8.2.0</identity.version>
     <!-- We use this for the Zeebe test container version only -->
     <zeebe.docker.version>${zeebe.version}</zeebe.docker.version>
 
-    <surefire-plugin.version>3.0.0-M9</surefire-plugin.version>
+    <surefire-plugin.version>3.0.0</surefire-plugin.version>
     <!-- maven plugins -->
     <plugin.version.sonar>3.9.1.2184</plugin.version.sonar>
 
     <jackson.version>2.14.1</jackson.version>
-    <jsonpath.version>2.7.0</jsonpath.version>
+    <jsonpath.version>2.8.0</jsonpath.version>
     <elasticsearch.version>7.17.9</elasticsearch.version>
+    <!-- The default es 8 version we are going to be testing with-->
+    <elasticsearch8.test.version>8.6.0</elasticsearch8.test.version>
     <!--The least supported elasticsearch version we should test against-->
     <elasticsearch.test.version>7.10.0</elasticsearch.test.version>
     <!--the ElasticSearch version of the previous Optimize version -->
@@ -48,8 +50,8 @@
     <!-- https://www.elastic.co/guide/en/elasticsearch/client/java-api/6.5/_using_another_logger.html -->
     <elasticsearch.log4j.version>2.20.0</elasticsearch.log4j.version>
     <guava.version>31.1-jre</guava.version>
-    <spring.boot.version>2.7.7</spring.boot.version>
-    <spring.version>5.3.23</spring.version>
+    <spring.boot.version>2.7.10</spring.boot.version>
+    <spring.version>5.3.26</spring.version>
     <mockito.version>5.2.0</mockito.version>
     <httpclient.version>4.5.14</httpclient.version>
     <junit.jupiter.version>5.9.2</junit.jupiter.version>
@@ -57,7 +59,7 @@
     <mockserver.version>5.14.0</mockserver.version>
     <quartz.version>2.3.2</quartz.version>
     <assertj.version>3.24.2</assertj.version>
-    <postgres.version>42.5.4</postgres.version>
+    <postgres.version>42.6.0</postgres.version>
 
     <lombok.version>1.18.26</lombok.version>
     <logback.version>1.2.11</logback.version>
@@ -123,6 +125,13 @@
     </profile>
 
     <profile>
+      <id>engine-7.19</id>
+      <properties>
+        <camunda.engine.version>7.19.0</camunda.engine.version>
+      </properties>
+    </profile>
+
+    <profile>
       <id>engine-7.18</id>
       <properties>
         <camunda.engine.version>7.18.0</camunda.engine.version>
@@ -147,7 +156,7 @@
           <plugin>
             <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-release-plugin</artifactId>
-            <version>2.5.3</version>
+            <version>3.0.0</version>
             <configuration>
               <releaseProfiles>engine-latest</releaseProfiles>
               <localCheckout>true</localCheckout>
@@ -333,6 +342,11 @@
       <version>4.2.0</version>
       <scope>test</scope>
     </dependency>
+    <dependency>
+      <groupId>io.netty</groupId>
+      <artifactId>netty-codec-http</artifactId>
+      <version>4.1.90.Final</version>
+    </dependency>
   </dependencies>
 
   <build>
@@ -433,7 +447,7 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-deploy-plugin</artifactId>
-          <version>3.1.0</version>
+          <version>3.1.1</version>
         </plugin>
         <plugin>
           <groupId>com.github.eirslett</groupId>
@@ -443,7 +457,7 @@
         <plugin>
           <groupId>com.mycila</groupId>
           <artifactId>license-maven-plugin</artifactId>
-          <version>4.1</version>
+          <version>4.2</version>
         </plugin>
         <!-- sonar relevant stuff -->
         <plugin>
@@ -454,7 +468,7 @@
         <plugin>
           <groupId>org.jacoco</groupId>
           <artifactId>jacoco-maven-plugin</artifactId>
-          <version>0.8.8</version>
+          <version>0.8.9</version>
         </plugin>
       </plugins>
     </pluginManagement>
@@ -570,14 +584,21 @@
   <!-- Fix for bug with downloading snapshots from Camunda Nexus using groups with RELEASE and SNAPSHOTS -->
   <repositories>
     <repository>
-      <id>test</id>
-      <url>http://repository</url>
+      <id>camunda-nexus</id>
+      <name>Camunda Nexus</name>
+      <url>https://artifacts.camunda.com/artifactory/internal/</url>
       <releases>
         <enabled>true</enabled>
       </releases>
       <snapshots>
         <enabled>true</enabled>
       </snapshots>
+    </repository>
+
+    <repository>
+      <id>central</id>
+      <name>Maven Central</name>
+      <url>https://repo1.maven.org/maven2/</url>
     </repository>
 
     <!-- add the elasticsearch repo -->

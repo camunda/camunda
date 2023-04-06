@@ -13,3 +13,9 @@ export async function isEventBasedProcessEnabled() {
 
   return value === 'true';
 }
+
+export async function getUserToken() {
+  const response = await get('api/token');
+  const value = await response.json();
+  return value.token;
+}

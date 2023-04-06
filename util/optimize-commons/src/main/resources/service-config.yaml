@@ -24,6 +24,9 @@ security:
         # decides if the Optimize auth cookie has the same site cookie flag set
         enabled: ${CAMUNDA_OPTIMIZE_SECURITY_AUTH_COOKIE_SAME_SITE_ENABLED:true}
       secure: auto
+      # browser cookies can have a maximum of 4096 bytes, we deduct 128 to make place for overhead
+      # information (expiration information, etc.)
+      maxSize: ${CAMUNDA_OPTIMIZE_SECURITY_AUTH_COOKIE_MAX_SIZE:3968}
     token:
       # Optimize uses token-based authentication to keep track of which users are
       # logged in. Define when a token is supposed to expire.
@@ -99,6 +102,9 @@ container:
     # A port number that will be used by Optimize to process
     # secure HTTPS connections.
     https: ${CAMUNDA_OPTIMIZE_CONTAINER_PORTS_HTTPS:8091}
+    # A port number that will be used by Optimize's Actuator management server
+    # always defaults to 8092
+    actuator: ${MANAGEMENT_SERVER_PORT:8092}
   # HTTPS requires an SSL Certificate. When you generate an SSL Certificate,
   # you are creating a keystore file and a keystore password for use when the
   # browser interface connects
@@ -117,6 +123,7 @@ container:
 users:
   cloud:
     accountsUrl: ${CAMUNDA_OPTIMIZE_M2M_ACCOUNTS_URL:}
+    notificationsUrl: ${CAMUNDA_OPTIMIZE_NOTIFICATIONS_URL:}
 
 # Configuration for engines used to import data. Please note that you have to have at
 # least one engine configured at all times.
@@ -188,7 +195,7 @@ zeebe:
   # The number of partitions configured for the Zeebe record source
   partitionCount: ${CAMUNDA_OPTIMIZE_ZEEBE_PARTITION_COUNT:1}
   # The max page size for importing Zeebe data
-  maxImportPageSize: ${CAMUNDA_OPTIMIZE_ZEEBE_MAX_IMPORT_PAGE_SIZE:10000}
+  maxImportPageSize: ${CAMUNDA_OPTIMIZE_ZEEBE_MAX_IMPORT_PAGE_SIZE:200}
   # Determines whether Optimize should convert and store object variables from Zeebe
   includeObjectVariableValue: ${CAMUNDA_OPTIMIZE_ZEEBE_INCLUDE_OBJECT_VARIABLE:true}
 

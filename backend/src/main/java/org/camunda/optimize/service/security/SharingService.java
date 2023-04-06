@@ -12,6 +12,7 @@ import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionRest
 import org.camunda.optimize.dto.optimize.query.report.AdditionalProcessReportEvaluationFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.AuthorizedReportEvaluationResult;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
 import org.camunda.optimize.dto.optimize.query.sharing.DashboardShareRestDto;
 import org.camunda.optimize.dto.optimize.query.sharing.ReportShareRestDto;
@@ -136,8 +137,8 @@ public class SharingService implements ReportReferencingService, DashboardRefere
     try {
       DashboardDefinitionRestDto dashboardDefinition =
         dashboardService.getDashboardDefinition(dashboardId, userId).getDefinitionDto();
-      if (dashboardDefinition.isManagementDashboard()) {
-        throw new OptimizeValidationException("Management Dashboards cannot be shared");
+      if (dashboardDefinition.isManagementDashboard() || dashboardDefinition.isInstantPreviewDashboard()) {
+        throw new OptimizeValidationException("Management Dashboards or Instant Preview Dashboards cannot be shared");
       }
 
       final Set<String> authorizedReportIdsOnDashboard = reportService.filterAuthorizedReportIds(
@@ -168,9 +169,12 @@ public class SharingService implements ReportReferencingService, DashboardRefere
         reportShare.getReportId(),
         userId
       );
-      if (reportDefinition.getDefinitionDto() instanceof SingleProcessReportDefinitionRequestDto
-        && ((SingleProcessReportDefinitionRequestDto) reportDefinition.getDefinitionDto()).getData().isManagementReport()) {
-        throw new OptimizeValidationException("Management Reports cannot be shared");
+      if (reportDefinition.getDefinitionDto() instanceof SingleProcessReportDefinitionRequestDto) {
+        final ProcessReportDataDto reportData =
+          ((SingleProcessReportDefinitionRequestDto) reportDefinition.getDefinitionDto()).getData();
+        if (reportData.isManagementReport() || reportData.isInstantPreviewReport()) {
+          throw new OptimizeValidationException("Management Reports and Instant Preview Dashboard Reports cannot be shared");
+        }
       }
     } catch (OptimizeValidationException exception) {
       throw exception;

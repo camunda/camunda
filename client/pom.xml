@@ -5,7 +5,7 @@
   <parent>
     <groupId>org.camunda.optimize</groupId>
     <artifactId>parent</artifactId>
-    <version>3.10.0-SNAPSHOT</version>
+    <version>3.11.0</version>
   </parent>
 
   <artifactId>client</artifactId>
@@ -60,77 +60,4 @@
       </plugin>
     </plugins>
   </build>
-
-  <profiles>
-    <profile>
-      <id>client.e2etests-browserstack</id>
-      <build>
-        <plugins>
-          <plugin>
-            <groupId>com.github.eirslett</groupId>
-            <artifactId>frontend-maven-plugin</artifactId>
-            <executions>
-              <execution>
-                <id>yarn-start-e2e-tests-ci-browserstack</id>
-                <goals>
-                  <goal>yarn</goal>
-                </goals>
-                <phase>test</phase>
-                <configuration>
-                  <arguments>run e2e:ci-browserstack</arguments>
-                </configuration>
-              </execution>
-            </executions>
-          </plugin>
-        </plugins>
-      </build>
-    </profile>
-
-    <profile>
-      <id>client.e2etests-chromeheadless</id>
-      <build>
-        <plugins>
-          <plugin>
-            <groupId>com.github.eirslett</groupId>
-            <artifactId>frontend-maven-plugin</artifactId>
-            <executions>
-              <execution>
-                <id>yarn-start-e2e-tests-ci-chromeheadless</id>
-                <goals>
-                  <goal>yarn</goal>
-                </goals>
-                <phase>test</phase>
-                <configuration>
-                  <arguments>run e2e:ci-chromeheadless</arguments>
-                </configuration>
-              </execution>
-            </executions>
-          </plugin>
-        </plugins>
-      </build>
-    </profile>
-    <profile>
-      <id>client.e2etests-cloud-chromeheadless</id>
-      <build>
-        <plugins>
-          <plugin>
-            <groupId>com.github.eirslett</groupId>
-            <artifactId>frontend-maven-plugin</artifactId>
-            <executions>
-              <execution>
-                <id>yarn-start-e2e-tests-cloud-ci-chromeheadless</id>
-                <goals>
-                  <goal>yarn</goal>
-                </goals>
-                <phase>test</phase>
-                <configuration>
-                  <arguments>run e2e:cloud:ci-chromeheadless</arguments>
-                </configuration>
-              </execution>
-            </executions>
-          </plugin>
-        </plugins>
-      </build>
-    </profile>
-  </profiles>
 </project>

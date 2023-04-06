@@ -21,7 +21,9 @@ import javax.ws.rs.core.NewCookie;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
@@ -89,26 +91,10 @@ public class AuthCookieService {
     );
   }
 
-  public String createOptimizeServiceTokenCookie(final OAuth2AccessToken accessToken,
-                                                 final Instant expiresAt,
-                                                 final String requestScheme) {
-    log.trace("Creating Optimize service token cookie.");
-    return createCookie(
-      OPTIMIZE_SERVICE_TOKEN,
-      accessToken.getTokenValue(),
-      requestScheme,
-      convertInstantToDate(expiresAt)
-    );
-  }
-
   public Optional<Instant> getOptimizeAuthCookieTokenExpiryDate(final String optimizeAuthCookieToken) {
     return getTokenIssuedAt(optimizeAuthCookieToken)
       .map(Date::toInstant)
       .map(issuedAt -> issuedAt.plus(getAuthConfiguration().getTokenLifeTimeMinutes(), ChronoUnit.MINUTES));
-  }
-
-  public static Optional<String> getAuthCookieToken(ContainerRequestContext requestContext) {
-    return extractCookieValue(requestContext).flatMap(AuthCookieService::extractTokenFromAuthorizationValue);
   }
 
   public javax.servlet.http.Cookie createDeleteCookie(final String cookieName, final String cookieValue,
@@ -116,9 +102,40 @@ public class AuthCookieService {
     return createCookie(cookieName, cookieValue, Instant.now(), requestScheme, true);
   }
 
+  public javax.servlet.http.Cookie createOptimizeAuthCookie(final String cookieValue, final Instant expiresAt,
+                                                            final String requestScheme) {
+    return createCookie(OPTIMIZE_AUTHORIZATION, cookieValue, expiresAt, requestScheme, false);
+  }
+
   public javax.servlet.http.Cookie createCookie(final String cookieName, final String cookieValue,
                                                 final Instant expiresAt, final String requestScheme) {
     return createCookie(cookieName, cookieValue, expiresAt, requestScheme, false);
+  }
+
+  public List<javax.servlet.http.Cookie> createOptimizeServiceTokenCookies(final OAuth2AccessToken accessToken,
+                                                                           final Instant expiresAt,
+                                                                           final String requestScheme) {
+    log.trace("Creating Optimize service token cookie(s).");
+    final String tokenValue = accessToken.getTokenValue();
+    final int maxCookieLength = configurationService.getAuthConfiguration().getCookieConfiguration().getMaxSize();
+    final int numberOfCookies = (int) Math.ceil((double) tokenValue.length() / maxCookieLength);
+    List<javax.servlet.http.Cookie> cookies = new ArrayList<>();
+    for (int i = 0; i < numberOfCookies; i++) {
+      cookies.add(createCookie(
+        getServiceCookieNameWithSuffix(i),
+        /* creates a substring of the cookie token value based on the index 'i' and the maximum cookie length
+          'maxCookieLength'. If the current index 'i' is equal to the number of cookies minus one, it takes the
+          remaining characters of the token value from the current index multiplied by the maximum cookie length
+          until the end of the string, otherwise it takes a substring starting from the current index multiplied by
+          the maximum cookie length with a length of the maximum cookie length.
+         */
+        i == (numberOfCookies - 1) ? tokenValue.substring((i * maxCookieLength)) :
+          tokenValue.substring((i * maxCookieLength), ((i * maxCookieLength) + maxCookieLength)),
+        expiresAt,
+        requestScheme
+      ));
+    }
+    return cookies;
   }
 
   private javax.servlet.http.Cookie createCookie(final String cookieName, final String cookieValue,
@@ -147,12 +164,56 @@ public class AuthCookieService {
   }
 
   public static Optional<String> getAuthCookieToken(HttpServletRequest servletRequest) {
-    return extractCookieValue(servletRequest, OPTIMIZE_AUTHORIZATION)
-      .flatMap(AuthCookieService::extractTokenFromAuthorizationValue);
+    // load just issued token if set by previous filter
+    String authorizationValue = (String) servletRequest.getAttribute(OPTIMIZE_AUTHORIZATION);
+    if (authorizationValue == null && servletRequest.getCookies() != null) {
+      for (javax.servlet.http.Cookie cookie : servletRequest.getCookies()) {
+        if (OPTIMIZE_AUTHORIZATION.equals(cookie.getName())) {
+          authorizationValue = cookie.getValue();
+        }
+      }
+    }
+    return Optional.ofNullable(authorizationValue).flatMap(AuthCookieService::extractTokenFromAuthorizationValue);
+  }
+
+  public static Optional<String> getAuthCookieToken(ContainerRequestContext requestContext) {
+    // load just issued token if set by previous filter
+    String authorizationValue = (String) requestContext.getProperty(OPTIMIZE_AUTHORIZATION);
+    if (authorizationValue == null) {
+      for (Map.Entry<String, Cookie> cookieEntry : requestContext.getCookies().entrySet()) {
+        if (OPTIMIZE_AUTHORIZATION.equals(cookieEntry.getKey())) {
+          authorizationValue = cookieEntry.getValue().getValue();
+        }
+      }
+    }
+    return Optional.ofNullable(authorizationValue).flatMap(AuthCookieService::extractTokenFromAuthorizationValue);
   }
 
   public static Optional<String> getServiceAccessToken(HttpServletRequest servletRequest) {
-    return extractCookieValue(servletRequest, OPTIMIZE_SERVICE_TOKEN);
+    boolean serviceTokenExtracted = false;
+    int serviceTokenSuffixToExtract = 0;
+    StringBuilder serviceAccessToken = new StringBuilder();
+    while (!serviceTokenExtracted) {
+      final String serviceCookieName = getServiceCookieNameWithSuffix(serviceTokenSuffixToExtract);
+      String authorizationValue = null;
+      if (servletRequest.getCookies() != null) {
+        for (javax.servlet.http.Cookie cookie : servletRequest.getCookies()) {
+          if (serviceCookieName.equals(cookie.getName())) {
+            authorizationValue = cookie.getValue();
+          }
+        }
+      }
+      if (authorizationValue != null) {
+        serviceAccessToken.append(authorizationValue);
+        serviceTokenSuffixToExtract += 1;
+      } else {
+        serviceTokenExtracted = true;
+      }
+    }
+    if (serviceAccessToken.length() != 0) {
+      return Optional.of(serviceAccessToken.toString().trim());
+    }
+    return Optional.empty();
   }
 
   public static Optional<String> getTokenSubject(String token) {
@@ -211,30 +272,8 @@ public class AuthCookieService {
     return Optional.empty();
   }
 
-  private static Optional<String> extractCookieValue(final ContainerRequestContext requestContext) {
-    // load just issued token if set by previous filter
-    String authorizationValue = (String) requestContext.getProperty(OPTIMIZE_AUTHORIZATION);
-    if (authorizationValue == null) {
-      for (Map.Entry<String, Cookie> c : requestContext.getCookies().entrySet()) {
-        if (OPTIMIZE_AUTHORIZATION.equals(c.getKey())) {
-          authorizationValue = c.getValue().getValue();
-        }
-      }
-    }
-    return Optional.ofNullable(authorizationValue);
-  }
-
-  private static Optional<String> extractCookieValue(final HttpServletRequest servletRequest, final String cookieName) {
-    // load just issued token if set by previous filter
-    String authorizationValue = (String) servletRequest.getAttribute(cookieName);
-    if (authorizationValue == null && servletRequest.getCookies() != null) {
-      for (javax.servlet.http.Cookie cookie : servletRequest.getCookies()) {
-        if (cookieName.equals(cookie.getName())) {
-          return Optional.of(cookie.getValue());
-        }
-      }
-    }
-    return Optional.ofNullable(authorizationValue);
+  private static String getServiceCookieNameWithSuffix(final int suffix) {
+    return OPTIMIZE_SERVICE_TOKEN + "_" + suffix;
   }
 
   private static Optional<String> extractTokenFromAuthorizationValue(final String authCookieValue) {
@@ -243,4 +282,5 @@ public class AuthCookieService {
     }
     return Optional.ofNullable(authCookieValue);
   }
+
 }

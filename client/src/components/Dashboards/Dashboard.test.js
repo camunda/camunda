@@ -247,3 +247,14 @@ it('should use instant preview dashboard entity for magic link', async () => {
 
   expect(loadEntity).toHaveBeenCalledWith('dashboard/instant', 'id', undefined);
 });
+
+it('should hide sharing for instant preview dashboard', async () => {
+  loadEntity.mockReturnValueOnce({instantPreviewDashboard: true});
+  const node = shallow(
+    <Dashboard {...props} entity="dashboard/instant" match={{params: {id: '1'}}} />
+  );
+
+  await flushPromises();
+
+  expect(node.find(DashboardView).prop('sharingHidden')).toBe(true);
+});

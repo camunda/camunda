@@ -7,7 +7,7 @@
 
 const fs = require('fs');
 
-const blacklistedFiles = ['setupTests.js'];
+const blacklistedFiles = ['setupTests.ts'];
 const blacklistedDependencies = ['@lexical/'];
 
 function getAllFilesInDirectory(dir, filelist) {
@@ -28,7 +28,7 @@ function getInternalModules(dir) {
 }
 
 function isJavascriptFile(filename) {
-  return /^(?!.*test\.js).*\.js$/g.test(filename);
+  return /^(?!.*test\.(js|ts(x)?)).*\.(js|ts(x)?)$/g.test(filename);
 }
 
 function isStyleFile(filename) {

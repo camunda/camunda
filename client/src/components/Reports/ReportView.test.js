@@ -188,3 +188,19 @@ describe('Download CSV', () => {
     expect(node.find(DownloadButton).prop('totalCount')).toBe(20);
   });
 });
+
+it('should hide share, edit and delete buttons for instant preview report', () => {
+  const node = shallow(
+    <ReportView
+      report={{
+        ...report,
+        data: {instantPreviewReport: true},
+        result: {type: 'number', measures: [{data: 12}]},
+      }}
+    />
+  );
+
+  expect(node.find('ShareEntity')).not.toExist();
+  expect(node.find('.tool-button.edit-button')).not.toExist();
+  expect(node.find('.tool-button.delete-button')).not.toExist();
+});

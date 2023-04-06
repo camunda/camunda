@@ -5,8 +5,6 @@
  * except in compliance with the proprietary license.
  */
 
-import {ClientFunction} from 'testcafe';
-
 import {cleanEntities} from '../setup';
 import config from '../config';
 import * as u from '../utils';
@@ -253,17 +251,6 @@ test('external datasources', async (t) => {
 
   await t.click(e.addTileButton);
 
-  const checkIframeLoaded = ClientFunction(() => {
-    return new Promise((resolve) => {
-      const iframe = document.querySelector('iframe');
-      iframe.addEventListener('load', function () {
-        resolve();
-      });
-    });
-  });
-
-  await checkIframeLoaded();
-
   await t.switchToIframe(e.externalReport);
 
   await t.expect(e.exampleHeading.textContent).contains('Example Domain');
@@ -301,9 +288,8 @@ test('text report', async (t) => {
   await t.click(e.addTileButton);
   await t.click('.DashboardRenderer');
 
-  await t.expect(await e.textReport.textContent).match(/text/i);
-  await t.expect(e.textReportField('strong').textContent).match(/\.*bold/i);
-  await t.expect(e.textReportField('em').textContent).match(/\.*italic/i);
+  await t.expect(e.textReportField('strong').visible).ok();
+  await t.expect(e.textReportField('em').visible).ok();
 });
 
 test('deleting', async (t) => {

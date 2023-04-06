@@ -64,7 +64,9 @@ public class UpgradePluginIT extends AbstractUpgradeIT {
     // then
     esMockServer.verify(
       request().withHeader(new Header("Authorization", "Bearer dynamicToken_0")),
-      VerificationTimes.once()
+      // The first request is to check the ES version during client creation, the second is
+      // being done when fetching the ES version to verify if we need to turn on the compatibility mode.
+      VerificationTimes.exactly(2)
     );
     esMockServer.verify(
       request().withHeader(new Header("Authorization", "Bearer dynamicToken_1")),
@@ -93,7 +95,10 @@ public class UpgradePluginIT extends AbstractUpgradeIT {
     esMockServer.verify(request().withHeaders(
       new Header("Authorization", "Bearer dynamicToken_0"),
       new Header("CustomHeader", "customValue")
-    ), VerificationTimes.once());
+    ),
+    // The first request is to check the ES version during client creation, the second is
+    // being done when fetching the ES version to verify if we need to turn on the compatibility mode.
+    VerificationTimes.exactly(2));
   }
 
   private void performUpgrade() {

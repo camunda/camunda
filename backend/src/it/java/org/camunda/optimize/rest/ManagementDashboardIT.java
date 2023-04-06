@@ -61,9 +61,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.operator.ComparisonOperator.GREATER_THAN;
 import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.operator.ComparisonOperator.LESS_THAN;
 import static org.camunda.optimize.service.dashboard.ManagementDashboardService.MANAGEMENT_DASHBOARD_ID;
-import static org.camunda.optimize.service.entities.dashboard.DashboardDefinitionImportIT.getExternalResourceUrls;
 import static org.camunda.optimize.service.dashboard.ManagementDashboardService.MANAGEMENT_DASHBOARD_LOCALIZATION_CODE;
 import static org.camunda.optimize.service.dashboard.ManagementDashboardService.PROCESS_INSTANCE_USAGE_REPORT_LOCALIZATION_CODE;
+import static org.camunda.optimize.service.entities.dashboard.DashboardDefinitionImportIT.getExternalResourceUrls;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DASHBOARD_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.SINGLE_PROCESS_REPORT_INDEX_NAME;
 import static org.camunda.optimize.util.SuppressionConstants.UNUSED;
@@ -122,6 +122,13 @@ public class ManagementDashboardIT extends AbstractIT {
         assertThat(report.getCreated()).isEqualTo(now);
         assertThat(report.getOwner()).isNull();
         assertThat(report.getCollectionId()).isNull();
+        // Management Reports cannot contain KPIs, because the KPIService is using PlainReportEvaluationHandler which
+        // always returns VIEWER for getAuthorizedRole. However, an issue arises because we use a nonexistent
+        // userID in setDataSourcesForSystemGeneratedReports to retrieve all definitions/tenants the "current user" is
+        // allowed to see. If management dashboard falsely included a KPI report,
+        // setDataSourcesForSystemGeneratedReports gets called causing an exception potentially blocking evaluation of
+        // further KPI reports.
+        assertThat(report.getData().getConfiguration().getTargetValue().getIsKpi()).isNull();
         assertThat(report.getDefinitionType()).isEqualTo(DefinitionType.PROCESS);
         assertThat(report.getFilterData()).isEqualTo(
           expectedReportsAndLocationsByName.get(report.getName()).getReportDefinitionRequestDto().getFilterData());

@@ -229,15 +229,15 @@ public class EntityNamesRestServiceIT extends AbstractEntitiesRestServiceIT {
       ),
       Arguments.of(
         "de",
-        "Anzahl der ausgeführten Prozesseinstanzen"
+        "Anzahl der ausgeführten Prozessinstanzen"
       )
     );
   }
 
   private static Stream<Arguments> templatesAndExpectedLocalizedNames() {
     return Stream.of(
-      Arguments.of("template1.json", "en", "Process performance overview"),
-      Arguments.of("template1.json", "de", "Prozessleistungsübersicht"),
+      Arguments.of("template1.json", "en", "Instant Preview Dashboard"),
+      Arguments.of("template1.json", "de", "Instant Preview Dashboard"),
       Arguments.of("template2.json", "en", "KPI Dashboard"),
       Arguments.of("template2.json", "de", "KPI Dashboard")
     );
