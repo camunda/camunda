@@ -20,6 +20,7 @@ import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceRelatedIntent;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRelated;
+import io.camunda.zeebe.stream.api.ReadonlyStreamProcessorContext;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import java.util.function.Consumer;
 import org.slf4j.Logger;
@@ -34,6 +35,7 @@ public final class DbBlackListState implements MutableBlackListState {
   private final ColumnFamily<DbLong, DbNil> blackListColumnFamily;
   private final DbLong processInstanceKey;
   private final BlacklistMetrics blacklistMetrics;
+  private boolean empty = true;
 
   public DbBlackListState(
       final ZeebeDb<ZbColumnFamilies> zeebeDb,
@@ -46,10 +48,16 @@ public final class DbBlackListState implements MutableBlackListState {
     blacklistMetrics = new BlacklistMetrics(partitionId);
   }
 
+  @Override
+  public void onRecovered(final ReadonlyStreamProcessorContext context) {
+    empty = blackListColumnFamily.isEmpty();
+  }
+
   private void blacklist(final long key) {
     if (key >= 0) {
       LOG.warn(BLACKLIST_INSTANCE_MESSAGE, key);
 
+      empty = false;
       processInstanceKey.wrapLong(key);
       blackListColumnFamily.insert(processInstanceKey, DbNil.INSTANCE);
       blacklistMetrics.countBlacklistedInstance();
@@ -57,6 +65,10 @@ public final class DbBlackListState implements MutableBlackListState {
   }
 
   private boolean isOnBlacklist(final long key) {
+    if (empty) {
+      return false;
+    }
+
     processInstanceKey.wrapLong(key);
     return blackListColumnFamily.exists(processInstanceKey);
   }
@@ -71,6 +83,11 @@ public final class DbBlackListState implements MutableBlackListState {
       }
     }
     return false;
+  }
+
+  @Override
+  public boolean isEmpty() {
+    return empty;
   }
 
   @Override
