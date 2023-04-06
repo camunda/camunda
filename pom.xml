@@ -23,7 +23,7 @@
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-    <project.previousVersion>3.9.0</project.previousVersion>
+    <project.previousVersion>3.10.0</project.previousVersion>
 
     <camunda.engine.version>7.18.0</camunda.engine.version>
     <camunda.maven.artifacts.version>7.18.0-ee</camunda.maven.artifacts.version>
