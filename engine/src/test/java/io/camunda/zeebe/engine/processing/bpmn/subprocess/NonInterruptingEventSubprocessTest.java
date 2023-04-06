@@ -38,7 +38,6 @@ import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.jupiter.api.condition.EnabledIf;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
@@ -62,7 +61,7 @@ public class NonInterruptingEventSubprocessTest {
   public Consumer<Long> triggerEventSubprocess;
 
   @Parameterized.Parameter(3)
-  public static Boolean cyclic;
+  public Boolean cyclic;
 
   private ProcessMetadataValue currentProcess;
   private String correlationKey;
