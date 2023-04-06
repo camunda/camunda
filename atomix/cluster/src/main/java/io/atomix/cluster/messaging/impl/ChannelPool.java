@@ -18,9 +18,11 @@ package io.atomix.cluster.messaging.impl;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import io.atomix.utils.concurrent.OrderedFuture;
 import io.atomix.utils.net.Address;
+import io.camunda.zeebe.util.collection.Tuple;
 import io.netty.channel.Channel;
-import java.net.InetSocketAddress;
+import java.net.InetAddress;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -35,7 +37,7 @@ class ChannelPool {
 
   private final Function<Address, CompletableFuture<Channel>> factory;
   private final int size;
-  private final Map<InetSocketAddress, List<CompletableFuture<Channel>>> channels =
+  private final Map<Tuple<Address, InetAddress>, List<CompletableFuture<Channel>>> channels =
       Maps.newConcurrentMap();
 
   ChannelPool(final Function<Address, CompletableFuture<Channel>> factory, final int size) {
@@ -49,14 +51,16 @@ class ChannelPool {
    * @param address the address for which to return the channel pool
    * @return the channel pool for the given address
    */
-  private List<CompletableFuture<Channel>> getChannelPool(final Address address) {
-    final InetSocketAddress targetAddress = address.socketAddress();
-    final List<CompletableFuture<Channel>> channelPool = channels.get(targetAddress);
+  private List<CompletableFuture<Channel>> getChannelPool(
+      final Address address, final InetAddress inetAddress) {
+    final Tuple<Address, InetAddress> channelPoolIdentifier = new Tuple<>(address, inetAddress);
+
+    final List<CompletableFuture<Channel>> channelPool = channels.get(channelPoolIdentifier);
     if (channelPool != null) {
       return channelPool;
     }
     return channels.computeIfAbsent(
-        targetAddress,
+        channelPoolIdentifier,
         e -> {
           final List<CompletableFuture<Channel>> defaultList = new ArrayList<>(size);
           for (int i = 0; i < size; i++) {
@@ -84,7 +88,14 @@ class ChannelPool {
    * @return a future to be completed with a channel from the pool
    */
   CompletableFuture<Channel> getChannel(final Address address, final String messageType) {
-    final List<CompletableFuture<Channel>> channelPool = getChannelPool(address);
+    final InetAddress inetAddress = address.address();
+    if (inetAddress == null) {
+      final CompletableFuture<Channel> failedFuture = new OrderedFuture<>();
+      failedFuture.completeExceptionally(
+          new IllegalStateException("Failed to resolve address %s".formatted(address)));
+      return failedFuture;
+    }
+    final List<CompletableFuture<Channel>> channelPool = getChannelPool(address, inetAddress);
     final int offset = getChannelOffset(messageType);
 
     CompletableFuture<Channel> channelFuture = channelPool.get(offset);
