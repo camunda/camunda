@@ -29,8 +29,8 @@
     <camunda.maven.artifacts.version>7.18.0-ee</camunda.maven.artifacts.version>
 
     <!-- We use this version to compile but run IT against containers with zeebe.docker.version -->
-    <zeebe.version>8.2.0-alpha5</zeebe.version>
-    <identity.version>8.2.0-alpha5</identity.version>
+    <zeebe.version>8.2.0</zeebe.version>
+    <identity.version>8.2.0</identity.version>
     <!-- We use this for the Zeebe test container version only -->
     <zeebe.docker.version>${zeebe.version}</zeebe.docker.version>
 
@@ -341,6 +341,11 @@
       <artifactId>awaitility</artifactId>
       <version>4.2.0</version>
       <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>io.netty</groupId>
+      <artifactId>netty-codec-http</artifactId>
+      <version>4.1.90.Final</version>
     </dependency>
   </dependencies>
 
