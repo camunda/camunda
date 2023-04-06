@@ -117,10 +117,7 @@ class ChannelPool {
                           closed -> {
                             synchronized (channelPool) {
                               // Remove channel from the pool after it is closed.
-                              final var currentFuture = channelPool.get(offset);
-                              if (finalFuture == currentFuture) {
-                                channelPool.set(offset, null);
-                              }
+                              removeChannel(channelPool, offset, finalFuture);
                             }
                           });
                 } else {
@@ -171,6 +168,17 @@ class ChannelPool {
           }
         });
     return future;
+  }
+
+  private static void removeChannel(
+      final List<CompletableFuture<Channel>> channelPool,
+      final int offset,
+      final CompletableFuture<Channel> finalFuture) {
+    final var currentFuture = channelPool.get(offset);
+    // check if new channel is already replaced before removing it.
+    if (finalFuture == currentFuture) {
+      channelPool.set(offset, null);
+    }
   }
 
   private void completeFuture(
