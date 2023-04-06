@@ -85,7 +85,7 @@
               <exclude>**/target/**/*.md</exclude>
               <exclude>clients/go/vendor/**/*.md</exclude>
             </excludes>
-            <flexmark />
+            <flexmark></flexmark>
           </markdown>
         </configuration>
       </plugin>
