@@ -261,6 +261,32 @@ pipeline {
             }
           }
         }
+        stage("8.2.0") {
+          agent {
+            kubernetes {
+              cloud 'optimize-ci'
+              label "optimize-ci-build-zeebe-8-2-0_${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(20)}-${env.BUILD_ID}"
+              defaultContainer 'jnlp'
+              yaml mavenIntegrationTestSpec("${env.CAMBPM_VERSION}", "${env.ES_VERSION}")
+            }
+          }
+          environment {
+            LABEL = "optimize-ci-build-zeebe-8-2-0_${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(20)}-${env.BUILD_ID}"
+          }
+          steps {
+            integrationTestSteps("8.2.0", false)
+          }
+          post {
+            always {
+              junit testResults: 'backend/target/failsafe-reports/**/*.xml', allowEmptyResults: true, keepLongStdio: true
+              container('gcloud'){
+                sh 'apt-get install kubectl'
+                sh 'kubectl logs -l jenkins/label=$LABEL -c elasticsearch > elasticsearch_zeebe820.log'
+              }
+              archiveArtifacts artifacts: 'elasticsearch_zeebe820.log', onlyIfSuccessful: false
+            }
+          }
+        }
         stage("Release") {
           agent {
             kubernetes {
