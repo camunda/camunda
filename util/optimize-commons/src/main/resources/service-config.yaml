@@ -523,20 +523,20 @@ sharing:
 
 historyCleanup:
   # cron expression for when the cleanup should run
-  cronTrigger: '0 1 * * *'
+  cronTrigger: '${CAMUNDA_OPTIMIZE_HISTORY_CLEANUP_CRON_TRIGGER:0 1 * * *}'
   # default time to live (ttl) for data, when reached the corresponding process/decision/event instances will get cleaned up
   # Format is ISO_8601 duration  https://en.wikipedia.org/wiki/ISO_8601#Durations
-  ttl: 'P2Y'
+  ttl: ${CAMUNDA_OPTIMIZE_HISTORY_CLEANUP_TTL:P2Y}
   processDataCleanup:
     # switch for the Camunda process data cleanup, defaults to false
-    enabled: false
+    enabled: ${CAMUNDA_OPTIMIZE_HISTORY_CLEANUP_PROCESS_DATA_CLEANUP_ENABLED:false}
     # type of process data cleanup to perform, possible values:
     # 'all' - delete everything related to the process instance
     # 'variables' - only delete associated variables of a process instance
-    cleanupMode: 'all'
+    cleanupMode: ${CAMUNDA_OPTIMIZE_HISTORY_CLEANUP_PROCESS_DATA_CLEANUP_CLEANUP_MODE:all}
     # Defines the batch size in which Camunda engine process instance data gets cleaned up.
     # It may be reduced if requests fail due to request size constraints.
-    batchSize: 10000
+    batchSize: ${CAMUNDA_OPTIMIZE_HISTORY_CLEANUP_PROCESS_DATA_CLEANUP_BATCH_SIZE:10000}
     # process definition specific configuration parameters that will overwrite the general parameters (ttl, processDataCleanupMode)
     # for the specific processDefinition key
     perProcessDefinitionConfig:
@@ -545,7 +545,7 @@ historyCleanup:
     #   cleanupMode: 'variables'
   decisionDataCleanup:
     # switch for the Camunda decision data cleanup, defaults to false
-    enabled: false
+    enabled: ${CAMUNDA_OPTIMIZE_HISTORY_CLEANUP_DECISION_DATA_CLEANUP_ENABLED:false}
     # decision definition specific configuration parameters that will overwrite the general parameters (ttl)
     # for the specific decisionDefinition key
     perDecisionDefinitionConfig:
@@ -553,11 +553,11 @@ historyCleanup:
     #   ttl: 'P2M'
   ingestedEventCleanup:
     # switch for the ingested event data cleanup, defaults to false
-    enabled: false
+    enabled: ${CAMUNDA_OPTIMIZE_HISTORY_CLEANUP_INGESTED_EVENT_CLEANUP_ENABLED:false}
   externalVariableCleanup:
     # switch for the ingested variable data cleanup, defaults to false. Note that this cleans the external variable index,
     # not external variables already imported into process instances.
-    enabled: false
+    enabled: ${CAMUNDA_OPTIMIZE_HISTORY_CLEANUP_EXTERNAL_VARIABLE_CLEANUP_ENABLED:false}
 
 # Configuration relating to the automatic archiving of data within Optimize
 dataArchive:
