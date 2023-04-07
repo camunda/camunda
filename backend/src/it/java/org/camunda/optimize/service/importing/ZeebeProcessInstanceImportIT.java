@@ -27,7 +27,6 @@ import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIf;
-import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 
 import java.time.Instant;
 import java.time.OffsetDateTime;
@@ -259,7 +258,7 @@ public class ZeebeProcessInstanceImportIT extends AbstractZeebeIT {
     waitUntilMinimumProcessInstanceEventsExportedCount(4);
     zeebeExtension.setClock(Instant.now().plus(1, ChronoUnit.DAYS));
     zeebeExtension.completeTaskForInstanceWithJobType(SERVICE_TASK);
-    waitUntilMinimumProcessInstanceEventsExportedCount(5);
+    waitUntilMinimumProcessInstanceEventsExportedCount(7);
     importAllZeebeEntitiesFromScratch();
 
     // then
@@ -392,7 +391,7 @@ public class ZeebeProcessInstanceImportIT extends AbstractZeebeIT {
         .hasSizeGreaterThan(1));
   }
 
-  @DisabledIfSystemProperty(named = "zeebe.docker.version", matches = "8.0.0")
+  @DisabledIf("isZeebeVersionPre81")
   @Test
   public void importZeebeProcessInstanceData_processStartedDuringProcess() {
     // given
@@ -419,7 +418,7 @@ public class ZeebeProcessInstanceImportIT extends AbstractZeebeIT {
       });
   }
 
-  @DisabledIfSystemProperty(named = "zeebe.docker.version", matches = "8.0.0")
+  @DisabledIf("isZeebeVersionPre81")
   @Test
   public void importZeebeProcessInstanceData_processContainsTerminateEndEvent() {
     // given
@@ -441,7 +440,7 @@ public class ZeebeProcessInstanceImportIT extends AbstractZeebeIT {
         ));
   }
 
-  @DisabledIfSystemProperty(named = "zeebe.docker.version", matches = "8.0.0")
+  @DisabledIf("isZeebeVersionPre81")
   @Test
   public void importZeebeProcessInstanceData_processContainsInclusiveGateway() {
     // given
@@ -498,6 +497,7 @@ public class ZeebeProcessInstanceImportIT extends AbstractZeebeIT {
       });
   }
 
+  // Elements such as data stores, date objects, link events, escalation events and undefined tasks were introduced with 8.2
   @DisabledIf("isZeebeVersionPre82")
   @Test
   public void importZeebeProcess_processContainsNewBpmnElementsIntroducedWith820() {

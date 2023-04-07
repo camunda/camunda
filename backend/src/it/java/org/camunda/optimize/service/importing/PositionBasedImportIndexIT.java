@@ -14,7 +14,6 @@ import org.camunda.optimize.AbstractZeebeIT;
 import org.camunda.optimize.dto.optimize.query.event.process.FlowNodeInstanceDto;
 import org.camunda.optimize.dto.zeebe.ZeebeRecordDto;
 import org.camunda.optimize.dto.zeebe.process.ZeebeProcessInstanceDataDto;
-import org.camunda.optimize.test.it.extension.IntegrationTestConfigurationUtil;
 import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
 import org.camunda.optimize.util.ZeebeBpmnModels;
 import org.junit.jupiter.api.Order;
@@ -26,7 +25,6 @@ import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.util.List;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEMENT_COMPLETED;
@@ -275,8 +273,7 @@ public class PositionBasedImportIndexIT extends AbstractZeebeIT {
 
   @SuppressWarnings(UNUSED)
   private static boolean isZeebeVersionPreSequenceField() {
-    final Pattern zeebeVersionPreSequenceField = Pattern.compile("8.0.*|8.1.*");
-    return zeebeVersionPreSequenceField.matcher(IntegrationTestConfigurationUtil.getZeebeDockerVersion()).matches();
+    return isZeebeVersionPre82();
   }
 
 }
