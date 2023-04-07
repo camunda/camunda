@@ -167,14 +167,11 @@ void integrationTestSteps(String version, boolean snapshot) {
   container('maven') {
     runMaven("test -Dskip.fe.build");
     withCredentials([usernamePassword(credentialsId: 'camunda-nexus', usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD')]) {
-      def zeebeVersionToUse =
-        (version == "latest") ? getZeebeVersionFromTag("${version}", snapshot) : version
-      def identityVersionToUse =
-        (version == "latest") ? getIdentityVersionFromTag("${version}", snapshot, "$USERNAME", "$PASSWORD") : version
+      def zeebeVersionToUse = (version == "latest") ? getZeebeVersionFromTag("${version}", snapshot) : version
       sh("""    
         echo "running zeebe tests using Zeebe version: ${zeebeVersionToUse}, Identity version: ${identityVersionToUse}"
       """)
-      runMaven("verify -Didentity.version=${identityVersionToUse} -Dzeebe.docker.version=${snapshot ? "SNAPSHOT" : zeebeVersionToUse} -Dit.test.includedGroups='Zeebe-test' -Dskip.docker -Pit,engine-latest -pl backend -am")
+      runMaven("verify -Dzeebe.docker.version=${snapshot ? "SNAPSHOT" : zeebeVersionToUse} -Dit.test.includedGroups='Zeebe-test' -Dskip.docker -Pit,engine-latest -pl backend -am")
     }
   }
 }
