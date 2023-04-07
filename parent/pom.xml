@@ -150,7 +150,7 @@
     <plugin.version.scala>4.8.1</plugin.version.scala>
     <plugin.version.shade>3.4.1</plugin.version.shade>
     <plugin.version.sonar>3.9.1.2184</plugin.version.sonar>
-    <plugin.version.spotbugs>4.7.3.3</plugin.version.spotbugs>
+    <plugin.version.spotbugs>4.7.3.4</plugin.version.spotbugs>
     <plugin.version.surefire>3.0.0</plugin.version.surefire>
     <plugin.version.versions>2.15.0</plugin.version.versions>
 
