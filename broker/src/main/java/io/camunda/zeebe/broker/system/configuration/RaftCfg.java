@@ -8,7 +8,6 @@
 package io.camunda.zeebe.broker.system.configuration;
 
 import java.time.Duration;
-import java.util.Objects;
 
 public final class RaftCfg implements ConfigurationEntry {
   public static final boolean DEFAULT_ENABLE_PRIORITY_ELECTION = true;
@@ -47,7 +46,7 @@ public final class RaftCfg implements ConfigurationEntry {
   public record FlushConfig(boolean enabled, Duration delayTime) {
     public FlushConfig(final boolean enabled, final Duration delayTime) {
       this.enabled = enabled;
-      this.delayTime = Objects.requireNonNull(delayTime, "must specify a valid delay");
+      this.delayTime = delayTime == null ? Duration.ZERO : delayTime;
     }
   }
 }
