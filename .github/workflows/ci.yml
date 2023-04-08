@@ -21,6 +21,10 @@ defaults:
 
 env:
   DOCKER_PLATFORMS: "linux/amd64,linux/arm64"
+  # may resolve broken dependencies by enforcing checksum comparison of dependencies, and
+  # temporarily switch to the old wagon transport until the next maven release (3.9.2?) is out
+  # containing the fix for https://issues.apache.org/jira/browse/MRESOLVER-326
+  MAVEN_ARGS: -Dmaven.resolver.transport=wagon -U
 
 jobs:
   integration-tests:
