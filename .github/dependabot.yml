@@ -11,7 +11,7 @@ updates:
       time: "03:00"
       timezone: "UTC"
     commit-message:
-      prefix: "deps(maven): "
+      prefix: "deps: "
     labels:
       - "dependencies"
     open-pull-requests-limit: 25
@@ -30,7 +30,7 @@ updates:
       time: "03:00"
       timezone: "UTC"
     commit-message:
-      prefix: "deps(go): "
+      prefix: "deps: "
     labels:
       - "dependencies"
     open-pull-requests-limit: 10
@@ -44,7 +44,7 @@ updates:
       time: "03:00"
       timezone: "UTC"
     commit-message:
-      prefix: "deps(.github): "
+      prefix: "deps: "
     labels:
       - "dependencies"
     open-pull-requests-limit: 10
@@ -61,7 +61,7 @@ updates:
       time: "03:00"
       timezone: "UTC"
     commit-message:
-      prefix: "deps(maven): "
+      prefix: "deps: "
     labels:
       - "dependencies"
     open-pull-requests-limit: 25
@@ -82,7 +82,7 @@ updates:
       time: "03:00"
       timezone: "UTC"
     commit-message:
-      prefix: "deps(go): "
+      prefix: "deps: "
     labels:
       - "dependencies"
     open-pull-requests-limit: 10
@@ -100,7 +100,7 @@ updates:
       time: "03:00"
       timezone: "UTC"
     commit-message:
-      prefix: "deps(.github): "
+      prefix: "deps: "
     labels:
       - "dependencies"
     open-pull-requests-limit: 10
@@ -121,7 +121,7 @@ updates:
       time: "03:00"
       timezone: "UTC"
     commit-message:
-      prefix: "deps(maven): "
+      prefix: "deps: "
     labels:
       - "dependencies"
     open-pull-requests-limit: 25
@@ -142,7 +142,7 @@ updates:
       time: "03:00"
       timezone: "UTC"
     commit-message:
-      prefix: "deps(go): "
+      prefix: "deps: "
     labels:
       - "dependencies"
     open-pull-requests-limit: 10
@@ -160,7 +160,7 @@ updates:
       time: "03:00"
       timezone: "UTC"
     commit-message:
-      prefix: "deps(.github): "
+      prefix: "deps: "
     labels:
       - "dependencies"
     open-pull-requests-limit: 10
@@ -181,7 +181,7 @@ updates:
       time: "03:00"
       timezone: "UTC"
     commit-message:
-      prefix: "deps(maven): "
+      prefix: "deps: "
     labels:
       - "dependencies"
     open-pull-requests-limit: 25
@@ -202,7 +202,7 @@ updates:
       time: "03:00"
       timezone: "UTC"
     commit-message:
-      prefix: "deps(go): "
+      prefix: "deps: "
     labels:
       - "dependencies"
     open-pull-requests-limit: 10
@@ -220,7 +220,7 @@ updates:
       time: "03:00"
       timezone: "UTC"
     commit-message:
-      prefix: "deps(.github): "
+      prefix: "deps: "
     labels:
       - "dependencies"
     open-pull-requests-limit: 10
