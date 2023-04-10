@@ -10,6 +10,7 @@ public class IdentityProperties {
   private String issuerUrl;
   private String baseUrl;
   private String issuerBackendUrl;
+  private String redirectRootUrl;
   private String clientId;
   private String clientSecret;
   private String audience;
@@ -45,6 +46,14 @@ public class IdentityProperties {
 
   public void setIssuerBackendUrl(final String issuerBackendUrl) {
     this.issuerBackendUrl = issuerBackendUrl;
+  }
+
+  public String getRedirectRootUrl() {
+    return redirectRootUrl;
+  }
+
+  public void setRedirectRootUrl(String redirectRootUrl) {
+    this.redirectRootUrl = redirectRootUrl;
   }
 
   public String getAudience() {
