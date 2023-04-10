@@ -58,6 +58,8 @@ jobs:
           maven-extra-args: >
             -T1C -X -e -U
             -Dmaven.wagon.httpconnectionManager.ttlSeconds=120 -Dmaven.wagon.http.pool=false -Dmaven.resolver.transport=wagon
+            -Dmaven.wagon.http.retryHandler.class=standard -Dmaven.wagon.http.retryHandler.requestSentEnabled=true
+            -Dmaven.wagon.http.retryHandler.count=5
       - name: Upload test artifacts
         uses: ./.github/actions/collect-test-artifacts
         if: always()
