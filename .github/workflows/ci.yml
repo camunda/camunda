@@ -19,14 +19,11 @@ defaults:
     shell: bash
 
 jobs:
-  integration-tests:
-    name: Integration tests
-    runs-on: [ self-hosted, linux, "16" ]
-    timeout-minutes: 45
+  module-integration-tests:
+    name: Module integration tests
+    runs-on: [ self-hosted, linux, amd64, "16" ]
+    timeout-minutes: 15
     env:
-      TC_CLOUD_LOGS_VERBOSE: true
-      TC_CLOUD_TOKEN: ${{ secrets.TC_CLOUD_TOKEN }}
-      TC_CLOUD_CONCURRENCY: 2
       ZEEBE_TEST_DOCKER_IMAGE: localhost:5000/camunda/zeebe:current-test
     services:
       registry:
@@ -38,6 +35,9 @@ jobs:
       - uses: ./.github/actions/setup-zeebe
         with:
           maven-cache: 'true'
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
       - uses: ./.github/actions/build-zeebe
         id: build-zeebe
         with:
@@ -48,24 +48,17 @@ jobs:
           version: current-test
           push: true
           distball: ${{ steps.build-zeebe.outputs.distball }}
-      - name: Prepare Testcontainers Cloud agent
-        if: env.TC_CLOUD_TOKEN != ''
-        run: |
-          curl -L -o agent https://app.testcontainers.cloud/download/testcontainers-cloud-agent_linux_x86-64
-          chmod +x agent
-          ./agent --private-registry-url=http://localhost:5000 '--private-registry-allowed-image-name-globs=*,*/*' > .testcontainers-agent.log 2>&1 &
-          ./agent wait
       - name: Create build output log file
         run: echo "BUILD_OUTPUT_FILE_PATH=$(mktemp)" >> $GITHUB_ENV
       - name: Maven Test Build
         run: >
-          mvn -B -T2 --no-snapshot-updates
+          ./mvnw -B -T3 --no-snapshot-updates
           -D forkCount=5
           -D maven.javadoc.skip=true
           -D skipUTs -D skipChecks
           -D failsafe.rerunFailingTestsCount=3 -D flaky.test.reportDir=failsafe-reports
           -P parallel-tests,extract-flaky-tests
-          -pl '!qa/update-tests'
+          -pl '!qa/integration-tests,!qa/update-tests'
           verify
           | tee "${BUILD_OUTPUT_FILE_PATH}"
       - name: Duplicate Test Check
@@ -76,11 +69,11 @@ jobs:
         uses: ./.github/actions/collect-test-artifacts
         if: always()
         with:
-          name: Integration Tests
-  qa-update-tests:
-    name: QA Update tests
-    runs-on: [ self-hosted, linux, "16" ]
-    timeout-minutes: 45
+          name: Module integration Tests
+  qa-integration-tests:
+    name: QA Integration tests
+    runs-on: [ self-hosted, linux, amd64, "16" ]
+    timeout-minutes: 20
     env:
       TC_CLOUD_LOGS_VERBOSE: true
       TC_CLOUD_TOKEN: ${{ secrets.TC_CLOUD_TOKEN }}
@@ -117,7 +110,66 @@ jobs:
         run: echo "BUILD_OUTPUT_FILE_PATH=$(mktemp)" >> $GITHUB_ENV
       - name: Maven Test Build
         run: >
-          mvn -B -T2 --no-snapshot-updates
+          mvn -B --no-snapshot-updates
+          -D forkCount=10
+          -D maven.javadoc.skip=true
+          -D skipUTs -D skipChecks
+          -D failsafe.rerunFailingTestsCount=3 -D flaky.test.reportDir=failsafe-reports
+          -P parallel-tests,extract-flaky-tests
+          -pl 'qa/integration-tests'
+          verify
+          | tee "${BUILD_OUTPUT_FILE_PATH}"
+      - name: Duplicate Test Check
+        uses: ./.github/actions/check-duplicate-tests
+        with:
+          buildOutputFilePath: ${{ env.BUILD_OUTPUT_FILE_PATH }}
+      - name: Upload test artifacts
+        uses: ./.github/actions/collect-test-artifacts
+        if: always()
+        with:
+          name: QA integration Tests
+  qa-update-tests:
+    name: QA Update tests
+    runs-on: [ self-hosted, linux, amd64, "16" ]
+    timeout-minutes: 20
+    env:
+      TC_CLOUD_LOGS_VERBOSE: true
+      TC_CLOUD_TOKEN: ${{ secrets.TC_CLOUD_TOKEN }}
+      TC_CLOUD_CONCURRENCY: 2
+      ZEEBE_TEST_DOCKER_IMAGE: localhost:5000/camunda/zeebe:current-test
+    services:
+      registry:
+        image: registry:2
+        ports:
+          - 5000:5000
+    steps:
+      - uses: actions/checkout@v3
+      - uses: ./.github/actions/setup-zeebe
+        with:
+          maven-cache: 'true'
+      - uses: ./.github/actions/build-zeebe
+        id: build-zeebe
+        with:
+          maven-extra-args: -T1C
+      - uses: ./.github/actions/build-docker
+        with:
+          repository: localhost:5000/camunda/zeebe
+          version: current-test
+          push: true
+          distball: ${{ steps.build-zeebe.outputs.distball }}
+      - name: Prepare Testcontainers Cloud agent
+        if: env.TC_CLOUD_TOKEN != ''
+        run: |
+          curl -L -o agent https://app.testcontainers.cloud/download/testcontainers-cloud-agent_linux_x86-64
+          chmod +x agent
+          ./agent --private-registry-url=http://localhost:5000 '--private-registry-allowed-image-name-globs=*,*/*' > .testcontainers-agent.log 2>&1 &
+          ./agent wait
+      - name: Create build output log file
+        run: echo "BUILD_OUTPUT_FILE_PATH=$(mktemp)" >> $GITHUB_ENV
+      - name: Maven Test Build
+        run: >
+          mvn -B --no-snapshot-updates
+          -D forkCount=10
           -D maven.javadoc.skip=true
           -D skipUTs -D skipChecks
           -D failsafe.rerunFailingTestsCount=3 -D flaky.test.reportDir=failsafe-reports
@@ -380,7 +432,8 @@ jobs:
     name: Test summary
     runs-on: ubuntu-latest
     needs:
-      - integration-tests
+      - module-integration-tests
+      - qa-integration-tests
       - qa-update-tests
       - unit-tests
       - smoke-tests
@@ -399,7 +452,8 @@ jobs:
     name: "Event File"
     runs-on: ubuntu-latest
     needs:
-      - integration-tests
+      - module-integration-tests
+      - qa-integration-tests
       - qa-update-tests
       - unit-tests
       - smoke-tests
