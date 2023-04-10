@@ -55,7 +55,9 @@ jobs:
         id: build-zeebe
         with:
           go: false
-          maven-extra-args: -T1C -X
+          maven-extra-args: >
+            -T1C -X -U
+            -Dmaven.wagon.httpconnectionManager.ttlSeconds=120 -Dmaven.wagon.http.pool=false -Dmaven.resolver.transport=wagon
       - name: Upload test artifacts
         uses: ./.github/actions/collect-test-artifacts
         if: always()
