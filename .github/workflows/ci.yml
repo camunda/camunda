@@ -210,6 +210,8 @@ jobs:
       - uses: ./.github/actions/setup-zeebe
         with:
           go: false
+          # On MacOS we observed maven lookup issues more frequently, this mitigates the frequency
+          maven-cache: ${{ runner.os == 'macOS' }}
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
