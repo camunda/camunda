@@ -56,7 +56,7 @@ jobs:
         run: echo "BUILD_OUTPUT_FILE_PATH=$(mktemp)" >> $GITHUB_ENV
       - name: Maven Test Build
         run: >
-          ./mvnw -B -T0.5C --no-snapshot-updates
+          ./mvnw -B -T5 --no-snapshot-updates
           -D forkCount=0.5C
           -D maven.javadoc.skip=true
           -D skipUTs -D skipChecks
