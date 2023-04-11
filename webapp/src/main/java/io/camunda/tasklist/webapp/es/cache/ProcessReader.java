@@ -135,7 +135,8 @@ public class ProcessReader {
   }
 
   private List<String> getProcessDefinitionsFromAuthorization() {
-    if (tasklistProperties.getIdentity().getBaseUrl() != null) {
+    if (tasklistProperties.getIdentity().isResourcePermissionsEnabled()
+        && tasklistProperties.getIdentity().getBaseUrl() != null) {
       final Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
       if (authentication instanceof IdentityAuthentication) {
         final IdentityAuthentication identityAuthentication =

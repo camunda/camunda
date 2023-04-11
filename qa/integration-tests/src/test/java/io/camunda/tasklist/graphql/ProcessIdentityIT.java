@@ -58,6 +58,7 @@ public class ProcessIdentityIT extends IdentityTester {
                 + testContext.getExternalIdentityHost()
                 + ":"
                 + testContext.getExternalIdentityPort());
+    registry.add("camunda.tasklist.identity.resourcePermissionsEnabled", () -> true);
     registry.add(
         "camunda.tasklist.identity.issuerBackendUrl",
         () ->
