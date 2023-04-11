@@ -21,6 +21,13 @@ updates:
       # as we need to sync with the other teams before doing that
       - dependency-name: org.elasticsearch.client:*
         update-types: [ "version-update:semver-major", "version-update:semver-minor" ]
+      # After updating to Jacoco 0.8.9 we ran into the issue that our smoke tests on macOS kept
+      # failing as it couldn't resolve all of Jacoco's dependencies. It's not quite clear why this
+      # happened, but we could identify that it started after updating to this patch version. We
+      # have reverted this patch version for now. To make sure dependabot won't update it again, we
+      # have added 0.8.9 to the ignored versions.
+      - dependency-name: org.jacoco:*
+        versions: [ 0.8.9 ]
 
   # Enable version updates for the go client
   - package-ecosystem: "gomod"
@@ -70,6 +77,13 @@ updates:
       # Ignore major and minor updates, for stable branches we only want to get patches
       - dependency-name: "*"
         update-types: [ "version-update:semver-major", "version-update:semver-minor" ]
+      # After updating to Jacoco 0.8.9 we ran into the issue that our smoke tests on macOS kept
+      # failing as it couldn't resolve all of Jacoco's dependencies. It's not quite clear why this
+      # happened, but we could identify that it started after updating to this patch version. We
+      # have reverted this patch version for now. To make sure dependabot won't update it again, we
+      # have added 0.8.9 to the ignored versions.
+      - dependency-name: org.jacoco:*
+        versions: [ 0.8.9 ]
     allow:
       # Allow only production dependency updates for maintenance branches
       - dependency-type: "production"
@@ -130,6 +144,13 @@ updates:
       # Ignore major and minor updates, for stable branches we only want to get patches
       - dependency-name: "*"
         update-types: [ "version-update:semver-major", "version-update:semver-minor" ]
+      # After updating to Jacoco 0.8.9 we ran into the issue that our smoke tests on macOS kept
+      # failing as it couldn't resolve all of Jacoco's dependencies. It's not quite clear why this
+      # happened, but we could identify that it started after updating to this patch version. We
+      # have reverted this patch version for now. To make sure dependabot won't update it again, we
+      # have added 0.8.9 to the ignored versions.
+      - dependency-name: org.jacoco:*
+        versions: [ 0.8.9 ]
     allow:
       # Allow only production dependency updates for maintenance branches
       - dependency-type: "production"
@@ -190,6 +211,13 @@ updates:
       # Ignore major and minor updates, for stable branches we only want to get patches
       - dependency-name: "*"
         update-types: [ "version-update:semver-major", "version-update:semver-minor" ]
+      # After updating to Jacoco 0.8.9 we ran into the issue that our smoke tests on macOS kept
+      # failing as it couldn't resolve all of Jacoco's dependencies. It's not quite clear why this
+      # happened, but we could identify that it started after updating to this patch version. We
+      # have reverted this patch version for now. To make sure dependabot won't update it again, we
+      # have added 0.8.9 to the ignored versions.
+      - dependency-name: org.jacoco:*
+        versions: [ 0.8.9 ]
     allow:
       # Allow only production dependency updates for maintenance branches
       - dependency-type: "production"
