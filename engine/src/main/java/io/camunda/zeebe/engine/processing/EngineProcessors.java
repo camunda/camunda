@@ -69,9 +69,6 @@ public final class EngineProcessors {
     final TypedRecordProcessors typedRecordProcessors =
         TypedRecordProcessors.processors(processingState.getKeyGenerator(), writers);
 
-    // TODO: use streamer in processors instead of state
-    processingState.getJobState().setJobStreamer(jobStreamer);
-
     // register listener that handles migrations immediately, so it is the first to be called
     typedRecordProcessors.withListener(new DbMigrationController(processingState));
 

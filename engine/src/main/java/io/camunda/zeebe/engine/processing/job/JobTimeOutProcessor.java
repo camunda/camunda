@@ -43,7 +43,9 @@ public final class JobTimeOutProcessor implements CommandProcessor<JobRecord> {
     if (state == State.ACTIVATED) {
       commandControl.accept(JobIntent.TIMED_OUT, command.getValue());
       jobMetrics.jobTimedOut(command.getValue().getType());
-      // TODO: call JobActivationbehavior#publishWork
+
+      final JobRecord timedOutJobRecord = jobState.getJob(jobKey);
+      jobActivationBehavior.publishWork(timedOutJobRecord);
     } else {
       final String textState;
 

@@ -40,8 +40,8 @@ final class IncidentResolvedApplier implements TypedEventApplier<IncidentIntent,
   @Override
   public void applyState(final long incidentKey, final IncidentRecord value) {
     final var jobKey = value.getJobKey();
-    if (jobKey > 0) {
-      // incident belonged to job
+    final boolean isJobRelatedIncident = jobKey > 0;
+    if (isJobRelatedIncident) {
       final var stateOfJob = jobState.getState(jobKey);
       if (RESOLVABLE_JOB_STATES.contains(stateOfJob)) {
         final var job = jobState.getJob(jobKey);
