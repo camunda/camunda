@@ -51,7 +51,7 @@ final class ClientStreamRequestManager<M extends BufferWriter> {
 
   private void doAdd(
       final AddStreamRequest request, final MemberId brokerId, final ClientStream<M> clientStream) {
-    if (clientStream.isConnected(brokerId)) {
+    if (clientStream.isConnected(brokerId) || clientStream.isClosed()) {
       return;
     }
 

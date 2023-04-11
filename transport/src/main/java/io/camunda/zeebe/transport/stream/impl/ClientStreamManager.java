@@ -43,6 +43,11 @@ final class ClientStreamManager<M extends BufferWriter> {
     registry.list().forEach(c -> requestManager.openStream(c, Collections.singleton(serverId)));
   }
 
+  void onServerRemoved(final MemberId serverId) {
+    servers.remove(serverId);
+    registry.list().forEach(clientStream -> clientStream.remove(serverId));
+  }
+
   UUID add(
       final DirectBuffer streamType,
       final M metadata,
@@ -60,7 +65,11 @@ final class ClientStreamManager<M extends BufferWriter> {
 
   void remove(final UUID streamId) {
     final var clientStream = registry.remove(streamId);
-    clientStream.ifPresent(stream -> requestManager.removeStream(stream, servers));
+    clientStream.ifPresent(
+        stream -> {
+          stream.close();
+          requestManager.removeStream(stream, servers);
+        });
   }
 
   void removeAll() {

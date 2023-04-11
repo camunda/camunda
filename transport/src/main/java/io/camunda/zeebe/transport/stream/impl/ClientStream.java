@@ -23,6 +23,8 @@ final class ClientStream<M extends BufferWriter> {
   private final ClientStreamConsumer streamConsumer;
   private final Set<MemberId> liveConnections = new HashSet<>();
 
+  private State state;
+
   ClientStream(
       final UUID streamId,
       final DirectBuffer streamType,
@@ -32,6 +34,7 @@ final class ClientStream<M extends BufferWriter> {
     this.streamType = streamType;
     this.metadata = metadata;
     streamConsumer = clientStreamConsumer;
+    state = State.OPEN;
   }
 
   UUID getStreamId() {
@@ -78,5 +81,18 @@ final class ClientStream<M extends BufferWriter> {
    */
   void remove(final MemberId serverId) {
     liveConnections.remove(serverId);
+  }
+
+  void close() {
+    state = State.CLOSED;
+  }
+
+  boolean isClosed() {
+    return state == State.CLOSED;
+  }
+
+  private enum State {
+    OPEN,
+    CLOSED
   }
 }

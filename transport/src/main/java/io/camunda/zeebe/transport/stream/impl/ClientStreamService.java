@@ -79,4 +79,8 @@ public class ClientStreamService<M extends BufferWriter> extends Actor
   public void onServerJoined(final MemberId memberId) {
     actor.run(() -> clientStreamManager.onServerJoined(memberId));
   }
+
+  public void onServerRemoved(final MemberId memberId) {
+    actor.run(() -> clientStreamManager.onServerRemoved(memberId));
+  }
 }

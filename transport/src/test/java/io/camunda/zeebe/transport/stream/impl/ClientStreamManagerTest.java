@@ -145,4 +145,20 @@ class ClientStreamManagerTest {
         .withThrowableOfType(ExecutionException.class)
         .withCauseInstanceOf(NoSuchStreamException.class);
   }
+
+  @Test
+  void shouldRemoveServerFromClientStream() {
+    // given
+    final MemberId server = MemberId.from("1");
+    clientStreamManager.onServerJoined(server);
+    final var uuid = clientStreamManager.add(streamType, metadata, p -> {});
+    final var clientStream = registry.get(uuid).orElseThrow();
+    assertThat(clientStream.isConnected(server)).isTrue();
+
+    // when
+    clientStreamManager.onServerRemoved(server);
+
+    // then
+    assertThat(clientStream.isConnected(server)).isFalse();
+  }
 }

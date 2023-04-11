@@ -12,6 +12,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -80,6 +81,37 @@ class ClientStreamRequestManagerTest {
     verify(mockTransport, times(2))
         .send(eq(StreamTopics.ADD.topic()), any(), any(), any(), eq(server), any());
     assertThat(clientStream.isConnected(server)).isTrue();
+  }
+
+  @Test
+  void shouldSendAddRequestAgainAfterAServerIsReAdded() {
+    // given
+    final MemberId server = MemberId.from("1");
+    requestManager.openStream(clientStream, Set.of(server));
+
+    // when
+    clientStream.remove(server);
+    requestManager.openStream(clientStream, Set.of(server));
+
+    // then
+    verify(mockTransport, times(2))
+        .send(eq(StreamTopics.ADD.topic()), any(), any(), any(), eq(server), any());
+
+    assertThat(clientStream.isConnected(server)).isTrue();
+  }
+
+  @Test
+  void shouldNotSendAddRequestIfStreamIsClosed() {
+    // given
+    clientStream.close();
+
+    // when
+    final MemberId server = MemberId.from("1");
+    requestManager.openStream(clientStream, Set.of(server));
+
+    // then
+    verify(mockTransport, never())
+        .send(eq(StreamTopics.ADD.topic()), any(), any(), any(), eq(server), any());
   }
 
   @Test
