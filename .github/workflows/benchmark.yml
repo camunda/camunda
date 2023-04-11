@@ -103,8 +103,8 @@ jobs:
           context: .
           tags: gcr.io/zeebe-io/zeebe:${{ steps.image-tag.outputs.image-tag }}
           push: true
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          cache-from: type=gha,ignore-error=true
+          cache-to: type=gha,mode=max,ignore-error=true
           build-args: DIST=build
           target: app
   build-benchmark-images:

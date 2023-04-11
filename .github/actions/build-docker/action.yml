@@ -81,8 +81,8 @@ runs:
         tags: ${{ steps.get-image.outputs.result }}
         load: ${{ inputs.push != 'true' }}
         push: ${{ inputs.push }}
-        cache-from: type=gha
-        cache-to: type=gha,mode=max
+        cache-from: type=gha,ignore-error=true
+        cache-to: type=gha,mode=max,ignore-error=true
         platforms: ${{ inputs.platforms }}
         build-args: |
           DISTBALL=${{ steps.get-distball.outputs.result }}
