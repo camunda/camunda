@@ -81,7 +81,8 @@ runs:
         tags: ${{ steps.get-images.outputs.result }}
         load: ${{ inputs.push != 'true' }}
         push: ${{ inputs.push }}
-        no-cache: true
+        cache-from: type=gha,ignore-error=true
+        cache-to: type=gha,mode=max,ignore-error=true
         build-args: |
           DISTBALL=${{ steps.get-distball.outputs.result }}
           DATE=${{ steps.get-date.outputs.result }}
