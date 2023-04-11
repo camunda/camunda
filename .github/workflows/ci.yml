@@ -30,7 +30,7 @@ jobs:
     env:
       TC_CLOUD_LOGS_VERBOSE: true
       TC_CLOUD_TOKEN: ${{ secrets.TC_CLOUD_TOKEN }}
-      TC_CLOUD_CONCURRENCY: 2
+      TC_CLOUD_CONCURRENCY: 1
       ZEEBE_TEST_DOCKER_IMAGE: localhost:5000/camunda/zeebe:current-test
     services:
       registry:
@@ -87,11 +87,11 @@ jobs:
   qa-update-tests:
     name: QA Update tests
     runs-on: [ self-hosted, linux, amd64, "16" ]
-    timeout-minutes: 45
+    timeout-minutes: 30
     env:
       TC_CLOUD_LOGS_VERBOSE: true
       TC_CLOUD_TOKEN: ${{ secrets.TC_CLOUD_TOKEN }}
-      TC_CLOUD_CONCURRENCY: 2
+      TC_CLOUD_CONCURRENCY: 1
       ZEEBE_TEST_DOCKER_IMAGE: localhost:5000/camunda/zeebe:current-test
     services:
       registry:
