@@ -19,6 +19,17 @@
     <version.maven-jar-plugin>3.3.0</version.maven-jar-plugin>
   </properties>
 
+  <dependencyManagement>
+    <dependencies>
+      <!-- fixes a CVE associated with plexus, a transitive dependency to surefire -->
+      <dependency>
+        <groupId>org.codehaus.plexus</groupId>
+        <artifactId>plexus-utils</artifactId>
+        <version>3.5.1</version>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
+
   <dependencies>
     <dependency>
       <groupId>junit</groupId>
