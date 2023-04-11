@@ -62,13 +62,13 @@ jobs:
             -Dmaven.wagon.http.retryHandler.count=5 -Dhttp.keepAlive=false
       - name: Debug m2 repository
         if: failure()
-        run: ls -lashR $HOME/.m2/repository/org/jacoco
+        run: ls -lashR ~/.m2/repository/org/jacoco
       - name: Collect m2 repository
         uses: actions/upload-artifact@v3
         if: failure()
         with:
           name: Jacoco artifacts for ${{ inputs.name  }}
-          path: $HOME/.m2/repository/org/jacoco
+          path: ~/.m2/repository/org/jacoco
           retention-days: 1
           if-no-files-found: ignore
       - name: Upload test artifacts
