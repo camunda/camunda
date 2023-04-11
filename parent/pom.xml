@@ -1951,38 +1951,6 @@
       </build>
     </profile>
 
-    <!-- profile to perform only static code analysis using sonar scanner -->
-    <profile>
-      <id>sonar</id>
-      <properties>
-        <!-- sonarscanner integration -->
-        <!-- sonar.login token must be passed at runtime to avoid sharing token -->
-        <sonar.host.url>https://sonarcloud.io</sonar.host.url>
-        <sonar.organization>camunda-cloud</sonar.organization>
-        <sonar.login>${env.SONARCLOUD_TOKEN}</sonar.login>
-        <sonar.links.issue>${project.scm.url}/issues</sonar.links.issue>
-        <sonar.cpd.exclusions>broker/src/main/java/io/camunda/zeebe/broker/system/configuration/backpressure/Gradient2Cfg.java,broker/src/main/java/io/camunda/zeebe/broker/system/configuration/backpressure/GradientCfg.java</sonar.cpd.exclusions>
-        <sonar.java.source>${version.java}</sonar.java.source>
-      </properties>
-      <build>
-        <plugins>
-          <plugin>
-            <groupId>org.sonarsource.scanner.maven</groupId>
-            <artifactId>sonar-maven-plugin</artifactId>
-            <version>${plugin.version.sonar}</version>
-            <executions>
-              <execution>
-                <goals>
-                  <goal>sonar</goal>
-                </goals>
-                <phase>verify</phase>
-              </execution>
-            </executions>
-          </plugin>
-        </plugins>
-      </build>
-    </profile>
-
     <!-- profile to auto format -->
     <profile>
       <id>autoFormat</id>
