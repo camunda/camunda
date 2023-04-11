@@ -37,12 +37,6 @@
             <include>**/*Tests.java</include>
             <include>**/*TestCase.java</include>
           </includes>
-          <!--
-            as our in-house CI does not enable IPv6, clients not running in a Testcontainer-managed
-            container will not be able to use IPv6; as such, ensure we always prefer IPv4 when
-            resolving host names
-          -->
-          <argLine>-XX:MaxDirectMemorySize=4g -Djava.net.preferIPv4Stack=true</argLine>
         </configuration>
       </plugin>
 
