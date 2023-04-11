@@ -122,6 +122,8 @@ public class IdentityAuthentication extends AbstractAuthenticationToken
     } catch (io.camunda.identity.sdk.exception.InvalidConfigurationException ice) {
       LOGGER.debug(
           "Base URL is not provided so it's not possible to get authorizations from Identity");
+    } catch (Exception e) {
+      LOGGER.debug("Identity and Tasklist misconfiguration.");
     }
     subject = accessToken.getToken().getSubject();
     expires = accessToken.getToken().getExpiresAt();
