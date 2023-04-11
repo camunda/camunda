@@ -516,7 +516,10 @@ public final class TimerCatchEventTest {
   public void shouldCreateTimerBasedOnBoundaryWithDateTimeEvent() {
     // given/when
     final long processInstanceKey =
-        ENGINE.processInstance().ofBpmnProcessId("BOUNDARY_EVENT_ABSOLUTE_DATETIME_PROCESS").create();
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId("BOUNDARY_EVENT_ABSOLUTE_DATETIME_PROCESS")
+            .create();
 
     // then
     final Record<TimerRecordValue> timerRecord =
