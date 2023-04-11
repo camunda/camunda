@@ -237,6 +237,7 @@ public final class ErrorCatchEventTest {
     final List<Record<VariableRecordValue>> variableRecords =
         RecordingExporter.variableRecords()
             .withProcessInstanceKey(processInstanceKey)
+            .limit(r -> r.getValue().getName().equals("foo"))
             .collect(Collectors.toList());
 
     final List<Record<ProcessInstanceRecordValue>> errorEvents =

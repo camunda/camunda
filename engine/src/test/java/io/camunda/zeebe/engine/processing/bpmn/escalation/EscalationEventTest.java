@@ -36,6 +36,7 @@ public class EscalationEventTest {
   private static final String TASK_ELEMENT_ID = "task";
   private static final String PROCESS_ID = "wf";
   private static final String ESCALATION_CODE = "ESCALATION";
+  private static final String ESCALATION_CODE_NUMBER = "404";
   private static final String THROW_ELEMENT_ID = "throw";
   private static final String CATCH_ELEMENT_ID = "catch";
 
@@ -153,6 +154,54 @@ public class EscalationEventTest {
             tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_COMPLETED));
 
     assertIsEscalated(processInstanceKey, CATCH_ELEMENT_ID, THROW_ELEMENT_ID, ESCALATION_CODE);
+  }
+
+  @Test
+  public void shouldCatchEscalationOnBoundaryEventWithNumericEscalationCode() {
+    // Regression for https://github.com/camunda/zeebe/issues/12326
+    // given
+    final var process =
+        Bpmn.createExecutableProcess(PROCESS_ID)
+            .startEvent()
+            .subProcess(
+                "subprocess",
+                s ->
+                    s.embeddedSubProcess()
+                        .startEvent()
+                        .intermediateThrowEvent(
+                            THROW_ELEMENT_ID, i -> i.escalation(ESCALATION_CODE_NUMBER)))
+            .boundaryEvent(CATCH_ELEMENT_ID, AbstractBoundaryEventBuilder::escalation)
+            .manualTask(TASK_ELEMENT_ID)
+            .endEvent()
+            .done();
+    ENGINE.deployment().withXmlResource(process).deploy();
+
+    // when
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    // then
+    assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limitToProcessInstanceCompleted())
+        .extracting(r -> r.getValue().getBpmnElementType(), Record::getIntent)
+        .containsSubsequence(
+            tuple(BpmnElementType.SUB_PROCESS, ProcessInstanceIntent.ELEMENT_TERMINATING),
+            tuple(
+                BpmnElementType.INTERMEDIATE_THROW_EVENT,
+                ProcessInstanceIntent.ELEMENT_TERMINATING),
+            tuple(
+                BpmnElementType.INTERMEDIATE_THROW_EVENT, ProcessInstanceIntent.ELEMENT_TERMINATED),
+            tuple(BpmnElementType.SUB_PROCESS, ProcessInstanceIntent.ELEMENT_TERMINATED),
+            tuple(BpmnElementType.BOUNDARY_EVENT, ProcessInstanceIntent.ELEMENT_COMPLETING),
+            tuple(BpmnElementType.BOUNDARY_EVENT, ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple(BpmnElementType.MANUAL_TASK, ProcessInstanceIntent.ELEMENT_COMPLETING),
+            tuple(BpmnElementType.MANUAL_TASK, ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_COMPLETING),
+            tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_COMPLETED));
+
+    assertIsEscalated(
+        processInstanceKey, CATCH_ELEMENT_ID, THROW_ELEMENT_ID, ESCALATION_CODE_NUMBER);
   }
 
   @Test
