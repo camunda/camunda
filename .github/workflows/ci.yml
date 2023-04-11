@@ -61,6 +61,7 @@ jobs:
             -Dmaven.wagon.http.retryHandler.class=standard -Dmaven.wagon.http.retryHandler.requestSentEnabled=true
             -Dmaven.wagon.http.retryHandler.count=5 -Dhttp.keepAlive=false
       - name: Debug m2 repository
+        if: failure()
         run: ls -lashR $HOME/.m2/repository/org/jacoco
       - name: Collect m2 repository
         uses: actions/upload-artifact@v3
