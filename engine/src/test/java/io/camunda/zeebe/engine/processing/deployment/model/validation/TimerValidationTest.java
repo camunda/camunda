@@ -168,6 +168,17 @@ public final class TimerValidationTest {
                             .timerWithCycleExpression(expression)
                             .done())),
             Arguments.of(
+                "boundary event",
+                "date",
+                processBuilder(
+                    expression ->
+                        Bpmn.createExecutableProcess("process")
+                            .startEvent()
+                            .serviceTask("task", t -> t.zeebeJobType("test"))
+                            .boundaryEvent("boundary-event")
+                            .timerWithDateExpression(expression)
+                            .done())),
+            Arguments.of(
                 "intermediate catch event",
                 "duration",
                 processBuilder(
@@ -176,6 +187,16 @@ public final class TimerValidationTest {
                             .startEvent()
                             .intermediateCatchEvent("intermediate-catch-event")
                             .timerWithDurationExpression(expression)
+                            .done())),
+            Arguments.of(
+                "intermediate catch event",
+                "date",
+                processBuilder(
+                    expression ->
+                        Bpmn.createExecutableProcess("process")
+                            .startEvent()
+                            .intermediateCatchEvent("intermediate-catch-event")
+                            .timerWithDateExpression(expression)
                             .done())),
             Arguments.of(
                 "event sub-process",
@@ -205,6 +226,22 @@ public final class TimerValidationTest {
                                     subProcess
                                         .startEvent()
                                         .timerWithCycleExpression(expression)
+                                        .endEvent())
+                            .startEvent()
+                            .endEvent()
+                            .done())),
+            Arguments.of(
+                "event sub-process",
+                "date",
+                processBuilder(
+                    expression ->
+                        Bpmn.createExecutableProcess("process")
+                            .eventSubProcess(
+                                "sub-process",
+                                subProcess ->
+                                    subProcess
+                                        .startEvent()
+                                        .timerWithDateExpression(expression)
                                         .endEvent())
                             .startEvent()
                             .endEvent()
