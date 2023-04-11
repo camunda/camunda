@@ -11,6 +11,7 @@ import io.camunda.identity.sdk.Identity;
 import io.camunda.identity.sdk.authentication.AccessToken;
 import io.camunda.identity.sdk.authentication.Tokens;
 import io.camunda.identity.sdk.authentication.UserDetails;
+import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.util.SpringContextHolder;
 import io.camunda.tasklist.webapp.security.OldUsernameAware;
 import io.camunda.tasklist.webapp.security.Permission;
@@ -116,9 +117,12 @@ public class IdentityAuthentication extends AbstractAuthenticationToken
     }
 
     try {
-      authorization =
-          new IdentityAuthorization(
-              getIdentity().authorizations().forToken(this.tokens.getAccessToken()));
+      final TasklistProperties props = SpringContextHolder.getBean(TasklistProperties.class);
+      if (props.getIdentity().isResourcePermissionsEnabled()) {
+        authorization =
+            new IdentityAuthorization(
+                getIdentity().authorizations().forToken(this.tokens.getAccessToken()));
+      }
     } catch (io.camunda.identity.sdk.exception.InvalidConfigurationException ice) {
       LOGGER.debug(
           "Base URL is not provided so it's not possible to get authorizations from Identity");
