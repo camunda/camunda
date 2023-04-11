@@ -20,14 +20,6 @@
           "classQualifiedName": "io.camunda.zeebe.protocol.record.value.BpmnElementType"
         },
         {
-          "justification": "Ignore new methods for Protocol Record interfaces, as these are not meant to be implemented but simply consumed; as such, new methods are perfectly fine to add",
-          "code": "java.method.addedToInterface",
-          "new": {
-            "matcher": "java",
-            "match": "interface * { * io.camunda.zeebe.protocol.record.**::^*(**); }"
-          }
-        },
-        {
           "justification": "Ignore Enum order for ValueType as ordinal() is not used",
           "code": "java.field.enumConstantOrderChanged",
           "classQualifiedName": "io.camunda.zeebe.protocol.record.ValueType"
@@ -38,78 +30,17 @@
           "match": "io.camunda.zeebe.protocol.record.RejectionType"
         },
         {
-          "ignore": true,
-          "code": "java.method.removed",
-          "old": "method io.camunda.zeebe.protocol.record.value.ImmutableProcessInstanceModificationRecordValue.Builder io.camunda.zeebe.protocol.record.value.ImmutableProcessInstanceModificationRecordValue.Builder::addActivatedElementInstanceKey(java.lang.Long)",
-          "justification": "This method had a wrong name. It was only used internally as it provides no value for others."
+          "justification": "Ignore new methods for Protocol Record interfaces, as these are not meant to be implemented but simply consumed; as such, new methods are perfectly fine to add",
+          "code": "java.method.addedToInterface",
+          "new": {
+            "matcher": "java",
+            "match": "interface * { * io.camunda.zeebe.protocol.record.**::^*(**); }"
+          }
         },
         {
-          "ignore": true,
-          "code": "java.method.removed",
-          "old": "method io.camunda.zeebe.protocol.record.value.ImmutableProcessInstanceModificationRecordValue.Builder io.camunda.zeebe.protocol.record.value.ImmutableProcessInstanceModificationRecordValue.Builder::addActivatedElementInstanceKeys(java.lang.Long[])",
-          "justification": "This method had a wrong name. It was only used internally as it provides no value for others."
-        },
-        {
-          "ignore": true,
-          "code": "java.method.removed",
-          "old": "method io.camunda.zeebe.protocol.record.value.ImmutableProcessInstanceModificationRecordValue.Builder io.camunda.zeebe.protocol.record.value.ImmutableProcessInstanceModificationRecordValue.Builder::addAllActivatedElementInstanceKeys(java.lang.Iterable<? extends java.lang.Long>)",
-          "justification": "This method had a wrong name. It was only used internally as it provides no value for others."
-        },
-        {
-          "ignore": true,
-          "code": "java.method.removed",
-          "old": "method io.camunda.zeebe.protocol.record.value.ImmutableProcessInstanceModificationRecordValue.Builder io.camunda.zeebe.protocol.record.value.ImmutableProcessInstanceModificationRecordValue.Builder::withActivatedElementInstanceKeys(java.lang.Iterable<? extends java.lang.Long>)",
-          "justification": "This method had a wrong name. It was only used internally as it provides no value for others."
-        },
-        {
-          "ignore": true,
-          "code": "java.method.removed",
-          "old": "method java.util.Set<java.lang.Long> io.camunda.zeebe.protocol.record.value.ImmutableProcessInstanceModificationRecordValue::getActivatedElementInstanceKeys()",
-          "justification": "This method had a wrong name. It was only used internally as it provides no value for others."
-        },
-        {
-          "ignore": true,
-          "code": "java.method.removed",
-          "old": "method io.camunda.zeebe.protocol.record.value.ImmutableProcessInstanceModificationRecordValue io.camunda.zeebe.protocol.record.value.ImmutableProcessInstanceModificationRecordValue::withActivatedElementInstanceKeys(java.lang.Iterable<? extends java.lang.Long>)",
-          "justification": "This method had a wrong name. It was only used internally as it provides no value for others."
-        },
-        {
-          "ignore": true,
-          "code": "java.method.removed",
-          "old": "method io.camunda.zeebe.protocol.record.value.ImmutableProcessInstanceModificationRecordValue io.camunda.zeebe.protocol.record.value.ImmutableProcessInstanceModificationRecordValue::withActivatedElementInstanceKeys(java.lang.Long[])",
-          "justification": "This method had a wrong name. It was only used internally as it provides no value for others."
-        },
-        {
-          "ignore": true,
-          "code": "java.method.removed",
-          "old": "method java.util.Set<java.lang.Long> io.camunda.zeebe.protocol.record.value.ProcessInstanceModificationRecordValue::getActivatedElementInstanceKeys()",
-          "justification": "This method had a wrong name. It was only used internally as it provides no value for others."
-        },
-        {
-          "ignore": true,
-          "code": "java.method.returnTypeChanged",
-          "old": "method long io.camunda.zeebe.protocol.record.value.EvaluatedDecisionValue::getDecisionVersion()",
-          "new": "method int io.camunda.zeebe.protocol.record.value.EvaluatedDecisionValue::getDecisionVersion()",
-          "justification": "This method returned the wrong type. The version property is unlikely to surpass MAX_INT. Furthermore, in many cases the JVM automatically converts long to int."
-        },
-        {
-          "ignore": true,
-          "code": "java.method.removed",
-          "old": "method io.camunda.zeebe.protocol.record.value.ImmutableEvaluatedDecisionValue.Builder io.camunda.zeebe.protocol.record.value.ImmutableEvaluatedDecisionValue.Builder::withDecisionVersion(long)",
-          "justification": "This method provided an input argument of the wrong type. The version property is unlikely to surpass MAX_INT. Furthermore, in many cases the JVM automatically converts long to int."
-        },
-        {
-          "ignore": true,
-          "code": "java.method.returnTypeChanged",
-          "old": "method long io.camunda.zeebe.protocol.record.value.ImmutableEvaluatedDecisionValue::getDecisionVersion()",
-          "new": "method int io.camunda.zeebe.protocol.record.value.ImmutableEvaluatedDecisionValue::getDecisionVersion()",
-          "justification": "This method returned the wrong type. The version property is unlikely to surpass MAX_INT. Furthermore, in many cases the JVM automatically converts long to int."
-        },
-        {
-          "ignore": true,
-          "code": "java.method.removed",
-          "old": "method io.camunda.zeebe.protocol.record.value.ImmutableEvaluatedDecisionValue io.camunda.zeebe.protocol.record.value.ImmutableEvaluatedDecisionValue::withDecisionVersion(long)",
-          "justification": "This method provided an input argument of the wrong type. The version property is unlikely to surpass MAX_INT. Furthermore, in many cases the JVM automatically converts long to int."
+          "justification": "Ignore changes to the project version, as it changes on every release",
+          "code": "java.field.constantValueChanged",
+          "fieldName": "SEMANTIC_VERSION"
         }
       ]
     }
