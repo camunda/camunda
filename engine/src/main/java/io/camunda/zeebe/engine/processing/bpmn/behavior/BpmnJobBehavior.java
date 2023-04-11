@@ -60,6 +60,7 @@ public final class BpmnJobBehavior {
   private final BpmnStateBehavior stateBehavior;
   private final BpmnIncidentBehavior incidentBehavior;
   private final JobMetrics jobMetrics;
+  private final BpmnJobActivationBehavior jobActivationBehavior;
 
   public BpmnJobBehavior(
       final KeyGenerator keyGenerator,
@@ -68,6 +69,7 @@ public final class BpmnJobBehavior {
       final ExpressionProcessor expressionBehavior,
       final BpmnStateBehavior stateBehavior,
       final BpmnIncidentBehavior incidentBehavior,
+      final BpmnJobActivationBehavior jobActivationBehavior,
       final JobMetrics jobMetrics) {
     this.keyGenerator = keyGenerator;
     this.jobState = jobState;
@@ -76,6 +78,7 @@ public final class BpmnJobBehavior {
     this.stateBehavior = stateBehavior;
     this.incidentBehavior = incidentBehavior;
     this.jobMetrics = jobMetrics;
+    this.jobActivationBehavior = jobActivationBehavior;
   }
 
   public Either<Failure, ?> createNewJob(
@@ -176,6 +179,8 @@ public final class BpmnJobBehavior {
 
     final var jobKey = keyGenerator.nextKey();
     stateWriter.appendFollowUpEvent(jobKey, JobIntent.CREATED, jobRecord);
+
+    // TODO: call JobActivationbehavior#publishWork
   }
 
   private DirectBuffer encodeHeaders(

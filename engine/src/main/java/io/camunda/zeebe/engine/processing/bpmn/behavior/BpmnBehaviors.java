@@ -49,4 +49,6 @@ public interface BpmnBehaviors {
   VariableBehavior variableBehavior();
 
   ElementActivationBehavior elementActivationBehavior();
+
+  BpmnJobActivationBehavior jobActivationBehavior();
 }
