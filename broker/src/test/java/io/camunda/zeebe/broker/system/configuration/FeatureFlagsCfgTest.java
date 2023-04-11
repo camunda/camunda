@@ -72,4 +72,37 @@ final class FeatureFlagsCfgTest {
     // then
     assertThat(featureFlagsCfg.isEnableActorMetrics()).isFalse();
   }
+
+  @Test
+  void shouldDisableAsyncScheduledTasksByDefault() {
+    // when
+    final BrokerCfg cfg = TestConfigReader.readConfig("empty", environment);
+    final var featureFlagsCfg = cfg.getExperimental().getFeatures();
+
+    // then
+    assertThat(featureFlagsCfg.isEnableAsyncScheduledTasks()).isFalse();
+  }
+
+  @Test
+  void shouldSetEnableAsyncScheduledTasksFromConfig() {
+    // when
+    final BrokerCfg cfg = TestConfigReader.readConfig("feature-flags-cfg", environment);
+    final var featureFlagsCfg = cfg.getExperimental().getFeatures();
+
+    // then
+    assertThat(featureFlagsCfg.isEnableAsyncScheduledTasks()).isTrue();
+  }
+
+  @Test
+  void shouldSetEnableAsyncScheduledTasksFromEnv() {
+    // given
+    environment.put("zeebe.broker.experimental.features.enableAsyncScheduledTasks", "true");
+
+    // when
+    final BrokerCfg cfg = TestConfigReader.readConfig("feature-flags-cfg", environment);
+    final var featureFlagsCfg = cfg.getExperimental().getFeatures();
+
+    // then
+    assertThat(featureFlagsCfg.isEnableAsyncScheduledTasks()).isTrue();
+  }
 }

@@ -32,6 +32,7 @@ public final class FeatureFlagsCfg {
 
   private boolean enableYieldingDueDateChecker = DEFAULT_SETTINGS.yieldingDueDateChecker();
   private boolean enableActorMetrics = DEFAULT_SETTINGS.enableActorMetrics();
+  private boolean enableAsyncScheduledTasks = DEFAULT_SETTINGS.enableAsyncScheduledTasks();
 
   public boolean isEnableYieldingDueDateChecker() {
     return enableYieldingDueDateChecker;
@@ -49,11 +50,17 @@ public final class FeatureFlagsCfg {
     this.enableActorMetrics = enableActorMetrics;
   }
 
+  public void setEnableAsyncScheduledTasks(final boolean enableAsyncScheduledTasks) {
+    this.enableAsyncScheduledTasks = enableAsyncScheduledTasks;
+  }
+
+  public boolean isEnableAsyncScheduledTasks() {
+    return enableAsyncScheduledTasks;
+  }
 
   public FeatureFlags toFeatureFlags() {
     return new FeatureFlags(
-        enableYieldingDueDateChecker,
-        enableActorMetrics
+        enableYieldingDueDateChecker, enableActorMetrics, enableAsyncScheduledTasks
         /*, enableFoo*/ );
   }
 

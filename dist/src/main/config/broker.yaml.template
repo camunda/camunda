@@ -957,3 +957,7 @@
         # Controls whether to collect metrics about actor usage such as actor job execution latencies
         # This setting can also be overridden using the environment variable ZEEBE_BROKER_EXPERIMENTAL_FEATURES_ENABLEACTORMETRICS
         # enableActorMetrics: false
+
+        # When enabled, scheduled processing tasks such as checking message TTLs run concurrently to regular processing
+        # This setting can also be overridden using the environment variable ZEEBE_BROKER_EXPERIMENTAL_FEATURES_ENABLEASYNCSCHEDULEDTASKS
+        # enableAsyncScheduledTasks: false

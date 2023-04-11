@@ -144,6 +144,8 @@ public final class StreamProcessorTransitionStep implements PartitionTransitionS
         .nodeId(context.getNodeId())
         .commandResponseWriter(context.getCommandResponseWriter())
         .maxCommandsInBatch(context.getBrokerCfg().getProcessing().getMaxCommandsInBatch())
+        .withAsyncScheduledTasks(
+            context.getBrokerCfg().getExperimental().getFeatures().isEnableAsyncScheduledTasks())
         .listener(
             new StreamProcessorListener() {
               @Override

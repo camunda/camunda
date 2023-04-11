@@ -11,7 +11,7 @@ import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
 
 public record FeatureFlags(
-    boolean yieldingDueDateChecker, boolean enableActorMetrics
+    boolean yieldingDueDateChecker, boolean enableActorMetrics, boolean enableAsyncScheduledTasks
     /*, boolean foo*/ ) {
 
   /* To add a new feature toggle, please follow these steps:
@@ -44,10 +44,11 @@ public record FeatureFlags(
   private static final boolean YIELDING_DUE_DATE_CHECKER = false;
   private static final boolean ENABLE_ACTOR_METRICS = false;
 
+  private static final boolean ENABLE_ASYNC_SCHEDULED_TASKS = false;
+
   public static FeatureFlags createDefault() {
     return new FeatureFlags(
-        YIELDING_DUE_DATE_CHECKER,
-        ENABLE_ACTOR_METRICS
+        YIELDING_DUE_DATE_CHECKER, ENABLE_ACTOR_METRICS, ENABLE_ASYNC_SCHEDULED_TASKS
         /*, FOO_DEFAULT*/ );
   }
 
@@ -59,7 +60,8 @@ public record FeatureFlags(
   public static FeatureFlags createDefaultForTests() {
     return new FeatureFlags(
         true, /* YIELDING_DUE_DATE_CHECKER*/
-        false /* ENABLE_ACTOR_METRICS */);
+        false, /* ENABLE_ACTOR_METRICS */
+        false /* ENABLE_ASYNC_SCHEDULED_TASKS */);
   }
 
   @Override
