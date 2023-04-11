@@ -56,10 +56,20 @@ jobs:
         with:
           go: false
           maven-extra-args: >
-            -T1C -X -e -U
+            -T1C -e -U
             -Dmaven.wagon.httpconnectionManager.ttlSeconds=120 -Dmaven.wagon.http.pool=false -Dmaven.resolver.transport=wagon
             -Dmaven.wagon.http.retryHandler.class=standard -Dmaven.wagon.http.retryHandler.requestSentEnabled=true
             -Dmaven.wagon.http.retryHandler.count=5 -Dhttp.keepAlive=false
+      - name: Debug m2 repository
+        run: ls -lashR $HOME/.m2/repository/org/jacoco
+      - name: Collect m2 repository
+        uses: actions/upload-artifact@v3
+        if: failure()
+        with:
+          name: Jacoco artifacts for ${{ inputs.name  }}
+          path: $HOME/.m2/repository/org/jacoco
+          retention-days: 1
+          if-no-files-found: ignore
       - name: Upload test artifacts
         uses: ./.github/actions/collect-test-artifacts
         if: always()
