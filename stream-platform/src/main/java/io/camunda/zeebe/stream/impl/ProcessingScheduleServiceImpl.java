@@ -9,8 +9,6 @@ package io.camunda.zeebe.stream.impl;
 
 import io.camunda.zeebe.logstreams.log.LogStreamWriter;
 import io.camunda.zeebe.scheduler.ActorControl;
-import io.camunda.zeebe.scheduler.future.ActorFuture;
-import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.scheduler.retry.AbortableRetryStrategy;
 import io.camunda.zeebe.stream.api.scheduling.ProcessingScheduleService;
 import io.camunda.zeebe.stream.api.scheduling.Task;
@@ -20,38 +18,36 @@ import java.util.function.BooleanSupplier;
 import java.util.function.Supplier;
 import org.slf4j.Logger;
 
-/**
- * Here the implementation is just a suggestion to amke the engine abstraction work. Can be whatever
- * PDT team thinks is best to work with
- */
-public class ProcessingScheduleServiceImpl implements ProcessingScheduleService, AutoCloseable {
+/** Implementation that uses an {@link ActorControl} to schedule and execute all tasks. */
+public class ProcessingScheduleServiceImpl implements ProcessingScheduleService {
 
   private static final Logger LOG = Loggers.STREAM_PROCESSING;
   private final Supplier<StreamProcessor.Phase> streamProcessorPhaseSupplier;
   private final BooleanSupplier abortCondition;
-  private final Supplier<ActorFuture<LogStreamWriter>> writerAsyncSupplier;
-  private LogStreamWriter logStreamWriter;
-  private ActorControl actorControl;
-  private AbortableRetryStrategy writeRetryStrategy;
-  private CompletableActorFuture<Void> openFuture;
+  private final LogStreamWriter logStreamWriter;
+  private final ActorControl actorControl;
+  private final AbortableRetryStrategy writeRetryStrategy;
 
   public ProcessingScheduleServiceImpl(
       final Supplier<Phase> streamProcessorPhaseSupplier,
       final BooleanSupplier abortCondition,
-      final Supplier<ActorFuture<LogStreamWriter>> writerAsyncSupplier) {
+      final ActorControl actorControl,
+      final LogStreamWriter logStreamWriter) {
     this.streamProcessorPhaseSupplier = streamProcessorPhaseSupplier;
     this.abortCondition = abortCondition;
-    this.writerAsyncSupplier = writerAsyncSupplier;
+    this.actorControl = actorControl;
+    this.logStreamWriter = logStreamWriter;
+    this.writeRetryStrategy = new AbortableRetryStrategy(actorControl);
   }
 
   @Override
   public void runDelayed(final Duration delay, final Runnable followUpTask) {
-    useActorControl(() -> actorControl.schedule(delay, followUpTask));
+    actorControl.run(() -> actorControl.schedule(delay, followUpTask));
   }
 
   @Override
   public void runDelayed(final Duration delay, final Task task) {
-    runDelayed(delay, toRunnable(task));
+    actorControl.run(() -> runDelayed(delay, toRunnable(task)));
   }
 
   @Override
@@ -76,44 +72,6 @@ public class ProcessingScheduleServiceImpl implements ProcessingScheduleService,
   @Override
   public void runDelayedAsync(final Duration delay, final Task task) {
     runDelayed(delay, task);
-  }
-
-  private void useActorControl(final Runnable task) {
-    if (actorControl == null) {
-      LOG.debug("ProcessingScheduleService hasn't been opened yet, ignore scheduled task.");
-      return;
-    }
-    task.run();
-  }
-
-  public ActorFuture<Void> open(final ActorControl control) {
-    if (openFuture != null) {
-      return openFuture;
-    }
-
-    openFuture = new CompletableActorFuture<>();
-    writeRetryStrategy = new AbortableRetryStrategy(control);
-    final var writerFuture = writerAsyncSupplier.get();
-    control.runOnCompletion(
-        writerFuture,
-        (writer, failure) -> {
-          if (failure == null) {
-            logStreamWriter = writer;
-            actorControl = control;
-            openFuture.complete(null);
-          } else {
-            openFuture.completeExceptionally(failure);
-          }
-        });
-    return openFuture;
-  }
-
-  @Override
-  public void close() {
-    actorControl = null;
-    logStreamWriter = null;
-    writeRetryStrategy = null;
-    openFuture = null;
   }
 
   Runnable toRunnable(final Task task) {

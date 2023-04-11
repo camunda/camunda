@@ -27,6 +27,7 @@ import java.util.function.BooleanSupplier;
 public final class StreamProcessorContext implements ReadonlyStreamProcessorContext {
 
   public static final int DEFAULT_MAX_COMMANDS_IN_BATCH = 100;
+  public static final boolean DEFAULT_ASYNC_SCHEDULED_TASKS = false;
   private static final StreamProcessorListener NOOP_LISTENER =
       new StreamProcessorListener() {
         @Override
@@ -56,6 +57,7 @@ public final class StreamProcessorContext implements ReadonlyStreamProcessorCont
   private volatile StreamProcessor.Phase phase = Phase.INITIAL;
   private KeyGeneratorControls keyGeneratorControls;
   private int maxCommandsInBatch = DEFAULT_MAX_COMMANDS_IN_BATCH;
+  private boolean asyncScheduledTasks = DEFAULT_ASYNC_SCHEDULED_TASKS;
 
   public StreamProcessorContext actor(final ActorControl actor) {
     this.actor = actor;
@@ -205,5 +207,14 @@ public final class StreamProcessorContext implements ReadonlyStreamProcessorCont
 
   public int getMaxCommandsInBatch() {
     return maxCommandsInBatch;
+  }
+
+  public boolean asyncScheduledTasks() {
+    return false;
+  }
+
+  public StreamProcessorContext withAsyncScheduledTasks(final boolean enabled) {
+    this.asyncScheduledTasks = enabled;
+    return this;
   }
 }

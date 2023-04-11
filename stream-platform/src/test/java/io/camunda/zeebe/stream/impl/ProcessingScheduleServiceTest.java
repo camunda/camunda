@@ -9,7 +9,6 @@ package io.camunda.zeebe.stream.impl;
 
 import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ACTIVATE_ELEMENT;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.never;
@@ -21,6 +20,7 @@ import static org.mockito.Mockito.verify;
 import io.camunda.zeebe.logstreams.log.LogAppendEntry;
 import io.camunda.zeebe.logstreams.log.LogStreamWriter;
 import io.camunda.zeebe.scheduler.Actor;
+import io.camunda.zeebe.scheduler.ActorControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.scheduler.testing.ControlledActorSchedulerExtension;
@@ -43,25 +43,25 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-class ProcessingScheduleServiceTest {
+final class ProcessingScheduleServiceTest {
 
   @RegisterExtension
   ControlledActorSchedulerExtension actorScheduler = new ControlledActorSchedulerExtension();
 
   private LifecycleSupplier lifecycleSupplier;
-  private WriterAsyncSupplier writerAsyncSupplier;
-  private TestScheduleServiceActorDecorator scheduleService;
+  private TestWriter testWriter;
+  private ProcessingScheduleService scheduleService;
 
   @BeforeEach
   void before() {
     lifecycleSupplier = new LifecycleSupplier();
-    writerAsyncSupplier = new WriterAsyncSupplier();
-    final var processingScheduleService =
+    testWriter = new TestWriter();
+    final var scheduledTaskExecutor = new TestScheduleServiceActorDecorator();
+    scheduleService =
         new ProcessingScheduleServiceImpl(
-            lifecycleSupplier, lifecycleSupplier, writerAsyncSupplier);
+            lifecycleSupplier, lifecycleSupplier, scheduledTaskExecutor.getActor(), testWriter);
 
-    scheduleService = new TestScheduleServiceActorDecorator(processingScheduleService);
-    actorScheduler.submitActor(scheduleService);
+    actorScheduler.submitActor(scheduledTaskExecutor);
     actorScheduler.workUntilDone();
   }
 
@@ -143,41 +143,6 @@ class ProcessingScheduleServiceTest {
   }
 
   @Test
-  void shouldNotExecuteTasksWhenScheduledOnClosedActor() {
-    // given
-    lifecycleSupplier.currentPhase = Phase.PAUSED;
-    final var notOpenScheduleService =
-        new ProcessingScheduleServiceImpl(
-            lifecycleSupplier, lifecycleSupplier, writerAsyncSupplier);
-    final var mockedTask = spy(new DummyTask());
-
-    // when
-    notOpenScheduleService.runDelayed(Duration.ZERO, mockedTask);
-    actorScheduler.workUntilDone();
-
-    // then
-    verify(mockedTask, never()).execute(any());
-  }
-
-  @Test
-  void shouldFailActorIfWriterCantBeRetrieved() {
-    // given
-    writerAsyncSupplier.writerFutureRef.set(
-        CompletableActorFuture.completedExceptionally(new RuntimeException("expected")));
-    final var notOpenScheduleService =
-        new TestScheduleServiceActorDecorator(
-            new ProcessingScheduleServiceImpl(
-                lifecycleSupplier, lifecycleSupplier, writerAsyncSupplier));
-
-    // when
-    final var actorFuture = actorScheduler.submitActor(notOpenScheduleService);
-    actorScheduler.workUntilDone();
-
-    // then
-    assertThatThrownBy(actorFuture::join).hasMessageContaining("expected");
-  }
-
-  @Test
   void shouldWriteRecordAfterTaskWasExecuted() {
     // given
 
@@ -192,7 +157,7 @@ class ProcessingScheduleServiceTest {
 
     // then
 
-    assertThat(writerAsyncSupplier.writer.entries)
+    assertThat(testWriter.entries)
         .describedAs("Record is written to the log stream")
         .map(LogAppendEntry::key)
         .containsExactly(1L);
@@ -207,7 +172,7 @@ class ProcessingScheduleServiceTest {
     // non-deterministic
     // order
     final var counter = new AtomicInteger(0);
-    writerAsyncSupplier.writer.acceptWrites.set(
+    testWriter.acceptWrites.set(
         () -> {
           final var invocationCount = counter.incrementAndGet();
           // wait a sufficiently high enough invocation count to ensure the second timer is
@@ -242,7 +207,7 @@ class ProcessingScheduleServiceTest {
     actorScheduler.workUntilDone();
 
     // then
-    assertThat(writerAsyncSupplier.writer.entries)
+    assertThat(testWriter.entries)
         .describedAs("Both timers have executed")
         .hasSize(2)
         .map(LogAppendEntry::key)
@@ -269,21 +234,6 @@ class ProcessingScheduleServiceTest {
     verify(mockedTask, times(5)).execute(any());
   }
 
-  @Test
-  void shouldNotRunScheduledTasksAfterClosed() {
-    // given
-    final var mockedTask = spy(new DummyTask());
-    scheduleService.runDelayed(Duration.ofMillis(200), mockedTask);
-
-    // when
-    final var closed = scheduleService.closeAsync();
-    actorScheduler.workUntilDone();
-    closed.join();
-
-    // then
-    verify(mockedTask, never()).execute(any());
-  }
-
   /**
    * This decorator is an actor and implements {@link ProcessingScheduleService} and delegates to
    * {@link ProcessingScheduleServiceImpl}, on each call it will submit an extra job to the related
@@ -293,40 +243,9 @@ class ProcessingScheduleServiceTest {
    * <p>Note: This is an actor scheduler limitation, since the used way how we schedule timers are
    * not thread safe, so this need to happen on the same thread, meaning on the same actor.
    */
-  private static final class TestScheduleServiceActorDecorator extends Actor
-      implements ProcessingScheduleService {
-    private final ProcessingScheduleServiceImpl processingScheduleService;
-
-    public TestScheduleServiceActorDecorator(
-        final ProcessingScheduleServiceImpl processingScheduleService) {
-      this.processingScheduleService = processingScheduleService;
-    }
-
-    @Override
-    protected void onActorStarting() {
-      final var openFuture = processingScheduleService.open(actor);
-      actor.runOnCompletionBlockingCurrentPhase(
-          openFuture,
-          (v, t) -> {
-            if (t != null) {
-              actor.fail(t);
-            }
-          });
-    }
-
-    @Override
-    public void runDelayed(final Duration delay, final Runnable task) {
-      actor.submit(() -> processingScheduleService.runDelayed(delay, task));
-    }
-
-    @Override
-    public void runDelayed(final Duration delay, final Task task) {
-      actor.submit(() -> processingScheduleService.runDelayed(delay, task));
-    }
-
-    @Override
-    public void runAtFixedRate(final Duration delay, final Task task) {
-      actor.submit(() -> processingScheduleService.runAtFixedRate(delay, task));
+  private static final class TestScheduleServiceActorDecorator extends Actor {
+    public ActorControl getActor() {
+      return this.actor;
     }
   }
 
