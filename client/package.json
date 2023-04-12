@@ -104,7 +104,7 @@
     "jest-enzyme": "^7.1.2",
     "jest-junit": "^15.0.0",
     "license-checker": "^25.0.1",
-    "lint-staged": "^13.1.2",
+    "lint-staged": "^13.2.1",
     "mock-socket": "^9.2.1",
     "node-fetch": "^2.6.7",
     "old-bpmn-js": "npm:bpmn-js@8.10",
