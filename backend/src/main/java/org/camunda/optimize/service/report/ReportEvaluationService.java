@@ -43,19 +43,16 @@ public class ReportEvaluationService {
                                                                 final ZoneId timezone,
                                                                 final ReportDefinitionDto reportDefinition,
                                                                 final PaginationDto paginationDto) {
-    // reset owner, it's not relevant for authorization given a full unsaved report definition is provided
-    final String originalOwner = reportDefinition.getOwner();
+    // reset owner and last modifier to avoid unnecessary user retrieval hits when resolving to display names during rest mapping
+    // as no owner/modifier display names are required for unsaved reports
     reportDefinition.setOwner(null);
+    reportDefinition.setLastModifier(null);
     ReportEvaluationInfo evaluationInfo = ReportEvaluationInfo.builder(reportDefinition)
       .userId(userId)
       .timezone(timezone)
       .pagination(paginationDto)
       .build();
     // auth is handled in evaluator as it also handles single reports of a combined report
-    final AuthorizedReportEvaluationResult authorizedReportEvaluationResult =
-      reportEvaluator.evaluateReport(evaluationInfo);
-    // reflect back original owner value as provided in the request into the response
-    authorizedReportEvaluationResult.getEvaluationResult().getReportDefinition().setOwner(originalOwner);
-    return authorizedReportEvaluationResult;
+    return reportEvaluator.evaluateReport(evaluationInfo);
   }
 }
