@@ -111,7 +111,7 @@
     "opn": "^6.0.0",
     "prettier": "2.8.4",
     "react-scripts": "5.0.0",
-    "sass": "^1.58.3",
+    "sass": "^1.62.0",
     "shelljs": "^0.8.5",
     "styled-components": "^5.3.9",
     "testcafe": "^2.5.0",
