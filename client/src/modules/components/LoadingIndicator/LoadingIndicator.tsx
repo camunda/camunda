@@ -14,6 +14,10 @@ interface LoadingIndicatorProps extends ComponentPropsWithoutRef<'div'> {
   small?: boolean;
 }
 
-export default function LoadingIndicator({small, className, ...props}: LoadingIndicatorProps) {
+export default function LoadingIndicator({
+  small,
+  className,
+  ...props
+}: LoadingIndicatorProps): JSX.Element {
   return <div {...props} className={classnames('LoadingIndicator', className, {small})} />;
 }

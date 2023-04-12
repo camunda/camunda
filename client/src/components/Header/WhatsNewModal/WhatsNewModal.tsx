@@ -24,7 +24,7 @@ interface WhatsNewModalProps extends WithErrorHandlingProps {
   onClose: () => void;
 }
 
-export function WhatsNewModal({open, onClose, mightFail}: WhatsNewModalProps) {
+export function WhatsNewModal({open, onClose, mightFail}: WhatsNewModalProps): JSX.Element {
   const [optimizeVersion, setOptimizeVersion] = useState<string | null>(null);
   const [seen, setSeen] = useState<boolean>(true);
   const [modalContent, setModalContent] = useState<string>('');
