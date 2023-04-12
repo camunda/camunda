@@ -5,22 +5,22 @@
  * except in compliance with the proprietary license.
  */
 
-import {ReactNode} from 'react';
+import {ComponentPropsWithoutRef, ReactNode, forwardRef} from 'react';
 import ReactDOM from 'react-dom';
 import classnames from 'classnames';
 import {ComposedModal, ModalBody, ModalHeader, ModalFooter} from '@carbon/react';
 
 import './Modal.scss';
 
-type ModalProps = {
+interface ModalProps {
   onClose?: () => void;
-  size?: string;
+  size?: 'xs' | 'sm' | 'md' | 'lg' | undefined;
   open?: boolean;
   className?: string;
   children?: ReactNode;
   isFullWidth?: boolean;
   isOverflowVisible?: boolean;
-};
+}
 
 export default function Modal({
   open,
@@ -49,4 +49,19 @@ export default function Modal({
 
 Modal.Header = ModalHeader;
 Modal.Footer = ModalFooter;
-Modal.Content = ModalBody;
+Modal.Content = forwardRef<HTMLDivElement, ComponentPropsWithoutRef<'div'>>((props, ref) => {
+  return (
+    <ModalBody
+      {...props}
+      ref={ref}
+      onClick={(evt) => {
+        evt.stopPropagation();
+        props.onClick?.(evt);
+      }}
+      onMouseDown={(evt) => {
+        evt.stopPropagation();
+        props.onMouseDown?.(evt);
+      }}
+    />
+  );
+});

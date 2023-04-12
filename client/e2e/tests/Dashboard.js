@@ -437,7 +437,6 @@ test('add a report from the dashboard', async (t) => {
     .click(e.reportModalDropdownOption.withText('New Report from a template'))
     .click(e.addTileButton);
 
-  await t.debug();
   await t
     .click(e.templateModalProcessField)
     .click(e.option('Invoice Receipt with alternative correlation variable'))

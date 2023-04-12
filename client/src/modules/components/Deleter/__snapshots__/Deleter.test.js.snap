@@ -1,7 +1,7 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
 exports[`should accept a custom name formatter 1`] = `
-<ForwardRef(ModalBody)>
+<ForwardRef>
   <p>
     The 'cool name' Report will be permanently deleted.
   </p>
@@ -10,7 +10,7 @@ exports[`should accept a custom name formatter 1`] = `
       Warning: This action cannot be undone.
     </b>
   </p>
-</ForwardRef(ModalBody)>
+</ForwardRef>
 `;
 
 exports[`should not render anything when no entity is set 1`] = `""`;
@@ -29,7 +29,7 @@ exports[`should show the confirmation modal when entity is set 1`] = `
   >
     Delete Report
   </ForwardRef(ModalHeader)>
-  <ForwardRef(ModalBody)>
+  <ForwardRef>
     <p>
       The 'Doomed Report' Report will be permanently deleted.
     </p>
@@ -38,7 +38,7 @@ exports[`should show the confirmation modal when entity is set 1`] = `
         Warning: This action cannot be undone.
       </b>
     </p>
-  </ForwardRef(ModalBody)>
+  </ForwardRef>
   <ForwardRef(ModalFooter)
     closeModal={[Function]}
     onRequestClose={[Function]}
@@ -78,7 +78,7 @@ exports[`should use provided delete text for title and button 1`] = `
   >
     Remove entity
   </ForwardRef(ModalHeader)>
-  <ForwardRef(ModalBody)>
+  <ForwardRef>
     <p>
       The 'Doomed Report' Report will be permanently deleted.
     </p>
@@ -87,7 +87,7 @@ exports[`should use provided delete text for title and button 1`] = `
         Warning: This action cannot be undone.
       </b>
     </p>
-  </ForwardRef(ModalBody)>
+  </ForwardRef>
   <ForwardRef(ModalFooter)
     closeModal={[Function]}
     onRequestClose={[Function]}

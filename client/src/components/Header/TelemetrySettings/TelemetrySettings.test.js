@@ -45,7 +45,7 @@ it('should update the telemetry when applying the changes', async () => {
   await runLastEffect();
 
   node.find(LabeledInput).simulate('change', {target: {checked: false}});
-  node.find(Modal.Footer).prop('onRequestSubmit')();
+  node.find('.confirm').simulate('click');
 
   expect(updateTelemetry).toHaveBeenCalledWith(false);
   expect(loadConfig).toHaveBeenCalled();

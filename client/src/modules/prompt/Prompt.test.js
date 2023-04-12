@@ -7,7 +7,6 @@
 
 import React from 'react';
 import {shallow} from 'enzyme';
-
 import {Button} from '@carbon/react';
 
 import {default as Prompt, showPrompt} from './Prompt';

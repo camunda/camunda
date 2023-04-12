@@ -7,8 +7,16 @@
 
 import React, {useEffect, useState} from 'react';
 import classnames from 'classnames';
+import {Button} from '@carbon/react';
 
-import {CarbonModal as Modal, Button, ButtonGroup, Labeled, Form, UserTypeahead} from 'components';
+import {
+  CarbonModal as Modal,
+  Button as LegacyButton,
+  ButtonGroup,
+  Labeled,
+  Form,
+  UserTypeahead,
+} from 'components';
 import {t} from 'translation';
 import {showError} from 'notifications';
 import {withErrorHandling} from 'HOC';
@@ -106,12 +114,12 @@ export function AssigneeFilter({
         )}
         {getPretext?.(users, operator)}
         <ButtonGroup>
-          <Button active={operator === 'in'} onClick={() => setOperator('in')}>
+          <LegacyButton active={operator === 'in'} onClick={() => setOperator('in')}>
             {t('common.filter.assigneeModal.includeOnly')}
-          </Button>
-          <Button active={operator === 'not in'} onClick={() => setOperator('not in')}>
+          </LegacyButton>
+          <LegacyButton active={operator === 'not in'} onClick={() => setOperator('not in')}>
             {t('common.filter.assigneeModal.excludeOnly')}
-          </Button>
+          </LegacyButton>
         </ButtonGroup>
         <Form>
           <Form.InputGroup>
@@ -153,15 +161,18 @@ export function AssigneeFilter({
         </Form>
         {getPosttext?.(users, operator)}
       </Modal.Content>
-      <Modal.Footer
-        primaryButtonText={
-          filterData ? t('common.filter.updateFilter') : t('common.filter.addFilter')
-        }
-        primaryButtonDisabled={users.length === 0 && !forceEnabled?.(users, operator)}
-        onRequestSubmit={confirm}
-        onRequestClose={close}
-        secondaryButtonText={t('common.cancel')}
-      />
+      <Modal.Footer>
+        <Button kind="secondary" className="cancel" onClick={close}>
+          {t('common.cancel')}
+        </Button>
+        <Button
+          className="confirm"
+          disabled={users.length === 0 && !forceEnabled?.(users, operator)}
+          onClick={confirm}
+        >
+          {filterData ? t('common.filter.updateFilter') : t('common.filter.addFilter')}
+        </Button>
+      </Modal.Footer>
     </Modal>
   );
 }

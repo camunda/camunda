@@ -14,7 +14,7 @@ exports[`should hide option to move the copy for collection entities 1`] = `
   >
     Copy collection
   </ForwardRef(ModalHeader)>
-  <ForwardRef(ModalBody)>
+  <ForwardRef>
     <Form>
       <FormGroup>
         <ForwardRef(LabeledInput)
@@ -29,7 +29,7 @@ exports[`should hide option to move the copy for collection entities 1`] = `
         All items and users will be copied.
       </Message>
     </Form>
-  </ForwardRef(ModalBody)>
+  </ForwardRef>
   <ForwardRef(ModalFooter)
     closeModal={[Function]}
     onRequestClose={[Function]}
@@ -67,7 +67,7 @@ exports[`should match snapshot 1`] = `
   >
     Copy Test Dashboard
   </ForwardRef(ModalHeader)>
-  <ForwardRef(ModalBody)>
+  <ForwardRef>
     <Form>
       <FormGroup>
         <ForwardRef(LabeledInput)
@@ -97,7 +97,7 @@ exports[`should match snapshot 1`] = `
         setMoving={[Function]}
       />
     </Form>
-  </ForwardRef(ModalBody)>
+  </ForwardRef>
   <ForwardRef(ModalFooter)
     closeModal={[Function]}
     onRequestClose={[Function]}

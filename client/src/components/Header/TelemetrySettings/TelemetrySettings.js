@@ -6,6 +6,7 @@
  */
 
 import React, {useState, useEffect} from 'react';
+import {Button} from '@carbon/react';
 
 import {CarbonModal as Modal, LabeledInput, DocsLink} from 'components';
 import {t} from 'translation';
@@ -77,13 +78,14 @@ export function TelemetrySettings({onClose, mightFail}) {
           })}
         </p>
       </Modal.Content>
-      <Modal.Footer
-        primaryButtonText={t('common.save')}
-        primaryButtonDisabled={isLoading}
-        onRequestSubmit={submit}
-        onRequestClose={onClose}
-        secondaryButtonText={t('common.cancel')}
-      />
+      <Modal.Footer>
+        <Button kind="secondary" className="cancel" onClick={onClose} disabled={isLoading}>
+          {t('common.cancel')}
+        </Button>
+        <Button className="confirm" disabled={isLoading} onClick={submit}>
+          {t('common.save')}
+        </Button>
+      </Modal.Footer>
     </Modal>
   );
 }

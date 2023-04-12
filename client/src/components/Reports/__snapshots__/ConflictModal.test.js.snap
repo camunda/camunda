@@ -25,7 +25,7 @@ exports[`should match snapshot 1`] = `
   >
     Destructive Changes
   </ForwardRef(ModalHeader)>
-  <ForwardRef(ModalBody)>
+  <ForwardRef>
     <div
       key="alert"
     >
@@ -49,7 +49,7 @@ exports[`should match snapshot 1`] = `
         </b>
       </p>
     </div>
-  </ForwardRef(ModalBody)>
+  </ForwardRef>
   <ForwardRef(ModalFooter)
     closeModal={[Function]}
     onRequestClose={[Function]}

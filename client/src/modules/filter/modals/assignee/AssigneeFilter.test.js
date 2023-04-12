@@ -77,7 +77,7 @@ it('should add/remove a role', async () => {
     {id: 'USER:demo', identity: {id: 'demo', name: 'Demo Demo'}},
   ]);
 
-  node.find(Modal.Footer).prop('onRequestSubmit')();
+  node.find('.confirm').simulate('click');
   expect(spy).toHaveBeenCalledWith({
     data: {operator: 'in', values: [null, 'demo']},
     type: 'assignee',
@@ -90,7 +90,7 @@ it('should add/remove a role', async () => {
     {id: 'USER:null', identity: {id: null, name: 'Unassigned'}},
   ]);
 
-  node.find(Modal.Footer).prop('onRequestSubmit')();
+  node.find('.confirm').simulate('click');
   expect(spy).toHaveBeenCalledWith({
     data: {operator: 'in', values: [null]},
     type: 'assignee',
@@ -133,9 +133,9 @@ it('should allow rendering a posttext if provided', async () => {
 it('should allow forcing the add button to be enabled', () => {
   const node = shallow(<AssigneeFilter {...props} />);
 
-  expect(node.find(Modal.Footer).prop('primaryButtonDisabled')).toBe(true);
+  expect(node.find('.confirm').prop('disabled')).toBe(true);
 
   node.setProps({forceEnabled: () => true});
 
-  expect(node.find(Modal.Footer).prop('primaryButtonDisabled')).toBe(false);
+  expect(node.find('.confirm').prop('disabled')).toBe(false);
 });

@@ -199,29 +199,26 @@ export function SourcesModal({onClose, onConfirm, mightFail, confirmText, preSel
 
             if (tenants.length !== 0) {
               body.push(
-                // the propagation stop is needed to stop the modal from closing when
                 // clicking inside the popover
-                <div onMouseDown={(evt) => evt.stopPropagation()}>
-                  <TenantPopover
-                    tenants={def.tenants}
-                    selected={selectedDefinition?.tenants || ['']}
-                    disabled={!selectedDefinition}
-                    onChange={(newTenants) => {
-                      setSelected(
-                        selected.map((selectedDefinition) => {
-                          if (def.key === selectedDefinition.definitionKey) {
-                            return {
-                              ...selectedDefinition,
-                              tenants: newTenants.length === 0 ? [def.tenants[0].id] : newTenants,
-                            };
-                          }
-                          return selectedDefinition;
-                        })
-                      );
-                    }}
-                    renderInPortal="sourcesModalTenantPopover"
-                  />
-                </div>
+                <TenantPopover
+                  tenants={def.tenants}
+                  selected={selectedDefinition?.tenants || ['']}
+                  disabled={!selectedDefinition}
+                  onChange={(newTenants) => {
+                    setSelected(
+                      selected.map((selectedDefinition) => {
+                        if (def.key === selectedDefinition.definitionKey) {
+                          return {
+                            ...selectedDefinition,
+                            tenants: newTenants.length === 0 ? [def.tenants[0].id] : newTenants,
+                          };
+                        }
+                        return selectedDefinition;
+                      })
+                    );
+                  }}
+                  renderInPortal="sourcesModalTenantPopover"
+                />
               );
             }
 

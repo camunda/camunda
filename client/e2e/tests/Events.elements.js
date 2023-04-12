@@ -52,7 +52,6 @@ export const externalEventsTab = Selector('.NavItem').withText('External Events'
 export const eventCheckbox = (index) =>
   Selector('.Table tbody tr').nth(index).find('input[type=checkbox]');
 export const selectionDropdown = Selector('.selectionActions button');
-export const confirmModalButton = Selector('.confirm.Button');
 export const externalEventsTable = Selector('.Table');
 export const externalEventgroup = (index) =>
   Selector('.ExternalSource .itemsList .LabeledInput').nth(index);

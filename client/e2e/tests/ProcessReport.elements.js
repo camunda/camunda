@@ -25,7 +25,6 @@ export const shareLink = shareHeader.find('.title-button');
 export const deleteButton = Selector('.delete-button');
 export const definitionCopyButton = (definition) => definition.find('.Button').nth(0);
 export const definitionEditButton = (definition) => definition.find('.Popover .Button');
-export const modalConfirmbutton = Selector('.Modal .confirm.Button');
 export const checkbox = (name) => Selector('.label').withText(name);
 export const groupbyDropdown = checkbox('Group By').nextSibling();
 export const groupbyDropdownButton = groupbyDropdown.find('button');
