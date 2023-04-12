@@ -9,19 +9,18 @@ package io.camunda.zeebe.stream.impl;
 
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.stream.api.scheduling.ProcessingScheduleService;
-import io.camunda.zeebe.stream.api.scheduling.SimpleProcessingScheduleService;
 import io.camunda.zeebe.stream.api.scheduling.Task;
 import java.time.Duration;
 
 public class ExtendedProcessingScheduleServiceImpl implements ProcessingScheduleService {
 
-  private final SimpleProcessingScheduleService processorActorService;
-  private final SimpleProcessingScheduleService asyncActorService;
+  private final ProcessingScheduleService processorActorService;
+  private final ProcessingScheduleService asyncActorService;
   private final ConcurrencyControl concurrencyControl;
 
   public ExtendedProcessingScheduleServiceImpl(
-      final SimpleProcessingScheduleService processorActorService,
-      final SimpleProcessingScheduleService asyncActorService,
+      final ProcessingScheduleService processorActorService,
+      final ProcessingScheduleService asyncActorService,
       final ConcurrencyControl concurrencyControl) {
     this.processorActorService = processorActorService;
     this.asyncActorService = asyncActorService;

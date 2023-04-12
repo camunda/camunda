@@ -25,7 +25,6 @@ import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.scheduler.testing.ControlledActorSchedulerExtension;
 import io.camunda.zeebe.stream.api.scheduling.ProcessingScheduleService;
-import io.camunda.zeebe.stream.api.scheduling.SimpleProcessingScheduleService;
 import io.camunda.zeebe.stream.api.scheduling.Task;
 import io.camunda.zeebe.stream.api.scheduling.TaskResult;
 import io.camunda.zeebe.stream.api.scheduling.TaskResultBuilder;
@@ -295,7 +294,7 @@ class ProcessingScheduleServiceTest {
    * not thread safe, so this need to happen on the same thread, meaning on the same actor.
    */
   private static final class TestScheduleServiceActorDecorator extends Actor
-      implements SimpleProcessingScheduleService {
+      implements ProcessingScheduleService {
     private final ProcessingScheduleServiceImpl processingScheduleService;
 
     public TestScheduleServiceActorDecorator(
