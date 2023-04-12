@@ -122,12 +122,7 @@ public class ManagementDashboardIT extends AbstractIT {
         assertThat(report.getCreated()).isEqualTo(now);
         assertThat(report.getOwner()).isNull();
         assertThat(report.getCollectionId()).isNull();
-        // Management Reports cannot contain KPIs, because the KPIService is using PlainReportEvaluationHandler which
-        // always returns VIEWER for getAuthorizedRole. However, an issue arises because we use a nonexistent
-        // userID in setDataSourcesForSystemGeneratedReports to retrieve all definitions/tenants the "current user" is
-        // allowed to see. If management dashboard falsely included a KPI report,
-        // setDataSourcesForSystemGeneratedReports gets called causing an exception potentially blocking evaluation of
-        // further KPI reports.
+        // Management Reports cannot contain KPIs because there is no "real" user when setting the data sources during evaluation
         assertThat(report.getData().getConfiguration().getTargetValue().getIsKpi()).isNull();
         assertThat(report.getDefinitionType()).isEqualTo(DefinitionType.PROCESS);
         assertThat(report.getFilterData()).isEqualTo(

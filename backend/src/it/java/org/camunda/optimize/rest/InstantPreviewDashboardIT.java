@@ -189,7 +189,7 @@ public class InstantPreviewDashboardIT extends AbstractDashboardRestServiceIT {
     instantPreviewDashboardDto.setTemplateHash(23L);
     embeddedOptimizeExtension.getInstantPreviewDashboardWriter().saveInstantDashboard(instantPreviewDashboardDto);
     // Perform the check that is done at the start-up from Optimize
-    embeddedOptimizeExtension.getInstantPreviewDashboardService().scanForTemplateChanges();
+    embeddedOptimizeExtension.getInstantPreviewDashboardService().deleteInstantPreviewDashboardsAndEntitiesForChangedTemplates();
     // Now get the dashboard again
     DashboardDefinitionRestDto newDashboard = dashboardClient.getInstantPreviewDashboard(
       processDefKey,
@@ -234,7 +234,7 @@ public class InstantPreviewDashboardIT extends AbstractDashboardRestServiceIT {
 
     // when
     // Perform the check that is done at the start-up from Optimize
-    embeddedOptimizeExtension.getInstantPreviewDashboardService().scanForTemplateChanges();
+    embeddedOptimizeExtension.getInstantPreviewDashboardService().deleteInstantPreviewDashboardsAndEntitiesForChangedTemplates();
     // Now get the dashboard again. Since the entry was still valid, I expect the same old dashboard with the same ID
     DashboardDefinitionRestDto newDashboard = dashboardClient.getInstantPreviewDashboard(
       processDefKey,
@@ -511,24 +511,18 @@ public class InstantPreviewDashboardIT extends AbstractDashboardRestServiceIT {
       if (tile.getType() == DashboardTileType.TEXT) {
         final HashMap<String, Object> textTileConfiguration = (HashMap<String, Object>) tile.getConfiguration();
         InstantPreviewDashboardService.
-          findAndConvertTileContent(textTileConfiguration,
-                                    TEXT_FIELD,
-                                    this::assertTileTranslation,
-                                    locale);
+          findAndConvertTileContent(
+            textTileConfiguration,
+            TEXT_FIELD,
+            this::assertTileTranslation,
+            locale
+          );
       }
     });
   }
 
   @Test
   public void savedInstantPreviewReportCanBeEvaluatedAndIncludesAllTenants() {
-    /* Test logic:
-        1. deploy definition on tenant1
-        2. create instant preview reports
-        3. evaluate reports ==> includes data from tenant1 only
-        4. deploy definition on tenant2
-        5. evaluate the reports again ==> includes data from tenant1 and tenant2
-     */
-
     // given
     engineIntegrationExtension.createTenant(FIRST_TENANT);
     engineIntegrationExtension.createTenant(SECOND_TENANT);
@@ -645,13 +639,6 @@ public class InstantPreviewDashboardIT extends AbstractDashboardRestServiceIT {
   @ParameterizedTest
   @MethodSource("templates")
   public void enforceInstantPreviewReportsHaveNoKPIs(String dashboardJsonTemplateFilename) {
-    // Instant Preview Reports cannot contain KPIs, because the KPIService is using PlainReportEvaluationHandler which
-    // always returns VIEWER for getAuthorizedRole. However, an issue arises because we use a nonexistent
-    // userID in setDataSourcesForSystemGeneratedReports to retrieve all definitions/tenants the "current user" is
-    // allowed to see. If an instant preview dashboard falsely included a KPI report,
-    // setDataSourcesForSystemGeneratedReports gets called causing an exception potentially blocking evaluation of
-    // further KPI reports.
-
     // given
     final InstantPreviewDashboardService instantPreviewDashboardService =
       embeddedOptimizeExtension.getInstantPreviewDashboardService();
@@ -683,6 +670,7 @@ public class InstantPreviewDashboardIT extends AbstractDashboardRestServiceIT {
         .getReportDefinition()
         .getData())
       .collect(toSet());
+    // Instant Preview Reports cannot contain KPIs because there is no "real" user when setting the data sources during evaluation
     reportDataSet.forEach(reportData -> assertThat(reportData.getConfiguration().getTargetValue().getIsKpi()).isFalse());
   }
 
@@ -699,61 +687,64 @@ public class InstantPreviewDashboardIT extends AbstractDashboardRestServiceIT {
 
   private void assertTileTranslation(HashMap<String, Object> textTileConfiguration, String locale) {
     HashMap<String, List<String>> expectedStrings = new HashMap<>();
-    expectedStrings.put("de", List.of("Instant Preview Dashboard",
-                                      "KPI Dashboard",
-                                      "Überwache echzeitnah die Gesundheit von Prozessen.",
-                                      "Das Betriebsdashboard erlaubt es, alle wichtigen Prozessemetriken zu überwachen.",
-                                      "Mögliche nächste Schritte:",
-                                      "- Gehe zur Sammlung und erstelle ein eigenes Dashboard.",
-                                      "- Definiere einen Alarm für eine Sammlung und erhalte Alarmbenachrichtigungen per Email.",
-                                      "Berichte Geschäftsmetriken an Stakeholder.",
-                                      "Das Betriebsreporting enthält Prozesskennzahlen um eine Abteilung zu steuern.",
-                                      "- Gehe zur Sammlung und erstelle ein eigenes Dashboard.",
-                                      "- Gehe zu einem Bericht und definiere KPIs.",
-                                      "- Gehe zu den Dashboards und abonniere einen Prozess Digest.",
-                                      "Analytische Werkzeuge um Prozessverbesserungen zu identifizieren.",
-                                      "Die angebotenen Werkzeuge zur Prozess- und Regelanalyse helfen dabei, Engpässe und ungenutzte Prozesszweige zu finden.",
-                                      "Mögliche nächste Schritte:",
-                                      "- Gehe zur Sammlung und erstelle einen Bericht.",
-                                      "- Gehe zu den Analysen und führe eine Prozesszweiganalyse durch.",
-                                      "- Gehe zu den Analysen und führe eine Ausreißeranalyse durch.",
-                                      "Aktuell laufend",
-                                      "In den letzten 7 Tagen gestartet",
-                                      "In den letzten 7 Tagen beendet",
-                                      "Aufgaben mit Zwischenfällen",
-                                      "Anzahl offener Zwischenfälle",
-                                      "In den letzten 7 Tagen gestartet",
-                                      "Anzahl abgeschlossener Prozesse pro Monat",
-                                      "Welche Aufgaben benötigen die meiste Zeit und sind daher Automatisierungskandidaten"
-                                    ));
-    expectedStrings.put("en", List.of("Instant Preview Dashboard",
-                                      "KPI Dashboard",
-                                      "Monitor process health in near realtime.",
-                                      "The business operations dashboard provides you with an overview of the health of your process.",
-                                      "Next steps:",
-                                      "- Go to Collections and create your own Dashboard.",
-                                      "- Define Alerts for the Collection and get notified via email.",
-                                      "Report business metrics to stakeholders.",
-                                      "The business reporting dashboards provide process metrics to manage and report a business.",
-                                      "Next steps:",
-                                      "- Go to Collections and create your own dashboard.",
-                                      "- Go to a Report and change it to a KPI.",
-                                      "- Go to Dashboards and subscribe to an email Digest.",
-                                      "Analytic tools to find process improvements.",
-                                      "The tools provided for process and rules analytics help to find bottlenecks and unused branches to reduce complexity and increase performance.",
-                                      "Next steps:",
-                                      "- Go to Collections and build your own Reports.",
-                                      "- Go to Analysis and perform a Branch Analysis.",
-                                      "- Go to Analysis and perform an Outlier Analysis.",
-                                      "Currently running",
-                                      "Started in the last 7 days",
-                                      "Ended in the last 7 days",
-                                      "Tasks with Incidents",
-                                      "Number of running incidents",
-                                      "Started in the last 7 days",
-                                      "Number of processes completed per month",
-                                      "Which tasks take the most time and are candidates for automation"
-                                    ));
+    expectedStrings.put("de", List.of(
+      "Instant Preview Dashboard",
+      "KPI Dashboard",
+      "Überwache echzeitnah die Gesundheit von Prozessen.",
+      "Das Betriebsdashboard erlaubt es, alle wichtigen Prozessemetriken zu überwachen.",
+      "Mögliche nächste Schritte:",
+      "- Gehe zur Sammlung und erstelle ein eigenes Dashboard.",
+      "- Definiere einen Alarm für eine Sammlung und erhalte Alarmbenachrichtigungen per Email.",
+      "Berichte Geschäftsmetriken an Stakeholder.",
+      "Das Betriebsreporting enthält Prozesskennzahlen um eine Abteilung zu steuern.",
+      "- Gehe zur Sammlung und erstelle ein eigenes Dashboard.",
+      "- Gehe zu einem Bericht und definiere KPIs.",
+      "- Gehe zu den Dashboards und abonniere einen Prozess Digest.",
+      "Analytische Werkzeuge um Prozessverbesserungen zu identifizieren.",
+      "Die angebotenen Werkzeuge zur Prozess- und Regelanalyse helfen dabei, Engpässe und ungenutzte Prozesszweige zu finden.",
+      "Mögliche nächste Schritte:",
+      "- Gehe zur Sammlung und erstelle einen Bericht.",
+      "- Gehe zu den Analysen und führe eine Prozesszweiganalyse durch.",
+      "- Gehe zu den Analysen und führe eine Ausreißeranalyse durch.",
+      "Aktuell laufend",
+      "In den letzten 7 Tagen gestartet",
+      "In den letzten 7 Tagen beendet",
+      "Aufgaben mit Zwischenfällen",
+      "Anzahl offener Zwischenfälle",
+      "In den letzten 7 Tagen gestartet",
+      "Anzahl abgeschlossener Prozesse pro Monat",
+      "Welche Aufgaben benötigen die meiste Zeit und sind daher Automatisierungskandidaten"
+    ));
+    expectedStrings.put("en", List.of(
+      "Instant Preview Dashboard",
+      "KPI Dashboard",
+      "Monitor process health in near realtime.",
+      "The business operations dashboard provides you with an overview of the health of your process.",
+      "Next steps:",
+      "- Go to Collections and create your own Dashboard.",
+      "- Define Alerts for the Collection and get notified via email.",
+      "Report business metrics to stakeholders.",
+      "The business reporting dashboards provide process metrics to manage and report a business.",
+      "Next steps:",
+      "- Go to Collections and create your own dashboard.",
+      "- Go to a Report and change it to a KPI.",
+      "- Go to Dashboards and subscribe to an email Digest.",
+      "Analytic tools to find process improvements.",
+      "The tools provided for process and rules analytics help to find bottlenecks and unused branches to reduce complexity and" +
+        " increase performance.",
+      "Next steps:",
+      "- Go to Collections and build your own Reports.",
+      "- Go to Analysis and perform a Branch Analysis.",
+      "- Go to Analysis and perform an Outlier Analysis.",
+      "Currently running",
+      "Started in the last 7 days",
+      "Ended in the last 7 days",
+      "Tasks with Incidents",
+      "Number of running incidents",
+      "Started in the last 7 days",
+      "Number of processes completed per month",
+      "Which tasks take the most time and are candidates for automation"
+    ));
     String textContent = (String) textTileConfiguration.get(TEXT_FIELD);
     assertThat(expectedStrings.get(locale)).contains(textContent);
   }
@@ -830,19 +821,15 @@ public class InstantPreviewDashboardIT extends AbstractDashboardRestServiceIT {
       )
     );
   }
+
   @SuppressWarnings(UNUSED)
   private static Stream<Arguments> templateAndLocales() {
     return Stream.of(
-      Arguments.of(
-        "template1.json",
-        "en"
-        ),
-      Arguments.of(
-        "template1.json",
-        "de"
-        )
-      );
+      Arguments.of("template1.json", "en"),
+      Arguments.of("template1.json", "de")
+    );
   }
+
   @SuppressWarnings(UNUSED)
   private static Stream<String> templates() {
     return Stream.of("template1.json", "template2.json", "template3.json");
