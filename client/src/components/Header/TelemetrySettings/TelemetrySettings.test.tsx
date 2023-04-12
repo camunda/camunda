@@ -5,10 +5,10 @@
  * except in compliance with the proprietary license.
  */
 
-import React, {runLastEffect} from 'react';
+import {runLastEffect} from '__mocks__/react';
 import {shallow} from 'enzyme';
 
-import {CarbonModal as Modal, LabeledInput} from 'components';
+import {LabeledInput} from 'components';
 import {loadConfig} from 'config';
 
 import {updateTelemetry} from './service';
@@ -28,7 +28,7 @@ jest.mock('./service', () => ({
 
 const props = {
   onClose: jest.fn(),
-  mightFail: (data, cb) => cb(data),
+  mightFail: jest.fn().mockImplementation((data, cb) => cb(data)),
 };
 
 it('should contain a checkbox with the current state of the telemetry settings', async () => {

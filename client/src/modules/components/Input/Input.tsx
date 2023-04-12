@@ -12,7 +12,7 @@ import {Icon} from 'components';
 import './Input.scss';
 
 // We are overriding here the default placeholder type to let the use of translation function without type casting
-interface InputProps extends Omit<ComponentPropsWithoutRef<'input'>, 'placeholder'> {
+export interface InputProps extends Omit<ComponentPropsWithoutRef<'input'>, 'placeholder'> {
   disabled?: boolean;
   className?: string;
   isInvalid?: boolean;

@@ -5,14 +5,20 @@
  * except in compliance with the proprietary license.
  */
 
-import React from 'react';
+import {ReactNode} from 'react';
+import {withDocs, WithDocsProps} from 'HOC';
 
-import {withDocs} from 'HOC';
+interface DocsLinkProps extends WithDocsProps {
+  location: string;
+  children: ReactNode;
+}
 
-export default withDocs(function ({docsLink, location, children}) {
+const DocsLink = ({docsLink, location, children}: DocsLinkProps): JSX.Element => {
   return (
     <a href={docsLink + location} target="_blank" rel="noopener noreferrer">
       {children}
     </a>
   );
-});
+};
+
+export default withDocs(DocsLink);

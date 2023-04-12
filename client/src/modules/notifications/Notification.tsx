@@ -5,7 +5,7 @@
  * except in compliance with the proprietary license.
  */
 
-import {useState, useEffect, useRef, useCallback} from 'react';
+import {useState, useEffect, useRef, useCallback, ReactNode} from 'react';
 import classnames from 'classnames';
 import {Button, Icon} from 'components';
 
@@ -14,7 +14,7 @@ import './Notification.scss';
 export interface Config {
   id?: string;
   type?: string;
-  text: string;
+  text: ReactNode;
   stayOpen?: boolean;
   duration?: number;
 }

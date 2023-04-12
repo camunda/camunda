@@ -5,13 +5,13 @@
  * except in compliance with the proprietary license.
  */
 
-import {ComponentPropsWithoutRef, MouseEvent} from 'react';
+import {ComponentPropsWithoutRef, MouseEvent, ReactNode} from 'react';
 
 import classnames from 'classnames';
 import './Labeled.scss';
 
-interface LabeledProps extends ComponentPropsWithoutRef<'label'> {
-  label: string | JSX.Element[];
+export interface LabeledProps extends ComponentPropsWithoutRef<'label'> {
+  label: string | ReactNode;
   appendLabel?: boolean;
   disabled?: boolean;
 }

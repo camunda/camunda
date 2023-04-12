@@ -7,6 +7,6 @@
 
 import {put} from 'request';
 
-export async function updateTelemetry(enabled) {
+export async function updateTelemetry(enabled: boolean): Promise<Response> {
   return await put('api/settings', {metadataTelemetryEnabled: enabled});
 }

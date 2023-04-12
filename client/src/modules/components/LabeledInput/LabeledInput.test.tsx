@@ -5,7 +5,6 @@
  * except in compliance with the proprietary license.
  */
 
-import React from 'react';
 import {shallow} from 'enzyme';
 
 import LabeledInput from './LabeledInput';
@@ -18,13 +17,17 @@ it('should create a input with the provided id', () => {
 });
 
 it('should include the child content', () => {
-  const node = shallow(<LabeledInput>some child content</LabeledInput>);
+  const node = shallow(<LabeledInput label="test">some child content</LabeledInput>);
 
   expect(node).toIncludeText('some child content');
 });
 
 it('should can be disabled', () => {
-  const node = shallow(<LabeledInput disabled>some child content</LabeledInput>);
+  const node = shallow(
+    <LabeledInput label="test" disabled>
+      some child content
+    </LabeledInput>
+  );
 
   expect(node.find('Labeled')).toHaveProp('disabled', true);
 });

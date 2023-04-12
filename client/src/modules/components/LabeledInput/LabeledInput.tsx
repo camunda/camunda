@@ -5,12 +5,21 @@
  * except in compliance with the proprietary license.
  */
 
-import React from 'react';
+import {forwardRef, ReactNode} from 'react';
+import {Labeled, Input, LabeledProps, InputProps} from 'components';
 
-import {Labeled, Input} from 'components';
 import classnames from 'classnames';
 
-export default React.forwardRef(function LabeledInput({label, className, children, ...props}, ref) {
+interface LabeledInputProps extends InputProps {
+  label: LabeledProps['label'];
+  className?: string;
+  children?: ReactNode;
+}
+
+const LabeledInput = forwardRef<HTMLInputElement, LabeledInputProps>(function LabeledInput(
+  {label, className, children, ...props},
+  ref
+): JSX.Element {
   return (
     <div className={classnames('LabeledInput', className)}>
       <Labeled
@@ -24,3 +33,5 @@ export default React.forwardRef(function LabeledInput({label, className, childre
     </div>
   );
 });
+
+export default LabeledInput;

@@ -26,7 +26,7 @@ export async function initTranslation(): Promise<void> {
   translationObject = await loadTranslation(await getOptimizeVersion(), localeCode);
 }
 
-export function t(key: string, data?: Record<string, unknown>): JSX.Element[] | string {
+export function t(key: string, data?: Record<string, unknown>): string | JSX.Element[] {
   const translatedString = injectData(findValue(key, translationObject), data);
 
   if (containsHTML(translatedString)) {

@@ -5,20 +5,23 @@
  * except in compliance with the proprietary license.
  */
 
-import React, {useState, useEffect} from 'react';
+import {useState, useEffect} from 'react';
 import {Button} from '@carbon/react';
 
 import {CarbonModal as Modal, LabeledInput, DocsLink} from 'components';
 import {t} from 'translation';
-import {withErrorHandling} from 'HOC';
+import {withErrorHandling, WithErrorHandlingProps} from 'HOC';
 import {showError, addNotification} from 'notifications';
 import {isMetadataTelemetryEnabled, loadConfig} from 'config';
-
 import {updateTelemetry} from './service';
 
 import './TelemetrySettings.scss';
 
-export function TelemetrySettings({onClose, mightFail}) {
+interface TelemetrySettingsProps extends WithErrorHandlingProps {
+  onClose: () => void;
+}
+
+export function TelemetrySettings({onClose, mightFail}: TelemetrySettingsProps): JSX.Element {
   const [telemetryEnabled, setTelemetryEnabled] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 

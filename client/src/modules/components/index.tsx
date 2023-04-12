@@ -11,6 +11,7 @@ export {Icon} from './Icon';
 export {ActionItem} from './ActionItem';
 export {Form} from './Form';
 export {Input} from './Input';
+export {LabeledInput} from './LabeledInput';
 export {Labeled} from './Labeled';
 export {Tooltip} from './Tooltip';
 export {Modal, CarbonModal} from './Modal';
@@ -21,3 +22,7 @@ export {PageTitle} from './PageTitle';
 export {EntityDescription} from './EntityDescription';
 export {EntityNameForm} from './EntityNameForm';
 export {LoadingIndicator} from './LoadingIndicator';
+export {DocsLink} from './DocsLink';
+
+export type {InputProps} from './Input';
+export type {LabeledProps} from './Labeled';
