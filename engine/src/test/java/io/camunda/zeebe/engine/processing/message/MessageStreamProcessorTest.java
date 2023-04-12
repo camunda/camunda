@@ -34,7 +34,6 @@ import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessMessageSubscriptionIntent;
 import io.camunda.zeebe.stream.api.InterPartitionCommandSender;
 import io.camunda.zeebe.stream.api.ProcessingResultBuilder;
-import io.camunda.zeebe.util.FeatureFlags;
 import java.time.Duration;
 import org.agrona.DirectBuffer;
 import org.awaitility.Awaitility;
@@ -72,8 +71,7 @@ public final class MessageStreamProcessorTest {
               scheduledTaskDbState,
               spySubscriptionCommandSender,
               processingContext.getWriters(),
-              DEFAULT_ENGINE_CONFIGURATION,
-              FeatureFlags.createDefault());
+              DEFAULT_ENGINE_CONFIGURATION);
           return typedRecordProcessors;
         });
   }

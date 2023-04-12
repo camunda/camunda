@@ -40,8 +40,6 @@ public final class MessageTimeToLiveChecker implements Task {
   private final Duration executionInterval;
   /** This determines the maximum number of EXPIRE commands it will attempt to fit in the result. */
   private final int batchLimit;
-  /** This determines whether to run this checker async or not. */
-  private final boolean enableMessageTtlCheckerAsync;
 
   private final ProcessingScheduleService scheduleService;
   private final MessageState messageState;
@@ -54,12 +52,10 @@ public final class MessageTimeToLiveChecker implements Task {
   public MessageTimeToLiveChecker(
       final Duration executionInterval,
       final int batchLimit,
-      final boolean enableMessageTtlCheckerAsync,
       final ProcessingScheduleService scheduleService,
       final MessageState messageState) {
     this.executionInterval = executionInterval;
     this.batchLimit = batchLimit;
-    this.enableMessageTtlCheckerAsync = enableMessageTtlCheckerAsync;
     this.messageState = messageState;
     this.scheduleService = scheduleService;
     lastIndex = null;
@@ -93,21 +89,13 @@ public final class MessageTimeToLiveChecker implements Task {
             });
 
     if (shouldContinueWhereLeftOff) {
-      reschedule(Duration.ZERO);
+      scheduleService.runDelayed(Duration.ZERO, this);
     } else {
       lastIndex = null;
       currentTimestamp = -1;
-      reschedule(executionInterval);
+      scheduleService.runDelayed(executionInterval, this);
     }
 
     return taskResultBuilder.build();
-  }
-
-  private void reschedule(final Duration idleInterval) {
-    if (enableMessageTtlCheckerAsync) {
-      scheduleService.runDelayedAsync(idleInterval, this);
-    } else {
-      scheduleService.runDelayed(idleInterval, this);
-    }
   }
 }

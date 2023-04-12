@@ -72,37 +72,4 @@ final class FeatureFlagsCfgTest {
     // then
     assertThat(featureFlagsCfg.isEnableActorMetrics()).isFalse();
   }
-
-  @Test
-  void shouldDisableMessageTTLCheckerAsyncByDefault() {
-    // when
-    final BrokerCfg cfg = TestConfigReader.readConfig("empty", environment);
-    final var featureFlagsCfg = cfg.getExperimental().getFeatures();
-
-    // then
-    assertThat(featureFlagsCfg.isEnableMessageTtlCheckerAsync()).isFalse();
-  }
-
-  @Test
-  void shouldSetEnableMessageTtlCheckerAsyncFromConfig() {
-    // when
-    final BrokerCfg cfg = TestConfigReader.readConfig("feature-flags-cfg", environment);
-    final var featureFlagsCfg = cfg.getExperimental().getFeatures();
-
-    // then
-    assertThat(featureFlagsCfg.isEnableMessageTtlCheckerAsync()).isTrue();
-  }
-
-  @Test
-  void shouldSetEnableMessageTtlCheckerAsyncFromEnv() {
-    // given
-    environment.put("zeebe.broker.experimental.features.enableMessageTTLCheckerAsync", "true");
-
-    // when
-    final BrokerCfg cfg = TestConfigReader.readConfig("feature-flags-cfg", environment);
-    final var featureFlagsCfg = cfg.getExperimental().getFeatures();
-
-    // then
-    assertThat(featureFlagsCfg.isEnableMessageTtlCheckerAsync()).isTrue();
-  }
 }

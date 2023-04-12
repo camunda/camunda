@@ -130,8 +130,7 @@ public final class EngineProcessors {
         typedRecordProcessorContext.getScheduledTaskDbState(),
         typedRecordProcessors,
         writers,
-        config,
-        featureFlags);
+        config);
 
     final TypedRecordProcessor<ProcessInstanceRecord> bpmnStreamProcessor =
         addProcessProcessors(
@@ -260,8 +259,7 @@ public final class EngineProcessors {
       final ScheduledTaskDbState scheduledTaskDbState,
       final TypedRecordProcessors typedRecordProcessors,
       final Writers writers,
-      final EngineConfiguration config,
-      final FeatureFlags featureFlags) {
+      final EngineConfiguration config) {
     MessageEventProcessors.addMessageProcessors(
         bpmnBehaviors,
         typedRecordProcessors,
@@ -269,8 +267,7 @@ public final class EngineProcessors {
         scheduledTaskDbState,
         subscriptionCommandSender,
         writers,
-        config,
-        featureFlags);
+        config);
   }
 
   private static void addDecisionProcessors(
