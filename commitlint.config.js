@@ -3,6 +3,9 @@ module.exports = {
 
     helpUrl: 'https://github.com/camunda/zeebe/blob/main/CONTRIBUTING.md/#commit-message-guidelines',
 
+    // Ignore commits created by dependabot. We cannot guarantee that these don't violate our commit rules.
+    ignores: [(msg) => /Signed-off-by: dependabot\[bot\]/m.test(msg)],
+
     // Rules are made up by a name and a configuration array. The configuration array contains:
     // - Level [0..2]: 0 disables the rule. For 1 it will be considered a warning for 2 an error.
     // - Applicable always|never: never inverts the rule.
