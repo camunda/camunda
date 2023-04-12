@@ -1461,16 +1461,16 @@
   resolved "https://registry.yarnpkg.com/@carbon/motion/-/motion-11.10.0.tgz#7674652557dc1fe650eb506c38e8bf722c9d0018"
   integrity sha512-eKQTBvfgTI+txk4BjRTjObOnQ9/uWSRurzIQK4qXsRJZuxvyJTChw+0pKMjohfpzOOnv5E1XxyfM3MWURaGe6Q==
 
-"@carbon/react@^1.24.0":
-  version "1.24.0"
-  resolved "https://registry.yarnpkg.com/@carbon/react/-/react-1.24.0.tgz#b18cc0fdcc83324f835a4e03e20d1d1202d6cf5b"
-  integrity sha512-yvbUdRISlOi9RxvF5P35yzlsndLCO9+Wg8vTb2jJWEQ5PuGXRfFmInc62v3eFFLHrEwfzIrtzjzKidwKbZioOw==
+"@carbon/react@^1.26.0":
+  version "1.26.0"
+  resolved "https://registry.yarnpkg.com/@carbon/react/-/react-1.26.0.tgz#0b86a35620d911dce82fdf2b2dac122392008afb"
+  integrity sha512-0Vk/Dw/DLoWo2KjcOzK5iQhegSJ0Ud5XxcmdH0oQoL3RwHLoMPF9XCdpg7CjjsXnSUv07+EnOoRsOj01GyhGng==
   dependencies:
     "@babel/runtime" "^7.18.3"
     "@carbon/feature-flags" "^0.13.0"
     "@carbon/icons-react" "^11.17.0"
     "@carbon/layout" "^11.12.0"
-    "@carbon/styles" "^1.24.0"
+    "@carbon/styles" "^1.26.0"
     "@carbon/telemetry" "0.1.0"
     classnames "2.3.2"
     copy-to-clipboard "^3.3.1"
@@ -1488,10 +1488,10 @@
     wicg-inert "^3.1.1"
     window-or-global "^1.0.1"
 
-"@carbon/styles@^1.24.0":
-  version "1.24.0"
-  resolved "https://registry.yarnpkg.com/@carbon/styles/-/styles-1.24.0.tgz#6047169eb8cc18e6a0cfd34a2ac2b8cb6be64484"
-  integrity sha512-h5CmBU3yBw5Li5luzY2O4OPlhi6cWIhYjYDBaqpbyAU3fBu9K+0E8mH+T/Ri3qDaIcsTIg+3IE5GV045dHrDvg==
+"@carbon/styles@^1.26.0":
+  version "1.26.0"
+  resolved "https://registry.yarnpkg.com/@carbon/styles/-/styles-1.26.0.tgz#40e52ea8357fb87a736a45a18c423be3feefa7fa"
+  integrity sha512-A7K4sFBQsm8qXN1Wmw/B1OVtf1pDqBlAbgrs7lFuC7YpSD87xy0oHwHiCVXvLLvJgszjOi/5AT4VB7wF/EmbLQ==
   dependencies:
     "@carbon/colors" "^11.13.0"
     "@carbon/feature-flags" "^0.13.0"
