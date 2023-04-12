@@ -37,7 +37,6 @@ public class EngineVersionChecker {
 
   // Any minor or major versions newer than specified here will also be accepted
   static {
-    supportedEngines.add("7.17.0");
     supportedEngines.add("7.18.0");
     supportedEngines.add("7.19.0");
   }

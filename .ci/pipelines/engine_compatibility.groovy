@@ -199,32 +199,6 @@ pipeline {
     stage('IT') {
       failFast false
       parallel {
-        stage('IT 7.17') {
-          agent {
-            kubernetes {
-              cloud 'optimize-ci'
-              label "optimize-ci-build-it-7.17_${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(10)}-${env.BUILD_ID}"
-              defaultContainer 'jnlp'
-              yaml integrationTestPodSpec(env.CAMBPM_7_17_VERSION, env.ES_VERSION)
-            }
-          }
-          environment {
-            LABEL = "optimize-ci-build-it-7.17_${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(10)}-${env.BUILD_ID}"
-          }
-          steps {
-            integrationTestSteps('7.17')
-          }
-          post {
-            always {
-              junit testResults: 'backend/target/failsafe-reports/**/*.xml', allowEmptyResults: true, keepLongStdio: true
-              container('gcloud'){
-                sh 'apt-get install kubectl'
-                sh 'kubectl logs -l jenkins/label=$LABEL -c elasticsearch-9200 > elasticsearch_cambpm717.log'
-              }
-              archiveArtifacts artifacts: 'elasticsearch_cambpm717.log', onlyIfSuccessful: false
-            }
-          }
-        }
         stage('IT 7.18') {
           agent {
             kubernetes {
