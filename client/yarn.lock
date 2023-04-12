@@ -5630,10 +5630,10 @@ dlv@^1.1.3:
   resolved "https://registry.yarnpkg.com/dlv/-/dlv-1.1.3.tgz#5c198a8a11453596e751494d49874bc7732f2e79"
   integrity sha512-+HlytyjlPKnIG8XuRG8WvmBP8xs8P71y+SKKS6ZXWoEgLuePxtDoUEiH7WkdePWrQ5JBpE6aoVqfZfJUQkjXwA==
 
-dmn-js-decision-table@^14.1.1:
-  version "14.1.1"
-  resolved "https://registry.yarnpkg.com/dmn-js-decision-table/-/dmn-js-decision-table-14.1.1.tgz#b0fcdd44a51271afac410af0a3c55d388c3ee610"
-  integrity sha512-PwiWKi5V5wKu3+t+9aeih9fdIa7l8p7pDF7I1pA3jEsg+0MRbgmDWXQ7yERpY/xQVdknyTyUEylMLb9dWHFpFg==
+dmn-js-decision-table@^14.1.2:
+  version "14.1.2"
+  resolved "https://registry.yarnpkg.com/dmn-js-decision-table/-/dmn-js-decision-table-14.1.2.tgz#c7d77abb46a94a294b3cfbea7799071a643cc64d"
+  integrity sha512-i3VyG4hmSLcpL1ThjbvMuRWUlSbNDNYQkIClZvjnahRntcJN2P4zVw2mS8cF4xQR812jIsT/yvR3Yo9jaYx5EA==
   dependencies:
     css.escape "^1.5.1"
     diagram-js "^11.4.1"
@@ -5645,10 +5645,10 @@ dmn-js-decision-table@^14.1.1:
     selection-ranges "^3.0.2"
     table-js "^8.0.1"
 
-dmn-js-drd@^14.0.2:
-  version "14.0.2"
-  resolved "https://registry.yarnpkg.com/dmn-js-drd/-/dmn-js-drd-14.0.2.tgz#1e2c9bdb31eb1056093af37e39d59ff3c93c4dfa"
-  integrity sha512-mOV6HJp1nub6wumDFzx+7E9AOwD5F5lj6lEcREXuCXAJ8uyRJyfaNTM52tA+TvdbO4bZnuMbfAZr3aGvm1sNTA==
+dmn-js-drd@^14.1.2:
+  version "14.1.2"
+  resolved "https://registry.yarnpkg.com/dmn-js-drd/-/dmn-js-drd-14.1.2.tgz#0f2aa6d4dae04fdbfcfaba5dbb61d7ad21460fab"
+  integrity sha512-ZnGIaeVJ452AAnypkti8jLdBGz+AkEVLe49swmW5Qem25xh3zAGVtTvOmgRbhjoiA7aBLF1TTPfNjyl+SXSduw==
   dependencies:
     diagram-js "^11.4.1"
     diagram-js-direct-editing "^2.0.0"
@@ -5659,10 +5659,10 @@ dmn-js-drd@^14.0.2:
     object-refs "^0.3.0"
     tiny-svg "^3.0.0"
 
-dmn-js-literal-expression@^14.0.2:
-  version "14.0.2"
-  resolved "https://registry.yarnpkg.com/dmn-js-literal-expression/-/dmn-js-literal-expression-14.0.2.tgz#5c16fdb4a59d8accad5cd902308ad1607fd57b41"
-  integrity sha512-4qvXEfzVnqyFBsmEjr3GIUsF5ZPNNwV9oeYztORgze+/eB6C6igsnu32CJiZQ+/LXZltGyemYbJTfymiRgN1tg==
+dmn-js-literal-expression@^14.1.2:
+  version "14.1.2"
+  resolved "https://registry.yarnpkg.com/dmn-js-literal-expression/-/dmn-js-literal-expression-14.1.2.tgz#6796aded99bfbaea6acd6e09136f198d6be46134"
+  integrity sha512-JCZwuw/T3z6F25ooI6qfAbmT3KngYJluyOlfF9wrec2pX8ml9Da84eRSiFPrSH6CPln3EEgC6pCqiPsNDPqTLA==
   dependencies:
     diagram-js "^11.4.1"
     dmn-js-shared "^14.0.2"
@@ -5688,14 +5688,14 @@ dmn-js-shared@^14.0.2:
     selection-update "^0.1.2"
     table-js "^8.0.1"
 
-dmn-js@^14.1.1:
-  version "14.1.1"
-  resolved "https://registry.yarnpkg.com/dmn-js/-/dmn-js-14.1.1.tgz#bbe3f261c5368bc56ec6406dceeb4e07d7d72164"
-  integrity sha512-sE6GvGlg4czlOLzDXwk1vwHXSKQdKZTHmC+f4xYBrQegl0L/VIo195goNCU4CmWJ7Vvu78wDMYwCGkT5kl2D0w==
+dmn-js@^14.1.2:
+  version "14.1.2"
+  resolved "https://registry.yarnpkg.com/dmn-js/-/dmn-js-14.1.2.tgz#6cb6d02f393742326e0db349bc97ee8af59066ca"
+  integrity sha512-CCnR92tXxfP5rhvsrkHSYOhklM/8upNcevsuIg6gi1K0azwjyB5dLDqVQbyJNkPEZ53TwDn5SEso9qpiVswZvA==
   dependencies:
-    dmn-js-decision-table "^14.1.1"
-    dmn-js-drd "^14.0.2"
-    dmn-js-literal-expression "^14.0.2"
+    dmn-js-decision-table "^14.1.2"
+    dmn-js-drd "^14.1.2"
+    dmn-js-literal-expression "^14.1.2"
     dmn-js-shared "^14.0.2"
 
 dmn-moddle@^10.0.0:
