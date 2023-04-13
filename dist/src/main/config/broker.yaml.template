@@ -788,3 +788,11 @@
         # enabling it in production.
         # This setting can also be overridden using the environment variable ZEEBE_BROKER_EXPERIMENTAL_FEATURES_ENABLEMESSAGETTLCHECKERASYNC
         # enableMessageTTLCheckerAsync: false
+
+        # While disabled, checking for due timers blocks all other executions that occur on the
+        # stream processor, including process execution and job activation/completion.
+        # When enabled, the Due Date Checker will run asynchronous to the Engine's stream processor.
+        # This helps improve throughput and process latency when there are a lot of timers.
+        # We recommend testing this feature in a non-production environment before enabling it in production.
+        # This setting can also be overridden using the environment variable ZEEBE_BROKER_EXPERIMENTAL_FEATURES_ENABLETIMERDUEDATECHECKERASYNC
+        # enableTimerDueDateCheckerAsync: false
