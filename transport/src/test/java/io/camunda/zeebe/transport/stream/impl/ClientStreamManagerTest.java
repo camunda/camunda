@@ -210,6 +210,32 @@ class ClientStreamManagerTest {
   }
 
   @Test
+  void shouldForwardErrorWhenPushFails() {
+    // given
+    final var clientStreamId =
+        clientStreamManager.add(
+            streamType,
+            metadata,
+            p -> {
+              throw new RuntimeException("Expected");
+            });
+    final var streamId = getServerStreamId(clientStreamId);
+
+    // when
+    final var payloadPushed = BufferUtil.wrapString("data");
+    final var request = new PushStreamRequest().streamId(streamId).payload(payloadPushed);
+    final CompletableFuture<Void> future = new CompletableFuture<>();
+    clientStreamManager.onPayloadReceived(request, future);
+
+    // then
+    assertThat(future)
+        .failsWithin(Duration.ofMillis(100))
+        .withThrowableOfType(ExecutionException.class)
+        .withCauseInstanceOf(RuntimeException.class)
+        .withMessageContaining("Expected");
+  }
+
+  @Test
   void shouldRemoveServerFromClientStream() {
     // given
     final MemberId server = MemberId.from("1");

@@ -83,8 +83,12 @@ final class ClientStreamManager<M extends BufferWriter> {
     final var clientStream = registry.get(streamId);
     clientStream.ifPresentOrElse(
         stream -> {
-          stream.getClientStreamConsumer().push(payload);
-          responseFuture.complete(null);
+          try {
+            stream.getClientStreamConsumer().push(payload);
+            responseFuture.complete(null);
+          } catch (final Exception e) {
+            responseFuture.completeExceptionally(e);
+          }
         },
         () -> {
           // Stream does not exist. We expect to have already sent remove request to all servers.
