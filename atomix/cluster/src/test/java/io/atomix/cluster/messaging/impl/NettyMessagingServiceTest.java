@@ -656,6 +656,8 @@ public class NettyMessagingServiceTest {
           .withThrowableThat()
           .havingRootCause()
           .isInstanceOf(TimeoutException.class);
+      // wait until the channel is closed before grabbing the next one
+      assertThat(originalChannel.closeFuture()).succeedsWithin(Duration.ofSeconds(15));
 
       // when - remote connection finally succeeds
       // give a generous time out on the second request, as creating a new channel can be slow at
@@ -667,7 +669,6 @@ public class NettyMessagingServiceTest {
 
       // then
       final var newChannel = channelPool.getChannel(address2, subject).join();
-      assertThat(originalChannel.closeFuture()).succeedsWithin(Duration.ofSeconds(15));
       assertThat(newChannel).isNotEqualTo(originalChannel);
     } finally {
       nettyWithOwnPool.stop().join();
