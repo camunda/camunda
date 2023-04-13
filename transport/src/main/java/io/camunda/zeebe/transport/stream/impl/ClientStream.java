@@ -9,12 +9,11 @@ package io.camunda.zeebe.transport.stream.impl;
 
 import io.camunda.zeebe.transport.stream.api.ClientStreamConsumer;
 import io.camunda.zeebe.util.buffer.BufferWriter;
-import java.util.UUID;
 import org.agrona.DirectBuffer;
 
 /** Represents a registered client stream. * */
 record ClientStream<M extends BufferWriter>(
-    UUID streamId,
+    ClientStreamIdImpl streamId,
     AggregatedClientStream<M> serverStream,
     DirectBuffer streamType,
     M metadata,

@@ -9,12 +9,12 @@ package io.camunda.zeebe.transport.stream.impl;
 
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.transport.stream.api.ClientStreamConsumer;
+import io.camunda.zeebe.transport.stream.api.ClientStreamId;
 import io.camunda.zeebe.transport.stream.impl.messages.PushStreamRequest;
 import io.camunda.zeebe.util.buffer.BufferWriter;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
-import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import org.agrona.DirectBuffer;
 import org.slf4j.Logger;
@@ -48,21 +48,20 @@ final class ClientStreamManager<M extends BufferWriter> {
     registry.list().forEach(clientStream -> clientStream.remove(serverId));
   }
 
-  UUID add(
+  ClientStreamId add(
       final DirectBuffer streamType,
       final M metadata,
       final ClientStreamConsumer clientStreamConsumer) {
-    final var streamId = UUID.randomUUID();
-
     // add first in memory to handle case of new broker while we're adding
-    final AggregatedClientStream<M> serverStream =
-        registry.addClient(streamId, streamType, metadata, clientStreamConsumer);
-    LOG.debug("Added client stream [{}] to stream [{}]", streamId, serverStream.getStreamId());
-    serverStream.open(requestManager, servers);
-    return streamId;
+    final ClientStream<M> clientStream =
+        registry.addClient(streamType, metadata, clientStreamConsumer);
+    LOG.debug("Added new client stream [{}]", clientStream.streamId());
+    clientStream.serverStream().open(requestManager, servers);
+
+    return clientStream.streamId();
   }
 
-  void remove(final UUID streamId) {
+  void remove(final ClientStreamId streamId) {
     LOG.debug("Removing client stream [{}]", streamId);
     final var serverStream = registry.removeClient(streamId);
     serverStream.ifPresent(

@@ -9,7 +9,6 @@ package io.camunda.zeebe.transport.stream.api;
 
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.util.buffer.BufferWriter;
-import java.util.UUID;
 import org.agrona.DirectBuffer;
 
 /**
@@ -33,7 +32,7 @@ public interface ClientStreamer<M extends BufferWriter> {
    * @param clientStreamConsumer consumer which process data received from the server
    * @return a unique id of the stream
    */
-  ActorFuture<UUID> add(
+  ActorFuture<ClientStreamId> add(
       final DirectBuffer streamType,
       final M metadata,
       final ClientStreamConsumer clientStreamConsumer);
@@ -46,5 +45,5 @@ public interface ClientStreamer<M extends BufferWriter> {
    * @param streamId unique id of the stream
    * @return a future which will be completed after the stream is removed
    */
-  ActorFuture<Void> remove(final UUID streamId);
+  ActorFuture<Void> remove(final ClientStreamId streamId);
 }

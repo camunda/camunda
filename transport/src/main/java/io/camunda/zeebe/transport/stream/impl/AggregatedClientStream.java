@@ -12,13 +12,12 @@ import io.camunda.zeebe.transport.stream.api.ClientStreamConsumer;
 import io.camunda.zeebe.util.buffer.BufferWriter;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 import org.agrona.DirectBuffer;
+import org.agrona.collections.Int2ObjectHashMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -27,25 +26,25 @@ final class AggregatedClientStream<M extends BufferWriter> {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(AggregatedClientStream.class);
   private final UUID streamId;
-  private final DirectBuffer streamType;
-  private final M metadata;
+  private final LogicalId<M> logicalId;
   private final ClientStreamConsumer streamConsumer;
   private final Set<MemberId> liveConnections = new HashSet<>();
 
-  private final Map<UUID, ClientStream<M>> clientStreams = new HashMap<>();
+  private final Int2ObjectHashMap<ClientStream<M>> clientStreams = new Int2ObjectHashMap<>();
 
   private State state;
+  private int nextLocalId;
 
-  AggregatedClientStream(final UUID streamId, final DirectBuffer streamType, final M metadata) {
+  AggregatedClientStream(final UUID streamId, final LogicalId<M> logicalId) {
     this.streamId = streamId;
-    this.streamType = streamType;
-    this.metadata = metadata;
+    this.logicalId = logicalId;
+
     streamConsumer = this::push;
     state = State.INITIAL;
   }
 
   void addClient(final ClientStream<M> clientStream) {
-    clientStreams.put(clientStream.streamId(), clientStream);
+    clientStreams.put(clientStream.streamId().localId(), clientStream);
   }
 
   UUID getStreamId() {
@@ -53,15 +52,21 @@ final class AggregatedClientStream<M extends BufferWriter> {
   }
 
   DirectBuffer getStreamType() {
-    return streamType;
+    return logicalId.streamType();
   }
 
   M getMetadata() {
-    return metadata;
+    return logicalId.metadata();
   }
 
   ClientStreamConsumer getClientStreamConsumer() {
     return streamConsumer;
+  }
+
+  int nextLocalId() {
+    final var localId = nextLocalId;
+    nextLocalId++;
+    return localId;
   }
 
   /**
@@ -102,13 +107,17 @@ final class AggregatedClientStream<M extends BufferWriter> {
     return state == State.CLOSED;
   }
 
-  void removeClient(final UUID streamId) {
-    clientStreams.remove(streamId);
+  void removeClient(final ClientStreamIdImpl streamId) {
+    clientStreams.remove(streamId.localId());
   }
 
   /** returns true if there are no client streams for this stream * */
   boolean isEmpty() {
     return clientStreams.isEmpty();
+  }
+
+  LogicalId<M> logicalId() {
+    return logicalId;
   }
 
   private void push(final DirectBuffer buffer) {
@@ -135,6 +144,8 @@ final class AggregatedClientStream<M extends BufferWriter> {
       state = State.OPEN;
     }
   }
+
+  record LogicalId<M>(DirectBuffer streamType, M metadata) {}
 
   private enum State {
     INITIAL,
