@@ -23,9 +23,6 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-import static org.mockito.Mockito.spy;
-import static org.mockito.Mockito.timeout;
-import static org.mockito.Mockito.verify;
 import static org.slf4j.LoggerFactory.getLogger;
 
 import com.google.common.util.concurrent.MoreExecutors;
@@ -35,7 +32,6 @@ import io.atomix.cluster.messaging.MessagingConfig;
 import io.atomix.cluster.messaging.MessagingException;
 import io.atomix.utils.net.Address;
 import io.camunda.zeebe.test.util.socket.SocketUtil;
-import io.netty.channel.Channel;
 import java.net.ConnectException;
 import java.time.Duration;
 import java.util.Arrays;
@@ -51,11 +47,10 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiFunction;
 import java.util.stream.Stream;
-import org.awaitility.Awaitility;
+import org.agrona.collections.MutableReference;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
@@ -592,99 +587,107 @@ public class NettyMessagingServiceTest {
   public void shouldCloseChannelAfterTimeout() {
     // given
     final var subject = nextSubject();
-    final var expectedException = new TimeoutException();
+    final MutableReference<ChannelPool> poolRef = new MutableReference<>();
+    final var timeoutOnCreate = Duration.ofSeconds(10);
+    final var nettyWithOwnPool = createMessagingServiceWithPool(poolRef);
+    final var channelPool = poolRef.get();
 
-    final AtomicInteger channelsOpen = new AtomicInteger(0);
-    final AtomicReference<Channel> channelRef = new AtomicReference<>();
-    final ManagedMessagingService nettyWithOwnPool =
-        createMessagingServiceWithSpiedPool(channelsOpen, channelRef);
+    try {
+      nettyWithOwnPool.start().join();
 
-    netty2.registerHandler(
-        subject, (address, bytes) -> new CompletableFuture<>()); // never complete this future
+      // grab the original channel, so we can assert it was closed
+      // it's also useful to send a successful request once, so we can ensure the channel exists and
+      // set a lower timeout on the request we want specifically to time out
+      netty2.registerHandler(subject, (address, bytes) -> new byte[0], Runnable::run);
+      nettyWithOwnPool
+          .sendAndReceive(address2, subject, "get channel".getBytes(), true, timeoutOnCreate)
+          .join();
+      final var originalChannel = channelPool.getChannel(address2, subject).join();
 
-    // when
-    final CompletableFuture<byte[]> response =
-        nettyWithOwnPool.sendAndReceive(address2, subject, "fail".getBytes());
+      // when - set up handler which will always cause timeouts
+      netty2.unregisterHandler(subject);
+      netty2.registerHandler(subject, (address, bytes) -> new CompletableFuture<>());
+      final CompletableFuture<byte[]> response =
+          nettyWithOwnPool.sendAndReceive(
+              address2, subject, "fail".getBytes(), true, Duration.ofSeconds(1));
 
-    // then
-    assertThat(response)
-        .failsWithin(Duration.ofSeconds(15))
-        .withThrowableOfType(ExecutionException.class)
-        .havingRootCause()
-        .isInstanceOf(expectedException.getClass())
-        .withMessageContaining("timed out in");
-    // closing causes an CloseException which causes another close
-    verify(channelRef.get(), timeout(1000).atLeast(1)).close();
+      // then
+      assertThat(response)
+          .failsWithin(Duration.ofSeconds(15))
+          .withThrowableThat()
+          .havingRootCause()
+          .isInstanceOf(TimeoutException.class)
+          .withMessageContaining("timed out in");
+      assertThat(originalChannel.closeFuture()).succeedsWithin(Duration.ofSeconds(15));
+    } finally {
+      nettyWithOwnPool.stop().join();
+    }
   }
 
   @Test
   public void shouldCreateNewChannelOnNewRequestAfterTimeout() {
     // given
     final var subject = nextSubject();
-    final var expectedException = new TimeoutException();
+    final MutableReference<ChannelPool> poolRef = new MutableReference<>();
+    final var timeoutOnCreate = Duration.ofSeconds(10);
+    final var nettyWithOwnPool = createMessagingServiceWithPool(poolRef);
+    final var channelPool = poolRef.get();
 
-    final AtomicInteger channelsOpen = new AtomicInteger(0);
-    final AtomicReference<Channel> channelRef = new AtomicReference<>();
-    final ManagedMessagingService nettyWithOwnPool =
-        createMessagingServiceWithSpiedPool(channelsOpen, channelRef);
+    try {
+      nettyWithOwnPool.start().join();
 
-    netty2.registerHandler(
-        subject, (address, bytes) -> new CompletableFuture<>()); // never complete this future
-    final CompletableFuture<byte[]> response =
-        nettyWithOwnPool.sendAndReceive(address2, subject, "fail".getBytes());
-    assertThat(response)
-        .failsWithin(Duration.ofSeconds(15))
-        .withThrowableOfType(ExecutionException.class)
-        .havingRootCause()
-        .isInstanceOf(expectedException.getClass())
-        .withMessageContaining("timed out in");
+      // grab the original channel, so we can assert it was closed
+      // it's also useful to send a successful request once, so we can ensure the channel exists and
+      // set a lower timeout on the request we want specifically to time out
+      netty2.registerHandler(subject, (address, bytes) -> new byte[0], Runnable::run);
+      nettyWithOwnPool
+          .sendAndReceive(address2, subject, "get channel".getBytes(), true, timeoutOnCreate)
+          .join();
+      final var originalChannel = channelPool.getChannel(address2, subject).join();
 
-    // when
-    verify(channelRef.get(), timeout(1000).atLeast(1)).close();
-    nettyWithOwnPool.sendAndReceive(address2, subject, "fail".getBytes());
+      // set up handler which will always cause timeouts
+      netty2.unregisterHandler(subject);
+      netty2.registerHandler(subject, (address, bytes) -> new CompletableFuture<>());
+      final CompletableFuture<byte[]> response =
+          nettyWithOwnPool.sendAndReceive(
+              address2, subject, "fail".getBytes(), true, Duration.ofSeconds(1));
+      assertThat(response)
+          .failsWithin(Duration.ofSeconds(15))
+          .withThrowableThat()
+          .havingRootCause()
+          .isInstanceOf(TimeoutException.class);
 
-    // then
-    // closing causes an CloseException which causes another close
-    Awaitility.await("channels should be recreated").until(channelsOpen::get, c -> c == 2);
+      // when - remote connection finally succeeds
+      // give a generous time out on the second request, as creating a new channel can be slow at
+      // times
+      netty2.unregisterHandler(subject);
+      netty2.registerHandler(subject, (address, bytes) -> new byte[0], Runnable::run);
+      nettyWithOwnPool.sendAndReceive(
+          address2, subject, "success".getBytes(), true, timeoutOnCreate);
+
+      // then
+      final var newChannel = channelPool.getChannel(address2, subject).join();
+      assertThat(originalChannel.closeFuture()).succeedsWithin(Duration.ofSeconds(15));
+      assertThat(newChannel).isNotEqualTo(originalChannel);
+    } finally {
+      nettyWithOwnPool.stop().join();
+    }
   }
 
-  private static ManagedMessagingService createMessagingServiceWithSpiedPool(
-      final AtomicInteger channelsOpen, final AtomicReference<Channel> channelRef) {
+  private ManagedMessagingService createMessagingServiceWithPool(
+      final MutableReference<ChannelPool> poolRef) {
     final var otherAddress = Address.from(SocketUtil.getNextAddress().getPort());
     final var config = new MessagingConfig();
-    return (ManagedMessagingService)
-        new NettyMessagingService(
-                "test",
-                otherAddress,
-                config,
-                ProtocolVersion.V2,
-                (channelFactory) ->
-                    // returning channel pool - to create spied channels
-                    new ChannelPool(
-                        (addr) -> {
-                          // channel factory
-                          channelsOpen.incrementAndGet();
-                          // we have to return another future so our spy is used in the messaging
-                          // service
-                          final CompletableFuture<Channel> channelSpyFuture =
-                              new CompletableFuture<>();
-                          final CompletableFuture<Channel> channelCreationFuture =
-                              channelFactory.apply(addr);
-                          channelCreationFuture.whenComplete(
-                              (channel, err) -> {
-                                if (err == null) {
-                                  final Channel spy = spy(channel);
-                                  channelRef.set(spy);
-                                  channelSpyFuture.complete(spy);
-                                } else {
-                                  channelSpyFuture.completeExceptionally(err);
-                                }
-                              });
-                          return channelSpyFuture;
-                        },
-                        config.getConnectionPoolSize()))
-            .start()
-            .join();
+    return new NettyMessagingService(
+        "test",
+        otherAddress,
+        config,
+        ProtocolVersion.V2,
+        factory -> {
+          final var pool = new ChannelPool(factory, 8);
+          poolRef.set(pool);
+          return pool;
+        });
   }
 
   @Test
