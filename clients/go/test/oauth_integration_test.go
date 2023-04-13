@@ -22,7 +22,6 @@ import (
 	"github.com/stretchr/testify/suite"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
-	"io/ioutil"
 	"net/http"
 	"os"
 	"strings"
@@ -77,7 +76,7 @@ func (s *oauthIntegrationTestSuite) TestFetchOAuthToken() {
 	endpoint, err := s.getEndpoint(publicPort, "oauth2/token")
 	s.Require().NoError(err)
 
-	file, err := ioutil.TempFile("/tmp", "oauthCredsCache")
+	file, err := os.CreateTemp("/tmp", "oauthCredsCache")
 	s.Require().NoError(err)
 	defer os.Remove(file.Name())
 	cache, err := zbc.NewOAuthYamlCredentialsCache(file.Name())

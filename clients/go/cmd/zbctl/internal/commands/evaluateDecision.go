@@ -19,7 +19,7 @@ import (
 	"github.com/camunda/zeebe/clients/go/v8/internal/utils"
 	"github.com/camunda/zeebe/clients/go/v8/pkg/commands"
 	"github.com/spf13/cobra"
-	"io/ioutil"
+	"os"
 	"strconv"
 )
 
@@ -78,7 +78,7 @@ func parseDecisionEvaluationVariables(decisionVariables string) (string, error) 
 	jsonErr := jsStringChecker.Validate("variables", decisionVariables)
 	if jsonErr != nil {
 		// not a JSON string
-		fileVariables, err := ioutil.ReadFile(decisionVariables)
+		fileVariables, err := os.ReadFile(decisionVariables)
 		if err != nil {
 			// not a file path or valid JSON string
 			return "", errors.New("invalid --variables passed. Invalid file or " + jsonErr.Error())
