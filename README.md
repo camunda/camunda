@@ -33,10 +33,10 @@ On Tasklist we use Playwright for visual regression testing. These tests run on 
 
 To run these locally you can follow the steps below:
 
-1. Inside the client folder run `yarn build`
+1. Inside the client folder run `yarn build:visual-regression`
 2. After the build is finished start the Docker container with `yarn start-visual-regression-docker`
 3. Inside the container, run `yarn start:visual-regression &`
-4. After that, run `yarn playwright`
+4. After that, run `yarn playwright visual`
 
 #### Updating screenshots
 

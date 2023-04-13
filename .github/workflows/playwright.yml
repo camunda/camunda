@@ -34,7 +34,7 @@ jobs:
         run: npx playwright install --with-deps chromium
       - name: Build frontend
         working-directory: ./client
-        run: yarn build
+        run: yarn build:visual-regression
       - name: Start server
         working-directory: ./client
         run: yarn start:visual-regression &

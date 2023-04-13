@@ -45,7 +45,8 @@
     "analyze-bundle": "yarn build && source-map-explorer 'build/static/js/*.js'",
     "playwright": "playwright test",
     "start-visual-regression-docker": "docker run --rm --network host -v $(pwd):/work/ -w /work/ -it mcr.microsoft.com/playwright:v1.32.1-focal /bin/bash",
-    "start:visual-regression": "serve build/ -p 8080 -n -s -L"
+    "start:visual-regression": "serve build/ -p 8080 -n -s -L",
+    "build:visual-regression": "REACT_APP_VERSION=0.0.0-SNAPSHOT yarn build"
   },
   "browserslist": [
     ">0.2%",
