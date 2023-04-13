@@ -614,7 +614,7 @@ public class NettyMessagingServiceTest {
       // then
       assertThat(response)
           .failsWithin(Duration.ofSeconds(15))
-	  .withThrowableOfType(ExecutionException.class)
+          .withThrowableOfType(ExecutionException.class)
           .havingRootCause()
           .isInstanceOf(TimeoutException.class)
           .withMessageContaining("timed out in");
@@ -653,7 +653,7 @@ public class NettyMessagingServiceTest {
               address2, subject, "fail".getBytes(), true, Duration.ofSeconds(1));
       assertThat(response)
           .failsWithin(Duration.ofSeconds(15))
-	  .withThrowableOfType(ExecutionException.class)
+          .withThrowableOfType(ExecutionException.class)
           .havingRootCause()
           .isInstanceOf(TimeoutException.class);
       // wait until the channel is closed before grabbing the next one
