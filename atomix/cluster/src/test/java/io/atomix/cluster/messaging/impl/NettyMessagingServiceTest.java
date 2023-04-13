@@ -614,7 +614,7 @@ public class NettyMessagingServiceTest {
       // then
       assertThat(response)
           .failsWithin(Duration.ofSeconds(15))
-          .withThrowableThat()
+	  .withThrowableOfType(ExecutionException.class)
           .havingRootCause()
           .isInstanceOf(TimeoutException.class)
           .withMessageContaining("timed out in");
