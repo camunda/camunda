@@ -8,6 +8,7 @@
 package io.camunda.zeebe.transport.stream.impl;
 
 import io.camunda.zeebe.transport.stream.api.ClientStreamConsumer;
+import io.camunda.zeebe.util.VisibleForTesting;
 import io.camunda.zeebe.util.buffer.BufferWriter;
 import io.camunda.zeebe.util.collection.Tuple;
 import java.util.Collection;
@@ -68,5 +69,10 @@ final class ClientStreamRegistry<M extends BufferWriter> {
       }
     }
     return Optional.empty();
+  }
+
+  @VisibleForTesting
+  Optional<ClientStream<M>> getClient(final UUID clientStreamId) {
+    return Optional.ofNullable(clientStreams.get(clientStreamId));
   }
 }
