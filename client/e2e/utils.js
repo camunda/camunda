@@ -9,6 +9,7 @@ import {Selector} from 'testcafe';
 
 import config from './config';
 import * as Homepage from './tests/Homepage.elements.js';
+import * as Common from './tests/Common.elements.js';
 
 let instanceCount = {
   Chrome: 0,
@@ -44,25 +45,25 @@ export function getUser(t, userHandle) {
 }
 
 export async function createNewReport(t) {
-  await t.click('.CreateNewButton');
+  await t.click(Common.createNewMenu);
   await t.click(Selector('.Submenu').withText('Report'));
   await t.click(Selector('.Submenu .DropdownOption').withText('Process Report'));
   await t.click(Selector('.Button').withText('Blank report'));
-  await t.click(Selector(Homepage.carbonModalConfirmBtn));
+  await t.click(Selector(Common.carbonModalConfirmBtn));
   await toggleReportAutoPreviewUpdate(t);
 }
 
 export async function createNewDecisionReport(t) {
-  await t.click(Homepage.createNewMenu);
-  await t.click(Homepage.option('Report'));
-  await t.click(Homepage.submenuOption('Decision Report'));
+  await t.click(Common.createNewMenu);
+  await t.click(Common.option('Report'));
+  await t.click(Common.submenuOption('Decision Report'));
   await toggleReportAutoPreviewUpdate(t);
 }
 
 export async function createNewCombinedReport(t) {
-  await t.click(Homepage.createNewMenu);
-  await t.click(Homepage.option('Report'));
-  await t.click(Homepage.submenuOption('Combined Process Report'));
+  await t.click(Common.createNewMenu);
+  await t.click(Common.option('Report'));
+  await t.click(Common.submenuOption('Combined Process Report'));
   await toggleReportAutoPreviewUpdate(t);
 }
 
@@ -97,7 +98,7 @@ export async function selectDefinition(t, name, version = 'Specific version') {
   await t
     .click('.Popover.DefinitionSelection')
     .typeText('.Typeahead input', name, {replace: true})
-    .click(Selector('.Typeahead .DropdownOption').withText(name));
+    .click(Common.typeaheadOption(name));
 
   await t.expect(Selector('.VersionPopover button').hasAttribute('disabled')).notOk();
 
@@ -137,12 +138,12 @@ export const selectVisualization = selectControlPanelOption('Visualization');
 
 export async function save(t) {
   await t.click('.save-button');
-  await t.expect(Selector('.edit-button').visible).ok();
+  await t.expect(Common.editButton.visible).ok();
 }
 
 export async function cancel(t) {
   await t.click('.cancel-button');
-  await t.expect(Selector('.edit-button').visible).ok();
+  await t.expect(Common.editButton.visible).ok();
 }
 
 export async function gotoOverview(t) {
@@ -150,10 +151,10 @@ export async function gotoOverview(t) {
 }
 
 export async function createNewDashboard(t) {
-  await t.click('.CreateNewButton');
-  await t.click(Selector('.DropdownOption').withText('Dashboard'));
+  await t.click(Common.createNewMenu);
+  await t.click(Common.option('Dashboard'));
   await t.click(Homepage.blankDashboardButton);
-  await t.click(Homepage.carbonModalConfirmBtn);
+  await t.click(Common.carbonModalConfirmBtn);
 }
 
 export async function addReportToDashboard(t, name) {
@@ -167,10 +168,10 @@ export async function addReportToDashboard(t, name) {
 
 export async function bulkDeleteAllItems(t) {
   await t.click(Homepage.homepageLink);
-  await t.click(Homepage.selectAllCheckbox);
-  await t.click(Homepage.bulkMenu);
-  await t.click(Homepage.del(Homepage.bulkMenu));
-  await t.click(Homepage.carbonModalConfirmBtn);
+  await t.click(Common.selectAllCheckbox);
+  await t.click(Common.bulkMenu);
+  await t.click(Common.del(Common.bulkMenu));
+  await t.click(Common.carbonModalConfirmBtn);
 }
 
 export async function toggleReportAutoPreviewUpdate(t) {

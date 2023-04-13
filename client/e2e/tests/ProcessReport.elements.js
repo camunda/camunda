@@ -7,22 +7,11 @@
 
 import {Selector} from 'testcafe';
 
-export const nameEditField = Selector('.EntityNameForm .name-input');
-export const templateModalProcessField = Selector('.CarbonModal .MultiSelect');
 export const templateOption = (text) =>
   Selector('.TemplateModal .templateContainer .Button').withText(text);
 export const reportName = Selector('.ReportView .name');
 export const reportRenderer = Selector('.ReportRenderer');
 export const report = Selector('.ListItem.report');
-export const editButton = Selector('.edit-button');
-export const shareButton = Selector('.share-button .Button');
-export const shareSwitch = Selector('.ShareEntity .Switch');
-export const shareUrl = Selector('.ShareEntity .linkText');
-export const shareHeader = Selector('.Sharing .header');
-export const shareOptimizeIcon = Selector('.Sharing.compact .iconLink');
-export const shareTitle = shareHeader.find('.name-container');
-export const shareLink = shareHeader.find('.title-button');
-export const deleteButton = Selector('.delete-button');
 export const definitionCopyButton = (definition) => definition.find('.Button').nth(0);
 export const definitionEditButton = (definition) => definition.find('.Popover .Button');
 export const checkbox = (name) => Selector('.label').withText(name);
@@ -30,7 +19,6 @@ export const groupbyDropdown = checkbox('Group By').nextSibling();
 export const groupbyDropdownButton = groupbyDropdown.find('button');
 export const removeGroupButton = Selector('.removeGrouping');
 export const visualizationDropdown = checkbox('Visualization').nextSibling();
-export const option = (text) => Selector('.DropdownOption').withExactText(text);
 export const configurationOption = (text) =>
   Selector('.Configuration .DropdownOption').withExactText(text);
 export const reportTable = reportRenderer.find('.Table');
@@ -59,9 +47,7 @@ export const targetValueButton = Selector('.toggleButton');
 export const targetValueInput = (name) => Selector('.Modal tbody tr').withText(name).find('.Input');
 export const nodeFilterOperator = (name) =>
   Selector('.Modal tbody tr').withText(name).find('.Dropdown:first-child');
-export const primaryModalButton = Selector('.Modal .Modal__actions .primary');
 export const warning = Selector('.Message--warning');
-export const controlPanel = Selector('.ReportControlPanel');
 export const processPartButton = Selector('.ReportControlPanel .Button').withText(
   'Process Instance Part'
 );
@@ -108,7 +94,6 @@ export const versionSpecific = Selector('input[type="radio"]').nth(2);
 export const versionCheckbox = (number) =>
   Selector('.specificVersions input[type="checkbox"]').nth(number);
 export const tenantPopover = Selector('.TenantPopover');
-export const modalContainer = Selector('.Modal__content-container');
 export const aggregationTypeSelect = Selector('.AggregationType');
 export const aggregationOption = (text) => Selector('.AggregationType .Switch').withText(text);
 export const detailsPopoverButton = Selector('.EntityName .Popover .Button');
@@ -118,7 +103,6 @@ export const modalDiagram = Selector('.DiagramModal .BPMNDiagram');
 export const closeModalButton = Selector('.Modal .Button').withText('Close');
 export const bucketSizeSwitch = Selector('.BucketSize .Switch');
 export const bucketSizeUnitSelect = Selector('.BucketSize .Select').nth(0);
-export const submenuOption = (text) => Selector('.Submenu .DropdownOption').withText(text);
 export const nextPageButton = Selector('.Table .Button.next');
 export const rowsPerPageButton = Selector('.Table .size .Button');
 export const addMeasureButton = Selector('.addMeasure button');

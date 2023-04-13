@@ -11,6 +11,7 @@ import * as u from '../utils';
 import {addAnnotation, clearAllAnnotations} from '../browserMagic';
 
 import * as Analysis from './Analysis.elements.js';
+import * as Common from './Common.elements.js';
 
 fixture('Process Analysis').page(config.endpoint).beforeEach(u.login).afterEach(cleanEntities);
 
@@ -105,7 +106,10 @@ test('should show outlier details modal when clicking view details on a flow nod
 
   await t
     .resizeWindow(1600, 800)
-    .takeElementScreenshot(Analysis.modal, 'process-analysis/img/outlierExample_2_distribution.png')
+    .takeElementScreenshot(
+      Common.modalContainer,
+      'process-analysis/img/outlierExample_2_distribution.png'
+    )
     .maximizeWindow();
 
   await t.expect(Analysis.chart.visible).ok();
@@ -124,7 +128,10 @@ test('should show common outliers variables as a table', async (t) => {
 
   await t
     .resizeWindow(1600, 800)
-    .takeElementScreenshot(Analysis.modal, 'process-analysis/img/outlierExample_3_Variables.png')
+    .takeElementScreenshot(
+      Common.modalContainer,
+      'process-analysis/img/outlierExample_3_Variables.png'
+    )
     .maximizeWindow();
 
   await t.expect(Analysis.variablesTable.visible).ok();

@@ -9,7 +9,7 @@ import {cleanEntities} from '../setup';
 import config from '../config';
 import * as u from '../utils';
 
-import * as Homepage from './Homepage.elements.js';
+import * as Common from './Common.elements.js';
 import * as Report from './DecisionReport.elements.js';
 import * as ProcessReport from './ProcessReport.elements.js';
 
@@ -18,20 +18,16 @@ fixture('Decision Report').page(config.endpoint).beforeEach(u.login).afterEach(c
 test('create a dmn js table report', async (t) => {
   await t.resizeWindow(1400, 700);
 
-  await t.click(Homepage.createNewMenu);
-  await t.click(Homepage.option('Report'));
+  await t.click(Common.createNewMenu);
+  await t.click(Common.option('Report'));
 
-  await t.hover(Homepage.submenuOption('Decision Report'));
+  await t.hover(Common.submenuOption('Decision Report'));
 
-  await t.takeElementScreenshot(
-    Homepage.entityList,
-    'decision-analysis/img/dmn_report_create.png',
-    {
-      crop: {left: 1000, bottom: 300},
-    }
-  );
+  await t.takeElementScreenshot(Common.entityList, 'decision-analysis/img/dmn_report_create.png', {
+    crop: {left: 1000, bottom: 300},
+  });
 
-  await t.click(Homepage.submenuOption('Decision Report'));
+  await t.click(Common.submenuOption('Decision Report'));
 
   await u.toggleReportAutoPreviewUpdate(t);
 
@@ -46,7 +42,7 @@ test('create a dmn js table report', async (t) => {
   await t.expect(Report.decisionTable.textContent).contains('Hits');
   await t.expect(Report.decisionTableCell(1, 2).textContent).eql('"Misc"');
 
-  await t.typeText(Report.nameEditField, 'Decision Table', {replace: true});
+  await t.typeText(Common.nameEditField, 'Decision Table', {replace: true});
 
   await t
     .resizeWindow(1400, 700)
@@ -60,11 +56,11 @@ test('create raw data report', async (t) => {
   await u.selectDefinition(t, 'Invoice Classification');
   await u.selectView(t, 'Raw Data');
 
-  await t.expect(Report.reportTable.textContent).contains('Decision Definition Key');
-  await t.expect(Report.reportTable.textContent).contains('InputVar');
-  await t.expect(Report.reportTable.textContent).contains('OutputVar');
+  await t.expect(ProcessReport.reportTable.textContent).contains('Decision Definition Key');
+  await t.expect(ProcessReport.reportTable.textContent).contains('InputVar');
+  await t.expect(ProcessReport.reportTable.textContent).contains('OutputVar');
 
-  await t.typeText(Report.nameEditField, 'DMN - Raw Data Report', {replace: true});
+  await t.typeText(Common.nameEditField, 'DMN - Raw Data Report', {replace: true});
 
   await t
     .resizeWindow(1400, 700)
@@ -78,14 +74,14 @@ test('save the report', async (t) => {
   await u.selectDefinition(t, 'Invoice Classification');
   await u.selectView(t, 'Raw Data');
 
-  await t.typeText(Report.nameEditField, 'new decision report', {replace: true});
+  await t.typeText(Common.nameEditField, 'new decision report', {replace: true});
   await u.save(t);
 
-  await t.expect(Report.reportTable.visible).ok();
+  await t.expect(ProcessReport.reportTable.visible).ok();
 
   await u.gotoOverview(t);
 
-  await t.expect(Homepage.reportLabel.textContent).contains('Decision');
+  await t.expect(Common.reportLabel.textContent).contains('Decision');
 });
 
 test('create a single number report', async (t) => {
@@ -94,9 +90,9 @@ test('create a single number report', async (t) => {
   await u.selectDefinition(t, 'Invoice Classification');
   await u.selectView(t, 'Evaluation Count');
 
-  await t.expect(Report.reportNumber.visible).ok();
+  await t.expect(ProcessReport.reportNumber.visible).ok();
 
-  await t.typeText(Report.nameEditField, 'Progress of Expected Evaluation Count', {replace: true});
+  await t.typeText(Common.nameEditField, 'Progress of Expected Evaluation Count', {replace: true});
 
   await t.click(ProcessReport.configurationButton);
   await t.click(ProcessReport.goalSwitch);
@@ -120,13 +116,13 @@ test('create a report grouped by evaluation date', async (t) => {
 
   await checkVisualizations(t);
 
-  await t.click(Report.option('Table'));
+  await t.click(Common.option('Table'));
 
-  await t.expect(Report.reportTable.visible).ok();
+  await t.expect(ProcessReport.reportTable.visible).ok();
 
   await u.selectVisualization(t, 'Line Chart');
 
-  await t.typeText(Report.nameEditField, 'Decision Evaluations', {replace: true});
+  await t.typeText(Common.nameEditField, 'Decision Evaluations', {replace: true});
 
   await t
     .resizeWindow(1400, 700)
@@ -145,14 +141,14 @@ test('create a report grouped by Input variable', async (t) => {
 
   await checkVisualizations(t);
 
-  await t.click(Report.option('Line Chart'));
+  await t.click(Common.option('Line Chart'));
 
-  await t.expect(Report.reportChart.visible).ok();
+  await t.expect(ProcessReport.reportChart.visible).ok();
 
   await u.selectGroupby(t, 'Output Variable', 'Classification');
   await u.selectVisualization(t, 'Pie Chart');
 
-  await t.typeText(Report.nameEditField, 'Distribution of Expense Classification', {replace: true});
+  await t.typeText(Common.nameEditField, 'Distribution of Expense Classification', {replace: true});
 
   await t
     .resizeWindow(1400, 700)
@@ -174,7 +170,7 @@ test('filters', async (t) => {
     .click(Report.filterButton)
     .hover(Report.filterOption('Output Variable'))
     .takeElementScreenshot(
-      Report.controlPanel,
+      Common.controlPanel,
       'decision-analysis/img/report-with-filterlist-open.png'
     )
     .maximizeWindow();
@@ -199,9 +195,9 @@ test('show raw data and decision table', async (t) => {
 });
 
 async function checkVisualizations(t) {
-  await t.expect(Report.option('Number').hasClass('disabled')).ok();
-  await t.expect(Report.option('Table').hasClass('disabled')).notOk();
-  await t.expect(Report.option('Bar Chart').hasClass('disabled')).notOk();
-  await t.expect(Report.option('Line Chart').hasClass('disabled')).notOk();
-  await t.expect(Report.option('Pie Chart').hasClass('disabled')).notOk();
+  await t.expect(Common.option('Number').hasClass('disabled')).ok();
+  await t.expect(Common.option('Table').hasClass('disabled')).notOk();
+  await t.expect(Common.option('Bar Chart').hasClass('disabled')).notOk();
+  await t.expect(Common.option('Line Chart').hasClass('disabled')).notOk();
+  await t.expect(Common.option('Pie Chart').hasClass('disabled')).notOk();
 }

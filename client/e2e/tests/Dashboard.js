@@ -11,29 +11,30 @@ import * as u from '../utils';
 import {addAnnotation, clearAllAnnotations} from '../browserMagic';
 
 import * as e from './Dashboard.elements.js';
-import * as Homepage from './Homepage.elements.js';
+import * as Common from './Common.elements.js';
 import * as Filter from './Filter.elements.js';
 import * as Alert from './Alerts.elements.js';
+import * as Report from './ProcessReport.elements.js';
 
 fixture('Dashboard').page(config.endpoint).beforeEach(u.login).afterEach(cleanEntities);
 
 test('create a dashboard and reports from a template', async (t) => {
-  await t.click(Homepage.createNewMenu).click(Homepage.option('Collection'));
-  await t.click(Homepage.carbonModalConfirmBtn);
-  await t.click(Homepage.carbonModalConfirmBtn);
+  await t.click(Common.createNewMenu).click(Common.option('Collection'));
+  await t.click(Common.carbonModalConfirmBtn);
+  await t.click(Common.carbonModalConfirmBtn);
 
   await t.resizeWindow(1300, 750);
-  await t.click(Homepage.createNewMenu);
-  await t.click(Homepage.option('Dashboard'));
+  await t.click(Common.createNewMenu);
+  await t.click(Common.option('Dashboard'));
 
-  await t.click(e.templateModalProcessField);
-  await t.click(e.option('Invoice Receipt with alternative correlation variable'));
+  await t.click(Common.templateModalProcessField);
+  await t.click(Common.option('Invoice Receipt with alternative correlation variable'));
   await t.click(e.templateOption('Process performance overview'));
 
   await t.takeScreenshot('img/dashboardTemplate.png', {fullPage: true});
   await t.resizeWindow(1200, 600);
 
-  await t.click(Homepage.carbonModalConfirmBtn);
+  await t.click(Common.carbonModalConfirmBtn);
 
   await t.takeScreenshot('img/dashboard-dashboardEditActions.png', {fullPage: true});
 
@@ -64,7 +65,7 @@ test('create a dashboard and reports from a template', async (t) => {
   await clearAllAnnotations();
 
   await t.click(e.autoRefreshButton);
-  await t.click(e.option('1 minute'));
+  await t.click(Common.option('1 minute'));
 
   await u.save(t);
 
@@ -79,8 +80,8 @@ test('create a dashboard and reports from a template', async (t) => {
 
   await t.click(e.collectionLink);
 
-  await t.expect(Homepage.reportItem.visible).ok();
-  await t.expect(Homepage.dashboardItem.visible).ok();
+  await t.expect(Common.reportItem.visible).ok();
+  await t.expect(Common.dashboardItem.visible).ok();
 });
 
 test('create a report and add it to the Dashboard', async (t) => {
@@ -94,14 +95,14 @@ test('create a report and add it to the Dashboard', async (t) => {
 
   await u.save(t);
 
-  await t.expect(e.report.visible).ok();
-  await t.expect(e.report.textContent).contains('invoice');
-  await t.expect(e.report.textContent).contains('Start Date');
+  await t.expect(Report.reportRenderer.visible).ok();
+  await t.expect(Report.reportRenderer.textContent).contains('invoice');
+  await t.expect(Report.reportRenderer.textContent).contains('Start Date');
 });
 
 test('renaming a dashboard', async (t) => {
   await u.createNewDashboard(t);
-  await t.typeText(e.nameEditField, 'New Name', {replace: true});
+  await t.typeText(Common.nameEditField, 'New Name', {replace: true});
 
   await u.save(t);
 
@@ -112,8 +113,8 @@ test('cancel changes', async (t) => {
   await u.createNewDashboard(t);
   await u.save(t);
 
-  await t.click(e.editButton);
-  await t.typeText(e.nameEditField, 'New Name', {replace: true});
+  await t.click(Common.editButton);
+  await t.typeText(Common.nameEditField, 'New Name', {replace: true});
   await u.cancel(t);
 
   await t.expect(e.dashboardName.textContent).notEql('New Name');
@@ -134,25 +135,25 @@ test('cancel changes', async (t) => {
 
 test('sharing', async (t) => {
   await t.resizeWindow(1300, 750);
-  await t.click(Homepage.createNewMenu);
-  await t.click(Homepage.option('Dashboard'));
+  await t.click(Common.createNewMenu);
+  await t.click(Common.option('Dashboard'));
 
   await t.click(e.templateOption('Process performance overview'));
 
-  await t.click(e.templateModalProcessField);
-  await t.click(e.option('Invoice Receipt with alternative correlation variable'));
-  await t.click(Homepage.carbonModalConfirmBtn);
+  await t.click(Common.templateModalProcessField);
+  await t.click(Common.option('Invoice Receipt with alternative correlation variable'));
+  await t.click(Common.carbonModalConfirmBtn);
 
   await u.save(t);
 
-  await t.expect(e.shareButton.hasAttribute('disabled')).notOk();
+  await t.expect(Common.shareButton.hasAttribute('disabled')).notOk();
 
-  await t.click(e.shareButton);
-  await t.click(e.shareSwitch);
+  await t.click(Common.shareButton);
+  await t.click(Common.shareSwitch);
 
   await t.takeScreenshot('img/dashboard-sharingPopover.png', {fullPage: true});
 
-  const shareUrl = await e.shareUrl.value;
+  const shareUrl = await Common.shareUrl.value;
 
   await t.navigateTo(shareUrl);
 
@@ -165,30 +166,30 @@ test('sharing header parameters', async (t) => {
 
   await u.save(t);
 
-  await t.click(e.shareButton);
-  await t.click(e.shareSwitch);
+  await t.click(Common.shareButton);
+  await t.click(Common.shareSwitch);
 
-  const shareUrl = await e.shareUrl.value;
+  const shareUrl = await Common.shareUrl.value;
 
   await t.navigateTo(shareUrl + '&mode=embed');
 
-  await t.expect(e.shareOptimizeIcon.visible).ok();
-  await t.expect(e.shareTitle.visible).ok();
-  await t.expect(e.shareLink.visible).ok();
+  await t.expect(Common.shareOptimizeIcon.visible).ok();
+  await t.expect(Common.shareTitle.visible).ok();
+  await t.expect(Common.shareLink.visible).ok();
 
   await t.navigateTo(shareUrl + '&mode=embed&header=hidden');
 
-  await t.expect(e.shareHeader.exists).notOk();
+  await t.expect(Common.shareHeader.exists).notOk();
 
   await t.navigateTo(shareUrl + '&header=titleOnly');
 
-  await t.expect(e.shareTitle.exists).ok();
-  await t.expect(e.shareLink.exists).notOk();
+  await t.expect(Common.shareTitle.exists).ok();
+  await t.expect(Common.shareLink.exists).notOk();
 
   await t.navigateTo(shareUrl + '&mode=embed&header=linkOnly');
 
-  await t.expect(e.shareTitle.exists).notOk();
-  await t.expect(e.shareLink.exists).ok();
+  await t.expect(Common.shareTitle.exists).notOk();
+  await t.expect(Common.shareLink.exists).ok();
 });
 
 test('sharing with filters', async (t) => {
@@ -201,25 +202,25 @@ test('sharing with filters', async (t) => {
   await u.addReportToDashboard(t, 'Blank report');
 
   await t.click(e.addFilterButton);
-  await t.click(e.option('Instance State'));
+  await t.click(Common.option('Instance State'));
 
   await u.save(t);
 
   await t.click(e.instanceStateFilter);
   await t.click(e.switchElement('Suspended'));
 
-  await t.expect(e.shareButton.hasAttribute('disabled')).notOk();
+  await t.expect(Common.shareButton.hasAttribute('disabled')).notOk();
 
-  await t.click(e.shareButton);
-  await t.click(e.shareSwitch);
+  await t.click(Common.shareButton);
+  await t.click(Common.shareSwitch);
   await t.click(e.shareFilterCheckbox);
 
-  const shareUrl = await e.shareUrl.value;
+  const shareUrl = await Common.shareUrl.value;
 
   await t.navigateTo(shareUrl);
 
-  await t.expect(e.report.visible).ok();
-  await t.expect(e.report.textContent).contains('No data');
+  await t.expect(Report.reportRenderer.visible).ok();
+  await t.expect(Report.reportRenderer.textContent).contains('No data');
 });
 
 test('remove a report from a dashboard', async (t) => {
@@ -234,13 +235,13 @@ test('remove a report from a dashboard', async (t) => {
   await t.click(e.reportDeleteButton);
   await u.save(t);
 
-  await t.expect(e.report.exists).notOk();
+  await t.expect(Report.reportRenderer.exists).notOk();
 });
 
 test('external datasources', async (t) => {
   await u.createNewDashboard(t);
 
-  await t.click(e.addButton);
+  await t.click(Common.addButton);
 
   await t.takeElementScreenshot(e.reportModal, 'img/dashboard-addAReportModal.png');
 
@@ -259,7 +260,7 @@ test('external datasources', async (t) => {
 test('text report', async (t) => {
   await u.createNewDashboard(t);
 
-  await t.click(e.addButton);
+  await t.click(Common.addButton);
   await t.click(e.textReportLink);
   await t.typeText(e.textReportInput, 'This is a text report ');
 
@@ -272,13 +273,13 @@ test('text report', async (t) => {
   await t.click(e.textReportToolButton('Italic'));
 
   await t.click(e.textReportInsertDropdown);
-  await t.click(e.option('Link'));
+  await t.click(Common.option('Link'));
   await t.typeText(e.textReportUrlInput, 'https://example.com/');
   await t.typeText(e.textReportAltInput, 'This is a link to example.com');
   await t.click(e.textReportInsertAddButton);
 
   await t.click(e.textReportInsertDropdown);
-  await t.click(e.option('Image'));
+  await t.click(Common.option('Image'));
   await t.typeText(e.textReportUrlInput, 'https://avatars3.githubusercontent.com/u/2443838');
   await t.typeText(e.textReportAltInput, 'This is a camunda logo');
   await t.click(e.textReportInsertAddButton);
@@ -297,8 +298,8 @@ test('deleting', async (t) => {
 
   await u.save(t);
 
-  await t.click(e.deleteButton);
-  await t.click(Homepage.carbonModalConfirmBtn);
+  await t.click(Common.deleteButton);
+  await t.click(Common.carbonModalConfirmBtn);
 
   await t.expect(e.dashboard.exists).notOk();
 });
@@ -314,24 +315,24 @@ test('filters', async (t) => {
   await u.addReportToDashboard(t, 'Blank report');
 
   await u.save(t);
-  await t.click(e.editButton);
+  await t.click(Common.editButton);
 
   await t.click(e.addFilterButton);
-  await t.click(e.option('Instance State'));
+  await t.click(Common.option('Instance State'));
   await t.click(e.addFilterButton);
-  await t.click(e.option('Start Date'));
+  await t.click(Common.option('Start Date'));
   await t.click(e.addFilterButton);
-  await t.click(e.option('Variable'));
+  await t.click(Common.option('Variable'));
 
   await t.typeText(Filter.typeaheadInput, 'invoiceCategory', {replace: true});
-  await t.click(Filter.typeaheadOption('invoiceCategory'));
+  await t.click(Common.typeaheadOption('invoiceCategory'));
   await t.click(Filter.multiSelectValue('Software License Costs'));
   await t.click(Filter.multiSelectValue('Travel Expenses'));
   await t.click(Filter.multiSelectValue('Misc'));
 
   await t.click(Filter.customValueCheckbox);
 
-  await t.click(Filter.confirmButton);
+  await t.click(Common.modalConfirmButton);
 
   await t.resizeWindow(1200, 550);
   await t.takeElementScreenshot(e.dashboardContainer, 'img/filter-editMode.png', {
@@ -343,7 +344,7 @@ test('filters', async (t) => {
 
   await u.save(t);
 
-  await t.expect(e.report.visible).ok();
+  await t.expect(Report.reportRenderer.visible).ok();
   await t.expect(e.instanceStateFilter.textContent).contains('Running');
 
   await t.click(e.selectionFilter);
@@ -356,42 +357,42 @@ test('filters', async (t) => {
 
   await t.click(e.customValueAddButton);
   await t.typeText(e.typeaheadInput, 'Other', {replace: true});
-  await t.click(e.typeaheadOption('Other'));
+  await t.click(Common.typeaheadOption('Other'));
 
   await t.maximizeWindow();
 
-  await t.expect(e.report.visible).ok();
+  await t.expect(Report.reportRenderer.visible).ok();
 
   await u.gotoOverview(t);
-  await t.click(Homepage.dashboardItem);
-  await t.expect(e.report.visible).ok();
+  await t.click(Common.dashboardItem);
+  await t.expect(Report.reportRenderer.visible).ok();
   await t.expect(e.instanceStateFilter.textContent).contains('Running');
 
-  await t.click(e.editButton);
+  await t.click(Common.editButton);
   await t.click(e.instanceStateFilter);
   await t.click(e.switchElement('Running'));
   await t.click(e.switchElement('Suspended'));
 
   await u.save(t);
 
-  await t.click(e.shareButton);
-  await t.click(e.shareSwitch);
+  await t.click(Common.shareButton);
+  await t.click(Common.shareSwitch);
 
-  const shareUrl = await e.shareUrl.value;
+  const shareUrl = await Common.shareUrl.value;
 
   await t.navigateTo(shareUrl);
 
-  await t.expect(e.report.visible).ok();
-  await t.expect(e.report.textContent).contains('No data');
+  await t.expect(Report.reportRenderer.visible).ok();
+  await t.expect(Report.reportRenderer.textContent).contains('No data');
 });
 
 test('version selection', async (t) => {
-  await t.click(Homepage.createNewMenu).click(Homepage.option('Collection'));
-  await t.click(Homepage.carbonModalConfirmBtn);
-  await t.click(Homepage.carbonModalConfirmBtn);
+  await t.click(Common.createNewMenu).click(Common.option('Collection'));
+  await t.click(Common.carbonModalConfirmBtn);
+  await t.click(Common.carbonModalConfirmBtn);
 
   await u.createNewReport(t);
-  await t.typeText(e.nameEditField, 'Number Report', {replace: true});
+  await t.typeText(Common.nameEditField, 'Number Report', {replace: true});
   await u.selectReportDefinition(t, 'Invoice Receipt with alternative correlation variable');
   await u.selectView(t, 'Process Instance', 'Count');
   await u.save(t);
@@ -403,49 +404,49 @@ test('version selection', async (t) => {
 
   // Creating
   await t.click(e.alertsDropdown);
-  await t.click(e.option('New Alert'));
+  await t.click(Common.option('New Alert'));
   await t.typeText(Alert.inputWithLabel('Alert Name'), 'Test alert', {replace: true});
-  await t.click(Alert.reportTypeahead);
-  await t.click(Alert.reportTypeaheadOption('Number Report'));
+  await t.click(Common.typeahead);
+  await t.click(Common.typeaheadOption('Number Report'));
   await t.typeText(Alert.inputWithLabel('Send Email to'), 'test@email.com ');
-  await t.click(Alert.primaryModalButton);
-  await t.click(e.notificationCloseButton);
+  await t.click(Common.modalConfirmButton);
+  await t.click(Common.notificationCloseButton);
 
   // editing
   await t.click(e.alertsDropdown);
-  await t.click(e.option('Test alert'));
+  await t.click(Common.option('Test alert'));
   await t.typeText(Alert.inputWithLabel('Alert Name'), 'another alert name', {replace: true});
-  await t.click(Alert.primaryModalButton);
-  await t.click(e.notificationCloseButton);
+  await t.click(Common.modalConfirmButton);
+  await t.click(Common.notificationCloseButton);
 
   // deleting
   await t.click(e.alertsDropdown);
-  await t.click(e.option('another alert name'));
+  await t.click(Common.option('another alert name'));
   await t.click(e.alertDeleteButton);
-  await t.click(Homepage.carbonModalConfirmBtn);
-  await t.click(e.notificationCloseButton);
+  await t.click(Common.carbonModalConfirmBtn);
+  await t.click(Common.notificationCloseButton);
   await t.click(e.alertsDropdown);
-  await t.expect(e.option('Test alert').exists).notOk();
+  await t.expect(Common.option('Test alert').exists).notOk();
 });
 
 test('add a report from the dashboard', async (t) => {
   await u.createNewDashboard(t);
 
   await t
-    .click(e.addButton)
+    .click(Common.addButton)
     .click(e.reportModalOptionsButton)
     .click(e.reportModalDropdownOption.withText('New Report from a template'))
     .click(e.addTileButton);
 
   await t
-    .click(e.templateModalProcessField)
-    .click(e.option('Invoice Receipt with alternative correlation variable'))
+    .click(Common.templateModalProcessField)
+    .click(Common.option('Invoice Receipt with alternative correlation variable'))
     .click(e.blankReportButton)
-    .click(Homepage.carbonModalConfirmBtn)
+    .click(Common.carbonModalConfirmBtn)
     .click('.DashboardRenderer');
 
   await t
-    .click(e.addButton)
+    .click(Common.addButton)
     .click(e.reportModalOptionsButton)
     .click(e.reportModalDropdownOption.withText('New Report from a template'))
     .click(e.addTileButton);
@@ -457,7 +458,7 @@ test('add a report from the dashboard', async (t) => {
     )
     .ok();
 
-  await t.click(Homepage.carbonModalConfirmBtn).click('.DashboardRenderer');
+  await t.click(Common.carbonModalConfirmBtn).click('.DashboardRenderer');
 
   await u.save(t);
 

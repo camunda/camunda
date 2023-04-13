@@ -8,7 +8,7 @@
 import config from '../config';
 import {cleanEntities} from '../setup';
 import {login, save} from '../utils';
-import * as e from './Homepage.elements.js';
+import * as Common from './Common.elements.js';
 
 fixture('German Optimize')
   .page(config.endpoint)
@@ -22,12 +22,12 @@ fixture('German Optimize')
   });
 
 test('Create a report in the german version of optimize', async (t) => {
-  await t.click(e.createNewMenu).hover(e.newReportOption);
-  await t.click(e.submenuOption('Prozessbericht'));
+  await t.click(Common.createNewMenu).hover(Common.newReportOption);
+  await t.click(Common.submenuOption('Prozessbericht'));
 
-  await t.click(e.templateModalProcessField);
-  await t.click(e.firstTypeaheadOption);
-  await t.click(e.carbonModalConfirmBtn);
+  await t.click(Common.templateModalProcessField);
+  await t.click(Common.firstTypeaheadOption);
+  await t.click(Common.carbonModalConfirmBtn);
 
   await save(t);
 });

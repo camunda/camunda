@@ -10,7 +10,9 @@ import config from '../config';
 import * as u from '../utils';
 
 import * as Report from './DecisionReport.elements.js';
+import * as ProcessReport from './ProcessReport.elements.js';
 import * as Filter from './Filter.elements.js';
+import * as Common from './Common.elements.js';
 
 fixture('Decision Report Filter')
   .page(config.endpoint)
@@ -23,20 +25,20 @@ test('should apply a filter to the report result', async (t) => {
   await u.selectDefinition(t, 'Invoice Classification');
   await u.selectView(t, 'Evaluation Count');
 
-  const unfiltered = +(await Report.reportNumber.textContent);
+  const unfiltered = +(await ProcessReport.reportNumber.textContent);
 
   await t.click(Report.sectionToggle('Filters'));
   await t.click(Report.filterButton);
   await t.click(Report.filterOption('Input Variable'));
-  await t.click(Filter.typeahead);
-  await t.click(Filter.typeaheadOption('Invoice Amount'));
+  await t.click(Common.typeahead);
+  await t.click(Common.typeaheadOption('Invoice Amount'));
   await t.click(Filter.variableFilterOperatorButton('is less than'));
 
   await t.typeText(Filter.variableFilterValueInput, '100', {replace: true});
 
-  await t.click(Report.primaryModalButton);
+  await t.click(Common.modalConfirmButton);
 
-  const filtered = +(await Report.reportNumber.textContent);
+  const filtered = +(await ProcessReport.reportNumber.textContent);
 
   await t.expect(unfiltered).gt(filtered);
 });
@@ -50,14 +52,14 @@ test('should have seperate input and output variables', async (t) => {
   await t.click(Report.sectionToggle('Filters'));
   await t.click(Report.filterButton);
   await t.click(Report.filterOption('Input Variable'));
-  await t.click(Filter.typeahead);
-  await t.expect(Filter.typeahead.textContent).notContains('Classification');
+  await t.click(Common.typeahead);
+  await t.expect(Common.typeahead.textContent).notContains('Classification');
   await t.click(Filter.modalCancel);
 
   await t.click(Report.filterButton);
   await t.click(Report.filterOption('Output Variable'));
-  await t.click(Filter.typeahead);
+  await t.click(Common.typeahead);
 
-  await t.expect(Filter.typeahead.textContent).notContains('Invoice Amount');
-  await t.expect(Filter.typeahead.textContent).contains('Classification');
+  await t.expect(Common.typeahead.textContent).notContains('Invoice Amount');
+  await t.expect(Common.typeahead.textContent).contains('Classification');
 });

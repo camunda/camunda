@@ -9,25 +9,24 @@ import {cleanEntities} from '../setup';
 import config from '../config';
 import * as u from '../utils';
 
-import * as Report from './ProcessReport.elements.js';
 import * as Alert from './Alerts.elements.js';
-import * as Homepage from './Homepage.elements.js';
 import * as Collection from './Collection.elements.js';
+import * as Common from './Common.elements.js';
 
 fixture('Alerts').page(config.endpoint).beforeEach(u.login).afterEach(cleanEntities);
 
 test('create, edit, copy and remove an alert', async (t) => {
-  await t.click(Homepage.createNewMenu).click(Homepage.option('Collection'));
-  await t.typeText(Homepage.modalNameInput, 'Test Collection', {replace: true});
-  await t.click(Homepage.carbonModalConfirmBtn);
-  await t.click(Homepage.carbonModalConfirmBtn);
+  await t.click(Common.createNewMenu).click(Common.option('Collection'));
+  await t.typeText(Common.modalNameInput, 'Test Collection', {replace: true});
+  await t.click(Common.carbonModalConfirmBtn);
+  await t.click(Common.carbonModalConfirmBtn);
 
   await u.createNewReport(t);
   await u.selectReportDefinition(t, 'Lead Qualification');
 
   await u.selectView(t, 'Process Instance', 'Count');
 
-  await t.typeText(Report.nameEditField, 'Number Report', {replace: true});
+  await t.typeText(Common.nameEditField, 'Number Report', {replace: true});
 
   await u.save(t);
 
@@ -43,14 +42,17 @@ test('create, edit, copy and remove an alert', async (t) => {
   });
 
   await t.click(Alert.webhookDropdown);
-  await t.click(Collection.typeaheadOption('testWebhook'));
+  await t.click(Common.typeaheadOption('testWebhook'));
 
-  await t.click(Alert.reportTypeahead);
-  await t.click(Alert.reportTypeaheadOption('Number Report'));
+  await t.click(Common.typeahead);
+  await t.click(Common.typeaheadOption('Number Report'));
 
-  await t.takeElementScreenshot(Alert.modal, 'additional-features/img/alert-modal-description.png');
+  await t.takeElementScreenshot(
+    Common.modalContainer,
+    'additional-features/img/alert-modal-description.png'
+  );
 
-  await t.click(Alert.primaryModalButton);
+  await t.click(Common.modalConfirmButton);
 
   await t.expect(Alert.list.textContent).contains('Test Alert');
   await t.expect(Alert.list.textContent).contains('Number Report');
@@ -62,9 +64,9 @@ test('create, edit, copy and remove an alert', async (t) => {
     .maximizeWindow();
 
   // EDIT
-  await t.hover(Alert.listItem);
-  await t.click(Homepage.contextMenu(Alert.listItem));
-  await t.click(Homepage.edit(Alert.listItem));
+  await t.hover(Common.listItem);
+  await t.click(Common.contextMenu(Common.listItem));
+  await t.click(Common.edit(Common.listItem));
 
   await t.typeText(Alert.inputWithLabel('Alert Name'), 'Edited Alert', {replace: true});
 
@@ -72,29 +74,29 @@ test('create, edit, copy and remove an alert', async (t) => {
 
   await t.expect(Alert.list.textContent).notContains('Edited Alert');
 
-  await t.hover(Alert.listItem);
-  await t.click(Homepage.contextMenu(Alert.listItem));
-  await t.click(Homepage.edit(Alert.listItem));
+  await t.hover(Common.listItem);
+  await t.click(Common.contextMenu(Common.listItem));
+  await t.click(Common.edit(Common.listItem));
   await t.typeText(Alert.inputWithLabel('Alert Name'), 'Saved Alert', {replace: true});
 
-  await t.click(Alert.primaryModalButton);
+  await t.click(Common.modalConfirmButton);
 
   await t.expect(Alert.list.textContent).contains('Saved Alert');
 
   // COPY
-  await t.hover(Alert.listItem);
-  await t.click(Homepage.contextMenu(Alert.listItem));
-  await t.click(Homepage.copy(Alert.listItem));
+  await t.hover(Common.listItem);
+  await t.click(Common.contextMenu(Common.listItem));
+  await t.click(Common.copy(Common.listItem));
   await t.typeText(Alert.inputWithLabel('Name of Copy'), 'Copied Alert', {replace: true});
-  await t.click(Alert.primaryModalButton);
+  await t.click(Common.modalConfirmButton);
   await t.expect(Alert.list.textContent).contains('Copied Alert');
 
   // DELETE
-  await t.hover(Alert.listItem);
-  await t.click(Homepage.contextMenu(Alert.listItem));
-  await t.click(Homepage.del(Alert.listItem));
+  await t.hover(Common.listItem);
+  await t.click(Common.contextMenu(Common.listItem));
+  await t.click(Common.del(Common.listItem));
 
-  await t.click(Homepage.carbonModalConfirmBtn);
+  await t.click(Common.carbonModalConfirmBtn);
 
   await t.expect(Alert.list.textContent).notContains('Saved Alert');
 });

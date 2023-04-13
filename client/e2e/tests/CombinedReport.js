@@ -9,9 +9,9 @@ import {cleanEntities} from '../setup';
 import config from '../config';
 import * as u from '../utils';
 
-import * as Homepage from './Homepage.elements.js';
 import * as Report from './ProcessReport.elements.js';
 import * as Combined from './CombinedReport.elements.js';
+import * as Common from './Common.elements.js';
 
 fixture('Combined Report').page(config.endpoint).beforeEach(u.login).afterEach(cleanEntities);
 
@@ -34,10 +34,10 @@ async function createReport(
     await t.click(Report.filterButton);
     await t.click(Report.filterOption('Instance State'));
     await t.click(Report.modalOption('Completed'));
-    await t.click(Report.primaryModalButton);
+    await t.click(Common.modalConfirmButton);
   }
 
-  await t.typeText(Report.nameEditField, name, {replace: true});
+  await t.typeText(Common.nameEditField, name, {replace: true});
 
   await u.save(t);
 
@@ -55,18 +55,18 @@ test('combine two single number reports', async (t) => {
 
   await t.resizeWindow(1400, 700);
 
-  await t.click(Homepage.createNewMenu);
-  await t.click(Homepage.option('Report'));
+  await t.click(Common.createNewMenu);
+  await t.click(Common.option('Report'));
 
-  await t.hover(Homepage.submenuOption('Combined Process Report'));
+  await t.hover(Common.submenuOption('Combined Process Report'));
 
-  await t.takeElementScreenshot(Homepage.entityList, 'img/combined-report-create.png', {
+  await t.takeElementScreenshot(Common.entityList, 'img/combined-report-create.png', {
     crop: {left: 1000, bottom: 300},
   });
 
-  await t.click(Homepage.submenuOption('Combined Process Report'));
+  await t.click(Common.submenuOption('Combined Process Report'));
   await u.toggleReportAutoPreviewUpdate(t);
-  await t.typeText(Report.nameEditField, 'Combined Report', {replace: true});
+  await t.typeText(Common.nameEditField, 'Combined Report', {replace: true});
 
   await t
     .resizeWindow(1150, 700)
@@ -84,7 +84,7 @@ test('combine two single number reports', async (t) => {
 
   await u.gotoOverview(t);
 
-  await t.expect(Homepage.reportLabel.textContent).contains('Combined');
+  await t.expect(Common.reportLabel.textContent).contains('Combined');
 });
 
 test('combine two single table reports and reorder them', async (t) => {
@@ -96,9 +96,9 @@ test('combine two single table reports and reorder them', async (t) => {
   await t.click(Combined.singleReport('Table Report'));
   await t.click(Combined.singleReport('Another Table Report'));
 
-  await t.expect(Combined.reportTable.visible).ok();
+  await t.expect(Report.reportTable.visible).ok();
 
-  await t.typeText(Report.nameEditField, 'Combined Table Report', {replace: true});
+  await t.typeText(Common.nameEditField, 'Combined Table Report', {replace: true});
 
   await t
     .resizeWindow(1150, 700)
@@ -107,7 +107,7 @@ test('combine two single table reports and reorder them', async (t) => {
 
   await t.dragToElement(Combined.singleReport('Table Report'), Combined.dragEndIndicator);
 
-  await t.expect(Combined.reportTable.visible).ok();
+  await t.expect(Report.reportTable.visible).ok();
 });
 
 test('combine two single chart reports and change their colors', async (t) => {
@@ -119,9 +119,9 @@ test('combine two single chart reports and change their colors', async (t) => {
   await t.click(Combined.singleReport('Line Report - 1'));
   await t.click(Combined.singleReport('Line Report - 2'));
 
-  await t.expect(Combined.reportChart.visible).ok();
+  await t.expect(Report.reportChart.visible).ok();
 
-  await t.typeText(Report.nameEditField, 'Combined Chart Report', {replace: true});
+  await t.typeText(Common.nameEditField, 'Combined Chart Report', {replace: true});
 
   await t.resizeWindow(1150, 700);
 
@@ -131,7 +131,7 @@ test('combine two single chart reports and change their colors', async (t) => {
 
   await t.click(Combined.redColor);
 
-  await t.expect(Combined.reportChart.visible).ok();
+  await t.expect(Report.reportChart.visible).ok();
 });
 
 test('open the configuration popover and add a goal line', async (t) => {
@@ -143,7 +143,7 @@ test('open the configuration popover and add a goal line', async (t) => {
   await t.click(Combined.singleReport('Bar Report - 1'));
   await t.click(Combined.singleReport('Bar Report - 2'));
 
-  await t.typeText(Report.nameEditField, 'Combined Chart Report', {replace: true});
+  await t.typeText(Common.nameEditField, 'Combined Chart Report', {replace: true});
 
   await t.resizeWindow(1150, 700);
 
@@ -155,5 +155,5 @@ test('open the configuration popover and add a goal line', async (t) => {
 
   await t.click(Combined.configurationButton);
 
-  await t.expect(Combined.reportChart.visible).ok();
+  await t.expect(Report.reportChart.visible).ok();
 });

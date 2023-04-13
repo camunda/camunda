@@ -7,10 +7,8 @@
 
 import {Selector} from 'testcafe';
 
-export const typeahead = Selector('.Modal__content .Typeahead');
 export const multiSelect = Selector('.CarbonModal .MultiSelect');
 export const typeaheadInput = Selector('.Modal__content .Typeahead .Input');
-export const typeaheadOption = (text) => typeahead.find('.DropdownOption').withText(text);
 export const stateFilterMultiSelect = Selector('.Modal__content .MultiSelect');
 export const stateFilterMultiSelectOption = (text) =>
   stateFilterMultiSelect.find('.DropdownOption').withText(text);
@@ -39,7 +37,6 @@ export const modalCancel = Selector('.Modal .Button').withText('Cancel');
 export const stringValues = Selector('.Checklist .itemsList');
 export const firstMultiSelectValue = Selector('.Checklist .itemsList .LabeledInput .label');
 export const multiSelectValue = (text) => firstMultiSelectValue.withText(text);
-export const confirmButton = Selector('.Modal .Modal__actions .primary');
 export const customValueCheckbox = Selector('.Modal .customValueCheckbox');
 export const addValueButton = Selector('.Modal .customValueButton');
 export const customValueInput = Selector('.Modal .customValueInput input');

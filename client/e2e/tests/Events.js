@@ -10,15 +10,15 @@ import config from '../config';
 import * as u from '../utils';
 
 import * as e from './Events.elements.js';
-import * as Homepage from './Homepage.elements';
+import * as Common from './Common.elements';
 
 fixture('Events Processes').page(config.endpoint).beforeEach(u.login).after(cleanEventProcesses);
 
 test('create a process from scratch', async (t) => {
   await t.click(e.navItem);
   await t.click(e.createDropdown);
-  await t.click(e.dropdownOption('Model a Process'));
-  await t.typeText(e.nameEditField, 'Invoice Process', {replace: true});
+  await t.click(Common.option('Model a Process'));
+  await t.typeText(Common.nameEditField, 'Invoice Process', {replace: true});
   await t.click(e.firstEl);
   await t.click(e.activityTask);
   await t.click(e.saveButton);
@@ -32,9 +32,9 @@ test('add sources, map and publish a process', async (t) => {
   await t.click(e.createDropdown);
   await t.setFilesToUpload(e.fileInput, './resources/eventsProcess.bpmn');
   await t.click(e.entity('Event Invoice process'));
-  await t.click(e.editButton);
+  await t.click(Common.editButton);
 
-  await t.typeText(e.nameEditField, 'Event Invoice process', {replace: true});
+  await t.typeText(Common.nameEditField, 'Event Invoice process', {replace: true});
 
   await t.takeScreenshot('additional-features/img/editMode.png');
 
@@ -52,21 +52,24 @@ test('add sources, map and publish a process', async (t) => {
   await t.click(e.typeaheadOption(e.variableTypeahead, 'longVar'));
   await t.click(e.startAndEndEvents);
 
-  await t.takeElementScreenshot(e.modalContainer, 'additional-features/img/sourceModal.png');
+  await t.takeElementScreenshot(Common.modalContainer, 'additional-features/img/sourceModal.png');
 
-  await t.click(e.primaryModalButton);
+  await t.click(Common.modalConfirmButton);
 
   await t.click(e.addSource);
   await t.click(e.externalEvents);
   await t.click(e.externalEventgroup(2));
   await t.click(e.externalEventgroup(3));
-  await t.takeElementScreenshot(e.modalContainer, 'additional-features/img/externalEvents.png');
-  await t.click(e.primaryModalButton);
+  await t.takeElementScreenshot(
+    Common.modalContainer,
+    'additional-features/img/externalEvents.png'
+  );
+  await t.click(Common.modalConfirmButton);
 
   await t.click(e.addSource);
   await t.click(e.externalEvents);
   await t.click(e.externalEventgroup(0));
-  await t.click(e.primaryModalButton);
+  await t.click(Common.modalConfirmButton);
 
   await t.takeElementScreenshot(e.eventsTable, 'additional-features/img/eventsTable.png');
 
@@ -93,7 +96,7 @@ test('add sources, map and publish a process', async (t) => {
 
   await t.click(e.publishButton);
 
-  await t.takeElementScreenshot(e.modalContainer, 'additional-features/img/publishModal.png');
+  await t.takeElementScreenshot(Common.modalContainer, 'additional-features/img/publishModal.png');
 
   await t.click(e.permissionButton);
 
@@ -104,42 +107,51 @@ test('add sources, map and publish a process', async (t) => {
   await t.click(e.typeaheadOption(e.usersTypeahead, 'john'));
   await t.typeText(e.typeaheadInput(e.usersTypeahead), 'john', {replace: true});
 
-  await t.takeElementScreenshot(e.modalContainer.nth(1), 'additional-features/img/usersModal.png');
+  await t.takeElementScreenshot(
+    Common.modalContainer.nth(1),
+    'additional-features/img/usersModal.png'
+  );
 
-  await t.click(e.primaryModalButton.nth(1));
-  await t.click(e.primaryModalButton);
-  await t.expect(e.notification.exists).ok({timeout: 5000});
-  await t.click(e.notificationCloseButton(e.notification));
-  await t.expect(e.notification.exists).notOk({timeout: 5000});
+  await t.click(Common.modalConfirmButton.nth(1));
+  await t.click(Common.modalConfirmButton);
+  await t.expect(Common.notification.exists).ok({timeout: 5000});
+  await t.click(Common.notificationCloseButton(Common.notification));
+  await t.expect(Common.notification.exists).notOk({timeout: 5000});
 
   // Listing
   await t.click(e.navItem);
   await t.hover(e.entity('Event Invoice process'));
-  await t.click(Homepage.contextMenu(e.invoiceEventProcess));
+  await t.click(Common.contextMenu(e.invoiceEventProcess));
   await t.takeScreenshot('additional-features/img/processList.png');
 
   // Edit Access
   await t.click(e.editAccess(e.invoiceEventProcess));
-  await t.takeElementScreenshot(e.modalContainer.nth(0), 'additional-features/img/editAccess.png');
+  await t.takeElementScreenshot(
+    Common.modalContainer.nth(0),
+    'additional-features/img/editAccess.png'
+  );
 });
 
 test('auto generate a process', async (t) => {
   await t.click(e.navItem);
   await t.click(e.createDropdown);
-  await t.click(e.dropdownOption('Autogenerate'));
+  await t.click(Common.option('Autogenerate'));
   await t.click(e.buttonWithText('Add Event Source'));
 
   await t.click(e.optionsButton(e.processTypeahead));
   await t.typeText(e.typeaheadInput(e.processTypeahead), 'Invoice', {replace: true});
   await t.click(e.typeaheadOption(e.processTypeahead, 'Invoice Receipt'));
   await t.click(e.businessKey);
-  await t.click(e.primaryModalButton.nth(1));
+  await t.click(Common.modalConfirmButton.nth(1));
 
   await t.click(e.buttonWithText('Add Event Source'));
   await t.click(e.externalEvents);
-  await t.click(e.primaryModalButton.nth(1));
+  await t.click(Common.modalConfirmButton.nth(1));
 
-  await t.takeElementScreenshot(e.modalContainer, 'additional-features/img/auto-generation.png');
+  await t.takeElementScreenshot(
+    Common.modalContainer,
+    'additional-features/img/auto-generation.png'
+  );
 
   await t.click(e.buttonWithText('Generate'));
 
@@ -157,10 +169,10 @@ test('delete multiple external events', async (t) => {
   await t.click(e.eventCheckbox(0));
   await t.click(e.eventCheckbox(3));
   await t.click(e.selectionDropdown);
-  await t.hover(e.dropdownOption('Delete'));
+  await t.hover(Common.option('Delete'));
 
   await t.takeScreenshot('additional-features/img/deleting-events.png', {fullPage: true});
 
-  await t.click(e.dropdownOption('Delete'));
-  await t.click(Homepage.carbonModalConfirmBtn);
+  await t.click(Common.option('Delete'));
+  await t.click(Common.carbonModalConfirmBtn);
 });

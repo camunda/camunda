@@ -9,7 +9,7 @@ import config from '../config';
 import * as u from '../utils';
 
 import * as e from './smokeTest.elements.js';
-import * as Homepage from '../tests/Homepage.elements.js';
+import * as Common from '../tests/Common.elements.js';
 
 fixture('Smoke test').page(config.endpoint);
 
@@ -26,9 +26,9 @@ test('create a report from a template', async (t) => {
     .click('button[type="submit"]');
 
   await t.click(e.whatsNewCloseBtn);
-  await t.click(Homepage.createNewMenu);
-  await t.click(Homepage.option('Report'));
+  await t.click(Common.createNewMenu);
+  await t.click(Common.option('Report'));
   await t.click(e.emptyTemplate);
-  await t.click(Homepage.carbonModalConfirmBtn);
+  await t.click(Common.carbonModalConfirmBtn);
   await u.save(t);
 });

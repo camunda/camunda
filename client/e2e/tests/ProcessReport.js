@@ -11,27 +11,27 @@ import * as u from '../utils';
 import {addAnnotation, clearAllAnnotations} from '../browserMagic';
 
 import * as e from './ProcessReport.elements.js';
-import * as Homepage from './Homepage.elements.js';
+import * as Common from './Common.elements.js';
 
 fixture('Process Report').page(config.endpoint).beforeEach(u.login).afterEach(cleanEntities);
 
 test('create a report from a template', async (t) => {
   await t.resizeWindow(1300, 750);
-  await t.click(Homepage.createNewMenu);
-  await t.click(Homepage.newReportOption);
-  await t.click(Homepage.submenuOption('Process Report'));
+  await t.click(Common.createNewMenu);
+  await t.click(Common.newReportOption);
+  await t.click(Common.submenuOption('Process Report'));
 
-  await t.click(e.templateModalProcessField);
-  await t.click(e.option('Invoice Receipt with alternative correlation variable'));
+  await t.click(Common.templateModalProcessField);
+  await t.click(Common.option('Invoice Receipt with alternative correlation variable'));
 
   await t.click(e.templateOption('Heatmap: Flownode count'));
 
   await t.takeScreenshot('img/reportTemplate.png', {fullPage: true});
   await t.maximizeWindow();
 
-  await t.click(Homepage.carbonModalConfirmBtn);
+  await t.click(Common.carbonModalConfirmBtn);
 
-  await t.expect(e.nameEditField.value).eql('Heatmap: Flownode count');
+  await t.expect(Common.nameEditField.value).eql('Heatmap: Flownode count');
   await t.expect(e.groupbyDropdownButton.textContent).contains('Flow Nodes');
   await t.expect(e.reportDiagram.visible).ok();
 });
@@ -39,7 +39,7 @@ test('create a report from a template', async (t) => {
 test('create and name a report', async (t) => {
   await u.createNewReport(t);
 
-  await t.typeText(e.nameEditField, 'Invoice Pipeline', {replace: true});
+  await t.typeText(Common.nameEditField, 'Invoice Pipeline', {replace: true});
 
   await u.selectReportDefinition(t, 'Invoice Receipt with alternative correlation variable');
   await u.selectView(t, 'Flow Node', 'Count');
@@ -59,7 +59,7 @@ test('create and name a report', async (t) => {
 test('sharing', async (t) => {
   await u.createNewReport(t);
 
-  await t.typeText(e.nameEditField, 'Invoice Pipeline', {replace: true});
+  await t.typeText(Common.nameEditField, 'Invoice Pipeline', {replace: true});
 
   await u.selectReportDefinition(t, 'Invoice Receipt with alternative correlation variable');
   await u.selectView(t, 'Flow Node', 'Count');
@@ -69,10 +69,10 @@ test('sharing', async (t) => {
   await u.selectVisualization(t, 'Heatmap');
   await u.save(t);
 
-  await t.expect(e.shareButton.hasClass('disabled')).notOk();
+  await t.expect(Common.shareButton.hasClass('disabled')).notOk();
 
-  await t.click(e.shareButton);
-  await t.click(e.shareSwitch);
+  await t.click(Common.shareButton);
+  await t.click(Common.shareSwitch);
 
   await t
     .takeScreenshot('process-analysis/report-analysis/img/report-sharingPopover.png', {
@@ -80,12 +80,12 @@ test('sharing', async (t) => {
     })
     .maximizeWindow();
 
-  const shareUrl = await e.shareUrl.value;
+  const shareUrl = await Common.shareUrl.value;
 
   await t.navigateTo(shareUrl);
 
   await t.expect(e.reportRenderer.visible).ok();
-  await t.expect(e.shareHeader.textContent).contains('Invoice Pipeline');
+  await t.expect(Common.shareHeader.textContent).contains('Invoice Pipeline');
 });
 
 test('sharing header parameters', async (t) => {
@@ -93,30 +93,30 @@ test('sharing header parameters', async (t) => {
 
   await u.save(t);
 
-  await t.click(e.shareButton);
-  await t.click(e.shareSwitch);
+  await t.click(Common.shareButton);
+  await t.click(Common.shareSwitch);
 
-  const shareUrl = await e.shareUrl.value;
+  const shareUrl = await Common.shareUrl.value;
 
   await t.navigateTo(shareUrl + '?mode=embed');
 
-  await t.expect(e.shareOptimizeIcon.visible).ok();
-  await t.expect(e.shareTitle.visible).ok();
-  await t.expect(e.shareLink.visible).ok();
+  await t.expect(Common.shareOptimizeIcon.visible).ok();
+  await t.expect(Common.shareTitle.visible).ok();
+  await t.expect(Common.shareLink.visible).ok();
 
   await t.navigateTo(shareUrl + '?mode=embed&header=hidden');
 
-  await t.expect(e.shareHeader.exists).notOk();
+  await t.expect(Common.shareHeader.exists).notOk();
 
   await t.navigateTo(shareUrl + '?header=titleOnly');
 
-  await t.expect(e.shareTitle.exists).ok();
-  await t.expect(e.shareLink.exists).notOk();
+  await t.expect(Common.shareTitle.exists).ok();
+  await t.expect(Common.shareLink.exists).notOk();
 
   await t.navigateTo(shareUrl + '?mode=embed&header=linkOnly');
 
-  await t.expect(e.shareTitle.exists).notOk();
-  await t.expect(e.shareLink.exists).ok();
+  await t.expect(Common.shareTitle.exists).notOk();
+  await t.expect(Common.shareLink.exists).ok();
 });
 
 test('version selection', async (t) => {
@@ -164,7 +164,7 @@ test('raw data table pagination', async (t) => {
   await u.selectView(t, 'Raw Data');
   await t.click(e.nextPageButton);
   await t.click(e.rowsPerPageButton);
-  await t.click(e.option('100'));
+  await t.click(Common.option('100'));
   await t.expect(e.reportTable.visible).ok();
 });
 
@@ -173,7 +173,7 @@ test('sort table columns', async (t) => {
   await u.selectReportDefinition(t, 'Invoice Receipt with alternative correlation variable');
   await u.selectView(t, 'Raw Data');
 
-  await t.typeText(e.nameEditField, 'Table Report', {replace: true});
+  await t.typeText(Common.nameEditField, 'Table Report', {replace: true});
 
   await t.expect(e.reportRenderer.textContent).contains('invoice');
   await t.expect(e.reportRenderer.textContent).contains('Start Date');
@@ -270,8 +270,8 @@ test('cancel changes', async (t) => {
 
   await u.save(t);
 
-  await t.click(e.editButton);
-  await t.typeText(e.nameEditField, 'Another new Name', {replace: true});
+  await t.click(Common.editButton);
+  await t.typeText(Common.nameEditField, 'Another new Name', {replace: true});
   await u.cancel(t);
 
   await t.expect(e.reportName.textContent).notEql('Another new Name');
@@ -284,17 +284,17 @@ test('should only enable valid combinations for process instance count grouped b
 
   await t.click(e.groupbyDropdown);
 
-  await t.expect(e.option('Start Date').hasClass('disabled')).notOk();
-  await t.expect(e.option('Variable').hasClass('disabled')).notOk();
-  await t.expect(e.option('Flow Nodes').hasClass('disabled')).ok();
+  await t.expect(Common.option('Start Date').hasClass('disabled')).notOk();
+  await t.expect(Common.option('Variable').hasClass('disabled')).notOk();
+  await t.expect(Common.option('Flow Nodes').hasClass('disabled')).ok();
 
   await t.click(e.visualizationDropdown);
 
-  await t.expect(e.option('Number').hasClass('disabled')).notOk();
-  await t.expect(e.option('Table').hasClass('disabled')).ok();
-  await t.expect(e.option('Bar Chart').hasClass('disabled')).ok();
-  await t.expect(e.option('Heatmap').hasClass('disabled')).ok();
-  await t.expect(e.option('Bar/Line Chart').hasClass('disabled')).ok();
+  await t.expect(Common.option('Number').hasClass('disabled')).notOk();
+  await t.expect(Common.option('Table').hasClass('disabled')).ok();
+  await t.expect(Common.option('Bar Chart').hasClass('disabled')).ok();
+  await t.expect(Common.option('Heatmap').hasClass('disabled')).ok();
+  await t.expect(Common.option('Bar/Line Chart').hasClass('disabled')).ok();
 
   await t.expect(e.reportNumber.visible).ok();
 });
@@ -303,7 +303,7 @@ test('Limit the precision in number report', async (t) => {
   await u.createNewReport(t);
   await u.selectReportDefinition(t, 'Invoice Receipt with alternative correlation variable');
 
-  await t.typeText(e.nameEditField, 'Number Report', {replace: true});
+  await t.typeText(Common.nameEditField, 'Number Report', {replace: true});
 
   await u.selectView(t, 'Process Instance', 'Duration');
 
@@ -325,7 +325,7 @@ test('Limit the precision in chart type reports', async (t) => {
   await u.createNewReport(t);
   await u.selectReportDefinition(t, 'Invoice Receipt with alternative correlation variable');
 
-  await t.typeText(e.nameEditField, 'Chart Report', {replace: true});
+  await t.typeText(Common.nameEditField, 'Chart Report', {replace: true});
 
   await u.selectView(t, 'Flow Node', 'Duration');
   await u.selectVisualization(t, 'Bar Chart');
@@ -372,13 +372,13 @@ test('select process instance count grouped by end date', async (t) => {
 
   await t.click(e.visualizationDropdown);
 
-  await t.expect(e.option('Number').hasClass('disabled')).ok();
-  await t.expect(e.option('Table').hasClass('disabled')).notOk();
-  await t.expect(e.option('Bar Chart').hasClass('disabled')).notOk();
-  await t.expect(e.option('Line Chart').hasClass('disabled')).notOk();
-  await t.expect(e.option('Pie Chart').hasClass('disabled')).notOk();
-  await t.expect(e.option('Heatmap').hasClass('disabled')).ok();
-  await t.expect(e.option('Bar/Line Chart').hasClass('disabled')).ok();
+  await t.expect(Common.option('Number').hasClass('disabled')).ok();
+  await t.expect(Common.option('Table').hasClass('disabled')).notOk();
+  await t.expect(Common.option('Bar Chart').hasClass('disabled')).notOk();
+  await t.expect(Common.option('Line Chart').hasClass('disabled')).notOk();
+  await t.expect(Common.option('Pie Chart').hasClass('disabled')).notOk();
+  await t.expect(Common.option('Heatmap').hasClass('disabled')).ok();
+  await t.expect(Common.option('Bar/Line Chart').hasClass('disabled')).ok();
   await t.click(e.visualizationDropdown);
 
   await u.selectVisualization(t, 'Table');
@@ -395,13 +395,13 @@ test('select process instance count grouped by variable', async (t) => {
 
   await t.click(e.visualizationDropdown);
 
-  await t.expect(e.option('Number').hasClass('disabled')).ok();
-  await t.expect(e.option('Table').hasClass('disabled')).notOk();
-  await t.expect(e.option('Bar Chart').hasClass('disabled')).notOk();
-  await t.expect(e.option('Line Chart').hasClass('disabled')).notOk();
-  await t.expect(e.option('Pie Chart').hasClass('disabled')).notOk();
-  await t.expect(e.option('Heatmap').hasClass('disabled')).ok();
-  await t.expect(e.option('Bar/Line Chart').hasClass('disabled')).ok();
+  await t.expect(Common.option('Number').hasClass('disabled')).ok();
+  await t.expect(Common.option('Table').hasClass('disabled')).notOk();
+  await t.expect(Common.option('Bar Chart').hasClass('disabled')).notOk();
+  await t.expect(Common.option('Line Chart').hasClass('disabled')).notOk();
+  await t.expect(Common.option('Pie Chart').hasClass('disabled')).notOk();
+  await t.expect(Common.option('Heatmap').hasClass('disabled')).ok();
+  await t.expect(Common.option('Bar/Line Chart').hasClass('disabled')).ok();
 
   await t.click(e.visualizationDropdown);
 
@@ -432,15 +432,15 @@ test('should only enable valid combinations for Flow Node Count', async (t) => {
 
   await t.click(e.visualizationDropdown);
 
-  await t.expect(e.option('Number').hasClass('disabled')).ok();
-  await t.expect(e.option('Table').hasClass('disabled')).notOk();
-  await t.expect(e.option('Bar Chart').hasClass('disabled')).notOk();
-  await t.expect(e.option('Heatmap').hasClass('disabled')).notOk();
+  await t.expect(Common.option('Number').hasClass('disabled')).ok();
+  await t.expect(Common.option('Table').hasClass('disabled')).notOk();
+  await t.expect(Common.option('Bar Chart').hasClass('disabled')).notOk();
+  await t.expect(Common.option('Heatmap').hasClass('disabled')).notOk();
 });
 
 test('bar chart and line chart configuration', async (t) => {
   await u.createNewReport(t);
-  await t.typeText(e.nameEditField, 'Bar Chart Report', {replace: true});
+  await t.typeText(Common.nameEditField, 'Bar Chart Report', {replace: true});
 
   await u.selectReportDefinition(t, 'Multi-Instance Subprocess');
 
@@ -490,7 +490,7 @@ test('bar chart and line chart configuration', async (t) => {
 
   await t.click(e.distributedBySelect);
   await t.click(e.dropdownOption('Variable'));
-  await t.click(e.submenuOption('boolVar'));
+  await t.click(Common.submenuOption('boolVar'));
   await u.selectVisualization(t, 'Bar Chart');
 
   await t.click(e.configurationButton);
@@ -570,7 +570,7 @@ test('aggregators', async (t) => {
   await t.click(e.filterButton);
   await t.click(e.filterOption('Instance State'));
   await t.click(e.modalOption('Completed'));
-  await t.click(e.primaryModalButton);
+  await t.click(Common.modalConfirmButton);
 
   const avg = await e.reportNumber.textContent;
 
@@ -661,7 +661,7 @@ test('progress bar and reset to default', async (t) => {
 test('heatmap target values', async (t) => {
   await u.createNewReport(t);
 
-  await t.typeText(e.nameEditField, 'Invoice Pipeline', {replace: true});
+  await t.typeText(Common.nameEditField, 'Invoice Pipeline', {replace: true});
 
   await u.selectReportDefinition(t, 'Invoice Receipt with alternative correlation variable');
   await u.selectView(t, 'Flow Node', 'Duration');
@@ -680,11 +680,11 @@ test('heatmap target values', async (t) => {
   await t.typeText(e.targetValueInput('Review Invoice'), '1');
 
   await t.takeElementScreenshot(
-    e.modalContainer,
+    Common.modalContainer,
     'process-analysis/report-analysis/img/targetvalue-2.png'
   );
 
-  await t.click(e.primaryModalButton);
+  await t.click(Common.modalConfirmButton);
 
   await t.hover(e.flowNode('approveInvoice'));
 
@@ -744,28 +744,28 @@ test('should only enable valid combinations for user task', async (t) => {
 
   await t.click(e.groupbyDropdown);
 
-  await t.expect(e.option('Flow Nodes').hasClass('disabled')).ok();
-  await t.expect(e.option('User Task').hasClass('disabled')).notOk();
-  await t.expect(e.option('Assignee').hasClass('disabled')).notOk();
-  await t.expect(e.option('Candidate Group').hasClass('disabled')).notOk();
-  await t.expect(e.option('Start Date').hasClass('disabled')).notOk();
+  await t.expect(Common.option('Flow Nodes').hasClass('disabled')).ok();
+  await t.expect(Common.option('User Task').hasClass('disabled')).notOk();
+  await t.expect(Common.option('Assignee').hasClass('disabled')).notOk();
+  await t.expect(Common.option('Candidate Group').hasClass('disabled')).notOk();
+  await t.expect(Common.option('Start Date').hasClass('disabled')).notOk();
 
-  await t.click(e.option('User Tasks'));
+  await t.click(Common.option('User Tasks'));
 
   await t.click(e.visualizationDropdown);
 
-  await t.expect(e.option('Number').hasClass('disabled')).ok();
-  await t.expect(e.option('Table').hasClass('disabled')).notOk();
-  await t.expect(e.option('Bar Chart').hasClass('disabled')).notOk();
-  await t.expect(e.option('Heatmap').hasClass('disabled')).notOk();
+  await t.expect(Common.option('Number').hasClass('disabled')).ok();
+  await t.expect(Common.option('Table').hasClass('disabled')).notOk();
+  await t.expect(Common.option('Bar Chart').hasClass('disabled')).notOk();
+  await t.expect(Common.option('Heatmap').hasClass('disabled')).notOk();
 
   await u.selectGroupby(t, 'Assignee');
 
   await t.click(e.visualizationDropdown);
 
-  await t.expect(e.option('Heatmap').hasClass('disabled')).ok();
+  await t.expect(Common.option('Heatmap').hasClass('disabled')).ok();
 
-  await t.click(e.option('Table'));
+  await t.click(Common.option('Table'));
 
   await t.expect(e.reportTable.visible).ok();
 });
@@ -792,13 +792,13 @@ test('should be able to distribute candidate group by user task', async (t) => {
 
   await t.click(e.visualizationDropdown);
 
-  await t.expect(e.option('Table').hasClass('disabled')).notOk();
-  await t.expect(e.option('Bar Chart').hasClass('disabled')).notOk();
-  await t.expect(e.option('Line Chart').hasClass('disabled')).notOk();
-  await t.expect(e.option('Number').hasClass('disabled')).ok();
-  await t.expect(e.option('Pie Chart').hasClass('disabled')).ok();
+  await t.expect(Common.option('Table').hasClass('disabled')).notOk();
+  await t.expect(Common.option('Bar Chart').hasClass('disabled')).notOk();
+  await t.expect(Common.option('Line Chart').hasClass('disabled')).notOk();
+  await t.expect(Common.option('Number').hasClass('disabled')).ok();
+  await t.expect(Common.option('Pie Chart').hasClass('disabled')).ok();
 
-  await t.click(e.option('Table'));
+  await t.click(Common.option('Table'));
   await t.expect(e.reportTable.visible).ok();
 });
 
@@ -848,12 +848,12 @@ test('process parts', async (t) => {
   await t.click(e.modalFlowNode('assignApprover'));
 
   await t.takeElementScreenshot(
-    e.modalContainer,
+    Common.modalContainer,
     'process-analysis/report-analysis/img/process-part.png'
   );
   await t.maximizeWindow();
 
-  await t.click(e.primaryModalButton);
+  await t.click(Common.modalConfirmButton);
 
   const withPart = await e.reportNumber.textContent;
 
@@ -864,8 +864,8 @@ test('deleting', async (t) => {
   await u.createNewReport(t);
 
   await u.save(t);
-  await t.click(e.deleteButton);
-  await t.click(Homepage.carbonModalConfirmBtn);
+  await t.click(Common.deleteButton);
+  await t.click(Common.carbonModalConfirmBtn);
 
   await t.expect(e.report.exists).notOk();
 });
@@ -928,7 +928,7 @@ test('distribute by variable', async (t) => {
 
   await t.click(e.distributedBySelect);
   await t.click(e.dropdownOption('Variable'));
-  await t.click(e.submenuOption('approved'));
+  await t.click(Common.submenuOption('approved'));
   await t
     .resizeWindow(1650, 900)
     .takeElementScreenshot(
@@ -939,7 +939,7 @@ test('distribute by variable', async (t) => {
 
   await t.click(e.distributedBySelect);
   await t.click(e.dropdownOption('Variable'));
-  await t.click(e.submenuOption('invoiceCategory'));
+  await t.click(Common.submenuOption('invoiceCategory'));
   await u.selectVisualization(t, 'Table');
 
   await t.expect(e.reportRenderer.textContent).contains('Misc');
@@ -957,10 +957,10 @@ test('distribute by start/end date', async (t) => {
   await u.selectVisualization(t, 'Bar Chart');
   await t.click(e.distributedBySelect);
   await t.click(e.dropdownOption('Start Date'));
-  await t.click(e.submenuOption('Month'));
+  await t.click(Common.submenuOption('Month'));
   await t.click(e.distributedBySelect);
   await t.click(e.dropdownOption('End Date'));
-  await t.click(e.submenuOption('Automatic'));
+  await t.click(Common.submenuOption('Automatic'));
   await u.selectGroupby(t, 'Variable', 'boolVar');
 
   await t.expect(e.reportChart.visible).ok();
@@ -1027,7 +1027,7 @@ test('multi-measure reports', async (t) => {
   await t.expect(e.reportDiagram.visible).ok();
 
   await t.click(e.heatDropdown);
-  await t.click(e.option('Heat: Duration - Avg'));
+  await t.click(Common.option('Heat: Duration - Avg'));
 
   await t.expect(e.reportDiagram.visible).ok();
 });
@@ -1080,7 +1080,7 @@ test('distributed multi-measure reports', async (t) => {
 
   await t.click(e.distributedBySelect);
   await t.click(e.dropdownOption('Variable'));
-  await t.click(e.submenuOption('invoiceCategory'));
+  await t.click(Common.submenuOption('invoiceCategory'));
 
   await t.click(e.addMeasureButton);
   await t.click(e.dropdownOption('Count'));
@@ -1115,7 +1115,7 @@ test('multi-definition report', async (t) => {
   await t.resizeWindow(1650, 700);
 
   await t.takeElementScreenshot(
-    e.modalContainer,
+    Common.modalContainer,
     'process-analysis/report-analysis/img/report-processDefinitionSelection.png'
   );
 
@@ -1222,7 +1222,7 @@ test('Display precision properly', async (t) => {
   await u.createNewReport(t);
   await u.selectReportDefinition(t, 'Invoice Receipt with alternative correlation variable');
 
-  await t.typeText(e.nameEditField, 'Precision Report', {replace: true});
+  await t.typeText(Common.nameEditField, 'Precision Report', {replace: true});
 
   await u.selectView(t, 'Flow Node', 'Duration');
   await t.click(e.addMeasureButton);
