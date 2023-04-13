@@ -119,9 +119,7 @@ func (cmd *CreateInstanceCommand) StartBeforeElement(elementID string) CreateIns
 		ElementId: elementID,
 	}
 
-	updatedStartInstructions := append(cmd.request.StartInstructions, &startInstruction)
-
-	cmd.request.StartInstructions = updatedStartInstructions
+	cmd.request.StartInstructions = append(cmd.request.StartInstructions, &startInstruction)
 	return cmd
 }
 
