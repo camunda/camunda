@@ -507,6 +507,10 @@ const RADIO_STYLES = css`
         border-color: var(--cds-icon-disabled);
       }
 
+      &.fjs-disabled .fjs-checked .fjs-input:after {
+        background-color: var(--cds-icon-disabled);
+      }
+
       .fjs-form-field-label:not(:first-of-type) {
         ${theme.bodyShort01};
         color: var(--cds-text-primary);
