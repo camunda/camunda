@@ -1,0 +1,18 @@
+[
+  {
+    "extension": "revapi.differences",
+    "id": "differences",
+    "configuration": {
+      "differences": [
+        {
+          "justification": "Allowed annotations were fixed to prevent indirect modifications via transitive dependencies, but will not affect existing usage",
+          "code": "java.annotation.attributeAdded",
+          "old": "@interface io.camunda.zeebe.protocol.record.ImmutableProtocol",
+          "new": "@interface io.camunda.zeebe.protocol.record.ImmutableProtocol",
+          "attribute": "allowedClasspathAnnotations",
+          "value": "{org.immutables.value.Generated.class, javax.annotation.ParametersAreNonnullByDefault.class, javax.annotation.concurrent.Immutable.class, edu.umd.cs.findbugs.annotations.SuppressFBWarnings.class, javax.annotation.concurrent.NotThreadSafe.class, javax.annotation.Nullable.class}"
+        }
+      ]
+    }
+  }
+]
