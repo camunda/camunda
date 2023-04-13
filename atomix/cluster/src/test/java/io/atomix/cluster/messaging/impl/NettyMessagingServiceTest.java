@@ -653,7 +653,7 @@ public class NettyMessagingServiceTest {
               address2, subject, "fail".getBytes(), true, Duration.ofSeconds(1));
       assertThat(response)
           .failsWithin(Duration.ofSeconds(15))
-          .withThrowableThat()
+	  .withThrowableOfType(ExecutionException.class)
           .havingRootCause()
           .isInstanceOf(TimeoutException.class);
       // wait until the channel is closed before grabbing the next one
