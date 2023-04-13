@@ -54,7 +54,7 @@
           "isBelow" : false,
           "value" : "2"
         },
-        "isKpi" : true
+        "isKpi" : false
       },
       "heatmapTargetValue" : {
         "active" : false,
@@ -125,6 +125,7 @@
     },
     "visualization" : "number",
     "managementReport" : false,
+    "instantPreviewReport" : true,
     "userTaskReport" : false
   }
 }, {
@@ -183,7 +184,7 @@
           "isBelow" : false,
           "value" : "2"
         },
-        "isKpi" : true
+        "isKpi" : false
       },
       "heatmapTargetValue" : {
         "active" : false,
@@ -240,6 +241,7 @@
     },
     "visualization" : "number",
     "managementReport" : false,
+    "instantPreviewReport" : true,
     "userTaskReport" : false
   }
 }, {
@@ -298,7 +300,7 @@
           "isBelow" : false,
           "value" : "2"
         },
-        "isKpi" : true
+        "isKpi" : false
       },
       "heatmapTargetValue" : {
         "active" : false,
@@ -360,6 +362,7 @@
     },
     "visualization" : "number",
     "managementReport" : false,
+    "instantPreviewReport" : true,
     "userTaskReport" : false
   }
 }, {
@@ -418,7 +421,7 @@
           "isBelow" : false,
           "value" : "2"
         },
-        "isKpi" : true
+        "isKpi" : false
       },
       "heatmapTargetValue" : {
         "active" : false,
@@ -485,6 +488,7 @@
     },
     "visualization" : "number",
     "managementReport" : false,
+    "instantPreviewReport" : true,
     "userTaskReport" : false
   }
 }, {
@@ -543,7 +547,7 @@
           "isBelow" : false,
           "value" : "2"
         },
-        "isKpi" : true
+        "isKpi" : false
       },
       "heatmapTargetValue" : {
         "active" : false,
@@ -600,6 +604,7 @@
     },
     "visualization" : "number",
     "managementReport" : false,
+    "instantPreviewReport" : true,
     "userTaskReport" : false
   }
 }, {

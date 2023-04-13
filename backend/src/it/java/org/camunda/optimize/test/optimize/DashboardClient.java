@@ -47,7 +47,7 @@ public class DashboardClient {
   }
 
   public DashboardDefinitionRestDto getInstantPreviewDashboard(String processDefinitionKey, String template) {
-    return getInstantPreviewDashboardLocalized(processDefinitionKey, template, null);
+    return getInstantPreviewDashboardLocalized(processDefinitionKey, template, "en");
   }
 
   public DashboardDefinitionRestDto getInstantPreviewDashboardLocalized(final String processDefinitionKey,

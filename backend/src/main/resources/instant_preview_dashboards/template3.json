@@ -54,7 +54,7 @@
           "isBelow" : false,
           "value" : "2"
         },
-        "isKpi" : true
+        "isKpi" : false
       },
       "heatmapTargetValue" : {
         "active" : false,
@@ -121,6 +121,7 @@
     },
     "visualization" : "number",
     "managementReport" : false,
+    "instantPreviewReport" : true,
     "userTaskReport" : false
   }
 }, {
@@ -242,6 +243,7 @@
     },
     "visualization" : "heat",
     "managementReport" : false,
+    "instantPreviewReport" : true,
     "userTaskReport" : false
   }
 }, {
@@ -368,6 +370,7 @@
     },
     "visualization" : "line",
     "managementReport" : false,
+    "instantPreviewReport" : true,
     "userTaskReport" : false
   }
 }, {
@@ -483,6 +486,7 @@
     },
     "visualization" : "heat",
     "managementReport" : false,
+    "instantPreviewReport" : true,
     "userTaskReport" : false
   }
 }, {
@@ -541,7 +545,7 @@
           "isBelow" : false,
           "value" : "2"
         },
-        "isKpi" : true
+        "isKpi" : false
       },
       "heatmapTargetValue" : {
         "active" : false,
@@ -603,6 +607,7 @@
     },
     "visualization" : "number",
     "managementReport" : false,
+    "instantPreviewReport" : true,
     "userTaskReport" : false
   }
 }, {
@@ -724,6 +729,7 @@
     },
     "visualization" : "heat",
     "managementReport" : false,
+    "instantPreviewReport" : true,
     "userTaskReport" : false
   }
 }, {
@@ -782,7 +788,7 @@
           "isBelow" : false,
           "value" : "2"
         },
-        "isKpi" : true
+        "isKpi" : false
       },
       "heatmapTargetValue" : {
         "active" : false,
@@ -839,6 +845,7 @@
     },
     "visualization" : "number",
     "managementReport" : false,
+    "instantPreviewReport" : true,
     "userTaskReport" : false
   }
 }, {
@@ -961,6 +968,7 @@
     },
     "visualization" : "barLine",
     "managementReport" : false,
+    "instantPreviewReport" : true,
     "userTaskReport" : false
   }
 }, {
@@ -1019,7 +1027,7 @@
           "isBelow" : false,
           "value" : "2"
         },
-        "isKpi" : true
+        "isKpi" : false
       },
       "heatmapTargetValue" : {
         "active" : false,
@@ -1090,6 +1098,7 @@
     },
     "visualization" : "number",
     "managementReport" : false,
+    "instantPreviewReport" : true,
     "userTaskReport" : false
   }
 }, {
@@ -1148,7 +1157,7 @@
           "isBelow" : false,
           "value" : "2"
         },
-        "isKpi" : true
+        "isKpi" : false
       },
       "heatmapTargetValue" : {
         "active" : false,
@@ -1205,6 +1214,7 @@
     },
     "visualization" : "number",
     "managementReport" : false,
+    "instantPreviewReport" : true,
     "userTaskReport" : false
   }
 }, {
@@ -1322,6 +1332,7 @@
     },
     "visualization" : "bar",
     "managementReport" : false,
+    "instantPreviewReport" : true,
     "userTaskReport" : false
   }
 }, {
@@ -1437,6 +1448,7 @@
     },
     "visualization" : "heat",
     "managementReport" : false,
+    "instantPreviewReport" : true,
     "userTaskReport" : false
   }
 }, {

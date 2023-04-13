@@ -15,7 +15,7 @@ import org.camunda.optimize.service.dashboard.InstantPreviewDashboardService;
 import org.camunda.optimize.service.identity.AbstractIdentityService;
 import org.springframework.stereotype.Component;
 
-import java.util.HashMap;
+import java.util.Map;
 import java.util.Optional;
 
 @Slf4j
@@ -67,17 +67,19 @@ public class DashboardRestMapper {
   private void localizeTextsFromTextTiles(final DashboardDefinitionRestDto dashboardData, final String locale) {
     dashboardData.getTiles().forEach(tile -> {
       if (tile.getType() == DashboardTileType.TEXT) {
-        final HashMap<String, Object> textTileConfiguration = (HashMap<String, Object>) tile.getConfiguration();
+        final Map<String, Object> textTileConfiguration = (Map<String, Object>) tile.getConfiguration();
         InstantPreviewDashboardService.
-          findAndConvertTileContent(textTileConfiguration,
-                                    TYPE_TEXT_VALUE,
-                                    this::localizeTextFromTile,
-                                    locale);
+          findAndConvertTileContent(
+            textTileConfiguration,
+            TYPE_TEXT_VALUE,
+            this::localizeTextFromTile,
+            locale
+          );
       }
     });
   }
 
-  private void localizeTextFromTile(HashMap<String, Object> textTileConfiguration, String locale) {
+  private void localizeTextFromTile(Map<String, Object> textTileConfiguration, String locale) {
     String textContent = (String) textTileConfiguration.get(TEXT_FIELD);
     Optional.ofNullable(localizationService.getLocalizationForInstantPreviewDashboardCode(
       locale,

@@ -11,6 +11,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.camunda.optimize.dto.optimize.query.EntityIdResponseDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionRestDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.InstantDashboardDataDto;
+import org.camunda.optimize.dto.optimize.query.dashboard.tile.DashboardReportTileDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.tile.DashboardTileType;
 import org.camunda.optimize.dto.optimize.query.definition.DefinitionWithTenantIdsDto;
 import org.camunda.optimize.dto.optimize.query.entity.EntityType;
@@ -36,6 +37,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.regex.Matcher;
@@ -137,7 +139,7 @@ public class InstantPreviewDashboardService {
    */
   public static void findAndConvertTileContent(Object node,
                                                String fieldType,
-                                               BiConsumerWithParameters<HashMap<String, Object>, String> transformFunction,
+                                               BiConsumerWithParameters<Map<String, Object>, String> transformFunction,
                                                String additionalParameterValue) {
     if (node instanceof HashMap) {
       HashMap<String, Object> tileConfigurationElement = (HashMap<String, Object>) node;
@@ -182,10 +184,6 @@ public class InstantPreviewDashboardService {
                 List.of(new ReportDataDefinitionDto(
                   processDefinitionKey, List.of(ALL_VERSIONS), processDefinition.getTenantIds()
                 )));
-              singleReport.getData().setInstantPreviewReport(true);
-              // We need to enforce that instant preview reports do not contain KPIs, since we will run into issues
-              // down the line whenever the KpiEvaluationSchedulerService tries to evaluate them
-              singleReport.getData().getConfiguration().getTargetValue().setIsKpi(false);
             }),
         () -> log.warn("Could not retrieve process definition data for {}", processDefinitionKey)
       );
@@ -194,7 +192,7 @@ public class InstantPreviewDashboardService {
       .filter(DashboardDefinitionExportDto.class::isInstance)
       .forEach(dashboardEntity -> {
         DashboardDefinitionExportDto dashboardData = ((DashboardDefinitionExportDto) dashboardEntity);
-        processAllImageUrlsInTiles(dashboardData);
+        processAllImageUrlsInTiles(dashboardData.getTiles());
         dashboardData.setInstantPreviewDashboard(true);
       });
 
@@ -210,10 +208,10 @@ public class InstantPreviewDashboardService {
       .map(EntityIdResponseDto::getId);
   }
 
-  private void processAllImageUrlsInTiles(final DashboardDefinitionExportDto dashboardData) {
-    dashboardData.getTiles().forEach(tile -> {
+  public void processAllImageUrlsInTiles(final List<DashboardReportTileDto> tiles) {
+    tiles.forEach(tile -> {
       if (tile.getType() == DashboardTileType.TEXT) {
-        final HashMap<String, Object> textTileConfiguration = (HashMap<String, Object>) tile.getConfiguration();
+        final Map<String, Object> textTileConfiguration = (Map<String, Object>) tile.getConfiguration();
         // The cluster ID is necessary to calculate the appropriate relative URL
         String clusterId = configurationService.getAuthConfiguration().getCloudAuthConfiguration().getClusterId();
         if (StringUtils.isNotEmpty(clusterId)) {
@@ -225,7 +223,7 @@ public class InstantPreviewDashboardService {
     });
   }
 
-  private void convertAbsoluteUrlsToRelative(HashMap<String, Object> textTileConfigElement, String clusterId) {
+  private void convertAbsoluteUrlsToRelative(Map<String, Object> textTileConfigElement, String clusterId) {
     // If working in cloud mode, the relative URL needs to include the cluster ID for it to work properly
     String srcValue = (String) textTileConfigElement.get(SRC_FIELD);
     String altTextValue = (String) textTileConfigElement.get(ALTTEXT_FIELD);
@@ -234,7 +232,6 @@ public class InstantPreviewDashboardService {
     // dashboard image urls from the template are static and need to be transformed into a relative path that
     // includes the current cluster ID so that e.g. https://www.anyOldUrl.com/MyImage.png becomes
     // /<CLUSTER_ID>/external/static/instant_preview_dashboards/MyImage.png
-    // TODO When implementing OPT-6752 check that the file name below actually exists in the internal folder
     String srcValueFileName = srcValue.substring((srcValue).lastIndexOf('/') + 1);
     textTileConfigElement.put(SRC_FIELD, clusterId + EXTERNAL_STATIC_RESOURCES_SUBPATH + srcValueFileName);
     String altTextValueFileName = altTextValue.substring((altTextValue).lastIndexOf('/') + 1);
@@ -267,23 +264,10 @@ public class InstantPreviewDashboardService {
 
   @EventListener(ApplicationReadyEvent.class)
   public void deleteInstantPreviewDashboardsAndEntitiesForChangedTemplates() {
-    // We assume that the default template exists, and that all other templates are named incrementally
-    String currentTemplate = INSTANT_DASHBOARD_DEFAULT_TEMPLATE;
-    List<Long> templateFileChecksums = new ArrayList<>();
-    InputStream templateInputStream = getClass().getClassLoader()
-      .getResourceAsStream(INSTANT_PREVIEW_DASHBOARD_TEMPLATES_PATH + currentTemplate);
-    while (templateInputStream != null) {
-      try {
-        templateFileChecksums.add(getChecksumCRC32(templateInputStream, 8192));
-      } catch (IOException e) {
-        log.error("Could not generate checksum for template [{}]", currentTemplate);
-      }
-      currentTemplate = incrementFileName(currentTemplate);
-      templateInputStream = getClass().getClassLoader()
-        .getResourceAsStream(INSTANT_PREVIEW_DASHBOARD_TEMPLATES_PATH + currentTemplate);
-    }
+    List<Long> templateFileChecksums = getCurrentFileChecksums();
     try {
-      List<String> dashboardsToDelete = instantDashboardMetadataWriter.deleteOutdatedTemplateEntries(templateFileChecksums);
+      List<String> dashboardsToDelete =
+        instantDashboardMetadataWriter.deleteOutdatedTemplateEntriesAndGetExistingDashboardIds(templateFileChecksums);
       for (String dashboardIdToDelete : dashboardsToDelete) {
         final DashboardDefinitionRestDto dashboardDefinition =
           dashboardService.getDashboardDefinitionAsService(dashboardIdToDelete);
@@ -301,6 +285,26 @@ public class InstantPreviewDashboardService {
       // since any error is not critical and would not hinder optimize in functioning properly
       log.error("There was an error deleting data from an outdated Instant Preview Dashboard", e);
     }
+  }
+
+  public List<Long> getCurrentFileChecksums() {
+    // Generate the hashes for the current templates deployed. We assume that the default template exists, and that all other
+    // templates are named incrementally
+    String currentTemplate = INSTANT_DASHBOARD_DEFAULT_TEMPLATE;
+    List<Long> fileChecksums = new ArrayList<>();
+    InputStream templateInputStream = getClass().getClassLoader()
+      .getResourceAsStream(INSTANT_PREVIEW_DASHBOARD_TEMPLATES_PATH + currentTemplate);
+    while (templateInputStream != null) {
+      try {
+        fileChecksums.add(getChecksumCRC32(templateInputStream, 8192));
+      } catch (IOException e) {
+        log.error("Could not generate checksum for template [{}]", currentTemplate);
+      }
+      currentTemplate = incrementFileName(currentTemplate);
+      templateInputStream = getClass().getClassLoader()
+        .getResourceAsStream(INSTANT_PREVIEW_DASHBOARD_TEMPLATES_PATH + currentTemplate);
+    }
+    return fileChecksums;
   }
 
   public static long getChecksumCRC32(InputStream stream, int bufferSize) throws IOException {

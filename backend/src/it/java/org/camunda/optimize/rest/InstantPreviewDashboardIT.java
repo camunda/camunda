@@ -33,8 +33,10 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static java.util.stream.Collectors.toSet;
@@ -509,7 +511,7 @@ public class InstantPreviewDashboardIT extends AbstractDashboardRestServiceIT {
 
     dashboardData.getTiles().forEach(tile -> {
       if (tile.getType() == DashboardTileType.TEXT) {
-        final HashMap<String, Object> textTileConfiguration = (HashMap<String, Object>) tile.getConfiguration();
+        final Map<String, Object> textTileConfiguration = (Map<String, Object>) tile.getConfiguration();
         InstantPreviewDashboardService.
           findAndConvertTileContent(
             textTileConfiguration,
@@ -636,42 +638,46 @@ public class InstantPreviewDashboardIT extends AbstractDashboardRestServiceIT {
     });
   }
 
-  @ParameterizedTest
-  @MethodSource("templates")
-  public void enforceInstantPreviewReportsHaveNoKPIs(String dashboardJsonTemplateFilename) {
+  @Test
+  public void allDashboardTemplatesAreValid() {
     // given
-    final InstantPreviewDashboardService instantPreviewDashboardService =
-      embeddedOptimizeExtension.getInstantPreviewDashboardService();
     String processDefKey = "dummy";
     engineIntegrationExtension.deployAndStartProcess(getSimpleBpmnDiagram(processDefKey));
     importAllEngineEntitiesFromScratch();
+    final InstantPreviewDashboardService instantPreviewDashboardService =
+      embeddedOptimizeExtension.getInstantPreviewDashboardService();
+    final List<String> templateFiles = templates().collect(Collectors.toList());
 
-    // when
-    final Optional<InstantDashboardDataDto> instantPreviewDashboard =
-      instantPreviewDashboardService.createInstantPreviewDashboard(processDefKey, dashboardJsonTemplateFilename);
+    // then there are the expected number of template files
+    assertThat(templateFiles).hasSameSizeAs(instantPreviewDashboardService.getCurrentFileChecksums());
 
-    // then
-    assertThat(instantPreviewDashboard).isPresent();
-    final InstantDashboardDataDto instantPreviewDashboardDto = instantPreviewDashboard.get();
+    templateFiles
+      .forEach(templateFile -> {
+        // when
+        final Optional<InstantDashboardDataDto> instantPreviewDashboard =
+          instantPreviewDashboardService.createInstantPreviewDashboard(processDefKey, templateFile);
 
-    // when
-    DashboardDefinitionRestDto returnedDashboard = dashboardClient.getInstantPreviewDashboard(
-      processDefKey,
-      dashboardJsonTemplateFilename
-    );
+        // then
+        assertThat(instantPreviewDashboard).isPresent();
+        final InstantDashboardDataDto instantPreviewDashboardDto = instantPreviewDashboard.get();
 
-    // then
-    assertThat(returnedDashboard).isNotNull();
-    assertThat(returnedDashboard.getId()).isEqualTo(instantPreviewDashboardDto.getDashboardId());
-    final DashboardDefinitionRestDto dashboard = dashboardClient.getDashboard(returnedDashboard.getId());
-    assertThat(dashboard).isNotNull();
-    final Set<ProcessReportDataDto> reportDataSet = dashboard.getTileIds().stream()
-      .map(tileId -> reportClient.evaluateReport(tileId)
-        .getReportDefinition()
-        .getData())
-      .collect(toSet());
-    // Instant Preview Reports cannot contain KPIs because there is no "real" user when setting the data sources during evaluation
-    reportDataSet.forEach(reportData -> assertThat(reportData.getConfiguration().getTargetValue().getIsKpi()).isFalse());
+        // when
+        DashboardDefinitionRestDto returnedDashboard =
+          dashboardClient.getInstantPreviewDashboard(processDefKey, templateFile);
+
+        // then
+        assertThat(returnedDashboard).isNotNull();
+        assertThat(returnedDashboard.getId()).isEqualTo(instantPreviewDashboardDto.getDashboardId());
+        assertThat(returnedDashboard.isInstantPreviewDashboard()).isTrue();
+        assertThat(returnedDashboard.isManagementDashboard()).isFalse();
+        final DashboardDefinitionRestDto dashboard = dashboardClient.getDashboard(returnedDashboard.getId());
+        assertThat(dashboard).isNotNull();
+        dashboard.getTileIds().stream()
+          .map(tileId -> reportClient.evaluateReport(tileId)
+            .getReportDefinition()
+            .getData())
+          .forEach(reportData -> assertThat(reportData.getConfiguration().getTargetValue().getIsKpi()).isFalse());
+      });
   }
 
   @NotNull
@@ -685,7 +691,7 @@ public class InstantPreviewDashboardIT extends AbstractDashboardRestServiceIT {
     }
   }
 
-  private void assertTileTranslation(HashMap<String, Object> textTileConfiguration, String locale) {
+  private void assertTileTranslation(Map<String, Object> textTileConfiguration, String locale) {
     HashMap<String, List<String>> expectedStrings = new HashMap<>();
     expectedStrings.put("de", List.of(
       "Instant Preview Dashboard",
@@ -834,4 +840,5 @@ public class InstantPreviewDashboardIT extends AbstractDashboardRestServiceIT {
   private static Stream<String> templates() {
     return Stream.of("template1.json", "template2.json", "template3.json");
   }
+
 }
