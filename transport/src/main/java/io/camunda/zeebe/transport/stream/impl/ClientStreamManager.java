@@ -53,18 +53,17 @@ final class ClientStreamManager<M extends BufferWriter> {
       final M metadata,
       final ClientStreamConsumer clientStreamConsumer) {
     final var streamId = UUID.randomUUID();
-    final var clientStreamMeta =
-        new ClientStream<>(streamId, streamType, metadata, clientStreamConsumer);
 
     // add first in memory to handle case of new broker while we're adding
-    registry.add(clientStreamMeta);
-    requestManager.openStream(clientStreamMeta, servers);
+    final AggregatedClientStream<M> serverStream =
+        registry.addClient(streamId, streamType, metadata, clientStreamConsumer);
+    requestManager.openStream(serverStream, servers);
 
     return streamId;
   }
 
   void remove(final UUID streamId) {
-    final var clientStream = registry.remove(streamId);
+    final var clientStream = registry.removeClient(streamId);
     clientStream.ifPresent(
         stream -> {
           stream.close();

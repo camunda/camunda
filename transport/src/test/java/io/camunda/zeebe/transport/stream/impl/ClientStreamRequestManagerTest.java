@@ -36,9 +36,9 @@ class ClientStreamRequestManagerTest {
   private final ClientStreamRequestManager<BufferWriter> requestManager =
       new ClientStreamRequestManager<>(mockTransport, new TestConcurrencyControl());
 
-  private final ClientStream<BufferWriter> clientStream =
-      new ClientStream<>(
-          UUID.randomUUID(), BufferUtil.wrapString("foo"), new TestMetadata(), p -> {});
+  private final AggregatedClientStream<BufferWriter> clientStream =
+      new AggregatedClientStream<>(
+          UUID.randomUUID(), BufferUtil.wrapString("foo"), new TestMetadata());
 
   @BeforeEach
   void setup() {
