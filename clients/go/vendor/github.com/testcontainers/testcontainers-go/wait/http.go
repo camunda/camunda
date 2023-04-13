@@ -7,9 +7,9 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net"
 	"net/http"
+	"net/url"
 	"strconv"
 	"time"
 
@@ -18,10 +18,11 @@ import (
 
 // Implement interface
 var _ Strategy = (*HTTPStrategy)(nil)
+var _ StrategyTimeout = (*HTTPStrategy)(nil)
 
 type HTTPStrategy struct {
 	// all Strategies should have a startupTimeout to avoid waiting infinitely
-	startupTimeout time.Duration
+	timeout *time.Duration
 
 	// additional properties
 	Port              nat.Port
@@ -34,12 +35,12 @@ type HTTPStrategy struct {
 	Method            string      // http method
 	Body              io.Reader   // http request body
 	PollInterval      time.Duration
+	UserInfo          *url.Userinfo
 }
 
 // NewHTTPStrategy constructs a HTTP strategy waiting on port 80 and status code 200
 func NewHTTPStrategy(path string) *HTTPStrategy {
 	return &HTTPStrategy{
-		startupTimeout:    defaultStartupTimeout(),
 		Port:              "80/tcp",
 		Path:              path,
 		StatusCodeMatcher: defaultStatusCodeMatcher,
@@ -49,6 +50,7 @@ func NewHTTPStrategy(path string) *HTTPStrategy {
 		Method:            http.MethodGet,
 		Body:              nil,
 		PollInterval:      defaultPollInterval(),
+		UserInfo:          nil,
 	}
 }
 
@@ -60,8 +62,9 @@ func defaultStatusCodeMatcher(status int) bool {
 // since go has neither covariance nor generics, the return type must be the type of the concrete implementation
 // this is true for all properties, even the "shared" ones like startupTimeout
 
-func (ws *HTTPStrategy) WithStartupTimeout(startupTimeout time.Duration) *HTTPStrategy {
-	ws.startupTimeout = startupTimeout
+// WithStartupTimeout can be used to change the default startup timeout
+func (ws *HTTPStrategy) WithStartupTimeout(timeout time.Duration) *HTTPStrategy {
+	ws.timeout = &timeout
 	return ws
 }
 
@@ -103,6 +106,11 @@ func (ws *HTTPStrategy) WithBody(reqdata io.Reader) *HTTPStrategy {
 	return ws
 }
 
+func (ws *HTTPStrategy) WithBasicAuth(username, password string) *HTTPStrategy {
+	ws.UserInfo = url.UserPassword(username, password)
+	return ws
+}
+
 // WithPollInterval can be used to override the default polling interval of 100 milliseconds
 func (ws *HTTPStrategy) WithPollInterval(pollInterval time.Duration) *HTTPStrategy {
 	ws.PollInterval = pollInterval
@@ -115,11 +123,19 @@ func ForHTTP(path string) *HTTPStrategy {
 	return NewHTTPStrategy(path)
 }
 
+func (ws *HTTPStrategy) Timeout() *time.Duration {
+	return ws.timeout
+}
+
 // WaitUntilReady implements Strategy.WaitUntilReady
 func (ws *HTTPStrategy) WaitUntilReady(ctx context.Context, target StrategyTarget) (err error) {
-	// limit context to startupTimeout
-	ctx, cancelContext := context.WithTimeout(ctx, ws.startupTimeout)
-	defer cancelContext()
+	timeout := defaultStartupTimeout()
+	if ws.timeout != nil {
+		timeout = *ws.timeout
+	}
+
+	ctx, cancel := context.WithTimeout(ctx, timeout)
+	defer cancel()
 
 	ipAddress, err := target.Host(ctx)
 	if err != nil {
@@ -184,12 +200,21 @@ func (ws *HTTPStrategy) WaitUntilReady(ctx context.Context, target StrategyTarge
 
 	client := http.Client{Transport: tripper, Timeout: time.Second}
 	address := net.JoinHostPort(ipAddress, strconv.Itoa(port.Int()))
-	endpoint := fmt.Sprintf("%s://%s%s", proto, address, ws.Path)
+
+	endpoint := url.URL{
+		Scheme: proto,
+		Host:   address,
+		Path:   ws.Path,
+	}
+
+	if ws.UserInfo != nil {
+		endpoint.User = ws.UserInfo
+	}
 
 	// cache the body into a byte-slice so that it can be iterated over multiple times
 	var body []byte
 	if ws.Body != nil {
-		body, err = ioutil.ReadAll(ws.Body)
+		body, err = io.ReadAll(ws.Body)
 		if err != nil {
 			return
 		}
@@ -200,7 +225,7 @@ func (ws *HTTPStrategy) WaitUntilReady(ctx context.Context, target StrategyTarge
 		case <-ctx.Done():
 			return ctx.Err()
 		case <-time.After(ws.PollInterval):
-			req, err := http.NewRequestWithContext(ctx, ws.Method, endpoint, bytes.NewReader(body))
+			req, err := http.NewRequestWithContext(ctx, ws.Method, endpoint.String(), bytes.NewReader(body))
 			if err != nil {
 				return err
 			}
@@ -209,9 +234,11 @@ func (ws *HTTPStrategy) WaitUntilReady(ctx context.Context, target StrategyTarge
 				continue
 			}
 			if ws.StatusCodeMatcher != nil && !ws.StatusCodeMatcher(resp.StatusCode) {
+				_ = resp.Body.Close()
 				continue
 			}
 			if ws.ResponseMatcher != nil && !ws.ResponseMatcher(resp.Body) {
+				_ = resp.Body.Close()
 				continue
 			}
 			if err := resp.Body.Close(); err != nil {
