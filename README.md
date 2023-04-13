@@ -38,5 +38,12 @@ To run these locally you can follow the steps below:
 3. Inside the container, run `yarn start:visual-regression &`
 4. After that, run `yarn playwright`
 
+#### Updating screenshots
+
 If you made feature changes and want to purposely wants to update the UI baseline you can follow the steps before, but on step 4 you should run `yarn playwright --update-snapshots`. Beware the this will update all screenshots, so make sure you only have the changes you want to update in your branch.
 
+#### Inspecting failures in the CI
+
+Sometimes the visual regression tests might fail in the CI and you want to check why. To achieve that you can download the Playwright report assets (like in the image below), unzip the folder and then run `npx @playwright/test show-report folder-with-unzipped-assets/`.
+
+<img src="/docs_assets/playwright_report.png" alt="Playwright report artifact download" width="500"/>
