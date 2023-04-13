@@ -19,9 +19,13 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 import org.agrona.DirectBuffer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /** Represents a stream which aggregates multiple logically equivalent client streams. * */
 final class AggregatedClientStream<M extends BufferWriter> {
+
+  private static final Logger LOGGER = LoggerFactory.getLogger(AggregatedClientStream.class);
   private final UUID streamId;
   private final DirectBuffer streamType;
   private final M metadata;
@@ -114,6 +118,8 @@ final class AggregatedClientStream<M extends BufferWriter> {
     }
 
     final ClientStream<M> clientStream = pickRandomStream(streams);
+    LOGGER.trace(
+        "Pushing data from stream [{}] to client [{}]", streamId, clientStream.getStreamId());
     clientStream.getClientStreamConsumer().push(buffer);
   }
 

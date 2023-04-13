@@ -53,6 +53,9 @@ final class ClientStreamRegistry<M extends BufferWriter> {
     return serverStream;
   }
 
+  /**
+   * @return aggregated stream if it can be removed
+   */
   Optional<AggregatedClientStream<M>> removeClient(final UUID streamId) {
     final var clientStream = clientStreams.remove(streamId);
     if (clientStream != null) {

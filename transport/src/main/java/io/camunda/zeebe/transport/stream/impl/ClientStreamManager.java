@@ -57,15 +57,18 @@ final class ClientStreamManager<M extends BufferWriter> {
     // add first in memory to handle case of new broker while we're adding
     final AggregatedClientStream<M> serverStream =
         registry.addClient(streamId, streamType, metadata, clientStreamConsumer);
+    LOG.debug("Added client stream [{}] to stream [{}]", streamId, serverStream.getStreamId());
     requestManager.openStream(serverStream, servers);
 
     return streamId;
   }
 
   void remove(final UUID streamId) {
-    final var clientStream = registry.removeClient(streamId);
-    clientStream.ifPresent(
+    LOG.debug("Removing client stream [{}]", streamId);
+    final var serverStream = registry.removeClient(streamId);
+    serverStream.ifPresent(
         stream -> {
+          LOG.debug("Removing aggregated stream [{}]", stream.getStreamId());
           stream.close();
           requestManager.removeStream(stream, servers);
         });
