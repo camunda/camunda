@@ -16,11 +16,10 @@ package commands
 
 import (
 	"context"
+	"os"
 	"time"
 
 	"errors"
-	"io/ioutil"
-
 	"github.com/camunda/zeebe/clients/go/v8/internal/utils"
 	"github.com/spf13/cobra"
 )
@@ -83,7 +82,7 @@ func parsePublishMessageVariables(messageVariables string) (string, error) {
 	jsonErr := jsStringChecker.Validate("variables", messageVariables)
 	if jsonErr != nil {
 		// not a JSON string
-		fileVariables, err := ioutil.ReadFile(messageVariables)
+		fileVariables, err := os.ReadFile(messageVariables)
 		if err != nil {
 			// not a file path or valid JSON string
 			return "", errors.New("invalid --variables passed. Invalid file or " + jsonErr.Error())
