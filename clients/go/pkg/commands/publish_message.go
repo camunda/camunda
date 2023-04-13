@@ -58,7 +58,7 @@ type PublishMessageCommand struct {
 	request pb.PublishMessageRequest
 }
 
-//nolint:golint
+//nolint:revive
 func (cmd *PublishMessageCommand) MessageId(messageId string) PublishMessageCommandStep3 {
 	cmd.request.MessageId = messageId
 	return cmd
