@@ -20,7 +20,7 @@ import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 import org.agrona.DirectBuffer;
 
-/** Represents a registered client stream. * */
+/** Represents a stream which aggregates multiple logically equivalent client streams. * */
 final class AggregatedClientStream<M extends BufferWriter> {
   private final UUID streamId;
   private final DirectBuffer streamType;
@@ -42,23 +42,6 @@ final class AggregatedClientStream<M extends BufferWriter> {
 
   void addClient(final ClientStream<M> clientStream) {
     clientStreams.put(clientStream.getStreamId(), clientStream);
-  }
-
-  private void push(final DirectBuffer buffer) {
-    final var streams = clientStreams.values();
-    if (streams.isEmpty()) {
-      throw new NoSuchStreamException();
-    }
-
-    final ClientStream<M> clientStream = pickRandomStream(streams);
-    clientStream.getClientStreamConsumer().push(buffer);
-  }
-
-  private ClientStream<M> pickRandomStream(final Collection<ClientStream<M>> streams) {
-    final var targets = new ArrayList<>(streams);
-    final var index = ThreadLocalRandom.current().nextInt(streams.size());
-
-    return targets.get(index);
   }
 
   UUID getStreamId() {
@@ -115,12 +98,30 @@ final class AggregatedClientStream<M extends BufferWriter> {
     return state == State.CLOSED;
   }
 
-  public void removeClient(final UUID streamId) {
+  void removeClient(final UUID streamId) {
     clientStreams.remove(streamId);
   }
 
-  public boolean isEmpty() {
+  /** returns true if there are no client streams for this stream * */
+  boolean isEmpty() {
     return clientStreams.isEmpty();
+  }
+
+  private void push(final DirectBuffer buffer) {
+    final var streams = clientStreams.values();
+    if (streams.isEmpty()) {
+      throw new NoSuchStreamException();
+    }
+
+    final ClientStream<M> clientStream = pickRandomStream(streams);
+    clientStream.getClientStreamConsumer().push(buffer);
+  }
+
+  private ClientStream<M> pickRandomStream(final Collection<ClientStream<M>> streams) {
+    final var targets = new ArrayList<>(streams);
+    final var index = ThreadLocalRandom.current().nextInt(streams.size());
+
+    return targets.get(index);
   }
 
   private enum State {
