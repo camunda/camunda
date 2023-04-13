@@ -1415,10 +1415,10 @@
     inherits "^2.0.4"
     tiny-svg "^3.0.0"
 
-"@camunda/camunda-composite-components@^0.0.34":
-  version "0.0.34"
-  resolved "https://registry.yarnpkg.com/@camunda/camunda-composite-components/-/camunda-composite-components-0.0.34.tgz#76a3412ce9a9a9a27d2b53f7548ceba6732b4e16"
-  integrity sha512-DOoyXtnwlx91AH154eVXTZTFscR6EALpPR0BHwL++umwXrlTA2YMKJTinl+bozRgOKGwhAHkXUwcZjeu6TE5CA==
+"@camunda/camunda-composite-components@^0.0.35":
+  version "0.0.35"
+  resolved "https://registry.yarnpkg.com/@camunda/camunda-composite-components/-/camunda-composite-components-0.0.35.tgz#f28f24ee5b70a00100c088e83ca27fe151d205ed"
+  integrity sha512-lHd5op25Ie3Hi0AYRfYaDDHnVSwqbViUD4bDUEHX7FlmhaZchMFOn2OXp4CJJPu5+JaWx/Ug/0VtOL2VSDapUA==
 
 "@carbon/colors@^11.13.0":
   version "11.13.0"
