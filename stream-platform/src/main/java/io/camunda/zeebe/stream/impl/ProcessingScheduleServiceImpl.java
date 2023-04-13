@@ -64,16 +64,6 @@ public class ProcessingScheduleServiceImpl implements ProcessingScheduleService 
             }));
   }
 
-  @Override
-  public void runAtFixedRateAsync(final Duration delay, final Task task) {
-    runAtFixedRate(delay, task);
-  }
-
-  @Override
-  public void runDelayedAsync(final Duration delay, final Task task) {
-    runDelayed(delay, task);
-  }
-
   Runnable toRunnable(final Task task) {
     return () -> {
       if (abortCondition.getAsBoolean()) {
