@@ -18,10 +18,8 @@ import java.util.concurrent.ExecutionException;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.testcontainers.junit.jupiter.Testcontainers;
 import software.amazon.awssdk.regions.Region;
 
-@Testcontainers
 final class ConnectionErrorTest {
   private static final String ACCESS_KEY = "letmein";
   private static final String SECRET_KEY = "letmein1234";
