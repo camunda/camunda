@@ -681,8 +681,8 @@ jobs:
     # This workflow will auto merge a PR authored by dependabot[bot]. It runs only on open PRs ready for
     # review.
     #
-    # It will merge the PR only if: it is authored by dependabot[bot], is a patch semantic update, and
-    # all CI checks are successful (ignoring the soon-to-be-removed Jenkins check).
+    # It will merge the PR only if: it is authored by dependabot[bot], is a minor or patch semantic
+    # update, and all CI checks are successful (ignoring the soon-to-be-removed Jenkins check).
     #
     # The workflow is divided into multiple sequential jobs to allow giving only minimal permissions to
     # the GitHub token passed around.
@@ -706,7 +706,7 @@ jobs:
           github-token: "${{ secrets.GITHUB_TOKEN }}"
       - id: approve-and-merge
         name: Approve and merge PR
-        if: steps.metadata.outputs.update-type == 'version-update:semver-patch'
+        if: steps.metadata.outputs.update-type == 'version-update:semver-patch' || steps.metadata.outputs.update-type == 'version-update:semver-minor'
         run: gh pr review ${{ github.event.pull_request.number }} --approve -b "bors merge"
         env:
           GITHUB_TOKEN: "${{secrets.GITHUB_TOKEN}}"
