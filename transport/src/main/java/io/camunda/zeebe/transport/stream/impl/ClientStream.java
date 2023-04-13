@@ -49,7 +49,7 @@ final class ClientStream<M extends BufferWriter> {
     return streamConsumer;
   }
 
-  public AggregatedClientStream<M> getServerStream() {
+  AggregatedClientStream<M> getServerStream() {
     return serverStream;
   }
 }
