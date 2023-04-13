@@ -6,9 +6,17 @@
   }
 
   &.overflowVisible {
+    overflow-y: auto;
+
     .cds--modal-container,
     .cds--modal-content {
       overflow: visible;
+    }
+
+    .cds--modal-container {
+      max-height: max-content;
+      height: max-content;
+      margin: auto;
     }
   }
 }

@@ -6,8 +6,9 @@
  */
 
 import React from 'react';
+import {Button} from '@carbon/react';
 
-import {Button, LabeledInput, Modal, Form} from 'components';
+import {LabeledInput, CarbonModal as Modal, Form} from 'components';
 import {t} from 'translation';
 
 export default class EditUserModal extends React.Component {
@@ -73,14 +74,14 @@ export default class EditUserModal extends React.Component {
             </Form.Group>
           </Form>
         </Modal.Content>
-        <Modal.Actions>
-          <Button main className="cancel" onClick={onClose}>
+        <Modal.Footer>
+          <Button kind="secondary" className="cancel" onClick={onClose}>
             {t('common.cancel')}
           </Button>
-          <Button main primary className="confirm" onClick={this.onConfirm}>
+          <Button className="confirm" onClick={this.onConfirm}>
             {t('common.apply')}
           </Button>
-        </Modal.Actions>
+        </Modal.Footer>
       </Modal>
     );
   }

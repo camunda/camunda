@@ -52,7 +52,7 @@ test('create, edit, copy and remove an alert', async (t) => {
     'additional-features/img/alert-modal-description.png'
   );
 
-  await t.click(Common.modalConfirmButton);
+  await t.click(Common.carbonModalConfirmBtn);
 
   await t.expect(Alert.list.textContent).contains('Test Alert');
   await t.expect(Alert.list.textContent).contains('Number Report');
@@ -79,7 +79,7 @@ test('create, edit, copy and remove an alert', async (t) => {
   await t.click(Common.edit(Common.listItem));
   await t.typeText(Alert.inputWithLabel('Alert Name'), 'Saved Alert', {replace: true});
 
-  await t.click(Common.modalConfirmButton);
+  await t.click(Common.carbonModalConfirmBtn);
 
   await t.expect(Alert.list.textContent).contains('Saved Alert');
 
@@ -87,8 +87,8 @@ test('create, edit, copy and remove an alert', async (t) => {
   await t.hover(Common.listItem);
   await t.click(Common.contextMenu(Common.listItem));
   await t.click(Common.copy(Common.listItem));
-  await t.typeText(Alert.inputWithLabel('Name of Copy'), 'Copied Alert', {replace: true});
-  await t.click(Common.modalConfirmButton);
+  await t.typeText(Alert.copyNameInput, 'Copied Alert', {replace: true});
+  await t.click(Common.carbonModalConfirmBtn);
   await t.expect(Alert.list.textContent).contains('Copied Alert');
 
   // DELETE

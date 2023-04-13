@@ -10,7 +10,14 @@ import {ComponentProps} from 'react';
 declare module '@carbon/react' {
   declare function Button(
     props: {
-      kind?: 'danger' | 'ghost' | 'primary' | 'secondary' | 'tertiary';
+      kind?:
+        | 'danger'
+        | 'ghost'
+        | 'primary'
+        | 'secondary'
+        | 'tertiary'
+        | 'danger--tertiary'
+        | 'danger--ghost';
     } & ComponentProps<'button'>
   );
 

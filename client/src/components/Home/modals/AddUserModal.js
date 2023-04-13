@@ -6,8 +6,9 @@
  */
 
 import React from 'react';
+import {Button} from '@carbon/react';
 
-import {Button, LabeledInput, Modal, Form, UserTypeahead} from 'components';
+import {LabeledInput, CarbonModal as Modal, Form, UserTypeahead} from 'components';
 import {t} from 'translation';
 
 const defaultState = {
@@ -42,7 +43,7 @@ export default class AddUserModal extends React.Component {
     const {users, activeRole} = this.state;
 
     return (
-      <Modal className="AddUserModal" open={open} onClose={this.onClose} onConfirm={this.onConfirm}>
+      <Modal className="AddUserModal" open={open} onClose={this.onClose} isOverflowVisible>
         <Modal.Header>
           {optimizeProfile === 'platform'
             ? t('home.roles.addUserGroupTitle')
@@ -97,20 +98,14 @@ export default class AddUserModal extends React.Component {
             </Form.Group>
           </Form>
         </Modal.Content>
-        <Modal.Actions>
-          <Button main className="cancel" onClick={this.onClose}>
+        <Modal.Footer>
+          <Button kind="secondary" className="cancel" onClick={this.onClose}>
             {t('common.cancel')}
           </Button>
-          <Button
-            main
-            primary
-            className="confirm"
-            disabled={!users.length}
-            onClick={this.onConfirm}
-          >
+          <Button className="confirm" disabled={!users.length} onClick={this.onConfirm}>
             {t('common.add')}
           </Button>
-        </Modal.Actions>
+        </Modal.Footer>
       </Modal>
     );
   }

@@ -3,14 +3,18 @@
 exports[`should match snapshot 1`] = `
 <Modal
   className="AddUserModal"
+  isOverflowVisible={true}
   onClose={[Function]}
-  onConfirm={[Function]}
   open={true}
 >
-  <Component>
+  <ForwardRef(ModalHeader)
+    buttonOnClick={[Function]}
+    closeModal={[Function]}
+    iconDescription="Close"
+  >
     Add User or User Group
-  </Component>
-  <Component>
+  </ForwardRef(ModalHeader)>
+  <ForwardRef>
     <Form>
       Users and User Groups
       <FormGroup>
@@ -70,24 +74,26 @@ exports[`should match snapshot 1`] = `
         />
       </FormGroup>
     </Form>
-  </Component>
-  <Component>
-    <ForwardRef(Button)
+  </ForwardRef>
+  <ForwardRef(ModalFooter)
+    closeModal={[Function]}
+    onRequestClose={[Function]}
+    onRequestSubmit={[Function]}
+  >
+    <Button
       className="cancel"
-      main={true}
+      kind="secondary"
       onClick={[Function]}
     >
       Cancel
-    </ForwardRef(Button)>
-    <ForwardRef(Button)
+    </Button>
+    <Button
       className="confirm"
       disabled={true}
-      main={true}
       onClick={[Function]}
-      primary={true}
     >
       Add
-    </ForwardRef(Button)>
-  </Component>
+    </Button>
+  </ForwardRef(ModalFooter)>
 </Modal>
 `;

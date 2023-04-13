@@ -111,54 +111,37 @@ exports[`should match snapshot 1`] = `
   <Modal
     className="saveModal"
     onClose={[Function]}
-    onConfirm={[Function]}
     open={null}
   >
-    <Component>
+    <ForwardRef(ModalHeader)
+      buttonOnClick={[Function]}
+      closeModal={[Function]}
+      iconDescription="Close"
+    >
       Destructive Changes
-    </Component>
-    <Component />
-    <Component>
-      <ForwardRef(Button)
+    </ForwardRef(ModalHeader)>
+    <ForwardRef />
+    <ForwardRef(ModalFooter)
+      closeModal={[Function]}
+      onRequestClose={[Function]}
+      onRequestSubmit={[Function]}
+    >
+      <Button
         className="close"
         disabled={false}
-        main={true}
+        kind="secondary"
         onClick={[Function]}
       >
         Don't Save
-      </ForwardRef(Button)>
-      <ForwardRef(Button)
+      </Button>
+      <Button
         className="confirm"
         disabled={false}
-        main={true}
         onClick={[Function]}
-        primary={true}
       >
         Save Changes
-      </ForwardRef(Button)>
-    </Component>
+      </Button>
+    </ForwardRef(ModalFooter)>
   </Modal>
 </div>
-`;
-
-exports[`should pass conflict to confirmation modal if update failed 1`] = `
-<Component>
-  <p>
-    These changes are incompatible with the Report(s):
-  </p>
-  <ul>
-    <li
-      key="reportId"
-    >
-      '
-      Report Name
-      '
-    </li>
-  </ul>
-  <p>
-    <b>
-      Warning: Saving will remove Tenants from the Report(s).
-    </b>
-  </p>
-</Component>
 `;

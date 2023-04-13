@@ -6,9 +6,16 @@
  */
 
 import React from 'react';
+import {Button} from '@carbon/react';
 
 import {t} from 'translation';
-import {Button, EntityList, Deleter, BulkDeleter, Modal} from 'components';
+import {
+  EntityList,
+  Deleter,
+  BulkDeleter,
+  CarbonModal as Modal,
+  Button as LegacyButton,
+} from 'components';
 import {showError} from 'notifications';
 import {withErrorHandling} from 'HOC';
 import {formatters} from 'services';
@@ -112,13 +119,13 @@ export default withErrorHandling(
             name={t('home.sources.title')}
             action={(bulkActive) =>
               !readOnly && (
-                <Button
+                <LegacyButton
                   main
                   primary={!bulkActive}
                   onClick={() => this.setState({addingSource: true})}
                 >
                   {t('common.add')}
-                </Button>
+                </LegacyButton>
               )
             }
             bulkActions={
@@ -204,12 +211,7 @@ export default withErrorHandling(
             type="source"
             deleteEntity={() => removeSource(collection, deleting.id)}
           />
-          <Modal
-            open={conflict}
-            onClose={this.closeEditSourceModal}
-            onConfirm={() => this.editSource(tenants, true)}
-            className="saveModal"
-          >
+          <Modal open={conflict} onClose={this.closeEditSourceModal} className="saveModal">
             <Modal.Header>{t('report.saveConflict.header')}</Modal.Header>
             <Modal.Content>
               {conflict && conflict.length > 0 && (
@@ -226,9 +228,9 @@ export default withErrorHandling(
                 </>
               )}
             </Modal.Content>
-            <Modal.Actions>
+            <Modal.Footer>
               <Button
-                main
+                kind="secondary"
                 disabled={editLoading}
                 className="close"
                 onClick={this.closeEditSourceModal}
@@ -236,15 +238,13 @@ export default withErrorHandling(
                 {t('saveGuard.no')}
               </Button>
               <Button
-                main
                 disabled={editLoading}
-                primary
                 className="confirm"
                 onClick={() => this.editSource(tenants, true)}
               >
                 {t('saveGuard.yes')}
               </Button>
-            </Modal.Actions>
+            </Modal.Footer>
           </Modal>
           {addingSource && (
             <SourcesModal

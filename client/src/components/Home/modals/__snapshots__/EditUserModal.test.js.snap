@@ -7,10 +7,14 @@ exports[`should match snapshot 1`] = `
   onConfirm={[Function]}
   open={true}
 >
-  <Component>
+  <ForwardRef(ModalHeader)
+    buttonOnClick={[Function]}
+    closeModal={[Function]}
+    iconDescription="Close"
+  >
     Edit User
-  </Component>
-  <Component>
+  </ForwardRef(ModalHeader)>
+  <ForwardRef>
     <Form>
       User role
       <FormGroup>
@@ -61,23 +65,25 @@ exports[`should match snapshot 1`] = `
         />
       </FormGroup>
     </Form>
-  </Component>
-  <Component>
-    <ForwardRef(Button)
+  </ForwardRef>
+  <ForwardRef(ModalFooter)
+    closeModal={[Function]}
+    onRequestClose={[Function]}
+    onRequestSubmit={[Function]}
+  >
+    <Button
       className="cancel"
-      main={true}
+      kind="secondary"
       onClick={[MockFunction]}
     >
       Cancel
-    </ForwardRef(Button)>
-    <ForwardRef(Button)
+    </Button>
+    <Button
       className="confirm"
-      main={true}
       onClick={[Function]}
-      primary={true}
     >
       Apply
-    </ForwardRef(Button)>
-  </Component>
+    </Button>
+  </ForwardRef(ModalFooter)>
 </Modal>
 `;

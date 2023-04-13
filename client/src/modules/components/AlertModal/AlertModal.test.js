@@ -8,12 +8,12 @@
 import React from 'react';
 import {shallow} from 'enzyme';
 
-import {AlertModal} from './AlertModal';
-
-import ThresholdInput from './ThresholdInput';
-
-import {formatters, evaluateReport} from 'services';
 import {isEmailEnabled} from 'config';
+import {formatters, evaluateReport} from 'services';
+import {CarbonModal as Modal} from 'components';
+
+import {AlertModal} from './AlertModal';
+import ThresholdInput from './ThresholdInput';
 
 jest.mock('config', () => ({
   isEmailEnabled: jest.fn().mockReturnValue(true),
@@ -99,7 +99,7 @@ it('should call the onConfirm method and not include duplicate emails', () => {
 
   node.setProps({initialAlert});
 
-  node.find('[primary]').simulate('click');
+  node.find(Modal.Footer).find('Button').at(1).simulate('click');
 
   expect(spy).toHaveBeenCalled();
   expect(spy.mock.calls[0][0].emails).toEqual(['test@camunda.com']);
@@ -111,7 +111,7 @@ it('should disable the submit button if the name is empty', () => {
   node.setProps({initialAlert});
   node.setState({name: ''});
 
-  expect(node.find('[primary]')).toBeDisabled();
+  expect(node.find(Modal.Footer).find('Button').at(1)).toBeDisabled();
 });
 
 it('should disable the submit button if the email is not valid', () => {
@@ -119,7 +119,7 @@ it('should disable the submit button if the email is not valid', () => {
 
   node.setProps({initialAlert});
   node.find('MultiEmailInput').prop('onChange')(['this is not a valid email'], false);
-  expect(node.find('[primary]')).toBeDisabled();
+  expect(node.find(Modal.Footer).find('Button').at(1)).toBeDisabled();
 });
 
 it('should disable the submit button if no report is selected', () => {
@@ -127,7 +127,7 @@ it('should disable the submit button if no report is selected', () => {
 
   node.setProps({initialAlert});
   node.setState({reportId: ''});
-  expect(node.find('[primary]')).toBeDisabled();
+  expect(node.find(Modal.Footer).find('Button').at(1)).toBeDisabled();
 });
 
 it('should disable the submit button if the threshold is not a number', () => {
@@ -135,7 +135,7 @@ it('should disable the submit button if the threshold is not a number', () => {
 
   node.setProps({initialAlert});
   node.setState({threshold: 'five'});
-  expect(node.find('[primary]')).toBeDisabled();
+  expect(node.find(Modal.Footer).find('Button').at(1)).toBeDisabled();
 });
 
 it('should disable the submit button if the threshold is not a percentage', () => {
@@ -143,11 +143,11 @@ it('should disable the submit button if the threshold is not a percentage', () =
 
   node.setState({threshold: '101'});
   expect(node.find(ThresholdInput).prop('isInvalid')).toBe(true);
-  expect(node.find('[primary]')).toBeDisabled();
+  expect(node.find(Modal.Footer).find('Button').at(1)).toBeDisabled();
 
   node.setState({threshold: '100'});
   expect(node.find(ThresholdInput).prop('isInvalid')).toBe(false);
-  expect(node.find('[primary]')).not.toBeDisabled();
+  expect(node.find(Modal.Footer).find('Button').at(1)).not.toBeDisabled();
 });
 
 it('should disable the submit button if the check interval is negative', () => {
@@ -160,7 +160,7 @@ it('should disable the submit button if the check interval is negative', () => {
       unit: 'seconds',
     },
   });
-  expect(node.find('[primary]')).toBeDisabled();
+  expect(node.find(Modal.Footer).find('Button').at(1)).toBeDisabled();
 });
 
 it('should enable the submit button if webhook is selected', () => {
@@ -170,7 +170,7 @@ it('should enable the submit button if webhook is selected', () => {
   node.setState({emails: ['']});
   node.find('Typeahead').at(1).prop('onChange')('testWebhook');
 
-  expect(node.find({variant: 'primary'})).not.toBeDisabled();
+  expect(node.find(Modal.Footer).find('Button').at(1)).not.toBeDisabled();
 });
 
 it('should show warning if alert is inactive due to missing webhook', async () => {
@@ -281,5 +281,5 @@ it('should allow to remove an alert from inside the modal if onRemove prop is pr
 it('should disable the submit button when disabled prop is passed', () => {
   const node = shallow(<AlertModal {...props} disabled />);
 
-  expect(node.find('[primary]')).toBeDisabled();
+  expect(node.find(Modal.Footer).find('Button').at(1)).toBeDisabled();
 });

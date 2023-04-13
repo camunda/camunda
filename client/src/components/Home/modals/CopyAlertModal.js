@@ -6,8 +6,9 @@
  */
 
 import React, {useState} from 'react';
+import {Button} from '@carbon/react';
 
-import {Modal, Button, Form, LabeledInput} from 'components';
+import {CarbonModal as Modal, Form, LabeledInput} from 'components';
 import {t} from 'translation';
 
 export default function CopyAlertModal({onClose, initialAlertName, onConfirm}) {
@@ -25,18 +26,19 @@ export default function CopyAlertModal({onClose, initialAlertName, onConfirm}) {
               value={name}
               autoComplete="off"
               onChange={({target: {value}}) => setName(value)}
+              data-modal-primary-focus
             />
           </Form.Group>
         </Form>
       </Modal.Content>
-      <Modal.Actions>
-        <Button main onClick={onClose}>
+      <Modal.Footer>
+        <Button kind="secondary" onClick={onClose}>
           {t('common.cancel')}
         </Button>
-        <Button main disabled={!name} primary onClick={() => onConfirm(name)}>
+        <Button disabled={!name} onClick={() => onConfirm(name)}>
           {t('common.copy')}
         </Button>
-      </Modal.Actions>
+      </Modal.Footer>
     </Modal>
   );
 }

@@ -94,7 +94,7 @@ test('user permissions', async (t) => {
   await t.click(e.usersTypeahead);
   await t.typeText(e.usersTypeahead, 'sales', {replace: true});
   await t.click(Common.option('sales'));
-  await t.click(Common.modalConfirmButton);
+  await t.click(Common.carbonModalConfirmBtn);
 
   await t.expect(e.groupItem.visible).ok();
   await t.expect(e.groupItem.textContent).contains('User Group');
@@ -108,7 +108,7 @@ test('user permissions', async (t) => {
   await t.click(Common.option('peter')).pressKey('tab');
   await t.click(e.roleOption('Editor'));
   await t.takeElementScreenshot(e.addUserModal, 'img/addUser.png');
-  await t.click(Common.modalConfirmButton);
+  await t.click(Common.carbonModalConfirmBtn);
 
   await t
     .resizeWindow(1150, 650)
@@ -129,7 +129,7 @@ test('user permissions', async (t) => {
   await t.typeText(e.usersTypeahead, username, {replace: true});
   await t.click(Common.option(username));
   await t.click(e.roleOption('Manager'));
-  await t.click(Common.modalConfirmButton);
+  await t.click(Common.carbonModalConfirmBtn);
 
   await t.hover(e.userItem(managerName));
   await t.expect(Common.contextMenu(e.userItem(managerName)).visible).ok();
@@ -138,7 +138,7 @@ test('user permissions', async (t) => {
   await t.click(Common.edit(e.userItem(managerName)));
 
   await t.click(e.roleOption('Viewer'));
-  await t.click(Common.modalConfirmButton);
+  await t.click(Common.carbonModalConfirmBtn);
 
   await t.expect(e.addButton.exists).notOk();
 
@@ -206,7 +206,7 @@ test('add, edit and delete sources', async (t) => {
   await t.click(Common.contextMenu(e.processItem.nth(1)));
   await t.click(Common.edit(e.processItem.nth(1)));
   await t.click(e.checkbox('engineering'));
-  await t.click(Common.modalConfirmButton);
+  await t.click(Common.carbonModalConfirmBtn);
   await t.expect(e.processItem.nth(1).textContent).notContains('engineering');
 
   // delete source

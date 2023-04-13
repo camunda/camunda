@@ -7,11 +7,12 @@
 
 import React from 'react';
 import update from 'immutability-helper';
+import {Button} from '@carbon/react';
 
 import {
-  Modal,
+  CarbonModal as Modal,
   Message,
-  Button,
+  Button as LegacyButton,
   Labeled,
   Input,
   LabeledInput,
@@ -250,7 +251,7 @@ export class AlertModal extends React.Component {
     const reportMeasure = this.getReportMeasure(reportId);
 
     return (
-      <Modal open onClose={onClose} className="AlertModal">
+      <Modal open onClose={onClose} className="AlertModal" isOverflowVisible>
         <Modal.Header>
           {this.isInEditingMode() ? t('alert.edit') : t('alert.createNew')}
         </Modal.Header>
@@ -394,13 +395,13 @@ export class AlertModal extends React.Component {
                         </Typeahead.Option>
                       ))}
                     </Typeahead>
-                    <Button
+                    <LegacyButton
                       disabled={!webhook}
                       onClick={() => this.setState({webhook: undefined})}
                       className="reset"
                     >
                       {t('common.reset')}
-                    </Button>
+                    </LegacyButton>
                   </Form.InputGroup>
                 </Labeled>
               </Form.Group>
@@ -458,19 +459,19 @@ export class AlertModal extends React.Component {
             )}
           </Form>
         </Modal.Content>
-        <Modal.Actions>
+        <Modal.Footer>
           {onRemove && (
-            <Button link className="deleteButton" onClick={onRemove}>
+            <Button kind="danger--ghost" className="deleteButton" onClick={onRemove}>
               {t('common.delete')}
             </Button>
           )}
-          <Button main onClick={onClose}>
+          <Button kind="secondary" onClick={onClose}>
             {t('common.cancel')}
           </Button>
-          <Button main primary onClick={this.confirm} disabled={invalid || disabled}>
+          <Button onClick={this.confirm} disabled={invalid || disabled}>
             {this.isInEditingMode() ? t('alert.apply') : t('alert.create')}
           </Button>
-        </Modal.Actions>
+        </Modal.Footer>
       </Modal>
     );
   }

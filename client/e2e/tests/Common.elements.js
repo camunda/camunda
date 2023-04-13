@@ -11,9 +11,9 @@ export const createNewMenu = Selector('.CreateNewButton');
 export const editButton = Selector('.edit-button');
 export const confirmButton = Selector('button.confirm');
 export const modalConfirmButton = Selector('.Modal button.primary');
-export const carbonModalConfirmBtn = Selector(
-  '.CarbonModal.is-visible .cds--modal-footer .cds--btn:nth-child(2)'
-);
+export const carbonModalConfirmBtn = Selector('.CarbonModal.is-visible')
+  .nth(-1)
+  .find('.cds--modal-footer .cds--btn:last-child');
 export const modalNameInput = Selector('.CarbonModal.is-visible input[type="text"]');
 export const option = (text) => Selector('.DropdownOption').withText(text);
 export const submenuOption = (text) => Selector('.Submenu .DropdownOption').withText(text);

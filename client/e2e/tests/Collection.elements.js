@@ -35,7 +35,8 @@ export const userItem = (text) => Selector('.ListItem').withText('User').withTex
 export const groupItem = Selector('.ListItem').withText('User Group');
 export const processItem = Selector('.ListItem').withText('Process');
 export const decisionItem = Selector('.ListItem').withText('Decision');
-export const roleOption = (text) => Selector('.Modal .LabeledInput .label.after').withText(text);
+export const roleOption = (text) =>
+  Selector('.CarbonModal.is-visible .LabeledInput .label.after').withText(text);
 export const userList = Selector('.UserList');
 export const addUserModal = Selector('.AddUserModal');
 export const addSourceModal = Selector('.SourcesModal');
