@@ -119,9 +119,7 @@ func (cmd *CreateInstanceCommand) StartBeforeElement(elementID string) CreateIns
 		ElementId: elementID,
 	}
 
-	updatedStartInstructions := append(cmd.request.StartInstructions, &startInstruction)
-
-	cmd.request.StartInstructions = updatedStartInstructions
+	cmd.request.StartInstructions = append(cmd.request.StartInstructions, &startInstruction)
 	return cmd
 }
 
@@ -140,7 +138,7 @@ func (cmd *CreateInstanceCommand) ProcessDefinitionKey(key int64) CreateInstance
 	return cmd
 }
 
-//nolint:golint
+//nolint:revive
 func (cmd *CreateInstanceCommand) BPMNProcessId(id string) CreateInstanceCommandStep2 {
 	cmd.request.BpmnProcessId = id
 	return cmd

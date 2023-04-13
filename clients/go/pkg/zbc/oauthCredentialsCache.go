@@ -18,7 +18,6 @@ import (
 	"github.com/mitchellh/go-homedir"
 	"golang.org/x/oauth2"
 	"gopkg.in/yaml.v2"
-	"io/ioutil"
 	"log"
 	"os"
 	"path"
@@ -117,7 +116,7 @@ func (cache *oauthYamlCredentialsCache) put(audience string, credentials *oauth2
 
 // readCache will overwrite the current contents of cache.audiences, so use carefully
 func (cache *oauthYamlCredentialsCache) readCache() error {
-	cacheContents, err := ioutil.ReadFile(cache.path)
+	cacheContents, err := os.ReadFile(cache.path)
 	if err != nil {
 		return err
 	}
@@ -139,7 +138,7 @@ func (cache *oauthYamlCredentialsCache) writeCache() error {
 		return err
 	}
 
-	return ioutil.WriteFile(cache.path, cacheContents, 0600)
+	return os.WriteFile(cache.path, cacheContents, 0600)
 }
 
 func getDefaultOAuthYamlCredentialsCacheRelativePath() string {

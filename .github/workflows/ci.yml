@@ -353,7 +353,8 @@ jobs:
       - name: golangci-lint
         uses: golangci/golangci-lint-action@v3
         with:
-          version: v1.32
+          # fixed to avoid triggering false positive; see https://github.com/golangci/golangci-lint-action/issues/535
+          version: v1.47.3
           working-directory: clients/go
   java-checks:
     name: Java checks
