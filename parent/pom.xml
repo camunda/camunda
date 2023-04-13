@@ -127,6 +127,7 @@
     <version.jackson-annotations>2.14.2</version.jackson-annotations>
     <version.swagger-annotations>2.2.9</version.swagger-annotations>
     <version.checker-qual>3.32.0</version.checker-qual>
+    <version.reactive-streams>1.0.4</version.reactive-streams>
 
     <!-- maven plugins -->
     <plugin.version.antrun>3.1.0</plugin.version.antrun>
@@ -825,6 +826,12 @@
             <artifactId>grpc-all</artifactId>
           </exclusion>
         </exclusions>
+      </dependency>
+
+      <dependency>
+        <groupId>org.reactivestreams</groupId>
+        <artifactId>reactive-streams</artifactId>
+        <version>${version.reactive-streams}</version>
       </dependency>
 
       <!-- Interface based code generation -->
