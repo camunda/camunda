@@ -20,9 +20,6 @@ import org.agrona.DirectBuffer;
 
 /** A registry to keeps tracks of all open streams. */
 final class ClientStreamRegistry<M extends BufferWriter> {
-
-  // This class is currently a very simple wrapper around a map. When we aggregate multiple streams
-  // into one stream, we may have to keep track of them also here.
   private final Map<UUID, ClientStream<M>> clientStreams = new HashMap<>();
   private final Map<UUID, AggregatedClientStream<M>> serverStreams = new HashMap<>();
 
