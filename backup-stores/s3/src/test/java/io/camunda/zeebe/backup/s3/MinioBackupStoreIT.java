@@ -10,6 +10,7 @@ package io.camunda.zeebe.backup.s3;
 import io.camunda.zeebe.backup.s3.S3BackupConfig.Builder;
 import java.time.Duration;
 import org.apache.commons.lang3.RandomStringUtils;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.testcontainers.containers.GenericContainer;
@@ -75,6 +76,11 @@ final class MinioBackupStoreIT implements S3BackupStoreTests {
             .build();
     client = S3BackupStore.buildClient(config);
     store = new S3BackupStore(config, client);
+  }
+
+  @AfterEach
+  void tearDown() {
+    store.closeAsync();
   }
 
   @Override
