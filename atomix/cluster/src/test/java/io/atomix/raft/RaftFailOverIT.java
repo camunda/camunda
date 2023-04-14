@@ -29,7 +29,7 @@ import org.junit.runners.Parameterized.Parameter;
 import org.junit.runners.Parameterized.Parameters;
 
 @RunWith(Parameterized.class)
-public class RaftFailOverTest {
+public class RaftFailOverIT {
 
   @Rule @Parameter public RaftRule raftRule;
 
