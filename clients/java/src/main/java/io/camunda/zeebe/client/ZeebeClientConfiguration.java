@@ -92,4 +92,9 @@ public interface ZeebeClientConfiguration {
    * @see ZeebeClientBuilder#overrideAuthority(String)
    */
   String getOverrideAuthority();
+
+  /**
+   * @see ZeebeClientBuilder#maxMessageSize(int)
+   */
+  int getMaxMessageSize();
 }

@@ -192,6 +192,12 @@ public class ZeebeClientCloudBuilderImpl
   }
 
   @Override
+  public ZeebeClientBuilder maxMessageSize(final int maxMessageSize) {
+    innerBuilder.maxMessageSize(maxMessageSize);
+    return this;
+  }
+
+  @Override
   public ZeebeClient build() {
     innerBuilder.gatewayAddress(determineGatewayAddress());
     innerBuilder.credentialsProvider(determineCredentialsProvider());

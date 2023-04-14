@@ -86,6 +86,11 @@ public final class ClientProperties {
   public static final String OVERRIDE_AUTHORITY = "zeebe.client.overrideauthority";
 
   /**
+   * @see ZeebeClientBuilder#maxMessageSize(int) (String)
+   */
+  public static final String MAX_MESSAGE_SIZE = "zeebe.client.maxMessageSize";
+
+  /**
    * @see ZeebeClientCloudBuilderStep1#withClusterId(java.lang.String)
    */
   public static final String CLOUD_CLUSTER_ID = "zeebe.client.cloud.clusterId";

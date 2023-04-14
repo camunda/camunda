@@ -19,9 +19,11 @@ import static io.camunda.zeebe.client.ClientProperties.CA_CERTIFICATE_PATH;
 import static io.camunda.zeebe.client.ClientProperties.DEFAULT_MESSAGE_TIME_TO_LIVE;
 import static io.camunda.zeebe.client.ClientProperties.DEFAULT_REQUEST_TIMEOUT;
 import static io.camunda.zeebe.client.ClientProperties.KEEP_ALIVE;
+import static io.camunda.zeebe.client.ClientProperties.MAX_MESSAGE_SIZE;
 import static io.camunda.zeebe.client.ClientProperties.OVERRIDE_AUTHORITY;
 import static io.camunda.zeebe.client.ClientProperties.USE_PLAINTEXT_CONNECTION;
 import static io.camunda.zeebe.client.impl.BuilderUtils.appendProperty;
+import static io.camunda.zeebe.client.impl.util.DataSizeUtil.ONE_MB;
 
 import io.camunda.zeebe.client.ClientProperties;
 import io.camunda.zeebe.client.CredentialsProvider;
@@ -30,6 +32,7 @@ import io.camunda.zeebe.client.ZeebeClientBuilder;
 import io.camunda.zeebe.client.ZeebeClientConfiguration;
 import io.camunda.zeebe.client.api.JsonMapper;
 import io.camunda.zeebe.client.impl.oauth.OAuthCredentialsProviderBuilder;
+import io.camunda.zeebe.client.impl.util.DataSizeUtil;
 import io.camunda.zeebe.client.impl.util.Environment;
 import io.grpc.ClientInterceptor;
 import java.time.Duration;
@@ -62,6 +65,7 @@ public final class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeCl
   private Duration keepAlive = Duration.ofSeconds(45);
   private JsonMapper jsonMapper = new ZeebeObjectMapper();
   private String overrideAuthority;
+  private int maxMessageSize = 4 * ONE_MB;
 
   @Override
   public String getGatewayAddress() {
@@ -139,6 +143,11 @@ public final class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeCl
   }
 
   @Override
+  public int getMaxMessageSize() {
+    return maxMessageSize;
+  }
+
+  @Override
   public ZeebeClientBuilder withProperties(final Properties properties) {
     if (properties.containsKey(ClientProperties.APPLY_ENVIRONMENT_VARIABLES_OVERRIDES)) {
       applyEnvironmentVariableOverrides(
@@ -201,6 +210,9 @@ public final class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeCl
     if (properties.containsKey(OVERRIDE_AUTHORITY)) {
       overrideAuthority(properties.getProperty(OVERRIDE_AUTHORITY));
     }
+    if (properties.containsKey(MAX_MESSAGE_SIZE)) {
+      maxMessageSize(DataSizeUtil.parse(properties.getProperty(MAX_MESSAGE_SIZE)));
+    }
     return this;
   }
 
@@ -225,43 +237,43 @@ public final class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeCl
 
   @Override
   public ZeebeClientBuilder numJobWorkerExecutionThreads(final int numSubscriptionThreads) {
-    numJobWorkerExecutionThreads = numSubscriptionThreads;
+    this.numJobWorkerExecutionThreads = numSubscriptionThreads;
     return this;
   }
 
   @Override
   public ZeebeClientBuilder defaultJobWorkerName(final String workerName) {
-    defaultJobWorkerName = workerName;
+    this.defaultJobWorkerName = workerName;
     return this;
   }
 
   @Override
   public ZeebeClientBuilder defaultJobTimeout(final Duration timeout) {
-    defaultJobTimeout = timeout;
+    this.defaultJobTimeout = timeout;
     return this;
   }
 
   @Override
   public ZeebeClientBuilder defaultJobPollInterval(final Duration pollInterval) {
-    defaultJobPollInterval = pollInterval;
+    this.defaultJobPollInterval = pollInterval;
     return this;
   }
 
   @Override
   public ZeebeClientBuilder defaultMessageTimeToLive(final Duration timeToLive) {
-    defaultMessageTimeToLive = timeToLive;
+    this.defaultMessageTimeToLive = timeToLive;
     return this;
   }
 
   @Override
   public ZeebeClientBuilder defaultRequestTimeout(final Duration requestTimeout) {
-    defaultRequestTimeout = requestTimeout;
+    this.defaultRequestTimeout = requestTimeout;
     return this;
   }
 
   @Override
   public ZeebeClientBuilder usePlaintext() {
-    usePlaintextConnection = true;
+    this.usePlaintextConnection = true;
     return this;
   }
 
@@ -301,7 +313,13 @@ public final class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeCl
 
   @Override
   public ZeebeClientBuilder overrideAuthority(final String authority) {
-    overrideAuthority = authority;
+    this.overrideAuthority = authority;
+    return this;
+  }
+
+  @Override
+  public ZeebeClientBuilder maxMessageSize(final int maxMessageSize) {
+    this.maxMessageSize = maxMessageSize;
     return this;
   }
 
@@ -338,6 +356,10 @@ public final class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeCl
     if (shouldUseDefaultCredentialsProvider()) {
       credentialsProvider = createDefaultCredentialsProvider();
     }
+
+    if (Environment.system().isDefined(MAX_MESSAGE_SIZE)) {
+      maxMessageSize(DataSizeUtil.parse(Environment.system().get(MAX_MESSAGE_SIZE)));
+    }
   }
 
   @Override
@@ -353,6 +375,7 @@ public final class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeCl
     appendProperty(sb, "defaultMessageTimeToLive", defaultMessageTimeToLive);
     appendProperty(sb, "defaultRequestTimeout", defaultRequestTimeout);
     appendProperty(sb, "overrideAuthority", overrideAuthority);
+    appendProperty(sb, "maxMessageSize", maxMessageSize);
 
     return sb.toString();
   }

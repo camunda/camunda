@@ -16,11 +16,13 @@
 package io.camunda.zeebe.client;
 
 import static io.camunda.zeebe.client.ClientProperties.CLOUD_REGION;
+import static io.camunda.zeebe.client.ClientProperties.MAX_MESSAGE_SIZE;
 import static io.camunda.zeebe.client.ClientProperties.USE_PLAINTEXT_CONNECTION;
 import static io.camunda.zeebe.client.impl.ZeebeClientBuilderImpl.CA_CERTIFICATE_VAR;
 import static io.camunda.zeebe.client.impl.ZeebeClientBuilderImpl.KEEP_ALIVE_VAR;
 import static io.camunda.zeebe.client.impl.ZeebeClientBuilderImpl.OVERRIDE_AUTHORITY_VAR;
 import static io.camunda.zeebe.client.impl.ZeebeClientBuilderImpl.PLAINTEXT_CONNECTION_VAR;
+import static io.camunda.zeebe.client.impl.util.DataSizeUtil.ONE_MB;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
@@ -63,6 +65,7 @@ public final class ZeebeClientTest extends ClientTest {
       assertThat(configuration.getDefaultJobPollInterval()).isEqualTo(Duration.ofMillis(100));
       assertThat(configuration.getDefaultMessageTimeToLive()).isEqualTo(Duration.ofHours(1));
       assertThat(configuration.getDefaultRequestTimeout()).isEqualTo(Duration.ofSeconds(10));
+      assertThat(configuration.getMaxMessageSize()).isEqualTo(4 * 1024 * 1024);
       assertThat(configuration.getOverrideAuthority()).isNull();
     }
   }
@@ -197,6 +200,49 @@ public final class ZeebeClientTest extends ClientTest {
 
     // then
     assertThat(builder.getOverrideAuthority()).isEqualTo("virtualhost");
+  }
+
+  @Test
+  public void shouldSetMaxMessageSize() {
+    // given
+    final ZeebeClientBuilderImpl builder = new ZeebeClientBuilderImpl();
+    builder.maxMessageSize(10 * 1024 * 1024);
+
+    // when
+    builder.build();
+
+    // then
+    assertThat(builder.getMaxMessageSize()).isEqualTo(10 * 1024 * 1024);
+  }
+
+  @Test
+  public void shouldSetMaxMessageSizeWithProperty() {
+    // given
+    final ZeebeClientBuilderImpl builder = new ZeebeClientBuilderImpl();
+
+    final Properties properties = new Properties();
+    properties.setProperty(MAX_MESSAGE_SIZE, "10MB");
+    builder.withProperties(properties);
+    // when
+    builder.build();
+
+    // then
+    assertThat(builder.getMaxMessageSize()).isEqualTo(10 * ONE_MB);
+  }
+
+  @Test
+  public void shouldOverrideMaxMessageSizeWithEnvVar() {
+    // given
+    final ZeebeClientBuilderImpl builder = new ZeebeClientBuilderImpl();
+    builder.applyEnvironmentVariableOverrides(Boolean.TRUE);
+    builder.maxMessageSize(4 * ONE_MB);
+    Environment.system().put(MAX_MESSAGE_SIZE, "10MB");
+
+    // when
+    builder.build();
+
+    // then
+    assertThat(builder.getMaxMessageSize()).isEqualTo(10 * ONE_MB);
   }
 
   @Test
