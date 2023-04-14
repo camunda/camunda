@@ -97,6 +97,10 @@ runs:
       # maven.wagon.* and maven.resolver.transport set the resolver's network transport to Wagon,
       # the old provider pre 3.9. Until Maven 3.9.2, we have to do this if we want to retry on
       # network issues, as otherwise any issue will fail the build.
+      # aether.enhancedLocalRepository.split splits between local and remote artifacts.
+      # aether.enhancedLocalRepository.splitRemote splits remote artifacts into released and snapshot
+      # aether.syncContext.* config ensures that maven uses file locks to prevent corruption from
+      # downloading multiple artifacts at the same time.
       run: |
         tee .mvn/maven.config <<EOF
         --errors
@@ -107,6 +111,10 @@ runs:
         -D maven.wagon.http.retryHandler.class=standard
         -D maven.wagon.http.retryHandler.requestSentEnabled=true
         -D maven.wagon.http.retryHandler.count=5
+        -D aether.enhancedLocalRepository.split=true
+        -D aether.enhancedLocalRepository.splitRemote=true
+        -D aether.syncContext.named.nameMapper=file-gav
+        -D aether.syncContext.named.factory=file-lock
         EOF
     - if: ${{ inputs.maven-cache == 'true' }}
       name: Cache local Maven repository
