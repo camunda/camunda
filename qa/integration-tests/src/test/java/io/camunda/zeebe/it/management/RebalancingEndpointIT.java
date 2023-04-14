@@ -10,6 +10,7 @@ package io.camunda.zeebe.it.management;
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.client.api.response.PartitionInfo;
 import io.camunda.zeebe.qa.util.actuator.RebalanceActuator;
+import io.camunda.zeebe.qa.util.testcontainers.ContainerLogsDumper;
 import io.camunda.zeebe.qa.util.testcontainers.ZeebeTestContainerDefaults;
 import io.zeebe.containers.ZeebeGatewayNode;
 import io.zeebe.containers.cluster.ZeebeCluster;
@@ -17,6 +18,7 @@ import java.time.Duration;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.testcontainers.containers.Network;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
@@ -35,6 +37,10 @@ final class RebalancingEndpointIT {
           .withReplicationFactor(3)
           .withNetwork(network)
           .build();
+
+  @RegisterExtension
+  @SuppressWarnings("unused")
+  final ContainerLogsDumper logsWatcher = new ContainerLogsDumper(cluster::getNodes);
 
   private ZeebeClient client;
 
