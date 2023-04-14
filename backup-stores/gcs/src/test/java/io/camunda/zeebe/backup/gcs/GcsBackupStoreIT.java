@@ -13,6 +13,7 @@ import io.camunda.zeebe.backup.gcs.GcsBackupStoreException.UnexpectedManifestSta
 import io.camunda.zeebe.backup.gcs.util.GcsContainer;
 import io.camunda.zeebe.backup.testkit.BackupStoreTestKit;
 import org.apache.commons.lang3.RandomStringUtils;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
@@ -56,6 +57,11 @@ public class GcsBackupStoreIT {
                   .build());
     }
 
+    @AfterEach
+    void tearDown() {
+      store.closeAsync().join();
+    }
+
     @Override
     public BackupStore getStore() {
       return store;
@@ -88,6 +94,11 @@ public class GcsBackupStoreIT {
       }
 
       store = new GcsBackupStore(config);
+    }
+
+    @AfterEach
+    void tearDown() {
+      store.closeAsync().join();
     }
 
     @Override
