@@ -13,43 +13,9 @@ import java.util.UUID;
 import org.agrona.DirectBuffer;
 
 /** Represents a registered client stream. * */
-final class ClientStream<M extends BufferWriter> {
-  private final UUID streamId;
-  private final AggregatedClientStream<M> serverStream;
-  private final DirectBuffer streamType;
-  private final M metadata;
-  private final ClientStreamConsumer streamConsumer;
-
-  ClientStream(
-      final UUID streamId,
-      final AggregatedClientStream<M> serverStream,
-      final DirectBuffer streamType,
-      final M metadata,
-      final ClientStreamConsumer clientStreamConsumer) {
-    this.streamId = streamId;
-    this.serverStream = serverStream;
-    this.streamType = streamType;
-    this.metadata = metadata;
-    streamConsumer = clientStreamConsumer;
-  }
-
-  UUID getStreamId() {
-    return streamId;
-  }
-
-  DirectBuffer getStreamType() {
-    return streamType;
-  }
-
-  M getMetadata() {
-    return metadata;
-  }
-
-  ClientStreamConsumer getClientStreamConsumer() {
-    return streamConsumer;
-  }
-
-  AggregatedClientStream<M> getServerStream() {
-    return serverStream;
-  }
-}
+record ClientStream<M extends BufferWriter>(
+    UUID streamId,
+    AggregatedClientStream<M> serverStream,
+    DirectBuffer streamType,
+    M metadata,
+    ClientStreamConsumer clientStreamConsumer) {}

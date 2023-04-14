@@ -45,7 +45,7 @@ final class AggregatedClientStream<M extends BufferWriter> {
   }
 
   void addClient(final ClientStream<M> clientStream) {
-    clientStreams.put(clientStream.getStreamId(), clientStream);
+    clientStreams.put(clientStream.streamId(), clientStream);
   }
 
   UUID getStreamId() {
@@ -118,9 +118,8 @@ final class AggregatedClientStream<M extends BufferWriter> {
     }
 
     final ClientStream<M> clientStream = pickRandomStream(streams);
-    LOGGER.trace(
-        "Pushing data from stream [{}] to client [{}]", streamId, clientStream.getStreamId());
-    clientStream.getClientStreamConsumer().push(buffer);
+    LOGGER.trace("Pushing data from stream [{}] to client [{}]", streamId, clientStream.streamId());
+    clientStream.clientStreamConsumer().push(buffer);
   }
 
   private ClientStream<M> pickRandomStream(final Collection<ClientStream<M>> streams) {
