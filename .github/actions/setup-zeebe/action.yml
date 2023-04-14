@@ -63,8 +63,8 @@ runs:
         secrets: |
           secret/data/products/zeebe/ci/zeebe ARTIFACTS_USR;
           secret/data/products/zeebe/ci/zeebe ARTIFACTS_PSW;
-    - if: ${{ inputs.java == 'true' }}
-      uses: actions/setup-java@v3
+    - uses: actions/setup-java@v3
+      if: inputs.java == 'true'
       with:
         distribution: 'temurin'
         java-version: ${{ inputs.java-version }}
@@ -75,7 +75,8 @@ runs:
     - name: 'Create settings.xml'
       uses: s4u/maven-settings-action@v2.8.0
       if: |
-        inputs.secret_vault_address != ''
+        inputs.java == 'true'
+        && inputs.secret_vault_address != ''
         && inputs.secret_vault_roleId != ''
         && inputs.secret_vault_secretId != ''
       with:
@@ -88,6 +89,7 @@ runs:
           }]
         mirrors: '[{"url": "https://repository.nexus.camunda.cloud/content/groups/internal/", "id": "camunda-nexus", "mirrorOf": "zeebe,zeebe-snapshots", "name": "camunda Nexus"}]'
     - name: Configure Maven
+      if: inputs.java == 'true'
       shell: bash
       # --errors ensures errors will also spit out a stack trace, which is always useful, and has no impact on normal builds
       # maven.wagon.* and maven.resolver.transport set the resolver's network transport to Wagon,
@@ -112,8 +114,8 @@ runs:
         -D aether.syncContext.named.nameMapper=file-gav
         -D aether.syncContext.named.factory=file-lock
         EOF
-    - if: ${{ inputs.maven-cache == 'true' }}
-      name: Cache local Maven repository
+    - name: Cache local Maven repository
+      if: inputs.java == 'true'
       uses: actions/cache@v3
       with:
         path: ~/.m2/repository/cached/releases/
