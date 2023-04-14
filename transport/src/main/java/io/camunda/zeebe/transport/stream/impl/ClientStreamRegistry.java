@@ -71,7 +71,8 @@ final class ClientStreamRegistry<M extends BufferWriter> {
     return Optional.empty();
   }
 
-  @VisibleForTesting
+  @VisibleForTesting(
+      "To inspect the registry state to see if the client is added or removed as expected")
   Optional<ClientStream<M>> getClient(final UUID clientStreamId) {
     return Optional.ofNullable(clientStreams.get(clientStreamId));
   }
