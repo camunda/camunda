@@ -166,7 +166,7 @@ jobs:
           - os: linux
             runner: [ self-hosted, linux, amd64 ]
           - os: linux
-            runner: [ self-hosted, linux, amd64 ]
+            runner: [ self-hosted, linux, arm64 ]
             arch: arm64
     steps:
       - uses: actions/checkout@v3
@@ -192,7 +192,6 @@ jobs:
           push: false
       - name: Run smoke test on ${{ matrix.arch }}
         env:
-          DOCKER_DEFAULT_PLATFORM: linux/${{ matrix.arch }}
           # For non Linux runners there is no container available for testing, see build-docker job
           EXCLUDED_TEST_GROUPS: ${{ runner.os != 'Linux' && 'container' }}
         run: >
