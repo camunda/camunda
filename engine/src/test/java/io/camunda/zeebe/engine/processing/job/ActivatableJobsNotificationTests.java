@@ -8,7 +8,6 @@
 package io.camunda.zeebe.engine.processing.job;
 
 import static io.camunda.zeebe.protocol.record.intent.JobIntent.TIMED_OUT;
-import static org.mockito.internal.verification.VerificationModeFactory.times;
 
 import io.camunda.zeebe.engine.processing.streamprocessor.JobStreamer;
 import io.camunda.zeebe.engine.util.EngineRule;
@@ -34,6 +33,7 @@ import org.mockito.Mockito;
 public final class ActivatableJobsNotificationTests {
 
   private static final String PROCESS_ID = "process";
+  private static final int VERIFICATION_TIMEOUT = 5000;
   private static final Function<String, BpmnModelInstance> MODEL_SUPPLIER =
       (type) ->
           Bpmn.createExecutableProcess(PROCESS_ID)
@@ -42,11 +42,11 @@ public final class ActivatableJobsNotificationTests {
               .endEvent("end")
               .done();
 
-  private static final JobStreamer JOB_AVAILABLE_CALLBACK = Mockito.spy(JobStreamer.class);
+  private static final JobStreamer JOB_STREAMER = Mockito.spy(JobStreamer.class);
 
   @ClassRule
   public static final EngineRule ENGINE =
-      EngineRule.singlePartition().withJobStreamer(JOB_AVAILABLE_CALLBACK);
+      EngineRule.singlePartition().withJobStreamer(JOB_STREAMER);
 
   @Rule
   public final RecordingExporterTestWatcher recordingExporterTestWatcher =
@@ -69,7 +69,7 @@ public final class ActivatableJobsNotificationTests {
     createProcessInstanceAndJobs(3);
 
     // then
-    Mockito.verify(JOB_AVAILABLE_CALLBACK, times(3)).notifyWorkAvailable(taskType);
+    verifyLongPollingNotification(3, taskType);
   }
 
   @Test
@@ -82,7 +82,7 @@ public final class ActivatableJobsNotificationTests {
     createProcessInstanceAndJobs(1);
 
     // then
-    Mockito.verify(JOB_AVAILABLE_CALLBACK, times(2)).notifyWorkAvailable(taskType);
+    verifyLongPollingNotification(2, taskType);
   }
 
   @Test
@@ -95,7 +95,7 @@ public final class ActivatableJobsNotificationTests {
     createProcessInstanceAndJobs(1);
 
     // then
-    Mockito.verify(JOB_AVAILABLE_CALLBACK, times(2)).notifyWorkAvailable(taskType);
+    verifyLongPollingNotification(2, taskType);
   }
 
   @Test
@@ -109,7 +109,7 @@ public final class ActivatableJobsNotificationTests {
     RecordingExporter.jobRecords(TIMED_OUT).withType(taskType).getFirst();
 
     // then
-    Mockito.verify(JOB_AVAILABLE_CALLBACK, times(2)).notifyWorkAvailable(taskType);
+    verifyLongPollingNotification(2, taskType);
   }
 
   @Test
@@ -125,7 +125,7 @@ public final class ActivatableJobsNotificationTests {
     createProcessInstanceAndJobs(1);
 
     // then
-    Mockito.verify(JOB_AVAILABLE_CALLBACK, times(3)).notifyWorkAvailable(taskType);
+    verifyLongPollingNotification(3, taskType);
   }
 
   @Test
@@ -139,7 +139,7 @@ public final class ActivatableJobsNotificationTests {
     ENGINE.job().withKey(jobKey).withRetries(10).fail();
 
     // then
-    Mockito.verify(JOB_AVAILABLE_CALLBACK, times(2)).notifyWorkAvailable(taskType);
+    verifyLongPollingNotification(2, taskType);
   }
 
   @Test
@@ -161,7 +161,7 @@ public final class ActivatableJobsNotificationTests {
     ENGINE.incident().ofInstance(job.getProcessInstanceKey()).resolve();
 
     // then
-    Mockito.verify(JOB_AVAILABLE_CALLBACK, times(2)).notifyWorkAvailable(taskType);
+    verifyLongPollingNotification(2, taskType);
   }
 
   @Test
@@ -175,8 +175,8 @@ public final class ActivatableJobsNotificationTests {
     ENGINE.createJob(secondType, PROCESS_ID);
 
     // then
-    Mockito.verify(JOB_AVAILABLE_CALLBACK, times(1)).notifyWorkAvailable(firstType);
-    Mockito.verify(JOB_AVAILABLE_CALLBACK, times(1)).notifyWorkAvailable(secondType);
+    verifyLongPollingNotification(1, firstType);
+    verifyLongPollingNotification(1, secondType);
   }
 
   private List<Long> createProcessInstanceAndJobs(final int amount) {
@@ -200,5 +200,10 @@ public final class ActivatableJobsNotificationTests {
         .withTimeout(timeout.toMillis())
         .withMaxJobsToActivate(amount)
         .activate();
+  }
+
+  private void verifyLongPollingNotification(final int numberOfInvocations, final String taskType) {
+    Mockito.verify(JOB_STREAMER, Mockito.timeout(VERIFICATION_TIMEOUT).times(numberOfInvocations))
+        .notifyWorkAvailable(taskType);
   }
 }

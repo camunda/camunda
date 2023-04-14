@@ -46,9 +46,10 @@ public class BpmnJobActivationBehavior {
   }
 
   public void publishWork(final JobRecord jobRecord) {
+    final String jobType = jobRecord.getType();
     sideEffectWriter.appendSideEffect(
         () -> {
-          jobStreamer.notifyWorkAvailable(jobRecord.getType());
+          jobStreamer.notifyWorkAvailable(jobType);
           return true;
         });
   }
