@@ -120,7 +120,7 @@ runs:
       name: Cache local Maven repository
       uses: actions/cache@v3
       with:
-        path: ~/.m2/repository
+        path: ~/.m2/repository/cached/releases/
         key: ${{ runner.os }}-maven-${{ inputs.maven-cache-key-modifier }}-${{ hashFiles('**/pom.xml') }}
         restore-keys: |
           ${{ runner.os }}-maven-${{ inputs.maven-cache-key-modifier }}-
