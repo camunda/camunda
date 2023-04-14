@@ -26,6 +26,8 @@ public final class ClusterCfg implements ConfigurationEntry {
   public static final int DEFAULT_REPLICATION_FACTOR = 1;
   public static final int DEFAULT_CLUSTER_SIZE = 1;
   public static final String DEFAULT_CLUSTER_NAME = "zeebe-cluster";
+  public static final Duration DEFAULT_ELECTION_TIMEOUT = Duration.ofMillis(2500);
+
   private static final String NODE_ID_ERROR_MSG =
       "Node id %s needs to be non negative and smaller then cluster size %s.";
   private static final String REPLICATION_FACTOR_ERROR_MSG =
@@ -38,7 +40,6 @@ public final class ClusterCfg implements ConfigurationEntry {
           + " quorum = {}. If you want to ensure high fault-tolerance and availability,"
           + " make sure to use an odd replication factor.";
   private static final Duration DEFAULT_HEARTBEAT_INTERVAL = Duration.ofMillis(250);
-  private static final Duration DEFAULT_ELECTION_TIMEOUT = Duration.ofMillis(2500);
 
   private List<String> initialContactPoints = DEFAULT_CONTACT_POINTS;
 

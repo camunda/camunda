@@ -23,6 +23,7 @@ import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import org.agrona.DirectBuffer;
+import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -30,10 +31,10 @@ import org.junit.jupiter.api.Test;
 class ClientStreamManagerTest {
 
   private final DirectBuffer streamType = BufferUtil.wrapString("foo");
-  private final BufferWriter metadata = mock(BufferWriter.class);
-  private final ClientStreamRegistry<BufferWriter> registry = new ClientStreamRegistry<>();
+  private final TestMetadata metadata = new TestMetadata(1);
+  private final ClientStreamRegistry<TestMetadata> registry = new ClientStreamRegistry<>();
   private final ClusterCommunicationService mockTransport = mock(ClusterCommunicationService.class);
-  private final ClientStreamManager<BufferWriter> clientStreamManager =
+  private final ClientStreamManager<TestMetadata> clientStreamManager =
       new ClientStreamManager<>(
           registry, new ClientStreamRequestManager<>(mockTransport, new TestConcurrencyControl()));
 
@@ -54,6 +55,47 @@ class ClientStreamManagerTest {
   }
 
   @Test
+  void shouldAggregateStreamsWithSameStreamTypeAndMetadata() {
+    // when
+    final var uuid1 =
+        clientStreamManager.add(BufferUtil.wrapString("foo"), new TestMetadata(1), p -> {});
+    final var uuid2 =
+        clientStreamManager.add(BufferUtil.wrapString("foo"), new TestMetadata(1), p -> {});
+    final var stream1 = registry.getClient(uuid1).orElseThrow();
+    final var stream2 = registry.getClient(uuid2).orElseThrow();
+
+    // then
+    assertThat(stream1.serverStream().getStreamId())
+        .isEqualTo(stream2.serverStream().getStreamId());
+  }
+
+  @Test
+  void shouldNoAggregateStreamsWithDifferentMetadata() {
+    // when
+    final var uuid1 = clientStreamManager.add(streamType, new TestMetadata(1), p -> {});
+    final var uuid2 = clientStreamManager.add(streamType, new TestMetadata(2), p -> {});
+    final var stream1 = registry.getClient(uuid1).orElseThrow();
+    final var stream2 = registry.getClient(uuid2).orElseThrow();
+
+    // then
+    assertThat(stream1.serverStream().getStreamId())
+        .isNotEqualTo(stream2.serverStream().getStreamId());
+  }
+
+  @Test
+  void shouldNoAggregateStreamsWithDifferentStreamType() {
+    // when
+    final var uuid1 = clientStreamManager.add(BufferUtil.wrapString("foo"), metadata, p -> {});
+    final var uuid2 = clientStreamManager.add(BufferUtil.wrapString("bar"), metadata, p -> {});
+    final var stream1 = registry.getClient(uuid1).orElseThrow();
+    final var stream2 = registry.getClient(uuid2).orElseThrow();
+
+    // then
+    assertThat(stream1.serverStream().getStreamId())
+        .isNotEqualTo(stream2.serverStream().getStreamId());
+  }
+
+  @Test
   void shouldOpenStreamToExistingServers() {
     // given
     final MemberId server1 = MemberId.from("1");
@@ -65,58 +107,79 @@ class ClientStreamManagerTest {
     final var uuid = clientStreamManager.add(streamType, metadata, p -> {});
 
     // then
-    final var clientStream = registry.get(uuid).orElseThrow();
+    final UUID serverStreamId = getServerStreamId(uuid);
+    final var stream = registry.get(serverStreamId).orElseThrow();
 
-    assertThat(clientStream.isConnected(server1)).isTrue();
-    assertThat(clientStream.isConnected(server2)).isTrue();
+    assertThat(stream.isConnected(server1)).isTrue();
+    assertThat(stream.isConnected(server2)).isTrue();
   }
 
   @Test
   void shouldOpenStreamToNewlyAddedServer() {
     // given
     final var uuid = clientStreamManager.add(streamType, metadata, p -> {});
-    final var clientStream = registry.get(uuid).orElseThrow();
+    final var serverStream = registry.get(getServerStreamId(uuid)).orElseThrow();
 
     // when
     final MemberId server = MemberId.from("3");
     clientStreamManager.onServerJoined(server);
 
     // then
-    assertThat(clientStream.isConnected(server)).isTrue();
+    assertThat(serverStream.isConnected(server)).isTrue();
   }
 
   @Test
   void shouldOpenStreamToNewlyAddedServerForAllOpenStreams() {
     // given
-    final var stream1 = clientStreamManager.add(streamType, metadata, p -> {});
-    final var stream2 = clientStreamManager.add(streamType, metadata, p -> {});
-
+    final var stream1 = clientStreamManager.add(BufferUtil.wrapString("foo"), metadata, p -> {});
+    final var stream2 = clientStreamManager.add(BufferUtil.wrapString("bar"), metadata, p -> {});
+    final var serverStream1 = registry.get(getServerStreamId(stream1)).orElseThrow();
+    final var serverStream2 = registry.get(getServerStreamId(stream2)).orElseThrow();
     // when
     final MemberId server = MemberId.from("3");
     clientStreamManager.onServerJoined(server);
 
     // then
-    assertThat(registry.get(stream1).orElseThrow().isConnected(server)).isTrue();
-    assertThat(registry.get(stream2).orElseThrow().isConnected(server)).isTrue();
+    assertThat(serverStream1.isConnected(server)).isTrue();
+    assertThat(serverStream2.isConnected(server)).isTrue();
   }
 
   @Test
   void shouldRemoveStream() {
     // given
     final var uuid = clientStreamManager.add(streamType, metadata, p -> {});
+    final var serverStreamId = getServerStreamId(uuid);
 
     // when
     clientStreamManager.remove(uuid);
 
     // then
-    assertThat(registry.get(uuid)).isEmpty();
+    assertThat(registry.getClient(uuid)).isEmpty();
+    assertThat(registry.get(serverStreamId)).isEmpty();
+  }
+
+  @Test
+  void shouldNotRemoveIfOtherClientStreamExist() {
+    // given
+    final var uuid1 = clientStreamManager.add(streamType, metadata, p -> {});
+    final var uuid2 = clientStreamManager.add(streamType, metadata, p -> {});
+    final var serverStreamId = getServerStreamId(uuid1);
+
+    // when
+    clientStreamManager.remove(uuid1);
+
+    // then
+    assertThat(registry.getClient(uuid1)).isEmpty();
+    assertThat(registry.getClient(uuid2)).isPresent();
+    assertThat(registry.get(serverStreamId)).isPresent();
   }
 
   @Test
   void shouldPushPayloadToClient() {
     // given
     final DirectBuffer payloadReceived = new UnsafeBuffer();
-    final var streamId = clientStreamManager.add(streamType, metadata, payloadReceived::wrap);
+    final var clientStreamId = clientStreamManager.add(streamType, metadata, payloadReceived::wrap);
+    final var streamId = getServerStreamId(clientStreamId);
 
     // when
     final var payloadPushed = BufferUtil.wrapString("data");
@@ -147,18 +210,60 @@ class ClientStreamManagerTest {
   }
 
   @Test
+  void shouldForwardErrorWhenPushFails() {
+    // given
+    final var clientStreamId =
+        clientStreamManager.add(
+            streamType,
+            metadata,
+            p -> {
+              throw new RuntimeException("Expected");
+            });
+    final var streamId = getServerStreamId(clientStreamId);
+
+    // when
+    final var payloadPushed = BufferUtil.wrapString("data");
+    final var request = new PushStreamRequest().streamId(streamId).payload(payloadPushed);
+    final CompletableFuture<Void> future = new CompletableFuture<>();
+    clientStreamManager.onPayloadReceived(request, future);
+
+    // then
+    assertThat(future)
+        .failsWithin(Duration.ofMillis(100))
+        .withThrowableOfType(ExecutionException.class)
+        .withCauseInstanceOf(RuntimeException.class)
+        .withMessageContaining("Expected");
+  }
+
+  @Test
   void shouldRemoveServerFromClientStream() {
     // given
     final MemberId server = MemberId.from("1");
     clientStreamManager.onServerJoined(server);
     final var uuid = clientStreamManager.add(streamType, metadata, p -> {});
-    final var clientStream = registry.get(uuid).orElseThrow();
-    assertThat(clientStream.isConnected(server)).isTrue();
+    final var stream = registry.get(getServerStreamId(uuid)).orElseThrow();
+    assertThat(stream.isConnected(server)).isTrue();
 
     // when
     clientStreamManager.onServerRemoved(server);
 
     // then
-    assertThat(clientStream.isConnected(server)).isFalse();
+    assertThat(stream.isConnected(server)).isFalse();
+  }
+
+  private UUID getServerStreamId(final UUID clientStreamId) {
+    return registry.getClient(clientStreamId).orElseThrow().serverStream().getStreamId();
+  }
+
+  private record TestMetadata(int data) implements BufferWriter {
+    @Override
+    public int getLength() {
+      return Integer.BYTES;
+    }
+
+    @Override
+    public void write(final MutableDirectBuffer buffer, final int offset) {
+      buffer.putInt(offset, data);
+    }
   }
 }

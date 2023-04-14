@@ -53,20 +53,21 @@ final class ClientStreamManager<M extends BufferWriter> {
       final M metadata,
       final ClientStreamConsumer clientStreamConsumer) {
     final var streamId = UUID.randomUUID();
-    final var clientStreamMeta =
-        new ClientStream<>(streamId, streamType, metadata, clientStreamConsumer);
 
     // add first in memory to handle case of new broker while we're adding
-    registry.add(clientStreamMeta);
-    requestManager.openStream(clientStreamMeta, servers);
-
+    final AggregatedClientStream<M> serverStream =
+        registry.addClient(streamId, streamType, metadata, clientStreamConsumer);
+    LOG.debug("Added client stream [{}] to stream [{}]", streamId, serverStream.getStreamId());
+    serverStream.open(requestManager, servers);
     return streamId;
   }
 
   void remove(final UUID streamId) {
-    final var clientStream = registry.remove(streamId);
-    clientStream.ifPresent(
+    LOG.debug("Removing client stream [{}]", streamId);
+    final var serverStream = registry.removeClient(streamId);
+    serverStream.ifPresent(
         stream -> {
+          LOG.debug("Removing aggregated stream [{}]", stream.getStreamId());
           stream.close();
           requestManager.removeStream(stream, servers);
         });
@@ -84,8 +85,12 @@ final class ClientStreamManager<M extends BufferWriter> {
     final var clientStream = registry.get(streamId);
     clientStream.ifPresentOrElse(
         stream -> {
-          stream.getClientStreamConsumer().push(payload);
-          responseFuture.complete(null);
+          try {
+            stream.getClientStreamConsumer().push(payload);
+            responseFuture.complete(null);
+          } catch (final Exception e) {
+            responseFuture.completeExceptionally(e);
+          }
         },
         () -> {
           // Stream does not exist. We expect to have already sent remove request to all servers.

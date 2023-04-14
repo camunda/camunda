@@ -7,11 +7,15 @@
  */
 package io.camunda.zeebe.broker.system.configuration;
 
+import static io.camunda.zeebe.broker.system.configuration.ClusterCfg.DEFAULT_ELECTION_TIMEOUT;
+
 import java.time.Duration;
 
 public final class ExperimentalRaftCfg implements ConfigurationEntry {
 
-  private static final Duration DEFAULT_REQUEST_TIMEOUT = Duration.ofSeconds(5);
+  // Requests should time out faster than the election timeout to ensure that a single missed
+  // heartbeat does not cause immediate re-election.
+  private static final Duration DEFAULT_REQUEST_TIMEOUT = DEFAULT_ELECTION_TIMEOUT;
   private static final Duration DEFAULT_MAX_QUORUM_RESPONSE_TIMEOUT = Duration.ofSeconds(0);
   private static final int DEFAULT_MIN_STEP_DOWN_FAILURE_COUNT = 3;
   private static final int DEFAULT_PREFER_SNAPSHOT_REPLICATION_THRESHOLD = 100;
