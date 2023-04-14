@@ -116,13 +116,21 @@ runs:
         -D maven.artifact.threads=32
         EOF
     - name: Cache local Maven repository
-      if: inputs.java == 'true'
+      if: inputs.java == 'true' && startsWith(runner.name, 'actions-runner-')
       uses: actions/cache@v3
       with:
         path: ~/.m2/repository/cached/releases/
-        key: ${{ runner.os }}-mvn-${{ inputs.maven-cache-key-modifier }}-${{ hashFiles('**/pom.xml') }}
+        key: self-hosted-${{ runner.os }}-mvn-${{ inputs.maven-cache-key-modifier }}-${{ hashFiles('**/pom.xml') }}
         restore-keys: |
-          ${{ runner.os }}-mvn-${{ inputs.maven-cache-key-modifier }}
+          self-hosted-${{ runner.os }}-mvn-${{ inputs.maven-cache-key-modifier }}
+    - name: Cache local Maven repository
+      if: inputs.java == 'true' && !startsWith(runner.name, 'actions-runner-')
+      uses: actions/cache@v3
+      with:
+        path: ~/.m2/repository/cached/releases/
+        key: gh-hosted-${{ runner.os }}-mvn-${{ inputs.maven-cache-key-modifier }}-${{ hashFiles('**/pom.xml') }}
+        restore-keys: |
+          gh-hosted-${{ runner.os }}-mvn-${{ inputs.maven-cache-key-modifier }}
     - if: ${{ inputs.go == 'true' }}
       uses: actions/setup-go@v3
       with:
