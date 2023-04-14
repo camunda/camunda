@@ -18,13 +18,9 @@ inputs:
     description: The JDK version to setup
     default: "17"
     required: false
-  maven-cache:
-    description: A modifier key used to toggle the usage of a maven repo cache.
-    default: "false"
-    required: false
   maven-cache-key-modifier:
     description: A modifier key used for the maven cache, can be used to create isolated caches for certain jobs.
-    default: "default"
+    default: "shared"
     required: false
   secret_vault_address:
     description: 'secret vault url'
