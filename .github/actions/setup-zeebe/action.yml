@@ -121,9 +121,9 @@ runs:
       uses: actions/cache@v3
       with:
         path: ~/.m2/repository/cached/releases/
-        key: ${{ runner.os }}-maven-${{ inputs.maven-cache-key-modifier }}-${{ hashFiles('**/pom.xml') }}
+        key: ${{ runner.os }}-mvn-${{ inputs.maven-cache-key-modifier }}-${{ hashFiles('**/pom.xml') }}
         restore-keys: |
-          ${{ runner.os }}-maven-${{ inputs.maven-cache-key-modifier }}-
+          ${{ runner.os }}-mvn-${{ inputs.maven-cache-key-modifier }}
     - if: ${{ inputs.go == 'true' }}
       uses: actions/setup-go@v3
       with:
