@@ -44,3 +44,4 @@ jobs:
           junit_files: |
             artifacts/**/surefire-reports/*.xml
             artifacts/**/failsafe-reports/TEST-*.xml
+          comment_mode: off
