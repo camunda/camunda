@@ -113,6 +113,7 @@ runs:
         -D aether.enhancedLocalRepository.splitRemote=true
         -D aether.syncContext.named.nameMapper=file-gav
         -D aether.syncContext.named.factory=file-lock
+        -D maven.artifact.threads=32
         EOF
     - name: Cache local Maven repository
       if: inputs.java == 'true'
