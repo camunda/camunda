@@ -72,9 +72,6 @@ runs:
       with:
         distribution: 'temurin'
         java-version: ${{ inputs.java-version }}
-        # if we run on arm64 set equivalent architecture as input, else default to x64
-        # see https://docs.github.com/en/actions/learn-github-actions/contexts#runner-context
-        architecture: ${{ runner.arch == 'ARM64' && 'aarch64' || 'x64' }}
     # Use CI Nexus as co-located pull-through cache for Maven artifacts via ~/.m2/settings.xml
     - name: 'Create settings.xml'
       uses: s4u/maven-settings-action@v2.8.0
