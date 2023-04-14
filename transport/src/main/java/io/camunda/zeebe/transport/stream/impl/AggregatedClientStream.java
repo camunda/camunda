@@ -41,7 +41,7 @@ final class AggregatedClientStream<M extends BufferWriter> {
     this.streamType = streamType;
     this.metadata = metadata;
     streamConsumer = this::push;
-    state = State.OPEN;
+    state = State.INITIAL;
   }
 
   void addClient(final ClientStream<M> clientStream) {
@@ -129,7 +129,15 @@ final class AggregatedClientStream<M extends BufferWriter> {
     return targets.get(index);
   }
 
+  void open(final ClientStreamRequestManager<M> requestManager, final Set<MemberId> servers) {
+    if (state == State.INITIAL) {
+      requestManager.openStream(this, servers);
+      state = State.OPEN;
+    }
+  }
+
   private enum State {
+    INITIAL,
     OPEN,
     CLOSED
   }

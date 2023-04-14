@@ -58,8 +58,7 @@ final class ClientStreamManager<M extends BufferWriter> {
     final AggregatedClientStream<M> serverStream =
         registry.addClient(streamId, streamType, metadata, clientStreamConsumer);
     LOG.debug("Added client stream [{}] to stream [{}]", streamId, serverStream.getStreamId());
-    requestManager.openStream(serverStream, servers);
-
+    serverStream.open(requestManager, servers);
     return streamId;
   }
 
