@@ -5,8 +5,10 @@
  * except in compliance with the proprietary license.
  */
 
-import React from 'react';
 import {shallow} from 'enzyme';
+import {Button} from '@carbon/react';
+
+import {CarbonModal as Modal} from 'components';
 
 import EditUserModal from './EditUserModal';
 
@@ -20,18 +22,29 @@ const props = {
   },
 };
 
-it('should match snapshot', () => {
-  const node = shallow(<EditUserModal {...props} />);
+beforeEach(() => {
+  jest.clearAllMocks();
+});
 
-  expect(node).toMatchSnapshot();
+it('should display the user name or ID', () => {
+  const wrapper = shallow(<EditUserModal {...props} />);
+  const header = wrapper.find(Modal.Header);
+  expect(header.text()).toEqual(`Edit ${props.identity.name}`);
 });
 
 it('should call the onConfirm prop', () => {
   const node = shallow(<EditUserModal {...props} />);
 
-  node.setState({role: 'manager'});
-
+  const editorRadio = node.find({type: 'radio'}).last();
+  editorRadio.simulate('change');
   node.find('.confirm').simulate('click');
 
   expect(props.onConfirm).toHaveBeenCalledWith('manager');
+});
+
+it('should call onClose when the cancel button is clicked', () => {
+  const wrapper = shallow(<EditUserModal {...props} />);
+  const cancelButton = wrapper.find(Button).first();
+  cancelButton.simulate('click');
+  expect(props.onClose).toHaveBeenCalled();
 });

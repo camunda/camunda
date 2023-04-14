@@ -5,17 +5,27 @@
  * except in compliance with the proprietary license.
  */
 
-import React, {useState} from 'react';
+import {useState} from 'react';
 import {Button} from '@carbon/react';
 
 import {CarbonModal as Modal, Form, LabeledInput} from 'components';
 import {t} from 'translation';
 
-export default function CopyAlertModal({onClose, initialAlertName, onConfirm}) {
+interface CopyAlertModalProps {
+  initialAlertName: string;
+  onClose: () => void;
+  onConfirm: (name: string) => void;
+}
+
+export default function CopyAlertModal({
+  onClose,
+  initialAlertName,
+  onConfirm,
+}: CopyAlertModalProps) {
   const [name, setName] = useState(initialAlertName + ' (' + t('common.copyLabel') + ')');
 
   return (
-    <Modal open onClose={onClose} onConfirm={() => onConfirm(name)}>
+    <Modal open onClose={onClose}>
       <Modal.Header>{t('common.copyName', {name: initialAlertName})}</Modal.Header>
       <Modal.Content>
         <Form>

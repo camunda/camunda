@@ -5,7 +5,6 @@
  * except in compliance with the proprietary license.
  */
 
-import React from 'react';
 import {shallow} from 'enzyme';
 
 import {LabeledInput, CarbonModal as Modal} from 'components';
@@ -15,6 +14,7 @@ import CopyAlertModal from './CopyAlertModal';
 const props = {
   initialAlertName: 'test',
   onConfirm: jest.fn(),
+  onClose: jest.fn(),
 };
 
 it('should update the alert name', () => {
