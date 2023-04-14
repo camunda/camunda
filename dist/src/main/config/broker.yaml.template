@@ -806,7 +806,7 @@
       # raft:
         # Sets the timeout for all requests send by raft leaders and followers.
         # This setting can also be overridden using the environment variable ZEEBE_BROKER_EXPERIMENTAL_RAFT_REQUESTTIMEOUT
-        # requestTimeout: 5s
+        # requestTimeout: 2500ms
 
         # If the leader is not able to reach the quorum, the leader may step down.
         # This is triggered after a number of requests, to a quorum of followers, has failed, and the number of failures
