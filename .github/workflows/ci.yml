@@ -19,64 +19,39 @@ defaults:
     shell: bash
 
 jobs:
-  module-integration-tests:
-    name: Module integration tests
-    runs-on: [ self-hosted, linux, amd64, "16" ]
-    timeout-minutes: 15
-    env:
-      ZEEBE_TEST_DOCKER_IMAGE: localhost:5000/camunda/zeebe:current-test
-    services:
-      registry:
-        image: registry:2
-        ports:
-          - 5000:5000
-    steps:
-      - uses: actions/checkout@v3
-      - uses: ./.github/actions/setup-zeebe
-        with:
-          maven-cache: 'true'
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
-          secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
-      - uses: ./.github/actions/build-zeebe
-        id: build-zeebe
-        with:
-          maven-extra-args: -T1C
-      - uses: ./.github/actions/build-docker
-        with:
-          repository: localhost:5000/camunda/zeebe
-          version: current-test
-          push: true
-          distball: ${{ steps.build-zeebe.outputs.distball }}
-      - name: Create build output log file
-        run: echo "BUILD_OUTPUT_FILE_PATH=$(mktemp)" >> $GITHUB_ENV
-      - name: Maven Test Build
-        run: >
-          ./mvnw -B -T3 --no-snapshot-updates
-          -D forkCount=5
-          -D maven.javadoc.skip=true
-          -D skipUTs -D skipChecks
-          -D failsafe.rerunFailingTestsCount=3 -D flaky.test.reportDir=failsafe-reports
-          -P parallel-tests,extract-flaky-tests
-          -pl '!qa/integration-tests,!qa/update-tests'
-          verify
-          | tee "${BUILD_OUTPUT_FILE_PATH}"
-      - name: Duplicate Test Check
-        uses: ./.github/actions/check-duplicate-tests
-        with:
-          buildOutputFilePath: ${{ env.BUILD_OUTPUT_FILE_PATH }}
-      - name: Upload test artifacts
-        uses: ./.github/actions/collect-test-artifacts
-        if: always()
-        with:
-          name: Module integration Tests
-  qa-integration-tests:
-    name: QA Integration tests
-    runs-on: [ self-hosted, linux, amd64, "16" ]
+  integration-tests:
+    name: "[IT] ${{ matrix.name }}"
     timeout-minutes: 20
+    runs-on: [ self-hosted, linux, amd64, "16" ]
+    strategy:
+      fail-fast: false
+      matrix:
+        group: [ modules, qa-integration, qa-update ]
+        include:
+          - group: modules
+            name: "Module Integration Tests"
+            maven-modules: "'!qa/integration-tests,!qa/update-tests'"
+            maven-build-threads: 2
+            maven-test-fork-count: 7
+            tcc-enabled: 'false'
+          - group: qa-integration
+            name: "QA Integration Tests"
+            maven-modules: "qa/integration-tests"
+            maven-build-threads: 1
+            maven-test-fork-count: 10
+            tcc-enabled: 'true'
+            tcc-concurrency: 2
+          - group: qa-update
+            name: "QA Update Tests"
+            maven-modules: "qa/update-tests"
+            maven-build-threads: 1
+            maven-test-fork-count: 10
+            tcc-enabled: 'true'
+            tcc-concurrency: 2
     env:
-      TC_CLOUD_TOKEN: ${{ secrets.TC_CLOUD_TOKEN }}
-      TC_CLOUD_CONCURRENCY: 2
+      TC_CLOUD_LOGS_VERBOSE: true
+      TC_CLOUD_TOKEN: ${{ matrix.tcc-enabled == 'true' && secrets.TC_CLOUD_TOKEN || '' }}
+      TC_CLOUD_CONCURRENCY: ${{ matrix.tcc-concurrency }}
       ZEEBE_TEST_DOCKER_IMAGE: localhost:5000/camunda/zeebe:current-test
     services:
       registry:
@@ -109,13 +84,13 @@ jobs:
         run: echo "BUILD_OUTPUT_FILE_PATH=$(mktemp)" >> $GITHUB_ENV
       - name: Maven Test Build
         run: >
-          mvn -B --no-snapshot-updates
-          -D forkCount=10
+          mvn -B -T ${{ matrix.maven-build-threads }} --no-snapshot-updates
+          -D forkCount=${{ matrix.maven-test-fork-count }}
           -D maven.javadoc.skip=true
           -D skipUTs -D skipChecks
           -D failsafe.rerunFailingTestsCount=3 -D flaky.test.reportDir=failsafe-reports
           -P parallel-tests,extract-flaky-tests
-          -pl 'qa/integration-tests'
+          -pl ${{ matrix.maven-modules }}
           verify
           | tee "${BUILD_OUTPUT_FILE_PATH}"
       - name: Duplicate Test Check
@@ -126,64 +101,7 @@ jobs:
         uses: ./.github/actions/collect-test-artifacts
         if: always()
         with:
-          name: QA integration Tests
-  qa-update-tests:
-    name: QA Update tests
-    runs-on: [ self-hosted, linux, amd64, "16" ]
-    timeout-minutes: 20
-    env:
-      TC_CLOUD_TOKEN: ${{ secrets.TC_CLOUD_TOKEN }}
-      TC_CLOUD_CONCURRENCY: 2
-      ZEEBE_TEST_DOCKER_IMAGE: localhost:5000/camunda/zeebe:current-test
-    services:
-      registry:
-        image: registry:2
-        ports:
-          - 5000:5000
-    steps:
-      - uses: actions/checkout@v3
-      - uses: ./.github/actions/setup-zeebe
-        with:
-          maven-cache: 'true'
-      - uses: ./.github/actions/build-zeebe
-        id: build-zeebe
-        with:
-          maven-extra-args: -T1C
-      - uses: ./.github/actions/build-docker
-        with:
-          repository: localhost:5000/camunda/zeebe
-          version: current-test
-          push: true
-          distball: ${{ steps.build-zeebe.outputs.distball }}
-      - name: Prepare Testcontainers Cloud agent
-        if: env.TC_CLOUD_TOKEN != ''
-        run: |
-          curl -L -o agent https://app.testcontainers.cloud/download/testcontainers-cloud-agent_linux_x86-64
-          chmod +x agent
-          ./agent --private-registry-url=http://localhost:5000 '--private-registry-allowed-image-name-globs=*,*/*' &
-          ./agent wait
-      - name: Create build output log file
-        run: echo "BUILD_OUTPUT_FILE_PATH=$(mktemp)" >> $GITHUB_ENV
-      - name: Maven Test Build
-        run: >
-          mvn -B --no-snapshot-updates
-          -D forkCount=10
-          -D maven.javadoc.skip=true
-          -D skipUTs -D skipChecks
-          -D failsafe.rerunFailingTestsCount=3 -D flaky.test.reportDir=failsafe-reports
-          -P parallel-tests,extract-flaky-tests
-          -pl qa/update-tests
-          verify
-          | tee "${BUILD_OUTPUT_FILE_PATH}"
-      - name: Duplicate Test Check
-        uses: ./.github/actions/check-duplicate-tests
-        with:
-          buildOutputFilePath: ${{ env.BUILD_OUTPUT_FILE_PATH }}
-      - name: Upload test artifacts
-        uses: ./.github/actions/collect-test-artifacts
-        if: always()
-        with:
-          name: QA Update Tests
+          name: "[IT] ${{ matrix.name }}"
   unit-tests:
     name: Unit tests
     runs-on: [ self-hosted, linux, "16" ]
@@ -220,7 +138,7 @@ jobs:
         with:
           name: "unit tests"
   smoke-tests:
-    name: Smoke tests on ${{ matrix.os }}
+    name: "[Smoke] ${{ matrix.os }}"
     timeout-minutes: 20
     runs-on: ${{ matrix.os }}
     strategy:
@@ -251,7 +169,7 @@ jobs:
         uses: ./.github/actions/collect-test-artifacts
         if: always()
         with:
-          name: Smoke Tests ${{ matrix.os }}
+          name: "[Smoke] ${{ matrix.os }}"
   property-tests:
     name: Property Tests
     runs-on: [ self-hosted, linux, "16" ]
@@ -459,9 +377,7 @@ jobs:
     name: Test summary
     runs-on: ubuntu-latest
     needs:
-      - module-integration-tests
-      - qa-integration-tests
-      - qa-update-tests
+      - integration-tests
       - unit-tests
       - smoke-tests
       - property-tests
@@ -480,9 +396,7 @@ jobs:
     name: "Event File"
     runs-on: ubuntu-latest
     needs:
-      - module-integration-tests
-      - qa-integration-tests
-      - qa-update-tests
+      - integration-tests
       - unit-tests
       - smoke-tests
       - property-tests
