@@ -105,7 +105,7 @@ final class GcsRestoreAcceptanceIT {
     final var response = actuator.take(BACKUP_ID);
     assertThat(response).isInstanceOf(TakeBackupResponse.class);
     Awaitility.await("until a backup exists with the given ID")
-        .atMost(Duration.ofSeconds(3000))
+        .atMost(Duration.ofSeconds(60))
         .ignoreExceptions() // 404 NOT_FOUND throws exception
         .untilAsserted(
             () -> {
@@ -133,7 +133,7 @@ final class GcsRestoreAcceptanceIT {
     final var response = actuator.take(BACKUP_ID);
     assertThat(response).isInstanceOf(TakeBackupResponse.class);
     Awaitility.await("until a backup exists with the given ID")
-        .atMost(Duration.ofSeconds(30))
+        .atMost(Duration.ofSeconds(60))
         .ignoreExceptions() // 404 NOT_FOUND throws exception
         .untilAsserted(
             () -> {

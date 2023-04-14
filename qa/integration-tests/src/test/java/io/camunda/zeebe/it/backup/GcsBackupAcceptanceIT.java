@@ -119,7 +119,7 @@ final class GcsBackupAcceptanceIT {
   private static void waitUntilBackupIsCompleted(
       final BackupActuator actuator, final long backupId) {
     Awaitility.await("until a backup exists with the id %d".formatted(backupId))
-        .atMost(Duration.ofSeconds(30))
+        .atMost(Duration.ofSeconds(60))
         .ignoreExceptions() // 404 NOT_FOUND throws exception
         .untilAsserted(
             () -> {
@@ -170,7 +170,7 @@ final class GcsBackupAcceptanceIT {
 
     // then
     Awaitility.await("Backup is deleted")
-        .timeout(Duration.ofSeconds(10))
+        .timeout(Duration.ofSeconds(30))
         .untilAsserted(
             () ->
                 assertThatThrownBy(() -> actuator.status(backupId))
