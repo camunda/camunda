@@ -59,7 +59,7 @@ module.exports = {
         'scope-empty': [0, 'never'],
         'scope-max-length': [0, 'always', Infinity],
         'scope-min-length': [0, 'always', 0],
-        'subject-case': [0, 'always', 'lower-case'],
+        'subject-case': [0, 'never', ['sentence-case', 'start-case', 'pascal-case', 'upper-case']],
         'subject-empty': [0, 'never'],
         'subject-full-stop': [0, 'never', '.'],
         'subject-max-length': [0, 'always', Infinity],
