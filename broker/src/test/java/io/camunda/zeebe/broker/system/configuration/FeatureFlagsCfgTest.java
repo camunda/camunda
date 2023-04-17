@@ -105,4 +105,37 @@ final class FeatureFlagsCfgTest {
     // then
     assertThat(featureFlagsCfg.isEnableMessageTtlCheckerAsync()).isTrue();
   }
+
+  @Test
+  void shouldDisableDueDateCheckerAsyncByDefault() {
+    // when
+    final BrokerCfg cfg = TestConfigReader.readConfig("empty", environment);
+    final var featureFlagsCfg = cfg.getExperimental().getFeatures();
+
+    // then
+    assertThat(featureFlagsCfg.isEnableTimerDueDateCheckerAsync()).isFalse();
+  }
+
+  @Test
+  void shouldSetEnableTimerDueDateCheckerAsyncFromConfig() {
+    // when
+    final BrokerCfg cfg = TestConfigReader.readConfig("feature-flags-cfg", environment);
+    final var featureFlagsCfg = cfg.getExperimental().getFeatures();
+
+    // then
+    assertThat(featureFlagsCfg.isEnableTimerDueDateCheckerAsync()).isTrue();
+  }
+
+  @Test
+  void shouldSetEnableTimerDueDateCheckerAsyncFromEnv() {
+    // given
+    environment.put("zeebe.broker.experimental.features.enableMessageDueDateAsync", "true");
+
+    // when
+    final BrokerCfg cfg = TestConfigReader.readConfig("feature-flags-cfg", environment);
+    final var featureFlagsCfg = cfg.getExperimental().getFeatures();
+
+    // then
+    assertThat(featureFlagsCfg.isEnableTimerDueDateCheckerAsync()).isTrue();
+  }
 }

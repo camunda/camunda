@@ -10,7 +10,6 @@ package io.camunda.zeebe.engine.processing.scheduled;
 import io.camunda.zeebe.scheduler.clock.ActorClock;
 import io.camunda.zeebe.stream.api.ReadonlyStreamProcessorContext;
 import io.camunda.zeebe.stream.api.StreamProcessorLifecycleAware;
-import io.camunda.zeebe.stream.api.scheduling.ProcessingScheduleService;
 import io.camunda.zeebe.stream.api.scheduling.Task;
 import io.camunda.zeebe.stream.api.scheduling.TaskResult;
 import io.camunda.zeebe.stream.api.scheduling.TaskResultBuilder;
@@ -18,8 +17,8 @@ import java.time.Duration;
 import java.util.function.Function;
 
 public final class DueDateChecker implements StreamProcessorLifecycleAware {
-
-  private ProcessingScheduleService scheduleService;
+  private ScheduleDelayed scheduleService;
+  private final boolean scheduleAsync;
 
   private boolean checkerRunning;
   private boolean shouldRescheduleChecker;
@@ -30,8 +29,11 @@ public final class DueDateChecker implements StreamProcessorLifecycleAware {
   private final TriggerEntitiesTask triggerEntitiesTask;
 
   public DueDateChecker(
-      final long timerResolution, final Function<TaskResultBuilder, Long> nextDueDateFunction) {
+      final long timerResolution,
+      final boolean scheduleAsync,
+      final Function<TaskResultBuilder, Long> nextDueDateFunction) {
     this.timerResolution = timerResolution;
+    this.scheduleAsync = scheduleAsync;
     nextDueDateSupplier = nextDueDateFunction;
     triggerEntitiesTask = new TriggerEntitiesTask();
   }
@@ -83,7 +85,13 @@ public final class DueDateChecker implements StreamProcessorLifecycleAware {
 
   @Override
   public void onRecovered(final ReadonlyStreamProcessorContext processingContext) {
-    scheduleService = processingContext.getScheduleService();
+    final var scheduleService = processingContext.getScheduleService();
+    if (scheduleAsync) {
+      this.scheduleService = scheduleService::runDelayedAsync;
+    } else {
+      this.scheduleService = scheduleService::runDelayed;
+    }
+
     shouldRescheduleChecker = true;
     // check if timers are due after restart
     scheduleTriggerEntitiesTask();
@@ -124,5 +132,21 @@ public final class DueDateChecker implements StreamProcessorLifecycleAware {
       }
       return taskResultBuilder.build();
     }
+  }
+
+  /**
+   * Abstracts over async and sync scheduling methods of {@link
+   * io.camunda.zeebe.stream.api.scheduling.ProcessingScheduleService}.
+   */
+  @FunctionalInterface
+  interface ScheduleDelayed {
+    /**
+     * Implemented by either {@link
+     * io.camunda.zeebe.stream.api.scheduling.ProcessingScheduleService#runDelayed(Duration, Task)}
+     * or {@link
+     * io.camunda.zeebe.stream.api.scheduling.ProcessingScheduleService#runDelayedAsync(Duration,
+     * Task)}
+     */
+    void runDelayed(final Duration delay, final Task task);
   }
 }
