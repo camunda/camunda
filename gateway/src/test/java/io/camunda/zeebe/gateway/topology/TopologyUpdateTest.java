@@ -14,12 +14,15 @@ import io.atomix.cluster.ClusterMembershipEvent;
 import io.atomix.cluster.ClusterMembershipEvent.Type;
 import io.atomix.cluster.Member;
 import io.atomix.cluster.MemberConfig;
+import io.atomix.cluster.MemberId;
+import io.camunda.zeebe.gateway.impl.broker.cluster.BrokerTopologyListener;
 import io.camunda.zeebe.gateway.impl.broker.cluster.BrokerTopologyManagerImpl;
 import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
 import io.camunda.zeebe.protocol.record.PartitionHealthStatus;
 import io.camunda.zeebe.scheduler.testing.ControlledActorSchedulerExtension;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.CopyOnWriteArraySet;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -307,6 +310,81 @@ final class TopologyUpdateTest {
         .isNotEqualTo(brokerId);
   }
 
+  @Test
+  void shouldNotifyListenerWhenBrokerAdded() {
+    // given
+    final RecordingTopologyListener topology = new RecordingTopologyListener();
+    addTopologyListener(topology);
+
+    final int brokerId = 1;
+    final BrokerInfo broker = createBroker(brokerId);
+
+    // when
+    notifyEvent(createMemberAddedEvent(broker));
+
+    // then
+    assertThat(topology.getBrokers()).contains(brokerId);
+  }
+
+  @Test
+  void shouldNotifyListenerWithInitialState() {
+    // given
+    final int brokerId = 1;
+    final BrokerInfo broker = createBroker(brokerId);
+    notifyEvent(createMemberAddedEvent(broker));
+
+    // when
+    final RecordingTopologyListener topology = new RecordingTopologyListener();
+    addTopologyListener(topology);
+
+    // then
+    assertThat(topology.getBrokers()).contains(brokerId);
+  }
+
+  @Test
+  void shouldNotifyListenerWhenBrokerRemoved() {
+    // given
+    final RecordingTopologyListener topology = new RecordingTopologyListener();
+    addTopologyListener(topology);
+
+    final int brokerId = 1;
+    final BrokerInfo broker = createBroker(brokerId);
+    notifyEvent(createMemberAddedEvent(broker));
+
+    // when
+    notifyEvent(createMemberRemoveEvent(broker));
+
+    // then
+    assertThat(topology.getBrokers()).doesNotContain(brokerId);
+  }
+
+  @Test
+  void shouldRemoveListener() {
+    // given
+    final RecordingTopologyListener topology = new RecordingTopologyListener();
+    addTopologyListener(topology);
+
+    final int brokerId = 1;
+    final BrokerInfo broker = createBroker(brokerId);
+    notifyEvent(createMemberAddedEvent(broker));
+
+    // when
+    topologyManager.removeTopologyListener(topology);
+    actorSchedulerRule.workUntilDone();
+
+    notifyEvent(createMemberRemoveEvent(broker));
+
+    // then
+    assertThat(topology.getBrokers())
+        .describedAs("Listener should not get remove event")
+        .contains(brokerId);
+  }
+
+  private void addTopologyListener(final RecordingTopologyListener listener) {
+    topologyManager.addTopologyListener(listener);
+    actorSchedulerRule.workUntilDone();
+  }
+
   private BrokerInfo createBroker(final int brokerId) {
     final BrokerInfo broker =
         new BrokerInfo()
@@ -338,7 +416,7 @@ final class TopologyUpdateTest {
   }
 
   private ClusterMembershipEvent createMemberRemoveEvent(final BrokerInfo broker) {
-    final Member member = new Member(new MemberConfig());
+    final Member member = new Member(new MemberConfig().setId(String.valueOf(broker.getNodeId())));
     broker.writeIntoProperties(member.properties());
     return new ClusterMembershipEvent(Type.MEMBER_REMOVED, member);
   }
@@ -346,5 +424,24 @@ final class TopologyUpdateTest {
   private void notifyEvent(final ClusterMembershipEvent broker) {
     topologyManager.event(broker);
     actorSchedulerRule.workUntilDone();
+  }
+
+  private static class RecordingTopologyListener implements BrokerTopologyListener {
+
+    private final Set<Integer> brokers = new CopyOnWriteArraySet<>();
+
+    @Override
+    public void brokerAdded(final MemberId memberId) {
+      brokers.add(Integer.parseInt(memberId.id()));
+    }
+
+    @Override
+    public void brokerRemoved(final MemberId memberId) {
+      brokers.remove(Integer.parseInt(memberId.id()));
+    }
+
+    Set<Integer> getBrokers() {
+      return brokers;
+    }
   }
 }
