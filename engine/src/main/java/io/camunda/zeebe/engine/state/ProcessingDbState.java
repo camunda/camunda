@@ -116,6 +116,7 @@ public class ProcessingDbState implements MutableProcessingState {
   public void onRecovered(final ReadonlyStreamProcessorContext context) {
     messageSubscriptionState.onRecovered(context);
     processMessageSubscriptionState.onRecovered(context);
+    blackListState.onRecovered(context);
   }
 
   @Override
