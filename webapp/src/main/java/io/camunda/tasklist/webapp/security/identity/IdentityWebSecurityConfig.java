@@ -7,13 +7,7 @@
 package io.camunda.tasklist.webapp.security.identity;
 
 import static io.camunda.tasklist.webapp.security.TasklistProfileService.IDENTITY_AUTH_PROFILE;
-import static io.camunda.tasklist.webapp.security.TasklistURIs.AUTH_WHITELIST;
-import static io.camunda.tasklist.webapp.security.TasklistURIs.ERROR_URL;
-import static io.camunda.tasklist.webapp.security.TasklistURIs.GRAPHQL_URL;
-import static io.camunda.tasklist.webapp.security.TasklistURIs.LOGIN_RESOURCE;
-import static io.camunda.tasklist.webapp.security.TasklistURIs.REQUESTED_URL;
-import static io.camunda.tasklist.webapp.security.TasklistURIs.REST_V1_API;
-import static io.camunda.tasklist.webapp.security.TasklistURIs.ROOT_URL;
+import static io.camunda.tasklist.webapp.security.TasklistURIs.*;
 import static org.apache.commons.lang3.StringUtils.containsAny;
 
 import io.camunda.tasklist.webapp.security.BaseWebConfigurer;
@@ -55,6 +49,7 @@ public class IdentityWebSecurityConfig extends BaseWebConfigurer {
                   .permitAll()
                   .requestMatchers(
                       AntPathRequestMatcher.antMatcher(GRAPHQL_URL),
+                      AntPathRequestMatcher.antMatcher(ALL_REST_V1_API),
                       AntPathRequestMatcher.antMatcher(ERROR_URL))
                   .authenticated()
                   .requestMatchers(ROOT_URL)

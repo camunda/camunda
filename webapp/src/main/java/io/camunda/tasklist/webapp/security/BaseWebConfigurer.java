@@ -6,13 +6,7 @@
  */
 package io.camunda.tasklist.webapp.security;
 
-import static io.camunda.tasklist.webapp.security.TasklistURIs.AUTH_WHITELIST;
-import static io.camunda.tasklist.webapp.security.TasklistURIs.COOKIE_JSESSIONID;
-import static io.camunda.tasklist.webapp.security.TasklistURIs.ERROR_URL;
-import static io.camunda.tasklist.webapp.security.TasklistURIs.GRAPHQL_URL;
-import static io.camunda.tasklist.webapp.security.TasklistURIs.LOGIN_RESOURCE;
-import static io.camunda.tasklist.webapp.security.TasklistURIs.LOGOUT_RESOURCE;
-import static io.camunda.tasklist.webapp.security.TasklistURIs.RESPONSE_CHARACTER_ENCODING;
+import static io.camunda.tasklist.webapp.security.TasklistURIs.*;
 import static org.apache.hc.core5.http.ContentType.APPLICATION_JSON;
 import static org.springframework.http.HttpStatus.NO_CONTENT;
 import static org.springframework.http.HttpStatus.UNAUTHORIZED;
@@ -78,6 +72,7 @@ public abstract class BaseWebConfigurer {
                   .permitAll()
                   .requestMatchers(
                       AntPathRequestMatcher.antMatcher(GRAPHQL_URL),
+                      AntPathRequestMatcher.antMatcher(ALL_REST_V1_API),
                       AntPathRequestMatcher.antMatcher(ERROR_URL))
                   .authenticated();
             })
