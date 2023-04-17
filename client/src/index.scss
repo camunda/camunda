@@ -11,6 +11,8 @@
 );
 
 @use '@carbon/react/scss/fonts/sans';
+@use '@carbon/react/scss/themes';
+@use '@carbon/react/scss/theme';
 @include sans.medium();
 @include sans.bold();
 
@@ -95,4 +97,12 @@ textarea {
 
 p {
   @include type-style('body-01');
+}
+
+.cds--g10 {
+  @include theme.theme(themes.$g10);
+}
+
+.cds--g100 {
+  @include theme.theme(themes.$g100);
 }
