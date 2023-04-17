@@ -40,7 +40,7 @@ import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.model.CreateBucketRequest;
 
 @Testcontainers
-final class CompressionTest {
+final class CompressionIT {
   private static final String ACCESS_KEY = "letmein";
   private static final String SECRET_KEY = "letmein1234";
   private static final int DEFAULT_PORT = 9000;

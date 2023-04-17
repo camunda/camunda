@@ -52,7 +52,7 @@ import org.junit.runners.Parameterized.Parameter;
 import org.junit.runners.Parameterized.Parameters;
 
 @RunWith(Parameterized.class)
-public class ZeebeTest {
+public class ZeebeIT {
 
   // rough estimate of how many entries we'd need to write to fill a segment
   // segments are configured for 1kb, and one entry takes ~30 bytes (plus some metadata I guess)
