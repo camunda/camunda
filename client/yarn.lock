@@ -2635,13 +2635,13 @@
   dependencies:
     "@types/enzyme" "*"
 
-"@types/enzyme@*", "@types/enzyme@^3.10.12":
-  version "3.10.12"
-  resolved "https://registry.yarnpkg.com/@types/enzyme/-/enzyme-3.10.12.tgz#ac4494801b38188935580642f772ad18f72c132f"
-  integrity sha512-xryQlOEIe1TduDWAOphR0ihfebKFSWOXpIsk+70JskCfRfW+xALdnJ0r1ZOTo85F9Qsjk6vtlU7edTYHbls9tA==
+"@types/enzyme@*", "@types/enzyme@^3.10.13":
+  version "3.10.13"
+  resolved "https://registry.yarnpkg.com/@types/enzyme/-/enzyme-3.10.13.tgz#332c0ed59b01f7b1c398c532a1c21a5feefabeb1"
+  integrity sha512-FCtoUhmFsud0Yx9fmZk179GkdZ4U9B0GFte64/Md+W/agx0L5SxsIIbhLBOxIb9y2UfBA4WQnaG1Od/UsUQs9Q==
   dependencies:
     "@types/cheerio" "*"
-    "@types/react" "*"
+    "@types/react" "^16"
 
 "@types/error-stack-parser@^1.3.18":
   version "1.3.18"
@@ -2898,6 +2898,15 @@
   version "18.0.28"
   resolved "https://registry.yarnpkg.com/@types/react/-/react-18.0.28.tgz#accaeb8b86f4908057ad629a26635fe641480065"
   integrity sha512-RD0ivG1kEztNBdoAK7lekI9M+azSnitIn85h4iOiaLjaTrMjzslhaqCGaI4IyCJ1RljWiLCEu4jyrLLgqxBTew==
+  dependencies:
+    "@types/prop-types" "*"
+    "@types/scheduler" "*"
+    csstype "^3.0.2"
+
+"@types/react@^16":
+  version "16.14.40"
+  resolved "https://registry.yarnpkg.com/@types/react/-/react-16.14.40.tgz#cbf1c6249e9a96eb1badc7f32f1055e532e21c72"
+  integrity sha512-elQj2VQHDuJ5xuEcn5Wxh/YQFNbEuPJFRKSdyG866awDm5dmtoqsMmuAJWb/l/qd2kDkZMfOTKygVfMIdBBPKg==
   dependencies:
     "@types/prop-types" "*"
     "@types/scheduler" "*"
