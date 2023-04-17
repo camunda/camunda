@@ -39,6 +39,7 @@ import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.testing.ActorSchedulerRule;
 import io.camunda.zeebe.test.broker.protocol.brokerapi.ExecuteCommandRequest;
 import io.camunda.zeebe.test.broker.protocol.brokerapi.ExecuteCommandResponseBuilder;
@@ -99,7 +100,7 @@ public final class BrokerClientTest {
             atomixCluster.getEventService(),
             actorScheduler.get());
 
-    client.start();
+    client.start().forEach(ActorFuture::join);
 
     final BrokerClusterStateImpl topology = new BrokerClusterStateImpl();
     topology.addPartitionIfAbsent(START_PARTITION_ID);

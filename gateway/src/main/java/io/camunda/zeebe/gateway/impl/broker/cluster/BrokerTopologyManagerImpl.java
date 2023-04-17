@@ -17,6 +17,9 @@ import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.gateway.Loggers;
 import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
 import io.camunda.zeebe.scheduler.Actor;
+import io.camunda.zeebe.scheduler.ActorSchedulingService;
+import io.camunda.zeebe.scheduler.future.ActorFuture;
+import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
@@ -33,6 +36,7 @@ public final class BrokerTopologyManagerImpl extends Actor
   private final GatewayTopologyMetrics topologyMetrics = new GatewayTopologyMetrics();
 
   private final Set<BrokerTopologyListener> topologyListeners = new HashSet<>();
+  private final ActorFuture<Void> startFuture = new CompletableActorFuture<>();
 
   public BrokerTopologyManagerImpl(final Supplier<Set<Member>> membersSupplier) {
     this.membersSupplier = membersSupplier;
@@ -49,6 +53,13 @@ public final class BrokerTopologyManagerImpl extends Actor
 
   public void setTopology(final BrokerClusterStateImpl topology) {
     this.topology.set(topology);
+  }
+
+  public ActorFuture<Void> start(final ActorSchedulingService actorScheduler) {
+    if (!startFuture.isDone()) {
+      actorScheduler.submitActor(this);
+    }
+    return startFuture;
   }
 
   private void checkForMissingEvents() {
@@ -77,6 +88,7 @@ public final class BrokerTopologyManagerImpl extends Actor
   protected void onActorStarted() {
     // Get the initial member state before the listener is registered
     checkForMissingEvents();
+    startFuture.complete(null);
   }
 
   @Override
