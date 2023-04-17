@@ -27,7 +27,7 @@ public class DueDateCheckerTest {
   @Test
   public void shouldNotScheduleTwoTasks() {
     // given
-    final var dueDateChecker = new DueDateChecker(100, (builder) -> 0L);
+    final var dueDateChecker = new DueDateChecker(100, false, (builder) -> 0L);
     final var mockContext = mock(ReadonlyStreamProcessorContext.class);
     final var mockScheduleService = mock(ProcessingScheduleService.class);
 
@@ -48,7 +48,7 @@ public class DueDateCheckerTest {
   @Test
   public void shouldScheduleForAnEarlierTasks() {
     // given
-    final var dueDateChecker = new DueDateChecker(100, (builder) -> 0L);
+    final var dueDateChecker = new DueDateChecker(100, false, (builder) -> 0L);
     final var mockContext = mock(ReadonlyStreamProcessorContext.class);
     final var mockScheduleService = mock(ProcessingScheduleService.class);
 
