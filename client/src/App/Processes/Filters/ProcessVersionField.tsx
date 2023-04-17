@@ -11,6 +11,8 @@ import {observer} from 'mobx-react';
 
 import {processesStore} from 'modules/stores/processes';
 import {Select} from './styled';
+import {IS_COMBOBOX_ENABLED} from 'modules/feature-flags';
+import {ComboBox} from 'modules/components/ComboBox';
 
 const ProcessVersionField: React.FC = observer(() => {
   const {versionsByProcess} = processesStore;
@@ -35,7 +37,30 @@ const ProcessVersionField: React.FC = observer(() => {
 
   const form = useForm();
 
-  return (
+  return IS_COMBOBOX_ENABLED ? (
+    <Field name="version">
+      {({input}) => {
+        return (
+          <ComboBox
+            titleText="Version"
+            id="processVersion"
+            aria-label="Select a Process Version"
+            onChange={({selectedItem}) => {
+              input.onChange(selectedItem?.id);
+              form.change('flowNodeId', undefined);
+            }}
+            items={
+              versions?.map(({version}) => ({
+                id: version.toString(),
+                label: version.toString(),
+              })) ?? []
+            }
+            value={input.value}
+          />
+        );
+      }}
+    </Field>
+  ) : (
     <Field name="version">
       {({input}) => {
         return (

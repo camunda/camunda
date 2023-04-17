@@ -20,7 +20,10 @@ import {mockFetchProcessInstancesStatistics} from 'modules/mocks/api/processInst
 import {mockFetchProcessXML} from 'modules/mocks/api/processes/fetchProcessXML';
 import {pickDateTimeRange} from 'modules/testUtils/dateTimeRange';
 import {IS_COMBOBOX_ENABLED} from 'modules/feature-flags';
-import {selectComboBoxOption} from 'modules/testUtils/selectComboBoxOption';
+import {
+  selectProcess,
+  selectProcessVersion,
+} from 'modules/testUtils/selectComboBoxOption';
 
 jest.unmock('modules/utils/date/formatDate');
 
@@ -64,21 +67,19 @@ describe('Filters', () => {
       await waitFor(() =>
         expect(screen.getByLabelText('Process')).toBeEnabled()
       );
-      await selectComboBoxOption({
-        user,
-        fieldName: 'Process',
-        itemName: 'Big variable process',
-      });
+      await selectProcess({user, option: 'Big variable process'});
+
+      expect(screen.getByLabelText('Version')).toBeEnabled();
+      await selectProcessVersion({user, option: '1'});
     } else {
       await user.selectOptions(screen.getByTestId('filter-process-name'), [
         'Big variable process',
       ]);
+      expect(screen.getByTestId('filter-process-version')).toBeEnabled();
+      expect(
+        within(screen.getByTestId('filter-process-version')).getByText('1')
+      ).toBeInTheDocument();
     }
-
-    expect(screen.getByTestId('filter-process-version')).toBeEnabled();
-    expect(
-      within(screen.getByTestId('filter-process-version')).getByText('1')
-    ).toBeInTheDocument();
 
     await waitFor(() =>
       expect(screen.getByTestId('search')).toHaveTextContent(
@@ -120,6 +121,7 @@ describe('Filters', () => {
       expect(screen.getByLabelText('Process')).toHaveValue(
         'Big variable process'
       );
+      expect(screen.getByLabelText('Version')).toHaveValue('1');
     } else {
       expect(
         await screen.findByText('Big variable process')
@@ -127,11 +129,12 @@ describe('Filters', () => {
       await waitFor(() =>
         expect(screen.getByTestId('filter-process-name')).toBeEnabled()
       );
+      expect(
+        await within(screen.getByTestId('filter-process-version')).findByText(
+          '1'
+        )
+      ).toBeInTheDocument();
     }
-
-    expect(
-      await within(screen.getByTestId('filter-process-version')).findByText('1')
-    ).toBeInTheDocument();
 
     expect(await screen.findByText(MOCK_PARAMS.flowNodeId)).toBeInTheDocument();
 
@@ -238,18 +241,14 @@ describe('Filters', () => {
       );
 
       expect(screen.getByLabelText('Process')).toHaveValue('');
-      expect(screen.getByTestId('filter-process-version')).toHaveValue('all');
+      expect(screen.getByLabelText('Version')).toHaveValue('');
       expect(screen.getByTestId('filter-flow-node')).toHaveValue('');
       expect(screen.getByTestId(/active/)).not.toBeChecked();
       expect(screen.getByTestId(/incidents/)).not.toBeChecked();
       expect(screen.getByTestId(/completed/)).not.toBeChecked();
       expect(screen.getByTestId(/canceled/)).not.toBeChecked();
 
-      await selectComboBoxOption({
-        user,
-        fieldName: 'Process',
-        itemName: 'Big variable process',
-      });
+      await selectProcess({user, option: 'Big variable process'});
     } else {
       await waitFor(() =>
         expect(screen.getByTestId('filter-process-name')).toBeEnabled()
@@ -552,30 +551,33 @@ describe('Filters', () => {
     }
   });
 
-  it('should omit all versions option', async () => {
-    const {user} = render(<Filters />, {
-      wrapper: getWrapper(
-        `/?${new URLSearchParams(
-          Object.entries({
-            process: 'bigVarProcess',
-            version: '1',
-          })
-        ).toString()}`
-      ),
-    });
+  (IS_COMBOBOX_ENABLED ? it.skip : it)(
+    'should omit all versions option',
+    async () => {
+      const {user} = render(<Filters />, {
+        wrapper: getWrapper(
+          `/?${new URLSearchParams(
+            Object.entries({
+              process: 'bigVarProcess',
+              version: '1',
+            })
+          ).toString()}`
+        ),
+      });
 
-    await user.click(screen.getByLabelText(/version/i));
+      await user.click(screen.getByLabelText(/version/i));
 
-    expect(
-      within(screen.getByLabelText(/version/i)!).getByRole('option', {
-        name: '1',
-      })
-    ).toBeInTheDocument();
+      expect(
+        within(screen.getByLabelText(/version/i)!).getByRole('option', {
+          name: '1',
+        })
+      ).toBeInTheDocument();
 
-    expect(
-      within(screen.queryByLabelText(/version/i)!).queryByRole('option', {
-        name: /all/i,
-      })
-    ).not.toBeInTheDocument();
-  });
+      expect(
+        within(screen.queryByLabelText(/version/i)!).queryByRole('option', {
+          name: /all/i,
+        })
+      ).not.toBeInTheDocument();
+    }
+  );
 });

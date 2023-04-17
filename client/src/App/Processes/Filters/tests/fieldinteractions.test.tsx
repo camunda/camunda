@@ -21,7 +21,10 @@ import {mockFetchGroupedProcesses} from 'modules/mocks/api/processes/fetchGroupe
 import {mockFetchProcessInstancesStatistics} from 'modules/mocks/api/processInstances/fetchProcessInstancesStatistics';
 import {mockFetchProcessXML} from 'modules/mocks/api/processes/fetchProcessXML';
 import {IS_COMBOBOX_ENABLED} from 'modules/feature-flags';
-import {selectComboBoxOption} from 'modules/testUtils/selectComboBoxOption';
+import {
+  selectProcess,
+  selectProcessVersion,
+} from 'modules/testUtils/selectComboBoxOption';
 
 jest.unmock('modules/utils/date/formatDate');
 
@@ -206,28 +209,30 @@ describe('Interaction with other fields during validation', () => {
     ).toBeInTheDocument();
 
     if (IS_COMBOBOX_ENABLED) {
-      await selectComboBoxOption({
-        user,
-        fieldName: 'Process',
-        itemName: 'eventBasedGatewayProcess',
-      });
+      await selectProcess({user, option: 'eventBasedGatewayProcess'});
+      expect(screen.getByLabelText('Version')).toBeEnabled();
+      expect(
+        screen.getByText(
+          'Key has to be a 16 to 19 digit number, separated by space or comma'
+        )
+      ).toBeInTheDocument();
+
+      await selectProcessVersion({user, option: '2'});
     } else {
       await user.selectOptions(screen.getByTestId('filter-process-name'), [
         'eventBasedGatewayProcess',
       ]);
+      expect(screen.getByTestId('filter-process-version')).toBeEnabled();
+      expect(
+        screen.getByText(
+          'Key has to be a 16 to 19 digit number, separated by space or comma'
+        )
+      ).toBeInTheDocument();
+
+      await user.selectOptions(screen.getByTestId('filter-process-version'), [
+        '2',
+      ]);
     }
-
-    expect(screen.getByTestId('filter-process-version')).toBeEnabled();
-
-    expect(
-      screen.getByText(
-        'Key has to be a 16 to 19 digit number, separated by space or comma'
-      )
-    ).toBeInTheDocument();
-
-    await user.selectOptions(screen.getByTestId('filter-process-version'), [
-      '2',
-    ]);
 
     expect(
       screen.getByText(

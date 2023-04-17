@@ -16,7 +16,10 @@ import {
 } from './utils/setFlyoutTestAttribute';
 import {displayOptionalFilter} from './utils/displayOptionalFilter';
 import {processesPage as ProcessesPage} from './PageModels/Processes';
-import {validateSelectValueLegacy} from './utils/validateSelectValue';
+import {
+  validateSelectValue,
+  validateSelectValueLegacy,
+} from './utils/validateSelectValue';
 import {pickDateTimeRange} from './utils/pickDateTimeRange';
 import {IS_COMBOBOX_ENABLED} from '../../src/modules/feature-flags';
 
@@ -37,7 +40,6 @@ fixture('Process Instances Filters')
       );
 
     if (IS_COMBOBOX_ENABLED) {
-      await setProcessesFlyoutTestAttribute('processVersion');
       await setProcessesFlyoutTestAttribute('flowNode');
     } else {
       await setProcessesFlyoutTestAttributeLegacy('processName');
@@ -166,16 +168,23 @@ test('Interaction between diagram and filters', async (t) => {
 
   await ProcessesPage.selectProcess('Process With Multiple Versions');
 
-  await validateSelectValueLegacy(
-    ProcessesPage.Filters.processVersion.field,
-    '2'
-  );
+  if (IS_COMBOBOX_ENABLED) {
+    await validateSelectValue(ProcessesPage.Filters.processVersion.field, '2');
+  } else {
+    await validateSelectValueLegacy(
+      ProcessesPage.Filters.processVersion.field,
+      '2'
+    );
+  }
 
   await t.click(ProcessesPage.Filters.flowNode.field);
   await ProcessesPage.selectFlowNode('StartEvent_1');
 
   // change version and see flow node filter has been reset
   await t.click(ProcessesPage.Filters.processVersion.field);
+  if (IS_COMBOBOX_ENABLED) {
+    await ProcessesPage.clearComboBox('Version');
+  }
   await ProcessesPage.selectVersion('1');
   await validateSelectValueLegacy(ProcessesPage.Filters.flowNode.field, '--');
 

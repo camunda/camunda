@@ -8,14 +8,10 @@
 import {ClientFunction} from 'testcafe';
 
 const setProcessesFlyoutTestAttribute = ClientFunction(
-  (fieldName: 'processVersion' | 'flowNode') => {
+  (fieldName: 'flowNode') => {
     const cmSelectFields = {
-      processVersion: {
-        index: 0,
-        testId: 'cm-flyout-process-version',
-      },
       flowNode: {
-        index: 1,
+        index: 0,
         testId: 'cm-flyout-flow-node',
       },
     };

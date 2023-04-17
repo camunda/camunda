@@ -29,6 +29,7 @@ const ProcessField: React.FC = observer(() => {
         <ComboBox
           titleText="Process"
           id="processName"
+          aria-label="Select a Process"
           onChange={({selectedItem}) => {
             const versions = selectedItem
               ? versionsByProcess[selectedItem.id]

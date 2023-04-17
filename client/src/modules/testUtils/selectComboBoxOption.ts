@@ -11,16 +11,38 @@ import {UserEvent} from 'modules/testing-library';
 const selectComboBoxOption = async ({
   user,
   fieldName,
-  itemName,
+  option,
+  listBoxLabel,
 }: {
   user: UserEvent;
   fieldName: string;
-  itemName: string;
+  option: string;
+  listBoxLabel: string;
 }) => {
   await user.click(screen.getByLabelText(fieldName));
-  await user.selectOptions(screen.getByRole('listbox'), [
-    screen.getByRole('option', {name: itemName}),
+  await user.selectOptions(screen.getByRole('listbox', {name: listBoxLabel}), [
+    screen.getByRole('option', {name: option}),
   ]);
 };
 
-export {selectComboBoxOption};
+type SelectProps = {user: UserEvent; option: string};
+
+const selectProcess = ({user, option}: SelectProps) => {
+  return selectComboBoxOption({
+    user,
+    option,
+    fieldName: 'Process',
+    listBoxLabel: 'Select a Process',
+  });
+};
+
+const selectProcessVersion = ({user, option}: SelectProps) => {
+  return selectComboBoxOption({
+    user,
+    option,
+    fieldName: 'Version',
+    listBoxLabel: 'Select a Process Version',
+  });
+};
+
+export {selectProcess, selectProcessVersion};

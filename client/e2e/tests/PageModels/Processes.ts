@@ -110,7 +110,9 @@ class ProcessesPage {
     },
 
     processVersion: {
-      field: screen.queryByTestId('filter-process-version'),
+      field: IS_COMBOBOX_ENABLED
+        ? screen.queryByLabelText('Version')
+        : screen.queryByTestId('filter-process-version'),
     },
 
     flowNode: {
@@ -133,25 +135,61 @@ class ProcessesPage {
     );
   };
 
-  selectProcess = async (name: string) => {
+  clearComboBox = (label: string) =>
+    t.click(
+      within(screen.queryByLabelText(label).parent(0)).queryByRole('button', {
+        name: 'Clear selected item',
+      })
+    );
+
+  selectComboBoxOption = async ({
+    fieldName,
+    option,
+    listBoxLabel,
+  }: {
+    fieldName: string;
+    option: string;
+    listBoxLabel: string;
+  }) => {
+    await t.click(screen.queryByLabelText(fieldName));
+    await t.click(
+      within(screen.getByRole('listbox', {name: listBoxLabel})).getByRole(
+        'option',
+        {name: option}
+      )
+    );
+  };
+
+  selectProcess = async (option: string) => {
     if (IS_COMBOBOX_ENABLED) {
-      await t.click(screen.queryByLabelText('Process'));
-      await t.click(screen.queryByRole('option', {name}));
+      return this.selectComboBoxOption({
+        fieldName: 'Process',
+        option,
+        listBoxLabel: 'Select a Process',
+      });
     } else {
       await t.click(
         within(
           screen.queryByTestId('cm-flyout-process-name').shadowRoot()
-        ).queryByText(name)
+        ).queryByText(option)
       );
     }
   };
 
-  selectVersion = async (version: string) => {
-    await t.click(
-      within(
-        screen.queryByTestId('cm-flyout-process-version').shadowRoot()
-      ).queryByText(version)
-    );
+  selectVersion = async (option: string) => {
+    if (IS_COMBOBOX_ENABLED) {
+      return this.selectComboBoxOption({
+        fieldName: 'Version',
+        option,
+        listBoxLabel: 'Select a Process Version',
+      });
+    } else {
+      await t.click(
+        within(
+          screen.queryByTestId('cm-flyout-process-version').shadowRoot()
+        ).queryByText(option)
+      );
+    }
   };
 
   selectFlowNode = async (name: string) => {
