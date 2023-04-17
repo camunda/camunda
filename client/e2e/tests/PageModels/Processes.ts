@@ -116,7 +116,9 @@ class ProcessesPage {
     },
 
     flowNode: {
-      field: screen.queryByTestId('filter-flow-node'),
+      field: IS_COMBOBOX_ENABLED
+        ? screen.queryByLabelText('Flow Node')
+        : screen.queryByTestId('filter-flow-node'),
     },
   };
 
@@ -192,12 +194,20 @@ class ProcessesPage {
     }
   };
 
-  selectFlowNode = async (name: string) => {
-    await t.click(
-      within(
-        screen.queryByTestId('cm-flyout-flow-node').shadowRoot()
-      ).queryByText(name)
-    );
+  selectFlowNode = async (option: string) => {
+    if (IS_COMBOBOX_ENABLED) {
+      return this.selectComboBoxOption({
+        fieldName: 'Flow Node',
+        option,
+        listBoxLabel: 'Select a Flow Node',
+      });
+    } else {
+      await t.click(
+        within(
+          screen.queryByTestId('cm-flyout-flow-node').shadowRoot()
+        ).queryByText(option)
+      );
+    }
   };
 }
 

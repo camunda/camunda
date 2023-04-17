@@ -56,6 +56,7 @@ const ProcessVersionField: React.FC = observer(() => {
               })) ?? []
             }
             value={input.value}
+            placeholder="Search by Process Version"
           />
         );
       }}

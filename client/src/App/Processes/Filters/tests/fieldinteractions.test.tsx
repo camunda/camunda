@@ -22,6 +22,7 @@ import {mockFetchProcessInstancesStatistics} from 'modules/mocks/api/processInst
 import {mockFetchProcessXML} from 'modules/mocks/api/processes/fetchProcessXML';
 import {IS_COMBOBOX_ENABLED} from 'modules/feature-flags';
 import {
+  selectFlowNode,
   selectProcess,
   selectProcessVersion,
 } from 'modules/testUtils/selectComboBoxOption';
@@ -218,6 +219,14 @@ describe('Interaction with other fields during validation', () => {
       ).toBeInTheDocument();
 
       await selectProcessVersion({user, option: '2'});
+
+      expect(
+        screen.getByText(
+          'Key has to be a 16 to 19 digit number, separated by space or comma'
+        )
+      ).toBeInTheDocument();
+
+      await selectFlowNode({user, option: 'ServiceTask_0kt6c5i'});
     } else {
       await user.selectOptions(screen.getByTestId('filter-process-name'), [
         'eventBasedGatewayProcess',
@@ -232,17 +241,17 @@ describe('Interaction with other fields during validation', () => {
       await user.selectOptions(screen.getByTestId('filter-process-version'), [
         '2',
       ]);
+
+      expect(
+        screen.getByText(
+          'Key has to be a 16 to 19 digit number, separated by space or comma'
+        )
+      ).toBeInTheDocument();
+
+      await user.selectOptions(screen.getByTestId('filter-flow-node'), [
+        'ServiceTask_0kt6c5i',
+      ]);
     }
-
-    expect(
-      screen.getByText(
-        'Key has to be a 16 to 19 digit number, separated by space or comma'
-      )
-    ).toBeInTheDocument();
-
-    await user.selectOptions(screen.getByTestId('filter-flow-node'), [
-      'ServiceTask_0kt6c5i',
-    ]);
 
     expect(
       screen.getByText(

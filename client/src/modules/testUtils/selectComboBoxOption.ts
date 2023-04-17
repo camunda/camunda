@@ -45,4 +45,13 @@ const selectProcessVersion = ({user, option}: SelectProps) => {
   });
 };
 
-export {selectProcess, selectProcessVersion};
+const selectFlowNode = ({user, option}: SelectProps) => {
+  return selectComboBoxOption({
+    user,
+    option,
+    fieldName: 'Flow Node',
+    listBoxLabel: 'Select a Flow Node',
+  });
+};
+
+export {selectProcess, selectProcessVersion, selectFlowNode};

@@ -10,10 +10,7 @@ import {setup} from './ProcessInstancesFilters.setup';
 import {demoUser} from './utils/Roles';
 import {wait} from './utils/wait';
 import {screen, within} from '@testing-library/testcafe';
-import {
-  setProcessesFlyoutTestAttribute,
-  setProcessesFlyoutTestAttributeLegacy,
-} from './utils/setFlyoutTestAttribute';
+import {setProcessesFlyoutTestAttributeLegacy} from './utils/setFlyoutTestAttribute';
 import {displayOptionalFilter} from './utils/displayOptionalFilter';
 import {processesPage as ProcessesPage} from './PageModels/Processes';
 import {
@@ -39,9 +36,7 @@ fixture('Process Instances Filters')
         })
       );
 
-    if (IS_COMBOBOX_ENABLED) {
-      await setProcessesFlyoutTestAttribute('flowNode');
-    } else {
+    if (!IS_COMBOBOX_ENABLED) {
       await setProcessesFlyoutTestAttributeLegacy('processName');
       await setProcessesFlyoutTestAttributeLegacy('processVersion');
       await setProcessesFlyoutTestAttributeLegacy('flowNode');
@@ -175,18 +170,20 @@ test('Interaction between diagram and filters', async (t) => {
       ProcessesPage.Filters.processVersion.field,
       '2'
     );
+    await t.click(ProcessesPage.Filters.flowNode.field);
+    await ProcessesPage.selectFlowNode('StartEvent_1');
   }
-
-  await t.click(ProcessesPage.Filters.flowNode.field);
-  await ProcessesPage.selectFlowNode('StartEvent_1');
 
   // change version and see flow node filter has been reset
   await t.click(ProcessesPage.Filters.processVersion.field);
   if (IS_COMBOBOX_ENABLED) {
     await ProcessesPage.clearComboBox('Version');
+    await ProcessesPage.selectVersion('1');
+    await validateSelectValue(ProcessesPage.Filters.flowNode.field, '');
+  } else {
+    await ProcessesPage.selectVersion('1');
+    await validateSelectValueLegacy(ProcessesPage.Filters.flowNode.field, '--');
   }
-  await ProcessesPage.selectVersion('1');
-  await validateSelectValueLegacy(ProcessesPage.Filters.flowNode.field, '--');
 
   await t.click(ProcessesPage.Filters.flowNode.field);
   await ProcessesPage.selectFlowNode('StartEvent_1');
@@ -201,10 +198,18 @@ test('Interaction between diagram and filters', async (t) => {
   await t.click(
     within(screen.queryByTestId('diagram')).queryByText(/always fails/i)
   );
-  await validateSelectValueLegacy(
-    ProcessesPage.Filters.flowNode.field,
-    'Always fails'
-  );
+
+  if (IS_COMBOBOX_ENABLED) {
+    await validateSelectValue(
+      ProcessesPage.Filters.flowNode.field,
+      'Always fails'
+    );
+  } else {
+    await validateSelectValueLegacy(
+      ProcessesPage.Filters.flowNode.field,
+      'Always fails'
+    );
+  }
 
   // select same flow node again and see filter is removed
   await t
@@ -214,5 +219,10 @@ test('Interaction between diagram and filters', async (t) => {
         .exists
     )
     .notOk();
-  await validateSelectValueLegacy(ProcessesPage.Filters.flowNode.field, '--');
+
+  if (IS_COMBOBOX_ENABLED) {
+    await validateSelectValue(ProcessesPage.Filters.flowNode.field, '');
+  } else {
+    await validateSelectValueLegacy(ProcessesPage.Filters.flowNode.field, '--');
+  }
 });

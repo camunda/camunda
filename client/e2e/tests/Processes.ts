@@ -138,10 +138,17 @@ test('Select flow node in diagram', async (t) => {
     within(screen.queryByTestId('diagram')).queryByText('Ship Articles')
   );
 
-  await validateSelectValueLegacy(
-    ProcessesPage.Filters.flowNode.field,
-    'Ship Articles'
-  );
+  if (IS_COMBOBOX_ENABLED) {
+    await validateSelectValue(
+      ProcessesPage.Filters.flowNode.field,
+      'Ship Articles'
+    );
+  } else {
+    await validateSelectValueLegacy(
+      ProcessesPage.Filters.flowNode.field,
+      'Ship Articles'
+    );
+  }
 
   await t
     .expect(
@@ -169,10 +176,17 @@ test('Select flow node in diagram', async (t) => {
     within(screen.queryByTestId('diagram')).queryByText('Check payment')
   );
 
-  await validateSelectValueLegacy(
-    ProcessesPage.Filters.flowNode.field,
-    'Check payment'
-  );
+  if (IS_COMBOBOX_ENABLED) {
+    await validateSelectValue(
+      ProcessesPage.Filters.flowNode.field,
+      'Check payment'
+    );
+  } else {
+    await validateSelectValueLegacy(
+      ProcessesPage.Filters.flowNode.field,
+      'Check payment'
+    );
+  }
 
   await t
     .expect(within(screen.queryByTestId('data-list')).getAllByRole('row').count)

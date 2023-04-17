@@ -14,6 +14,7 @@ type Props = {
   id: string;
   value: string;
   titleText: string;
+  placeholder?: string;
   onChange: (data: {[selectedItem: string]: Item | null | undefined}) => void;
   items: Item[];
 };
@@ -38,6 +39,7 @@ const ComboBox: React.FC<Props> = observer(
             item.label.toLowerCase().includes(inputValue?.toLowerCase())
           );
         }}
+        size="sm"
         {...props}
       />
     );

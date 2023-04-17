@@ -21,6 +21,7 @@ import {mockFetchProcessXML} from 'modules/mocks/api/processes/fetchProcessXML';
 import {pickDateTimeRange} from 'modules/testUtils/dateTimeRange';
 import {IS_COMBOBOX_ENABLED} from 'modules/feature-flags';
 import {
+  selectFlowNode,
   selectProcess,
   selectProcessVersion,
 } from 'modules/testUtils/selectComboBoxOption';
@@ -122,6 +123,10 @@ describe('Filters', () => {
         'Big variable process'
       );
       expect(screen.getByLabelText('Version')).toHaveValue('1');
+
+      expect(screen.getByLabelText('Flow Node')).toHaveValue(
+        MOCK_PARAMS.flowNodeId
+      );
     } else {
       expect(
         await screen.findByText('Big variable process')
@@ -134,9 +139,10 @@ describe('Filters', () => {
           '1'
         )
       ).toBeInTheDocument();
+      expect(
+        await screen.findByText(MOCK_PARAMS.flowNodeId)
+      ).toBeInTheDocument();
     }
-
-    expect(await screen.findByText(MOCK_PARAMS.flowNodeId)).toBeInTheDocument();
 
     expect(screen.getByDisplayValue(MOCK_PARAMS.ids)).toBeInTheDocument();
 
@@ -233,16 +239,17 @@ describe('Filters', () => {
     });
 
     if (IS_COMBOBOX_ENABLED) {
+      // Wait for data to be fetched
       await waitFor(() =>
         expect(screen.getByLabelText('Process')).toBeEnabled()
       );
       await waitFor(() =>
-        expect(screen.getByTestId('filter-flow-node')).toBeEnabled()
+        expect(screen.getByLabelText('Flow Node')).toBeEnabled()
       );
 
       expect(screen.getByLabelText('Process')).toHaveValue('');
       expect(screen.getByLabelText('Version')).toHaveValue('');
-      expect(screen.getByTestId('filter-flow-node')).toHaveValue('');
+      expect(screen.getByLabelText('Flow Node')).toHaveValue('');
       expect(screen.getByTestId(/active/)).not.toBeChecked();
       expect(screen.getByTestId(/incidents/)).not.toBeChecked();
       expect(screen.getByTestId(/completed/)).not.toBeChecked();
@@ -291,9 +298,13 @@ describe('Filters', () => {
       MOCK_VALUES.errorMessage
     );
 
-    await user.selectOptions(screen.getByTestId('filter-flow-node'), [
-      MOCK_VALUES.flowNodeId,
-    ]);
+    if (IS_COMBOBOX_ENABLED) {
+      await selectFlowNode({user, option: MOCK_VALUES.flowNodeId});
+    } else {
+      await user.selectOptions(screen.getByTestId('filter-flow-node'), [
+        MOCK_VALUES.flowNodeId,
+      ]);
+    }
 
     await user.click(screen.getByText(/^more filters$/i));
     await user.click(screen.getByText('Variable'));
@@ -343,7 +354,9 @@ describe('Filters', () => {
     }
 
     await waitFor(() =>
-      expect(screen.getByTestId('filter-flow-node')).toBeEnabled()
+      IS_COMBOBOX_ENABLED
+        ? expect(screen.getByLabelText('Flow Node')).toBeEnabled()
+        : expect(screen.getByTestId('filter-flow-node')).toBeEnabled()
     );
 
     await user.click(screen.getByText(/^more filters$/i));
