@@ -19,6 +19,8 @@ import {mockFetchGroupedProcesses} from 'modules/mocks/api/processes/fetchGroupe
 import {mockFetchProcessInstancesStatistics} from 'modules/mocks/api/processInstances/fetchProcessInstancesStatistics';
 import {mockFetchProcessXML} from 'modules/mocks/api/processes/fetchProcessXML';
 import {pickDateTimeRange} from 'modules/testUtils/dateTimeRange';
+import {IS_COMBOBOX_ENABLED} from 'modules/feature-flags';
+import {selectComboBoxOption} from 'modules/testUtils/selectComboBoxOption';
 
 jest.unmock('modules/utils/date/formatDate');
 
@@ -58,13 +60,20 @@ describe('Filters', () => {
       wrapper: getWrapper(),
     });
 
-    await waitFor(() =>
-      expect(screen.getByTestId('filter-process-name')).toBeEnabled()
-    );
-
-    await user.selectOptions(screen.getByTestId('filter-process-name'), [
-      'Big variable process',
-    ]);
+    if (IS_COMBOBOX_ENABLED) {
+      await waitFor(() =>
+        expect(screen.getByLabelText('Process')).toBeEnabled()
+      );
+      await selectComboBoxOption({
+        user,
+        fieldName: 'Process',
+        itemName: 'Big variable process',
+      });
+    } else {
+      await user.selectOptions(screen.getByTestId('filter-process-name'), [
+        'Big variable process',
+      ]);
+    }
 
     expect(screen.getByTestId('filter-process-version')).toBeEnabled();
     expect(
@@ -104,10 +113,21 @@ describe('Filters', () => {
       ),
     });
 
-    expect(await screen.findByText('Big variable process')).toBeInTheDocument();
-    await waitFor(() =>
-      expect(screen.getByTestId('filter-process-name')).toBeEnabled()
-    );
+    if (IS_COMBOBOX_ENABLED) {
+      await waitFor(() =>
+        expect(screen.getByLabelText('Process')).toBeEnabled()
+      );
+      expect(screen.getByLabelText('Process')).toHaveValue(
+        'Big variable process'
+      );
+    } else {
+      expect(
+        await screen.findByText('Big variable process')
+      ).toBeInTheDocument();
+      await waitFor(() =>
+        expect(screen.getByTestId('filter-process-name')).toBeEnabled()
+      );
+    }
 
     expect(
       await within(screen.getByTestId('filter-process-version')).findByText('1')
@@ -156,10 +176,16 @@ describe('Filters', () => {
       wrapper: getWrapper(initialPath),
     });
 
-    expect(await screen.findByText('Big variable process')).toBeInTheDocument();
-    await waitFor(() =>
-      expect(screen.getByTestId('filter-process-name')).toBeEnabled()
-    );
+    if (IS_COMBOBOX_ENABLED) {
+      // Wait for data to be fetched
+      await waitFor(() =>
+        expect(screen.getByLabelText('Process')).toBeEnabled()
+      );
+    } else {
+      await waitFor(() =>
+        expect(screen.getByTestId('filter-flow-node')).toBeEnabled()
+      );
+    }
 
     // Hidden fields
     expect(
@@ -203,24 +229,47 @@ describe('Filters', () => {
       wrapper: getWrapper(),
     });
 
-    await waitFor(() =>
-      expect(screen.getByTestId('filter-process-name')).toBeEnabled()
-    );
-    await waitFor(() =>
-      expect(screen.getByTestId('filter-flow-node')).toBeEnabled()
-    );
+    if (IS_COMBOBOX_ENABLED) {
+      await waitFor(() =>
+        expect(screen.getByLabelText('Process')).toBeEnabled()
+      );
+      await waitFor(() =>
+        expect(screen.getByTestId('filter-flow-node')).toBeEnabled()
+      );
 
-    expect(screen.getByTestId('filter-process-name')).toHaveValue('');
-    expect(screen.getByTestId('filter-process-version')).toHaveValue('all');
-    expect(screen.getByTestId('filter-flow-node')).toHaveValue('');
-    expect(screen.getByTestId(/active/)).not.toBeChecked();
-    expect(screen.getByTestId(/incidents/)).not.toBeChecked();
-    expect(screen.getByTestId(/completed/)).not.toBeChecked();
-    expect(screen.getByTestId(/canceled/)).not.toBeChecked();
+      expect(screen.getByLabelText('Process')).toHaveValue('');
+      expect(screen.getByTestId('filter-process-version')).toHaveValue('all');
+      expect(screen.getByTestId('filter-flow-node')).toHaveValue('');
+      expect(screen.getByTestId(/active/)).not.toBeChecked();
+      expect(screen.getByTestId(/incidents/)).not.toBeChecked();
+      expect(screen.getByTestId(/completed/)).not.toBeChecked();
+      expect(screen.getByTestId(/canceled/)).not.toBeChecked();
 
-    await user.selectOptions(screen.getByTestId('filter-process-name'), [
-      'Big variable process',
-    ]);
+      await selectComboBoxOption({
+        user,
+        fieldName: 'Process',
+        itemName: 'Big variable process',
+      });
+    } else {
+      await waitFor(() =>
+        expect(screen.getByTestId('filter-process-name')).toBeEnabled()
+      );
+      await waitFor(() =>
+        expect(screen.getByTestId('filter-flow-node')).toBeEnabled()
+      );
+
+      expect(screen.getByTestId('filter-process-name')).toHaveValue('');
+      expect(screen.getByTestId('filter-process-version')).toHaveValue('all');
+      expect(screen.getByTestId('filter-flow-node')).toHaveValue('');
+      expect(screen.getByTestId(/active/)).not.toBeChecked();
+      expect(screen.getByTestId(/incidents/)).not.toBeChecked();
+      expect(screen.getByTestId(/completed/)).not.toBeChecked();
+      expect(screen.getByTestId(/canceled/)).not.toBeChecked();
+
+      await user.selectOptions(screen.getByTestId('filter-process-name'), [
+        'Big variable process',
+      ]);
+    }
 
     await user.click(screen.getByText(/^more filters$/i));
     await user.click(screen.getByText('Process Instance Key(s)'));
@@ -284,9 +333,16 @@ describe('Filters', () => {
       wrapper: getWrapper(),
     });
 
-    await waitFor(() =>
-      expect(screen.getByTestId('filter-process-name')).toBeEnabled()
-    );
+    if (IS_COMBOBOX_ENABLED) {
+      await waitFor(() =>
+        expect(screen.getByLabelText('Process')).toBeEnabled()
+      );
+    } else {
+      await waitFor(() =>
+        expect(screen.getByTestId('filter-process-name')).toBeEnabled()
+      );
+    }
+
     await waitFor(() =>
       expect(screen.getByTestId('filter-flow-node')).toBeEnabled()
     );

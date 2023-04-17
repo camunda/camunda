@@ -7,6 +7,7 @@
 
 import {within, screen} from '@testing-library/testcafe';
 import {t} from 'testcafe';
+import {IS_COMBOBOX_ENABLED} from '../../../src/modules/feature-flags';
 
 class ProcessesPage {
   Filters = {
@@ -103,7 +104,9 @@ class ProcessesPage {
     },
 
     processName: {
-      field: screen.queryByTestId('filter-process-name'),
+      field: IS_COMBOBOX_ENABLED
+        ? screen.queryByLabelText('Process')
+        : screen.queryByTestId('filter-process-name'),
     },
 
     processVersion: {
@@ -131,11 +134,16 @@ class ProcessesPage {
   };
 
   selectProcess = async (name: string) => {
-    await t.click(
-      within(
-        screen.queryByTestId('cm-flyout-process-name').shadowRoot()
-      ).queryByText(name)
-    );
+    if (IS_COMBOBOX_ENABLED) {
+      await t.click(screen.queryByLabelText('Process'));
+      await t.click(screen.queryByRole('option', {name}));
+    } else {
+      await t.click(
+        within(
+          screen.queryByTestId('cm-flyout-process-name').shadowRoot()
+        ).queryByText(name)
+      );
+    }
   };
 
   selectVersion = async (version: string) => {

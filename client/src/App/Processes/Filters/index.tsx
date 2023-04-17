@@ -53,6 +53,7 @@ import {Variable} from './VariableField';
 import {DateRangeField} from 'modules/components/DateRangeField';
 import {tracking} from 'modules/tracking';
 import {dateRangePopoverStore} from 'modules/stores/dateRangePopover';
+import {IS_COMBOBOX_ENABLED} from 'modules/feature-flags';
 
 type OptionalFilter =
   | 'variable'
@@ -198,7 +199,9 @@ const Filters: React.FC = observer(() => {
                   'canceled',
                 ]}
               />
-              <ProcessHeader appearance="emphasis">Process</ProcessHeader>
+              {!IS_COMBOBOX_ENABLED && (
+                <ProcessHeader appearance="emphasis">Process</ProcessHeader>
+              )}
               <ProcessField />
               <ProcessVersionField />
               <FlowNodeField />

@@ -8,11 +8,18 @@
 import {within} from '@testing-library/testcafe';
 import {t} from 'testcafe';
 
-const validateSelectValue = async (
+const validateSelectValueLegacy = async (
   field: Selector | SelectorPromise,
   text: string
 ) => {
   await t.expect(within(field.shadowRoot()).queryByText(text).exists).ok();
 };
 
-export {validateSelectValue};
+const validateSelectValue = async (
+  field: Selector | SelectorPromise,
+  text: string
+) => {
+  await t.expect(field.value).eql(text);
+};
+
+export {validateSelectValue, validateSelectValueLegacy};

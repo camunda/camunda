@@ -10,11 +10,15 @@ import {setup} from './ProcessInstancesFilters.setup';
 import {demoUser} from './utils/Roles';
 import {wait} from './utils/wait';
 import {screen, within} from '@testing-library/testcafe';
-import {setProcessesFlyoutTestAttribute} from './utils/setFlyoutTestAttribute';
+import {
+  setProcessesFlyoutTestAttribute,
+  setProcessesFlyoutTestAttributeLegacy,
+} from './utils/setFlyoutTestAttribute';
 import {displayOptionalFilter} from './utils/displayOptionalFilter';
 import {processesPage as ProcessesPage} from './PageModels/Processes';
-import {validateSelectValue} from './utils/validateSelectValue';
+import {validateSelectValueLegacy} from './utils/validateSelectValue';
 import {pickDateTimeRange} from './utils/pickDateTimeRange';
+import {IS_COMBOBOX_ENABLED} from '../../src/modules/feature-flags';
 
 fixture('Process Instances Filters')
   .page(config.endpoint)
@@ -32,9 +36,14 @@ fixture('Process Instances Filters')
         })
       );
 
-    await setProcessesFlyoutTestAttribute('processName');
-    await setProcessesFlyoutTestAttribute('processVersion');
-    await setProcessesFlyoutTestAttribute('flowNode');
+    if (IS_COMBOBOX_ENABLED) {
+      await setProcessesFlyoutTestAttribute('processVersion');
+      await setProcessesFlyoutTestAttribute('flowNode');
+    } else {
+      await setProcessesFlyoutTestAttributeLegacy('processName');
+      await setProcessesFlyoutTestAttributeLegacy('processVersion');
+      await setProcessesFlyoutTestAttributeLegacy('flowNode');
+    }
   });
 
 test('Apply Filters', async (t) => {
@@ -157,7 +166,10 @@ test('Interaction between diagram and filters', async (t) => {
 
   await ProcessesPage.selectProcess('Process With Multiple Versions');
 
-  await validateSelectValue(ProcessesPage.Filters.processVersion.field, '2');
+  await validateSelectValueLegacy(
+    ProcessesPage.Filters.processVersion.field,
+    '2'
+  );
 
   await t.click(ProcessesPage.Filters.flowNode.field);
   await ProcessesPage.selectFlowNode('StartEvent_1');
@@ -165,7 +177,7 @@ test('Interaction between diagram and filters', async (t) => {
   // change version and see flow node filter has been reset
   await t.click(ProcessesPage.Filters.processVersion.field);
   await ProcessesPage.selectVersion('1');
-  await validateSelectValue(ProcessesPage.Filters.flowNode.field, '--');
+  await validateSelectValueLegacy(ProcessesPage.Filters.flowNode.field, '--');
 
   await t.click(ProcessesPage.Filters.flowNode.field);
   await ProcessesPage.selectFlowNode('StartEvent_1');
@@ -180,7 +192,7 @@ test('Interaction between diagram and filters', async (t) => {
   await t.click(
     within(screen.queryByTestId('diagram')).queryByText(/always fails/i)
   );
-  await validateSelectValue(
+  await validateSelectValueLegacy(
     ProcessesPage.Filters.flowNode.field,
     'Always fails'
   );
@@ -193,5 +205,5 @@ test('Interaction between diagram and filters', async (t) => {
         .exists
     )
     .notOk();
-  await validateSelectValue(ProcessesPage.Filters.flowNode.field, '--');
+  await validateSelectValueLegacy(ProcessesPage.Filters.flowNode.field, '--');
 });

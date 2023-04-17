@@ -8,6 +8,28 @@
 import {ClientFunction} from 'testcafe';
 
 const setProcessesFlyoutTestAttribute = ClientFunction(
+  (fieldName: 'processVersion' | 'flowNode') => {
+    const cmSelectFields = {
+      processVersion: {
+        index: 0,
+        testId: 'cm-flyout-process-version',
+      },
+      flowNode: {
+        index: 1,
+        testId: 'cm-flyout-flow-node',
+      },
+    };
+
+    var element =
+      document.getElementsByTagName('cm-select-flyout')[
+        cmSelectFields[fieldName].index
+      ];
+
+    element.setAttribute('data-testid', cmSelectFields[fieldName].testId);
+  }
+);
+
+const setProcessesFlyoutTestAttributeLegacy = ClientFunction(
   (fieldName: 'processName' | 'processVersion' | 'flowNode') => {
     const cmSelectFields = {
       processName: {
@@ -55,4 +77,8 @@ const setDecisionsFlyoutTestAttribute = ClientFunction(
   }
 );
 
-export {setProcessesFlyoutTestAttribute, setDecisionsFlyoutTestAttribute};
+export {
+  setProcessesFlyoutTestAttribute,
+  setProcessesFlyoutTestAttributeLegacy,
+  setDecisionsFlyoutTestAttribute,
+};

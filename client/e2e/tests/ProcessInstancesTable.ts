@@ -10,9 +10,10 @@ import {demoUser} from './utils/Roles';
 import {wait} from './utils/wait';
 import {config} from '../config';
 import {setup} from './ProcessInstancesTable.setup';
-import {setProcessesFlyoutTestAttribute} from './utils/setFlyoutTestAttribute';
+import {setProcessesFlyoutTestAttributeLegacy} from './utils/setFlyoutTestAttribute';
 import {displayOptionalFilter} from './utils/displayOptionalFilter';
 import {processesPage as ProcessesPage} from './PageModels/Processes';
+import {IS_COMBOBOX_ENABLED} from '../../src/modules/feature-flags';
 
 fixture('Process Instances Table')
   .page(config.endpoint)
@@ -30,7 +31,9 @@ fixture('Process Instances Table')
         })
       );
 
-    await setProcessesFlyoutTestAttribute('processName');
+    if (!IS_COMBOBOX_ENABLED) {
+      await setProcessesFlyoutTestAttributeLegacy('processName');
+    }
   });
 
 test('Sorting', async (t) => {

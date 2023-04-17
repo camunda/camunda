@@ -20,6 +20,8 @@ import {processDiagramStore} from 'modules/stores/processDiagram';
 import {mockFetchGroupedProcesses} from 'modules/mocks/api/processes/fetchGroupedProcesses';
 import {mockFetchProcessInstancesStatistics} from 'modules/mocks/api/processInstances/fetchProcessInstancesStatistics';
 import {mockFetchProcessXML} from 'modules/mocks/api/processes/fetchProcessXML';
+import {IS_COMBOBOX_ENABLED} from 'modules/feature-flags';
+import {selectComboBoxOption} from 'modules/testUtils/selectComboBoxOption';
 
 jest.unmock('modules/utils/date/formatDate');
 
@@ -203,9 +205,17 @@ describe('Interaction with other fields during validation', () => {
       )
     ).toBeInTheDocument();
 
-    await user.selectOptions(screen.getByTestId('filter-process-name'), [
-      'eventBasedGatewayProcess',
-    ]);
+    if (IS_COMBOBOX_ENABLED) {
+      await selectComboBoxOption({
+        user,
+        fieldName: 'Process',
+        itemName: 'eventBasedGatewayProcess',
+      });
+    } else {
+      await user.selectOptions(screen.getByTestId('filter-process-name'), [
+        'eventBasedGatewayProcess',
+      ]);
+    }
 
     expect(screen.getByTestId('filter-process-version')).toBeEnabled();
 

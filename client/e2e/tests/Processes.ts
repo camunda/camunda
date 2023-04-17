@@ -14,11 +14,15 @@ import {getPathname} from './utils/getPathname';
 import {getSearch} from './utils/getSearch';
 import {convertToQueryString} from './utils/convertToQueryString';
 import {screen, within} from '@testing-library/testcafe';
-import {setProcessesFlyoutTestAttribute} from './utils/setFlyoutTestAttribute';
+import {setProcessesFlyoutTestAttributeLegacy} from './utils/setFlyoutTestAttribute';
 import {displayOptionalFilter} from './utils/displayOptionalFilter';
 import {validateCheckedState} from './utils/validateCheckedState';
-import {validateSelectValue} from './utils/validateSelectValue';
+import {
+  validateSelectValue,
+  validateSelectValueLegacy,
+} from './utils/validateSelectValue';
 import {processesPage as ProcessesPage} from './PageModels/Processes';
+import {IS_COMBOBOX_ENABLED} from '../../src/modules/feature-flags';
 
 fixture('Processes')
   .page(config.endpoint)
@@ -27,13 +31,18 @@ fixture('Processes')
     await wait();
   })
   .beforeEach(async (t) => {
-    await t.useRole(demoUser).click(
-      screen.queryByRole('link', {
-        name: /processes/i,
-      })
-    );
+    await t
+      .useRole(demoUser)
+      .maximizeWindow()
+      .click(
+        screen.queryByRole('link', {
+          name: /processes/i,
+        })
+      );
 
-    await setProcessesFlyoutTestAttribute('processName');
+    if (!IS_COMBOBOX_ENABLED) {
+      await setProcessesFlyoutTestAttributeLegacy('processName');
+    }
   });
 
 test('Processes Page Initial Load', async (t) => {
@@ -129,7 +138,7 @@ test('Select flow node in diagram', async (t) => {
     within(screen.queryByTestId('diagram')).queryByText('Ship Articles')
   );
 
-  await validateSelectValue(
+  await validateSelectValueLegacy(
     ProcessesPage.Filters.flowNode.field,
     'Ship Articles'
   );
@@ -160,7 +169,7 @@ test('Select flow node in diagram', async (t) => {
     within(screen.queryByTestId('diagram')).queryByText('Check payment')
   );
 
-  await validateSelectValue(
+  await validateSelectValueLegacy(
     ProcessesPage.Filters.flowNode.field,
     'Check payment'
   );
@@ -191,9 +200,15 @@ test('Wait for process creation', async (t) => {
   await t.expect(screen.queryByTestId('table-skeleton').exists).ok();
   await t.expect(screen.queryByTestId('diagram-spinner').exists).ok();
 
-  await t
-    .expect(ProcessesPage.Filters.processName.field.getAttribute('disabled'))
-    .eql('true');
+  if (IS_COMBOBOX_ENABLED) {
+    await t
+      .expect(ProcessesPage.Filters.processName.field.hasAttribute('disabled'))
+      .ok();
+  } else {
+    await t
+      .expect(ProcessesPage.Filters.processName.field.getAttribute('disabled'))
+      .eql('true');
+  }
 
   await deployProcess(['newProcess.bpmn']);
 
@@ -207,12 +222,25 @@ test('Wait for process creation', async (t) => {
     )
     .ok();
 
-  await t
-    .expect(ProcessesPage.Filters.processName.field.getAttribute('disabled'))
-    .eql('false');
+  if (IS_COMBOBOX_ENABLED) {
+    await t
+      .expect(ProcessesPage.Filters.processName.field.hasAttribute('disabled'))
+      .notOk();
+  } else {
+    await t
+      .expect(ProcessesPage.Filters.processName.field.getAttribute('disabled'))
+      .eql('false');
+  }
 
-  await validateSelectValue(
-    ProcessesPage.Filters.processName.field,
-    'Test Process'
-  );
+  if (IS_COMBOBOX_ENABLED) {
+    await validateSelectValue(
+      ProcessesPage.Filters.processName.field,
+      'Test Process'
+    );
+  } else {
+    await validateSelectValueLegacy(
+      ProcessesPage.Filters.processName.field,
+      'Test Process'
+    );
+  }
 });

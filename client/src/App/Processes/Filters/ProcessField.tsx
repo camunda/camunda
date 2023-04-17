@@ -8,8 +8,9 @@
 import React from 'react';
 import {Field, useForm} from 'react-final-form';
 import {observer} from 'mobx-react';
-
 import {processesStore} from 'modules/stores/processes';
+import {ComboBox} from 'modules/components/ComboBox';
+import {IS_COMBOBOX_ENABLED} from 'modules/feature-flags';
 import {Select} from './styled';
 
 const ProcessField: React.FC = observer(() => {
@@ -22,7 +23,37 @@ const ProcessField: React.FC = observer(() => {
     },
   ];
 
-  return (
+  return IS_COMBOBOX_ENABLED ? (
+    <Field name="process" data-testid="filter-process-name-field">
+      {({input}) => (
+        <ComboBox
+          titleText="Process"
+          id="processName"
+          onChange={({selectedItem}) => {
+            const versions = selectedItem
+              ? versionsByProcess[selectedItem.id]
+              : [];
+            const initialVersionSelection =
+              versions === undefined
+                ? undefined
+                : versions[versions.length - 1]?.version;
+
+            input.onChange(selectedItem?.id);
+
+            form.change('version', initialVersionSelection);
+            form.change('flowNodeId', undefined);
+          }}
+          items={processes.map((option) => {
+            return {
+              label: option.label,
+              id: option.value,
+            };
+          })}
+          value={input.value}
+        />
+      )}
+    </Field>
+  ) : (
     <Field name="process">
       {({input}) => {
         const isSelectedValueValid =
