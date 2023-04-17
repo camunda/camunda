@@ -102,7 +102,7 @@
     "http-proxy-middleware": "^2.0.6",
     "husky": "^8.0.3",
     "jest-enzyme": "^7.1.2",
-    "jest-junit": "^15.0.0",
+    "jest-junit": "^16.0.0",
     "license-checker": "^25.0.1",
     "lint-staged": "^13.2.1",
     "mock-socket": "^9.2.1",
