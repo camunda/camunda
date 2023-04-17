@@ -7,8 +7,6 @@
  */
 package io.camunda.zeebe.gateway.impl.broker;
 
-import io.atomix.cluster.ClusterMembershipEvent;
-import io.atomix.cluster.ClusterMembershipEvent.Type;
 import io.atomix.cluster.ClusterMembershipService;
 import io.atomix.cluster.messaging.ClusterEventService;
 import io.atomix.cluster.messaging.MessagingService;
@@ -47,10 +45,6 @@ public final class BrokerClientImpl implements BrokerClient {
 
     topologyManager = new BrokerTopologyManagerImpl(membershipService::getMembers);
     membershipService.addListener(topologyManager);
-    membershipService
-        .getMembers()
-        .forEach(
-            member -> topologyManager.event(new ClusterMembershipEvent(Type.MEMBER_ADDED, member)));
 
     atomixTransportAdapter = new AtomixClientTransportAdapter(messagingService);
     requestManager =

@@ -80,59 +80,6 @@ public final class TopologyUpdateTest {
   }
 
   @Test
-  public void shouldAddBrokerOnTopologyEvenOnNotReceivedEvent() {
-    // given
-    final int brokerId = 0;
-    final int partition = 1;
-    final BrokerInfo broker = createBroker(brokerId);
-    broker.setFollowerForPartition(partition);
-    createMemberAddedEvent(broker);
-
-    // when
-    actorClock.addTime(Duration.ofSeconds(10));
-
-    // then
-    Awaitility.given()
-        // topology is eventually available
-        .ignoreException(NullPointerException.class)
-        .await("the partition has the expected follower")
-        .untilAsserted(
-            () ->
-                assertThat(topologyManager.getTopology().getFollowersForPartition(partition))
-                    .containsExactly(brokerId));
-  }
-
-  @Test
-  public void shouldUpdateBrokerOnTopologyEvenOnNotReceivedEvent() {
-    // given
-    final int brokerId = 0;
-    final int partition = 1;
-    final BrokerInfo broker = createBroker(brokerId);
-    topologyManager.event(createMemberAddedEvent(broker));
-    Awaitility.given()
-        // topology is eventually available
-        .ignoreException(NullPointerException.class)
-        .await("the partition has no follower")
-        .untilAsserted(
-            () ->
-                assertThat(topologyManager.getTopology().getFollowersForPartition(partition))
-                    .isNull());
-
-    // when
-    final BrokerInfo brokerUpdate = createBroker(brokerId);
-    brokerUpdate.setFollowerForPartition(partition);
-    createMemberUpdateEvent(brokerUpdate);
-    actorClock.addTime(Duration.ofSeconds(10));
-
-    // then
-    Awaitility.await("the partition has the expected follower")
-        .untilAsserted(
-            () ->
-                assertThat(topologyManager.getTopology().getFollowersForPartition(partition))
-                    .containsExactly(brokerId));
-  }
-
-  @Test
   public void shouldUpdateTopologyOnBrokerRemove() {
     // given
     final int brokerId = 0;
