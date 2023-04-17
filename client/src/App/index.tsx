@@ -22,6 +22,7 @@ import GlobalStyles from './GlobalStyles';
 import {NetworkStatusWatcher} from './NetworkStatusWatcher';
 import {CommonUiContext} from 'modules/CommonUiContext';
 import {Paths} from 'modules/routes';
+import {CarbonPaths} from 'modules/carbonRoutes';
 import {RedirectDeprecatedRoutes} from './RedirectDeprecatedRoutes';
 import {AuthenticationCheck} from './AuthenticationCheck';
 import {SessionWatcher} from './SessionWatcher';
@@ -32,6 +33,11 @@ import {tracking} from 'modules/tracking';
 import {currentTheme} from 'modules/stores/currentTheme';
 import {createBrowserHistory} from 'history';
 import {ThemeSwitcher} from 'modules/components/ThemeSwitcher';
+import loadable from '@loadable/component';
+
+const CarbonLayout = loadable(() => import('./Carbon/Layout/index'), {
+  resolveComponent: (components) => components.Layout,
+});
 
 const App: React.FC = () => {
   useEffect(() => {
@@ -57,6 +63,7 @@ const App: React.FC = () => {
           <TrackPagination />
           <Routes>
             <Route path={Paths.login()} element={<Login />} />
+            <Route path={CarbonPaths.login()} element={<Login />} />
             <Route
               path={Paths.dashboard()}
               element={
@@ -75,6 +82,32 @@ const App: React.FC = () => {
               <Route
                 path={Paths.decisionInstance()}
                 element={<DecisionInstance />}
+              />
+            </Route>
+            <Route
+              path={CarbonPaths.dashboard()}
+              element={
+                <AuthenticationCheck redirectPath={CarbonPaths.login()}>
+                  <CarbonLayout />
+                </AuthenticationCheck>
+              }
+            >
+              <Route index element={<div>Carbon - Dashboard</div>} />
+              <Route
+                path={CarbonPaths.processes()}
+                element={<div>Carbon - Processes</div>}
+              />
+              <Route
+                path={CarbonPaths.processInstance()}
+                element={<div>Carbon - Process Instance</div>}
+              />
+              <Route
+                path={CarbonPaths.decisions()}
+                element={<div>Carbon - Decisions</div>}
+              />
+              <Route
+                path={CarbonPaths.decisionInstance()}
+                element={<div>Carbon - Decision Instance</div>}
               />
             </Route>
           </Routes>
