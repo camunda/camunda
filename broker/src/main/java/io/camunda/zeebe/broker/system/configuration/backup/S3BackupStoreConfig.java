@@ -8,6 +8,7 @@
 package io.camunda.zeebe.broker.system.configuration.backup;
 
 import io.camunda.zeebe.backup.s3.S3BackupConfig;
+import io.camunda.zeebe.backup.s3.S3BackupConfig.Builder;
 import io.camunda.zeebe.broker.system.configuration.ConfigurationEntry;
 import java.time.Duration;
 import java.util.Objects;
@@ -102,16 +103,19 @@ public class S3BackupStoreConfig implements ConfigurationEntry {
   }
 
   public static S3BackupConfig toStoreConfig(S3BackupStoreConfig config) {
-    return new S3BackupConfig.Builder()
-        .withBucketName(config.getBucketName())
-        .withEndpoint(config.getEndpoint())
-        .withRegion(config.getRegion())
-        .withCredentials(config.getAccessKey(), config.getSecretKey())
-        .withApiCallTimeout(config.getApiCallTimeout())
-        .forcePathStyleAccess(config.isForcePathStyleAccess())
-        .withCompressionAlgorithm(config.getCompression())
-        .withBasePath(config.getBasePath())
-        .build();
+    final var builder =
+        new Builder()
+            .withBucketName(config.getBucketName())
+            .withEndpoint(config.getEndpoint())
+            .withRegion(config.getRegion())
+            .withApiCallTimeout(config.getApiCallTimeout())
+            .forcePathStyleAccess(config.isForcePathStyleAccess())
+            .withCompressionAlgorithm(config.getCompression())
+            .withBasePath(config.getBasePath());
+    if (config.getAccessKey() != null && config.getSecretKey() != null) {
+      builder.withCredentials(config.getAccessKey(), config.getSecretKey());
+    }
+    return builder.build();
   }
 
   @Override
