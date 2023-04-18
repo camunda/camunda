@@ -149,8 +149,7 @@ public class InstantPreviewDashboardService {
       } else {
         // Otherwise, recursively search again
         tileConfigurationElement
-          .forEach((key, value) -> findAndConvertTileContent(
-            value, fieldType, transformFunction, additionalParameterValue));
+          .forEach((key, value) -> findAndConvertTileContent(value, fieldType, transformFunction, additionalParameterValue));
       }
     } else if (node instanceof ArrayList) {
       // A list typically happens when the "children" node is found. In this case, we want to perform the transformation in each
@@ -180,6 +179,7 @@ public class InstantPreviewDashboardService {
             .forEach(reportEntity -> {
               SingleProcessReportDefinitionExportDto singleReport =
                 ((SingleProcessReportDefinitionExportDto) reportEntity);
+              singleReport.getData().setInstantPreviewReport(true);
               singleReport.getData().setDefinitions(
                 List.of(new ReportDataDefinitionDto(
                   processDefinitionKey, List.of(ALL_VERSIONS), processDefinition.getTenantIds()

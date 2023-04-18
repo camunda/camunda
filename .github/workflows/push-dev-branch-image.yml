@@ -76,7 +76,7 @@ jobs:
           echo "sha=${SHA}" >> "$GITHUB_OUTPUT"
           echo "docker_image=gcr.io/${{ steps.auth.outputs.project_id }}/${{ env.IMAGE_NAME }}:${{ github.event.inputs.image_tag }}" >> "$GITHUB_OUTPUT"
 
-      # This action equaes to:
+      # This action equates to:
       # docker buildx build -t registry.camunda.cloud/team-optimize/optimize:OPT-xxxx
       # --build-arg VERSION=3.11.0-SNAPSHOT --build-arg DATE=2022-12-08T15:25:30.165965Z
       # --build-arg REVISION=cb723f69397c60c7f513ca58c99473e5c8431a27 --platform linux/amd64,linux/arm64 --push .

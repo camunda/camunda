@@ -29,6 +29,7 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import javax.ws.rs.core.Response;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.HashMap;
@@ -45,6 +46,7 @@ import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
 import static org.camunda.optimize.dto.optimize.query.dashboard.InstantDashboardDataDto.INSTANT_DASHBOARD_DEFAULT_TEMPLATE;
 import static org.camunda.optimize.rest.RestTestConstants.DEFAULT_USERNAME;
 import static org.camunda.optimize.service.dashboard.InstantPreviewDashboardService.INSTANT_PREVIEW_DASHBOARD_TEMPLATES_PATH;
+import static org.camunda.optimize.service.dashboard.InstantPreviewDashboardService.TYPE_IMAGE_VALUE;
 import static org.camunda.optimize.service.dashboard.InstantPreviewDashboardService.getChecksumCRC32;
 import static org.camunda.optimize.service.util.importing.EngineConstants.RESOURCE_TYPE_PROCESS_DEFINITION;
 import static org.camunda.optimize.service.util.importing.EngineConstants.RESOURCE_TYPE_TENANT;
@@ -60,6 +62,8 @@ public class InstantPreviewDashboardIT extends AbstractDashboardRestServiceIT {
   private static final String FIRST_DEF_KEY = "someDef";
   private static final String SECOND_DEF_KEY = "otherDef";
   private static final String TEXT_FIELD = "text";
+  public static final String EXTERNAL_PATH = "/external";
+  public static final String FRONTEND_EXTERNAL_RESOURCES_PATH = "../client/public";
 
   @Test
   public void instantPreviewDashboardHappyCase() {
@@ -676,7 +680,23 @@ public class InstantPreviewDashboardIT extends AbstractDashboardRestServiceIT {
           .map(tileId -> reportClient.evaluateReport(tileId)
             .getReportDefinition()
             .getData())
-          .forEach(reportData -> assertThat(reportData.getConfiguration().getTargetValue().getIsKpi()).isFalse());
+          .forEach(reportData -> {
+            assertThat(reportData.getConfiguration().getTargetValue().getIsKpi()).isFalse();
+            assertThat(reportData.isManagementReport()).isFalse();
+            assertThat(reportData.isInstantPreviewReport()).isTrue();
+          });
+        dashboard.getTiles().forEach(tile -> {
+          if (tile.getType() == DashboardTileType.TEXT) {
+            final Map<String, Object> textTileConfiguration = (Map<String, Object>) tile.getConfiguration();
+            InstantPreviewDashboardService.
+              findAndConvertTileContent(
+                textTileConfiguration,
+                TYPE_IMAGE_VALUE,
+                this::assertImagePresent,
+                "src"
+              );
+          }
+        });
       });
   }
 
@@ -689,6 +709,14 @@ public class InstantPreviewDashboardIT extends AbstractDashboardRestServiceIT {
     } catch (IOException e) {
       throw new OptimizeIntegrationTestException("Failed to calculate expected checksum for template", e);
     }
+  }
+
+  private void assertImagePresent(Map<String, Object> textTileConfiguration, final String imageTag) {
+    // Reverse-engineering the frontend external resources URI to the frontend resources folder
+    String filePath = ((String) textTileConfiguration.get(imageTag)).replace(EXTERNAL_PATH,
+                                                                          FRONTEND_EXTERNAL_RESOURCES_PATH);
+    // then
+    assertThat(new File(filePath)).exists();
   }
 
   private void assertTileTranslation(Map<String, Object> textTileConfiguration, String locale) {
