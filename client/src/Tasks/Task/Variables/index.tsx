@@ -176,23 +176,25 @@ const Variables: React.FC<Props> = ({
         <>
           <PanelHeader>
             <Heading>Variables</Heading>
-            <Button
-              kind="ghost"
-              type="button"
-              size="sm"
-              onClick={() => {
-                form.mutators.push('newVariables');
-              }}
-              renderIcon={Add}
-              disabled={!canCompleteTask}
-              title={
-                canCompleteTask
-                  ? undefined
-                  : 'You must assign the task to add variables'
-              }
-            >
-              Add Variable
-            </Button>
+            {taskState !== 'COMPLETED' && (
+              <Button
+                kind="ghost"
+                type="button"
+                size="sm"
+                onClick={() => {
+                  form.mutators.push('newVariables');
+                }}
+                renderIcon={Add}
+                disabled={!canCompleteTask}
+                title={
+                  canCompleteTask
+                    ? undefined
+                    : 'You must assign the task to add variables'
+                }
+              >
+                Add Variable
+              </Button>
+            )}
           </PanelHeader>
           <Separator />
           <ScrollableContent>
@@ -444,6 +446,7 @@ const Variables: React.FC<Props> = ({
                       },
                     }}
                     buttonProps={{
+                      className: taskState === 'COMPLETED' ? 'hide' : '',
                       size: 'md',
                       type: 'submit',
                       disabled:

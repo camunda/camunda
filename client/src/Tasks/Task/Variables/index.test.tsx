@@ -25,7 +25,11 @@ import {
 } from 'modules/queries/get-task-variables';
 import {MockThemeProvider} from 'modules/theme/MockProvider';
 import {Variables} from './index';
-import {assignedTask, unassignedTask} from 'modules/mock-schema/mocks/task';
+import {
+  assignedTask,
+  completedTask,
+  unassignedTask,
+} from 'modules/mock-schema/mocks/task';
 import {ApolloProvider, useQuery} from '@apollo/client';
 import {client} from 'modules/apollo-client';
 import {nodeMockServer} from 'modules/mockServer/nodeMockServer';
@@ -636,6 +640,31 @@ describe('<Variables />', () => {
     );
   });
 
+  it('should hide add variable button on completed tasks', async () => {
+    nodeMockServer.use(
+      graphql.query('GetTaskVariables', (_, res, ctx) => {
+        return res.once(ctx.data(mockGetTaskVariables().result.data));
+      }),
+    );
+
+    render(
+      <Variables
+        task={completedTask()}
+        user={currentUser}
+        onSubmit={() => Promise.resolve()}
+        onSubmitFailure={noop}
+        onSubmitSuccess={noop}
+      />,
+      {
+        wrapper: Wrapper,
+      },
+    );
+
+    expect(await screen.findByText('Variables')).toBeInTheDocument();
+
+    expect(screen.queryByText(/add variable/i)).not.toBeInTheDocument();
+  });
+
   it('should disable submit button on form errors for existing variables', async () => {
     nodeMockServer.use(
       graphql.query('GetTaskVariables', (_, res, ctx) => {
@@ -725,6 +754,31 @@ describe('<Variables />', () => {
     await user.click(await screen.findByText(/add variable/i));
 
     expect(await screen.findByText(/complete task/i)).toBeDisabled();
+  });
+
+  it('should hide completion button on completed tasks', async () => {
+    nodeMockServer.use(
+      graphql.query('GetTaskVariables', (_, res, ctx) => {
+        return res.once(ctx.data(mockGetTaskVariables().result.data));
+      }),
+    );
+
+    render(
+      <Variables
+        task={completedTask()}
+        user={currentUser}
+        onSubmit={() => Promise.resolve()}
+        onSubmitFailure={noop}
+        onSubmitSuccess={noop}
+      />,
+      {
+        wrapper: Wrapper,
+      },
+    );
+
+    expect(await screen.findByText('Variables')).toBeInTheDocument();
+
+    expect(screen.queryByText(/complete task/i)).not.toBeVisible();
   });
 
   it('should complete a task with a truncated variable', async () => {

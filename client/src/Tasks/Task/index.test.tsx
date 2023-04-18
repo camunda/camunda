@@ -158,7 +158,9 @@ describe('<Task />', () => {
 
     expect(await screen.findByTestId('details-info')).toBeInTheDocument();
     expect(await screen.findByTestId('variables-table')).toBeInTheDocument();
-    expect(screen.getByText('Complete Task')).toBeDisabled();
+    expect(await screen.findByText('Variables')).toBeInTheDocument();
+
+    expect(screen.queryByText('Complete Task')).not.toBeVisible();
   });
 
   it('should render completed task with embedded form', async () => {
@@ -183,7 +185,7 @@ describe('<Task />', () => {
 
     expect(await screen.findByTestId('details-info')).toBeInTheDocument();
     expect(await screen.findByTestId('embedded-form')).toBeInTheDocument();
-    expect(screen.getByText('Complete Task')).toBeDisabled();
+    expect(screen.queryByText('Complete Task')).not.toBeVisible();
   });
 
   it('should complete task without variables', async () => {

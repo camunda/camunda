@@ -6,13 +6,12 @@
  */
 
 import {
-  Button,
   ButtonDefaultProps,
   ButtonKindProps,
   InlineLoading as OriginalInlineLoading,
 } from '@carbon/react';
 import {useEffect} from 'react';
-import {InlineLoading} from './styled';
+import {Button, InlineLoading} from './styled';
 
 type Props = {
   inlineLoadingProps?: Omit<

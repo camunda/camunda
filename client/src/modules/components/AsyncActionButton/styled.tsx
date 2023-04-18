@@ -6,10 +6,19 @@
  */
 
 import styled from 'styled-components';
-import {InlineLoading as BaseInlineLoading} from '@carbon/react';
+import {
+  Button as BaseButton,
+  InlineLoading as BaseInlineLoading,
+} from '@carbon/react';
 
 const InlineLoading = styled(BaseInlineLoading)`
   width: fit-content;
 `;
 
-export {InlineLoading};
+const Button = styled(BaseButton)`
+  &.hide {
+    display: none;
+  }
+`;
+
+export {Button, InlineLoading};

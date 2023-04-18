@@ -198,6 +198,7 @@ const FormJS: React.FC<Props> = ({
                 },
               }}
               buttonProps={{
+                className: taskState === 'COMPLETED' ? 'hide' : '',
                 size: 'md',
                 type: 'submit',
                 disabled: submissionState === 'active' || !canCompleteTask,
