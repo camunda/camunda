@@ -50,7 +50,8 @@ public interface Intent {
           SignalIntent.class,
           SignalSubscriptionIntent.class,
           ResourceDeletionIntent.class,
-          CommandDistributionIntent.class);
+          CommandDistributionIntent.class,
+          AggregatedChangesIntent.class);
   short NULL_VAL = 255;
   Intent UNKNOWN =
       new Intent() {
@@ -128,6 +129,8 @@ public interface Intent {
         return ResourceDeletionIntent.from(intent);
       case COMMAND_DISTRIBUTION:
         return CommandDistributionIntent.from(intent);
+      case AGGREGATED_CHANGES:
+        return AggregatedChangesIntent.from(intent);
       case NULL_VAL:
       case SBE_UNKNOWN:
         return Intent.UNKNOWN;

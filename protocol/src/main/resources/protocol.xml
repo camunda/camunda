@@ -50,6 +50,7 @@
       <validValue name="COMMAND_DISTRIBUTION">33</validValue>
 
       <!-- Management records / record not related to process automation -->
+      <validValue name="AGGREGATED_CHANGES">253</validValue>
       <validValue name="CHECKPOINT">254</validValue>
     </enum>
 
