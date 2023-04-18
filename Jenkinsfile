@@ -116,6 +116,7 @@ pipeline {
             always {
               junit testResults: 'qa/integration-tests/target/*-reports/**/*.xml', keepLongStdio: true, allowEmptyResults: true
               junit testResults: 'importer/target/*-reports/**/*.xml', keepLongStdio: true, allowEmptyResults: true
+              publishHTML([allowMissing: true, alwaysLinkToLastBuild: true, keepAll: false, reportDir: 'test-coverage/target/site/jacoco-aggregate', reportFiles: 'index.html', reportName: 'JaCoCo report', reportTitles: 'Tasklist code coverage report', useWrapperFileDirectly: true])
             }
           }
         }

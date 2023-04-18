@@ -22,6 +22,7 @@
     <module>qa</module>
     <module>distro</module>
     <module>mvc-auth-commons</module>
+    <module>test-coverage</module>
   </modules>
 
   <properties>
@@ -547,6 +548,11 @@
             </execution>
           </executions>
         </plugin>
+        <plugin>
+          <groupId>org.jacoco</groupId>
+          <artifactId>jacoco-maven-plugin</artifactId>
+          <version>0.8.9</version>
+        </plugin>
       </plugins>
 
     </pluginManagement>
@@ -579,6 +585,35 @@
             </configuration>
             <goals>
               <goal>enforce</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.jacoco</groupId>
+        <artifactId>jacoco-maven-plugin</artifactId>
+        <configuration>
+          <excludes>
+            <!--exclusions for `tasklist-common` module-->
+            <exclude>**/camunda/tasklist/entities/**/*</exclude>
+            <exclude>**/camunda/tasklist/exceptions/**/*</exclude>
+            <exclude>**/camunda/tasklist/property/**/*</exclude>
+            <!--exclusions for `tasklist-webapp` module-->
+            <exclude>**/camunda/tasklist/webapp/api/rest/v1/entities/**/*</exclude>
+            <exclude>**/camunda/tasklist/webapp/management/dto/**/*</exclude>
+            <exclude>**/camunda/tasklist/webapp/graphql/entity/**/*</exclude>
+            <exclude>**/camunda/tasklist/webapp/rest/exception/**/*</exclude>
+            <exclude>**/camunda/tasklist/webapp/config/**/*</exclude>
+            <exclude>**/camunda/tasklist/webapp/es/dao/response/**/*</exclude>
+            <exclude>**/camunda/tasklist/webapp/**/*ErrorController.*</exclude>
+            <exclude>**/camunda/tasklist/webapp/**/ClusterMetadata.*</exclude>
+          </excludes>
+        </configuration>
+        <executions>
+          <execution>
+            <id>prepare-agent</id>
+            <goals>
+              <goal>prepare-agent</goal>
             </goals>
           </execution>
         </executions>
