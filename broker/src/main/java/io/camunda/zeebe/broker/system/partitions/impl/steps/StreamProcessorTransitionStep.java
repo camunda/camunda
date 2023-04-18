@@ -15,6 +15,7 @@ import io.camunda.zeebe.logstreams.log.LoggedEvent;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.stream.api.RecordProcessor;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
+import io.camunda.zeebe.stream.impl.AggregatedChangesApplier;
 import io.camunda.zeebe.stream.impl.StreamProcessor;
 import io.camunda.zeebe.stream.impl.StreamProcessorListener;
 import io.camunda.zeebe.stream.impl.StreamProcessorMode;
@@ -134,7 +135,7 @@ public final class StreamProcessorTransitionStep implements PartitionTransitionS
 
     final var engine = new Engine(context.getTypedRecordProcessorFactory(), engineCfg);
     final List<RecordProcessor> recordProcessors =
-        List.of(engine, context.getCheckpointProcessor());
+        List.of(engine, context.getCheckpointProcessor(), new AggregatedChangesApplier());
 
     return StreamProcessor.builder()
         .logStream(context.getLogStream())

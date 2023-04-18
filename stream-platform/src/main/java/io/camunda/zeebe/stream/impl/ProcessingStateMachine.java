@@ -9,13 +9,16 @@ package io.camunda.zeebe.stream.impl;
 
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDbTransaction;
+import io.camunda.zeebe.db.impl.rocksdb.transaction.ZeebeTransaction;
 import io.camunda.zeebe.logstreams.impl.Loggers;
 import io.camunda.zeebe.logstreams.log.LogAppendEntry;
 import io.camunda.zeebe.logstreams.log.LogStreamReader;
 import io.camunda.zeebe.logstreams.log.LogStreamWriter;
 import io.camunda.zeebe.logstreams.log.LoggedEvent;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
+import io.camunda.zeebe.protocol.impl.record.value.management.AggregatedChangesRecord;
 import io.camunda.zeebe.protocol.record.RecordType;
+import io.camunda.zeebe.protocol.record.intent.AggregatedChangesIntent;
 import io.camunda.zeebe.scheduler.ActorControl;
 import io.camunda.zeebe.scheduler.clock.ActorClock;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
@@ -34,6 +37,7 @@ import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.MutableLastProcessedPositionState;
 import io.camunda.zeebe.stream.impl.metrics.ProcessingMetrics;
 import io.camunda.zeebe.stream.impl.metrics.StreamProcessorMetrics;
+import io.camunda.zeebe.stream.impl.records.RecordBatchEntry;
 import io.camunda.zeebe.stream.impl.records.RecordValues;
 import io.camunda.zeebe.stream.impl.records.TypedRecordImpl;
 import io.camunda.zeebe.stream.impl.records.UnwrittenRecord;
@@ -49,6 +53,7 @@ import java.util.Collections;
 import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.function.BooleanSupplier;
+import org.rocksdb.RocksDBException;
 import org.slf4j.Logger;
 
 /**
@@ -450,11 +455,11 @@ public final class ProcessingStateMachine {
 
   private void writeRecords() {
     final var sourceRecordPosition = typedCommand.getPosition();
-
+    final var toWrite = aggregateEvents(pendingWrites, zeebeDbTransaction);
     final ActorFuture<Boolean> retryFuture =
         writeRetryStrategy.runWithRetry(
             () -> {
-              final long position = logStreamWriter.tryWrite(pendingWrites, sourceRecordPosition);
+              final long position = logStreamWriter.tryWrite(toWrite, sourceRecordPosition);
               if (position > 0) {
                 writtenPosition = position;
               }
@@ -481,6 +486,33 @@ public final class ProcessingStateMachine {
             updateState();
           }
         });
+  }
+
+  private List<LogAppendEntry> aggregateEvents(
+      List<LogAppendEntry> entries, ZeebeDbTransaction tx) {
+    final var aggregatedEntries = new ArrayList<LogAppendEntry>();
+    for (final var entry : entries) {
+      if (entry.recordMetadata().getRecordType() != RecordType.EVENT) {
+        aggregatedEntries.add(entry);
+      }
+    }
+
+    final var writeBatch = ((ZeebeTransaction) tx).getWriteBatch();
+    final var changes = new AggregatedChangesRecord();
+    try {
+      changes.setChanges(writeBatch.data());
+    } catch (RocksDBException e) {
+      throw new RuntimeException(e);
+    }
+    aggregatedEntries.add(
+        new RecordBatchEntry(
+            new RecordMetadata()
+                .recordType(RecordType.EVENT)
+                .intent(AggregatedChangesIntent.CHANGED),
+            -1,
+            -1,
+            changes));
+    return aggregatedEntries;
   }
 
   private void updateState() {

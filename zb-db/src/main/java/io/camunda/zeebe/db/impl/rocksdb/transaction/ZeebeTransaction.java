@@ -17,6 +17,7 @@ import org.rocksdb.ReadOptions;
 import org.rocksdb.RocksDBException;
 import org.rocksdb.RocksIterator;
 import org.rocksdb.Transaction;
+import org.rocksdb.WriteBatch;
 
 public class ZeebeTransaction implements ZeebeDbTransaction, AutoCloseable {
 
@@ -35,6 +36,14 @@ public class ZeebeTransaction implements ZeebeDbTransaction, AutoCloseable {
     } catch (final Exception ex) {
       throw new RuntimeException(ex);
     }
+  }
+
+  public Transaction getRawTransaction() {
+    return transaction;
+  }
+
+  public WriteBatch getWriteBatch() {
+    return transaction.getWriteBatch().getWriteBatch();
   }
 
   public void put(
