@@ -168,8 +168,6 @@ jobs:
           - os: linux
             runner: [ self-hosted, linux, amd64 ]
             arch: arm64
-    env:
-      JAVA_TOOL_OPTIONS: -XX:+TieredCompilation -XX:TieredStopAtLevel=1 -XX:ReservedCodeCacheSize=64M
     steps:
       - uses: actions/checkout@v3
       - uses: ./.github/actions/setup-zeebe
