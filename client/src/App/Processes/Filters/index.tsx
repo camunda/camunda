@@ -10,6 +10,7 @@ import {Field, Form} from 'react-final-form';
 import {useLocation, Location} from 'react-router-dom';
 import isEqual from 'lodash/isEqual';
 import intersection from 'lodash/intersection';
+import {Stack} from '@carbon/react';
 import {
   FiltersForm,
   ResetButtonContainer,
@@ -202,9 +203,11 @@ const Filters: React.FC = observer(() => {
               {!IS_COMBOBOX_ENABLED && (
                 <ProcessHeader appearance="emphasis">Process</ProcessHeader>
               )}
-              <ProcessField />
-              <ProcessVersionField />
-              <FlowNodeField />
+              <Stack gap={5}>
+                <ProcessField />
+                <ProcessVersionField />
+                <FlowNodeField />
+              </Stack>
               <InstanceStates>
                 <StatesHeader appearance="emphasis">
                   Instance States

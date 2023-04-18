@@ -5,11 +5,45 @@
  * except in compliance with the proprietary license.
  */
 
+type PolymorphicRef<C extends React.ElementType> =
+  React.ComponentPropsWithRef<C>['ref'];
+
+type AsProp<C extends React.ElementType> = {
+  as?: C;
+};
+
+type PropsToOmit<C extends React.ElementType, P> = keyof (AsProp<C> & P);
+
+type PolymorphicComponentProp<
+  C extends React.ElementType,
+  Props = {}
+> = React.PropsWithChildren<Props & AsProp<C>> &
+  Omit<React.ComponentPropsWithoutRef<C>, PropsToOmit<C, Props>>;
+
+type PolymorphicComponentPropWithRef<
+  C extends React.ElementType,
+  Props = {}
+> = PolymorphicComponentProp<C, Props> & {ref?: PolymorphicRef<C>};
+
 declare module '@carbon/react' {
   export const Theme: React.FunctionComponent<{
     children: React.ReactNode;
     theme?: 'white' | 'g10' | 'g90' | 'g100';
   }>;
+
+  type StackProps<C extends React.ElementType> =
+    PolymorphicComponentPropWithRef<
+      C,
+      {
+        gap?: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13;
+        orientation?: 'horizontal' | 'vertical';
+      }
+    >;
+
+  export const Stack: <C extends React.ElementType = 'div'>(
+    props: StackProps<C>
+  ) => React.ReactElement | null;
+
   export const useTheme: any;
   export * from 'carbon-components-react';
 }
