@@ -9,13 +9,17 @@ import {test, expect} from '@playwright/test';
 
 test.describe('login page', () => {
   test('empty page', async ({page}) => {
-    await page.goto('/login');
+    await page.goto('/login', {
+      waitUntil: 'networkidle',
+    });
 
     await expect(page).toHaveScreenshot();
   });
 
   test('field level error', async ({page}) => {
-    await page.goto('/login');
+    await page.goto('/login', {
+      waitUntil: 'networkidle',
+    });
 
     await page.getByRole('button', {name: 'Login'}).click();
 
@@ -34,7 +38,9 @@ test.describe('login page', () => {
         }),
       }),
     );
-    await page.goto('/login');
+    await page.goto('/login', {
+      waitUntil: 'networkidle',
+    });
 
     await page.getByPlaceholder('Username').type('demo');
     await page.getByPlaceholder('Password').type('wrongpassword');
