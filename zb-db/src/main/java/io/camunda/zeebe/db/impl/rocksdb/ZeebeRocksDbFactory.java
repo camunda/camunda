@@ -184,8 +184,10 @@ public final class ZeebeRocksDbFactory<ColumnFamilyType extends Enum<ColumnFamil
     final var tableConfig = createTableFormatConfig(closeables, blockCacheMemory);
 
     return columnFamilyOptions
-        // to extract our column family type (used as prefix) and seek faster
-        .useFixedLengthPrefixExtractor(Long.BYTES)
+        // to seek faster
+        //  1. LONG to extract our column family type (used as prefix)
+        //  2. LONG to extract most key prefixes (e.g. scopeKey)
+        .useFixedLengthPrefixExtractor(2 * Long.BYTES)
         .setMemtablePrefixBloomSizeRatio(memtablePrefixFilterMemory)
         // memtables
         // merge at least 3 memtables per L0 file, otherwise all memtables are flushed as individual
