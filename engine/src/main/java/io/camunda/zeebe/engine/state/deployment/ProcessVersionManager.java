@@ -12,7 +12,9 @@ import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.db.impl.DbString;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
+import java.util.function.ToLongFunction;
 import org.agrona.DirectBuffer;
+import org.agrona.collections.Object2LongHashMap;
 
 public final class ProcessVersionManager {
 
@@ -21,6 +23,7 @@ public final class ProcessVersionManager {
   private final ColumnFamily<DbString, NextValue> nextValueColumnFamily;
   private final DbString processIdKey;
   private final NextValue nextVersion = new NextValue();
+  private final Object2LongHashMap<String> versionCache;
 
   public ProcessVersionManager(
       final long initialValue,
@@ -32,12 +35,14 @@ public final class ProcessVersionManager {
     nextValueColumnFamily =
         zeebeDb.createColumnFamily(
             ZbColumnFamilies.PROCESS_VERSION, transactionContext, processIdKey, nextVersion);
+    versionCache = new Object2LongHashMap<>(initialValue);
   }
 
   public void setProcessVersion(final String processId, final long value) {
     processIdKey.wrapString(processId);
     nextVersion.set(value);
     nextValueColumnFamily.upsert(processIdKey, nextVersion);
+    versionCache.put(processId, value);
   }
 
   public long getCurrentProcessVersion(final String processId) {
@@ -51,6 +56,11 @@ public final class ProcessVersionManager {
   }
 
   private long getCurrentProcessVersion() {
+    return versionCache.computeIfAbsent(
+        processIdKey.toString(), (ToLongFunction<String>) (key) -> getProcessVersionFromDB());
+  }
+
+  private long getProcessVersionFromDB() {
     final NextValue readValue = nextValueColumnFamily.get(processIdKey);
 
     long currentValue = initialValue;
