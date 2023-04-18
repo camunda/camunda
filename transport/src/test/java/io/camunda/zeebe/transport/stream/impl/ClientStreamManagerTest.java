@@ -52,7 +52,7 @@ class ClientStreamManagerTest {
     final var streamId = clientStreamManager.add(streamType, metadata, p -> {});
 
     // then
-    assertThat(registry.get(streamId.serverId())).isNotNull();
+    assertThat(registry.getClient(streamId)).isNotEmpty();
   }
 
   @Test
