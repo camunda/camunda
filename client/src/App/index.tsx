@@ -34,6 +34,7 @@ import {currentTheme} from 'modules/stores/currentTheme';
 import {createBrowserHistory} from 'history';
 import {ThemeSwitcher} from 'modules/components/ThemeSwitcher';
 import loadable from '@loadable/component';
+import {InstancesList} from './Carbon/Layout/InstancesList';
 
 const CarbonLayout = loadable(() => import('./Carbon/Layout/index'), {
   resolveComponent: (components) => components.Layout,
@@ -95,7 +96,13 @@ const App: React.FC = () => {
               <Route index element={<div>Carbon - Dashboard</div>} />
               <Route
                 path={CarbonPaths.processes()}
-                element={<div>Carbon - Processes</div>}
+                element={
+                  <InstancesList
+                    filters={<div>processes - filters</div>}
+                    diagram={<section>processes - diagram</section>}
+                    instances={<section>processes - instances</section>}
+                  />
+                }
               />
               <Route
                 path={CarbonPaths.processInstance()}
@@ -103,7 +110,13 @@ const App: React.FC = () => {
               />
               <Route
                 path={CarbonPaths.decisions()}
-                element={<div>Carbon - Decisions</div>}
+                element={
+                  <InstancesList
+                    filters={<div>decisions - filters</div>}
+                    diagram={<section>decisions - diagram</section>}
+                    instances={<section>decisions - instances</section>}
+                  />
+                }
               />
               <Route
                 path={CarbonPaths.decisionInstance()}
