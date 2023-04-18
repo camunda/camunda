@@ -47,7 +47,7 @@
     <version.commons-codec>1.15</version.commons-codec>
     <version.commons-text>1.10.0</version.commons-text>
     <version.cron-utils>9.2.1</version.cron-utils>
-    <version.docker-java-api>3.2.13</version.docker-java-api>
+    <version.docker-java-api>3.3.0</version.docker-java-api>
     <version.elasticsearch>7.17.5</version.elasticsearch>
     <version.error-prone>2.15.0</version.error-prone>
     <version.grpc>1.49.2</version.grpc>
