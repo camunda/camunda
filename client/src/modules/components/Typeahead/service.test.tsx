@@ -19,7 +19,7 @@ jest.mock('services', () => ({
 }));
 
 it('should highlight strings', () => {
-  const result = highlightText('highlight this');
+  const result = highlightText('highlight this', '');
 
   expect(result).toBe('got highlight');
 });

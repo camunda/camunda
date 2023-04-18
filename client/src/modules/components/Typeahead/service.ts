@@ -6,11 +6,11 @@
  */
 
 import {formatters} from 'services';
-import React from 'react';
+import React, {ReactElement, ReactNode} from 'react';
 import {Typeahead} from 'components';
 
-export function highlightText(content, query) {
-  let children;
+export function highlightText(content: ReactNode, query: string): ReactNode {
+  let children: ReactNode;
   if (typeof content === 'string') {
     children = formatters.getHighlightedText(content, query);
   } else {
@@ -28,7 +28,7 @@ export function highlightText(content, query) {
 }
 
 // https://stackoverflow.com/a/42498730/4016581
-function recursiveMap(children, fn) {
+function recursiveMap(children: ReactNode, fn: (child: ReactElement) => ReactNode): ReactNode {
   return React.Children.map(children, (child) => {
     if (!React.isValidElement(child)) {
       return child;
@@ -37,7 +37,7 @@ function recursiveMap(children, fn) {
     if (child.props.children) {
       child = React.cloneElement(child, {
         children: recursiveMap(child.props.children, fn),
-      });
+      } as Record<string, ReactNode>);
     }
 
     return fn(child);

@@ -7,6 +7,7 @@ exports[`should match snapshot 1`] = `
 >
   <ForwardRef(Input)
     autoComplete="none"
+    value=""
   />
   <span
     className="sizer"

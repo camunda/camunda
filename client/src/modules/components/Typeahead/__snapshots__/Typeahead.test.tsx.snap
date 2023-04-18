@@ -18,7 +18,7 @@ exports[`should render an empty Input 1`] = `
     className="optionsButton"
     disabled={true}
     onClick={[Function]}
-    tabIndex="-1"
+    tabIndex={-1}
   >
     <Icon
       className="downIcon"

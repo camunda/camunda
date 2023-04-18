@@ -13,7 +13,7 @@ import {Input} from 'components';
 import Typeahead from './Typeahead';
 
 it('should render an empty Input', () => {
-  const node = shallow(<Typeahead />);
+  const node = shallow(<Typeahead children={null} />);
 
   expect(node).toMatchSnapshot();
 });
@@ -38,15 +38,13 @@ it('should show/hide options list on input focus/blur', () => {
 });
 
 it('should show option list on arrow button click', () => {
-  const node = shallow(
+  const node = shallow<Typeahead>(
     <Typeahead>
       <Typeahead.Option id="test_option" value="1">
         Option One
       </Typeahead.Option>
     </Typeahead>
   );
-
-  node.instance().input = {current: {focus: () => {}}};
 
   node.find('.optionsButton').simulate('click');
 
@@ -65,10 +63,7 @@ it('should select an option', () => {
 
   node.find(Input).simulate('focus');
 
-  node
-    .find('OptionsList')
-    .props()
-    .onSelect({props: {children: 'Option One', value: '1'}});
+  node.find('OptionsList').simulate('select', {props: {children: 'Option One', value: '1'}});
 
   expect(node.find(Input).prop('value')).toBe('Option One');
   expect(node.find('OptionsList').prop('open')).toBe(false);
@@ -90,7 +85,7 @@ it('should function as a controlled select', () => {
 });
 
 it('should always select value if typedOption is set', () => {
-  const node = shallow(<Typeahead value="typed" typedOption />);
+  const node = shallow(<Typeahead value="typed" typedOption children={null} />);
 
   expect(node.find(Input).prop('value')).toBe('typed');
 });

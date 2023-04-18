@@ -5,8 +5,7 @@
  * except in compliance with the proprietary license.
  */
 
-import React, {runLastEffect} from 'react';
-
+import {runLastEffect} from '__mocks__/react';
 import {Dropdown} from 'components';
 
 import OptionsList from './OptionsList';
@@ -18,9 +17,13 @@ const props = {
   open: true,
   input: {
     addEventListener: jest.fn(),
-  },
+  } as jest.MockedObject<HTMLInputElement>,
   filter: '',
   onSelect: jest.fn(),
+  children: <div />,
+  onOpen: jest.fn(),
+  onRemove: jest.fn(),
+  onClose: () => {},
 };
 
 it('should render an empty OptionsList', () => {

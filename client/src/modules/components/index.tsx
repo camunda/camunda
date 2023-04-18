@@ -23,6 +23,9 @@ export {EntityDescription} from './EntityDescription';
 export {EntityNameForm} from './EntityNameForm';
 export {LoadingIndicator} from './LoadingIndicator';
 export {DocsLink} from './DocsLink';
+export {Typeahead, MultiSelect} from './Typeahead';
+export {Tag} from './Tag';
+export {UncontrolledMultiValueInput} from './MultiValueInput';
 
 export type {InputProps} from './Input';
 export type {LabeledProps} from './Labeled';

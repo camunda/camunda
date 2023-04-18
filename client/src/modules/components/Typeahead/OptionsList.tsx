@@ -5,7 +5,7 @@
  * except in compliance with the proprietary license.
  */
 
-import React, {useState, useEffect, useCallback} from 'react';
+import React, {useState, useEffect, useCallback, ReactNode, ReactElement, MouseEvent} from 'react';
 
 import {t} from 'translation';
 import {Dropdown, LoadingIndicator} from 'components';
@@ -13,6 +13,31 @@ import {Dropdown, LoadingIndicator} from 'components';
 import {highlightText} from './service';
 
 import './OptionsList.scss';
+
+type OptionProps = {
+  label: string;
+  value: string;
+  children: ReactNode;
+  disabled?: boolean;
+  className: string;
+  onClick: () => void;
+  onMouseDown?: (evt: MouseEvent<HTMLDivElement, MouseEvent>) => void;
+};
+
+interface OptionsListProps {
+  loading?: boolean;
+  hasMore?: boolean;
+  input: HTMLInputElement | null;
+  onSelect: (option: ReactElement<OptionProps>) => void;
+  filter: string;
+  children: ReactNode;
+  onMouseDown?: (evt: MouseEvent<HTMLDivElement, MouseEvent>) => void;
+  async?: boolean;
+  typedOption?: boolean;
+  open: boolean;
+  onOpen: () => void;
+  onClose: () => void;
+}
 
 export default function OptionsList({
   loading,
@@ -25,18 +50,18 @@ export default function OptionsList({
   async,
   typedOption,
   ...props
-}) {
-  const [selectedOption, setSelectedOption] = useState(-1);
-  const optionList = React.createRef();
-  const optionsArr = React.Children.toArray(children);
-  let filteredOptions = optionsArr;
+}: OptionsListProps): JSX.Element | null {
+  const [selectedOption, setSelectedOption] = useState<number>(-1);
+  const optionList = React.createRef<HTMLDivElement>();
+  const optionsArr = React.Children.toArray(children) as ReactElement<OptionProps>[];
+  let filteredOptions: ReactElement<OptionProps>[] = optionsArr;
 
   if (!async) {
     filteredOptions = optionsArr.filter(({props: {label, children}}) => {
       if (filter && typedOption && (label || children) === filter) {
         return false; // remove options that exactly match the typed option
       }
-      return (label || children)?.toLowerCase().includes(filter.toLowerCase());
+      return (label || children)?.toString().toLowerCase().includes(filter.toLowerCase());
     });
   }
 
@@ -51,14 +76,15 @@ export default function OptionsList({
   const optionsWithProps = filteredOptions.map((option, i) =>
     React.cloneElement(option, {
       className: i === selectedOption ? 'isActive' : '',
-      onClick: (evt) => onSelect(option),
-      onMouseDown: (evt) => !option.props.disabled && onMouseDown?.(evt),
+      onClick: () => onSelect(option),
+      onMouseDown: (evt: React.MouseEvent<HTMLDivElement, MouseEvent>) =>
+        !option.props.disabled && onMouseDown?.(evt),
       children: highlightText(option.props.children, filter),
     })
   );
 
   const handleKeyPress = useCallback(
-    (evt) => {
+    (evt: KeyboardEvent) => {
       const {open, onOpen, onClose} = props;
       let nextOption = -1;
       evt = evt || window.event;
@@ -94,11 +120,11 @@ export default function OptionsList({
         if (selectedItem) {
           selectedItem.scrollIntoView({block: 'nearest', inline: 'nearest'});
         }
-      }
 
-      // scroll to end on the last element to show the has more info message
-      if (nextOption === optionsCount - 1) {
-        optionList.current.scrollTop = optionList.current.scrollHeight;
+        // scroll to end on the last element to show the has more info message
+        if (nextOption === optionsCount - 1) {
+          optionList.current.scrollTop = optionList.current.scrollHeight;
+        }
       }
 
       setSelectedOption(nextOption);
