@@ -15,6 +15,7 @@ import static org.mockito.Mockito.when;
 import io.atomix.cluster.MemberId;
 import io.atomix.cluster.messaging.ClusterCommunicationService;
 import io.camunda.zeebe.scheduler.testing.TestConcurrencyControl;
+import io.camunda.zeebe.transport.stream.api.ClientStreamId;
 import io.camunda.zeebe.transport.stream.impl.messages.PushStreamRequest;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import io.camunda.zeebe.util.buffer.BufferWriter;
@@ -48,10 +49,10 @@ class ClientStreamManagerTest {
   @Test
   void shouldAddStream() {
     // when
-    final var uuid = clientStreamManager.add(streamType, metadata, p -> {});
+    final var streamId = clientStreamManager.add(streamType, metadata, p -> {});
 
     // then
-    assertThat(registry.get(uuid)).isNotNull();
+    assertThat(registry.getClient(streamId)).isNotEmpty();
   }
 
   @Test
@@ -251,7 +252,7 @@ class ClientStreamManagerTest {
     assertThat(stream.isConnected(server)).isFalse();
   }
 
-  private UUID getServerStreamId(final UUID clientStreamId) {
+  private UUID getServerStreamId(final ClientStreamId clientStreamId) {
     return registry.getClient(clientStreamId).orElseThrow().serverStream().getStreamId();
   }
 

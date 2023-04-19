@@ -12,11 +12,11 @@ import io.atomix.cluster.messaging.ClusterCommunicationService;
 import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.transport.stream.api.ClientStreamConsumer;
+import io.camunda.zeebe.transport.stream.api.ClientStreamId;
 import io.camunda.zeebe.transport.stream.api.ClientStreamer;
 import io.camunda.zeebe.transport.stream.impl.messages.MessageUtil;
 import io.camunda.zeebe.transport.stream.impl.messages.StreamTopics;
 import io.camunda.zeebe.util.buffer.BufferWriter;
-import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import org.agrona.DirectBuffer;
 
@@ -64,7 +64,7 @@ public class ClientStreamService<M extends BufferWriter> extends Actor
   }
 
   @Override
-  public ActorFuture<UUID> add(
+  public ActorFuture<ClientStreamId> add(
       final DirectBuffer streamType,
       final M metadata,
       final ClientStreamConsumer clientStreamConsumer) {
@@ -72,7 +72,7 @@ public class ClientStreamService<M extends BufferWriter> extends Actor
   }
 
   @Override
-  public ActorFuture<Void> remove(final UUID streamId) {
+  public ActorFuture<Void> remove(final ClientStreamId streamId) {
     return actor.call(() -> clientStreamManager.remove(streamId));
   }
 
