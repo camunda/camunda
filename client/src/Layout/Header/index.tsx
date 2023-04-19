@@ -171,7 +171,6 @@ const Header: React.FC = observer(() => {
               ],
       }}
       appBar={{
-        type: 'app',
         ariaLabel: 'App Panel',
         isOpen: false,
         elements: IS_SAAS ? switcherElements : [],
@@ -183,7 +182,6 @@ const Header: React.FC = observer(() => {
         },
       }}
       infoSideBar={{
-        type: 'info',
         isOpen: false,
         ariaLabel: 'Info',
         elements: [
@@ -249,7 +247,6 @@ const Header: React.FC = observer(() => {
         version: process.env.REACT_APP_VERSION,
       }}
       userSideBar={{
-        type: 'user',
         ariaLabel: 'Settings',
         customElements: {
           profile: {

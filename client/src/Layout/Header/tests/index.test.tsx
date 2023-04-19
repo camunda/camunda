@@ -28,7 +28,9 @@ describe('<Header />', () => {
       screen.getByRole('banner', {name: 'Camunda Tasklist'}),
     ).toBeInTheDocument();
     expect(screen.getByText('Non-Production License')).toBeInTheDocument();
-    expect(screen.getByRole('button', {name: 'Info'})).toBeInTheDocument();
-    expect(screen.getByRole('button', {name: 'Settings'})).toBeInTheDocument();
+    expect(screen.getByRole('button', {name: 'Open Info'})).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', {name: 'Open Settings'}),
+    ).toBeInTheDocument();
   });
 });
