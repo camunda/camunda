@@ -32,6 +32,7 @@ import org.rocksdb.Options;
 import org.rocksdb.RateLimiter;
 import org.rocksdb.RocksDB;
 import org.rocksdb.RocksDBException;
+import org.rocksdb.SstPartitionerFixedPrefixFactory;
 import org.rocksdb.Statistics;
 import org.rocksdb.StatsLevel;
 import org.rocksdb.TableFormatConfig;
@@ -184,6 +185,7 @@ public final class ZeebeRocksDbFactory<ColumnFamilyType extends Enum<ColumnFamil
     final var tableConfig = createTableFormatConfig(closeables, blockCacheMemory);
 
     return columnFamilyOptions
+        .setSstPartitionerFactory(new SstPartitionerFixedPrefixFactory(Long.BYTES))
         // to extract our column family type (used as prefix) and seek faster
         .useFixedLengthPrefixExtractor(Long.BYTES)
         .setMemtablePrefixBloomSizeRatio(memtablePrefixFilterMemory)
