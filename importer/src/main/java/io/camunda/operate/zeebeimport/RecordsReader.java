@@ -202,23 +202,22 @@ public class RecordsReader implements Runnable {
           .routing(String.valueOf(partitionId))
           .requestCache(false);
 
-      final SearchResponse searchResponse =
-      withTimer(() -> zeebeEsClient.search(searchRequest, RequestOptions.DEFAULT));
+      final SearchResponse searchResponse = withTimer(() -> zeebeEsClient.search(searchRequest, RequestOptions.DEFAULT));
+      checkForFailedShards(searchResponse);
 
       return createImportBatch(searchResponse);
     } catch (ElasticsearchStatusException ex) {
       if (ex.getMessage().contains("no such index")) {
         throw new NoSuchIndexException();
       } else {
-        final String message = String.format("Exception occurred, while obtaining next Zeebe records batch: %s", ex.getMessage());
+        final String message = String.format("Exception occurred for alias [%s], while obtaining next Zeebe records batch: %s", aliasName, ex.getMessage());
         throw new OperateRuntimeException(message, ex);
       }
     } catch (Exception e) {
-      final String message = String.format("Exception occurred, while obtaining next Zeebe records batch: %s", e.getMessage());
+      final String message = String.format("Exception occurred for alias [%s], while obtaining next Zeebe records batch: %s", aliasName, e.getMessage());
       throw new OperateRuntimeException(message, e);
     }
   }
-
 
   private void rescheduleReader(Integer readerDelay) {
     if (readerDelay != null) {
@@ -264,20 +263,26 @@ public class RecordsReader implements Runnable {
     String aliasName = importValueType.getAliasName(operateProperties.getZeebeElasticsearch().getPrefix());
     try {
       final SearchRequest searchRequest = createSearchQuery(aliasName, positionFrom, positionTo);
-      final SearchResponse searchResponse =
-          withTimer(() -> zeebeEsClient.search(searchRequest, RequestOptions.DEFAULT));
+      final SearchResponse searchResponse = withTimer(() -> zeebeEsClient.search(searchRequest, RequestOptions.DEFAULT));
+      checkForFailedShards(searchResponse);
 
       return createImportBatch(searchResponse);
     } catch (ElasticsearchStatusException ex) {
       if (ex.getMessage().contains("no such index")) {
         throw new NoSuchIndexException();
       } else {
-        final String message = String.format("Exception occurred, while obtaining next Zeebe records batch: %s", ex.getMessage());
+        final String message = String.format("Exception occurred for alias [%s], while obtaining next Zeebe records batch: %s", aliasName, ex.getMessage());
         throw new OperateRuntimeException(message, ex);
       }
     } catch (Exception e) {
-      final String message = String.format("Exception occurred, while obtaining next Zeebe records batch: %s", e.getMessage());
+      final String message = String.format("Exception occurred for alias [%s], while obtaining next Zeebe records batch: %s", aliasName, e.getMessage());
       throw new OperateRuntimeException(message, e);
+    }
+  }
+
+  private void checkForFailedShards(SearchResponse searchResponse) {
+    if (searchResponse.getFailedShards() > 0) {
+      throw new OperateRuntimeException("Some ES shards failed. Ignoring search response and retrying, to prevent data loss.");
     }
   }
 
