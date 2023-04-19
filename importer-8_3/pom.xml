@@ -7,8 +7,8 @@
   </parent>
   <modelVersion>4.0.0</modelVersion>
 
-  <name>Operate Importer 8.1</name>
-  <artifactId>operate-importer-8_1</artifactId>
+  <name>Operate Importer 8.3</name>
+  <artifactId>operate-importer-8_3</artifactId>
 
   <dependencies>
 
@@ -62,7 +62,7 @@
           <relocations>
             <relocation>
               <pattern>io.camunda.zeebe.protocol</pattern>
-              <shadedPattern>io.camunda.zeebe.protocol.v810</shadedPattern>
+              <shadedPattern>io.camunda.zeebe.protocol.v820</shadedPattern>
             </relocation>
           </relocations>
         </configuration>

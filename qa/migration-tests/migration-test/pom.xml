@@ -66,6 +66,13 @@
     </dependency>
 
     <dependency>
+        <groupId>io.camunda</groupId>
+        <artifactId>operate-qa-migration-tests-test-fixture-820</artifactId>
+        <version>${project.version}</version>
+        <scope>test</scope>
+    </dependency>
+
+    <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>operate-els-schema</artifactId>
       <version>${project.version}</version>

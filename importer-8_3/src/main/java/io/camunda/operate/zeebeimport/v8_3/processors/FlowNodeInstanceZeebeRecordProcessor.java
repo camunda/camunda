@@ -4,7 +4,7 @@
  * See the License.txt file for more information. You may not use this file
  * except in compliance with the proprietary license.
  */
-package io.camunda.operate.zeebeimport.v8_1.processors;
+package io.camunda.operate.zeebeimport.v8_3.processors;
 
 import static io.camunda.operate.util.ElasticsearchUtil.UPDATE_RETRY_COUNT;
 import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEMENT_ACTIVATING;

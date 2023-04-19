@@ -4,7 +4,7 @@
  * See the License.txt file for more information. You may not use this file
  * except in compliance with the proprietary license.
  */
-package io.camunda.operate.zeebeimport.v8_1.processors;
+package io.camunda.operate.zeebeimport.v8_3.processors;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.type.SimpleType;
@@ -254,6 +254,6 @@ public class ElasticsearchBulkProcessor extends AbstractImportBatchProcessor {
 
   @Override
   public String getZeebeVersion() {
-    return "8.1";
+    return "8.3";
   }
 }

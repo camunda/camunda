@@ -19,6 +19,7 @@
     <module>test-fixture-130</module>
     <module>test-fixture-800</module>
     <module>test-fixture-810</module>
+    <module>test-fixture-820</module>
 		<module>migration-test</module>
 	</modules>
 

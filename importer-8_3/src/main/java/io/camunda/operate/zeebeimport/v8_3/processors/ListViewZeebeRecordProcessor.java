@@ -4,7 +4,7 @@
  * See the License.txt file for more information. You may not use this file
  * except in compliance with the proprietary license.
  */
-package io.camunda.operate.zeebeimport.v8_1.processors;
+package io.camunda.operate.zeebeimport.v8_3.processors;
 
 import static io.camunda.operate.schema.templates.ListViewTemplate.ACTIVITIES_JOIN_RELATION;
 import static io.camunda.operate.schema.templates.ListViewTemplate.ACTIVITY_ID;
