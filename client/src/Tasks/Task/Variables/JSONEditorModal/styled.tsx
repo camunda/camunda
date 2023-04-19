@@ -5,12 +5,12 @@
  * except in compliance with the proprietary license.
  */
 
-import BaseEditor from '@monaco-editor/react';
+import BaseEditor, {EditorProps} from '@monaco-editor/react';
 import styled from 'styled-components';
 
 const Editor = styled(BaseEditor)`
   height: 60vh;
-` as typeof BaseEditor;
+` as React.FC<EditorProps>;
 
 const EditorPlaceholder = styled.div`
   height: 60vh;

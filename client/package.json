@@ -8,7 +8,7 @@
     "@camunda/camunda-composite-components": "0.0.30",
     "@carbon/elements": "11.21.0",
     "@carbon/react": "1.27.0",
-    "@monaco-editor/react": "4.4.6",
+    "@monaco-editor/react": "4.5.0",
     "date-fns": "2.29.3",
     "final-form": "4.20.9",
     "final-form-arrays": "3.1.0",
