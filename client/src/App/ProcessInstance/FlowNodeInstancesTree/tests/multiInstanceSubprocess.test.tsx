@@ -11,7 +11,6 @@ import {flowNodeInstanceStore} from 'modules/stores/flowNodeInstance';
 import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
 import {processInstanceDetailsDiagramStore} from 'modules/stores/processInstanceDetailsDiagram';
 import {multiInstanceProcess} from 'modules/testUtils';
-import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {FlowNodeInstancesTree} from '..';
 import {
   multiInstanceProcessInstance,
@@ -19,33 +18,18 @@ import {
   mockFlowNodeInstance,
   processId,
   processInstanceId,
+  Wrapper,
 } from './mocks';
 import {mockFetchProcessInstance} from 'modules/mocks/api/processInstances/fetchProcessInstance';
 import {mockFetchProcessXML} from 'modules/mocks/api/processes/fetchProcessXML';
 import {mockFetchFlowNodeInstances} from 'modules/mocks/api/fetchFlowNodeInstances';
 
 describe('FlowNodeInstancesTree - Multi Instance Subprocess', () => {
-  beforeAll(() => {
-    //@ts-ignore
-    IS_REACT_ACT_ENVIRONMENT = false;
-  });
-
-  afterAll(() => {
-    //@ts-ignore
-    IS_REACT_ACT_ENVIRONMENT = true;
-  });
-
   beforeEach(async () => {
     mockFetchProcessInstance().withSuccess(multiInstanceProcessInstance);
     mockFetchProcessXML().withSuccess(multiInstanceProcess);
 
     await processInstanceDetailsDiagramStore.fetchProcessXml(processId);
-  });
-
-  afterEach(() => {
-    processInstanceDetailsStore.reset();
-    processInstanceDetailsDiagramStore.reset();
-    flowNodeInstanceStore.reset();
   });
 
   it('should load the instance history', async () => {
@@ -66,7 +50,7 @@ describe('FlowNodeInstancesTree - Multi Instance Subprocess', () => {
         scrollableContainerRef={createRef<HTMLElement>()}
       />,
       {
-        wrapper: ThemeProvider,
+        wrapper: Wrapper,
       }
     );
 
@@ -95,7 +79,7 @@ describe('FlowNodeInstancesTree - Multi Instance Subprocess', () => {
         scrollableContainerRef={createRef<HTMLElement>()}
       />,
       {
-        wrapper: ThemeProvider,
+        wrapper: Wrapper,
       }
     );
 
@@ -157,7 +141,7 @@ describe('FlowNodeInstancesTree - Multi Instance Subprocess', () => {
         scrollableContainerRef={createRef<HTMLElement>()}
       />,
       {
-        wrapper: ThemeProvider,
+        wrapper: Wrapper,
       }
     );
 

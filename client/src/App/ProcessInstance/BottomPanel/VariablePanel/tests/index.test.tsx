@@ -37,6 +37,8 @@ import {mockFetchProcessXML} from 'modules/mocks/api/processes/fetchProcessXML';
 import {mockApplyOperation} from 'modules/mocks/api/processInstances/operations';
 import {mockGetOperation} from 'modules/mocks/api/getOperation';
 import * as operationApi from 'modules/api/getOperation';
+import {useEffect} from 'react';
+import {act} from 'react-dom/test-utils';
 
 const getOperationSpy = jest.spyOn(operationApi, 'getOperation');
 
@@ -48,6 +50,17 @@ jest.mock('modules/notifications', () => ({
 }));
 
 const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
+  useEffect(() => {
+    return () => {
+      variablesStore.reset();
+      flowNodeSelectionStore.reset();
+      flowNodeMetaDataStore.reset();
+      processInstanceDetailsDiagramStore.reset();
+      modificationsStore.reset();
+      processInstanceDetailsStatisticsStore.reset();
+    };
+  }, []);
+
   return (
     <ThemeProvider>
       <MemoryRouter initialEntries={['/processes/1']}>
@@ -60,16 +73,6 @@ const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
 };
 
 describe('VariablePanel', () => {
-  beforeAll(() => {
-    //@ts-ignore
-    IS_REACT_ACT_ENVIRONMENT = false;
-  });
-
-  afterAll(() => {
-    //@ts-ignore
-    IS_REACT_ACT_ENVIRONMENT = true;
-  });
-
   beforeEach(() => {
     mockFetchProcessInstanceDetailStatistics().withSuccess([
       {
@@ -105,15 +108,6 @@ describe('VariablePanel', () => {
     );
   });
 
-  afterEach(() => {
-    variablesStore.reset();
-    flowNodeSelectionStore.reset();
-    flowNodeMetaDataStore.reset();
-    processInstanceDetailsDiagramStore.reset();
-    modificationsStore.reset();
-    processInstanceDetailsStatisticsStore.reset();
-  });
-
   it.each([true, false])(
     'should show multiple scope placeholder when multiple nodes are selected - modification mode: %p',
     async (enableModificationMode) => {
@@ -136,8 +130,10 @@ describe('VariablePanel', () => {
         screen.getByRole('button', {name: /add variable/i})
       ).toBeInTheDocument();
 
-      flowNodeSelectionStore.setSelection({
-        flowNodeId: 'TEST_FLOW_NODE',
+      act(() => {
+        flowNodeSelectionStore.setSelection({
+          flowNodeId: 'TEST_FLOW_NODE',
+        });
       });
 
       expect(
@@ -167,10 +163,12 @@ describe('VariablePanel', () => {
 
       mockFetchVariables().withServerError();
 
-      variablesStore.fetchVariables({
-        fetchType: 'initial',
-        instanceId: 'invalid_instance',
-        payload: {pageSize: 10, scopeId: '1'},
+      act(() => {
+        variablesStore.fetchVariables({
+          fetchType: 'initial',
+          instanceId: 'invalid_instance',
+          payload: {pageSize: 10, scopeId: '1'},
+        });
       });
 
       expect(
@@ -198,10 +196,12 @@ describe('VariablePanel', () => {
 
       mockFetchVariables().withNetworkError();
 
-      variablesStore.fetchVariables({
-        fetchType: 'initial',
-        instanceId: 'invalid_instance',
-        payload: {pageSize: 10, scopeId: '1'},
+      act(() => {
+        variablesStore.fetchVariables({
+          fetchType: 'initial',
+          instanceId: 'invalid_instance',
+          payload: {pageSize: 10, scopeId: '1'},
+        });
       });
 
       expect(
@@ -321,9 +321,11 @@ describe('VariablePanel', () => {
       within(screen.getByTestId('foo')).getByTestId('edit-variable-spinner')
     ).toBeInTheDocument();
 
-    flowNodeSelectionStore.setSelection({
-      flowNodeId: 'TEST_FLOW_NODE',
-      flowNodeInstanceId: '2',
+    act(() => {
+      flowNodeSelectionStore.setSelection({
+        flowNodeId: 'TEST_FLOW_NODE',
+        flowNodeInstanceId: '2',
+      });
     });
 
     expect(await screen.findByTestId('variables-spinner')).toBeInTheDocument();
@@ -376,8 +378,10 @@ describe('VariablePanel', () => {
     ).toBeInTheDocument();
 
     await user.type(screen.getByTestId('add-variable-name'), '2');
-    await waitForElementToBeRemoved(() =>
-      screen.getByText('Name should be unique')
+    await waitFor(() =>
+      expect(
+        screen.queryByText('Name should be unique')
+      ).not.toBeInTheDocument()
     );
 
     await user.type(screen.getByTestId('add-variable-name'), '{backspace}');
@@ -553,10 +557,12 @@ describe('VariablePanel', () => {
 
     mockFetchVariables().withSuccess([createVariable()]);
 
-    variablesStore.fetchVariables({
-      fetchType: 'initial',
-      instanceId: '1',
-      payload: {pageSize: 10, scopeId: '1'},
+    act(() => {
+      variablesStore.fetchVariables({
+        fetchType: 'initial',
+        instanceId: '1',
+        payload: {pageSize: 10, scopeId: '1'},
+      });
     });
 
     expect(await screen.findByTestId('variables-spinner')).toBeInTheDocument();
@@ -577,9 +583,11 @@ describe('VariablePanel', () => {
 
     mockFetchVariables().withSuccess([createVariable({name: 'test2'})]);
 
-    flowNodeSelectionStore.setSelection({
-      flowNodeId: 'Activity_0qtp1k6',
-      flowNodeInstanceId: '2',
+    act(() => {
+      flowNodeSelectionStore.setSelection({
+        flowNodeId: 'Activity_0qtp1k6',
+        flowNodeInstanceId: '2',
+      });
     });
 
     expect(await screen.findByText('test2')).toBeInTheDocument();
@@ -591,21 +599,23 @@ describe('VariablePanel', () => {
 
     mockFetchFlowNodeMetadata().withSuccess(singleInstanceMetadata);
 
-    flowNodeSelectionStore.setSelection({
-      flowNodeId: 'Event_0bonl61',
+    act(() => {
+      flowNodeSelectionStore.setSelection({
+        flowNodeId: 'Event_0bonl61',
+      });
+    });
+
+    expect(screen.getByText('No Input Mappings defined')).toBeInTheDocument();
+
+    mockFetchVariables().withSuccess([createVariable({name: 'test2'})]);
+
+    act(() => {
+      flowNodeSelectionStore.clearSelection();
     });
 
     expect(
-      await screen.findByText('No Input Mappings defined')
-    ).toBeInTheDocument();
-
-    mockFetchVariables().withSuccess([createVariable({name: 'test2'})]);
-    flowNodeSelectionStore.clearSelection();
-
-    await waitForElementToBeRemoved(() =>
-      screen.getByText('No Input Mappings defined')
-    );
-
+      screen.queryByText('No Input Mappings defined')
+    ).not.toBeInTheDocument();
     expect(
       screen.getByRole('heading', {name: 'Variables'})
     ).toBeInTheDocument();
@@ -622,8 +632,10 @@ describe('VariablePanel', () => {
     mockFetchFlowNodeMetadata().withSuccess(singleInstanceMetadata);
     mockFetchVariables().withSuccess([]);
 
-    flowNodeSelectionStore.setSelection({
-      flowNodeId: 'StartEvent_1',
+    act(() => {
+      flowNodeSelectionStore.setSelection({
+        flowNodeId: 'StartEvent_1',
+      });
     });
 
     expect(
@@ -650,9 +662,11 @@ describe('VariablePanel', () => {
 
     mockFetchVariables().withSuccess([createVariable({name: 'test2'})]);
 
-    flowNodeSelectionStore.setSelection({
-      flowNodeInstanceId: 'another_flow_node',
-      flowNodeId: 'TEST_FLOW_NODE',
+    act(() => {
+      flowNodeSelectionStore.setSelection({
+        flowNodeInstanceId: 'another_flow_node',
+        flowNodeId: 'TEST_FLOW_NODE',
+      });
     });
 
     expect(await screen.findByTestId('variables-spinner')).toBeInTheDocument();
@@ -673,11 +687,15 @@ describe('VariablePanel', () => {
 
     expect(screen.getByText('testVariableName')).toBeInTheDocument();
 
-    flowNodeSelectionStore.setSelection({
-      flowNodeId: 'non-existing',
+    mockFetchVariables().withSuccess([]);
+
+    act(() => {
+      flowNodeSelectionStore.setSelection({
+        flowNodeId: 'non-existing',
+      });
     });
 
-    await waitForElementToBeRemoved(() => screen.getByText('testVariableName'));
+    expect(screen.queryByText('testVariableName')).not.toBeInTheDocument();
 
     await user.dblClick(screen.getByRole('button', {name: 'Input Mappings'}));
     expect(screen.getByText('No Input Mappings defined')).toBeInTheDocument();
@@ -690,41 +708,48 @@ describe('VariablePanel', () => {
     const {user} = render(<VariablePanel />, {wrapper: Wrapper});
     expect(await screen.findByText('testVariableName')).toBeInTheDocument();
 
-    modificationsStore.enableModificationMode();
+    act(() => {
+      modificationsStore.enableModificationMode();
+    });
+
     expect(
       screen.getByRole('button', {name: /add variable/i})
     ).toBeInTheDocument();
     expect(screen.getByText('testVariableName')).toBeInTheDocument();
 
-    flowNodeSelectionStore.selectFlowNode({
-      flowNodeId: 'flowNode-without-running-tokens',
+    act(() => {
+      flowNodeSelectionStore.selectFlowNode({
+        flowNodeId: 'flowNode-without-running-tokens',
+      });
     });
 
     // initial state
-    await waitForElementToBeRemoved(() =>
-      screen.getByRole('button', {name: /add variable/i})
-    );
+    expect(
+      screen.queryByRole('button', {name: /add variable/i})
+    ).not.toBeInTheDocument();
     expect(screen.queryByText('testVariableName')).not.toBeInTheDocument();
     expect(
       screen.queryByText('The Flow Node has no Variables')
     ).not.toBeInTheDocument();
 
     // one 'add token' modification is created
-    modificationsStore.addModification({
-      type: 'token',
-      payload: {
-        operation: 'ADD_TOKEN',
-        flowNode: {
-          id: 'flowNode-without-running-tokens',
-          name: 'Flow Node without running tokens',
+    act(() => {
+      modificationsStore.addModification({
+        type: 'token',
+        payload: {
+          operation: 'ADD_TOKEN',
+          flowNode: {
+            id: 'flowNode-without-running-tokens',
+            name: 'Flow Node without running tokens',
+          },
+          affectedTokenCount: 1,
+          visibleAffectedTokenCount: 1,
+          scopeId: 'some-new-scope-id',
+          parentScopeIds: {
+            'another-flownode-without-any-tokens': 'some-new-parent-scope-id',
+          },
         },
-        affectedTokenCount: 1,
-        visibleAffectedTokenCount: 1,
-        scopeId: 'some-new-scope-id',
-        parentScopeIds: {
-          'another-flownode-without-any-tokens': 'some-new-parent-scope-id',
-        },
-      },
+      });
     });
 
     expect(
@@ -746,20 +771,21 @@ describe('VariablePanel', () => {
     expect(screen.queryByTestId('variables-spinner')).not.toBeInTheDocument();
 
     // second 'add token' modification is created
-
-    modificationsStore.addModification({
-      type: 'token',
-      payload: {
-        operation: 'ADD_TOKEN',
-        flowNode: {
-          id: 'flowNode-without-running-tokens',
-          name: 'Flow Node without running tokens',
+    act(() => {
+      modificationsStore.addModification({
+        type: 'token',
+        payload: {
+          operation: 'ADD_TOKEN',
+          flowNode: {
+            id: 'flowNode-without-running-tokens',
+            name: 'Flow Node without running tokens',
+          },
+          affectedTokenCount: 1,
+          visibleAffectedTokenCount: 1,
+          scopeId: 'some-new-scope-id-2',
+          parentScopeIds: {},
         },
-        affectedTokenCount: 1,
-        visibleAffectedTokenCount: 1,
-        scopeId: 'some-new-scope-id-2',
-        parentScopeIds: {},
-      },
+      });
     });
 
     expect(
@@ -773,10 +799,12 @@ describe('VariablePanel', () => {
     ).not.toBeInTheDocument();
 
     // select only one of the scopes
-    flowNodeSelectionStore.selectFlowNode({
-      flowNodeId: 'flowNode-without-running-tokens',
-      flowNodeInstanceId: 'some-new-scope-id-1',
-      isPlaceholder: true,
+    act(() => {
+      flowNodeSelectionStore.selectFlowNode({
+        flowNodeId: 'flowNode-without-running-tokens',
+        flowNodeInstanceId: 'some-new-scope-id-1',
+        isPlaceholder: true,
+      });
     });
 
     expect(
@@ -788,10 +816,12 @@ describe('VariablePanel', () => {
     ).toBeInTheDocument();
 
     // select new parent scope
-    flowNodeSelectionStore.selectFlowNode({
-      flowNodeId: 'another-flownode-without-any-tokens',
-      flowNodeInstanceId: 'some-new-parent-scope-id',
-      isPlaceholder: true,
+    act(() => {
+      flowNodeSelectionStore.selectFlowNode({
+        flowNodeId: 'another-flownode-without-any-tokens',
+        flowNodeInstanceId: 'some-new-parent-scope-id',
+        isPlaceholder: true,
+      });
     });
 
     expect(
@@ -825,8 +855,10 @@ describe('VariablePanel', () => {
 
     mockFetchVariables().withSuccess([]);
 
-    flowNodeSelectionStore.selectFlowNode({
-      flowNodeId: 'TEST_FLOW_NODE',
+    act(() => {
+      flowNodeSelectionStore.selectFlowNode({
+        flowNodeId: 'TEST_FLOW_NODE',
+      });
     });
 
     await waitFor(() =>
@@ -849,19 +881,21 @@ describe('VariablePanel', () => {
     ).not.toBeInTheDocument();
 
     // one 'add token' modification is created
-    modificationsStore.addModification({
-      type: 'token',
-      payload: {
-        operation: 'ADD_TOKEN',
-        flowNode: {
-          id: 'TEST_FLOW_NODE',
-          name: 'Flow Node with finished tokens',
+    act(() => {
+      modificationsStore.addModification({
+        type: 'token',
+        payload: {
+          operation: 'ADD_TOKEN',
+          flowNode: {
+            id: 'TEST_FLOW_NODE',
+            name: 'Flow Node with finished tokens',
+          },
+          affectedTokenCount: 1,
+          visibleAffectedTokenCount: 1,
+          scopeId: 'some-new-scope-id',
+          parentScopeIds: {},
         },
-        affectedTokenCount: 1,
-        visibleAffectedTokenCount: 1,
-        scopeId: 'some-new-scope-id',
-        parentScopeIds: {},
-      },
+      });
     });
 
     expect(
@@ -887,10 +921,12 @@ describe('VariablePanel', () => {
     expect(screen.queryByTestId('variables-spinner')).not.toBeInTheDocument();
 
     // select only one of the scopes
-    flowNodeSelectionStore.selectFlowNode({
-      flowNodeId: 'TEST_FLOW_NODE',
-      flowNodeInstanceId: 'some-new-scope-id',
-      isPlaceholder: true,
+    act(() => {
+      flowNodeSelectionStore.selectFlowNode({
+        flowNodeId: 'TEST_FLOW_NODE',
+        flowNodeInstanceId: 'some-new-scope-id',
+        isPlaceholder: true,
+      });
     });
 
     expect(
@@ -925,8 +961,10 @@ describe('VariablePanel', () => {
 
     mockFetchVariables().withSuccess([]);
 
-    flowNodeSelectionStore.selectFlowNode({
-      flowNodeId: 'Activity_0qtp1k6',
+    act(() => {
+      flowNodeSelectionStore.selectFlowNode({
+        flowNodeId: 'Activity_0qtp1k6',
+      });
     });
 
     await waitFor(() =>
@@ -949,29 +987,33 @@ describe('VariablePanel', () => {
       screen.getByRole('button', {name: /add variable/i})
     ).toBeInTheDocument();
 
-    modificationsStore.cancelAllTokens('Activity_0qtp1k6');
+    act(() => {
+      modificationsStore.cancelAllTokens('Activity_0qtp1k6');
+    });
 
-    await waitForElementToBeRemoved(() =>
-      screen.getByRole('button', {name: /add variable/i})
-    );
+    expect(
+      screen.queryByRole('button', {name: /add variable/i})
+    ).not.toBeInTheDocument();
     expect(
       screen.getByText('The Flow Node has no Variables')
     ).toBeInTheDocument();
 
     // add a new token
-    modificationsStore.addModification({
-      type: 'token',
-      payload: {
-        operation: 'ADD_TOKEN',
-        flowNode: {
-          id: 'Activity_0qtp1k6',
-          name: 'Flow Node with running tokens',
+    act(() => {
+      modificationsStore.addModification({
+        type: 'token',
+        payload: {
+          operation: 'ADD_TOKEN',
+          flowNode: {
+            id: 'Activity_0qtp1k6',
+            name: 'Flow Node with running tokens',
+          },
+          affectedTokenCount: 1,
+          visibleAffectedTokenCount: 1,
+          scopeId: 'some-new-scope-id',
+          parentScopeIds: {},
         },
-        affectedTokenCount: 1,
-        visibleAffectedTokenCount: 1,
-        scopeId: 'some-new-scope-id',
-        parentScopeIds: {},
-      },
+      });
     });
 
     expect(
@@ -985,14 +1027,16 @@ describe('VariablePanel', () => {
     ).not.toBeInTheDocument();
 
     // remove cancel modification
-    modificationsStore.removeFlowNodeModification({
-      operation: 'CANCEL_TOKEN',
-      flowNode: {
-        id: 'Activity_0qtp1k6',
-        name: 'Flow Node with running tokens',
-      },
-      affectedTokenCount: 1,
-      visibleAffectedTokenCount: 1,
+    act(() => {
+      modificationsStore.removeFlowNodeModification({
+        operation: 'CANCEL_TOKEN',
+        flowNode: {
+          id: 'Activity_0qtp1k6',
+          name: 'Flow Node with running tokens',
+        },
+        affectedTokenCount: 1,
+        visibleAffectedTokenCount: 1,
+      });
     });
 
     expect(
@@ -1017,9 +1061,11 @@ describe('VariablePanel', () => {
     });
 
     // select existing scope
-    flowNodeSelectionStore.selectFlowNode({
-      flowNodeId: 'Activity_0qtp1k6',
-      flowNodeInstanceId: '2251799813695856',
+    act(() => {
+      flowNodeSelectionStore.selectFlowNode({
+        flowNodeId: 'Activity_0qtp1k6',
+        flowNodeInstanceId: '2251799813695856',
+      });
     });
 
     await waitFor(() =>
@@ -1049,10 +1095,12 @@ describe('VariablePanel', () => {
     ).toBeInTheDocument();
 
     // select new scope
-    flowNodeSelectionStore.selectFlowNode({
-      flowNodeId: 'Activity_0qtp1k6',
-      flowNodeInstanceId: 'some-new-scope-id',
-      isPlaceholder: true,
+    act(() => {
+      flowNodeSelectionStore.selectFlowNode({
+        flowNodeId: 'Activity_0qtp1k6',
+        flowNodeInstanceId: 'some-new-scope-id',
+        isPlaceholder: true,
+      });
     });
 
     expect(
@@ -1104,8 +1152,10 @@ describe('VariablePanel', () => {
       },
     });
 
-    flowNodeSelectionStore.selectFlowNode({
-      flowNodeId: 'TEST_FLOW_NODE',
+    act(() => {
+      flowNodeSelectionStore.selectFlowNode({
+        flowNodeId: 'TEST_FLOW_NODE',
+      });
     });
 
     expect(await screen.findByText('some-other-variable')).toBeInTheDocument();
@@ -1152,8 +1202,10 @@ describe('VariablePanel', () => {
       },
     });
 
-    flowNodeSelectionStore.selectFlowNode({
-      flowNodeId: 'Activity_0qtp1k6',
+    act(() => {
+      flowNodeSelectionStore.selectFlowNode({
+        flowNodeId: 'Activity_0qtp1k6',
+      });
     });
 
     // initial state
@@ -1163,11 +1215,13 @@ describe('VariablePanel', () => {
     ).toBeInTheDocument();
     expect(screen.getByTestId('edit-variable-value')).toBeInTheDocument();
 
-    modificationsStore.cancelAllTokens('Activity_0qtp1k6');
+    act(() => {
+      modificationsStore.cancelAllTokens('Activity_0qtp1k6');
+    });
 
-    await waitForElementToBeRemoved(() =>
-      screen.getByRole('button', {name: /add variable/i})
-    );
+    expect(
+      screen.queryByRole('button', {name: /add variable/i})
+    ).not.toBeInTheDocument();
     expect(screen.getByText('some-other-variable')).toBeInTheDocument();
 
     expect(screen.queryByTestId('edit-variable-value')).not.toBeInTheDocument();
@@ -1197,11 +1251,11 @@ describe('VariablePanel', () => {
     expect(screen.getByText('testVariableName')).toBeInTheDocument();
     expect(screen.getByTestId('edit-variable-value')).toBeInTheDocument();
 
-    modificationsStore.cancelAllTokens('Activity_0qtp1k6');
+    act(() => {
+      modificationsStore.cancelAllTokens('Activity_0qtp1k6');
+    });
 
-    await waitForElementToBeRemoved(() =>
-      screen.getByTestId('edit-variable-value')
-    );
+    expect(screen.queryByTestId('edit-variable-value')).not.toBeInTheDocument();
   });
 
   it('should display readonly state for existing node if cancel modification is applied on the flow node and one new token is added', async () => {
@@ -1227,9 +1281,11 @@ describe('VariablePanel', () => {
 
     mockFetchVariables().withSuccess([]);
 
-    flowNodeSelectionStore.selectFlowNode({
-      flowNodeId: 'Activity_0qtp1k6',
-      flowNodeInstanceId: '2251799813695856',
+    act(() => {
+      flowNodeSelectionStore.selectFlowNode({
+        flowNodeId: 'Activity_0qtp1k6',
+        flowNodeInstanceId: '2251799813695856',
+      });
     });
 
     await waitFor(() =>
@@ -1252,30 +1308,34 @@ describe('VariablePanel', () => {
       screen.getByRole('button', {name: /add variable/i})
     ).toBeInTheDocument();
 
-    modificationsStore.cancelAllTokens('Activity_0qtp1k6');
+    act(() => {
+      modificationsStore.cancelAllTokens('Activity_0qtp1k6');
+    });
 
-    await waitForElementToBeRemoved(() =>
-      screen.getByRole('button', {name: /add variable/i})
-    );
+    expect(
+      screen.queryByRole('button', {name: /add variable/i})
+    ).not.toBeInTheDocument();
 
     expect(
       screen.getByText('The Flow Node has no Variables')
     ).toBeInTheDocument();
 
     // add a new token
-    modificationsStore.addModification({
-      type: 'token',
-      payload: {
-        operation: 'ADD_TOKEN',
-        flowNode: {
-          id: 'Activity_0qtp1k6',
-          name: 'Flow Node with running tokens',
+    act(() => {
+      modificationsStore.addModification({
+        type: 'token',
+        payload: {
+          operation: 'ADD_TOKEN',
+          flowNode: {
+            id: 'Activity_0qtp1k6',
+            name: 'Flow Node with running tokens',
+          },
+          affectedTokenCount: 1,
+          visibleAffectedTokenCount: 1,
+          scopeId: 'some-new-scope-id',
+          parentScopeIds: {},
         },
-        affectedTokenCount: 1,
-        visibleAffectedTokenCount: 1,
-        scopeId: 'some-new-scope-id',
-        parentScopeIds: {},
-      },
+      });
     });
 
     expect(
@@ -1309,9 +1369,11 @@ describe('VariablePanel', () => {
 
     mockFetchVariables().withSuccess([]);
 
-    flowNodeSelectionStore.selectFlowNode({
-      flowNodeId: 'Activity_0qtp1k6',
-      flowNodeInstanceId: '2251799813695856',
+    act(() => {
+      flowNodeSelectionStore.selectFlowNode({
+        flowNodeId: 'Activity_0qtp1k6',
+        flowNodeInstanceId: '2251799813695856',
+      });
     });
 
     await waitFor(() =>
@@ -1336,19 +1398,21 @@ describe('VariablePanel', () => {
     ).not.toBeInTheDocument();
 
     // add one new token
-    modificationsStore.addModification({
-      type: 'token',
-      payload: {
-        operation: 'ADD_TOKEN',
-        flowNode: {
-          id: 'Activity_0qtp1k6',
-          name: 'Flow Node with running tokens',
+    act(() => {
+      modificationsStore.addModification({
+        type: 'token',
+        payload: {
+          operation: 'ADD_TOKEN',
+          flowNode: {
+            id: 'Activity_0qtp1k6',
+            name: 'Flow Node with running tokens',
+          },
+          affectedTokenCount: 1,
+          visibleAffectedTokenCount: 1,
+          scopeId: 'new-scope',
+          parentScopeIds: {},
         },
-        affectedTokenCount: 1,
-        visibleAffectedTokenCount: 1,
-        scopeId: 'new-scope',
-        parentScopeIds: {},
-      },
+      });
     });
 
     expect(

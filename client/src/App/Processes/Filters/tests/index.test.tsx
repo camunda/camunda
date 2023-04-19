@@ -29,16 +29,6 @@ import {
 jest.unmock('modules/utils/date/formatDate');
 
 describe('Filters', () => {
-  beforeAll(() => {
-    //@ts-ignore
-    IS_REACT_ACT_ENVIRONMENT = false;
-  });
-
-  afterAll(() => {
-    //@ts-ignore
-    IS_REACT_ACT_ENVIRONMENT = true;
-  });
-
   beforeEach(async () => {
     mockFetchGroupedProcesses().withSuccess(groupedProcessesMock);
     mockFetchProcessInstancesStatistics().withSuccess(mockProcessStatistics);
@@ -51,9 +41,6 @@ describe('Filters', () => {
   });
 
   afterEach(() => {
-    processesStore.reset();
-    processDiagramStore.reset();
-
     jest.clearAllTimers();
     jest.useRealTimers();
   });

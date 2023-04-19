@@ -14,20 +14,12 @@ import {renderPopover} from './mocks';
 import {mockFetchProcessInstanceDetailStatistics} from 'modules/mocks/api/processInstances/fetchProcessInstanceDetailStatistics';
 import {mockFetchProcessXML} from 'modules/mocks/api/processes/fetchProcessXML';
 import {IS_ADD_TOKEN_WITH_ANCESTOR_KEY_SUPPORTED} from 'modules/feature-flags';
+import {act} from 'react-dom/test-utils';
 
 describe('Modification Dropdown - Multi Scopes', () => {
-  beforeAll(() => {
-    //@ts-ignore
-    IS_REACT_ACT_ENVIRONMENT = false;
-  });
-
-  afterAll(() => {
-    //@ts-ignore
-    IS_REACT_ACT_ENVIRONMENT = true;
-  });
-
   beforeEach(() => {
     mockFetchProcessXML().withSuccess(open('multipleInstanceSubProcess.bpmn'));
+    modificationsStore.enableModificationMode();
   });
 
   it('should support add modification for task with multiple scopes', async () => {
@@ -62,10 +54,11 @@ describe('Modification Dropdown - Multi Scopes', () => {
         processInstanceDetailsDiagramStore.state.diagramModel
       ).not.toBeNull()
     );
-    modificationsStore.enableModificationMode();
 
-    flowNodeSelectionStore.selectFlowNode({
-      flowNodeId: 'TaskB',
+    act(() => {
+      flowNodeSelectionStore.selectFlowNode({
+        flowNodeId: 'TaskB',
+      });
     });
 
     expect(
@@ -110,10 +103,11 @@ describe('Modification Dropdown - Multi Scopes', () => {
           processInstanceDetailsDiagramStore.state.diagramModel
         ).not.toBeNull()
       );
-      modificationsStore.enableModificationMode();
 
-      flowNodeSelectionStore.selectFlowNode({
-        flowNodeId: 'TaskB',
+      act(() => {
+        flowNodeSelectionStore.selectFlowNode({
+          flowNodeId: 'TaskB',
+        });
       });
 
       expect(
@@ -159,10 +153,11 @@ describe('Modification Dropdown - Multi Scopes', () => {
           processInstanceDetailsDiagramStore.state.diagramModel
         ).not.toBeNull()
       );
-      modificationsStore.enableModificationMode();
 
-      flowNodeSelectionStore.selectFlowNode({
-        flowNodeId: 'TaskB',
+      act(() => {
+        flowNodeSelectionStore.selectFlowNode({
+          flowNodeId: 'TaskB',
+        });
       });
 
       expect(
@@ -208,12 +203,13 @@ describe('Modification Dropdown - Multi Scopes', () => {
           processInstanceDetailsDiagramStore.state.diagramModel
         ).not.toBeNull()
       );
-      modificationsStore.enableModificationMode();
 
       modificationsStore.cancelAllTokens('TaskB');
 
-      flowNodeSelectionStore.selectFlowNode({
-        flowNodeId: 'TaskB',
+      act(() => {
+        flowNodeSelectionStore.selectFlowNode({
+          flowNodeId: 'TaskB',
+        });
       });
 
       expect(
@@ -262,12 +258,13 @@ describe('Modification Dropdown - Multi Scopes', () => {
           processInstanceDetailsDiagramStore.state.diagramModel
         ).not.toBeNull()
       );
-      modificationsStore.enableModificationMode();
 
       modificationsStore.cancelAllTokens('TaskB');
 
-      flowNodeSelectionStore.selectFlowNode({
-        flowNodeId: 'TaskB',
+      act(() => {
+        flowNodeSelectionStore.selectFlowNode({
+          flowNodeId: 'TaskB',
+        });
       });
 
       expect(

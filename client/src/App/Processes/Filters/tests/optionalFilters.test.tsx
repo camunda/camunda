@@ -23,16 +23,6 @@ import {mockFetchProcessXML} from 'modules/mocks/api/processes/fetchProcessXML';
 jest.unmock('modules/utils/date/formatDate');
 
 describe('Optional Filters', () => {
-  beforeAll(() => {
-    //@ts-ignore
-    IS_REACT_ACT_ENVIRONMENT = false;
-  });
-
-  afterAll(() => {
-    //@ts-ignore
-    IS_REACT_ACT_ENVIRONMENT = true;
-  });
-
   beforeEach(async () => {
     mockFetchGroupedProcesses().withSuccess(groupedProcessesMock);
     mockFetchProcessInstancesStatistics().withSuccess(mockProcessStatistics);
@@ -41,13 +31,9 @@ describe('Optional Filters', () => {
     processesStore.fetchProcesses();
 
     await processDiagramStore.fetchProcessDiagram('bigVarProcess');
-    jest.useFakeTimers();
   });
 
   afterEach(() => {
-    processesStore.reset();
-    processDiagramStore.reset();
-
     jest.clearAllTimers();
     jest.useRealTimers();
   });
@@ -180,9 +166,11 @@ describe('Optional Filters', () => {
 
     await user.click(screen.getByText(/^more filters$/i));
     await user.click(screen.getByText(LABEL));
-    await user.click(screen.getByText(/^more filters$/i));
 
     expect(screen.getByLabelText(/start date range/i)).toBeInTheDocument();
+
+    await user.click(screen.getByText(/^more filters$/i));
+
     expect(
       // eslint-disable-next-line testing-library/prefer-presence-queries
       within(screen.getByTestId('more-filters-dropdown')).queryByText(LABEL)

@@ -6,7 +6,6 @@
  */
 
 import {render, screen, waitFor} from 'modules/testing-library';
-import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
 import {flowNodeInstanceStore} from 'modules/stores/flowNodeInstance';
 import {processInstanceDetailsDiagramStore} from 'modules/stores/processInstanceDetailsDiagram';
@@ -18,6 +17,7 @@ import {
   mockFlowNodeInstance,
   processId,
   processInstanceId,
+  Wrapper,
 } from './mocks';
 import {eventSubProcess} from 'modules/testUtils';
 import {createRef} from 'react';
@@ -26,16 +26,6 @@ import {mockFetchProcessXML} from 'modules/mocks/api/processes/fetchProcessXML';
 import {mockFetchFlowNodeInstances} from 'modules/mocks/api/fetchFlowNodeInstances';
 
 describe('FlowNodeInstancesTree - Event Subprocess', () => {
-  beforeAll(() => {
-    //@ts-ignore
-    IS_REACT_ACT_ENVIRONMENT = false;
-  });
-
-  afterAll(() => {
-    //@ts-ignore
-    IS_REACT_ACT_ENVIRONMENT = true;
-  });
-
   beforeEach(async () => {
     mockFetchProcessInstance().withSuccess(multiInstanceProcessInstance);
     mockFetchProcessXML().withSuccess(eventSubProcess);
@@ -44,12 +34,6 @@ describe('FlowNodeInstancesTree - Event Subprocess', () => {
 
     processInstanceDetailsStore.init({id: processInstanceId});
     flowNodeInstanceStore.init();
-  });
-
-  afterEach(() => {
-    processInstanceDetailsStore.reset();
-    processInstanceDetailsDiagramStore.reset();
-    flowNodeInstanceStore.reset();
   });
 
   it('should be able to unfold and fold event subprocesses', async () => {
@@ -69,7 +53,7 @@ describe('FlowNodeInstancesTree - Event Subprocess', () => {
         scrollableContainerRef={createRef<HTMLElement>()}
       />,
       {
-        wrapper: ThemeProvider,
+        wrapper: Wrapper,
       }
     );
 

@@ -46,9 +46,7 @@ test('Navigate to called and parent process instances', async (t) => {
     .expect(withinInstanceHeader.getByText('Call Activity Process').exists)
     .ok()
     .click(
-      withinInstanceHeader.getByRole('link', {
-        name: /view all called instances/i,
-      })
+      screen.queryByRole('link', {description: /view all called instances/i})
     );
 
   const withinInstancesList = within(screen.queryByTestId('data-list'));
@@ -68,7 +66,7 @@ test('Navigate to called and parent process instances', async (t) => {
   // Navigate to call activity instance
   await t.click(
     withinInstancesList.getByRole('link', {
-      name: /view parent instance/i,
+      description: /view parent instance/i,
     })
   );
 
@@ -112,7 +110,9 @@ test('Navigate to called and parent process instances', async (t) => {
     .expect(withinPopover.queryByText(/Called Process Instance/).exists)
     .ok()
     .click(
-      withinPopover.getByRole('link', {name: /view called process instance/i})
+      withinPopover.getByRole('link', {
+        description: /view called process instance/i,
+      })
     );
 
   // Expect correct header
@@ -142,7 +142,7 @@ test('Navigate to called and parent process instances', async (t) => {
   // Navigate to parent instance
   await t.click(
     withinInstanceHeader.getByRole('link', {
-      name: /view parent instance/i,
+      description: /view parent instance/i,
     })
   );
 

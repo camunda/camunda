@@ -59,7 +59,7 @@
   },
   "devDependencies": {
     "@testing-library/jest-dom": "5.16.5",
-    "@testing-library/react": "13.4.0",
+    "@testing-library/react": "14.0.0",
     "@testing-library/react-hooks": "8.0.1",
     "@testing-library/testcafe": "5.0.0",
     "@testing-library/user-event": "14.4.3",
@@ -115,6 +115,7 @@
     "workerDirectory": "public"
   },
   "resolutions": {
-    "react-scripts/postcss-preset-env/postcss-custom-properties": "^13.0.0"
+    "react-scripts/postcss-preset-env/postcss-custom-properties": "^13.0.0",
+    "@testing-library/dom": "9.0.0"
   }
 }

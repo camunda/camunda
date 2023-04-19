@@ -10,6 +10,7 @@ import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {processInstancesStore} from 'modules/stores/processInstances';
 import {ListFooter} from './index';
 import {processInstancesSelectionStore} from 'modules/stores/processInstancesSelection';
+import {useEffect} from 'react';
 
 const DROPDOWN_REGEX = /^Apply Operation on \d+ Instance[s]?...$/;
 const COPYRIGHT_REGEX = /^© Camunda Services GmbH \d{4}. All rights reserved./;
@@ -53,27 +54,22 @@ const mockInstances: ProcessInstanceEntity[] = [
   },
 ];
 
+const Wrapper = ({children}: {children?: React.ReactNode}) => {
+  useEffect(() => {
+    return processInstancesSelectionStore.reset;
+  }, []);
+
+  return <ThemeProvider>{children}</ThemeProvider>;
+};
+
 describe('ListFooter', () => {
-  beforeAll(() => {
-    //@ts-ignore
-    IS_REACT_ACT_ENVIRONMENT = false;
-  });
-
-  afterAll(() => {
-    //@ts-ignore
-    IS_REACT_ACT_ENVIRONMENT = true;
-  });
-
-  afterEach(() => {
-    processInstancesSelectionStore.reset();
-  });
   it('should show copyright, no dropdown', () => {
     processInstancesStore.setProcessInstances({
       filteredProcessInstancesCount: 11,
       processInstances: mockInstances,
     });
 
-    render(<ListFooter />, {wrapper: ThemeProvider});
+    render(<ListFooter />, {wrapper: Wrapper});
 
     const copyrightText = screen.getByText(COPYRIGHT_REGEX);
     expect(copyrightText).toBeInTheDocument();
@@ -87,9 +83,10 @@ describe('ListFooter', () => {
       filteredProcessInstancesCount: 9,
       processInstances: mockInstances,
     });
-    render(<ListFooter />, {wrapper: ThemeProvider});
     processInstancesSelectionStore.selectProcessInstance('1');
     processInstancesSelectionStore.selectProcessInstance('2');
+
+    render(<ListFooter />, {wrapper: Wrapper});
     expect(
       await screen.findByText('Apply Operation on 2 Instances...')
     ).toBeInTheDocument();

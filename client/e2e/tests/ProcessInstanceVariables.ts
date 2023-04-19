@@ -148,9 +148,11 @@ test('Add variables', async (t) => {
   );
 
   await t
+    .expect(screen.queryByText('1 results found').exists)
+    .ok()
     .expect(
-      within(screen.queryByTestId('data-list')).queryByRole('cell', {
-        name: `View instance ${instance.processInstanceKey}`,
+      screen.queryByRole('link', {
+        description: `View instance ${instance.processInstanceKey}`,
       }).exists
     )
     .ok();

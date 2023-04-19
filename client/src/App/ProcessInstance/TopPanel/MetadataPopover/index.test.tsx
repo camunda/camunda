@@ -43,6 +43,7 @@ import {LocationLog} from 'modules/utils/LocationLog';
 import {mockFetchProcessInstanceIncidents} from 'modules/mocks/api/processInstances/fetchProcessInstanceIncidents';
 import {mockFetchFlowNodeMetadata} from 'modules/mocks/api/processInstances/fetchFlowNodeMetaData';
 import {mockFetchProcessXML} from 'modules/mocks/api/processes/fetchProcessXML';
+import {useEffect} from 'react';
 
 const MOCK_EXECUTION_DATE = '21 seconds';
 
@@ -52,6 +53,16 @@ jest.mock('date-fns', () => ({
 }));
 
 const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
+  useEffect(() => {
+    return () => {
+      flowNodeMetaDataStore.reset();
+      flowNodeSelectionStore.reset();
+      processInstanceDetailsStore.reset();
+      incidentsStore.reset();
+      processInstanceDetailsDiagramStore.reset();
+    };
+  }, []);
+
   return (
     <ThemeProvider>
       <MemoryRouter initialEntries={['/processes/1']}>
@@ -77,28 +88,10 @@ const renderPopover = () => {
 };
 
 describe('MetadataPopover', () => {
-  beforeAll(() => {
-    //@ts-ignore
-    IS_REACT_ACT_ENVIRONMENT = false;
-  });
-
-  afterAll(() => {
-    //@ts-ignore
-    IS_REACT_ACT_ENVIRONMENT = true;
-  });
-
   beforeEach(() => {
     flowNodeMetaDataStore.init();
     flowNodeSelectionStore.init();
     processInstanceDetailsDiagramStore.init();
-  });
-
-  afterEach(() => {
-    flowNodeMetaDataStore.reset();
-    flowNodeSelectionStore.reset();
-    processInstanceDetailsStore.reset();
-    incidentsStore.reset();
-    processInstanceDetailsDiagramStore.reset();
   });
 
   it('should render meta data for incident flow node', async () => {

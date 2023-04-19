@@ -31,11 +31,20 @@ import {mockFetchProcessInstances} from 'modules/mocks/api/processInstances/fetc
 import {mockFetchGroupedProcesses} from 'modules/mocks/api/processes/fetchGroupedProcesses';
 import {mockFetchProcessInstancesStatistics} from 'modules/mocks/api/processInstances/fetchProcessInstancesStatistics';
 import {mockFetchProcessXML} from 'modules/mocks/api/processes/fetchProcessXML';
+import {useEffect} from 'react';
 
 jest.mock('modules/utils/bpmn');
 
 function getWrapper(initialPath: string = '/processes') {
   const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
+    useEffect(() => {
+      return () => {
+        processInstancesSelectionStore.reset();
+        processInstancesStore.reset();
+        processDiagramStore.reset();
+        processesStore.reset();
+      };
+    }, []);
     return (
       <ThemeProvider>
         <MemoryRouter initialEntries={[initialPath]}>
@@ -57,28 +66,11 @@ function getWrapper(initialPath: string = '/processes') {
 }
 
 describe('Instances', () => {
-  beforeAll(() => {
-    //@ts-ignore
-    IS_REACT_ACT_ENVIRONMENT = false;
-  });
-
-  afterAll(() => {
-    //@ts-ignore
-    IS_REACT_ACT_ENVIRONMENT = true;
-  });
-
   beforeEach(() => {
     mockFetchProcessInstances().withSuccess(mockProcessInstances);
     mockFetchGroupedProcesses().withSuccess(groupedProcessesMock);
     mockFetchProcessInstancesStatistics().withSuccess(mockProcessStatistics);
     mockFetchProcessXML().withSuccess(mockProcessXML);
-  });
-
-  afterEach(() => {
-    processInstancesSelectionStore.reset();
-    processInstancesStore.reset();
-    processDiagramStore.reset();
-    processesStore.reset();
   });
 
   it('should render title and document title', () => {
@@ -140,12 +132,11 @@ describe('Instances', () => {
 
     mockFetchProcessInstances().withSuccess(mockProcessInstances);
     await user.click(screen.getByText(/go to active/i));
+    await waitForElementToBeRemoved(screen.getByTestId('instances-loader'));
 
-    await waitFor(() =>
-      expect(
-        screen.getByLabelText(/select instance 2251799813685594/i)
-      ).not.toBeChecked()
-    );
+    expect(
+      screen.getByLabelText(/select instance 2251799813685594/i)
+    ).not.toBeChecked();
   });
 
   it('should not reset selected instances when table is sorted', async () => {

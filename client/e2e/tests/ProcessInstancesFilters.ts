@@ -71,7 +71,7 @@ test('Apply Filters', async (t) => {
   await t
     .expect(
       await within(screen.queryByTestId('data-list'))
-        .getAllByRole('link', {name: /View parent instance/i})
+        .getAllByRole('link', {description: /View parent instance/i})
         .nth(0).innerText
     )
     .eql(callActivityProcessInstance.processInstanceKey);

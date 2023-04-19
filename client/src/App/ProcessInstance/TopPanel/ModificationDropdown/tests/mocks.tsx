@@ -17,6 +17,7 @@ import {MemoryRouter} from 'react-router-dom';
 import {ModificationDropdown} from '..';
 import {processInstanceDetailsStatisticsStore} from 'modules/stores/processInstanceDetailsStatistics';
 import {modificationsStore} from 'modules/stores/modifications';
+import {flowNodeMetaDataStore} from 'modules/stores/flowNodeMetaData';
 
 const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
   useEffect(() => {
@@ -66,6 +67,7 @@ const resetStores = () => {
   modificationsStore.reset();
   processInstanceDetailsStatisticsStore.reset();
   processInstanceDetailsDiagramStore.reset();
+  flowNodeMetaDataStore.reset();
 };
 
 export {renderPopover};

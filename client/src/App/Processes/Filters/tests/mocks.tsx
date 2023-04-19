@@ -8,6 +8,9 @@
 import {Route, MemoryRouter, Routes} from 'react-router-dom';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {LocationLog} from 'modules/utils/LocationLog';
+import {useEffect} from 'react';
+import {processesStore} from 'modules/stores/processes';
+import {processDiagramStore} from 'modules/stores/processDiagram';
 
 const GROUPED_BIG_VARIABLE_PROCESS = {
   bpmnProcessId: 'bigVarProcess',
@@ -24,6 +27,13 @@ const GROUPED_BIG_VARIABLE_PROCESS = {
 
 function getWrapper(initialPath: string = '/') {
   const MockApp: React.FC<{children?: React.ReactNode}> = ({children}) => {
+    useEffect(() => {
+      return () => {
+        processesStore.reset();
+        processDiagramStore.reset();
+      };
+    }, []);
+
     return (
       <ThemeProvider>
         <MemoryRouter initialEntries={[initialPath]}>

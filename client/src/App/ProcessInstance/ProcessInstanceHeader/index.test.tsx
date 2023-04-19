@@ -43,6 +43,8 @@ import {mockFetchProcessXML} from 'modules/mocks/api/processes/fetchProcessXML';
 import {mockApplyOperation} from 'modules/mocks/api/processInstances/operations';
 import {mockGetOperation} from 'modules/mocks/api/getOperation';
 import * as operationApi from 'modules/api/getOperation';
+import {useEffect} from 'react';
+import {act} from 'react-dom/test-utils';
 
 const getOperationSpy = jest.spyOn(operationApi, 'getOperation');
 
@@ -57,6 +59,16 @@ jest.mock('modules/notifications', () => {
 });
 
 const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
+  useEffect(() => {
+    return () => {
+      operationsStore.reset();
+      variablesStore.reset();
+      processInstanceDetailsStore.reset();
+      processInstanceDetailsDiagramStore.reset();
+      authenticationStore.reset();
+    };
+  }, []);
+
   return (
     <ThemeProvider>
       <MemoryRouter initialEntries={['/processes/1']}>
@@ -71,22 +83,7 @@ const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
 };
 
 describe('InstanceHeader', () => {
-  beforeAll(() => {
-    //@ts-ignore
-    IS_REACT_ACT_ENVIRONMENT = false;
-  });
-
-  afterAll(() => {
-    //@ts-ignore
-    IS_REACT_ACT_ENVIRONMENT = true;
-  });
-
   afterEach(() => {
-    operationsStore.reset();
-    variablesStore.reset();
-    processInstanceDetailsStore.reset();
-    processInstanceDetailsDiagramStore.reset();
-    authenticationStore.reset();
     window.clientConfig = undefined;
   });
 
@@ -292,12 +289,14 @@ describe('InstanceHeader', () => {
 
     expect(screen.queryByTestId('operation-spinner')).not.toBeInTheDocument();
 
-    variablesStore.addVariable({
-      id: mockInstanceWithoutOperations.id,
-      name: mockVariable.name,
-      value: mockVariable.value,
-      onSuccess: () => {},
-      onError: () => {},
+    act(() => {
+      variablesStore.addVariable({
+        id: mockInstanceWithoutOperations.id,
+        name: mockVariable.name,
+        value: mockVariable.value,
+        onSuccess: () => {},
+        onError: () => {},
+      });
     });
 
     expect(await screen.findByTestId('operation-spinner')).toBeInTheDocument();
@@ -310,7 +309,9 @@ describe('InstanceHeader', () => {
 
     mockFetchProcessInstance().withSuccess(mockInstanceWithoutOperations);
 
-    await waitForElementToBeRemoved(screen.queryByTestId('operation-spinner'));
+    await waitForElementToBeRemoved(() =>
+      screen.queryByTestId('operation-spinner')
+    );
 
     expect(getOperationSpy).toHaveBeenCalledWith('batch-operation-id');
 

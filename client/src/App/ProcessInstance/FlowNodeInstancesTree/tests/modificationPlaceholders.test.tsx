@@ -6,19 +6,13 @@
  */
 
 import {createRef} from 'react';
-import {
-  render,
-  screen,
-  waitFor,
-  waitForElementToBeRemoved,
-} from 'modules/testing-library';
+import {render, screen, waitFor} from 'modules/testing-library';
 import {flowNodeInstanceStore} from 'modules/stores/flowNodeInstance';
 import {modificationsStore} from 'modules/stores/modifications';
 import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
 import {processInstanceDetailsDiagramStore} from 'modules/stores/processInstanceDetailsDiagram';
 import {processInstanceDetailsStatisticsStore} from 'modules/stores/processInstanceDetailsStatistics';
 import {multiInstanceProcess} from 'modules/testUtils';
-import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {generateUniqueID} from 'modules/utils/generateUniqueID';
 import {FlowNodeInstancesTree} from '..';
 import {
@@ -30,37 +24,19 @@ import {
   processInstanceId,
   multipleSubprocessesWithNoRunningScopeMock,
   multipleSubprocessesWithOneRunningScopeMock,
+  Wrapper,
 } from './mocks';
 import {mockNestedSubprocess} from 'modules/mocks/mockNestedSubprocess';
-import {instanceHistoryModificationStore} from 'modules/stores/instanceHistoryModification';
 import {mockFetchProcessInstance} from 'modules/mocks/api/processInstances/fetchProcessInstance';
 import {mockFetchProcessInstanceDetailStatistics} from 'modules/mocks/api/processInstances/fetchProcessInstanceDetailStatistics';
 import {mockFetchProcessXML} from 'modules/mocks/api/processes/fetchProcessXML';
 import {mockFetchFlowNodeInstances} from 'modules/mocks/api/fetchFlowNodeInstances';
+import {act} from 'react-dom/test-utils';
 
 describe('FlowNodeInstancesTree - Modification placeholders', () => {
-  beforeAll(() => {
-    //@ts-ignore
-    IS_REACT_ACT_ENVIRONMENT = false;
-  });
-
-  afterAll(() => {
-    //@ts-ignore
-    IS_REACT_ACT_ENVIRONMENT = true;
-  });
-
   beforeEach(async () => {
     mockFetchProcessInstance().withSuccess(multiInstanceProcessInstance);
     mockFetchProcessXML().withSuccess(multiInstanceProcess);
-  });
-
-  afterEach(() => {
-    processInstanceDetailsStore.reset();
-    processInstanceDetailsDiagramStore.reset();
-    flowNodeInstanceStore.reset();
-    modificationsStore.reset();
-    processInstanceDetailsStatisticsStore.reset();
-    instanceHistoryModificationStore.reset();
   });
 
   it('should show and remove two add modification flow nodes', async () => {
@@ -83,7 +59,7 @@ describe('FlowNodeInstancesTree - Modification placeholders', () => {
         scrollableContainerRef={createRef<HTMLElement>()}
       />,
       {
-        wrapper: ThemeProvider,
+        wrapper: Wrapper,
       }
     );
 
@@ -96,28 +72,32 @@ describe('FlowNodeInstancesTree - Modification placeholders', () => {
     ).not.toBeInTheDocument();
     expect(screen.queryByText('stop.svg')).not.toBeInTheDocument();
 
-    modificationsStore.enableModificationMode();
-    modificationsStore.addModification({
-      type: 'token',
-      payload: {
-        operation: 'ADD_TOKEN',
-        scopeId: generateUniqueID(),
-        flowNode: {id: 'peterJoin', name: 'Peter Join'},
-        affectedTokenCount: 1,
-        visibleAffectedTokenCount: 1,
-        parentScopeIds: modificationsStore.generateParentScopeIds('peterJoin'),
-      },
-    });
-    modificationsStore.addModification({
-      type: 'token',
-      payload: {
-        operation: 'ADD_TOKEN',
-        scopeId: generateUniqueID(),
-        flowNode: {id: 'peterJoin', name: 'Peter Join'},
-        affectedTokenCount: 1,
-        visibleAffectedTokenCount: 1,
-        parentScopeIds: modificationsStore.generateParentScopeIds('peterJoin'),
-      },
+    act(() => {
+      modificationsStore.enableModificationMode();
+      modificationsStore.addModification({
+        type: 'token',
+        payload: {
+          operation: 'ADD_TOKEN',
+          scopeId: generateUniqueID(),
+          flowNode: {id: 'peterJoin', name: 'Peter Join'},
+          affectedTokenCount: 1,
+          visibleAffectedTokenCount: 1,
+          parentScopeIds:
+            modificationsStore.generateParentScopeIds('peterJoin'),
+        },
+      });
+      modificationsStore.addModification({
+        type: 'token',
+        payload: {
+          operation: 'ADD_TOKEN',
+          scopeId: generateUniqueID(),
+          flowNode: {id: 'peterJoin', name: 'Peter Join'},
+          affectedTokenCount: 1,
+          visibleAffectedTokenCount: 1,
+          parentScopeIds:
+            modificationsStore.generateParentScopeIds('peterJoin'),
+        },
+      });
     });
 
     await waitFor(() =>
@@ -136,9 +116,11 @@ describe('FlowNodeInstancesTree - Modification placeholders', () => {
       screen.getByText('Filter-Map Sub Process (Multi Instance)')
     ).toBeInTheDocument();
 
-    modificationsStore.reset();
+    act(() => {
+      modificationsStore.reset();
+    });
 
-    await waitForElementToBeRemoved(() => screen.getAllByText('Peter Join'));
+    expect(screen.queryByText('Peter Join')).not.toBeInTheDocument();
     // modification icons
     expect(screen.queryByText('plus.svg')).not.toBeInTheDocument();
     expect(
@@ -179,7 +161,7 @@ describe('FlowNodeInstancesTree - Modification placeholders', () => {
         scrollableContainerRef={createRef<HTMLElement>()}
       />,
       {
-        wrapper: ThemeProvider,
+        wrapper: Wrapper,
       }
     );
 
@@ -190,8 +172,10 @@ describe('FlowNodeInstancesTree - Modification placeholders', () => {
     ).not.toBeInTheDocument();
     expect(screen.queryByText('stop.svg')).not.toBeInTheDocument();
 
-    modificationsStore.enableModificationMode();
-    modificationsStore.cancelAllTokens('peterJoin');
+    act(() => {
+      modificationsStore.enableModificationMode();
+      modificationsStore.cancelAllTokens('peterJoin');
+    });
 
     expect(screen.getByText('Multi-Instance Process')).toBeInTheDocument();
     expect(screen.getAllByText('Peter Join')).toHaveLength(2);
@@ -203,10 +187,12 @@ describe('FlowNodeInstancesTree - Modification placeholders', () => {
       screen.queryByText('warning-message-icon.svg')
     ).not.toBeInTheDocument();
 
-    modificationsStore.reset();
+    act(() => {
+      modificationsStore.reset();
+    });
 
     // modification icons
-    await waitForElementToBeRemoved(() => screen.getByText('stop.svg'));
+    expect(screen.queryByText('stop.svg')).not.toBeInTheDocument();
     expect(screen.queryByText('plus.svg')).not.toBeInTheDocument();
     expect(
       screen.queryByText('warning-message-icon.svg')
@@ -275,7 +261,7 @@ describe('FlowNodeInstancesTree - Modification placeholders', () => {
         scrollableContainerRef={createRef<HTMLElement>()}
       />,
       {
-        wrapper: ThemeProvider,
+        wrapper: Wrapper,
       }
     );
 
@@ -283,28 +269,32 @@ describe('FlowNodeInstancesTree - Modification placeholders', () => {
       screen.getAllByRole('button', {name: 'Unfold parent_sub_process'})
     ).toHaveLength(2);
 
-    modificationsStore.enableModificationMode();
-    modificationsStore.addModification({
-      type: 'token',
-      payload: {
-        operation: 'ADD_TOKEN',
-        scopeId: generateUniqueID(),
-        flowNode: {id: 'user_task', name: 'User Task'},
-        affectedTokenCount: 1,
-        visibleAffectedTokenCount: 1,
-        parentScopeIds: modificationsStore.generateParentScopeIds('user_task'),
-      },
-    });
-    modificationsStore.addModification({
-      type: 'token',
-      payload: {
-        operation: 'ADD_TOKEN',
-        scopeId: generateUniqueID(),
-        flowNode: {id: 'user_task', name: 'User Task'},
-        affectedTokenCount: 1,
-        visibleAffectedTokenCount: 1,
-        parentScopeIds: modificationsStore.generateParentScopeIds('user_task'),
-      },
+    act(() => {
+      modificationsStore.enableModificationMode();
+      modificationsStore.addModification({
+        type: 'token',
+        payload: {
+          operation: 'ADD_TOKEN',
+          scopeId: generateUniqueID(),
+          flowNode: {id: 'user_task', name: 'User Task'},
+          affectedTokenCount: 1,
+          visibleAffectedTokenCount: 1,
+          parentScopeIds:
+            modificationsStore.generateParentScopeIds('user_task'),
+        },
+      });
+      modificationsStore.addModification({
+        type: 'token',
+        payload: {
+          operation: 'ADD_TOKEN',
+          scopeId: generateUniqueID(),
+          flowNode: {id: 'user_task', name: 'User Task'},
+          affectedTokenCount: 1,
+          visibleAffectedTokenCount: 1,
+          parentScopeIds:
+            modificationsStore.generateParentScopeIds('user_task'),
+        },
+      });
     });
 
     await waitFor(() =>
@@ -434,7 +424,7 @@ describe('FlowNodeInstancesTree - Modification placeholders', () => {
         scrollableContainerRef={createRef<HTMLElement>()}
       />,
       {
-        wrapper: ThemeProvider,
+        wrapper: Wrapper,
       }
     );
 
@@ -442,28 +432,32 @@ describe('FlowNodeInstancesTree - Modification placeholders', () => {
       2
     );
 
-    modificationsStore.enableModificationMode();
-    modificationsStore.addModification({
-      type: 'token',
-      payload: {
-        operation: 'ADD_TOKEN',
-        scopeId: generateUniqueID(),
-        flowNode: {id: 'user_task', name: 'User Task'},
-        affectedTokenCount: 1,
-        visibleAffectedTokenCount: 1,
-        parentScopeIds: modificationsStore.generateParentScopeIds('user_task'),
-      },
-    });
-    modificationsStore.addModification({
-      type: 'token',
-      payload: {
-        operation: 'ADD_TOKEN',
-        scopeId: generateUniqueID(),
-        flowNode: {id: 'user_task', name: 'User Task'},
-        affectedTokenCount: 1,
-        visibleAffectedTokenCount: 1,
-        parentScopeIds: modificationsStore.generateParentScopeIds('user_task'),
-      },
+    act(() => {
+      modificationsStore.enableModificationMode();
+      modificationsStore.addModification({
+        type: 'token',
+        payload: {
+          operation: 'ADD_TOKEN',
+          scopeId: generateUniqueID(),
+          flowNode: {id: 'user_task', name: 'User Task'},
+          affectedTokenCount: 1,
+          visibleAffectedTokenCount: 1,
+          parentScopeIds:
+            modificationsStore.generateParentScopeIds('user_task'),
+        },
+      });
+      modificationsStore.addModification({
+        type: 'token',
+        payload: {
+          operation: 'ADD_TOKEN',
+          scopeId: generateUniqueID(),
+          flowNode: {id: 'user_task', name: 'User Task'},
+          affectedTokenCount: 1,
+          visibleAffectedTokenCount: 1,
+          parentScopeIds:
+            modificationsStore.generateParentScopeIds('user_task'),
+        },
+      });
     });
 
     expect(screen.getAllByLabelText('Unfold parent_sub_process')).toHaveLength(

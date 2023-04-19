@@ -24,7 +24,7 @@ function createWrapper(initialPath: string = '/') {
         authenticationStore.reset();
         processesStore.reset();
       };
-    });
+    }, []);
     return (
       <ThemeProvider>
         <MemoryRouter initialEntries={[initialPath]}>

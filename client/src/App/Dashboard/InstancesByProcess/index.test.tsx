@@ -16,9 +16,17 @@ import {mockFetchProcessInstancesByName} from 'modules/mocks/api/incidents/fetch
 import {processInstancesByNameStore} from 'modules/stores/processInstancesByName';
 import {createUser} from 'modules/testUtils';
 import {authenticationStore} from 'modules/stores/authentication';
+import {useEffect} from 'react';
 
 function createWrapper(initialPath: string = '/') {
   const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
+    useEffect(() => {
+      return () => {
+        panelStatesStore.reset();
+        processInstancesByNameStore.reset();
+      };
+    }, []);
+
     return (
       <ThemeProvider>
         <MemoryRouter initialEntries={[initialPath]}>
@@ -36,32 +44,17 @@ function createWrapper(initialPath: string = '/') {
 }
 
 describe('InstancesByProcess', () => {
-  beforeAll(() => {
-    //@ts-ignore
-    IS_REACT_ACT_ENVIRONMENT = false;
-  });
-
-  afterAll(() => {
-    //@ts-ignore
-    IS_REACT_ACT_ENVIRONMENT = true;
-  });
-
   beforeEach(() => {
     panelStatesStore.toggleFiltersPanel();
   });
 
-  afterEach(() => {
-    panelStatesStore.reset();
-    processInstancesByNameStore.reset();
-  });
-
   it('should display skeleton when loading', async () => {
     mockFetchProcessInstancesByName().withSuccess(mockWithSingleVersion);
+    processInstancesByNameStore.getProcessInstancesByName();
 
     render(<InstancesByProcess />, {
       wrapper: createWrapper(),
     });
-    processInstancesByNameStore.getProcessInstancesByName();
 
     expect(screen.getByTestId('skeleton')).toBeInTheDocument();
 
@@ -74,11 +67,11 @@ describe('InstancesByProcess', () => {
 
   it('should handle server errors', async () => {
     mockFetchProcessInstancesByName().withServerError();
+    processInstancesByNameStore.getProcessInstancesByName();
 
     render(<InstancesByProcess />, {
       wrapper: createWrapper(),
     });
-    processInstancesByNameStore.getProcessInstancesByName();
 
     expect(
       await screen.findByText('Data could not be fetched')
@@ -87,11 +80,11 @@ describe('InstancesByProcess', () => {
 
   it('should handle network errors', async () => {
     mockFetchProcessInstancesByName().withNetworkError();
+    processInstancesByNameStore.getProcessInstancesByName();
 
     render(<InstancesByProcess />, {
       wrapper: createWrapper(),
     });
-    processInstancesByNameStore.getProcessInstancesByName();
 
     expect(
       await screen.findByText('Data could not be fetched')
@@ -118,11 +111,11 @@ describe('InstancesByProcess', () => {
 
   it.skip('should render items with more than one processes versions', async () => {
     mockFetchProcessInstancesByName().withSuccess(mockWithMultipleVersions);
+    processInstancesByNameStore.getProcessInstancesByName();
 
     const {user} = render(<InstancesByProcess />, {
       wrapper: createWrapper(),
     });
-    processInstancesByNameStore.getProcessInstancesByName();
 
     const withinIncident = within(
       await screen.findByTestId('incident-byProcess-0')
@@ -194,11 +187,11 @@ describe('InstancesByProcess', () => {
 
   it('should render items with one process version', async () => {
     mockFetchProcessInstancesByName().withSuccess(mockWithSingleVersion);
+    processInstancesByNameStore.getProcessInstancesByName();
 
     render(<InstancesByProcess />, {
       wrapper: createWrapper(),
     });
-    processInstancesByNameStore.getProcessInstancesByName();
 
     const withinIncident = within(
       await screen.findByTestId('incident-byProcess-0')
@@ -232,11 +225,11 @@ describe('InstancesByProcess', () => {
   it('should expand filters panel on click', async () => {
     jest.useFakeTimers();
     mockFetchProcessInstancesByName().withSuccess(mockWithSingleVersion);
+    processInstancesByNameStore.getProcessInstancesByName();
 
     const {user} = render(<InstancesByProcess />, {
       wrapper: createWrapper(),
     });
-    processInstancesByNameStore.getProcessInstancesByName();
 
     expect(panelStatesStore.state.isFiltersCollapsed).toBe(true);
 
@@ -265,12 +258,12 @@ describe('InstancesByProcess', () => {
     jest.useFakeTimers();
 
     mockFetchProcessInstancesByName().withSuccess(mockWithSingleVersion);
+    processInstancesByNameStore.init();
+    processInstancesByNameStore.getProcessInstancesByName();
 
     render(<InstancesByProcess />, {
       wrapper: createWrapper(),
     });
-    processInstancesByNameStore.init();
-    processInstancesByNameStore.getProcessInstancesByName();
 
     const withinIncident = within(
       await screen.findByTestId('incident-byProcess-0')
@@ -306,11 +299,11 @@ describe('InstancesByProcess', () => {
         },
       })
     );
+    processInstancesByNameStore.getProcessInstancesByName();
 
     render(<InstancesByProcess />, {
       wrapper: createWrapper(),
     });
-    processInstancesByNameStore.getProcessInstancesByName();
 
     expect(
       await screen.findByRole('button', {name: 'Go to Modeler'})
@@ -325,11 +318,11 @@ describe('InstancesByProcess', () => {
     mockFetchProcessInstancesByName().withSuccess([]);
 
     authenticationStore.setUser(createUser());
+    processInstancesByNameStore.getProcessInstancesByName();
 
     render(<InstancesByProcess />, {
       wrapper: createWrapper(),
     });
-    processInstancesByNameStore.getProcessInstancesByName();
 
     expect(
       screen.queryByRole('button', {name: 'Go to Modeler'})

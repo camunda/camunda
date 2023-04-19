@@ -36,7 +36,7 @@ test('Navigation between process and decision', async (t) => {
     )
     .click(
       screen.queryByRole('link', {
-        name: `View instance ${processInstanceKey}`,
+        description: `View instance ${processInstanceKey}`,
       })
     )
     .expect(screen.queryByTestId('diagram').exists)
@@ -48,7 +48,7 @@ test('Navigation between process and decision', async (t) => {
     .ok()
     .click(
       within(screen.getByTestId('popover')).queryByRole('link', {
-        name: /view root cause decision invoice classification/i,
+        description: /view root cause decision invoice classification/i,
       })
     )
     .expect(screen.queryByTestId('decision-panel').exists)
@@ -69,7 +69,7 @@ test('Navigation between process and decision', async (t) => {
     .click(screen.getByRole('button', {name: /close drd panel/i}))
     .click(
       screen.getByRole('link', {
-        name: `View process instance ${processInstanceKey}`,
+        description: `View process instance ${processInstanceKey}`,
       })
     )
     .expect(screen.queryByTestId('instance-header').exists)
@@ -96,7 +96,7 @@ test('Navigation between process and decision', async (t) => {
     )
     .click(
       screen.queryByRole('link', {
-        name: `View decision instance ${calledDecisionInstanceId}`,
+        description: `View decision instance ${calledDecisionInstanceId}`,
       })
     )
     .expect(screen.queryByTestId('decision-panel').exists)

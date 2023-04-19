@@ -5,7 +5,7 @@
  * except in compliance with the proprietary license.
  */
 
-import {createRef, useEffect} from 'react';
+import {createRef} from 'react';
 import {render, screen, waitFor} from 'modules/testing-library';
 import {flowNodeInstanceStore} from 'modules/stores/flowNodeInstance';
 import {modificationsStore} from 'modules/stores/modifications';
@@ -13,36 +13,20 @@ import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails
 import {processInstanceDetailsDiagramStore} from 'modules/stores/processInstanceDetailsDiagram';
 import {processInstanceDetailsStatisticsStore} from 'modules/stores/processInstanceDetailsStatistics';
 import {createInstance} from 'modules/testUtils';
-import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {FlowNodeInstancesTree} from '..';
 import {
   processInstanceId,
   multipleSubprocessesWithTwoRunningScopesMock,
   mockRunningNodeInstance,
+  Wrapper,
 } from './mocks';
 import {mockNestedSubprocess} from 'modules/mocks/mockNestedSubprocess';
-import {instanceHistoryModificationStore} from 'modules/stores/instanceHistoryModification';
 import {mockFetchProcessInstance} from 'modules/mocks/api/processInstances/fetchProcessInstance';
 import {mockFetchProcessInstanceDetailStatistics} from 'modules/mocks/api/processInstances/fetchProcessInstanceDetailStatistics';
 import {mockFetchProcessXML} from 'modules/mocks/api/processes/fetchProcessXML';
 import {mockFetchFlowNodeInstances} from 'modules/mocks/api/fetchFlowNodeInstances';
 import {act} from 'react-dom/test-utils';
 import {generateUniqueID} from 'modules/utils/generateUniqueID';
-
-const Wrapper = ({children}: {children?: React.ReactNode}) => {
-  useEffect(() => {
-    return () => {
-      processInstanceDetailsStore.reset();
-      processInstanceDetailsDiagramStore.reset();
-      flowNodeInstanceStore.reset();
-      modificationsStore.reset();
-      processInstanceDetailsStatisticsStore.reset();
-      instanceHistoryModificationStore.reset();
-    };
-  }, []);
-
-  return <ThemeProvider>{children}</ThemeProvider>;
-};
 
 describe('FlowNodeInstancesTree - modifications with ancestor selection', () => {
   beforeEach(async () => {

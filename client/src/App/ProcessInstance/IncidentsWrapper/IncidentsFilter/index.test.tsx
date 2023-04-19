@@ -12,28 +12,26 @@ import {mockIncidents, mockIncidentsWithManyErrors} from './index.setup';
 import {incidentsStore} from 'modules/stores/incidents';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {mockFetchProcessInstanceIncidents} from 'modules/mocks/api/processInstances/fetchProcessInstanceIncidents';
+import {useEffect} from 'react';
 
 const {reset, fetchIncidents} = incidentsStore;
 
+const Wrapper = ({children}: {children?: React.ReactNode}) => {
+  useEffect(() => {
+    return reset;
+  }, []);
+
+  return <ThemeProvider>{children}</ThemeProvider>;
+};
+
 describe('IncidentsFilter', () => {
-  beforeAll(() => {
-    //@ts-ignore
-    IS_REACT_ACT_ENVIRONMENT = false;
-  });
-
-  afterAll(() => {
-    reset();
-    //@ts-ignore
-    IS_REACT_ACT_ENVIRONMENT = true;
-  });
-
   it('should render pills by incident type', async () => {
     mockFetchProcessInstanceIncidents().withSuccess(mockIncidents);
 
     await fetchIncidents('1');
 
     render(<IncidentsFilter />, {
-      wrapper: ThemeProvider,
+      wrapper: Wrapper,
     });
 
     expect(screen.getByText('Incident type:')).toBeInTheDocument();
@@ -51,7 +49,7 @@ describe('IncidentsFilter', () => {
     await fetchIncidents('1');
 
     render(<IncidentsFilter />, {
-      wrapper: ThemeProvider,
+      wrapper: Wrapper,
     });
     expect(screen.getByText('Flow Node:')).toBeInTheDocument();
     expect(
@@ -70,7 +68,7 @@ describe('IncidentsFilter', () => {
     await fetchIncidents('1');
 
     const {user} = render(<IncidentsFilter />, {
-      wrapper: ThemeProvider,
+      wrapper: Wrapper,
     });
     expect(
       screen.queryByRole('button', {name: 'error type 6 1'})
@@ -89,7 +87,7 @@ describe('IncidentsFilter', () => {
     await fetchIncidents('1');
 
     const {user} = render(<IncidentsFilter />, {
-      wrapper: ThemeProvider,
+      wrapper: Wrapper,
     });
 
     expect(

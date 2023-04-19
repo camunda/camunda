@@ -21,18 +21,22 @@ import {MemoryRouter} from 'react-router-dom';
 import {Filters} from './index';
 import {mockFetchGroupedDecisions} from 'modules/mocks/api/decisions/fetchGroupedDecisions';
 import {pickDateTimeRange} from 'modules/testUtils/dateTimeRange';
+import {useEffect} from 'react';
 
 jest.unmock('modules/utils/date/formatDate');
 
 function reset() {
   jest.clearAllTimers();
   jest.useRealTimers();
-  groupedDecisionsStore.reset();
   localStorage.clear();
 }
 
 function getWrapper(initialPath: string = '/decisions') {
   const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
+    useEffect(() => {
+      return groupedDecisionsStore.reset;
+    }, []);
+
     return (
       <ThemeProvider>
         <MemoryRouter initialEntries={[initialPath]}>
@@ -57,16 +61,6 @@ const MOCK_FILTERS_PARAMS = {
 } as const;
 
 describe('<Filters />', () => {
-  beforeAll(() => {
-    //@ts-ignore
-    IS_REACT_ACT_ENVIRONMENT = false;
-  });
-
-  afterAll(() => {
-    //@ts-ignore
-    IS_REACT_ACT_ENVIRONMENT = true;
-  });
-
   beforeEach(async () => {
     mockFetchGroupedDecisions().withSuccess(groupedDecisions);
 
@@ -208,7 +202,7 @@ describe('<Filters />', () => {
     expect(screen.getByDisplayValue(/2251799813689549/i)).toBeInTheDocument();
   });
 
-  it('initialise filter values from url - evaluation date range', () => {
+  it('initialise filter values from url - evaluation date range', async () => {
     const MOCK_PARAMS = {
       evaluationDateAfter: '2021-02-21 09:00:00',
       evaluationDateBefore: '2021-02-22 10:00:00',
@@ -219,7 +213,9 @@ describe('<Filters />', () => {
     });
 
     expect(
-      screen.getByDisplayValue('2021-02-21 09:00:00 - 2021-02-22 10:00:00')
+      await screen.findByDisplayValue(
+        '2021-02-21 09:00:00 - 2021-02-22 10:00:00'
+      )
     ).toBeInTheDocument();
   });
 

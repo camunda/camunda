@@ -24,11 +24,20 @@ import {mockFetchProcessInstances} from 'modules/mocks/api/processInstances/fetc
 import {mockFetchGroupedProcesses} from 'modules/mocks/api/processes/fetchGroupedProcesses';
 import {mockFetchProcessInstancesStatistics} from 'modules/mocks/api/processInstances/fetchProcessInstancesStatistics';
 import {mockFetchProcessXML} from 'modules/mocks/api/processes/fetchProcessXML';
+import {useEffect} from 'react';
+import {act} from 'react-dom/test-utils';
 
 jest.mock('modules/utils/bpmn');
 
 function getWrapper(initialPath: string = '/') {
   const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
+    useEffect(() => {
+      return () => {
+        processDiagramStore.reset();
+        processesStore.reset();
+      };
+    }, []);
+
     return (
       <MemoryRouter initialEntries={[initialPath]}>
         <ThemeProvider>{children}</ThemeProvider>
@@ -40,16 +49,6 @@ function getWrapper(initialPath: string = '/') {
 }
 
 describe('DiagramPanel', () => {
-  beforeAll(() => {
-    //@ts-ignore
-    IS_REACT_ACT_ENVIRONMENT = false;
-  });
-
-  afterAll(() => {
-    //@ts-ignore
-    IS_REACT_ACT_ENVIRONMENT = true;
-  });
-
   beforeEach(() => {
     mockFetchProcessInstances().withSuccess(mockProcessInstances);
     mockFetchGroupedProcesses().withSuccess(groupedProcessesMock);
@@ -57,11 +56,6 @@ describe('DiagramPanel', () => {
     mockFetchProcessXML().withSuccess('');
 
     processesStore.fetchProcesses();
-  });
-
-  afterEach(() => {
-    processDiagramStore.reset();
-    processesStore.reset();
   });
 
   it('should render header', async () => {
@@ -140,7 +134,9 @@ describe('DiagramPanel', () => {
       wrapper: getWrapper(),
     });
 
-    processDiagramStore.fetchProcessDiagram('1');
+    act(() => {
+      processDiagramStore.fetchProcessDiagram('1');
+    });
 
     expect(
       await screen.findByText('Diagram could not be fetched')
@@ -152,7 +148,9 @@ describe('DiagramPanel', () => {
     mockFetchProcessInstancesStatistics().withSuccess(mockProcessStatistics);
     mockFetchProcessXML().withSuccess('');
 
-    processDiagramStore.fetchProcessDiagram('2');
+    act(() => {
+      processDiagramStore.fetchProcessDiagram('2');
+    });
 
     expect(await screen.findByTestId('diagram-spinner')).toBeInTheDocument();
     await waitForElementToBeRemoved(screen.getByTestId('diagram-spinner'));
@@ -164,7 +162,9 @@ describe('DiagramPanel', () => {
     mockFetchProcessInstancesStatistics().withSuccess(mockProcessStatistics);
     mockFetchProcessXML().withServerError();
 
-    processDiagramStore.fetchProcessDiagram('3');
+    act(() => {
+      processDiagramStore.fetchProcessDiagram('3');
+    });
 
     expect(
       await screen.findByText('Diagram could not be fetched')

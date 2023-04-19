@@ -240,7 +240,7 @@ describe('TopPanel', () => {
       await screen.findByText(/Flow Node Modifications/)
     ).toBeInTheDocument();
     expect(
-      screen.getByTitle(/Add single flow node instance/)
+      await screen.findByTitle(/Add single flow node instance/)
     ).toBeInTheDocument();
     expect(
       screen.getByTitle(/Cancel selected instance in this flow node/)
@@ -347,11 +347,11 @@ describe('TopPanel', () => {
       flowNodeInstanceId: 'some-instance-id',
     });
 
-    expect(
-      await screen.findByText(
+    await waitForElementToBeRemoved(() =>
+      screen.queryByText(
         /Flow node has multiple instances. To select one, use the instance history tree below./i
       )
-    ).toBeInTheDocument();
+    );
   });
 
   (IS_ADD_TOKEN_WITH_ANCESTOR_KEY_SUPPORTED ? it : it.skip)(

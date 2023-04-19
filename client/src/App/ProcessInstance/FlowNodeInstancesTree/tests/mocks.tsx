@@ -8,12 +8,20 @@
 import {
   FlowNodeInstance,
   FlowNodeInstances,
+  flowNodeInstanceStore,
 } from 'modules/stores/flowNodeInstance';
+import {instanceHistoryModificationStore} from 'modules/stores/instanceHistoryModification';
+import {modificationsStore} from 'modules/stores/modifications';
+import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
+import {processInstanceDetailsDiagramStore} from 'modules/stores/processInstanceDetailsDiagram';
 import {
   createEventSubProcessFlowNodeInstances,
   createInstance,
   createMultiInstanceFlowNodeInstances,
 } from 'modules/testUtils';
+import {useEffect} from 'react';
+import {ThemeProvider} from 'modules/theme/ThemeProvider';
+import {processInstanceDetailsStatisticsStore} from 'modules/stores/processInstanceDetailsStatistics';
 
 const multiInstanceProcessInstance: ProcessInstanceEntity = Object.freeze(
   createInstance({
@@ -665,6 +673,21 @@ const multipleSubprocessesWithTwoRunningScopesMock: {
   },
 };
 
+const Wrapper = ({children}: {children?: React.ReactNode}) => {
+  useEffect(() => {
+    return () => {
+      processInstanceDetailsStore.reset();
+      processInstanceDetailsDiagramStore.reset();
+      flowNodeInstanceStore.reset();
+      modificationsStore.reset();
+      processInstanceDetailsStatisticsStore.reset();
+      instanceHistoryModificationStore.reset();
+    };
+  }, []);
+
+  return <ThemeProvider>{children}</ThemeProvider>;
+};
+
 export {
   multiInstanceProcessInstance,
   nestedSubProcessesInstance,
@@ -680,4 +703,5 @@ export {
   multipleSubprocessesWithNoRunningScopeMock,
   multipleSubprocessesWithTwoRunningScopesMock,
   mockRunningNodeInstance,
+  Wrapper,
 };

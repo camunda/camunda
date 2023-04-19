@@ -27,16 +27,6 @@ import {mockFetchProcessXML} from 'modules/mocks/api/processes/fetchProcessXML';
 jest.unmock('modules/utils/date/formatDate');
 
 describe('Validations', () => {
-  beforeAll(() => {
-    //@ts-ignore
-    IS_REACT_ACT_ENVIRONMENT = false;
-  });
-
-  afterAll(() => {
-    //@ts-ignore
-    IS_REACT_ACT_ENVIRONMENT = true;
-  });
-
   beforeEach(async () => {
     mockFetchGroupedProcesses().withSuccess(groupedProcessesMock);
     mockFetchProcessInstancesStatistics().withSuccess(mockProcessStatistics);
@@ -49,9 +39,6 @@ describe('Validations', () => {
   });
 
   afterEach(() => {
-    processesStore.reset();
-    processDiagramStore.reset();
-
     jest.clearAllTimers();
     jest.useRealTimers();
   });

@@ -22,7 +22,7 @@ type Props = {
 const Wrapper = ({children}: Props) => {
   useEffect(() => {
     return modificationsStore.reset;
-  });
+  }, []);
 
   return <ThemeProvider>{children}</ThemeProvider>;
 };

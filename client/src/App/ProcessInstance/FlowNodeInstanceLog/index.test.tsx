@@ -24,16 +24,26 @@ import {
 import {mockFetchProcessInstance} from 'modules/mocks/api/processInstances/fetchProcessInstance';
 import {mockFetchProcessXML} from 'modules/mocks/api/processes/fetchProcessXML';
 import {mockFetchFlowNodeInstances} from 'modules/mocks/api/fetchFlowNodeInstances';
+import {useEffect} from 'react';
 
 jest.mock('modules/utils/bpmn');
 
 const processInstancesMock = createMultiInstanceFlowNodeInstances('1');
 
-describe('FlowNodeInstanceLog', () => {
-  beforeAll(async () => {
-    //@ts-ignore
-    IS_REACT_ACT_ENVIRONMENT = false;
+const Wrapper = ({children}: {children?: React.ReactNode}) => {
+  useEffect(() => {
+    return () => {
+      processInstanceDetailsStore.reset();
+      flowNodeInstanceStore.reset();
+      processInstanceDetailsDiagramStore.reset();
+    };
+  }, []);
 
+  return <ThemeProvider>{children}</ThemeProvider>;
+};
+
+describe('FlowNodeInstanceLog', () => {
+  beforeEach(async () => {
     mockFetchProcessInstance().withSuccess(
       createInstance({
         id: '1',
@@ -46,26 +56,13 @@ describe('FlowNodeInstanceLog', () => {
     processInstanceDetailsStore.init({id: '1'});
   });
 
-  afterAll(() => {
-    processInstanceDetailsStore.reset();
-
-    //@ts-ignore
-    IS_REACT_ACT_ENVIRONMENT = true;
-  });
-
-  afterEach(() => {
-    flowNodeInstanceStore.reset();
-    processInstanceDetailsDiagramStore.reset();
-  });
-
   it('should render skeleton when instance tree is not loaded', async () => {
     mockFetchFlowNodeInstances().withSuccess(processInstancesMock.level1);
     mockFetchProcessXML().withSuccess('');
-
-    render(<FlowNodeInstanceLog />, {wrapper: ThemeProvider});
-
     flowNodeInstanceStore.init();
     processInstanceDetailsDiagramStore.fetchProcessXml('1');
+
+    render(<FlowNodeInstanceLog />, {wrapper: Wrapper});
 
     expect(screen.getByTestId('instance-history-skeleton')).toBeInTheDocument();
 
@@ -77,11 +74,10 @@ describe('FlowNodeInstanceLog', () => {
   it('should render skeleton when instance diagram is not loaded', async () => {
     mockFetchFlowNodeInstances().withSuccess(processInstancesMock.level1);
     mockFetchProcessXML().withSuccess('');
-
-    render(<FlowNodeInstanceLog />, {wrapper: ThemeProvider});
-
     flowNodeInstanceStore.init();
     processInstanceDetailsDiagramStore.fetchProcessXml('1');
+
+    render(<FlowNodeInstanceLog />, {wrapper: Wrapper});
 
     expect(
       await screen.findByTestId('instance-history-skeleton')
@@ -95,11 +91,11 @@ describe('FlowNodeInstanceLog', () => {
   it('should display error when instance tree data could not be fetched', async () => {
     mockFetchFlowNodeInstances().withServerError();
     mockFetchProcessXML().withSuccess('');
-
-    render(<FlowNodeInstanceLog />, {wrapper: ThemeProvider});
-
     flowNodeInstanceStore.init();
     processInstanceDetailsDiagramStore.fetchProcessXml('1');
+
+    render(<FlowNodeInstanceLog />, {wrapper: Wrapper});
+
     expect(
       await screen.findByText('Instance History could not be fetched')
     ).toBeInTheDocument();
@@ -108,11 +104,10 @@ describe('FlowNodeInstanceLog', () => {
   it('should display error when instance diagram could not be fetched', async () => {
     mockFetchFlowNodeInstances().withSuccess(processInstancesMock.level1);
     mockFetchProcessXML().withServerError();
-
-    render(<FlowNodeInstanceLog />, {wrapper: ThemeProvider});
-
     flowNodeInstanceStore.init();
     processInstanceDetailsDiagramStore.fetchProcessXml('1');
+
+    render(<FlowNodeInstanceLog />, {wrapper: Wrapper});
 
     expect(
       await screen.findByText('Instance History could not be fetched')
@@ -122,12 +117,11 @@ describe('FlowNodeInstanceLog', () => {
   it('should continue polling after poll failure', async () => {
     mockFetchFlowNodeInstances().withSuccess(processInstancesMock.level1);
     mockFetchProcessXML().withSuccess('');
-
-    render(<FlowNodeInstanceLog />, {wrapper: ThemeProvider});
-
     jest.useFakeTimers();
     flowNodeInstanceStore.init();
     processInstanceDetailsDiagramStore.fetchProcessXml('1');
+
+    render(<FlowNodeInstanceLog />, {wrapper: Wrapper});
 
     expect(await screen.findAllByTestId('INCIDENT-icon')).toHaveLength(1);
     expect(await screen.findAllByTestId('COMPLETED-icon')).toHaveLength(1);
@@ -174,11 +168,10 @@ describe('FlowNodeInstanceLog', () => {
   it('should render flow node instances tree', async () => {
     mockFetchFlowNodeInstances().withSuccess(processInstancesMock.level1);
     mockFetchProcessXML().withSuccess('');
-
-    render(<FlowNodeInstanceLog />, {wrapper: ThemeProvider});
-
     flowNodeInstanceStore.init();
     processInstanceDetailsDiagramStore.fetchProcessXml('1');
+
+    render(<FlowNodeInstanceLog />, {wrapper: Wrapper});
 
     expect((await screen.findAllByText('processName')).length).toBeGreaterThan(
       0

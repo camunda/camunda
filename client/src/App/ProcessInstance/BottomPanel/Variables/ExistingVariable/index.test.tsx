@@ -18,12 +18,22 @@ import {LastModification} from 'App/ProcessInstance/LastModification';
 import {OnLastVariableModificationRemoved} from '../OnLastVariableModificationRemoved';
 import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
 import {createInstance} from 'modules/testUtils';
+import {useEffect} from 'react';
 
 type Props = {
   children?: React.ReactNode;
 };
 
 const Wrapper: React.FC<Props> = ({children}) => {
+  useEffect(() => {
+    return () => {
+      processInstanceDetailsStore.reset();
+      variablesStore.reset();
+      modificationsStore.reset();
+      flowNodeSelectionStore.reset();
+    };
+  }, []);
+
   return (
     <ThemeProvider>
       <MemoryRouter>
@@ -78,16 +88,6 @@ const editValue = async (type: string, user: UserEvent, value: string) => {
 };
 
 describe('Variables', () => {
-  beforeAll(() => {
-    //@ts-ignore
-    IS_REACT_ACT_ENVIRONMENT = false;
-  });
-
-  afterAll(() => {
-    //@ts-ignore
-    IS_REACT_ACT_ENVIRONMENT = true;
-  });
-
   beforeEach(() => {
     processInstanceDetailsStore.setProcessInstance(
       createInstance({id: 'process-instance-id'})
@@ -96,12 +96,6 @@ describe('Variables', () => {
       flowNodeId: 'some-scope',
       flowNodeInstanceId: 'flow-node-instance-id',
     });
-  });
-  afterEach(() => {
-    processInstanceDetailsStore.reset();
-    variablesStore.reset();
-    modificationsStore.reset();
-    flowNodeSelectionStore.reset();
   });
 
   it.each(['textfield', 'jsoneditor'])(

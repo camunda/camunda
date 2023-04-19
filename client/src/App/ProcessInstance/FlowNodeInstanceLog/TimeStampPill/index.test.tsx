@@ -12,44 +12,50 @@ import {processInstanceDetailsDiagramStore} from 'modules/stores/processInstance
 import {flowNodeInstanceStore} from 'modules/stores/flowNodeInstance';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {mockFetchProcessXML} from 'modules/mocks/api/processes/fetchProcessXML';
+import {useEffect} from 'react';
+import {act} from 'react-dom/test-utils';
 
 jest.mock('modules/utils/bpmn');
 
+const Wrapper = ({children}: {children?: React.ReactNode}) => {
+  useEffect(() => {
+    return () => {
+      flowNodeTimeStampStore.reset();
+      processInstanceDetailsDiagramStore.reset();
+      flowNodeInstanceStore.reset();
+    };
+  }, []);
+
+  return <ThemeProvider>{children}</ThemeProvider>;
+};
+
 describe('TimeStampPill', () => {
-  beforeAll(() => {
-    //@ts-ignore
-    IS_REACT_ACT_ENVIRONMENT = false;
-  });
-
-  afterAll(() => {
-    //@ts-ignore
-    IS_REACT_ACT_ENVIRONMENT = true;
-  });
-
   beforeEach(() => {
     mockFetchProcessXML().withSuccess('');
   });
 
-  afterEach(() => {
-    flowNodeTimeStampStore.reset();
-    processInstanceDetailsDiagramStore.reset();
-    flowNodeInstanceStore.reset();
-  });
-
   it('should render "Show" / "Hide" label', async () => {
-    render(<TimeStampPill />, {wrapper: ThemeProvider});
+    render(<TimeStampPill />, {wrapper: Wrapper});
 
     expect(screen.getByText('Show End Date')).toBeInTheDocument();
-    flowNodeTimeStampStore.toggleTimeStampVisibility();
+
+    act(() => {
+      flowNodeTimeStampStore.toggleTimeStampVisibility();
+    });
+
     expect(await screen.findByText('Hide End Date')).toBeInTheDocument();
   });
 
   it('should be disabled if diagram and instance execution history is not loaded', async () => {
-    render(<TimeStampPill />, {wrapper: ThemeProvider});
+    render(<TimeStampPill />, {wrapper: Wrapper});
 
     expect(screen.getByRole('button')).toBeDisabled();
-    await flowNodeInstanceStore.fetchInstanceExecutionHistory('1');
-    await processInstanceDetailsDiagramStore.fetchProcessXml('1');
+
+    act(() => {
+      flowNodeInstanceStore.fetchInstanceExecutionHistory('1');
+      processInstanceDetailsDiagramStore.fetchProcessXml('1');
+    });
+
     await waitFor(() => expect(screen.getByRole('button')).toBeEnabled());
   });
 });

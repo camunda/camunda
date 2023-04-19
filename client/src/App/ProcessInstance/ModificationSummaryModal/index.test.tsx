@@ -23,6 +23,8 @@ import {mockFetchProcessInstanceDetailStatistics} from 'modules/mocks/api/proces
 import {mockFetchProcessXML} from 'modules/mocks/api/processes/fetchProcessXML';
 import {mockModify} from 'modules/mocks/api/processInstances/modify';
 import {open} from 'modules/mocks/diagrams';
+import {useEffect} from 'react';
+import {act} from 'react-dom/test-utils';
 
 const mockDisplayNotification = jest.fn();
 jest.mock('modules/notifications', () => ({
@@ -31,29 +33,26 @@ jest.mock('modules/notifications', () => ({
   }),
 }));
 
+const Wrapper = ({children}: {children?: React.ReactNode}) => {
+  useEffect(() => {
+    return () => {
+      modificationsStore.reset();
+      processInstanceDetailsStore.reset();
+      processInstanceDetailsStatisticsStore.reset();
+    };
+  }, []);
+
+  return <ThemeProvider>{children}</ThemeProvider>;
+};
+
 describe('Modification Summary Modal', () => {
-  beforeAll(() => {
-    //@ts-ignore
-    IS_REACT_ACT_ENVIRONMENT = false;
-  });
-
-  afterAll(() => {
-    //@ts-ignore
-    IS_REACT_ACT_ENVIRONMENT = true;
-  });
-
   beforeEach(() => {
     processInstanceDetailsStore.setProcessInstance(createInstance({id: '1'}));
-  });
-  afterEach(() => {
-    modificationsStore.reset();
-    processInstanceDetailsStore.reset();
-    processInstanceDetailsStatisticsStore.reset();
   });
 
   it('should render information message', async () => {
     render(<ModificationSummaryModal isVisible onClose={() => {}} />, {
-      wrapper: ThemeProvider,
+      wrapper: Wrapper,
     });
 
     expect(
@@ -65,7 +64,7 @@ describe('Modification Summary Modal', () => {
 
   it('should display no planned modification messages', async () => {
     render(<ModificationSummaryModal isVisible onClose={() => {}} />, {
-      wrapper: ThemeProvider,
+      wrapper: Wrapper,
     });
 
     expect(
@@ -78,14 +77,16 @@ describe('Modification Summary Modal', () => {
 
   it('should render variable modifications', async () => {
     render(<ModificationSummaryModal isVisible onClose={() => {}} />, {
-      wrapper: ThemeProvider,
+      wrapper: Wrapper,
     });
 
-    createAddVariableModification({
-      scopeId: 'flow-node-1',
-      flowNodeName: 'flow node 1',
-      name: 'test',
-      value: '123',
+    act(() => {
+      createAddVariableModification({
+        scopeId: 'flow-node-1',
+        flowNodeName: 'flow node 1',
+        name: 'test',
+        value: '123',
+      });
     });
 
     expect(
@@ -126,15 +127,17 @@ describe('Modification Summary Modal', () => {
     const {user} = render(
       <ModificationSummaryModal isVisible onClose={() => {}} />,
       {
-        wrapper: ThemeProvider,
+        wrapper: Wrapper,
       }
     );
 
-    createAddVariableModification({
-      scopeId: 'flow-node-1',
-      flowNodeName: 'flow node 1',
-      name: 'test',
-      value: '123',
+    act(() => {
+      createAddVariableModification({
+        scopeId: 'flow-node-1',
+        flowNodeName: 'flow node 1',
+        name: 'test',
+        value: '123',
+      });
     });
 
     await user.click(
@@ -148,10 +151,6 @@ describe('Modification Summary Modal', () => {
   });
 
   it('should render flow node modifications', async () => {
-    render(<ModificationSummaryModal isVisible onClose={() => {}} />, {
-      wrapper: ThemeProvider,
-    });
-
     modificationsStore.addModification({
       type: 'token',
       payload: {
@@ -163,6 +162,10 @@ describe('Modification Summary Modal', () => {
         scopeIds: ['1'],
         parentScopeIds: {},
       },
+    });
+
+    render(<ModificationSummaryModal isVisible onClose={() => {}} />, {
+      wrapper: Wrapper,
     });
 
     expect(
@@ -206,37 +209,39 @@ describe('Modification Summary Modal', () => {
       })
     ).toBeInTheDocument();
 
-    modificationsStore.removeLastModification();
+    act(() => {
+      modificationsStore.removeLastModification();
+      modificationsStore.cancelToken('flow-node-1', 'some-instance-key-1');
+    });
 
-    modificationsStore.cancelToken('flow-node-1', 'some-instance-key-1');
-
-    await waitForElementToBeRemoved(() =>
-      screen.getByRole('cell', {
+    expect(
+      screen.queryByRole('cell', {
         name: /--/i,
       })
-    );
+    ).not.toBeInTheDocument();
     expect(
       screen.getByRole('cell', {
         name: /some-instance-key-1/i,
       })
     ).toBeInTheDocument();
 
-    modificationsStore.removeLastModification();
-
-    modificationsStore.addMoveModification({
-      sourceFlowNodeId: 'flow-node-1',
-      sourceFlowNodeInstanceKey: 'some-instance-key-2',
-      targetFlowNodeId: 'flow-node-2',
-      affectedTokenCount: 1,
-      visibleAffectedTokenCount: 1,
-      newScopeCount: 1,
+    act(() => {
+      modificationsStore.removeLastModification();
+      modificationsStore.addMoveModification({
+        sourceFlowNodeId: 'flow-node-1',
+        sourceFlowNodeInstanceKey: 'some-instance-key-2',
+        targetFlowNodeId: 'flow-node-2',
+        affectedTokenCount: 1,
+        visibleAffectedTokenCount: 1,
+        newScopeCount: 1,
+      });
     });
 
-    await waitForElementToBeRemoved(() =>
-      screen.getByRole('cell', {
+    expect(
+      screen.queryByRole('cell', {
         name: /some-instance-key-1/i,
       })
-    );
+    ).not.toBeInTheDocument();
     expect(
       screen.getByRole('cell', {
         name: /some-instance-key-2/i,
@@ -245,13 +250,6 @@ describe('Modification Summary Modal', () => {
   });
 
   it('should delete flow node modifications', async () => {
-    const {user} = render(
-      <ModificationSummaryModal isVisible onClose={() => {}} />,
-      {
-        wrapper: ThemeProvider,
-      }
-    );
-
     modificationsStore.addModification({
       type: 'token',
       payload: {
@@ -264,6 +262,13 @@ describe('Modification Summary Modal', () => {
         parentScopeIds: {},
       },
     });
+
+    const {user} = render(
+      <ModificationSummaryModal isVisible onClose={() => {}} />,
+      {
+        wrapper: Wrapper,
+      }
+    );
 
     await waitFor(() =>
       expect(screen.getByRole('button', {name: 'Apply'})).toBeEnabled()
@@ -284,12 +289,14 @@ describe('Modification Summary Modal', () => {
     const {user} = render(
       <ModificationSummaryModal isVisible onClose={() => {}} />,
       {
-        wrapper: ThemeProvider,
+        wrapper: Wrapper,
       }
     );
 
-    modificationsStore.cancelToken('flow-node-1', 'some-instance-key-1');
-    modificationsStore.cancelToken('flow-node-1', 'some-instance-key-2');
+    act(() => {
+      modificationsStore.cancelToken('flow-node-1', 'some-instance-key-1');
+      modificationsStore.cancelToken('flow-node-1', 'some-instance-key-2');
+    });
 
     await waitFor(() =>
       expect(screen.getByRole('button', {name: 'Apply'})).toBeEnabled()
@@ -315,13 +322,6 @@ describe('Modification Summary Modal', () => {
   });
 
   it('should delete move token modification applied on a single flow node instance key', async () => {
-    const {user} = render(
-      <ModificationSummaryModal isVisible onClose={() => {}} />,
-      {
-        wrapper: ThemeProvider,
-      }
-    );
-
     modificationsStore.addMoveModification({
       sourceFlowNodeId: 'flow-node-1',
       sourceFlowNodeInstanceKey: 'some-instance-key-1',
@@ -339,6 +339,13 @@ describe('Modification Summary Modal', () => {
       visibleAffectedTokenCount: 1,
       newScopeCount: 1,
     });
+
+    const {user} = render(
+      <ModificationSummaryModal isVisible onClose={() => {}} />,
+      {
+        wrapper: Wrapper,
+      }
+    );
 
     await waitFor(() =>
       expect(screen.getByRole('button', {name: 'Apply'})).toBeEnabled()
@@ -369,7 +376,7 @@ describe('Modification Summary Modal', () => {
     const {user} = render(
       <ModificationSummaryModal isVisible onClose={mockOnClose} />,
       {
-        wrapper: ThemeProvider,
+        wrapper: Wrapper,
       }
     );
 
@@ -383,13 +390,6 @@ describe('Modification Summary Modal', () => {
   });
 
   it('should display variable content details on modal icon click', async () => {
-    const {user} = render(
-      <ModificationSummaryModal isVisible onClose={() => {}} />,
-      {
-        wrapper: ThemeProvider,
-      }
-    );
-
     createAddVariableModification({
       scopeId: 'flow-node-1',
       flowNodeName: 'flow node 1',
@@ -410,6 +410,13 @@ describe('Modification Summary Modal', () => {
       },
     });
 
+    const {user} = render(
+      <ModificationSummaryModal isVisible onClose={() => {}} />,
+      {
+        wrapper: Wrapper,
+      }
+    );
+
     const [jsonEditorModal, diffEditorModal] = await screen.findAllByRole(
       'button',
       {
@@ -422,7 +429,7 @@ describe('Modification Summary Modal', () => {
     expect(
       screen.getByRole('heading', {name: /variable "test"/i})
     ).toBeInTheDocument();
-    expect(screen.getByDisplayValue('123')).toBeInTheDocument();
+    expect(await screen.findByDisplayValue('123')).toBeInTheDocument();
 
     await user.click(screen.getByRole('button', {name: /close/i}));
     await waitForElementToBeRemoved(() =>
@@ -470,26 +477,28 @@ describe('Modification Summary Modal', () => {
     );
     await processInstanceDetailsStatisticsStore.fetchFlowNodeStatistics(1);
 
-    render(<ModificationSummaryModal isVisible onClose={() => {}} />, {
-      wrapper: ThemeProvider,
-    });
-
-    modificationsStore.addModification({
-      type: 'token',
-      payload: {
-        operation: 'ADD_TOKEN',
-        flowNode: {
-          id: 'multi-instance-subprocess',
-          name: 'multi instance subprocess',
+    act(() => {
+      modificationsStore.addModification({
+        type: 'token',
+        payload: {
+          operation: 'ADD_TOKEN',
+          flowNode: {
+            id: 'multi-instance-subprocess',
+            name: 'multi instance subprocess',
+          },
+          scopeId: 'multi-instance-subprocess-scope',
+          affectedTokenCount: 1,
+          visibleAffectedTokenCount: 1,
+          parentScopeIds: {},
         },
-        scopeId: 'multi-instance-subprocess-scope',
-        affectedTokenCount: 1,
-        visibleAffectedTokenCount: 1,
-        parentScopeIds: {},
-      },
+      });
+
+      modificationsStore.cancelAllTokens('multi-instance-subprocess');
     });
 
-    modificationsStore.cancelAllTokens('multi-instance-subprocess');
+    render(<ModificationSummaryModal isVisible onClose={() => {}} />, {
+      wrapper: Wrapper,
+    });
 
     const [
       addModificationAffectedTokenCount,
@@ -522,7 +531,7 @@ describe('Modification Summary Modal', () => {
     const {user} = render(
       <ModificationSummaryModal isVisible onClose={mockOnClose} />,
       {
-        wrapper: ThemeProvider,
+        wrapper: Wrapper,
       }
     );
 
@@ -558,7 +567,7 @@ describe('Modification Summary Modal', () => {
     const {user} = render(
       <ModificationSummaryModal isVisible onClose={mockOnClose} />,
       {
-        wrapper: ThemeProvider,
+        wrapper: Wrapper,
       }
     );
 
@@ -632,7 +641,7 @@ describe('Modification Summary Modal', () => {
     await processInstanceDetailsStatisticsStore.fetchFlowNodeStatistics('id');
 
     render(<ModificationSummaryModal isVisible onClose={jest.fn()} />, {
-      wrapper: ThemeProvider,
+      wrapper: Wrapper,
     });
 
     expect(
@@ -641,7 +650,9 @@ describe('Modification Summary Modal', () => {
       )
     ).not.toBeInTheDocument();
 
-    modificationsStore.cancelAllTokens('taskA');
+    act(() => {
+      modificationsStore.cancelAllTokens('taskA');
+    });
 
     expect(
       screen.queryByText(
@@ -649,7 +660,9 @@ describe('Modification Summary Modal', () => {
       )
     ).not.toBeInTheDocument();
 
-    modificationsStore.cancelAllTokens('taskB');
+    act(() => {
+      modificationsStore.cancelAllTokens('taskB');
+    });
 
     expect(
       await screen.findByText(
@@ -657,23 +670,25 @@ describe('Modification Summary Modal', () => {
       )
     ).toBeInTheDocument();
 
-    modificationsStore.addModification({
-      type: 'token',
-      payload: {
-        operation: 'ADD_TOKEN',
-        flowNode: {id: 'taskB', name: 'task b'},
-        affectedTokenCount: 1,
-        visibleAffectedTokenCount: 1,
-        scopeId: 'some-scope-id',
-        parentScopeIds: {},
-      },
+    act(() => {
+      modificationsStore.addModification({
+        type: 'token',
+        payload: {
+          operation: 'ADD_TOKEN',
+          flowNode: {id: 'taskB', name: 'task b'},
+          affectedTokenCount: 1,
+          visibleAffectedTokenCount: 1,
+          scopeId: 'some-scope-id',
+          parentScopeIds: {},
+        },
+      });
     });
 
-    await waitForElementToBeRemoved(() =>
-      screen.getByText(
+    expect(
+      screen.queryByText(
         'The planned modifications will cancel all remaining running flow node instances. Applying these modifications will cancel the entire process instance.'
       )
-    );
+    ).not.toBeInTheDocument();
   });
 
   it('should display error message and diable apply button if all modifications are about to be canceled and process has a parent', async () => {
@@ -701,7 +716,7 @@ describe('Modification Summary Modal', () => {
     await processInstanceDetailsStatisticsStore.fetchFlowNodeStatistics('id');
 
     render(<ModificationSummaryModal isVisible onClose={jest.fn()} />, {
-      wrapper: ThemeProvider,
+      wrapper: Wrapper,
     });
 
     expect(
@@ -729,7 +744,9 @@ describe('Modification Summary Modal', () => {
     ).not.toBeInTheDocument();
     expect(screen.getByRole('button', {name: 'Apply'})).toBeDisabled();
 
-    modificationsStore.cancelAllTokens('taskA');
+    act(() => {
+      modificationsStore.cancelAllTokens('taskA');
+    });
 
     expect(
       await screen.findByText(

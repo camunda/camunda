@@ -9,6 +9,8 @@ import {render, screen, waitFor} from 'modules/testing-library';
 import {authenticationStore} from 'modules/stores/authentication';
 import {Link, MemoryRouter} from 'react-router-dom';
 import {SessionWatcher} from './SessionWatcher';
+import {useEffect} from 'react';
+import {act} from 'react-dom/test-utils';
 
 const mockRemoveNotification = jest.fn();
 const mockDisplayNotification = jest.fn(() => ({
@@ -23,29 +25,23 @@ jest.mock('modules/notifications', () => ({
 }));
 
 function getWrapper(initialEntries = ['/']) {
-  const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => (
-    <MemoryRouter initialEntries={initialEntries}>
-      {children}
-      <Link to="/other-route">get out</Link>
-    </MemoryRouter>
-  );
+  const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
+    useEffect(() => {
+      return authenticationStore.reset;
+    });
+    return (
+      <MemoryRouter initialEntries={initialEntries}>
+        {children}
+        <Link to="/other-route">get out</Link>
+      </MemoryRouter>
+    );
+  };
 
   return Wrapper;
 }
 
 describe('<SessionWatcher />', () => {
-  beforeAll(() => {
-    //@ts-ignore
-    IS_REACT_ACT_ENVIRONMENT = false;
-  });
-
-  afterAll(() => {
-    //@ts-ignore
-    IS_REACT_ACT_ENVIRONMENT = true;
-  });
-
   afterEach(() => {
-    authenticationStore.reset();
     mockDisplayNotification.mockReset();
     mockRemoveNotification.mockReset();
   });
@@ -55,16 +51,21 @@ describe('<SessionWatcher />', () => {
       wrapper: getWrapper(['/foo']),
     });
 
-    authenticationStore.setUser({
-      displayName: 'Jon',
-      canLogout: true,
-      permissions: ['read', 'write'],
-      userId: 'jon',
-      roles: null,
-      salesPlanType: null,
-      c8Links: {},
+    act(() => {
+      authenticationStore.setUser({
+        displayName: 'Jon',
+        canLogout: true,
+        permissions: ['read', 'write'],
+        userId: 'jon',
+        roles: null,
+        salesPlanType: null,
+        c8Links: {},
+      });
     });
-    authenticationStore.expireSession();
+
+    act(() => {
+      authenticationStore.expireSession();
+    });
 
     await waitFor(() =>
       expect(mockDisplayNotification).toHaveBeenCalledWith('info', {
@@ -72,14 +73,16 @@ describe('<SessionWatcher />', () => {
       })
     );
 
-    authenticationStore.setUser({
-      displayName: 'Jon Doe',
-      permissions: ['read', 'write'],
-      canLogout: true,
-      userId: 'jon',
-      roles: null,
-      salesPlanType: null,
-      c8Links: {},
+    act(() => {
+      authenticationStore.setUser({
+        displayName: 'Jon Doe',
+        permissions: ['read', 'write'],
+        canLogout: true,
+        userId: 'jon',
+        roles: null,
+        salesPlanType: null,
+        c8Links: {},
+      });
     });
 
     await waitFor(() => expect(mockRemoveNotification).toHaveBeenCalled());
@@ -90,16 +93,21 @@ describe('<SessionWatcher />', () => {
       wrapper: getWrapper(),
     });
 
-    authenticationStore.setUser({
-      displayName: 'Jon',
-      canLogout: true,
-      permissions: [],
-      userId: 'jon',
-      roles: null,
-      salesPlanType: null,
-      c8Links: {},
+    act(() => {
+      authenticationStore.setUser({
+        displayName: 'Jon',
+        canLogout: true,
+        permissions: [],
+        userId: 'jon',
+        roles: null,
+        salesPlanType: null,
+        c8Links: {},
+      });
     });
-    authenticationStore.expireSession();
+
+    act(() => {
+      authenticationStore.expireSession();
+    });
 
     await waitFor(() =>
       expect(mockDisplayNotification).toHaveBeenCalledWith('info', {
@@ -113,16 +121,21 @@ describe('<SessionWatcher />', () => {
       wrapper: getWrapper(['/login']),
     });
 
-    authenticationStore.setUser({
-      displayName: 'Jon',
-      canLogout: true,
-      permissions: [],
-      userId: 'jon',
-      roles: null,
-      salesPlanType: null,
-      c8Links: {},
+    act(() => {
+      authenticationStore.setUser({
+        displayName: 'Jon',
+        canLogout: true,
+        permissions: [],
+        userId: 'jon',
+        roles: null,
+        salesPlanType: null,
+        c8Links: {},
+      });
     });
-    authenticationStore.expireSession();
+
+    act(() => {
+      authenticationStore.expireSession();
+    });
 
     expect(mockDisplayNotification).not.toHaveBeenCalledWith('info', {
       headline: 'Session expired',

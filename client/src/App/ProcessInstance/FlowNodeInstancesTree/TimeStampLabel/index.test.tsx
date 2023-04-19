@@ -5,27 +5,14 @@
  * except in compliance with the proprietary license.
  */
 
-import {
-  render,
-  screen,
-  waitForElementToBeRemoved,
-} from 'modules/testing-library';
+import {render, screen} from 'modules/testing-library';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {flowNodeTimeStampStore} from 'modules/stores/flowNodeTimeStamp';
 import {TimeStampLabel} from './index';
 import {MOCK_TIMESTAMP} from 'modules/utils/date/__mocks__/formatDate';
+import {act} from 'react-dom/test-utils';
 
 describe('TimeStampLabel', () => {
-  beforeAll(() => {
-    //@ts-ignore
-    IS_REACT_ACT_ENVIRONMENT = false;
-  });
-
-  afterAll(() => {
-    //@ts-ignore
-    IS_REACT_ACT_ENVIRONMENT = true;
-  });
-
   it('should hide/display time stamp on time stamp toggle', async () => {
     render(
       <TimeStampLabel
@@ -35,9 +22,17 @@ describe('TimeStampLabel', () => {
       {wrapper: ThemeProvider}
     );
     expect(screen.queryByText(MOCK_TIMESTAMP)).not.toBeInTheDocument();
-    flowNodeTimeStampStore.toggleTimeStampVisibility();
+
+    act(() => {
+      flowNodeTimeStampStore.toggleTimeStampVisibility();
+    });
+
     expect(await screen.findByText(MOCK_TIMESTAMP)).toBeInTheDocument();
-    flowNodeTimeStampStore.toggleTimeStampVisibility();
-    await waitForElementToBeRemoved(() => screen.getByText(MOCK_TIMESTAMP));
+
+    act(() => {
+      flowNodeTimeStampStore.toggleTimeStampVisibility();
+    });
+
+    expect(screen.queryByText(MOCK_TIMESTAMP)).not.toBeInTheDocument();
   });
 });

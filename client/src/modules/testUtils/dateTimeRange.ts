@@ -27,7 +27,7 @@ const pickDateTimeRange = async ({
   fromTime?: string;
   toTime?: string;
 }) => {
-  expect(screen.getByTestId('popover')).toBeInTheDocument();
+  expect(await screen.findByTestId('popover')).toBeInTheDocument();
 
   const monthName = document.querySelector('.cur-month')?.textContent;
   const year = document.querySelector<HTMLInputElement>('.cur-year')?.value;
