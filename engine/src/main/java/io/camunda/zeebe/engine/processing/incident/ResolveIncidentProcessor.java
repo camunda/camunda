@@ -75,12 +75,7 @@ public final class ResolveIncidentProcessor implements TypedRecordProcessor<Inci
     stateWriter.appendFollowUpEvent(key, IncidentIntent.RESOLVED, incident);
     responseWriter.writeEventOnCommand(key, IncidentIntent.RESOLVED, incident, command);
 
-    final long jobKey = incident.getJobKey();
-    final boolean isJobRelatedIncident = jobKey > 0;
-    if (isJobRelatedIncident) {
-      final JobRecord failedJobRecord = jobState.getJob(jobKey);
-      jobActivationBehavior.publishWork(failedJobRecord);
-    }
+    publishIncidentRelatedJob(incident.getJobKey());
 
     // if it fails, a new incident is raised
     attemptToContinueProcessProcessing(command, incident);
@@ -146,6 +141,14 @@ public final class ResolveIncidentProcessor implements TypedRecordProcessor<Inci
         return Either.right(ProcessInstanceIntent.COMPLETE_ELEMENT);
       default:
         return Either.left(String.format(ELEMENT_NOT_IN_SUPPORTED_STATE_MSG, instanceState));
+    }
+  }
+
+  private void publishIncidentRelatedJob(final long jobKey) {
+    final boolean isJobRelatedIncident = jobKey > 0;
+    if (isJobRelatedIncident) {
+      final JobRecord failedJobRecord = jobState.getJob(jobKey);
+      jobActivationBehavior.publishWork(failedJobRecord);
     }
   }
 }
