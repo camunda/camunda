@@ -9,7 +9,7 @@ package io.camunda.tasklist.util.apps.idempotency;
 import io.camunda.tasklist.exceptions.PersistenceException;
 import io.camunda.tasklist.zeebe.ImportValueType;
 import io.camunda.tasklist.zeebeimport.ImportBatch;
-import io.camunda.tasklist.zeebeimport.v810.processors.ElasticsearchBulkProcessor;
+import io.camunda.tasklist.zeebeimport.v830.processors.ElasticsearchBulkProcessor;
 import java.util.HashSet;
 import java.util.Set;
 import org.springframework.context.annotation.Bean;
@@ -23,7 +23,7 @@ import org.springframework.context.annotation.Primary;
 @Configuration
 public class ZeebeImportIdempotencyTestConfig {
 
-  @Bean("io.camunda.tasklist.zeebeimport.v810.processors.ElasticsearchBulkProcessor")
+  @Bean("io.camunda.tasklist.zeebeimport.v830.processors.ElasticsearchBulkProcessor")
   @Primary
   public CustomElasticsearchBulkProcessor elasticsearchBulkProcessor() {
     return new CustomElasticsearchBulkProcessor();

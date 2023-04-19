@@ -53,6 +53,13 @@
 
     <dependency>
       <groupId>io.camunda</groupId>
+      <artifactId>tasklist-qa-migration-tests-test-fixture-820</artifactId>
+      <version>${project.version}</version>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
       <artifactId>tasklist-els-schema</artifactId>
       <version>${project.version}</version>
       <scope>test</scope>

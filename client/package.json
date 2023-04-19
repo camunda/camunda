@@ -1,6 +1,6 @@
 {
   "name": "camunda-tasklist",
-  "version": "8.2.0-SNAPSHOT",
+  "version": "8.3.0-SNAPSHOT",
   "private": true,
   "dependencies": {
     "@apollo/client": "3.7.10",

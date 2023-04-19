@@ -14,8 +14,8 @@
     <module>els-schema</module>
     <module>data-generator</module>
     <module>importer-common</module>
-    <module>importer-810</module>
     <module>importer-820</module>
+    <module>importer-830</module>
     <module>importer</module>
     <module>archiver</module>
     <module>webapp</module>
