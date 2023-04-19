@@ -19,8 +19,10 @@ import io.camunda.zeebe.gateway.impl.broker.cluster.BrokerTopologyManager;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerRequest;
 import io.camunda.zeebe.gateway.impl.broker.response.BrokerResponse;
 import io.camunda.zeebe.protocol.Protocol;
+import io.camunda.zeebe.scheduler.future.ActorFuture;
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -40,7 +42,9 @@ public final class StubbedBrokerClient implements BrokerClient {
   public StubbedBrokerClient() {}
 
   @Override
-  public void start() {}
+  public Collection<ActorFuture<Void>> start() {
+    return null;
+  }
 
   @Override
   public void close() {}

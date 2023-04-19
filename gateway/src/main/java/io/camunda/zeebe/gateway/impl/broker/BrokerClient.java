@@ -10,13 +10,21 @@ package io.camunda.zeebe.gateway.impl.broker;
 import io.camunda.zeebe.gateway.impl.broker.cluster.BrokerTopologyManager;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerRequest;
 import io.camunda.zeebe.gateway.impl.broker.response.BrokerResponse;
+import io.camunda.zeebe.scheduler.future.ActorFuture;
 import java.time.Duration;
+import java.util.Collection;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 
 public interface BrokerClient extends AutoCloseable {
 
-  void start();
+  /**
+   * Starts broker client and associated services.
+   *
+   * @return a collection of futures for each of the service, which will be completed when the
+   *     corresponding service is started.
+   */
+  Collection<ActorFuture<Void>> start();
 
   @Override
   void close();

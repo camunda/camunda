@@ -7,8 +7,6 @@
  */
 package io.camunda.zeebe.gateway.impl.broker;
 
-import io.atomix.cluster.ClusterMembershipEvent;
-import io.atomix.cluster.ClusterMembershipEvent.Type;
 import io.atomix.cluster.ClusterMembershipService;
 import io.atomix.cluster.messaging.ClusterEventService;
 import io.atomix.cluster.messaging.MessagingService;
@@ -19,8 +17,11 @@ import io.camunda.zeebe.gateway.impl.broker.cluster.BrokerTopologyManagerImpl;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerRequest;
 import io.camunda.zeebe.gateway.impl.broker.response.BrokerResponse;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
+import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.transport.impl.AtomixClientTransportAdapter;
 import java.time.Duration;
+import java.util.Collection;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 import org.slf4j.Logger;
@@ -47,10 +48,6 @@ public final class BrokerClientImpl implements BrokerClient {
 
     topologyManager = new BrokerTopologyManagerImpl(membershipService::getMembers);
     membershipService.addListener(topologyManager);
-    membershipService
-        .getMembers()
-        .forEach(
-            member -> topologyManager.event(new ClusterMembershipEvent(Type.MEMBER_ADDED, member)));
 
     atomixTransportAdapter = new AtomixClientTransportAdapter(messagingService);
     requestManager =
@@ -62,10 +59,11 @@ public final class BrokerClientImpl implements BrokerClient {
   }
 
   @Override
-  public void start() {
-    schedulingService.submitActor(topologyManager);
-    schedulingService.submitActor(atomixTransportAdapter);
-    schedulingService.submitActor(requestManager);
+  public Collection<ActorFuture<Void>> start() {
+    final var topologyManagerStarted = topologyManager.start(schedulingService);
+    final var transportStarted = schedulingService.submitActor(atomixTransportAdapter);
+    final var requestManagerStarted = schedulingService.submitActor(requestManager);
+    return List.of(topologyManagerStarted, transportStarted, requestManagerStarted);
   }
 
   @Override

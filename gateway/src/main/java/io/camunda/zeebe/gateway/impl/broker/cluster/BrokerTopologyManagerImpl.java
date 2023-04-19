@@ -13,10 +13,14 @@ import io.atomix.cluster.ClusterMembershipEvent;
 import io.atomix.cluster.ClusterMembershipEvent.Type;
 import io.atomix.cluster.ClusterMembershipEventListener;
 import io.atomix.cluster.Member;
+import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.gateway.Loggers;
 import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
 import io.camunda.zeebe.scheduler.Actor;
-import java.time.Duration;
+import io.camunda.zeebe.scheduler.ActorSchedulingService;
+import io.camunda.zeebe.scheduler.future.ActorFuture;
+import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
+import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
@@ -27,9 +31,12 @@ public final class BrokerTopologyManagerImpl extends Actor
 
   private static final Logger LOG = Loggers.GATEWAY_LOGGER;
 
-  protected final AtomicReference<BrokerClusterStateImpl> topology;
+  private final AtomicReference<BrokerClusterStateImpl> topology;
   private final Supplier<Set<Member>> membersSupplier;
   private final GatewayTopologyMetrics topologyMetrics = new GatewayTopologyMetrics();
+
+  private final Set<BrokerTopologyListener> topologyListeners = new HashSet<>();
+  private final ActorFuture<Void> startFuture = new CompletableActorFuture<>();
 
   public BrokerTopologyManagerImpl(final Supplier<Set<Member>> membersSupplier) {
     this.membersSupplier = membersSupplier;
@@ -46,6 +53,13 @@ public final class BrokerTopologyManagerImpl extends Actor
 
   public void setTopology(final BrokerClusterStateImpl topology) {
     this.topology.set(topology);
+  }
+
+  public ActorFuture<Void> start(final ActorSchedulingService actorScheduler) {
+    if (!startFuture.isDone()) {
+      actorScheduler.submitActor(this);
+    }
+    return startFuture;
   }
 
   private void checkForMissingEvents() {
@@ -72,8 +86,9 @@ public final class BrokerTopologyManagerImpl extends Actor
 
   @Override
   protected void onActorStarted() {
-    // to make gateway topology more robust we need to check for missing events periodically
-    actor.runAtFixedRate(Duration.ofSeconds(5), this::checkForMissingEvents);
+    // Get the initial member state before the listener is registered
+    checkForMissingEvents();
+    startFuture.complete(null);
   }
 
   @Override
@@ -92,6 +107,7 @@ public final class BrokerTopologyManagerImpl extends Actor
                 LOG.debug("Received new broker {}.", brokerInfo);
                 newTopology.addBrokerIfAbsent(brokerInfo.getNodeId());
                 processProperties(brokerInfo, newTopology);
+                topologyListeners.forEach(l -> l.brokerAdded(subject.id()));
                 break;
 
               case METADATA_CHANGED:
@@ -108,6 +124,7 @@ public final class BrokerTopologyManagerImpl extends Actor
               case MEMBER_REMOVED:
                 LOG.debug("Received broker was removed {}.", brokerInfo);
                 newTopology.removeBroker(brokerInfo.getNodeId());
+                topologyListeners.forEach(l -> l.brokerRemoved(subject.id()));
                 break;
 
               case REACHABILITY_CHANGED:
@@ -165,5 +182,29 @@ public final class BrokerTopologyManagerImpl extends Actor
             followers.forEach(broker -> topologyMetrics.setFollower(partition, broker));
           }
         });
+  }
+
+  /**
+   * Adds the topology listener. For each existing brokers, the listener will be notified via {@link
+   * BrokerTopologyListener#brokerAdded(MemberId)}. After that, the listener gets notified of every
+   * new broker added or removed events.
+   *
+   * @param listener the topology listener
+   */
+  public void addTopologyListener(final BrokerTopologyListener listener) {
+    actor.run(
+        () -> {
+          topologyListeners.add(listener);
+          final BrokerClusterStateImpl currentTopology = topology.get();
+          if (currentTopology != null) {
+            currentTopology.getBrokers().stream()
+                .map(b -> MemberId.from(String.valueOf(b)))
+                .forEach(listener::brokerAdded);
+          }
+        });
+  }
+
+  public void removeTopologyListener(final BrokerTopologyListener listener) {
+    actor.run(() -> topologyListeners.remove(listener));
   }
 }
