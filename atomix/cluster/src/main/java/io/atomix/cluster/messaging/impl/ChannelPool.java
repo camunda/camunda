@@ -22,6 +22,7 @@ import io.atomix.utils.concurrent.OrderedFuture;
 import io.atomix.utils.net.Address;
 import io.camunda.zeebe.util.collection.Tuple;
 import io.netty.channel.Channel;
+import java.net.ConnectException;
 import java.net.InetAddress;
 import java.util.ArrayList;
 import java.util.List;
@@ -92,7 +93,7 @@ class ChannelPool {
     if (inetAddress == null) {
       final CompletableFuture<Channel> failedFuture = new OrderedFuture<>();
       failedFuture.completeExceptionally(
-          new IllegalStateException("Failed to resolve address %s".formatted(address)));
+          new ConnectException("Failed to resolve address %s".formatted(address)));
       return failedFuture;
     }
     final List<CompletableFuture<Channel>> channelPool = getChannelPool(address, inetAddress);
