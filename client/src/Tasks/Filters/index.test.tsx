@@ -39,7 +39,7 @@ describe('<Filters />', () => {
       wrapper: createWrapper(),
     });
 
-    fireEvent.click(screen.getByRole('button', {name: 'Filter options'}));
+    fireEvent.click(screen.getByRole('combobox', {name: 'Filter options'}));
 
     expect(screen.getByRole('option', {name: 'All open'})).toBeInTheDocument();
     expect(
@@ -74,7 +74,7 @@ describe('<Filters />', () => {
       wrapper: createWrapper(),
     });
 
-    fireEvent.click(screen.getByRole('button', {name: 'Filter options'}));
+    fireEvent.click(screen.getByRole('combobox', {name: 'Filter options'}));
     fireEvent.click(screen.getByRole('option', {name: 'Assigned to me'}));
     fireEvent.click(screen.getByRole('button', {name: 'Sort tasks'}));
     fireEvent.click(screen.getByText('Due date'));
@@ -89,7 +89,9 @@ describe('<Filters />', () => {
       wrapper: createWrapper(),
     });
 
-    expect(screen.getByRole('button', {name: 'Filter options'})).toBeDisabled();
+    expect(
+      screen.getByRole('combobox', {name: 'Filter options'}),
+    ).toBeDisabled();
     expect(screen.getByRole('button', {name: 'Sort tasks'})).toBeDisabled();
   });
 

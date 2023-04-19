@@ -30,7 +30,7 @@ test('filter selection', async (t) => {
   await t.expect(screen.queryAllByText('Some user activity').exists).ok();
 
   await t
-    .click(screen.getByRole('button', {name: 'Filter options'}))
+    .click(screen.getByRole('combobox', {name: 'Filter options'}))
     .click(screen.getByText('Assigned to me'));
 
   await t.expect(await getURL()).contains('/?filter=assigned-to-me');
@@ -54,7 +54,7 @@ test('update task list according to user actions', async (t) => {
   const withinExpandedPanel = within(screen.getByTitle('Left panel'));
 
   await t
-    .click(withinExpandedPanel.getByRole('button', {name: 'Filter options'}))
+    .click(withinExpandedPanel.getByRole('combobox', {name: 'Filter options'}))
     .click(screen.getByRole('option', {name: /unassigned/i}));
 
   await t.expect(await getURL()).contains('?filter=unassigned');
@@ -68,7 +68,7 @@ test('update task list according to user actions', async (t) => {
     .notOk();
 
   await t
-    .click(withinExpandedPanel.getByRole('button', {name: 'Filter options'}))
+    .click(withinExpandedPanel.getByRole('combobox', {name: 'Filter options'}))
     .click(screen.getByRole('option', {name: /assigned to me/i}));
 
   await t.expect(await getURL()).contains('?filter=assigned-to-me');
@@ -82,7 +82,7 @@ test('update task list according to user actions', async (t) => {
     .notOk();
 
   await t
-    .click(withinExpandedPanel.getByRole('button', {name: 'Filter options'}))
+    .click(withinExpandedPanel.getByRole('combobox', {name: 'Filter options'}))
     .click(screen.queryByRole('option', {name: /completed/i}));
 
   await t.expect(await getURL()).contains('?filter=completed');
