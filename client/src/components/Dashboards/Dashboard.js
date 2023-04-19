@@ -55,6 +55,14 @@ export class Dashboard extends React.Component {
   componentDidMount = async () => {
     this.setState({sharingEnabled: await isSharingEnabled()});
 
+    // Because of other apps want to still use the old magic link,
+    // we have to redirect to the dashboard/instant
+    const collectionId = getCollection(this.props.location.pathname);
+    const isMagicLink = collectionId === this.state.id;
+    if (isMagicLink) {
+      this.props.history.replace('/dashboard/instant/' + collectionId);
+    }
+
     if (this.isNew()) {
       this.createDashboard();
     } else {
@@ -109,7 +117,7 @@ export class Dashboard extends React.Component {
     const templateName = this.getTemplateParam();
     this.props.mightFail(
       loadEntity(
-        this.getEntityType(),
+        this.props.entity,
         this.state.id,
         templateName ? {template: templateName} : undefined
       ),
@@ -150,14 +158,6 @@ export class Dashboard extends React.Component {
         }
       }
     );
-  };
-
-  getEntityType = () => {
-    // Because of other apps want to still use the old magic link, we have to redirect
-    // this request to the dashboard/instant
-    const collectionId = getCollection(this.props.location.pathname);
-    const isMagicLink = collectionId === this.state.id;
-    return isMagicLink ? 'dashboard/instant' : this.props.entity;
   };
 
   goHome = () => {
