@@ -36,6 +36,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.collections.Long2ObjectHashMap;
@@ -176,9 +177,16 @@ public final class DbProcessState implements MutableProcessState {
 
     final ExecutableProcess executableProcess =
         definitions.stream()
-            .filter(w -> BufferUtil.equals(persistedProcess.getBpmnProcessId(), w.getId()))
+            .filter(
+                process -> BufferUtil.equals(persistedProcess.getBpmnProcessId(), process.getId()))
             .findFirst()
-            .orElseThrow();
+            .orElseThrow(
+                () ->
+                    new NoSuchElementException(
+                        String.format(
+                            "Expected to find executable process in persisted process with key '%s',"
+                                + " but after transformation no such executable process could be found.",
+                            persistedProcess.getKey())));
 
     final DeployedProcess deployedProcess = new DeployedProcess(executableProcess, copiedProcess);
 
