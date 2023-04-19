@@ -15,9 +15,7 @@ import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.transport.TransportFactory;
 import io.camunda.zeebe.transport.stream.api.RemoteStreamService;
 import io.camunda.zeebe.transport.stream.api.RemoteStreamer;
-import io.camunda.zeebe.util.buffer.BufferReader;
 import io.camunda.zeebe.util.buffer.BufferUtil;
-import io.camunda.zeebe.util.buffer.BufferWriter;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -27,7 +25,6 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicReference;
 import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
-import org.agrona.MutableDirectBuffer;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -36,11 +33,11 @@ import org.junit.jupiter.api.Test;
 /** Tests end-to-end stream management from client to server */
 class StreamIntegrationTest {
 
-  private ClientStreamService<SerializableData> clientStreamer;
-  private RemoteStreamer<SerializableData, SerializableData> remoteStreamer;
+  private ClientStreamService<TestSerializableData> clientStreamer;
+  private RemoteStreamer<TestSerializableData, TestSerializableData> remoteStreamer;
 
   private final DirectBuffer streamType = BufferUtil.wrapString("foo");
-  private final SerializableData metadata = new SerializableData().data(1);
+  private final TestSerializableData metadata = new TestSerializableData(1);
   private ActorScheduler actorScheduler;
 
   private final List<AutoCloseable> closeables = new ArrayList<>();
@@ -65,9 +62,9 @@ class StreamIntegrationTest {
     clientStreamer = startClientStreamer(clientService, serverId);
   }
 
-  private ClientStreamService<SerializableData> startClientStreamer(
+  private ClientStreamService<TestSerializableData> startClientStreamer(
       final TestCommunicationService clientService, final MemberId serverId) {
-    final ClientStreamService<SerializableData> clientStreamService =
+    final ClientStreamService<TestSerializableData> clientStreamService =
         new ClientStreamService<>(clientService);
     actorScheduler.submitActor(clientStreamService).join();
     closeables.add(clientStreamService);
@@ -87,7 +84,7 @@ class StreamIntegrationTest {
     closeables.add(() -> actorScheduler.stop());
   }
 
-  private RemoteStreamer<SerializableData, SerializableData> startRemoteStreamer(
+  private RemoteStreamer<TestSerializableData, TestSerializableData> startRemoteStreamer(
       final TestCommunicationService serverService) {
     // required to start and stop remote stream service
     final TestActor testActor = new TestActor();
@@ -97,10 +94,11 @@ class StreamIntegrationTest {
     return testActor
         .call(
             () -> {
-              final RemoteStreamService<SerializableData, SerializableData> remoteStreamService =
-                  new TransportFactory(actorScheduler)
-                      .createRemoteStreamServer(
-                          serverService, SerializableData::new, RemoteStreamMetrics.noop());
+              final RemoteStreamService<TestSerializableData, TestSerializableData>
+                  remoteStreamService =
+                      new TransportFactory(actorScheduler)
+                          .createRemoteStreamServer(
+                              serverService, TestSerializableData::new, RemoteStreamMetrics.noop());
               closeables.add(
                   () -> testActor.call(() -> remoteStreamService.closeAsync(testActor)).join());
               return remoteStreamService.start(actorScheduler, testActor);
@@ -126,7 +124,7 @@ class StreamIntegrationTest {
             streamType,
             metadata,
             p -> {
-              final SerializableData payload = new SerializableData();
+              final TestSerializableData payload = new TestSerializableData();
               payload.wrap(p, 0, p.capacity());
               payloads.get().add(payload.data());
               latch.countDown();
@@ -136,8 +134,8 @@ class StreamIntegrationTest {
     // when
     Awaitility.await().until(() -> remoteStreamer.streamFor(streamType).isPresent());
 
-    pushPayload(new SerializableData().data(100));
-    pushPayload(new SerializableData().data(200));
+    pushPayload(new TestSerializableData().data(100));
+    pushPayload(new TestSerializableData().data(200));
 
     // then
     // verify client receives payload
@@ -159,7 +157,7 @@ class StreamIntegrationTest {
     final CountDownLatch latch = new CountDownLatch(1);
     // Use serverStream obtained before stream is removed
     serverStream.push(
-        new SerializableData().data(100),
+        new TestSerializableData(100),
         (e, p) -> {
           error.set(e);
           latch.countDown();
@@ -170,37 +168,8 @@ class StreamIntegrationTest {
     assertThat(error.get()).hasCauseInstanceOf(NoSuchStreamException.class);
   }
 
-  private void pushPayload(final SerializableData data) {
+  private void pushPayload(final TestSerializableData data) {
     remoteStreamer.streamFor(streamType).orElseThrow().push(data, (p, e) -> {});
-  }
-
-  private static class SerializableData implements BufferReader, BufferWriter {
-
-    private int data;
-
-    public int data() {
-      return data;
-    }
-
-    public SerializableData data(final int data) {
-      this.data = data;
-      return this;
-    }
-
-    @Override
-    public void wrap(final DirectBuffer buffer, final int offset, final int length) {
-      data = buffer.getInt(0);
-    }
-
-    @Override
-    public int getLength() {
-      return Integer.BYTES;
-    }
-
-    @Override
-    public void write(final MutableDirectBuffer buffer, final int offset) {
-      buffer.putInt(offset, data);
-    }
   }
 
   private static final class TestActor extends Actor {}
