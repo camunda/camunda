@@ -7,7 +7,7 @@
 
 import {shallow} from 'enzyme';
 
-import {LabeledInput, CarbonModal as Modal} from 'components';
+import {LabeledInput} from 'components';
 
 import CopyAlertModal from './CopyAlertModal';
 
@@ -23,7 +23,7 @@ it('should update the alert name', () => {
   expect(node.find(LabeledInput).prop('value')).toBe('test (copy)');
 
   node.find(LabeledInput).simulate('change', {target: {value: 'new alert'}});
-  node.find(Modal.Footer).find('Button').at(1).simulate('click');
+  node.find('Button').at(1).simulate('click');
 
   expect(props.onConfirm).toHaveBeenCalledWith('new alert');
 });
