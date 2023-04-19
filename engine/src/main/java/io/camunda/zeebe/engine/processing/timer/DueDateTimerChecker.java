@@ -32,6 +32,7 @@ public class DueDateTimerChecker implements StreamProcessorLifecycleAware {
     dueDateChecker =
         new DueDateChecker(
             TIMER_RESOLUTION,
+            featureFlags.enableTimerDueDateCheckerAsync(),
             new TriggerTimersSideEffect(
                 timerInstanceState, ActorClock.current(), featureFlags.yieldingDueDateChecker()));
   }

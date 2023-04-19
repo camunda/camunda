@@ -14,7 +14,8 @@ public record FeatureFlags(
     boolean yieldingDueDateChecker,
     boolean enableActorMetrics,
     boolean enableBackup,
-    boolean enableMessageTTLCheckerAsync
+    boolean enableMessageTTLCheckerAsync,
+    boolean enableTimerDueDateCheckerAsync
     /*, boolean foo*/ ) {
 
   /* To add a new feature toggle, please follow these steps:
@@ -50,10 +51,15 @@ public record FeatureFlags(
   private static final boolean ENABLE_BACKUP = false;
 
   private static final boolean ENABLE_MSG_TTL_CHECKER_ASYNC = false;
+  private static final boolean ENABLE_DUE_DATE_CHECKER_ASYNC = false;
 
   public static FeatureFlags createDefault() {
     return new FeatureFlags(
-        YIELDING_DUE_DATE_CHECKER, ENABLE_ACTOR_METRICS, ENABLE_BACKUP, ENABLE_MSG_TTL_CHECKER_ASYNC
+        YIELDING_DUE_DATE_CHECKER,
+        ENABLE_ACTOR_METRICS,
+        ENABLE_BACKUP,
+        ENABLE_MSG_TTL_CHECKER_ASYNC,
+        ENABLE_DUE_DATE_CHECKER_ASYNC
         /*, FOO_DEFAULT*/ );
   }
 
@@ -67,7 +73,8 @@ public record FeatureFlags(
         true, /* YIELDING_DUE_DATE_CHECKER*/
         false, /* ENABLE_ACTOR_METRICS */
         true, /* ENABLE_BACKUP */
-        true /* ENABLE_MSG_TTL_CHECKER_ASYNC */
+        true, /* ENABLE_MSG_TTL_CHECKER_ASYNC */
+        true /* ENABLE_DUE_DATE_CHECKER_ASYNC */
         /*, FOO_DEFAULT*/ );
   }
 

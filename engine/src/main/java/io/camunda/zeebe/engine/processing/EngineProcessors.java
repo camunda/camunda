@@ -65,7 +65,8 @@ public final class EngineProcessors {
     final var config = typedRecordProcessorContext.getConfig();
 
     final DueDateTimerChecker timerChecker =
-        new DueDateTimerChecker(processingState.getTimerState(), featureFlags);
+        new DueDateTimerChecker(
+            typedRecordProcessorContext.getScheduledTaskDbState().getTimerState(), featureFlags);
 
     final var jobMetrics = new JobMetrics(partitionId);
     final var processEngineMetrics = new ProcessEngineMetrics(processingState.getPartitionId());
