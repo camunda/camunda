@@ -9,9 +9,9 @@ package io.camunda.zeebe.transport.stream.impl;
 
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.transport.stream.api.ClientStreamConsumer;
+import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.buffer.BufferWriter;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
@@ -126,16 +126,47 @@ final class AggregatedClientStream<M extends BufferWriter> {
       throw new NoSuchStreamException();
     }
 
-    final ClientStream<M> clientStream = pickRandomStream(streams);
-    LOGGER.trace("Pushing data from stream [{}] to client [{}]", streamId, clientStream.streamId());
-    clientStream.clientStreamConsumer().push(buffer);
-  }
-
-  private ClientStream<M> pickRandomStream(final Collection<ClientStream<M>> streams) {
     final var targets = new ArrayList<>(streams);
     final var index = ThreadLocalRandom.current().nextInt(streams.size());
 
-    return targets.get(index);
+    final var result = tryPush(targets, index, 1, buffer);
+    if (result.isLeft()) {
+      throw result.getLeft();
+    }
+  }
+
+  private Either<RuntimeException, Boolean> tryPush(
+      final ArrayList<ClientStream<M>> targets,
+      final int index,
+      final int currentCount,
+      final DirectBuffer buffer) {
+    // Try with clients in a round-robin starting from the randomly picked startIndex
+    final var clientStream = targets.get(index);
+    try {
+      LOGGER.trace(
+          "Pushing data from stream [{}] to client [{}]", streamId, clientStream.streamId());
+      clientStream.clientStreamConsumer().push(buffer);
+      return Either.right(true);
+    } catch (final Exception pushFailed) {
+      if (currentCount >= targets.size()) {
+        final StreamExhaustedException error =
+            new StreamExhaustedException(
+                "Failed to push data to all available clients. No more clients left to retry.");
+        error.addSuppressed(pushFailed);
+        return Either.left(error);
+      } else {
+        LOGGER.warn(
+            "Failed to push data to client [{}], retrying with next client.",
+            clientStream.streamId(),
+            pushFailed);
+        return tryPush(targets, (index + 1) % targets.size(), currentCount + 1, buffer)
+            .mapLeft(
+                retryError -> {
+                  retryError.addSuppressed(pushFailed);
+                  return retryError;
+                });
+      }
+    }
   }
 
   void open(final ClientStreamRequestManager<M> requestManager, final Set<MemberId> servers) {
