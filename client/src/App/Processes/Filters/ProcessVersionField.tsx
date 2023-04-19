@@ -8,11 +8,10 @@
 import React from 'react';
 import {Field, useField, useForm} from 'react-final-form';
 import {observer} from 'mobx-react';
-
+import {Dropdown} from '@carbon/react';
 import {processesStore} from 'modules/stores/processes';
 import {Select} from './styled';
 import {IS_COMBOBOX_ENABLED} from 'modules/feature-flags';
-import {ComboBox} from 'modules/components/ComboBox';
 
 const ProcessVersionField: React.FC = observer(() => {
   const {versionsByProcess} = processesStore;
@@ -35,28 +34,28 @@ const ProcessVersionField: React.FC = observer(() => {
     },
   ];
 
+  const items = ['all', ...versions.map(({version}) => version)];
+
   const form = useForm();
 
   return IS_COMBOBOX_ENABLED ? (
     <Field name="version">
       {({input}) => {
         return (
-          <ComboBox
+          <Dropdown
+            label="Select a Process Version"
+            aria-label="Select a Process Version"
             titleText="Version"
             id="processVersion"
-            aria-label="Select a Process Version"
             onChange={({selectedItem}) => {
-              input.onChange(selectedItem?.id);
+              input.onChange(selectedItem);
               form.change('flowNodeId', undefined);
             }}
-            items={
-              versions?.map(({version}) => ({
-                id: version.toString(),
-                label: version.toString(),
-              })) ?? []
-            }
-            value={input.value}
-            placeholder="Search by Process Version"
+            disabled={versions.length === 0}
+            items={items}
+            itemToString={(item) => (item === 'all' ? 'All' : item.toString())}
+            selectedItem={input.value}
+            size="sm"
           />
         );
       }}

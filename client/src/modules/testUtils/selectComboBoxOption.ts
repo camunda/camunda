@@ -5,7 +5,7 @@
  * except in compliance with the proprietary license.
  */
 
-import {screen} from '@testing-library/react';
+import {screen, within} from '@testing-library/react';
 import {UserEvent} from 'modules/testing-library';
 
 const selectComboBoxOption = async ({
@@ -36,13 +36,14 @@ const selectProcess = ({user, option}: SelectProps) => {
   });
 };
 
-const selectProcessVersion = ({user, option}: SelectProps) => {
-  return selectComboBoxOption({
-    user,
-    option,
-    fieldName: 'Version',
-    listBoxLabel: 'Select a Process Version',
-  });
+const selectProcessVersion = async ({user, option}: SelectProps) => {
+  await user.click(screen.getByLabelText('Version', {selector: 'button'}));
+  await user.selectOptions(
+    within(screen.getByLabelText('Select a Process Version')).getByRole(
+      'listbox'
+    ),
+    [screen.getByRole('option', {name: option})]
+  );
 };
 
 const selectFlowNode = ({user, option}: SelectProps) => {

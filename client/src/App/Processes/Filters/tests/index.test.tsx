@@ -57,7 +57,9 @@ describe('Filters', () => {
       );
       await selectProcess({user, option: 'Big variable process'});
 
-      expect(screen.getByLabelText('Version')).toBeEnabled();
+      expect(
+        screen.getByLabelText('Version', {selector: 'button'})
+      ).toBeEnabled();
       await selectProcessVersion({user, option: '1'});
     } else {
       await user.selectOptions(screen.getByTestId('filter-process-name'), [
@@ -109,7 +111,9 @@ describe('Filters', () => {
       expect(screen.getByLabelText('Process')).toHaveValue(
         'Big variable process'
       );
-      expect(screen.getByLabelText('Version')).toHaveValue('1');
+      expect(
+        screen.getByLabelText('Version', {selector: 'button'})
+      ).toHaveTextContent('1');
 
       expect(screen.getByLabelText('Flow Node')).toHaveValue(
         MOCK_PARAMS.flowNodeId
@@ -235,7 +239,9 @@ describe('Filters', () => {
       );
 
       expect(screen.getByLabelText('Process')).toHaveValue('');
-      expect(screen.getByLabelText('Version')).toHaveValue('');
+      expect(
+        screen.getByLabelText('Version', {selector: 'button'})
+      ).toBeDisabled();
       expect(screen.getByLabelText('Flow Node')).toHaveValue('');
       expect(screen.getByTestId(/active/)).not.toBeChecked();
       expect(screen.getByTestId(/incidents/)).not.toBeChecked();

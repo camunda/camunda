@@ -111,7 +111,7 @@ class ProcessesPage {
 
     processVersion: {
       field: IS_COMBOBOX_ENABLED
-        ? screen.queryByLabelText('Version')
+        ? screen.queryByLabelText('Version', {selector: 'button'})
         : screen.queryByTestId('filter-process-version'),
     },
 
@@ -180,11 +180,13 @@ class ProcessesPage {
 
   selectVersion = async (option: string) => {
     if (IS_COMBOBOX_ENABLED) {
-      return this.selectComboBoxOption({
-        fieldName: 'Version',
-        option,
-        listBoxLabel: 'Select a Process Version',
-      });
+      await t.click(screen.queryByLabelText('Version', {selector: 'button'}));
+      await t.click(
+        within(screen.queryByLabelText('Select a Process Version')).getByRole(
+          'option',
+          {name: option}
+        )
+      );
     } else {
       await t.click(
         within(

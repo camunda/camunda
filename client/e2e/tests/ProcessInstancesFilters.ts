@@ -160,11 +160,12 @@ test('Apply Filters', async (t) => {
 
 test('Interaction between diagram and filters', async (t) => {
   await t.click(ProcessesPage.Filters.processName.field);
-
   await ProcessesPage.selectProcess('Process With Multiple Versions');
 
   if (IS_COMBOBOX_ENABLED) {
-    await validateSelectValue(ProcessesPage.Filters.processVersion.field, '2');
+    await t
+      .expect(ProcessesPage.Filters.processVersion.field.textContent)
+      .contains('2');
   } else {
     await validateSelectValueLegacy(
       ProcessesPage.Filters.processVersion.field,
@@ -175,12 +176,11 @@ test('Interaction between diagram and filters', async (t) => {
   }
 
   // change version and see flow node filter has been reset
-  await t.click(ProcessesPage.Filters.processVersion.field);
   if (IS_COMBOBOX_ENABLED) {
-    await ProcessesPage.clearComboBox('Version');
     await ProcessesPage.selectVersion('1');
     await validateSelectValue(ProcessesPage.Filters.flowNode.field, '');
   } else {
+    await t.click(ProcessesPage.Filters.processVersion.field);
     await ProcessesPage.selectVersion('1');
     await validateSelectValueLegacy(ProcessesPage.Filters.flowNode.field, '--');
   }

@@ -198,7 +198,9 @@ describe('Interaction with other fields during validation', () => {
 
     if (IS_COMBOBOX_ENABLED) {
       await selectProcess({user, option: 'eventBasedGatewayProcess'});
-      expect(screen.getByLabelText('Version')).toBeEnabled();
+      expect(
+        screen.getByLabelText('Version', {selector: 'button'})
+      ).toBeEnabled();
       expect(
         screen.getByText(
           'Key has to be a 16 to 19 digit number, separated by space or comma'
