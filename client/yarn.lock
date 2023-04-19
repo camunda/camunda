@@ -8478,12 +8478,10 @@ mkdirp@^0.5.1, mkdirp@~0.5.1:
   dependencies:
     minimist "^1.2.6"
 
-mobx-react-lite@4.0.2:
-  version "4.0.2"
-  resolved "https://registry.yarnpkg.com/mobx-react-lite/-/mobx-react-lite-4.0.2.tgz#bf4df238d17491cddb1021a49f79f8af50ed4260"
-  integrity sha512-5o7for7/5QLpgzKvA3ZjrO8TmfkZgVcSjwYalGlW6OkK/fCxmVlwbFeoWJQzWbkWSxlcaatTO0j4riAUvWoqMg==
-  dependencies:
-    use-sync-external-store "^1.2.0"
+mobx-react-lite@3.4.3:
+  version "3.4.3"
+  resolved "https://registry.yarnpkg.com/mobx-react-lite/-/mobx-react-lite-3.4.3.tgz#3a4c22c30bfaa8b1b2aa48d12b2ba811c0947ab7"
+  integrity sha512-NkJREyFTSUXR772Qaai51BnE1voWx56LOL80xG7qkZr6vo8vEaLF3sz1JNUVh+rxmUzxYaqOhfuxTfqUh0FXUg==
 
 mobx@6.9.0:
   version "6.9.0"
@@ -12007,11 +12005,6 @@ use-resize-observer@^6.0.0:
   integrity sha512-SiPcWHiIQ1CnHmb6PxbYtygqiZXR0U9dNkkbpX9VYnlstUwF8+QqpUTrzh13pjPwcjMVGR+QIC+nvF5ujfFNng==
   dependencies:
     resize-observer-polyfill "^1.5.1"
-
-use-sync-external-store@^1.2.0:
-  version "1.2.0"
-  resolved "https://registry.yarnpkg.com/use-sync-external-store/-/use-sync-external-store-1.2.0.tgz#7dbefd6ef3fe4e767a0cf5d7287aacfb5846928a"
-  integrity sha512-eEgnFxGQ1Ife9bzYs6VLi8/4X6CObHMw9Qr9tPY43iKwsPw8xE8+EFsf/2cFZ5S3esXgpWgtSCtLNS41F+sKPA==
 
 utf8-byte-length@^1.0.1:
   version "1.0.4"
