@@ -11,6 +11,7 @@ import {PAGE_TITLE} from 'modules/constants';
 import {InstancesList} from '../Layout/InstancesList';
 import {InstancesTable} from './InstancesTable';
 import {VisuallyHiddenH1} from 'modules/components/VisuallyHiddenH1';
+import {Filters} from './Filters';
 
 const Decisions: React.FC = () => {
   useEffect(() => {
@@ -21,7 +22,7 @@ const Decisions: React.FC = () => {
     <>
       <VisuallyHiddenH1>Operate Decision Instances</VisuallyHiddenH1>
       <InstancesList
-        filters={<div>decisions - filters</div>}
+        filters={<Filters />}
         diagram={<Decision />}
         instances={<InstancesTable />}
       />

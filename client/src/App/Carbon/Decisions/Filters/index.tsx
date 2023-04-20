@@ -5,15 +5,10 @@
  * except in compliance with the proprietary license.
  */
 
-import styled from 'styled-components';
+import {CollapsablePanel} from './CollapsablePanel';
 
-const Header = styled.header`
-  background-color: var(--cds-layer-01);
-  border-bottom: solid 1px var(--cds-border-subtle-01);
-  padding: var(--cds-spacing-04);
-  display: flex;
-  align-items: center;
-  height: var(--cds-spacing-09);
-`;
+const Filters: React.FC = () => {
+  return <CollapsablePanel label="Filters">decisions-filters</CollapsablePanel>;
+};
 
-export {Header};
+export {Filters};

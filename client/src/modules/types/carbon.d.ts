@@ -44,6 +44,29 @@ declare module '@carbon/react' {
     props: StackProps<C>
   ) => React.ReactElement | null;
 
+  export const IconButton: React.FunctionComponent<
+    {
+      align?:
+        | 'top'
+        | 'top-left'
+        | 'top-right'
+        | 'bottom'
+        | 'bottom-left'
+        | 'bottom-right'
+        | 'left'
+        | 'right';
+      defaultOpen?: boolean;
+      disabled?: boolean;
+      enterDelayMs?: number;
+      kind?: 'primary' | 'secondary' | 'ghost' | 'tertiary';
+      label: string;
+      leaveDelayMs?: number;
+      size?: 'sm' | 'md' | 'lg';
+      className?: string;
+      onClick?: () => void;
+      children?: React.ReactNode;
+    } & React.ButtonHTMLAttributes<HTMLButtonElement>
+  >;
   export const useTheme: any;
   export * from 'carbon-components-react';
 }
@@ -79,4 +102,6 @@ declare module '@carbon/react/icons' {
   >;
 
   export const ArrowRight: Icon;
+  export const RowExpand: Icon;
+  export const RowCollapse: Icon;
 }

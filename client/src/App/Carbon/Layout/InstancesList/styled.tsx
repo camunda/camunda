@@ -12,7 +12,7 @@ const Container = styled.div`
     return css`
       display: grid;
       height: 100%;
-      grid-template-columns: 20rem 1fr;
+      grid-template-columns: auto 1fr;
     `;
   }}
 `;

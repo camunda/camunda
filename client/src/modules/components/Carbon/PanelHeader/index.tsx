@@ -5,7 +5,7 @@
  * except in compliance with the proprietary license.
  */
 
-import {Container} from './styled';
+import {Header} from './styled';
 import {Title} from '../PanelTitle';
 
 type Props = {
@@ -23,14 +23,13 @@ const PanelHeader: React.FC<Props> = ({
   className,
 }) => {
   return (
-    <Container className={className}>
+    <Header className={className}>
       <Title>
         {title}
         {count > 0 && <>&nbsp;&nbsp;&nbsp;-&nbsp;&nbsp;&nbsp;{count} results</>}
       </Title>
-
       {children}
-    </Container>
+    </Header>
   );
 };
 
