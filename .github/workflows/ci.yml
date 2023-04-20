@@ -99,7 +99,7 @@ jobs:
           buildOutputFilePath: ${{ env.BUILD_OUTPUT_FILE_PATH }}
       - name: Upload test artifacts
         uses: ./.github/actions/collect-test-artifacts
-        if: always()
+        if: failure()
         with:
           name: "[IT] ${{ matrix.name }}"
   unit-tests:
@@ -136,7 +136,7 @@ jobs:
           buildOutputFilePath: ${{ env.BUILD_OUTPUT_FILE_PATH }}
       - name: Upload test artifacts
         uses: ./.github/actions/collect-test-artifacts
-        if: always()
+        if: failure()
         with:
           name: "unit tests"
   smoke-tests:
@@ -169,7 +169,7 @@ jobs:
           verify
       - name: Upload test artifacts
         uses: ./.github/actions/collect-test-artifacts
-        if: always()
+        if: failure()
         with:
           name: "[Smoke] ${{ matrix.os }}"
   property-tests:
@@ -202,7 +202,7 @@ jobs:
           buildOutputFilePath: ${{ env.BUILD_OUTPUT_FILE_PATH }}
       - name: Upload test artifacts
         uses: ./.github/actions/collect-test-artifacts
-        if: always()
+        if: failure()
         with:
           name: Property Tests
   go-client:
@@ -275,7 +275,7 @@ jobs:
           buildOutputFilePath: ${{ env.BUILD_OUTPUT_FILE_PATH }}
       - name: Upload test artifacts
         uses: ./.github/actions/collect-test-artifacts
-        if: always()
+        if: failure()
         with:
           name: Java 8 Client
   codeql:
