@@ -7,7 +7,7 @@
 
 export function getHighlightedText(
   text: string,
-  highlight: string,
+  highlight?: string,
   matchFromStart?: boolean
 ): JSX.Element[] | string {
   if (!highlight) {

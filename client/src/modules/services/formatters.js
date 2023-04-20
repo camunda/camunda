@@ -5,7 +5,6 @@
  * except in compliance with the proprietary license.
  */
 
-import React from 'react';
 import {parseISO, isValid} from 'date-fns';
 import {Chart} from 'chart.js';
 
@@ -31,6 +30,8 @@ const scaleUnits = [
   {exponent: 6, label: 'million'},
   {exponent: 3, label: 'thousand'},
 ];
+
+export {getHighlightedText} from './formatters.tsx';
 
 function getNumberOfDigits(x) {
   // https://stackoverflow.com/a/28203456
@@ -187,28 +188,6 @@ export const convertDurationToSingleNumber = (threshold) => {
 
 export function convertToMilliseconds(value, unit) {
   return value * timeUnits[unit].value;
-}
-
-export function getHighlightedText(text, highlight, matchFromStart) {
-  if (!highlight) {
-    return text;
-  }
-  // we need to escape special characters in the highlight text
-  // https://stackoverflow.com/a/3561711
-  let regex = highlight.replace(/[-\\^$*+?.()|[\]{}]/g, '\\$&');
-  if (matchFromStart) {
-    regex = '^' + regex;
-  }
-  // Split on highlight term and include term into parts, ignore case
-  const parts = text.split(new RegExp(`(${regex})`, 'gi'));
-  return parts.map((part, i) => (
-    <span
-      key={i}
-      className={part.toLowerCase() === highlight.toLowerCase() ? 'textBold' : undefined}
-    >
-      {part}
-    </span>
-  ));
 }
 
 export function camelCaseToLabel(type) {

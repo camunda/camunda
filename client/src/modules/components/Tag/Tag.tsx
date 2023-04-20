@@ -5,17 +5,15 @@
  * except in compliance with the proprietary license.
  */
 
-import {ReactNode} from 'react';
+import {ComponentPropsWithoutRef} from 'react';
 import classnames from 'classnames';
 
 import {Button, Icon, Tooltip} from 'components';
 
 import './Tag.scss';
 
-interface tagProps {
-  className?: string;
+interface TagProps extends ComponentPropsWithoutRef<'div'> {
   invalid?: boolean;
-  children: ReactNode;
   onRemove: () => void;
 }
 
@@ -25,7 +23,7 @@ export default function Tag({
   children,
   onRemove = () => {},
   ...props
-}: tagProps): JSX.Element {
+}: TagProps): JSX.Element {
   return (
     <div className={classnames('Tag', className, {invalid})} {...props}>
       <Tooltip content={children} overflowOnly>

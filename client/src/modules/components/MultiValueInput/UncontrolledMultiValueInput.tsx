@@ -5,7 +5,7 @@
  * except in compliance with the proprietary license.
  */
 
-import React, {useRef, useEffect, useImperativeHandle} from 'react';
+import React, {useRef, useEffect, useImperativeHandle, UIEvent} from 'react';
 import classnames from 'classnames';
 import {Input, Icon, Tag, InputProps} from 'components';
 
@@ -14,9 +14,6 @@ import './UncontrolledMultiValueInput.scss';
 interface UncontrolledMultiValueInputProps extends InputProps {
   values: {value: string; label?: string; invalid?: boolean}[];
   value: string;
-  onClear: (
-    evt: React.MouseEvent<HTMLButtonElement, MouseEvent> | React.KeyboardEvent<HTMLButtonElement>
-  ) => void;
   onRemove: (value: string, index: number) => void;
   className?: string;
   inputClassName?: string;
@@ -42,15 +39,13 @@ export default React.forwardRef<HTMLInputElement, UncontrolledMultiValueInputPro
       }
     }
 
-    function tiggerClear(
-      evt: React.MouseEvent<HTMLButtonElement, MouseEvent> | React.KeyboardEvent<HTMLButtonElement>
-    ) {
+    function tiggerClear(evt: UIEvent<HTMLElement>) {
       if (input.current) {
         input.current.focus();
       }
 
       evt.preventDefault();
-      onClear(evt);
+      onClear?.(evt);
     }
 
     const empty = values.length === 0;
@@ -79,10 +74,9 @@ export default React.forwardRef<HTMLInputElement, UncontrolledMultiValueInputPro
           <button
             className="searchClear"
             onKeyDown={(evt) => {
-              if (evt.keyCode !== 13) {
-                return;
+              if (evt.key === 'Enter') {
+                tiggerClear(evt);
               }
-              tiggerClear(evt);
             }}
             onMouseDown={tiggerClear}
           >

@@ -5,7 +5,7 @@
  * except in compliance with the proprietary license.
  */
 
-import {forwardRef, ComponentPropsWithoutRef, KeyboardEvent, MouseEvent} from 'react';
+import {forwardRef, ComponentPropsWithoutRef, UIEvent} from 'react';
 import classnames from 'classnames';
 import {Icon} from 'components';
 
@@ -17,7 +17,7 @@ export interface InputProps extends Omit<ComponentPropsWithoutRef<'input'>, 'pla
   className?: string;
   isInvalid?: boolean;
   placeholder?: string | JSX.Element[];
-  onClear?: (evt: KeyboardEvent<HTMLButtonElement> | MouseEvent<HTMLButtonElement>) => void;
+  onClear?: (evt: UIEvent<HTMLElement>) => void;
 }
 
 export default forwardRef<HTMLInputElement, InputProps>(function Input(
@@ -40,7 +40,7 @@ export default forwardRef<HTMLInputElement, InputProps>(function Input(
     return (ref.current = el);
   };
 
-  const triggerClear = (evt: KeyboardEvent<HTMLButtonElement> | MouseEvent<HTMLButtonElement>) => {
+  const triggerClear = (evt: UIEvent<HTMLElement>) => {
     if ('type' in evt && 'keyCode' in evt && evt.type === 'keydown' && evt.keyCode !== 13) {
       return;
     }

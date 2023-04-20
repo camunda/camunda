@@ -5,7 +5,15 @@
  * except in compliance with the proprietary license.
  */
 
-import React from 'react';
+import {
+  ReactElement,
+  createRef,
+  ChangeEvent,
+  Component,
+  Children,
+  isValidElement,
+  ReactNode,
+} from 'react';
 
 import {Input, Button, Icon, Dropdown} from 'components';
 import {t} from 'translation';
@@ -14,16 +22,9 @@ import classnames from 'classnames';
 import OptionsList from './OptionsList';
 
 import './Typeahead.scss';
-import {ReactElement} from 'react';
-
-const defaultState = {
-  query: '',
-  open: false,
-  selected: '',
-};
 
 interface TypeaheadProps {
-  children: React.ReactNode;
+  children: ReactNode;
   initialValue?: string;
   value?: string;
   onSearch: (query: string) => void;
@@ -41,12 +42,18 @@ interface TypeaheadProps {
 }
 
 interface TypeaheadState {
-  query: string | undefined;
+  query: string;
   open: boolean;
   selected: string | undefined;
 }
 
-export default class Typeahead extends React.Component<TypeaheadProps, TypeaheadState> {
+const defaultState: TypeaheadState = {
+  query: '',
+  open: false,
+  selected: '',
+};
+
+export default class Typeahead extends Component<TypeaheadProps, TypeaheadState> {
   static defaultProps = {
     onSearch: () => {},
     onChange: () => {},
@@ -58,9 +65,9 @@ export default class Typeahead extends React.Component<TypeaheadProps, Typeahead
 
   optionClicked = false;
 
-  input = React.createRef<HTMLInputElement>();
+  input = createRef<HTMLInputElement>();
 
-  onTextChange = (evt: React.ChangeEvent<HTMLInputElement>) => {
+  onTextChange = (evt: ChangeEvent<HTMLInputElement>) => {
     this.setState({query: evt.target.value, open: true});
     this.props.onSearch(evt.target.value);
   };
@@ -86,19 +93,19 @@ export default class Typeahead extends React.Component<TypeaheadProps, Typeahead
     }
   }
 
-  findAndSelect = (value: string | undefined) => {
+  findAndSelect = (value?: string) => {
     const {children, typedOption} = this.props;
-    const foundOption = React.Children.toArray(children).find(
+    const foundOption = Children.toArray(children).find(
       (option) => (option as ReactElement).props.value === value
     );
 
     if (typedOption) {
       this.setState({
         selected: value,
-        query: value,
+        query: value || '',
       });
-    } else if (foundOption) {
-      const {label, children} = (foundOption as ReactElement).props;
+    } else if (isValidElement(foundOption)) {
+      const {label, children} = foundOption.props;
       const selected = label || children;
       this.setState({
         selected,
@@ -143,7 +150,7 @@ export default class Typeahead extends React.Component<TypeaheadProps, Typeahead
   render() {
     const {children, disabled, loading, hasMore, async, typedOption, className} = this.props;
     const {query, open, selected} = this.state;
-    const isEmpty = !loading && !query && !typedOption && React.Children.count(children) === 0;
+    const isEmpty = !loading && !query && !typedOption && Children.count(children) === 0;
     const isInputDisabled = isEmpty || disabled;
 
     return (
@@ -192,7 +199,7 @@ export default class Typeahead extends React.Component<TypeaheadProps, Typeahead
 
   static Option = Dropdown.Option;
 
-  static Highlight = function Highlight(props: {children: ReactElement | string}): JSX.Element {
-    return props.children as JSX.Element;
+  static Highlight = function Highlight(props: {children: string}) {
+    return <>{props.children}</>;
   };
 }

@@ -5,7 +5,18 @@
  * except in compliance with the proprietary license.
  */
 
-import React, {useState, useEffect, useCallback, ReactNode, ReactElement, MouseEvent} from 'react';
+import {
+  useState,
+  useEffect,
+  useCallback,
+  ReactNode,
+  ReactElement,
+  MouseEvent,
+  isValidElement,
+  cloneElement,
+  createRef,
+  Children,
+} from 'react';
 
 import {t} from 'translation';
 import {Dropdown, LoadingIndicator} from 'components';
@@ -14,7 +25,7 @@ import {highlightText} from './service';
 
 import './OptionsList.scss';
 
-type OptionProps = {
+export interface OptionProps {
   label: string;
   value: string;
   children: ReactNode;
@@ -22,14 +33,14 @@ type OptionProps = {
   className: string;
   onClick: () => void;
   onMouseDown?: (evt: MouseEvent<HTMLDivElement, MouseEvent>) => void;
-};
+}
 
 interface OptionsListProps {
   loading?: boolean;
   hasMore?: boolean;
   input: HTMLInputElement | null;
   onSelect: (option: ReactElement<OptionProps>) => void;
-  filter: string;
+  filter?: string;
   children: ReactNode;
   onMouseDown?: (evt: MouseEvent<HTMLDivElement, MouseEvent>) => void;
   async?: boolean;
@@ -52,11 +63,11 @@ export default function OptionsList({
   ...props
 }: OptionsListProps): JSX.Element | null {
   const [selectedOption, setSelectedOption] = useState<number>(-1);
-  const optionList = React.createRef<HTMLDivElement>();
-  const optionsArr = React.Children.toArray(children) as ReactElement<OptionProps>[];
+  const optionList = createRef<HTMLDivElement>();
+  const optionsArr = Children.toArray(children).filter(isValidElement<OptionProps>);
   let filteredOptions: ReactElement<OptionProps>[] = optionsArr;
 
-  if (!async) {
+  if (!async && filter) {
     filteredOptions = optionsArr.filter(({props: {label, children}}) => {
       if (filter && typedOption && (label || children) === filter) {
         return false; // remove options that exactly match the typed option
@@ -74,10 +85,10 @@ export default function OptionsList({
   }
 
   const optionsWithProps = filteredOptions.map((option, i) =>
-    React.cloneElement(option, {
+    cloneElement(option, {
       className: i === selectedOption ? 'isActive' : '',
       onClick: () => onSelect(option),
-      onMouseDown: (evt: React.MouseEvent<HTMLDivElement, MouseEvent>) =>
+      onMouseDown: (evt: MouseEvent<HTMLDivElement, MouseEvent>) =>
         !option.props.disabled && onMouseDown?.(evt),
       children: highlightText(option.props.children, filter),
     })

@@ -9,7 +9,7 @@ import {formatters} from 'services';
 import React, {ReactElement, ReactNode} from 'react';
 import {Typeahead} from 'components';
 
-export function highlightText(content: ReactNode, query: string): ReactNode {
+export function highlightText(content: ReactNode, query?: string): ReactNode {
   let children: ReactNode;
   if (typeof content === 'string') {
     children = formatters.getHighlightedText(content, query);

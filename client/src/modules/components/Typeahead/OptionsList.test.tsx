@@ -5,13 +5,12 @@
  * except in compliance with the proprietary license.
  */
 
+import {shallow} from 'enzyme';
 import {runLastEffect} from '__mocks__/react';
 import {Dropdown} from 'components';
 
 import OptionsList from './OptionsList';
 import Typeahead from './Typeahead';
-
-import {shallow} from 'enzyme';
 
 const props = {
   open: true,

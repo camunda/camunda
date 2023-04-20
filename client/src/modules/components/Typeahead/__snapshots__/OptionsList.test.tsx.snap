@@ -4,11 +4,12 @@ exports[`should render an empty OptionsList 1`] = `
 <div
   className="OptionsList"
 >
-  <ForwardRef(DropdownOption)
-    className="message"
-  >
-    No results found
-  </ForwardRef(DropdownOption)>
+  <div
+    className=""
+    key=".0"
+    onClick={[Function]}
+    onMouseDown={[Function]}
+  />
 </div>
 `;
 
@@ -44,15 +45,16 @@ exports[`should render has more info message if specified 1`] = `
 <div
   className="OptionsList"
 >
+  <div
+    className=""
+    key=".0"
+    onClick={[Function]}
+    onMouseDown={[Function]}
+  />
   <ForwardRef(DropdownOption)
     className="message"
   >
-    No results found
-  </ForwardRef(DropdownOption)>
-  <ForwardRef(DropdownOption)
-    className="message"
-  >
-    Displaying 0 results only. Search to refine.
+    Displaying 1 results only. Search to refine.
   </ForwardRef(DropdownOption)>
 </div>
 `;

@@ -5,13 +5,13 @@
  * except in compliance with the proprietary license.
  */
 
-import React, {ReactElement, useEffect, useRef, useState} from 'react';
+import {ReactElement, useEffect, useRef, useState, Children, ReactNode} from 'react';
 import classnames from 'classnames';
 
 import {Button, Icon, Dropdown, UncontrolledMultiValueInput} from 'components';
 import {t} from 'translation';
 
-import OptionsList from './OptionsList';
+import OptionsList, {OptionProps} from './OptionsList';
 import Typeahead from './Typeahead';
 
 import './MultiSelect.scss';
@@ -20,19 +20,19 @@ type MultiSelectProps = {
   onSearch?: (query: string) => void;
   onOpen?: (query: string) => void;
   onClose?: () => void;
-  values?: {label: string; value: any}[];
+  values?: {label: string; value: string}[];
   noValuesMessage?: string;
   placeholder?: string;
   className?: string;
-  onAdd: (value: any) => void;
-  onRemove: (value: any, index: number) => void;
+  onAdd: (value: string) => void;
+  onRemove: (value: string, index: number) => void;
   async?: boolean;
   onClear: () => void;
   typedOption?: boolean;
   hasMore?: boolean;
   loading?: boolean;
   disabled?: boolean;
-  children: React.ReactNode;
+  children: ReactNode;
   persistMenu?: boolean;
 };
 
@@ -61,7 +61,7 @@ export default function MultiSelect({
 
   const input = useRef<HTMLInputElement>(null);
 
-  const isEmpty = !loading && !query && React.Children.count(children) === 0;
+  const isEmpty = !loading && !query && Children.count(children) === 0;
   const isInputDisabled = disabled || (isEmpty && !typedOption);
 
   useEffect(() => {
@@ -88,7 +88,7 @@ export default function MultiSelect({
     setInsideClick(false);
   }
 
-  function selectOption({props: {value}}: ReactElement) {
+  function selectOption({props: {value}}: ReactElement<OptionProps>) {
     if (query) {
       setQuery('');
       onSearch('');
@@ -115,7 +115,10 @@ export default function MultiSelect({
   function handleKeyPress(evt: React.KeyboardEvent<HTMLInputElement>) {
     if (query === '' && evt.key === 'Backspace' && values.length > 0) {
       const lastElementIndex = values.length - 1;
-      onRemove(values[lastElementIndex]?.value, lastElementIndex);
+      const lastElementValue = values[lastElementIndex]?.value;
+      if (lastElementValue) {
+        onRemove(lastElementValue, lastElementIndex);
+      }
     }
   }
 
