@@ -6,6 +6,7 @@
   "components": [
     {
       "type": "image",
+      "alt": "The Camunda logo",
       "id": "Field_19vtr2a",
       "source": "https://camunda.com/wp-content/uploads/2020/05/logo-camunda-black.svg"
     },

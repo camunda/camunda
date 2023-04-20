@@ -364,6 +364,7 @@
     {
       "type": "image",
       "id": "Field_1mv8qs4",
+      "alt": "An placeholder",
       "source": "https://via.placeholder.com/150C",
       "layout": {
         "row": "Row_069d2ee"
