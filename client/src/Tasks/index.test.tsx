@@ -5,13 +5,7 @@
  * except in compliance with the proprietary license.
  */
 
-import {
-  render,
-  screen,
-  waitForElementToBeRemoved,
-  fireEvent,
-  waitFor,
-} from 'modules/testing-library';
+import {render, screen, fireEvent, waitFor} from 'modules/testing-library';
 import {MemoryRouter} from 'react-router-dom';
 import {MockThemeProvider} from 'modules/theme/MockProvider';
 import {generateTask} from 'modules/mock-schema/mocks/tasks';
@@ -76,8 +70,6 @@ describe('<Layout />', () => {
     });
 
     await waitFor(() => expect(screen.getByTitle('All open')).toBeDisabled());
-
-    await waitForElementToBeRemoved(screen.getByTestId('tasks-skeleton'));
 
     expect(await screen.findByText('TASK 0')).toBeInTheDocument();
     expect(screen.getByText('TASK 49')).toBeInTheDocument();

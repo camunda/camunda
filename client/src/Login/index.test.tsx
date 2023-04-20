@@ -192,6 +192,7 @@ describe('<Login />', () => {
   it('should not allow the form to be submitted with empty fields', async () => {
     nodeMockServer.use(
       rest.post('/api/login', (_, res, ctx) => res.once(ctx.text(''))),
+      rest.post('/api/login', (_, res, ctx) => res.once(ctx.text(''))),
     );
 
     const {user} = render(<Login />, {

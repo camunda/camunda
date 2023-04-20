@@ -34,6 +34,7 @@ function mockMatchMedia() {
 mockMatchMedia();
 
 beforeEach(() => {
+  nodeMockServer.resetHandlers();
   mockMatchMedia();
 
   window.localStorage.clear();
@@ -79,7 +80,6 @@ beforeAll(() => {
 });
 
 afterEach(async () => {
-  nodeMockServer.resetHandlers();
   await clearClientCache();
 });
 
