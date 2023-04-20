@@ -241,6 +241,12 @@
 
     <dependency>
       <groupId>io.camunda</groupId>
+      <artifactId>zeebe-backup</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
       <artifactId>zeebe-backup-store-s3</artifactId>
       <scope>test</scope>
     </dependency>
