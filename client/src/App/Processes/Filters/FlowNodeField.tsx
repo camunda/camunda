@@ -9,20 +9,12 @@ import React from 'react';
 import {observer} from 'mobx-react';
 import {Field} from 'react-final-form';
 import {processDiagramStore} from 'modules/stores/processDiagram';
-import {Select} from './styled';
-import {IS_COMBOBOX_ENABLED} from 'modules/feature-flags';
 import {ComboBox} from 'modules/components/ComboBox';
 
 const FlowNodeField: React.FC = observer(() => {
   const {flowNodeFilterOptions} = processDiagramStore;
 
-  const options = [
-    {
-      options: [{label: '--', value: ''}, ...flowNodeFilterOptions],
-    },
-  ];
-
-  return IS_COMBOBOX_ENABLED ? (
+  return (
     <Field name="flowNodeId">
       {({input}) => (
         <ComboBox
@@ -40,26 +32,6 @@ const FlowNodeField: React.FC = observer(() => {
           })}
           value={input.value}
           placeholder="Search by Process Flow Node"
-        />
-      )}
-    </Field>
-  ) : (
-    <Field name="flowNodeId">
-      {({input}) => (
-        <Select
-          placeholder="--"
-          label="Flow Node"
-          data-testid="filter-flow-node"
-          options={options}
-          disabled={flowNodeFilterOptions.length === 0}
-          selectedOptions={
-            flowNodeFilterOptions.length > 0 && input.value
-              ? [input.value]
-              : ['']
-          }
-          onCmInput={(event) => {
-            input.onChange(event.detail.selectedOptions[0]);
-          }}
         />
       )}
     </Field>

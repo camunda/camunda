@@ -8,15 +8,12 @@
 import styled, {css} from 'styled-components';
 import {
   CmDropdown,
-  CmSelect,
   CmText,
   CmCheckbox,
   CmIcon,
 } from '@camunda-cloud/common-ui-react';
 import {TextField as BaseTextField} from 'modules/components/TextField';
 import {Panel} from 'modules/components/Panel';
-
-const Select = styled(CmSelect)``;
 
 const SectionTitle = styled(CmText)``;
 
@@ -34,10 +31,6 @@ const Fields = styled.div`
       flex-direction: column;
       background-color: ${theme.colors.itemEven};
       overflow-y: auto;
-
-      ${Select}:not(:last-child), ${SectionTitle}:not(:last-child),  ${TextField}:not(:last-child) {
-        padding-bottom: 8px;
-      }
 
       ${Checkbox}:not(:last-child) {
         padding-bottom: 12px;
@@ -103,7 +96,6 @@ const OptionalFilters = styled.div`
 export {
   FormElement,
   Dropdown,
-  Select,
   SectionTitle,
   Checkbox,
   TextField,

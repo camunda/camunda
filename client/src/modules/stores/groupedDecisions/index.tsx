@@ -49,7 +49,6 @@ class GroupedDecisions extends NetworkReconnectionHandler {
       startFetching: action,
       reset: override,
       decisions: computed,
-      areDecisionsEmpty: computed,
       decisionVersionsById: computed,
     });
   }

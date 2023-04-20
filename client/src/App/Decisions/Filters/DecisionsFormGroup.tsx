@@ -8,26 +8,16 @@
 import {Field, useField, useForm} from 'react-final-form';
 import {observer} from 'mobx-react';
 import {groupedDecisionsStore} from 'modules/stores/groupedDecisions';
-import {FormGroup, SectionTitle, Select} from './styled';
-import {IS_COMBOBOX_ENABLED} from 'modules/feature-flags';
+import {FormGroup, SectionTitle} from './styled';
 import {ComboBox} from 'modules/components/ComboBox';
 import {Dropdown, Stack} from '@carbon/react';
 
 const DecisionsFormGroup: React.FC = observer(() => {
-  const {areDecisionsEmpty, getVersions, getDefaultVersion, decisions} =
-    groupedDecisionsStore;
+  const {getVersions, getDefaultVersion, decisions} = groupedDecisionsStore;
 
   const form = useForm();
   const selectedDecisionId = useField('name').input.value;
   const versions = getVersions(selectedDecisionId);
-  const options = [
-    {
-      label: 'All',
-      value: '',
-    },
-    ...decisions,
-  ];
-
   const items = ['all', ...versions];
 
   return (
@@ -37,116 +27,51 @@ const DecisionsFormGroup: React.FC = observer(() => {
       <Stack gap={5}>
         <Field name="name">
           {({input}) => {
-            if (IS_COMBOBOX_ENABLED) {
-              return (
-                <ComboBox
-                  id="decisionName"
-                  aria-label="Select a Decision"
-                  items={decisions.map(({value, label}) => ({
-                    label,
-                    id: value,
-                  }))}
-                  onChange={({selectedItem}) => {
-                    const decisionId = selectedItem?.id;
+            return (
+              <ComboBox
+                id="decisionName"
+                aria-label="Select a Decision"
+                items={decisions.map(({value, label}) => ({
+                  label,
+                  id: value,
+                }))}
+                onChange={({selectedItem}) => {
+                  const decisionId = selectedItem?.id;
 
-                    input.onChange(decisionId);
-                    form.change(
-                      'version',
-                      decisionId === undefined
-                        ? ''
-                        : getDefaultVersion(decisionId)
-                    );
-                  }}
-                  titleText="Name"
-                  value={input.value}
-                  placeholder="Search by Decision Name"
-                />
-              );
-            } else {
-              const isSelectedValueValid =
-                options.find((option) => option.value === input.value) !==
-                undefined;
-
-              return (
-                <Select
-                  label="Name"
-                  data-testid="filter-decision-name"
-                  selectedOptions={
-                    isSelectedValueValid && decisions.length > 0 && input.value
-                      ? [input.value]
-                      : ['']
-                  }
-                  onCmInput={(event) => {
-                    const decisionId = event.detail.selectedOptions[0] ?? '';
-                    input.onChange(decisionId);
-                    form.change('version', getDefaultVersion(decisionId));
-                  }}
-                  disabled={areDecisionsEmpty}
-                  options={[
-                    {
-                      options,
-                    },
-                  ]}
-                />
-              );
-            }
+                  input.onChange(decisionId);
+                  form.change(
+                    'version',
+                    decisionId === undefined
+                      ? ''
+                      : getDefaultVersion(decisionId)
+                  );
+                }}
+                titleText="Name"
+                value={input.value}
+                placeholder="Search by Decision Name"
+              />
+            );
           }}
         </Field>
         <Field name="version">
-          {({input}) =>
-            IS_COMBOBOX_ENABLED ? (
-              <Dropdown
-                label="Select a Decision Version"
-                aria-label="Select a Decision Version"
-                titleText="Version"
-                id="decisionVersion"
-                onChange={({selectedItem}) => {
-                  input.onChange(selectedItem);
-                }}
-                disabled={versions.length === 0}
-                items={items}
-                itemToString={(item) =>
-                  item === 'all' ? 'All' : item.toString()
-                }
-                selectedItem={input.value}
-                size="sm"
-              />
-            ) : (
-              <Select
-                label="Version"
-                data-testid="filter-decision-version"
-                selectedOptions={
-                  versions.length > 0 && input.value
-                    ? [input.value.toString()]
-                    : ['all']
-                }
-                onCmInput={(event) => {
-                  input.onChange(event.detail.selectedOptions[0]);
-                }}
-                disabled={areDecisionsEmpty || versions.length === 0}
-                options={[
-                  {
-                    options:
-                      versions.length === 1
-                        ? versions.map((version) => ({
-                            label: version.toString(),
-                            value: version.toString(),
-                          }))
-                        : [
-                            {
-                              label: 'All',
-                              value: 'all',
-                            },
-                            ...(versions.map((version) => ({
-                              label: version.toString(),
-                              value: version.toString(),
-                            })) ?? []),
-                          ],
-                  },
-                ]}
-              />
-            )
-          }
+          {({input}) => (
+            <Dropdown
+              label="Select a Decision Version"
+              aria-label="Select a Decision Version"
+              titleText="Version"
+              id="decisionVersion"
+              onChange={({selectedItem}) => {
+                input.onChange(selectedItem);
+              }}
+              disabled={versions.length === 0}
+              items={items}
+              itemToString={(item) =>
+                item === 'all' ? 'All' : item.toString()
+              }
+              selectedItem={input.value}
+              size="sm"
+            />
+          )}
         </Field>
       </Stack>
     </FormGroup>

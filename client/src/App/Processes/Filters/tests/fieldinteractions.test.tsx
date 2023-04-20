@@ -20,7 +20,6 @@ import {processDiagramStore} from 'modules/stores/processDiagram';
 import {mockFetchGroupedProcesses} from 'modules/mocks/api/processes/fetchGroupedProcesses';
 import {mockFetchProcessInstancesStatistics} from 'modules/mocks/api/processInstances/fetchProcessInstancesStatistics';
 import {mockFetchProcessXML} from 'modules/mocks/api/processes/fetchProcessXML';
-import {IS_COMBOBOX_ENABLED} from 'modules/feature-flags';
 import {
   selectFlowNode,
   selectProcess,
@@ -196,51 +195,25 @@ describe('Interaction with other fields during validation', () => {
       )
     ).toBeInTheDocument();
 
-    if (IS_COMBOBOX_ENABLED) {
-      await selectProcess({user, option: 'eventBasedGatewayProcess'});
-      expect(
-        screen.getByLabelText('Version', {selector: 'button'})
-      ).toBeEnabled();
-      expect(
-        screen.getByText(
-          'Key has to be a 16 to 19 digit number, separated by space or comma'
-        )
-      ).toBeInTheDocument();
+    await selectProcess({user, option: 'eventBasedGatewayProcess'});
+    expect(
+      screen.getByLabelText('Version', {selector: 'button'})
+    ).toBeEnabled();
+    expect(
+      screen.getByText(
+        'Key has to be a 16 to 19 digit number, separated by space or comma'
+      )
+    ).toBeInTheDocument();
 
-      await selectProcessVersion({user, option: '2'});
+    await selectProcessVersion({user, option: '2'});
 
-      expect(
-        screen.getByText(
-          'Key has to be a 16 to 19 digit number, separated by space or comma'
-        )
-      ).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        'Key has to be a 16 to 19 digit number, separated by space or comma'
+      )
+    ).toBeInTheDocument();
 
-      await selectFlowNode({user, option: 'ServiceTask_0kt6c5i'});
-    } else {
-      await user.selectOptions(screen.getByTestId('filter-process-name'), [
-        'eventBasedGatewayProcess',
-      ]);
-      expect(screen.getByTestId('filter-process-version')).toBeEnabled();
-      expect(
-        screen.getByText(
-          'Key has to be a 16 to 19 digit number, separated by space or comma'
-        )
-      ).toBeInTheDocument();
-
-      await user.selectOptions(screen.getByTestId('filter-process-version'), [
-        '2',
-      ]);
-
-      expect(
-        screen.getByText(
-          'Key has to be a 16 to 19 digit number, separated by space or comma'
-        )
-      ).toBeInTheDocument();
-
-      await user.selectOptions(screen.getByTestId('filter-flow-node'), [
-        'ServiceTask_0kt6c5i',
-      ]);
-    }
+    await selectFlowNode({user, option: 'ServiceTask_0kt6c5i'});
 
     expect(
       screen.getByText(

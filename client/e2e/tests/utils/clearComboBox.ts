@@ -7,13 +7,8 @@
 
 import {t} from 'testcafe';
 import {within, screen} from '@testing-library/testcafe';
-import {IS_COMBOBOX_ENABLED} from '../../../src/modules/feature-flags';
 
 const clearComboBox = async ({fieldName}: {fieldName: string}) => {
-  if (!IS_COMBOBOX_ENABLED) {
-    return;
-  }
-
   const parentElement = screen.getByLabelText(fieldName).parent(0);
 
   await t.click(

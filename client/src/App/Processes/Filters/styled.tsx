@@ -7,12 +7,7 @@
 
 import styled, {css} from 'styled-components';
 import {Panel} from 'modules/components/Panel';
-import {
-  CmText,
-  CmDropdown,
-  CmSelect,
-  CmIcon,
-} from '@camunda-cloud/common-ui-react';
+import {CmText, CmDropdown, CmIcon} from '@camunda-cloud/common-ui-react';
 import {TextField as BaseTextField} from 'modules/components/TextField';
 
 const TextField = styled(BaseTextField)`
@@ -41,10 +36,6 @@ const ResetButtonContainer = styled(Panel.Footer)`
   }}
 `;
 
-const Select = styled(CmSelect)`
-  padding-bottom: 5px;
-`;
-
 const Fields = styled.div`
   ${({theme}) => {
     return css`
@@ -54,11 +45,6 @@ const Fields = styled.div`
       background-color: ${theme.colors.itemEven};
     `;
   }}
-`;
-
-const ProcessHeader = styled(CmText)`
-  display: block;
-  padding-bottom: 5px;
 `;
 
 const StatesHeader = styled(CmText)`
@@ -109,11 +95,9 @@ export {
   FiltersForm,
   ResetButtonContainer,
   Fields,
-  ProcessHeader,
   StatesHeader,
   InstanceStates,
   MoreFiltersDropdown,
-  Select,
   OptionalFilters,
   FormGroup,
   DeleteIcon,

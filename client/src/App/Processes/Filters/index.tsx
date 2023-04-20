@@ -17,7 +17,6 @@ import {
   Fields,
   StatesHeader,
   InstanceStates,
-  ProcessHeader,
   OptionalFilters,
   MoreFiltersDropdown,
   FormGroup,
@@ -54,7 +53,6 @@ import {Variable} from './VariableField';
 import {DateRangeField} from 'modules/components/DateRangeField';
 import {tracking} from 'modules/tracking';
 import {dateRangePopoverStore} from 'modules/stores/dateRangePopover';
-import {IS_COMBOBOX_ENABLED} from 'modules/feature-flags';
 
 type OptionalFilter =
   | 'variable'
@@ -200,9 +198,6 @@ const Filters: React.FC = observer(() => {
                   'canceled',
                 ]}
               />
-              {!IS_COMBOBOX_ENABLED && (
-                <ProcessHeader appearance="emphasis">Process</ProcessHeader>
-              )}
               <Stack gap={5}>
                 <ProcessField />
                 <ProcessVersionField />

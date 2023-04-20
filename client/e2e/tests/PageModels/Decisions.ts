@@ -7,7 +7,6 @@
 
 import {within, screen} from '@testing-library/testcafe';
 import {t} from 'testcafe';
-import {IS_COMBOBOX_ENABLED} from '../../../src/modules/feature-flags';
 import {selectComboBoxOption} from '../utils/selectComboBoxOption';
 
 class DecisionsPage {
@@ -22,39 +21,21 @@ class DecisionsPage {
   };
 
   selectDecision = async (option: string) => {
-    if (IS_COMBOBOX_ENABLED) {
-      await selectComboBoxOption({
-        fieldName: 'Name',
-        option,
-        listBoxLabel: 'Select a Decision',
-      });
-    } else {
-      await t.click(this.Filters.decisionName.field);
-      await t.click(
-        within(
-          screen.queryByTestId('cm-flyout-decision-name').shadowRoot()
-        ).queryByText(option)
-      );
-    }
+    await selectComboBoxOption({
+      fieldName: 'Name',
+      option,
+      listBoxLabel: 'Select a Decision',
+    });
   };
 
   selectVersion = async (option: string) => {
-    if (IS_COMBOBOX_ENABLED) {
-      await t.click(screen.queryByLabelText('Version', {selector: 'button'}));
-      await t.click(
-        within(screen.queryByLabelText('Select a Decision Version')).getByRole(
-          'option',
-          {name: option}
-        )
-      );
-    } else {
-      await t.click(this.Filters.decisionVersion.field);
-      await t.click(
-        within(
-          screen.queryByTestId('cm-flyout-decision-version').shadowRoot()
-        ).queryByText(option)
-      );
-    }
+    await t.click(screen.queryByLabelText('Version', {selector: 'button'}));
+    await t.click(
+      within(screen.queryByLabelText('Select a Decision Version')).getByRole(
+        'option',
+        {name: option}
+      )
+    );
   };
 }
 

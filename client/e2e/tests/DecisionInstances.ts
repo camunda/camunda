@@ -11,8 +11,6 @@ import {setup} from './DecisionInstances.setup';
 import {wait} from './utils/wait';
 import {screen, within} from '@testing-library/testcafe';
 import {decisionsPage} from './PageModels/Decisions';
-import {setDecisionsFlyoutTestAttribute} from './utils/setFlyoutTestAttribute';
-import {IS_COMBOBOX_ENABLED} from '../../src/modules/feature-flags';
 import {clearComboBox} from './utils/clearComboBox';
 
 fixture('Decision Instances')
@@ -31,11 +29,6 @@ test('Switch between Decision versions', async (t) => {
       name: /decisions/i,
     })
   );
-
-  if (!IS_COMBOBOX_ENABLED) {
-    await setDecisionsFlyoutTestAttribute('decisionName');
-    await setDecisionsFlyoutTestAttribute('decisionVersion');
-  }
 
   const withinDecisionViewer = within(screen.getByTestId('decision-viewer'));
 

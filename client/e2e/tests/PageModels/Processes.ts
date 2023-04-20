@@ -7,7 +7,6 @@
 
 import {within, screen} from '@testing-library/testcafe';
 import {t} from 'testcafe';
-import {IS_COMBOBOX_ENABLED} from '../../../src/modules/feature-flags';
 import {selectComboBoxOption} from '../utils/selectComboBoxOption';
 
 class ProcessesPage {
@@ -105,21 +104,15 @@ class ProcessesPage {
     },
 
     processName: {
-      field: IS_COMBOBOX_ENABLED
-        ? screen.queryByLabelText('Process')
-        : screen.queryByTestId('filter-process-name'),
+      field: screen.queryByLabelText('Process'),
     },
 
     processVersion: {
-      field: IS_COMBOBOX_ENABLED
-        ? screen.queryByLabelText('Version', {selector: 'button'})
-        : screen.queryByTestId('filter-process-version'),
+      field: screen.queryByLabelText('Version', {selector: 'button'}),
     },
 
     flowNode: {
-      field: IS_COMBOBOX_ENABLED
-        ? screen.queryByLabelText('Flow Node')
-        : screen.queryByTestId('filter-flow-node'),
+      field: screen.queryByLabelText('Flow Node'),
     },
   };
 
@@ -146,53 +139,29 @@ class ProcessesPage {
     );
 
   selectProcess = async (option: string) => {
-    if (IS_COMBOBOX_ENABLED) {
-      return selectComboBoxOption({
-        fieldName: 'Process',
-        option,
-        listBoxLabel: 'Select a Process',
-      });
-    } else {
-      await t.click(
-        within(
-          screen.queryByTestId('cm-flyout-process-name').shadowRoot()
-        ).queryByText(option)
-      );
-    }
+    return selectComboBoxOption({
+      fieldName: 'Process',
+      option,
+      listBoxLabel: 'Select a Process',
+    });
   };
 
   selectVersion = async (option: string) => {
-    if (IS_COMBOBOX_ENABLED) {
-      await t.click(screen.queryByLabelText('Version', {selector: 'button'}));
-      await t.click(
-        within(screen.queryByLabelText('Select a Process Version')).getByRole(
-          'option',
-          {name: option}
-        )
-      );
-    } else {
-      await t.click(
-        within(
-          screen.queryByTestId('cm-flyout-process-version').shadowRoot()
-        ).queryByText(option)
-      );
-    }
+    await t.click(screen.queryByLabelText('Version', {selector: 'button'}));
+    await t.click(
+      within(screen.queryByLabelText('Select a Process Version')).getByRole(
+        'option',
+        {name: option}
+      )
+    );
   };
 
   selectFlowNode = async (option: string) => {
-    if (IS_COMBOBOX_ENABLED) {
-      return selectComboBoxOption({
-        fieldName: 'Flow Node',
-        option,
-        listBoxLabel: 'Select a Flow Node',
-      });
-    } else {
-      await t.click(
-        within(
-          screen.queryByTestId('cm-flyout-flow-node').shadowRoot()
-        ).queryByText(option)
-      );
-    }
+    return selectComboBoxOption({
+      fieldName: 'Flow Node',
+      option,
+      listBoxLabel: 'Select a Flow Node',
+    });
   };
 }
 

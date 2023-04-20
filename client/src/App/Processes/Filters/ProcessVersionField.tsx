@@ -10,35 +10,15 @@ import {Field, useField, useForm} from 'react-final-form';
 import {observer} from 'mobx-react';
 import {Dropdown} from '@carbon/react';
 import {processesStore} from 'modules/stores/processes';
-import {Select} from './styled';
-import {IS_COMBOBOX_ENABLED} from 'modules/feature-flags';
 
 const ProcessVersionField: React.FC = observer(() => {
   const {versionsByProcess} = processesStore;
   const selectedProcess = useField('process').input.value;
-
   const versions = versionsByProcess[selectedProcess] ?? [];
-
-  const mappedVersions =
-    versions?.map(({version}) => ({
-      value: version.toString(),
-      label: version.toString(),
-    })) ?? [];
-
-  const options = [
-    {
-      options:
-        mappedVersions.length === 1
-          ? mappedVersions
-          : [{label: 'All', value: 'all'}, ...mappedVersions],
-    },
-  ];
-
   const items = ['all', ...versions.map(({version}) => version)];
-
   const form = useForm();
 
-  return IS_COMBOBOX_ENABLED ? (
+  return (
     <Field name="version">
       {({input}) => {
         return (
@@ -56,32 +36,6 @@ const ProcessVersionField: React.FC = observer(() => {
             itemToString={(item) => (item === 'all' ? 'All' : item.toString())}
             selectedItem={input.value}
             size="sm"
-          />
-        );
-      }}
-    </Field>
-  ) : (
-    <Field name="version">
-      {({input}) => {
-        return (
-          <Select
-            label="Version"
-            data-testid="filter-process-version"
-            onCmInput={(event) => {
-              if (event.detail.selectedOptions[0] !== '') {
-                input.onChange(event.detail.selectedOptions[0]);
-
-                form.change('flowNodeId', undefined);
-              }
-            }}
-            placeholder="Process Version"
-            disabled={versions === undefined || versions.length === 0}
-            options={options}
-            selectedOptions={
-              versions?.length > 0 && input.value
-                ? [input.value.toString()]
-                : ['all']
-            }
           />
         );
       }}

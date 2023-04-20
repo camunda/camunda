@@ -19,7 +19,6 @@ import {mockFetchGroupedProcesses} from 'modules/mocks/api/processes/fetchGroupe
 import {mockFetchProcessInstancesStatistics} from 'modules/mocks/api/processInstances/fetchProcessInstancesStatistics';
 import {mockFetchProcessXML} from 'modules/mocks/api/processes/fetchProcessXML';
 import {pickDateTimeRange} from 'modules/testUtils/dateTimeRange';
-import {IS_COMBOBOX_ENABLED} from 'modules/feature-flags';
 import {
   selectFlowNode,
   selectProcess,
@@ -51,25 +50,13 @@ describe('Filters', () => {
       wrapper: getWrapper(),
     });
 
-    if (IS_COMBOBOX_ENABLED) {
-      await waitFor(() =>
-        expect(screen.getByLabelText('Process')).toBeEnabled()
-      );
-      await selectProcess({user, option: 'Big variable process'});
+    await waitFor(() => expect(screen.getByLabelText('Process')).toBeEnabled());
+    await selectProcess({user, option: 'Big variable process'});
 
-      expect(
-        screen.getByLabelText('Version', {selector: 'button'})
-      ).toBeEnabled();
-      await selectProcessVersion({user, option: '1'});
-    } else {
-      await user.selectOptions(screen.getByTestId('filter-process-name'), [
-        'Big variable process',
-      ]);
-      expect(screen.getByTestId('filter-process-version')).toBeEnabled();
-      expect(
-        within(screen.getByTestId('filter-process-version')).getByText('1')
-      ).toBeInTheDocument();
-    }
+    expect(
+      screen.getByLabelText('Version', {selector: 'button'})
+    ).toBeEnabled();
+    await selectProcessVersion({user, option: '1'});
 
     await waitFor(() =>
       expect(screen.getByTestId('search')).toHaveTextContent(
@@ -104,36 +91,17 @@ describe('Filters', () => {
       ),
     });
 
-    if (IS_COMBOBOX_ENABLED) {
-      await waitFor(() =>
-        expect(screen.getByLabelText('Process')).toBeEnabled()
-      );
-      expect(screen.getByLabelText('Process')).toHaveValue(
-        'Big variable process'
-      );
-      expect(
-        screen.getByLabelText('Version', {selector: 'button'})
-      ).toHaveTextContent('1');
+    await waitFor(() => expect(screen.getByLabelText('Process')).toBeEnabled());
+    expect(screen.getByLabelText('Process')).toHaveValue(
+      'Big variable process'
+    );
+    expect(
+      screen.getByLabelText('Version', {selector: 'button'})
+    ).toHaveTextContent('1');
 
-      expect(screen.getByLabelText('Flow Node')).toHaveValue(
-        MOCK_PARAMS.flowNodeId
-      );
-    } else {
-      expect(
-        await screen.findByText('Big variable process')
-      ).toBeInTheDocument();
-      await waitFor(() =>
-        expect(screen.getByTestId('filter-process-name')).toBeEnabled()
-      );
-      expect(
-        await within(screen.getByTestId('filter-process-version')).findByText(
-          '1'
-        )
-      ).toBeInTheDocument();
-      expect(
-        await screen.findByText(MOCK_PARAMS.flowNodeId)
-      ).toBeInTheDocument();
-    }
+    expect(screen.getByLabelText('Flow Node')).toHaveValue(
+      MOCK_PARAMS.flowNodeId
+    );
 
     expect(screen.getByDisplayValue(MOCK_PARAMS.ids)).toBeInTheDocument();
 
@@ -176,16 +144,8 @@ describe('Filters', () => {
       wrapper: getWrapper(initialPath),
     });
 
-    if (IS_COMBOBOX_ENABLED) {
-      // Wait for data to be fetched
-      await waitFor(() =>
-        expect(screen.getByLabelText('Process')).toBeEnabled()
-      );
-    } else {
-      await waitFor(() =>
-        expect(screen.getByTestId('filter-flow-node')).toBeEnabled()
-      );
-    }
+    // Wait for data to be fetched
+    await waitFor(() => expect(screen.getByLabelText('Process')).toBeEnabled());
 
     // Hidden fields
     expect(
@@ -229,46 +189,23 @@ describe('Filters', () => {
       wrapper: getWrapper(),
     });
 
-    if (IS_COMBOBOX_ENABLED) {
-      // Wait for data to be fetched
-      await waitFor(() =>
-        expect(screen.getByLabelText('Process')).toBeEnabled()
-      );
-      await waitFor(() =>
-        expect(screen.getByLabelText('Flow Node')).toBeEnabled()
-      );
+    // Wait for data to be fetched
+    await waitFor(() => expect(screen.getByLabelText('Process')).toBeEnabled());
+    await waitFor(() =>
+      expect(screen.getByLabelText('Flow Node')).toBeEnabled()
+    );
 
-      expect(screen.getByLabelText('Process')).toHaveValue('');
-      expect(
-        screen.getByLabelText('Version', {selector: 'button'})
-      ).toBeDisabled();
-      expect(screen.getByLabelText('Flow Node')).toHaveValue('');
-      expect(screen.getByTestId(/active/)).not.toBeChecked();
-      expect(screen.getByTestId(/incidents/)).not.toBeChecked();
-      expect(screen.getByTestId(/completed/)).not.toBeChecked();
-      expect(screen.getByTestId(/canceled/)).not.toBeChecked();
+    expect(screen.getByLabelText('Process')).toHaveValue('');
+    expect(
+      screen.getByLabelText('Version', {selector: 'button'})
+    ).toBeDisabled();
+    expect(screen.getByLabelText('Flow Node')).toHaveValue('');
+    expect(screen.getByTestId(/active/)).not.toBeChecked();
+    expect(screen.getByTestId(/incidents/)).not.toBeChecked();
+    expect(screen.getByTestId(/completed/)).not.toBeChecked();
+    expect(screen.getByTestId(/canceled/)).not.toBeChecked();
 
-      await selectProcess({user, option: 'Big variable process'});
-    } else {
-      await waitFor(() =>
-        expect(screen.getByTestId('filter-process-name')).toBeEnabled()
-      );
-      await waitFor(() =>
-        expect(screen.getByTestId('filter-flow-node')).toBeEnabled()
-      );
-
-      expect(screen.getByTestId('filter-process-name')).toHaveValue('');
-      expect(screen.getByTestId('filter-process-version')).toHaveValue('all');
-      expect(screen.getByTestId('filter-flow-node')).toHaveValue('');
-      expect(screen.getByTestId(/active/)).not.toBeChecked();
-      expect(screen.getByTestId(/incidents/)).not.toBeChecked();
-      expect(screen.getByTestId(/completed/)).not.toBeChecked();
-      expect(screen.getByTestId(/canceled/)).not.toBeChecked();
-
-      await user.selectOptions(screen.getByTestId('filter-process-name'), [
-        'Big variable process',
-      ]);
-    }
+    await selectProcess({user, option: 'Big variable process'});
 
     await user.click(screen.getByText(/^more filters$/i));
     await user.click(screen.getByText('Process Instance Key(s)'));
@@ -291,13 +228,7 @@ describe('Filters', () => {
       MOCK_VALUES.errorMessage
     );
 
-    if (IS_COMBOBOX_ENABLED) {
-      await selectFlowNode({user, option: MOCK_VALUES.flowNodeId});
-    } else {
-      await user.selectOptions(screen.getByTestId('filter-flow-node'), [
-        MOCK_VALUES.flowNodeId,
-      ]);
-    }
+    await selectFlowNode({user, option: MOCK_VALUES.flowNodeId});
 
     await user.click(screen.getByText(/^more filters$/i));
     await user.click(screen.getByText('Variable'));
@@ -336,20 +267,10 @@ describe('Filters', () => {
       wrapper: getWrapper(),
     });
 
-    if (IS_COMBOBOX_ENABLED) {
-      await waitFor(() =>
-        expect(screen.getByLabelText('Process')).toBeEnabled()
-      );
-    } else {
-      await waitFor(() =>
-        expect(screen.getByTestId('filter-process-name')).toBeEnabled()
-      );
-    }
+    await waitFor(() => expect(screen.getByLabelText('Process')).toBeEnabled());
 
     await waitFor(() =>
-      IS_COMBOBOX_ENABLED
-        ? expect(screen.getByLabelText('Flow Node')).toBeEnabled()
-        : expect(screen.getByTestId('filter-flow-node')).toBeEnabled()
+      expect(screen.getByLabelText('Flow Node')).toBeEnabled()
     );
 
     await user.click(screen.getByText(/^more filters$/i));
@@ -557,33 +478,31 @@ describe('Filters', () => {
     }
   });
 
-  (IS_COMBOBOX_ENABLED ? it.skip : it)(
-    'should omit all versions option',
-    async () => {
-      const {user} = render(<Filters />, {
-        wrapper: getWrapper(
-          `/?${new URLSearchParams(
-            Object.entries({
-              process: 'bigVarProcess',
-              version: '1',
-            })
-          ).toString()}`
-        ),
-      });
+  // TODO: enable when https://github.com/camunda/operate/issues/4403 is implemented again
+  it.skip('should omit all versions option', async () => {
+    const {user} = render(<Filters />, {
+      wrapper: getWrapper(
+        `/?${new URLSearchParams(
+          Object.entries({
+            process: 'bigVarProcess',
+            version: '1',
+          })
+        ).toString()}`
+      ),
+    });
 
-      await user.click(screen.getByLabelText(/version/i));
+    await user.click(screen.getByLabelText(/version/i));
 
-      expect(
-        within(screen.getByLabelText(/version/i)!).getByRole('option', {
-          name: '1',
-        })
-      ).toBeInTheDocument();
+    expect(
+      within(screen.getByLabelText(/version/i)!).getByRole('option', {
+        name: '1',
+      })
+    ).toBeInTheDocument();
 
-      expect(
-        within(screen.queryByLabelText(/version/i)!).queryByRole('option', {
-          name: /all/i,
-        })
-      ).not.toBeInTheDocument();
-    }
-  );
+    expect(
+      within(screen.queryByLabelText(/version/i)!).queryByRole('option', {
+        name: /all/i,
+      })
+    ).not.toBeInTheDocument();
+  });
 });
