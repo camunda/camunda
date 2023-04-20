@@ -47,7 +47,7 @@
     <version.commons-codec>1.15</version.commons-codec>
     <version.commons-text>1.10.0</version.commons-text>
     <version.cron-utils>9.2.1</version.cron-utils>
-    <version.docker-java-api>3.2.13</version.docker-java-api>
+    <version.docker-java-api>3.3.0</version.docker-java-api>
     <version.elasticsearch>7.17.5</version.elasticsearch>
     <version.error-prone>2.15.0</version.error-prone>
     <version.grpc>1.49.2</version.grpc>
@@ -82,7 +82,7 @@
     <version.wiremock>2.34.0</version.wiremock>
     <version.conscrypt>2.5.2</version.conscrypt>
     <version.asm>9.3</version.asm>
-    <version.testcontainers>1.17.6</version.testcontainers>
+    <version.testcontainers>1.18.0</version.testcontainers>
     <version.netflix.concurrency>0.3.9</version.netflix.concurrency>
     <version.zeebe-test-container>3.5.1</version.zeebe-test-container>
     <version.feel-scala>1.15.3</version.feel-scala>
@@ -940,24 +940,6 @@
         <version>${version.awssdk}</version>
         <type>pom</type>
         <scope>import</scope>
-      </dependency>
-
-      <!--
-        Sad workaround for https://github.com/testcontainers/testcontainers-java/issues/4279; when
-        this is not needed and removed, make sure to remove it from child modules including this as
-        well
-      -->
-      <dependency>
-        <groupId>com.amazonaws</groupId>
-        <artifactId>aws-java-sdk-core</artifactId>
-        <version>1.12.450</version>
-        <scope>test</scope>
-        <exclusions>
-          <exclusion>
-            <groupId>*</groupId>
-            <artifactId>*</artifactId>
-          </exclusion>
-        </exclusions>
       </dependency>
 
       <!-- Dependencies present for convergence only -->
