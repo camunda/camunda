@@ -50,7 +50,7 @@ public abstract class DateUtil {
   }
 
   public static OffsetDateTime toOffsetDateTime(String timestamp) {
-    return toOffsetDateTime(timestamp, DateTimeFormatter.ISO_OFFSET_DATE_TIME);
+    return toOffsetDateTime(timestamp, DateTimeFormatter.ISO_ZONED_DATE_TIME);
   }
 
   public static OffsetDateTime toOffsetDateTime(String timestamp, String pattern) {
