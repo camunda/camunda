@@ -74,16 +74,11 @@ describe('<FormJS />', () => {
   it('should render form for unassigned task', async () => {
     nodeMockServer.use(
       graphql.query('GetSelectedVariables', (req, res, ctx) => {
-        if (
-          areArraysEqual(
-            REQUESTED_VARIABLES,
-            req.body?.variables?.variableNames,
-          )
-        ) {
-          return res.once(ctx.data(mockGetSelectedVariables().result.data));
+        if (areArraysEqual(REQUESTED_VARIABLES, req.variables?.variableNames)) {
+          return res(ctx.data(mockGetSelectedVariables().result.data));
         }
 
-        return res.once(
+        return res(
           ctx.errors([
             {
               message: 'Invalid variables',
@@ -126,16 +121,11 @@ describe('<FormJS />', () => {
   it('should render form for assigned task', async () => {
     nodeMockServer.use(
       graphql.query('GetSelectedVariables', (req, res, ctx) => {
-        if (
-          areArraysEqual(
-            REQUESTED_VARIABLES,
-            req.body?.variables?.variableNames,
-          )
-        ) {
-          return res.once(ctx.data(mockGetSelectedVariables().result.data));
+        if (areArraysEqual(REQUESTED_VARIABLES, req.variables?.variableNames)) {
+          return res(ctx.data(mockGetSelectedVariables().result.data));
         }
 
-        return res.once(
+        return res(
           ctx.errors([
             {
               message: 'Invalid variables',
@@ -177,16 +167,11 @@ describe('<FormJS />', () => {
   it('should render a prefilled form', async () => {
     nodeMockServer.use(
       graphql.query('GetSelectedVariables', (req, res, ctx) => {
-        if (
-          areArraysEqual(
-            REQUESTED_VARIABLES,
-            req.body?.variables?.variableNames,
-          )
-        ) {
-          return res.once(ctx.data(mockGetSelectedVariables().result.data));
+        if (areArraysEqual(REQUESTED_VARIABLES, req.variables?.variableNames)) {
+          return res(ctx.data(mockGetSelectedVariables().result.data));
         }
 
-        return res.once(
+        return res(
           ctx.errors([
             {
               message: 'Invalid variables',
@@ -225,16 +210,11 @@ describe('<FormJS />', () => {
   it('should submit prefilled form', async () => {
     nodeMockServer.use(
       graphql.query('GetSelectedVariables', (req, res, ctx) => {
-        if (
-          areArraysEqual(
-            REQUESTED_VARIABLES,
-            req.body?.variables?.variableNames,
-          )
-        ) {
-          return res.once(ctx.data(mockGetSelectedVariables().result.data));
+        if (areArraysEqual(REQUESTED_VARIABLES, req.variables?.variableNames)) {
+          return res(ctx.data(mockGetSelectedVariables().result.data));
         }
 
-        return res.once(
+        return res(
           ctx.errors([
             {
               message: 'Invalid variables',
@@ -289,16 +269,11 @@ describe('<FormJS />', () => {
   it('should submit edited form', async () => {
     nodeMockServer.use(
       graphql.query('GetSelectedVariables', (req, res, ctx) => {
-        if (
-          areArraysEqual(
-            REQUESTED_VARIABLES,
-            req.body?.variables?.variableNames,
-          )
-        ) {
-          return res.once(ctx.data(mockGetSelectedVariables().result.data));
+        if (areArraysEqual(REQUESTED_VARIABLES, req.variables?.variableNames)) {
+          return res(ctx.data(mockGetSelectedVariables().result.data));
         }
 
-        return res.once(
+        return res(
           ctx.errors([
             {
               message: 'Invalid variables',
@@ -358,7 +333,7 @@ describe('<FormJS />', () => {
   it('should render a prefilled form', async () => {
     nodeMockServer.use(
       graphql.query('GetForm', (_, res, ctx) => {
-        return res.once(ctx.data(mockGetDynamicForm.result.data));
+        return res(ctx.data(mockGetDynamicForm.result.data));
       }),
       graphql.query('GetSelectedVariables', async (req, res, ctx) => {
         const body = await req.json();
@@ -369,10 +344,10 @@ describe('<FormJS />', () => {
             body?.variables?.variableNames,
           )
         ) {
-          return res.once(ctx.data(mockGetDynamicFormsVariables().result.data));
+          return res(ctx.data(mockGetDynamicFormsVariables().result.data));
         }
 
-        return res.once(
+        return res(
           ctx.errors([
             {
               message: 'Invalid variables',

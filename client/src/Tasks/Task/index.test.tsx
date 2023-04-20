@@ -122,6 +122,9 @@ describe('<Task />', () => {
       graphql.query('GetSelectedVariables', (_, res, ctx) => {
         return res.once(ctx.data(mockGetSelectedVariables().result.data));
       }),
+      graphql.query('GetTaskVariables', (_, res, ctx) => {
+        return res(ctx.data(mockGetTaskVariables().result.data));
+      }),
     );
 
     render(<Task hasRemainingTasks />, {
@@ -275,6 +278,9 @@ describe('<Task />', () => {
       graphql.query('GetTaskVariables', (_, res, ctx) => {
         return res.once(ctx.data(mockGetTaskVariables().result.data));
       }),
+      graphql.query('GetTaskVariables', (_, res, ctx) => {
+        return res.once(ctx.data(mockGetTaskVariables().result.data));
+      }),
     );
 
     render(<Task hasRemainingTasks />, {
@@ -346,6 +352,9 @@ describe('<Task />', () => {
       ),
       graphql.query('GetForm', (_, res, ctx) =>
         res.once(ctx.data(mockGetInvalidForm.result.data)),
+      ),
+      graphql.query('GetTaskVariables', (_, res, ctx) =>
+        res.once(ctx.data(mockGetTaskVariables().result.data)),
       ),
       graphql.query('GetTaskVariables', (_, res, ctx) =>
         res.once(ctx.data(mockGetTaskVariables().result.data)),
