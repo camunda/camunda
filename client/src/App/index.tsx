@@ -17,6 +17,7 @@ import {Dashboard} from './Dashboard';
 import {Processes} from './Processes';
 import {ProcessInstance} from './ProcessInstance';
 import {Decisions} from './Decisions';
+import {Decisions as CarbonDecisions} from './Carbon/Decisions';
 import {DecisionInstance} from './DecisionInstance';
 import GlobalStyles from './GlobalStyles';
 import {NetworkStatusWatcher} from './NetworkStatusWatcher';
@@ -110,13 +111,7 @@ const App: React.FC = () => {
               />
               <Route
                 path={CarbonPaths.decisions()}
-                element={
-                  <InstancesList
-                    filters={<div>decisions - filters</div>}
-                    diagram={<section>decisions - diagram</section>}
-                    instances={<section>decisions - instances</section>}
-                  />
-                }
+                element={<CarbonDecisions />}
               />
               <Route
                 path={CarbonPaths.decisionInstance()}
