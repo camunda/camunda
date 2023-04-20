@@ -7,9 +7,12 @@
  */
 package io.camunda.zeebe.engine.state.immutable;
 
+import io.camunda.zeebe.engine.api.StreamProcessorLifecycleAware;
 import io.camunda.zeebe.engine.api.TypedRecord;
 
-public interface BlackListState {
+public interface BlackListState extends StreamProcessorLifecycleAware {
 
   boolean isOnBlacklist(final TypedRecord record);
+
+  boolean isEmpty();
 }
