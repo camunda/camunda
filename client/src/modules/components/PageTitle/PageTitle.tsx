@@ -8,7 +8,13 @@
 import {useEffect} from 'react';
 import {t} from 'translation';
 
-export default function PageTitle({pageName, resourceName, isNew = false}) {
+interface PageTitleProps {
+  pageName?: string;
+  resourceName?: string;
+  isNew?: boolean;
+}
+
+export default function PageTitle({pageName, resourceName, isNew = false}: PageTitleProps) {
   useEffect(() => {
     if (isNew) {
       setPageTitle(`${t('appName')} | ${t('common.new')} ${pageName}`);
@@ -28,6 +34,6 @@ export default function PageTitle({pageName, resourceName, isNew = false}) {
   return null;
 }
 
-function setPageTitle(title) {
-  document.title = title;
+function setPageTitle(title: string | JSX.Element[]) {
+  document.title = title.toString();
 }
