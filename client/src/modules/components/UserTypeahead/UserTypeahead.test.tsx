@@ -5,7 +5,6 @@
  * except in compliance with the proprietary license.
  */
 
-import React from 'react';
 import {shallow} from 'enzyme';
 
 import {showError} from 'notifications';
@@ -19,16 +18,26 @@ jest.mock('./service', () => ({
   getUser: jest.fn().mockReturnValue({id: 'kermit', type: 'user', name: 'Kermit'}),
 }));
 
+const props = {
+  mightFail: jest.fn().mockImplementation((data, cb) => cb(data)),
+};
+
+const testUser = {
+  id: 'USER:kermit',
+  identity: {
+    name: 'kermit',
+    id: 'kermit',
+    type: 'user',
+    email: 'kermit@kermit.com',
+    memberCount: '1',
+  },
+};
+
 it('should invoke onChange when adding a user', () => {
   const spy = jest.fn();
-  const node = shallow(
-    <UserTypeahead
-      users={[{id: 'USER:kermit', identity: {id: 'kermit', type: 'user'}}]}
-      onChange={spy}
-    />
-  );
+  const node = shallow(<UserTypeahead {...props} users={[testUser]} onChange={spy} />);
 
-  node.find('MultiUserInput').prop('onAdd')({
+  node.find('MultiUserInput').simulate('add', {
     id: 'sales',
     type: 'group',
     name: 'Sales',
@@ -36,21 +45,25 @@ it('should invoke onChange when adding a user', () => {
   });
 
   expect(spy).toHaveBeenCalledWith([
-    {id: 'USER:kermit', identity: {id: 'kermit', type: 'user'}},
-    {id: 'GROUP:sales', identity: {id: 'sales', memberCount: '2', name: 'Sales', type: 'group'}},
+    testUser,
+    {
+      id: 'GROUP:sales',
+      identity: {id: 'sales', memberCount: '2', name: 'Sales', type: 'group', email: undefined},
+    },
   ]);
 });
 
 it('should show an error when adding already existing user/group', () => {
   const node = shallow(
     <UserTypeahead
-      users={[{id: 'USER:kermit', identity: {id: 'kermit', type: 'user'}}]}
+      {...props}
+      users={[testUser]}
       mightFail={jest.fn().mockImplementation((data, cb) => cb(data))}
       onChange={jest.fn()}
     />
   );
 
-  node.find('MultiUserInput').prop('onAdd')({id: 'kermit'});
+  node.find('MultiUserInput').simulate('add', {id: 'kermit'});
 
   expect(showError).toHaveBeenCalled();
 });
@@ -59,12 +72,13 @@ it('should load non imported user before adding it to the list', () => {
   const spy = jest.fn();
   const node = shallow(
     <UserTypeahead
+      {...props}
       users={[]}
       mightFail={jest.fn().mockImplementation((data, cb) => cb(data))}
       onChange={spy}
     />
   );
-  node.find('MultiUserInput').prop('onAdd')({
+  node.find('MultiUserInput').simulate('add', {
     id: 'kermit',
   });
   expect(getUser).toHaveBeenCalledWith('kermit');
@@ -80,6 +94,7 @@ it('should load non imported user before adding it to the list', () => {
 it('should handle users and collectionUsers null values', () => {
   const node = shallow(
     <UserTypeahead
+      {...props}
       users={null}
       collectionUsers={[]}
       mightFail={jest.fn().mockImplementation((data, cb) => cb(data))}

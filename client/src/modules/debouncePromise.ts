@@ -12,9 +12,13 @@
 // the debounce. If the timeoutId of the promise after the backend request returns is still the last timeout id
 // we have stored, no user interaction has been made in between and we can resolve the promise.
 export default function debouncePromiseFactory() {
-  let lastTimeoutId;
+  let lastTimeoutId: NodeJS.Timeout;
 
-  return (fct, delay = 0, ...args) =>
+  return <T extends (...args: any[]) => any>(
+    fct: T,
+    delay = 0,
+    ...args: any[]
+  ): Promise<ReturnType<T>> =>
     new Promise((resolve, reject) => {
       clearTimeout(lastTimeoutId);
       const timeoutId = setTimeout(async () => {

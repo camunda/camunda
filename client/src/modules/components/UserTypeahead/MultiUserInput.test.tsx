@@ -5,26 +5,32 @@
  * except in compliance with the proprietary license.
  */
 
-import React from 'react';
 import {shallow} from 'enzyme';
 
 import MultiUserInput from './MultiUserInput';
 import {searchIdentities} from './service';
 
-jest.mock('debouncePromise', () => () => (fn) => fn());
+jest.mock('debouncePromise', () => () => (fn: any) => fn());
 
 jest.mock('./service', () => ({
   searchIdentities: jest.fn().mockReturnValue({result: [], total: 50}),
 }));
 
+const props = {
+  users: [],
+  onAdd: jest.fn(),
+  onRemove: jest.fn(),
+  onClear: jest.fn(),
+};
+
 it('should render a MultiSelect', () => {
-  const node = shallow(<MultiUserInput />);
+  const node = shallow(<MultiUserInput {...props} />);
 
   expect(node.find('MultiSelect')).toExist();
 });
 
 it('should load initial data when select is opened', async () => {
-  const node = shallow(<MultiUserInput />);
+  const node = shallow(<MultiUserInput {...props} />);
 
   node.find('MultiSelect').simulate('open');
   await flushPromises();
@@ -33,7 +39,7 @@ it('should load initial data when select is opened', async () => {
 });
 
 it('should enable loading while loading data and enable hasMore if there are more data available', async () => {
-  const node = shallow(<MultiUserInput />);
+  const node = shallow(<MultiUserInput {...props} />);
 
   node.find('MultiSelect').simulate('open');
 
@@ -44,7 +50,7 @@ it('should enable loading while loading data and enable hasMore if there are mor
 });
 
 it('should format user list information correctly', async () => {
-  searchIdentities.mockReturnValueOnce({
+  (searchIdentities as jest.Mock).mockReturnValueOnce({
     result: [
       {id: 'testUser', type: 'user'},
       {id: 'user2', email: 'testUser@test.com', type: 'user'},
@@ -54,7 +60,13 @@ it('should format user list information correctly', async () => {
   });
   const node = shallow(
     <MultiUserInput
-      users={[{id: 'GROUP:groupId', identity: {id: 'groupId', name: 'groupName', type: 'group'}}]}
+      {...props}
+      users={[
+        {
+          id: 'GROUP:groupId',
+          identity: {id: 'groupId', name: 'groupName', type: 'group', email: ''},
+        },
+      ]}
     />
   );
   node.find('MultiSelect').simulate('open');
@@ -64,11 +76,11 @@ it('should format user list information correctly', async () => {
 });
 
 it('should invoke onAdd when selecting an identity even if it is not in loaded identities', async () => {
-  searchIdentities.mockReturnValue({result: [{id: 'notTest'}], total: 1});
+  (searchIdentities as jest.Mock).mockReturnValue({result: [{id: 'notTest'}], total: 1});
   const spy = jest.fn();
-  const node = shallow(<MultiUserInput onAdd={spy} />);
+  const node = shallow(<MultiUserInput {...props} onAdd={spy} />);
 
-  node.find('MultiSelect').prop('onAdd')('test');
+  node.find('MultiSelect').simulate('add', 'test');
 
   expect(spy).toHaveBeenCalledWith({id: 'test'});
 });

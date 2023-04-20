@@ -5,7 +5,7 @@
  * except in compliance with the proprietary license.
  */
 
-import {useState} from 'react';
+import {useState, ReactNode} from 'react';
 import update from 'immutability-helper';
 
 import {getRandomId} from 'services';
@@ -56,8 +56,12 @@ export function addNotification(config: Config | string) {
   notificationsInstance?.addNotification({...config, id: getRandomId()});
 }
 
-export async function showError(error: string | ErrorResponse) {
-  const text = typeof error === 'string' ? error : error.message;
-
+export async function showError(error: ErrorResponse | ReactNode) {
+  let text: ReactNode;
+  if (error && typeof error === 'object' && 'message' in error) {
+    text = error.message;
+  } else {
+    text = error;
+  }
   addNotification({type: 'error', text});
 }

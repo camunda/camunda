@@ -22,7 +22,7 @@ type MultiSelectProps = {
   onClose?: () => void;
   values?: {label: string; value: string}[];
   noValuesMessage?: string;
-  placeholder?: string;
+  placeholder?: ReactNode;
   className?: string;
   onAdd: (value: string) => void;
   onRemove: (value: string, index: number) => void;

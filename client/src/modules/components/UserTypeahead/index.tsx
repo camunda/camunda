@@ -6,3 +6,5 @@
  */
 
 export {default as UserTypeahead} from './UserTypeahead';
+
+export type {User} from './service';

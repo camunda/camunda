@@ -5,21 +5,22 @@
  * except in compliance with the proprietary license.
  */
 
-import React, {useRef, useEffect, useImperativeHandle, UIEvent} from 'react';
+import {forwardRef, ReactNode, useRef, useEffect, useImperativeHandle, UIEvent} from 'react';
 import classnames from 'classnames';
 import {Input, Icon, Tag, InputProps} from 'components';
 
 import './UncontrolledMultiValueInput.scss';
 
-interface UncontrolledMultiValueInputProps extends InputProps {
+interface UncontrolledMultiValueInputProps extends Omit<InputProps, 'placeholder'> {
   values: {value: string; label?: string; invalid?: boolean}[];
   value: string;
   onRemove: (value: string, index: number) => void;
   className?: string;
   inputClassName?: string;
+  placeholder?: ReactNode;
 }
 
-export default React.forwardRef<HTMLInputElement, UncontrolledMultiValueInputProps>(
+export default forwardRef<HTMLInputElement, UncontrolledMultiValueInputProps>(
   ({values, value, onClear, placeholder, onRemove, className, inputClassName, ...props}, ref) => {
     const input = useRef<HTMLInputElement>(null);
     const sizer = useRef<HTMLSpanElement>(null);

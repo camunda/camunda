@@ -5,16 +5,28 @@
  * except in compliance with the proprietary license.
  */
 
-import React from 'react';
 import update from 'immutability-helper';
 
-import {withErrorHandling} from 'HOC';
+import {withErrorHandling, WithErrorHandlingProps} from 'HOC';
 import {t} from 'translation';
 import {showError} from 'notifications';
 import {LoadingIndicator} from 'components';
 
 import MultiUserInput from './MultiUserInput';
-import {getUser} from './service';
+import {getUser, User} from './service';
+
+export interface UserTypeaheadProps extends WithErrorHandlingProps {
+  users: User[] | null;
+  collectionUsers?: User[];
+  onChange: (users: User[]) => void;
+  fetchUsers?: (
+    query: string,
+    excludeGroups: boolean
+  ) => Promise<{total: number; result: User['identity'][]}>;
+  optionsOnly?: boolean;
+  excludeGroups?: boolean;
+  persistMenu?: boolean;
+}
 
 export function UserTypeahead({
   users = [],
@@ -25,19 +37,22 @@ export function UserTypeahead({
   optionsOnly,
   excludeGroups = false,
   persistMenu,
-}) {
+}: UserTypeaheadProps) {
   if (!users || !collectionUsers) {
     return <LoadingIndicator />;
   }
 
-  const getSelectedUser = (user, cb) => {
-    const {id, name} = user;
-    if (!name) {
+  const getSelectedUser = (
+    user: {id: string} | User['identity'],
+    cb: (user: User['identity']) => void
+  ) => {
+    if (!('name' in user)) {
       return mightFail(
-        getUser(id),
+        getUser(user.id),
         (user) => {
           const {type, id} = user;
-          const exists = (users) => users.some((user) => user.id === `${type.toUpperCase()}:${id}`);
+          const exists = (users: User[]) =>
+            users.some((user) => user.id === `${type.toUpperCase()}:${id}`);
 
           if (exists(users)) {
             return showError(t('home.roles.existing-identity'));
@@ -58,15 +73,15 @@ export function UserTypeahead({
     cb(user);
   };
 
-  const addUser = (user) => {
-    getSelectedUser(user, ({id, type, name, memberCount}) => {
+  const addUser = (user: {id: string} | User['identity']) => {
+    getSelectedUser(user, ({id, type, name, memberCount, email}) => {
       const newId = `${type.toUpperCase()}:${id}`;
-      const newIdentity = {id: newId, identity: {id, name, type, memberCount}};
+      const newIdentity: User = {id: newId, identity: {id, name, type, memberCount, email}};
       onChange(update(users, {$push: [newIdentity]}));
     });
   };
 
-  const removeUser = (id) => onChange(users.filter((user) => user.id !== id));
+  const removeUser = (id: string) => onChange(users.filter((user) => user.id !== id));
 
   return (
     <MultiUserInput

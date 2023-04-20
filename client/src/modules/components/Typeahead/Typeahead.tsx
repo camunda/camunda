@@ -199,7 +199,7 @@ export default class Typeahead extends Component<TypeaheadProps, TypeaheadState>
 
   static Option = Dropdown.Option;
 
-  static Highlight = function Highlight(props: {children: string}) {
+  static Highlight = function Highlight(props: {children: string; matchFromStart?: boolean}) {
     return <>{props.children}</>;
   };
 }

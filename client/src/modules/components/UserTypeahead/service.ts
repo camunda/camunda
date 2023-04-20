@@ -7,13 +7,26 @@
 
 import {get} from 'request';
 
-export async function searchIdentities(terms, excludeUserGroups) {
-  const response = await get(`api/identity/search`, {terms, excludeUserGroups});
+export interface User {
+  id: string;
+  identity: {
+    name: string;
+    email?: string;
+    id: string;
+    type: string;
+    memberCount?: string;
+  };
+}
 
+export async function searchIdentities(
+  terms: string,
+  excludeUserGroups: boolean
+): Promise<{total: number; result: User['identity'][]}> {
+  const response = await get('api/identity/search', {terms, excludeUserGroups});
   return await response.json();
 }
 
-export async function getUser(id) {
+export async function getUser(id: string): Promise<User['identity']> {
   const response = await get(`api/identity/${id}`);
   return await response.json();
 }

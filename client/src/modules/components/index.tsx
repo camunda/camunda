@@ -26,6 +26,8 @@ export {DocsLink} from './DocsLink';
 export {Typeahead, MultiSelect} from './Typeahead';
 export {Tag} from './Tag';
 export {UncontrolledMultiValueInput} from './MultiValueInput';
+export {UserTypeahead} from './UserTypeahead';
 
 export type {InputProps} from './Input';
 export type {LabeledProps} from './Labeled';
+export type {User} from './UserTypeahead';

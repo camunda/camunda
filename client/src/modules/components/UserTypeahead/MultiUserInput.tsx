@@ -5,17 +5,30 @@
  * except in compliance with the proprietary license.
  */
 
-import React, {useState} from 'react';
+import {useState} from 'react';
 
 import {MultiSelect} from 'components';
 import {t} from 'translation';
 import debouncePromise from 'debouncePromise';
 
-import {searchIdentities} from './service';
+import {UserTypeaheadProps} from './UserTypeahead';
+import {searchIdentities, User} from './service';
 
 import './MultiUserInput.scss';
 
 const debounceRequest = debouncePromise();
+
+interface MultiUserInputProps {
+  users: User[];
+  collectionUsers?: User[];
+  onAdd: (value: {id: string} | User['identity']) => void;
+  fetchUsers?: UserTypeaheadProps['fetchUsers'];
+  optionsOnly?: boolean;
+  onRemove: (id: string) => void;
+  onClear: () => void;
+  excludeGroups?: boolean;
+  persistMenu?: boolean;
+}
 
 export default function MultiUserInput({
   users = [],
@@ -27,12 +40,12 @@ export default function MultiUserInput({
   onClear,
   excludeGroups = false,
   persistMenu,
-}) {
+}: MultiUserInputProps): JSX.Element {
   const [loading, setLoading] = useState(true);
   const [hasMore, setHasMore] = useState(false);
-  const [identities, setIdentities] = useState([]);
+  const [identities, setIdentities] = useState<User['identity'][]>([]);
 
-  const loadNewValues = async (query, delay = 0) => {
+  const loadNewValues = async (query: string, delay = 0) => {
     setLoading(true);
 
     const {total, result} = await debounceRequest(async () => {
@@ -44,7 +57,7 @@ export default function MultiUserInput({
     setHasMore(total > result.length);
   };
 
-  function add(id) {
+  function add(id: string) {
     if (id || id === null) {
       const selectedIdentity = identities
         .filter(filterSelected)
@@ -57,8 +70,9 @@ export default function MultiUserInput({
     }
   }
 
-  const filterSelected = ({id, type}) => {
-    const exists = (users) => users.some((user) => user.id === `${type.toUpperCase()}:${id}`);
+  const filterSelected = ({id, type}: User['identity']) => {
+    const exists = (users: User[]) =>
+      users.some((user) => user.id === `${type.toUpperCase()}:${id}`);
 
     return !exists(users) && !exists(collectionUsers);
   };
@@ -107,9 +121,9 @@ export default function MultiUserInput({
   );
 }
 
-function formatTypeaheadOption({name, email, id, type}) {
-  const subTexts = [];
-  if (name) {
+function formatTypeaheadOption({name, email, id, type}: User['identity']) {
+  const subTexts: string[] = [];
+  if (name && email) {
     subTexts.push(email);
   }
 

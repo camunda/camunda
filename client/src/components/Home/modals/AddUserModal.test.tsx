@@ -5,19 +5,21 @@
  * except in compliance with the proprietary license.
  */
 
-import React from 'react';
 import {shallow} from 'enzyme';
 
 import {UserTypeahead} from 'components';
+import {getOptimizeProfile} from 'config';
 
 import AddUserModal from './AddUserModal';
 
+const optimizeProfile: Awaited<ReturnType<typeof getOptimizeProfile>> = 'platform';
+
 const props = {
+  optimizeProfile,
   open: true,
   existingUsers: [],
   onClose: jest.fn(),
   onConfirm: jest.fn(),
-  optimizeProfile: 'platform',
 };
 
 it('should match snapshot', () => {
@@ -32,7 +34,8 @@ it('should call the onConfirm prop', () => {
   node.find(UserTypeahead).prop('onChange')([
     {id: 'USER:testUser', identity: {id: 'testUser', type: 'user'}},
   ]);
-  node.setState({activeRole: 'editor'});
+
+  node.find({type: 'radio'}).at(1).simulate('change');
 
   node.find('.confirm').simulate('click');
 

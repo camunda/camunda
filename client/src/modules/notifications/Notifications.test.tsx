@@ -37,3 +37,13 @@ it('should accept string error', async () => {
 
   expect(node.find('Notification').prop<Config>('config').text).toBe('Error content');
 });
+
+it('should accept React element error', async () => {
+  const node = shallow(<Notifications />);
+
+  await showError(<h1>test</h1>);
+
+  const test = shallow(node.find('Notification').prop<Config>('config').text as React.ReactElement);
+
+  expect(test.find('h1')).toExist();
+});
