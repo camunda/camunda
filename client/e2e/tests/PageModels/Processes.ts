@@ -8,6 +8,7 @@
 import {within, screen} from '@testing-library/testcafe';
 import {t} from 'testcafe';
 import {IS_COMBOBOX_ENABLED} from '../../../src/modules/feature-flags';
+import {selectComboBoxOption} from '../utils/selectComboBoxOption';
 
 class ProcessesPage {
   Filters = {
@@ -144,27 +145,9 @@ class ProcessesPage {
       })
     );
 
-  selectComboBoxOption = async ({
-    fieldName,
-    option,
-    listBoxLabel,
-  }: {
-    fieldName: string;
-    option: string;
-    listBoxLabel: string;
-  }) => {
-    await t.click(screen.queryByLabelText(fieldName));
-    await t.click(
-      within(screen.getByRole('listbox', {name: listBoxLabel})).getByRole(
-        'option',
-        {name: option}
-      )
-    );
-  };
-
   selectProcess = async (option: string) => {
     if (IS_COMBOBOX_ENABLED) {
-      return this.selectComboBoxOption({
+      return selectComboBoxOption({
         fieldName: 'Process',
         option,
         listBoxLabel: 'Select a Process',
@@ -198,7 +181,7 @@ class ProcessesPage {
 
   selectFlowNode = async (option: string) => {
     if (IS_COMBOBOX_ENABLED) {
-      return this.selectComboBoxOption({
+      return selectComboBoxOption({
         fieldName: 'Flow Node',
         option,
         listBoxLabel: 'Select a Flow Node',

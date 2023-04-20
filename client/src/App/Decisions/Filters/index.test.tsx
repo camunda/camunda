@@ -22,6 +22,12 @@ import {Filters} from './index';
 import {mockFetchGroupedDecisions} from 'modules/mocks/api/decisions/fetchGroupedDecisions';
 import {pickDateTimeRange} from 'modules/testUtils/dateTimeRange';
 import {useEffect} from 'react';
+import {IS_COMBOBOX_ENABLED} from 'modules/feature-flags';
+import {
+  clearComboBox,
+  selectDecision,
+  selectDecisionVersion,
+} from 'modules/testUtils/selectComboBoxOption';
 
 jest.unmock('modules/utils/date/formatDate');
 
@@ -51,6 +57,14 @@ function getWrapper(initialPath: string = '/decisions') {
   return Wrapper;
 }
 
+const expectVersion = (version: string) => {
+  expect(
+    within(screen.getByLabelText('Version', {selector: 'button'})).getByText(
+      version
+    )
+  ).toBeInTheDocument();
+};
+
 const MOCK_FILTERS_PARAMS = {
   name: 'invoice-assign-approver',
   version: '2',
@@ -76,8 +90,10 @@ describe('<Filters />', () => {
     });
 
     expect(screen.getByText(/^decision$/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/name/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/version/i)).toBeInTheDocument();
+    expect(screen.getByLabelText('Name')).toBeInTheDocument();
+    expect(
+      screen.getByLabelText('Version', {selector: 'button'})
+    ).toBeInTheDocument();
     expect(screen.getByText(/^instance states$/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/evaluated/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/failed/i)).toBeInTheDocument();
@@ -101,10 +117,15 @@ describe('<Filters />', () => {
     expect(screen.getByTestId('pathname')).toHaveTextContent(/^\/decisions$/);
     expect(screen.getByTestId('search')).toBeEmptyDOMElement();
 
-    await user.selectOptions(screen.getByLabelText(/name/i), [
-      'invoice-assign-approver',
-    ]);
-    await user.selectOptions(screen.getByLabelText(/version/i), ['2']);
+    if (IS_COMBOBOX_ENABLED) {
+      await selectDecision({user, option: 'Assign Approver Group'});
+      await selectDecisionVersion({user, option: '2'});
+    } else {
+      await user.selectOptions(screen.getByLabelText(/name/i), [
+        'invoice-assign-approver',
+      ]);
+      await user.selectOptions(screen.getByLabelText(/version/i), ['2']);
+    }
     await user.click(screen.getByLabelText(/evaluated/i));
     await user.click(screen.getByLabelText(/failed/i));
 
@@ -190,12 +211,22 @@ describe('<Filters />', () => {
       wrapper: getWrapper(`/?${new URLSearchParams(MOCK_FILTERS_PARAMS)}`),
     });
 
-    expect(
-      screen.getByDisplayValue(/assign approver group/i)
-    ).toBeInTheDocument();
-    expect(
-      within(screen.getByLabelText(/version/i)).getByRole('option', {name: '2'})
-    ).toBeInTheDocument();
+    if (IS_COMBOBOX_ENABLED) {
+      expect(screen.getByLabelText('Name')).toHaveValue(
+        'Assign Approver Group'
+      );
+      expectVersion('2');
+    } else {
+      expect(
+        screen.getByDisplayValue(/assign approver group/i)
+      ).toBeInTheDocument();
+      expect(
+        within(screen.getByLabelText(/version/i)).getByRole('option', {
+          name: '2',
+        })
+      ).toBeInTheDocument();
+    }
+
     expect(screen.getByLabelText(/evaluated/i)).toBeChecked();
     expect(screen.getByLabelText(/failed/i)).toBeChecked();
     expect(screen.getByDisplayValue(/2251799813689540-1/i)).toBeInTheDocument();
@@ -300,50 +331,84 @@ describe('<Filters />', () => {
     ).not.toBeInTheDocument();
   });
 
-  it('should select decision name and version', async () => {
-    const {user} = render(<Filters />, {
-      wrapper: getWrapper(),
-    });
+  (IS_COMBOBOX_ENABLED ? it.skip : it)(
+    'should select decision name and version',
+    async () => {
+      const {user} = render(<Filters />, {
+        wrapper: getWrapper(),
+      });
 
-    const withinVersionField = within(screen.getByLabelText(/version/i));
+      const withinVersionField = within(screen.getByLabelText(/version/i));
 
-    expect(
-      withinVersionField.queryByRole('option', {name: '1'})
-    ).not.toBeInTheDocument();
-    expect(
-      withinVersionField.queryByRole('option', {name: '2'})
-    ).not.toBeInTheDocument();
-    expect(screen.getAllByDisplayValue(/all/i)).toHaveLength(2);
-    expect(screen.getByLabelText(/version/i)).toBeDisabled();
+      expect(
+        withinVersionField.queryByRole('option', {name: '1'})
+      ).not.toBeInTheDocument();
+      expect(
+        withinVersionField.queryByRole('option', {name: '2'})
+      ).not.toBeInTheDocument();
+      expect(screen.getAllByDisplayValue(/all/i)).toHaveLength(2);
+      expect(screen.getByLabelText(/version/i)).toBeDisabled();
 
-    await user.selectOptions(screen.getByLabelText(/name/i), [
-      'invoice-assign-approver',
-    ]);
+      await user.selectOptions(screen.getByLabelText(/name/i), [
+        'invoice-assign-approver',
+      ]);
 
-    expect(
-      withinVersionField.getByRole('option', {name: '2'})
-    ).toBeInTheDocument();
-    expect(screen.getByLabelText(/version/i)).not.toBeDisabled();
-    expect(screen.queryByDisplayValue(/all/i)).not.toBeInTheDocument();
+      expect(
+        withinVersionField.getByRole('option', {name: '2'})
+      ).toBeInTheDocument();
+      expect(screen.getByLabelText(/version/i)).not.toBeDisabled();
+      expect(screen.queryByDisplayValue(/all/i)).not.toBeInTheDocument();
 
-    await user.selectOptions(screen.getByLabelText(/version/i), ['1']);
+      await user.selectOptions(screen.getByLabelText(/version/i), ['1']);
 
-    expect(
-      withinVersionField.getByRole('option', {name: '1'})
-    ).toBeInTheDocument();
-    expect(screen.getByLabelText(/version/i)).not.toBeDisabled();
+      expect(
+        withinVersionField.getByRole('option', {name: '1'})
+      ).toBeInTheDocument();
+      expect(screen.getByLabelText(/version/i)).not.toBeDisabled();
 
-    await user.selectOptions(screen.getByLabelText(/name/i), ['']);
+      await user.selectOptions(screen.getByLabelText(/name/i), ['']);
 
-    expect(
-      withinVersionField.queryByRole('option', {name: '1'})
-    ).not.toBeInTheDocument();
-    expect(
-      withinVersionField.queryByRole('option', {name: '2'})
-    ).not.toBeInTheDocument();
-    expect(screen.getAllByDisplayValue(/all/i)).toHaveLength(2);
-    expect(screen.getByLabelText(/version/i)).toBeDisabled();
-  });
+      expect(
+        withinVersionField.queryByRole('option', {name: '1'})
+      ).not.toBeInTheDocument();
+      expect(
+        withinVersionField.queryByRole('option', {name: '2'})
+      ).not.toBeInTheDocument();
+      expect(screen.getAllByDisplayValue(/all/i)).toHaveLength(2);
+      expect(screen.getByLabelText(/version/i)).toBeDisabled();
+    }
+  );
+
+  (IS_COMBOBOX_ENABLED ? it : it.skip)(
+    'should select decision name and version',
+    async () => {
+      const {user} = render(<Filters />, {
+        wrapper: getWrapper(),
+      });
+
+      expect(
+        screen.getByLabelText('Version', {selector: 'button'})
+      ).toBeDisabled();
+
+      await selectDecision({user, option: 'Assign Approver Group'});
+      await waitFor(() => expectVersion('2'));
+
+      expect(
+        screen.getByLabelText('Version', {selector: 'button'})
+      ).toBeEnabled();
+
+      await selectDecisionVersion({user, option: '1'});
+      await waitFor(() => expectVersion('1'));
+      expect(
+        screen.getByLabelText('Version', {selector: 'button'})
+      ).toBeEnabled();
+
+      await clearComboBox({user, fieldName: 'Name'});
+      expect(
+        screen.getByLabelText('Version', {selector: 'button'})
+      ).toBeDisabled();
+    }
+  );
 
   it('should validate decision instance keys', async () => {
     const {user} = render(<Filters />, {
@@ -504,31 +569,34 @@ describe('<Filters />', () => {
     );
   });
 
-  it('should omit all versions option', async () => {
-    reset();
-    const firstDecision = groupedDecisions[0]!;
-    const firstVersion = firstDecision.decisions[1]!;
+  (IS_COMBOBOX_ENABLED ? it.skip : it)(
+    'should omit all versions option',
+    async () => {
+      reset();
+      const firstDecision = groupedDecisions[0]!;
+      const firstVersion = firstDecision.decisions[1]!;
 
-    mockFetchGroupedDecisions().withSuccess([
-      {...firstDecision, decisions: [firstVersion]},
-    ]);
+      mockFetchGroupedDecisions().withSuccess([
+        {...firstDecision, decisions: [firstVersion]},
+      ]);
 
-    await groupedDecisionsStore.fetchDecisions();
+      await groupedDecisionsStore.fetchDecisions();
 
-    jest.useFakeTimers();
+      jest.useFakeTimers();
 
-    const {user} = render(<Filters />, {
-      wrapper: getWrapper(
-        `/decisions?name=${firstDecision.decisionId}&version=${firstVersion}`
-      ),
-    });
+      const {user} = render(<Filters />, {
+        wrapper: getWrapper(
+          `/decisions?name=${firstDecision.decisionId}&version=${firstVersion}`
+        ),
+      });
 
-    await user.click(screen.getByLabelText(/version/i));
+      await user.click(screen.getByLabelText(/version/i));
 
-    expect(
-      within(screen.queryByLabelText(/version/i)!).queryByRole('option', {
-        name: /all/i,
-      })
-    ).not.toBeInTheDocument();
-  });
+      expect(
+        within(screen.queryByLabelText(/version/i)!).queryByRole('option', {
+          name: /all/i,
+        })
+      ).not.toBeInTheDocument();
+    }
+  );
 });

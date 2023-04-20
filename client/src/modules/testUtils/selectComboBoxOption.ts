@@ -5,7 +5,7 @@
  * except in compliance with the proprietary license.
  */
 
-import {screen, within} from '@testing-library/react';
+import {screen, waitFor, within} from '@testing-library/react';
 import {UserEvent} from 'modules/testing-library';
 
 const selectComboBoxOption = async ({
@@ -55,4 +55,50 @@ const selectFlowNode = ({user, option}: SelectProps) => {
   });
 };
 
-export {selectProcess, selectProcessVersion, selectFlowNode};
+const selectDecision = ({user, option}: SelectProps) => {
+  return selectComboBoxOption({
+    user,
+    option,
+    fieldName: 'Name',
+    listBoxLabel: 'Select a Decision',
+  });
+};
+
+const selectDecisionVersion = async ({user, option}: SelectProps) => {
+  await user.click(screen.getByLabelText('Version', {selector: 'button'}));
+  await user.selectOptions(
+    within(screen.getByLabelText('Select a Decision Version')).getByRole(
+      'listbox'
+    ),
+    [screen.getByRole('option', {name: option})]
+  );
+};
+
+const clearComboBox = async ({
+  user,
+  fieldName,
+}: {
+  user: UserEvent;
+  fieldName: string;
+}) => {
+  const parentElement = screen.getByLabelText(fieldName).parentElement;
+
+  await waitFor(() => expect(parentElement).toBeInTheDocument());
+
+  if (parentElement) {
+    return user.click(
+      within(parentElement).getByRole('button', {
+        name: 'Clear selected item',
+      })
+    );
+  }
+};
+
+export {
+  selectProcess,
+  selectProcessVersion,
+  selectFlowNode,
+  selectDecision,
+  selectDecisionVersion,
+  clearComboBox,
+};
