@@ -33,6 +33,7 @@ const CollapsablePanel: React.FC<Props> = ({label, children}) => {
     <BaseCollapsablePanel
       label={label}
       panelPosition="LEFT"
+      maxWidth={320}
       isCollapsed={panelState === 'collapsed'}
       onToggle={() => {
         setPanelState((panelState) => {

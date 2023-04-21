@@ -12,23 +12,46 @@ import {
 } from '@carbon/react/icons';
 import {IconButton as BaseIconButton} from '@carbon/react';
 import {Header as BaseHeader} from '../PanelHeader/styled';
+import {COLLAPSABLE_PANEL_MIN_WIDTH} from 'modules/constants';
 
 type CollapsableProps = {
   isCollapsed: boolean;
+  $panelPosition: 'LEFT' | 'RIGHT';
+  $isOverlay?: boolean;
+  $maxWidth: number;
 };
 
 const Collapsable = styled.div<CollapsableProps>`
-  ${({isCollapsed}) => {
+  ${({isCollapsed, $isOverlay, $panelPosition, $maxWidth}) => {
+    const isLeft = $panelPosition === 'LEFT';
+    const isRight = $panelPosition === 'RIGHT';
+
     return css`
       height: 100%;
 
       ${isCollapsed
         ? css`
-            min-width: var(--cds-spacing-09);
+            min-width: ${COLLAPSABLE_PANEL_MIN_WIDTH};
           `
         : css`
-            min-width: calc(2 * var(--cds-spacing-13));
+            min-width: ${$maxWidth}px;
           `};
+
+      ${$isOverlay
+        ? css`
+            position: absolute;
+            ${isRight
+              ? css`
+                  right: 0;
+                `
+              : ''}
+            ${isLeft
+              ? css`
+                  left: 0;
+                `
+              : ''}
+          `
+        : ''};
     `;
   }}
 `;
@@ -97,8 +120,22 @@ const IconButton = styled(BaseIconButton)`
   min-height: 0;
 `;
 
-const Header = styled(BaseHeader)`
-  justify-content: space-between;
+type HeaderProps = {
+  $panelPosition: 'RIGHT' | 'LEFT';
+};
+
+const Header = styled(BaseHeader)<HeaderProps>`
+  ${({$panelPosition}) => {
+    return css`
+      justify-content: space-between;
+      ${$panelPosition === 'RIGHT' &&
+      css`
+        flex-direction: row-reverse;
+        justify-content: flex-end;
+        gap: var(--cds-spacing-06);
+      `}
+    `;
+  }}
 `;
 
 export {Panel, Collapsable, ExpandIcon, CollapseIcon, IconButton, Header};

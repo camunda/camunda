@@ -19,14 +19,18 @@ import {
 type Props = {
   label: string;
   panelPosition: 'RIGHT' | 'LEFT';
+  isOverlay?: boolean;
   onToggle: () => void;
   isCollapsed: boolean;
   children?: React.ReactNode;
+  maxWidth: number;
 };
 
 const CollapsablePanel: React.FC<Props> = ({
   label,
   panelPosition,
+  maxWidth,
+  isOverlay = false,
   children,
   isCollapsed,
   onToggle,
@@ -35,7 +39,13 @@ const CollapsablePanel: React.FC<Props> = ({
   const tooltipAlignment = panelPosition === 'RIGHT' ? 'left' : 'right';
 
   return (
-    <Collapsable {...props} isCollapsed={isCollapsed}>
+    <Collapsable
+      {...props}
+      isCollapsed={isCollapsed}
+      $panelPosition={panelPosition}
+      $isOverlay={isOverlay}
+      $maxWidth={maxWidth}
+    >
       {isCollapsed ? (
         <Panel
           data-testid="collapsed-panel"
@@ -55,7 +65,7 @@ const CollapsablePanel: React.FC<Props> = ({
         </Panel>
       ) : (
         <Panel data-testid="expanded-panel" $panelPosition={panelPosition}>
-          <Header>
+          <Header $panelPosition={panelPosition}>
             <Title>{label}</Title>
             <IconButton
               kind="ghost"

@@ -12,6 +12,7 @@ import {
 import {Container} from './styled';
 import {observer} from 'mobx-react';
 import {useEffect, useRef, useState} from 'react';
+import {OperationsPanel} from 'modules/components/Carbon/OperationsPanel';
 
 type Props = {
   filters: React.ReactNode;
@@ -42,6 +43,7 @@ const InstancesList: React.FC<Props> = observer(
             {instances}
           </ResizablePanel>
         </div>
+        <OperationsPanel />
       </Container>
     );
   }
