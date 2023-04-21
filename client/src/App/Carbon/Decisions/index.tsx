@@ -12,11 +12,31 @@ import {InstancesList} from '../Layout/InstancesList';
 import {InstancesTable} from './InstancesTable';
 import {VisuallyHiddenH1} from 'modules/components/VisuallyHiddenH1';
 import {Filters} from './Filters';
+import {groupedDecisionsStore} from 'modules/stores/groupedDecisions';
+import {useLocation, Location} from 'react-router-dom';
+
+type LocationType = Omit<Location, 'state'> & {
+  state: {refreshContent?: boolean};
+};
 
 const Decisions: React.FC = () => {
   useEffect(() => {
     document.title = PAGE_TITLE.DECISION_INSTANCES;
+    groupedDecisionsStore.fetchDecisions();
+
+    return groupedDecisionsStore.reset;
   }, []);
+
+  const location = useLocation() as LocationType;
+
+  useEffect(() => {
+    if (
+      groupedDecisionsStore.state.status !== 'initial' &&
+      location.state?.refreshContent
+    ) {
+      groupedDecisionsStore.fetchDecisions();
+    }
+  }, [location.state]);
 
   return (
     <>

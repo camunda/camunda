@@ -6,14 +6,16 @@
  */
 
 import styled from 'styled-components';
+import {TableContainer as BaseTableContainer} from '@carbon/react';
 
-const Header = styled.header`
-  background-color: var(--cds-layer-01);
-  border-bottom: solid 1px var(--cds-border-subtle-01);
-  padding: var(--cds-spacing-04);
-  display: flex;
-  align-items: center;
-  min-height: var(--cds-spacing-09);
+const Container = styled.div`
+  height: 100%;
+  overflow-y: auto;
+  flex: 1 0 0;
 `;
 
-export {Header};
+const TableContainer = styled(BaseTableContainer)`
+  padding-top: 0;
+`;
+
+export {Container, TableContainer};

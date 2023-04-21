@@ -7,13 +7,10 @@
 
 import styled from 'styled-components';
 
-const Header = styled.header`
-  background-color: var(--cds-layer-01);
-  border-bottom: solid 1px var(--cds-border-subtle-01);
-  padding: var(--cds-spacing-04);
+const Container = styled.section`
+  height: 100%;
   display: flex;
-  align-items: center;
-  min-height: var(--cds-spacing-09);
+  flex-direction: column;
 `;
 
-export {Header};
+export {Container};

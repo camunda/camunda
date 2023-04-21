@@ -33,7 +33,7 @@ const InstancesTable: React.FC = observer(() => {
   const {
     state: {
       status,
-      filteredProcessInstancesCount,
+      filteredDecisionInstancesCount,
       latestFetch,
       decisionInstances,
     },
@@ -59,7 +59,7 @@ const InstancesTable: React.FC = observer(() => {
         return;
       }
 
-      decisionInstancesStore.fetchProcessInstancesFromFilters();
+      decisionInstancesStore.fetchDecisionInstancesFromFilters();
     }
   }, [location.search, groupedDecisionsStatus, decisions]);
 
@@ -92,7 +92,7 @@ const InstancesTable: React.FC = observer(() => {
     <Container>
       <PanelHeader
         title="Decision Instances"
-        count={filteredProcessInstancesCount}
+        count={filteredDecisionInstancesCount}
       />
       <SortableTable
         state={getTableState()}

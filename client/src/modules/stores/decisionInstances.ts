@@ -18,7 +18,7 @@ import {tracking} from 'modules/tracking';
 type FetchType = 'initial' | 'prev' | 'next';
 type State = {
   decisionInstances: DecisionInstanceEntity[];
-  filteredProcessInstancesCount: number;
+  filteredDecisionInstancesCount: number;
   latestFetch: {
     fetchType: FetchType;
     decisionInstancesCount: number;
@@ -38,7 +38,7 @@ const MAX_INSTANCES_PER_REQUEST = 50;
 
 const DEFAULT_STATE: State = {
   decisionInstances: [],
-  filteredProcessInstancesCount: 0,
+  filteredDecisionInstancesCount: 0,
   latestFetch: null,
   status: 'initial',
 };
@@ -65,7 +65,7 @@ class DecisionInstances extends NetworkReconnectionHandler {
     });
   }
 
-  fetchProcessInstancesFromFilters = this.retryOnConnectionLost(async () => {
+  fetchDecisionInstancesFromFilters = this.retryOnConnectionLost(async () => {
     this.startFetching();
     this.fetchInstances({
       fetchType: 'initial',
@@ -184,7 +184,7 @@ class DecisionInstances extends NetworkReconnectionHandler {
     } else {
       this.state.status = 'fetching';
     }
-    this.state.filteredProcessInstancesCount = 0;
+    this.state.filteredDecisionInstancesCount = 0;
   };
 
   startFetchingNext = () => {
@@ -250,7 +250,7 @@ class DecisionInstances extends NetworkReconnectionHandler {
     totalCount: number;
   }) => {
     this.state.decisionInstances = decisionInstances;
-    this.state.filteredProcessInstancesCount = totalCount;
+    this.state.filteredDecisionInstancesCount = totalCount;
   };
 
   get areDecisionInstancesEmpty() {
