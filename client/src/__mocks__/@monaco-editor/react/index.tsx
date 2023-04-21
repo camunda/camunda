@@ -18,9 +18,13 @@ class MockModelContentChangedEvent implements editor.IModelContentChangedEvent {
   isUndoing = false;
   isRedoing = false;
   isFlush = false;
+  isEolChange = false;
 }
 
-const Editor: typeof OriginalEditor = ({value, onChange}) => {
+const Editor: React.FC<React.ComponentProps<typeof OriginalEditor>> = ({
+  value,
+  onChange,
+}) => {
   return (
     <textarea
       data-testid="monaco-editor"
@@ -36,7 +40,10 @@ const useMonaco: typeof originUseMonaco = () => {
   return null;
 };
 
-const DiffEditor: typeof OriginalDiffEditor = ({original, modified}) => {
+const DiffEditor: React.FC<React.ComponentProps<typeof OriginalDiffEditor>> = ({
+  original,
+  modified,
+}) => {
   return (
     <>
       <textarea value={original} readOnly />
