@@ -8,13 +8,13 @@
 package io.camunda.zeebe.transport.stream.impl;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatException;
-import static org.assertj.core.api.Assertions.assertThatNoException;
 
+import io.camunda.zeebe.scheduler.testing.TestActorFuture;
 import io.camunda.zeebe.transport.stream.api.ClientStreamConsumer;
 import io.camunda.zeebe.transport.stream.api.ClientStreamId;
 import io.camunda.zeebe.transport.stream.impl.AggregatedClientStream.LogicalId;
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -40,12 +40,12 @@ class AggregatedClientStreamTest {
             addFailingClient(executedClients::add),
             addFailingClient(executedClients::add));
 
-    // when - then
+    // when
+    final TestActorFuture<Void> future = new TestActorFuture<>();
+    stream.getClientStreamConsumer().push(null, future);
 
-    assertThatException()
-        .isThrownBy(() -> stream.getClientStreamConsumer().push(null))
-        .isInstanceOf(StreamExhaustedException.class);
-
+    // then
+    assertThat(future).failsWithin(Duration.ofMillis(100));
     assertThat(executedClients).containsExactlyInAnyOrderElementsOf(expected);
   }
 
@@ -57,11 +57,19 @@ class AggregatedClientStreamTest {
 
     final AtomicBoolean pushSucceeded = new AtomicBoolean(false);
     final ClientStreamIdImpl streamId = getNextStreamId();
-    addClient(streamId, p -> pushSucceeded.set(true));
+    addClient(
+        streamId,
+        p -> {
+          pushSucceeded.set(true);
+          return TestActorFuture.completedFuture(null);
+        });
 
-    // when - then
+    // when
+    final TestActorFuture<Void> future = new TestActorFuture<>();
+    stream.getClientStreamConsumer().push(null, future);
 
-    assertThatNoException().isThrownBy(() -> stream.getClientStreamConsumer().push(null));
+    // then
+    assertThat(future).succeedsWithin(Duration.ofMillis(100));
     assertThat(pushSucceeded.get()).isTrue();
   }
 
@@ -75,7 +83,7 @@ class AggregatedClientStreamTest {
         streamId,
         p -> {
           consumer.accept(streamId);
-          throw new RuntimeException("fail");
+          return TestActorFuture.failedFuture(new RuntimeException("fail"));
         });
     return streamId;
   }

@@ -11,6 +11,7 @@ import io.atomix.cluster.MemberId;
 import io.atomix.cluster.messaging.ClusterCommunicationService;
 import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
+import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.transport.stream.api.ClientStreamConsumer;
 import io.camunda.zeebe.transport.stream.api.ClientStreamId;
 import io.camunda.zeebe.transport.stream.api.ClientStreamer;
@@ -44,16 +45,25 @@ public class ClientStreamService<M extends BufferWriter> extends Actor
         StreamTopics.PUSH.topic(),
         MessageUtil::parsePushRequest,
         request -> {
-          final CompletableFuture<Void> future = new CompletableFuture<>();
+          final CompletableFuture<Void> responseFuture = new CompletableFuture<>();
           actor.run(
               () -> {
                 try {
-                  clientStreamManager.onPayloadReceived(request, future);
+                  final ActorFuture<Void> payloadPushed = new CompletableActorFuture<>();
+                  clientStreamManager.onPayloadReceived(request, payloadPushed);
+                  payloadPushed.onComplete(
+                      (ok, error) -> {
+                        if (error == null) {
+                          responseFuture.complete(null);
+                        } else {
+                          responseFuture.completeExceptionally(error);
+                        }
+                      });
                 } catch (final Exception e) {
-                  future.completeExceptionally(e);
+                  responseFuture.completeExceptionally(e);
                 }
               });
-          return future;
+          return responseFuture;
         },
         ignore -> new byte[0]);
   }
