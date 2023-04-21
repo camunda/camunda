@@ -45,8 +45,12 @@ public class BpmnJobActivationBehavior {
     this.jobMetrics = jobMetrics;
   }
 
-  public void publishWork(
-      final JobRecord jobRecord, final long elementInstanceKey, final long activationTimeStamp) {
-    // TODO: add conditional logic for job pushing or notifying
+  public void publishWork(final JobRecord jobRecord) {
+    final String jobType = jobRecord.getType();
+    sideEffectWriter.appendSideEffect(
+        () -> {
+          jobStreamer.notifyWorkAvailable(jobType);
+          return true;
+        });
   }
 }

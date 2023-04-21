@@ -135,7 +135,11 @@ public final class JobFailProcessor implements CommandProcessor<JobRecord> {
           });
     }
     commandControl.accept(JobIntent.FAILED, failedJob);
-    // TODO: call JobActivationbehavior#publishWork
     jobMetrics.jobFailed(failedJob.getType());
+
+    final boolean retryImmediately = retries > 0 && retryBackOff <= 0;
+    if (retryImmediately) {
+      jobActivationBehavior.publishWork(failedJob);
+    }
   }
 }

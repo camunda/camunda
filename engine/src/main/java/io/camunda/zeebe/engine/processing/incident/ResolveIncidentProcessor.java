@@ -15,9 +15,11 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseW
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.immutable.IncidentState;
+import io.camunda.zeebe.engine.state.immutable.JobState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
 import io.camunda.zeebe.protocol.impl.record.value.incident.IncidentRecord;
+import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
@@ -42,6 +44,7 @@ public final class ResolveIncidentProcessor implements TypedRecordProcessor<Inci
   private final ElementInstanceState elementInstanceState;
   private final TypedResponseWriter responseWriter;
   private final BpmnJobActivationBehavior jobActivationBehavior;
+  private final JobState jobState;
 
   public ResolveIncidentProcessor(
       final ProcessingState processingState,
@@ -55,6 +58,7 @@ public final class ResolveIncidentProcessor implements TypedRecordProcessor<Inci
     incidentState = processingState.getIncidentState();
     elementInstanceState = processingState.getElementInstanceState();
     this.jobActivationBehavior = jobActivationBehavior;
+    jobState = processingState.getJobState();
   }
 
   @Override
@@ -70,7 +74,8 @@ public final class ResolveIncidentProcessor implements TypedRecordProcessor<Inci
 
     stateWriter.appendFollowUpEvent(key, IncidentIntent.RESOLVED, incident);
     responseWriter.writeEventOnCommand(key, IncidentIntent.RESOLVED, incident, command);
-    // TODO: call JobActivationbehavior#publishWork
+
+    publishIncidentRelatedJob(incident.getJobKey());
 
     // if it fails, a new incident is raised
     attemptToContinueProcessProcessing(command, incident);
@@ -136,6 +141,14 @@ public final class ResolveIncidentProcessor implements TypedRecordProcessor<Inci
         return Either.right(ProcessInstanceIntent.COMPLETE_ELEMENT);
       default:
         return Either.left(String.format(ELEMENT_NOT_IN_SUPPORTED_STATE_MSG, instanceState));
+    }
+  }
+
+  private void publishIncidentRelatedJob(final long jobKey) {
+    final boolean isJobRelatedIncident = jobKey > 0;
+    if (isJobRelatedIncident) {
+      final JobRecord failedJobRecord = jobState.getJob(jobKey);
+      jobActivationBehavior.publishWork(failedJobRecord);
     }
   }
 }
