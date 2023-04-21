@@ -694,7 +694,7 @@ public final class NettyMessagingService implements ManagedMessagingService {
     final InetAddress resolvedAddress = address.address(true);
     if (resolvedAddress == null) {
       future.completeExceptionally(
-          new IllegalStateException(
+          new ConnectException(
               "Failed to bootstrap client (address "
                   + address.toString()
                   + " cannot be resolved)"));
