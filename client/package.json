@@ -116,6 +116,6 @@
   },
   "resolutions": {
     "react-scripts/postcss-preset-env/postcss-custom-properties": "^13.0.0",
-    "@testing-library/dom": "9.0.0"
+    "@testing-library/dom": "9.2.0"
   }
 }
