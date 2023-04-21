@@ -40,7 +40,7 @@ jobs:
             maven-build-threads: 1
             maven-test-fork-count: 8
             tcc-enabled: 'true'
-            tcc-concurrency: 2
+            tcc-concurrency: 3
           - group: qa-update
             name: "QA Update Tests"
             maven-modules: "qa/update-tests"
