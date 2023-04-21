@@ -33,7 +33,7 @@ import org.agrona.collections.MutableInteger;
  */
 public final class MessageTimeToLiveChecker implements Task {
 
-  private static final MessageRecord EMPTY_DELETE_MESSAGE_COMMAND =
+  private final MessageRecord emptyDeleteMessageCommand =
       new MessageRecord().setName("").setCorrelationKey("").setTimeToLive(-1L);
 
   /** This determines the duration that the TTL checker is idle after it completes an execution. */
@@ -88,7 +88,7 @@ public final class MessageTimeToLiveChecker implements Task {
 
               final boolean stillFitsInResult =
                   taskResultBuilder.appendCommandRecord(
-                      expiredMessageKey, MessageIntent.EXPIRE, EMPTY_DELETE_MESSAGE_COMMAND);
+                      expiredMessageKey, MessageIntent.EXPIRE, emptyDeleteMessageCommand);
               return stillFitsInResult && counter.incrementAndGet() < batchLimit;
             });
 
