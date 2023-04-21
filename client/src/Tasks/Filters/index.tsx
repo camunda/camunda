@@ -39,7 +39,7 @@ const Filters: React.FC<Props> = ({disabled}) => {
   const initialValues = {filter, sortBy};
 
   return (
-    <Container title="Filters">
+    <Container aria-label="Filters">
       <Form<FormValues>
         onSubmit={(values) => {
           const updatedParams = new URLSearchParams(

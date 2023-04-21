@@ -183,7 +183,7 @@ const Details: React.FC<Props> = ({children, onAssignmentError, task}) => {
         </Header>
         {children}
       </Content>
-      <Aside>
+      <Aside aria-label="Task details right panel">
         <ContainedList label="Details" kind="disclosed">
           <ContainedListItem>
             <BodyCompact $color="secondary">Creation date</BodyCompact>

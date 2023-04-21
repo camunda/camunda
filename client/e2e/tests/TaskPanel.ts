@@ -25,7 +25,7 @@ fixture('Left panel')
 const getURL = ClientFunction(() => window.location.href);
 
 test('filter selection', async (t) => {
-  const withinExpandedPanel = within(screen.getByTitle('Left panel'));
+  const withinExpandedPanel = within(screen.getByLabelText('Left panel'));
 
   await t.expect(screen.queryAllByText('Some user activity').exists).ok();
 
@@ -51,7 +51,7 @@ test('filter selection', async (t) => {
 });
 
 test('update task list according to user actions', async (t) => {
-  const withinExpandedPanel = within(screen.getByTitle('Left panel'));
+  const withinExpandedPanel = within(screen.getByLabelText('Left panel'));
 
   await t
     .click(withinExpandedPanel.getByRole('combobox', {name: 'Filter options'}))
@@ -89,7 +89,7 @@ test('update task list according to user actions', async (t) => {
 
   await t
     .expect(
-      within(screen.getByTitle('Left panel'))
+      within(screen.getByLabelText('Left panel'))
         .getAllByText('usertask_to_be_assigned')
         .nth(0).exists,
     )

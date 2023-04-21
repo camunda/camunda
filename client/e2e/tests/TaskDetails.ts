@@ -26,7 +26,7 @@ const getURL = ClientFunction(() => window.location.href);
 
 test('load task details when a task is selected', async (t) => {
   await t.click(
-    within(screen.getByTitle('Left panel'))
+    within(screen.getByLabelText('Left panel'))
       .getAllByText('usertask_to_be_completed')
       .nth(0),
   );
@@ -60,7 +60,7 @@ test('load task details when a task is selected', async (t) => {
 
 test('assign and unassign task', async (t) => {
   await t.click(
-    within(screen.getByTitle('Left panel'))
+    within(screen.getByLabelText('Left panel'))
       .getAllByText('usertask_to_be_completed')
       .nth(0),
   );
@@ -102,7 +102,7 @@ test('assign and unassign task', async (t) => {
 
 test('complete task', async (t) => {
   await t.click(
-    within(screen.getByTitle('Left panel')).getByText(
+    within(screen.getByLabelText('Left panel')).getByText(
       'usertask_to_be_completed',
     ),
   );
@@ -170,7 +170,7 @@ test('task completion with form on Assigned to Me filter', async (t) => {
     .click(screen.queryByText('All open'))
     .click(screen.queryByText('Assigned to me'))
     .click(
-      within(screen.getByTitle('Left panel')).queryByText(
+      within(screen.getByLabelText('Left panel')).queryByText(
         /^user registration$/i,
       ),
     )

@@ -20,7 +20,7 @@ const Tasks: React.FC = () => {
 
   return (
     <Container>
-      <TasksPanel title="Left panel" forwardedAs="section">
+      <TasksPanel aria-label="Left panel" forwardedAs="section">
         <Filters disabled={loading} />
         <AvailableTasks
           loading={loading}

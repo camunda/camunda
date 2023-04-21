@@ -27,7 +27,7 @@ fixture('Variables')
 
 test('display info message when task has no variables', async (t) => {
   await t.click(
-    within(screen.getByTitle('Left panel'))
+    within(screen.getByLabelText('Left panel'))
       .getAllByText('usertask_without_variables')
       .nth(0),
   );
@@ -36,7 +36,7 @@ test('display info message when task has no variables', async (t) => {
 
 test('display variables when task has variables', async (t) => {
   await t.click(
-    within(screen.getByTitle('Left panel'))
+    within(screen.getByLabelText('Left panel'))
       .getAllByText('usertask_with_variables')
       .nth(0),
   );
@@ -71,7 +71,7 @@ test.after(async (t) => {
 })('new variable disappears after refresh', async (t) => {
   await t
     .click(
-      within(screen.getByTitle('Left panel'))
+      within(screen.getByLabelText('Left panel'))
         .getAllByText('usertask_with_variables')
         .nth(0),
     )
@@ -112,7 +112,7 @@ test.after(async (t) => {
 test.skip('new variable still exists after refresh if task is completed', async (t) => {
   await t
     .click(
-      within(screen.getByTitle('Left panel'))
+      within(screen.getByLabelText('Left panel'))
         .getAllByText('usertask_with_variables')
         .nth(0),
     )
@@ -163,7 +163,7 @@ test.after(async (t) => {
 })('edited variable is not saved after refresh', async (t) => {
   await t
     .click(
-      within(screen.getByTitle('Left panel'))
+      within(screen.getByLabelText('Left panel'))
         .getAllByText('usertask_with_variables')
         .nth(0),
     )
@@ -184,7 +184,7 @@ test.after(async (t) => {
 test('edited variable is saved after refresh if task is completed', async (t) => {
   await t
     .click(
-      within(screen.getByTitle('Left panel'))
+      within(screen.getByLabelText('Left panel'))
         .getAllByText('usertask_with_variables')
         .nth(0),
     )
