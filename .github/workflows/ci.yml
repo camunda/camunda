@@ -38,9 +38,9 @@ jobs:
             name: "QA Integration Tests"
             maven-modules: "qa/integration-tests"
             maven-build-threads: 1
-            maven-test-fork-count: 10
+            maven-test-fork-count: 8
             tcc-enabled: 'true'
-            tcc-concurrency: 3
+            tcc-concurrency: 2
           - group: qa-update
             name: "QA Update Tests"
             maven-modules: "qa/update-tests"
