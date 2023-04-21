@@ -13,7 +13,7 @@ const Container = styled.div`
     return css`
       display: grid;
       height: 100%;
-      grid-template-columns: auto 1fr ${COLLAPSABLE_PANEL_MIN_WIDTH};
+      grid-template-columns: auto minmax(0, 1fr) ${COLLAPSABLE_PANEL_MIN_WIDTH};
       position: relative;
     `;
   }}

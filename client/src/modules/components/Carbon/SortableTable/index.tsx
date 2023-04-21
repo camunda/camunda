@@ -6,15 +6,13 @@
  */
 
 import React from 'react';
-import {Container, TableContainer} from './styled';
+import {Container, TableContainer, TableCell, TableHead} from './styled';
 
 import {
   DataTable,
   Table,
-  TableHead,
   TableRow,
   TableHeader,
-  TableCell,
   DataTableHeader,
   DataTableRow,
   TableBody,

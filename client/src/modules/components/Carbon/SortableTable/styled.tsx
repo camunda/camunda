@@ -6,7 +6,11 @@
  */
 
 import styled from 'styled-components';
-import {TableContainer as BaseTableContainer} from '@carbon/react';
+import {
+  TableContainer as BaseTableContainer,
+  TableCell as BaseTableCell,
+  TableHead as BaseTableHead,
+} from '@carbon/react';
 
 const Container = styled.div`
   height: 100%;
@@ -18,4 +22,12 @@ const TableContainer = styled(BaseTableContainer)`
   padding-top: 0;
 `;
 
-export {Container, TableContainer};
+const TableCell = styled(BaseTableCell)`
+  white-space: nowrap;
+`;
+
+const TableHead = styled(BaseTableHead)`
+  white-space: nowrap;
+`;
+
+export {Container, TableContainer, TableCell, TableHead};

@@ -7,16 +7,17 @@
 
 import styled from 'styled-components';
 
-const Container = styled.section`
-  height: 100%;
-  display: flex;
-  flex-direction: column;
+import {
+  WarningFilled as BaseWarningFilled,
+  CheckmarkOutline as BaseCheckmarkOutline,
+} from '@carbon/react/icons';
+
+const WarningFilled = styled(BaseWarningFilled)`
+  fill: var(--cds-support-error);
 `;
 
-const DecisionName = styled.div`
-  display: flex;
-  align-items: center;
-  gap: var(--cds-spacing-04);
+const CheckmarkOutline = styled(BaseCheckmarkOutline)`
+  fill: var(--cds-icon-secondary);
 `;
 
-export {Container, DecisionName};
+export {WarningFilled, CheckmarkOutline};

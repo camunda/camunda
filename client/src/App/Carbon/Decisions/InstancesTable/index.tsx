@@ -7,13 +7,17 @@
 
 import {PanelHeader} from 'modules/components/Carbon/PanelHeader';
 import {SortableTable} from 'modules/components/Carbon/SortableTable';
+import {StateIcon} from 'modules/components/Carbon/StateIcon';
 import {decisionInstancesStore} from 'modules/stores/decisionInstances';
 import {groupedDecisionsStore} from 'modules/stores/groupedDecisions';
 import {formatDate} from 'modules/utils/date';
 import {useEffect} from 'react';
 import {useLocation} from 'react-router-dom';
-import {Container} from './styled';
+import {Container, DecisionName} from './styled';
 import {observer} from 'mobx-react';
+import {CarbonPaths} from 'modules/carbonRoutes';
+import {tracking} from 'modules/tracking';
+import {Link} from 'modules/components/Carbon/Link';
 
 const InstancesTable: React.FC = observer(() => {
   const {
@@ -52,6 +56,7 @@ const InstancesTable: React.FC = observer(() => {
         rows={decisionInstances.map(
           ({
             id,
+            state,
             decisionName,
             decisionVersion,
             evaluationDate,
@@ -59,12 +64,51 @@ const InstancesTable: React.FC = observer(() => {
           }) => {
             return {
               id,
-              decisionName,
-              decisionInstanceKey: id,
+              decisionName: (
+                <DecisionName>
+                  <StateIcon
+                    state={state}
+                    data-testid={`${state}-icon-${id}`}
+                    size={20}
+                  />
+                  {decisionName}
+                </DecisionName>
+              ),
+              decisionInstanceKey: (
+                <Link
+                  to={CarbonPaths.decisionInstance(id)}
+                  onClick={() => {
+                    tracking.track({
+                      eventName: 'navigation',
+                      link: 'decision-instances-parent-process-details',
+                    });
+                  }}
+                  title={`View decision instance ${id}`}
+                >
+                  {id}
+                </Link>
+              ),
               decisionVersion,
               evaluationDate: formatDate(evaluationDate),
               processInstanceId: (
-                <>{processInstanceId !== null ? processInstanceId : 'None'}</>
+                <>
+                  {processInstanceId !== null ? (
+                    <Link
+                      to={CarbonPaths.processInstance(processInstanceId)}
+                      title={`View process instance ${processInstanceId}`}
+                      onClick={() => {
+                        tracking.track({
+                          eventName: 'navigation',
+                          link: 'decision-instances-parent-process-details',
+                        });
+                      }}
+                    >
+                      {processInstanceId}
+                    </Link>
+                  ) : (
+                    'None'
+                  )}
+                </>
               ),
             };
           }

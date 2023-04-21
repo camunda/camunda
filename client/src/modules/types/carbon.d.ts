@@ -104,4 +104,6 @@ declare module '@carbon/react/icons' {
   export const ArrowRight: Icon;
   export const RowExpand: Icon;
   export const RowCollapse: Icon;
+  export const CheckmarkOutline: Icon;
+  export const WarningFilled: Icon;
 }
