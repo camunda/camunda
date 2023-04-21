@@ -8,6 +8,30 @@ option go_package = "./;pb";
 // For a more complete documentation, refer to Zeebe documentation at:
 // https://docs.camunda.io/docs/reference/grpc
 
+message MigrateProcessInstanceRequest {
+  // key of process instance to migrate
+  int64 processInstanceKey = 1;
+
+  MigrationPlan migrationPlan = 2;
+
+  message MigrationPlan {
+    // the process definition key to migrate into
+    int64 targetProcessDefinitionKey = 1;
+    // source (to migrate from) element id and target element id (to migrate into)
+    repeated MappingInstruction mappingInstructions = 2;
+  }
+
+  message MappingInstruction {
+    // the element id to migrate from
+    string sourceElementId = 1;
+    // the element id to migrate into
+    string targetElementId = 2;
+    // future extensions might include different types of instructions
+    // for now, however, the start instruction is implicitly a
+    // "startBeforeElement" instruction
+  }
+}
+
 message ActivateJobsRequest {
   // the job type, as defined in the BPMN process (e.g. <zeebe:taskDefinition
   // type="payment-service" />)
