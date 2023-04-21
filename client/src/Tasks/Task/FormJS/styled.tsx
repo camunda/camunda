@@ -992,6 +992,7 @@ const FormCustomStyling = createGlobalStyle`
       .fjs-form {
         background-color: transparent;
         color: var(--cds-text-primary);
+        padding: 0;
       }
 
       .fjs-layout-column:first-of-type .fjs-form-field {
