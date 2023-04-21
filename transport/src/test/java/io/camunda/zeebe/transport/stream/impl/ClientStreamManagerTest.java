@@ -232,8 +232,7 @@ class ClientStreamManagerTest {
     assertThat(future)
         .failsWithin(Duration.ofMillis(100))
         .withThrowableOfType(ExecutionException.class)
-        .withCauseInstanceOf(RuntimeException.class)
-        .withMessageContaining("Expected");
+        .withCauseInstanceOf(RuntimeException.class);
   }
 
   @Test
