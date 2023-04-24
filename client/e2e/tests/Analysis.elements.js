@@ -7,7 +7,6 @@
 
 import {Selector} from 'testcafe';
 
-export const navItem = Selector('header a[href="#/analysis"]');
 export const flowNode = (id) => Selector(`[data-element-id="${id}"]`);
 export const statisticsDiagram = Selector('.Statistics canvas');
 export const endEventOverlay = Selector('.DiagramBehavior__end-event-statistics');
