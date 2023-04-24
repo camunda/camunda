@@ -5635,12 +5635,7 @@ didi@^5.2.1:
   resolved "https://registry.yarnpkg.com/didi/-/didi-5.2.1.tgz#1a0b1336be8baa0b068a72036eedd9fb94135bff"
   integrity sha512-IKNnajUlD4lWMy/Q9Emkk7H1qnzREgY4UyE3IhmOi/9IKua0JYtYldk928bOdt1yNxN8EiOy1sqtSozEYsmjCg==
 
-didi@^9.0.0:
-  version "9.0.0"
-  resolved "https://registry.yarnpkg.com/didi/-/didi-9.0.0.tgz#f127477d098a60329a80638333924c15291f8496"
-  integrity sha512-bOZ7WAah3t8TxKV81pbIivHjWyABot49YXG1M3QztnUlZDHz3MRNJ1nZO87JbqrkqNI/2GR4ncHfXdGIP9LX+w==
-
-didi@^9.0.2:
+didi@^9.0.0, didi@^9.0.2:
   version "9.0.2"
   resolved "https://registry.yarnpkg.com/didi/-/didi-9.0.2.tgz#e49a80aa281b5672e45519ba1980d7fba2e32cfb"
   integrity sha512-q2+aj+lnJcUweV7A9pdUrwFr4LHVmRPwTmQLtHPFz4aT7IBoryN6Iy+jmFku+oIzr5ebBkvtBCOb87+dJhb7bg==
@@ -14430,15 +14425,15 @@ symbol-tree@^3.2.2, symbol-tree@^3.2.4:
   resolved "https://registry.yarnpkg.com/symbol-tree/-/symbol-tree-3.2.4.tgz#430637d248ba77e078883951fb9aa0eed7c63fa2"
   integrity sha512-9QNk5KwDF+Bvz+PyObkmSYjI5ksVUYtjW7AU22r2NKcfLJcXp96hkDWU3+XndOsUb+AQ9QhfzfCT2O+CNWT5Tw==
 
-table-js@^8.0.1:
-  version "8.0.1"
-  resolved "https://registry.yarnpkg.com/table-js/-/table-js-8.0.1.tgz#d0e6268eb33f7fd5c851f14888bb26d6f95b35ac"
-  integrity sha512-9Ehv2F8+PzOk+3RT6a2zaiTg60B5F9RdNSngk2egwUCJ1rsEmhtr+QOef8qk323iXqa6OiaJR7HjWV071a8VHg==
+table-js@^8.0.1, table-js@^8.0.2:
+  version "8.0.2"
+  resolved "https://registry.yarnpkg.com/table-js/-/table-js-8.0.2.tgz#58a189955cc8e7f5dcce6c3a744245b7946f74dc"
+  integrity sha512-R8KyK2O7Hgz6LXnRZNbwA/Bs3jmDTN92qZkQv8/pr2oMzPzsWYBuX/igeG8LMhPMHEydVwx3WGM749gV/5ABhQ==
   dependencies:
     didi "^9.0.0"
     ids "^1.0.0"
     min-dash "^4.0.0"
-    min-dom "^4.0.2"
+    min-dom "^4.0.3"
     selection-ranges "^3.0.3"
 
 tailwindcss@^3.0.2:
