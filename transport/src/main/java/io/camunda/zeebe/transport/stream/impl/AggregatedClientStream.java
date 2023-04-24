@@ -9,6 +9,7 @@ package io.camunda.zeebe.transport.stream.impl;
 
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
+import io.camunda.zeebe.transport.stream.api.ClientStreamMetrics;
 import io.camunda.zeebe.util.buffer.BufferWriter;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -27,21 +28,28 @@ final class AggregatedClientStream<M extends BufferWriter> {
   private final UUID streamId;
   private final LogicalId<M> logicalId;
   private final Set<MemberId> liveConnections = new HashSet<>();
-
+  private final ClientStreamMetrics metrics;
   private final Int2ObjectHashMap<ClientStream<M>> clientStreams = new Int2ObjectHashMap<>();
 
   private State state;
   private int nextLocalId;
 
   AggregatedClientStream(final UUID streamId, final LogicalId<M> logicalId) {
+    this(streamId, logicalId, ClientStreamMetrics.noop());
+  }
+
+  AggregatedClientStream(
+      final UUID streamId, final LogicalId<M> logicalId, final ClientStreamMetrics metrics) {
     this.streamId = streamId;
     this.logicalId = logicalId;
+    this.metrics = metrics;
 
     state = State.INITIAL;
   }
 
   void addClient(final ClientStream<M> clientStream) {
     clientStreams.put(clientStream.streamId().localId(), clientStream);
+    metrics.observeAggregatedClientCount(clientStreams.size());
   }
 
   UUID getStreamId() {
@@ -102,6 +110,7 @@ final class AggregatedClientStream<M extends BufferWriter> {
 
   void removeClient(final ClientStreamIdImpl streamId) {
     clientStreams.remove(streamId.localId());
+    metrics.observeAggregatedClientCount(clientStreams.size());
   }
 
   /** returns true if there are no client streams for this stream * */
