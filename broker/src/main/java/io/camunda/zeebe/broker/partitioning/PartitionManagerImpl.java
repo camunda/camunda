@@ -127,7 +127,7 @@ public final class PartitionManagerImpl implements PartitionManager, TopologyMan
 
     return partitionService
         .start()
-        .thenApply(
+        .thenApplyAsync(
             ps -> {
               LOGGER.info("Registering Partition Manager");
 
@@ -158,12 +158,10 @@ public final class PartitionManagerImpl implements PartitionManager, TopologyMan
                       topologyManager,
                       brokerCfg.getExperimental().getFeatures().toFeatureFlags()));
 
-              final var futures =
-                  partitions.stream()
-                      .map(partition -> CompletableFuture.runAsync(() -> startPartition(partition)))
-                      .toArray(CompletableFuture[]::new);
+              for (final var partition: partitions) {
+                CompletableFuture.runAsync(() -> startPartition(partition));
+              }
 
-              CompletableFuture.allOf(futures).join();
               return null;
             });
   }
