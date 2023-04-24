@@ -48,6 +48,7 @@
       <validValue name="SIGNAL">31</validValue>
       <validValue name="RESOURCE_DELETION">32</validValue>
       <validValue name="COMMAND_DISTRIBUTION">33</validValue>
+      <validValue name="PROCESS_INSTANCE_BATCH">34</validValue>
 
       <!-- Management records / record not related to process automation -->
       <validValue name="CHECKPOINT">254</validValue>
