@@ -5,6 +5,11 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.camunda.zeebe.transport.stream.impl;
+package io.camunda.zeebe.transport.stream.api;
 
-public class NoSuchStreamException extends RuntimeException {}
+public class StreamExhaustedException extends RuntimeException {
+
+  public StreamExhaustedException(final String message) {
+    super(message);
+  }
+}
