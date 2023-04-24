@@ -11,6 +11,7 @@ import static io.camunda.operate.Metrics.TAG_KEY_PARTITION;
 import static io.camunda.operate.Metrics.TAG_KEY_TYPE;
 import static io.camunda.operate.util.ElasticsearchUtil.*;
 import static io.camunda.operate.util.ThreadUtil.sleepFor;
+import static org.apache.lucene.search.TotalHits.Relation.GREATER_THAN_OR_EQUAL_TO;
 import static org.elasticsearch.index.query.QueryBuilders.*;
 import static org.springframework.beans.factory.config.BeanDefinition.SCOPE_PROTOTYPE;
 
@@ -22,9 +23,11 @@ import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.schema.indices.ImportPositionIndex;
 import io.camunda.operate.zeebe.ImportValueType;
 
+import java.io.IOException;
 import java.time.Duration;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
@@ -36,8 +39,10 @@ import java.util.concurrent.locks.ReentrantLock;
 import org.elasticsearch.ElasticsearchStatusException;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
+import org.elasticsearch.action.search.SearchScrollRequest;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
+import org.elasticsearch.core.TimeValue;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.RangeQueryBuilder;
 import org.elasticsearch.search.SearchHit;
@@ -182,40 +187,82 @@ public class RecordsReader implements Runnable {
 
   public ImportBatch readNextBatchBySequence(final Long sequence, final Long lastSequence) throws NoSuchIndexException {
     final String aliasName = importValueType.getAliasName(operateProperties.getZeebeElasticsearch().getPrefix());
-    int size = operateProperties.getZeebeElasticsearch().getBatchSize();
+    int batchSize = operateProperties.getZeebeElasticsearch().getBatchSize();
+
+    final long lessThanEqualsSequence;
+    final int maxNumberOfHits;
+
     if (lastSequence != null && lastSequence > 0) {
-      logger.debug("Import batch reread was called. Data type {}, partitionId {}, sequence {}, lastSequence {}.", importValueType, partitionId, sequence, lastSequence);
-      size = (int) (lastSequence - sequence);
+      //in worst case all the records are duplicated
+      maxNumberOfHits = (int) ((lastSequence - sequence) * 2);
+      lessThanEqualsSequence = lastSequence;
+      logger.debug(
+          "Import batch reread was called. Data type {}, partitionId {}, sequence {}, lastSequence {}, maxNumberOfHits {}.",
+          importValueType, partitionId, sequence, lastSequence, maxNumberOfHits);
+    } else {
+      maxNumberOfHits = batchSize;
+      lessThanEqualsSequence = sequence + batchSize;
     }
-    size = (size <= 0 || size > QUERY_MAX_SIZE ? QUERY_MAX_SIZE : size);
+
     SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
         .sort(ImportPositionIndex.SEQUENCE, SortOrder.ASC)
-        .size(size);
+        .query(rangeQuery(ImportPositionIndex.SEQUENCE)
+            .gt(sequence)
+            .lte(lessThanEqualsSequence))
+        .size(maxNumberOfHits >= QUERY_MAX_SIZE ? QUERY_MAX_SIZE : maxNumberOfHits);
+
+    final SearchRequest searchRequest = new SearchRequest(aliasName)
+        .source(searchSourceBuilder)
+        .routing(String.valueOf(partitionId))
+        .requestCache(false);
+
     try {
-      if (sequence != null && sequence > 0){
-        searchSourceBuilder = searchSourceBuilder.query(rangeQuery(ImportPositionIndex.SEQUENCE)
-            .gt(sequence).lte(sequence + size));
-      }
-
-      final SearchRequest searchRequest = new SearchRequest(aliasName)
-          .source(searchSourceBuilder)
-          .routing(String.valueOf(partitionId))
-          .requestCache(false);
-
-      final SearchResponse searchResponse = withTimer(() -> zeebeEsClient.search(searchRequest, RequestOptions.DEFAULT));
-      checkForFailedShards(searchResponse);
-
-      return createImportBatch(searchResponse);
+      final SearchHit[] hits = withTimerSearchHits(() -> read(searchRequest, maxNumberOfHits >= QUERY_MAX_SIZE));
+      return createImportBatch(hits);
     } catch (ElasticsearchStatusException ex) {
       if (ex.getMessage().contains("no such index")) {
         throw new NoSuchIndexException();
       } else {
-        final String message = String.format("Exception occurred for alias [%s], while obtaining next Zeebe records batch: %s", aliasName, ex.getMessage());
+        final String message = String.format("Exception occurred, while obtaining next Zeebe records batch: %s", ex.getMessage());
         throw new OperateRuntimeException(message, ex);
       }
     } catch (Exception e) {
-      final String message = String.format("Exception occurred for alias [%s], while obtaining next Zeebe records batch: %s", aliasName, e.getMessage());
+      final String message = String.format("Exception occurred, while obtaining next Zeebe records batch: %s", e.getMessage());
       throw new OperateRuntimeException(message, e);
+    }
+  }
+
+  private SearchHit[] read(SearchRequest searchRequest, boolean scrollNeeded) throws IOException {
+    String scrollId = null;
+    try {
+      List<SearchHit> searchHits = new ArrayList<>();
+
+      if (scrollNeeded) {
+        searchRequest.scroll(TimeValue.timeValueMillis(SCROLL_KEEP_ALIVE_MS));
+      }
+      SearchResponse response = zeebeEsClient.search(searchRequest, RequestOptions.DEFAULT);
+      checkForFailedShards(response);
+
+      searchHits.addAll(List.of(response.getHits().getHits()));
+
+      if (scrollNeeded) {
+        scrollId = response.getScrollId();
+        do {
+          SearchScrollRequest scrollRequest = new SearchScrollRequest(scrollId);
+          scrollRequest.scroll(TimeValue.timeValueMillis(SCROLL_KEEP_ALIVE_MS));
+
+          response = zeebeEsClient.scroll(scrollRequest, RequestOptions.DEFAULT);
+          checkForFailedShards(response);
+
+          scrollId = response.getScrollId();
+          searchHits.addAll(List.of(response.getHits().getHits()));
+        } while (response.getHits().getHits().length != 0);
+      }
+      return searchHits.toArray(new SearchHit[0]);
+    } finally {
+      if (scrollId != null) {
+        clearScroll(scrollId, zeebeEsClient);
+      }
     }
   }
 
@@ -295,6 +342,14 @@ public class RecordsReader implements Runnable {
     return new ImportBatch(partitionId, importValueType, Arrays.asList(hits), indexName);
   }
 
+  private ImportBatch createImportBatch(SearchHit[] hits) {
+    String indexName = null;
+    if (hits.length > 0) {
+      indexName = hits[hits.length - 1].getIndex();
+    }
+    return new ImportBatch(partitionId, importValueType, Arrays.asList(hits), indexName);
+  }
+
   private SearchRequest createSearchQuery(String aliasName, long positionFrom, Long positionTo) {
     RangeQueryBuilder positionQ = rangeQuery(ImportPositionIndex.POSITION).gt(positionFrom);
     if (positionTo != null) {
@@ -322,6 +377,13 @@ public class RecordsReader implements Runnable {
         Metrics.TAG_KEY_TYPE, importValueType.name(),
         Metrics.TAG_KEY_PARTITION, String.valueOf(partitionId))
     .recordCallable(callable);
+  }
+
+  private SearchHit[] withTimerSearchHits(Callable<SearchHit[]> callable) throws Exception {
+    return metrics.getTimer(Metrics.TIMER_NAME_IMPORT_QUERY,
+            Metrics.TAG_KEY_TYPE, importValueType.name(),
+            Metrics.TAG_KEY_PARTITION, String.valueOf(partitionId))
+        .recordCallable(callable);
   }
 
   public boolean tryToScheduleImportJob(final ImportJob importJob, final boolean skipPendingJob) {

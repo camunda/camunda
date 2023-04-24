@@ -6,15 +6,21 @@
  */
 package io.camunda.operate.zeebeimport;
 
+import java.io.IOException;
+import java.text.SimpleDateFormat;
 import java.time.Instant;
 import java.time.OffsetDateTime;
+import java.time.ZoneId;
 import java.time.ZoneOffset;
+import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import io.camunda.operate.entities.FlowNodeInstanceEntity;
 import io.camunda.operate.entities.FlowNodeState;
 import io.camunda.operate.exceptions.NoSuchIndexException;
+import io.camunda.operate.schema.templates.BatchOperationTemplate;
 import io.camunda.operate.util.TestApplication;
 import io.camunda.operate.entities.listview.ProcessInstanceForListViewEntity;
 import io.camunda.operate.entities.listview.ProcessInstanceState;
@@ -23,6 +29,11 @@ import io.camunda.operate.util.ElasticsearchTestRule;
 import io.camunda.operate.util.OperateZeebeIntegrationTest;
 import io.camunda.operate.util.ZeebeTestUtil;
 import io.camunda.operate.webapp.es.reader.ProcessInstanceReader;
+import org.elasticsearch.client.RequestOptions;
+import org.elasticsearch.client.RestHighLevelClient;
+import org.elasticsearch.index.reindex.ReindexRequest;
+import org.elasticsearch.script.Script;
+import org.elasticsearch.script.ScriptType;
 import org.junit.Rule;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -48,8 +59,14 @@ public class ImportMidnightIT extends OperateZeebeIntegrationTest {
   @Autowired
   private ProcessInstanceReader processInstanceReader;
 
+  @Autowired
+  private OperateProperties operateProperties;
+
   @SpyBean
   private RecordsReaderHolder recordsReaderHolder;
+
+  @Autowired
+  private RestHighLevelClient esClient;
 
   @Rule
   public ElasticsearchTestRule elasticsearchTestRule  = new ElasticsearchTestRule() {
@@ -65,7 +82,7 @@ public class ImportMidnightIT extends OperateZeebeIntegrationTest {
   }
 
   @Test
-  public void testProcessInstancesCompletedNextDay() {
+  public void testProcessInstancesCompletedNextDay() throws IOException {
     // having
     String processId = "demoProcess";
     BpmnModelInstance process = Bpmn.createExecutableProcess(processId)
@@ -93,6 +110,7 @@ public class ImportMidnightIT extends OperateZeebeIntegrationTest {
     completeTask(processInstanceKey, "task2", null, false);
     //let Zeebe export data
     sleepFor(5000);
+    duplicateRecords(firstDate, secondDate);
 
     //when
     //refresh 2nd date index and load all data
@@ -119,6 +137,18 @@ public class ImportMidnightIT extends OperateZeebeIntegrationTest {
     assertThat(activity.getState()).isEqualTo(FlowNodeState.COMPLETED);
     assertThat(activity.getEndDate()).isAfterOrEqualTo(OffsetDateTime.ofInstant(secondDate, ZoneOffset.systemDefault()));
 
+  }
+
+  private void duplicateRecords(Instant firstDate, Instant secondDate) throws IOException {
+    DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern(
+        operateProperties.getArchiver().getRolloverDateFormat()).withZone(ZoneId.systemDefault());
+    String firstDateStr = dateTimeFormatter.format(firstDate);
+    String secondDateStr = dateTimeFormatter.format(secondDate);
+    String script = "ctx._index = ctx._index.replace( \"" + firstDateStr + "\", \"" + secondDateStr + "\");";
+    ReindexRequest reindexRequest = new ReindexRequest().setSourceIndices(zeebeRule.getPrefix() + "*")
+        .setDestIndex("generated")
+        .setScript(new Script(ScriptType.INLINE, Script.DEFAULT_SCRIPT_LANG, script, new HashMap<>()));
+    esClient.reindex(reindexRequest, RequestOptions.DEFAULT);
   }
 
   /**

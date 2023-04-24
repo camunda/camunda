@@ -106,12 +106,24 @@ public class ImportJob implements Callable<Boolean> {
           ImportBatch newImportBatch;
           if (previousPosition.getSequence() > 0) {
             newImportBatch = recordsReader.readNextBatchBySequence(previousPosition.getSequence(), importBatch.getLastProcessedSequence(objectMapper));
+
+            final Long lastSequenceFromInitialBatch = importBatch.getLastProcessedSequence(objectMapper);
+            final Long lastSequenceFromNewImportBatch = newImportBatch.getLastProcessedSequence(objectMapper);
+
+            if (newImportBatch == null || newImportBatch.getHits() == null || lastSequenceFromInitialBatch > lastSequenceFromNewImportBatch) {
+              final String message = String.format("Warning! Import batch became smaller after reread. Should not happen. Will be retried. Expected last sequence %d, actual last sequence %d.",
+                  lastSequenceFromInitialBatch, lastSequenceFromNewImportBatch);
+              throw new OperateRuntimeException(message);
+            }
+
           } else {
             newImportBatch = recordsReader.readNextBatchByPositionAndPartition(
                 previousPosition.getPosition(), importBatch.getLastProcessedPosition(objectMapper));
-          }
-          if (newImportBatch == null || newImportBatch.getHits() == null || newImportBatch.getHits().size() < importBatch.getHits().size()) {
-            throw new OperateRuntimeException("Warning! Import batch became smaller after reread. Should not happen. Will be retried.");
+
+            if (newImportBatch == null || newImportBatch.getHits() == null || newImportBatch.getHits().size() < importBatch.getHits().size()) {
+              throw new OperateRuntimeException("Warning! Import batch became smaller after reread. Should not happen. Will be retried.");
+            }
+
           }
           importBatch = newImportBatch;
         } catch (NoSuchIndexException ex) {
