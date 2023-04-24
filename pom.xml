@@ -38,6 +38,7 @@
     <module>gateway-protocol-impl</module>
     <module>gateway</module>
     <module>clients/java</module>
+    <module>clients/zbctl</module>
     <module>exporter-api</module>
     <module>exporter-test</module>
     <module>protocol-asserts</module>
