@@ -85,7 +85,7 @@ final class ClientStreamManager<M extends BufferWriter> {
     clientStream.ifPresentOrElse(
         stream -> {
           try {
-            stream.getClientStreamConsumer().push(payload, responseFuture);
+            stream.push(payload, responseFuture);
           } catch (final Exception e) {
             responseFuture.completeExceptionally(e);
           }

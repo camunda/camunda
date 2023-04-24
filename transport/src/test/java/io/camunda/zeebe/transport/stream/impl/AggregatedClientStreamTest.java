@@ -42,7 +42,7 @@ class AggregatedClientStreamTest {
 
     // when
     final TestActorFuture<Void> future = new TestActorFuture<>();
-    stream.getClientStreamConsumer().push(null, future);
+    stream.push(null, future);
 
     // then
     assertThat(future).failsWithin(Duration.ofMillis(100));
@@ -66,7 +66,7 @@ class AggregatedClientStreamTest {
 
     // when
     final TestActorFuture<Void> future = new TestActorFuture<>();
-    stream.getClientStreamConsumer().push(null, future);
+    stream.push(null, future);
 
     // then
     assertThat(future).succeedsWithin(Duration.ofMillis(100));

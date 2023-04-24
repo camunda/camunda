@@ -26,7 +26,6 @@ final class AggregatedClientStream<M extends BufferWriter> {
   private static final Logger LOGGER = LoggerFactory.getLogger(AggregatedClientStream.class);
   private final UUID streamId;
   private final LogicalId<M> logicalId;
-  private final AsyncStreamConsumer streamConsumer;
   private final Set<MemberId> liveConnections = new HashSet<>();
 
   private final Int2ObjectHashMap<ClientStream<M>> clientStreams = new Int2ObjectHashMap<>();
@@ -38,7 +37,6 @@ final class AggregatedClientStream<M extends BufferWriter> {
     this.streamId = streamId;
     this.logicalId = logicalId;
 
-    streamConsumer = this::push;
     state = State.INITIAL;
   }
 
@@ -56,10 +54,6 @@ final class AggregatedClientStream<M extends BufferWriter> {
 
   M getMetadata() {
     return logicalId.metadata();
-  }
-
-  AsyncStreamConsumer getClientStreamConsumer() {
-    return streamConsumer;
   }
 
   int nextLocalId() {
@@ -119,7 +113,7 @@ final class AggregatedClientStream<M extends BufferWriter> {
     return logicalId;
   }
 
-  private void push(final DirectBuffer buffer, final ActorFuture<Void> future) {
+  void push(final DirectBuffer buffer, final ActorFuture<Void> future) {
     final var streams = clientStreams.values();
     if (streams.isEmpty()) {
       throw new NoSuchStreamException();
@@ -174,10 +168,6 @@ final class AggregatedClientStream<M extends BufferWriter> {
   }
 
   record LogicalId<M>(DirectBuffer streamType, M metadata) {}
-
-  interface AsyncStreamConsumer {
-    void push(DirectBuffer data, ActorFuture<Void> futureToComplete);
-  }
 
   private enum State {
     INITIAL,
