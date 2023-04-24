@@ -42,6 +42,7 @@
       <validValue name="DECISION">25</validValue>
       <validValue name="DECISION_REQUIREMENTS">26</validValue>
       <validValue name="DECISION_EVALUATION">27</validValue>
+      <validValue name="PROCESS_INSTANCE_BATCH">34</validValue>
     </enum>
 
     <enum name="RecordType" encodingType="uint8">

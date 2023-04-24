@@ -40,7 +40,8 @@ public interface Intent {
           ProcessEventIntent.class,
           DecisionIntent.class,
           DecisionRequirementsIntent.class,
-          DecisionEvaluationIntent.class);
+          DecisionEvaluationIntent.class,
+          ProcessInstanceBatchIntent.class);
   short NULL_VAL = 255;
   Intent UNKNOWN =
       new Intent() {
@@ -103,6 +104,8 @@ public interface Intent {
         return DecisionRequirementsIntent.from(intent);
       case DECISION_EVALUATION:
         return DecisionEvaluationIntent.from(intent);
+      case PROCESS_INSTANCE_BATCH:
+        return ProcessInstanceBatchIntent.from(intent);
       case NULL_VAL:
       case SBE_UNKNOWN:
         return Intent.UNKNOWN;
