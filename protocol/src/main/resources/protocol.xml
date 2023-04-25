@@ -58,6 +58,7 @@
       <validValue name="EVENT">0</validValue>
       <validValue name="COMMAND">1</validValue>
       <validValue name="COMMAND_REJECTION">2</validValue>
+      <validValue name="AUDIT">3</validValue>
     </enum>
 
     <enum name="RejectionType" encodingType="uint8">
