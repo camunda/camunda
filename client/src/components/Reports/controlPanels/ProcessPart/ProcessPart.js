@@ -6,9 +6,11 @@
  */
 
 import React from 'react';
+import {Button} from '@carbon/react';
+
 import {
-  Button,
-  Modal,
+  Button as LegacyButton,
+  CarbonModal as Modal,
   BPMNDiagram,
   ClickBehavior,
   PartHighlight,
@@ -41,7 +43,7 @@ export default class ProcessPart extends React.Component {
 
   renderButton() {
     if (!this.props.processPart) {
-      return <Button onClick={this.openModal}>{t('report.processPart.label')}</Button>;
+      return <LegacyButton onClick={this.openModal}>{t('report.processPart.label')}</LegacyButton>;
     }
   }
 
@@ -84,13 +86,7 @@ export default class ProcessPart extends React.Component {
 
     const selection = [start, end].filter((v) => v);
     return (
-      <Modal
-        open={modalOpen}
-        onClose={this.closeModal}
-        onConfirm={this.isValid() ? this.applyPart : undefined}
-        size="max"
-        className="ProcessPartModal"
-      >
+      <Modal open={modalOpen} onClose={this.closeModal} size="lg" className="ProcessPartModal">
         <Modal.Header>{t('report.processPart.title')}</Modal.Header>
         <Modal.Content>
           <span>
@@ -130,14 +126,14 @@ export default class ProcessPart extends React.Component {
             </BPMNDiagram>
           </div>
         </Modal.Content>
-        <Modal.Actions>
-          <Button main onClick={this.closeModal}>
+        <Modal.Footer>
+          <Button kind="secondary" onClick={this.closeModal}>
             {t('common.cancel')}
           </Button>
-          <Button main primary onClick={this.applyPart} disabled={!this.isValid()}>
+          <Button onClick={this.applyPart} disabled={!this.isValid()}>
             {t('common.apply')}
           </Button>
-        </Modal.Actions>
+        </Modal.Footer>
       </Modal>
     );
   }
