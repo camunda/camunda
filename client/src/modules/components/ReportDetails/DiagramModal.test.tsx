@@ -5,7 +5,7 @@
  * except in compliance with the proprietary license.
  */
 
-import React, {runLastEffect} from 'react';
+import {runLastEffect} from '__mocks__/react';
 import {shallow} from 'enzyme';
 
 import {BPMNDiagram, DMNDiagram} from 'components';
@@ -23,7 +23,8 @@ jest.mock('services', () => {
 
 const props = {
   mightFail: jest.fn().mockImplementation((data, cb) => cb(data)),
-  close: jest.fn(),
+  onClose: jest.fn(),
+  open: true,
   definition: {
     key: 'test',
     name: 'Test Definition',

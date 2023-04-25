@@ -5,25 +5,35 @@
  * except in compliance with the proprietary license.
  */
 
-import React, {useEffect, useState} from 'react';
+import {useEffect, useState} from 'react';
+import {Button} from '@carbon/react';
 
-import {Modal, Button, BPMNDiagram, DMNDiagram, LoadingIndicator} from 'components';
-import {withErrorHandling} from 'HOC';
+import {CarbonModal as Modal, BPMNDiagram, DMNDiagram, LoadingIndicator} from 'components';
+import {WithErrorHandlingProps, withErrorHandling} from 'HOC';
 import {t} from 'translation';
 import {showError} from 'notifications';
 import {loadProcessDefinitionXml, loadDecisionDefinitionXml} from 'services';
 
 import './DiagramModal.scss';
 
-export function DiagramModal({definition, type, close, mightFail}) {
-  const [xml, setXml] = useState(null);
+type Definition = {key: string; name: string; versions: string[]; tenantIds: (string | null)[]};
+
+interface DiagramModalProps extends WithErrorHandlingProps {
+  definition: Definition;
+  type: string;
+  open: boolean;
+  onClose: () => void;
+}
+
+export function DiagramModal({definition, type, open, onClose, mightFail}: DiagramModalProps) {
+  const [xml, setXml] = useState<string | null>(null);
 
   useEffect(() => {
     mightFail(loadXML(type, definition), setXml, showError);
   }, [mightFail, definition, type]);
 
   return (
-    <Modal className="DiagramModal" open size="max" onClose={close}>
+    <Modal className="DiagramModal" open={open} size="lg" onClose={onClose}>
       <Modal.Header>{definition.name || definition.key}</Modal.Header>
       <Modal.Content>
         {!xml && <LoadingIndicator />}
@@ -34,23 +44,23 @@ export function DiagramModal({definition, type, close, mightFail}) {
           <BPMNDiagram xml={xml} />
         )}
       </Modal.Content>
-      <Modal.Actions>
-        <Button main onClick={close}>
+      <Modal.Footer>
+        <Button kind="secondary" onClick={onClose}>
           {t('common.close')}
         </Button>
-      </Modal.Actions>
+      </Modal.Footer>
     </Modal>
   );
 }
 
 export default withErrorHandling(DiagramModal);
 
-function loadXML(reportType, definition) {
+function loadXML(reportType: string, definition: Definition) {
+  const {key, versions, tenantIds} = definition;
+
   if (reportType === 'decision') {
-    const {key, versions, tenantIds} = definition;
     return loadDecisionDefinitionXml(key, versions[0], tenantIds[0]);
   } else {
-    const {key, versions, tenantIds} = definition;
     return loadProcessDefinitionXml(key, versions[0], tenantIds[0]);
   }
 }
