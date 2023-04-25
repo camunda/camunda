@@ -5,10 +5,11 @@
  * except in compliance with the proprietary license.
  */
 
-import React, {useEffect, useState} from 'react';
+import {useEffect, useState} from 'react';
+import {Button} from '@carbon/react';
 
-import {Modal, Button, LoadingIndicator} from 'components';
-import {withErrorHandling} from 'HOC';
+import {CarbonModal as Modal, LoadingIndicator} from 'components';
+import {withErrorHandling, WithErrorHandlingProps} from 'HOC';
 import {showError} from 'notifications';
 import {t} from 'translation';
 
@@ -16,11 +17,22 @@ import {loadObjectValues} from './service';
 
 import './ObjectVariableModal.scss';
 
+interface ObjectVariableModalProps extends WithErrorHandlingProps {
+  variable: {
+    name: string;
+    processInstanceId: string;
+    processDefinitionKey: string;
+    versions: string[];
+    tenantIds: (string | null)[];
+  };
+  onClose?: () => void;
+}
+
 export function ObjectVariableModal({
   variable: {name, processInstanceId, processDefinitionKey, versions, tenantIds},
   onClose,
   mightFail,
-}) {
+}: ObjectVariableModalProps) {
   const [objectString, setObjectString] = useState();
 
   useEffect(() => {
@@ -40,11 +52,11 @@ export function ObjectVariableModal({
         </div>
         <pre>{objectString || <LoadingIndicator />}</pre>
       </Modal.Content>
-      <Modal.Actions>
-        <Button main className="close" onClick={onClose}>
+      <Modal.Footer>
+        <Button kind="secondary" className="close" onClick={onClose}>
           {t('common.close')}
         </Button>
-      </Modal.Actions>
+      </Modal.Footer>
     </Modal>
   );
 }

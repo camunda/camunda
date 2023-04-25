@@ -5,7 +5,7 @@
  * except in compliance with the proprietary license.
  */
 
-import React, {runLastEffect} from 'react';
+import {runLastEffect} from '__mocks__/react';
 import {shallow} from 'enzyme';
 
 import {loadObjectValues} from './service';
