@@ -5,24 +5,28 @@
  * except in compliance with the proprietary license.
  */
 
-import React from 'react';
 import {mount} from 'enzyme';
 
-import ThemedBPMNDiagram from './BPMNDiagram';
+import {BPMNDiagram, BPMNDiagramProps} from './BPMNDiagram';
 import NavigatedViewer from 'bpmn-js/lib/NavigatedViewer';
 import Viewer from 'bpmn-js/lib/Viewer';
 
-const {WrappedComponent: BPMNDiagramWithErrorHandling} = ThemedBPMNDiagram;
-const {WrappedComponent: BPMNDiagram} = BPMNDiagramWithErrorHandling;
-
-const props = {
+const props: BPMNDiagramProps = {
   mightFail: jest.fn().mockImplementation(async (data, cb) => cb(await data)),
   xml: 'diagram-xml',
+  theme: 'light',
+  toggleTheme: jest.fn(),
 };
 
 jest.mock('bpmn-js/lib/NavigatedViewer', () => {
   const attachSpy = jest.fn();
   return class NavigatedViewer {
+    canvas: {
+      resized: jest.Mock<any, any, any>;
+      zoom: jest.Mock<any, any, any>;
+      viewbox: jest.Mock<any, any, any>;
+    };
+    zoomScroll: {stepZoom: jest.Mock<any, any, any>};
     constructor() {
       this.canvas = {
         resized: jest.fn(),
@@ -53,7 +57,7 @@ jest.mock('bpmn-js/lib/NavigatedViewer', () => {
         };
       },
     };
-    get = (prop) => {
+    get = (prop: keyof this) => {
       return this[prop];
     };
   };
@@ -62,6 +66,11 @@ jest.mock('bpmn-js/lib/NavigatedViewer', () => {
 jest.mock('bpmn-js/lib/Viewer', () => {
   const attachSpy = jest.fn();
   return class Viewer {
+    canvas: {
+      resized: jest.Mock<any, any, any>;
+      zoom: jest.Mock<any, any, any>;
+      viewbox: jest.Mock<any, any, any>;
+    };
     constructor() {
       this.canvas = {
         resized: jest.fn(),
@@ -107,7 +116,7 @@ beforeEach(() => {
 const diagramXml = 'some diagram XML';
 
 it('should create a Viewer', async () => {
-  const node = mount(<BPMNDiagram {...props} />);
+  const node = mount<BPMNDiagram>(<BPMNDiagram {...props} />);
 
   await flushPromises();
 
@@ -115,7 +124,7 @@ it('should create a Viewer', async () => {
 });
 
 it('should create a Viewer without Navigation if Navigation is disabled', async () => {
-  const node = mount(<BPMNDiagram {...props} disableNavigation />);
+  const node = mount<BPMNDiagram>(<BPMNDiagram {...props} disableNavigation />);
 
   await flushPromises();
 
@@ -123,46 +132,46 @@ it('should create a Viewer without Navigation if Navigation is disabled', async 
 });
 
 it('should import the provided xml', async () => {
-  const node = mount(<BPMNDiagram {...props} xml={diagramXml} />);
+  const node = mount<BPMNDiagram>(<BPMNDiagram {...props} xml={diagramXml} />);
   await flushPromises();
 
-  expect(node.instance().viewer.importXML).toHaveBeenCalled();
-  expect(node.instance().viewer.importXML.mock.calls[0][0]).toBe(diagramXml);
+  expect(node.instance().viewer?.importXML).toHaveBeenCalled();
+  expect((node.instance().viewer?.importXML as jest.Mock).mock.calls[0][0]).toBe(diagramXml);
 });
 
 it('should not create viewer if xml is not provided', async () => {
-  const node = mount(<BPMNDiagram {...props} xml={null} />);
+  const node = mount<BPMNDiagram>(<BPMNDiagram {...props} xml={null} />);
   await flushPromises();
 
   expect(node.instance().viewer).not.toBeDefined();
 });
 
 it('should import an updated xml', async () => {
-  const node = mount(<BPMNDiagram xml={diagramXml} {...props} />);
+  const node = mount<BPMNDiagram>(<BPMNDiagram {...props} xml={diagramXml} />);
 
   node.setProps({xml: 'some other xml'});
 
   await flushPromises();
 
-  expect(node.instance().viewer.importXML.mock.calls[0][0]).toBe('some other xml');
+  expect((node.instance().viewer?.importXML as jest.Mock).mock.calls[0][0]).toBe('some other xml');
 });
 
 it('should handle rapid xml updates well', async () => {
-  const node = mount(<BPMNDiagram xml={diagramXml} {...props} />);
+  const node = mount<BPMNDiagram>(<BPMNDiagram {...props} xml={diagramXml} />);
 
   await flushPromises();
-  node.instance().viewer.attachTo.mockClear();
+  (node.instance().viewer?.attachTo as jest.Mock).mockClear();
 
   node.setProps({xml: 'first update xml'});
   node.setProps({xml: 'second update xml'});
 
   await flushPromises();
 
-  expect(node.instance().viewer.attachTo).toHaveBeenCalledTimes(1);
+  expect(node.instance().viewer?.attachTo).toHaveBeenCalledTimes(1);
 });
 
 it('should attach a resize observer', async () => {
-  const node = mount(<BPMNDiagram xml={diagramXml} {...props} />);
+  const node = mount<BPMNDiagram>(<BPMNDiagram {...props} xml={diagramXml} />);
 
   await flushPromises();
 
@@ -170,7 +179,7 @@ it('should attach a resize observer', async () => {
 });
 
 it('should not render children when diagram is not loaded', async () => {
-  const node = mount(
+  const node = mount<BPMNDiagram>(
     <BPMNDiagram {...props} xml={diagramXml}>
       <p>Additional Content</p>
     </BPMNDiagram>
@@ -184,7 +193,7 @@ it('should not render children when diagram is not loaded', async () => {
 });
 
 it('should render children when diagram is renderd', async () => {
-  const node = mount(
+  const node = mount<BPMNDiagram>(
     <BPMNDiagram {...props} xml={diagramXml}>
       <p>Additional Content</p>
     </BPMNDiagram>
@@ -196,7 +205,7 @@ it('should render children when diagram is renderd', async () => {
 });
 
 it('should pass viewer instance to children', async () => {
-  const node = mount(
+  const node = mount<BPMNDiagram>(
     <BPMNDiagram {...props} xml={diagramXml}>
       <p>Additional Content</p>
     </BPMNDiagram>
@@ -210,7 +219,7 @@ it('should pass viewer instance to children', async () => {
 });
 
 it('should re-use viewer instances', async () => {
-  const node1 = mount(
+  const node1 = mount<BPMNDiagram>(
     <BPMNDiagram {...props} xml={diagramXml}>
       <p>Additional Content</p>
     </BPMNDiagram>
@@ -221,7 +230,7 @@ it('should re-use viewer instances', async () => {
   const viewer1 = node1.instance().viewer;
   node1.unmount();
 
-  const node2 = mount(
+  const node2 = mount<BPMNDiagram>(
     <BPMNDiagram {...props} xml={diagramXml}>
       <p>Additional Content</p>
     </BPMNDiagram>
@@ -235,13 +244,13 @@ it('should re-use viewer instances', async () => {
 });
 
 it('should not re-use modeler instances', async () => {
-  const node1 = mount(<BPMNDiagram {...props} allowModeling />);
+  const node1 = mount<BPMNDiagram>(<BPMNDiagram {...props} allowModeling />);
   await flushPromises();
 
   const viewer1 = node1.instance().viewer;
   node1.unmount();
 
-  const node2 = mount(<BPMNDiagram {...props} allowModeling />);
+  const node2 = mount<BPMNDiagram>(<BPMNDiagram {...props} allowModeling />);
   await flushPromises();
 
   const viewer2 = node2.instance().viewer;
@@ -249,13 +258,13 @@ it('should not re-use modeler instances', async () => {
 });
 
 it('should show a loading indicator while loading', () => {
-  const node = mount(<BPMNDiagram xml={diagramXml} {...props} />);
+  const node = mount<BPMNDiagram>(<BPMNDiagram {...props} xml={diagramXml} />);
 
   expect(node.find('LoadingIndicator')).toExist();
 });
 
 it('should show a loading indicator if specified by props', async () => {
-  const node = mount(<BPMNDiagram xml={diagramXml} {...props} loading />);
+  const node = mount<BPMNDiagram>(<BPMNDiagram {...props} xml={diagramXml} loading />);
 
   await flushPromises();
 
@@ -265,7 +274,7 @@ it('should show a loading indicator if specified by props', async () => {
 });
 
 it('should show diagram zoom and reset controls', async () => {
-  const node = mount(<BPMNDiagram xml={diagramXml} {...props} />);
+  const node = mount<BPMNDiagram>(<BPMNDiagram {...props} xml={diagramXml} />);
 
   await flushPromises();
 
@@ -275,19 +284,19 @@ it('should show diagram zoom and reset controls', async () => {
 });
 
 it('should trigger diagram zoom when zoom function is called', async () => {
-  const node = mount(<BPMNDiagram xml={diagramXml} {...props} />);
+  const node = mount<BPMNDiagram>(<BPMNDiagram {...props} xml={diagramXml} />);
 
   await flushPromises();
 
   node.setState({loaded: true});
   node.instance().zoom(5);
 
-  expect(node.instance().viewer.zoomScroll.stepZoom).toHaveBeenCalledWith(5);
+  expect(node.instance().viewer?.get<any>('zoomScroll').stepZoom).toHaveBeenCalledWith(5);
 });
 
 it('should reset the canvas zoom to viewport when fit diagram function is called', async () => {
-  const node = mount(<BPMNDiagram xml={diagramXml} {...props} />);
-  node.instance().storeContainer({clientHeight: 100});
+  const node = mount<BPMNDiagram>(<BPMNDiagram {...props} xml={diagramXml} />);
+  node.instance().storeContainer({clientHeight: 100} as HTMLDivElement);
 
   await flushPromises();
 
@@ -295,5 +304,8 @@ it('should reset the canvas zoom to viewport when fit diagram function is called
 
   node.instance().fitDiagram();
 
-  expect(node.instance().viewer.canvas.zoom).toHaveBeenCalledWith('fit-viewport', 'auto');
+  expect(node.instance().viewer?.get<any>('canvas').zoom).toHaveBeenCalledWith(
+    'fit-viewport',
+    'auto'
+  );
 });

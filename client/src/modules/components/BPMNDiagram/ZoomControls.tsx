@@ -5,22 +5,26 @@
  * except in compliance with the proprietary license.
  */
 
-import React from 'react';
 import {Button, Icon} from 'components';
 import './ZoomControls.scss';
 
-const zoomStepSize = 0.1;
+const ZOOM_STEP_SIZE = 0.1;
 
-export default function ZoomControls({fit, zoom}) {
+interface ZoomControlsProps {
+  fit: () => void;
+  zoom: (stepSize: number) => void;
+}
+
+export default function ZoomControls({fit, zoom}: ZoomControlsProps) {
   return (
     <div className="ZoomControls">
       <Button className="reset" onClick={fit}>
         <Icon type="diagram-reset" />
       </Button>
-      <Button className="zoomIn" onClick={() => zoom(zoomStepSize)}>
+      <Button className="zoomIn" onClick={() => zoom(ZOOM_STEP_SIZE)}>
         <Icon type="plus" />
       </Button>
-      <Button className="zoomOut" onClick={() => zoom(-zoomStepSize)}>
+      <Button className="zoomOut" onClick={() => zoom(-ZOOM_STEP_SIZE)}>
         <Icon type="minus" />
       </Button>
     </div>
