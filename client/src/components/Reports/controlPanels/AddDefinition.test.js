@@ -8,6 +8,8 @@
 import React, {runLastEffect} from 'react';
 import {shallow} from 'enzyme';
 
+import {Button, CarbonModal as Modal} from 'components';
+
 import {AddDefinition} from './AddDefinition';
 import {loadDefinitions, loadTenants} from './service';
 
@@ -35,9 +37,9 @@ const props = {
 it('should open a modal on button click', () => {
   const node = shallow(<AddDefinition {...props} />);
 
-  node.simulate('click', {stopPropagation: () => {}});
+  node.find(Button).simulate('click', {stopPropagation: () => {}});
 
-  expect(node.find('Modal').prop('open')).toBe(true);
+  expect(node.find(Modal).prop('open')).toBe(true);
 });
 
 it('should contain a checklist with all available definitions', () => {
@@ -101,7 +103,7 @@ it('should call back with definitions to add', () => {
       tenants: [{id: null, name: 'Not Defined'}],
     },
   ]);
-  node.find('Modal').find({primary: true}).simulate('click');
+  node.find('.confirm').simulate('click', {stopPropagation: () => {}});
 
   expect(spy).toHaveBeenCalledWith([
     {

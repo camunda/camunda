@@ -7,8 +7,15 @@
 
 import {useState, useEffect} from 'react';
 import {withRouter} from 'react-router-dom';
+import {Button} from '@carbon/react';
 
-import {Button, Icon, Modal, Checklist, MessageBox} from 'components';
+import {
+  Button as LegacyButton,
+  Icon,
+  CarbonModal as Modal,
+  Checklist,
+  MessageBox,
+} from 'components';
 import {withErrorHandling} from 'HOC';
 import {getCollection, getRandomId} from 'services';
 import {t} from 'translation';
@@ -45,25 +52,27 @@ export function AddDefinition({mightFail, location, definitions, type, onAdd}) {
     return isNameUnique ? name : `${name} (${key})`;
   }
 
+  const handleModalClose = (evt) => {
+    evt.stopPropagation();
+    setModalOpen(false);
+  };
+
   return (
-    <Button
-      small
-      className="AddDefinition"
-      onClick={(evt) => {
-        evt.stopPropagation();
-        setSelectedDefinitions([]);
-        setModalOpen(true);
-      }}
-      disabled={definitions.length >= 10}
-    >
-      <Icon type="plus" />
-      {t('common.add')}
-      <Modal
-        open={modalOpen}
-        onClose={() => setModalOpen(false)}
-        className="AddDefinition__Modal"
-        noAutoFocus
+    <>
+      <LegacyButton
+        small
+        className="AddDefinition"
+        onClick={(evt) => {
+          evt.stopPropagation();
+          setSelectedDefinitions([]);
+          setModalOpen(true);
+        }}
+        disabled={definitions.length >= 10}
       >
+        <Icon type="plus" />
+        {t('common.add')}
+      </LegacyButton>
+      <Modal open={modalOpen} onClose={handleModalClose} className="AddDefinitionModal">
         <Modal.Header>
           {t('report.definition.add', {type: t('report.definition.' + type)})}
         </Modal.Header>
@@ -96,15 +105,14 @@ export function AddDefinition({mightFail, location, definitions, type, onAdd}) {
             }}
           />
         </Modal.Content>
-        <Modal.Actions>
-          <Button main onClick={() => setModalOpen(false)}>
+        <Modal.Footer>
+          <Button kind="secondary" className="cancel" onClick={handleModalClose}>
             {t('common.cancel')}
           </Button>
           <Button
-            primary
-            main
-            onClick={() => {
-              setModalOpen(false);
+            className="confirm"
+            onClick={(evt) => {
+              handleModalClose(evt);
               mightFail(
                 loadTenants(
                   type,
@@ -132,9 +140,9 @@ export function AddDefinition({mightFail, location, definitions, type, onAdd}) {
           >
             {t('common.add')}
           </Button>
-        </Modal.Actions>
+        </Modal.Footer>
       </Modal>
-    </Button>
+    </>
   );
 }
 
