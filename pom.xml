@@ -40,7 +40,7 @@
     <version.mockito>5.0.0</version.mockito>
     <version.byte.buddy>1.12.22</version.byte.buddy>
     <version.assertj-core>3.24.2</version.assertj-core>
-    <version.jackson>2.14.1</version.jackson>
+    <version.jackson>2.14.2</version.jackson>
     <version.graphql>15.0.0</version.graphql>
     <version.graphql.tools>13.0.3</version.graphql.tools>
     <version.graphql-java>20.1</version.graphql-java>
