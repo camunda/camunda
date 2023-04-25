@@ -11,7 +11,6 @@ import static io.camunda.operate.Metrics.TAG_KEY_PARTITION;
 import static io.camunda.operate.Metrics.TAG_KEY_TYPE;
 import static io.camunda.operate.util.ElasticsearchUtil.*;
 import static io.camunda.operate.util.ThreadUtil.sleepFor;
-import static org.apache.lucene.search.TotalHits.Relation.GREATER_THAN_OR_EQUAL_TO;
 import static org.elasticsearch.index.query.QueryBuilders.*;
 import static org.springframework.beans.factory.config.BeanDefinition.SCOPE_PROTOTYPE;
 
@@ -223,11 +222,11 @@ public class RecordsReader implements Runnable {
       if (ex.getMessage().contains("no such index")) {
         throw new NoSuchIndexException();
       } else {
-        final String message = String.format("Exception occurred, while obtaining next Zeebe records batch: %s", ex.getMessage());
+        final String message = String.format("Exception occurred for alias [%s], while obtaining next Zeebe records batch: %s", aliasName, ex.getMessage());
         throw new OperateRuntimeException(message, ex);
       }
     } catch (Exception e) {
-      final String message = String.format("Exception occurred, while obtaining next Zeebe records batch: %s", e.getMessage());
+      final String message = String.format("Exception occurred for alias [%s], while obtaining next Zeebe records batch: %s", aliasName, e.getMessage());
       throw new OperateRuntimeException(message, e);
     }
   }
