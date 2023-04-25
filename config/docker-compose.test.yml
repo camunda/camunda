@@ -1,0 +1,73 @@
+version: "3.6"
+#this docker-compose will start Elastic, Zeebe (with external data folder, which allows to update Zeebe), Operate and Tasklist
+services:
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.17.4
+    container_name: elasticsearch
+    environment:
+      - discovery.type=single-node
+      - cluster.name=docker-cluster
+      - bootstrap.memory_lock=true
+      - xpack.security.enabled=false
+      - "ES_JAVA_OPTS=-Xms1024m -Xmx1024m"
+      - path.repo=/usr/local/els-snapshots
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    ports:
+      - 9200:9200
+      - 9300:9300
+    restart: always
+    volumes:
+      - ./els-snapshots:/usr/local/els-snapshots
+  zeebe:
+    container_name: zeebe
+    image: camunda/zeebe:8.2.1
+    environment:
+      - "JAVA_TOOL_OPTIONS=-Xms512m -Xmx512m"
+      - ZEEBE_HOST=${ZEEBE_HOST:-}
+      - ZEEBE_BROKER_CLUSTER_PARTITIONS_COUNT=4
+      - ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_INDEX_DEPLOYMENT=false
+      - ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_CLASSNAME=io.camunda.zeebe.exporter.ElasticsearchExporter
+      - ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_URL=http://elasticsearch:9200
+      - ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_BULK_SIZE=1
+    ports:
+      - 26500:26500
+      - 8000:8000
+    restart: always
+    volumes:
+      - ./data:/usr/local/zeebe/data
+  operate:
+    image: camunda/operate:8.2.3
+    container_name: operate
+    environment:
+      - SERVER_PORT=8081
+      - CAMUNDA_OPERATE_ZEEBE_GATEWAYADDRESS=zeebe:26500
+      - CAMUNDA_OPERATE_ELASTICSEARCH_URL=http://elasticsearch:9200
+      - CAMUNDA_OPERATE_ZEEBEELASTICSEARCH_URL=http://elasticsearch:9200
+      - SPRING_PROFILES_ACTIVE=dev-data
+      - CAMUNDA_OPERATE_TASKLIST_URL=http://localhost:8082/tasklist
+      - CAMUNDA_OPERATE_BACKUP_REPOSITORYNAME=test
+      - SERVER_SERVLET_CONTEXT_PATH=/operate
+    ports:
+      - 8081:8081
+    depends_on:
+      - elasticsearch
+      - zeebe
+  tasklist:
+    image: camunda/tasklist:8.2.3
+    container_name: tasklist
+    environment:
+      - SERVER_PORT=8082
+      - CAMUNDA_TASKLIST_ZEEBE_GATEWAYADDRESS=zeebe:26500
+      - CAMUNDA_TASKLIST_ELASTICSEARCH_URL=http://elasticsearch:9200
+      - CAMUNDA_TASKLIST_ZEEBEELASTICSEARCH_URL=http://elasticsearch:9200
+      - SPRING_PROFILES_ACTIVE=dev-data
+      - CAMUNDA_TASKLIST_BACKUP_REPOSITORYNAME=test
+      - SERVER_SERVLET_CONTEXT_PATH=/tasklist
+    ports:
+      - 8082:8082
+    depends_on:
+      - elasticsearch
+      - zeebe
