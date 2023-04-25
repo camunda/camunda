@@ -158,14 +158,14 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
-          "expr": "sum(rate(zeebe_element_instance_events_total{cluster=~\"$cluster\", namespace=~\"medic.*benchmark\", pod=~\"$pod\", type!=\"PROCESS\", action!=\"activated\"}[1m])) by (namespace)",
+          "expr": "sum(rate(zeebe_element_instance_events_total{cluster=~\"$cluster\", namespace=~\"medic.*benchmark\", pod=~\"$pod\", type!=\"PROCESS\", action!=\"activated\"}[$interval])) by (namespace)",
           "instant": true,
           "interval": "",
           "legendFormat": "{{namespace}}",
           "refId": "B"
         }
       ],
-      "title": "Overall FNI  per s [1m]",
+      "title": "Overall FNI  per s [$interval]",
       "type": "stat"
     },
     {
@@ -242,14 +242,14 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
-          "expr": "sum(rate(zeebe_element_instance_events_total{cluster=~\"$cluster\", namespace=~\"medic.*benchmark\",partition=~\"$partition\",pod=~\"$pod\", action=\"completed\", type=\"PROCESS\"}[1m])) by (namespace)",
+          "expr": "sum(rate(zeebe_element_instance_events_total{cluster=~\"$cluster\", namespace=~\"medic.*benchmark\",partition=~\"$partition\",pod=~\"$pod\", action=\"completed\", type=\"PROCESS\"}[$interval])) by (namespace)",
           "instant": true,
           "interval": "",
           "legendFormat": "{{namespace}}",
           "refId": "B"
         }
       ],
-      "title": "Completed processes per s [1m]",
+      "title": "Completed processes per s [$interval]",
       "type": "stat"
     },
     {
@@ -322,14 +322,14 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
-          "expr": "sum(rate(zeebe_element_instance_events_total{cluster=~\"$cluster\", namespace=~\"medic.*benchmark\",partition=~\"$partition\",pod=~\"$pod\", action=\"completed\", type=\"SERVICE_TASK\"}[1m])) by (namespace)",
+          "expr": "sum(rate(zeebe_element_instance_events_total{cluster=~\"$cluster\", namespace=~\"medic.*benchmark\",partition=~\"$partition\",pod=~\"$pod\", action=\"completed\", type=\"SERVICE_TASK\"}[$interval])) by (namespace)",
           "instant": true,
           "interval": "",
           "legendFormat": "{{namespace}}",
           "refId": "B"
         }
       ],
-      "title": "Completed tasks per s [1m]",
+      "title": "Completed tasks per s [$interval]",
       "type": "stat"
     },
     {
@@ -419,14 +419,14 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
-          "expr": "sum(rate(zeebe_element_instance_events_total{cluster=~\"$cluster\", namespace=~\"medic.*mixed\", pod=~\"$pod\", type!=\"PROCESS\", action!=\"activated\"}[1m])) by (namespace)",
+          "expr": "sum(rate(zeebe_element_instance_events_total{cluster=~\"$cluster\", namespace=~\"medic.*mixed\", pod=~\"$pod\", type!=\"PROCESS\", action!=\"activated\"}[$interval])) by (namespace)",
           "instant": true,
           "interval": "",
           "legendFormat": "{{namespace}}",
           "refId": "B"
         }
       ],
-      "title": "Overall FNI  per s [1m]",
+      "title": "Overall FNI  per s [$interval]",
       "type": "stat"
     },
     {
@@ -503,14 +503,14 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
-          "expr": "sum(rate(zeebe_element_instance_events_total{cluster=~\"$cluster\", namespace=~\"medic.*mixed\",partition=~\"$partition\",pod=~\"$pod\", action=\"completed\", type=\"PROCESS\"}[1m])) by (namespace)",
+          "expr": "sum(rate(zeebe_element_instance_events_total{cluster=~\"$cluster\", namespace=~\"medic.*mixed\",partition=~\"$partition\",pod=~\"$pod\", action=\"completed\", type=\"PROCESS\"}[$interval])) by (namespace)",
           "instant": true,
           "interval": "",
           "legendFormat": "{{namespace}}",
           "refId": "B"
         }
       ],
-      "title": "Completed processes per s [1m]",
+      "title": "Completed processes per s [$interval]",
       "type": "stat"
     },
     {
@@ -583,14 +583,14 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
-          "expr": "sum(rate(zeebe_element_instance_events_total{cluster=~\"$cluster\", namespace=~\"medic.*mixed\",partition=~\"$partition\",pod=~\"$pod\", action=\"completed\", type=\"SERVICE_TASK\"}[1m])) by (namespace)",
+          "expr": "sum(rate(zeebe_element_instance_events_total{cluster=~\"$cluster\", namespace=~\"medic.*mixed\",partition=~\"$partition\",pod=~\"$pod\", action=\"completed\", type=\"SERVICE_TASK\"}[$interval])) by (namespace)",
           "instant": true,
           "interval": "",
           "legendFormat": "{{namespace}}",
           "refId": "B"
         }
       ],
-      "title": "Completed tasks per s [1m]",
+      "title": "Completed tasks per s [$interval]",
       "type": "stat"
     },
     {
@@ -663,7 +663,7 @@
             "uid": "$DS_PROMETHEUS"
           },
           "editorMode": "code",
-          "expr": "histogram_quantile(0.50, sum(rate(zeebe_process_instance_execution_time_bucket{cluster=~\"$cluster\", namespace=~\"medic.*latency\",pod=~\"$pod\", partition=~\"$partition\"}[1m])) by (le, namespace))",
+          "expr": "histogram_quantile(0.50, sum(rate(zeebe_process_instance_execution_time_bucket{cluster=~\"$cluster\", namespace=~\"medic.*latency\",pod=~\"$pod\", partition=~\"$partition\"}[$interval])) by (le, namespace))",
           "format": "heatmap",
           "interval": "30s",
           "intervalFactor": 1,
@@ -676,7 +676,7 @@
             "uid": "$DS_PROMETHEUS"
           },
           "editorMode": "code",
-          "expr": "histogram_quantile(0.99, sum(rate(zeebe_process_instance_execution_time_bucket{cluster=~\"$cluster\", namespace=~\"medic.*latency\",pod=~\"$pod\", partition=~\"$partition\"}[1m])) by (le, namespace))",
+          "expr": "histogram_quantile(0.99, sum(rate(zeebe_process_instance_execution_time_bucket{cluster=~\"$cluster\", namespace=~\"medic.*latency\",pod=~\"$pod\", partition=~\"$partition\"}[$interval])) by (le, namespace))",
           "interval": "",
           "legendFormat": "p99 {{namespace}}",
           "range": true,
@@ -1361,14 +1361,14 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
-          "expr": "sum(rate(zeebe_element_instance_events_total{cluster=~\"$cluster\", namespace=~\"release.*\", pod=~\"$pod\", type!=\"PROCESS\", action!=\"activated\"}[1m])) by (namespace)",
+          "expr": "sum(rate(zeebe_element_instance_events_total{cluster=~\"$cluster\", namespace=~\"release.*\", pod=~\"$pod\", type!=\"PROCESS\", action!=\"activated\"}[$interval])) by (namespace)",
           "instant": true,
           "interval": "",
           "legendFormat": "{{namespace}}",
           "refId": "B"
         }
       ],
-      "title": "Overall FNI  per s [1m]",
+      "title": "Overall FNI  per s [$interval]",
       "type": "stat"
     },
     {
@@ -1444,14 +1444,14 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
-          "expr": "sum(rate(zeebe_element_instance_events_total{cluster=~\"$cluster\", namespace=~\"release.*\",partition=~\"$partition\",pod=~\"$pod\", action=\"completed\", type=\"PROCESS\"}[1m])) by (namespace)",
+          "expr": "sum(rate(zeebe_element_instance_events_total{cluster=~\"$cluster\", namespace=~\"release.*\",partition=~\"$partition\",pod=~\"$pod\", action=\"completed\", type=\"PROCESS\"}[$interval])) by (namespace)",
           "instant": true,
           "interval": "",
           "legendFormat": "{{namespace}}",
           "refId": "B"
         }
       ],
-      "title": "Completed processes per s [1m]",
+      "title": "Completed processes per s [$interval]",
       "type": "stat"
     },
     {
@@ -1523,14 +1523,14 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
-          "expr": "sum(rate(zeebe_element_instance_events_total{cluster=~\"$cluster\", namespace=~\"release.*\",partition=~\"$partition\",pod=~\"$pod\", action=\"completed\", type=\"SERVICE_TASK\"}[1m])) by (namespace)",
+          "expr": "sum(rate(zeebe_element_instance_events_total{cluster=~\"$cluster\", namespace=~\"release.*\",partition=~\"$partition\",pod=~\"$pod\", action=\"completed\", type=\"SERVICE_TASK\"}[$interval])) by (namespace)",
           "instant": true,
           "interval": "",
           "legendFormat": "{{namespace}}",
           "refId": "B"
         }
       ],
-      "title": "Completed tasks per s [1m]",
+      "title": "Completed tasks per s [$interval]",
       "type": "stat"
     },
     {
