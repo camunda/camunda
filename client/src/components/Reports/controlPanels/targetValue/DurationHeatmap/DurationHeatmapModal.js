@@ -9,10 +9,10 @@ import React from 'react';
 import update from 'immutability-helper';
 import classnames from 'classnames';
 import Viewer from 'bpmn-js/lib/NavigatedViewer';
+import {Button} from '@carbon/react';
 
 import {
-  Button,
-  Modal,
+  CarbonModal as Modal,
   BPMNDiagram,
   Table,
   Input,
@@ -129,7 +129,10 @@ export default class DurationHeatmapModal extends React.Component {
   };
 
   constructTableBody = () => {
-    const resultObj = formatters.objectifyResult(getReportResult(this.props.report).data);
+    const reportResults = getReportResult(this.props.report).data;
+    const resultObj = Array.isArray(reportResults)
+      ? formatters.objectifyResult(getReportResult(this.props.report).data)
+      : {};
 
     return Object.keys(this.state.values).map((id) => {
       const settings = this.state.values[id] || {value: '', unit: 'hours'};
@@ -137,7 +140,7 @@ export default class DurationHeatmapModal extends React.Component {
       return [
         this.state.nodeNames[id],
         formatters.duration(resultEntry || 0),
-        <React.Fragment>
+        <>
           <div className="selection">
             <Input
               value={settings.value}
@@ -169,7 +172,7 @@ export default class DurationHeatmapModal extends React.Component {
               <Select.Option value="years">{t('common.unit.year.label-plural')}</Select.Option>
             </Select>
           </div>
-        </React.Fragment>,
+        </>,
       ];
     });
   };
@@ -242,7 +245,7 @@ export default class DurationHeatmapModal extends React.Component {
 
     return (
       <Modal
-        size="max"
+        size="lg"
         open={open}
         onClose={onClose}
         className={classnames('DurationHeatmapModal', 'type-' + nodeType)}
@@ -276,14 +279,14 @@ export default class DurationHeatmapModal extends React.Component {
             <Message error>{t('report.heatTarget.invalidValue')}</Message>
           )}
         </Modal.Content>
-        <Modal.Actions>
-          <Button main onClick={onClose}>
+        <Modal.Footer>
+          <Button kind="secondary" className="cancel" onClick={onClose}>
             {t('common.cancel')}
           </Button>
-          <Button main primary onClick={this.confirmModal} disabled={!this.validChanges()}>
+          <Button onClick={this.confirmModal} className="confirm" disabled={!this.validChanges()}>
             {t('common.apply')}
           </Button>
-        </Modal.Actions>
+        </Modal.Footer>
       </Modal>
     );
   }
