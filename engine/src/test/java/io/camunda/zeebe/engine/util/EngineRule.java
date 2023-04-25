@@ -463,7 +463,7 @@ public final class EngineRule extends ExternalResource {
             typedEvent = new TypedRecordImpl(partitionId);
             final var asyncLogStream = synchronousLogStream.getAsyncLogStream();
             asyncLogStream.registerRecordAvailableListener(this::onNewEventCommitted);
-            logStreamReader = asyncLogStream.newLogStreamReader().join();
+            logStreamReader = asyncLogStream.newAuditReader().join();
             exportEvents();
           });
     }

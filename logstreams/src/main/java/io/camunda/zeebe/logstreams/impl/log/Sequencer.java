@@ -144,11 +144,17 @@ final class Sequencer implements LogStreamWriter, Closeable {
       }
     }
 
-    final var auditEntry = buildAuditEntry(sourcePosition, now, auditEntries);
-
     final var entriesToWrite = new ArrayList<LogAppendEntry>(unprocessedCommands.size() + 2);
-    entriesToWrite.add(auditEntry);
-    entriesToWrite.add(writeBatchEntry);
+
+    if (!auditEntries.isEmpty()) {
+      final var auditEntry = buildAuditEntry(sourcePosition, now, auditEntries);
+      entriesToWrite.add(auditEntry);
+    }
+
+    if (writeBatchEntry != null) {
+      entriesToWrite.add(writeBatchEntry);
+    }
+
     entriesToWrite.addAll(unprocessedCommands);
     return new SequencedBatch(now, position + auditEntries.size(), sourcePosition, entriesToWrite);
   }

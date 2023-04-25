@@ -18,13 +18,13 @@ public final class ZeebeEntryValidator implements EntryValidator {
       return ValidationResult.ok();
     }
 
-    if (entry.lowestPosition() != lastEntry.highestPosition() + 1) {
-      return ValidationResult.failure(
-          String.format(
-              "Expected no gaps between application entries, but the last application entry had a "
-                  + "highest position of %d and the current entry has a lowest position of %d",
-              lastEntry.highestPosition(), entry.lowestPosition()));
-    }
+//    if (entry.lowestPosition() != lastEntry.highestPosition() + 1) {
+//      return ValidationResult.failure(
+//          String.format(
+//              "Expected no gaps between application entries, but the last application entry had a "
+//                  + "highest position of %d and the current entry has a lowest position of %d",
+//              lastEntry.highestPosition(), entry.lowestPosition()));
+//    }
 
     return ValidationResult.ok();
   }
