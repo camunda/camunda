@@ -99,35 +99,50 @@ public class ImportJob implements Callable<Boolean> {
       final RecordsReader recordsReader =
           recordsReaderHolder.getRecordsReader(
               importBatch.getPartitionId(), importBatch.getImportValueType());
-      if (recordsReader != null) {
-        try {
-          final ImportBatch newImportBatch;
-          if (previousPosition.getSequence() > 0) {
-            newImportBatch =
-                recordsReader.readNextBatchBySequence(
-                    previousPosition.getSequence(),
-                    importBatch.getLastProcessedSequence(objectMapper));
-          } else {
-            newImportBatch =
-                recordsReader.readNextBatchByPositionAndPartition(
-                    previousPosition.getPosition(),
-                    importBatch.getLastProcessedPosition(objectMapper));
+      if (recordsReader == null) {
+        LOGGER.warn(
+            "Unable to find records reader for partitionId {} and ImportValueType {}",
+            importBatch.getPartitionId(),
+            importBatch.getImportValueType());
+        return;
+      }
+      try {
+        final ImportBatch newImportBatch;
+        if (previousPosition.getSequence() > 0) {
+          newImportBatch =
+              recordsReader.readNextBatchBySequence(
+                  previousPosition.getSequence(),
+                  importBatch.getLastProcessedSequence(objectMapper));
+
+          final Long lastSequenceFromInitialBatch =
+              importBatch.getLastProcessedSequence(objectMapper);
+          final Long lastSequenceFromNewImportBatch =
+              newImportBatch.getLastProcessedSequence(objectMapper);
+
+          if (newImportBatch == null
+              || newImportBatch.getHits() == null
+              || lastSequenceFromInitialBatch > lastSequenceFromNewImportBatch) {
+            final String message =
+                String.format(
+                    "Warning! Import batch became smaller after reread. Should not happen. Will be retried. Expected last sequence %d, actual last sequence %d.",
+                    lastSequenceFromInitialBatch, lastSequenceFromNewImportBatch);
+            throw new TasklistRuntimeException(message);
           }
+        } else {
+          newImportBatch =
+              recordsReader.readNextBatchByPositionAndPartition(
+                  previousPosition.getPosition(),
+                  importBatch.getLastProcessedPosition(objectMapper));
           if (newImportBatch == null
               || newImportBatch.getHits() == null
               || newImportBatch.getHits().size() < importBatch.getHits().size()) {
             throw new TasklistRuntimeException(
                 "Warning! Import batch became smaller after reread. Should not happen. Will be retried.");
           }
-          importBatch = newImportBatch;
-        } catch (NoSuchIndexException ex) {
-          LOGGER.warn("Indices are not found" + importBatch.toString());
         }
-      } else {
-        LOGGER.warn(
-            "Unable to find records reader for partitionId {} and ImportValueType {}",
-            importBatch.getPartitionId(),
-            importBatch.getImportValueType());
+        importBatch = newImportBatch;
+      } catch (NoSuchIndexException ex) {
+        LOGGER.warn("Indices are not found" + importBatch.toString());
       }
     }
   }

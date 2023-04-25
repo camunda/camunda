@@ -408,7 +408,7 @@ public abstract class ElasticsearchUtil {
     clearScroll(scrollId, esClient);
   }
 
-  private static void clearScroll(String scrollId, RestHighLevelClient esClient) {
+  public static void clearScroll(String scrollId, RestHighLevelClient esClient) {
     if (scrollId != null) {
       // clear the scroll
       final ClearScrollRequest clearScrollRequest = new ClearScrollRequest();
