@@ -28,30 +28,27 @@ import org.slf4j.LoggerFactory;
 final class RemoteStreamPusher<P extends BufferWriter> {
   private static final Logger LOG = LoggerFactory.getLogger(RemoteStreamPusher.class);
   private final RemoteStreamMetrics metrics;
-
-  private final StreamId streamId;
   private final Transport transport;
   private final Executor executor;
 
   RemoteStreamPusher(
-      final StreamId streamId,
-      final Transport transport,
-      final Executor executor,
-      final RemoteStreamMetrics metrics) {
+      final Transport transport, final Executor executor, final RemoteStreamMetrics metrics) {
     this.metrics = metrics;
-    this.streamId = Objects.requireNonNull(streamId, "must specify a target stream ID");
     this.transport = Objects.requireNonNull(transport, "must provide a network transport");
     this.executor = Objects.requireNonNull(executor, "must provide an asynchronous executor");
   }
 
-  public void pushAsync(final P payload, final ErrorHandler<P> errorHandler) {
+  public void pushAsync(
+      final P payload, final ErrorHandler<P> errorHandler, final StreamId streamId) {
     Objects.requireNonNull(payload, "must specify a payload");
     Objects.requireNonNull(errorHandler, "must specify a error handler");
 
-    executor.execute(() -> push(payload, instrumentingErrorHandler(errorHandler)));
+    executor.execute(
+        () -> push(payload, instrumentingErrorHandler(errorHandler, streamId), streamId));
   }
 
-  private ErrorHandler<P> instrumentingErrorHandler(final ErrorHandler<P> errorHandler) {
+  private ErrorHandler<P> instrumentingErrorHandler(
+      final ErrorHandler<P> errorHandler, final StreamId streamId) {
     return (error, payload) -> {
       if (error != null) {
         metrics.pushFailed();
@@ -61,7 +58,7 @@ final class RemoteStreamPusher<P extends BufferWriter> {
     };
   }
 
-  private void push(final P payload, final ErrorHandler<P> errorHandler) {
+  private void push(final P payload, final ErrorHandler<P> errorHandler, final StreamId streamId) {
     final var request = new PushStreamRequest().streamId(streamId.streamId()).payload(payload);
     try {
       transport

@@ -25,6 +25,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
@@ -124,6 +125,14 @@ final class RemoteStreamerTest {
     @Override
     public Set<StreamConsumer<TestMetadata>> get(final UnsafeBuffer streamType) {
       return consumers.getOrDefault(streamType, Collections.emptySet());
+    }
+
+    @Override
+    public Set<StreamConsumer<TestMetadata>> getStreamsByLogicalId(
+        final UnsafeBuffer streamType, final TestMetadata properties) {
+      return get(streamType).stream()
+          .filter(s -> s.properties().equals(properties))
+          .collect(Collectors.toSet());
     }
   }
 

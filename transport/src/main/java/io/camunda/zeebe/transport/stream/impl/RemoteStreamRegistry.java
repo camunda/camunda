@@ -17,6 +17,7 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArraySet;
+import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
 /**
@@ -35,6 +36,10 @@ public class RemoteStreamRegistry<M> implements ImmutableStreamRegistry<M> {
   // Needs to be thread-safe for readers
   private final ConcurrentMap<UnsafeBuffer, Set<StreamConsumer<M>>> typeToConsumers =
       new ConcurrentHashMap<>();
+
+  private final ConcurrentMap<LogicalId<M>, Set<StreamConsumer<M>>> logicalIdToConsumers =
+      new ConcurrentHashMap<>();
+
   private final Map<StreamId, StreamConsumer<M>> idToConsumer = new HashMap<>();
 
   public RemoteStreamRegistry(final RemoteStreamMetrics metrics) {
@@ -64,11 +69,14 @@ public class RemoteStreamRegistry<M> implements ImmutableStreamRegistry<M> {
     // Using CopyOnWriteArraySet assuming the size is small and updates/removal is less frequent. If
     // this is not the case, better use other thread-safe sets.
     typeToConsumers.putIfAbsent(streamType, new CopyOnWriteArraySet<>());
+    final var logicalId = new LogicalId<>(streamType, properties);
+    logicalIdToConsumers.putIfAbsent(logicalId, new CopyOnWriteArraySet<>());
 
     final var streamConsumer = new StreamConsumer<>(uniqueId, properties, streamType);
 
     idToConsumer.put(uniqueId, streamConsumer);
     typeToConsumers.get(streamType).add(streamConsumer);
+    logicalIdToConsumers.get(logicalId).add(streamConsumer);
     metrics.addStream();
   }
 
@@ -85,6 +93,13 @@ public class RemoteStreamRegistry<M> implements ImmutableStreamRegistry<M> {
       typeToConsumers.computeIfPresent(
           consumer.streamType(),
           (type, consumerSet) -> {
+            consumerSet.remove(consumer);
+            return consumerSet.isEmpty() ? null : consumerSet;
+          });
+      final var logicalId = new LogicalId<>(consumer.streamType(), consumer.properties());
+      logicalIdToConsumers.computeIfPresent(
+          logicalId,
+          (id, consumerSet) -> {
             consumerSet.remove(consumer);
             return consumerSet.isEmpty() ? null : consumerSet;
           });
@@ -109,8 +124,17 @@ public class RemoteStreamRegistry<M> implements ImmutableStreamRegistry<M> {
     return typeToConsumers.getOrDefault(streamType, Collections.emptySet());
   }
 
+  @Override
+  public Set<StreamConsumer<M>> getStreamsByLogicalId(
+      final UnsafeBuffer streamType, final M properties) {
+    return logicalIdToConsumers.getOrDefault(
+        new LogicalId<>(streamType, properties), Collections.emptySet());
+  }
+
   public void clear() {
     typeToConsumers.clear();
     idToConsumer.clear();
   }
+
+  record LogicalId<M>(DirectBuffer streamType, M metadata) {}
 }

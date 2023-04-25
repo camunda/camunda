@@ -24,6 +24,16 @@ interface ImmutableStreamRegistry<M> {
    */
   Set<StreamConsumer<M>> get(final UnsafeBuffer streamType);
 
+  Set<StreamConsumer<M>> getStreamsByLogicalId(UnsafeBuffer streamType, M properties);
+
+  /**
+   * Uniquely identifies a stream
+   *
+   * @param streamId
+   * @param receiver
+   */
+  record StreamId(UUID streamId, MemberId receiver) {}
+
   /**
    * A stream consumer uniquely identified by the id, with its properties and streamType.
    *
@@ -33,12 +43,4 @@ interface ImmutableStreamRegistry<M> {
    * @param <M> type of the properties
    */
   record StreamConsumer<M>(StreamId id, M properties, UnsafeBuffer streamType) {}
-
-  /**
-   * Uniquely identifies a stream
-   *
-   * @param streamId
-   * @param receiver
-   */
-  record StreamId(UUID streamId, MemberId receiver) {}
 }
