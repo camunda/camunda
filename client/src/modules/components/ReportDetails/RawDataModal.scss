@@ -1,5 +1,11 @@
-.RawDataModal .Modal__content {
-  display: flex;
-  flex-direction: column;
-  max-height: calc(100vh - 150px);
+.RawDataModal {
+  .cds--modal-container {
+    height: 100%;
+  }
+
+  .cds--modal-content {
+    display: flex;
+    flex-direction: column;
+    max-height: calc(100vh - 150px);
+  }
 }

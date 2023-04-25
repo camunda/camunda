@@ -5,9 +5,10 @@
  * except in compliance with the proprietary license.
  */
 
-import React, {useState, useCallback, useEffect} from 'react';
+import {useState, useCallback, useEffect} from 'react';
+import {Button} from '@carbon/react';
 
-import {Modal, Button, ReportRenderer, LoadingIndicator} from 'components';
+import {CarbonModal as Modal, ReportRenderer, LoadingIndicator} from 'components';
 import {withErrorHandling} from 'HOC';
 import {evaluateReport} from 'services';
 import {t} from 'translation';
@@ -15,7 +16,7 @@ import {newReport} from 'config';
 
 import './RawDataModal.scss';
 
-export function RawDataModal({name, report, close, mightFail}) {
+export function RawDataModal({name, report, open, onClose, mightFail}) {
   const [rawDataReport, setRawDataReport] = useState();
   const [error, setError] = useState();
   const [reportPayload, setReportPayload] = useState(convertToRawData(report));
@@ -33,7 +34,7 @@ export function RawDataModal({name, report, close, mightFail}) {
   }, []);
 
   return (
-    <Modal className="RawDataModal" open size="max" onClose={close}>
+    <Modal className="RawDataModal" open={open} size="lg" onClose={onClose}>
       <Modal.Header>{name}</Modal.Header>
       <Modal.Content>
         {!rawDataReport && !error ? (
@@ -42,11 +43,11 @@ export function RawDataModal({name, report, close, mightFail}) {
           <ReportRenderer error={error} report={rawDataReport} loadReport={loadReport} />
         )}
       </Modal.Content>
-      <Modal.Actions>
-        <Button main onClick={close}>
+      <Modal.Footer>
+        <Button kind="secondary" className="close" onClick={onClose}>
           {t('common.close')}
         </Button>
-      </Modal.Actions>
+      </Modal.Footer>
     </Modal>
   );
 }

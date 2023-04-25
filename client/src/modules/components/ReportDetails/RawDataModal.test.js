@@ -8,15 +8,16 @@
 import React, {runLastEffect} from 'react';
 import {shallow} from 'enzyme';
 
-import {ReportRenderer, Modal} from 'components';
+import {ReportRenderer, CarbonModal as Modal} from 'components';
 import {evaluateReport} from 'services';
 
 import {RawDataModal} from './RawDataModal';
 
 const props = {
   name: 'processName',
+  open: true,
   report: {data: {configuration: {xml: 'xml data'}}},
-  close: jest.fn(),
+  onClose: jest.fn(),
   mightFail: jest.fn().mockImplementation((data, cb) => cb(data)),
 };
 
