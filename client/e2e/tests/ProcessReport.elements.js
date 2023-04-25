@@ -45,13 +45,16 @@ export const badge = (id) =>
   Selector(`.BPMNDiagram .djs-overlay-container [data-container-id="${id}"] .djs-overlay`);
 export const targetValueButton = Selector('.toggleButton');
 export const targetValueInput = (name) => Selector('.Modal tbody tr').withText(name).find('.Input');
+// This stays only until filters modal are carbonized
+export const carbonTargetValueInput = (name) =>
+  Selector('.CarbonModal tbody tr').withText(name).find('.Input');
 export const nodeFilterOperator = (name) =>
   Selector('.Modal tbody tr').withText(name).find('.Dropdown:first-child');
 export const warning = Selector('.Message--warning');
 export const processPartButton = Selector('.ReportControlPanel .Button').withText(
   'Process Instance Part'
 );
-export const modalFlowNode = (id) => Selector(`.Modal [data-element-id="${id}"]`);
+export const modalFlowNode = (id) => Selector(`.ProcessPartModal [data-element-id="${id}"]`);
 export const selectSectionWithLabel = (label) => Selector('section .sectionTitle').withText(label);
 export const selectSwitchLabel = (label) => Selector('.Switch .label').withText(label);
 export const tableGroup = (idx) => Selector('.Table thead tr.groupRow th').nth(idx);
@@ -100,7 +103,8 @@ export const detailsPopoverButton = Selector('.EntityName .Popover .Button');
 export const modalButton = (text) => Selector('.ReportDetails .modalButton').withText(text);
 export const rawDataTable = Selector('.RawDataModal .Table');
 export const modalDiagram = Selector('.DiagramModal .BPMNDiagram');
-export const closeModalButton = Selector('.Modal .Button').withText('Close');
+export const objectVariableModalCloseButton = Selector('.ObjectVariableModal .close');
+export const rawDataModalCloseButton = Selector('.RawDataModal .close');
 export const bucketSizeSwitch = Selector('.BucketSize .Switch');
 export const bucketSizeUnitSelect = Selector('.BucketSize .Select').nth(0);
 export const nextPageButton = Selector('.Table .Button.next');
@@ -120,7 +124,7 @@ export const tableScrollableContainer = reportTable.find('table');
 export const objectViewBtn = reportTable.find('.ObjectViewBtn').nth(0);
 export const objectVariableModal = Selector('.ObjectVariableModal');
 export const renameVariablesBtn = Selector('.actionBar .Button').withText('Rename Variables');
-export const newNameInput = (name) => Selector('.Modal tbody tr').withText(name).find('.Input');
-export const updateVariableBtn = Selector('.Modal__actions .Button').withText('Update');
+export const newNameInput = (name) =>
+  Selector('.RenameVariablesModal tbody tr').withText(name).find('.Input');
 export const viewSelect = Selector('.View .activateButton');
 export const numberReportInfo = reportRenderer.find('.Number .label');

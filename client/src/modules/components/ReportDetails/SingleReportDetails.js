@@ -80,64 +80,73 @@ export function SingleReportDetails({report, showReportName, mightFail, location
   }
 
   return (
-    <div className="SingleReportDetails">
-      {showReportName && <h2>{reportName}</h2>}
-      {definitions.length && (
-        <div>
-          <h3>{t('report.definition.' + type + (definitions.length > 1 ? '-plural' : ''))}</h3>
-          {definitions.map((definition, idx) => {
-            const tenantInfo = getTenantInfoForDefinition(definition);
+    <>
+      <div className="SingleReportDetails">
+        {showReportName && <h2>{reportName}</h2>}
+        {definitions.length && (
+          <div>
+            <h3>{t('report.definition.' + type + (definitions.length > 1 ? '-plural' : ''))}</h3>
+            {definitions.map((definition, idx) => {
+              const tenantInfo = getTenantInfoForDefinition(definition);
 
-            return (
-              <div key={idx + definition.key} className="definition">
-                <h4>{definition.displayName || definition.name || definition.key}</h4>
-                <div className="info">
-                  {t('common.definitionSelection.version.label')}:{' '}
-                  {formatVersions(definition.versions)}
-                </div>
-                {tenantInfo?.length > 1 && (
+              return (
+                <div key={idx + definition.key} className="definition">
+                  <h4>{definition.displayName || definition.name || definition.key}</h4>
                   <div className="info">
-                    {t('common.tenant.label')}: {formatTenants(definition.tenantIds, tenantInfo)}
+                    {t('common.definitionSelection.version.label')}:{' '}
+                    {formatVersions(definition.versions)}
                   </div>
-                )}
-                {!isShared && (
-                  <Button link className="modalButton" onClick={() => setShowDiagram(definition)}>
-                    {t('common.entity.viewModel.' + report.reportType)}
-                  </Button>
-                )}
-              </div>
-            );
-          })}
-          <hr />
-        </div>
-      )}
-      {report.data.view && report.data.groupBy && (
-        <div>
-          <h3>{t('report.view.' + type)}</h3>
-          <h4
-            className={classnames({
-              nowrap: report.data.view.entity === 'variable',
+                  {tenantInfo?.length > 1 && (
+                    <div className="info">
+                      {t('common.tenant.label')}: {formatTenants(definition.tenantIds, tenantInfo)}
+                    </div>
+                  )}
+                  {!isShared && (
+                    <Button link className="modalButton" onClick={() => setShowDiagram(definition)}>
+                      {t('common.entity.viewModel.' + report.reportType)}
+                    </Button>
+                  )}
+                </div>
+              );
             })}
-          >
-            {getSelectedView(report.data, type)}
-          </h4>
-          {!isShared && (
-            <Button className="rawDataButton modalButton" link onClick={() => setShowRawData(true)}>
-              {t('common.entity.viewRawData')}
-            </Button>
-          )}
-          <hr />
-        </div>
+            <hr />
+          </div>
+        )}
+        {report.data.view && report.data.groupBy && (
+          <div>
+            <h3>{t('report.view.' + type)}</h3>
+            <h4
+              className={classnames({
+                nowrap: report.data.view.entity === 'variable',
+              })}
+            >
+              {getSelectedView(report.data, type)}
+            </h4>
+            {!isShared && (
+              <Button
+                className="rawDataButton modalButton"
+                link
+                onClick={() => setShowRawData(true)}
+              >
+                {t('common.entity.viewRawData')}
+              </Button>
+            )}
+            <hr />
+          </div>
+        )}
+      </div>
+      {!!showDiagram && (
+        <DiagramModal open type={type} definition={showDiagram} onClose={closePopover} />
       )}
       {showRawData && (
         <RawDataModal
+          open
           report={report}
           name={reportName + ' - ' + t('report.view.rawData')}
-          close={closePopover}
+          onClose={closePopover}
         />
       )}
-      {showDiagram && <DiagramModal type={type} definition={showDiagram} close={closePopover} />}
-    </div>
+    </>
   );
 }
 

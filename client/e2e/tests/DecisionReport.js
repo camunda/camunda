@@ -187,7 +187,7 @@ test('show raw data and decision table', async (t) => {
   await t.click(ProcessReport.detailsPopoverButton);
   await t.click(ProcessReport.modalButton('View Raw data'));
   await t.expect(ProcessReport.rawDataTable.visible).ok();
-  await t.click(ProcessReport.closeModalButton);
+  await t.click(ProcessReport.rawDataModalCloseButton);
 
   await t.click(ProcessReport.detailsPopoverButton);
   await t.click(ProcessReport.modalButton('View Decision Table'));

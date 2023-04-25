@@ -225,7 +225,7 @@ test('view a variable object in rawdata table', async (t) => {
   await t.click(e.objectViewBtn);
   await t.expect(e.objectVariableModal.visible).ok();
 
-  await t.click(e.closeModalButton);
+  await t.click(e.objectVariableModalCloseButton);
 });
 
 test('drag distributed table columns', async (t) => {
@@ -675,16 +675,16 @@ test('heatmap target values', async (t) => {
   await t.expect(e.tooltip.textContent).notContains('Target duration');
 
   await t.click(e.targetValueButton);
-  await t.typeText(e.targetValueInput('Approve Invoice'), '1');
-  await t.typeText(e.targetValueInput('Prepare Bank Transfer'), '5');
-  await t.typeText(e.targetValueInput('Review Invoice'), '1');
+  await t.typeText(e.carbonTargetValueInput('Approve Invoice'), '1');
+  await t.typeText(e.carbonTargetValueInput('Prepare Bank Transfer'), '5');
+  await t.typeText(e.carbonTargetValueInput('Review Invoice'), '1');
 
   await t.takeElementScreenshot(
     Common.modalContainer,
     'process-analysis/report-analysis/img/targetvalue-2.png'
   );
 
-  await t.click(Common.modalConfirmButton);
+  await t.click(Common.carbonModalConfirmBtn);
 
   await t.hover(e.flowNode('approveInvoice'));
 
@@ -853,7 +853,7 @@ test('process parts', async (t) => {
   );
   await t.maximizeWindow();
 
-  await t.click(Common.modalConfirmButton);
+  await t.click(Common.carbonModalConfirmBtn);
 
   const withPart = await e.reportNumber.textContent;
 
@@ -879,7 +879,7 @@ test('show raw data and process model', async (t) => {
   await t.click(e.detailsPopoverButton);
   await t.click(e.modalButton('View Raw data'));
   await t.expect(e.rawDataTable.visible).ok();
-  await t.click(e.closeModalButton);
+  await t.click(e.rawDataModalCloseButton);
 
   await t.click(e.detailsPopoverButton);
   await t.click(e.modalButton('View Process Model'));
@@ -1153,7 +1153,7 @@ test('variable renaming', async (t) => {
   await t.click(e.definitionEditor);
   await t.click(e.renameVariablesBtn);
   await t.typeText(e.newNameInput('amount'), 'renamed amount', {replace: true});
-  await t.click(e.updateVariableBtn);
+  await t.click(Common.carbonModalConfirmBtn);
   await t.click(e.definitionEditor);
 
   await t.expect(e.viewSelect.textContent).contains('renamed amount');
@@ -1164,7 +1164,7 @@ test('variable renaming', async (t) => {
   await t.click(e.definitionEditor);
   await t.click(e.renameVariablesBtn);
   await t.selectText(e.newNameInput('amount')).pressKey('delete');
-  await t.click(e.updateVariableBtn);
+  await t.click(Common.carbonModalConfirmBtn);
   await t.click(e.definitionEditor);
 
   await t.expect(e.viewSelect.textContent).contains('amount');
