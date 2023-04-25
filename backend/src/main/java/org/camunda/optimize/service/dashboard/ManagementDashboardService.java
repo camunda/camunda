@@ -92,9 +92,7 @@ public class ManagementDashboardService {
       .visualization(ProcessVisualization.BAR)
       .managementReport(true)
       .build();
-    final String reportId = reportWriter.createNewSingleProcessReport(
-      null, processInstanceGroupedByMonth, PROCESS_INSTANCE_USAGE_REPORT_LOCALIZATION_CODE, null
-    ).getId();
+    final String reportId = createReportAndGetId(processInstanceGroupedByMonth, PROCESS_INSTANCE_USAGE_REPORT_LOCALIZATION_CODE);
     return buildDashboardReportTileDto(positionDto, dimensionDto, reportId);
   }
 
@@ -114,9 +112,7 @@ public class ManagementDashboardService {
       .configuration(SingleReportConfigurationDto.builder().targetValue(targetConfig).build())
       .managementReport(true)
       .build();
-    final String reportId = reportWriter.createNewSingleProcessReport(
-      null, overAllIncidentFreeRate, INCIDENT_FREE_RATE_REPORT_LOCALIZATION_CODE, null
-    ).getId();
+    final String reportId = createReportAndGetId(overAllIncidentFreeRate, INCIDENT_FREE_RATE_REPORT_LOCALIZATION_CODE);
     return buildDashboardReportTileDto(positionDto, dimensionDto, reportId);
   }
 
@@ -141,9 +137,7 @@ public class ManagementDashboardService {
       .configuration(SingleReportConfigurationDto.builder().targetValue(targetConfig).build())
       .managementReport(true)
       .build();
-    final String reportId = reportWriter.createNewSingleProcessReport(
-      null, automationRate, AUTOMATION_RATE_REPORT_LOCALIZATION_CODE, null
-    ).getId();
+    final String reportId = createReportAndGetId(automationRate, AUTOMATION_RATE_REPORT_LOCALIZATION_CODE);
     return buildDashboardReportTileDto(positionDto, dimensionDto, reportId);
   }
 
@@ -166,9 +160,7 @@ public class ManagementDashboardService {
                 .buildList())
       .managementReport(true)
       .build();
-    final String reportId = reportWriter.createNewSingleProcessReport(
-      null, longRunningInstances, LONG_RUNNING_INSTANCES_REPORT_LOCALIZATION_CODE, null
-    ).getId();
+    final String reportId = createReportAndGetId(longRunningInstances, LONG_RUNNING_INSTANCES_REPORT_LOCALIZATION_CODE);
     return buildDashboardReportTileDto(positionDto, dimensionDto, reportId);
   }
 
@@ -181,23 +173,19 @@ public class ManagementDashboardService {
       .visualization(ProcessVisualization.PIE)
       .managementReport(true)
       .build();
-    final String reportId = reportWriter.createNewSingleProcessReport(
-      null, automationCandidates, AUTOMATION_CANDIDATES_REPORT_LOCALIZATION_CODE, null
-    ).getId();
+    final String reportId = createReportAndGetId(automationCandidates, AUTOMATION_CANDIDATES_REPORT_LOCALIZATION_CODE);
     return buildDashboardReportTileDto(positionDto, dimensionDto, reportId);
   }
 
   private DashboardReportTileDto createActiveBottlenecksReport(final PositionDto positionDto, final DimensionDto dimensionDto) {
-    final ProcessReportDataDto automationCandidates = ProcessReportDataDto.builder()
+    final ProcessReportDataDto activeBottlenecks = ProcessReportDataDto.builder()
       .definitions(Collections.emptyList())
       .view(new ProcessViewDto(ProcessViewEntity.FLOW_NODE, List.of(ViewProperty.FREQUENCY, ViewProperty.DURATION)))
       .groupBy(new FlowNodesGroupByDto())
       .visualization(ProcessVisualization.PIE)
       .managementReport(true)
       .build();
-    final String reportId = reportWriter.createNewSingleProcessReport(
-      null, automationCandidates, ACTIVE_BOTTLENECKS_REPORT_LOCALIZATION_CODE, null
-    ).getId();
+    final String reportId = createReportAndGetId(activeBottlenecks, ACTIVE_BOTTLENECKS_REPORT_LOCALIZATION_CODE);
     return buildDashboardReportTileDto(positionDto, dimensionDto, reportId);
   }
 
@@ -225,4 +213,11 @@ public class ManagementDashboardService {
     dashboardDefinition.setManagementDashboard(true);
     dashboardWriter.saveDashboard(dashboardDefinition);
   }
+
+  private String createReportAndGetId(final ProcessReportDataDto processReportDataDto, final String localisationCodeForName) {
+    return reportWriter.createNewSingleProcessReport(
+      null, processReportDataDto, localisationCodeForName, null, null
+    ).getId();
+  }
+
 }

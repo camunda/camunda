@@ -3,7 +3,7 @@
  * Licensed under a proprietary license. See the License.txt file for more information.
  * You may not use this file except in compliance with the proprietary license.
  */
-package org.camunda.optimize.upgrade.indexes;
+package org.camunda.optimize.upgrade.indices;
 
 import lombok.AllArgsConstructor;
 import org.camunda.optimize.service.es.schema.DefaultIndexMappingCreator;
@@ -13,9 +13,9 @@ import org.elasticsearch.xcontent.XContentBuilder;
 import java.io.IOException;
 
 @AllArgsConstructor
-public class UserTestWithTemplateIndex extends DefaultIndexMappingCreator {
+public class UserTestWithTemplateUpdatedMappingIndex extends DefaultIndexMappingCreator {
 
-  private static final int VERSION = 1;
+  private static final int VERSION = 2;
 
   @Override
   public String getIndexName() {
@@ -45,6 +45,9 @@ public class UserTestWithTemplateIndex extends DefaultIndexMappingCreator {
       .field("type", "keyword")
       .endObject()
       .startObject("username")
+      .field("type", "keyword")
+      .endObject()
+      .startObject("email")
       .field("type", "keyword")
       .endObject();
   }

@@ -11,8 +11,8 @@ import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.experimental.FieldNameConstants;
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionRestDto;
-import org.camunda.optimize.dto.optimize.query.dashboard.tile.DashboardReportTileDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.filter.DashboardFilterDto;
+import org.camunda.optimize.dto.optimize.query.dashboard.tile.DashboardReportTileDto;
 import org.camunda.optimize.dto.optimize.rest.export.ExportEntityType;
 import org.camunda.optimize.dto.optimize.rest.export.OptimizeEntityExportDto;
 import org.camunda.optimize.service.es.schema.index.DashboardIndex;
@@ -42,6 +42,7 @@ public class DashboardDefinitionExportDto extends OptimizeEntityExportDto {
       dashboardDefinition.getId(),
       ExportEntityType.DASHBOARD,
       dashboardDefinition.getName(),
+      null, // TODO: Dashboard descriptions will be handled in https://jira.camunda.com/browse/OPT-6885
       DashboardIndex.VERSION
     );
     this.tiles = dashboardDefinition.getTiles();

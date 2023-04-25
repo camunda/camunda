@@ -3,8 +3,9 @@
  * Licensed under a proprietary license. See the License.txt file for more information.
  * You may not use this file except in compliance with the proprietary license.
  */
-package org.camunda.optimize.service.es.schema.index.report;
+package org.camunda.optimize.upgrade.migrate310to311.indices;
 
+import lombok.AllArgsConstructor;
 import org.elasticsearch.xcontent.XContentBuilder;
 
 import java.io.IOException;
@@ -12,9 +13,10 @@ import java.io.IOException;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.COMBINED_REPORT_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.MAPPING_ENABLED_SETTING;
 
-public class CombinedReportIndex extends AbstractReportIndex {
+@AllArgsConstructor
+public class CombinedDecisionReportIndexV4 extends AbstractReportIndexOld {
 
-  public static final int VERSION = 5;
+  public static final int VERSION = 4;
 
   public static final String VISUALIZATION = "visualization";
   public static final String CONFIGURATION = "configuration";
@@ -38,26 +40,26 @@ public class CombinedReportIndex extends AbstractReportIndex {
     // @formatter:off
     return xContentBuilder.
       startObject(DATA)
-        .field("type", "nested")
-        .startObject("properties")
-          .startObject(CONFIGURATION)
-            .field(MAPPING_ENABLED_SETTING, false)
-          .endObject()
-          .startObject(VISUALIZATION)
-            .field("type", "keyword")
-          .endObject()
-          .startObject(REPORTS)
-            .field("type", "nested")
-            .startObject("properties")
-              .startObject(REPORT_ITEM_ID)
-                .field("type", "keyword")
-              .endObject()
-              .startObject(REPORT_ITEM_COLOR)
-                .field("type", "keyword")
-              .endObject()
-            .endObject()
-          .endObject()
-        .endObject()
+      .field("type", "nested")
+      .startObject("properties")
+      .startObject(CONFIGURATION)
+      .field(MAPPING_ENABLED_SETTING, false)
+      .endObject()
+      .startObject(VISUALIZATION)
+      .field("type", "keyword")
+      .endObject()
+      .startObject(REPORTS)
+      .field("type", "nested")
+      .startObject("properties")
+      .startObject(REPORT_ITEM_ID)
+      .field("type", "keyword")
+      .endObject()
+      .startObject(REPORT_ITEM_COLOR)
+      .field("type", "keyword")
+      .endObject()
+      .endObject()
+      .endObject()
+      .endObject()
       .endObject();
     // @formatter:on
   }

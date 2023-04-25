@@ -3,16 +3,18 @@
  * Licensed under a proprietary license. See the License.txt file for more information.
  * You may not use this file except in compliance with the proprietary license.
  */
-package org.camunda.optimize.upgrade.indexes;
+package org.camunda.optimize.upgrade.indices;
 
+import lombok.AllArgsConstructor;
 import org.camunda.optimize.service.es.schema.DefaultIndexMappingCreator;
 import org.elasticsearch.xcontent.XContentBuilder;
 
 import java.io.IOException;
 
-public class UserTestUpdatedMappingIndex extends DefaultIndexMappingCreator {
+@AllArgsConstructor
+public class UserTestIndex extends DefaultIndexMappingCreator {
 
-  private static final int VERSION = 2;
+  private int version = 1;
 
   @Override
   public String getIndexName() {
@@ -21,20 +23,17 @@ public class UserTestUpdatedMappingIndex extends DefaultIndexMappingCreator {
 
   @Override
   public int getVersion() {
-    return VERSION;
+    return version;
   }
 
   @Override
   public XContentBuilder addProperties(XContentBuilder xContentBuilder) throws IOException {
     return xContentBuilder
       .startObject("password")
-        .field("type", "keyword")
+      .field("type", "keyword")
       .endObject()
       .startObject("username")
-        .field("type", "keyword")
-      .endObject()
-      .startObject("email")
-        .field("type", "keyword")
+      .field("type", "keyword")
       .endObject();
   }
 }

@@ -45,11 +45,13 @@ import javax.ws.rs.NotFoundException;
 import java.io.IOException;
 import java.time.OffsetDateTime;
 import java.util.Collections;
+import java.util.Map;
 import java.util.Set;
 
 import static org.camunda.optimize.service.es.schema.index.report.AbstractReportIndex.COLLECTION_ID;
 import static org.camunda.optimize.service.es.schema.index.report.AbstractReportIndex.COMBINED;
 import static org.camunda.optimize.service.es.schema.index.report.AbstractReportIndex.CREATED;
+import static org.camunda.optimize.service.es.schema.index.report.AbstractReportIndex.DESCRIPTION;
 import static org.camunda.optimize.service.es.schema.index.report.AbstractReportIndex.LAST_MODIFIED;
 import static org.camunda.optimize.service.es.schema.index.report.AbstractReportIndex.LAST_MODIFIER;
 import static org.camunda.optimize.service.es.schema.index.report.AbstractReportIndex.NAME;
@@ -59,6 +61,7 @@ import static org.camunda.optimize.service.es.schema.index.report.CombinedReport
 import static org.camunda.optimize.service.es.schema.index.report.CombinedReportIndex.REPORTS;
 import static org.camunda.optimize.service.es.schema.index.report.CombinedReportIndex.REPORT_ITEM_ID;
 import static org.camunda.optimize.service.es.schema.index.report.SingleProcessReportIndex.MANAGEMENT_REPORT;
+import static org.camunda.optimize.service.es.writer.ElasticsearchWriterUtil.createDefaultScriptWithPrimitiveParams;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.COMBINED_REPORT_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_RETRIES_ON_CONFLICT;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.SINGLE_DECISION_REPORT_INDEX_NAME;
@@ -72,9 +75,11 @@ import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 @Component
 @Slf4j
 public class ReportWriter {
+
   private static final Set<String> UPDATABLE_FIELDS = ImmutableSet.of(
     NAME, DATA, LAST_MODIFIED, LAST_MODIFIER, CREATED, OWNER, COLLECTION_ID, COMBINED, REPORT_TYPE
   );
+
   private static final String PROCESS_DEFINITION_PROPERTY = String.join(
     ".", DATA, SingleReportDataDto.Fields.definitions, ReportDataDefinitionDto.Fields.key
   );
@@ -85,6 +90,7 @@ public class ReportWriter {
   public IdResponseDto createNewCombinedReport(@NonNull final String userId,
                                                @NonNull final CombinedReportDataDto reportData,
                                                @NonNull final String reportName,
+                                               final String description,
                                                final String collectionId) {
     log.debug("Writing new combined report to Elasticsearch");
     final String id = IdGenerator.getNextId();
@@ -96,6 +102,7 @@ public class ReportWriter {
     reportDefinitionDto.setOwner(userId);
     reportDefinitionDto.setLastModifier(userId);
     reportDefinitionDto.setName(reportName);
+    reportDefinitionDto.setDescription(description);
     reportDefinitionDto.setData(reportData);
     reportDefinitionDto.setCollectionId(collectionId);
 
@@ -125,6 +132,7 @@ public class ReportWriter {
   public IdResponseDto createNewSingleProcessReport(final String userId,
                                                     @NonNull final ProcessReportDataDto reportData,
                                                     @NonNull final String reportName,
+                                                    final String description,
                                                     final String collectionId) {
     log.debug("Writing new single report to Elasticsearch");
 
@@ -137,6 +145,7 @@ public class ReportWriter {
     reportDefinitionDto.setOwner(userId);
     reportDefinitionDto.setLastModifier(userId);
     reportDefinitionDto.setName(reportName);
+    reportDefinitionDto.setDescription(description);
     reportDefinitionDto.setData(reportData);
     reportDefinitionDto.setCollectionId(collectionId);
 
@@ -166,6 +175,7 @@ public class ReportWriter {
   public IdResponseDto createNewSingleDecisionReport(@NonNull final String userId,
                                                      @NonNull final DecisionReportDataDto reportData,
                                                      @NonNull final String reportName,
+                                                     final String description,
                                                      final String collectionId) {
     log.debug("Writing new single report to Elasticsearch");
 
@@ -178,6 +188,7 @@ public class ReportWriter {
     reportDefinitionDto.setOwner(userId);
     reportDefinitionDto.setLastModifier(userId);
     reportDefinitionDto.setName(reportName);
+    reportDefinitionDto.setDescription(description);
     reportDefinitionDto.setData(reportData);
     reportDefinitionDto.setCollectionId(collectionId);
 
@@ -251,10 +262,16 @@ public class ReportWriter {
   private void updateReport(ReportDefinitionUpdateDto updatedReport, String indexName) {
     log.debug("Updating report with id [{}] in Elasticsearch", updatedReport.getId());
     try {
-      Script updateScript = ElasticsearchWriterUtil.createFieldUpdateScript(
+      final Map<String, Object> updateParams = ElasticsearchWriterUtil.createFieldUpdateScriptParams(
         UPDATABLE_FIELDS,
         updatedReport,
         objectMapper
+      );
+      // We always update the description, even if the new value is null
+      updateParams.put(DESCRIPTION, updatedReport.getDescription());
+      final Script updateScript = createDefaultScriptWithPrimitiveParams(
+        ElasticsearchWriterUtil.createUpdateFieldsScript(updateParams.keySet()),
+        updateParams
       );
       final UpdateRequest request =
         new UpdateRequest()

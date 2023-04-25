@@ -14,9 +14,11 @@ import org.camunda.optimize.dto.optimize.query.report.single.configuration.Singl
 import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionRequestDto;
 import org.camunda.optimize.dto.optimize.rest.DefinitionExceptionItemDto;
 import org.camunda.optimize.dto.optimize.rest.DefinitionExceptionResponseDto;
+import org.camunda.optimize.dto.optimize.rest.ErrorResponseDto;
 import org.camunda.optimize.dto.optimize.rest.ImportIndexMismatchDto;
 import org.camunda.optimize.dto.optimize.rest.ImportedIndexMismatchResponseDto;
 import org.camunda.optimize.dto.optimize.rest.export.report.SingleDecisionReportDefinitionExportDto;
+import org.camunda.optimize.dto.optimize.rest.export.report.SingleProcessReportDefinitionExportDto;
 import org.camunda.optimize.service.entities.AbstractExportImportEntityDefinitionIT;
 import org.camunda.optimize.service.es.schema.index.report.SingleDecisionReportIndex;
 import org.junit.jupiter.api.Test;
@@ -49,6 +51,21 @@ public class DecisionReportDefinitionImportIT extends AbstractExportImportEntity
       (SingleDecisionReportDefinitionRequestDto) reportClient.getReportById(importedId.getId());
 
     assertImportedReport(importedReport, reportDefToImport, null);
+  }
+
+  @Test
+  public void importReportWithInvalidDescription() {
+    // given
+    final SingleDecisionReportDefinitionExportDto simpleDecisionExportDto = createSimpleDecisionExportDto();
+    simpleDecisionExportDto.setDescription("");
+
+    // when
+    final Response response = importClient.importEntity(simpleDecisionExportDto);
+
+    // then
+    assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
+    final ErrorResponseDto invalidDescriptionResponseDto = response.readEntity(ErrorResponseDto.class);
+    assertThat(invalidDescriptionResponseDto.getErrorCode()).isEqualTo("importDescriptionInvalid");
   }
 
   @Test

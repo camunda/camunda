@@ -6,9 +6,9 @@
 package org.camunda.optimize.rest.providers;
 
 import lombok.extern.slf4j.Slf4j;
-import org.camunda.optimize.dto.optimize.rest.DefinitionExceptionResponseDto;
+import org.camunda.optimize.dto.optimize.rest.ErrorResponseDto;
 import org.camunda.optimize.service.LocalizationService;
-import org.camunda.optimize.service.exceptions.OptimizeImportDefinitionDoesNotExistException;
+import org.camunda.optimize.service.exceptions.OptimizeImportDescriptionNotValidException;
 
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
@@ -18,37 +18,31 @@ import javax.ws.rs.ext.Provider;
 
 @Provider
 @Slf4j
-public class OptimizeImportDefinitionDoesNotExistsExceptionMapper
-  implements ExceptionMapper<OptimizeImportDefinitionDoesNotExistException> {
-  public static final String ERROR_CODE = "importDefinitionForbidden";
+public class OptimizeImportDescriptionNotValidExceptionMapper
+  implements ExceptionMapper<OptimizeImportDescriptionNotValidException> {
+  public static final String ERROR_CODE = "importDescriptionInvalid";
 
   private final LocalizationService localizationService;
 
-  public OptimizeImportDefinitionDoesNotExistsExceptionMapper(@Context final LocalizationService localizationService) {
+  public OptimizeImportDescriptionNotValidExceptionMapper(@Context final LocalizationService localizationService) {
     this.localizationService = localizationService;
   }
 
   @Override
-  public Response toResponse(final OptimizeImportDefinitionDoesNotExistException exception) {
-    log.info("Mapping OptimizeImportDefinitionDoesNotExistException");
+  public Response toResponse(final OptimizeImportDescriptionNotValidException exception) {
+    log.info("Mapping OptimizeImportDescriptionNotValidException");
 
     return Response
       .status(Response.Status.BAD_REQUEST)
       .type(MediaType.APPLICATION_JSON_TYPE)
-      .entity(getMissingDefinitionResponseDto(exception))
+      .entity(getDescriptionNotValidResponseDto(exception))
       .build();
   }
 
-  private DefinitionExceptionResponseDto getMissingDefinitionResponseDto(OptimizeImportDefinitionDoesNotExistException exception) {
+  private ErrorResponseDto getDescriptionNotValidResponseDto(OptimizeImportDescriptionNotValidException exception) {
     String errorCode = exception.getErrorCode();
     String errorMessage = localizationService.getDefaultLocaleMessageForApiErrorCode(errorCode);
     String detailedErrorMessage = exception.getMessage();
-
-    return new DefinitionExceptionResponseDto(
-      errorCode,
-      errorMessage,
-      detailedErrorMessage,
-      exception.getMissingDefinitions()
-    );
+    return new ErrorResponseDto(errorCode, errorMessage, detailedErrorMessage);
   }
 }

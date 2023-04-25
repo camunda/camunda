@@ -30,7 +30,7 @@ public class OptimizeImportIncorrectIndexVersionExceptionMapper
 
   @Override
   public Response toResponse(final OptimizeImportIncorrectIndexVersionException exception) {
-    log.warn("Mapping OptimizeImportIncorrectIndexVersionException");
+    log.info("Mapping OptimizeImportIncorrectIndexVersionException");
 
     return Response
       .status(Response.Status.BAD_REQUEST)

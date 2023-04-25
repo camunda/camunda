@@ -1486,6 +1486,7 @@
     "importIndexVersionMismatch": "Import fehlgeschlagen, weil die Datenstruktur der zu importierenden Entität nicht mit der aktuellen Datenstruktur übereinstimmt. Bitte migrieren Sie die Daten vor dem Export, um sicher zu stellen, dass die Optimize Version übereinstimmt.",
     "importDefinitionForbidden": "Import fehlgeschlagen, weil Ihnen die Befugnis für eine oder mehrere Definitionen, auf denen die zu importierende Entität basiert, fehlt.",
     "importFileInvalid": "Import fehlgeschlagen, weil die ausgewählte Datei ungültig ist. Es können nur von Optimize exportierte JSON-Dateien importiert werden.",
+    "importDescriptionInvalid": "Importierung ist fehlgeschlagen weil die gegebene Beschreibung fehlerhaft ist. Die Beschreibung muss entweder null oder nicht größer als 400 Charaktere sein.",
     "invalidAlertEmailAddresses": "Benutzer mit den folgenden Email-Addressen können keine Alarme empfange: {invalidAlertEmails}"
   },
   "textEditor": {

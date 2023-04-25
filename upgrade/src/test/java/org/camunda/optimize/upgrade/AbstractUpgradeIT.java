@@ -26,10 +26,10 @@ import org.camunda.optimize.service.util.configuration.elasticsearch.Elasticsear
 import org.camunda.optimize.test.it.extension.IntegrationTestConfigurationUtil;
 import org.camunda.optimize.test.it.extension.MockServerUtil;
 import org.camunda.optimize.upgrade.es.index.UpdateLogEntryIndex;
-import org.camunda.optimize.upgrade.indexes.UserTestIndex;
-import org.camunda.optimize.upgrade.indexes.UserTestUpdatedMappingIndex;
-import org.camunda.optimize.upgrade.indexes.UserTestWithTemplateIndex;
-import org.camunda.optimize.upgrade.indexes.UserTestWithTemplateUpdatedMappingIndex;
+import org.camunda.optimize.upgrade.indices.UserTestIndex;
+import org.camunda.optimize.upgrade.indices.UserTestUpdatedMappingIndex;
+import org.camunda.optimize.upgrade.indices.UserTestWithTemplateIndex;
+import org.camunda.optimize.upgrade.indices.UserTestWithTemplateUpdatedMappingIndex;
 import org.camunda.optimize.upgrade.main.UpgradeProcedure;
 import org.camunda.optimize.upgrade.plan.UpgradeExecutionDependencies;
 import org.camunda.optimize.upgrade.service.UpgradeStepLogService;

@@ -43,5 +43,6 @@ public abstract class OptimizeEntityExportDto {
   private ExportEntityType exportEntityType;
   @NotNull
   private String name;
+  private String description;
   private int sourceIndexVersion;
 }

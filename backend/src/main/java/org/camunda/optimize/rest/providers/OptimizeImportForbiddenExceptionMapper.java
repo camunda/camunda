@@ -29,7 +29,7 @@ public class OptimizeImportForbiddenExceptionMapper implements ExceptionMapper<O
 
   @Override
   public Response toResponse(final OptimizeImportForbiddenException exception) {
-    log.warn("Mapping OptimizeImportForbiddenException");
+    log.info("Mapping OptimizeImportForbiddenException");
 
     return Response
       .status(Response.Status.FORBIDDEN)
