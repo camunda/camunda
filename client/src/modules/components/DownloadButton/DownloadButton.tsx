@@ -5,15 +5,31 @@
  * except in compliance with the proprietary license.
  */
 
-import React, {useState, useEffect} from 'react';
+import React, {useState, useEffect, MouseEvent, MouseEventHandler} from 'react';
 
-import {Button, Modal} from 'components';
-import {withErrorHandling, withDocs, withUser} from 'HOC';
+import {Button as LegacyButton, CarbonModal as Modal} from 'components';
+import {
+  withErrorHandling,
+  withDocs,
+  withUser,
+  WithUserProps,
+  WithErrorHandlingProps,
+  WithDocsProps,
+} from 'HOC';
 import {get} from 'request';
 import {showError} from 'notifications';
 import {getExportCsvLimit} from 'config';
 
 import {t} from 'translation';
+import {Button} from '@carbon/react';
+
+export interface DownloadButtonProps extends WithUserProps, WithErrorHandlingProps, WithDocsProps {
+  href: string;
+  fileName?: string;
+  onClick?: MouseEventHandler<HTMLButtonElement>;
+  retriever?: () => Promise<Blob>;
+  totalCount: number;
+}
 
 export function DownloadButton({
   href,
@@ -29,7 +45,7 @@ export function DownloadButton({
   getUser,
   refreshUser,
   ...props
-}) {
+}: DownloadButtonProps) {
   const [exportLimit, setExportLimit] = useState(1000);
   const [modalOpen, setModalOpen] = useState(false);
 
@@ -40,7 +56,7 @@ export function DownloadButton({
     })();
   }, []);
 
-  function triggerDownload(evt) {
+  function triggerDownload(evt: MouseEvent<HTMLButtonElement>) {
     onClick?.(evt);
     mightFail(
       retriever ? retriever() : getData(href),
@@ -65,39 +81,35 @@ export function DownloadButton({
 
   return (
     <>
-      <Button
+      <LegacyButton
         {...props}
         onClick={(evt) => (totalCount > exportLimit ? setModalOpen(true) : triggerDownload(evt))}
       />
-      {modalOpen && (
-        <Modal open onClose={closeModal}>
-          <Modal.Header>{t('report.downloadCSV')}</Modal.Header>
-          <Modal.Content>
-            <p>
-              <b>{t('common.csvLimit.Warning')}</b>
-            </p>
-            <p>{t('common.csvLimit.info', {exportLimit, totalCount})}</p>
-            <p>
-              {t('common.csvLimit.exportApi', {
-                docsLink: docsLink + 'apis-clients/optimize-api/report/get-data-export/',
-              })}
-            </p>
-          </Modal.Content>
-          <Modal.Actions>
-            <Button main onClick={closeModal}>
-              {t('common.cancel')}
-            </Button>
-            <Button main primary onClick={triggerDownload}>
-              {t('common.download')}
-            </Button>
-          </Modal.Actions>
-        </Modal>
-      )}
+      <Modal open={modalOpen} onClose={closeModal}>
+        <Modal.Header>{t('report.downloadCSV')}</Modal.Header>
+        <Modal.Content>
+          <p>
+            <b>{t('common.csvLimit.Warning')}</b>
+          </p>
+          <p>{t('common.csvLimit.info', {exportLimit, totalCount})}</p>
+          <p>
+            {t('common.csvLimit.exportApi', {
+              docsLink: docsLink + 'apis-clients/optimize-api/report/get-data-export/',
+            })}
+          </p>
+        </Modal.Content>
+        <Modal.Footer>
+          <Button kind="secondary" onClick={closeModal}>
+            {t('common.cancel')}
+          </Button>
+          <Button onClick={triggerDownload}>{t('common.download')}</Button>
+        </Modal.Footer>
+      </Modal>
     </>
   );
 }
 
-async function getData(url) {
+async function getData(url: string) {
   const response = await get(url);
   return await response.blob();
 }

@@ -18,8 +18,6 @@ interface ButtonProps extends ComponentPropsWithoutRef<'button'> {
   icon?: boolean;
   small?: boolean;
   link?: boolean;
-  className?: string;
-  onClick?: () => void;
 }
 
 export default forwardRef<HTMLButtonElement, ButtonProps>(function Button(
