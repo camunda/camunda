@@ -27,6 +27,7 @@ import java.util.Objects;
 import java.util.Queue;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.locks.ReentrantLock;
+import org.agrona.concurrent.UnsafeBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -158,7 +159,7 @@ final class Sequencer implements LogStreamWriter, Closeable {
     final var auditRecord = new AuditRecord();
     final var auditRecordMetadata =
         new RecordMetadata().recordType(RecordType.AUDIT).intent(AuditIntent.AUDITED);
-    auditRecord.events().wrap(SequencedBatchSerializer.serializeBatch(auditBatch));
+    auditRecord.setEvents(new UnsafeBuffer(SequencedBatchSerializer.serializeBatch(auditBatch)));
     return LogAppendEntry.of(auditRecordMetadata, auditRecord);
   }
 

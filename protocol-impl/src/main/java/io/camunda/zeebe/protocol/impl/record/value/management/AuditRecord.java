@@ -25,4 +25,9 @@ public final class AuditRecord extends UnifiedRecordValue implements AuditRecord
   public DirectBuffer events() {
     return events.getValue();
   }
+
+  public AuditRecord setEvents(DirectBuffer buffer) {
+    events.setValue(buffer);
+    return this;
+  }
 }
