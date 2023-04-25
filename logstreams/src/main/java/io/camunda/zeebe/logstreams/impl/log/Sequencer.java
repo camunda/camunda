@@ -97,7 +97,7 @@ final class Sequencer implements LogStreamWriter, Closeable {
       isEnqueued = queue.offer(sequencedBatch);
       if (isEnqueued) {
         metrics.observeBatchLengthBytes(sequencedBatch.length());
-        position = currentPosition + batchSize;
+        position = sequencedBatch.firstPosition() + sequencedBatch.entries().size();
       }
     } finally {
       lock.unlock();
