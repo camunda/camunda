@@ -5,43 +5,26 @@
  * except in compliance with the proprietary license.
  */
 
-import {ComponentPropsWithoutRef, ReactNode, forwardRef} from 'react';
+import {ComponentProps, ComponentPropsWithoutRef, forwardRef} from 'react';
 import ReactDOM from 'react-dom';
 import classnames from 'classnames';
 import {ComposedModal, ModalBody, ModalHeader, ModalFooter} from '@carbon/react';
 
 import './Modal.scss';
 
-interface ModalProps {
-  onClose?: () => void;
-  size?: 'xs' | 'sm' | 'md' | 'lg' | undefined;
-  open?: boolean;
-  className?: string;
-  children?: ReactNode;
-  isFullWidth?: boolean;
+interface ModalProps extends ComponentProps<typeof ComposedModal> {
   isOverflowVisible?: boolean;
 }
 
-export default function Modal({
-  open,
-  onClose,
-  children,
-  className,
-  size,
-  isFullWidth,
-  isOverflowVisible,
-}: ModalProps) {
+export default function Modal({children, className, isOverflowVisible, ...props}: ModalProps) {
   return typeof document === 'undefined'
     ? null
     : ReactDOM.createPortal(
         <ComposedModal
+          {...props}
           className={classnames('CarbonModal', {overflowVisible: isOverflowVisible}, className)}
-          open={open}
-          onClose={onClose}
-          size={size}
-          isFullWidth={isFullWidth}
         >
-          {children}
+          {props.open ? children : null}
         </ComposedModal>,
         document.body
       );

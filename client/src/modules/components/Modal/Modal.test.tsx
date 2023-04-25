@@ -17,7 +17,7 @@ it('should render without throwing an error', () => {
 
 it('should render children', () => {
   const node = shallow(
-    <Modal>
+    <Modal open>
       <div>Child content</div>
     </Modal>
   );
