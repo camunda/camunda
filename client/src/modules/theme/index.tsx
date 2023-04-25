@@ -6,3 +6,4 @@
  */
 
 export {Provider, Consumer, themed} from './Theme';
+export type {ThemeContextProps} from './Theme';

@@ -5,12 +5,20 @@
  * except in compliance with the proprietary license.
  */
 
-import React from 'react';
+import {Component, ComponentType, ReactNode, createContext} from 'react';
 
-const ThemeContext = React.createContext();
+interface ThemeState {
+  theme: 'light' | 'dark';
+}
 
-export class Provider extends React.Component {
-  state = {theme: 'light'};
+export interface ThemeContextProps extends ThemeState {
+  toggleTheme: () => void;
+}
+
+const ThemeContext = createContext<ThemeContextProps | undefined>(undefined);
+
+export class Provider extends Component<{children: ReactNode}, ThemeState> {
+  state: ThemeState = {theme: 'light'};
 
   toggleTheme = () => {
     this.setState(({theme}) => {
@@ -36,8 +44,8 @@ export class Provider extends React.Component {
 
 export const Consumer = ThemeContext.Consumer;
 
-export const themed = (Component) => {
-  function Themed(props) {
+export const themed = (Component: ComponentType<any>) => {
+  function Themed(props: any) {
     return <Consumer>{(themeProps) => <Component {...props} {...themeProps} />}</Consumer>;
   }
 
