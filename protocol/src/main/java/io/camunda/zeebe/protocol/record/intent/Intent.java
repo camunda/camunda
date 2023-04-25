@@ -16,6 +16,7 @@
 package io.camunda.zeebe.protocol.record.intent;
 
 import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.intent.management.AuditIntent;
 import io.camunda.zeebe.protocol.record.intent.management.CheckpointIntent;
 import java.util.Arrays;
 import java.util.Collection;
@@ -131,6 +132,8 @@ public interface Intent {
         return CommandDistributionIntent.from(intent);
       case AGGREGATED_CHANGES:
         return AggregatedChangesIntent.from(intent);
+      case AUDIT:
+        return AuditIntent.from(intent);
       case NULL_VAL:
       case SBE_UNKNOWN:
         return Intent.UNKNOWN;
@@ -196,6 +199,8 @@ public interface Intent {
         return SignalSubscriptionIntent.valueOf(intent);
       case RESOURCE_DELETION:
         return ResourceDeletionIntent.valueOf(intent);
+      case AUDIT:
+        return AuditIntent.valueOf(intent);
       case NULL_VAL:
       case SBE_UNKNOWN:
         return Intent.UNKNOWN;

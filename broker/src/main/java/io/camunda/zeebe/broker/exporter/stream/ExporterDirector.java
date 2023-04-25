@@ -165,7 +165,7 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
   @Override
   protected void onActorStarting() {
     if (exporterMode == ExporterMode.ACTIVE) {
-      final ActorFuture<LogStreamReader> newReaderFuture = logStream.newLogStreamReader();
+      final ActorFuture<LogStreamReader> newReaderFuture = logStream.newAuditReader();
       actor.runOnCompletionBlockingCurrentPhase(
           newReaderFuture,
           (reader, errorOnReceivingReader) -> {
@@ -294,7 +294,7 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
   private ExporterEventFilter createEventFilter(final List<ExporterContainer> containers) {
 
     final List<Context.RecordFilter> recordFilters =
-        containers.stream().map(c -> c.getContext().getFilter()).collect(Collectors.toList());
+        containers.stream().map(c -> c.getContext().getFilter()).toList();
 
     final Map<RecordType, Boolean> acceptRecordTypes =
         Arrays.stream(RecordType.values())
@@ -435,8 +435,7 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
   }
 
   private void clearExporterState() {
-    final List<String> exporterIds =
-        containers.stream().map(ExporterContainer::getId).collect(Collectors.toList());
+    final List<String> exporterIds = containers.stream().map(ExporterContainer::getId).toList();
 
     state.visitExporterState(
         (exporterId, exporterStateEntry) -> {

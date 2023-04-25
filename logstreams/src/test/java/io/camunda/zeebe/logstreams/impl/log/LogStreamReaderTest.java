@@ -12,18 +12,27 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import io.camunda.zeebe.logstreams.impl.serializer.SequencedBatchSerializer;
 import io.camunda.zeebe.logstreams.log.LogAppendEntry;
 import io.camunda.zeebe.logstreams.log.LogStreamReader;
 import io.camunda.zeebe.logstreams.log.LogStreamWriter;
 import io.camunda.zeebe.logstreams.log.LoggedEvent;
 import io.camunda.zeebe.logstreams.util.LogStreamReaderRule;
 import io.camunda.zeebe.logstreams.util.LogStreamRule;
+import io.camunda.zeebe.logstreams.util.SyncLogStream.Writer;
 import io.camunda.zeebe.logstreams.util.TestEntry;
+import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
+import io.camunda.zeebe.protocol.impl.record.value.management.AuditRecord;
+import io.camunda.zeebe.protocol.record.RecordType;
+import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.intent.management.AuditIntent;
 import io.camunda.zeebe.util.ByteValue;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -44,7 +53,8 @@ public final class LogStreamReaderTest {
 
   @Before
   public void setUp() {
-    reader = readerRule.getLogStreamReader();
+    final var delegate = readerRule.getLogStreamReader();
+    reader = new AuditLogStreamReader(delegate);
     writer = logStreamRule.getLogStream().newSyncLogStreamWriter();
   }
 
@@ -238,11 +248,40 @@ public final class LogStreamReaderTest {
     assertThat(reader.hasNext()).isFalse();
   }
 
+  @Test
+  public void shouldUnrollAuditRecords() {
+    // given
+    final List<LogAppendEntry> normalEntries =
+        IntStream.range(0, 2).mapToObj(TestEntry::ofKey).toList();
+    writer.tryWrite(normalEntries);
+    final List<LogAppendEntry> entries = IntStream.range(2, 10).mapToObj(TestEntry::ofKey).toList();
+    final var auditRecord = new AuditRecord();
+    final var sequencer = (Sequencer) ((Writer) writer).delegate();
+    sequencer.tryWrite(entries);
+    final SequencedBatch sequencedBatch = sequencer.tryRead();
+    final var metadata = new RecordMetadata();
+    metadata.recordType(RecordType.AUDIT).intent(AuditIntent.AUDITED).valueType(ValueType.AUDIT);
+    auditRecord.setEvents(
+        new UnsafeBuffer(SequencedBatchSerializer.serializeBatch(sequencedBatch)));
+    writer.tryWrite(
+        TestEntry.builder().withRecordMetadata(metadata).withRecordValue(auditRecord).build());
+    final LogAppendEntry finalEntry = TestEntry.ofKey(10);
+    writer.tryWrite(finalEntry);
+
+    // when
+    final var concat = new ArrayList<LogAppendEntry>();
+    concat.addAll(normalEntries);
+    concat.addAll(entries);
+    concat.add(finalEntry);
+    assertReaderHasEntries(concat);
+    assertThat(reader.hasNext()).isFalse();
+  }
+
   private void assertReaderHasEntries(final List<LogAppendEntry> entries) {
     var lastPosition = -1L;
     reader.seekToFirstEvent();
     for (int i = 0; i < entries.size(); i++) {
-      final var loggedEvent = readerRule.nextEvent();
+      final var loggedEvent = reader.next();
       assertThat(loggedEvent.getPosition()).isGreaterThan(lastPosition);
       assertThat(loggedEvent.getKey()).isEqualTo(i);
       assertThatEntry(entries.get(i)).matchesLoggedEvent(loggedEvent);

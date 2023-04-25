@@ -11,11 +11,12 @@ import io.camunda.zeebe.msgpack.property.BinaryProperty;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.value.management.AuditRecordValue;
 import org.agrona.DirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
 
 public final class AuditRecord extends UnifiedRecordValue implements AuditRecordValue {
   private static final String EVENTS_KEY = "events";
 
-  private final BinaryProperty events = new BinaryProperty(EVENTS_KEY);
+  private final BinaryProperty events = new BinaryProperty(EVENTS_KEY, new UnsafeBuffer());
 
   public AuditRecord() {
     declareProperty(events);

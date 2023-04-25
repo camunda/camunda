@@ -46,6 +46,12 @@ public interface LogStream extends AsyncClosable, AutoCloseable, HealthMonitorab
   ActorFuture<LogStreamReader> newLogStreamReader();
 
   /**
+   * @return a future, when successfully completed it returns a newly created log stream reader
+   *     which is aware of audit records
+   */
+  ActorFuture<LogStreamReader> newAuditReader();
+
+  /**
    * @return a future, when successfully completed it returns a newly created log stream record
    *     writer
    */

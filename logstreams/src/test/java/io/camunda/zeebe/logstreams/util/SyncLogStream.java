@@ -105,7 +105,7 @@ public class SyncLogStream implements SynchronousLogStream {
     return position;
   }
 
-  private final class Writer implements SynchronousLogStreamWriter {
+  public final class Writer implements SynchronousLogStreamWriter {
     private final LogStreamWriter delegate;
 
     private Writer(final LogStreamWriter delegate) {
@@ -115,6 +115,10 @@ public class SyncLogStream implements SynchronousLogStream {
     @Override
     public long tryWrite(final List<LogAppendEntry> appendEntries, final long sourcePosition) {
       return syncTryWrite(() -> delegate.tryWrite(appendEntries, sourcePosition));
+    }
+
+    public LogStreamWriter delegate() {
+      return delegate;
     }
   }
 }

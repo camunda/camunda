@@ -185,6 +185,10 @@ public final class LogStreamImpl extends Actor
     actor.call(() -> recordAwaiters.remove(recordAwaiter));
   }
 
+  public ActorFuture<LogStreamReader> newAuditReader() {
+    return actor.call(() -> new AuditLogStreamReader(createLogStreamReader()));
+  }
+
   private ActorFuture<LogStreamWriter> createNewLogStreamWriter() {
     // this should be replaced after refactoring the actor control
     if (actor.isClosed()) {
