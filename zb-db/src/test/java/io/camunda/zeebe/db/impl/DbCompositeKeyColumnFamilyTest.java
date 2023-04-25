@@ -413,6 +413,143 @@ public final class DbCompositeKeyColumnFamilyTest {
     assertThat(secondKeyParts).containsExactly(34L, 37426L, 923113L, 255L);
   }
 
+  @Test
+  public void shouldUseWhileEqualPrefixWithNullStartAt() {
+    // given
+    upsertKeyValuePair("foo", 1, "first");
+    upsertKeyValuePair("bar", 2, "second");
+    upsertKeyValuePair("foo", 3, "third");
+    upsertKeyValuePair("foo", 4, "fourth");
+    upsertKeyValuePair("baz", 5, "fifth");
+
+    // when
+    firstKey.wrapString("foo");
+    final List<String> firstKeyParts = new ArrayList<>();
+    final List<Long> secondKeyParts = new ArrayList<>();
+    final List<String> values = new ArrayList<>();
+    columnFamily.whileEqualPrefix(
+        firstKey,
+        null,
+        (key, value) -> {
+          final DbString firstPart = key.first();
+          firstKeyParts.add(firstPart.toString());
+
+          final DbLong secondPart = key.second();
+          secondKeyParts.add(secondPart.getValue());
+
+          values.add(value.toString());
+          return true;
+        });
+
+    // then
+    assertThat(values).containsExactly("first", "third", "fourth");
+    assertThat(firstKeyParts).containsOnly("foo");
+    assertThat(secondKeyParts).containsExactly(1L, 3L, 4L);
+  }
+
+  @Test
+  public void shouldUseWhileEqualPrefixWithStartAt() {
+    // given
+    upsertKeyValuePair("foo", 1, "first");
+    upsertKeyValuePair("bar", 2, "second");
+    upsertKeyValuePair("foo", 3, "third");
+    upsertKeyValuePair("foo", 4, "fourth");
+    upsertKeyValuePair("baz", 5, "fifth");
+
+    // when
+    firstKey.wrapString("foo");
+    secondKey.wrapLong(3L);
+    final List<String> firstKeyParts = new ArrayList<>();
+    final List<Long> secondKeyParts = new ArrayList<>();
+    final List<String> values = new ArrayList<>();
+    columnFamily.whileEqualPrefix(
+        firstKey,
+        compositeKey,
+        (key, value) -> {
+          final DbString firstPart = key.first();
+          firstKeyParts.add(firstPart.toString());
+
+          final DbLong secondPart = key.second();
+          secondKeyParts.add(secondPart.getValue());
+
+          values.add(value.toString());
+          return true;
+        });
+
+    // then
+    assertThat(values).containsExactly("third", "fourth");
+    assertThat(firstKeyParts).containsOnly("foo");
+    assertThat(secondKeyParts).containsExactly(3L, 4L);
+  }
+
+  @Test
+  public void shouldUseWhileTrueWithStartAtMissingKey() {
+    // given
+    upsertKeyValuePair("foo", 1, "first");
+    upsertKeyValuePair("bar", 2, "second");
+    upsertKeyValuePair("foo", 4, "fourth");
+    upsertKeyValuePair("baz", 5, "fifth");
+
+    // when
+    firstKey.wrapString("foo");
+    secondKey.wrapLong(3L);
+    final List<String> firstKeyParts = new ArrayList<>();
+    final List<Long> secondKeyParts = new ArrayList<>();
+    final List<String> values = new ArrayList<>();
+    columnFamily.whileEqualPrefix(
+        firstKey,
+        compositeKey,
+        (key, value) -> {
+          final DbString firstPart = key.first();
+          firstKeyParts.add(firstPart.toString());
+
+          final DbLong secondPart = key.second();
+          secondKeyParts.add(secondPart.getValue());
+
+          values.add(value.toString());
+          return true;
+        });
+
+    // then
+    assertThat(values).containsExactly("fourth");
+    assertThat(firstKeyParts).containsOnly("foo");
+    assertThat(secondKeyParts).containsExactly(4L);
+  }
+
+  @Test
+  public void shouldUseWhileTrueWithStartAtMissingPrefix() {
+    // given
+    upsertKeyValuePair("foo", 1, "first");
+    upsertKeyValuePair("bar", 2, "second");
+    upsertKeyValuePair("foo", 3, "third");
+    upsertKeyValuePair("foo", 4, "fourth");
+
+    // when
+    firstKey.wrapString("baz");
+    secondKey.wrapLong(1L);
+    final List<String> firstKeyParts = new ArrayList<>();
+    final List<Long> secondKeyParts = new ArrayList<>();
+    final List<String> values = new ArrayList<>();
+    columnFamily.whileEqualPrefix(
+        firstKey,
+        compositeKey,
+        (key, value) -> {
+          final DbString firstPart = key.first();
+          firstKeyParts.add(firstPart.toString());
+
+          final DbLong secondPart = key.second();
+          secondKeyParts.add(secondPart.getValue());
+
+          values.add(value.toString());
+          return true;
+        });
+
+    // then
+    assertThat(values).isEmpty();
+    assertThat(firstKeyParts).isEmpty();
+    assertThat(secondKeyParts).isEmpty();
+  }
+
   private void upsertKeyValuePair(final String firstKey, final long secondKey, final String value) {
     this.firstKey.wrapString(firstKey);
     this.secondKey.wrapLong(secondKey);
