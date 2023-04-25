@@ -10,11 +10,18 @@ package io.camunda.zeebe.logstreams.impl.log;
 import static io.camunda.zeebe.logstreams.impl.serializer.DataFrameDescriptor.FRAME_ALIGNMENT;
 
 import io.camunda.zeebe.logstreams.impl.serializer.DataFrameDescriptor;
+import io.camunda.zeebe.logstreams.impl.serializer.SequencedBatchSerializer;
 import io.camunda.zeebe.logstreams.log.LogAppendEntry;
 import io.camunda.zeebe.logstreams.log.LogStreamWriter;
+import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
+import io.camunda.zeebe.protocol.impl.record.value.management.AuditRecord;
+import io.camunda.zeebe.protocol.record.RecordType;
+import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.intent.management.AuditIntent;
 import io.camunda.zeebe.scheduler.ActorCondition;
 import io.camunda.zeebe.scheduler.clock.ActorClock;
 import java.io.Closeable;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Queue;
@@ -85,9 +92,7 @@ final class Sequencer implements LogStreamWriter, Closeable {
     lock.lock();
     try {
       currentPosition = position;
-      final var sequencedBatch =
-          new SequencedBatch(
-              ActorClock.currentTimeMillis(), currentPosition, sourcePosition, appendEntries);
+      final var sequencedBatch = reorganizeBatch(sourcePosition, appendEntries);
       isEnqueued = queue.offer(sequencedBatch);
       if (isEnqueued) {
         metrics.observeBatchLengthBytes(sequencedBatch.length());
@@ -108,6 +113,53 @@ final class Sequencer implements LogStreamWriter, Closeable {
       LOG.trace("Rejecting write of {}, sequencer queue is full", appendEntries);
       return -1;
     }
+  }
+
+  /**
+   * Organizes the given list of entries into:
+   *
+   * <ol>
+   *   <li>{@link AuditRecord An audit record}
+   *   <li>{@link io.camunda.zeebe.protocol.impl.record.value.management.AggregatedChangesRecord The
+   *       writebatch}
+   *   <li>Unprocessed Commands
+   * </ol>
+   */
+  private SequencedBatch reorganizeBatch(
+      final long sourcePosition, final List<LogAppendEntry> appendEntries) {
+    final var now = ActorClock.currentTimeMillis();
+    final List<LogAppendEntry> auditEntries = new ArrayList<>(appendEntries.size());
+    final List<LogAppendEntry> unprocessedCommands = new ArrayList<>(1);
+    LogAppendEntry writeBatchEntry = null;
+
+    for (final var entry : appendEntries) {
+      if (entry.recordMetadata().getValueType() == ValueType.AGGREGATED_CHANGES) {
+        writeBatchEntry = entry;
+      } else if (entry.recordMetadata().getRecordType() == RecordType.COMMAND
+          && !entry.isProcessed()) {
+        unprocessedCommands.add(entry);
+      } else {
+        auditEntries.add(entry);
+      }
+    }
+
+    final var auditEntry = buildAuditEntry(sourcePosition, now, auditEntries);
+
+    final var entriesToWrite = new ArrayList<LogAppendEntry>(unprocessedCommands.size() + 2);
+    entriesToWrite.add(auditEntry);
+    entriesToWrite.add(writeBatchEntry);
+    entriesToWrite.addAll(unprocessedCommands);
+    return new SequencedBatch(now, position + auditEntries.size(), sourcePosition, entriesToWrite);
+  }
+
+  private LogAppendEntry buildAuditEntry(
+      final long sourcePosition, final long now, final List<LogAppendEntry> auditEntries) {
+    final var auditBatch = new SequencedBatch(now, position, sourcePosition, auditEntries);
+    final var auditRecord = new AuditRecord();
+    final var auditRecordMetadata =
+        new RecordMetadata().recordType(RecordType.AUDIT).intent(AuditIntent.AUDITED);
+    auditRecord.events().wrap(SequencedBatchSerializer.serializeBatch(auditBatch));
+    return LogAppendEntry.of(auditRecordMetadata, auditRecord);
   }
 
   /**
