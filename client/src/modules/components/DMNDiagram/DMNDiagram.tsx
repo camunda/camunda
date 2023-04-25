@@ -5,16 +5,35 @@
  * except in compliance with the proprietary license.
  */
 
-import React, {useEffect, useRef} from 'react';
+import {ReactNode, useEffect, useRef} from 'react';
 import Viewer from 'dmn-js';
 import {migrateDiagram} from '@bpmn-io/dmn-migrate';
 
-import {withErrorHandling} from 'HOC';
+import {WithErrorHandlingProps, withErrorHandling} from 'HOC';
 import {showError} from 'notifications';
 
 import 'dmn-js//dist/assets/dmn-js-shared.css';
 import 'dmn-js/dist/assets/dmn-js-decision-table.css';
 import './DMNDiagram.scss';
+
+export type AdditionalModule = {
+  __init__: string[];
+  hitsColumn: (
+    | string
+    | {
+        (components: any): void;
+        $inject: string[];
+      }
+  )[];
+};
+
+interface DMNDiagramProps extends WithErrorHandlingProps {
+  xml: string | null;
+  decisionDefinitionKey?: string;
+  additionalModules?: AdditionalModule[];
+  onLoad?: () => void;
+  children?: ReactNode;
+}
 
 export function DMNDiagram({
   xml,
@@ -23,9 +42,9 @@ export function DMNDiagram({
   onLoad = () => {},
   mightFail,
   children,
-}) {
-  const container = useRef(null);
-  const viewer = useRef(null);
+}: DMNDiagramProps) {
+  const container = useRef<HTMLDivElement | null>(null);
+  const viewer = useRef<Viewer | null>(null);
 
   useEffect(() => {
     if (viewer.current) {
@@ -41,8 +60,8 @@ export function DMNDiagram({
       migrateDiagram(xml),
       async (dmn13Xml) => {
         if (dmn13Xml) {
-          await viewer.current.importXML(dmn13Xml);
-          await viewer.current.open(
+          await viewer.current?.importXML(dmn13Xml);
+          await viewer.current?.open(
             viewer.current
               .getViews()
               .find(

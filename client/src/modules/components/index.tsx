@@ -28,6 +28,7 @@ export {Tag} from './Tag';
 export {UncontrolledMultiValueInput} from './MultiValueInput';
 export {UserTypeahead} from './UserTypeahead';
 export {BPMNDiagram} from './BPMNDiagram';
+export {DMNDiagram} from './DMNDiagram';
 
 export type {InputProps} from './Input';
 export type {LabeledProps} from './Labeled';

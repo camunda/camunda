@@ -5,11 +5,12 @@
  * except in compliance with the proprietary license.
  */
 
-import React, {runLastEffect, useRef} from 'react';
+import {useRef} from 'react';
+import {runLastEffect} from '__mocks__/react';
 import {shallow} from 'enzyme';
 import Viewer from 'dmn-js';
 
-import {DMNDiagram} from './DMNDiagram';
+import {AdditionalModule, DMNDiagram} from './DMNDiagram';
 
 jest.mock('dmn-js', () =>
   jest.fn().mockImplementation(() => ({
@@ -25,23 +26,23 @@ jest.mock('dmn-js', () =>
 );
 
 jest.mock('react', () => {
-  const outstandingEffects = [];
+  const outstandingEffects: Function[] = [];
   const viewer = {current: {destroy: jest.fn()}};
   const useRef = () => viewer;
   useRef.viewer = viewer;
   return {
     ...jest.requireActual('react'),
-    useEffect: (fn) => outstandingEffects.push(fn),
+    useEffect: (fn: Function) => outstandingEffects.push(fn),
     runLastEffect: () => {
       if (outstandingEffects.length) {
-        outstandingEffects.pop()();
+        outstandingEffects.pop()?.();
       }
     },
     useRef,
   };
 });
 
-jest.mock('@bpmn-io/dmn-migrate', () => ({migrateDiagram: (xml) => xml}));
+jest.mock('@bpmn-io/dmn-migrate', () => ({migrateDiagram: (xml: string) => xml}));
 
 const props = {
   xml: 'dmn xml string',
@@ -50,10 +51,10 @@ const props = {
 };
 
 it('should construct a new Viewer instance with any addons provided', () => {
-  shallow(<DMNDiagram {...props} additionalModules={['test']} />);
+  shallow(<DMNDiagram {...props} additionalModules={['test' as unknown as AdditionalModule]} />);
   runLastEffect();
 
-  expect(Viewer.mock.calls[0][0].decisionTable.additionalModules).toEqual(['test']);
+  expect((Viewer as jest.Mock).mock.calls[0][0].decisionTable.additionalModules).toEqual(['test']);
 });
 
 it('should import the provided xml', async () => {
@@ -61,8 +62,8 @@ it('should import the provided xml', async () => {
   await flushPromises();
   runLastEffect();
 
-  expect(useRef.viewer.current.importXML).toHaveBeenCalled();
-  expect(useRef.viewer.current.importXML.mock.calls[0][0]).toBe('dmn xml string');
+  expect((useRef as any).viewer.current.importXML).toHaveBeenCalled();
+  expect((useRef as any).viewer.current.importXML.mock.calls[0][0]).toBe('dmn xml string');
 });
 
 it('invoke onLoad after openning the diagram', async () => {
@@ -71,7 +72,7 @@ it('invoke onLoad after openning the diagram', async () => {
   runLastEffect();
   await flushPromises();
 
-  expect(useRef.viewer.current.open).toHaveBeenCalled();
+  expect((useRef as any).viewer.current.open).toHaveBeenCalled();
   expect(spy).toHaveBeenCalled();
 });
 
