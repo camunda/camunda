@@ -490,13 +490,6 @@ public final class ProcessingStateMachine {
 
   private List<LogAppendEntry> aggregateEvents(
       List<LogAppendEntry> entries, ZeebeDbTransaction tx) {
-    final var aggregatedEntries = new ArrayList<LogAppendEntry>();
-    for (final var entry : entries) {
-      if (entry.recordMetadata().getRecordType() != RecordType.EVENT) {
-        aggregatedEntries.add(entry);
-      }
-    }
-
     final var writeBatch = ((ZeebeTransaction) tx).getWriteBatch();
     final var changes = new AggregatedChangesRecord();
     try {
@@ -504,7 +497,8 @@ public final class ProcessingStateMachine {
     } catch (RocksDBException e) {
       throw new RuntimeException(e);
     }
-    aggregatedEntries.add(
+    final var entriesToWrite = new ArrayList<>(entries);
+    entriesToWrite.add(
         new RecordBatchEntry(
             new RecordMetadata()
                 .recordType(RecordType.EVENT)
@@ -512,7 +506,7 @@ public final class ProcessingStateMachine {
             -1,
             -1,
             changes));
-    return aggregatedEntries;
+    return entriesToWrite;
   }
 
   private void updateState() {
