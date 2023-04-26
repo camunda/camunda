@@ -10,6 +10,7 @@ package io.camunda.zeebe.transport.stream.impl;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.atomix.cluster.MemberId;
+import io.camunda.zeebe.transport.stream.impl.ImmutableStreamRegistry.AggregatedRemoteStream;
 import io.camunda.zeebe.transport.stream.api.RemoteStreamMetrics;
 import io.camunda.zeebe.transport.stream.impl.ImmutableStreamRegistry.StreamConsumer;
 import io.camunda.zeebe.transport.stream.impl.ImmutableStreamRegistry.StreamId;
@@ -35,17 +36,25 @@ final class RemoteStreamRegistryTest {
 
     // when
     streamRegistry.add(typeFoo, id1, gateway, 1);
-    streamRegistry.add(typeFoo, id2, gateway, 2);
+    streamRegistry.add(typeBar, id2, gateway, 2);
 
     // then
-    assertThat(streamRegistry.get(typeFoo))
-        .containsExactlyInAnyOrder(
-            new StreamConsumer<>(new StreamId(id1, gateway), 1, typeFoo),
-            new StreamConsumer<>(new StreamId(id2, gateway), 2, typeFoo));
+
+    final AggregatedRemoteStream<Integer> streamFoo =
+        streamRegistry.get(typeFoo).stream().findFirst().orElseThrow();
+    assertThat(streamFoo.getLogicalId()).isEqualTo(new LogicalId<>(typeFoo, 1));
+    assertThat(streamFoo.getStreamConsumers())
+        .containsExactly(new StreamConsumer<>(new StreamId(id1, gateway), 1, typeFoo));
+
+    final AggregatedRemoteStream<Integer> streamBar =
+        streamRegistry.get(typeBar).stream().findFirst().orElseThrow();
+    assertThat(streamBar.getLogicalId()).isEqualTo(new LogicalId<>(typeBar, 2));
+    assertThat(streamBar.getStreamConsumers())
+        .containsExactly(new StreamConsumer<>(new StreamId(id2, gateway), 2, typeBar));
   }
 
   @Test
-  void shouldRemoveStream() {
+  void shouldRemoveClientStream() {
     // given
     final UUID id = UUID.randomUUID();
     streamRegistry.add(typeFoo, id, gateway, 1);
@@ -55,8 +64,23 @@ final class RemoteStreamRegistryTest {
     streamRegistry.remove(id, gateway);
 
     // then
-    assertThat(streamRegistry.get(typeFoo))
+    final AggregatedRemoteStream<Integer> aggregatedRemoteStream =
+        streamRegistry.get(typeFoo).stream().findFirst().orElseThrow();
+    assertThat(aggregatedRemoteStream.getStreamConsumers())
         .containsExactly(new StreamConsumer<>(new StreamId(id, otherGateway), 1, typeFoo));
+  }
+
+  @Test
+  void shouldRemoveAggregatedStream() {
+    // given
+    final UUID id = UUID.randomUUID();
+    streamRegistry.add(typeFoo, id, gateway, 1);
+
+    // when
+    streamRegistry.remove(id, gateway);
+
+    // then
+    assertThat(streamRegistry.get(typeFoo)).isEmpty();
   }
 
   @Test
@@ -70,8 +94,10 @@ final class RemoteStreamRegistryTest {
     streamRegistry.add(typeFoo, id, gateway, 1);
 
     // then
-    assertThat(streamRegistry.get(typeFoo))
-        .contains(new StreamConsumer<>(new StreamId(id, gateway), 1, typeFoo));
+    final AggregatedRemoteStream<Integer> aggregatedRemoteStream =
+        streamRegistry.get(typeFoo).stream().findFirst().orElseThrow();
+    assertThat(aggregatedRemoteStream.getStreamConsumers())
+        .containsExactly(new StreamConsumer<>(new StreamId(id, gateway), 1, typeFoo));
   }
 
   @Test
@@ -87,8 +113,10 @@ final class RemoteStreamRegistryTest {
 
     // then
     assertThat(streamRegistry.get(typeFoo)).isEmpty();
-    assertThat(streamRegistry.get(typeBar))
-        .contains(new StreamConsumer<>(new StreamId(idOther, otherGateway), 3, typeBar));
+    final AggregatedRemoteStream<Integer> aggregatedRemoteStream =
+        streamRegistry.get(typeBar).stream().findFirst().orElseThrow();
+    assertThat(aggregatedRemoteStream.getStreamConsumers())
+        .containsExactly(new StreamConsumer<>(new StreamId(idOther, otherGateway), 3, typeBar));
   }
 
   @Test
