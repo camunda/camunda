@@ -152,7 +152,7 @@ jobs:
             --project optimize-previews \
             --upsert" >> $GITHUB_ENV
       env:
-        revision: 'persistent'
+        revision: 'master'
         es_version: ${{ github.event.inputs.es_version }}
         cambpm_version: ${{ github.event.inputs.cambpm_version }}
         docker_tag: ${{ github.sha }}
@@ -162,7 +162,7 @@ jobs:
     - name: Deploy Persistent Environment
       uses: camunda/infra-global-github-actions/preview-env/create@main
       with:
-        revision: 'persistent'
+        revision: 'master'
         argocd_token: ${{ steps.secrets.outputs.ARGOCD_TOKEN }}
         app_name: optimize-${{ github.event.inputs.app_name == 'master' && 'stage' || github.event.inputs.app_name }}
         app_url: https://${{ github.event.inputs.app_name == 'master' && 'stage' || github.event.inputs.app_name }}.optimize.camunda.cloud
