@@ -10,7 +10,6 @@ package io.camunda.zeebe.transport.stream.impl;
 import io.camunda.zeebe.transport.stream.api.ClientStreamConsumer;
 import io.camunda.zeebe.transport.stream.api.ClientStreamId;
 import io.camunda.zeebe.transport.stream.api.ClientStreamMetrics;
-import io.camunda.zeebe.transport.stream.impl.AggregatedClientStream.LogicalId;
 import io.camunda.zeebe.util.VisibleForTesting;
 import io.camunda.zeebe.util.buffer.BufferWriter;
 import java.util.Collection;
