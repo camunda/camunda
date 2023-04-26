@@ -7,10 +7,6 @@
  */
 package io.camunda.zeebe.transport.stream.impl;
 
-import io.camunda.zeebe.transport.stream.impl.ImmutableStreamRegistry.AggregatedRemoteStream;
-import java.util.Set;
+import org.agrona.DirectBuffer;
 
-@FunctionalInterface
-interface RemoteStreamPicker<M> {
-  AggregatedRemoteStream<M> pickStream(final Set<AggregatedRemoteStream<M>> consumers);
-}
+record LogicalId<M>(DirectBuffer streamType, M metadata) {}

@@ -64,10 +64,8 @@ public final class RemoteStreamerImpl<M extends BufferReader, P extends BufferWr
 
     final var target = streamPicker.pickStream(consumers);
 
-    final var targetSet = registry.getStreamsByLogicalId(streamTypeBuffer, target.properties());
-
     final RemoteStreamImpl<M, P> gatewayStream =
-        new RemoteStreamImpl<>(target, targetSet, target.properties(), remoteStreamPusher);
+        new RemoteStreamImpl<>(target, remoteStreamPusher, actor::run);
     return Optional.of(gatewayStream);
   }
 

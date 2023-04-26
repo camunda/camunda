@@ -8,6 +8,8 @@
 package io.camunda.zeebe.transport.stream.impl;
 
 import io.atomix.cluster.MemberId;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -22,9 +24,7 @@ interface ImmutableStreamRegistry<M> {
    * @param streamType type of the stream
    * @return set of streams for the given type
    */
-  Set<StreamConsumer<M>> get(final UnsafeBuffer streamType);
-
-  Set<StreamConsumer<M>> getStreamsByLogicalId(UnsafeBuffer streamType, M properties);
+  Set<AggregatedRemoteStream<M>> get(final UnsafeBuffer streamType);
 
   /**
    * Uniquely identifies a stream
@@ -43,4 +43,29 @@ interface ImmutableStreamRegistry<M> {
    * @param <M> type of the properties
    */
   record StreamConsumer<M>(StreamId id, M properties, UnsafeBuffer streamType) {}
+
+  class AggregatedRemoteStream<M> {
+    private final LogicalId<M> logicalId;
+    private final List<StreamConsumer<M>> streamConsumers = new ArrayList<>();
+
+    AggregatedRemoteStream(final LogicalId<M> logicalId) {
+      this.logicalId = logicalId;
+    }
+
+    void addConsumer(final StreamConsumer<M> consumer) {
+      streamConsumers.add(consumer);
+    }
+
+    void removeConsumer(final StreamConsumer<M> consumer) {
+      streamConsumers.remove(consumer);
+    }
+
+    public List<StreamConsumer<M>> getStreamConsumers() {
+      return streamConsumers;
+    }
+
+    public LogicalId<M> getLogicalId() {
+      return logicalId;
+    }
+  }
 }
