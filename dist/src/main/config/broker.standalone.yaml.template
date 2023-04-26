@@ -533,6 +533,7 @@
         #     variable: true
         #     variableDocument: true
         #     processInstance: true
+        #     processInstanceBatch: false
         #     processInstanceCreation: false
         #     processMessageSubscription: false
 

@@ -1,0 +1,36 @@
+{
+  "index_patterns": [
+    "zeebe-record_process-instance-batch_*"
+  ],
+  "composed_of": ["zeebe-record"],
+  "priority": 20,
+  "version": 1,
+  "template": {
+    "settings": {
+      "number_of_shards": 1,
+      "number_of_replicas": 0,
+      "index.queries.cache.enabled": false
+    },
+    "aliases": {
+      "zeebe-record-process-instance-batch": {}
+    },
+    "mappings": {
+      "properties": {
+        "value": {
+          "dynamic": "strict",
+          "properties": {
+            "processInstanceKey": {
+              "type": "long"
+            },
+            "batchElementInstanceKey": {
+              "type": "long"
+            },
+            "index": {
+              "type": "long"
+            }
+          }
+        }
+      }
+    }
+  }
+}
