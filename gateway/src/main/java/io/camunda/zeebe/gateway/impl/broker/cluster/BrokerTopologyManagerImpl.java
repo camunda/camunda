@@ -55,6 +55,25 @@ public final class BrokerTopologyManagerImpl extends Actor
     this.topology.set(topology);
   }
 
+  @Override
+  public void addTopologyListener(final BrokerTopologyListener listener) {
+    actor.run(
+        () -> {
+          topologyListeners.add(listener);
+          final BrokerClusterStateImpl currentTopology = topology.get();
+          if (currentTopology != null) {
+            currentTopology.getBrokers().stream()
+                .map(b -> MemberId.from(String.valueOf(b)))
+                .forEach(listener::brokerAdded);
+          }
+        });
+  }
+
+  @Override
+  public void removeTopologyListener(final BrokerTopologyListener listener) {
+    actor.run(() -> topologyListeners.remove(listener));
+  }
+
   public ActorFuture<Void> start(final ActorSchedulingService actorScheduler) {
     if (!startFuture.isDone()) {
       actorScheduler.submitActor(this);
@@ -182,29 +201,5 @@ public final class BrokerTopologyManagerImpl extends Actor
             followers.forEach(broker -> topologyMetrics.setFollower(partition, broker));
           }
         });
-  }
-
-  /**
-   * Adds the topology listener. For each existing brokers, the listener will be notified via {@link
-   * BrokerTopologyListener#brokerAdded(MemberId)}. After that, the listener gets notified of every
-   * new broker added or removed events.
-   *
-   * @param listener the topology listener
-   */
-  public void addTopologyListener(final BrokerTopologyListener listener) {
-    actor.run(
-        () -> {
-          topologyListeners.add(listener);
-          final BrokerClusterStateImpl currentTopology = topology.get();
-          if (currentTopology != null) {
-            currentTopology.getBrokers().stream()
-                .map(b -> MemberId.from(String.valueOf(b)))
-                .forEach(listener::brokerAdded);
-          }
-        });
-  }
-
-  public void removeTopologyListener(final BrokerTopologyListener listener) {
-    actor.run(() -> topologyListeners.remove(listener));
   }
 }
