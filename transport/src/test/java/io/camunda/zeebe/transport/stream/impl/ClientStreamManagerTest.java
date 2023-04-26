@@ -14,7 +14,9 @@ import static org.mockito.Mockito.when;
 
 import io.atomix.cluster.MemberId;
 import io.atomix.cluster.messaging.ClusterCommunicationService;
+import io.camunda.zeebe.scheduler.testing.TestActorFuture;
 import io.camunda.zeebe.scheduler.testing.TestConcurrencyControl;
+import io.camunda.zeebe.transport.stream.api.ClientStreamConsumer;
 import io.camunda.zeebe.transport.stream.api.ClientStreamId;
 import io.camunda.zeebe.transport.stream.impl.messages.PushStreamRequest;
 import io.camunda.zeebe.util.buffer.BufferUtil;
@@ -31,6 +33,8 @@ import org.junit.jupiter.api.Test;
 
 class ClientStreamManagerTest {
 
+  private static final ClientStreamConsumer NOOP_CONSUMER =
+      p -> TestActorFuture.completedFuture(null);
   private final DirectBuffer streamType = BufferUtil.wrapString("foo");
   private final TestMetadata metadata = new TestMetadata(1);
   private final ClientStreamRegistry<TestMetadata> registry = new ClientStreamRegistry<>();
@@ -49,7 +53,7 @@ class ClientStreamManagerTest {
   @Test
   void shouldAddStream() {
     // when
-    final var streamId = clientStreamManager.add(streamType, metadata, p -> {});
+    final var streamId = clientStreamManager.add(streamType, metadata, NOOP_CONSUMER);
 
     // then
     assertThat(registry.getClient(streamId)).isNotEmpty();
@@ -59,9 +63,12 @@ class ClientStreamManagerTest {
   void shouldAggregateStreamsWithSameStreamTypeAndMetadata() {
     // when
     final var uuid1 =
-        clientStreamManager.add(BufferUtil.wrapString("foo"), new TestMetadata(1), p -> {});
+        clientStreamManager.add(
+            BufferUtil.wrapString("foo"),
+            new TestMetadata(1),
+            p -> TestActorFuture.completedFuture(null));
     final var uuid2 =
-        clientStreamManager.add(BufferUtil.wrapString("foo"), new TestMetadata(1), p -> {});
+        clientStreamManager.add(BufferUtil.wrapString("foo"), new TestMetadata(1), NOOP_CONSUMER);
     final var stream1 = registry.getClient(uuid1).orElseThrow();
     final var stream2 = registry.getClient(uuid2).orElseThrow();
 
@@ -73,8 +80,8 @@ class ClientStreamManagerTest {
   @Test
   void shouldNoAggregateStreamsWithDifferentMetadata() {
     // when
-    final var uuid1 = clientStreamManager.add(streamType, new TestMetadata(1), p -> {});
-    final var uuid2 = clientStreamManager.add(streamType, new TestMetadata(2), p -> {});
+    final var uuid1 = clientStreamManager.add(streamType, new TestMetadata(1), NOOP_CONSUMER);
+    final var uuid2 = clientStreamManager.add(streamType, new TestMetadata(2), NOOP_CONSUMER);
     final var stream1 = registry.getClient(uuid1).orElseThrow();
     final var stream2 = registry.getClient(uuid2).orElseThrow();
 
@@ -86,8 +93,10 @@ class ClientStreamManagerTest {
   @Test
   void shouldNoAggregateStreamsWithDifferentStreamType() {
     // when
-    final var uuid1 = clientStreamManager.add(BufferUtil.wrapString("foo"), metadata, p -> {});
-    final var uuid2 = clientStreamManager.add(BufferUtil.wrapString("bar"), metadata, p -> {});
+    final var uuid1 =
+        clientStreamManager.add(BufferUtil.wrapString("foo"), metadata, NOOP_CONSUMER);
+    final var uuid2 =
+        clientStreamManager.add(BufferUtil.wrapString("bar"), metadata, NOOP_CONSUMER);
     final var stream1 = registry.getClient(uuid1).orElseThrow();
     final var stream2 = registry.getClient(uuid2).orElseThrow();
 
@@ -105,7 +114,7 @@ class ClientStreamManagerTest {
     clientStreamManager.onServerJoined(server2);
 
     // when
-    final var uuid = clientStreamManager.add(streamType, metadata, p -> {});
+    final var uuid = clientStreamManager.add(streamType, metadata, NOOP_CONSUMER);
 
     // then
     final UUID serverStreamId = getServerStreamId(uuid);
@@ -118,7 +127,7 @@ class ClientStreamManagerTest {
   @Test
   void shouldOpenStreamToNewlyAddedServer() {
     // given
-    final var uuid = clientStreamManager.add(streamType, metadata, p -> {});
+    final var uuid = clientStreamManager.add(streamType, metadata, NOOP_CONSUMER);
     final var serverStream = registry.get(getServerStreamId(uuid)).orElseThrow();
 
     // when
@@ -132,8 +141,10 @@ class ClientStreamManagerTest {
   @Test
   void shouldOpenStreamToNewlyAddedServerForAllOpenStreams() {
     // given
-    final var stream1 = clientStreamManager.add(BufferUtil.wrapString("foo"), metadata, p -> {});
-    final var stream2 = clientStreamManager.add(BufferUtil.wrapString("bar"), metadata, p -> {});
+    final var stream1 =
+        clientStreamManager.add(BufferUtil.wrapString("foo"), metadata, NOOP_CONSUMER);
+    final var stream2 =
+        clientStreamManager.add(BufferUtil.wrapString("bar"), metadata, NOOP_CONSUMER);
     final var serverStream1 = registry.get(getServerStreamId(stream1)).orElseThrow();
     final var serverStream2 = registry.get(getServerStreamId(stream2)).orElseThrow();
     // when
@@ -148,7 +159,7 @@ class ClientStreamManagerTest {
   @Test
   void shouldRemoveStream() {
     // given
-    final var uuid = clientStreamManager.add(streamType, metadata, p -> {});
+    final var uuid = clientStreamManager.add(streamType, metadata, NOOP_CONSUMER);
     final var serverStreamId = getServerStreamId(uuid);
 
     // when
@@ -162,8 +173,8 @@ class ClientStreamManagerTest {
   @Test
   void shouldNotRemoveIfOtherClientStreamExist() {
     // given
-    final var uuid1 = clientStreamManager.add(streamType, metadata, p -> {});
-    final var uuid2 = clientStreamManager.add(streamType, metadata, p -> {});
+    final var uuid1 = clientStreamManager.add(streamType, metadata, NOOP_CONSUMER);
+    final var uuid2 = clientStreamManager.add(streamType, metadata, NOOP_CONSUMER);
     final var serverStreamId = getServerStreamId(uuid1);
 
     // when
@@ -179,13 +190,20 @@ class ClientStreamManagerTest {
   void shouldPushPayloadToClient() {
     // given
     final DirectBuffer payloadReceived = new UnsafeBuffer();
-    final var clientStreamId = clientStreamManager.add(streamType, metadata, payloadReceived::wrap);
+    final var clientStreamId =
+        clientStreamManager.add(
+            streamType,
+            metadata,
+            p -> {
+              payloadReceived.wrap(p);
+              return TestActorFuture.completedFuture(null);
+            });
     final var streamId = getServerStreamId(clientStreamId);
 
     // when
     final var payloadPushed = BufferUtil.wrapString("data");
     final var request = new PushStreamRequest().streamId(streamId).payload(payloadPushed);
-    final CompletableFuture<Void> future = new CompletableFuture<>();
+    final var future = new TestActorFuture<Void>();
     clientStreamManager.onPayloadReceived(request, future);
 
     // then
@@ -200,7 +218,7 @@ class ClientStreamManagerTest {
     // when
     final var payloadPushed = BufferUtil.wrapString("data");
     final var request = new PushStreamRequest().streamId(UUID.randomUUID()).payload(payloadPushed);
-    final CompletableFuture<Void> future = new CompletableFuture<>();
+    final var future = new TestActorFuture<Void>();
     clientStreamManager.onPayloadReceived(request, future);
 
     // then
@@ -225,7 +243,7 @@ class ClientStreamManagerTest {
     // when
     final var payloadPushed = BufferUtil.wrapString("data");
     final var request = new PushStreamRequest().streamId(streamId).payload(payloadPushed);
-    final CompletableFuture<Void> future = new CompletableFuture<>();
+    final var future = new TestActorFuture<Void>();
     clientStreamManager.onPayloadReceived(request, future);
 
     // then
@@ -240,7 +258,8 @@ class ClientStreamManagerTest {
     // given
     final MemberId server = MemberId.from("1");
     clientStreamManager.onServerJoined(server);
-    final var uuid = clientStreamManager.add(streamType, metadata, p -> {});
+    final var uuid =
+        clientStreamManager.add(streamType, metadata, p -> TestActorFuture.completedFuture(null));
     final var stream = registry.get(getServerStreamId(uuid)).orElseThrow();
     assertThat(stream.isConnected(server)).isTrue();
 

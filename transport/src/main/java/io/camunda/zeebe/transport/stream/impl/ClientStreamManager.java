@@ -8,6 +8,7 @@
 package io.camunda.zeebe.transport.stream.impl;
 
 import io.atomix.cluster.MemberId;
+import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.transport.stream.api.ClientStreamConsumer;
 import io.camunda.zeebe.transport.stream.api.ClientStreamId;
 import io.camunda.zeebe.transport.stream.impl.messages.PushStreamRequest;
@@ -15,7 +16,6 @@ import io.camunda.zeebe.util.buffer.BufferWriter;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
-import java.util.concurrent.CompletableFuture;
 import org.agrona.DirectBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -77,7 +77,7 @@ final class ClientStreamManager<M extends BufferWriter> {
   }
 
   public void onPayloadReceived(
-      final PushStreamRequest pushStreamRequest, final CompletableFuture<Void> responseFuture) {
+      final PushStreamRequest pushStreamRequest, final ActorFuture<Void> responseFuture) {
     final var streamId = pushStreamRequest.streamId();
     final var payload = pushStreamRequest.payload();
 
@@ -85,8 +85,7 @@ final class ClientStreamManager<M extends BufferWriter> {
     clientStream.ifPresentOrElse(
         stream -> {
           try {
-            stream.getClientStreamConsumer().push(payload);
-            responseFuture.complete(null);
+            stream.push(payload, responseFuture);
           } catch (final Exception e) {
             responseFuture.completeExceptionally(e);
           }

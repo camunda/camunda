@@ -12,6 +12,7 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.ActorScheduler;
+import io.camunda.zeebe.scheduler.testing.TestActorFuture;
 import io.camunda.zeebe.transport.TransportFactory;
 import io.camunda.zeebe.transport.stream.api.RemoteStreamService;
 import io.camunda.zeebe.transport.stream.api.RemoteStreamer;
@@ -128,6 +129,7 @@ class StreamIntegrationTest {
               payload.wrap(p, 0, p.capacity());
               payloads.get().add(payload.data());
               latch.countDown();
+              return TestActorFuture.completedFuture(null);
             })
         .join();
 
@@ -146,7 +148,8 @@ class StreamIntegrationTest {
   @Test
   void shouldReturnErrorWhenClientStreamIsClosed() throws InterruptedException {
     // given
-    final var clientStreamId = clientStreamer.add(streamType, metadata, p -> {}).join();
+    final var clientStreamId =
+        clientStreamer.add(streamType, metadata, p -> TestActorFuture.completedFuture(null)).join();
     Awaitility.await().until(() -> remoteStreamer.streamFor(streamType).isPresent());
     final var serverStream = remoteStreamer.streamFor(streamType).orElseThrow();
 
