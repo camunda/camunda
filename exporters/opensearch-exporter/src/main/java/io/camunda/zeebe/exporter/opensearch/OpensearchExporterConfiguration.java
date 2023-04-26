@@ -78,6 +78,8 @@ public class OpensearchExporterConfiguration {
         return index.variableDocument;
       case PROCESS_INSTANCE:
         return index.processInstance;
+      case PROCESS_INSTANCE_BATCH:
+        return index.processInstanceBatch;
       case PROCESS_INSTANCE_CREATION:
         return index.processInstanceCreation;
       case PROCESS_INSTANCE_MODIFICATION:
@@ -153,6 +155,7 @@ public class OpensearchExporterConfiguration {
     public boolean messageSubscription = true;
     public boolean process = true;
     public boolean processInstance = true;
+    public boolean processInstanceBatch = false;
     public boolean processInstanceCreation = true;
     public boolean processInstanceModification = true;
     public boolean processMessageSubscription = true;
@@ -223,6 +226,8 @@ public class OpensearchExporterConfiguration {
           + ", variableDocument="
           + variableDocument
           + ", processInstance="
+          + processInstanceBatch
+          + ", processInstanceBatch="
           + processInstance
           + ", processInstanceCreation="
           + processInstanceCreation
