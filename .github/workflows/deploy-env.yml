@@ -139,7 +139,7 @@ jobs:
     - name: Determine Argocd arguments
       shell: bash
       run: |
-        echo "persistent_arguments=--dest-namespace ${app_name} \
+        echo "persistent_arguments=--dest-namespace optimize-${app_name} \
             --file .ci/deployments-resources/argo/c7-optimize-application.yml \
             --helm-set optimize.image.tag=${docker_tag} \
             --helm-set cambpm.image.tag=${cambpm_version} \
