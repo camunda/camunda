@@ -91,11 +91,19 @@ public final class BrokerTopologyManagerImpl extends Actor
     for (final Member member : members) {
       final BrokerInfo brokerInfo = BrokerInfo.fromProperties(member.properties());
       if (brokerInfo != null) {
-        newTopology.addBrokerIfAbsent(brokerInfo.getNodeId());
-        processProperties(brokerInfo, newTopology);
+        addBroker(newTopology, member, brokerInfo);
       }
     }
     topology.set(newTopology);
+  }
+
+  private void addBroker(
+      final BrokerClusterStateImpl newTopology, final Member member, final BrokerInfo brokerInfo) {
+    if (newTopology.addBrokerIfAbsent(brokerInfo.getNodeId())) {
+      topologyListeners.forEach(l -> l.brokerAdded(member.id()));
+    }
+
+    processProperties(brokerInfo, newTopology);
   }
 
   @Override
@@ -122,35 +130,26 @@ public final class BrokerTopologyManagerImpl extends Actor
             final BrokerClusterStateImpl newTopology = new BrokerClusterStateImpl(topology.get());
 
             switch (eventType) {
-              case MEMBER_ADDED:
+              case MEMBER_ADDED -> {
                 LOG.debug("Received new broker {}.", brokerInfo);
-                newTopology.addBrokerIfAbsent(brokerInfo.getNodeId());
-                processProperties(brokerInfo, newTopology);
-                topologyListeners.forEach(l -> l.brokerAdded(subject.id()));
-                break;
-
-              case METADATA_CHANGED:
+                addBroker(newTopology, subject, brokerInfo);
+              }
+              case METADATA_CHANGED -> {
                 LOG.debug(
                     "Received metadata change from Broker {}, partitions {}, terms {} and health {}.",
                     brokerInfo.getNodeId(),
                     brokerInfo.getPartitionRoles(),
                     brokerInfo.getPartitionLeaderTerms(),
                     brokerInfo.getPartitionHealthStatuses());
-                newTopology.addBrokerIfAbsent(brokerInfo.getNodeId());
-                processProperties(brokerInfo, newTopology);
-                break;
-
-              case MEMBER_REMOVED:
+                addBroker(newTopology, subject, brokerInfo);
+              }
+              case MEMBER_REMOVED -> {
                 LOG.debug("Received broker was removed {}.", brokerInfo);
                 newTopology.removeBroker(brokerInfo.getNodeId());
                 topologyListeners.forEach(l -> l.brokerRemoved(subject.id()));
-                break;
-
-              case REACHABILITY_CHANGED:
-              default:
-                LOG.debug(
-                    "Received {} for broker {}, do nothing.", eventType, brokerInfo.getNodeId());
-                break;
+              }
+              default -> LOG.debug(
+                  "Received {} for broker {}, do nothing.", eventType, brokerInfo.getNodeId());
             }
 
             topology.set(newTopology);
