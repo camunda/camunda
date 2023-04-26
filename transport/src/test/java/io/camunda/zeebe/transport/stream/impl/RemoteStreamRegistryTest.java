@@ -10,6 +10,7 @@ package io.camunda.zeebe.transport.stream.impl;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.atomix.cluster.MemberId;
+import io.camunda.zeebe.transport.stream.api.RemoteStreamMetrics;
 import io.camunda.zeebe.transport.stream.impl.ImmutableStreamRegistry.StreamConsumer;
 import io.camunda.zeebe.transport.stream.impl.ImmutableStreamRegistry.StreamId;
 import io.camunda.zeebe.util.buffer.BufferUtil;

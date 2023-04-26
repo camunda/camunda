@@ -12,6 +12,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.atomix.cluster.MemberId;
 import io.atomix.cluster.messaging.ClusterCommunicationService;
 import io.camunda.zeebe.scheduler.testing.ControlledActorSchedulerExtension;
+import io.camunda.zeebe.transport.stream.api.RemoteStreamMetrics;
 import io.camunda.zeebe.transport.stream.impl.ImmutableStreamRegistry.StreamConsumer;
 import io.camunda.zeebe.transport.stream.impl.ImmutableStreamRegistry.StreamId;
 import io.camunda.zeebe.transport.stream.impl.messages.PushStreamRequest;

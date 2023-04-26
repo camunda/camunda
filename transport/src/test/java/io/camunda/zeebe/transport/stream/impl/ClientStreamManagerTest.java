@@ -18,6 +18,7 @@ import io.camunda.zeebe.scheduler.testing.TestActorFuture;
 import io.camunda.zeebe.scheduler.testing.TestConcurrencyControl;
 import io.camunda.zeebe.transport.stream.api.ClientStreamConsumer;
 import io.camunda.zeebe.transport.stream.api.ClientStreamId;
+import io.camunda.zeebe.transport.stream.api.NoSuchStreamException;
 import io.camunda.zeebe.transport.stream.impl.messages.PushStreamRequest;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import io.camunda.zeebe.util.buffer.BufferWriter;
@@ -39,9 +40,12 @@ class ClientStreamManagerTest {
   private final TestMetadata metadata = new TestMetadata(1);
   private final ClientStreamRegistry<TestMetadata> registry = new ClientStreamRegistry<>();
   private final ClusterCommunicationService mockTransport = mock(ClusterCommunicationService.class);
+  private final TestClientStreamMetrics metrics = new TestClientStreamMetrics();
   private final ClientStreamManager<TestMetadata> clientStreamManager =
       new ClientStreamManager<>(
-          registry, new ClientStreamRequestManager<>(mockTransport, new TestConcurrencyControl()));
+          registry,
+          new ClientStreamRequestManager<>(mockTransport, new TestConcurrencyControl()),
+          metrics);
 
   @BeforeEach
   void setup() {
@@ -209,6 +213,7 @@ class ClientStreamManagerTest {
     // then
     assertThat(future).succeedsWithin(Duration.ofMillis(100));
     assertThat(payloadReceived).isEqualTo(payloadPushed);
+    assertThat(metrics.getPushSucceeded()).isOne();
   }
 
   @Test
@@ -226,6 +231,7 @@ class ClientStreamManagerTest {
         .failsWithin(Duration.ofMillis(100))
         .withThrowableOfType(ExecutionException.class)
         .withCauseInstanceOf(NoSuchStreamException.class);
+    assertThat(metrics.getPushFailed()).isOne();
   }
 
   @Test
@@ -268,6 +274,31 @@ class ClientStreamManagerTest {
 
     // then
     assertThat(stream.isConnected(server)).isFalse();
+  }
+
+  @Test
+  void shouldReportServerCountOnJoined() {
+    // given
+    final MemberId server = MemberId.from("1");
+
+    // when
+    clientStreamManager.onServerJoined(server);
+
+    // then
+    assertThat(metrics.getServerCount()).isOne();
+  }
+
+  @Test
+  void shouldReportServerCountOnRemoved() {
+    // given
+    final MemberId server = MemberId.from("1");
+    clientStreamManager.onServerJoined(server);
+
+    // when
+    clientStreamManager.onServerRemoved(server);
+
+    // then
+    assertThat(metrics.getServerCount()).isZero();
   }
 
   private UUID getServerStreamId(final ClientStreamId clientStreamId) {

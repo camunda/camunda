@@ -8,6 +8,7 @@
 package io.camunda.zeebe.transport.stream.impl;
 
 import io.atomix.cluster.MemberId;
+import io.camunda.zeebe.transport.stream.api.RemoteStreamMetrics;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;

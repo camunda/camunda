@@ -11,7 +11,10 @@ import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.transport.stream.api.ClientStreamConsumer;
 import io.camunda.zeebe.transport.stream.api.ClientStreamId;
+import io.camunda.zeebe.transport.stream.api.ClientStreamMetrics;
+import io.camunda.zeebe.transport.stream.api.NoSuchStreamException;
 import io.camunda.zeebe.transport.stream.impl.messages.PushStreamRequest;
+import io.camunda.zeebe.util.VisibleForTesting;
 import io.camunda.zeebe.util.buffer.BufferWriter;
 import java.util.Collections;
 import java.util.HashSet;
@@ -24,12 +27,22 @@ final class ClientStreamManager<M extends BufferWriter> {
   private static final Logger LOG = LoggerFactory.getLogger(ClientStreamManager.class);
   private final ClientStreamRegistry<M> registry;
   private final ClientStreamRequestManager<M> requestManager;
+  private final ClientStreamMetrics metrics;
   private final Set<MemberId> servers = new HashSet<>();
 
+  @VisibleForTesting("Useful for testing with a noop implementation")
   ClientStreamManager(
       final ClientStreamRegistry<M> registry, final ClientStreamRequestManager<M> requestManager) {
+    this(registry, requestManager, ClientStreamMetrics.noop());
+  }
+
+  ClientStreamManager(
+      final ClientStreamRegistry<M> registry,
+      final ClientStreamRequestManager<M> requestManager,
+      final ClientStreamMetrics metrics) {
     this.registry = registry;
     this.requestManager = requestManager;
+    this.metrics = metrics;
   }
 
   /**
@@ -40,11 +53,15 @@ final class ClientStreamManager<M extends BufferWriter> {
    */
   void onServerJoined(final MemberId serverId) {
     servers.add(serverId);
+    metrics.serverCount(servers.size());
+
     registry.list().forEach(c -> requestManager.openStream(c, Collections.singleton(serverId)));
   }
 
   void onServerRemoved(final MemberId serverId) {
     servers.remove(serverId);
+    metrics.serverCount(servers.size());
+
     registry.list().forEach(clientStream -> clientStream.remove(serverId));
   }
 
@@ -73,6 +90,7 @@ final class ClientStreamManager<M extends BufferWriter> {
   }
 
   void removeAll() {
+    registry.clear();
     requestManager.removeAll(servers);
   }
 
@@ -80,6 +98,15 @@ final class ClientStreamManager<M extends BufferWriter> {
       final PushStreamRequest pushStreamRequest, final ActorFuture<Void> responseFuture) {
     final var streamId = pushStreamRequest.streamId();
     final var payload = pushStreamRequest.payload();
+
+    responseFuture.onComplete(
+        (ok, error) -> {
+          if (error != null) {
+            metrics.pushFailed();
+          } else {
+            metrics.pushSucceeded();
+          }
+        });
 
     final var clientStream = registry.get(streamId);
     clientStream.ifPresentOrElse(

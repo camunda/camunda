@@ -12,7 +12,7 @@ import java.util.Set;
 import java.util.UUID;
 import org.agrona.concurrent.UnsafeBuffer;
 
-public interface ImmutableStreamRegistry<M> {
+interface ImmutableStreamRegistry<M> {
 
   /**
    * Returns a set of streams for the given type.

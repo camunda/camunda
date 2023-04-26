@@ -9,12 +9,14 @@ package io.camunda.zeebe.transport.stream.impl;
 
 import io.camunda.zeebe.transport.stream.api.ClientStreamConsumer;
 import io.camunda.zeebe.transport.stream.api.ClientStreamId;
+import io.camunda.zeebe.transport.stream.api.ClientStreamMetrics;
 import io.camunda.zeebe.transport.stream.impl.AggregatedClientStream.LogicalId;
 import io.camunda.zeebe.util.VisibleForTesting;
 import io.camunda.zeebe.util.buffer.BufferWriter;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 import org.agrona.DirectBuffer;
@@ -24,6 +26,16 @@ final class ClientStreamRegistry<M extends BufferWriter> {
   private final Map<ClientStreamId, ClientStream<M>> clientStreams = new HashMap<>();
   private final Map<UUID, AggregatedClientStream<M>> serverStreams = new HashMap<>();
   private final Map<LogicalId<M>, UUID> serverStreamIds = new HashMap<>();
+
+  private final ClientStreamMetrics metrics;
+
+  ClientStreamRegistry() {
+    this(ClientStreamMetrics.noop());
+  }
+
+  ClientStreamRegistry(final ClientStreamMetrics metrics) {
+    this.metrics = Objects.requireNonNull(metrics, "must specify metrics");
+  }
 
   Optional<AggregatedClientStream<M>> get(final UUID serverStreamId) {
     return Optional.ofNullable(serverStreams.get(serverStreamId));
@@ -49,6 +61,9 @@ final class ClientStreamRegistry<M extends BufferWriter> {
         new ClientStream<>(streamId, serverStream, streamType, metadata, clientStreamConsumer);
     serverStream.addClient(clientStream);
     clientStreams.put(streamId, clientStream);
+
+    metrics.aggregatedStreamCount(serverStreams.size());
+    metrics.clientCount(clientStreams.size());
     return clientStream;
   }
 
@@ -60,13 +75,27 @@ final class ClientStreamRegistry<M extends BufferWriter> {
     if (clientStream != null) {
       final var serverStream = clientStream.serverStream();
       serverStream.removeClient(clientStream.streamId());
+      metrics.clientCount(clientStreams.size());
+
       if (serverStream.isEmpty()) {
         serverStreams.remove(serverStream.getStreamId());
         serverStreamIds.remove(serverStream.logicalId());
+        metrics.aggregatedStreamCount(serverStreams.size());
+
         return Optional.of(serverStream);
       }
     }
+
     return Optional.empty();
+  }
+
+  void clear() {
+    clientStreams.clear();
+    serverStreams.clear();
+    serverStreamIds.clear();
+
+    metrics.clientCount(0);
+    metrics.aggregatedStreamCount(0);
   }
 
   @VisibleForTesting(

@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.broker.jobstream;
 
-import io.camunda.zeebe.transport.stream.impl.RemoteStreamMetrics;
+import io.camunda.zeebe.transport.stream.api.RemoteStreamMetrics;
 import io.prometheus.client.Counter;
 import io.prometheus.client.Gauge;
 
