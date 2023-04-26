@@ -5,7 +5,8 @@
  * except in compliance with the proprietary license.
  */
 
-import React, {useEffect, useState} from 'react';
+import {useEffect, useState} from 'react';
+import {Button} from '@carbon/react';
 import {
   $createParagraphNode,
   $insertNodes,
@@ -17,7 +18,7 @@ import {
 import {$wrapNodeInElement, mergeRegister} from '@lexical/utils';
 import {useLexicalComposerContext} from '@lexical/react/LexicalComposerContext';
 
-import {Button, Form, Input, Labeled, Modal} from 'components';
+import {Form, Input, Labeled, CarbonModal as Modal} from 'components';
 import {t} from 'translation';
 
 import {validateUrl} from './service';
@@ -48,6 +49,7 @@ export function InsertImageModal({editor, onClose}: {editor: LexicalEditor; onCl
                 placeholder={t('textEditor.plugins.images.urlPlaceholder')}
                 onChange={({target: {value}}) => setSrc(value)}
                 value={src}
+                data-modal-primary-focus
               />
             </Labeled>
           </Form.Group>
@@ -62,14 +64,14 @@ export function InsertImageModal({editor, onClose}: {editor: LexicalEditor; onCl
           </Form.Group>
         </Form>
       </Modal.Content>
-      <Modal.Actions>
-        <Button main onClick={onClose}>
+      <Modal.Footer>
+        <Button kind="secondary" onClick={onClose}>
           {t('common.cancel')}
         </Button>
-        <Button main primary disabled={!validateUrl(src)} onClick={onClick}>
+        <Button disabled={!validateUrl(src)} onClick={onClick}>
           {t('common.add')}
         </Button>
-      </Modal.Actions>
+      </Modal.Footer>
     </Modal>
   );
 }

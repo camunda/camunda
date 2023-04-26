@@ -27,7 +27,7 @@ it('should call the onClose when modal is closed', () => {
 
   expect(spy).toHaveBeenCalled();
 
-  node.find('ForwardRef(Button)').at(0).simulate('click');
+  node.find('Button').at(0).simulate('click');
 
   expect(spy).toHaveBeenCalled();
 });
@@ -35,7 +35,7 @@ it('should call the onClose when modal is closed', () => {
 it('should disable the button if the url is invalid', () => {
   const node = shallow(<InsertLinkModal editor={editor} />);
 
-  expect(node.find('ForwardRef(Button)').at(1).prop('disabled')).toBe(true);
+  expect(node.find('Button').at(1).prop('disabled')).toBe(true);
 
   node
     .find('ForwardRef(Input)')
@@ -47,14 +47,14 @@ it('should disable the button if the url is invalid', () => {
     .at(1)
     .simulate('change', {target: {value: 'some link'}});
 
-  expect(node.find('ForwardRef(Button)').at(1).prop('disabled')).toBe(true);
+  expect(node.find('Button').at(1).prop('disabled')).toBe(true);
 
   node
     .find('ForwardRef(Input)')
     .at(0)
     .simulate('change', {target: {value: 'http://example.com'}});
 
-  expect(node.find('ForwardRef(Button)').at(1).prop('disabled')).toBe(false);
+  expect(node.find('Button').at(1).prop('disabled')).toBe(false);
 });
 
 it('should dispatch insert link command on report add button', () => {
@@ -71,7 +71,7 @@ it('should dispatch insert link command on report add button', () => {
     .at(1)
     .simulate('change', {target: {value: 'some link'}});
 
-  node.find('ForwardRef(Button)').at(1).simulate('click');
+  node.find('Button').at(1).simulate('click');
 
   expect(editor.dispatchCommand).toHaveBeenCalledWith(undefined, {
     altText: 'some link',
@@ -89,7 +89,7 @@ it('should dispatch insert link command with alt text defaulted to url when not 
     .at(0)
     .simulate('change', {target: {value: 'http://example.com'}});
 
-  node.find('ForwardRef(Button)').at(1).simulate('click');
+  node.find('Button').at(1).simulate('click');
 
   expect(editor.dispatchCommand).toHaveBeenCalledWith(undefined, {
     altText: 'http://example.com',

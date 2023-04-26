@@ -50,7 +50,7 @@ it('should render the modal', () => {
 it('should  disable the submit button if the text in editor is empty or too long', () => {
   const node = shallow(<TextReportEditModal />);
 
-  expect(node.find('[primary]')).toBeDisabled();
+  expect(node.find('Button').at(1)).toBeDisabled();
 
   const normalText = {
     root: {
@@ -68,7 +68,7 @@ it('should  disable the submit button if the text in editor is empty or too long
     },
   };
   node.find('TextEditor').prop('onChange')(normalText);
-  expect(node.find('[primary]')).not.toBeDisabled();
+  expect(node.find('Button').at(1)).not.toBeDisabled();
 
   const tooLongText = {
     root: {
@@ -87,7 +87,7 @@ it('should  disable the submit button if the text in editor is empty or too long
   };
   node.find('TextEditor').prop('onChange')(tooLongText);
 
-  expect(node.find('[primary]')).toBeDisabled();
+  expect(node.find('Button').at(1)).toBeDisabled();
 });
 
 it('should invoke onConfirm when the submit button is clicked', () => {
@@ -128,7 +128,7 @@ it('should invoke onConfirm when the submit button is clicked', () => {
 
   node.find('TextEditor').prop('onChange')(newEditorValue);
 
-  node.find('[primary]').simulate('click');
+  node.find('Button').at(1).simulate('click');
 
   expect(spy).toHaveBeenCalledWith(newEditorValue);
 });

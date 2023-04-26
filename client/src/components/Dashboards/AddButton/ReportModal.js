@@ -7,10 +7,10 @@
 
 import React, {useEffect, useState} from 'react';
 import {withRouter} from 'react-router-dom';
+import {Button} from '@carbon/react';
 
 import {
-  Modal,
-  Button,
+  CarbonModal as Modal,
   Input,
   Typeahead,
   LoadingIndicator,
@@ -74,12 +74,7 @@ function ReportModal({close, confirm, location}) {
     (!loading && availableReports.find(({id}) => selectedReportId === id)) || {};
 
   return (
-    <Modal
-      className="ReportModal"
-      open
-      onClose={close}
-      onConfirm={!isInvalid ? addReport : undefined}
-    >
+    <Modal className="ReportModal" open onClose={close} isOverflowVisible>
       <Modal.Header>{t('dashboard.addButton.addTile')}</Modal.Header>
       <Modal.Content>
         <Form>
@@ -136,14 +131,14 @@ function ReportModal({close, confirm, location}) {
           </Tabs>
         </Form>
       </Modal.Content>
-      <Modal.Actions>
-        <Button main onClick={close}>
+      <Modal.Footer>
+        <Button kind="secondary" onClick={close}>
           {t('common.cancel')}
         </Button>
-        <Button main primary onClick={addReport} disabled={isInvalid}>
+        <Button onClick={addReport} disabled={isInvalid}>
           {t('dashboard.addButton.addTileLabel')}
         </Button>
-      </Modal.Actions>
+      </Modal.Footer>
     </Modal>
   );
 }

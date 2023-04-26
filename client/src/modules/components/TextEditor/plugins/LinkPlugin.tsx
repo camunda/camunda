@@ -6,6 +6,7 @@
  */
 
 import {useEffect, useState} from 'react';
+import {Button} from '@carbon/react';
 import {
   createCommand,
   $createTextNode,
@@ -20,7 +21,7 @@ import {mergeRegister, $insertNodeToNearestRoot} from '@lexical/utils';
 import {useLexicalComposerContext} from '@lexical/react/LexicalComposerContext';
 import {LinkPlugin as LexicalLinkPlugin} from '@lexical/react/LexicalLinkPlugin';
 
-import {Button, Form, Input, Labeled, Modal} from 'components';
+import {Form, Input, Labeled, CarbonModal as Modal} from 'components';
 import {t} from 'translation';
 
 import {validateUrl} from './service';
@@ -90,6 +91,7 @@ export function InsertLinkModal({editor, onClose}: {editor: LexicalEditor; onClo
                 placeholder={t('textEditor.plugins.link.urlPlaceholder')}
                 onChange={({target: {value}}) => setUrl(value)}
                 value={url}
+                data-modal-primary-focus
               />
             </Labeled>
           </Form.Group>
@@ -104,14 +106,14 @@ export function InsertLinkModal({editor, onClose}: {editor: LexicalEditor; onClo
           </Form.Group>
         </Form>
       </Modal.Content>
-      <Modal.Actions>
-        <Button main onClick={onClose}>
+      <Modal.Footer>
+        <Button kind="secondary" onClick={onClose}>
           {t('common.cancel')}
         </Button>
-        <Button main primary disabled={!validateUrl(url)} onClick={onClick}>
+        <Button disabled={!validateUrl(url)} onClick={onClick}>
           {t('common.add')}
         </Button>
-      </Modal.Actions>
+      </Modal.Footer>
     </Modal>
   );
 }

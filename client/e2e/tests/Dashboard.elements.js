@@ -22,7 +22,7 @@ export const textReportToolButton = (title) => Selector(`.Button[title=${title}]
 export const textReportInsertDropdown = Selector('.InsertOptions');
 export const textReportUrlInput = Selector('.InsertModal input').nth(0);
 export const textReportAltInput = Selector('.InsertModal input').nth(1);
-export const textReportInsertAddButton = Selector('.InsertModal .Button').withText('Add');
+export const textReportInsertAddButton = Selector('.InsertModal button').withText('Add');
 export const blankReportButton = Selector('.Button').withText('Blank report');
 export const externalReport = Selector('iframe', {timeout: 60000});
 export const textReport = Selector('.TextReport .editor');

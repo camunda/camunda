@@ -49,8 +49,8 @@ export default function AddButton({addReport, existingReport}) {
     <>
       <Button main className="AddButton tool-button" onClick={() => setOpen(true)}>
         <Icon type="plus" /> {t('dashboard.addButton.addTile')}
-        {open && <ReportModal close={closeModal} confirm={onConfirm} />}
       </Button>
+      {open && <ReportModal close={closeModal} confirm={onConfirm} />}
       {creatingNewReport && (
         <ReportCreationModal
           onClose={() => setCreatingNewReport(false)}

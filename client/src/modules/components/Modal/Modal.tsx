@@ -45,6 +45,12 @@ Modal.Content = forwardRef<HTMLDivElement, ComponentPropsWithoutRef<'div'>>((pro
         evt.stopPropagation();
         props.onMouseDown?.(evt);
       }}
+      // carbon modals trigger blur when clicking on input element inside nested modals
+      // This prevents focusing on those elements inside the nested modals
+      onBlur={(evt) => {
+        evt.stopPropagation();
+        props.onBlur?.(evt);
+      }}
     />
   );
 });
