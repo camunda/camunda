@@ -24,6 +24,7 @@ import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstan
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import org.agrona.DirectBuffer;
 import org.agrona.collections.MutableInteger;
@@ -261,6 +262,28 @@ public final class DbElementInstanceState implements MutableElementInstanceState
           });
     }
     return children;
+  }
+
+  @Override
+  public void forEachChild(
+      final long parentKey,
+      final long startAtKey,
+      final BiFunction<Long, ElementInstance, Boolean> visitor) {
+    this.parentKey.inner().wrapLong(parentKey);
+    elementInstanceKey.wrapLong(startAtKey);
+
+    // If startAtKey is a negative value we should use null instead. This will make it so we start
+    // the iteration at the first child of the parent.
+    final var compositeKey = startAtKey == -1 ? null : parentChildKey;
+
+    parentChildColumnFamily.whileEqualPrefix(
+        this.parentKey,
+        compositeKey,
+        (key, value) -> {
+          final DbLong childKey = key.second().inner();
+          final ElementInstance childInstance = getInstance(childKey.getValue());
+          return visitor.apply(childKey.getValue(), childInstance);
+        });
   }
 
   @Override
