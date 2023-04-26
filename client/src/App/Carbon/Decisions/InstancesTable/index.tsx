@@ -19,9 +19,12 @@ import {CarbonPaths} from 'modules/carbonRoutes';
 import {tracking} from 'modules/tracking';
 import {Link} from 'modules/components/Carbon/Link';
 
+const ROW_HEIGHT = 34;
+
 const InstancesTable: React.FC = observer(() => {
   const {
-    state: {filteredDecisionInstancesCount, decisionInstances},
+    state: {filteredDecisionInstancesCount, latestFetch, decisionInstances},
+    hasLatestDecisionInstances,
   } = decisionInstancesStore;
 
   const location = useLocation();
@@ -53,6 +56,24 @@ const InstancesTable: React.FC = observer(() => {
         count={filteredDecisionInstancesCount}
       />
       <SortableTable
+        onVerticalScrollStartReach={async (scrollDown) => {
+          if (decisionInstancesStore.shouldFetchPreviousInstances() === false) {
+            return;
+          }
+
+          await decisionInstancesStore.fetchPreviousInstances();
+
+          if (hasLatestDecisionInstances) {
+            scrollDown(latestFetch?.decisionInstancesCount ?? 0 * ROW_HEIGHT);
+          }
+        }}
+        onVerticalScrollEndReach={() => {
+          if (decisionInstancesStore.shouldFetchNextInstances() === false) {
+            return;
+          }
+
+          decisionInstancesStore.fetchNextInstances();
+        }}
         rows={decisionInstances.map(
           ({
             id,

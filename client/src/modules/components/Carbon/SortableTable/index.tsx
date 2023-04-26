@@ -5,7 +5,7 @@
  * except in compliance with the proprietary license.
  */
 
-import React from 'react';
+import React, {useRef} from 'react';
 import {Container, TableContainer, TableCell, TableHead} from './styled';
 
 import {
@@ -14,9 +14,9 @@ import {
   TableRow,
   DataTableHeader,
   DataTableRow,
-  TableBody,
 } from '@carbon/react';
 import {ColumnHeader} from './ColumnHeader';
+import {InfiniteScroller} from 'modules/components/InfiniteScroller';
 
 type HeaderColumn = {
   isDefault?: boolean;
@@ -27,11 +27,21 @@ type Props = {
   headerColumns: HeaderColumn[];
   rows: DataTableRow[];
   onSort?: React.ComponentProps<typeof ColumnHeader>['onSort'];
-};
+} & Pick<
+  React.ComponentProps<typeof InfiniteScroller>,
+  'onVerticalScrollStartReach' | 'onVerticalScrollEndReach'
+>;
 
-const SortableTable: React.FC<Props> = ({headerColumns, rows}) => {
+const SortableTable: React.FC<Props> = ({
+  headerColumns,
+  rows,
+  onVerticalScrollStartReach,
+  onVerticalScrollEndReach,
+}) => {
+  let scrollableContentRef = useRef<HTMLDivElement | null>(null);
+
   return (
-    <Container>
+    <Container ref={scrollableContentRef}>
       <DataTable
         useZebraStyles
         rows={rows}
@@ -63,17 +73,23 @@ const SortableTable: React.FC<Props> = ({headerColumns, rows}) => {
                   })}
                 </TableRow>
               </TableHead>
-              <TableBody>
-                {rows.map((row) => {
-                  return (
-                    <TableRow {...getRowProps({row})}>
-                      {row.cells.map((cell) => (
-                        <TableCell key={cell.id}>{cell.value}</TableCell>
-                      ))}
-                    </TableRow>
-                  );
-                })}
-              </TableBody>
+              <InfiniteScroller
+                onVerticalScrollStartReach={onVerticalScrollStartReach}
+                onVerticalScrollEndReach={onVerticalScrollEndReach}
+                scrollableContainerRef={scrollableContentRef}
+              >
+                <tbody aria-live="polite">
+                  {rows.map((row) => {
+                    return (
+                      <TableRow {...getRowProps({row})}>
+                        {row.cells.map((cell) => (
+                          <TableCell key={cell.id}>{cell.value}</TableCell>
+                        ))}
+                      </TableRow>
+                    );
+                  })}
+                </tbody>
+              </InfiniteScroller>
             </Table>
           </TableContainer>
         )}
