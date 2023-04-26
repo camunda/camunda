@@ -54,6 +54,28 @@ final class RemoteStreamRegistryTest {
   }
 
   @Test
+  void shouldAggregateMultipleStreamsWithSameProperties() {
+    // given
+    final UUID id1 = UUID.randomUUID();
+    final UUID id2 = UUID.randomUUID();
+    final int properties = 1;
+
+    // when
+    streamRegistry.add(typeFoo, id1, gateway, properties);
+    streamRegistry.add(typeFoo, id2, gateway, properties);
+
+    // then
+
+    final AggregatedRemoteStream<Integer> streamFoo =
+        streamRegistry.get(typeFoo).stream().findFirst().orElseThrow();
+    assertThat(streamFoo.getLogicalId()).isEqualTo(new LogicalId<>(typeFoo, properties));
+    assertThat(streamFoo.getStreamConsumers())
+        .containsExactly(
+            new StreamConsumer<>(new StreamId(id1, gateway), properties, typeFoo),
+            new StreamConsumer<>(new StreamId(id2, gateway), properties, typeFoo));
+  }
+
+  @Test
   void shouldRemoveClientStream() {
     // given
     final UUID id = UUID.randomUUID();
