@@ -18,6 +18,7 @@ import io.camunda.zeebe.gateway.impl.configuration.SecurityCfg;
 import io.camunda.zeebe.gateway.impl.job.ActivateJobsHandler;
 import io.camunda.zeebe.gateway.impl.job.LongPollingActivateJobsHandler;
 import io.camunda.zeebe.gateway.impl.job.RoundRobinActivateJobsHandler;
+import io.camunda.zeebe.gateway.impl.stream.JobActivationProperties;
 import io.camunda.zeebe.gateway.interceptors.impl.ContextInjectingInterceptor;
 import io.camunda.zeebe.gateway.interceptors.impl.DecoratedInterceptor;
 import io.camunda.zeebe.gateway.interceptors.impl.IdentityInterceptor;
@@ -27,6 +28,8 @@ import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
+import io.camunda.zeebe.transport.stream.api.ClientStreamer;
+import io.camunda.zeebe.util.CloseableSilently;
 import io.camunda.zeebe.util.Either;
 import io.grpc.BindableService;
 import io.grpc.Server;
@@ -47,7 +50,7 @@ import me.dinowernli.grpc.prometheus.Configuration;
 import me.dinowernli.grpc.prometheus.MonitoringServerInterceptor;
 import org.slf4j.Logger;
 
-public final class Gateway {
+public final class Gateway implements CloseableSilently {
   private static final Logger LOG = Loggers.GATEWAY_LOGGER;
   private static final MonitoringServerInterceptor MONITORING_SERVER_INTERCEPTOR =
       MonitoringServerInterceptor.create(Configuration.allMetrics());
@@ -57,6 +60,7 @@ public final class Gateway {
   private final GatewayCfg gatewayCfg;
   private final ActorSchedulingService actorSchedulingService;
   private final GatewayHealthManager healthManager;
+  private final ClientStreamer<JobActivationProperties> jobStreamer;
 
   private Server server;
   private final BrokerClient brokerClient;
@@ -64,10 +68,12 @@ public final class Gateway {
   public Gateway(
       final GatewayCfg gatewayCfg,
       final BrokerClient brokerClient,
-      final ActorSchedulingService actorSchedulingService) {
+      final ActorSchedulingService actorSchedulingService,
+      final ClientStreamer<JobActivationProperties> jobStreamer) {
     this.gatewayCfg = gatewayCfg;
     this.brokerClient = brokerClient;
     this.actorSchedulingService = actorSchedulingService;
+    this.jobStreamer = jobStreamer;
 
     healthManager = new GatewayHealthManagerImpl();
   }
@@ -113,7 +119,8 @@ public final class Gateway {
 
   private Either<Exception, Server> createAndStartServer(
       final ActivateJobsHandler activateJobsHandler) {
-    final EndpointManager endpointManager = new EndpointManager(brokerClient, activateJobsHandler);
+    final EndpointManager endpointManager =
+        new EndpointManager(brokerClient, activateJobsHandler, jobStreamer);
     final GatewayGrpcService gatewayGrpcService = new GatewayGrpcService(endpointManager);
 
     try {
@@ -193,6 +200,11 @@ public final class Gateway {
     }
 
     serverBuilder.useTransportSecurity(certificateChainPath, privateKeyPath);
+  }
+
+  @Override
+  public void close() {
+    stop();
   }
 
   private CompletableFuture<ActivateJobsHandler> createAndStartActivateJobsHandler(

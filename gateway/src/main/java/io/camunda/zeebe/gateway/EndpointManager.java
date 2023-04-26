@@ -16,6 +16,7 @@ import io.camunda.zeebe.gateway.impl.broker.cluster.BrokerClusterState;
 import io.camunda.zeebe.gateway.impl.broker.cluster.BrokerTopologyManager;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerRequest;
 import io.camunda.zeebe.gateway.impl.job.ActivateJobsHandler;
+import io.camunda.zeebe.gateway.impl.stream.JobActivationProperties;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.BroadcastSignalRequest;
@@ -56,6 +57,7 @@ import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ThrowErrorResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.TopologyResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.UpdateJobRetriesRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.UpdateJobRetriesResponse;
+import io.camunda.zeebe.transport.stream.api.ClientStreamer;
 import io.camunda.zeebe.util.VersionUtil;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -69,11 +71,19 @@ public final class EndpointManager {
   private final ActivateJobsHandler activateJobsHandler;
   private final RequestRetryHandler requestRetryHandler;
 
+  // TODO: actually make use of it
+  @SuppressWarnings({"FieldCanBeLocal", "unused"})
+  private final ClientStreamer<JobActivationProperties> jobStreamer;
+
   public EndpointManager(
-      final BrokerClient brokerClient, final ActivateJobsHandler activateJobsHandler) {
+      final BrokerClient brokerClient,
+      final ActivateJobsHandler activateJobsHandler,
+      final ClientStreamer<JobActivationProperties> jobStreamer) {
     this.brokerClient = brokerClient;
-    topologyManager = brokerClient.getTopologyManager();
     this.activateJobsHandler = activateJobsHandler;
+    this.jobStreamer = jobStreamer;
+
+    topologyManager = brokerClient.getTopologyManager();
     requestRetryHandler = new RequestRetryHandler(brokerClient, topologyManager);
   }
 
