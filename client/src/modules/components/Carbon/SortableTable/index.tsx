@@ -12,15 +12,21 @@ import {
   DataTable,
   Table,
   TableRow,
-  TableHeader,
   DataTableHeader,
   DataTableRow,
   TableBody,
 } from '@carbon/react';
+import {ColumnHeader} from './ColumnHeader';
+
+type HeaderColumn = {
+  isDefault?: boolean;
+  sortKey?: string;
+} & DataTableHeader;
 
 type Props = {
-  headerColumns: DataTableHeader[];
+  headerColumns: HeaderColumn[];
   rows: DataTableRow[];
+  onSort?: React.ComponentProps<typeof ColumnHeader>['onSort'];
 };
 
 const SortableTable: React.FC<Props> = ({headerColumns, rows}) => {
@@ -44,9 +50,15 @@ const SortableTable: React.FC<Props> = ({headerColumns, rows}) => {
                 <TableRow>
                   {headers.map((header) => {
                     return (
-                      <TableHeader {...getHeaderProps({header})}>
-                        {header.header}
-                      </TableHeader>
+                      <ColumnHeader
+                        {...getHeaderProps({
+                          header,
+                          isSortable: true,
+                        })}
+                        label={header.header}
+                        sortKey={header.sortKey ?? header.key}
+                        isDefault={header.isDefault}
+                      />
                     );
                   })}
                 </TableRow>

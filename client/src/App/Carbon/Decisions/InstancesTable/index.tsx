@@ -121,6 +121,7 @@ const InstancesTable: React.FC = observer(() => {
           {
             header: 'Decision Instance Key',
             key: 'decisionInstanceKey',
+            sortKey: 'id',
           },
           {
             header: 'Version',
@@ -129,6 +130,7 @@ const InstancesTable: React.FC = observer(() => {
           {
             header: 'Evaluation Date',
             key: 'evaluationDate',
+            isDefault: true,
           },
           {
             header: 'Process Instance Key',
