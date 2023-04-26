@@ -148,7 +148,7 @@ jobs:
             --helm-set git.branch=master \
             --helm-set env=persistent \
             --name optimize-${app_name} \
-            --revision ${revision} \
+            --revision master \
             --project optimize-previews \
             --upsert" >> $GITHUB_ENV
       env:
