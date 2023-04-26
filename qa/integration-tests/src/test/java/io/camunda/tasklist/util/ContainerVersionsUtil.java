@@ -11,14 +11,17 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.Properties;
 
-public class ZeebeVersionsUtil {
+public class ContainerVersionsUtil {
 
   public static final String ZEEBE_CURRENTVERSION_DOCKER_PROPERTY_NAME =
       "zeebe.currentVersion.docker";
-  private static final String VERSIONS_FILE = "/zeebe-versions.properties";
+
+  public static final String IDENTITY_CURRENTVERSION_DOCKER_PROPERTY_NAME =
+      "identity.currentVersion.docker";
+  private static final String VERSIONS_FILE = "/container-versions.properties";
 
   public static String readProperty(String propertyName) {
-    try (InputStream propsFile = ZeebeVersionsUtil.class.getResourceAsStream(VERSIONS_FILE)) {
+    try (InputStream propsFile = ContainerVersionsUtil.class.getResourceAsStream(VERSIONS_FILE)) {
       final Properties props = new Properties();
       props.load(propsFile);
       return props.getProperty(propertyName);

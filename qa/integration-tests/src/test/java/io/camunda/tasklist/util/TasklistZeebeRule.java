@@ -71,7 +71,8 @@ public class TasklistZeebeRule extends TestWatcher {
 
   private void startZeebe() {
     final String zeebeVersion =
-        ZeebeVersionsUtil.readProperty(ZeebeVersionsUtil.ZEEBE_CURRENTVERSION_DOCKER_PROPERTY_NAME);
+        ContainerVersionsUtil.readProperty(
+            ContainerVersionsUtil.ZEEBE_CURRENTVERSION_DOCKER_PROPERTY_NAME);
     zeebeContainer =
         new ZeebeContainer(DockerImageName.parse("camunda/zeebe").withTag(zeebeVersion));
     Testcontainers.exposeHostPorts(9200);

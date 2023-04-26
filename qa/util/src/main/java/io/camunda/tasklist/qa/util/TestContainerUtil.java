@@ -84,13 +84,13 @@ public class TestContainerUtil {
   private KeycloakContainer keycloakContainer;
   private PostgreSQLContainer postgreSQLContainer;
 
-  public void startIdentity(TestContext testContext) {
+  public void startIdentity(TestContext testContext, String version) {
     startKeyCloak(testContext);
     startPostgres(testContext);
 
     LOGGER.info("************ Starting Identity ************");
     identityContainer =
-        new GenericContainer<>(String.format("%s:%s", "camunda/identity", "8.2.0"))
+        new GenericContainer<>(String.format("%s:%s", "camunda/identity", version))
             .withExposedPorts(IDENTITY_PORT)
             .withNetwork(getNetwork());
 
