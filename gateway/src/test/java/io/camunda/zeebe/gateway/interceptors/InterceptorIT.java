@@ -15,12 +15,16 @@ import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.client.api.command.ClientStatusException;
 import io.camunda.zeebe.client.api.response.DeploymentEvent;
 import io.camunda.zeebe.gateway.Gateway;
+import io.camunda.zeebe.gateway.impl.broker.BrokerClient;
 import io.camunda.zeebe.gateway.impl.broker.BrokerClientImpl;
 import io.camunda.zeebe.gateway.impl.configuration.GatewayCfg;
 import io.camunda.zeebe.gateway.impl.configuration.InterceptorCfg;
+import io.camunda.zeebe.gateway.impl.stream.JobStreamClient;
+import io.camunda.zeebe.gateway.impl.stream.JobStreamClientImpl;
 import io.camunda.zeebe.gateway.interceptors.util.ContextInspectingInterceptor;
 import io.camunda.zeebe.gateway.interceptors.util.TestInterceptor;
 import io.camunda.zeebe.scheduler.ActorScheduler;
+import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.test.util.socket.SocketUtil;
 import io.grpc.StatusRuntimeException;
 import io.netty.util.NetUtil;
@@ -42,6 +46,8 @@ final class InterceptorIT {
           .build();
 
   private AtomixCluster cluster;
+  private BrokerClient brokerClient;
+  private JobStreamClient jobStreamClient;
   private Gateway gateway;
 
   @BeforeEach
@@ -60,25 +66,29 @@ final class InterceptorIT {
         AtomixCluster.builder()
             .withAddress(Address.from(clusterAddress.getHostName(), clusterAddress.getPort()))
             .build();
-    final var brokerClient =
+    brokerClient =
         new BrokerClientImpl(
             config.getCluster().getRequestTimeout(),
             cluster.getMessagingService(),
             cluster.getMembershipService(),
             cluster.getEventService(),
             scheduler);
-    gateway = new Gateway(config, brokerClient, scheduler);
+    jobStreamClient = new JobStreamClientImpl(scheduler, cluster.getCommunicationService());
+    gateway = new Gateway(config, brokerClient, scheduler, jobStreamClient.streamer());
 
     cluster.start().join();
     scheduler.start();
-    brokerClient.start();
+    jobStreamClient.start().join();
+    brokerClient.start().forEach(ActorFuture::join);
+    brokerClient.getTopologyManager().addTopologyListener(jobStreamClient);
 
     // gateway is purposefully not started to allow configuration changes
   }
 
   @AfterEach
   void afterEach() {
-    CloseHelper.quietCloseAll(gateway::stop, () -> cluster.stop().join(), scheduler);
+    CloseHelper.quietCloseAll(
+        gateway, brokerClient, jobStreamClient, scheduler, () -> cluster.stop().join());
   }
 
   @Test

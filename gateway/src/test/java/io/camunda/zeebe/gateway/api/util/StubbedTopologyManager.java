@@ -13,8 +13,6 @@ import io.camunda.zeebe.gateway.impl.broker.cluster.BrokerClusterState;
 import io.camunda.zeebe.gateway.impl.broker.cluster.BrokerClusterStateImpl;
 import io.camunda.zeebe.gateway.impl.broker.cluster.BrokerTopologyListener;
 import io.camunda.zeebe.gateway.impl.broker.cluster.BrokerTopologyManager;
-import java.util.HashSet;
-import java.util.Set;
 
 public final class StubbedTopologyManager implements BrokerTopologyManager {
 

@@ -11,16 +11,20 @@ import io.atomix.cluster.AtomixCluster;
 import io.camunda.zeebe.gateway.impl.stream.JobStreamClient;
 import io.camunda.zeebe.gateway.impl.stream.JobStreamClientImpl;
 import io.camunda.zeebe.scheduler.ActorScheduler;
+import io.camunda.zeebe.util.VisibleForTesting;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.stereotype.Component;
 
+@VisibleForTesting
 @Component
-final class JobStreamComponent {
+public final class JobStreamComponent {
 
+  @VisibleForTesting
   @Bean(destroyMethod = "close")
   @Autowired
-  JobStreamClient jobStreamClient(final ActorScheduler scheduler, final AtomixCluster cluster) {
+  public JobStreamClient jobStreamClient(
+      final ActorScheduler scheduler, final AtomixCluster cluster) {
     return new JobStreamClientImpl(scheduler, cluster.getCommunicationService());
   }
 }

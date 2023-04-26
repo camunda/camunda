@@ -16,10 +16,14 @@ import io.camunda.zeebe.client.api.ZeebeFuture;
 import io.camunda.zeebe.client.api.command.ClientStatusException;
 import io.camunda.zeebe.client.api.command.FinalCommandStep;
 import io.camunda.zeebe.gateway.Gateway;
+import io.camunda.zeebe.gateway.impl.broker.BrokerClient;
 import io.camunda.zeebe.gateway.impl.broker.BrokerClientImpl;
 import io.camunda.zeebe.gateway.impl.configuration.GatewayCfg;
 import io.camunda.zeebe.gateway.impl.configuration.NetworkCfg;
+import io.camunda.zeebe.gateway.impl.stream.JobStreamClient;
+import io.camunda.zeebe.gateway.impl.stream.JobStreamClientImpl;
 import io.camunda.zeebe.scheduler.ActorScheduler;
+import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.test.util.asserts.grpc.ClientStatusExceptionAssert;
 import io.camunda.zeebe.test.util.socket.SocketUtil;
 import io.grpc.Status.Code;
@@ -29,6 +33,7 @@ import java.net.InetAddress;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
+import org.agrona.CloseHelper;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.parallel.Execution;
@@ -42,6 +47,8 @@ class UnavailableBrokersTest {
   static AtomixCluster cluster;
   static ActorScheduler actorScheduler;
   static ZeebeClient client;
+  static BrokerClient brokerClient;
+  static JobStreamClient jobStreamClient;
 
   @BeforeAll
   static void setUp() throws IOException {
@@ -55,16 +62,22 @@ class UnavailableBrokersTest {
     actorScheduler = ActorScheduler.newActorScheduler().build();
     actorScheduler.start();
 
-    final var brokerClient =
+    brokerClient =
         new BrokerClientImpl(
             config.getCluster().getRequestTimeout(),
             cluster.getMessagingService(),
             cluster.getMembershipService(),
             cluster.getEventService(),
             actorScheduler);
-    brokerClient.start();
+    jobStreamClient = new JobStreamClientImpl(actorScheduler, cluster.getCommunicationService());
+    jobStreamClient.start();
 
-    gateway = new Gateway(config, brokerClient, actorScheduler);
+    // before we can add the job stream client as a topology listener, we need to wait for the
+    // topology to be set up, otherwise the callback may be lost
+    brokerClient.start().forEach(ActorFuture::join);
+    brokerClient.getTopologyManager().addTopologyListener(jobStreamClient);
+
+    gateway = new Gateway(config, brokerClient, actorScheduler, jobStreamClient.streamer());
     gateway.start().join();
 
     final String gatewayAddress = NetUtil.toSocketAddressString(networkCfg.toSocketAddress());
@@ -73,10 +86,13 @@ class UnavailableBrokersTest {
 
   @AfterAll
   static void tearDown() {
-    client.close();
-    gateway.stop();
-    actorScheduler.stop();
-    cluster.stop();
+    CloseHelper.closeAll(
+        client,
+        gateway,
+        brokerClient,
+        jobStreamClient,
+        actorScheduler,
+        () -> cluster.stop().join());
   }
 
   @ParameterizedTest(name = "{0}")

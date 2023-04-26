@@ -12,16 +12,21 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import io.atomix.cluster.AtomixCluster;
 import io.atomix.utils.net.Address;
 import io.camunda.zeebe.gateway.Gateway;
+import io.camunda.zeebe.gateway.impl.broker.BrokerClient;
 import io.camunda.zeebe.gateway.impl.broker.BrokerClientImpl;
 import io.camunda.zeebe.gateway.impl.configuration.GatewayCfg;
 import io.camunda.zeebe.gateway.impl.configuration.NetworkCfg;
 import io.camunda.zeebe.gateway.impl.configuration.SecurityCfg;
+import io.camunda.zeebe.gateway.impl.stream.JobStreamClient;
+import io.camunda.zeebe.gateway.impl.stream.JobStreamClientImpl;
 import io.camunda.zeebe.scheduler.ActorScheduler;
+import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.test.util.asserts.SslAssert;
 import io.camunda.zeebe.test.util.socket.SocketUtil;
 import io.netty.handler.ssl.util.SelfSignedCertificate;
 import java.io.File;
 import java.io.IOException;
+import org.agrona.CloseHelper;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -29,6 +34,10 @@ import org.junit.jupiter.api.Test;
 final class SecurityTest {
   private SelfSignedCertificate certificate;
   private Gateway gateway;
+  private ActorScheduler actorScheduler;
+  private AtomixCluster atomix;
+  private BrokerClient brokerClient;
+  private JobStreamClient jobStreamClient;
 
   @BeforeEach
   void beforeEach() throws Exception {
@@ -37,10 +46,8 @@ final class SecurityTest {
 
   @AfterEach
   public void tearDown() {
-    if (gateway != null) {
-      gateway.stop();
-      gateway = null;
-    }
+    CloseHelper.quietCloseAll(
+        gateway, brokerClient, jobStreamClient, actorScheduler, () -> atomix.stop().join());
   }
 
   @Test
@@ -140,20 +147,26 @@ final class SecurityTest {
 
   private Gateway buildGateway(final GatewayCfg gatewayCfg) {
     final var clusterAddress = SocketUtil.getNextAddress();
-    final var atomix =
+    atomix =
         AtomixCluster.builder()
             .withAddress(Address.from(clusterAddress.getHostName(), clusterAddress.getPort()))
             .build();
-    final var actorScheduler = ActorScheduler.newActorScheduler().build();
+    actorScheduler = ActorScheduler.newActorScheduler().build();
     actorScheduler.start();
-    final var brokerClient =
+    brokerClient =
         new BrokerClientImpl(
             gatewayCfg.getCluster().getRequestTimeout(),
             atomix.getMessagingService(),
             atomix.getMembershipService(),
             atomix.getEventService(),
             actorScheduler);
-    brokerClient.start();
-    return new Gateway(gatewayCfg, brokerClient, actorScheduler);
+    jobStreamClient = new JobStreamClientImpl(actorScheduler, atomix.getCommunicationService());
+    jobStreamClient.start();
+
+    // before we can add the job stream client as a topology listener, we need to wait for the
+    // topology to be set up, otherwise the callback may be lost
+    brokerClient.start().forEach(ActorFuture::join);
+    brokerClient.getTopologyManager().addTopologyListener(jobStreamClient);
+    return new Gateway(gatewayCfg, brokerClient, actorScheduler, jobStreamClient.streamer());
   }
 }

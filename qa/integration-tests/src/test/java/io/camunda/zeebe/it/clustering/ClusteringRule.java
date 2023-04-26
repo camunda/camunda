@@ -47,6 +47,7 @@ import io.camunda.zeebe.gateway.ActorSchedulerComponent;
 import io.camunda.zeebe.gateway.BrokerClientComponent;
 import io.camunda.zeebe.gateway.Gateway;
 import io.camunda.zeebe.gateway.GatewayClusterConfiguration;
+import io.camunda.zeebe.gateway.JobStreamComponent;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerCreateProcessInstanceRequest;
 import io.camunda.zeebe.gateway.impl.broker.response.BrokerResponse;
 import io.camunda.zeebe.gateway.impl.configuration.GatewayCfg;
@@ -439,12 +440,21 @@ public class ClusteringRule extends ExternalResource {
 
     final var brokerClient =
         new BrokerClientComponent(gatewayCfg, atomixCluster, actorScheduler).brokerClient();
-    brokerClient.start();
+    final var jobStreamClient =
+        new JobStreamComponent().jobStreamClient(actorScheduler, atomixCluster);
+    jobStreamClient.start().join();
 
-    final Gateway gateway = new Gateway(gatewayCfg, brokerClient, actorScheduler);
+    // before we can add the job stream client as a topology listener, we need to wait for the
+    // topology to be set up, otherwise the callback may be lost
+    brokerClient.start().forEach(ActorFuture::join);
+    brokerClient.getTopologyManager().addTopologyListener(jobStreamClient);
+
+    final Gateway gateway =
+        new Gateway(gatewayCfg, brokerClient, actorScheduler, jobStreamClient.streamer());
     closeables.add(actorScheduler);
-    closeables.add(gateway::stop);
+    closeables.add(gateway);
     closeables.add(() -> atomixCluster.stop().join());
+    closeables.add(jobStreamClient);
     closeables.add(brokerClient);
     return gateway;
   }
