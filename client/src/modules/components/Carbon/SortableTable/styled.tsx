@@ -10,6 +10,7 @@ import {
   TableContainer as BaseTableContainer,
   TableCell as BaseTableCell,
   TableHead as BaseTableHead,
+  DataTableSkeleton as BaseDataTableSkeleton,
 } from '@carbon/react';
 
 const Container = styled.div`
@@ -18,9 +19,7 @@ const Container = styled.div`
   flex: 1 0 0;
 `;
 
-const TableContainer = styled(BaseTableContainer)`
-  padding-top: 0;
-`;
+const TableContainer = styled(BaseTableContainer)``;
 
 const TableCell = styled(BaseTableCell)`
   white-space: nowrap;
@@ -38,4 +37,17 @@ const EmptyMessageContainer = styled.div`
   background-color: var(--cds-layer-01);
 `;
 
-export {Container, TableContainer, TableCell, TableHead, EmptyMessageContainer};
+const DataTableSkeleton = styled(BaseDataTableSkeleton)`
+  tr {
+    height: 2rem;
+  }
+`;
+
+export {
+  Container,
+  TableContainer,
+  TableCell,
+  TableHead,
+  EmptyMessageContainer,
+  DataTableSkeleton,
+};

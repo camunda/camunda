@@ -12,6 +12,7 @@ import {
   TableCell,
   TableHead,
   EmptyMessageContainer,
+  DataTableSkeleton,
 } from './styled';
 
 import {
@@ -24,6 +25,8 @@ import {
 import {ColumnHeader} from './ColumnHeader';
 import {InfiniteScroller} from 'modules/components/InfiniteScroller';
 import {EmptyMessage} from '../EmptyMessage';
+
+const NUMBER_OF_SKELETON_ROWS = 10;
 
 type HeaderColumn = {
   isDefault?: boolean;
@@ -67,6 +70,20 @@ const SortableTable: React.FC<Props> = ({
     );
   }
 
+  if (state === 'skeleton') {
+    return (
+      <DataTableSkeleton
+        columnCount={headerColumns.length}
+        rowCount={NUMBER_OF_SKELETON_ROWS}
+        showHeader={false}
+        showToolbar={false}
+        headers={headerColumns.map(({header}) => ({
+          header: header.toString(),
+        }))}
+      />
+    );
+  }
+
   return (
     <Container ref={scrollableContentRef}>
       <DataTable
@@ -100,7 +117,7 @@ const SortableTable: React.FC<Props> = ({
                   })}
                 </TableRow>
               </TableHead>
-              {state === 'content' && (
+              {['content', 'loading'].includes(state) && (
                 <InfiniteScroller
                   onVerticalScrollStartReach={onVerticalScrollStartReach}
                   onVerticalScrollEndReach={onVerticalScrollEndReach}

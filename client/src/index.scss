@@ -106,3 +106,7 @@ p {
 .cds--g100 {
   @include theme.theme(themes.$g100);
 }
+
+.cds--data-table-container {
+  padding-top: 0;
+}
