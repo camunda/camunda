@@ -36,7 +36,7 @@ import org.junit.jupiter.api.Test;
 /** Tests end-to-end stream management from client to server */
 class StreamIntegrationTest {
 
-  private ClientStreamService<TestSerializableData> clientStreamer;
+  private ClientStreamServiceImpl<TestSerializableData> clientStreamer;
   private RemoteStreamer<TestSerializableData, TestSerializableData> remoteStreamer;
 
   private final DirectBuffer streamType = BufferUtil.wrapString("foo");
@@ -65,10 +65,10 @@ class StreamIntegrationTest {
     clientStreamer = startClientStreamer(clientService, serverId);
   }
 
-  private ClientStreamService<TestSerializableData> startClientStreamer(
+  private ClientStreamServiceImpl<TestSerializableData> startClientStreamer(
       final TestCommunicationService clientService, final MemberId serverId) {
-    final ClientStreamService<TestSerializableData> clientStreamService =
-        new ClientStreamService<>(clientService);
+    final ClientStreamServiceImpl<TestSerializableData> clientStreamService =
+        new ClientStreamServiceImpl<>(clientService);
     actorScheduler.submitActor(clientStreamService).join();
     closeables.add(clientStreamService);
 

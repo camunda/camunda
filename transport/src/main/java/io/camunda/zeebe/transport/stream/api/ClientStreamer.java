@@ -8,6 +8,7 @@
 package io.camunda.zeebe.transport.stream.api;
 
 import io.camunda.zeebe.scheduler.future.ActorFuture;
+import io.camunda.zeebe.util.CloseableSilently;
 import io.camunda.zeebe.util.buffer.BufferWriter;
 import org.agrona.DirectBuffer;
 
@@ -17,7 +18,7 @@ import org.agrona.DirectBuffer;
  * <p>When a client stream is added, it opens a stream to all servers. When a server pushes data to
  * this stream, the client receives it via {@link ClientStreamConsumer#push(DirectBuffer)}
  */
-public interface ClientStreamer<M extends BufferWriter> {
+public interface ClientStreamer<M extends BufferWriter> extends CloseableSilently {
 
   /**
    * Registers a client and opens a stream for the given streamType and associated Metadata with all
