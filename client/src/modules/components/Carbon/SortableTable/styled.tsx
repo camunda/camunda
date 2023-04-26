@@ -5,7 +5,7 @@
  * except in compliance with the proprietary license.
  */
 
-import styled from 'styled-components';
+import styled, {css} from 'styled-components';
 import {
   TableContainer as BaseTableContainer,
   TableCell as BaseTableCell,
@@ -13,13 +13,27 @@ import {
   DataTableSkeleton as BaseDataTableSkeleton,
 } from '@carbon/react';
 
-const Container = styled.div`
-  height: 100%;
-  overflow-y: auto;
-  flex: 1 0 0;
+type ContainerProps = {
+  $isScrollable: boolean;
+};
+
+const Container = styled.div<ContainerProps>`
+  ${({$isScrollable}) => {
+    return css`
+      height: 100%;
+      overflow-y: ${$isScrollable ? 'auto' : 'hidden'};
+      flex: 1 0 0;
+
+      .cds--loading-overlay {
+        position: absolute;
+      }
+    `;
+  }}
 `;
 
-const TableContainer = styled(BaseTableContainer)``;
+const TableContainer = styled(BaseTableContainer)`
+  height: 100%;
+`;
 
 const TableCell = styled(BaseTableCell)`
   white-space: nowrap;

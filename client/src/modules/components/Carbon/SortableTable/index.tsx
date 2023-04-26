@@ -21,6 +21,7 @@ import {
   TableRow,
   DataTableHeader,
   DataTableRow,
+  Loading,
 } from '@carbon/react';
 import {ColumnHeader} from './ColumnHeader';
 import {InfiniteScroller} from 'modules/components/InfiniteScroller';
@@ -85,7 +86,7 @@ const SortableTable: React.FC<Props> = ({
   }
 
   return (
-    <Container ref={scrollableContentRef}>
+    <Container ref={scrollableContentRef} $isScrollable={state === 'content'}>
       <DataTable
         useZebraStyles
         rows={rows}
@@ -99,6 +100,7 @@ const SortableTable: React.FC<Props> = ({
           getTableProps,
         }) => (
           <TableContainer>
+            {state === 'loading' && <Loading data-testid="data-table-loader" />}
             <Table {...getTableProps()} isSortable>
               <TableHead>
                 <TableRow>
