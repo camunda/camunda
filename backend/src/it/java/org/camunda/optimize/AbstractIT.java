@@ -45,7 +45,12 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.annotation.Configuration;
 
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 import static org.camunda.optimize.jetty.OptimizeResourceConstants.ACTUATOR_PORT_PROPERTY_KEY;
 import static org.camunda.optimize.service.util.configuration.EnvironmentPropertiesConstants.CONTEXT_PATH;
@@ -118,11 +123,11 @@ public abstract class AbstractIT {
     new OutlierDistributionClient(engineIntegrationExtension);
 
   public void startAndUseNewOptimizeInstance() {
-    final String httpsPort = getPortArg(HTTPS_PORT_KEY);
-    final String httpPort = getPortArg(HTTP_PORT_KEY);
-    final String actuatorPort = getArg(ACTUATOR_PORT_PROPERTY_KEY, String.valueOf(OptimizeResourceConstants.ACTUATOR_PORT + 100));
-    final String contextPath = embeddedOptimizeExtension.getConfigurationService().getContextPath()
-      .map(contextPathFromConfig -> getArg(CONTEXT_PATH, contextPathFromConfig)).orElse("");
+    startAndUseNewOptimizeInstance(new HashMap<>());
+  }
+
+  public void startAndUseNewOptimizeInstance(Map<String, String> argMap) {
+    String[] arguments = prepareArgs(argMap);
 
     // run after-test cleanups with the old context
     embeddedOptimizeExtension.afterTest();
@@ -131,17 +136,29 @@ public abstract class AbstractIT {
       ((ConfigurableApplicationContext) embeddedOptimizeExtension.getApplicationContext()).close();
     }
 
-    final ConfigurableApplicationContext context = SpringApplication.run(
-      Main.class,
-      httpsPort,
-      httpPort,
-      actuatorPort,
-      contextPath
-    );
+    final ConfigurableApplicationContext context = SpringApplication.run(Main.class, arguments);
+
     embeddedOptimizeExtension.setApplicationContext(context);
     embeddedOptimizeExtension.setCloseContextAfterTest(true);
     embeddedOptimizeExtension.setResetImportOnStart(false);
     embeddedOptimizeExtension.setupOptimize();
+  }
+
+  private String[] prepareArgs(final Map<String, String> argMap) {
+    final String httpsPort = getPortArg(HTTPS_PORT_KEY);
+    final String httpPort = getPortArg(HTTP_PORT_KEY);
+    final String actuatorPort = getArg(ACTUATOR_PORT_PROPERTY_KEY, String.valueOf(OptimizeResourceConstants.ACTUATOR_PORT + 100));
+    final String contextPath = embeddedOptimizeExtension.getConfigurationService().getContextPath()
+      .map(contextPathFromConfig -> getArg(CONTEXT_PATH, contextPathFromConfig)).orElse("");
+
+    final List<String> argList = argMap.entrySet()
+      .stream()
+      .map(e -> getArg(e.getKey(), e.getValue()))
+      .collect(Collectors.toList());
+
+    Collections.addAll(argList, httpsPort, httpPort, actuatorPort, contextPath);
+
+    return argList.toArray(String[]::new);
   }
 
   private String getArg(String key, String value) {
