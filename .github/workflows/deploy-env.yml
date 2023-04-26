@@ -144,10 +144,12 @@ jobs:
             --helm-set optimize.image.tag=${docker_tag} \
             --helm-set cambpm.image.tag=${cambpm_version} \
             --helm-set elasticsearch.image.tag=${es_version} \
-            --helm-set global.labels.app=${app_name} \
-            --name ${app_name} \
+            --helm-set global.labels.app=optimize-${app_name} \
+            --helm-set git.branch=master
+            --helm-set env=persistent \
+            --name optimize-${app_name} \
+            --revision ${revision}
             --project optimize-previews \
-            --revision master --helm-set git.branch=master --helm-set env=persistent \
             --upsert" >> $GITHUB_ENV
       env:
         revision: ${{ github.event.inputs.chart_ref }}
