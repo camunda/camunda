@@ -32,4 +32,10 @@ public interface TypedCommandWriter {
    *     appended command doesn't fit into the RecordBatch
    */
   void appendFollowUpCommand(long key, Intent intent, RecordValue value);
+
+  /**
+   * @param commandLength the length of the command that will be written
+   * @return true if a command of the given length can be written
+   */
+  boolean canWriteCommandOfLength(final int commandLength);
 }
