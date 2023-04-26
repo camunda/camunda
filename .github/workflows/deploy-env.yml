@@ -156,7 +156,7 @@ jobs:
         es_version: ${{ github.event.inputs.es_version }}
         cambpm_version: ${{ github.event.inputs.cambpm_version }}
         docker_tag: ${{ github.sha }}
-        app_name: optimize-${{ github.event.inputs.app_name == 'master' && 'stage' || github.event.inputs.app_name }}
+        app_name: ${{ github.event.inputs.app_name == 'master' && 'stage' || github.event.inputs.app_name }}
     #########################################################################
     # Create a Persistent environment
     - name: Deploy Persistent Environment
@@ -164,6 +164,6 @@ jobs:
       with:
         revision: 'master'
         argocd_token: ${{ steps.secrets.outputs.ARGOCD_TOKEN }}
-        app_name: optimize-${{ github.event.inputs.app_name == 'master' && 'stage' || github.event.inputs.app_name }}
+        app_name: ${{ github.event.inputs.app_name == 'master' && 'stage' || github.event.inputs.app_name }}
         app_url: https://${{ github.event.inputs.app_name == 'master' && 'stage' || github.event.inputs.app_name }}.optimize.camunda.cloud
         argocd_arguments: ${{ env.persistent_arguments }}
