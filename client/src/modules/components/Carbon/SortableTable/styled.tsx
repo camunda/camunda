@@ -30,4 +30,12 @@ const TableHead = styled(BaseTableHead)`
   white-space: nowrap;
 `;
 
-export {Container, TableContainer, TableCell, TableHead};
+const EmptyMessageContainer = styled.div`
+  display: flex;
+  justify-content: center;
+  height: 100%;
+  align-items: center;
+  background-color: var(--cds-layer-01);
+`;
+
+export {Container, TableContainer, TableCell, TableHead, EmptyMessageContainer};

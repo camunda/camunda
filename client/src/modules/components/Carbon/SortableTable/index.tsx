@@ -6,7 +6,13 @@
  */
 
 import React, {useRef} from 'react';
-import {Container, TableContainer, TableCell, TableHead} from './styled';
+import {
+  Container,
+  TableContainer,
+  TableCell,
+  TableHead,
+  EmptyMessageContainer,
+} from './styled';
 
 import {
   DataTable,
@@ -17,6 +23,7 @@ import {
 } from '@carbon/react';
 import {ColumnHeader} from './ColumnHeader';
 import {InfiniteScroller} from 'modules/components/InfiniteScroller';
+import {EmptyMessage} from '../EmptyMessage';
 
 type HeaderColumn = {
   isDefault?: boolean;
@@ -24,8 +31,10 @@ type HeaderColumn = {
 } & DataTableHeader;
 
 type Props = {
+  state: 'skeleton' | 'loading' | 'error' | 'empty' | 'content';
   headerColumns: HeaderColumn[];
   rows: DataTableRow[];
+  emptyMessage: {message: string; additionalInfo?: string};
   onSort?: React.ComponentProps<typeof ColumnHeader>['onSort'];
 } & Pick<
   React.ComponentProps<typeof InfiniteScroller>,
@@ -33,12 +42,30 @@ type Props = {
 >;
 
 const SortableTable: React.FC<Props> = ({
+  state,
   headerColumns,
   rows,
+  emptyMessage,
   onVerticalScrollStartReach,
   onVerticalScrollEndReach,
 }) => {
   let scrollableContentRef = useRef<HTMLDivElement | null>(null);
+
+  if (['empty', 'error'].includes(state)) {
+    return (
+      <EmptyMessageContainer>
+        <>
+          {state === 'empty' && <EmptyMessage {...emptyMessage} />}
+          {state === 'error' && (
+            <EmptyMessage
+              message="Data could not be fetched"
+              additionalInfo="Refresh the page to try again"
+            />
+          )}
+        </>
+      </EmptyMessageContainer>
+    );
+  }
 
   return (
     <Container ref={scrollableContentRef}>
@@ -63,7 +90,7 @@ const SortableTable: React.FC<Props> = ({
                       <ColumnHeader
                         {...getHeaderProps({
                           header,
-                          isSortable: true,
+                          isSortable: state === 'content',
                         })}
                         label={header.header}
                         sortKey={header.sortKey ?? header.key}
@@ -73,23 +100,25 @@ const SortableTable: React.FC<Props> = ({
                   })}
                 </TableRow>
               </TableHead>
-              <InfiniteScroller
-                onVerticalScrollStartReach={onVerticalScrollStartReach}
-                onVerticalScrollEndReach={onVerticalScrollEndReach}
-                scrollableContainerRef={scrollableContentRef}
-              >
-                <tbody aria-live="polite">
-                  {rows.map((row) => {
-                    return (
-                      <TableRow {...getRowProps({row})}>
-                        {row.cells.map((cell) => (
-                          <TableCell key={cell.id}>{cell.value}</TableCell>
-                        ))}
-                      </TableRow>
-                    );
-                  })}
-                </tbody>
-              </InfiniteScroller>
+              {state === 'content' && (
+                <InfiniteScroller
+                  onVerticalScrollStartReach={onVerticalScrollStartReach}
+                  onVerticalScrollEndReach={onVerticalScrollEndReach}
+                  scrollableContainerRef={scrollableContentRef}
+                >
+                  <tbody aria-live="polite">
+                    {rows.map((row) => {
+                      return (
+                        <TableRow {...getRowProps({row})}>
+                          {row.cells.map((cell) => (
+                            <TableCell key={cell.id}>{cell.value}</TableCell>
+                          ))}
+                        </TableRow>
+                      );
+                    })}
+                  </tbody>
+                </InfiniteScroller>
+              )}
             </Table>
           </TableContainer>
         )}

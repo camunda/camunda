@@ -18,16 +18,24 @@ import {observer} from 'mobx-react';
 import {CarbonPaths} from 'modules/carbonRoutes';
 import {tracking} from 'modules/tracking';
 import {Link} from 'modules/components/Carbon/Link';
+import {useFilters} from 'modules/hooks/useFilters';
 
 const ROW_HEIGHT = 34;
 
 const InstancesTable: React.FC = observer(() => {
   const {
-    state: {filteredDecisionInstancesCount, latestFetch, decisionInstances},
+    state: {
+      status,
+      filteredDecisionInstancesCount,
+      latestFetch,
+      decisionInstances,
+    },
+    areDecisionInstancesEmpty,
     hasLatestDecisionInstances,
   } = decisionInstancesStore;
 
   const location = useLocation();
+  const filters = useFilters();
 
   const {
     state: {status: groupedDecisionsStatus, decisions},
@@ -49,6 +57,32 @@ const InstancesTable: React.FC = observer(() => {
     }
   }, [location.search, groupedDecisionsStatus, decisions]);
 
+  const getTableState = () => {
+    if (['initial', 'first-fetch'].includes(status)) {
+      return 'skeleton';
+    }
+    if (status === 'fetching') {
+      return 'loading';
+    }
+    if (status === 'error') {
+      return 'error';
+    }
+    if (areDecisionInstancesEmpty) {
+      return 'empty';
+    }
+
+    return 'content';
+  };
+
+  const getEmptyListMessage = () => {
+    return {
+      message: 'There are no Instances matching this filter set',
+      additionalInfo: filters.areDecisionInstanceStatesApplied()
+        ? undefined
+        : 'To see some results, select at least one Instance state',
+    };
+  };
+
   return (
     <Container>
       <PanelHeader
@@ -56,6 +90,8 @@ const InstancesTable: React.FC = observer(() => {
         count={filteredDecisionInstancesCount}
       />
       <SortableTable
+        state={getTableState()}
+        emptyMessage={getEmptyListMessage()}
         onVerticalScrollStartReach={async (scrollDown) => {
           if (decisionInstancesStore.shouldFetchPreviousInstances() === false) {
             return;
