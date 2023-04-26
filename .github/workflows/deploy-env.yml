@@ -145,10 +145,10 @@ jobs:
             --helm-set cambpm.image.tag=${cambpm_version} \
             --helm-set elasticsearch.image.tag=${es_version} \
             --helm-set global.labels.app=optimize-${app_name} \
-            --helm-set git.branch=master
+            --helm-set git.branch=master \
             --helm-set env=persistent \
             --name optimize-${app_name} \
-            --revision ${revision}
+            --revision ${revision} \
             --project optimize-previews \
             --upsert" >> $GITHUB_ENV
       env:
