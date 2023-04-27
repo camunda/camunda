@@ -11,6 +11,7 @@ import {createRoot} from 'react-dom/client';
 import {App} from './App';
 import {tracking} from 'modules/tracking';
 import './index.scss';
+import {StrictMode} from 'react';
 
 function mock(): Promise<void> {
   return new Promise((resolve) => {
@@ -33,6 +34,9 @@ const container = document.querySelector('#root');
 const root = createRoot(container!);
 
 Promise.all([tracking.loadAnalyticsToWillingUsers(), mock()]).then(() => {
-  // Add StrictMode again when this is fixed https://github.com/apollographql/apollo-client/issues/9819
-  root.render(<App />);
+  root.render(
+    <StrictMode>
+      <App />
+    </StrictMode>,
+  );
 });
