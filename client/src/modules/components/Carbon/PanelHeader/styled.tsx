@@ -6,15 +6,14 @@
  */
 
 import styled from 'styled-components';
-import {layer01, borderSubtle01, spacing04, spacing09} from '@carbon/elements';
 
 const Header = styled.header`
-  background-color: ${layer01};
-  border-bottom: solid 1px ${borderSubtle01};
-  padding: ${spacing04};
+  background-color: var(--cds-layer-01);
+  border-bottom: solid 1px var(--cds-border-subtle-01);
+  padding: var(--cds-spacing-04);
   display: flex;
   align-items: center;
-  min-height: ${spacing09};
+  min-height: var(--cds-spacing-09);
 `;
 
 export {Header};

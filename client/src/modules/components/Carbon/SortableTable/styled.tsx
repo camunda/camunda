@@ -12,7 +12,6 @@ import {
   TableHead as BaseTableHead,
   DataTableSkeleton as BaseDataTableSkeleton,
 } from '@carbon/react';
-import {layer01} from '@carbon/elements';
 
 type ContainerProps = {
   $isScrollable: boolean;
@@ -22,7 +21,7 @@ const Container = styled.div<ContainerProps>`
   ${({$isScrollable}) => {
     return css`
       height: 100%;
-      background-color: ${layer01};
+      background-color: var(--cds-layer-01);
       overflow-y: ${$isScrollable ? 'auto' : 'hidden'};
       flex: 1 0 0;
 
@@ -53,7 +52,7 @@ const EmptyMessageContainer = styled.div`
   justify-content: center;
   height: 100%;
   align-items: center;
-  background-color: ${layer01};
+  background-color: var(--cds-layer-01);
 `;
 
 const DataTableSkeleton = styled(BaseDataTableSkeleton)`
