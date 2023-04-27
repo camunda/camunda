@@ -44,6 +44,20 @@ declare module '@carbon/react' {
     props: StackProps<C>
   ) => React.ReactElement | null;
 
+  type LayerProps<C extends React.ElementType> =
+    PolymorphicComponentPropWithRef<
+      C,
+      {
+        children?: React.ReactNode;
+        className?: string;
+        level?: 0 | 1 | 2;
+      }
+    >;
+
+  export const Layer: <C extends React.ElementType = 'div'>(
+    props: LayerProps<C>
+  ) => React.ReactElement | null;
+
   export const IconButton: React.FunctionComponent<
     {
       align?:

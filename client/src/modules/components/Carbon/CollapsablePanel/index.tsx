@@ -15,6 +15,7 @@ import {
   CollapseIcon,
   IconButton,
 } from './styled';
+import {Layer} from '@carbon/react';
 
 type Props = {
   label: string;
@@ -77,7 +78,7 @@ const CollapsablePanel: React.FC<Props> = ({
               <CollapseIcon size={20} $panelPosition={panelPosition} />
             </IconButton>
           </Header>
-          {children}
+          <Layer level={1}>{children}</Layer>
         </Panel>
       )}
     </Collapsable>

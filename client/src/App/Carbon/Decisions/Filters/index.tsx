@@ -5,10 +5,57 @@
  * except in compliance with the proprietary license.
  */
 
-import {CollapsablePanel} from './CollapsablePanel';
+import {
+  DecisionInstanceFilters,
+  getDecisionInstanceFilters,
+  updateDecisionsFiltersSearchString,
+} from 'modules/utils/filter';
+import {Form} from 'react-final-form';
+import {useLocation, useNavigate, Location} from 'react-router-dom';
+import {Container} from './styled';
 
-const Filters: React.FC = () => {
-  return <CollapsablePanel label="Filters">decisions-filters</CollapsablePanel>;
+import {observer} from 'mobx-react';
+import {AutoSubmit} from 'modules/components/AutoSubmit';
+import {DecisionsFormGroup} from './DecisionsFormGroup';
+import {CollapsablePanel} from './CollapsablePanel';
+import {Stack} from '@carbon/react';
+
+type LocationType = Omit<Location, 'state'> & {
+  state: {hideOptionalFilters?: boolean};
 };
+
+const Filters: React.FC = observer(() => {
+  const location = useLocation() as LocationType;
+  const navigate = useNavigate();
+
+  return (
+    <CollapsablePanel label="Filters">
+      <Container>
+        <Form<DecisionInstanceFilters>
+          onSubmit={(values) => {
+            navigate({
+              search: updateDecisionsFiltersSearchString(
+                location.search,
+                values
+              ),
+            });
+          }}
+          initialValues={getDecisionInstanceFilters(location.search)}
+        >
+          {({handleSubmit}) => (
+            <form onSubmit={handleSubmit}>
+              <AutoSubmit
+                fieldsToSkipTimeout={['name', 'version', 'evaluated', 'failed']}
+              />
+              <Stack gap={5}>
+                <DecisionsFormGroup />
+              </Stack>
+            </form>
+          )}
+        </Form>
+      </Container>
+    </CollapsablePanel>
+  );
+});
 
 export {Filters};
