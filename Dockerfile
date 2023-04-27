@@ -35,7 +35,7 @@ FROM ${DIST} as dist
 
 # Building application image
 # hadolint ignore=DL3006
-FROM eclipse-temurin:17-jre-focal@sha256:${BASE_SHA} as app
+FROM eclipse-temurin:17.0.7_7-jre-focal@sha256:${BASE_SHA} as app
 
 # leave unset to use the default value at the top of the file
 ARG BASE_SHA
