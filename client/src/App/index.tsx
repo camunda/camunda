@@ -18,6 +18,7 @@ import {Processes} from './Processes';
 import {ProcessInstance} from './ProcessInstance';
 import {Decisions} from './Decisions';
 import {Decisions as CarbonDecisions} from './Carbon/Decisions';
+import {Processes as CarbonProcesses} from './Carbon/Processes';
 import {DecisionInstance} from './DecisionInstance';
 import GlobalStyles from './GlobalStyles';
 import {NetworkStatusWatcher} from './NetworkStatusWatcher';
@@ -35,7 +36,6 @@ import {currentTheme} from 'modules/stores/currentTheme';
 import {createBrowserHistory} from 'history';
 import {ThemeSwitcher} from 'modules/components/ThemeSwitcher';
 import loadable from '@loadable/component';
-import {InstancesList} from './Carbon/Layout/InstancesList';
 
 const CarbonLayout = loadable(() => import('./Carbon/Layout/index'), {
   resolveComponent: (components) => components.Layout,
@@ -97,13 +97,7 @@ const App: React.FC = () => {
               <Route index element={<div>Carbon - Dashboard</div>} />
               <Route
                 path={CarbonPaths.processes()}
-                element={
-                  <InstancesList
-                    filters={<div>processes - filters</div>}
-                    diagram={<section>processes - diagram</section>}
-                    instances={<section>processes - instances</section>}
-                  />
-                }
+                element={<CarbonProcesses />}
               />
               <Route
                 path={CarbonPaths.processInstance()}
