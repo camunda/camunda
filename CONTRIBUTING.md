@@ -164,8 +164,10 @@ Before opening your first pull request, please have a look at this [guide](https
       manually rebase `main` into the issue branch and retrigger a merge
       attempt.
    3. If there are CI errors the author of the pull request has to check if
-      they are caused by its changes and address them. If they are flaky tests
-      a merge can be retried with a comment with the content `bors retry`.
+      they are caused by its changes and address them. If they are flaky tests, please
+      have a look at this [guide](docs/ci.md#determine-flakiness) on how to handle them.
+      Once the CI errors are resolved, a merge can be retried with a comment with
+      the content `bors retry`.
 
 ## Reviewing a pull request
 
