@@ -278,7 +278,7 @@ import:
         # Please refer to the technical guide on how to configure the heap size.
         maxEntryLimit: 100000
   # Controls whether customer onboarding data should be loaded to optimize (only for C8)
-  customer-onboarding: false
+  customer-onboarding: ${CAMUNDA_OPTIMIZE_IMPORT_CUSTOMER_ONBOARDING:false}
   # Some data can no longer be imported to a given document if its number of nested documents has reached the configured
   # limit. Enable this setting to skip this data during import if the nested document limit has been reached.
   skipDataAfterNestedDocLimitReached: ${CAMUNDA_OPTIMIZE_IMPORT_DATA_SKIP_DATA_AFTER_NESTED_DOC_LIMIT_REACHED:false}
