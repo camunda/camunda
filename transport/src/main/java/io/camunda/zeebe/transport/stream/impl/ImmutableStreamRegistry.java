@@ -44,6 +44,11 @@ interface ImmutableStreamRegistry<M> {
    */
   record StreamConsumer<M>(StreamId id, M properties, UnsafeBuffer streamType) {}
 
+  /**
+   * Keep tracks of {@link StreamConsumer}s which are logically similar.
+   *
+   * @param <M> type of the properties
+   */
   class AggregatedRemoteStream<M> {
     private final LogicalId<M> logicalId;
     private final List<StreamConsumer<M>> streamConsumers = new ArrayList<>();
