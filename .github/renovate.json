@@ -5,8 +5,7 @@
   ],
   "baseBranches": [
     "main",
-    "stable/8.0",
-    "stable/8.1"
+    "/^stable\\/8\\..*/"
   ],
   "dependencyDashboard": false,
   "enabledManagers": [
@@ -15,7 +14,7 @@
   "packageRules": [
     {
       "matchBaseBranches": [
-        "/^stable\/.*"
+        "/^stable\\/.*/"
       ],
       "matchUpdateTypes": [
         "major",
