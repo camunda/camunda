@@ -14,12 +14,13 @@
   ],
   "packageRules": [
     {
-      "matchBaseBranches": [
-        "/^stable\\/.*/"
+      "matchManagers": [
+        "dockerfile"
       ],
       "matchUpdateTypes": [
         "major",
-        "minor"
+        "minor",
+        "patch"
       ],
       "enabled": false
     }
