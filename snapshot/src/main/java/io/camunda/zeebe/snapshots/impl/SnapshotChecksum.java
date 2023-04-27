@@ -9,9 +9,10 @@ package io.camunda.zeebe.snapshots.impl;
 
 import java.io.IOException;
 import java.io.RandomAccessFile;
+import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.List;
+import java.util.stream.Stream;
 
 final class SnapshotChecksum {
 
@@ -38,7 +39,7 @@ final class SnapshotChecksum {
   public static SfvChecksum calculate(final Path snapshotDirectory) throws IOException {
     try (final var fileStream =
         Files.list(snapshotDirectory).filter(SnapshotChecksum::isNotMetadataFile).sorted()) {
-      final SfvChecksum sfvChecksum = createCombinedChecksum(fileStream.toList());
+      final SfvChecksum sfvChecksum = createCombinedChecksum(fileStream);
 
       // While persisting transient snapshot, the checksum of metadata file is added at the end.
       // Hence when we recalculate the checksum, we must follow the same order. Otherwise base on
@@ -70,11 +71,16 @@ final class SnapshotChecksum {
    *
    * @return the SfvChecksum object
    */
-  private static SfvChecksum createCombinedChecksum(final List<Path> files) throws IOException {
+  private static SfvChecksum createCombinedChecksum(final Stream<Path> files) {
     final SfvChecksum checksum = new SfvChecksum();
-    for (final var f : files) {
-      checksum.updateFromFile(f);
-    }
+    files.forEachOrdered(
+        path -> {
+          try {
+            checksum.updateFromFile(path);
+          } catch (IOException e) {
+            throw new UncheckedIOException(e);
+          }
+        });
     return checksum;
   }
 }
