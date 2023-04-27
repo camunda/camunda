@@ -8,7 +8,7 @@
 import styled from 'styled-components';
 
 const Header = styled.header`
-  background-color: var(--cds-layer-01);
+  background-color: var(--cds-layer);
   border-bottom: solid 1px var(--cds-border-subtle-01);
   padding: var(--cds-spacing-04);
   display: flex;

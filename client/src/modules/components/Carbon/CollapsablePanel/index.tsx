@@ -78,7 +78,7 @@ const CollapsablePanel: React.FC<Props> = ({
               <CollapseIcon size={20} $panelPosition={panelPosition} />
             </IconButton>
           </Header>
-          <Layer level={1}>{children}</Layer>
+          <Layer>{children}</Layer>
         </Panel>
       )}
     </Collapsable>

@@ -65,7 +65,7 @@ const Panel = styled.div<Props>`
   ${({$isClickable, $panelPosition}) => {
     return css`
       height: 100%;
-      background-color: var(--cds-layer-01);
+      background: var(--cds-layer);
 
       ${$panelPosition === 'LEFT'
         ? css`

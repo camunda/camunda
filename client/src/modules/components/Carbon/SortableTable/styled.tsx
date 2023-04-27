@@ -21,7 +21,7 @@ const Container = styled.div<ContainerProps>`
   ${({$isScrollable}) => {
     return css`
       height: 100%;
-      background-color: var(--cds-layer-01);
+      background-color: var(--cds-layer);
       overflow-y: ${$isScrollable ? 'auto' : 'hidden'};
       flex: 1 0 0;
 
@@ -52,7 +52,7 @@ const EmptyMessageContainer = styled.div`
   justify-content: center;
   height: 100%;
   align-items: center;
-  background-color: var(--cds-layer-01);
+  background-color: var(--cds-layer);
 `;
 
 const DataTableSkeleton = styled(BaseDataTableSkeleton)`
