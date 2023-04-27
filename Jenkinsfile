@@ -23,6 +23,10 @@ String getImageTag() {
   return env.BRANCH_NAME == 'master' ? getGitCommitHash() : "branch-${getBranchSlug()}"
 }
 
+Boolean getRunVerify() {
+  return env.BRANCH_NAME == 'master' || env.BRANCH_NAME.contains('stable/')
+}
+
 String getCiImageTag() {
   return "ci-${getGitCommitHash()}"
 }
@@ -99,6 +103,7 @@ pipeline {
         VERSION = getVersion()
         REVISION = getRevision()
         DATE = java.time.Instant.now().toString()
+        RUN_VERIFY = getRunVerify()
       }
       steps {
         lock('operate-dockerimage-upload') {
@@ -114,33 +119,35 @@ pipeline {
               apk add jq
               apk --no-cache add bash
 
-              # Since docker buildx doesn't allow to use --load for a multi-platform build, we do it one at a time to be
-              # able to perform the checks before pushing
-              # First amd64
-              docker buildx build \
-                -t ${OPERATE_DOCKER_IMAGE()}:${IMAGE_TAG} \
-                -t ${OPERATE_DOCKER_IMAGE()}:${CI_IMAGE_TAG} \
-                --build-arg VERSION=${VERSION} \
-                --build-arg DATE=${DATE} \
-                --build-arg REVISION=${REVISION} \
-                --platform linux/amd64 \
-                --load \
-                .
-              export ARCHITECTURE=amd64
-              bash ./.ci/docker/test/verify.sh ${OPERATE_DOCKER_IMAGE()}:${IMAGE_TAG} ${OPERATE_DOCKER_IMAGE()}:${CI_IMAGE_TAG}
+              if [[ ${RUN_VERIFY} == 'true' ]]; then
+                  # Since docker buildx doesn't allow to use --load for a multi-platform build, we do it one at a time to be
+                  # able to perform the checks before pushing
+                  # First amd64
+                  docker buildx build \
+                    -t ${OPERATE_DOCKER_IMAGE()}:${IMAGE_TAG} \
+                    -t ${OPERATE_DOCKER_IMAGE()}:${CI_IMAGE_TAG} \
+                    --build-arg VERSION=${VERSION} \
+                    --build-arg DATE=${DATE} \
+                    --build-arg REVISION=${REVISION} \
+                    --platform linux/amd64 \
+                    --load \
+                    .
+                  export ARCHITECTURE=amd64
+                  bash ./.ci/docker/test/verify.sh ${OPERATE_DOCKER_IMAGE()}:${IMAGE_TAG} ${OPERATE_DOCKER_IMAGE()}:${CI_IMAGE_TAG}
 
-              # Now arm64
-              docker buildx build \
-                -t ${OPERATE_DOCKER_IMAGE()}:${IMAGE_TAG} \
-                -t ${OPERATE_DOCKER_IMAGE()}:${CI_IMAGE_TAG} \
-                --build-arg VERSION=${VERSION} \
-                --build-arg DATE=${DATE} \
-                --build-arg REVISION=${REVISION} \
-                --platform linux/arm64 \
-                --load \
-                .
-              export ARCHITECTURE=arm64
-              bash ./.ci/docker/test/verify.sh ${OPERATE_DOCKER_IMAGE()}:${IMAGE_TAG} ${OPERATE_DOCKER_IMAGE()}:${CI_IMAGE_TAG}
+                  # Now arm64
+                  docker buildx build \
+                    -t ${OPERATE_DOCKER_IMAGE()}:${IMAGE_TAG} \
+                    -t ${OPERATE_DOCKER_IMAGE()}:${CI_IMAGE_TAG} \
+                    --build-arg VERSION=${VERSION} \
+                    --build-arg DATE=${DATE} \
+                    --build-arg REVISION=${REVISION} \
+                    --platform linux/arm64 \
+                    --load \
+                    .
+                  export ARCHITECTURE=arm64
+                  bash ./.ci/docker/test/verify.sh ${OPERATE_DOCKER_IMAGE()}:${IMAGE_TAG} ${OPERATE_DOCKER_IMAGE()}:${CI_IMAGE_TAG}
+              fi
 
               # If we made it to here, all checks were successful. So let's build it to push. This is not as
               # inefficient as it looks, since docker retrieves the previously generated images from the build cache
