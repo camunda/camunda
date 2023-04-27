@@ -6,9 +6,11 @@
  */
 
 import {shallow} from 'enzyme';
+import {SerializedEditorState, SerializedLexicalNode} from 'lexical';
+
 import TextReportEditModal from './TextReportEditModal';
 
-const editorValue = {
+const editorValue: SerializedEditorState = {
   root: {
     children: [
       {
@@ -28,7 +30,7 @@ const editorValue = {
         indent: 0,
         type: 'paragraph',
         version: 1,
-      },
+      } as SerializedLexicalNode,
     ],
     direction: 'ltr',
     format: '',
@@ -38,8 +40,14 @@ const editorValue = {
   },
 };
 
+const props = {
+  initialValue: editorValue,
+  onClose: jest.fn(),
+  onConfirm: jest.fn(),
+};
+
 it('should render the modal', () => {
-  const node = shallow(<TextReportEditModal initialValue={editorValue} />);
+  const node = shallow(<TextReportEditModal {...props} />);
 
   const editor = node.find('TextEditor');
 
@@ -47,8 +55,10 @@ it('should render the modal', () => {
   expect(editor.prop('initialValue')).toEqual(editorValue);
 });
 
-it('should  disable the submit button if the text in editor is empty or too long', () => {
-  const node = shallow(<TextReportEditModal />);
+it('should disable the submit button if the text in editor is empty or too long', () => {
+  const node = shallow(
+    <TextReportEditModal {...props} initialValue={{root: {...editorValue.root, children: []}}} />
+  );
 
   expect(node.find('Button').at(1)).toBeDisabled();
 
@@ -67,7 +77,7 @@ it('should  disable the submit button if the text in editor is empty or too long
       type: 'root',
     },
   };
-  node.find('TextEditor').prop('onChange')(normalText);
+  node.find('TextEditor').simulate('change', normalText);
   expect(node.find('Button').at(1)).not.toBeDisabled();
 
   const tooLongText = {
@@ -85,7 +95,7 @@ it('should  disable the submit button if the text in editor is empty or too long
       type: 'root',
     },
   };
-  node.find('TextEditor').prop('onChange')(tooLongText);
+  node.find('TextEditor').simulate('change', tooLongText);
 
   expect(node.find('Button').at(1)).toBeDisabled();
 });
@@ -93,7 +103,7 @@ it('should  disable the submit button if the text in editor is empty or too long
 it('should invoke onConfirm when the submit button is clicked', () => {
   const spy = jest.fn();
   const node = shallow(
-    <TextReportEditModal initialValue={editorValue} onConfirm={spy} onClose={() => {}} />
+    <TextReportEditModal {...props} initialValue={editorValue} onConfirm={spy} onClose={() => {}} />
   );
 
   const newEditorValue = {
@@ -126,7 +136,7 @@ it('should invoke onConfirm when the submit button is clicked', () => {
     },
   };
 
-  node.find('TextEditor').prop('onChange')(newEditorValue);
+  node.find('TextEditor').simulate('change', newEditorValue);
 
   node.find('Button').at(1).simulate('click');
 

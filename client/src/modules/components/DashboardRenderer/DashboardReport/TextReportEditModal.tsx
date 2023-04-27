@@ -7,12 +7,23 @@
 
 import {useState} from 'react';
 import {Button} from '@carbon/react';
+import {SerializedEditorState} from 'lexical';
 
 import {CarbonModal as Modal, TextEditor} from 'components';
 import {isTextReportValid} from 'services';
 import {t} from 'translation';
 
-export default function TextReportEditModal({initialValue, onClose, onConfirm}) {
+interface TextReportEditModalProps {
+  initialValue: SerializedEditorState;
+  onClose: () => void;
+  onConfirm: (value: SerializedEditorState) => void;
+}
+
+export default function TextReportEditModal({
+  initialValue,
+  onClose,
+  onConfirm,
+}: TextReportEditModalProps): JSX.Element {
   const [text, setText] = useState(initialValue);
 
   const textLength = TextEditor.getEditorStateLength(text);
