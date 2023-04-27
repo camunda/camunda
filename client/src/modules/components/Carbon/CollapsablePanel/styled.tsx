@@ -13,6 +13,7 @@ import {
 import {IconButton as BaseIconButton} from '@carbon/react';
 import {Header as BaseHeader} from '../PanelHeader/styled';
 import {COLLAPSABLE_PANEL_MIN_WIDTH} from 'modules/constants';
+import {layer01} from '@carbon/elements';
 
 type CollapsableProps = {
   isCollapsed: boolean;
@@ -65,7 +66,7 @@ const Panel = styled.div<Props>`
   ${({$isClickable, $panelPosition}) => {
     return css`
       height: 100%;
-      background-color: var(--cds-layer-01);
+      background-color: ${layer01};
 
       ${$panelPosition === 'LEFT'
         ? css`
