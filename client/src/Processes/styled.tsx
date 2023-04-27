@@ -7,10 +7,7 @@
 
 import {rem} from '@carbon/elements';
 import styled, {css} from 'styled-components';
-import {
-  SkeletonPlaceholder,
-  ActionableNotification as BaseActionableNotification,
-} from '@carbon/react';
+import {SkeletonPlaceholder} from '@carbon/react';
 
 const Container = styled.main`
   ${({theme}) => css`
@@ -68,21 +65,4 @@ const TileSkeleton = styled(SkeletonPlaceholder)`
   height: ${rem(132)};
 `;
 
-const ActionableNotification = styled(BaseActionableNotification)`
-  width: 100%;
-  max-width: 100%;
-`;
-
-const NotificationContainer = styled.div`
-  width: 100%;
-  padding-right: var(--cds-spacing-13);
-`;
-
-export {
-  Container,
-  SearchContainer,
-  ProcessesContainer,
-  TileSkeleton,
-  ActionableNotification,
-  NotificationContainer,
-};
+export {Container, SearchContainer, ProcessesContainer, TileSkeleton};

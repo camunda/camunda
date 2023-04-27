@@ -74,10 +74,10 @@ const Header: React.FC = observer(() => {
     )
     .filter((entry): entry is AppSwitcherElementType => entry !== undefined);
   const isProcessesPageEnabled =
-    ((!IS_SAAS && IS_RESOURCE_PERMISSIONS_ENABLED) ||
-      APP_VERSION.includes('alpha') ||
-      APP_VERSION.includes('SNAPSHOT')) &&
-    hasPermission;
+    hasPermission &&
+    (IS_SAAS ||
+      IS_RESOURCE_PERMISSIONS_ENABLED ||
+      APP_VERSION.includes('SNAPSHOT'));
   useEffect(() => {
     if (data?.currentUser) {
       tracking.identifyUser(data?.currentUser);

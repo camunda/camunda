@@ -6,10 +6,6 @@
  */
 
 import styled from 'styled-components';
-import {
-  ActionableNotification as BaseActionableNotification,
-  Tag as BaseTag,
-} from '@carbon/react';
 
 const Container = styled.div`
   display: flex;
@@ -23,12 +19,4 @@ const Image = styled.img`
   margin-bottom: var(--cds-spacing-08);
 `;
 
-const ActionableNotification = styled(BaseActionableNotification)`
-  margin-top: var(--cds-spacing-08);
-`;
-
-const Tag = styled(BaseTag)`
-  margin: 0;
-`;
-
-export {Container, Image, ActionableNotification, Tag};
+export {Container, Image};

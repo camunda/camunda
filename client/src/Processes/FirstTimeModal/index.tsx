@@ -9,7 +9,7 @@ import {Modal} from 'modules/components/Modal';
 import {useState} from 'react';
 import {useLocation, useNavigate} from 'react-router-dom';
 import Placeholder from './placeholder.svg';
-import {Container, Image, ActionableNotification, Tag} from './styled';
+import {Container, Image} from './styled';
 import {getStateLocally, storeStateLocally} from 'modules/utils/localStorage';
 import {Pages} from 'modules/constants/pages';
 import {tracking} from 'modules/tracking';
@@ -17,7 +17,6 @@ import {tracking} from 'modules/tracking';
 const FirstTimeModal: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const IS_SAAS = typeof window.clientConfig?.organizationId === 'string';
   const [isOpen, setIsOpen] = useState(
     !Boolean(getStateLocally('hasConsentedToStartProcess') ?? false),
   );
@@ -39,23 +38,7 @@ const FirstTimeModal: React.FC = () => {
   return (
     <Modal
       aria-label="Start your process on demand"
-      modalHeading={
-        <>
-          {IS_SAAS ? (
-            <>
-              <Tag
-                size="sm"
-                type="high-contrast"
-                aria-label="This is an alpha feature"
-              >
-                Alpha
-              </Tag>
-              <br />
-            </>
-          ) : null}
-          Start your process on demand
-        </>
-      }
+      modalHeading="Start your process on demand"
       secondaryButtonText="Cancel"
       primaryButtonText="Continue"
       open={isOpen}
@@ -94,28 +77,6 @@ const FirstTimeModal: React.FC = () => {
               directly start assigning these.
             </p>
           </div>
-          {IS_SAAS ? (
-            <ActionableNotification
-              actionButtonLabel="Read consent"
-              title="Alpha feature"
-              subtitle="this feature is only available for alpha releases."
-              hideCloseButton
-              kind="info"
-              role="alert"
-              lowContrast
-              inline
-              onActionButtonClick={() => {
-                tracking.track({
-                  eventName: 'processes-alpha-consent-link-clicked',
-                });
-                window.open(
-                  'https://docs.camunda.io/docs/reference/early-access/#alpha',
-                  '_blank',
-                  'noopener noreferrer',
-                );
-              }}
-            />
-          ) : null}
         </Container>
       ) : null}
     </Modal>
