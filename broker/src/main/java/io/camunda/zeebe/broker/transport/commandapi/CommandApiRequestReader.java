@@ -51,6 +51,7 @@ public class CommandApiRequestReader implements RequestReader<ExecuteCommandRequ
         ValueType.PROCESS_INSTANCE_MODIFICATION, ProcessInstanceModificationRecord::new);
     RECORDS_BY_TYPE.put(ValueType.SIGNAL, SignalRecord::new);
     RECORDS_BY_TYPE.put(ValueType.COMMAND_DISTRIBUTION, CommandDistributionRecord::new);
+    RECORDS_BY_TYPE.put(ValueType.PROCESS_INSTANCE_BATCH, ProcessInstanceRecord::new);
   }
 
   private UnifiedRecordValue value;

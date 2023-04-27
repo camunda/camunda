@@ -640,6 +640,7 @@
         #     process: true
         #     processEvent: false
         #     processInstance: true
+        #     processInstanceBatch: false
         #     processInstanceCreation: true
         #     processInstanceModification: true
         #     processMessageSubscription: true
@@ -709,6 +710,7 @@
         #     process: true
         #     processEvent: false
         #     processInstance: true
+        #     processInstanceBatch: false
         #     processInstanceCreation: true
         #     processInstanceModification: true
         #     processMessageSubscription: true
