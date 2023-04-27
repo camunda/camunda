@@ -4,7 +4,8 @@
 # see https://docs.docker.com/build/buildkit/#getting-started
 ARG JVM="eclipse-temurin"
 ARG JAVA_VERSION="17"
-ARG BASE_IMAGE="${JVM}:${JAVA_VERSION}-jre-focal"
+# We duplicate the JVM and JAVA_VERSION vars here as renovate will otherwise fail to properly parse
+ARG BASE_IMAGE="eclipse-temurin:17-jre-focal"
 ARG BASE_DIGEST_AMD64="sha256:22f133769ce2b956d150ab749cd4630b3e7fbac2b37049911aa0973a1283047c"
 ARG BASE_DIGEST_ARM64="sha256:54f64f1cf8e9b984a92d06d3ad5c10fbbb9e9869144f1f45decdf530d64a4163"
 
