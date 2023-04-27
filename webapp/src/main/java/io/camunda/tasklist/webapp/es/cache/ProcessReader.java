@@ -112,14 +112,10 @@ public class ProcessReader {
       }
 
     } else {
-      if (tasklistProperties.isAlphaVersion()) {
-        qb =
-            QueryBuilders.boolQuery()
-                .must(QueryBuilders.existsQuery(ProcessIndex.PROCESS_DEFINITION_ID))
-                .mustNot(QueryBuilders.termQuery(ProcessIndex.PROCESS_DEFINITION_ID, ""));
-      } else {
-        return new ArrayList<ProcessDTO>();
-      }
+      qb =
+          QueryBuilders.boolQuery()
+              .must(QueryBuilders.existsQuery(ProcessIndex.PROCESS_DEFINITION_ID))
+              .mustNot(QueryBuilders.termQuery(ProcessIndex.PROCESS_DEFINITION_ID, ""));
     }
 
     final SearchRequest searchRequest = getSearchRequestUniqueByProcessDefinitionId(qb);
@@ -204,22 +200,19 @@ public class ProcessReader {
       }
 
     } else {
-      if (tasklistProperties.isAlphaVersion()) {
-        qb =
-            QueryBuilders.boolQuery()
-                .should(QueryBuilders.termQuery(ProcessIndex.ID, search))
-                .should(
-                    QueryBuilders.regexpQuery(ProcessIndex.NAME, regexSearch)
-                        .caseInsensitive(CASE_INSENSITIVE))
-                .should(
-                    QueryBuilders.regexpQuery(ProcessIndex.PROCESS_DEFINITION_ID, regexSearch)
-                        .caseInsensitive(CASE_INSENSITIVE))
-                .must(QueryBuilders.existsQuery(ProcessIndex.PROCESS_DEFINITION_ID))
-                .mustNot(QueryBuilders.termQuery(ProcessIndex.PROCESS_DEFINITION_ID, ""))
-                .minimumShouldMatch(1);
-      } else {
-        return new ArrayList<ProcessDTO>();
-      }
+
+      qb =
+          QueryBuilders.boolQuery()
+              .should(QueryBuilders.termQuery(ProcessIndex.ID, search))
+              .should(
+                  QueryBuilders.regexpQuery(ProcessIndex.NAME, regexSearch)
+                      .caseInsensitive(CASE_INSENSITIVE))
+              .should(
+                  QueryBuilders.regexpQuery(ProcessIndex.PROCESS_DEFINITION_ID, regexSearch)
+                      .caseInsensitive(CASE_INSENSITIVE))
+              .must(QueryBuilders.existsQuery(ProcessIndex.PROCESS_DEFINITION_ID))
+              .mustNot(QueryBuilders.termQuery(ProcessIndex.PROCESS_DEFINITION_ID, ""))
+              .minimumShouldMatch(1);
     }
 
     final SearchRequest searchRequest = getSearchRequestUniqueByProcessDefinitionId(qb);

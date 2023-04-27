@@ -24,8 +24,7 @@ public class ProcessSaasIT extends TasklistZeebeIntegrationTest {
   }
 
   @Test
-  public void shouldReturnOnlyMostRecentVersionForAlphaBasedOnQuery() throws IOException {
-    tasklistProperties.setVersion("8.2.0-alpha");
+  public void shouldReturnOnlyMostRecentVersionBasedOnQuery() throws IOException {
     final String querySimpleProcess = "multipleVersions";
     tester.deployProcess("multipleVersions.bpmn").waitUntil().processIsDeployed();
     tester.deployProcess("multipleVersions-v2.bpmn").waitUntil().processIsDeployed();
@@ -38,8 +37,7 @@ public class ProcessSaasIT extends TasklistZeebeIntegrationTest {
   }
 
   @Test
-  public void shouldReturnOnlyMostRecentVersionForAlphaEmptyQuery() throws IOException {
-    tasklistProperties.setVersion("8.2.0-alpha");
+  public void shouldReturnOnlyMostRecentVersionEmptyQuery() throws IOException {
     final String emptyQuery = "";
     tester.deployProcess("multipleVersions.bpmn").waitUntil().processIsDeployed();
     tester.deployProcess("multipleVersions-v2.bpmn").waitUntil().processIsDeployed();
@@ -51,20 +49,7 @@ public class ProcessSaasIT extends TasklistZeebeIntegrationTest {
   }
 
   @Test
-  public void shouldNotReturnProcess() throws IOException {
-    tasklistProperties.setVersion("8.2.0");
-    final String emptyQuery = "";
-    tester.deployProcess("multipleVersions.bpmn").waitUntil().processIsDeployed();
-    tester.deployProcess("multipleVersions-v2.bpmn").waitUntil().processIsDeployed();
-
-    final GraphQLResponse response = tester.getAllProcesses(emptyQuery);
-    assertTrue(response.isOk());
-    assertEquals("0", response.get("$.data.processes.length()"));
-  }
-
-  @Test
   public void shouldReturnAllProcessesBasedOnEmptySearchQuery() throws IOException {
-    tasklistProperties.setVersion("8.2.0-alpha");
     final String searchEmpty = "";
     tester.deployProcess("simple_process.bpmn").waitUntil().processIsDeployed();
     tester.deployProcess("simple_process_2.bpmn").waitUntil().processIsDeployed();
@@ -90,7 +75,6 @@ public class ProcessSaasIT extends TasklistZeebeIntegrationTest {
 
   @Test
   public void shouldReturnProcessBasedOnProcessDefinitionIdQuery() throws IOException {
-    tasklistProperties.setVersion("8.2.0-alpha");
     final String queryProcessId = "FoRm";
     tester.deployProcess("simple_process.bpmn").waitUntil().processIsDeployed();
     tester.deployProcess("simple_process_2.bpmn").waitUntil().processIsDeployed();
@@ -104,7 +88,6 @@ public class ProcessSaasIT extends TasklistZeebeIntegrationTest {
 
   @Test
   public void shouldReturnProcessBasedOnProcessIdQuery() throws IOException {
-    tasklistProperties.setVersion("8.2.0-alpha");
     final String queryProcessId = "2251799813685249";
     tester.deployProcess("simple_process.bpmn").waitUntil().processIsDeployed();
     tester.deployProcess("simple_process_2.bpmn").waitUntil().processIsDeployed();
@@ -117,7 +100,6 @@ public class ProcessSaasIT extends TasklistZeebeIntegrationTest {
 
   @Test
   public void shouldNotReturnProcessBasedOnPartialProcessIdQuery() throws IOException {
-    tasklistProperties.setVersion("8.2.0-alpha");
     final String queryProcessId = "799813685";
     tester.deployProcess("simple_process.bpmn").waitUntil().processIsDeployed();
     tester.deployProcess("simple_process_2.bpmn").waitUntil().processIsDeployed();
@@ -130,7 +112,6 @@ public class ProcessSaasIT extends TasklistZeebeIntegrationTest {
 
   @Test
   public void shouldNotReturnProcessBasedOnSearchQuery() throws IOException {
-    tasklistProperties.setVersion("8.2.0-alpha");
     final String queryProcessId = "shouldNotReturn";
     tester.deployProcess("simple_process.bpmn").waitUntil().processIsDeployed();
     tester.deployProcess("simple_process_2.bpmn").waitUntil().processIsDeployed();
