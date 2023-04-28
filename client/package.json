@@ -14,7 +14,7 @@
     "@ungap/structured-clone": "^1.0.2",
     "bpmn-js": "13.0.4",
     "bpmn-js-disable-collapsed-subprocess": "^0.1.7",
-    "chart.js": "^4.2.1",
+    "chart.js": "^4.3.0",
     "chartjs-plugin-datalabels": "^2.2.0",
     "classnames": "^2.3.2",
     "date-fns": "^2.29.3",
