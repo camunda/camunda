@@ -18,6 +18,7 @@ import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.ActorFutureCollector;
+import java.util.stream.Stream;
 import org.agrona.CloseHelper;
 
 public final class EmbeddedGatewayService implements AutoCloseable {
@@ -62,14 +63,16 @@ public final class EmbeddedGatewayService implements AutoCloseable {
   }
 
   public ActorFuture<Gateway> start() {
-    jobStreamClient.start();
+    final var jobStreamClientStart = jobStreamClient.start();
+    final var brokerClientStart = brokerClient.start();
+    final var allStart =
+        Stream.concat(Stream.of(jobStreamClientStart), brokerClientStart.stream())
+            .collect(new ActorFutureCollector<>(concurrencyControl));
 
     // before we can add the job stream client as a topology listener, we need to wait for the
     // topology to be set up, otherwise the callback may be lost
-    final var brokerClientStart =
-        brokerClient.start().stream().collect(new ActorFutureCollector<>(concurrencyControl));
     concurrencyControl.runOnCompletion(
-        brokerClientStart,
+        allStart,
         (ok, error) -> brokerClient.getTopologyManager().addTopologyListener(jobStreamClient));
 
     return gateway.start();
