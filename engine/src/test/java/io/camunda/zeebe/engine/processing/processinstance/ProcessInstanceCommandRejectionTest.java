@@ -584,9 +584,10 @@ public final class ProcessInstanceCommandRejectionTest {
                 .endEvent()
                 .done());
 
-    final var timerCreated =
-        RecordingExporter.timerRecords(TimerIntent.CREATED)
+    final var serviceTaskActivated =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
             .withProcessInstanceKey(processInstanceKey)
+            .withElementId("a")
             .getFirst();
 
     final var jobCreated =
@@ -596,7 +597,8 @@ public final class ProcessInstanceCommandRejectionTest {
 
     // when
     engine.writeRecords(
-        cancelProcessInstanceCommand(processInstanceKey), triggerTimerCommand(timerCreated));
+        terminateElementCommand(serviceTaskActivated),
+        terminateElementCommand(serviceTaskActivated));
 
     // then
     final var rejectedCommand =
@@ -630,6 +632,12 @@ public final class ProcessInstanceCommandRejectionTest {
 
   private RecordToWrite triggerTimerCommand(final Record<TimerRecordValue> timer) {
     return RecordToWrite.command().timer(TimerIntent.TRIGGER, timer.getValue()).key(timer.getKey());
+  }
+
+  private RecordToWrite terminateElementCommand(final Record<ProcessInstanceRecordValue> record) {
+    return RecordToWrite.command()
+        .processInstance(ProcessInstanceIntent.TERMINATE_ELEMENT, record.getValue())
+        .key(record.getKey());
   }
 
   private void assertThatCommandIsRejected(
