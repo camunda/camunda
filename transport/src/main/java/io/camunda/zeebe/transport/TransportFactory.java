@@ -12,8 +12,11 @@ import io.atomix.cluster.messaging.MessagingService;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.transport.impl.AtomixClientTransportAdapter;
 import io.camunda.zeebe.transport.impl.AtomixServerTransport;
+import io.camunda.zeebe.transport.stream.api.ClientStreamMetrics;
+import io.camunda.zeebe.transport.stream.api.ClientStreamService;
 import io.camunda.zeebe.transport.stream.api.RemoteStreamMetrics;
 import io.camunda.zeebe.transport.stream.api.RemoteStreamService;
+import io.camunda.zeebe.transport.stream.impl.ClientStreamServiceImpl;
 import io.camunda.zeebe.transport.stream.impl.RemoteStreamApiHandler;
 import io.camunda.zeebe.transport.stream.impl.RemoteStreamEndpoint;
 import io.camunda.zeebe.transport.stream.impl.RemoteStreamRegistry;
@@ -54,5 +57,11 @@ public final class TransportFactory {
         new RemoteStreamerImpl<>(clusterCommunicationService, registry, metrics),
         new RemoteStreamEndpoint<>(
             clusterCommunicationService, new RemoteStreamApiHandler<>(registry, metadataFactory)));
+  }
+
+  public <M extends BufferWriter> ClientStreamService<M> createRemoteStreamClient(
+      final ClusterCommunicationService clusterCommunicationService,
+      final ClientStreamMetrics metrics) {
+    return new ClientStreamServiceImpl<>(clusterCommunicationService, metrics);
   }
 }

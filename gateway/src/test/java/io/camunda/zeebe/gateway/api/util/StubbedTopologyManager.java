@@ -11,6 +11,7 @@ import static io.camunda.zeebe.protocol.Protocol.START_PARTITION_ID;
 
 import io.camunda.zeebe.gateway.impl.broker.cluster.BrokerClusterState;
 import io.camunda.zeebe.gateway.impl.broker.cluster.BrokerClusterStateImpl;
+import io.camunda.zeebe.gateway.impl.broker.cluster.BrokerTopologyListener;
 import io.camunda.zeebe.gateway.impl.broker.cluster.BrokerTopologyManager;
 
 public final class StubbedTopologyManager implements BrokerTopologyManager {
@@ -35,5 +36,15 @@ public final class StubbedTopologyManager implements BrokerTopologyManager {
   @Override
   public BrokerClusterState getTopology() {
     return clusterState;
+  }
+
+  @Override
+  public void addTopologyListener(final BrokerTopologyListener listener) {
+    throw new UnsupportedOperationException("Not yet implemented; implement if need be");
+  }
+
+  @Override
+  public void removeTopologyListener(final BrokerTopologyListener listener) {
+    throw new UnsupportedOperationException("Not yet implemented; implement if need be");
   }
 }

@@ -10,30 +10,47 @@ package io.camunda.zeebe.transport.stream.impl;
 import io.atomix.cluster.MemberId;
 import io.atomix.cluster.messaging.ClusterCommunicationService;
 import io.camunda.zeebe.scheduler.Actor;
+import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.transport.stream.api.ClientStreamConsumer;
 import io.camunda.zeebe.transport.stream.api.ClientStreamId;
+import io.camunda.zeebe.transport.stream.api.ClientStreamMetrics;
+import io.camunda.zeebe.transport.stream.api.ClientStreamService;
 import io.camunda.zeebe.transport.stream.api.ClientStreamer;
 import io.camunda.zeebe.transport.stream.impl.messages.MessageUtil;
 import io.camunda.zeebe.transport.stream.impl.messages.StreamTopics;
+import io.camunda.zeebe.util.VisibleForTesting;
 import io.camunda.zeebe.util.buffer.BufferWriter;
 import java.util.concurrent.CompletableFuture;
 import org.agrona.DirectBuffer;
 
-public class ClientStreamService<M extends BufferWriter> extends Actor
-    implements ClientStreamer<M> {
+/**
+ * Implementation for both {@link ClientStreamer} and {@link ClientStreamService}.
+ *
+ * <p>TODO: In the future we may want to split this into more than implementation, where the
+ * streamer receives an execution context, and the service manages it.
+ */
+public final class ClientStreamServiceImpl<M extends BufferWriter> extends Actor
+    implements ClientStreamer<M>, ClientStreamService<M> {
 
   private final ClientStreamManager<M> clientStreamManager;
   private final ClusterCommunicationService communicationService;
 
-  public ClientStreamService(final ClusterCommunicationService communicationService) {
+  @VisibleForTesting
+  ClientStreamServiceImpl(final ClusterCommunicationService communicationService) {
+    this(communicationService, ClientStreamMetrics.noop());
+  }
+
+  public ClientStreamServiceImpl(
+      final ClusterCommunicationService communicationService, final ClientStreamMetrics metrics) {
     // ClientStreamRequestManager must use same actor as this because it is mutating shared
     // ClientStream objects.
     clientStreamManager =
         new ClientStreamManager<>(
-            new ClientStreamRegistry<>(),
-            new ClientStreamRequestManager<>(communicationService, actor));
+            new ClientStreamRegistry<>(metrics),
+            new ClientStreamRequestManager<>(communicationService, actor),
+            metrics);
     this.communicationService = communicationService;
   }
 
@@ -86,11 +103,21 @@ public class ClientStreamService<M extends BufferWriter> extends Actor
     return actor.call(() -> clientStreamManager.remove(streamId));
   }
 
+  @Override
+  public ActorFuture<Void> start(final ActorSchedulingService schedulingService) {
+    return schedulingService.submitActor(this);
+  }
+
   public void onServerJoined(final MemberId memberId) {
     actor.run(() -> clientStreamManager.onServerJoined(memberId));
   }
 
   public void onServerRemoved(final MemberId memberId) {
     actor.run(() -> clientStreamManager.onServerRemoved(memberId));
+  }
+
+  @Override
+  public ClientStreamer<M> streamer() {
+    return this;
   }
 }

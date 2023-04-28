@@ -113,12 +113,15 @@ public final class BrokerClusterStateImpl implements BrokerClusterState {
     }
   }
 
-  public void addBrokerIfAbsent(final int nodeId) {
-    if (brokerAddresses.get(nodeId) == null) {
-      brokerAddresses.put(nodeId, "");
-      brokerVersions.put(nodeId, "");
-      brokers.addInt(nodeId);
+  public boolean addBrokerIfAbsent(final int nodeId) {
+    if (brokerAddresses.get(nodeId) != null) {
+      return false;
     }
+
+    brokerAddresses.put(nodeId, "");
+    brokerVersions.put(nodeId, "");
+    brokers.addInt(nodeId);
+    return true;
   }
 
   public void setBrokerAddressIfPresent(final int brokerId, final String address) {

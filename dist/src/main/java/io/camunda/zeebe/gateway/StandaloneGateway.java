@@ -12,7 +12,9 @@ import io.camunda.zeebe.gateway.impl.SpringGatewayBridge;
 import io.camunda.zeebe.gateway.impl.broker.BrokerClient;
 import io.camunda.zeebe.gateway.impl.broker.cluster.BrokerTopologyManager;
 import io.camunda.zeebe.gateway.impl.configuration.GatewayCfg;
+import io.camunda.zeebe.gateway.impl.stream.JobStreamClient;
 import io.camunda.zeebe.scheduler.ActorScheduler;
+import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.shared.Profile;
 import io.camunda.zeebe.util.CloseableSilently;
 import io.camunda.zeebe.util.VersionUtil;
@@ -53,6 +55,7 @@ public class StandaloneGateway
   private final ActorScheduler actorScheduler;
   private final AtomixCluster atomixCluster;
   private final BrokerClient brokerClient;
+  private final JobStreamClient jobStreamClient;
 
   private Gateway gateway;
 
@@ -62,12 +65,14 @@ public class StandaloneGateway
       final SpringGatewayBridge springGatewayBridge,
       final ActorScheduler actorScheduler,
       final AtomixCluster atomixCluster,
-      final BrokerClient brokerClient) {
+      final BrokerClient brokerClient,
+      final JobStreamClient jobStreamClient) {
     this.configuration = configuration;
     this.springGatewayBridge = springGatewayBridge;
     this.actorScheduler = actorScheduler;
     this.atomixCluster = atomixCluster;
     this.brokerClient = brokerClient;
+    this.jobStreamClient = jobStreamClient;
   }
 
   public static void main(final String[] args) {
@@ -94,8 +99,16 @@ public class StandaloneGateway
       LOG.info("Starting standalone gateway with configuration {}", configuration.toJson());
     }
 
-    gateway = new Gateway(configuration, brokerClient, actorScheduler);
+    actorScheduler.start();
+    atomixCluster.start();
+    jobStreamClient.start().join();
 
+    // before we can add the job stream client as a topology listener, we need to wait for the
+    // topology to be set up, otherwise the callback may be lost
+    brokerClient.start().forEach(ActorFuture::join);
+    brokerClient.getTopologyManager().addTopologyListener(jobStreamClient);
+
+    gateway = new Gateway(configuration, brokerClient, actorScheduler, jobStreamClient.streamer());
     springGatewayBridge.registerBrokerClientSupplier(gateway::getBrokerClient);
     springGatewayBridge.registerGatewayStatusSupplier(gateway::getStatus);
     springGatewayBridge.registerClusterStateSupplier(
@@ -104,9 +117,6 @@ public class StandaloneGateway
                 .map(BrokerClient::getTopologyManager)
                 .map(BrokerTopologyManager::getTopology));
 
-    actorScheduler.start();
-    atomixCluster.start();
-    brokerClient.start();
     gateway.start().join(30, TimeUnit.SECONDS);
   }
 
