@@ -27,6 +27,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import org.agrona.MutableDirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -38,7 +39,8 @@ class ClientStreamRequestManagerTest {
 
   private final AggregatedClientStream<BufferWriter> clientStream =
       new AggregatedClientStream<>(
-          UUID.randomUUID(), new LogicalId<>(BufferUtil.wrapString("foo"), new TestMetadata()));
+          UUID.randomUUID(),
+          new LogicalId<>(new UnsafeBuffer(BufferUtil.wrapString("foo")), new TestMetadata()));
 
   @BeforeEach
   void setup() {

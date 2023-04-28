@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.transport.stream.impl;
 
-import org.agrona.DirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
 
 /**
  * A logical id that identifies a stream. Multiple streams can have same logical id. A payload
@@ -17,4 +17,4 @@ import org.agrona.DirectBuffer;
  * @param metadata metadata of the stream
  * @param <M> type of metadata
  */
-record LogicalId<M>(DirectBuffer streamType, M metadata) {}
+record LogicalId<M>(UnsafeBuffer streamType, M metadata) {}

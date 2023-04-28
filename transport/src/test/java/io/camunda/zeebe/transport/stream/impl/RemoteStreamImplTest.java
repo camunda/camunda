@@ -22,6 +22,7 @@ import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import org.agrona.concurrent.UnsafeBuffer;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 class RemoteStreamImplTest {
@@ -41,41 +42,39 @@ class RemoteStreamImplTest {
   private final RemoteStreamImpl<TestSerializableData, TestSerializableData> remoteStream =
       new RemoteStreamImpl<>(aggregatedStream, pusher, executor);
 
+  @BeforeEach
+  void setup() {
+    final UUID stream1 = UUID.randomUUID();
+    final LogicalId<TestSerializableData> logicalId = new LogicalId<>(streamType, properties);
+    aggregatedStream.addConsumer(
+        new StreamConsumer<>(new StreamId(stream1, MemberId.anonymous()), logicalId));
+    final UUID stream2 = UUID.randomUUID();
+    aggregatedStream.addConsumer(
+        new StreamConsumer<>(new StreamId(stream2, MemberId.anonymous()), logicalId));
+    final UUID stream3 = UUID.randomUUID();
+    aggregatedStream.addConsumer(
+        new StreamConsumer<>(new StreamId(stream3, MemberId.anonymous()), logicalId));
+  }
+
   @Test
   void shouldRetryWithAllAvailableRemoteStreams() {
     // given
-    final UUID stream1 = UUID.randomUUID();
-    aggregatedStream.addConsumer(
-        new StreamConsumer<>(new StreamId(stream1, MemberId.anonymous()), properties, streamType));
-    final UUID stream2 = UUID.randomUUID();
-    aggregatedStream.addConsumer(
-        new StreamConsumer<>(new StreamId(stream2, MemberId.anonymous()), properties, streamType));
-    final UUID stream3 = UUID.randomUUID();
-    aggregatedStream.addConsumer(
-        new StreamConsumer<>(new StreamId(stream3, MemberId.anonymous()), properties, streamType));
+    final var streams =
+        aggregatedStream.streamConsumers().stream().map(s -> s.id().streamId()).toList();
 
     // when
     remoteStream.push(payload, (e, p) -> {});
 
     // then
-    assertThat(transport.attemptedStreams).containsExactlyInAnyOrder(stream1, stream2, stream3);
+    assertThat(transport.attemptedStreams).containsExactlyInAnyOrderElementsOf(streams);
   }
 
   @Test
   void shouldStopRetryWhenPushSucceeds() {
     // given
-    final UUID stream1 = UUID.randomUUID();
-    aggregatedStream.addConsumer(
-        new StreamConsumer<>(new StreamId(stream1, MemberId.anonymous()), properties, streamType));
-    final UUID stream2 = UUID.randomUUID();
-    aggregatedStream.addConsumer(
-        new StreamConsumer<>(new StreamId(stream2, MemberId.anonymous()), properties, streamType));
-    final UUID stream3 = UUID.randomUUID();
-    aggregatedStream.addConsumer(
-        new StreamConsumer<>(new StreamId(stream3, MemberId.anonymous()), properties, streamType));
+    transport.succeedAfterAttempts(1);
 
     // when
-    transport.succeedAfterAttempts(1);
     remoteStream.push(payload, (e, p) -> {});
 
     // then

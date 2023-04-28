@@ -81,7 +81,7 @@ public class RemoteStreamRegistry<M> implements ImmutableStreamRegistry<M> {
           return aggregatedStream;
         });
 
-    final var streamConsumer = new StreamConsumer<>(uniqueId, properties, streamType);
+    final var streamConsumer = new StreamConsumer<>(uniqueId, logicalId);
     logicalIdToConsumers.get(logicalId).addConsumer(streamConsumer);
 
     idToConsumer.put(uniqueId, streamConsumer);
@@ -98,13 +98,12 @@ public class RemoteStreamRegistry<M> implements ImmutableStreamRegistry<M> {
     final var uniqueId = new StreamId(streamId, receiver);
     final var consumer = idToConsumer.remove(uniqueId);
     if (consumer != null) {
-      final var logicalId = new LogicalId<>(consumer.streamType(), consumer.properties());
       logicalIdToConsumers.computeIfPresent(
-          logicalId,
+          consumer.logicalId(),
           (id, aggregatedStream) -> {
             aggregatedStream.removeConsumer(consumer);
             if (aggregatedStream.streamConsumers().isEmpty()) {
-              typeToConsumers.get(consumer.streamType()).remove(aggregatedStream);
+              typeToConsumers.get(consumer.logicalId().streamType()).remove(aggregatedStream);
               return null;
             } else {
               return aggregatedStream;
