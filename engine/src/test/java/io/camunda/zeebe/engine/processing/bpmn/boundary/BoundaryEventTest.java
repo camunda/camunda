@@ -23,6 +23,7 @@ import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessEventIntent;
+import io.camunda.zeebe.protocol.record.intent.ProcessInstanceBatchIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessMessageSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.TimerIntent;
@@ -256,6 +257,7 @@ public final class BoundaryEventTest {
             tuple(ValueType.PROCESS_EVENT, ProcessEventIntent.TRIGGERING),
             tuple(ValueType.PROCESS_INSTANCE, ProcessInstanceIntent.TERMINATE_ELEMENT),
             tuple(ValueType.PROCESS_INSTANCE, ProcessInstanceIntent.ELEMENT_TERMINATING),
+            tuple(ValueType.PROCESS_INSTANCE_BATCH, ProcessInstanceBatchIntent.TERMINATE),
             tuple(ValueType.PROCESS_INSTANCE, ProcessInstanceIntent.TERMINATE_ELEMENT),
             tuple(ValueType.PROCESS_INSTANCE, ProcessInstanceIntent.ELEMENT_TERMINATING),
             tuple(ValueType.JOB, JobIntent.CANCELED),
