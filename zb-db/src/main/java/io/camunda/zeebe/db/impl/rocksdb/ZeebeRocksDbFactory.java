@@ -182,8 +182,12 @@ public final class ZeebeRocksDbFactory<ColumnFamilyType extends Enum<ColumnFamil
 
     final var tableConfig = createTableFormatConfig(closeables, blockCacheMemory);
 
+    if (rocksDbConfiguration.isSstPartitioningEnabled()) {
+      columnFamilyOptions.setSstPartitionerFactory(
+          new SstPartitionerFixedPrefixFactory(Long.BYTES));
+    }
+
     return columnFamilyOptions
-        .setSstPartitionerFactory(new SstPartitionerFixedPrefixFactory(Long.BYTES))
         // to extract our column family type (used as prefix) and seek faster
         .useFixedLengthPrefixExtractor(Long.BYTES)
         .setMemtablePrefixBloomSizeRatio(memtablePrefixFilterMemory)

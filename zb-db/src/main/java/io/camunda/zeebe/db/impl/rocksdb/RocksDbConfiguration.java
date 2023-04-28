@@ -17,6 +17,15 @@ public final class RocksDbConfiguration {
   public static final int DEFAULT_MIN_WRITE_BUFFER_NUMBER_TO_MERGE = 3;
   public static final boolean DEFAULT_STATISTICS_ENABLED = false;
   public static final boolean DEFAULT_WAL_DISABLED = false;
+
+  /**
+   * This is an experimental feature, it is not 100% clear yet what the implications are besides
+   * having much better performance (shown in several benchmarks) and generating more SST files.
+   *
+   * <p>There will be files created for each virtual colum family.
+   */
+  public static final boolean DEFAULT_SST_PARTITIONING_ENABLED = false;
+
   public static final int DEFAULT_IO_RATE_BYTES_PER_SECOND = 0;
 
   private Properties columnFamilyOptions = new Properties();
@@ -25,6 +34,8 @@ public final class RocksDbConfiguration {
   private int maxWriteBufferNumber = DEFAULT_MAX_WRITE_BUFFER_NUMBER;
   private int minWriteBufferNumberToMerge = DEFAULT_MIN_WRITE_BUFFER_NUMBER_TO_MERGE;
   private boolean walDisabled = DEFAULT_WAL_DISABLED;
+
+  private boolean sstPartitioningEnabled = DEFAULT_SST_PARTITIONING_ENABLED;
 
   /**
    * Defines how many files are kept open by RocksDB, per default it is unlimited (-1). This is done
@@ -118,6 +129,15 @@ public final class RocksDbConfiguration {
 
   public RocksDbConfiguration setWalDisabled(final boolean walDisabled) {
     this.walDisabled = walDisabled;
+    return this;
+  }
+
+  public boolean isSstPartitioningEnabled() {
+    return sstPartitioningEnabled;
+  }
+
+  public RocksDbConfiguration setSstPartitioningEnabled(final boolean sstPartitioningEnabled) {
+    this.sstPartitioningEnabled = sstPartitioningEnabled;
     return this;
   }
 }
