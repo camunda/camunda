@@ -199,6 +199,14 @@ class TransactionalColumnFamily<
   }
 
   @Override
+  public void whileEqualPrefix(
+      final DbKey keyPrefix,
+      final KeyType startAtKey,
+      final KeyValuePairVisitor<KeyType, ValueType> visitor) {
+    ensureInOpenTransaction(transaction -> forEachInPrefix(startAtKey, keyPrefix, visitor));
+  }
+
+  @Override
   public void deleteExisting(final KeyType key) {
     ensureInOpenTransaction(
         transaction -> {

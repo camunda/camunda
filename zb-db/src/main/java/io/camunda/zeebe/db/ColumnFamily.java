@@ -118,6 +118,26 @@ public interface ColumnFamily<KeyType extends DbKey, ValueType extends DbValue> 
   void whileEqualPrefix(DbKey keyPrefix, KeyValuePairVisitor<KeyType, ValueType> visitor);
 
   /**
+   * Visits the key-value pairs, which are stored in the column family and which have the same
+   * common prefix. The ordering depends on the key. The visitor can indicate via the return value,
+   * whether the iteration should continue or * not. This means if the visitor returns false the
+   * iteration will stop.
+   *
+   * <p>The given {@code startAtKey} indicates where the iteration should start. If the key exists,
+   * the first key-value-pair will contain the equal key as {@code startAtKey}. If the key doesn't
+   * exist it will start after.
+   *
+   * <p>Similar to {@link #whileEqualPrefix(DbKey, BiConsumer) and {@link
+   * #whileTrue(KeyValuePairVisitor)}}.
+   *
+   * @param keyPrefix the prefix which should have the keys in common
+   * @param startAtKey indicates on which key the iteration should start
+   * @param visitor the visitor which visits the key-value pairs
+   */
+  void whileEqualPrefix(
+      DbKey keyPrefix, KeyType startAtKey, KeyValuePairVisitor<KeyType, ValueType> visitor);
+
+  /**
    * Deletes the key-value pair with the given key if it exists in the column family
    *
    * @throws IllegalStateException if the key does not exist

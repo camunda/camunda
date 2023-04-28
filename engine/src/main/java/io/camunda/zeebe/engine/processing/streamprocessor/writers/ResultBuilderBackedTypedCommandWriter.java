@@ -32,6 +32,11 @@ final class ResultBuilderBackedTypedCommandWriter extends AbstractResultBuilderB
     appendRecord(key, intent, value);
   }
 
+  @Override
+  public boolean canWriteCommandOfLength(final int commandLength) {
+    return resultBuilder().canWriteEventOfLength(commandLength);
+  }
+
   private void appendRecord(final long key, final Intent intent, final RecordValue value) {
     resultBuilder()
         .appendRecord(key, RecordType.COMMAND, intent, RejectionType.NULL_VAL, "", value);
