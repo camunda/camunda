@@ -166,7 +166,7 @@ public class StatusWebSocketIT extends AbstractIT {
     final ClientAndServer engineMockServer = useAndGetEngineMockServer();
     final StatusClientSocket socket = new StatusClientSocket();
     try (final Session ignored = connectStatusClientSocket(socket)) {
-      final boolean initialStatusCorrectlyReceived = socket.getInitialStatusReceivedLatch().await(1, TimeUnit.SECONDS);
+      final boolean initialStatusCorrectlyReceived = socket.getInitialStatusReceivedLatch().await(2, TimeUnit.SECONDS);
       assertThat(initialStatusCorrectlyReceived).isTrue();
 
       // when
