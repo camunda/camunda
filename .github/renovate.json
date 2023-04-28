@@ -8,7 +8,7 @@
     "main",
     "/^stable\\/8\\..*/"
   ],
-  "dependencyDashboard": false,
+  "dependencyDashboard": true,
   "enabledManagers": [
     "dockerfile"
   ],
