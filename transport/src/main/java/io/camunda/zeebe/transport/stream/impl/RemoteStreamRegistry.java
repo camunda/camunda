@@ -9,6 +9,9 @@ package io.camunda.zeebe.transport.stream.impl;
 
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.transport.stream.api.RemoteStreamMetrics;
+import io.camunda.zeebe.transport.stream.impl.AggregatedRemoteStream.StreamConsumer;
+import io.camunda.zeebe.transport.stream.impl.AggregatedRemoteStream.StreamId;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -73,7 +76,7 @@ public class RemoteStreamRegistry<M> implements ImmutableStreamRegistry<M> {
     logicalIdToConsumers.computeIfAbsent(
         logicalId,
         id -> {
-          final var aggregatedStream = new AggregatedRemoteStream<>(logicalId);
+          final var aggregatedStream = new AggregatedRemoteStream<>(logicalId, new ArrayList<>());
           typeToConsumers.get(streamType).add(aggregatedStream);
           return aggregatedStream;
         });
@@ -100,7 +103,7 @@ public class RemoteStreamRegistry<M> implements ImmutableStreamRegistry<M> {
           logicalId,
           (id, aggregatedStream) -> {
             aggregatedStream.removeConsumer(consumer);
-            if (aggregatedStream.getStreamConsumers().isEmpty()) {
+            if (aggregatedStream.streamConsumers().isEmpty()) {
               typeToConsumers.get(consumer.streamType()).remove(aggregatedStream);
               return null;
             } else {

@@ -108,10 +108,10 @@ final class RemoteStreamApiHandlerTest {
     final var consumers = registry.get(streamType);
     assertThat(consumers).hasSize(1);
     final var stream = consumers.stream().findFirst().orElseThrow();
-    assertThat(stream.getLogicalId())
+    assertThat(stream.logicalId())
         .extracting(LogicalId::streamType, c -> c.metadata().version)
         .containsExactly(streamType, 1);
-    assertThat(stream.getStreamConsumers())
+    assertThat(stream.streamConsumers())
         .hasSize(1)
         .first()
         .extracting(c -> c.id().streamId(), c -> c.id().receiver())

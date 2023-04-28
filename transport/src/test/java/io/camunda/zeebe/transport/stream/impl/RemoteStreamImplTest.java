@@ -11,9 +11,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.transport.stream.api.RemoteStreamMetrics;
-import io.camunda.zeebe.transport.stream.impl.ImmutableStreamRegistry.AggregatedRemoteStream;
-import io.camunda.zeebe.transport.stream.impl.ImmutableStreamRegistry.StreamConsumer;
-import io.camunda.zeebe.transport.stream.impl.ImmutableStreamRegistry.StreamId;
+import io.camunda.zeebe.transport.stream.impl.AggregatedRemoteStream.StreamConsumer;
+import io.camunda.zeebe.transport.stream.impl.AggregatedRemoteStream.StreamId;
 import io.camunda.zeebe.transport.stream.impl.RemoteStreamPusher.Transport;
 import io.camunda.zeebe.transport.stream.impl.messages.PushStreamRequest;
 import io.camunda.zeebe.util.buffer.BufferUtil;
@@ -31,7 +30,7 @@ class RemoteStreamImplTest {
   private final TestSerializableData properties = new TestSerializableData(1);
   private final TestSerializableData payload = new TestSerializableData(1234);
   private final AggregatedRemoteStream<TestSerializableData> aggregatedStream =
-      new AggregatedRemoteStream<>(new LogicalId<>(streamType, properties));
+      new AggregatedRemoteStream<>(new LogicalId<>(streamType, properties), new ArrayList<>());
 
   private final FailingTransport transport = new FailingTransport();
 

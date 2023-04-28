@@ -8,8 +8,7 @@
 package io.camunda.zeebe.transport.stream.impl;
 
 import io.camunda.zeebe.transport.stream.api.RemoteStream;
-import io.camunda.zeebe.transport.stream.impl.ImmutableStreamRegistry.AggregatedRemoteStream;
-import io.camunda.zeebe.transport.stream.impl.ImmutableStreamRegistry.StreamConsumer;
+import io.camunda.zeebe.transport.stream.impl.AggregatedRemoteStream.StreamConsumer;
 import io.camunda.zeebe.util.buffer.BufferReader;
 import io.camunda.zeebe.util.buffer.BufferWriter;
 import java.util.ArrayList;
@@ -40,14 +39,14 @@ public class RemoteStreamImpl<M extends BufferReader, P extends BufferWriter>
 
   @Override
   public M metadata() {
-    return stream.getLogicalId().metadata();
+    return stream.logicalId().metadata();
   }
 
   @Override
   public void push(final P payload, final ErrorHandler<P> errorHandler) {
     executor.execute(
         () -> {
-          final List<StreamConsumer<M>> streamConsumers = stream.getStreamConsumers();
+          final List<StreamConsumer<M>> streamConsumers = stream.streamConsumers();
           final var randomClient =
               streamConsumers.get(ThreadLocalRandom.current().nextInt(streamConsumers.size()));
           streamer.pushAsync(

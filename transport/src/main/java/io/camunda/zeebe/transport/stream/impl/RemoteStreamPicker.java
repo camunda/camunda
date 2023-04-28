@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.transport.stream.impl;
 
-import io.camunda.zeebe.transport.stream.impl.ImmutableStreamRegistry.AggregatedRemoteStream;
 import java.util.Set;
 
 @FunctionalInterface
