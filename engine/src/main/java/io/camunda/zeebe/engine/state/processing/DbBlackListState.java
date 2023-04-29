@@ -14,6 +14,7 @@ import io.camunda.zeebe.db.impl.DbLong;
 import io.camunda.zeebe.db.impl.DbNil;
 import io.camunda.zeebe.engine.Loggers;
 import io.camunda.zeebe.engine.metrics.BlacklistMetrics;
+import io.camunda.zeebe.engine.processing.streamprocessor.ReadonlyProcessingContext;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecord;
 import io.camunda.zeebe.engine.state.ZbColumnFamilies;
 import io.camunda.zeebe.engine.state.mutable.MutableBlackListState;
@@ -21,6 +22,7 @@ import io.camunda.zeebe.msgpack.UnpackedObject;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceRelatedIntent;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRelated;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import org.slf4j.Logger;
 
@@ -44,6 +46,13 @@ public final class DbBlackListState implements MutableBlackListState {
         zeebeDb.createColumnFamily(
             ZbColumnFamilies.BLACKLIST, transactionContext, processInstanceKey, DbNil.INSTANCE);
     blacklistMetrics = new BlacklistMetrics(partitionId);
+  }
+
+  @Override
+  public void onRecovered(final ReadonlyProcessingContext context) {
+    final var counter = new AtomicInteger(0);
+    blackListColumnFamily.forEach(ignore -> counter.getAndIncrement());
+    blacklistMetrics.setBlacklistInstanceCounter(counter.get());
   }
 
   private void blacklist(final long key) {

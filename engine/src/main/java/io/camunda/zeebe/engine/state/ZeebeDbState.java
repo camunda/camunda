@@ -115,6 +115,7 @@ public class ZeebeDbState implements MutableZeebeState {
   public void onRecovered(final ReadonlyProcessingContext context) {
     messageSubscriptionState.onRecovered(context);
     processMessageSubscriptionState.onRecovered(context);
+    blackListState.onRecovered(context);
   }
 
   @Override
@@ -188,11 +189,6 @@ public class ZeebeDbState implements MutableZeebeState {
   }
 
   @Override
-  public KeyGenerator getKeyGenerator() {
-    return keyGenerator;
-  }
-
-  @Override
   public MutablePendingMessageSubscriptionState getPendingMessageSubscriptionState() {
     return messageSubscriptionState;
   }
@@ -200,6 +196,21 @@ public class ZeebeDbState implements MutableZeebeState {
   @Override
   public MutablePendingProcessMessageSubscriptionState getPendingProcessMessageSubscriptionState() {
     return processMessageSubscriptionState;
+  }
+
+  @Override
+  public KeyGenerator getKeyGenerator() {
+    return keyGenerator;
+  }
+
+  @Override
+  public MutableLastProcessedPositionState getLastProcessedPositionState() {
+    return lastProcessedPositionState;
+  }
+
+  @Override
+  public MutableDecisionState getDecisionState() {
+    return decisionState;
   }
 
   @Override
@@ -240,15 +251,5 @@ public class ZeebeDbState implements MutableZeebeState {
 
   public KeyGeneratorControls getKeyGeneratorControls() {
     return keyGenerator;
-  }
-
-  @Override
-  public MutableLastProcessedPositionState getLastProcessedPositionState() {
-    return lastProcessedPositionState;
-  }
-
-  @Override
-  public MutableDecisionState getDecisionState() {
-    return decisionState;
   }
 }
