@@ -22,6 +22,7 @@ import io.camunda.zeebe.msgpack.UnpackedObject;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceRelatedIntent;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRelated;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import org.slf4j.Logger;
 
@@ -50,7 +51,10 @@ public final class DbBlackListState implements MutableBlackListState {
 
   @Override
   public void onRecovered(final ReadonlyStreamProcessorContext context) {
-    empty = blackListColumnFamily.isEmpty();
+    final var counter = new AtomicInteger(0);
+    blackListColumnFamily.forEach(ignore -> counter.getAndIncrement());
+    empty = counter.get() == 0;
+    blacklistMetrics.setBlacklistInstanceCounter(counter.get());
   }
 
   private void blacklist(final long key) {
