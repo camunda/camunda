@@ -25,4 +25,18 @@ public interface JournalMetaStore {
    * @return last flushed index
    */
   long loadLastFlushedIndex();
+
+  class InMemory implements JournalMetaStore {
+    private volatile long index;
+
+    @Override
+    public void storeLastFlushedIndex(final long index) {
+      this.index = index;
+    }
+
+    @Override
+    public long loadLastFlushedIndex() {
+      return index;
+    }
+  }
 }

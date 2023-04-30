@@ -17,9 +17,9 @@ package io.atomix.raft.storage.log;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.atomix.raft.storage.MockJournalMetaStore;
 import io.atomix.raft.storage.log.entry.ApplicationEntry;
 import io.atomix.raft.storage.log.entry.RaftLogEntry;
+import io.camunda.zeebe.journal.JournalMetaStore.InMemory;
 import java.io.File;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -42,7 +42,7 @@ class RaftLogUncommittedReaderTest {
         RaftLog.builder()
             .withDirectory(directory)
             .withName("test")
-            .withMetaStore(new MockJournalMetaStore())
+            .withMetaStore(new InMemory())
             .build();
     uncommittedReader = raftlog.openUncommittedReader();
     data.order(ByteOrder.LITTLE_ENDIAN).putInt(123456);
@@ -61,7 +61,7 @@ class RaftLogUncommittedReaderTest {
 
     // then
     assertThat(uncommittedReader.hasNext()).isTrue();
-    assertThat(uncommittedReader.next().index()).isEqualTo(1);
+    assertThat(uncommittedReader.next().index()).isOne();
 
     assertThat(uncommittedReader.hasNext()).isTrue();
     assertThat(uncommittedReader.next().index()).isEqualTo(2);
