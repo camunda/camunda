@@ -102,14 +102,16 @@ public class MetaStore implements JournalMetaStore, AutoCloseable {
         FileChannel.open(confFile.toPath(), StandardOpenOption.READ, StandardOpenOption.WRITE);
 
     // Read existing meta info and rewrite with the current version
-    initializeMetaBuffer();
     lastFlushedIndex = readLastFlushedIndex();
+
+    initializeMetaBuffer();
   }
 
   private void initializeMetaBuffer() {
     final var term = loadTerm();
     final long index = loadLastFlushedIndex();
     final var voted = loadVote();
+
     metaBuffer.put(0, VERSION);
     storeTerm(term);
     storeLastFlushedIndex(index);
