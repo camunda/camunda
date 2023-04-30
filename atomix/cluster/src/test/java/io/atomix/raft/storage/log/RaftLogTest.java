@@ -23,12 +23,12 @@ import static org.mockito.Mockito.verify;
 import io.atomix.cluster.MemberId;
 import io.atomix.raft.cluster.RaftMember.Type;
 import io.atomix.raft.cluster.impl.DefaultRaftMember;
-import io.atomix.raft.storage.MockJournalMetaStore;
 import io.atomix.raft.storage.log.entry.ApplicationEntry;
 import io.atomix.raft.storage.log.entry.ConfigurationEntry;
 import io.atomix.raft.storage.log.entry.InitialEntry;
 import io.atomix.raft.storage.log.entry.RaftLogEntry;
 import io.camunda.zeebe.journal.Journal;
+import io.camunda.zeebe.journal.JournalMetaStore.InMemory;
 import java.io.File;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -61,7 +61,7 @@ class RaftLogTest {
         RaftLog.builder()
             .withDirectory(directory)
             .withName("test")
-            .withMetaStore(new MockJournalMetaStore())
+            .withMetaStore(new InMemory())
             .build();
     reader = raftlog.openUncommittedReader();
   }
@@ -143,7 +143,7 @@ class RaftLogTest {
         RaftLog.builder()
             .withDirectory(directory)
             .withName("test-follower")
-            .withMetaStore(new MockJournalMetaStore())
+            .withMetaStore(new InMemory())
             .build();
 
     // when

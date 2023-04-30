@@ -7,19 +7,21 @@
  */
 package io.camunda.zeebe.journal.util;
 
-import io.camunda.zeebe.journal.JournalMetaStore;
+import io.camunda.zeebe.journal.JournalMetaStore.InMemory;
 
-public final class MockJournalMetastore implements JournalMetaStore {
-
-  private long lastFlushedIndex = -1;
+public final class MockJournalMetastore extends InMemory {
+  private volatile Runnable onStoreFlushedIndex;
 
   @Override
   public void storeLastFlushedIndex(final long index) {
-    lastFlushedIndex = index;
+    if (onStoreFlushedIndex != null) {
+      onStoreFlushedIndex.run();
+    }
+
+    super.storeLastFlushedIndex(index);
   }
 
-  @Override
-  public long loadLastFlushedIndex() {
-    return lastFlushedIndex;
+  public void setOnStoreFlushedIndex(final Runnable onStoreFlushedIndex) {
+    this.onStoreFlushedIndex = onStoreFlushedIndex;
   }
 }

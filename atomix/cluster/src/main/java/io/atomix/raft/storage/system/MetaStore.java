@@ -39,11 +39,10 @@ import org.slf4j.LoggerFactory;
 /**
  * Manages persistence of server configurations.
  *
- * <p>The server metastore is responsible for persisting server configurations according to the
- * configured {@link RaftStorage#storageLevel() storage level}. Each server persists their current
- * {@link #loadTerm() term} and last {@link #loadVote() vote} as is dictated by the Raft consensus
- * algorithm. Additionally, the metastore is responsible for storing the last know server {@link
- * Configuration}, including cluster membership.
+ * <p>The server metastore is responsible for persisting server configurations. Each server persists
+ * their current {@link #loadTerm() term} and last {@link #loadVote() vote} as is dictated by the
+ * Raft consensus algorithm. Additionally, the metastore is responsible for storing the last know
+ * server {@link Configuration}, including cluster membership.
  */
 public class MetaStore implements JournalMetaStore, AutoCloseable {
 
@@ -103,6 +102,7 @@ public class MetaStore implements JournalMetaStore, AutoCloseable {
     final var term = loadTerm();
     final long index = loadLastFlushedIndex();
     final var voted = loadVote();
+
     metaBuffer.put(0, VERSION);
     storeTerm(term);
     storeLastFlushedIndex(index);
