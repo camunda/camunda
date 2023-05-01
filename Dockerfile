@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1.4
 # Override this based on the architecture; this is currently pointing to amd64
-ARG BASE_SHA="22f133769ce2b956d150ab749cd4630b3e7fbac2b37049911aa0973a1283047c"
+ARG BASE_DIGEST="sha256:22f133769ce2b956d150ab749cd4630b3e7fbac2b37049911aa0973a1283047c"
 
 # set to "build" to build zeebe from scratch instead of using a distball
 ARG DIST="distball"
@@ -35,16 +35,16 @@ FROM ${DIST} as dist
 
 # Building application image
 # hadolint ignore=DL3006
-FROM eclipse-temurin:17-jre-focal@sha256:${BASE_SHA} as app
+FROM eclipse-temurin:17-jre-focal@${BASE_DIGEST} as app
 
 # leave unset to use the default value at the top of the file
-ARG BASE_SHA
+ARG BASE_DIGEST
 ARG VERSION=""
 ARG DATE=""
 ARG REVISION=""
 
 # OCI labels: https://github.com/opencontainers/image-spec/blob/main/annotations.md
-LABEL org.opencontainers.image.base.digest="${BASE_SHA}"
+LABEL org.opencontainers.image.base.digest="${BASE_DIGEST}"
 LABEL org.opencontainers.image.base.name="docker.io/library/eclipse-temurin:17-jre-focal"
 LABEL org.opencontainers.image.created="${DATE}"
 LABEL org.opencontainers.image.authors="zeebe@camunda.com"

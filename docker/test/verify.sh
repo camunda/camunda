@@ -47,6 +47,16 @@ if ! imageInfo="$(docker inspect "${imageName}")"; then
   exit 1
 fi
 
+DIGEST_REGEX="BASE_DIGEST=\"(sha256\:[a-f0-9\:]+)\""
+DOCKERFILE=$(<"${BASH_SOURCE%/*}/../../Dockerfile")
+if [[ $DOCKERFILE =~ $DIGEST_REGEX ]]; then
+    DIGEST="${BASH_REMATCH[1]}"
+    echo "Digest found: $DIGEST"
+else
+    echo >&2 "Docker image digest can not be found in the Dockerfile"
+    exit 1
+fi
+
 # Extract the actual labels from the info - make sure to sort keys so we always have the same
 # ordering for maps to compare things properly
 actualLabels=$(echo "${imageInfo}" | jq --sort-keys '.[0].Config.Labels')
@@ -65,6 +75,7 @@ expectedLabels=$(
     --arg VERSION "${VERSION}" \
     --arg REVISION "${REVISION}" \
     --arg DATE "${DATE}" \
+    --arg DIGEST "${DIGEST}" \
     "$(cat "${labelsGoldenFile}")"
 )
 
