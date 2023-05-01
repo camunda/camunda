@@ -14,6 +14,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.zeebe.journal.CorruptedJournalException;
 import java.io.File;
+import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Objects;
 import org.agrona.CloseHelper;
@@ -184,6 +185,26 @@ class SegmentsManagerTest {
     assertThat(segments.getFirstSegment())
         .extracting(Segment::index, Segment::lastIndex)
         .containsExactly(1L, 0L);
+  }
+
+  @Test
+  void shouldHandleCrashOnResetAfterDeletionBeforeSegmentIsCreated() throws IOException {
+    // given
+    try (final var journal = openJournal()) {
+      journal.append(1, journalFactory.entry()).index();
+      journal.append(2, journalFactory.entry()).index();
+      journal.append(3, journalFactory.entry()).index();
+      journal.reset(10);
+    }
+
+    // when - simulate "failure" by corrupting the descriptor
+    segments = journalFactory.segmentsManager(directory);
+    segments.open();
+    LogCorrupter.corruptDescriptor(
+        Objects.requireNonNull(segments.getFirstSegment()).file().file());
+
+    // then
+    assertThatNoException().isThrownBy(() -> segments.open());
   }
 
   private SegmentedJournal openJournal() {
