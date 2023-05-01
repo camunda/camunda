@@ -20,7 +20,6 @@ import static com.google.common.base.Preconditions.checkState;
 
 import com.google.common.collect.Sets;
 import io.camunda.zeebe.journal.Journal;
-import io.camunda.zeebe.journal.JournalMetaStore;
 import io.camunda.zeebe.journal.JournalReader;
 import io.camunda.zeebe.journal.JournalRecord;
 import io.camunda.zeebe.util.VisibleForTesting;
@@ -47,15 +46,14 @@ public final class SegmentedJournal implements Journal {
       final JournalIndex journalIndex,
       final SegmentsManager segments,
       final JournalMetrics journalMetrics,
-      final JournalMetaStore journalMetaStore) {
+      final SegmentsFlusher segmentsFlusher) {
     this.journalMetrics = Objects.requireNonNull(journalMetrics, "must specify journal metrics");
     this.journalIndex = Objects.requireNonNull(journalIndex, "must specify a journal index");
     this.segments = Objects.requireNonNull(segments, "must specify a journal segments manager");
+    Objects.requireNonNull(segmentsFlusher, "must specify a segments flusher");
 
-    Objects.requireNonNull(journalMetaStore, "must specify a journal meta store");
-    this.segments.open(journalMetaStore.loadLastFlushedIndex());
-    writer =
-        new SegmentedJournalWriter(segments, new SegmentsFlusher(journalMetaStore), journalMetrics);
+    this.segments.open();
+    writer = new SegmentedJournalWriter(segments, segmentsFlusher, journalMetrics);
   }
 
   /**

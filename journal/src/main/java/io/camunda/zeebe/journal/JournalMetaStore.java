@@ -37,7 +37,7 @@ public interface JournalMetaStore {
   boolean hasLastFlushedIndex();
 
   class InMemory implements JournalMetaStore {
-    private volatile long index;
+    private volatile long index = -1L;
 
     @Override
     public void storeLastFlushedIndex(final long index) {
@@ -56,7 +56,7 @@ public interface JournalMetaStore {
 
     @Override
     public boolean hasLastFlushedIndex() {
-      return index == -1L;
+      return index != -1L;
     }
   }
 }
