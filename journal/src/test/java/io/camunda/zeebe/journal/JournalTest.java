@@ -84,8 +84,8 @@ final class JournalTest {
     final var recordAppended = journal.append(1, recordDataWriter);
 
     // then
-    assertThat(recordAppended.index()).isEqualTo(1);
-    assertThat(recordAppended.asqn()).isEqualTo(1);
+    assertThat(recordAppended.index()).isOne();
+    assertThat(recordAppended.asqn()).isOne();
   }
 
   @Test
@@ -108,7 +108,7 @@ final class JournalTest {
     final var secondRecord = journal.append(20, otherRecordDataWriter);
 
     // then
-    assertThat(firstRecord.index()).isEqualTo(1);
+    assertThat(firstRecord.index()).isOne();
     assertThat(firstRecord.asqn()).isEqualTo(10);
 
     assertThat(secondRecord.index()).isEqualTo(2);
@@ -179,7 +179,7 @@ final class JournalTest {
   void shouldReset() {
     // given
     long asqn = 1;
-    assertThat(journal.getLastIndex()).isEqualTo(0);
+    assertThat(journal.getLastIndex()).isZero();
     journal.append(asqn++, recordDataWriter);
     journal.append(asqn++, recordDataWriter);
 
@@ -188,9 +188,10 @@ final class JournalTest {
 
     // then
     assertThat(journal.isEmpty()).isTrue();
-    assertThat(journal.getLastIndex()).isEqualTo(1);
+    assertThat(journal.getLastIndex()).isOne();
     final var record = journal.append(asqn, recordDataWriter);
     assertThat(record.index()).isEqualTo(2);
+    assertThat(metaStore.hasLastFlushedIndex()).isFalse();
   }
 
   @Test
@@ -198,11 +199,10 @@ final class JournalTest {
     // given
     final var reader = journal.openReader();
     long asqn = 1;
-    assertThat(journal.getLastIndex()).isEqualTo(0);
+    assertThat(journal.getLastIndex()).isZero();
     journal.append(asqn++, recordDataWriter);
     journal.append(asqn++, recordDataWriter);
-    final var record1 = reader.next();
-    assertThat(record1.index()).isEqualTo(1);
+    assertThat(reader.next().index()).isOne();
 
     // when
     journal.reset(2);
@@ -216,18 +216,17 @@ final class JournalTest {
   void shouldWriteToTruncatedIndex() {
     // given
     final var reader = journal.openReader();
-    assertThat(journal.getLastIndex()).isEqualTo(0);
+    assertThat(journal.getLastIndex()).isZero();
     journal.append(1, recordDataWriter);
     journal.append(2, recordDataWriter);
     journal.append(3, recordDataWriter);
-    final var record1 = reader.next();
-    assertThat(record1.index()).isEqualTo(1);
+    assertThat(reader.next().index()).isOne();
 
     // when
     journal.deleteAfter(1);
 
     // then
-    assertThat(journal.getLastIndex()).isEqualTo(1);
+    assertThat(journal.getLastIndex()).isOne();
     final var record = journal.append(4, recordDataWriter);
     assertThat(record.index()).isEqualTo(2);
     assertThat(record.asqn()).isEqualTo(4);
@@ -241,18 +240,17 @@ final class JournalTest {
   void shouldTruncate() {
     // given
     final var reader = journal.openReader();
-    assertThat(journal.getLastIndex()).isEqualTo(0);
+    assertThat(journal.getLastIndex()).isZero();
     journal.append(1, recordDataWriter);
     journal.append(2, recordDataWriter);
     journal.append(3, recordDataWriter);
-    final var record1 = reader.next();
-    assertThat(record1.index()).isEqualTo(1);
+    assertThat(reader.next().index()).isOne();
 
     // when
     journal.deleteAfter(1);
 
     // then
-    assertThat(journal.getLastIndex()).isEqualTo(1);
+    assertThat(journal.getLastIndex()).isOne();
     assertThat(reader.hasNext()).isFalse();
   }
 
@@ -301,7 +299,7 @@ final class JournalTest {
   void shouldNotReadTruncatedEntriesWhenReaderPastTruncateIndex() {
     // given
     final var reader = journal.openReader();
-    assertThat(journal.getLastIndex()).isEqualTo(0);
+    assertThat(journal.getLastIndex()).isZero();
     journal.append(1, recordDataWriter);
     journal.append(2, recordDataWriter);
     journal.append(3, recordDataWriter);
@@ -313,7 +311,7 @@ final class JournalTest {
     journal.deleteAfter(1);
 
     // then
-    assertThat(journal.getLastIndex()).isEqualTo(1);
+    assertThat(journal.getLastIndex()).isOne();
     assertThat(reader.hasNext()).isFalse();
   }
 
@@ -321,7 +319,7 @@ final class JournalTest {
   void shouldNotReadTruncatedEntriesWhenReaderAtTruncateIndex() {
     // given
     final var reader = journal.openReader();
-    assertThat(journal.getLastIndex()).isEqualTo(0);
+    assertThat(journal.getLastIndex()).isZero();
     journal.append(1, recordDataWriter);
     journal.append(2, recordDataWriter);
     journal.append(3, recordDataWriter);
@@ -341,7 +339,7 @@ final class JournalTest {
   void shouldNotReadTruncatedEntriesWhenReaderBeforeTruncateIndex() {
     // given
     final var reader = journal.openReader();
-    assertThat(journal.getLastIndex()).isEqualTo(0);
+    assertThat(journal.getLastIndex()).isZero();
     journal.append(1, recordDataWriter);
     journal.append(2, recordDataWriter);
     journal.append(3, recordDataWriter);

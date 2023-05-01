@@ -37,7 +37,7 @@ class SegmentsManagerTest {
   void shouldDeleteFilesMarkedForDeletionsOnLoad() {
     // given
     segments = journalFactory.segmentsManager(directory);
-    segments.open(0);
+    segments.open();
     Objects.requireNonNull(segments.getFirstSegment()).createReader();
     segments.getFirstSegment().delete();
 
@@ -48,7 +48,7 @@ class SegmentsManagerTest {
     // deleted when opening.
 
     try (final var newSegments = journalFactory.segmentsManager(directory)) {
-      newSegments.open(0);
+      newSegments.open();
       // then
       final File logDirectory = directory.resolve("data").toFile();
       assertThat(logDirectory)
@@ -61,9 +61,8 @@ class SegmentsManagerTest {
   @Test
   void shouldDetectCorruptionAtDescriptorWithAckedEntries() throws Exception {
     // given
-    final long index;
     try (final var journal = openJournal()) {
-      index = journal.append(journalFactory.entry()).index();
+      journal.append(journalFactory.entry()).index();
     }
 
     final File dataFile = directory.resolve("data").toFile();
@@ -73,7 +72,7 @@ class SegmentsManagerTest {
 
     // when/then
     segments = journalFactory.segmentsManager(directory);
-    assertThatThrownBy(() -> segments.open(index)).isInstanceOf(CorruptedJournalException.class);
+    assertThatThrownBy(() -> segments.open()).isInstanceOf(CorruptedJournalException.class);
   }
 
   @Test
@@ -84,6 +83,7 @@ class SegmentsManagerTest {
       index = journal.append(journalFactory.entry()).index();
       journal.append(journalFactory.entry());
     }
+    journalFactory.metaStore().storeLastFlushedIndex(index);
 
     final File dataFile = directory.resolve("data").toFile();
     final File logFile =
@@ -94,7 +94,7 @@ class SegmentsManagerTest {
     segments = journalFactory.segmentsManager(directory);
 
     // then
-    assertThatNoException().isThrownBy(() -> segments.open(index));
+    assertThatNoException().isThrownBy(() -> segments.open());
     assertThat(segments.getFirstSegment())
         .extracting(Segment::index, Segment::lastIndex)
         .containsExactly(index, index);
@@ -114,7 +114,7 @@ class SegmentsManagerTest {
     segments = journalFactory.segmentsManager(directory);
 
     // then
-    assertThatNoException().isThrownBy(() -> segments.open(0));
+    assertThatNoException().isThrownBy(() -> segments.open());
     assertThat(segments.getFirstSegment())
         .extracting(Segment::index, Segment::lastIndex)
         .containsExactly(1L, 0L);
@@ -126,38 +126,19 @@ class SegmentsManagerTest {
     final var journal = openJournal();
     final var indexInFirstSegment = journal.append(1, journalFactory.entry()).index();
     journal.close();
+    journalFactory.metaStore().storeLastFlushedIndex(indexInFirstSegment + 1);
 
     // when
     segments = journalFactory.segmentsManager(directory);
 
     // then
     assertThatException()
-        .isThrownBy(() -> segments.open(indexInFirstSegment + 1))
+        .isThrownBy(() -> segments.open())
         .isInstanceOf(CorruptedJournalException.class);
   }
 
   @Test
   void shouldDetectCorruptionInIntermediateSegments() throws Exception {
-    // given
-    final var journal = openJournal();
-    final var indexInFirstSegment = journal.append(1, journalFactory.entry()).index();
-    final var lastFlushedIndex = journal.append(2, journalFactory.entry()).index();
-    final var firstSegmentFile = journal.getFirstSegment().file().file();
-    journal.close();
-
-    LogCorrupter.corruptRecord(firstSegmentFile, indexInFirstSegment);
-
-    // when
-    segments = journalFactory.segmentsManager(directory);
-
-    // then
-    assertThatException()
-        .isThrownBy(() -> segments.open(lastFlushedIndex))
-        .isInstanceOf(CorruptedJournalException.class);
-  }
-
-  @Test
-  void shouldNotDetectCorruptionWithUnflushedIndexInIntermediateSegments() throws Exception {
     // given
     final var journal = openJournal();
     final var indexInFirstSegment = journal.append(1, journalFactory.entry()).index();
@@ -171,7 +152,28 @@ class SegmentsManagerTest {
     segments = journalFactory.segmentsManager(directory);
 
     // then
-    assertThatNoException().isThrownBy(() -> segments.open(0));
+    assertThatException()
+        .isThrownBy(() -> segments.open())
+        .isInstanceOf(CorruptedJournalException.class);
+  }
+
+  @Test
+  void shouldNotDetectCorruptionWithUnflushedIndexInIntermediateSegments() throws Exception {
+    // given
+    final var journal = openJournal();
+    final var indexInFirstSegment = journal.append(1, journalFactory.entry()).index();
+    journal.append(2, journalFactory.entry()).index();
+    final var firstSegmentFile = journal.getFirstSegment().file().file();
+    journal.close();
+    journalFactory.metaStore().storeLastFlushedIndex(0);
+
+    LogCorrupter.corruptRecord(firstSegmentFile, indexInFirstSegment);
+
+    // when
+    segments = journalFactory.segmentsManager(directory);
+
+    // then
+    assertThatNoException().isThrownBy(() -> segments.open());
   }
 
   @Test
@@ -186,7 +188,7 @@ class SegmentsManagerTest {
     segments = journalFactory.segmentsManager(directory);
 
     // then
-    assertThatNoException().isThrownBy(() -> segments.open(0));
+    assertThatNoException().isThrownBy(() -> segments.open());
     assertThat(segments.getFirstSegment())
         .extracting(Segment::index, Segment::lastIndex)
         .containsExactly(1L, 0L);
