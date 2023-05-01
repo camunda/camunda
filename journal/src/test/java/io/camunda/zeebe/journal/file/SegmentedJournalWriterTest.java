@@ -26,7 +26,7 @@ final class SegmentedJournalWriterTest {
   @BeforeEach
   void beforeEach(final @TempDir Path tempDir) {
     segments = journalFactory.segmentsManager(tempDir);
-    segments.open(-1L);
+    segments.open();
     writer = new SegmentedJournalWriter(segments, flusher, journalFactory.metrics());
   }
 
@@ -64,6 +64,6 @@ final class SegmentedJournalWriterTest {
 
     // then
     assertThat(flusher.nextFlushIndex()).isEqualTo(8L);
-    assertThat(journalFactory.metaStore().loadLastFlushedIndex()).isEqualTo(7L);
+    assertThat(journalFactory.metaStore().hasLastFlushedIndex()).isFalse();
   }
 }
