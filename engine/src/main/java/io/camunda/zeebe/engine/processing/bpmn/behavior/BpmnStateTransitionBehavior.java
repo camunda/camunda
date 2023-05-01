@@ -22,7 +22,9 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.deployment.DeployedProcess;
+import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceBatchRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
+import io.camunda.zeebe.protocol.record.intent.ProcessInstanceBatchIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
@@ -318,26 +320,27 @@ public final class BpmnStateTransitionBehavior {
   }
 
   /**
-   * Terminate all child instances of the given scope.
+   * Terminate all child instances of the given scope. Terminating is done in batches. It is
+   * triggered by writing the ProcessInstanceBatch TERMINATE command.
    *
    * @param context the scope to terminate the child instances of
    * @return {@code true} if the scope has no active child instances
    */
   public boolean terminateChildInstances(final BpmnElementContext context) {
-
-    stateBehavior.getChildInstances(context).stream()
-        .filter(child -> ProcessInstanceLifecycle.canTerminate(child.getIntent()))
-        .forEach(
-            childInstanceContext ->
-                commandWriter.appendFollowUpCommand(
-                    childInstanceContext.getElementInstanceKey(),
-                    ProcessInstanceIntent.TERMINATE_ELEMENT,
-                    childInstanceContext.getRecordValue()));
-
     final var elementInstance = stateBehavior.getElementInstance(context);
     final var activeChildInstances = elementInstance.getNumberOfActiveElementInstances();
 
-    return activeChildInstances == 0;
+    if (activeChildInstances == 0) {
+      return true;
+    } else {
+      final var batchRecord =
+          new ProcessInstanceBatchRecord()
+              .setProcessInstanceKey(context.getProcessInstanceKey())
+              .setBatchElementInstanceKey(context.getElementInstanceKey());
+      final var key = keyGenerator.nextKey();
+      commandWriter.appendFollowUpCommand(key, ProcessInstanceBatchIntent.TERMINATE, batchRecord);
+      return false;
+    }
   }
 
   public <T extends ExecutableFlowNode> void takeOutgoingSequenceFlows(
