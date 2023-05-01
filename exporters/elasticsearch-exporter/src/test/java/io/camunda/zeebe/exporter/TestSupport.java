@@ -52,6 +52,7 @@ final class TestSupport {
       case JOB -> config.job = value;
       case DEPLOYMENT -> config.deployment = value;
       case PROCESS_INSTANCE -> config.processInstance = value;
+      case PROCESS_INSTANCE_BATCH -> config.processInstanceBatch = value;
       case INCIDENT -> config.incident = value;
       case MESSAGE -> config.message = value;
       case MESSAGE_SUBSCRIPTION -> config.messageSubscription = value;

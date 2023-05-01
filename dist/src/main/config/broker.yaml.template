@@ -531,6 +531,7 @@
         #     messageSubscription: true
         #     process: true
         #     processInstance: true
+        #     processInstanceBatch: false
         #     processInstanceCreation: true
         #     processInstanceModification: true
         #     processMessageSubscription: true
