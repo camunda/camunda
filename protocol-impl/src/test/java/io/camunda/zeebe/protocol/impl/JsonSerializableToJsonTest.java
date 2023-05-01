@@ -34,6 +34,7 @@ import io.camunda.zeebe.protocol.impl.record.value.message.MessageRecord;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageStartEventSubscriptionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageSubscriptionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.message.ProcessMessageSubscriptionRecord;
+import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceBatchRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationStartInstruction;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceModificationActivateInstruction;
@@ -1265,6 +1266,45 @@ final class JsonSerializableToJsonTest {
                 "decisionsMetadata": [],
                 "decisionRequirementsMetadata": []
               }
+          }
+          """
+      },
+
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      //////////////////////////////// ProcessInstanceBatchRecord /////////////////////////////////
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      {
+        "ProcessInstanceBatchRecord",
+        (Supplier<UnifiedRecordValue>)
+            () ->
+                new ProcessInstanceBatchRecord()
+                    .setProcessInstanceKey(123L)
+                    .setBatchElementInstanceKey(456L)
+                    .setIndex(10L),
+        """
+          {
+            "processInstanceKey": 123,
+            "batchElementInstanceKey": 456,
+            "index": 10
+          }
+          """
+      },
+
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      //////////////////////////////// Empty ProcessInstanceBatchRecord ///////////////////////////
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      {
+        "Empty ProcessInstanceBatchRecord",
+        (Supplier<UnifiedRecordValue>)
+            () ->
+                new ProcessInstanceBatchRecord()
+                    .setProcessInstanceKey(123L)
+                    .setBatchElementInstanceKey(456L),
+        """
+          {
+            "processInstanceKey": 123,
+            "batchElementInstanceKey": 456,
+            "index": -1
           }
           """
       },
