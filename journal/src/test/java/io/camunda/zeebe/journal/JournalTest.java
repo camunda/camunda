@@ -182,6 +182,7 @@ final class JournalTest {
     assertThat(journal.getLastIndex()).isOne();
     final var record = journal.append(asqn, data);
     assertThat(record.index()).isEqualTo(2);
+    assertThat(metaStore.hasLastFlushedIndex()).isFalse();
   }
 
   @Test
@@ -192,8 +193,7 @@ final class JournalTest {
     assertThat(journal.getLastIndex()).isZero();
     journal.append(asqn++, data);
     journal.append(asqn++, data);
-    final var record1 = reader.next();
-    assertThat(record1.index()).isOne();
+    assertThat(reader.next().index()).isOne();
 
     // when
     journal.reset(2);
@@ -211,8 +211,7 @@ final class JournalTest {
     journal.append(1, data);
     journal.append(2, data);
     journal.append(3, data);
-    final var record1 = reader.next();
-    assertThat(record1.index()).isOne();
+    assertThat(reader.next().index()).isOne();
 
     // when
     journal.deleteAfter(1);
@@ -236,8 +235,7 @@ final class JournalTest {
     journal.append(1, data);
     journal.append(2, data);
     journal.append(3, data);
-    final var record1 = reader.next();
-    assertThat(record1.index()).isOne();
+    assertThat(reader.next().index()).isOne();
 
     // when
     journal.deleteAfter(1);
@@ -582,7 +580,7 @@ final class JournalTest {
     final var secondRecord = copyRecord(journal.append(data));
     final File dataFile = Objects.requireNonNull(directory.toFile().listFiles())[0];
     final File log = Objects.requireNonNull(dataFile.listFiles())[0];
-    final var metaStore = new MockJournalMetastore();
+    final var metaStore = new InMemory();
     metaStore.storeLastFlushedIndex(firstRecord.index());
 
     // when

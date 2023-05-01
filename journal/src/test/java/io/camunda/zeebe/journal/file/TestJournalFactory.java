@@ -65,7 +65,7 @@ final class TestJournalFactory {
     size = getSerializedSize(entryData);
     this.maxEntryCount = maxEntryCount;
 
-    loader = new SegmentLoader(2 * maxSegmentSize(), metrics);
+    loader = new SegmentLoader();
   }
 
   int serializedEntrySize() {
@@ -95,11 +95,18 @@ final class TestJournalFactory {
         directory.resolve("data").toFile(),
         "journal",
         segmentLoader(),
-        metrics);
+        metaStore);
   }
 
-  SegmentedJournal journal(final SegmentsManager segments) {
-    return new SegmentedJournal(index, segments, metrics, metaStore);
+  SegmentedJournal journal(final Path directory) {
+    return new SegmentedJournal(
+        directory.toFile(),
+        maxSegmentSize(),
+        1024 * 1024 * 1024L,
+        index,
+        segmentsManager(directory),
+        metrics,
+        metaStore);
   }
 
   DirectBuffer entryData() {

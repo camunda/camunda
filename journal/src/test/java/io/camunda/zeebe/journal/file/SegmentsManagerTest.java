@@ -36,7 +36,7 @@ class SegmentsManagerTest {
   void shouldDeleteFilesMarkedForDeletionsOnLoad() {
     // given
     segments = journalFactory.segmentsManager(directory);
-    segments.open(0);
+    segments.open();
     Objects.requireNonNull(segments.getFirstSegment()).createReader();
     segments.getFirstSegment().delete();
 
@@ -44,7 +44,7 @@ class SegmentsManagerTest {
     // if we close the current journal, it will delete the files on closing. So we cannot test this
     // scenario.
     try (final var newSegments = journalFactory.segmentsManager(directory)) {
-      newSegments.open(0);
+      newSegments.open();
       // then
       final File logDirectory = directory.resolve("data").toFile();
       assertThat(logDirectory)
@@ -57,9 +57,8 @@ class SegmentsManagerTest {
   @Test
   void shouldDetectCorruptionAtDescriptorWithAckedEntries() throws Exception {
     // given
-    final long index;
     try (final var journal = openJournal()) {
-      index = journal.append(journalFactory.entryData()).index();
+      journal.append(journalFactory.entryData()).index();
     }
 
     final File dataFile = directory.resolve("data").toFile();
@@ -69,7 +68,7 @@ class SegmentsManagerTest {
 
     // when/then
     segments = journalFactory.segmentsManager(directory);
-    assertThatThrownBy(() -> segments.open(index)).isInstanceOf(CorruptedJournalException.class);
+    assertThatThrownBy(() -> segments.open()).isInstanceOf(CorruptedJournalException.class);
   }
 
   @Test
@@ -80,6 +79,7 @@ class SegmentsManagerTest {
       index = journal.append(journalFactory.entryData()).index();
       journal.append(journalFactory.entryData());
     }
+    journalFactory.metaStore().storeLastFlushedIndex(index);
 
     final File dataFile = directory.resolve("data").toFile();
     final File logFile =
@@ -90,7 +90,7 @@ class SegmentsManagerTest {
     segments = journalFactory.segmentsManager(directory);
 
     // then
-    assertThatNoException().isThrownBy(() -> segments.open(index));
+    assertThatNoException().isThrownBy(() -> segments.open());
     assertThat(segments.getFirstSegment())
         .extracting(Segment::index, Segment::lastIndex)
         .containsExactly(index, index);
@@ -110,7 +110,7 @@ class SegmentsManagerTest {
     segments = journalFactory.segmentsManager(directory);
 
     // then
-    assertThatNoException().isThrownBy(() -> segments.open(0));
+    assertThatNoException().isThrownBy(() -> segments.open());
     assertThat(segments.getFirstSegment())
         .extracting(Segment::index, Segment::lastIndex)
         .containsExactly(1L, 0L);
@@ -122,13 +122,13 @@ class SegmentsManagerTest {
     final var journal = openJournal();
     final var indexInFirstSegment = journal.append(1, journalFactory.entryData()).index();
     journal.close();
+    journalFactory.metaStore().storeLastFlushedIndex(indexInFirstSegment + 1);
 
     // when
     segments = journalFactory.segmentsManager(directory);
 
     // then
-    assertThatCode(() -> segments.open(indexInFirstSegment + 1))
-        .isInstanceOf(CorruptedJournalException.class);
+    assertThatCode(segments::open).isInstanceOf(CorruptedJournalException.class);
   }
 
   @Test
@@ -144,10 +144,10 @@ class SegmentsManagerTest {
 
     // when
     segments = journalFactory.segmentsManager(directory);
+    journalFactory.metaStore().storeLastFlushedIndex(lastFlushedIndex);
 
     // then
-    assertThatCode(() -> segments.open(lastFlushedIndex))
-        .isInstanceOf(CorruptedJournalException.class);
+    assertThatCode(segments::open).isInstanceOf(CorruptedJournalException.class);
   }
 
   @Test
@@ -165,7 +165,7 @@ class SegmentsManagerTest {
     segments = journalFactory.segmentsManager(directory);
 
     // then
-    assertThatNoException().isThrownBy(() -> segments.open(0));
+    assertThatNoException().isThrownBy(segments::open);
   }
 
   @Test
@@ -180,12 +180,13 @@ class SegmentsManagerTest {
     segments = journalFactory.segmentsManager(directory);
 
     // then
-    assertThatNoException().isThrownBy(() -> segments.open(0));
-    assertThat(Objects.requireNonNull(segments.getFirstSegment()).index()).isOne();
-    assertThat(segments.getFirstSegment().lastIndex()).isZero();
+    assertThatNoException().isThrownBy(() -> segments.open());
+    assertThat(segments.getFirstSegment())
+        .extracting(Segment::index, Segment::lastIndex)
+        .containsExactly(1L, 0L);
   }
 
   private SegmentedJournal openJournal() {
-    return journalFactory.journal(journalFactory.segmentsManager(directory));
+    return journalFactory.journal(directory);
   }
 }
