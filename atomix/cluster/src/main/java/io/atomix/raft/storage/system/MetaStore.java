@@ -21,6 +21,7 @@ import static com.google.common.base.MoreObjects.toStringHelper;
 import io.atomix.cluster.MemberId;
 import io.atomix.raft.storage.RaftStorage;
 import io.atomix.raft.storage.StorageException;
+import io.atomix.raft.storage.serializer.MetaEncoder;
 import io.atomix.raft.storage.serializer.MetaStoreSerializer;
 import io.camunda.zeebe.journal.JournalMetaStore;
 import java.io.File;
@@ -72,6 +73,10 @@ public class MetaStore implements JournalMetaStore, AutoCloseable {
           StandardOpenOption.CREATE_NEW,
           StandardOpenOption.WRITE,
           StandardOpenOption.SYNC);
+
+      // initialize the lastFlushedIndex to its null value; otherwise it will read it as 0 since
+      // all bytes in the empty file are now 0
+      lastFlushedIndex = MetaEncoder.lastFlushedIndexNullValue();
     }
 
     metaFileChannel =
@@ -196,6 +201,16 @@ public class MetaStore implements JournalMetaStore, AutoCloseable {
       throw new StorageException(e);
     }
     return serializer.readLastFlushedIndex(new UnsafeBuffer(metaBuffer), VERSION_LENGTH);
+  }
+
+  @Override
+  public void resetLastFlushedIndex() {
+    storeLastFlushedIndex(MetaEncoder.lastFlushedIndexNullValue());
+  }
+
+  @Override
+  public boolean hasLastFlushedIndex() {
+    return lastFlushedIndex != MetaEncoder.lastFlushedIndexNullValue();
   }
 
   /**

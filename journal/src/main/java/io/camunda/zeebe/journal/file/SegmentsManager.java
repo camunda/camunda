@@ -11,6 +11,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 
 import io.camunda.zeebe.journal.CorruptedJournalException;
 import io.camunda.zeebe.journal.JournalException;
+import io.camunda.zeebe.journal.JournalMetaStore;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.DirectoryStream;
@@ -39,32 +40,33 @@ final class SegmentsManager implements AutoCloseable {
 
   private static final Logger LOG = LoggerFactory.getLogger(SegmentsManager.class);
 
-  private final JournalMetrics journalMetrics;
   private final NavigableMap<Long, Segment> segments = new ConcurrentSkipListMap<>();
-  private volatile Segment currentSegment;
   private CompletableFuture<UninitializedSegment> nextSegment = null;
 
+  private final JournalMetrics journalMetrics;
   private final JournalIndex journalIndex;
   private final int maxSegmentSize;
-
   private final File directory;
-
   private final SegmentLoader segmentLoader;
-
   private final String name;
+  private final JournalMetaStore metaStore;
+
+  private volatile Segment currentSegment;
 
   SegmentsManager(
       final JournalIndex journalIndex,
       final int maxSegmentSize,
       final File directory,
       final String name,
-      final SegmentLoader segmentLoader) {
+      final SegmentLoader segmentLoader,
+      final JournalMetaStore metaStore) {
     this.name = checkNotNull(name, "name cannot be null");
     journalMetrics = new JournalMetrics(name);
     this.journalIndex = journalIndex;
     this.maxSegmentSize = maxSegmentSize;
     this.directory = directory;
     this.segmentLoader = segmentLoader;
+    this.metaStore = metaStore;
   }
 
   @Override
@@ -207,6 +209,11 @@ final class SegmentsManager implements AutoCloseable {
       journalMetrics.decSegmentCount();
     }
     segments.clear();
+
+    // setting the last flushed index to a semantic-null value will let us know on start up that
+    // there is "nothing" written, even if we cannot read the descriptor (e.g. if we crash after
+    // creating the segment but before writing its descriptor)
+    metaStore.storeLastFlushedIndex(-1L);
 
     final SegmentDescriptor descriptor =
         SegmentDescriptor.builder()
