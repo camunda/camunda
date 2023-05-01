@@ -5,9 +5,10 @@
  * except in compliance with the proprietary license.
  */
 
-import React, {useEffect, useState} from 'react';
-import {withRouter} from 'react-router-dom';
+import {useEffect, useState} from 'react';
+import {RouteComponentProps, withRouter} from 'react-router-dom';
 import {Button} from '@carbon/react';
+import {SerializedEditorState} from 'lexical';
 
 import {
   CarbonModal as Modal,
@@ -22,13 +23,21 @@ import {
 } from 'components';
 import {getCollection, isTextReportValid, loadReports} from 'services';
 import {t} from 'translation';
+import {DashboardTile, GenericReport} from 'types';
 
-function ReportModal({close, confirm, location}) {
-  const [availableReports, setAvailableReports] = useState(null);
-  const [selectedReportId, setSelectedReportId] = useState('');
-  const [externalUrl, setExternalUrl] = useState('');
-  const [tabOpen, setTabOpen] = useState('report');
-  const [text, setText] = useState();
+interface ReportModalProps extends RouteComponentProps {
+  close: () => void;
+  confirm: (reportConfig: Partial<DashboardTile>) => void;
+}
+
+type TabOpen = 'report' | 'external' | 'text';
+
+export function ReportModal({close, confirm, location}: ReportModalProps) {
+  const [availableReports, setAvailableReports] = useState<GenericReport[] | null>(null);
+  const [selectedReportId, setSelectedReportId] = useState<string>('');
+  const [externalUrl, setExternalUrl] = useState<string>('');
+  const [tabOpen, setTabOpen] = useState<TabOpen>('report');
+  const [text, setText] = useState<SerializedEditorState>();
 
   useEffect(() => {
     (async () => {
@@ -42,7 +51,12 @@ function ReportModal({close, confirm, location}) {
     confirm(getReportConfig(tabOpen, externalUrl, text, selectedReportId));
   };
 
-  const getReportConfig = (tabOpen, externalUrl, text, selectedReportId) => {
+  const getReportConfig = (
+    tabOpen: TabOpen,
+    externalUrl: string,
+    text: SerializedEditorState | undefined,
+    selectedReportId: string
+  ): Partial<DashboardTile> => {
     if (tabOpen === 'external') {
       return {id: '', configuration: {external: externalUrl}, type: 'external_url'};
     } else if (tabOpen === 'text') {
@@ -51,14 +65,14 @@ function ReportModal({close, confirm, location}) {
     return {id: selectedReportId, type: 'optimize_report'};
   };
 
-  const isExternalUrlValid = (url) => {
+  const isExternalUrlValid = (url: string) => {
     // url has to start with https:// or http://
     return url.match(/^(https|http):\/\/.+/);
   };
 
   const textLength = TextEditor.getEditorStateLength(text);
 
-  const isCurrentTabInvalid = (tabOpen, externalUrl, selectedReportId, text) => {
+  const isCurrentTabInvalid = (tabOpen: TabOpen, externalUrl: string, selectedReportId: string) => {
     const isInvalidMap = {
       report: !selectedReportId,
       external: !isExternalUrlValid(externalUrl),
@@ -68,17 +82,18 @@ function ReportModal({close, confirm, location}) {
     return isInvalidMap[tabOpen];
   };
 
-  const isInvalid = isCurrentTabInvalid(tabOpen, externalUrl, selectedReportId, text);
+  const isInvalid = isCurrentTabInvalid(tabOpen, externalUrl, selectedReportId);
   const loading = availableReports === null;
-  const selectedReport =
-    (!loading && availableReports.find(({id}) => selectedReportId === id)) || {};
+  const selectedReport = (!loading && availableReports.find(({id}) => selectedReportId === id)) || {
+    id: undefined,
+  };
 
   return (
     <Modal className="ReportModal" open onClose={close} isOverflowVisible>
       <Modal.Header>{t('dashboard.addButton.addTile')}</Modal.Header>
       <Modal.Content>
         <Form>
-          <Tabs value={tabOpen} onChange={setTabOpen}>
+          <Tabs<TabOpen> value={tabOpen} onChange={setTabOpen}>
             <Tabs.Tab value="report" title={t('dashboard.addButton.optimizeReport')}>
               <Form.Group>
                 {!loading && (

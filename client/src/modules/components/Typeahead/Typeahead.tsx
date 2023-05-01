@@ -31,13 +31,13 @@ interface TypeaheadProps {
   onChange: (value: string) => void;
   onOpen: () => void;
   onClose: () => void;
-  placeholder?: string;
+  placeholder?: string | JSX.Element[];
   disabled?: boolean;
   loading?: boolean;
   hasMore?: boolean;
   async?: boolean;
   typedOption?: boolean;
-  noValuesMessage?: string;
+  noValuesMessage?: string | JSX.Element[];
   className?: string;
 }
 

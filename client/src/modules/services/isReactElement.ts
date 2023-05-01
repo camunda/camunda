@@ -7,6 +7,6 @@
 
 import {ReactElement, ReactNode} from 'react';
 
-export default function isReactElement(child: ReactNode): child is ReactElement {
+export default function isReactElement<P = any>(child: ReactNode): child is ReactElement<P> {
   return !!child && typeof child === 'object' && 'type' in child;
 }

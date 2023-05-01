@@ -103,7 +103,7 @@ it('should disable the submit button if the text in editor is empty or too long'
 it('should invoke onConfirm when the submit button is clicked', () => {
   const spy = jest.fn();
   const node = shallow(
-    <TextReportEditModal {...props} initialValue={editorValue} onConfirm={spy} onClose={() => {}} />
+    <TextReportEditModal {...props} initialValue={editorValue} onConfirm={spy} />
   );
 
   const newEditorValue = {

@@ -5,7 +5,6 @@
  * except in compliance with the proprietary license.
  */
 
-import React from 'react';
 import {mount} from 'enzyme';
 
 import ButtonGroup from './ButtonGroup';

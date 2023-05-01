@@ -5,12 +5,16 @@
  * except in compliance with the proprietary license.
  */
 
-import React from 'react';
+import {ComponentPropsWithoutRef} from 'react';
 import classnames from 'classnames';
 
 import './ButtonGroup.scss';
 
-export default function ButtonGroup(props) {
+interface ButtonGroupProps extends ComponentPropsWithoutRef<'div'> {
+  disabled?: boolean;
+}
+
+export default function ButtonGroup(props: ButtonGroupProps) {
   return (
     <div className={classnames('ButtonGroup', {disabled: props.disabled}, props.className)}>
       {props.children}

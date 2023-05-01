@@ -5,12 +5,11 @@
  * except in compliance with the proprietary license.
  */
 
-import React from 'react';
-
 import {shallow} from 'enzyme';
 
-import Tabs from './Tabs';
 import {Button} from '../Button';
+
+import Tabs from './Tabs';
 
 it('should match snapshot', () => {
   const node = shallow(

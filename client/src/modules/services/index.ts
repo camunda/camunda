@@ -9,6 +9,13 @@ export function getRandomId() {
   return Math.random().toString(36).slice(2);
 }
 
+export function getCollection(path: string) {
+  const collectionMatch = /\/collection\/([^/]+)/g.exec(path);
+  return collectionMatch && collectionMatch[1];
+}
+
+export {loadReports} from './entityService';
+
 export * as formatters from './formatters';
 export {loadProcessDefinitionXml, loadDecisionDefinitionXml} from './dataLoaders';
 export {numberParser} from './NumberParser';
