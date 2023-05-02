@@ -31,7 +31,7 @@ const selectProcess = ({user, option}: SelectProps) => {
   return selectComboBoxOption({
     user,
     option,
-    fieldName: 'Process',
+    fieldName: 'Name',
     listBoxLabel: 'Select a Process',
   });
 };

@@ -50,7 +50,7 @@ describe('Filters', () => {
       wrapper: getWrapper(),
     });
 
-    await waitFor(() => expect(screen.getByLabelText('Process')).toBeEnabled());
+    await waitFor(() => expect(screen.getByLabelText('Name')).toBeEnabled());
     await selectProcess({user, option: 'Big variable process'});
 
     expect(
@@ -91,10 +91,18 @@ describe('Filters', () => {
       ),
     });
 
-    await waitFor(() => expect(screen.getByLabelText('Process')).toBeEnabled());
-    expect(screen.getByLabelText('Process')).toHaveValue(
-      'Big variable process'
+    await waitFor(() =>
+      expect(
+        screen.getByRole('combobox', {
+          name: 'Name',
+        })
+      ).toBeEnabled()
     );
+    expect(
+      screen.getByRole('combobox', {
+        name: 'Name',
+      })
+    ).toHaveValue('Big variable process');
     expect(
       screen.getByLabelText('Version', {selector: 'button'})
     ).toHaveTextContent('1');
@@ -145,7 +153,7 @@ describe('Filters', () => {
     });
 
     // Wait for data to be fetched
-    await waitFor(() => expect(screen.getByLabelText('Process')).toBeEnabled());
+    await waitFor(() => expect(screen.getByLabelText('Name')).toBeEnabled());
 
     // Hidden fields
     expect(
@@ -190,12 +198,12 @@ describe('Filters', () => {
     });
 
     // Wait for data to be fetched
-    await waitFor(() => expect(screen.getByLabelText('Process')).toBeEnabled());
+    await waitFor(() => expect(screen.getByLabelText('Name')).toBeEnabled());
     await waitFor(() =>
       expect(screen.getByLabelText('Flow Node')).toBeEnabled()
     );
 
-    expect(screen.getByLabelText('Process')).toHaveValue('');
+    expect(screen.getByLabelText('Name')).toHaveValue('');
     expect(
       screen.getByLabelText('Version', {selector: 'button'})
     ).toBeDisabled();
@@ -267,7 +275,7 @@ describe('Filters', () => {
       wrapper: getWrapper(),
     });
 
-    await waitFor(() => expect(screen.getByLabelText('Process')).toBeEnabled());
+    await waitFor(() => expect(screen.getByLabelText('Name')).toBeEnabled());
 
     await waitFor(() =>
       expect(screen.getByLabelText('Flow Node')).toBeEnabled()

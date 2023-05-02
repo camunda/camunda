@@ -47,6 +47,11 @@ const Fields = styled.div`
   }}
 `;
 
+const ProcessHeader = styled(CmText)`
+  display: block;
+  padding-bottom: 5px;
+`;
+
 const StatesHeader = styled(CmText)`
   display: block;
   margin-bottom: 9px;
@@ -95,6 +100,7 @@ export {
   FiltersForm,
   ResetButtonContainer,
   Fields,
+  ProcessHeader,
   StatesHeader,
   InstanceStates,
   MoreFiltersDropdown,

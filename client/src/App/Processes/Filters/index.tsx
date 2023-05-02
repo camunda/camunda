@@ -17,6 +17,7 @@ import {
   Fields,
   StatesHeader,
   InstanceStates,
+  ProcessHeader,
   OptionalFilters,
   MoreFiltersDropdown,
   FormGroup,
@@ -198,6 +199,7 @@ const Filters: React.FC = observer(() => {
                   'canceled',
                 ]}
               />
+              <ProcessHeader appearance="emphasis">Process</ProcessHeader>
               <Stack gap={5}>
                 <ProcessField />
                 <ProcessVersionField />

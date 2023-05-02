@@ -19,7 +19,7 @@ const ProcessField: React.FC = observer(() => {
     <Field name="process" data-testid="filter-process-name-field">
       {({input}) => (
         <ComboBox
-          titleText="Process"
+          titleText="Name"
           id="processName"
           aria-label="Select a Process"
           placeholder="Search by Process Name"

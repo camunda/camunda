@@ -104,7 +104,7 @@ class ProcessesPage {
     },
 
     processName: {
-      field: screen.queryByLabelText('Process'),
+      field: screen.queryByLabelText('Name'),
     },
 
     processVersion: {
@@ -140,7 +140,7 @@ class ProcessesPage {
 
   selectProcess = async (option: string) => {
     return selectComboBoxOption({
-      fieldName: 'Process',
+      fieldName: 'Name',
       option,
       listBoxLabel: 'Select a Process',
     });

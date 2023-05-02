@@ -28,42 +28,42 @@ describe('<ComboBox />', () => {
     render(
       <ComboBox
         id="process-name"
-        titleText="Process"
+        titleText="Name"
         items={[]}
         value=""
         onChange={() => {}}
       />
     );
 
-    expect(screen.getByLabelText('Process')).toBeDisabled();
+    expect(screen.getByLabelText('Name')).toBeDisabled();
   });
 
   it('should initially select item', () => {
     render(
       <ComboBox
         id="process-name"
-        titleText="Process"
+        titleText="Name"
         items={items}
         value="process2"
         onChange={() => {}}
       />
     );
 
-    expect(screen.getByLabelText('Process')).toHaveValue('Process Two');
+    expect(screen.getByLabelText('Name')).toHaveValue('Process Two');
   });
 
   it('should filter items', async () => {
     const {user} = render(
       <ComboBox
         id="process-name"
-        titleText="Process"
+        titleText="Name"
         items={items}
         value=""
         onChange={() => {}}
       />
     );
 
-    await user.type(screen.getByLabelText('Process'), 'ONE');
+    await user.type(screen.getByLabelText('Name'), 'ONE');
     expect(screen.getAllByRole('option')).toHaveLength(1);
     expect(screen.getAllByRole('option')[0]?.textContent).toEqual(
       'Process One'
@@ -71,7 +71,7 @@ describe('<ComboBox />', () => {
 
     await user.click(screen.getByRole('button', {name: 'Clear selected item'}));
 
-    await user.type(screen.getByLabelText('Process'), 'process t');
+    await user.type(screen.getByLabelText('Name'), 'process t');
     expect(screen.getAllByRole('option')).toHaveLength(2);
     expect(screen.getAllByRole('option')[0]?.textContent).toEqual(
       'Process Two'
@@ -82,7 +82,7 @@ describe('<ComboBox />', () => {
 
     await user.click(screen.getByRole('button', {name: 'Clear selected item'}));
 
-    await user.type(screen.getByLabelText('Process'), 'unknown');
+    await user.type(screen.getByLabelText('Name'), 'unknown');
     expect(screen.queryByRole('option')).not.toBeInTheDocument();
   });
 });

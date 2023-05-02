@@ -32,6 +32,10 @@ const Fields = styled.div`
       background-color: ${theme.colors.itemEven};
       overflow-y: auto;
 
+      ${SectionTitle}:not(:last-child) {
+        padding-bottom: 8px;
+      }
+
       ${Checkbox}:not(:last-child) {
         padding-bottom: 12px;
       }
