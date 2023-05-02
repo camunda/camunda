@@ -233,6 +233,13 @@ public class ProcessInstanceRestService extends InternalAPIErrorController {
     return variableReader.getVariables(processInstanceId, variableRequest);
   }
 
+  @Operation(summary = "Get full variable by id")
+  @GetMapping("/{processInstanceId}/variables/{variableId}")
+  public VariableDto getVariable(@PathVariable @ValidLongId String processInstanceId, @PathVariable String variableId) {
+    checkIdentityReadPermission(Long.parseLong(processInstanceId));
+    return variableReader.getVariable(variableId);
+  }
+
   @Operation(summary = "Get flow node states by process instance id")
   @GetMapping("/{processInstanceId}/flow-node-states")
   public Map<String, FlowNodeStateDto> getFlowNodeStates(@PathVariable @ValidLongId String processInstanceId) {

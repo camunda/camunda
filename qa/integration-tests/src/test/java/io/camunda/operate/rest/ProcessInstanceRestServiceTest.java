@@ -24,6 +24,7 @@ import io.camunda.operate.webapp.es.reader.VariableReader;
 import io.camunda.operate.webapp.es.reader.ProcessInstanceReader;
 import io.camunda.operate.webapp.es.writer.BatchOperationWriter;
 import io.camunda.operate.webapp.rest.ProcessInstanceRestService;
+import io.camunda.operate.webapp.rest.dto.VariableDto;
 import io.camunda.operate.webapp.rest.dto.VariableRequestDto;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewProcessInstanceDto;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewQueryDto;
@@ -533,6 +534,39 @@ public class ProcessInstanceRestServiceTest extends OperateIntegrationTest {
     assertThat(response).isNotNull();
   }
 
+  @Test
+  public void testProcessInstanceSingleVariableFailsWhenNoPermissions() throws Exception {
+    // given
+    String variableId = "var1";
+    String processInstanceId = "123";
+    String bpmnProcessId = "processId";
+    // when
+    when(processInstanceReader.getProcessInstanceByKey(Long.valueOf(processInstanceId))).thenReturn(
+        new ProcessInstanceForListViewEntity().setBpmnProcessId(bpmnProcessId));
+    when(permissionsService.hasPermissionForProcess(bpmnProcessId, IdentityPermission.READ)).thenReturn(false);
+    MvcResult mvcResult = getRequestShouldFailWithNoAuthorization(getVariableUrl(processInstanceId, variableId));
+    // then
+    assertErrorMessageContains(mvcResult, "No READ permission for process instance");
+  }
+
+  @Test
+  public void testProcessInstanceSingleVariableOkWhenHasPermissions() throws Exception {
+    // given
+    String variableId = "var1";
+    String processInstanceId = "123";
+    String bpmnProcessId = "processId";
+    // when
+    when(processInstanceReader.getProcessInstanceByKey(Long.valueOf(processInstanceId))).thenReturn(
+        new ProcessInstanceForListViewEntity().setBpmnProcessId(bpmnProcessId));
+    when(permissionsService.hasPermissionForProcess(bpmnProcessId, IdentityPermission.READ)).thenReturn(true);
+    when(variableReader.getVariable(variableId)).thenReturn(new VariableDto());
+    MvcResult mvcResult = getRequest(getVariableUrl(processInstanceId, variableId));
+    // then
+    final VariableDto response = mockMvcTestRule.fromResponse(mvcResult, new TypeReference<>() {
+    });
+    assertThat(response).isNotNull();
+  }
+
   public String getBatchOperationUrl() {
     return ProcessInstanceRestService.PROCESS_INSTANCE_URL + "/batch-operation";
   }
@@ -563,6 +597,10 @@ public class ProcessInstanceRestServiceTest extends OperateIntegrationTest {
 
   public String getVariablesByIdUrl(String id) {
     return ProcessInstanceRestService.PROCESS_INSTANCE_URL + "/" + id + "/variables";
+  }
+
+  public String getVariableUrl(String processInstanceId, String variableId) {
+    return ProcessInstanceRestService.PROCESS_INSTANCE_URL + "/" + processInstanceId + "/variables/" + variableId;
   }
 
   public String getFlowNodeStatesByIdUrl(String id) {

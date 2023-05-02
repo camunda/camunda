@@ -7,9 +7,12 @@
 
 import {requestAndParse} from 'modules/request';
 
-const fetchVariable = async (id: VariableEntity['id']) => {
+const fetchVariable = async (
+  processInstanceId: ProcessInstanceEntity['id'],
+  variableId: VariableEntity['id']
+) => {
   return requestAndParse<VariableEntity>({
-    url: `/api/variables/${id}`,
+    url: `/api/process-instances/${processInstanceId}/variables/${variableId}`,
   });
 };
 

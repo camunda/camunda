@@ -9,7 +9,6 @@ package io.camunda.operate.zeebeimport;
 import static io.camunda.operate.qa.util.VariablesUtil.VAR_SUFFIX;
 import static io.camunda.operate.qa.util.VariablesUtil.createBigVariable;
 import static io.camunda.operate.qa.util.VariablesUtil.createBigVarsWithSuffix;
-import static io.camunda.operate.webapp.rest.VariableRestService.VARIABLE_URL;
 import static org.assertj.core.api.Assertions.assertThat;
 import static io.camunda.operate.webapp.rest.ProcessInstanceRestService.PROCESS_INSTANCE_URL;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -52,8 +51,8 @@ public class VariableIT extends OperateZeebeIntegrationTest {
     return String.format(PROCESS_INSTANCE_URL + "/%s/variables", processInstanceKey);
   }
 
-  protected String getVariableURL(String variableId) {
-    return VARIABLE_URL + "/" + variableId;
+  protected String getVariableURL(Long processInstanceKey, String variableId) {
+    return String.format(PROCESS_INSTANCE_URL + "/%s/variables/%s", processInstanceKey, variableId);
   }
 
   @Test
@@ -377,7 +376,7 @@ public class VariableIT extends OperateZeebeIntegrationTest {
     String variableId = variables.get(0).getId();
 
     //when requesting one variable
-    final VariableDto variable = getOneVariable(variableId);
+    final VariableDto variable = getOneVariable(processInstanceKey, variableId);
 
     //then
     assertThat(variable.getValue()).contains(VAR_SUFFIX);
@@ -408,8 +407,8 @@ public class VariableIT extends OperateZeebeIntegrationTest {
     executeOneBatch();
     elasticsearchTestRule.processAllRecordsAndWait(operationsByProcessInstanceAreCompleted, processInstanceKey);
 
-    //when one variables is requested
-    VariableDto variable = getOneVariable(String.format("%d-%s", processInstanceKey, varName));
+    //when one variable is requested
+    VariableDto variable = getOneVariable(processInstanceKey, String.format("%d-%s", processInstanceKey, varName));
 
     //then variable with new small value is returned
     assertThat(variable.getValue()).isEqualTo(newVarValue);
@@ -517,9 +516,9 @@ public class VariableIT extends OperateZeebeIntegrationTest {
     return mockMvcTestRule.listFromResponse(mvcResult, VariableDto.class);
   }
 
-  protected VariableDto getOneVariable(String variableId) throws Exception {
+  protected VariableDto getOneVariable(Long processInstanceKey, String variableId) throws Exception {
     MvcResult mvcResult = mockMvc
-      .perform(get(getVariableURL(variableId)))
+      .perform(get(getVariableURL(processInstanceKey, variableId)))
       .andExpect(status().isOk())
       .andExpect(content().contentType(mockMvcTestRule.getContentType()))
       .andReturn();

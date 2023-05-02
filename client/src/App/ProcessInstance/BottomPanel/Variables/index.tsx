@@ -92,14 +92,17 @@ const Variables: React.FC<Props> = observer(
     const isAddMode = initialValues?.name === '' && initialValues?.value === '';
 
     function fetchFullVariable({
-      id,
+      processInstanceId,
+      variableId,
       enableLoading = true,
     }: {
-      id: VariableEntity['id'];
+      processInstanceId: ProcessInstanceEntity['id'];
+      variableId: VariableEntity['id'];
       enableLoading?: boolean;
     }) {
       return variablesStore.fetchVariable({
-        id,
+        processInstanceId,
+        variableId,
         onError: () => {
           notifications.displayNotification('error', {
             headline: 'Variable could not be fetched',
@@ -239,7 +242,8 @@ const Variables: React.FC<Props> = observer(
                                     undefined
                                 ) {
                                   variablesStore.fetchVariable({
-                                    id,
+                                    processInstanceId,
+                                    variableId: id,
                                     onSuccess: (variable: VariableEntity) => {
                                       variablesStore.setFullVariableValue(
                                         id,
@@ -302,7 +306,8 @@ const Variables: React.FC<Props> = observer(
                                                 onClick={async () => {
                                                   const variable =
                                                     await fetchFullVariable({
-                                                      id,
+                                                      processInstanceId,
+                                                      variableId: id,
                                                       enableLoading: false,
                                                     });
 
@@ -324,7 +329,8 @@ const Variables: React.FC<Props> = observer(
                                                 if (isPreview) {
                                                   const variable =
                                                     await fetchFullVariable({
-                                                      id,
+                                                      processInstanceId,
+                                                      variableId: id,
                                                     });
 
                                                   if (variable === null) {
@@ -359,7 +365,8 @@ const Variables: React.FC<Props> = observer(
                                           onClick={async () => {
                                             const variable =
                                               await fetchFullVariable({
-                                                id,
+                                                processInstanceId,
+                                                variableId: id,
                                                 enableLoading: false,
                                               });
 

@@ -209,7 +209,11 @@ describe('stores/variables', () => {
     mockFetchVariable().withSuccess(createVariable({id: 'variable-id'}));
 
     expect(variablesStore.state.loadingItemId).toBeNull();
-    variablesStore.fetchVariable({id: 'variable-id', onError: mockOnError});
+    variablesStore.fetchVariable({
+      processInstanceId: 'some-process-instance-id',
+      variableId: 'variable-id',
+      onError: mockOnError,
+    });
     expect(variablesStore.state.loadingItemId).toBe('variable-id');
 
     await waitFor(() => expect(variablesStore.state.loadingItemId).toBeNull());
@@ -219,7 +223,11 @@ describe('stores/variables', () => {
     // on server error
     mockFetchVariable().withServerError();
 
-    variablesStore.fetchVariable({id: 'variable-id', onError: mockOnError});
+    variablesStore.fetchVariable({
+      processInstanceId: 'some-process-instance-id',
+      variableId: 'variable-id',
+      onError: mockOnError,
+    });
     expect(variablesStore.state.loadingItemId).toBe('variable-id');
 
     await waitFor(() => expect(variablesStore.state.loadingItemId).toBeNull());
@@ -229,7 +237,11 @@ describe('stores/variables', () => {
     // on network error
     mockFetchVariable().withNetworkError();
 
-    variablesStore.fetchVariable({id: 'variable-id', onError: mockOnError});
+    variablesStore.fetchVariable({
+      processInstanceId: 'some-process-instance-id',
+      variableId: 'variable-id',
+      onError: mockOnError,
+    });
     expect(variablesStore.state.loadingItemId).toBe('variable-id');
 
     await waitFor(() => expect(variablesStore.state.loadingItemId).toBeNull());
@@ -240,7 +252,8 @@ describe('stores/variables', () => {
 
     expect(variablesStore.state.loadingItemId).toBeNull();
     variablesStore.fetchVariable({
-      id: 'variable-id',
+      processInstanceId: 'some-process-instance-id',
+      variableId: 'variable-id',
       onError: mockOnError,
       enableLoading: false,
     });

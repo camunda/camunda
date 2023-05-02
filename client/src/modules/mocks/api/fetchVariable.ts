@@ -8,6 +8,8 @@
 import {mockGetRequest} from './mockRequest';
 
 const mockFetchVariable = () =>
-  mockGetRequest<VariableEntity>('/api/variables/:id');
+  mockGetRequest<VariableEntity>(
+    '/api/process-instances/:processInstanceId/variables/:variableId'
+  );
 
 export {mockFetchVariable};
