@@ -25,6 +25,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 public class BackupRequestHandlerTest extends GatewayTest {
+
   BackupRequestHandler requestHandler;
 
   @Before
@@ -242,6 +243,29 @@ public class BackupRequestHandlerTest extends GatewayTest {
     assertThat(backups)
         .extracting(BackupStatus::status)
         .containsExactly(State.COMPLETED, State.COMPLETED);
+  }
+
+  @Test
+  public void shouldListReturnCompletedWhenDuplicateBackupIdForAPartition() {
+    // given
+    brokerClient.registerHandler(
+        BackupListRequest.class,
+        request ->
+            new BrokerResponse<>(
+                new BackupListResponse(
+                    List.of(
+                        getCompletedBackup(1, request.getPartitionId()),
+                        getInProgressBackup(1, request.getPartitionId())))));
+
+    // when
+    final var future = requestHandler.listBackups();
+
+    // then
+    assertThat(future).succeedsWithin(Duration.ofMillis(500));
+    final var backups = future.toCompletableFuture().join();
+    assertThat(backups).hasSize(1).extracting(BackupStatus::backupId).containsExactlyInAnyOrder(1L);
+
+    assertThat(backups).extracting(BackupStatus::status).containsExactly(State.COMPLETED);
   }
 
   @Test
