@@ -14,7 +14,7 @@ import {
   ExpandIcon,
   CollapseIcon,
   IconButton,
-  ScrollableContent,
+  Content,
 } from './styled';
 import {Layer} from '@carbon/react';
 import React, {forwardRef} from 'react';
@@ -27,6 +27,7 @@ type Props = {
   isCollapsed: boolean;
   children?: React.ReactNode;
   maxWidth: number;
+  scrollable?: boolean;
 };
 
 const CollapsablePanel = forwardRef<HTMLDivElement, Props>(
@@ -36,6 +37,7 @@ const CollapsablePanel = forwardRef<HTMLDivElement, Props>(
       panelPosition,
       maxWidth,
       isOverlay = false,
+      scrollable = true,
       children,
       isCollapsed,
       onToggle,
@@ -84,9 +86,9 @@ const CollapsablePanel = forwardRef<HTMLDivElement, Props>(
                 <CollapseIcon size={20} $panelPosition={panelPosition} />
               </IconButton>
             </Header>
-            <ScrollableContent ref={ref}>
+            <Content ref={ref} $scrollable={scrollable}>
               <Layer>{children}</Layer>
-            </ScrollableContent>
+            </Content>
           </Panel>
         )}
       </Collapsable>

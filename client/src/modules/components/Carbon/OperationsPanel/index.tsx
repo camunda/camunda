@@ -16,6 +16,7 @@ import OperationsEntry from './OperationsEntry';
 import {InfiniteScroller} from 'modules/components/InfiniteScroller';
 import {EMPTY_MESSAGE} from './constants';
 import {InlineNotification} from '@carbon/react';
+import {Skeleton} from './Skeleton';
 
 const OperationsPanel: React.FC = observer(() => {
   const {operations, status, hasMoreOperations} = operationsStore.state;
@@ -39,6 +40,8 @@ const OperationsPanel: React.FC = observer(() => {
     }
   }, []);
 
+  const shouldDisplaySkeleton = ['initial', 'first-fetch'].includes(status);
+
   return (
     <BaseCollapsablePanel
       label="Operations"
@@ -48,6 +51,7 @@ const OperationsPanel: React.FC = observer(() => {
       isCollapsed={isOperationsCollapsed}
       onToggle={toggleOperationsPanel}
       ref={scrollableContainerRef}
+      scrollable={!shouldDisplaySkeleton}
     >
       {(() => {
         if (operations.length === 0 && status === 'fetched') {
@@ -76,6 +80,10 @@ const OperationsPanel: React.FC = observer(() => {
               />
             </EmptyMessageContainer>
           );
+        }
+
+        if (shouldDisplaySkeleton) {
+          return <Skeleton />;
         }
 
         return (

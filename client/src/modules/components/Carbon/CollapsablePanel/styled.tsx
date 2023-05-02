@@ -143,8 +143,16 @@ const Header = styled(BaseHeader)<HeaderProps>`
   }}
 `;
 
-const ScrollableContent = styled.div`
-  overflow: auto;
+type ContentProps = {
+  $scrollable: boolean;
+};
+
+const Content = styled.div<ContentProps>`
+  ${({$scrollable}) => {
+    return css`
+      overflow: ${$scrollable ? 'auto' : 'hidden'};
+    `;
+  }}
 `;
 
 export {
@@ -154,5 +162,5 @@ export {
   CollapseIcon,
   IconButton,
   Header,
-  ScrollableContent,
+  Content,
 };
