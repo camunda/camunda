@@ -18,6 +18,7 @@ import io.camunda.zeebe.logstreams.log.LoggedEvent;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.impl.record.value.management.AggregatedChangesRecord;
 import io.camunda.zeebe.protocol.record.RecordType;
+import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.AggregatedChangesIntent;
 import io.camunda.zeebe.scheduler.ActorControl;
 import io.camunda.zeebe.scheduler.clock.ActorClock;
@@ -502,6 +503,7 @@ public final class ProcessingStateMachine {
         new RecordBatchEntry(
             new RecordMetadata()
                 .recordType(RecordType.EVENT)
+                .valueType(ValueType.AGGREGATED_CHANGES)
                 .intent(AggregatedChangesIntent.CHANGED),
             -1,
             -1,
