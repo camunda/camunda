@@ -17,6 +17,8 @@ import io.camunda.zeebe.gateway.impl.broker.cluster.BrokerTopologyManager;
 import io.camunda.zeebe.gateway.impl.broker.response.BrokerResponse;
 import io.camunda.zeebe.protocol.impl.encoding.BackupListResponse;
 import io.camunda.zeebe.protocol.management.BackupStatusCode;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import java.util.OptionalInt;
@@ -149,7 +151,9 @@ public final class BackupRequestHandler implements BackupApi {
                 Collectors.groupingBy(
                     BackupListResponse.BackupStatus::backupId,
                     Collectors.toMap(
-                        BackupListResponse.BackupStatus::partitionId, Function.identity())));
+                        BackupListResponse.BackupStatus::partitionId,
+                        Function.identity(),
+                        this::mergeDuplicatePartitionBackupStatus)));
 
     final var partitions = topologyManager.getTopology().getPartitions();
     // calculate status of each backup from the status of each partition
@@ -187,6 +191,31 @@ public final class BackupRequestHandler implements BackupApi {
                       .toList());
             })
         .toList();
+  }
+
+  // When a backup status returns more than one status for a partition, this method helps to
+  // choose the best one from the available backups of a partition.
+  private BackupListResponse.BackupStatus mergeDuplicatePartitionBackupStatus(
+      final BackupListResponse.BackupStatus x, final BackupListResponse.BackupStatus y) {
+    if (x.partitionId() != y.partitionId()) {
+      throw new IllegalArgumentException(
+          "Expected to merge backup status from same partitions, but provided backups of different partitions. Provided backups : %s, %s"
+              .formatted(x, y));
+    }
+
+    final List<BackupStatusCode> comparingOrder =
+        List.of(
+            BackupStatusCode.SBE_UNKNOWN,
+            BackupStatusCode.DOES_NOT_EXIST,
+            BackupStatusCode.FAILED,
+            BackupStatusCode.IN_PROGRESS,
+            BackupStatusCode.COMPLETED);
+
+    return Collections.max(
+        List.of(x, y),
+        Comparator.comparing(
+            BackupListResponse.BackupStatus::status,
+            Comparator.comparingInt(comparingOrder::indexOf)));
   }
 
   private CompletionStage<BrokerClusterState> checkTopologyComplete() {
