@@ -15,6 +15,8 @@ import io.camunda.zeebe.backup.processing.state.CheckpointState;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
@@ -44,16 +46,22 @@ final class BackupServiceImpl {
 
     backupsInProgress.add(inProgressBackup);
 
-    final var checkCurrentBackup = backupStore.getStatus(inProgressBackup.id());
+    final var checkCurrentBackup =
+        backupStore.list(
+            new BackupIdentifierWildcardImpl(
+                Optional.empty(),
+                Optional.of(inProgressBackup.id().partitionId()),
+                Optional.of(inProgressBackup.checkpointId())));
 
     final ActorFuture<Void> backupSaved = concurrencyControl.createFuture();
 
     checkCurrentBackup.whenCompleteAsync(
-        (status, error) -> {
+        (availableBackups, error) -> {
           if (error != null) {
             backupSaved.completeExceptionally(error);
           } else {
-            takeBackupIfDoesNotExist(status, inProgressBackup, concurrencyControl, backupSaved);
+            takeBackupIfDoesNotExist(
+                availableBackups, inProgressBackup, concurrencyControl, backupSaved);
           }
         },
         concurrencyControl::run);
@@ -63,12 +71,17 @@ final class BackupServiceImpl {
   }
 
   private void takeBackupIfDoesNotExist(
-      final BackupStatus status,
+      final Collection<BackupStatus> availableBackups,
       final InProgressBackup inProgressBackup,
       final ConcurrencyControl concurrencyControl,
       final ActorFuture<Void> backupSaved) {
 
-    switch (status.statusCode()) {
+    final BackupStatusCode existingBackupStatus =
+        availableBackups.isEmpty()
+            ? BackupStatusCode.DOES_NOT_EXIST
+            : Collections.max(availableBackups, Comparator.comparing(BackupStatus::statusCode))
+                .statusCode();
+    switch (existingBackupStatus) {
       case COMPLETED -> {
         LOG.debug("Backup {} is already completed, will not take a new one", inProgressBackup.id());
         backupSaved.complete(null);
@@ -77,9 +90,9 @@ final class BackupServiceImpl {
         LOG.error(
             "Backup {} already exists with status {}, will not take a new one",
             inProgressBackup.id(),
-            status);
+            existingBackupStatus);
         backupSaved.completeExceptionally(
-            new BackupAlreadyExistsException(inProgressBackup.id(), status));
+            new BackupAlreadyExistsException(inProgressBackup.id(), existingBackupStatus));
       }
       default -> {
         final ActorFuture<Void> snapshotFound = concurrencyControl.createFuture();
