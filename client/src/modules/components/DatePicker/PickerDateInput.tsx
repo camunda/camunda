@@ -5,15 +5,23 @@
  * except in compliance with the proprietary license.
  */
 
-import React from 'react';
-import {Input, Message, Icon} from 'components';
+import {ForwardedRef, forwardRef, memo} from 'react';
+
+import {Input, Message, Icon, InputProps} from 'components';
 import {t} from 'translation';
 
 import './PickerDateInput.scss';
 
-export const PickerDateInput = React.memo(
-  ({onChange, onSubmit, reference, isInvalid, ...props}) => {
-    const invalid = props.value && isInvalid;
+interface PickerDateInputProps extends Omit<InputProps, 'onChange'> {
+  reference?: ForwardedRef<HTMLInputElement>;
+  isInvalid?: boolean;
+  onChange: (value: string) => void;
+  onSubmit: () => void;
+}
+
+export const PickerDateInput = memo(
+  ({onChange, onSubmit, reference, isInvalid, ...props}: PickerDateInputProps) => {
+    const invalid = !!props.value && isInvalid;
     return (
       <div className="PickerDateInput">
         <Input
@@ -36,4 +44,6 @@ export const PickerDateInput = React.memo(
   }
 );
 
-export default React.forwardRef((props, ref) => <PickerDateInput {...props} reference={ref} />);
+export default forwardRef<HTMLInputElement, PickerDateInputProps>((props, ref) => (
+  <PickerDateInput {...props} reference={ref} />
+));

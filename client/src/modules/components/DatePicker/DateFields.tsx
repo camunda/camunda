@@ -5,7 +5,7 @@
  * except in compliance with the proprietary license.
  */
 
-import React from 'react';
+import {KeyboardEventHandler, PureComponent, createRef} from 'react';
 import classnames from 'classnames';
 import {parseISO} from 'date-fns';
 
@@ -19,24 +19,40 @@ import './DateFields.scss';
 
 const POPPUP_CLASSNAME = 'dateRangeContainer';
 
-export default class DateFields extends React.PureComponent {
-  state = {
+interface DateFieldsProps {
+  startDate: string;
+  endDate: string;
+  forceOpen?: boolean;
+  type: string;
+  format: string;
+  onDateChange: (type: DateFieldName, value: string) => void;
+}
+
+export type DateFieldName = 'startDate' | 'endDate';
+
+interface DateFieldsState {
+  popupOpen: boolean;
+  currentlySelectedField: DateFieldName | null;
+}
+
+export default class DateFields extends PureComponent<DateFieldsProps, DateFieldsState> {
+  state: DateFieldsState = {
     popupOpen: false,
     currentlySelectedField: null,
   };
 
-  dateFields = React.createRef();
+  dateFields = createRef<HTMLDivElement>();
 
-  endDateField = React.createRef();
+  endDateField = createRef<HTMLInputElement>();
 
   // Modals stop propagation of events on elements outside the modal
   // Therefore, we need to attach the events on the modal instead of document
-  getContext = () => this.dateFields.current?.closest('.Modal') || document;
+  getContext = () => this.dateFields.current?.closest<HTMLElement>('.Modal') || document;
 
   componentDidUpdate() {
     const {popupOpen} = this.state;
 
-    const context = this.getContext();
+    const context = this.getContext() as HTMLElement;
 
     if (popupOpen) {
       context.addEventListener('click', this.hidePopup);
@@ -48,12 +64,12 @@ export default class DateFields extends React.PureComponent {
   }
 
   componentWillUnmount() {
-    const context = this.getContext();
+    const context = this.getContext() as HTMLElement;
     context.removeEventListener('click', this.hidePopup);
     context.removeEventListener('keydown', this.closeOnEscape);
   }
 
-  handleKeyPress = (evt) => {
+  handleKeyPress: KeyboardEventHandler = (evt) => {
     if (this.state.popupOpen && evt.key === 'Escape') {
       evt.stopPropagation();
     }
@@ -123,7 +139,7 @@ export default class DateFields extends React.PureComponent {
   submitStart = () => {
     if (this.props.type === 'between') {
       this.setState({currentlySelectedField: 'endDate'});
-      this.endDateField.current.focus();
+      this.endDateField.current?.focus();
     } else {
       this.hidePopup();
     }
@@ -131,18 +147,21 @@ export default class DateFields extends React.PureComponent {
 
   submitEnd = () => {
     this.hidePopup();
-    this.endDateField.current.blur();
+    this.endDateField.current?.blur();
   };
 
-  closeOnEscape = (event) => {
+  closeOnEscape = (event: KeyboardEvent) => {
     if (event.key === 'Escape') {
       this.hidePopup();
     }
   };
 
-  formatDate = (date) => (date ? format(date, this.props.format) : '');
+  formatDate = (date?: Date | null) => (date ? format(date, this.props.format) : '');
 
-  onDateRangeChange = ({startDate, endDate}) => {
+  onDateRangeChange = ({
+    startDate,
+    endDate,
+  }: {startDate?: Date | null; endDate?: Date | null} = {}) => {
     this.props.onDateChange('startDate', this.formatDate(startDate));
     this.props.onDateChange('endDate', this.formatDate(endDate));
 
@@ -150,12 +169,12 @@ export default class DateFields extends React.PureComponent {
       setTimeout(this.hidePopup, 350);
     } else {
       this.setState({currentlySelectedField: 'endDate'});
-      this.endDateField.current.focus();
+      this.endDateField.current?.focus();
     }
   };
 
-  hidePopup = (evt) => {
-    if (!evt?.target?.closest('.' + POPPUP_CLASSNAME)) {
+  hidePopup = (evt?: Event) => {
+    if (!(evt?.target as HTMLElement)?.closest('.' + POPPUP_CLASSNAME)) {
       this.setState({
         popupOpen: false,
         currentlySelectedField: null,
@@ -163,13 +182,13 @@ export default class DateFields extends React.PureComponent {
     }
   };
 
-  isFieldSelected(field) {
+  isFieldSelected(field: DateFieldName): boolean {
     return this.state.currentlySelectedField === field;
   }
 
-  setDate = (name) => (date) => this.props.onDateChange(name, date);
+  setDate = (name: DateFieldName) => (date: string) => this.props.onDateChange(name, date);
 
-  toggleDateRangePopup = (field) => {
+  toggleDateRangePopup = (field: DateFieldName) => {
     this.setState({
       popupOpen: true,
       currentlySelectedField: field,

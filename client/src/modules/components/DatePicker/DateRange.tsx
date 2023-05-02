@@ -5,7 +5,6 @@
  * except in compliance with the proprietary license.
  */
 
-import React from 'react';
 import {Calendar, DateRange as ReactDateRange} from 'react-date-range';
 import {isValid, isAfter, isEqual} from 'date-fns';
 
@@ -16,7 +15,21 @@ import 'react-date-range/dist/styles.css'; // main style file
 import 'react-date-range/dist/theme/default.css'; // theme css file
 import './DateRange.scss';
 
-export default function DateRange({type, startDate, endDate, onDateChange, endDateSelected}) {
+interface DateRangeProps {
+  type: 'between' | 'after' | 'before';
+  startDate?: Date | null;
+  endDate?: Date | null;
+  onDateChange: (range?: {startDate?: Date | null; endDate?: Date | null}) => void;
+  endDateSelected?: boolean;
+}
+
+export default function DateRange({
+  type,
+  startDate,
+  endDate,
+  onDateChange,
+  endDateSelected,
+}: DateRangeProps) {
   const validStartDate = isValid(startDate) ? startDate : new Date();
   const validEndDate = isValid(endDate) ? endDate : new Date();
 

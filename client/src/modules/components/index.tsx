@@ -33,6 +33,8 @@ export {DownloadButton} from './DownloadButton';
 export {NoDataNotice} from './ReportRenderer';
 export {Table} from './Table';
 export {TargetValueBadge} from './TargetValueBadge';
+export {DatePicker} from './DatePicker';
+export {DateRangeInput} from './DateRangeInput';
 
 export type {InputProps} from './Input';
 export type {LabeledProps} from './Labeled';

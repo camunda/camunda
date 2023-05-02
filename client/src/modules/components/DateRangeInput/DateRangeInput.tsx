@@ -5,15 +5,36 @@
  * except in compliance with the proprietary license.
  */
 
-import React from 'react';
-
 import {Input, Select, Message, Form, DatePicker} from 'components';
 import {t} from 'translation';
 import {numberParser} from 'services';
 
 import './DateRangeInput.scss';
 
-export default function DateRangeInput({type, unit, startDate, endDate, customNum, onChange}) {
+interface DateRangeInputProps {
+  type: string;
+  unit: string;
+  startDate: Date | null;
+  endDate: Date | null;
+  customNum: string;
+  onChange: (params: {
+    type?: string;
+    unit?: string;
+    startDate?: Date | null;
+    endDate?: Date | null;
+    valid?: boolean;
+    customNum?: string;
+  }) => void;
+}
+
+export default function DateRangeInput({
+  type,
+  unit,
+  startDate,
+  endDate,
+  customNum,
+  onChange,
+}: DateRangeInputProps) {
   const isFixed = ['before', 'between', 'after'].includes(type);
   return (
     <Form.Group className="DateRangeInput">
@@ -74,7 +95,7 @@ export default function DateRangeInput({type, unit, startDate, endDate, customNu
                 className="number"
                 value={customNum ?? ''}
                 onChange={({target: {value}}) => onChange({customNum: value})}
-                maxLength="8"
+                maxLength={8}
               />
               <Select onChange={(unit) => onChange({unit})} value={unit}>
                 <Select.Option value="minutes">

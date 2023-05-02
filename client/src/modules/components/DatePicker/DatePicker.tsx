@@ -5,35 +5,44 @@
  * except in compliance with the proprietary license.
  */
 
-import React from 'react';
+import {Component} from 'react';
 import {parseISO, isAfter, isBefore} from 'date-fns';
 
 import {format} from 'dates';
 
-import DateFields from './DateFields';
+import DateFields, {DateFieldName} from './DateFields';
 import {isDateValid, DATE_FORMAT} from './service';
 
-export default class DatePicker extends React.Component {
-  constructor(props) {
+interface DatePickerProps {
+  initialDates: {startDate: Date | null; endDate: Date | null};
+  type: string;
+  forceOpen?: boolean;
+  onDateChange: (options: {endDate: Date | null; startDate: Date | null; valid?: boolean}) => void;
+}
+
+type DatePickerState = Record<DateFieldName, string>;
+
+export default class DatePicker extends Component<DatePickerProps, DatePickerState> {
+  constructor(props: DatePickerProps) {
     super(props);
 
     const {startDate, endDate} = props.initialDates || {};
     this.state = {
-      startDate: startDate ? format(startDate, DATE_FORMAT) : '',
-      endDate: endDate ? format(endDate, DATE_FORMAT) : '',
+      startDate: startDate ? format(+startDate, DATE_FORMAT) : '',
+      endDate: endDate ? format(+endDate, DATE_FORMAT) : '',
     };
   }
 
-  setDates = (dates) => this.setState({...dates});
+  setDates = (dates: DatePickerState) => this.setState({...dates});
 
-  onDateChange = (name, date) => {
+  onDateChange = (name: DateFieldName, date: string) => {
     const {type} = this.props;
     const dateObj = parseISO(date);
 
     this.setState(
       {
         [name]: date,
-      },
+      } as Record<DateFieldName, string>,
       () => {
         const startDate = type !== 'before' ? parseISO(this.state.startDate) : null;
         const endDate = type !== 'after' ? parseISO(this.state.endDate) : null;
@@ -46,8 +55,8 @@ export default class DatePicker extends React.Component {
 
         if (
           isAllValid &&
-          ((name === 'startDate' && isAfter(dateObj, endDate)) ||
-            (name === 'endDate' && isBefore(dateObj, startDate)))
+          ((name === 'startDate' && endDate && isAfter(dateObj, endDate)) ||
+            (name === 'endDate' && startDate && isBefore(dateObj, startDate)))
         ) {
           return this.setState({
             startDate: date,
@@ -72,7 +81,7 @@ export default class DatePicker extends React.Component {
   }
 }
 
-function isValid(type, startDate, endDate) {
+function isValid(type: string, startDate: string, endDate: string) {
   if (type === 'between') {
     return isDateValid(startDate) && isDateValid(endDate);
   } else if (type === 'after') {

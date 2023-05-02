@@ -5,10 +5,11 @@
  * except in compliance with the proprietary license.
  */
 
-import React from 'react';
+import {shallow, ShallowWrapper} from 'enzyme';
+
+import {Select} from 'components';
 
 import DateRangeInput from './DateRangeInput';
-import {shallow} from 'enzyme';
 
 const props = {
   type: '',
@@ -19,8 +20,8 @@ const props = {
   onChange: () => {},
 };
 
-const dateTypeSelect = (node) => node.find('Select').at(0);
-const unitSelect = (node) => node.find('Select').at(1);
+const dateTypeSelect = (node: ShallowWrapper) => node.find(Select).at(0);
+const unitSelect = (node: ShallowWrapper) => node.find(Select).at(1);
 
 it('should disable the unit selection when not selecting this or last', () => {
   const node = shallow(<DateRangeInput {...props} type="today" />);

@@ -5,27 +5,32 @@
  * except in compliance with the proprietary license.
  */
 
-import React from 'react';
 import {shallow} from 'enzyme';
 
-import {PickerDateInput} from './PickerDateInput';
 import {Input} from 'components';
 
+import {PickerDateInput} from './PickerDateInput';
+
+const props = {
+  onChange: jest.fn(),
+  onSubmit: jest.fn(),
+};
+
 it('should create a text input field', () => {
-  const node = shallow(<PickerDateInput />);
+  const node = shallow(<PickerDateInput {...props} />);
 
   expect(node.find(Input)).toExist();
 });
 
 it('should have field with value equal to formated date', () => {
-  const node = shallow(<PickerDateInput value="test" />);
+  const node = shallow(<PickerDateInput {...props} value="test" />);
 
   expect(node.find(Input)).toHaveValue('test');
 });
 
 it('should trigger onDateChange callback when input changes to valid date', () => {
   const spy = jest.fn();
-  const node = shallow(<PickerDateInput onChange={spy} />);
+  const node = shallow(<PickerDateInput {...props} onChange={spy} />);
 
   node.find(Input).simulate('change', {
     target: {
@@ -39,7 +44,7 @@ it('should trigger onDateChange callback when input changes to valid date', () =
 
 it('should trigger onSubmit when pressing the enter key', () => {
   const spy = jest.fn();
-  const node = shallow(<PickerDateInput onSubmit={spy} />);
+  const node = shallow(<PickerDateInput {...props} onSubmit={spy} />);
 
   node.find(Input).simulate('keyDown', {key: 'Enter'});
 
@@ -47,7 +52,7 @@ it('should trigger onSubmit when pressing the enter key', () => {
 });
 
 it('should add isInvalid prop to true when input changes to invalid date', () => {
-  const node = shallow(<PickerDateInput value="invalidValue" isInvalid={true} />);
+  const node = shallow(<PickerDateInput {...props} value="invalidValue" isInvalid={true} />);
 
   expect(node.find('.PickerDateInputWarning')).toExist();
 });

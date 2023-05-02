@@ -5,12 +5,13 @@
  * except in compliance with the proprietary license.
  */
 
-import React from 'react';
+import {RefObject} from 'react';
+import {shallow} from 'enzyme';
 import {parseISO} from 'date-fns';
 
 import {format} from 'dates';
+
 import DateFields from './DateFields';
-import {shallow} from 'enzyme';
 import DateRange from './DateRange';
 import PickerDateInput from './PickerDateInput';
 
@@ -23,6 +24,7 @@ const props = {
   endDate: format(parseISO('2020-06-05'), dateFormat),
   format: dateFormat,
   type: 'between',
+  onDateChange: jest.fn(),
 };
 
 it('should match snapshot', () => {
@@ -33,7 +35,7 @@ it('should match snapshot', () => {
 
 it('should set startDate on date change of start date input field', () => {
   const spy = jest.fn();
-  const node = shallow(<DateFields {...props} onDateChange={spy} />);
+  const node = shallow<DateFields>(<DateFields {...props} onDateChange={spy} />);
 
   node.instance().setDate('startDate')('change');
 
@@ -42,7 +44,7 @@ it('should set startDate on date change of start date input field', () => {
 
 it('should set endDate on date change of end date input field', () => {
   const spy = jest.fn();
-  const node = shallow(<DateFields {...props} onDateChange={spy} />);
+  const node = shallow<DateFields>(<DateFields {...props} onDateChange={spy} />);
 
   node.instance().setDate('endDate')('change');
 
@@ -50,7 +52,7 @@ it('should set endDate on date change of end date input field', () => {
 });
 
 it('should select date range popup on date input click', () => {
-  const node = shallow(<DateFields {...props} enableAddButton={jest.fn()} />);
+  const node = shallow(<DateFields {...props} />);
 
   node.find(PickerDateInput).at(0).simulate('click');
 
@@ -59,7 +61,7 @@ it('should select date range popup on date input click', () => {
 });
 
 it('should have DateRange', () => {
-  const node = shallow(<DateFields {...props} enableAddButton={jest.fn()} />);
+  const node = shallow(<DateFields {...props} />);
   node.setState({popupOpen: true});
 
   expect(node.find(DateRange)).toExist();
@@ -67,11 +69,13 @@ it('should have DateRange', () => {
 
 it('should update start and end date when selecting a date', () => {
   const spy = jest.fn();
-  const node = shallow(<DateFields {...props} onDateChange={spy} enableAddButton={jest.fn()} />);
+  const node = shallow<DateFields>(<DateFields {...props} onDateChange={spy} />);
 
   node.setState({popupOpen: true, currentlySelectedField: 'startDate'});
 
-  node.instance().endDateField = {current: {focus: jest.fn()}};
+  node.instance().endDateField = {
+    current: {focus: jest.fn()},
+  } as unknown as RefObject<HTMLInputElement>;
   node.instance().onDateRangeChange({startDate: new Date(), endDate: new Date()});
   const today = format(new Date(), dateFormat);
   expect(spy).toHaveBeenCalledWith('startDate', today);
@@ -79,20 +83,12 @@ it('should update start and end date when selecting a date', () => {
   expect(node.state('currentlySelectedField')).toBe('endDate');
 });
 
-it('should be possible to disable the date fields', () => {
-  const node = shallow(<DateFields {...props} disabled />);
-
-  const dateInputs = node.find(PickerDateInput);
-  expect(dateInputs.at(0).props('disabled')).toBeTruthy();
-  expect(dateInputs.at(1).props('disabled')).toBeTruthy();
-});
-
 it('should not close popup when clicking inside it', () => {
-  const node = shallow(<DateFields {...props} />);
+  const node = shallow<DateFields>(<DateFields {...props} />);
 
   node.setState({popupOpen: true, currentlySelectedField: 'startDate'});
 
-  node.instance().hidePopup({target: {closest: () => true}});
+  node.instance().hidePopup({target: {closest: () => true}} as unknown as Event);
 
   expect(node.state('popupOpen')).toBe(true);
 });

@@ -5,7 +5,7 @@
  * except in compliance with the proprietary license.
  */
 
-import React from 'react';
+import {ComponentProps} from 'react';
 import {shallow} from 'enzyme';
 import {parseISO} from 'date-fns';
 
@@ -16,7 +16,7 @@ console.error = jest.fn();
 
 jest.mock('components', () => {
   return {
-    ButtonGroup: (props) => <div {...props}>{props.children}</div>,
+    ButtonGroup: (props: ComponentProps<'div'>) => <div {...props}>{props.children}</div>,
   };
 });
 

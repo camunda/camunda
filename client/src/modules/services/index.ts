@@ -11,6 +11,7 @@ export function getRandomId() {
 
 export * as formatters from './formatters';
 export {loadProcessDefinitionXml, loadDecisionDefinitionXml} from './dataLoaders';
+export {numberParser} from './NumberParser';
 
 export {TEXT_REPORT_MAX_CHARACTERS, isTextReportTooLong, isTextReportValid} from './reportService';
 export {default as getScreenBounds} from './getScreenBounds';

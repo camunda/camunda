@@ -5,12 +5,8 @@
  * except in compliance with the proprietary license.
  */
 
-import {isValid, parseISO} from 'date-fns';
-import {format} from 'dates';
+export {};
 
-export const DATE_FORMAT = 'yyyy-MM-dd';
-
-export function isDateValid(date) {
-  const parsedDate = parseISO(date);
-  return isValid(parsedDate) && format(parsedDate, DATE_FORMAT) === date;
+declare module 'date-fns' {
+  export function isValid(date: any): date is Date;
 }

@@ -5,7 +5,6 @@
  * except in compliance with the proprietary license.
  */
 
-import React from 'react';
 import {shallow} from 'enzyme';
 import {Calendar, DateRange as ReactDateRange} from 'react-date-range';
 
@@ -20,6 +19,7 @@ jest.mock('date-fns', () => ({
 const props = {
   startDate: new Date('2019-01-01'),
   endDate: new Date('2020-01-05'),
+  onDateChange: jest.fn(),
 };
 
 it('pass start and end dates to date range component', () => {
@@ -44,7 +44,8 @@ it('invoke onChange with null endDate if type is "after"', () => {
   const spy = jest.fn();
   const node = shallow(<DateRange {...props} type="after" onDateChange={spy} />);
 
-  node.find(Calendar).prop('onChange')('test');
+  const date = new Date();
+  node.find(Calendar).prop('onChange')?.(date);
 
-  expect(spy).toHaveBeenCalledWith({endDate: null, startDate: 'test'});
+  expect(spy).toHaveBeenCalledWith({endDate: null, startDate: date});
 });
