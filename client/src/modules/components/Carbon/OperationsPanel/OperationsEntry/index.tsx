@@ -50,7 +50,7 @@ const OperationsEntry: React.FC<Props> = ({operation}) => {
   const label = TYPE_LABELS[type];
 
   return (
-    <Container isRunning={!isComplete}>
+    <Container isRunning={!isComplete} data-testid="operations-entry">
       <Header>
         <Title>
           {label}
@@ -60,11 +60,21 @@ const OperationsEntry: React.FC<Props> = ({operation}) => {
             ? ` ${name}`
             : ''}
         </Title>
-        {label === 'Delete' && <TrashCan size={16} />}
-        {label === 'Cancel' && <Error size={16} />}
-        {label === 'Retry' && <RetryFailed size={16} />}
-        {label === 'Modify' && <Tools size={16} />}
-        {label === 'Edit' && <Edit size={16} />}
+        {label === 'Delete' && (
+          <TrashCan size={16} data-testid="operation-delete-icon" />
+        )}
+        {label === 'Cancel' && (
+          <Error size={16} data-testid="operation-cancel-icon" />
+        )}
+        {label === 'Retry' && (
+          <RetryFailed size={16} data-testid="operation-retry-icon" />
+        )}
+        {label === 'Modify' && (
+          <Tools size={16} data-testid="operation-modify-icon" />
+        )}
+        {label === 'Edit' && (
+          <Edit size={16} data-testid="operation-edit-icon" />
+        )}
       </Header>
       <div>{id}</div>
       {!isComplete && <ProgressBar label="" value={fakeProgressPercentage} />}
