@@ -5,7 +5,7 @@
  * except in compliance with the proprietary license.
  */
 
-import React from 'react';
+import {ChangeEvent} from 'react';
 import {shallow} from 'enzyme';
 
 import Checklist from './Checklist';
@@ -50,11 +50,15 @@ it('should invoke onChange with the updated selected items', () => {
 it('should invoke onChange on selectAll/deselectAll', () => {
   const node = shallow(<Checklist {...props} />);
 
-  node.find('.selectAll').prop('onChange')({target: {checked: true}});
+  node.find('.selectAll').prop('onChange')?.({
+    target: {checked: true},
+  } as jest.MockedObject<ChangeEvent<HTMLInputElement>>);
 
   expect(props.onChange).toHaveBeenCalledWith(props.allItems);
 
-  node.find('.selectAll').prop('onChange')({target: {checked: false}});
+  node.find('.selectAll').prop('onChange')?.({target: {checked: false}} as jest.MockedObject<
+    ChangeEvent<HTMLInputElement>
+  >);
 
   expect(props.onChange).toHaveBeenCalledWith([]);
 });

@@ -5,7 +5,7 @@
  * except in compliance with the proprietary license.
  */
 
-import React, {useState} from 'react';
+import React, {ReactNode, useState} from 'react';
 import classnames from 'classnames';
 
 import {LabeledInput, Tag, LoadingIndicator, SearchInput} from 'components';
@@ -13,7 +13,30 @@ import {t} from 'translation';
 
 import './Checklist.scss';
 
-export default function Checklist({
+interface ChecklistProps<T> {
+  onSearch?: (value: string) => void;
+  allItems: T[];
+  selectedItems: T[];
+  onChange: (values: (T | undefined)[]) => void;
+  formatter: (
+    allItems: T[],
+    selectedItems: T[]
+  ) => {
+    label: string;
+    id: string | number | boolean | null;
+    checked?: boolean;
+    disabled?: boolean;
+  }[];
+  loading?: boolean;
+  labels?: Record<string, string | JSX.Element[]>;
+  headerHidden?: boolean;
+  preItems?: ReactNode;
+  customHeader?: ReactNode;
+}
+
+export default function Checklist<
+  T extends string | boolean | number | null | {id: string; key?: string}
+>({
   onSearch = () => {},
   selectedItems,
   allItems,
@@ -27,7 +50,7 @@ export default function Checklist({
   headerHidden,
   preItems,
   customHeader,
-}) {
+}: ChecklistProps<T>) {
   const [query, setQuery] = useState('');
 
   if (!allItems) {
@@ -39,11 +62,11 @@ export default function Checklist({
   const allDeselected = selectedItems.length === 0;
 
   const filteredData = data.filter(({label, id}) =>
-    (label || id)?.toLowerCase().includes(query.toLowerCase())
+    (label || id)?.toString().toLowerCase().includes(query.toLowerCase())
   );
   const allSelectedInView = filteredData.every(({checked}) => checked);
 
-  const updateItems = (itemId, checked) => {
+  const updateItems = (itemId: string | number | boolean | null, checked: boolean) => {
     if (checked) {
       const itemToSelect = allItems.find((item) => getIdentifier(item) === itemId);
       onChange([...selectedItems, itemToSelect]);
@@ -128,7 +151,7 @@ export default function Checklist({
               <LabeledInput
                 className={classnames({highlight: checked && !disabled})}
                 disabled={disabled}
-                key={id}
+                key={id?.toString()}
                 type="checkbox"
                 checked={checked}
                 label={label || id}
@@ -142,7 +165,9 @@ export default function Checklist({
   );
 }
 
-function getIdentifier(item) {
+function getIdentifier(
+  item: string | boolean | number | null | {id: string; key?: string}
+): string | boolean | number | null {
   if (typeof item === 'object' && item !== null) {
     return item.key || item.id;
   }

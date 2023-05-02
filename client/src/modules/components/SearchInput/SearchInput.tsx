@@ -5,13 +5,11 @@
  * except in compliance with the proprietary license.
  */
 
-import React from 'react';
-
-import {Input, Icon} from 'components';
+import {Input, Icon, InputProps} from 'components';
 
 import './SearchInput.scss';
 
-export default function SearchInput({...props}) {
+export default function SearchInput({...props}: InputProps) {
   return (
     <div className="SearchInput">
       <Input className="searchInput" type="text" {...props} />

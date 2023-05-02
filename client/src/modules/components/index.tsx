@@ -35,6 +35,8 @@ export {Table} from './Table';
 export {TargetValueBadge} from './TargetValueBadge';
 export {DatePicker} from './DatePicker';
 export {DateRangeInput} from './DateRangeInput';
+export {SearchInput} from './SearchInput';
+export {Checklist} from './Checklist';
 
 export type {InputProps} from './Input';
 export type {LabeledProps} from './Labeled';
