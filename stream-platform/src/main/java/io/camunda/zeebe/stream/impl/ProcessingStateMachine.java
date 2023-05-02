@@ -311,6 +311,7 @@ public final class ProcessingStateMachine {
           });
     }
   }
+
   /**
    * Starts the batch processing with the given initial command and iterates over ProcessingResult
    * and applies all follow-up commands until the command limit is reached or no more follow-up

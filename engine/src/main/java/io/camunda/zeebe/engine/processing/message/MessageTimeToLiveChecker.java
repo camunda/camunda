@@ -38,8 +38,10 @@ public final class MessageTimeToLiveChecker implements Task {
 
   /** This determines the duration that the TTL checker is idle after it completes an execution. */
   private final Duration executionInterval;
+
   /** This determines the maximum number of EXPIRE commands it will attempt to fit in the result. */
   private final int batchLimit;
+
   /** This determines whether to run this checker async or not. */
   private final boolean enableMessageTtlCheckerAsync;
 
@@ -48,6 +50,7 @@ public final class MessageTimeToLiveChecker implements Task {
 
   /** Keeps track of the timestamp to compare the message deadlines against. */
   private long currentTimestamp = -1;
+
   /** Keeps track of where to continue between iterations. */
   private MessageState.Index lastIndex;
 

@@ -332,6 +332,7 @@ class TransactionalColumnFamily<
       final DbKey prefix, final KeyValuePairVisitor<KeyType, ValueType> visitor) {
     forEachInPrefix(prefix, prefix, visitor);
   }
+
   /**
    * This is the preferred method to implement methods that iterate over a column family.
    *

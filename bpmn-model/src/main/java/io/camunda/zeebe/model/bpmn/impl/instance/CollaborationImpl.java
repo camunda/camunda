@@ -59,6 +59,7 @@ public class CollaborationImpl extends RootElementImpl implements Collaboration 
   protected static ChildElementCollection<ParticipantAssociation> participantAssociationCollection;
   protected static ChildElementCollection<MessageFlowAssociation> messageFlowAssociationCollection;
   protected static ChildElementCollection<CorrelationKey> correlationKeyCollection;
+
   /** TODO: choreographyRef */
   protected static ChildElementCollection<ConversationLink> conversationLinkCollection;
 

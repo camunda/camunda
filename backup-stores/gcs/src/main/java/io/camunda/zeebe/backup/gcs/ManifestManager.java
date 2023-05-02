@@ -52,6 +52,7 @@ public final class ManifestManager {
           .disable(WRITE_DATES_AS_TIMESTAMPS)
           .setSerializationInclusion(Include.NON_ABSENT);
   public static final int PRECONDITION_FAILED = 412;
+
   /**
    * Format for path to all manifests.
    *
@@ -61,6 +62,7 @@ public final class ManifestManager {
    * </ul>
    */
   private static final String MANIFESTS_ROOT_PATH_FORMAT = "%smanifests/";
+
   /**
    * The path format consists of the following elements:
    *
