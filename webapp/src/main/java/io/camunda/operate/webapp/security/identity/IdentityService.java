@@ -13,10 +13,12 @@ import io.camunda.identity.sdk.Identity;
 import io.camunda.identity.sdk.authentication.Tokens;
 import io.camunda.identity.sdk.authentication.dto.AuthCodeDto;
 import io.camunda.identity.sdk.exception.IdentityException;
+import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.util.RetryOperation;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import jakarta.servlet.http.HttpServletRequest;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Profile;
@@ -28,7 +30,7 @@ import org.springframework.stereotype.Component;
 public class IdentityService {
 
   @Autowired
-  private BeanFactory beanFactory;
+  private OperateProperties operateProperties;
 
   @Autowired
   private Identity identity;
@@ -48,17 +50,25 @@ public class IdentityService {
   }
 
   public String getRedirectURI(final HttpServletRequest req, final String redirectTo) {
-    String redirectUri = req.getScheme() + "://" + req.getServerName();
-    if ((req.getScheme().equals("http") && req.getServerPort() != 80) || (
-        req.getScheme().equals("https") && req.getServerPort() != 443)) {
-      redirectUri += ":" + req.getServerPort();
+    final String fixedRedirectRootUrl = operateProperties.getIdentity().getRedirectRootUrl();
+
+    String redirectRootUri;
+    if (StringUtils.isNotBlank(fixedRedirectRootUrl)) {
+      redirectRootUri = fixedRedirectRootUrl;
+    } else {
+      redirectRootUri = req.getScheme() + "://" + req.getServerName();
+      if ((req.getScheme().equals("http") && req.getServerPort() != 80)
+          || (req.getScheme().equals("https") && req.getServerPort() != 443)) {
+        redirectRootUri += ":" + req.getServerPort();
+      }
     }
-    String result;
+
+    final String result;
     if (contextPathIsUUID(req.getContextPath())) {
       final String clusterId = req.getContextPath().replace("/", "");
-      result = redirectUri + /* req.getContextPath()+ */ redirectTo + "?uuid=" + clusterId;
+      result = redirectRootUri + /* req.getContextPath()+ */ redirectTo + "?uuid=" + clusterId;
     } else {
-      result = redirectUri + req.getContextPath() + redirectTo;
+      result = redirectRootUri + req.getContextPath() + redirectTo;
     }
     return result;
   }
