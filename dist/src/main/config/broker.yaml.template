@@ -898,7 +898,7 @@
         # Configures if the RocksDB SST files should be partitioned based on some virtual column families.
         # By default RocksDB will not partition the SST files, which might have influence on the compacting of certain key ranges.
         # Enabling this option gives RocksDB some good hints how to improve compaction and reduce the write amplification.
-        # Benchmarks have show impressive results, but it is not yet 100% clear what implications it else has except
+        # Benchmarks have show impressive results allowing to sustain performance on larger states, but it is not yet 100% clear what implications it else has except
         # increasing the file count of runtime and snapshots.
         # This setting can also be set using the environment variable ZEEBE_BROKER_EXPERIMENTAL_ROCKSDB_ENABLESSTPARTITIONING
         # enableSstPartitioning: false
