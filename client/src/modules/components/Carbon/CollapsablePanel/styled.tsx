@@ -36,6 +36,7 @@ const Collapsable = styled.div<CollapsableProps>`
           `
         : css`
             min-width: ${$maxWidth}px;
+            width: ${$maxWidth}px;
           `};
 
       ${$isOverlay

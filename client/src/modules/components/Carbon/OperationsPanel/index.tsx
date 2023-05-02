@@ -11,9 +11,11 @@ import {CollapsablePanel as BaseCollapsablePanel} from 'modules/components/Carbo
 import {observer} from 'mobx-react';
 import {panelStatesStore} from 'modules/stores/panelStates';
 import {operationsStore} from 'modules/stores/operations';
-import {OperationsList} from './styled';
-import {InfiniteScroller} from 'modules/components/InfiniteScroller';
+import {OperationsList, EmptyMessageContainer} from './styled';
 import OperationsEntry from './OperationsEntry';
+import {InfiniteScroller} from 'modules/components/InfiniteScroller';
+import {EMPTY_MESSAGE} from './constants';
+import {InlineNotification} from '@carbon/react';
 
 const OperationsPanel: React.FC = observer(() => {
   const {operations, status, hasMoreOperations} = operationsStore.state;
@@ -47,20 +49,52 @@ const OperationsPanel: React.FC = observer(() => {
       onToggle={toggleOperationsPanel}
       ref={scrollableContainerRef}
     >
-      <InfiniteScroller
-        onVerticalScrollEndReach={() => {
-          if (hasMoreOperations && status !== 'fetching') {
-            operationsStore.fetchNextOperations();
-          }
-        }}
-        scrollableContainerRef={scrollableContainerRef}
-      >
-        <OperationsList data-testid="operations-list">
-          {operations.map((operation) => (
-            <OperationsEntry key={operation.id} operation={operation} />
-          ))}
-        </OperationsList>
-      </InfiniteScroller>
+      {(() => {
+        if (operations.length === 0 && status === 'fetched') {
+          return (
+            <EmptyMessageContainer>
+              <InlineNotification
+                kind="info"
+                lowContrast
+                title=""
+                subtitle={EMPTY_MESSAGE}
+                hideCloseButton
+              />
+            </EmptyMessageContainer>
+          );
+        }
+
+        if (status === 'error') {
+          return (
+            <EmptyMessageContainer>
+              <InlineNotification
+                kind="error"
+                lowContrast
+                title=""
+                subtitle="Operations could not be fetched"
+                hideCloseButton
+              />
+            </EmptyMessageContainer>
+          );
+        }
+
+        return (
+          <InfiniteScroller
+            onVerticalScrollEndReach={() => {
+              if (hasMoreOperations && status !== 'fetching') {
+                operationsStore.fetchNextOperations();
+              }
+            }}
+            scrollableContainerRef={scrollableContainerRef}
+          >
+            <OperationsList data-testid="operations-list">
+              {operations.map((operation) => (
+                <OperationsEntry key={operation.id} operation={operation} />
+              ))}
+            </OperationsList>
+          </InfiniteScroller>
+        );
+      })()}
     </BaseCollapsablePanel>
   );
 });

@@ -5,16 +5,6 @@
  * except in compliance with the proprietary license.
  */
 
-import styled from 'styled-components';
-
-const OperationsList = styled.ul`
-  li:last-child {
-    border-bottom: none;
-  }
-`;
-
-const EmptyMessageContainer = styled.div`
-  padding: var(--cds-spacing-05);
-`;
-
-export {OperationsList, EmptyMessageContainer};
+export const OPERATIONS_LABEL = 'Operations';
+export const EMPTY_MESSAGE =
+  'To create a new Operation, select some Instances from the list and click ”Apply Operation on…”';
