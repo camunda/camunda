@@ -8,11 +8,11 @@
 package io.camunda.zeebe.backup.management;
 
 import io.camunda.zeebe.backup.api.BackupIdentifier;
-import io.camunda.zeebe.backup.api.BackupStatus;
+import io.camunda.zeebe.backup.api.BackupStatusCode;
 
-public class BackupAlreadyExistsException extends RuntimeException {
+class BackupAlreadyExistsException extends RuntimeException {
 
-  public BackupAlreadyExistsException(final BackupIdentifier id, final BackupStatus status) {
+  BackupAlreadyExistsException(final BackupIdentifier id, final BackupStatusCode status) {
     super("Backup with id %s already exists, status of the backup is %s".formatted(id, status));
   }
 }
