@@ -5,12 +5,15 @@
  * except in compliance with the proprietary license.
  */
 
-export function flatten(ctx = '', suffix = () => '') {
-  return (flat, entry) => {
-    if (entry.columns) {
+import {Head} from './Table';
+
+type Entry = Head;
+export function flatten(ctx: string = '', suffix: (entry: Entry) => string | undefined = () => '') {
+  return (flat: string[], entry: Entry): string[] => {
+    if (typeof entry === 'object' && entry.columns) {
       // nested column, flatten recursivly with augmented context
       return flat.concat(
-        entry.columns.reduce(flatten(ctx + (entry.id || entry.label), suffix), [])
+        entry.columns.reduce<string[]>(flatten(ctx + (entry.id || entry.label), suffix), [])
       );
     } else {
       // normal column, return current context with optional suffix

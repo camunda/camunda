@@ -5,14 +5,14 @@
  * except in compliance with the proprietary license.
  */
 
-import React, {runAllEffects} from 'react';
+import {runAllEffects} from '__mocks__/react';
 import {shallow} from 'enzyme';
 
 import {Icon, Select} from 'components';
 
 import Table from './Table';
 
-function generateData(amount) {
+function generateData(amount: number) {
   const arr = [];
   for (let i = 0; i < amount; i++) {
     arr.push(['' + i]);
@@ -48,8 +48,8 @@ it('should be possible to explicitly disable sorting on a column', () => {
     {id: 'column3', label: 'Z', sortable: false},
   ]);
 
-  expect(result[0].disableSortBy).toBe(false);
-  expect(result[1].disableSortBy).toBe(true);
+  expect(result[0]?.disableSortBy).toBe(false);
+  expect(result[1]?.disableSortBy).toBe(true);
 });
 
 it('should support explicit id for nested columns', () => {

@@ -12,13 +12,16 @@ import {ignoreFragments, isReactElement} from 'services';
 import classnames from 'classnames';
 import {t} from 'translation';
 
-interface Selectprops extends Omit<ComponentProps<typeof Dropdown>, 'label'> {
-  value?: string;
-  onChange?: (value: string) => void;
+interface Selectprops<T extends object | string | number = string>
+  extends Omit<ComponentProps<typeof Dropdown>, 'label'> {
+  value?: T;
+  onChange?: (value: T) => void;
   label?: string | JSX.Element[];
 }
 
-export default class Select extends Component<Selectprops> {
+export default class Select<T extends object | string | number = string> extends Component<
+  Selectprops<T>
+> {
   renderChildrenWithProps = (children: ReactNode) => {
     return Children.toArray(children)
       .filter(isReactElement)
@@ -59,7 +62,9 @@ export default class Select extends Component<Selectprops> {
   };
 
   onChange = (evt: UIEvent<HTMLElement>) => {
-    const value = (evt.target as HTMLElement | null)?.closest('[value]')?.getAttribute('value');
+    const value = (evt.target as HTMLElement | null)
+      ?.closest('[value]')
+      ?.getAttribute('value') as T;
     if (value && this.props.onChange) {
       this.props.onChange(value);
     }
@@ -79,7 +84,9 @@ export default class Select extends Component<Selectprops> {
     );
   }
 
-  static Option = function Option(props: ComponentProps<typeof Dropdown.Option>) {
+  static Option = function Option<T extends object | string | number = string>(
+    props: ComponentProps<typeof Dropdown.Option<T>>
+  ) {
     return <Dropdown.Option {...props}>{props.children}</Dropdown.Option>;
   };
 

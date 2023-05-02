@@ -5,9 +5,24 @@
  * except in compliance with the proprietary license.
  */
 
-import React, {useEffect, useRef} from 'react';
+import React, {MouseEvent, UIEventHandler, useEffect, useRef} from 'react';
 import classnames from 'classnames';
-import {useTable, useSortBy, usePagination, useResizeColumns, useFlexLayout} from 'react-table';
+import {
+  useTable,
+  useSortBy,
+  usePagination,
+  useResizeColumns,
+  useFlexLayout,
+  Column,
+  UseSortByColumnProps,
+  UseSortByOptions,
+  TableInstance,
+  UseTableInstanceProps,
+  UsePaginationInstanceProps,
+  UseRowSelectInstanceProps,
+  UseTableOptions,
+  UsePaginationState,
+} from 'react-table';
 
 import {t} from 'translation';
 import {Select, Icon, Button, LoadingIndicator, Tooltip, NoDataNotice} from 'components';
@@ -16,7 +31,46 @@ import {flatten} from './service';
 
 import './Table.scss';
 
-export default function Table({
+export type TableInstanceWithHooks<T extends object> = TableInstance<T> &
+  UseTableInstanceProps<T> &
+  UsePaginationInstanceProps<T> & {
+    state: UsePaginationState<T>;
+  } & UseRowSelectInstanceProps<T>;
+
+export type Head =
+  | string
+  | (Partial<Column> & {
+      label?: string;
+      title?: string;
+      sortable?: boolean;
+      type?: string;
+      columns?: Head[];
+    });
+
+type Body = (string | JSX.Element)[] | {content?: unknown[]; props: unknown};
+
+interface TableProps {
+  head: Head[];
+  body: Body[];
+  className?: string;
+  resultType?: string;
+  sortByLabel?: boolean;
+  updateSorting?: (columneName: string | undefined, sorting: 'asc' | 'desc') => void;
+  sorting?: {by: string; order: string};
+  disablePagination?: boolean;
+  noHighlight?: boolean;
+  noData?: JSX.Element;
+  error?: boolean;
+  onScroll?: UIEventHandler<HTMLElement>;
+  fetchData?: ({pageIndex, pageSize}: {pageIndex: number; pageSize: number}) => void;
+  defaultPageSize?: number;
+  defaultPage?: number;
+  totalEntries?: number;
+  loading?: boolean;
+  allowLocalSorting?: boolean;
+}
+
+export default function Table<T extends object>({
   head,
   body,
   className,
@@ -35,8 +89,8 @@ export default function Table({
   totalEntries,
   loading,
   allowLocalSorting = false,
-}) {
-  const columnWidths = useRef({});
+}: TableProps) {
+  const columnWidths = useRef<Record<string, string | number | undefined>>({});
   const columns = React.useMemo(() => Table.formatColumns(head, '', columnWidths.current), [head]);
   const data = React.useMemo(() => Table.formatData(head, body), [head, body]);
   const initialSorting = React.useMemo(
@@ -74,19 +128,20 @@ export default function Table({
       ...(totalEntries
         ? {manualPagination: true, pageCount: Math.ceil(totalEntries / defaultPageSize)}
         : {}),
-    },
+    } as UseTableOptions<T>,
     useSortBy,
     usePagination,
     useFlexLayout,
     useResizeColumns
-  );
+  ) as TableInstanceWithHooks<T>;
+
   const firstRowIndex = pageIndex * pageSize;
   const maxLastRow = firstRowIndex + pageSize;
   const totalRows = totalEntries || body.length;
   const empty = !loading && (totalRows === 0 || head.length === 0);
   const lastRowIndex = maxLastRow > totalRows ? totalRows : maxLastRow;
 
-  function getSortingProps(column) {
+  function getSortingProps(column: Column & UseSortByOptions<T> & UseSortByColumnProps<T>) {
     if (!updateSorting && !allowLocalSorting) {
       return {};
     }
@@ -96,12 +151,12 @@ export default function Table({
       style: {
         cursor: column.disableSortBy ? 'default' : 'pointer',
       },
-      onClick: (evt) => {
+      onClick: (evt: MouseEvent) => {
         if (props.onClick) {
           props.onClick(evt);
           let sortColumn = column.id;
           if (resultType === 'map') {
-            if (sortColumn === columns[0].id) {
+            if (sortColumn === columns[0]?.id) {
               sortColumn = sortByLabel ? 'label' : 'key';
             } else {
               sortColumn = 'value';
@@ -113,8 +168,8 @@ export default function Table({
     };
   }
 
-  const thead = useRef();
-  const tbody = useRef();
+  const thead = useRef<HTMLTableSectionElement>(null);
+  const tbody = useRef<HTMLTableSectionElement>(null);
   useEffect(() => {
     if (window.ResizeObserver) {
       const ro = new ResizeObserver((entries) => {
@@ -155,7 +210,8 @@ export default function Table({
     );
   });
 
-  const isSortedDesc = (column) => (sorting ? sorting?.order === 'desc' : column.isSortedDesc);
+  const isSortedDesc = (column: UseSortByColumnProps<T>) =>
+    sorting ? sorting?.order === 'desc' : column.isSortedDesc;
 
   return (
     <div className={classnames('Table', className, {highlight: !noHighlight, loading})}>
@@ -166,7 +222,7 @@ export default function Table({
               {...headerGroup.getHeaderGroupProps()}
               className={classnames({groupRow: i === 0 && headerGroups.length > 1})}
             >
-              {headerGroup.headers.map((column) => (
+              {headerGroup.headers.map((column: any) => (
                 <th
                   className={classnames('tableHeader', {placeholder: column.placeholderOf})}
                   {...column.getHeaderProps()}
@@ -189,7 +245,7 @@ export default function Table({
             page.map((row) => {
               prepareRow(row);
               return (
-                <tr {...row.getRowProps(row.original.__props)}>
+                <tr {...row.getRowProps((row.original as any).__props)}>
                   {row.cells.map((cell) => {
                     const props = cell.getCellProps();
                     return (
@@ -259,7 +315,12 @@ export default function Table({
   );
 }
 
-function formatSorting(sorting, resultType, columns, allowLocalSorting) {
+function formatSorting<T extends object>(
+  sorting: {by: string; order: string} | undefined,
+  resultType: string | undefined,
+  columns: (Column & Partial<UseSortByOptions<T> & UseSortByColumnProps<T>>)[],
+  allowLocalSorting: boolean
+): {id?: string; desc?: boolean; order?: string}[] {
   if (allowLocalSorting) {
     const firstSortableColumn = columns.find((column) => !column.disableSortBy);
     if (firstSortableColumn) {
@@ -275,24 +336,41 @@ function formatSorting(sorting, resultType, columns, allowLocalSorting) {
   let id = by;
   if (resultType === 'map') {
     if (by === 'label' || by === 'key') {
-      id = columns[0].id;
+      id = columns[0]?.id!;
     } else if (by === 'value') {
-      id = columns[1].id;
+      id = columns[1]?.id!;
     }
   }
   return [{id, desc: order === 'desc'}];
 }
 
-Table.formatColumns = (head, ctx = '', columnWidths = {}, group) => {
+Table.formatColumns = <T extends object = object>(
+  head: Head[],
+  ctx: string = '',
+  columnWidths: Record<string, string | number | undefined> = {},
+  group?: unknown
+): (Column & Partial<UseSortByOptions<T> & UseSortByColumnProps<T>>)[] => {
   return head.map((elem, idx) => {
-    if (!elem.columns) {
-      const id = convertHeaderNameToAccessor(ctx + (elem.id || elem));
+    if (typeof elem === 'string' || !elem.columns) {
+      const id = convertHeaderNameToAccessor(ctx + (typeof elem === 'string' ? elem : elem.id));
+      if (typeof elem === 'string') {
+        return {
+          Header: elem,
+          title: undefined,
+          accessor: (d: Record<string, unknown>) => d[id],
+          id,
+          minWidth: 100,
+          disableSortBy: false,
+          width: columnWidths[id] || 180,
+          group,
+        };
+      }
       return {
-        Header: elem.label || elem,
+        Header: elem.label,
         title: elem.title,
-        accessor: (d) => d[id],
+        accessor: (d: Record<string, unknown>) => d[id],
         id,
-        minWidth: elem.width || 100,
+        minWidth: +(elem.width || 100),
         disableSortBy: elem.sortable === false,
         width: columnWidths[id] || elem.width || 180,
         group,
@@ -300,27 +378,27 @@ Table.formatColumns = (head, ctx = '', columnWidths = {}, group) => {
     }
 
     return {
-      id: elem.id || elem.label,
+      id: elem.id || elem.label || '',
       Header: elem.label,
       columns: Table.formatColumns(elem.columns, ctx + (elem.id || elem.label), columnWidths, idx),
     };
   });
 };
 
-Table.formatData = (head, body) => {
+Table.formatData = (head: Head[], body: Body[]) => {
   const flatHead = head.reduce(
-    flatten('', (entry) => entry.id || entry),
+    flatten('', (entry) => (typeof entry === 'object' ? entry?.id : entry)),
     []
   );
   return body.map((row) => {
-    const newRow = {};
+    const newRow: Record<string, unknown> & {__props?: unknown} = {};
 
-    const content = row.content || row;
+    const content: unknown[] = Array.isArray(row) ? row : row.content || [];
     content.forEach((cell, columnIdx) => {
-      newRow[convertHeaderNameToAccessor(flatHead[columnIdx])] = cell;
+      newRow[convertHeaderNameToAccessor(flatHead[columnIdx] || '')] = cell;
     });
 
-    if (row.props) {
+    if ('props' in row) {
       newRow.__props = row.props;
     }
 
@@ -328,11 +406,11 @@ Table.formatData = (head, body) => {
   });
 };
 
-function convertHeaderNameToAccessor(name) {
+function convertHeaderNameToAccessor(name: string) {
   const joined = name
     .split(' ')
     .join('')
-    .replace(t('report.variables.default'), t('report.groupBy.variable') + ':');
+    .replace(t('report.variables.default').toString(), t('report.groupBy.variable') + ':');
 
   return joined.charAt(0).toLowerCase() + joined.slice(1);
 }

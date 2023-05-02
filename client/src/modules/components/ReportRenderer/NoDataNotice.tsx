@@ -5,7 +5,7 @@
  * except in compliance with the proprietary license.
  */
 
-import React from 'react';
+import {ReactNode} from 'react';
 import classnames from 'classnames';
 
 import {Icon} from 'components';
@@ -13,7 +13,13 @@ import {t} from 'translation';
 
 import './NoDataNotice.scss';
 
-export default function NoDataNotice({type, title, children}) {
+interface NoDataNoticeProps {
+  type?: string;
+  title?: string;
+  children?: ReactNode;
+}
+
+export default function NoDataNotice({type, title, children}: NoDataNoticeProps) {
   return (
     <div className={classnames('NoDataNotice', type)}>
       <div className="container">
@@ -27,7 +33,7 @@ export default function NoDataNotice({type, title, children}) {
   );
 }
 
-function getIconName(type) {
+function getIconName(type: string) {
   if (type === 'error') {
     return 'warning';
   }

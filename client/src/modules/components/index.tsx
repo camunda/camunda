@@ -30,6 +30,8 @@ export {UserTypeahead} from './UserTypeahead';
 export {BPMNDiagram} from './BPMNDiagram';
 export {DMNDiagram} from './DMNDiagram';
 export {DownloadButton} from './DownloadButton';
+export {NoDataNotice} from './ReportRenderer';
+export {Table} from './Table';
 export {TargetValueBadge} from './TargetValueBadge';
 
 export type {InputProps} from './Input';

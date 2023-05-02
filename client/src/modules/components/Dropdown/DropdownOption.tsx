@@ -5,7 +5,7 @@
  * except in compliance with the proprietary license.
  */
 
-import {ComponentPropsWithoutRef, forwardRef} from 'react';
+import {ComponentPropsWithoutRef, ForwardedRef, forwardRef} from 'react';
 import {Link} from 'react-router-dom';
 import classnames from 'classnames';
 
@@ -13,27 +13,33 @@ import {Icon, Tooltip} from 'components';
 
 import './DropdownOption.scss';
 
-interface CommonProps {
-  value?: string;
+interface CommonProps<T extends object | string | number = string> {
+  value?: T;
   active?: boolean;
   disabled?: boolean;
   checked?: boolean;
   label?: string | JSX.Element;
 }
 
-interface LinkProps extends CommonProps, Partial<ComponentPropsWithoutRef<Link>> {
+interface LinkProps<T extends object | string | number = string>
+  extends CommonProps<T>,
+    Partial<ComponentPropsWithoutRef<Link>> {
   link: string;
 }
 
-interface DivProps extends CommonProps, Partial<ComponentPropsWithoutRef<'div'>> {
+interface DivProps<T extends object | string | number = string>
+  extends CommonProps<T>,
+    Partial<ComponentPropsWithoutRef<'div'>> {
   link?: never;
 }
 
-export type DropdownOptionProps = LinkProps | DivProps;
+export type DropdownOptionProps<T extends object | string | number = string> =
+  | LinkProps<T>
+  | DivProps<T>;
 
-export default forwardRef(function DropdownOption(
-  {active, link, disabled, ...props}: DropdownOptionProps,
-  ref
+function DropdownOption<T extends object | string | number = string>(
+  {active, link, disabled, ...props}: DropdownOptionProps<T>,
+  ref: ForwardedRef<HTMLElement>
 ) {
   const commonProps = {
     ...props,
@@ -69,4 +75,8 @@ export default forwardRef(function DropdownOption(
       </div>
     </Tooltip>
   );
-});
+}
+
+export default forwardRef(DropdownOption) as <T extends object | string | number = string>(
+  props: DropdownOptionProps<T> & {ref?: ForwardedRef<HTMLElement>}
+) => ReturnType<typeof DropdownOption>;
