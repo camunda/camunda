@@ -10,14 +10,10 @@ package io.camunda.zeebe.logstreams.impl.log;
 import static io.camunda.zeebe.logstreams.impl.serializer.DataFrameDescriptor.FRAME_ALIGNMENT;
 
 import io.camunda.zeebe.logstreams.impl.serializer.DataFrameDescriptor;
-import io.camunda.zeebe.logstreams.impl.serializer.SequencedBatchSerializer;
 import io.camunda.zeebe.logstreams.log.LogAppendEntry;
 import io.camunda.zeebe.logstreams.log.LogStreamWriter;
-import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
-import io.camunda.zeebe.protocol.impl.record.value.management.AuditRecord;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
-import io.camunda.zeebe.protocol.record.intent.management.AuditIntent;
 import io.camunda.zeebe.scheduler.ActorCondition;
 import io.camunda.zeebe.scheduler.clock.ActorClock;
 import java.io.Closeable;
@@ -27,7 +23,6 @@ import java.util.Objects;
 import java.util.Queue;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.locks.ReentrantLock;
-import org.agrona.concurrent.UnsafeBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -120,7 +115,6 @@ final class Sequencer implements LogStreamWriter, Closeable {
    * Organizes the given list of entries into:
    *
    * <ol>
-   *   <li>{@link AuditRecord An audit record}
    *   <li>{@link io.camunda.zeebe.protocol.impl.record.value.management.AggregatedChangesRecord The
    *       writebatch}
    *   <li>Unprocessed Commands
@@ -129,7 +123,6 @@ final class Sequencer implements LogStreamWriter, Closeable {
   private SequencedBatch reorganizeBatch(
       final long sourcePosition, final List<LogAppendEntry> appendEntries) {
     final var now = ActorClock.currentTimeMillis();
-    final List<LogAppendEntry> auditEntries = new ArrayList<>(appendEntries.size());
     final List<LogAppendEntry> unprocessedCommands = new ArrayList<>(1);
     LogAppendEntry writeBatchEntry = null;
 
@@ -139,34 +132,17 @@ final class Sequencer implements LogStreamWriter, Closeable {
       } else if (entry.recordMetadata().getRecordType() == RecordType.COMMAND
           && !entry.isProcessed()) {
         unprocessedCommands.add(entry);
-      } else {
-        auditEntries.add(entry);
       }
     }
 
     final var entriesToWrite = new ArrayList<LogAppendEntry>(unprocessedCommands.size() + 2);
-
-    if (!auditEntries.isEmpty()) {
-      final var auditEntry = buildAuditEntry(sourcePosition, now, auditEntries);
-      entriesToWrite.add(auditEntry);
-    }
 
     if (writeBatchEntry != null) {
       entriesToWrite.add(writeBatchEntry);
     }
 
     entriesToWrite.addAll(unprocessedCommands);
-    return new SequencedBatch(now, position + auditEntries.size(), sourcePosition, entriesToWrite);
-  }
-
-  private LogAppendEntry buildAuditEntry(
-      final long sourcePosition, final long now, final List<LogAppendEntry> auditEntries) {
-    final var auditBatch = new SequencedBatch(now, position, sourcePosition, auditEntries);
-    final var auditRecord = new AuditRecord();
-    final var auditRecordMetadata =
-        new RecordMetadata().recordType(RecordType.AUDIT).intent(AuditIntent.AUDITED);
-    auditRecord.setEvents(new UnsafeBuffer(SequencedBatchSerializer.serializeBatch(auditBatch)));
-    return LogAppendEntry.of(auditRecordMetadata, auditRecord);
+    return new SequencedBatch(now, position, sourcePosition, entriesToWrite);
   }
 
   /**
