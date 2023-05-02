@@ -110,6 +110,64 @@
           "code": "java.method.removed",
           "old": "method io.camunda.zeebe.protocol.record.value.ImmutableEvaluatedDecisionValue io.camunda.zeebe.protocol.record.value.ImmutableEvaluatedDecisionValue::withDecisionVersion(long)",
           "justification": "This method provided an input argument of the wrong type. The version property is unlikely to surpass MAX_INT. Furthermore, in many cases the JVM automatically converts long to int."
+        },
+        {
+          "ignore": true,
+          "code": "java.field.constantValueChanged",
+          "old": "field io.camunda.zeebe.protocol.management.BackupListResponseEncoder.BackupsEncoder.HEADER_SIZE",
+          "justification": "Only used for listing backups, this is an acceptable breaking change."
+        },
+        {
+          "ignore": true,
+          "code": "java.field.constantValueChanged",
+          "old": "field io.camunda.zeebe.protocol.management.BackupListResponseDecoder.BackupsDecoder.HEADER_SIZE",
+          "justification": "Only used for listing backups, this is an acceptable breaking change."
+        },
+        {
+          "ignore": true,
+          "code": "java.field.constantValueChanged",
+          "old": "field io.camunda.zeebe.protocol.management.BackupListResponseDecoder.BackupsDecoder.HEADER_SIZE",
+          "justification": "Only used for listing backups, this is an acceptable breaking change."
+        },
+        {
+          "ignore": true,
+          "code": "java.method.returnTypeChanged",
+          "old": "method short io.camunda.zeebe.protocol.management.BackupListResponseDecoder.BackupsDecoder::countMaxValue()",
+          "new": "method int io.camunda.zeebe.protocol.management.BackupListResponseDecoder.BackupsDecoder::countMaxValue()",
+          "justification": "Only used for listing backups, this is an acceptable breaking change."
+        },
+        {
+          "ignore": true,
+          "code": "java.method.returnTypeChanged",
+          "old": "method short io.camunda.zeebe.protocol.management.BackupListResponseDecoder.BackupsDecoder::countMinValue()",
+          "new": "method int io.camunda.zeebe.protocol.management.BackupListResponseDecoder.BackupsDecoder::countMinValue()",
+          "justification": "Only used for listing backups, this is an acceptable breaking change."
+        },
+        {
+          "ignore": true,
+          "code": "java.method.returnTypeChanged",
+          "old": "method short io.camunda.zeebe.protocol.management.BackupListResponseEncoder.BackupsEncoder::countMaxValue()",
+          "new": "method int io.camunda.zeebe.protocol.management.BackupListResponseEncoder.BackupsEncoder::countMaxValue()",
+          "justification": "Only used for listing backups, this is an acceptable breaking change."
+        },
+        {
+          "ignore": true,
+          "code": "java.method.returnTypeChanged",
+          "old": "method short io.camunda.zeebe.protocol.management.BackupListResponseEncoder.BackupsEncoder::countMinValue()",
+          "new": "method int io.camunda.zeebe.protocol.management.BackupListResponseEncoder.BackupsEncoder::countMinValue()",
+          "justification": "Only used for listing backups, this is an acceptable breaking change."
+        },
+        {
+          "ignore": true,
+          "code": "java.class.removed",
+          "old": "class io.camunda.zeebe.protocol.management.GroupSizeEncodingDecoder",
+          "justification": "This is no longer used for listing backups"
+        },
+        {
+          "ignore": true,
+          "code": "java.class.removed",
+          "old": "class io.camunda.zeebe.protocol.management.GroupSizeEncodingEncoder",
+          "justification": "This is no longer used for listing backups"
         }
       ]
     }
