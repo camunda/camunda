@@ -5,25 +5,24 @@
  * except in compliance with the proprietary license.
  */
 
-import React from 'react';
 import {shallow} from 'enzyme';
 
 import MessageBox from './MessageBox';
 
 it('renders without crashing', () => {
-  shallow(<MessageBox />);
+  shallow(<MessageBox type="success" />);
 });
 
 it('renders the message text provided as a property', () => {
   const text = 'This is a Message!';
 
-  const node = shallow(<MessageBox>{text}</MessageBox>);
+  const node = shallow(<MessageBox type="error">{text}</MessageBox>);
   expect(node).toIncludeText(text);
 });
 
 it('renders the class name as provided as a property', () => {
-  const type = 'test';
+  const type = 'warning';
 
   const node = shallow(<MessageBox type={type} />);
-  expect(node.find('.MessageBox')).toHaveClassName('MessageBox--test');
+  expect(node.find('.MessageBox')).toHaveClassName('MessageBox--warning');
 });

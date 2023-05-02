@@ -5,20 +5,22 @@
  * except in compliance with the proprietary license.
  */
 
-import React from 'react';
+import {ComponentPropsWithoutRef} from 'react';
 import classnames from 'classnames';
 
 import './MessageBox.scss';
 
-export default function MessageBox({type, children, ...props}) {
+interface MessageBoxProps extends ComponentPropsWithoutRef<'div'> {
+  type: 'error' | 'success' | 'warning';
+}
+
+export default function MessageBox({type, ...props}: MessageBoxProps) {
   return (
     <div
       {...props}
       className={classnames('MessageBox', {
         ['MessageBox--' + type]: type,
       })}
-    >
-      {children}
-    </div>
+    />
   );
 }

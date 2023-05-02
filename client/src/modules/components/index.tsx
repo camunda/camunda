@@ -9,6 +9,7 @@ export {Button} from './Button';
 export {ButtonGroup} from './ButtonGroup';
 export {Tabs} from './Tabs';
 export {Message} from './Message';
+export {MessageBox} from './MessageBox';
 export {Icon} from './Icon';
 export {ActionItem} from './ActionItem';
 export {Form} from './Form';

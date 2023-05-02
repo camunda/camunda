@@ -5,16 +5,26 @@
  * except in compliance with the proprietary license.
  */
 
-import React, {useState} from 'react';
+import {useState} from 'react';
 import {Button} from '@carbon/react';
 
 import {Form, LabeledInput, CarbonModal as Modal, MessageBox, DocsLink} from 'components';
 import {t} from 'translation';
 
-export default function VisibleEventsModal({initialScope, onClose, onConfirm}) {
-  const [scope, setScope] = useState(initialScope);
+interface VisibleEventsModalProps {
+  initialScope: string[];
+  onClose: () => void;
+  onConfirm: (scope: string[]) => void;
+}
 
-  const toggleScopeItem = (item) => {
+export default function VisibleEventsModal({
+  initialScope,
+  onClose,
+  onConfirm,
+}: VisibleEventsModalProps) {
+  const [scope, setScope] = useState<string[]>(initialScope);
+
+  const toggleScopeItem = (item: string) => {
     if (scope.includes(item)) {
       return setScope(scope.filter((i) => i !== item));
     }

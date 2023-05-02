@@ -5,7 +5,6 @@
  * except in compliance with the proprietary license.
  */
 
-import React from 'react';
 import {shallow} from 'enzyme';
 
 import VisibleEventsModal from './VisibleEventsModal';
@@ -14,6 +13,7 @@ import {LabeledInput} from 'components';
 const props = {
   initialScope: ['process_instance'],
   onConfirm: jest.fn(),
+  onClose: jest.fn(),
 };
 
 beforeEach(() => {
