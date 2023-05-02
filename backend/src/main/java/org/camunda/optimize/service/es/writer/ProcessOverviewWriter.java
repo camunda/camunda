@@ -150,13 +150,13 @@ public class ProcessOverviewWriter {
         ))
         .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT);
       bulkRequest.add(updateRequest);
-      ElasticsearchWriterUtil.doBulkRequest(
-        esClient,
-        bulkRequest,
-        new ProcessOverviewIndex().getIndexName(),
-        false
-      );
     }
+    ElasticsearchWriterUtil.doBulkRequest(
+      esClient,
+      bulkRequest,
+      new ProcessOverviewIndex().getIndexName(),
+      false
+    );
   }
 
   public void deleteProcessOwnerEntry(final String processDefinitionKey) {
