@@ -32,6 +32,7 @@ import io.camunda.zeebe.protocol.management.BackupStatusResponseEncoder;
 import io.camunda.zeebe.protocol.record.ErrorCode;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.scheduler.testing.ControlledActorSchedulerExtension;
+import io.camunda.zeebe.test.util.junit.RegressionTest;
 import io.camunda.zeebe.transport.ServerOutput;
 import io.camunda.zeebe.transport.ServerResponse;
 import io.camunda.zeebe.transport.impl.AtomixServerTransport;
@@ -43,6 +44,7 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
+import java.util.stream.IntStream;
 import org.agrona.ExpandableArrayBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.jupiter.api.BeforeEach;
@@ -305,6 +307,37 @@ final class BackupApiRequestHandlerTest {
         new BackupListResponse.BackupStatus(
             2, 1, BackupStatusCode.COMPLETED, "", "test", createdAt.toString());
     assertThat(listResponse.getBackups()).containsExactly(expected);
+  }
+
+  @RegressionTest("https://github.com/camunda/zeebe/issues/12597")
+  void shouldListManyBackups() {
+    // given
+    final var request = new BackupRequest().setType(BackupRequestType.LIST).setPartitionId(1);
+
+    final var statuses =
+        IntStream.range(0, 500)
+            .mapToObj(
+                i ->
+                    (BackupStatus)
+                        new BackupStatusImpl(
+                            new BackupIdentifierImpl(1, 1, i),
+                            Optional.empty(),
+                            io.camunda.zeebe.backup.api.BackupStatusCode.FAILED,
+                            Optional.empty(),
+                            Optional.of(Instant.now()),
+                            Optional.of(Instant.now())))
+            .toList();
+
+    when(backupManager.listBackups()).thenReturn(CompletableActorFuture.completed(statuses));
+
+    // when
+    final BackupListResponse listResponse = new BackupListResponse(List.of());
+    serverOutput.setResponseObject(listResponse);
+    handleRequest(request);
+
+    // then
+    assertThat(responseFuture).succeedsWithin(Duration.ofMillis(100)).matches(Either::isRight);
+    assertThat(listResponse.getBackups()).hasSize(statuses.size());
   }
 
   @Test
