@@ -43,6 +43,7 @@ export declare global {
     };
     Appcues?: Appcues;
     mixpanel?: Mixpanel;
+    toggleDevtools?: () => void;
   }
 
   namespace NodeJS {

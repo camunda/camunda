@@ -21,32 +21,35 @@ import {SessionWatcher} from './SessionWatcher';
 import {Tasks} from './Tasks';
 import {TrackPagination} from 'modules/tracking/TrackPagination';
 import {Processes} from 'Processes';
+import {ReactQueryProvider} from 'modules/ReactQueryProvider';
 
 const App: React.FC = () => {
   return (
     <ThemeProvider>
-      <ApolloProvider client={client}>
-        <Notifications />
-        <NetworkStatusWatcher />
-        <BrowserRouter basename={window.clientConfig?.contextPath ?? '/'}>
-          <SessionWatcher />
-          <TrackPagination />
-          <Routes>
-            <Route path={Pages.Login} element={<Login />} />
-            <Route
-              path="*"
-              element={
-                <AuthenticationCheck redirectPath={Pages.Login}>
-                  <Layout />
-                </AuthenticationCheck>
-              }
-            >
-              <Route path="*" element={<Tasks />} />
-              <Route path={Pages.Processes} element={<Processes />} />
-            </Route>
-          </Routes>
-        </BrowserRouter>
-      </ApolloProvider>
+      <ReactQueryProvider>
+        <ApolloProvider client={client}>
+          <Notifications />
+          <NetworkStatusWatcher />
+          <BrowserRouter basename={window.clientConfig?.contextPath ?? '/'}>
+            <SessionWatcher />
+            <TrackPagination />
+            <Routes>
+              <Route path={Pages.Login} element={<Login />} />
+              <Route
+                path="*"
+                element={
+                  <AuthenticationCheck redirectPath={Pages.Login}>
+                    <Layout />
+                  </AuthenticationCheck>
+                }
+              >
+                <Route path="*" element={<Tasks />} />
+                <Route path={Pages.Processes} element={<Processes />} />
+              </Route>
+            </Routes>
+          </BrowserRouter>
+        </ApolloProvider>
+      </ReactQueryProvider>
     </ThemeProvider>
   );
 };
