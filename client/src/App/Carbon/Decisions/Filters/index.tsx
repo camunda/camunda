@@ -18,6 +18,7 @@ import {observer} from 'mobx-react';
 import {AutoSubmit} from 'modules/components/AutoSubmit';
 import {DecisionsFormGroup} from './DecisionsFormGroup';
 import {CollapsablePanel} from './CollapsablePanel';
+import {InstancesStatesFormGroup} from './InstancesStatesFormGroup';
 import {Stack} from '@carbon/react';
 
 type LocationType = Omit<Location, 'state'> & {
@@ -49,6 +50,7 @@ const Filters: React.FC = observer(() => {
               />
               <Stack gap={5}>
                 <DecisionsFormGroup />
+                <InstancesStatesFormGroup />
               </Stack>
             </form>
           )}

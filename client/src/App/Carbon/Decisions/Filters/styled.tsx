@@ -6,16 +6,19 @@
  */
 
 import styled from 'styled-components';
-import {heading01, spacing05, spacing04} from '@carbon/elements';
+import {heading01, spacing05, supportError} from '@carbon/elements';
+import {WarningFilled as BaseWarningFilled} from '@carbon/react/icons';
 
 const Title = styled.h3`
   ${heading01};
-  margin-top: ${spacing04};
-  margin-bottom: ${spacing05};
 `;
 
 const Container = styled.div`
   padding: 0 ${spacing05};
 `;
 
-export {Container, Title};
+const WarningFilled = styled(BaseWarningFilled)`
+  fill: ${supportError};
+`;
+
+export {Container, Title, WarningFilled};
