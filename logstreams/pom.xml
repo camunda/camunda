@@ -57,11 +57,6 @@
       <artifactId>simpleclient</artifactId>
     </dependency>
 
-    <dependency>
-      <groupId>org.apache.commons</groupId>
-      <artifactId>commons-compress</artifactId>
-    </dependency>
-
     <!-- Test dependencies -->
     <dependency>
       <groupId>io.camunda</groupId>

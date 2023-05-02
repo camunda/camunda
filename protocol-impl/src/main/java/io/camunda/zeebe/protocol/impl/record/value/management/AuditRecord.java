@@ -7,9 +7,7 @@
  */
 package io.camunda.zeebe.protocol.impl.record.value.management;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.camunda.zeebe.msgpack.property.BinaryProperty;
-import io.camunda.zeebe.msgpack.property.IntegerProperty;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.value.management.AuditRecordValue;
 import org.agrona.DirectBuffer;
@@ -17,13 +15,11 @@ import org.agrona.concurrent.UnsafeBuffer;
 
 public final class AuditRecord extends UnifiedRecordValue implements AuditRecordValue {
   private static final String EVENTS_KEY = "events";
-  private static final String SIZE_KEY = "size";
 
   private final BinaryProperty events = new BinaryProperty(EVENTS_KEY, new UnsafeBuffer());
-  private final IntegerProperty size = new IntegerProperty(SIZE_KEY, 0);
 
   public AuditRecord() {
-    declareProperty(events).declareProperty(size);
+    declareProperty(events);
   }
 
   @Override
@@ -33,16 +29,6 @@ public final class AuditRecord extends UnifiedRecordValue implements AuditRecord
 
   public AuditRecord setEvents(DirectBuffer buffer) {
     events.setValue(buffer);
-    return this;
-  }
-
-  @JsonIgnore
-  public int getSize() {
-    return size.getValue();
-  }
-
-  public AuditRecord setSize(final int size) {
-    this.size.setValue(size);
     return this;
   }
 }

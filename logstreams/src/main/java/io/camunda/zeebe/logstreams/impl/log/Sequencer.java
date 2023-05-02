@@ -21,21 +21,13 @@ import io.camunda.zeebe.protocol.record.intent.management.AuditIntent;
 import io.camunda.zeebe.scheduler.ActorCondition;
 import io.camunda.zeebe.scheduler.clock.ActorClock;
 import java.io.Closeable;
-import java.io.IOException;
-import java.io.UncheckedIOException;
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Queue;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.locks.ReentrantLock;
-import org.agrona.ExpandableArrayBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
-import org.agrona.io.DirectBufferInputStream;
-import org.agrona.io.DirectBufferOutputStream;
-import org.agrona.io.ExpandableDirectBufferOutputStream;
-import org.apache.commons.compress.compressors.lz4.FramedLZ4CompressorOutputStream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -173,24 +165,7 @@ final class Sequencer implements LogStreamWriter, Closeable {
     final var auditRecord = new AuditRecord();
     final var auditRecordMetadata =
         new RecordMetadata().recordType(RecordType.AUDIT).intent(AuditIntent.AUDITED);
-
-    final ByteBuffer serializedAuditBatch = SequencedBatchSerializer.serializeBatch(auditBatch);
-    final var compressedAuditBatch = new ExpandableArrayBuffer(serializedAuditBatch.capacity() / 2);
-
-    final int compressedLength;
-    try (final var input = new DirectBufferInputStream(new UnsafeBuffer(serializedAuditBatch));
-        final var output = new ExpandableDirectBufferOutputStream(compressedAuditBatch);
-        final var compressor = new FramedLZ4CompressorOutputStream(output)) {
-      input.transferTo(compressor);
-      compressor.finish();
-      compressedLength = output.position();
-    } catch (final IOException e) {
-      throw new UncheckedIOException(e);
-    }
-
-    auditRecord
-        .setEvents(new UnsafeBuffer(compressedAuditBatch, 0, compressedLength))
-        .setSize(serializedAuditBatch.capacity());
+    auditRecord.setEvents(new UnsafeBuffer(SequencedBatchSerializer.serializeBatch(auditBatch)));
     return LogAppendEntry.of(auditRecordMetadata, auditRecord);
   }
 

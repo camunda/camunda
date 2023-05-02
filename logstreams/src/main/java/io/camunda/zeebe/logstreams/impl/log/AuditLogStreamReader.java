@@ -12,15 +12,9 @@ import io.camunda.zeebe.logstreams.log.LoggedEvent;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.impl.record.value.management.AuditRecord;
 import io.camunda.zeebe.protocol.record.RecordType;
-import java.io.IOException;
-import java.io.UncheckedIOException;
-import java.nio.ByteBuffer;
 import java.util.NoSuchElementException;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
-import org.agrona.io.DirectBufferInputStream;
-import org.agrona.io.DirectBufferOutputStream;
-import org.apache.commons.compress.compressors.lz4.FramedLZ4CompressorInputStream;
 
 public final class AuditLogStreamReader implements LogStreamReader {
   private final LogStreamReader delegate;
@@ -186,8 +180,6 @@ public final class AuditLogStreamReader implements LogStreamReader {
     nextAuditEvent.wrap(nextAuditEventBuffer, 0);
     nextAuditEventOffset = 0;
     nextEvent = null;
-
-    auditReader.reset();
   }
 
   private boolean hasBufferedEvents() {
@@ -204,18 +196,7 @@ public final class AuditLogStreamReader implements LogStreamReader {
     next.readMetadata(eventMetadata);
     if (eventMetadata.getRecordType() == RecordType.AUDIT) {
       next.readValue(auditReader);
-
-      final var uncompressedBuffer = new UnsafeBuffer(ByteBuffer.allocate(auditReader.getSize()));
-      try (final var input = new DirectBufferInputStream(auditReader.events());
-          final var output = new DirectBufferOutputStream(uncompressedBuffer)) {
-        final var decompressor = new FramedLZ4CompressorInputStream(input);
-        decompressor.transferTo(output);
-      } catch (final IOException e) {
-        throw new UncheckedIOException(e);
-      }
-
-      auditReader.reset();
-      nextAuditEventBuffer.wrap(uncompressedBuffer);
+      nextAuditEventBuffer.wrap(auditReader.events());
       nextAuditEventOffset = 0;
       nextAuditEvent.wrap(nextAuditEventBuffer, 0);
 
