@@ -9,7 +9,7 @@ import React from 'react';
 import {shallow} from 'enzyme';
 
 import VisibleEventsModal from './VisibleEventsModal';
-import {LabeledInput, Button} from 'components';
+import {LabeledInput} from 'components';
 
 const props = {
   initialScope: ['process_instance'],
@@ -31,7 +31,7 @@ it('should add a scope', () => {
 
   node.find(LabeledInput).at(1).simulate('change');
 
-  node.find(Button).at(1).simulate('click');
+  node.find('Button').at(1).simulate('click');
 
   expect(props.onConfirm).toHaveBeenCalledWith(['process_instance', 'start_end']);
 });
@@ -41,5 +41,5 @@ it('should disable the confirm button when no scope is selected', () => {
 
   node.find(LabeledInput).at(0).simulate('change');
 
-  expect(node.find(Button).at(1)).toBeDisabled();
+  expect(node.find('Button').at(1)).toBeDisabled();
 });

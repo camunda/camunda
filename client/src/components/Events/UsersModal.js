@@ -6,8 +6,9 @@
  */
 
 import React from 'react';
+import {Button} from '@carbon/react';
 
-import {Modal, Button, UserTypeahead, Labeled} from 'components';
+import {CarbonModal as Modal, UserTypeahead, Labeled} from 'components';
 import {showError} from 'notifications';
 import {withErrorHandling} from 'HOC';
 import {getOptimizeProfile} from 'config';
@@ -53,7 +54,7 @@ export class UsersModal extends React.Component {
     const isValid = users && users.length > 0;
 
     return (
-      <Modal open={id} onClose={this.close} onConfirm={this.onConfirm} className="UsersModal">
+      <Modal open={id} onClose={this.close} className="UsersModal" isOverflowVisible>
         <Modal.Header>{t('common.editAccess')}</Modal.Header>
         <Modal.Content>
           <p className="description">{t('events.permissions.description')}</p>
@@ -67,14 +68,14 @@ export class UsersModal extends React.Component {
             )}
           </Labeled>
         </Modal.Content>
-        <Modal.Actions>
-          <Button main disabled={loading} onClick={this.close}>
+        <Modal.Footer>
+          <Button kind="secondary" disabled={loading} onClick={this.close}>
             {t('common.cancel')}
           </Button>
-          <Button main disabled={loading || !isValid} primary onClick={this.onConfirm}>
+          <Button disabled={loading || !isValid} onClick={this.onConfirm}>
             {t('common.save')}
           </Button>
-        </Modal.Actions>
+        </Modal.Footer>
       </Modal>
     );
   }

@@ -11,7 +11,6 @@ import {shallow} from 'enzyme';
 import {GenerationModal} from './GenerationModal';
 import EventsSourceModal from './EventsSourceModal';
 import {createProcess} from './service';
-import {Button} from 'components';
 
 jest.mock('./service', () => ({createProcess: jest.fn().mockReturnValue('processId')}));
 
@@ -39,7 +38,7 @@ it('should redirect to the process view on confirmation', () => {
 
   node.find('EntityList').prop('action')().props.onClick({});
   node.find(EventsSourceModal).prop('onConfirm')(sources);
-  node.find(Button).at(1).simulate('click');
+  node.find('Button').at(1).simulate('click');
 
   expect(createProcess).toHaveBeenCalledWith({
     autogenerate: true,

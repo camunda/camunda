@@ -37,7 +37,7 @@ export const eventsTable = Selector('.EventTable');
 export const publishButton = Selector('.publish-button');
 export const permissionButton = Selector('.permission button');
 export const usersTypeahead = Selector('.MultiUserInput');
-export const buttonWithText = (text) => Selector('.Modal__content-container button').withText(text);
+export const addEventSourceBtn = Selector('.GenerationModal button').withText('Add Event Source');
 export const zoomButton = Selector('.zoomIn');
 export const diagram = Selector('.ProcessView .BPMNDiagram');
 export const businessKey = Selector('.label').withText('Business Key').prevSibling();

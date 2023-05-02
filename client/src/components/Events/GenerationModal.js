@@ -7,8 +7,9 @@
 
 import React, {useState} from 'react';
 import {Redirect} from 'react-router';
+import {Button} from '@carbon/react';
 
-import {Button, Modal, EntityList, Icon, DocsLink} from 'components';
+import {Button as LegacyButton, CarbonModal as Modal, EntityList, Icon, DocsLink} from 'components';
 import {t} from 'translation';
 import {withErrorHandling} from 'HOC';
 import {showError} from 'notifications';
@@ -33,12 +34,7 @@ export function GenerationModal({onClose, mightFail}) {
   }
 
   return (
-    <Modal
-      className="GenerationModal"
-      open
-      onClose={onClose}
-      onConfirm={sources.length > 0 && onConfirm}
-    >
+    <Modal className="GenerationModal" open onClose={onClose}>
       <Modal.Header>{t('events.autogenerate')}</Modal.Header>
       <Modal.Content>
         <p className="description">
@@ -50,10 +46,10 @@ export function GenerationModal({onClose, mightFail}) {
         <EntityList
           embedded
           action={() => (
-            <Button onClick={() => setOpenEventsSourceModal(true)}>
+            <LegacyButton onClick={() => setOpenEventsSourceModal(true)}>
               <Icon type="plus" />
               {t('events.sources.add')}
-            </Button>
+            </LegacyButton>
           )}
           name={t('events.addedSources')}
           empty={t('home.sources.notCreated')}
@@ -102,14 +98,14 @@ export function GenerationModal({onClose, mightFail}) {
           />
         )}
       </Modal.Content>
-      <Modal.Actions>
-        <Button main onClick={onClose}>
+      <Modal.Footer>
+        <Button kind="secondary" onClick={onClose}>
           {t('common.cancel')}
         </Button>
-        <Button main primary disabled={!sources.length} onClick={onConfirm}>
+        <Button disabled={!sources.length} onClick={onConfirm}>
           {t('events.generate')}
         </Button>
-      </Modal.Actions>
+      </Modal.Footer>
     </Modal>
   );
 }

@@ -51,7 +51,7 @@ beforeEach(() => {
 it('should disable the submit button if no definition selected', () => {
   const node = shallow(<EventsSourceModal {...props} />);
 
-  expect(node.find('[primary]')).toBeDisabled();
+  expect(node.find('Button').at(1)).toBeDisabled();
 });
 
 it('should disable definition selection in editing mode', () => {
@@ -104,7 +104,7 @@ it('should edit a source when clicking confirm', () => {
 
   node.find({type: 'radio'}).at(1).simulate('change');
 
-  node.find('[primary]').simulate('click');
+  node.find('Button').at(1).simulate('click');
 
   expect(spy).toHaveBeenCalledWith(
     [
@@ -140,7 +140,7 @@ it('should add a source when clicking confirm', () => {
 
   node.find({type: 'radio'}).at(2).simulate('change');
 
-  node.find('[primary]').simulate('click');
+  node.find('Button').at(1).simulate('click');
 
   expect(spy).toHaveBeenCalledWith(
     [
@@ -183,7 +183,7 @@ it('should add selected external sources', () => {
   const testSource = {type: 'external', configuration: {group: 'testGroup'}};
   node.find(ExternalSource).prop('onChange')([testSource]);
 
-  node.find('[primary]').simulate('click');
+  node.find('Button').at(1).simulate('click');
 
   expect(spy).toHaveBeenCalledWith([testSource], false);
 });
@@ -200,7 +200,7 @@ it('should add new external sources to already existing ones', () => {
   const newGroupSource = {type: 'external', configuration: {group: 'testGroup'}};
   node.find(ExternalSource).prop('onChange')([newGroupSource]);
 
-  node.find('[primary]').simulate('click');
+  node.find('Button').at(1).simulate('click');
 
   expect(spy).toHaveBeenCalledWith([newGroupSource, existingGroupSource], true);
 });
@@ -215,7 +215,7 @@ it('should not include existing groups if all external groups is selected', () =
   node.find('Tabs').prop('onChange')('external');
   node.find(ExternalSource).prop('onChange')([allExternalGroups]);
 
-  node.find('[primary]').simulate('click');
+  node.find('Button').at(1).simulate('click');
 
   expect(spy).toHaveBeenCalledWith([allExternalGroups], true);
 });
@@ -226,7 +226,7 @@ it('should add all external groups in auto generation', () => {
 
   node.find('Tabs').prop('onChange')('external');
 
-  node.find('[primary]').simulate('click');
+  node.find('Button').at(1).simulate('click');
 
   expect(node.find(ExternalSource)).not.toExist();
   expect(node.find('.addExternalInfo')).toExist();

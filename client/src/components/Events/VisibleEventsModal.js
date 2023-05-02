@@ -6,8 +6,9 @@
  */
 
 import React, {useState} from 'react';
+import {Button} from '@carbon/react';
 
-import {Form, LabeledInput, Modal, MessageBox, Button, DocsLink} from 'components';
+import {Form, LabeledInput, CarbonModal as Modal, MessageBox, DocsLink} from 'components';
 import {t} from 'translation';
 
 export default function VisibleEventsModal({initialScope, onClose, onConfirm}) {
@@ -23,7 +24,7 @@ export default function VisibleEventsModal({initialScope, onClose, onConfirm}) {
   const updateSource = () => scope.length > 0 && onConfirm(scope);
 
   return (
-    <Modal open onClose={onClose} onConfirm={updateSource}>
+    <Modal open onClose={onClose}>
       <Modal.Header>{t('events.sources.editScope')}</Modal.Header>
       <Modal.Content>
         <Form description={t('events.sources.eventListTip')}>
@@ -55,14 +56,14 @@ export default function VisibleEventsModal({initialScope, onClose, onConfirm}) {
           </MessageBox>
         </Form>
       </Modal.Content>
-      <Modal.Actions>
-        <Button main className="close" onClick={onClose}>
+      <Modal.Footer>
+        <Button kind="secondary" className="close" onClick={onClose}>
           {t('common.cancel')}
         </Button>
-        <Button disabled={!scope.length} main primary className="confirm" onClick={updateSource}>
+        <Button disabled={!scope.length} className="confirm" onClick={updateSource}>
           {t('common.update')}
         </Button>
-      </Modal.Actions>
+      </Modal.Footer>
     </Modal>
   );
 }

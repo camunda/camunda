@@ -35,7 +35,7 @@ it('should disable the save button if the user list is empty', () => {
   const node = shallow(<UsersModal {...props} />);
 
   expect(node.find(UserTypeahead).prop('users').length).toBe(0);
-  expect(node.find('[primary]')).toBeDisabled();
+  expect(node.find('Button').at(1)).toBeDisabled();
 });
 
 it('should update the list of users based on the UserTypeahead', () => {
@@ -46,7 +46,7 @@ it('should update the list of users based on the UserTypeahead', () => {
     {id: 'GROUP:sales', identity: {id: 'sales', memberCount: '2', name: 'Sales', type: 'group'}},
   ]);
 
-  node.find('[primary]').simulate('click');
+  node.find('Button').at(1).simulate('click');
 
   expect(updateUsers).toHaveBeenCalledWith('processId', [
     {id: 'USER:kermit', identity: {id: 'kermit', type: 'user'}},

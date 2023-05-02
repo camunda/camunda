@@ -19,13 +19,16 @@ exports[`should show different text depending on the republish prop 1`] = `
 <Modal
   className="PublishModal"
   onClose={[MockFunction]}
-  onConfirm={[Function]}
   open="processId"
 >
-  <Component>
+  <ForwardRef(ModalHeader)
+    buttonOnClick={[Function]}
+    closeModal={[Function]}
+    iconDescription="Close"
+  >
     Publishing Process
-  </Component>
-  <Component>
+  </ForwardRef(ModalHeader)>
+  <ForwardRef>
     <p>
       Published Event Based Processes will be available to use in Reports by selected users.
     </p>
@@ -44,26 +47,28 @@ exports[`should show different text depending on the republish prop 1`] = `
         ...
       </ForwardRef(Button)>
     </div>
-  </Component>
-  <Component>
-    <ForwardRef(Button)
+  </ForwardRef>
+  <ForwardRef(ModalFooter)
+    closeModal={[Function]}
+    onRequestClose={[Function]}
+    onRequestSubmit={[Function]}
+  >
+    <Button
       className="close"
       disabled={false}
-      main={true}
+      kind="secondary"
       onClick={[MockFunction]}
     >
       Cancel
-    </ForwardRef(Button)>
-    <ForwardRef(Button)
+    </Button>
+    <Button
       className="confirm"
       disabled={false}
-      main={true}
       onClick={[Function]}
-      primary={true}
     >
       Publish
-    </ForwardRef(Button)>
-  </Component>
+    </Button>
+  </ForwardRef(ModalFooter)>
 </Modal>
 `;
 
@@ -71,13 +76,16 @@ exports[`should show different text depending on the republish prop 2`] = `
 <Modal
   className="PublishModal"
   onClose={[MockFunction]}
-  onConfirm={[Function]}
   open="processId"
 >
-  <Component>
+  <ForwardRef(ModalHeader)
+    buttonOnClick={[Function]}
+    closeModal={[Function]}
+    iconDescription="Close"
+  >
     Re-Publishing Process
-  </Component>
-  <Component>
+  </ForwardRef(ModalHeader)>
+  <ForwardRef>
     <p>
       Re-Publishing will update data in all associated Reports.
     </p>
@@ -96,26 +104,28 @@ exports[`should show different text depending on the republish prop 2`] = `
         ...
       </ForwardRef(Button)>
     </div>
-  </Component>
-  <Component>
-    <ForwardRef(Button)
+  </ForwardRef>
+  <ForwardRef(ModalFooter)
+    closeModal={[Function]}
+    onRequestClose={[Function]}
+    onRequestSubmit={[Function]}
+  >
+    <Button
       className="close"
       disabled={false}
-      main={true}
+      kind="secondary"
       onClick={[MockFunction]}
     >
       Cancel
-    </ForwardRef(Button)>
-    <ForwardRef(Button)
+    </Button>
+    <Button
       className="confirm"
       disabled={false}
-      main={true}
       onClick={[Function]}
-      primary={true}
     >
       Publish
-    </ForwardRef(Button)>
-  </Component>
+    </Button>
+  </ForwardRef(ModalFooter)>
 </Modal>
 `;
 

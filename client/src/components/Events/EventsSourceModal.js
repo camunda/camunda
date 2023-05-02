@@ -7,10 +7,10 @@
 
 import React from 'react';
 import update from 'immutability-helper';
+import {Button} from '@carbon/react';
 
 import {
-  Modal,
-  Button,
+  CarbonModal as Modal,
   DefinitionSelection,
   LabeledInput,
   Typeahead,
@@ -160,7 +160,7 @@ export default withErrorHandling(
       } = source;
 
       return (
-        <Modal open onClose={onClose} className="EventsSourceModal">
+        <Modal open onClose={onClose} className="EventsSourceModal" isOverflowVisible>
           <Modal.Header>
             {this.isEditing() ? t('events.sources.editSource') : t('events.sources.addEvents')}
           </Modal.Header>
@@ -290,20 +290,14 @@ export default withErrorHandling(
               </Tabs.Tab>
             </Tabs>
           </Modal.Content>
-          <Modal.Actions>
-            <Button main className="close" onClick={onClose}>
+          <Modal.Footer>
+            <Button kind="secondary" className="close" onClick={onClose}>
               {t('common.cancel')}
             </Button>
-            <Button
-              disabled={!this.isValid()}
-              main
-              primary
-              className="confirm"
-              onClick={this.updateSources}
-            >
+            <Button disabled={!this.isValid()} className="confirm" onClick={this.updateSources}>
               {this.isEditing() ? t('common.update') : t('common.add')}
             </Button>
-          </Modal.Actions>
+          </Modal.Footer>
         </Modal>
       );
     }

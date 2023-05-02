@@ -6,14 +6,16 @@
  */
 
 import React from 'react';
+import {Button} from '@carbon/react';
 
-import {Modal, Button} from 'components';
+import {CarbonModal as Modal, Button as LegacyButton} from 'components';
 import {t} from 'translation';
 import {withErrorHandling, withUser} from 'HOC';
 import {showError, addNotification} from 'notifications';
 
 import {publish, getUsers} from './service';
 import UsersModal from './UsersModal';
+
 import './PublishModal.scss';
 
 export class PublishModal extends React.Component {
@@ -61,7 +63,7 @@ export class PublishModal extends React.Component {
     const {loading, editingAccess, isPrivate} = this.state;
 
     return (
-      <Modal open={id} onClose={onClose} onConfirm={this.publish} className="PublishModal">
+      <Modal open={id} onClose={onClose} className="PublishModal">
         <Modal.Header>
           {republish ? t('events.publishModal.republishHead') : t('events.publishModal.head')}
         </Modal.Header>
@@ -74,20 +76,20 @@ export class PublishModal extends React.Component {
           <div className="permission">
             <h4>{t('events.permissions.whoHasAccess')}</h4>
             {isPrivate ? t('events.permissions.private') : t('events.permissions.userGranted')}
-            <Button onClick={() => this.setState({editingAccess: id})} link>
+            <LegacyButton onClick={() => this.setState({editingAccess: id})} link>
               {t('common.change')}...
-            </Button>
+            </LegacyButton>
           </div>
           {editingAccess && <UsersModal id={editingAccess} onClose={this.closeUsersModal} />}
         </Modal.Content>
-        <Modal.Actions>
-          <Button main disabled={loading} className="close" onClick={onClose}>
+        <Modal.Footer>
+          <Button kind="secondary" disabled={loading} className="close" onClick={onClose}>
             {t('common.cancel')}
           </Button>
-          <Button main disabled={loading} primary className="confirm" onClick={this.publish}>
+          <Button disabled={loading} className="confirm" onClick={this.publish}>
             {t(`events.publish`)}
           </Button>
-        </Modal.Actions>
+        </Modal.Footer>
       </Modal>
     );
   }
