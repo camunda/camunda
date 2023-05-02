@@ -5,13 +5,27 @@
  * except in compliance with the proprietary license.
  */
 
-import styled from 'styled-components';
+import styled, {css} from 'styled-components';
 import {styles} from '@carbon/elements';
+import {ProgressBar as BaseProgressBar} from '@carbon/react';
 
-const Container = styled.li`
-  padding: var(--cds-spacing-05);
-  ${styles.bodyCompact01};
-  border-bottom: 1px solid var(--cds-border-subtle-01);
+type Props = {
+  isRunning?: boolean;
+};
+
+const Container = styled.li<Props>`
+  ${({isRunning}) => {
+    return css`
+      padding: var(--cds-spacing-05);
+      ${styles.bodyCompact01};
+      border-bottom: 1px solid var(--cds-border-subtle-01);
+
+      ${isRunning &&
+      css`
+        background-color: var(--cds-layer-hover-01);
+      `}
+    `;
+  }}
 `;
 
 const Header = styled.header`
@@ -33,4 +47,10 @@ const Details = styled.div`
   padding-top: var(--cds-spacing-07);
 `;
 
-export {Title, Details, Header, Container};
+const ProgressBar = styled(BaseProgressBar)`
+  padding-top: var(
+    --cds-spacing-06
+  ); // empty label has 0.5rem margin-bottom, so this spacing should be 06 instead of 07
+`;
+
+export {Title, Details, Header, Container, ProgressBar};

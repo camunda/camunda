@@ -8,7 +8,7 @@
 import {formatDate} from 'modules/utils/date';
 import pluralSuffix from 'modules/utils/pluralSuffix';
 import {useLoadingProgress} from './useLoadingProgress';
-import {Container, Details, Title, Header} from './styled';
+import {Container, Details, Title, Header, ProgressBar} from './styled';
 import {TrashCan, Error, Tools, RetryFailed, Edit} from '@carbon/react/icons';
 import {Link} from 'modules/components/Carbon/Link';
 import {CarbonPaths} from 'modules/carbonRoutes';
@@ -42,7 +42,7 @@ const OperationsEntry: React.FC<Props> = ({operation}) => {
     operationsFinishedCount,
   } = operation;
 
-  const {isComplete} = useLoadingProgress({
+  const {fakeProgressPercentage, isComplete} = useLoadingProgress({
     totalCount: operationsTotalCount,
     finishedCount: operationsFinishedCount,
   });
@@ -50,7 +50,7 @@ const OperationsEntry: React.FC<Props> = ({operation}) => {
   const label = TYPE_LABELS[type];
 
   return (
-    <Container>
+    <Container isRunning={!isComplete}>
       <Header>
         <Title>
           {label}
@@ -67,7 +67,7 @@ const OperationsEntry: React.FC<Props> = ({operation}) => {
         {label === 'Edit' && <Edit size={16} />}
       </Header>
       <div>{id}</div>
-
+      {!isComplete && <ProgressBar label="" value={fakeProgressPercentage} />}
       <Details>
         {label !== 'Delete' && (
           <Link

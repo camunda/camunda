@@ -81,6 +81,19 @@ declare module '@carbon/react' {
       children?: React.ReactNode;
     } & React.ButtonHTMLAttributes<HTMLButtonElement>
   >;
+
+  export const ProgressBar: React.FunctionComponent<{
+    className?: string;
+    helperText?: string;
+    hideLabel?: bool;
+    label: string;
+    max?: number;
+    size?: 'small' | 'big';
+    status?: 'active' | 'finished' | 'error';
+    type?: 'default' | 'inline' | 'indented';
+    value?: number;
+  }>;
+
   export const useTheme: any;
   export * from 'carbon-components-react';
 }
