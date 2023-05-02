@@ -191,7 +191,7 @@ final class JournalTest {
     assertThat(journal.getLastIndex()).isEqualTo(1);
     final var record = journal.append(asqn, recordDataWriter);
     assertThat(record.index()).isEqualTo(2);
-    assertThat(metaStore.loadLastFlushedIndex()).isOne();
+    assertThat(metaStore.hasLastFlushedIndex()).isFalse();
   }
 
   @Test

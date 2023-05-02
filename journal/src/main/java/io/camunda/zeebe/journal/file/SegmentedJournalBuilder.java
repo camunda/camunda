@@ -169,8 +169,15 @@ public class SegmentedJournalBuilder {
     final var segmentLoader = new SegmentLoader(freeDiskSpace, journalMetrics, segmentAllocator);
     final var segmentsManager =
         new SegmentsManager(
-            journalIndex, maxSegmentSize, directory, name, segmentLoader, journalMetrics);
+            journalIndex,
+            maxSegmentSize,
+            directory,
+            name,
+            segmentLoader,
+            journalMetrics,
+            journalMetaStore);
+    final var segmentsFlusher = new SegmentsFlusher(journalMetaStore);
 
-    return new SegmentedJournal(journalIndex, segmentsManager, journalMetrics, journalMetaStore);
+    return new SegmentedJournal(journalIndex, segmentsManager, journalMetrics, segmentsFlusher);
   }
 }

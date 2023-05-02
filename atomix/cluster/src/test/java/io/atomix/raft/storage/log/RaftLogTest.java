@@ -27,7 +27,6 @@ import static org.mockito.Mockito.when;
 import io.atomix.cluster.MemberId;
 import io.atomix.raft.cluster.RaftMember.Type;
 import io.atomix.raft.cluster.impl.DefaultRaftMember;
-import io.atomix.raft.storage.MockJournalMetaStore;
 import io.atomix.raft.storage.log.RaftLogFlusher.DirectFlusher;
 import io.atomix.raft.storage.log.RaftLogFlusher.NoopFlusher;
 import io.atomix.raft.storage.log.entry.ApplicationEntry;
@@ -37,6 +36,7 @@ import io.atomix.raft.storage.log.entry.RaftLogEntry;
 import io.atomix.raft.storage.log.entry.SerializedApplicationEntry;
 import io.camunda.zeebe.journal.Journal;
 import io.camunda.zeebe.journal.JournalMetaStore;
+import io.camunda.zeebe.journal.JournalMetaStore.InMemory;
 import java.io.File;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -67,7 +67,7 @@ class RaftLogTest {
 
   @BeforeEach
   void setup(@TempDir final File directory) {
-    metaStore = new MockJournalMetaStore();
+    metaStore = new InMemory();
     raftlog =
         RaftLog.builder()
             .withDirectory(directory)
@@ -155,7 +155,7 @@ class RaftLogTest {
         RaftLog.builder()
             .withDirectory(directory)
             .withName("test-follower")
-            .withMetaStore(new MockJournalMetaStore())
+            .withMetaStore(new InMemory())
             .build();
 
     // when

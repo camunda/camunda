@@ -89,17 +89,23 @@ final class TestJournalFactory {
   }
 
   SegmentsManager segmentsManager(final Path directory) {
+    return segmentsManager(directory, segmentLoader());
+  }
+
+  SegmentsManager segmentsManager(final Path directory, final SegmentLoader loader) {
     return new SegmentsManager(
         index,
         maxSegmentSize(),
         directory.resolve("data").toFile(),
         "journal",
-        segmentLoader(),
-        metrics);
+        loader,
+        metrics,
+        metaStore);
   }
 
   SegmentedJournal journal(final SegmentsManager segments) {
-    return new SegmentedJournal(index, segments, metrics, metaStore);
+    final var segmentsFlusher = new SegmentsFlusher(metaStore);
+    return new SegmentedJournal(index, segments, metrics, segmentsFlusher);
   }
 
   DirectBuffer entryData() {
