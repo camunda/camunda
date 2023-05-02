@@ -25,4 +25,38 @@ public interface JournalMetaStore {
    * @return last flushed index
    */
   long loadLastFlushedIndex();
+
+  /**
+   * Nulls the last flushed index. After calling this, {@link #hasLastFlushedIndex()} will return
+   * true.The actual value is implementation specific; to check if it was reset, call {@link
+   * #hasLastFlushedIndex()}.
+   */
+  void resetLastFlushedIndex();
+
+  /** Returns true if there is no known last flushed index. */
+  boolean hasLastFlushedIndex();
+
+  class InMemory implements JournalMetaStore {
+    private volatile long index = -1L;
+
+    @Override
+    public void storeLastFlushedIndex(final long index) {
+      this.index = index;
+    }
+
+    @Override
+    public long loadLastFlushedIndex() {
+      return index;
+    }
+
+    @Override
+    public void resetLastFlushedIndex() {
+      index = -1L;
+    }
+
+    @Override
+    public boolean hasLastFlushedIndex() {
+      return index != -1L;
+    }
+  }
 }

@@ -11,6 +11,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 
 import io.camunda.zeebe.journal.CorruptedJournalException;
 import io.camunda.zeebe.journal.JournalException;
+import io.camunda.zeebe.journal.JournalMetaStore;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.DirectoryStream;
@@ -40,19 +41,18 @@ final class SegmentsManager implements AutoCloseable {
 
   private static final Logger LOG = LoggerFactory.getLogger(SegmentsManager.class);
 
-  private final JournalMetrics journalMetrics;
   private final NavigableMap<Long, Segment> segments = new ConcurrentSkipListMap<>();
-  private volatile Segment currentSegment;
   private CompletableFuture<UninitializedSegment> nextSegment = null;
 
+  private final JournalMetrics journalMetrics;
   private final JournalIndex journalIndex;
   private final int maxSegmentSize;
-
   private final File directory;
-
   private final SegmentLoader segmentLoader;
-
   private final String name;
+  private final JournalMetaStore metaStore;
+
+  private volatile Segment currentSegment;
 
   SegmentsManager(
       final JournalIndex journalIndex,
@@ -60,13 +60,15 @@ final class SegmentsManager implements AutoCloseable {
       final File directory,
       final String name,
       final SegmentLoader segmentLoader,
-      final JournalMetrics journalMetrics) {
+      final JournalMetrics journalMetrics,
+      final JournalMetaStore metaStore) {
     this.name = checkNotNull(name, "name cannot be null");
     this.journalIndex = journalIndex;
     this.maxSegmentSize = maxSegmentSize;
     this.directory = directory;
     this.segmentLoader = segmentLoader;
     this.journalMetrics = journalMetrics;
+    this.metaStore = metaStore;
   }
 
   @Override
@@ -215,6 +217,11 @@ final class SegmentsManager implements AutoCloseable {
     }
     segments.clear();
 
+    // setting the last flushed index to a semantic-null value will let us know on start up that
+    // there is "nothing" written, even if we cannot read the descriptor (e.g. if we crash after
+    // creating the segment but before writing its descriptor)
+    metaStore.resetLastFlushedIndex();
+
     final SegmentDescriptor descriptor =
         SegmentDescriptor.builder()
             .withId(1)
@@ -260,11 +267,11 @@ final class SegmentsManager implements AutoCloseable {
     }
   }
 
-  /** Loads existing segments from the disk * */
-  void open(final long lastFlushedIndex) {
+  /** Loads existing segments from the disk */
+  void open() {
     final var openDurationTimer = journalMetrics.startJournalOpenDurationTimer();
     // Load existing log segments from disk.
-    for (final Segment segment : loadSegments(lastFlushedIndex)) {
+    for (final Segment segment : loadSegments()) {
       segments.put(segment.descriptor().index(), segment);
       journalMetrics.incSegmentCount();
     }
@@ -329,7 +336,9 @@ final class SegmentsManager implements AutoCloseable {
    *
    * @return A collection of segments for the log.
    */
-  private Collection<Segment> loadSegments(final long lastFlushedIndex) {
+  private Collection<Segment> loadSegments() {
+    final var lastFlushedIndex = metaStore.loadLastFlushedIndex();
+
     // Ensure log directories are created.
     //noinspection ResultOfMethodCallIgnored
     directory.mkdirs();
@@ -389,17 +398,27 @@ final class SegmentsManager implements AutoCloseable {
       final List<Segment> segments,
       final int failedIndex,
       final long lastFlushedIndex) {
-    long lastSegmentIndex = 0;
+    // if we've never flushed anything, then we can simply go head and delete the segment; otherwise
+    // fail if we've already flushed the failing index
+    if (metaStore.hasLastFlushedIndex()) {
+      long lastSegmentIndex = 0;
 
-    if (!segments.isEmpty()) {
-      final Segment previousSegment = segments.get(segments.size() - 1);
-      lastSegmentIndex = previousSegment.lastIndex();
+      if (!segments.isEmpty()) {
+        final Segment previousSegment = segments.get(segments.size() - 1);
+        lastSegmentIndex = previousSegment.lastIndex();
+      }
+
+      if (lastFlushedIndex > lastSegmentIndex) {
+        return false;
+      }
     }
 
-    if (lastFlushedIndex > lastSegmentIndex) {
-      return false;
-    }
+    deleteUnflushedSegments(files, failedIndex, lastFlushedIndex);
+    return true;
+  }
 
+  private void deleteUnflushedSegments(
+      final List<File> files, final int failedIndex, final long lastFlushedIndex) {
     LOG.debug(
         "Found corrupted segment after last ack'ed index {}. Deleting segments {} - {}",
         lastFlushedIndex,
@@ -417,8 +436,6 @@ final class SegmentsManager implements AutoCloseable {
             e);
       }
     }
-
-    return true;
   }
 
   /** Returns an array of valid log segments sorted by their id which may be empty but not null. */
