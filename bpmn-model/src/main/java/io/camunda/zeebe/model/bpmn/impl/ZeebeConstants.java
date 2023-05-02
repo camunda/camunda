@@ -82,6 +82,7 @@ public class ZeebeConstants {
 
   /** Form key format used for camunda-forms format */
   public static final String USER_TASK_FORM_KEY_CAMUNDA_FORMS_FORMAT = "camunda-forms";
+
   /** Form key location used for forms embedded in the same BPMN file, i.e. zeebeUserTaskForm */
   public static final String USER_TASK_FORM_KEY_BPMN_LOCATION = "bpmn";
 }

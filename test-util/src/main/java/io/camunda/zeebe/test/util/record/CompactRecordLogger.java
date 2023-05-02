@@ -743,6 +743,7 @@ public class CompactRecordLogger {
         .append(formatId(value.getBpmnProcessId()))
         .toString();
   }
+
   /**
    * Shortens and formats the key and stores it in the key substitutions, that is printed in the
    * list of decomposed keys for debugging at the end.

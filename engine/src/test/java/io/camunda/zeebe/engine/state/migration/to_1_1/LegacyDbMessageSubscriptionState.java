@@ -100,38 +100,7 @@ final class LegacyDbMessageSubscriptionState {
     messageNameAndCorrelationKeyColumnFamily.upsert(
         nameCorrelationAndElementInstanceKey, DbNil.INSTANCE);
   }
-  /*
-    public void visitSubscriptions(
-        final DirectBuffer messageName,
-        final DirectBuffer correlationKey,
-        final MessageSubscriptionVisitor visitor) {
 
-      this.messageName.wrapBuffer(messageName);
-      this.correlationKey.wrapBuffer(correlationKey);
-
-      messageNameAndCorrelationKeyColumnFamily.whileEqualPrefix(
-          nameAndCorrelationKey,
-          (compositeKey, nil) -> {
-            return visitMessageSubscription(elementKeyAndMessageName, visitor);
-          });
-    }
-
-    private Boolean visitMessageSubscription(
-        final DbCompositeKey<DbLong, DbString> elementKeyAndMessageName,
-        final MessageSubscriptionVisitor visitor) {
-      final LegacyMessageSubscription messageSubscription =
-          subscriptionColumnFamily.get(elementKeyAndMessageName);
-
-      if (messageSubscription == null) {
-        throw new IllegalStateException(
-            String.format(
-                "Expected to find subscription with key %d and %s, but no subscription found",
-                elementKeyAndMessageName.getFirst().getValue(),
-                elementKeyAndMessageName.getSecond()));
-      }
-      return visitor.visit(messageSubscription);
-    }
-  */
   public void updateToCorrelatingState(
       final MessageSubscriptionRecord record, final long sentTime) {
     final var messageKey = record.getMessageKey();
@@ -179,19 +148,7 @@ final class LegacyDbMessageSubscriptionState {
       sentTimeColumnFamily.upsert(sentTimeCompositeKey, DbNil.INSTANCE);
     }
   }
-  /*
-    public void visitSubscriptionBefore(
-        final long deadline, final MessageSubscriptionVisitor visitor) {
-      sentTimeColumnFamily.whileTrue(
-          (compositeKey, nil) -> {
-            final long sentTime = compositeKey.getFirst().getValue();
-            if (sentTime < deadline) {
-              return visitMessageSubscription(compositeKey.getSecond(), visitor);
-            }
-            return false;
-          });
-    }
-  */
+
   public boolean existSubscriptionForElementInstance(
       final long elementInstanceKey, final DirectBuffer messageName) {
     this.elementInstanceKey.wrapLong(elementInstanceKey);

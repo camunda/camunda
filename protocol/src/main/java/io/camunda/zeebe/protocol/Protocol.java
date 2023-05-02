@@ -36,6 +36,7 @@ public final class Protocol {
    * START_PARTITION_ID + partitionCount)
    */
   public static final int START_PARTITION_ID = 1;
+
   /**
    * The partition space is derived from the keyspace and the maximum bytes of long.
    *
@@ -43,7 +44,9 @@ public final class Protocol {
    */
   public static final int PARTITION_BITS = 13;
 
+  /** The maximum number of partitions that can be created in a cluster, i.e. 2^13, or 8192. */
   public static final long MAXIMUM_PARTITIONS = 1L << PARTITION_BITS;
+
   /**
    * Keyspace is defined for each partition. To define the keyspace size, the maximum events, which
    * can be written to the dispatcher implementation, has to be calculated.

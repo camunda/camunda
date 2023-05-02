@@ -52,6 +52,7 @@ public final class DbElementInstanceState implements MutableElementInstanceState
   private final DbCompositeKey<DbLong, DbString> flowScopeKeyAndElementId;
   private final DbCompositeKey<DbCompositeKey<DbLong, DbString>, DbString>
       numberOfTakenSequenceFlowsKey;
+
   /**
    * [flow scope key | gateway element id | sequence flow id] => [times the sequence flow was taken]
    */

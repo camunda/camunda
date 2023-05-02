@@ -166,6 +166,7 @@ public class PartitionRestoreService {
         "Failed to restore from backup. Cannot find a record at checkpoint position %d in the log."
             .formatted(checkpointPosition));
   }
+
   // Move contents of restored backup from the temp directory to partition's root data directory.
   // After this is done, the contents of the data directory follow the expected directory
   // structure. That is - segments in rootDirectory, snapshot in

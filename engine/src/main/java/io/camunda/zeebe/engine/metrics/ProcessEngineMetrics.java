@@ -15,6 +15,7 @@ import io.prometheus.client.Counter;
 public final class ProcessEngineMetrics {
 
   private static final String NAMESPACE = "zeebe";
+
   /**
    * Metrics that are annotated with this label are vitally important for usage tracking and
    * data-based decision-making as part of Camunda's SaaS offering.

@@ -109,6 +109,7 @@ public class AppendRequest extends AbstractRaftRequest {
   public List<PersistedRaftRecord> entries() {
     return entries;
   }
+
   /**
    * Returns the leader's commit index.
    *

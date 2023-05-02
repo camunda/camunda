@@ -43,6 +43,7 @@ public abstract class AbstractInclusiveGatewayBuilder<B extends AbstractInclusiv
     element.setDefault(sequenceFlow);
     return myself;
   }
+
   /**
    * Sets the current flow as the default flow.
    *

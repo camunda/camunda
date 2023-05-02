@@ -108,6 +108,7 @@ final class UpdateTestCase implements Arguments {
       before = func;
       return this;
     }
+
     /**
      * Should continue the instance after the upgrade in a way that will complete the process. Takes
      * the container rule and a long (e.g., a key) as input.

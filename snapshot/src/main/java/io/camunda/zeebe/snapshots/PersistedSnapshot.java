@@ -84,6 +84,7 @@ public interface PersistedSnapshot {
    * @return the metadata of the snapshot.
    */
   SnapshotMetadata getMetadata();
+
   /**
    * Reserves this snapshot. When the snapshot is reserved, it is not deleted until it is released.
    * The reservation status is not persisted. After a restart the snapshot will be in state

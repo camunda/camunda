@@ -752,6 +752,7 @@ public class ClusteringRule extends ExternalResource {
   public void fillSegments(final int minimumSegmentCount) {
     fillSegments(getBrokers(), minimumSegmentCount);
   }
+
   /**
    * Writes entries until at least the given count of segments exist on the given brokers.
    * Automatically accounts for offset log compaction to ensure that at least one segment will be
@@ -762,6 +763,7 @@ public class ClusteringRule extends ExternalResource {
         getBrokerCfg(0).getExperimental().getRaft().getPreferSnapshotReplicationThreshold();
     fillSegments(brokers, minimumSegmentCount, logCompactionOffset);
   }
+
   /**
    * Writes entries until at least the given count of segments exist on all brokers and at least the
    * given count of entries are written.
@@ -769,6 +771,7 @@ public class ClusteringRule extends ExternalResource {
   public void fillSegments(final int minimumSegmentCount, final int minimumWrittenEntries) {
     fillSegments(getBrokers(), minimumSegmentCount, minimumWrittenEntries);
   }
+
   /**
    * Writes entries until at least the given count of segments exist on the given brokers and at
    * least the given count of entries are written.

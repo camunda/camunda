@@ -43,8 +43,8 @@ public final class Broker implements AutoCloseable {
   // TODO make Broker class itself the actor
   private final BrokerStartupActor brokerStartupActor;
   private BrokerContext brokerContext;
-  // TODO make Broker class itself the actor
 
+  // TODO make Broker class itself the actor
   public Broker(final SystemContext systemContext, final SpringBrokerBridge springBrokerBridge) {
     this(systemContext, springBrokerBridge, Collections.emptyList());
   }

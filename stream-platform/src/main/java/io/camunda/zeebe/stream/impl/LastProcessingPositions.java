@@ -15,6 +15,7 @@ public class LastProcessingPositions {
 
   /** The last command position, which the processing state machine has processed successfully. */
   private final long lastProcessedPosition;
+
   /** The last written record position on the log. */
   private final long lastWrittenPosition;
 

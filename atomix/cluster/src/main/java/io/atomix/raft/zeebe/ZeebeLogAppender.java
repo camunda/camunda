@@ -31,6 +31,7 @@ import java.nio.ByteBuffer;
 public interface ZeebeLogAppender {
   /** Appends an entry to the local Raft log and schedules replication to each follower. */
   void appendEntry(ApplicationEntry entry, AppendListener appendListener);
+
   /**
    * Appends an entry to the local Raft log and schedules replication to each follower.
    *
