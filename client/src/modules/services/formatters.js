@@ -11,17 +11,6 @@ import {Chart} from 'chart.js';
 import {format} from 'dates';
 import {t} from 'translation';
 
-const timeUnits = {
-  millis: {value: 1, abbreviation: 'ms', label: 'milli'},
-  seconds: {value: 1000, abbreviation: 's', label: 'second'},
-  minutes: {value: 60 * 1000, abbreviation: 'min', label: 'minute'},
-  hours: {value: 60 * 60 * 1000, abbreviation: 'h', label: 'hour'},
-  days: {value: 24 * 60 * 60 * 1000, abbreviation: 'd', label: 'day'},
-  weeks: {value: 7 * 24 * 60 * 60 * 1000, abbreviation: 'wk', label: 'week'},
-  months: {value: 30 * 24 * 60 * 60 * 1000, abbreviation: 'm', label: 'month'},
-  years: {value: 12 * 30 * 24 * 60 * 60 * 1000, abbreviation: 'y', label: 'year'},
-};
-
 const scaleUnits = [
   {exponent: 18, label: 'quintillion'},
   {exponent: 15, label: 'quadrillion'},
@@ -30,8 +19,6 @@ const scaleUnits = [
   {exponent: 6, label: 'million'},
   {exponent: 3, label: 'thousand'},
 ];
-
-export {getHighlightedText} from './formatters.tsx';
 
 function getNumberOfDigits(x) {
   // https://stackoverflow.com/a/28203456
@@ -75,67 +62,6 @@ export function percentage(number) {
   return Number(Number(number).toFixed(2)) + '%';
 }
 
-export function duration(timeObject, precision, shortNotation) {
-  // In case the precision from the report configuration is passed to the function but it is turned off, its value is set to null
-  // In this case we want to set the default value of the precision to be 3
-  if (precision === null) {
-    precision = 3;
-  }
-
-  if (!timeObject && timeObject !== 0) {
-    return '--';
-  }
-
-  const time =
-    typeof timeObject === 'object'
-      ? timeObject.value * timeUnits[timeObject.unit].value
-      : Number(timeObject);
-
-  if (time >= 0 && time < 1) {
-    return `${Number(time.toFixed(2)) || 0}ms`;
-  }
-
-  const timeSegments = [];
-  let remainingTime = time;
-  let remainingPrecision = precision;
-  Object.keys(timeUnits)
-    .map((key) => timeUnits[key])
-    .sort((a, b) => b.value - a.value)
-    .filter(({value}) => value <= time)
-    .forEach((currentUnit) => {
-      if (precision) {
-        if (remainingPrecision-- > 0) {
-          let number = Math.floor(remainingTime / currentUnit.value);
-          if (!remainingPrecision || currentUnit.abbreviation === 'ms') {
-            number = Math.round(remainingTime / currentUnit.value);
-          }
-
-          if (number === 0) {
-            remainingPrecision++;
-          } else {
-            const longLabel = `\u00A0${t(
-              `common.unit.${currentUnit.label}.label${number !== 1 ? '-plural' : ''}`
-            )}`;
-            timeSegments.push(`${number}${shortNotation ? currentUnit.abbreviation : longLabel}`);
-          }
-          remainingTime -= number * currentUnit.value;
-        }
-      } else if (remainingTime >= currentUnit.value) {
-        let numberOfUnits = Math.floor(remainingTime / currentUnit.value);
-        // allow numbers with ms abreviation to have floating numbers (avoid flooring)
-        // e.g 1.2ms => 1.2 ms. On the other hand, 1.2 seconds => 1 seconds 200ms
-        if (currentUnit.abbreviation === 'ms') {
-          numberOfUnits = Number((remainingTime / currentUnit.value).toFixed(2));
-        }
-        timeSegments.push(numberOfUnits + currentUnit.abbreviation);
-
-        remainingTime -= numberOfUnits * currentUnit.value;
-      }
-    });
-
-  return timeSegments.join('\u00A0');
-}
-
 export function getRelativeValue(data, total) {
   if (!data && data !== 0) {
     return '--';
@@ -144,50 +70,6 @@ export function getRelativeValue(data, total) {
     return '0%';
   }
   return Math.round((data / total) * 1000) / 10 + '%';
-}
-
-export const convertDurationToObject = (value) => {
-  // sort the time units in descending order, then find the first one
-  // that fits the provided value without any decimal places
-  const [divisor, unit] = Object.keys(timeUnits)
-    .map((key) => [timeUnits[key].value, key])
-    .sort(([a], [b]) => b - a)
-    .find(([divisor]) => value % divisor === 0);
-
-  return {
-    value: (value / divisor).toString(),
-    unit,
-  };
-};
-
-export const convertToDecimalTimeUnit = (value) => {
-  // sort the time units in descending order, then find
-  // the biggest one that fits the provided value even if it
-  // has decimal places
-
-  const possibleUnits = Object.keys(timeUnits)
-    .map((key) => [timeUnits[key].value, key])
-    .sort(([a], [b]) => b - a);
-
-  const [divisor, unit] =
-    possibleUnits.find(([divisor]) => value / divisor >= 1) ||
-    possibleUnits[possibleUnits.length - 1];
-
-  return {
-    value: String(Number((value / divisor).toFixed(3))),
-    unit,
-  };
-};
-
-export const convertDurationToSingleNumber = (threshold) => {
-  if (typeof threshold.value === 'undefined') {
-    return threshold;
-  }
-  return threshold.value * timeUnits[threshold.unit].value;
-};
-
-export function convertToMilliseconds(value, unit) {
-  return value * timeUnits[unit].value;
 }
 
 export function camelCaseToLabel(type) {
@@ -420,3 +302,12 @@ export function formatLabel(label, numbersOnly) {
 
   return parsedLabel.toExponential();
 }
+
+export {
+  duration,
+  getHighlightedText,
+  convertDurationToObject,
+  convertDurationToSingleNumber,
+  convertToDecimalTimeUnit,
+  convertToMilliseconds,
+} from './formatters.tsx';

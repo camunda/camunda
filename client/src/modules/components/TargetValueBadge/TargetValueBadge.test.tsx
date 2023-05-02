@@ -5,10 +5,10 @@
  * except in compliance with the proprietary license.
  */
 
-import React from 'react';
+import {runLastCleanup, runLastEffect} from '__mocks__/react';
 import {mount} from 'enzyme';
 
-import TargetValueBadge from './TargetValueBadge';
+import TargetValueBadge, {Overlay} from './TargetValueBadge';
 import {formatters} from 'services';
 
 jest.mock('services', () => {
@@ -24,15 +24,15 @@ const viewer = {
   get: jest.fn().mockReturnThis(),
   remove: jest.fn(),
   add: jest.fn(),
-};
+} as jest.MockedObject<Overlay>;
 
-formatters.duration.mockReturnValue('some duration');
+(formatters.duration as jest.Mock).mockReturnValue('some duration');
 
 it('should add an overlay with the formatted target value', () => {
   mount(<TargetValueBadge viewer={viewer} values={{a: {value: 8, unit: 'hours'}}} />);
 
   expect(viewer.add).toHaveBeenCalled();
-  expect(viewer.add.mock.calls[0][2].html.textContent).toBe('some duration');
+  expect(viewer.add.mock.calls[0]?.[2].html.textContent).toBe('some duration');
 });
 
 it('should remove overlays when unmounting', () => {
@@ -40,6 +40,9 @@ it('should remove overlays when unmounting', () => {
 
   viewer.remove.mockClear();
   node.unmount();
+
+  runLastEffect();
+  runLastCleanup();
 
   expect(viewer.remove).toHaveBeenCalled();
 });
