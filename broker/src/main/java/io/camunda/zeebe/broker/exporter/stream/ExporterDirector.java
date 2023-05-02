@@ -165,7 +165,7 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
   @Override
   protected void onActorStarting() {
     if (exporterMode == ExporterMode.ACTIVE) {
-      final ActorFuture<LogStreamReader> newReaderFuture = logStream.newAuditReader();
+      final ActorFuture<LogStreamReader> newReaderFuture = logStream.newLogStreamReader();
       actor.runOnCompletionBlockingCurrentPhase(
           newReaderFuture,
           (reader, errorOnReceivingReader) -> {
