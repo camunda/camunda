@@ -13,6 +13,7 @@ import {
 import {IconButton as BaseIconButton} from '@carbon/react';
 import {Header as BaseHeader} from '../PanelHeader/styled';
 import {COLLAPSABLE_PANEL_MIN_WIDTH} from 'modules/constants';
+import {zOverlayCollapsable} from 'modules/constants/componentHierarchy';
 
 type CollapsableProps = {
   isCollapsed: boolean;
@@ -40,6 +41,7 @@ const Collapsable = styled.div<CollapsableProps>`
       ${$isOverlay
         ? css`
             position: absolute;
+            z-index: ${zOverlayCollapsable};
             ${isRight
               ? css`
                   right: 0;
@@ -65,7 +67,9 @@ const Panel = styled.div<Props>`
   ${({$isClickable, $panelPosition}) => {
     return css`
       height: 100%;
-      background: var(--cds-layer);
+      background-color: var(--cds-layer);
+      display: flex;
+      flex-direction: column;
 
       ${$panelPosition === 'LEFT'
         ? css`
@@ -138,4 +142,16 @@ const Header = styled(BaseHeader)<HeaderProps>`
   }}
 `;
 
-export {Panel, Collapsable, ExpandIcon, CollapseIcon, IconButton, Header};
+const ScrollableContent = styled.div`
+  overflow: auto;
+`;
+
+export {
+  Panel,
+  Collapsable,
+  ExpandIcon,
+  CollapseIcon,
+  IconButton,
+  Header,
+  ScrollableContent,
+};

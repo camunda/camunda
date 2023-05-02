@@ -14,8 +14,10 @@ import {
   ExpandIcon,
   CollapseIcon,
   IconButton,
+  ScrollableContent,
 } from './styled';
 import {Layer} from '@carbon/react';
+import React, {forwardRef} from 'react';
 
 type Props = {
   label: string;
@@ -27,62 +29,69 @@ type Props = {
   maxWidth: number;
 };
 
-const CollapsablePanel: React.FC<Props> = ({
-  label,
-  panelPosition,
-  maxWidth,
-  isOverlay = false,
-  children,
-  isCollapsed,
-  onToggle,
-  ...props
-}) => {
-  const tooltipAlignment = panelPosition === 'RIGHT' ? 'left' : 'right';
+const CollapsablePanel = forwardRef<HTMLDivElement, Props>(
+  (
+    {
+      label,
+      panelPosition,
+      maxWidth,
+      isOverlay = false,
+      children,
+      isCollapsed,
+      onToggle,
+      ...props
+    },
+    ref
+  ) => {
+    const tooltipAlignment = panelPosition === 'RIGHT' ? 'left' : 'right';
 
-  return (
-    <Collapsable
-      {...props}
-      isCollapsed={isCollapsed}
-      $panelPosition={panelPosition}
-      $isOverlay={isOverlay}
-      $maxWidth={maxWidth}
-    >
-      {isCollapsed ? (
-        <Panel
-          data-testid="collapsed-panel"
-          $panelPosition={panelPosition}
-          $isClickable
-          onClick={onToggle}
-        >
-          <IconButton
-            kind="ghost"
-            label={`Expand ${label}`}
-            align={tooltipAlignment}
-            size="sm"
+    return (
+      <Collapsable
+        {...props}
+        isCollapsed={isCollapsed}
+        $panelPosition={panelPosition}
+        $isOverlay={isOverlay}
+        $maxWidth={maxWidth}
+      >
+        {isCollapsed ? (
+          <Panel
+            data-testid="collapsed-panel"
+            $panelPosition={panelPosition}
+            $isClickable
+            onClick={onToggle}
           >
-            <ExpandIcon size={20} $panelPosition={panelPosition} />
-          </IconButton>
-          <Title $isVertical>{label}</Title>
-        </Panel>
-      ) : (
-        <Panel data-testid="expanded-panel" $panelPosition={panelPosition}>
-          <Header $panelPosition={panelPosition}>
-            <Title>{label}</Title>
             <IconButton
               kind="ghost"
-              onClick={onToggle}
-              label={`Collapse ${label}`}
+              label={`Expand ${label}`}
               align={tooltipAlignment}
               size="sm"
             >
-              <CollapseIcon size={20} $panelPosition={panelPosition} />
+              <ExpandIcon size={20} $panelPosition={panelPosition} />
             </IconButton>
-          </Header>
-          <Layer>{children}</Layer>
-        </Panel>
-      )}
-    </Collapsable>
-  );
-};
+            <Title $isVertical>{label}</Title>
+          </Panel>
+        ) : (
+          <Panel data-testid="expanded-panel" $panelPosition={panelPosition}>
+            <Header $panelPosition={panelPosition}>
+              <Title>{label}</Title>
+              <IconButton
+                kind="ghost"
+                onClick={onToggle}
+                label={`Collapse ${label}`}
+                align={tooltipAlignment}
+                size="sm"
+              >
+                <CollapseIcon size={20} $panelPosition={panelPosition} />
+              </IconButton>
+            </Header>
+            <ScrollableContent ref={ref}>
+              <Layer>{children}</Layer>
+            </ScrollableContent>
+          </Panel>
+        )}
+      </Collapsable>
+    );
+  }
+);
 
 export {CollapsablePanel};

@@ -120,4 +120,9 @@ declare module '@carbon/react/icons' {
   export const RowCollapse: Icon;
   export const CheckmarkOutline: Icon;
   export const WarningFilled: Icon;
+  export const TrashCan: Icon;
+  export const Error: Icon;
+  export const Tools: Icon;
+  export const RetryFailed: Icon;
+  export const Edit: Icon;
 }
