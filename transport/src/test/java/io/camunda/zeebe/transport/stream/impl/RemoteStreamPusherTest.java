@@ -13,7 +13,7 @@ import static org.assertj.core.api.Assertions.assertThatCode;
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.transport.stream.api.RemoteStream.ErrorHandler;
 import io.camunda.zeebe.transport.stream.api.RemoteStreamMetrics;
-import io.camunda.zeebe.transport.stream.impl.ImmutableStreamRegistry.StreamId;
+import io.camunda.zeebe.transport.stream.impl.AggregatedRemoteStream.StreamId;
 import io.camunda.zeebe.transport.stream.impl.RemoteStreamPusher.Transport;
 import io.camunda.zeebe.transport.stream.impl.messages.PushStreamRequest;
 import io.camunda.zeebe.util.buffer.BufferWriter;
@@ -30,7 +30,7 @@ final class RemoteStreamPusherTest {
   private final TestTransport transport = new TestTransport();
   private final Executor executor = Runnable::run;
   private final RemoteStreamPusher<Payload> pusher =
-      new RemoteStreamPusher<>(streamId, transport, executor, RemoteStreamMetrics.noop());
+      new RemoteStreamPusher<>(transport, executor, RemoteStreamMetrics.noop());
 
   @Test
   void shouldPushPayload() {
@@ -39,7 +39,7 @@ final class RemoteStreamPusherTest {
     final var errorHandler = new TestErrorHandler();
 
     // when
-    pusher.pushAsync(payload, errorHandler);
+    pusher.pushAsync(payload, errorHandler, streamId);
 
     // then
     final var sentRequest = transport.message;
@@ -59,7 +59,7 @@ final class RemoteStreamPusherTest {
     transport.synchronousException = failure;
 
     // when
-    pusher.pushAsync(payload, errorHandler);
+    pusher.pushAsync(payload, errorHandler, streamId);
 
     // then
     assertThat(errorHandler.errors)
@@ -78,7 +78,7 @@ final class RemoteStreamPusherTest {
     transport.response = CompletableFuture.failedFuture(failure);
 
     // when
-    pusher.pushAsync(payload, errorHandler);
+    pusher.pushAsync(payload, errorHandler, streamId);
 
     // then
     assertThat(errorHandler.errors)
@@ -94,7 +94,7 @@ final class RemoteStreamPusherTest {
     final var errorHandler = new TestErrorHandler();
 
     // when - then
-    assertThatCode(() -> pusher.pushAsync(null, errorHandler))
+    assertThatCode(() -> pusher.pushAsync(null, errorHandler, streamId))
         .isInstanceOf(NullPointerException.class);
   }
 
@@ -104,7 +104,8 @@ final class RemoteStreamPusherTest {
     final var payload = new Payload(1);
 
     // when - then
-    assertThatCode(() -> pusher.pushAsync(payload, null)).isInstanceOf(NullPointerException.class);
+    assertThatCode(() -> pusher.pushAsync(payload, null, streamId))
+        .isInstanceOf(NullPointerException.class);
   }
 
   private record Payload(int version) implements BufferWriter {

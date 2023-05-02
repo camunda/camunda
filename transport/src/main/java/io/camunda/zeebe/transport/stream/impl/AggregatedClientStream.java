@@ -178,8 +178,6 @@ final class AggregatedClientStream<M extends BufferWriter> {
     }
   }
 
-  record LogicalId<M>(DirectBuffer streamType, M metadata) {}
-
   private enum State {
     INITIAL,
     OPEN,

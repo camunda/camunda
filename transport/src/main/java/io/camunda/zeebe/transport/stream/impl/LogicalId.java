@@ -7,9 +7,14 @@
  */
 package io.camunda.zeebe.transport.stream.impl;
 
-import java.util.Set;
+import org.agrona.concurrent.UnsafeBuffer;
 
-@FunctionalInterface
-interface RemoteStreamPicker<M> {
-  AggregatedRemoteStream<M> pickStream(final Set<AggregatedRemoteStream<M>> consumers);
-}
+/**
+ * A logical id that identifies a stream. Multiple streams can have same logical id. A payload
+ * generated for a stream should be accepted by another stream with same logical id.
+ *
+ * @param streamType type of the stream
+ * @param metadata metadata of the stream
+ * @param <M> type of metadata
+ */
+record LogicalId<M>(UnsafeBuffer streamType, M metadata) {}

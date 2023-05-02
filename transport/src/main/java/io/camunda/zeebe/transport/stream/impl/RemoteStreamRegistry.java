@@ -9,6 +9,9 @@ package io.camunda.zeebe.transport.stream.impl;
 
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.transport.stream.api.RemoteStreamMetrics;
+import io.camunda.zeebe.transport.stream.impl.AggregatedRemoteStream.StreamConsumer;
+import io.camunda.zeebe.transport.stream.impl.AggregatedRemoteStream.StreamId;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -33,8 +36,12 @@ public class RemoteStreamRegistry<M> implements ImmutableStreamRegistry<M> {
   private final RemoteStreamMetrics metrics;
 
   // Needs to be thread-safe for readers
-  private final ConcurrentMap<UnsafeBuffer, Set<StreamConsumer<M>>> typeToConsumers =
+  private final ConcurrentMap<UnsafeBuffer, Set<AggregatedRemoteStream<M>>> typeToConsumers =
       new ConcurrentHashMap<>();
+
+  private final ConcurrentMap<LogicalId<M>, AggregatedRemoteStream<M>> logicalIdToConsumers =
+      new ConcurrentHashMap<>();
+
   private final Map<StreamId, StreamConsumer<M>> idToConsumer = new HashMap<>();
 
   public RemoteStreamRegistry(final RemoteStreamMetrics metrics) {
@@ -64,11 +71,20 @@ public class RemoteStreamRegistry<M> implements ImmutableStreamRegistry<M> {
     // Using CopyOnWriteArraySet assuming the size is small and updates/removal is less frequent. If
     // this is not the case, better use other thread-safe sets.
     typeToConsumers.putIfAbsent(streamType, new CopyOnWriteArraySet<>());
+    final var logicalId = new LogicalId<>(streamType, properties);
 
-    final var streamConsumer = new StreamConsumer<>(uniqueId, properties, streamType);
+    logicalIdToConsumers.computeIfAbsent(
+        logicalId,
+        id -> {
+          final var aggregatedStream = new AggregatedRemoteStream<>(logicalId, new ArrayList<>());
+          typeToConsumers.get(streamType).add(aggregatedStream);
+          return aggregatedStream;
+        });
+
+    final var streamConsumer = new StreamConsumer<>(uniqueId, logicalId);
+    logicalIdToConsumers.get(logicalId).addConsumer(streamConsumer);
 
     idToConsumer.put(uniqueId, streamConsumer);
-    typeToConsumers.get(streamType).add(streamConsumer);
     metrics.addStream();
   }
 
@@ -82,11 +98,16 @@ public class RemoteStreamRegistry<M> implements ImmutableStreamRegistry<M> {
     final var uniqueId = new StreamId(streamId, receiver);
     final var consumer = idToConsumer.remove(uniqueId);
     if (consumer != null) {
-      typeToConsumers.computeIfPresent(
-          consumer.streamType(),
-          (type, consumerSet) -> {
-            consumerSet.remove(consumer);
-            return consumerSet.isEmpty() ? null : consumerSet;
+      logicalIdToConsumers.computeIfPresent(
+          consumer.logicalId(),
+          (id, aggregatedStream) -> {
+            aggregatedStream.removeConsumer(consumer);
+            if (aggregatedStream.streamConsumers().isEmpty()) {
+              typeToConsumers.get(consumer.logicalId().streamType()).remove(aggregatedStream);
+              return null;
+            } else {
+              return aggregatedStream;
+            }
           });
       metrics.removeStream();
     }
@@ -105,7 +126,7 @@ public class RemoteStreamRegistry<M> implements ImmutableStreamRegistry<M> {
   }
 
   @Override
-  public Set<StreamConsumer<M>> get(final UnsafeBuffer streamType) {
+  public Set<AggregatedRemoteStream<M>> get(final UnsafeBuffer streamType) {
     return typeToConsumers.getOrDefault(streamType, Collections.emptySet());
   }
 

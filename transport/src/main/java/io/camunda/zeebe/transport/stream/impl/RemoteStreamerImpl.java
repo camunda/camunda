@@ -42,6 +42,7 @@ public final class RemoteStreamerImpl<M extends BufferReader, P extends BufferWr
   private final ClusterCommunicationService transport;
   private final ImmutableStreamRegistry<M> registry;
   private final RemoteStreamMetrics metrics;
+  private final RemoteStreamPusher<P> remoteStreamPusher;
 
   public RemoteStreamerImpl(
       final ClusterCommunicationService transport,
@@ -50,20 +51,21 @@ public final class RemoteStreamerImpl<M extends BufferReader, P extends BufferWr
     this.transport = Objects.requireNonNull(transport, "must specify a network transport");
     this.registry = Objects.requireNonNull(registry, "must specify a job stream registry");
     this.metrics = metrics;
+    remoteStreamPusher = new RemoteStreamPusher<>(this::send, actor::run, metrics);
   }
 
   @Override
   public Optional<RemoteStream<M, P>> streamFor(final DirectBuffer streamType) {
-    final var consumers = registry.get(new UnsafeBuffer(streamType));
+    final UnsafeBuffer streamTypeBuffer = new UnsafeBuffer(streamType);
+    final var consumers = registry.get(streamTypeBuffer);
     if (consumers.isEmpty()) {
       return Optional.empty();
     }
 
     final var target = streamPicker.pickStream(consumers);
+
     final RemoteStreamImpl<M, P> gatewayStream =
-        new RemoteStreamImpl<>(
-            target.properties(),
-            new RemoteStreamPusher<>(target.id(), this::send, actor::run, metrics));
+        new RemoteStreamImpl<>(target, remoteStreamPusher, actor::run);
     return Optional.of(gatewayStream);
   }
 

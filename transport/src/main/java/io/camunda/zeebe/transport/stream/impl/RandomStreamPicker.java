@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.transport.stream.impl;
 
-import io.camunda.zeebe.transport.stream.impl.ImmutableStreamRegistry.StreamConsumer;
 import java.util.ArrayList;
 import java.util.Set;
 import java.util.concurrent.ThreadLocalRandom;
@@ -15,7 +14,7 @@ import java.util.concurrent.ThreadLocalRandom;
 final class RandomStreamPicker<M> implements RemoteStreamPicker<M> {
 
   @Override
-  public StreamConsumer<M> pickStream(final Set<StreamConsumer<M>> consumers) {
+  public AggregatedRemoteStream<M> pickStream(final Set<AggregatedRemoteStream<M>> consumers) {
     final var targets = new ArrayList<>(consumers);
     final var index = ThreadLocalRandom.current().nextInt(consumers.size());
 

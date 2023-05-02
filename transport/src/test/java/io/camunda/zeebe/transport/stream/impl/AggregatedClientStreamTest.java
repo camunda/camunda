@@ -13,7 +13,6 @@ import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.scheduler.testing.TestActorFuture;
 import io.camunda.zeebe.transport.stream.api.ClientStreamConsumer;
 import io.camunda.zeebe.transport.stream.api.ClientStreamId;
-import io.camunda.zeebe.transport.stream.impl.AggregatedClientStream.LogicalId;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -21,14 +20,14 @@ import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
-import org.agrona.DirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.jupiter.api.Test;
 
 class AggregatedClientStreamTest {
   private static final ClientStreamConsumer CLIENT_STREAM_CONSUMER =
       p -> CompletableActorFuture.completed(null);
 
-  private final DirectBuffer streamType = BufferUtil.wrapString("foo");
+  private final UnsafeBuffer streamType = new UnsafeBuffer(BufferUtil.wrapString("foo"));
   private final TestSerializableData metadata = new TestSerializableData(1234);
   private final TestClientStreamMetrics metrics = new TestClientStreamMetrics();
   final AggregatedClientStream<TestSerializableData> stream =

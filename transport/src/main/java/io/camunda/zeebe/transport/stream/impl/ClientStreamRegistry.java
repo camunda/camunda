@@ -10,7 +10,6 @@ package io.camunda.zeebe.transport.stream.impl;
 import io.camunda.zeebe.transport.stream.api.ClientStreamConsumer;
 import io.camunda.zeebe.transport.stream.api.ClientStreamId;
 import io.camunda.zeebe.transport.stream.api.ClientStreamMetrics;
-import io.camunda.zeebe.transport.stream.impl.AggregatedClientStream.LogicalId;
 import io.camunda.zeebe.util.VisibleForTesting;
 import io.camunda.zeebe.util.buffer.BufferWriter;
 import java.util.Collection;
@@ -20,6 +19,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 import org.agrona.DirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
 
 /** A registry to keeps tracks of all open streams. */
 final class ClientStreamRegistry<M extends BufferWriter> {
@@ -49,7 +49,8 @@ final class ClientStreamRegistry<M extends BufferWriter> {
       final DirectBuffer streamType,
       final M metadata,
       final ClientStreamConsumer clientStreamConsumer) {
-    final LogicalId<M> logicalId = new LogicalId<>(streamType, metadata);
+    final var streamTypeBuffer = new UnsafeBuffer(streamType);
+    final LogicalId<M> logicalId = new LogicalId<>(streamTypeBuffer, metadata);
     // Find serverStreamId given streamType and metadata. Once a server stream is removed, a new
     // server stream with same streamType and metadata will get a new UUID.
     final var serverStreamId = serverStreamIds.computeIfAbsent(logicalId, k -> UUID.randomUUID());
@@ -58,7 +59,8 @@ final class ClientStreamRegistry<M extends BufferWriter> {
             serverStreamId, k -> new AggregatedClientStream<>(serverStreamId, logicalId));
     final var streamId = new ClientStreamIdImpl(serverStreamId, serverStream.nextLocalId());
     final var clientStream =
-        new ClientStream<>(streamId, serverStream, streamType, metadata, clientStreamConsumer);
+        new ClientStream<>(
+            streamId, serverStream, streamTypeBuffer, metadata, clientStreamConsumer);
     serverStream.addClient(clientStream);
     clientStreams.put(streamId, clientStream);
 

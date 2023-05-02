@@ -12,8 +12,6 @@ import static org.assertj.core.api.Assertions.assertThatCode;
 
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.transport.stream.api.RemoteStreamMetrics;
-import io.camunda.zeebe.transport.stream.impl.ImmutableStreamRegistry.StreamConsumer;
-import io.camunda.zeebe.transport.stream.impl.ImmutableStreamRegistry.StreamId;
 import io.camunda.zeebe.transport.stream.impl.messages.AddStreamRequest;
 import io.camunda.zeebe.transport.stream.impl.messages.RemoveStreamRequest;
 import io.camunda.zeebe.transport.stream.impl.messages.UUIDEncoder;
@@ -108,11 +106,16 @@ final class RemoteStreamApiHandlerTest {
 
     // then
     final var consumers = registry.get(streamType);
-    assertThat(consumers)
+    assertThat(consumers).hasSize(1);
+    final var stream = consumers.stream().findFirst().orElseThrow();
+    assertThat(stream.logicalId())
+        .extracting(LogicalId::streamType, c -> c.metadata().version)
+        .containsExactly(streamType, 1);
+    assertThat(stream.streamConsumers())
         .hasSize(1)
         .first()
-        .extracting(StreamConsumer::streamType, StreamConsumer::id, c -> c.properties().version)
-        .containsExactly(streamType, new StreamId(streamId, sender), 1);
+        .extracting(c -> c.id().streamId(), c -> c.id().receiver())
+        .containsExactly(streamId, sender);
   }
 
   @Test
