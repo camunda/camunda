@@ -10,6 +10,7 @@ package io.camunda.zeebe.test.util;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertNotNull;
 
+import com.fasterxml.jackson.core.StreamReadConstraints;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -27,7 +28,15 @@ import org.msgpack.jackson.dataformat.MessagePackFactory;
 
 public final class MsgPackUtil {
 
-  private static final ObjectMapper MSGPACK_MAPPER = new ObjectMapper(new MessagePackFactory());
+  private static final ObjectMapper MSGPACK_MAPPER =
+      new ObjectMapper(
+          new MessagePackFactory()
+              .setStreamReadConstraints(
+                  StreamReadConstraints.builder()
+                      .maxNumberLength(Integer.MAX_VALUE)
+                      .maxNestingDepth(Integer.MAX_VALUE)
+                      .maxStringLength(Integer.MAX_VALUE)
+                      .build()));
 
   public static DirectBuffer encodeMsgPack(final CheckedConsumer<MessageBufferPacker> msgWriter) {
     final MessageBufferPacker packer = MessagePack.newDefaultBufferPacker();

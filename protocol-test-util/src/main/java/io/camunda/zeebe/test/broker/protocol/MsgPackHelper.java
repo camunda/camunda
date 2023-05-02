@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.test.broker.protocol;
 
+import com.fasterxml.jackson.core.StreamReadConstraints;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.ByteArrayOutputStream;
@@ -15,10 +16,19 @@ import java.util.Map;
 import org.msgpack.jackson.dataformat.MessagePackFactory;
 
 public final class MsgPackHelper {
-  protected final ObjectMapper objectMapper;
+  private final ObjectMapper objectMapper;
 
   public MsgPackHelper() {
-    objectMapper = new ObjectMapper(new MessagePackFactory());
+    objectMapper =
+        new ObjectMapper(
+            new MessagePackFactory()
+                .setStreamReadConstraints(
+                    StreamReadConstraints.builder()
+                        .maxNumberLength(Integer.MAX_VALUE)
+                        .maxNestingDepth(Integer.MAX_VALUE)
+                        .maxStringLength(Integer.MAX_VALUE)
+                        .build()));
+
     // in the default setting, jackson deserializes numbers as Integer/Long/BigDecimal
     // depending on the value range; with that setting, asserting code has to do type conversion;
     // => we ensure it is always Long

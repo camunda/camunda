@@ -16,6 +16,7 @@ import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonParser.Feature;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.JsonToken;
+import com.fasterxml.jackson.core.StreamReadConstraints;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.MappingJsonFactory;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -35,6 +36,12 @@ import org.msgpack.jackson.dataformat.MessagePackFactory;
 
 public final class MsgPackConverter {
 
+  private static final StreamReadConstraints JSON_STREAM_CONSTRAINTS =
+      StreamReadConstraints.builder()
+          .maxStringLength(Integer.MAX_VALUE)
+          .maxNumberLength(Integer.MAX_VALUE)
+          .maxNestingDepth(Integer.MAX_VALUE)
+          .build();
   private static final JsonEncoding JSON_ENCODING = JsonEncoding.UTF8;
   private static final Charset JSON_CHARSET = StandardCharsets.UTF_8;
   private static final TypeReference<HashMap<String, Object>> OBJECT_MAP_TYPE_REFERENCE =
@@ -51,12 +58,17 @@ public final class MsgPackConverter {
    * most recycling of expensive construct is done on per-factory basis.
    */
   private static final JsonFactory MESSAGE_PACK_FACTORY =
-      new MessagePackFactory().setReuseResourceInGenerator(false).setReuseResourceInParser(false);
-  private static final JsonFactory JSON_FACTORY =
-      new MappingJsonFactory().configure(Feature.ALLOW_SINGLE_QUOTES, true);
-  private static final ObjectMapper JSON_OBJECT_MAPPER = new ObjectMapper(JSON_FACTORY);
+      new MessagePackFactory()
+          .setReuseResourceInGenerator(false)
+          .setReuseResourceInParser(false)
+          .setStreamReadConstraints(JSON_STREAM_CONSTRAINTS);
   private static final ObjectMapper MESSSAGE_PACK_OBJECT_MAPPER =
       new ObjectMapper(MESSAGE_PACK_FACTORY);
+  private static final JsonFactory JSON_FACTORY =
+      new MappingJsonFactory()
+          .configure(Feature.ALLOW_SINGLE_QUOTES, true)
+          .setStreamReadConstraints(JSON_STREAM_CONSTRAINTS);
+  private static final ObjectMapper JSON_OBJECT_MAPPER = new ObjectMapper(JSON_FACTORY);
 
   // prevent instantiation
   private MsgPackConverter() {}
