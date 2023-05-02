@@ -202,8 +202,45 @@ class SegmentsManagerTest {
     segments.open();
     LogCorrupter.corruptDescriptor(
         Objects.requireNonNull(segments.getFirstSegment()).file().file());
+    segments.close();
 
     // then
+    assertThatNoException().isThrownBy(() -> segments.open());
+  }
+
+  @Test
+  void shouldHandleCrashOnTruncateAfterDeletionBeforeSegmentIsCreated() {
+    // given
+    try (final var journal = openJournal()) {
+      journal.append(1, journalFactory.entry()).index();
+      final var index = journal.append(2, journalFactory.entry()).index();
+      journal.append(3, journalFactory.entry()).index();
+      journal.deleteAfter(index);
+    }
+
+    // when - simulate crash after creating the next segment but before writing or flushing anything
+    final var expectedRootCause = new IOException("failed");
+    Exception invalidSegmentWasCreated = null;
+    try (final var failingSegments =
+        journalFactory.segmentsManager(
+            directory,
+            new SegmentLoader(
+                Long.MIN_VALUE,
+                journalFactory.metrics(),
+                (channel, segmentSize) -> {
+                  SegmentAllocator.fill().allocate(channel, segmentSize);
+                  throw expectedRootCause;
+                }))) {
+      failingSegments.open();
+      // will allocate the next segment
+      failingSegments.getNextSegment();
+    } catch (final Exception error) {
+      invalidSegmentWasCreated = error;
+    }
+
+    // then
+    assertThat(invalidSegmentWasCreated).hasRootCause(expectedRootCause);
+    segments = journalFactory.segmentsManager(directory);
     assertThatNoException().isThrownBy(() -> segments.open());
   }
 
