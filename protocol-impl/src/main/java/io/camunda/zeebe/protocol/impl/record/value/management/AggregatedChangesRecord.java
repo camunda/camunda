@@ -17,7 +17,8 @@ public class AggregatedChangesRecord extends UnifiedRecordValue
 
   private static final String CHANGES_KEY = "changes";
 
-  private final BinaryProperty changesProperty = new BinaryProperty(CHANGES_KEY);
+  private final BinaryProperty changesProperty =
+      new BinaryProperty(CHANGES_KEY, new UnsafeBuffer());
 
   public AggregatedChangesRecord() {
     declareProperty(changesProperty);
