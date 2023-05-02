@@ -19,6 +19,7 @@ import io.camunda.zeebe.protocol.impl.record.value.escalation.EscalationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.incident.IncidentRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobBatchRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
+import io.camunda.zeebe.protocol.impl.record.value.management.AggregatedChangesRecord;
 import io.camunda.zeebe.protocol.impl.record.value.management.CheckpointRecord;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageRecord;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageStartEventSubscriptionRecord;
@@ -78,6 +79,7 @@ public final class TypedEventRegistry {
     registry.put(ValueType.ESCALATION, EscalationRecord.class);
     registry.put(ValueType.SIGNAL_SUBSCRIPTION, SignalSubscriptionRecord.class);
     registry.put(ValueType.SIGNAL, SignalRecord.class);
+    registry.put(ValueType.AGGREGATED_CHANGES, AggregatedChangesRecord.class);
 
     EVENT_REGISTRY = Collections.unmodifiableMap(registry);
 
