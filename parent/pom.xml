@@ -155,7 +155,7 @@
     <plugin.version.versions>2.15.0</plugin.version.versions>
 
     <!-- when updating this version, also change it in .idea/externalDependencies.xml -->
-    <plugin.version.google-java-format>1.16.0</plugin.version.google-java-format>
+    <plugin.version.google-java-format>1.17.0</plugin.version.google-java-format>
 
     <!-- maven extensions -->
     <extension.version.os-maven-plugin>1.7.1</extension.version.os-maven-plugin>
