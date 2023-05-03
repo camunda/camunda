@@ -152,7 +152,6 @@ public class ElasticsearchSessionRepository
   @Override
   public ElasticsearchSession findById(final String id) {
     LOGGER.debug("Retrieve session {} from Elasticsearch", id);
-    retryElasticsearchClient.refresh(tasklistWebSessionIndex.getFullQualifiedName());
     Map<String, Object> document;
     try {
       document =
