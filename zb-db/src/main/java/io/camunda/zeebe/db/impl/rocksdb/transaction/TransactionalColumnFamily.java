@@ -22,6 +22,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import org.agrona.DirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
 import org.rocksdb.ReadOptions;
 import org.rocksdb.RocksIterator;
 
@@ -68,6 +69,10 @@ class TransactionalColumnFamily<
     this.context = context;
     this.keyInstance = keyInstance;
     this.valueInstance = valueInstance;
+
+    if (columnFamily.getDeclaringClass().getEnumConstants().length >= 128) {
+      throw new IllegalStateException("Do not support column family with more than 128 entries");
+    }
     columnFamilyContext = new ColumnFamilyContext(columnFamily.ordinal());
     foreignKeyChecker = new ForeignKeyChecker(transactionDb, consistencyChecksSettings);
   }
@@ -360,8 +365,7 @@ class TransactionalColumnFamily<
      * <p>While iterating over subsequent keys we have to validate it.
      */
     columnFamilyContext.withPrefixKey(
-        prefix,
-        (prefixKey, prefixLength) -> {
+        (cfByte) -> {
           try (final RocksIterator iterator =
               newIterator(context, transactionDb.getPrefixReadOptions())) {
 
@@ -370,9 +374,28 @@ class TransactionalColumnFamily<
             for (iterator.seek(columnFamilyContext.keyWithColumnFamily(seekTarget));
                 iterator.isValid() && shouldVisitNext;
                 iterator.next()) {
+
               final byte[] keyBytes = iterator.key();
-              if (!startsWith(prefixKey, 0, prefixLength, keyBytes, 0, keyBytes.length)) {
+
+              if (cfByte != keyBytes[Long.BYTES - 1]) {
+                // CF doesn't match
                 break;
+              }
+
+              final int prefixLength = prefix.getLength();
+              if (prefixLength > 0) {
+                // check for prefix
+                final var prefixBuffer = new UnsafeBuffer(new byte[prefixLength]);
+                prefix.write(prefixBuffer, 0);
+                if (!startsWith(
+                    prefixBuffer.byteArray(),
+                    0,
+                    prefixLength,
+                    keyBytes,
+                    Long.BYTES,
+                    keyBytes.length)) {
+                  break;
+                }
               }
 
               shouldVisitNext = visit(keyInstance, valueInstance, visitor, iterator);

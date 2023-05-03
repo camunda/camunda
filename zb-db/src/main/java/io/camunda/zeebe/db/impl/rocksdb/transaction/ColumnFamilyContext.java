@@ -13,7 +13,7 @@ import io.camunda.zeebe.db.impl.ZeebeDbConstants;
 import java.nio.ByteBuffer;
 import java.util.ArrayDeque;
 import java.util.Queue;
-import java.util.function.ObjIntConsumer;
+import java.util.function.Consumer;
 import org.agrona.DirectBuffer;
 import org.agrona.ExpandableArrayBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -97,25 +97,11 @@ public class ColumnFamilyContext {
     return valueViewBuffer.capacity() == ZERO_SIZE_ARRAY.length;
   }
 
-  public void withPrefixKey(final DbKey key, final ObjIntConsumer<byte[]> prefixKeyConsumer) {
-    if (prefixKeyBuffers.peek() == null) {
-      throw new IllegalStateException(
-          "Currently nested prefix iterations are not supported! This will cause unexpected behavior.");
-    }
-
-    final ExpandableArrayBuffer prefixKeyBuffer = prefixKeyBuffers.remove();
-    try {
-      prefixKeyBuffer.putLong(0, columnFamilyPrefix, ZeebeDbConstants.ZB_DB_BYTE_ORDER);
-      key.write(prefixKeyBuffer, Long.BYTES);
-      final int prefixLength = Long.BYTES + key.getLength();
-
-      prefixKeyConsumer.accept(prefixKeyBuffer.byteArray(), prefixLength);
-    } finally {
-      prefixKeyBuffers.add(prefixKeyBuffer);
-    }
+  public void withPrefixKey(final Consumer<Byte> prefixKeyConsumer) {
+    prefixKeyConsumer.accept((byte) columnFamilyPrefix);
   }
 
-  ByteBuffer keyWithColumnFamily(DbKey key) {
+  ByteBuffer keyWithColumnFamily(final DbKey key) {
     final var bytes = ByteBuffer.allocate(Long.BYTES + key.getLength());
     final var buffer = new UnsafeBuffer(bytes);
 
