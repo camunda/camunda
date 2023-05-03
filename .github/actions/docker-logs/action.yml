@@ -1,0 +1,22 @@
+name: Docker Logs Collector
+description: |
+  Collects docker logs and uploads them as part of the build
+inputs:
+  # GitHub Actions does not expose the name of the job
+  archive_name:
+    required: true
+    description: The name provided for the archive.
+runs:
+  using: composite
+  steps:
+  - name: Dump docker logs
+    uses: jwalton/gh-docker-logs@v2
+    with:
+      dest: docker-logs
+  - uses: actions/upload-artifact@v3
+    with:
+      name: ${{ inputs.archive_name }}
+      path: docker-logs/
+      retention-days: 7
+      if-no-files-found: ignore
+  

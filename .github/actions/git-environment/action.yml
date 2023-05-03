@@ -1,0 +1,53 @@
+name: Get Environment
+description: |
+  Exposes common values for consumption in conditions of other jobs in a workflow.
+inputs:
+  maintenance_branch_regex:
+    description: 'A bash regex provided to determine the maintenance branch'
+    default: ^maintenance\/([0-9]+\.[0-9]+)$
+    required: false
+  main_branch_regex:
+    description: 'A bash regex provided to determine the main branch'
+    default: ^master$
+    required: false
+  branch:
+    description: 'Defaults to github.ref_name'
+    required: false
+outputs:
+  maintenance_version:
+    value: ${{ steps.define-values.outputs.maintenance_version }}
+    description: "If it's a maintenance branch, which maintenance version it is"
+  is_maintenance_branch:
+    value: ${{ steps.define-values.outputs.is_maintenance_branch }}
+    description: "Whether the provided branch is a maintenance branch"
+  is_main_branch:
+    value: ${{ steps.define-values.outputs.is_main_branch }}
+    description: "Whether the provided branch is a main branch"
+  is_main_or_maintenance_branch:
+    value: ${{ steps.define-values.outputs.is_main_or_maintenance_branch }}
+    description: "Whether the provided branch is a main or maintenance branch"
+  branch_slug:
+    value: ${{ steps.define-values.outputs.branch_slug }}
+    description: "The sanitized branch - everything lowercase and anything not a-z0-9- is replaced with -"
+  git_commit_hash:
+    value: ${{ steps.define-values.outputs.git_commit_hash }}
+    description: "The git commit hash "
+  image_tag:
+    value: ${{ steps.define-values.outputs.image_tag }}
+    description: "Depending on main/maintenance returns hash or branch-slug"
+  latest_tag:
+    value: ${{ steps.define-values.outputs.latest_tag }}
+    description: "If maintenance returns maintenance-version-latest else latest"
+
+runs:
+  using: composite
+  steps:
+  - name: Get environment values
+    id: define-values
+    shell: bash
+    run: |
+      ${{ github.action_path }}/env.sh
+    env:
+      branch: ${{ inputs.branch || github.ref_name }}
+      maintenance_branch_regex: ${{ inputs.maintenance_branch_regex }}
+      main_branch_regex: ${{ inputs.main_branch_regex }}

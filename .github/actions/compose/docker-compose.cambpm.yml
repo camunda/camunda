@@ -1,0 +1,20 @@
+version: "3.9"
+services:
+  cambpm:
+    container_name: cambpm
+    image: registry.camunda.cloud/cambpm-ee/camunda-bpm-platform-ee:${CAMBPM_VERSION:-7.18.0}
+    environment:
+    - TZ=Europe/Berlin
+    - JAVA_OPTS=-Xms${CAMBPM_JVM_MEMORY:-1}g -Xmx${CAMBPM_JVM_MEMORY:-1}g -XX:MaxMetaspaceSize=256m
+    ports:
+    - 8080:8080
+    - 9092:9092
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O- http://localhost:8080/engine-rest/engine | grep -q default"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    volumes:
+    - "../../../backend/target/cambpm_logs:/camunda/logs"
+    - "../../../backend/src/it/resources/tomcat/tomcat-users.xml:/camunda/conf/tomcat-users.xml"
+    - "../../../backend/src/it/resources/tomcat/context.xml:/camunda/webapps/manager/META-INF/context.xml"

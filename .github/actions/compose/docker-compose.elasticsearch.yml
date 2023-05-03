@@ -1,0 +1,28 @@
+version: "3.9"
+services:
+  elasticsearch:
+    container_name: elasticsearch-${ELASTIC_HTTP_PORT:-9200}
+    image: docker.elastic.co/elasticsearch/elasticsearch:${ELASTIC_VERSION:-7.17.9}
+    environment:
+    - TZ=Europe/Berlin
+    - xpack.security.enabled=false
+    - discovery.type=single-node
+    - bootstrap.memory_lock=true
+    - cluster.name=elasticsearch
+    - action.destructive_requires_name=false
+    # We usually run our integration tests concurrently, as some cleanup methods like #deleteAllOptimizeData
+    # internally make usage of scroll contexts this lead to hits on the scroll limit.
+    # Thus this increased scroll context limit.
+    - search.max_open_scroll_context=1000
+    - http.port=${ELASTIC_HTTP_PORT:-9200}
+    - ES_JAVA_OPTS=-Xms${ELASTIC_JVM_MEMORY:-1}g -Xmx${ELASTIC_JVM_MEMORY:-1}g
+    - path.repo=/var/tmp
+    ports:
+    - ${ELASTIC_HTTP_PORT:-9200}:${ELASTIC_HTTP_PORT:-9200}
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:${ELASTIC_HTTP_PORT:-9200}/_cat/health | grep -q green"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    volumes:
+    - /var/tmp:/var/tmp

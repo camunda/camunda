@@ -1,0 +1,68 @@
+version: "3.9"
+services:
+  cambpm:
+    container_name: cambpm
+    image: registry.camunda.cloud/cambpm-ee/camunda-bpm-platform-ee:${CAMBPM_VERSION:-7.18.0}
+    environment:
+    - TZ=Europe/Berlin
+    - JAVA_OPTS=-Xms${CAMBPM_JVM_MEMORY:-1}g -Xmx${CAMBPM_JVM_MEMORY:-1}g -XX:MaxMetaspaceSize=256m
+    ports:
+    - 8080:8080
+    - 9092:9092
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O- http://localhost:8080/engine-rest/engine | grep -q default"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    volumes:
+    - "../../../backend/target/cambpm_logs:/camunda/logs"
+    - "../../../backend/src/it/resources/tomcat/tomcat-users.xml:/camunda/conf/tomcat-users.xml"
+    - "../../../backend/src/it/resources/tomcat/context.xml:/camunda/webapps/manager/META-INF/context.xml"
+  elasticsearch:
+    container_name: elasticsearch-${ELASTIC_HTTP_PORT:-9200}
+    image: docker.elastic.co/elasticsearch/elasticsearch:${ELASTIC_VERSION:-7.17.9}
+    environment:
+    - TZ=Europe/Berlin
+    - xpack.security.enabled=false
+    - discovery.type=single-node
+    - bootstrap.memory_lock=true
+    - cluster.name=elasticsearch
+    - action.destructive_requires_name=false
+    # We usually run our integration tests concurrently, as some cleanup methods like #deleteAllOptimizeData
+    # internally make usage of scroll contexts this lead to hits on the scroll limit.
+    # Thus this increased scroll context limit.
+    - search.max_open_scroll_context=1000
+    - http.port=${ELASTIC_HTTP_PORT:-9200}
+    - ES_JAVA_OPTS=-Xms${ELASTIC_JVM_MEMORY:-1}g -Xmx${ELASTIC_JVM_MEMORY:-1}g
+    - path.repo=/var/tmp
+    ports:
+    - ${ELASTIC_HTTP_PORT:-9200}:${ELASTIC_HTTP_PORT:-9200}
+    healthcheck:
+    # single node elasticsearch, means it easily tips over into yellow, which is acceptable in this case
+      test: ["CMD-SHELL", "curl -f http://localhost:${ELASTIC_HTTP_PORT:-9200}/_cat/health | grep -qE 'green|yellow'"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    volumes:
+    - /var/tmp:/var/tmp
+  optimize:
+    container_name: optimize
+    image: registry.camunda.cloud/team-optimize/optimize:${OPTIMIZE_IMAGE_TAG:-latest}
+    environment:
+    - TZ=Europe/Berlin
+    - OPTIMIZE_JAVA_OPTS=-Xms1g -Xmx1g -XX:MaxMetaspaceSize=256m
+    - OPTIMIZE_ELASTICSEARCH_HOST=elasticsearch
+    - OPTIMIZE_ELASTICSEARCH_HTTP_PORT=${ELASTIC_HTTP_PORT:-9200}
+    - WAIT_FOR=elasticsearch:${ELASTIC_HTTP_PORT:-9200}
+    - WAIT_FOR_TIMEOUT=60
+    - OPTIMIZE_CAMUNDABPM_REST_URL=http://cambpm:8080/engine-rest
+    depends_on:
+    - cambpm
+    - elasticsearch
+    ports:
+    - 8090:8090
+    healthcheck:
+      test: ["CMD-SHELL", "curl -q -f -I http://localhost:8090/api/readyz | grep -q '200 OK'"]
+      interval: 30s
+      timeout: 5s
+      retries: 3

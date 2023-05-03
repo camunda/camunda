@@ -1,0 +1,30 @@
+name: Compose
+description: |
+  Compose Wrapper for elasticsearch / cambpm container
+inputs:
+  compose_file:
+    description: 'Full path to the compose file'
+    required: true
+  project_name:
+    description: 'Project name to allow running the same file multiple times'
+    required: true
+runs:
+  using: composite
+  steps:
+  - name: Run ${{ inputs.project_name }} compose
+    uses: isbang/compose-action@v1.4.1
+    with:
+      compose-file: |
+        ${{ inputs.compose_file }}
+      compose-flags: "--project-name ${{ inputs.project_name }}"
+  - name: Short sleep to let it startup
+    shell: bash
+    run: sleep 3
+  - name: Check if service is healthy
+    shell: bash
+    run: |
+      ${{ github.action_path }}/healthy.sh
+    env:
+      FILE: ${{ inputs.compose_file }}
+      TIMEOUT: "300"
+      COMPOSE_FLAGS: "--project-name ${{ inputs.project_name }}"
