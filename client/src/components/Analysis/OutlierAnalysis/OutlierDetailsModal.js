@@ -7,7 +7,7 @@
 
 import React from 'react';
 
-import {Modal, Tabs, DurationChart} from 'components';
+import {CarbonModal as Modal, Tabs, DurationChart} from 'components';
 import {t} from 'translation';
 import {withUser} from 'HOC';
 
@@ -20,7 +20,7 @@ export function OutlierDetailsModal({selectedNode, onClose, config, user}) {
   const {id, name, higherOutlier, data, totalCount} = selectedNode;
 
   return (
-    <Modal open size="large" onClose={onClose} className="OutlierDetailsModal">
+    <Modal open onClose={onClose} className="OutlierDetailsModal" size="lg">
       <Modal.Header>{t('analysis.outlier.detailsModal.title', {name})}</Modal.Header>
       <Modal.Content>
         <Tabs>

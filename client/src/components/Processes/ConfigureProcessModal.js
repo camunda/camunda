@@ -6,8 +6,17 @@
  */
 
 import React, {useEffect, useState} from 'react';
+import {Button} from '@carbon/react';
 
-import {Button, Icon, Labeled, MessageBox, Modal, Switch, Tooltip, UserTypeahead} from 'components';
+import {
+  Icon,
+  Labeled,
+  MessageBox,
+  CarbonModal as Modal,
+  Switch,
+  Tooltip,
+  UserTypeahead,
+} from 'components';
 import {t} from 'translation';
 import {getOptimizeProfile, isEmailEnabled} from 'config';
 import {withDocs} from 'HOC';
@@ -42,7 +51,7 @@ export function ConfigureProcessModal({
   }, []);
 
   return (
-    <Modal open onClose={onClose} className="ConfigureProcessModal">
+    <Modal open onClose={onClose} className="ConfigureProcessModal" isOverflowVisible>
       <Modal.Header>{t('processes.configureProcess')}</Modal.Header>
       <Modal.Content>
         {!emailEnabled && (
@@ -99,13 +108,11 @@ export function ConfigureProcessModal({
           }}
         />
       </Modal.Content>
-      <Modal.Actions>
-        <Button main className="close" onClick={onClose}>
+      <Modal.Footer>
+        <Button kind="secondary" className="close" onClick={onClose}>
           {t('common.cancel')}
         </Button>
         <Button
-          main
-          primary
           disabled={noChangesHappened}
           className="confirm"
           onClick={() => {
@@ -122,7 +129,7 @@ export function ConfigureProcessModal({
         >
           {t('common.save')}
         </Button>
-      </Modal.Actions>
+      </Modal.Footer>
     </Modal>
   );
 }
