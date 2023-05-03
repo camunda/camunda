@@ -1354,10 +1354,10 @@
     inherits "^2.0.4"
     tiny-svg "^3.0.0"
 
-"@camunda/camunda-composite-components@^0.0.35":
-  version "0.0.35"
-  resolved "https://registry.yarnpkg.com/@camunda/camunda-composite-components/-/camunda-composite-components-0.0.35.tgz#f28f24ee5b70a00100c088e83ca27fe151d205ed"
-  integrity sha512-lHd5op25Ie3Hi0AYRfYaDDHnVSwqbViUD4bDUEHX7FlmhaZchMFOn2OXp4CJJPu5+JaWx/Ug/0VtOL2VSDapUA==
+"@camunda/camunda-composite-components@^0.0.38-rc3":
+  version "0.0.38-rc3"
+  resolved "https://registry.yarnpkg.com/@camunda/camunda-composite-components/-/camunda-composite-components-0.0.38-rc3.tgz#ae968fa8ae5122fb090f52fe0460017739d45dc5"
+  integrity sha512-Eu2bbTXvvqbsJh0meLz+CXkhWdG+0NYA3ZQdCRQI7HccY0tJhIX3u704FGO8Vqsy3LurcdTropnB4AYHCXe/5g==
 
 "@carbon/colors@^11.14.0":
   version "11.14.0"
@@ -14340,17 +14340,6 @@ symbol-tree@^3.2.2, symbol-tree@^3.2.4:
   version "3.2.4"
   resolved "https://registry.yarnpkg.com/symbol-tree/-/symbol-tree-3.2.4.tgz#430637d248ba77e078883951fb9aa0eed7c63fa2"
   integrity sha512-9QNk5KwDF+Bvz+PyObkmSYjI5ksVUYtjW7AU22r2NKcfLJcXp96hkDWU3+XndOsUb+AQ9QhfzfCT2O+CNWT5Tw==
-
-table-js@^8.0.1, table-js@^8.0.2:
-  version "8.0.2"
-  resolved "https://registry.yarnpkg.com/table-js/-/table-js-8.0.2.tgz#58a189955cc8e7f5dcce6c3a744245b7946f74dc"
-  integrity sha512-R8KyK2O7Hgz6LXnRZNbwA/Bs3jmDTN92qZkQv8/pr2oMzPzsWYBuX/igeG8LMhPMHEydVwx3WGM749gV/5ABhQ==
-  dependencies:
-    didi "^9.0.0"
-    ids "^1.0.0"
-    min-dash "^4.0.0"
-    min-dom "^4.0.3"
-    selection-ranges "^3.0.3"
 
 table-js@^8.0.2:
   version "8.0.2"
