@@ -2184,44 +2184,6 @@
         "tagsQuery": "",
         "type": "query",
         "useTags": false
-      },
-      {
-        "current": {
-          "selected": true,
-          "text": "$__rate_interval",
-          "value": "$__rate_interval"
-        },
-        "description": "Configurable time duration interval, used for range vectors",
-        "hide": 0,
-        "includeAll": false,
-        "multi": false,
-        "name": "interval",
-        "options": [
-          {
-            "selected": true,
-            "text": "$__rate_interval",
-            "value": "$__rate_interval"
-          },
-          {
-            "selected": false,
-            "text": "30s",
-            "value": "30s"
-          },
-          {
-            "selected": false,
-            "text": "1m",
-            "value": "1m"
-          },
-          {
-            "selected": false,
-            "text": "5m",
-            "value": "5m"
-          }
-        ],
-        "query": "$__rate_interval, 30s, 1m, 5m",
-        "queryValue": "",
-        "skipUrlSync": false,
-        "type": "custom"
       }
     ]
   },
