@@ -19,7 +19,7 @@ exports[`should show different text depending on the republish prop 1`] = `
 <Modal
   className="PublishModal"
   onClose={[MockFunction]}
-  open="processId"
+  open={true}
 >
   <ForwardRef(ModalHeader)
     buttonOnClick={[Function]}
@@ -76,7 +76,7 @@ exports[`should show different text depending on the republish prop 2`] = `
 <Modal
   className="PublishModal"
   onClose={[MockFunction]}
-  open="processId"
+  open={true}
 >
   <ForwardRef(ModalHeader)
     buttonOnClick={[Function]}

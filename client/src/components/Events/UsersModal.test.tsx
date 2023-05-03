@@ -5,7 +5,7 @@
  * except in compliance with the proprietary license.
  */
 
-import React from 'react';
+import {runLastEffect} from '__mocks__/react';
 import {shallow} from 'enzyme';
 
 import {UserTypeahead} from 'components';
@@ -23,7 +23,7 @@ jest.mock('config', () => ({
   getOptimizeProfile: jest.fn().mockReturnValue('platform'),
 }));
 
-beforeEach(() => updateUsers.mockClear());
+beforeEach(() => (updateUsers as jest.Mock).mockClear());
 
 const props = {
   id: 'processId',
@@ -34,29 +34,35 @@ const props = {
 it('should disable the save button if the user list is empty', () => {
   const node = shallow(<UsersModal {...props} />);
 
-  expect(node.find(UserTypeahead).prop('users').length).toBe(0);
+  runLastEffect();
+
+  expect(node.find(UserTypeahead).prop('users')?.length).toBe(0);
   expect(node.find('Button').at(1)).toBeDisabled();
 });
 
 it('should update the list of users based on the UserTypeahead', () => {
   const node = shallow(<UsersModal {...props} />);
 
+  runLastEffect();
+
   node.find(UserTypeahead).prop('onChange')([
-    {id: 'USER:kermit', identity: {id: 'kermit', type: 'user'}},
+    {id: 'USER:kermit', identity: {name: '', id: 'kermit', type: 'user'}},
     {id: 'GROUP:sales', identity: {id: 'sales', memberCount: '2', name: 'Sales', type: 'group'}},
   ]);
 
   node.find('Button').at(1).simulate('click');
 
   expect(updateUsers).toHaveBeenCalledWith('processId', [
-    {id: 'USER:kermit', identity: {id: 'kermit', type: 'user'}},
+    {id: 'USER:kermit', identity: {name: '', id: 'kermit', type: 'user'}},
     {id: 'GROUP:sales', identity: {id: 'sales', memberCount: '2', name: 'Sales', type: 'group'}},
   ]);
 });
 
 it('should disable custom input in cloud mode', async () => {
-  getOptimizeProfile.mockReturnValueOnce('cloud');
+  (getOptimizeProfile as jest.Mock).mockReturnValueOnce('cloud');
   const node = await shallow(<UsersModal {...props} />);
+
+  await runLastEffect();
 
   expect(node.find(UserTypeahead).prop('optionsOnly')).toBe(true);
 });

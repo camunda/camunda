@@ -5,10 +5,11 @@
  * except in compliance with the proprietary license.
  */
 
-import React from 'react';
+import {runLastEffect} from '__mocks__/react';
 import {shallow} from 'enzyme';
 
 import {showError, addNotification} from 'notifications';
+import {User} from 'HOC';
 
 import {publish, getUsers} from './service';
 import {PublishModal} from './PublishModal';
@@ -31,7 +32,9 @@ jest.mock('notifications', () => ({
 }));
 
 const props = {
-  user: {id: 'demo'},
+  user: {id: 'demo'} as User,
+  getUser: jest.fn(),
+  refreshUser: jest.fn(),
   id: 'processId',
   onPublish: jest.fn(),
   onClose: jest.fn(),
@@ -41,9 +44,15 @@ const props = {
 
 it('should show different text depending on the republish prop', () => {
   const initialPublish = shallow(<PublishModal {...props} />);
+
+  runLastEffect();
+
   expect(initialPublish).toMatchSnapshot();
 
   const republish = shallow(<PublishModal {...props} republish />);
+
+  runLastEffect();
+
   expect(republish).toMatchSnapshot();
 });
 
@@ -55,16 +64,16 @@ it('should allow publishing the process with the given id', () => {
 });
 
 it('should show a success notification', () => {
-  addNotification.mockClear();
+  (addNotification as jest.Mock).mockClear();
   const node = shallow(<PublishModal {...props} />);
   node.find('.confirm').simulate('click');
 
   expect(addNotification).toHaveBeenCalled();
-  expect(addNotification.mock.calls[0]).toMatchSnapshot();
+  expect((addNotification as jest.Mock).mock.calls[0]).toMatchSnapshot();
 });
 
 it('should show an error message', () => {
-  showError.mockClear();
+  (showError as jest.Mock).mockClear();
   const node = shallow(
     <PublishModal
       {...props}
@@ -74,12 +83,14 @@ it('should show an error message', () => {
   node.find('.confirm').simulate('click');
 
   expect(showError).toHaveBeenCalled();
-  expect(showError.mock.calls[0]).toMatchSnapshot();
+  expect((showError as jest.Mock).mock.calls[0]).toMatchSnapshot();
 });
 
 it('should show that access is granted if there are more than one user', () => {
-  getUsers.mockReturnValue([{}, {}]);
+  (getUsers as jest.Mock).mockReturnValue([{}, {}]);
   const node = shallow(<PublishModal {...props} />);
+
+  runLastEffect();
 
   expect(node.find('.permission')).toMatchSnapshot();
 });
