@@ -5,11 +5,20 @@
  * except in compliance with the proprietary license.
  */
 
-import React, {useRef, useState} from 'react';
+import {KeyboardEvent, useRef, useState} from 'react';
 
-import UncontrolledMultiValueInput from './UncontrolledMultiValueInput';
+import UncontrolledMultiValueInput, {
+  UncontrolledMultiValueInputProps,
+} from './UncontrolledMultiValueInput';
 
-export default function MultiValueInput({
+interface MultiValueInputProps<T = unknown>
+  extends Omit<UncontrolledMultiValueInputProps<T>, 'onChange'> {
+  onAdd: (value: string) => void;
+  onChange?: (value: string) => void;
+  extraSeperators?: string[];
+}
+
+export default function MultiValueInput<T = unknown>({
   children,
   onClear,
   values = [],
@@ -18,11 +27,11 @@ export default function MultiValueInput({
   onChange,
   extraSeperators = [],
   ...props
-}) {
+}: MultiValueInputProps<T>) {
   const [value, setValue] = useState('');
-  const input = useRef();
+  const input = useRef<HTMLInputElement>(null);
 
-  function handleKeyPress(evt) {
+  function handleKeyPress(evt: KeyboardEvent) {
     if (['Enter', 'Tab', ...extraSeperators].includes(evt.key)) {
       if (value) {
         evt.preventDefault();
@@ -31,7 +40,7 @@ export default function MultiValueInput({
     }
     if (value === '' && evt.key === 'Backspace' && values.length > 0) {
       const lastElementIndex = values.length - 1;
-      onRemove(values[lastElementIndex].value, lastElementIndex);
+      onRemove(values[lastElementIndex]!.value, lastElementIndex);
     }
   }
 
@@ -42,6 +51,7 @@ export default function MultiValueInput({
 
   return (
     <UncontrolledMultiValueInput
+      {...props}
       className="MultiValueInput"
       ref={input}
       value={value}
@@ -56,7 +66,6 @@ export default function MultiValueInput({
       onBlur={addValue}
       onClear={onClear}
       onRemove={onRemove}
-      {...props}
     />
   );
 }

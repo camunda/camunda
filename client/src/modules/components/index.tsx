@@ -25,7 +25,7 @@ export {LoadingIndicator} from './LoadingIndicator';
 export {DocsLink} from './DocsLink';
 export {Typeahead, MultiSelect} from './Typeahead';
 export {Tag} from './Tag';
-export {UncontrolledMultiValueInput} from './MultiValueInput';
+export {MultiValueInput, UncontrolledMultiValueInput} from './MultiValueInput';
 export {UserTypeahead} from './UserTypeahead';
 export {BPMNDiagram} from './BPMNDiagram';
 export {DMNDiagram} from './DMNDiagram';

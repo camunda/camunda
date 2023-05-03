@@ -5,4 +5,5 @@
  * except in compliance with the proprietary license.
  */
 
+export {default as MultiValueInput} from './MultiValueInput';
 export {default as UncontrolledMultiValueInput} from './UncontrolledMultiValueInput';
