@@ -8,7 +8,7 @@ die () {
 
 NAMESPACE=$1
 ES_VERSION=$2
-CAMPBM_VERSION=$3
+CAMBPM_VERSION=$3
 
 sed -e "s/\${NAMESPACE}/$NAMESPACE/g" < .ci/podSpecs/clusterTests/ns.yml | kubectl apply -f -
 sed -e "s/\${NAMESPACE}/$NAMESPACE/g" < .ci/podSpecs/clusterTests/secrets.yml | kubectl apply -f -

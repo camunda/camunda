@@ -1,0 +1,82 @@
+name: Optimize Cluster Test
+
+on:
+  schedule:
+    - cron: "0 5 * * 1-5"
+
+jobs:
+  optimize-cluster-test:
+    runs-on: n1-standard-8-netssd-preempt
+    timeout-minutes: 60
+    env:
+      NAMESPACE: optimize-cluster-test-${{ github.run_id }}
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Import secrets
+      id: secrets
+      uses: hashicorp/vault-action@v2.5.0
+      with:
+        url: ${{ secrets.VAULT_ADDR }}
+        method: approle
+        roleId: ${{ secrets.VAULT_ROLE_ID }}
+        secretId: ${{ secrets.VAULT_SECRET_ID }}
+        secrets: secret/data/products/optimize/ci/camunda-optimize CI_SERVICE_ACCOUNT | GCP_CREDENTIALS;
+
+    - name: Setup Maven
+      uses: ./.github/actions/setup-maven
+      with:
+          secrets: ${{ toJSON(secrets) }}
+          java-version: 11
+          distribution: zulu
+    
+    - name: Authenticate to Google Cloud
+      uses: google-github-actions/auth@v1
+      with:
+        credentials_json: ${{ steps.secrets.outputs.GCP_CREDENTIALS }}
+
+    - name: Get gcloud credentials
+      uses: 'google-github-actions/get-gke-credentials@v1'
+      with:
+        cluster_name: 'camunda-ci'
+        location: 'europe-west1'
+
+    - name: Configure Google SDK
+      uses: google-github-actions/setup-gcloud@v1.1.0
+      with:
+        install_components: gke-gcloud-auth-plugin, kubectl
+
+    - name: Extract elasticsearch & cambpmn version
+      id: versions
+      run: |
+        echo "ES_VERSION=$(mvn -q -Dexec.executable=echo -Dexec.args='${elasticsearch.test.version}' --non-recursive exec:exec)" >> $GITHUB_OUTPUT
+        echo "CAMPBM_VERSION=$(mvn -q -Dexec.executable=echo -Dexec.args='${camunda.engine.version}' --non-recursive exec:exec)" >> $GITHUB_OUTPUT
+
+    - name: Deploy cluster
+      run: .ci/podSpecs/clusterTests/deploy.sh $NAMESPACE ${{ steps.versions.outputs.ES_VERSION }} ${{ steps.versions.outputs.CAMPBM_VERSION }}
+
+    - name: Run Tests
+      uses: ./.github/actions/run-maven
+      with:
+          parameters: >-
+                  -B -Pclustering-tests verify -pl qa/clustering-tests
+                  -Doptimize.importing.host=optimize-import.$NAMESPACE -Doptimize.importing.port=8090
+                  -Doptimize.notImporting.host=optimize-no-import.$NAMESPACE -Doptimize.notImporting.port=8090
+                  -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn
+
+    - name: Store elasticsearch logs
+      if: always()
+      run: kubectl -n $NAMESPACE logs elasticsearch-0 -c elasticsearch > elasticsearch.log
+
+    - name: Cluster cleanup
+      if: always() 
+      run: .ci/podSpecs/clusterTests/kill.sh $NAMESPACE
+    
+    - uses: actions/upload-artifact@v3
+      if: always()
+      with:
+        name: elasticsearch-logs
+        path: ./elasticsearch.log
+
