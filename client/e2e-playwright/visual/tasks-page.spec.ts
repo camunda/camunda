@@ -390,6 +390,8 @@ test.describe('tasks page', () => {
       waitUntil: 'networkidle',
     });
 
+    expect(page.getByText('Welcome to Tasklist')).toBeVisible();
+
     await expect(page).toHaveScreenshot();
   });
 
@@ -657,6 +659,8 @@ test.describe('tasks page', () => {
     await page.goto(`/${FORM_TASK.id}`, {
       waitUntil: 'networkidle',
     });
+
+    expect(page.getByText('I am a texfield*')).toBeVisible();
 
     await expect(page).toHaveScreenshot();
   });
