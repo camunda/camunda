@@ -18,3 +18,5 @@ export {Dropdown} from './Dropdown';
 export {Select} from './Select';
 export {TextEditor} from './TextEditor';
 export {PageTitle} from './PageTitle';
+export {EntityDescription} from './EntityDescription';
+export {EntityNameForm} from './EntityNameForm';

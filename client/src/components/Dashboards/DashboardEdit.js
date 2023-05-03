@@ -15,6 +15,7 @@ import {DashboardRenderer, EntityNameForm} from 'components';
 import {t} from 'translation';
 import {nowDirty, nowPristine, isDirty} from 'saveGuard';
 import {showPrompt} from 'prompt';
+import {track} from 'tracking';
 
 import {AddButton} from './AddButton';
 import {DeleteButton} from './DeleteButton';
@@ -31,13 +32,16 @@ export class DashboardEdit extends React.Component {
   constructor(props) {
     super(props);
 
-    const {name, initialAvailableFilters, initialTiles, refreshRateSeconds} = props;
+    const {id, name, description, initialAvailableFilters, initialTiles, refreshRateSeconds} =
+      props;
     this.state = {
       tiles: initialTiles,
       availableFilters: initialAvailableFilters || [],
       refreshRateSeconds,
       filter: getDefaultFilter(initialAvailableFilters),
-      name: name,
+      id,
+      name,
+      description,
     };
   }
 
@@ -123,6 +127,11 @@ export class DashboardEdit extends React.Component {
     this.setState({name: value});
   };
 
+  updateDescription = (description) => {
+    track('editDescription', {entity: 'dashboard', entityId: this.state.id});
+    this.setState({description});
+  };
+
   addReport = (newReport) => {
     this.setState({tiles: update(this.state.tiles, {$push: [newReport]})}, () => {
       const node = document.querySelector('.react-grid-layout').lastChild;
@@ -179,7 +188,8 @@ export class DashboardEdit extends React.Component {
       ) &&
       deepEqual(this.state.tiles, this.props.initialTiles) &&
       deepEqual(this.state.availableFilters, this.props.initialAvailableFilters) &&
-      this.state.name === this.props.name
+      this.state.name === this.props.name &&
+      this.state.description === this.props.description
     ) {
       nowPristine();
     } else {
@@ -200,12 +210,13 @@ export class DashboardEdit extends React.Component {
   save = (stayInEditMode) => {
     return new Promise((resolve) => {
       const promises = [];
-      const {name, tiles, availableFilters, filter, refreshRateSeconds} = this.state;
+      const {name, description, tiles, availableFilters, filter, refreshRateSeconds} = this.state;
 
       nowPristine();
       promises.push(
         this.props.saveChanges(
           name,
+          description,
           tiles,
           availableFilters.map((availableFilter) => {
             return {
@@ -261,7 +272,7 @@ export class DashboardEdit extends React.Component {
 
   render() {
     const {lastModifier, lastModified, isNew} = this.props;
-    const {tiles, name, availableFilters, refreshRateSeconds, filter} = this.state;
+    const {tiles, name, description, availableFilters, refreshRateSeconds, filter} = this.state;
 
     const optimizeReports = tiles?.filter(({id, report}) => !!id || !!report);
 
@@ -277,6 +288,8 @@ export class DashboardEdit extends React.Component {
             onChange={this.updateName}
             onSave={this.save}
             onCancel={nowPristine}
+            description={description}
+            onDescriptionChange={this.updateDescription}
           >
             <AddButton addReport={this.addReport} existingReport={tiles?.[0]} />
             <AddFiltersButton

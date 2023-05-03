@@ -11,6 +11,9 @@ export function isTextReportValid(textLength: number): boolean {
   return textLength > 0 && !isTextReportTooLong(textLength);
 }
 
-export function isTextReportTooLong(textLength: number): boolean {
-  return textLength > TEXT_REPORT_MAX_CHARACTERS;
+export function isTextReportTooLong(
+  textLength: number,
+  limit: number = TEXT_REPORT_MAX_CHARACTERS
+): boolean {
+  return textLength > limit;
 }

@@ -21,9 +21,11 @@ describe('isTextReportValid', () => {
 describe('isTextReportTooLong', () => {
   it('should return true if report is too long', () => {
     expect(isTextReportTooLong(3001)).toBe(true);
+    expect(isTextReportTooLong(3001, 100)).toBe(true);
   });
 
   it('should return false if report is not too long', () => {
     expect(isTextReportTooLong(100)).toBe(false);
+    expect(isTextReportTooLong(100, 200)).toBe(false);
   });
 });

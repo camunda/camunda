@@ -226,3 +226,15 @@ it('should hide the share button', () => {
 
   expect(node.find('Popover.share-button')).not.toExist();
 });
+
+it('should show the description', () => {
+  const node = shallow(<DashboardView description="description" />);
+
+  expect(node.find('EntityDescription').prop('description')).toBe('description');
+});
+
+it('should hide the description', () => {
+  const node = shallow(<DashboardView description={null} />);
+
+  expect(node.find('EntityDescription')).not.toExist();
+});

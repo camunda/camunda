@@ -21,6 +21,7 @@ import {
   EntityName,
   DiagramScrollLock,
   AlertsDropdown,
+  EntityDescription,
 } from 'components';
 import {evaluateReport} from 'services';
 import {themed} from 'theme';
@@ -43,6 +44,7 @@ export function DashboardView(props) {
   const {
     id,
     name,
+    description,
     currentUserRole,
     isAuthorizedToShare,
     sharingHidden,
@@ -116,9 +118,14 @@ export function DashboardView(props) {
       >
         <div className="header">
           <div className="head">
-            <EntityName details={<LastModifiedInfo entity={{lastModified, lastModifier, owner}} />}>
-              {name}
-            </EntityName>
+            <div className="info">
+              <EntityName
+                details={<LastModifiedInfo entity={{lastModified, lastModifier, owner}} />}
+              >
+                {name}
+              </EntityName>
+              {description && <EntityDescription description={description} />}
+            </div>
             <div className="tools">
               {!fullScreenHandle.active && (
                 <React.Fragment>

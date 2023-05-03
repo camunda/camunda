@@ -1,6 +1,22 @@
 .TextEditor {
   height: 100%;
 
+  .SimpleEditor {
+    width: 100%;
+    height: 150px;
+    resize: none;
+
+    &.error {
+      border-color: var(--red-darken-38);
+
+      &.focus-visible,
+      &:focus {
+        box-shadow: inset 0px 0px 0px 2px var(--red-darken-38),
+          var(--red-lighten-85) 0px 0px 0px 4px;
+      }
+    }
+  }
+
   &.CharCount {
     margin-top: 0.75rem;
     text-align: right;

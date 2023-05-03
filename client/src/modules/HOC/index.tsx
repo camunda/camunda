@@ -5,4 +5,6 @@
  * except in compliance with the proprietary license.
  */
 
-export {default as EntityNameForm} from './EntityNameForm.js';
+export {default as withErrorHandling} from './withErrorHandling';
+
+export type {WithErrorHandlingProps} from './withErrorHandling';

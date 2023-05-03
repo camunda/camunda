@@ -38,6 +38,7 @@ export function TemplateModal({
 }) {
   const firstTemplate = templateGroups[1].templates[0];
   const [name, setName] = useState(t(entity + '.templates.' + firstTemplate.name));
+  const [description, setDescription] = useState(firstTemplate.description);
   const [xmlData, setXmlData] = useState([]);
   const [template, setTemplate] = useState(firstTemplate.config);
   const [selectedDefinitions, setSelectedDefinitions] = useState(initialDefinitions);
@@ -92,6 +93,7 @@ export function TemplateModal({
 
       setTemplate(enabledTemplate.config);
       setName(t(entity + '.templates.' + enabledTemplate.name));
+      setDescription(enabledTemplate.description);
     }
   }, [templateGroups, selectedDefinitions, template, entity]);
 
@@ -128,6 +130,7 @@ export function TemplateModal({
 
   const newEntityState = templateToState({
     name,
+    description,
     template,
     definitions: selectedDefinitions.map((def) => ({...def, displayName: def.name})),
     xml: xmlData[0]?.xml,
@@ -173,7 +176,7 @@ export function TemplateModal({
             {templateGroups.map(({name, templates}, idx) => (
               <div key={idx} className="group">
                 <div className="groupTitle">{t('templates.templateGroups.' + name)}</div>
-                {templates.map(({name, hasSubtitle, img, config, disabled}, idx) => (
+                {templates.map(({name, description, hasSubtitle, img, config, disabled}, idx) => (
                   <Tooltip
                     key={idx}
                     content={
@@ -193,6 +196,7 @@ export function TemplateModal({
                         onClick={() => {
                           setTemplate(config);
                           setName(t(entity + '.templates.' + name));
+                          setDescription(description);
                         }}
                         disabled={disabled?.(selectedDefinitions)}
                       >

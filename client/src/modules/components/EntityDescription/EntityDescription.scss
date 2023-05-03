@@ -1,0 +1,50 @@
+.EntityDescription {
+  display: flex;
+  padding-right: 48px;
+  margin-top: 1rem;
+  font-size: 14px;
+
+  .description {
+    margin: 0;
+    word-break: break-word;
+
+    &.overflowHidden {
+      text-overflow: ellipsis;
+      overflow: hidden;
+      white-space: nowrap;
+    }
+
+    &.empty {
+      color: var(--grey-darken-33);
+    }
+  }
+
+  .toggle {
+    align-self: flex-end;
+    color: var(--blue-darken-55);
+    cursor: pointer;
+  }
+
+  .edit {
+    .Icon {
+      margin-right: 0;
+    }
+  }
+
+  .description,
+  .toggle,
+  .edit {
+    font-size: inherit;
+  }
+
+  .description,
+  .toggle {
+    line-height: 1.5;
+  }
+
+  .toggle,
+  .edit {
+    flex-shrink: 0;
+    margin-left: 1rem;
+  }
+}

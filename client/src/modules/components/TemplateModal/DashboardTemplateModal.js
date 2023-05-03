@@ -39,6 +39,7 @@ export default function DashboardTemplateModal({onClose}) {
       templates: [
         {
           name: 'processPerformance',
+          description: null,
           hasSubtitle: true,
           img: processPerformance,
           disabled: (definitions) => definitions.length > 1,
@@ -345,6 +346,7 @@ export default function DashboardTemplateModal({onClose}) {
       templates: [
         {
           name: 'operationsMonitoring',
+          description: null,
           hasSubtitle: true,
           img: operationsMonitoring,
           disabled: (definitions) => definitions.length < 2,
@@ -588,6 +590,7 @@ export default function DashboardTemplateModal({onClose}) {
     templateGroups[1].templates.push(
       {
         name: 'humanPerformance',
+        description: null,
         hasSubtitle: true,
         img: humanPerformance,
         disabled: (definitions) => definitions.length > 1,
@@ -660,6 +663,7 @@ export default function DashboardTemplateModal({onClose}) {
       },
       {
         name: 'humanBottleneckAnalysis',
+        description: null,
         hasSubtitle: true,
         img: humanBottleneckAnalysis,
         disabled: (definitions) => definitions.length > 1,
@@ -889,6 +893,7 @@ export default function DashboardTemplateModal({onClose}) {
     );
     templateGroups[2].templates.unshift({
       name: 'portfolioPerformance',
+      description: null,
       hasSubtitle: true,
       img: portfolioPerformance,
       disabled: (definitions) => definitions.length < 2,

@@ -6,17 +6,15 @@
  */
 
 import React from 'react';
-import withErrorHandling from './withErrorHandling';
-
+import withErrorHandling, {WithErrorHandlingProps} from './withErrorHandling';
 import {mount} from 'enzyme';
 
 it('should pass the value of the receiver function to the callback', (done) => {
   const spy = jest.fn();
   const Component = withErrorHandling(
-    class extends React.Component {
-      constructor(props) {
+    class extends React.Component<WithErrorHandlingProps> {
+      constructor(props: any) {
         super(props);
-
         props.mightFail(32, spy);
       }
       render() {
@@ -25,7 +23,6 @@ it('should pass the value of the receiver function to the callback', (done) => {
     }
   );
   mount(<Component />);
-
   setTimeout(() => {
     expect(spy).toHaveBeenCalledWith(32);
     done();
@@ -35,10 +32,9 @@ it('should pass the value of the receiver function to the callback', (done) => {
 it('should not pass the value of the receiver function to the function when component is unmountd', (done) => {
   const spy = jest.fn();
   const Component = withErrorHandling(
-    class extends React.Component {
-      constructor(props) {
+    class extends React.Component<WithErrorHandlingProps> {
+      constructor(props: any) {
         super(props);
-
         props.mightFail(32, spy);
       }
       render() {
@@ -48,7 +44,6 @@ it('should not pass the value of the receiver function to the function when comp
   );
   const node = mount(<Component />);
   node.unmount();
-
   setTimeout(() => {
     expect(spy).not.toHaveBeenCalled();
     done();
@@ -57,10 +52,9 @@ it('should not pass the value of the receiver function to the function when comp
 
 it('should catch errors', (done) => {
   const Component = withErrorHandling(
-    class extends React.Component {
-      constructor(props) {
+    class extends React.Component<WithErrorHandlingProps> {
+      constructor(props: any) {
         super(props);
-
         props.mightFail(
           (async () => {
             throw new Error();
@@ -74,7 +68,6 @@ it('should catch errors', (done) => {
     }
   );
   mount(<Component />);
-
   setTimeout(() => {
     done();
   });
@@ -83,10 +76,9 @@ it('should catch errors', (done) => {
 it('should pass an error and reset it via props', (done) => {
   const error = new Error();
   const Component = withErrorHandling(
-    class extends React.Component {
-      constructor(props) {
+    class extends React.Component<WithErrorHandlingProps> {
+      constructor(props: any) {
         super(props);
-
         props.mightFail(
           (async () => {
             throw error;
@@ -99,7 +91,7 @@ it('should pass an error and reset it via props', (done) => {
           (this.props.error && (
             <>
               {this.props.error.toString()}
-              <button onClick={() => this.props.resetError()} />
+              <button onClick={() => this.props.resetError?.()} />
             </>
           )) ||
           null
@@ -108,7 +100,6 @@ it('should pass an error and reset it via props', (done) => {
     }
   );
   const node = mount(<Component />);
-
   setTimeout(async () => {
     await node.update();
     expect(node).toIncludeText(error.toString());
@@ -122,10 +113,9 @@ it('should call a custom error handler', (done) => {
   const spy = jest.fn();
   const error = new Error();
   const Component = withErrorHandling(
-    class extends React.Component {
-      constructor(props) {
+    class extends React.Component<WithErrorHandlingProps> {
+      constructor(props: any) {
         super(props);
-
         props.mightFail(
           (async () => {
             throw error;
@@ -140,7 +130,6 @@ it('should call a custom error handler', (done) => {
     }
   );
   mount(<Component />);
-
   setTimeout(() => {
     expect(spy).toHaveBeenCalledWith(error);
     done();

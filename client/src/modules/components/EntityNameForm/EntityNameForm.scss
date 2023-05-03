@@ -1,26 +1,30 @@
 @import 'shared-styles/shared-styles.scss';
 
 .EntityNameForm {
-  .name-container {
-    position: relative;
+  .info {
     flex-grow: 1;
-    display: flex;
-    width: 100%;
-    padding-right: 48px;
-  }
 
-  .Input.name-input {
-    font-size: 14px;
-    width: 100%;
-
-    @include placeholder {
-      font-weight: normal;
-      color: var(--grey-lighten-56);
+    .name-container {
+      position: relative;
+      flex-grow: 1;
+      display: flex;
+      width: 100%;
+      padding-right: 48px;
     }
-  }
 
-  .cancel-button {
-    color: var(--grey-darken-33);
-    text-decoration: none;
+    .Input.name-input {
+      font-size: 14px;
+      width: 100%;
+
+      @include placeholder {
+        font-weight: normal;
+        color: var(--grey-lighten-56);
+      }
+    }
+
+    .cancel-button {
+      color: var(--grey-darken-33);
+      text-decoration: none;
+    }
   }
 }

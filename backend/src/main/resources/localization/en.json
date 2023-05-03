@@ -905,8 +905,11 @@
   },
   "common": {
     "name": "Name",
+    "description": "Description",
+    "noDescription": "No description yet",
     "edit": "Edit",
     "editName": "Edit {name}",
+    "addName": "Add {name}",
     "delete": "Delete",
     "deleteEntity": "Delete {entity}",
     "remove": "Remove",
@@ -967,6 +970,8 @@
     "viewDocumentation": "View documentation",
     "viewMore": "View More",
     "viewLess": "View Less",
+    "more": "More",
+    "less": "Less",
     "configure": "Configure",
     "new": "New",
     "process": {

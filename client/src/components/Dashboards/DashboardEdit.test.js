@@ -11,6 +11,7 @@ import {shallow} from 'enzyme';
 import {nowDirty, isDirty} from 'saveGuard';
 import {EntityNameForm} from 'components';
 import {showPrompt} from 'prompt';
+import {track} from 'tracking';
 
 import {FiltersEdit} from './filters';
 
@@ -29,6 +30,7 @@ jest.mock('./service', () => ({
   convertFilterToDefaultValues: () => null,
   getDefaultFilter: () => [],
 }));
+jest.mock('tracking', () => ({track: jest.fn()}));
 
 beforeEach(() => {
   showPrompt.mockClear();
@@ -168,7 +170,14 @@ it('should save basic dashboard info', async () => {
 
   await flushPromises();
 
-  expect(saveSpy).toHaveBeenCalledWith(dashboardName, [], [], intervalSeconds, stayInEditMode);
+  expect(saveSpy).toHaveBeenCalledWith(
+    dashboardName,
+    undefined,
+    [],
+    [],
+    intervalSeconds,
+    stayInEditMode
+  );
 });
 
 it('should update report', () => {
@@ -186,4 +195,13 @@ it('should update report', () => {
   node.find('DashboardRenderer').prop('onReportUpdate')(newReport);
 
   expect(node.state('tiles')[0]).toEqual(newReport);
+});
+
+it('should update description', () => {
+  const node = shallow(<DashboardEdit id="id" initialTiles={[]} />);
+
+  node.find(EntityNameForm).prop('onDescriptionChange')('some description');
+
+  expect(node.state('description')).toEqual('some description');
+  expect(track).toHaveBeenCalledWith('editDescription', {entity: 'dashboard', entityId: 'id'});
 });

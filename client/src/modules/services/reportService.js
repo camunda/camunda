@@ -120,12 +120,8 @@ export function isCategorical({groupBy, distributedBy}) {
   );
 }
 
-export const TEXT_REPORT_MAX_CHARACTERS = 3000;
-
-export function isTextReportValid(textLength) {
-  return textLength > 0 && !isTextReportTooLong(textLength);
-}
-
-export function isTextReportTooLong(textLength) {
-  return textLength > TEXT_REPORT_MAX_CHARACTERS;
-}
+export {
+  TEXT_REPORT_MAX_CHARACTERS,
+  isTextReportTooLong,
+  isTextReportValid,
+} from './reportService.ts';
