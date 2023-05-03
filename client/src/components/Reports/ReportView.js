@@ -20,6 +20,7 @@ import {
   ReportDetails,
   DownloadButton,
   AlertsDropdown,
+  EntityDescription,
 } from 'components';
 import {isSharingEnabled, getOptimizeProfile} from 'config';
 import {formatters, checkDeleteConflict} from 'services';
@@ -64,7 +65,7 @@ export class ReportView extends React.Component {
     const {report, error, user, loadReport} = this.props;
     const {redirect, sharingEnabled, optimizeProfile, deleting} = this.state;
 
-    const {id, name, currentUserRole, data} = report;
+    const {id, name, description, currentUserRole, data} = report;
     const isInstantPreviewReport = data?.instantPreviewReport;
 
     if (redirect) {
@@ -73,9 +74,12 @@ export class ReportView extends React.Component {
 
     return (
       <div className="ReportView Report">
-        <div className="Report__header">
+        <div className="header">
           <div className="head">
-            <EntityName details={<ReportDetails report={report} />}>{name}</EntityName>
+            <div className="info">
+              <EntityName details={<ReportDetails report={report} />}>{name}</EntityName>
+              {description && <EntityDescription description={description} />}
+            </div>
             <div className="tools">
               {!isInstantPreviewReport && currentUserRole === 'editor' && (
                 <>

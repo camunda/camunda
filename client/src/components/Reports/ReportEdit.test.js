@@ -11,6 +11,7 @@ import {shallow} from 'enzyme';
 import {updateEntity, createEntity, evaluateReport} from 'services';
 import {nowDirty, nowPristine} from 'saveGuard';
 import {EntityNameForm, InstanceCount, ReportRenderer} from 'components';
+import {track} from 'tracking';
 
 import {ReportEdit} from './ReportEdit';
 import ReportControlPanel from './controlPanels/ReportControlPanel';
@@ -28,10 +29,12 @@ jest.mock('services', () => {
 
 jest.mock('notifications', () => ({addNotification: jest.fn()}));
 jest.mock('saveGuard', () => ({nowDirty: jest.fn(), nowPristine: jest.fn()}));
+jest.mock('tracking', () => ({track: jest.fn()}));
 
 const report = {
   id: '1',
   name: 'name',
+  description: 'description',
   lastModifier: 'lastModifier',
   lastModified: '2017-11-11T11:11:11.1111+0200',
   reportType: 'process',
@@ -153,14 +156,15 @@ it('should save a changed report', async () => {
   expect(updateEntity).toHaveBeenCalled();
 });
 
-it('should reset name on cancel', async () => {
+it('should reset name and description on cancel', async () => {
   const node = shallow(<ReportEdit {...props} />);
 
-  node.setState({report: {...report, name: 'new Name'}});
+  node.setState({report: {...report, name: 'new Name', description: 'new Description'}});
 
   node.instance().cancel();
 
   expect(node.state().report.name).toBe('name');
+  expect(node.state().report.description).toBe('description');
 });
 
 it('should use original data as result data if report cant be evaluated on cancel', async () => {
@@ -211,6 +215,7 @@ it('should create a new report if the report is new', () => {
     collectionId: null,
     data: report.data,
     name: report.name,
+    description: report.description,
   });
 });
 
@@ -230,6 +235,7 @@ it('should create a new report in a collection', async () => {
     collectionId: '123',
     data: report.data,
     name: report.name,
+    description: report.description,
   });
 });
 
@@ -377,4 +383,31 @@ it('should not call evaluateReport when auto update is off', () => {
   node.find(ReportControlPanel).prop('updateReport')({processDefinitionKey: {$set: 'b'}}, true);
 
   expect(evaluateReport).not.toHaveBeenCalled();
+});
+
+it('should update description', async () => {
+  const node = shallow(<ReportEdit {...props} />);
+
+  node.find(EntityNameForm).prop('onDescriptionChange')('some description');
+  node.find(EntityNameForm).prop('onSave')();
+
+  expect(node.state().report.description).toEqual('some description');
+  expect(track).toHaveBeenCalledWith('editDescription', {entity: 'report', entityId: '1'});
+  expect(updateEntity).toHaveBeenCalledWith(
+    'report/process/single',
+    '1',
+    {
+      data: {
+        configuration: {},
+        definitions: [{key: 'aKey', tenantIds: [], versions: ['aVersion']}],
+        groupBy: {type: 'none', value: null},
+        processDefinitionKey: 'key',
+        view: {entity: null, proeprty: 'rawData'},
+        visualization: 'table',
+      },
+      description: 'some description',
+      name: 'name',
+    },
+    {query: {force: false}}
+  );
 });

@@ -296,7 +296,7 @@ test('add Flow Node filter', async (t) => {
   await u.selectView(t, 'Process Instance', 'Count');
   await t.click(Report.sectionToggle('Filters'));
 
-  await t.resizeWindow(1000, 700);
+  await t.resizeWindow(1000, 750);
 
   await t.click(Report.filterButton);
   await t.click(Report.filterOption('Flow Node Execution'));
