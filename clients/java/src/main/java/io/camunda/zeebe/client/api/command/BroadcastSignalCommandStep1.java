@@ -40,7 +40,7 @@ public interface BroadcastSignalCommandStep1 {
     BroadcastSignalCommandStep2 variables(InputStream variables);
 
     /**
-     * Set the variables of the message.
+     * Set the variables of the signal.
      *
      * @param variables the variables (JSON) as String
      * @return the builder for this command. Call {@link #send()} to complete the command and send
@@ -49,7 +49,7 @@ public interface BroadcastSignalCommandStep1 {
     BroadcastSignalCommandStep2 variables(String variables);
 
     /**
-     * Set the variables of the message.
+     * Set the variables of the signal.
      *
      * @param variables the variables as map
      * @return the builder for this command. Call {@link #send()} to complete the command and send
@@ -58,7 +58,7 @@ public interface BroadcastSignalCommandStep1 {
     BroadcastSignalCommandStep2 variables(Map<String, Object> variables);
 
     /**
-     * Set the variables of the message.
+     * Set the variables of the signal.
      *
      * @param variables the variables as object
      * @return the builder for this command. Call {@link #send()} to complete the command and send
