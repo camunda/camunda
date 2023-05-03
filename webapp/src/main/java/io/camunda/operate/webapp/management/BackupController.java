@@ -7,6 +7,7 @@
 package io.camunda.operate.webapp.management;
 
 import io.camunda.operate.property.OperateProperties;
+import io.camunda.operate.webapp.api.v1.rest.ErrorController;
 import io.camunda.operate.webapp.es.backup.BackupManager;
 import io.camunda.operate.webapp.management.dto.GetBackupStateResponseDto;
 import io.camunda.operate.webapp.management.dto.TakeBackupRequestDto;
@@ -25,7 +26,7 @@ import java.util.regex.Pattern;
 
 @Component
 @RestControllerEndpoint(id = "backups")
-public class BackupService {
+public class BackupController extends ErrorController {
 
   @Autowired
   private BackupManager backupManager;
