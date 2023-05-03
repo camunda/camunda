@@ -16,7 +16,6 @@ import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
@@ -79,8 +78,7 @@ final class BackupServiceImpl {
     final BackupStatusCode existingBackupStatus =
         availableBackups.isEmpty()
             ? BackupStatusCode.DOES_NOT_EXIST
-            : Collections.max(availableBackups, Comparator.comparing(BackupStatus::statusCode))
-                .statusCode();
+            : Collections.max(availableBackups, BackupStatusCode.BY_STATUS).statusCode();
     switch (existingBackupStatus) {
       case COMPLETED -> {
         LOG.debug("Backup {} is already completed, will not take a new one", inProgressBackup.id());
