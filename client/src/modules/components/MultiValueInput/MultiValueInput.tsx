@@ -51,7 +51,6 @@ export default function MultiValueInput<T = unknown>({
 
   return (
     <UncontrolledMultiValueInput
-      {...props}
       className="MultiValueInput"
       ref={input}
       value={value}
@@ -66,6 +65,7 @@ export default function MultiValueInput<T = unknown>({
       onBlur={addValue}
       onClear={onClear}
       onRemove={onRemove}
+      {...props}
     />
   );
 }
