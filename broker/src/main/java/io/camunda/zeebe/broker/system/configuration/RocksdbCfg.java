@@ -26,6 +26,8 @@ public final class RocksdbCfg implements ConfigurationEntry {
   private int ioRateBytesPerSecond = RocksDbConfiguration.DEFAULT_IO_RATE_BYTES_PER_SECOND;
   private boolean disableWal = RocksDbConfiguration.DEFAULT_WAL_DISABLED;
 
+  private boolean enableSstPartitioning = RocksDbConfiguration.DEFAULT_SST_PARTITIONING_ENABLED;
+
   @Override
   public void init(final BrokerCfg globalConfig, final String brokerBase) {
     if (columnFamilyOptions == null) {
@@ -110,6 +112,14 @@ public final class RocksdbCfg implements ConfigurationEntry {
     this.disableWal = disableWal;
   }
 
+  public boolean isEnableSstPartitioning() {
+    return enableSstPartitioning;
+  }
+
+  public void setEnableSstPartitioning(final boolean enableSstPartitioning) {
+    this.enableSstPartitioning = enableSstPartitioning;
+  }
+
   public RocksDbConfiguration createRocksDbConfiguration() {
     return new RocksDbConfiguration()
         .setColumnFamilyOptions(columnFamilyOptions)
@@ -119,7 +129,8 @@ public final class RocksdbCfg implements ConfigurationEntry {
         .setMinWriteBufferNumberToMerge(minWriteBufferNumberToMerge)
         .setStatisticsEnabled(enableStatistics)
         .setIoRateBytesPerSecond(ioRateBytesPerSecond)
-        .setWalDisabled(disableWal);
+        .setWalDisabled(disableWal)
+        .setSstPartitioningEnabled(enableSstPartitioning);
   }
 
   @Override
@@ -141,6 +152,8 @@ public final class RocksdbCfg implements ConfigurationEntry {
         + ioRateBytesPerSecond
         + ", disableWal="
         + disableWal
+        + ", enableSstPartitioning="
+        + enableSstPartitioning
         + '}';
   }
 
