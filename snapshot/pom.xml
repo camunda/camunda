@@ -6,12 +6,12 @@
   <parent>
     <groupId>io.camunda</groupId>
     <artifactId>zeebe-parent</artifactId>
-    <version>8.0.14-SNAPSHOT</version>
+    <version>8.0.14</version>
     <relativePath>../parent/pom.xml</relativePath>
   </parent>
 
   <artifactId>zeebe-snapshots</artifactId>
-  <version>8.0.14-SNAPSHOT</version>
+  <version>8.0.14</version>
   <packaging>jar</packaging>
 
   <name>Zeebe Snapshots</name>
