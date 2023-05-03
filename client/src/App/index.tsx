@@ -17,8 +17,6 @@ import {Dashboard} from './Dashboard';
 import {Processes} from './Processes';
 import {ProcessInstance} from './ProcessInstance';
 import {Decisions} from './Decisions';
-import {Decisions as CarbonDecisions} from './Carbon/Decisions';
-import {Processes as CarbonProcesses} from './Carbon/Processes';
 import {DecisionInstance} from './DecisionInstance';
 import GlobalStyles from './GlobalStyles';
 import {NetworkStatusWatcher} from './NetworkStatusWatcher';
@@ -39,6 +37,14 @@ import loadable from '@loadable/component';
 
 const CarbonLayout = loadable(() => import('./Carbon/Layout/index'), {
   resolveComponent: (components) => components.Layout,
+});
+
+const CarbonDecisions = loadable(() => import('./Carbon/Decisions/index'), {
+  resolveComponent: (components) => components.Decisions,
+});
+
+const CarbonProcesses = loadable(() => import('./Carbon/Processes/index'), {
+  resolveComponent: (components) => components.Processes,
 });
 
 const App: React.FC = () => {
