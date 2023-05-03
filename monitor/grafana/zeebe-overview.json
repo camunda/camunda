@@ -335,13 +335,13 @@
           "refId": "A"
         },
         {
-          "expr": "sum(rate(kube_pod_container_status_ready{container=\"worker\", cluster=~\"$cluster\", namespace=~\"$namespace\"}[$interval])) or vector(1)",
+          "expr": "sum(rate(kube_pod_container_status_ready{container=\"worker\", cluster=~\"$cluster\", namespace=~\"$namespace\"}[$__rate_interval])) or vector(1)",
           "hide": false,
           "legendFormat": "Worker restart",
           "refId": "M"
         },
         {
-          "expr": "sum(rate(kube_pod_container_status_ready{container=\"starter\", cluster=~\"$cluster\", namespace=~\"$namespace\"}[$interval])) or vector(1)",
+          "expr": "sum(rate(kube_pod_container_status_ready{container=\"starter\", cluster=~\"$cluster\", namespace=~\"$namespace\"}[$__rate_interval])) or vector(1)",
           "legendFormat": "Starter Restart",
           "refId": "N"
         }
@@ -669,7 +669,7 @@
       "pluginVersion": "7.4.5",
       "targets": [
         {
-          "expr": "(sum(rate(zeebe_dropped_request_count_total{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\"}[$interval])) by (partition) / sum(rate(zeebe_received_request_count_total{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\"}[$interval])) by (partition) ) * 100",
+          "expr": "(sum(rate(zeebe_dropped_request_count_total{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\"}[$__rate_interval])) by (partition) / sum(rate(zeebe_received_request_count_total{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\"}[$__rate_interval])) by (partition) ) * 100",
           "interval": "",
           "legendFormat": "Partition {{partition}}",
           "refId": "A"
@@ -683,7 +683,7 @@
       ],
       "timeFrom": null,
       "timeShift": null,
-      "title": "Backpressure Dropping Requests [$interval]",
+      "title": "Backpressure Dropping Requests",
       "type": "stat"
     },
     {
@@ -741,7 +741,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "sum(rate(zeebe_stream_processor_records_total{cluster=~\"$cluster\", namespace=~\"$namespace\",partition=~\"$partition\",pod=~\"$pod\", action=~\"skipped|processed\"}[$interval])) by (pod, partition, processor)",
+          "expr": "sum(rate(zeebe_stream_processor_records_total{cluster=~\"$cluster\", namespace=~\"$namespace\",partition=~\"$partition\",pod=~\"$pod\", action=~\"skipped|processed\"}[$__rate_interval])) by (pod, partition, processor)",
           "format": "time_series",
           "interval": "",
           "intervalFactor": 1,
@@ -749,7 +749,7 @@
           "refId": "A"
         },
         {
-          "expr": "sum(rate(zeebe_stream_processor_records_total{cluster=~\"$cluster\", namespace=~\"$namespace\",partition=~\"$partition\",pod=~\"$pod\", action=~\"written\"}[$interval])) by (pod, partition, processor)",
+          "expr": "sum(rate(zeebe_stream_processor_records_total{cluster=~\"$cluster\", namespace=~\"$namespace\",partition=~\"$partition\",pod=~\"$pod\", action=~\"written\"}[$__rate_interval])) by (pod, partition, processor)",
           "interval": "",
           "legendFormat": "{{pod}}-{{partition}}-{{processor}}-written",
           "refId": "C"
@@ -859,7 +859,7 @@
       "pluginVersion": "7.4.5",
       "targets": [
         {
-          "expr": "sum(rate(zeebe_element_instance_events_total{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\", type!=\"PROCESS\", action!=\"activated\"}[$interval]))",
+          "expr": "sum(rate(zeebe_element_instance_events_total{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\", type!=\"PROCESS\", action!=\"activated\"}[$__rate_interval]))",
           "instant": true,
           "interval": "",
           "legendFormat": "Partition {{partition}} FNI per s",
@@ -868,7 +868,7 @@
       ],
       "timeFrom": null,
       "timeShift": null,
-      "title": "Overall FNI  per s [$interval]",
+      "title": "Overall FNI  per s",
       "type": "stat"
     },
     {
@@ -926,7 +926,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "sum(rate(zeebe_exporter_events_total{cluster=~\"$cluster\", namespace=~\"$namespace\",partition=~\"$partition\",pod=~\"$pod\"}[$interval])) by (pod, partition, exporter)",
+          "expr": "sum(rate(zeebe_exporter_events_total{cluster=~\"$cluster\", namespace=~\"$namespace\",partition=~\"$partition\",pod=~\"$pod\"}[$__rate_interval])) by (pod, partition, exporter)",
           "format": "time_series",
           "hide": false,
           "interval": "",
@@ -1046,7 +1046,7 @@
       "tableColumn": "",
       "targets": [
         {
-          "expr": "sum(rate(zeebe_element_instance_events_total{cluster=~\"$cluster\", namespace=~\"$namespace\",partition=~\"$partition\",pod=~\"$pod\", action=\"completed\", type=\"SERVICE_TASK\"}[$interval]))",
+          "expr": "sum(rate(zeebe_element_instance_events_total{cluster=~\"$cluster\", namespace=~\"$namespace\",partition=~\"$partition\",pod=~\"$pod\", action=\"completed\", type=\"SERVICE_TASK\"}[$__rate_interval]))",
           "format": "time_series",
           "intervalFactor": 1,
           "legendFormat": "{{type}} {{action}}",
@@ -1138,7 +1138,7 @@
       "tableColumn": "",
       "targets": [
         {
-          "expr": "sum(rate(zeebe_element_instance_events_total{cluster=~\"$cluster\", namespace=~\"$namespace\",partition=~\"$partition\",pod=~\"$pod\", action=\"completed\", type=\"PROCESS\"}[$interval]))",
+          "expr": "sum(rate(zeebe_element_instance_events_total{cluster=~\"$cluster\", namespace=~\"$namespace\",partition=~\"$partition\",pod=~\"$pod\", action=\"completed\", type=\"PROCESS\"}[$__rate_interval]))",
           "format": "time_series",
           "intervalFactor": 1,
           "legendFormat": "{{type}} {{action}}",
@@ -1209,7 +1209,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "sum by (pod) (rate(container_cpu_usage_seconds_total{job=\"kubelet\", cluster=~\"$cluster\", namespace=~\"$namespace\", image!=\"\", pod_name=~\"$pod\", container_name!=\"POD\"}[$interval]))",
+          "expr": "sum by (pod) (rate(container_cpu_usage_seconds_total{job=\"kubelet\", cluster=~\"$cluster\", namespace=~\"$namespace\", image!=\"\", pod_name=~\"$pod\", container_name!=\"POD\"}[$__rate_interval]))",
           "interval": "",
           "legendFormat": "{{pod}}",
           "refId": "A"
@@ -1315,7 +1315,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "sum(rate(grpc_server_handled_total{cluster=~\"$cluster\", namespace=~\"$namespace\"}[$interval])) by (grpc_method, code)",
+          "expr": "sum(rate(grpc_server_handled_total{cluster=~\"$cluster\", namespace=~\"$namespace\"}[$__rate_interval])) by (grpc_method, code)",
           "format": "time_series",
           "interval": "",
           "intervalFactor": 1,
