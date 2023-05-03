@@ -11,4 +11,16 @@ import io.camunda.zeebe.util.buffer.BufferReader;
 import io.camunda.zeebe.util.buffer.BufferWriter;
 
 /** The key which is used to store a value. */
-public interface DbKey extends BufferReader, BufferWriter {}
+public interface DbKey extends BufferReader, BufferWriter {
+
+  /**
+   * Implementation of DbKey can define certain key ranges or structure, if this format doesn't
+   * apply to the current key instance, then this method should return false.
+   *
+   * <p>In this case the database can do some shortcuts like not storing the data or returning false
+   * immediately.
+   *
+   * @return true, if applies to a specific key format
+   */
+  boolean isValid();
+}

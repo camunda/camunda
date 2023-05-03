@@ -60,6 +60,11 @@ public record DbForeignKey<K extends DbKey>(
     return skip.test(inner);
   }
 
+  @Override
+  public boolean isValid() {
+    return inner.isValid();
+  }
+
   public enum MatchType {
     Full,
     Prefix,

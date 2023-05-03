@@ -45,4 +45,9 @@ public final class DbInt implements DbKey, DbValue {
   public String toString() {
     return "DbInt{" + intValue + '}';
   }
+
+  @Override
+  public boolean isValid() {
+    return intValue > 0;
+  }
 }

@@ -127,6 +127,7 @@ public class ZeebeTransaction implements ZeebeDbTransaction, AutoCloseable {
     transaction.rollback();
   }
 
+  @Override
   public void close() {
     transaction.close();
   }

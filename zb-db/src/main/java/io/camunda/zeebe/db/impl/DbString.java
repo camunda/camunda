@@ -61,4 +61,9 @@ public final class DbString implements DbKey, DbValue {
   public DirectBuffer getBuffer() {
     return bytes;
   }
+
+  @Override
+  public boolean isValid() {
+    return bytes.capacity() > 0;
+  }
 }

@@ -434,6 +434,11 @@ public final class EngineRule extends ExternalResource {
     public DirectBuffer getDirectBuffer() {
       return genericBuffer;
     }
+
+    @Override
+    public boolean isValid() {
+      return genericBuffer.capacity() > 0;
+    }
   }
 
   /////////////////////////////////////////////////////////////////////////////////////////////////

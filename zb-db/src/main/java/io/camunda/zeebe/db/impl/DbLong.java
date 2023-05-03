@@ -45,4 +45,9 @@ public final class DbLong implements DbKey, DbValue {
   public String toString() {
     return "DbLong{" + longValue + '}';
   }
+
+  @Override
+  public boolean isValid() {
+    return longValue > 0;
+  }
 }

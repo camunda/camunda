@@ -75,4 +75,9 @@ public final class DbCompositeKey<FirstKeyType extends DbKey, SecondKeyType exte
   public String toString() {
     return "DbCompositeKey{" + "first=" + first + ", second=" + second + '}';
   }
+
+  @Override
+  public boolean isValid() {
+    return first.isValid() || second.isValid();
+  }
 }

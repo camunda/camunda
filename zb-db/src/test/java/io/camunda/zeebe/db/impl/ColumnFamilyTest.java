@@ -77,6 +77,19 @@ public final class ColumnFamilyTest {
   }
 
   @Test
+  public void shouldReturnNullIfNotValid() {
+    // given
+    key.wrapLong(-1);
+
+    // when
+    final DbLong zbLong = columnFamily.get(key);
+
+    // then
+    assertThat(key.isValid()).isFalse();
+    assertThat(zbLong).isNull();
+  }
+
+  @Test
   public void shouldPutMultipleValues() {
     // given
     upsertKeyValuePair(1213, 255);

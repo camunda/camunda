@@ -74,6 +74,10 @@ class TransactionalColumnFamily<
 
   @Override
   public void insert(final KeyType key, final ValueType value) {
+    if (!key.isValid()) {
+      throw new IllegalStateException("lol");
+    }
+
     ensureInOpenTransaction(
         transaction -> {
           columnFamilyContext.writeKey(key);
@@ -92,6 +96,10 @@ class TransactionalColumnFamily<
 
   @Override
   public void update(final KeyType key, final ValueType value) {
+    if (!key.isValid()) {
+      throw new IllegalStateException("lol");
+    }
+
     ensureInOpenTransaction(
         transaction -> {
           columnFamilyContext.writeKey(key);
@@ -109,6 +117,10 @@ class TransactionalColumnFamily<
 
   @Override
   public void upsert(final KeyType key, final ValueType value) {
+    if (!key.isValid()) {
+      throw new IllegalStateException("lol");
+    }
+
     ensureInOpenTransaction(
         transaction -> {
           columnFamilyContext.writeKey(key);
@@ -125,6 +137,10 @@ class TransactionalColumnFamily<
 
   @Override
   public ValueType get(final KeyType key) {
+    if (!key.isValid()) {
+      return null;
+    }
+
     ensureInOpenTransaction(
         transaction -> {
           columnFamilyContext.writeKey(key);
