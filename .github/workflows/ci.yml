@@ -258,13 +258,9 @@ jobs:
       - name: Check backwards compatibility
         working-directory: clients/go/
         run: |
-          go install github.com/smola/gocompat/...@v0.3.0
-          PREFIX=github.com/camunda/zeebe/clients/go/v8
-          EXCLUDE=""
-          for file in {internal,cmd/zbctl/internal}/*; do
-            EXCLUDE="$EXCLUDE --exclude-package $PREFIX/$file"
-          done
-          gocompat compare --go1compat ${EXCLUDE} ./...
+          go install github.com/joelanford/go-apidiff@latest
+          LATEST_TAG_REF=$(git rev-list --tags --max-count=1)
+          go-apidiff --repo-path=../../ $LATEST_TAG_REF
       - uses: ./.github/actions/build-docker
         id: build-docker
         with:
