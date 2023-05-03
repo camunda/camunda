@@ -145,10 +145,22 @@ When writing in the Slack channel, please provide the logs from the `Prepare Tes
 ### Failing tests
 
 At times, there will be tests which only fail intermittently. It's critical to determine if these
-are real bugs or if they are simply flaky tests. Your first approach should be to reproduce the
-failure locally in the simplest way.
+are real bugs or if they are simply flaky tests.
+
+#### Determine flakiness
+
+In case the CI reports a flaky test, you can perform the following steps to determine your next
+action.
+
+- Check for [existing Zeebe issues with the `kind/flake` label](https://github.com/camunda/zeebe/issues?q=is%3Aopen+is%3Aissue+label%3Akind%2Fflake) that report the same flaky test.
+- If such an issue exists, comment in the issue about the re-occurrence. Provide a link to the CI build where the flaky test was reported.
+- If the flaky test hasn't been reported in a Zeebe issue, try to determine if the flakiness was introduced through your code changes.
+  - If the flaky test is unrelated to your code changes, [create a new "Unstable test" issue](https://github.com/camunda/zeebe/issues/new?assignees=&labels=kind%2Fflake&template=unstable_test.md&title=). Fill out the provided issue template with as much information about the flaky test.
+  - If the flaky test is related to your code changes, you should fix the flakiness before merging your code changes. You can follow the sections below on what to do in order to reproduce and root cause the problem.
 
 #### Reproduce locally
+
+Your first approach should be to reproduce the failure locally in the simplest way.
 
 Here are some tips to do so:
 
