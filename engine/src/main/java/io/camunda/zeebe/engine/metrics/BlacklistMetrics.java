@@ -7,12 +7,12 @@
  */
 package io.camunda.zeebe.engine.metrics;
 
-import io.prometheus.client.Counter;
+import io.prometheus.client.Gauge;
 
 public final class BlacklistMetrics {
 
-  private static final Counter BLACKLISTED_INSTANCES_COUNTER =
-      Counter.build()
+  private static final Gauge BLACKLISTED_INSTANCES_COUNTER =
+      Gauge.build()
           .namespace("zeebe")
           .name("blacklisted_instances_total")
           .help("Number of blacklisted instances")
@@ -27,5 +27,9 @@ public final class BlacklistMetrics {
 
   public void countBlacklistedInstance() {
     BLACKLISTED_INSTANCES_COUNTER.labels(partitionIdLabel).inc();
+  }
+
+  public void setBlacklistInstanceCounter(final int counter) {
+    BLACKLISTED_INSTANCES_COUNTER.labels(partitionIdLabel).set(counter);
   }
 }
