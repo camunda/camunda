@@ -22,14 +22,13 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 import io.camunda.zeebe.client.api.response.ActivatedJob;
-import io.camunda.zeebe.client.impl.ZeebeObjectMapper;
 import io.camunda.zeebe.client.impl.worker.JobPoller;
 import io.camunda.zeebe.client.util.ClientTest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass;
-import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsRequest;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
 import java.time.Duration;
+import java.util.Collections;
 import java.util.function.Consumer;
 import java.util.function.IntConsumer;
 import org.awaitility.Awaitility;
@@ -55,12 +54,13 @@ public final class JobPollerTest extends ClientTest {
     // given
     final Duration requestTimeout = Duration.ofHours(123);
     final JobPoller jobPoller = getJobPoller(requestTimeout);
+    final Duration deadlineOffset = Duration.ofSeconds(10);
 
     // when
     jobPoller.poll(123, jobConsumer, doneCallback, errorCallback, () -> true);
 
     // then
-    rule.verifyRequestTimeout(requestTimeout);
+    rule.verifyRequestTimeout(requestTimeout.plus(deadlineOffset));
   }
 
   @Test
@@ -107,11 +107,13 @@ public final class JobPollerTest extends ClientTest {
 
   private JobPoller getJobPoller(final Duration requestTimeout) {
     return new JobPoller(
-        rule.getGatewayStub(),
-        ActivateJobsRequest.newBuilder(),
-        new ZeebeObjectMapper(),
+        client,
         requestTimeout,
-        (t) -> false);
+        "testJobType",
+        "testWorkerName",
+        Duration.ofSeconds(10),
+        Collections.emptyList(),
+        10);
   }
 
   private static final class TestData {

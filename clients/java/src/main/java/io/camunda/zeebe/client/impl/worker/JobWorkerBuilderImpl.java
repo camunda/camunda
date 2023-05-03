@@ -18,9 +18,9 @@ package io.camunda.zeebe.client.impl.worker;
 import static io.camunda.zeebe.client.impl.command.ArgumentUtil.ensureGreaterThan;
 import static io.camunda.zeebe.client.impl.command.ArgumentUtil.ensureNotNull;
 import static io.camunda.zeebe.client.impl.command.ArgumentUtil.ensureNotNullNorEmpty;
+import static io.camunda.zeebe.client.impl.command.ArgumentUtil.ensurePositive;
 
 import io.camunda.zeebe.client.ZeebeClientConfiguration;
-import io.camunda.zeebe.client.api.JsonMapper;
 import io.camunda.zeebe.client.api.worker.BackoffSupplier;
 import io.camunda.zeebe.client.api.worker.JobClient;
 import io.camunda.zeebe.client.api.worker.JobHandler;
@@ -28,31 +28,23 @@ import io.camunda.zeebe.client.api.worker.JobWorker;
 import io.camunda.zeebe.client.api.worker.JobWorkerBuilderStep1;
 import io.camunda.zeebe.client.api.worker.JobWorkerBuilderStep1.JobWorkerBuilderStep2;
 import io.camunda.zeebe.client.api.worker.JobWorkerBuilderStep1.JobWorkerBuilderStep3;
-import io.camunda.zeebe.gateway.protocol.GatewayGrpc.GatewayStub;
-import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsRequest;
-import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsRequest.Builder;
 import java.io.Closeable;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.ScheduledExecutorService;
-import java.util.function.Predicate;
 
 public final class JobWorkerBuilderImpl
     implements JobWorkerBuilderStep1, JobWorkerBuilderStep2, JobWorkerBuilderStep3 {
 
   public static final BackoffSupplier DEFAULT_BACKOFF_SUPPLIER =
       BackoffSupplier.newBackoffBuilder().build();
-  private static final Duration DEADLINE_OFFSET = Duration.ofSeconds(10);
-  private final GatewayStub gatewayStub;
   private final JobClient jobClient;
-  private final JsonMapper jsonMapper;
   private final ScheduledExecutorService executorService;
   private final List<Closeable> closeables;
-  private final Predicate<Throwable> retryPredicate;
   private String jobType;
   private JobHandler handler;
-  private long timeout;
+  private Duration timeout;
   private String workerName;
   private int maxJobsActive;
   private Duration pollInterval;
@@ -62,25 +54,19 @@ public final class JobWorkerBuilderImpl
 
   public JobWorkerBuilderImpl(
       final ZeebeClientConfiguration configuration,
-      final GatewayStub gatewayStub,
       final JobClient jobClient,
-      final JsonMapper jsonMapper,
       final ScheduledExecutorService executorService,
-      final List<Closeable> closeables,
-      final Predicate<Throwable> retryPredicate) {
-    this.gatewayStub = gatewayStub;
+      final List<Closeable> closeables) {
     this.jobClient = jobClient;
-    this.jsonMapper = jsonMapper;
     this.executorService = executorService;
     this.closeables = closeables;
 
-    timeout = configuration.getDefaultJobTimeout().toMillis();
+    timeout = configuration.getDefaultJobTimeout();
     workerName = configuration.getDefaultJobWorkerName();
     maxJobsActive = configuration.getDefaultJobWorkerMaxJobsActive();
     pollInterval = configuration.getDefaultJobPollInterval();
     requestTimeout = configuration.getDefaultRequestTimeout();
     backoffSupplier = DEFAULT_BACKOFF_SUPPLIER;
-    this.retryPredicate = retryPredicate;
   }
 
   @Override
@@ -97,13 +83,13 @@ public final class JobWorkerBuilderImpl
 
   @Override
   public JobWorkerBuilderStep3 timeout(final long timeout) {
-    this.timeout = timeout;
-    return this;
+    return timeout(Duration.ofMillis(timeout));
   }
 
   @Override
   public JobWorkerBuilderStep3 timeout(final Duration timeout) {
-    return timeout(timeout.toMillis());
+    this.timeout = timeout;
+    return this;
   }
 
   @Override
@@ -151,27 +137,14 @@ public final class JobWorkerBuilderImpl
   public JobWorker open() {
     ensureNotNullNorEmpty("jobType", jobType);
     ensureNotNull("jobHandler", handler);
-    ensureGreaterThan("timeout", timeout, 0L);
+    ensurePositive("timeout", timeout);
     ensureNotNullNorEmpty("workerName", workerName);
     ensureGreaterThan("maxJobsActive", maxJobsActive, 0);
 
-    final Builder requestBuilder =
-        ActivateJobsRequest.newBuilder()
-            .setType(jobType)
-            .setTimeout(timeout)
-            .setWorker(workerName)
-            .setMaxJobsToActivate(maxJobsActive)
-            .setRequestTimeout(requestTimeout.toMillis());
-
-    if (fetchVariables != null) {
-      requestBuilder.addAllFetchVariable(fetchVariables);
-    }
-
-    final Duration deadline = requestTimeout.plus(DEADLINE_OFFSET);
-
     final JobRunnableFactory jobRunnableFactory = new JobRunnableFactory(jobClient, handler);
     final JobPoller jobPoller =
-        new JobPoller(gatewayStub, requestBuilder, jsonMapper, deadline, retryPredicate);
+        new JobPoller(
+            jobClient, requestTimeout, jobType, workerName, timeout, fetchVariables, maxJobsActive);
 
     final JobWorkerImpl jobWorker =
         new JobWorkerImpl(
