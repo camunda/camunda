@@ -26,6 +26,15 @@
       <validValue name="COMPLETED">2</validValue>
       <validValue name="FAILED">3</validValue>
     </enum>
+
+    <composite name="largeGroupSizeEncoding">
+      <!-- Similar to groupSizeEncoding in common-types.xml but uses uint16 instead of uint8 to count entries.-->
+      <type name="blockLength" primitiveType="uint16"/>
+      <type name="numInGroup" primitiveType="uint16"/>
+      <type name="numGroups" primitiveType="uint16"/>
+      <type name="numVarDataFields" primitiveType="uint16"/>
+    </composite>
+
   </types>
 
   <sbe:message name="AdminRequest" id="1">
@@ -63,7 +72,7 @@
 
   <sbe:message name="BackupListResponse" id="5">
     <!-- This response contains a subset of fields from BackupStatusResponse  -->
-    <group name="backups" id="1" dimensionType="groupSizeEncoding">
+    <group name="backups" id="1" dimensionType="largeGroupSizeEncoding">
       <field name="backupId" id="1" type="int64"/>
       <field name="status" id="2" type="BackupStatusCode"/>
       <field name="partitionId" id="3" type="uint16"/>
