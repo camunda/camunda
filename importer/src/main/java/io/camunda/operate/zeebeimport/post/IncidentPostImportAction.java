@@ -8,7 +8,6 @@ package io.camunda.operate.zeebeimport.post;
 
 import static io.camunda.operate.entities.IncidentState.ACTIVE;
 import static io.camunda.operate.entities.IncidentState.RESOLVED;
-import static io.camunda.operate.schema.templates.IncidentTemplate.*;
 import static io.camunda.operate.schema.templates.IncidentTemplate.KEY;
 import static io.camunda.operate.schema.templates.IncidentTemplate.STATE;
 import static io.camunda.operate.schema.templates.IncidentTemplate.TREE_PATH;
@@ -17,6 +16,7 @@ import static io.camunda.operate.schema.templates.ListViewTemplate.ID;
 import static io.camunda.operate.schema.templates.TemplateDescriptor.PARTITION_ID;
 import static io.camunda.operate.util.ElasticsearchUtil.*;
 import static java.time.temporal.ChronoUnit.MILLIS;
+import static java.util.Collections.EMPTY_LIST;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.idsQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
@@ -38,13 +38,7 @@ import io.camunda.operate.util.ThreadUtil;
 import io.camunda.operate.zeebeimport.util.TreePath;
 import java.io.IOException;
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
@@ -351,7 +345,7 @@ public class IncidentPostImportAction implements PostImportAction {
     }
 
     for (String fniId : fniIds2Update) {
-      flowNodeInstanceIndices.get(fniId).forEach(index -> {
+      flowNodeInstanceIndices.getOrDefault(fniId, List.of()).forEach(index -> {
         bulkUpdateRequest.add(new UpdateRequest(index, fniId)
             .doc(updateFields)
             .retryOnConflict(UPDATE_RETRY_COUNT));
@@ -362,7 +356,7 @@ public class IncidentPostImportAction implements PostImportAction {
                 "List view data was not yet imported for flow node instance %s",
                 fniId));
       } else {
-        flowNodeInstanceInListViewIndices.get(fniId).forEach(index -> {
+        flowNodeInstanceInListViewIndices.getOrDefault(fniId, List.of()).forEach(index -> {
           bulkUpdateRequest.add(new UpdateRequest(index, fniId)
               .doc(updateFields)
               .retryOnConflict(UPDATE_RETRY_COUNT));
