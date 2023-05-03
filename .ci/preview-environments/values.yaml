@@ -76,7 +76,7 @@ camunda-platform:
     fullnameOverride: zeebe
     # Defines the version of Zeebe to use
     image:
-      tag: 8.2.0
+      tag: 8.3.0-alpha1
     # ClusterSize defines the amount of brokers (=replicas), which are deployed via helm
     clusterSize: "1"
     # PartitionCount defines how many zeebe partitions are set up in the cluster
@@ -106,7 +106,7 @@ camunda-platform:
     replicas: 1
     # Defines the version of Zeebe to use
     image:
-      tag: 8.2.0
+      tag: 8.3.0-alpha1
     nodeSelector:
       cloud.google.com/gke-nodepool: previews
     tolerations:
