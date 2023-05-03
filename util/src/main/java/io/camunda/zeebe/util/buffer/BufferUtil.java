@@ -216,14 +216,28 @@ public final class BufferUtil {
       final int prefixOffset,
       final int prefixLength,
       final byte[] content,
-      int contentOffset,
+      final int contentOffset,
       final int contentLength) {
     if (contentLength < prefixLength) {
       return false;
     }
 
-    for (int i = prefixOffset; i < prefixLength; i++, contentOffset++) {
-      if (content[contentOffset] != prefix[i]) {
+    // we know that prefix length is either equal or smaller then content length
+    //
+
+    // prefix look normally like this: [0, 0, 0, 0, 0, 0, 0, 21] length = 8
+    // content like this: [0, 0, 0, 0, 0, 0, 0, 21, 0, 0, 0, 12] length = 12
+
+    // right now we check at the begin, which means we have to iterate several zero values which
+    // are always equal
+    // would be much fast if we iterate from the back
+
+    // prefix start at prefixOffSet + (prefix-length - 1)
+    // content start at contentOffSet + (prefix-length -1)
+
+    var offset = prefixLength - 1;
+    for (; offset >= 0; offset--) {
+      if (content[contentOffset + offset] != prefix[prefixOffset + offset]) {
         return false;
       }
     }
