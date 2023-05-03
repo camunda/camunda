@@ -4,7 +4,8 @@
   "private": true,
   "dependencies": {
     "@apollo/client": "3.7.12",
-    "@bpmn-io/form-js-viewer": "0.14.1",
+    "@bpmn-io/form-js-carbon-styles": "0.15.0-alpha.1",
+    "@bpmn-io/form-js-viewer": "0.15.0-alpha.0",
     "@camunda/camunda-composite-components": "0.0.35",
     "@carbon/elements": "11.21.0",
     "@carbon/react": "1.27.0",
@@ -110,7 +111,7 @@
     },
     "resetMocks": true,
     "transformIgnorePatterns": [
-      "/node_modules/(?!@camunda-cloud/common-ui.*|@camunda/camunda-composite-components)"
+      "/node_modules/(?!@camunda-cloud/common-ui.*|@camunda/camunda-composite-components|@bpmn-io/form-js-carbon-styles)"
     ]
   },
   "scarfSettings": {
