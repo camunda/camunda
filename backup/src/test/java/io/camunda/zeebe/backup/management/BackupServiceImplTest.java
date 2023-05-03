@@ -18,14 +18,16 @@ import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import io.camunda.zeebe.backup.api.Backup;
+import io.camunda.zeebe.backup.api.BackupIdentifier;
 import io.camunda.zeebe.backup.api.BackupStatus;
 import io.camunda.zeebe.backup.api.BackupStatusCode;
 import io.camunda.zeebe.backup.api.BackupStore;
 import io.camunda.zeebe.backup.common.BackupIdentifierImpl;
 import io.camunda.zeebe.backup.common.BackupIdentifierWildcardImpl;
 import io.camunda.zeebe.backup.common.BackupStatusImpl;
-import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
+import io.camunda.zeebe.scheduler.testing.TestActorFuture;
 import io.camunda.zeebe.scheduler.testing.TestConcurrencyControl;
 import java.time.Duration;
 import java.util.List;
@@ -43,13 +45,12 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class BackupServiceImplTest {
 
-  @Mock InProgressBackup inProgressBackup;
   @Mock BackupStore backupStore;
 
   @Mock BackupStatus notExistingBackupStatus;
 
   private BackupServiceImpl backupService;
-  private final ConcurrencyControl concurrencyControl = new TestConcurrencyControl();
+  private final TestConcurrencyControl concurrencyControl = new TestConcurrencyControl();
 
   @BeforeEach
   void setup() {
@@ -61,12 +62,19 @@ class BackupServiceImplTest {
     lenient()
         .when(backupStore.getStatus(any()))
         .thenReturn(CompletableFuture.completedFuture(notExistingBackupStatus));
+    lenient()
+        .when(
+            backupStore.list(
+                new BackupIdentifierWildcardImpl(
+                    Optional.empty(), Optional.of(2), Optional.of(3L))))
+        .thenReturn(CompletableFuture.completedFuture(List.of()));
   }
 
   @Test
   void shouldTakeBackup() {
     // given
-    mockInProgressBackup();
+    final ControllableInProgressBackup inProgressBackup = new ControllableInProgressBackup();
+    mockSaveBackup();
 
     // when
     final var result = backupService.takeBackup(inProgressBackup, concurrencyControl);
@@ -79,10 +87,10 @@ class BackupServiceImplTest {
   @Test
   void shouldCloseAllInProgressBackupsWhenClosing() {
     // given
-    final InProgressBackup backup1 = mock(InProgressBackup.class);
-    final InProgressBackup backup2 = mock(InProgressBackup.class);
-    when(backup1.findSegmentFiles()).thenReturn(concurrencyControl.createFuture());
-    when(backup2.findSegmentFiles()).thenReturn(concurrencyControl.createFuture());
+    final ControllableInProgressBackup backup1 =
+        new ControllableInProgressBackup().waitOnFindSegmentFiles();
+    final ControllableInProgressBackup backup2 =
+        new ControllableInProgressBackup().waitOnFindSegmentFiles();
 
     backupService.takeBackup(backup1, concurrencyControl);
     backupService.takeBackup(backup2, concurrencyControl);
@@ -91,14 +99,15 @@ class BackupServiceImplTest {
     backupService.close();
 
     // then
-    verify(backup1).close();
-    verify(backup2).close();
+    assertThat(backup1.isClosed()).isTrue();
+    assertThat(backup2.isClosed()).isTrue();
   }
 
   @Test
   void shouldCloseInProgressBackupsAfterBackupIsTaken() {
     // given
-    mockInProgressBackup();
+    final ControllableInProgressBackup inProgressBackup = new ControllableInProgressBackup();
+    mockSaveBackup();
 
     // when
     final var result = backupService.takeBackup(inProgressBackup, concurrencyControl);
@@ -110,8 +119,8 @@ class BackupServiceImplTest {
   @Test
   void shouldFailBackupWhenNoValidSnapshotFound() {
     // given
-    mockFindSegmentFiles();
-    when(inProgressBackup.findValidSnapshot()).thenReturn(failedFuture());
+    final ControllableInProgressBackup inProgressBackup =
+        new ControllableInProgressBackup().failOnFindValidSnapshot();
 
     // when
     final var result = backupService.takeBackup(inProgressBackup, concurrencyControl);
@@ -121,60 +130,53 @@ class BackupServiceImplTest {
         .failsWithin(Duration.ofMillis(1000))
         .withThrowableOfType(ExecutionException.class)
         .withMessageContaining("Expected");
-    verifyInProgressBackupIsCleanedUpAfterFailure();
+    verifyInProgressBackupIsCleanedUpAfterFailure(inProgressBackup);
   }
 
   @Test
   void shouldFailBackupWhenSnapshotCannotBeReserved() {
     // given
-    mockFindSegmentFiles();
-    mockFindValidSnapshot();
-    when(inProgressBackup.reserveSnapshot()).thenReturn(failedFuture());
+    final var inProgressBackup = new ControllableInProgressBackup().failOnReserveSnapshot();
 
     // when
     final var result = backupService.takeBackup(inProgressBackup, concurrencyControl);
 
     // then
     assertThat(result).failsWithin(Duration.ofMillis(100));
-    verifyInProgressBackupIsCleanedUpAfterFailure();
+    verifyInProgressBackupIsCleanedUpAfterFailure(inProgressBackup);
   }
 
   @Test
   void shouldFailBackupWhenSnapshotFilesCannotBeCollected() {
     // given
-    mockFindSegmentFiles();
-    mockFindValidSnapshot();
-    mockReserveSnapshot();
-    when(inProgressBackup.findSnapshotFiles()).thenReturn(failedFuture());
+    final var inProgressBackup = new ControllableInProgressBackup().failOnFindSnapshotFiles();
 
     // when
     final var result = backupService.takeBackup(inProgressBackup, concurrencyControl);
 
     // then
     assertThat(result).failsWithin(Duration.ofMillis(100));
-    verifyInProgressBackupIsCleanedUpAfterFailure();
+    verifyInProgressBackupIsCleanedUpAfterFailure(inProgressBackup);
   }
 
   @Test
   void shouldFailBackupWhenSegmentFilesCannotBeCollected() {
     // given
-    when(inProgressBackup.findSegmentFiles()).thenReturn(failedFuture());
+    final ControllableInProgressBackup inProgressBackup =
+        new ControllableInProgressBackup().failOnFindSegmentFiles();
 
     // when
     final var result = backupService.takeBackup(inProgressBackup, concurrencyControl);
 
     // then
     assertThat(result).failsWithin(Duration.ofMillis(100));
-    verifyInProgressBackupIsCleanedUpAfterFailure();
+    verifyInProgressBackupIsCleanedUpAfterFailure(inProgressBackup);
   }
 
   @Test
   void shouldFailBackupIfStoringFailed() {
     // given
-    mockFindValidSnapshot();
-    mockReserveSnapshot();
-    mockFindSnapshotFiles();
-    mockFindSegmentFiles();
+    final ControllableInProgressBackup inProgressBackup = new ControllableInProgressBackup();
     when(backupStore.save(any()))
         .thenReturn(CompletableFuture.failedFuture(new RuntimeException("Expected")));
 
@@ -183,7 +185,7 @@ class BackupServiceImplTest {
 
     // then
     assertThat(result).failsWithin(Duration.ofMillis(100));
-    verifyInProgressBackupIsCleanedUpAfterFailure();
+    verifyInProgressBackupIsCleanedUpAfterFailure(inProgressBackup);
   }
 
   @Test
@@ -285,9 +287,15 @@ class BackupServiceImplTest {
   @Test
   void shouldNotTakeNewBackupIfBackupAlreadyCompleted() {
     // given
+    final ControllableInProgressBackup inProgressBackup = new ControllableInProgressBackup();
     final BackupStatus status = mock(BackupStatus.class);
     when(status.statusCode()).thenReturn(BackupStatusCode.COMPLETED);
-    when(backupStore.getStatus(any())).thenReturn(CompletableFuture.completedFuture(status));
+    when(backupStore.list(
+            new BackupIdentifierWildcardImpl(
+                Optional.empty(),
+                Optional.of(inProgressBackup.id.partitionId()),
+                Optional.of(inProgressBackup.checkpointId()))))
+        .thenReturn(CompletableFuture.completedFuture(List.of(status)));
 
     // when
     backupService.takeBackup(inProgressBackup, concurrencyControl).join();
@@ -302,9 +310,10 @@ class BackupServiceImplTest {
       names = {"IN_PROGRESS", "FAILED"})
   void shouldNotTakeNewBackupIfBackupAlreadyExists(final BackupStatusCode statusCode) {
     // given
+    final ControllableInProgressBackup inProgressBackup = new ControllableInProgressBackup();
     final BackupStatus status = mock(BackupStatus.class);
     when(status.statusCode()).thenReturn(statusCode);
-    when(backupStore.getStatus(any())).thenReturn(CompletableFuture.completedFuture(status));
+    when(backupStore.list(any())).thenReturn(CompletableFuture.completedFuture(List.of(status)));
 
     // when
     assertThat(backupService.takeBackup(inProgressBackup, concurrencyControl))
@@ -390,44 +399,104 @@ class BackupServiceImplTest {
   }
 
   private ActorFuture<Void> failedFuture() {
-    final ActorFuture<Void> future = concurrencyControl.createFuture();
-    future.completeExceptionally(new RuntimeException("Expected"));
-    return future;
+    return concurrencyControl.failedFuture(new RuntimeException("Expected"));
   }
 
-  private void mockInProgressBackup() {
-    mockFindValidSnapshot();
-    mockReserveSnapshot();
-    mockFindSnapshotFiles();
-    mockFindSegmentFiles();
-    mockSaveBackup();
-  }
-
-  private void mockFindSnapshotFiles() {
-    when(inProgressBackup.findSnapshotFiles())
-        .thenReturn(concurrencyControl.createCompletedFuture());
-  }
-
-  private void mockReserveSnapshot() {
-    when(inProgressBackup.reserveSnapshot()).thenReturn(concurrencyControl.createCompletedFuture());
-  }
-
-  private void mockFindValidSnapshot() {
-    when(inProgressBackup.findValidSnapshot())
-        .thenReturn(concurrencyControl.createCompletedFuture());
+  private void verifyInProgressBackupIsCleanedUpAfterFailure(
+      final ControllableInProgressBackup inProgressBackup) {
+    verify(backupStore).markFailed(any(), any());
+    assertThat(inProgressBackup.isClosed()).isTrue();
   }
 
   private void mockSaveBackup() {
     when(backupStore.save(any())).thenReturn(CompletableFuture.completedFuture(null));
   }
 
-  private void mockFindSegmentFiles() {
-    when(inProgressBackup.findSegmentFiles())
-        .thenReturn(concurrencyControl.createCompletedFuture());
-  }
+  class ControllableInProgressBackup implements InProgressBackup {
 
-  private void verifyInProgressBackupIsCleanedUpAfterFailure() {
-    verify(backupStore).markFailed(any(), any());
-    verify(inProgressBackup).close();
+    private final BackupIdentifier id;
+    private ActorFuture<Void> findValidSnapshotFuture = TestActorFuture.completedFuture(null);
+    private ActorFuture<Void> reserveSnapshotFuture = TestActorFuture.completedFuture(null);
+    private ActorFuture<Void> findSnapshotFilesFuture = TestActorFuture.completedFuture(null);
+    private ActorFuture<Void> findSegmentFilesFuture = TestActorFuture.completedFuture(null);
+    private boolean closed;
+
+    ControllableInProgressBackup() {
+      id = new BackupIdentifierImpl(1, 2, 3);
+    }
+
+    @Override
+    public long checkpointId() {
+      return id.checkpointId();
+    }
+
+    @Override
+    public long checkpointPosition() {
+      return 1;
+    }
+
+    @Override
+    public BackupIdentifier id() {
+      return id;
+    }
+
+    @Override
+    public ActorFuture<Void> findValidSnapshot() {
+      return findValidSnapshotFuture;
+    }
+
+    @Override
+    public ActorFuture<Void> reserveSnapshot() {
+      return reserveSnapshotFuture;
+    }
+
+    @Override
+    public ActorFuture<Void> findSnapshotFiles() {
+      return findSnapshotFilesFuture;
+    }
+
+    @Override
+    public ActorFuture<Void> findSegmentFiles() {
+      return findSegmentFilesFuture;
+    }
+
+    @Override
+    public Backup createBackup() {
+      return null;
+    }
+
+    @Override
+    public void close() {
+      closed = true;
+    }
+
+    boolean isClosed() {
+      return closed;
+    }
+
+    ControllableInProgressBackup waitOnFindSegmentFiles() {
+      findSegmentFilesFuture = concurrencyControl.createFuture();
+      return this;
+    }
+
+    ControllableInProgressBackup failOnFindSegmentFiles() {
+      findSegmentFilesFuture = failedFuture();
+      return this;
+    }
+
+    ControllableInProgressBackup failOnFindSnapshotFiles() {
+      findSnapshotFilesFuture = failedFuture();
+      return this;
+    }
+
+    ControllableInProgressBackup failOnReserveSnapshot() {
+      reserveSnapshotFuture = failedFuture();
+      return this;
+    }
+
+    ControllableInProgressBackup failOnFindValidSnapshot() {
+      findValidSnapshotFuture = failedFuture();
+      return this;
+    }
   }
 }
