@@ -16,6 +16,7 @@ import io.camunda.operate.entities.dmn.DecisionType;
 import io.camunda.operate.entities.dmn.definition.DecisionDefinitionEntity;
 import io.camunda.operate.entities.dmn.definition.DecisionRequirementsEntity;
 import io.camunda.operate.exceptions.PersistenceException;
+import io.camunda.operate.property.ElasticsearchProperties;
 import io.camunda.operate.schema.indices.DecisionIndex;
 import io.camunda.operate.schema.indices.DecisionRequirementsIndex;
 import io.camunda.operate.schema.templates.DecisionInstanceTemplate;
@@ -270,11 +271,10 @@ public class DecisionDataUtil {
             .source(objectMapper.writeValueAsString(entity), XContentType.JSON);
         bulkRequest.add(indexRequest);
       }
-      ElasticsearchUtil.processBulkRequest(esClient, bulkRequest, true);
+      ElasticsearchUtil.processBulkRequest(esClient, bulkRequest, true, ElasticsearchProperties.BULK_REQUEST_MAX_SIZE_IN_BYTES_DEFAULT);
     } catch (Exception ex) {
       throw new PersistenceException(ex);
     }
-
   }
 
   public Map<Class<? extends OperateEntity>, String> getEntityToESAliasMap(){

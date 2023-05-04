@@ -355,7 +355,7 @@ public class ElasticsearchTestRule extends TestWatcher {
         }
         bulkRequest.add(indexRequest);
       }
-      ElasticsearchUtil.processBulkRequest(esClient, bulkRequest, true);
+      ElasticsearchUtil.processBulkRequest(esClient, bulkRequest, true, operateProperties.getElasticsearch().getBulkRequestMaxSizeInBytes());
     } catch (Exception ex) {
       throw new PersistenceException(ex);
     }

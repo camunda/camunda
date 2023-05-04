@@ -17,6 +17,7 @@ import io.camunda.operate.entities.OperationEntity;
 import io.camunda.operate.entities.OperationState;
 import io.camunda.operate.entities.OperationType;
 import io.camunda.operate.exceptions.OperateRuntimeException;
+import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.schema.templates.OperationTemplate;
 import java.io.IOException;
 import java.time.OffsetDateTime;
@@ -59,6 +60,9 @@ public class OperationsManager {
 
   @Autowired
   private RestHighLevelClient esClient;
+
+  @Autowired
+  private OperateProperties operateProperties;
 
   public void updateFinishedInBatchOperation(String batchOperationId) throws PersistenceException {
     this.updateFinishedInBatchOperation(batchOperationId, null);
@@ -107,7 +111,7 @@ public class OperationsManager {
       completeOperation(ids2indexNames.get(o.getId()),o.getId(), theBulkRequest);
     }
     if (bulkRequest == null) {
-      ElasticsearchUtil.processBulkRequest(esClient, theBulkRequest);
+      ElasticsearchUtil.processBulkRequest(esClient, theBulkRequest, operateProperties.getElasticsearch().getBulkRequestMaxSizeInBytes());
     }
   }
 
@@ -118,7 +122,7 @@ public class OperationsManager {
     }
     final Map<String,String> ids2indexNames =  getIndexNameForAliasAndId(operationTemplate.getAlias(), operationEntity.getId());
     completeOperation(ids2indexNames.get(operationEntity.getId()), operationEntity.getId(), bulkRequest);
-    ElasticsearchUtil.processBulkRequest(esClient, bulkRequest);
+    ElasticsearchUtil.processBulkRequest(esClient, bulkRequest, operateProperties.getElasticsearch().getBulkRequestMaxSizeInBytes());
   }
 
   private List<OperationEntity> getOperations(Long zeebeCommandKey, Long processInstanceKey, Long incidentKey, OperationType operationType){

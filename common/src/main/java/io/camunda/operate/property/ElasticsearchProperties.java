@@ -19,6 +19,8 @@ public class ElasticsearchProperties {
 
   public static final String ELS_DATE_FORMAT_DEFAULT = "date_time";
 
+  public static final int BULK_REQUEST_MAX_SIZE_IN_BYTES_DEFAULT = 1024 * 1024 * 90; // 90 MB
+
   private String clusterName= "elasticsearch";
 
   @Deprecated
@@ -42,8 +44,10 @@ public class ElasticsearchProperties {
   private String username;
   private String password;
 
+  private int bulkRequestMaxSizeInBytes = BULK_REQUEST_MAX_SIZE_IN_BYTES_DEFAULT;
+
   @NestedConfigurationProperty
-  private SslProperties ssl;
+  private SslProperties ssl;;
 
   public String getClusterName() {
     return clusterName;
@@ -165,5 +169,11 @@ public class ElasticsearchProperties {
     this.ssl = ssl;
   }
 
+  public long getBulkRequestMaxSizeInBytes() {
+    return bulkRequestMaxSizeInBytes;
+  }
 
+  public void setBulkRequestMaxSizeInBytes(int bulkRequestMaxSizeInBytes) {
+    this.bulkRequestMaxSizeInBytes = bulkRequestMaxSizeInBytes;
+  }
 }

@@ -11,6 +11,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.JacksonConfig;
 import io.camunda.operate.entities.*;
 import io.camunda.operate.exceptions.PersistenceException;
+import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.schema.templates.*;
 import io.camunda.operate.util.ElasticsearchUtil;
 import org.elasticsearch.action.bulk.BulkRequest;
@@ -54,6 +55,9 @@ public class DataMultiplicator implements CommandLineRunner {
   public static final int MAX_DOCUMENTS = 10_000;
   @Autowired
   private RestHighLevelClient esClient;
+
+  @Autowired
+  private OperateProperties operateProperties;
 
   @Autowired
   private List<TemplateDescriptor> indexDescriptors;
@@ -123,7 +127,7 @@ public class DataMultiplicator implements CommandLineRunner {
         }
       });
       count += bulkRequest.requests().size();
-      ElasticsearchUtil.processBulkRequest(esClient, bulkRequest);
+      ElasticsearchUtil.processBulkRequest(esClient, bulkRequest, operateProperties.getElasticsearch().getBulkRequestMaxSizeInBytes());
       int percentDone = Double.valueOf(100 * count/max).intValue();
       if(percentDone > 0 && percentDone % 20 == 0){
         logger.info("{}/{} ( {}% ) documents added to {}.", count, max, percentDone, templateDescriptor.getFullQualifiedName());

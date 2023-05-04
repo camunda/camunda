@@ -294,17 +294,53 @@ public abstract class ElasticsearchUtil {
 
   /* EXECUTE QUERY */
 
-  public static void processBulkRequest(RestHighLevelClient esClient, BulkRequest bulkRequest) throws PersistenceException {
-    processBulkRequest(esClient, bulkRequest, false);
+  public static void processBulkRequest(RestHighLevelClient esClient, BulkRequest bulkRequest, long maxBulkRequestSizeInBytes) throws PersistenceException {
+    processBulkRequest(esClient, bulkRequest, false, maxBulkRequestSizeInBytes);
   }
 
-  public static void processBulkRequest(RestHighLevelClient esClient, BulkRequest bulkRequest,
-      Runnable afterBulkAction) throws PersistenceException {
-    processBulkRequest(esClient, bulkRequest, false);
-    afterBulkAction.run();
+  public static void processBulkRequest(RestHighLevelClient esClient, BulkRequest bulkRequest, boolean refreshImmediately, long maxBulkRequestSizeInBytes ) throws PersistenceException {
+    if(bulkRequest.estimatedSizeInBytes() > maxBulkRequestSizeInBytes){
+      divideLargeBulkRequestAndProcess(esClient, bulkRequest, refreshImmediately, maxBulkRequestSizeInBytes);
+    } else {
+      processLimitedBulkRequest(esClient, bulkRequest, refreshImmediately);
+    }
   }
 
-  public static void processBulkRequest(RestHighLevelClient esClient, BulkRequest bulkRequest, boolean refreshImmediately) throws PersistenceException {
+  private static void divideLargeBulkRequestAndProcess(final RestHighLevelClient esClient,final BulkRequest bulkRequest,
+      final boolean refreshImmediately,final long maxBulkRequestSizeInBytes) throws PersistenceException {
+    logger.debug("Bulk request has {} bytes > {} max bytes ({} requests). Will divide it into smaller bulk requests.",
+        bulkRequest.estimatedSizeInBytes(), maxBulkRequestSizeInBytes, bulkRequest.requests().size());
+
+    int requestCount = 0;
+    final List<DocWriteRequest<?>> requests = bulkRequest.requests();
+
+    BulkRequest limitedBulkRequest = new BulkRequest();
+    while(requestCount < requests.size()){
+      DocWriteRequest<?> nextRequest = requests.get(requestCount);
+      if (nextRequest.ramBytesUsed() > maxBulkRequestSizeInBytes) {
+        throw new PersistenceException(String.format(
+            "One of the request with size of %d bytes is greater than max allowed %d bytes", nextRequest.ramBytesUsed(), maxBulkRequestSizeInBytes));
+      }
+
+      final long wholeSize = limitedBulkRequest.estimatedSizeInBytes() + nextRequest.ramBytesUsed();
+      if (wholeSize < maxBulkRequestSizeInBytes) {
+        limitedBulkRequest.add(nextRequest);
+      } else {
+        logger.debug("Submit bulk of {} requests, size {} bytes.", limitedBulkRequest.requests().size(), limitedBulkRequest.estimatedSizeInBytes());
+        processLimitedBulkRequest(esClient, limitedBulkRequest, refreshImmediately);
+        limitedBulkRequest = new BulkRequest();
+        limitedBulkRequest.add(nextRequest);
+      }
+      requestCount++;
+    }
+    if( !limitedBulkRequest.requests().isEmpty() ) {
+      logger.debug("Submit bulk of {} requests, size {} bytes.", limitedBulkRequest.requests().size(), limitedBulkRequest.estimatedSizeInBytes());
+      processLimitedBulkRequest(esClient, limitedBulkRequest, refreshImmediately);
+    }
+  }
+
+  private static void processLimitedBulkRequest(RestHighLevelClient esClient, BulkRequest bulkRequest, boolean refreshImmediately)
+      throws PersistenceException {
     if (bulkRequest.requests().size() > 0) {
       try {
         logger.debug("************* FLUSH BULK START *************");

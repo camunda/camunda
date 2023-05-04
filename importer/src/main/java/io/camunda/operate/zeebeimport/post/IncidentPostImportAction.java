@@ -170,8 +170,8 @@ public class IncidentPostImportAction implements PostImportAction {
       }
 
       if (!bulkProcessAndFlowNodeInstanceUpdate.requests().isEmpty()) {
-        ElasticsearchUtil.processBulkRequest(esClient, bulkProcessAndFlowNodeInstanceUpdate);
-        ElasticsearchUtil.processBulkRequest(esClient, bulkPendingIncidentUpdate);
+        ElasticsearchUtil.processBulkRequest(esClient, bulkProcessAndFlowNodeInstanceUpdate, operateProperties.getElasticsearch().getBulkRequestMaxSizeInBytes());
+        ElasticsearchUtil.processBulkRequest(esClient, bulkPendingIncidentUpdate, operateProperties.getElasticsearch().getBulkRequestMaxSizeInBytes());
         ThreadUtil.sleepFor(3000L);
       }
       if (logger.isDebugEnabled()) {

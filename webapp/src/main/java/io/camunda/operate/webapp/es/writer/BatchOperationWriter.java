@@ -145,7 +145,7 @@ public class BatchOperationWriter {
       bulkRequest.add(createUpdateByIdRequest(operation, false));
     }
     //TODO decide with index refresh
-    ElasticsearchUtil.processBulkRequest(esClient, bulkRequest, true);
+    ElasticsearchUtil.processBulkRequest(esClient, bulkRequest, true, operateProperties.getElasticsearch().getBulkRequestMaxSizeInBytes());
     logger.debug("{} operations locked", operationEntities.size());
     return operationEntities;
   }
@@ -294,7 +294,7 @@ public class BatchOperationWriter {
       //persist batch operation
       bulkRequest.add(getIndexBatchOperationRequest(batchOperation));
 
-      ElasticsearchUtil.processBulkRequest(esClient, bulkRequest);
+      ElasticsearchUtil.processBulkRequest(esClient, bulkRequest, operateProperties.getElasticsearch().getBulkRequestMaxSizeInBytes());
 
       return batchOperation;
     } catch (Exception ex) {
@@ -322,7 +322,7 @@ public class BatchOperationWriter {
                   List.of(processInstanceKey)), batchOperation.getId()))
           .add(getIndexBatchOperationRequest(batchOperation));
 
-      ElasticsearchUtil.processBulkRequest(esClient, bulkRequest);
+      ElasticsearchUtil.processBulkRequest(esClient, bulkRequest, operateProperties.getElasticsearch().getBulkRequestMaxSizeInBytes());
       return batchOperation;
     } catch (Exception ex) {
       throw new OperateRuntimeException(String.format("Exception occurred, while scheduling 'modify process instance' operation: %s", ex.getMessage()), ex);
@@ -400,7 +400,7 @@ public class BatchOperationWriter {
       //update process instance
       bulkRequest.add(getUpdateProcessInstanceRequest(processInstanceKey, processInstanceIdToIndexName, batchOperationId));
     }
-    ElasticsearchUtil.processBulkRequest(esClient, bulkRequest);
+    ElasticsearchUtil.processBulkRequest(esClient, bulkRequest, operateProperties.getElasticsearch().getBulkRequestMaxSizeInBytes());
     return operationsCount;
   }
 

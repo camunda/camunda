@@ -183,7 +183,7 @@ public class ImportPositionHolder {
       final var bulkRequest = preparedBulkRequest.get();
 
       withImportPositionTimer(() -> {
-        ElasticsearchUtil.processBulkRequest(esClient, bulkRequest);
+        ElasticsearchUtil.processBulkRequest(esClient, bulkRequest, operateProperties.getElasticsearch().getBulkRequestMaxSizeInBytes());
         return null;
       });
 

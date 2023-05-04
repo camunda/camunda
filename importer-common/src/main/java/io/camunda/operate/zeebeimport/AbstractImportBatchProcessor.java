@@ -9,6 +9,7 @@ package io.camunda.operate.zeebeimport;
 import java.util.concurrent.Callable;
 import io.camunda.operate.Metrics;
 import io.camunda.operate.exceptions.PersistenceException;
+import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.util.ElasticsearchUtil;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.client.RestHighLevelClient;
@@ -18,6 +19,9 @@ public abstract class AbstractImportBatchProcessor implements ImportBatchProcess
 
   @Autowired
   private RestHighLevelClient esClient;
+
+  @Autowired
+  private OperateProperties operateProperties;
 
   @Autowired
   private Metrics metrics;
@@ -32,7 +36,7 @@ public abstract class AbstractImportBatchProcessor implements ImportBatchProcess
       }, importBatch);
 
       withImportIndexQueryTimer(() -> {
-        ElasticsearchUtil.processBulkRequest(esClient, bulkRequest);
+        ElasticsearchUtil.processBulkRequest(esClient, bulkRequest, operateProperties.getElasticsearch().getBulkRequestMaxSizeInBytes());
         return null;
       }, importBatch);
 
