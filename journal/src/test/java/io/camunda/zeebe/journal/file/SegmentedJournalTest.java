@@ -20,11 +20,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 
 import io.camunda.zeebe.journal.JournalException.InvalidAsqn;
+import io.camunda.zeebe.journal.JournalMetaStore.InMemory;
 import io.camunda.zeebe.journal.JournalReader;
 import io.camunda.zeebe.journal.JournalRecord;
 import io.camunda.zeebe.journal.record.PersistedJournalRecord;
 import io.camunda.zeebe.journal.record.RecordData;
-import io.camunda.zeebe.journal.util.MockJournalMetastore;
 import io.camunda.zeebe.journal.util.PosixPathAssert;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import io.camunda.zeebe.util.buffer.DirectBufferWriter;
@@ -628,7 +628,7 @@ class SegmentedJournalTest {
             .withPreallocateSegmentFiles(true)
             .withMaxSegmentSize(segmentSize)
             .withDirectory(tmpDir.toFile())
-            .withMetaStore(new MockJournalMetastore());
+            .withMetaStore(new InMemory());
     final File firstSegment;
 
     // when
@@ -649,7 +649,7 @@ class SegmentedJournalTest {
             .withPreallocateSegmentFiles(false)
             .withMaxSegmentSize(segmentSize)
             .withDirectory(tmpDir.toFile())
-            .withMetaStore(new MockJournalMetastore());
+            .withMetaStore(new InMemory());
     final File firstSegment;
 
     // when
