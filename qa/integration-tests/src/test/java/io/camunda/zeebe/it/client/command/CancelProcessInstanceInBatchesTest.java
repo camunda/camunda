@@ -172,7 +172,9 @@ public final class CancelProcessInstanceInBatchesTest {
                 .withProcessInstanceKey(processInstance.getProcessInstanceKey())
                 .withBatchElementInstanceKey(batchElementInstanceKey)
                 .limit(2))
-        .describedAs("Has terminated in multiple batches")
+        .describedAs(
+            "Has terminated in multiple batches. If this assertion fails please decrease "
+                + "the message size, or increase the amount of element instances.")
         .hasSize(2);
   }
 }
