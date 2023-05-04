@@ -5,8 +5,9 @@
  * except in compliance with the proprietary license.
  */
 
-import {Modal, Stack, ActionableNotification} from '@carbon/react';
+import {Modal, Stack, ActionableNotification, Checkbox} from '@carbon/react';
 import {Description, WarningContainer} from './styled';
+import {useState} from 'react';
 
 type Props = {
   isVisible: boolean;
@@ -26,10 +27,14 @@ const DeleteDefinitionModal: React.FC<Props> = ({
   description,
   bodyContent,
   warningTitle,
+  confirmationText,
   warningContent,
   onClose,
   onDelete,
 }) => {
+  const [isConfirmed, setIsConfirmed] = useState(false);
+  const [hasConfirmationError, setHasConfirmationError] = useState(false);
+
   return (
     <Modal
       open={isVisible}
@@ -38,7 +43,14 @@ const DeleteDefinitionModal: React.FC<Props> = ({
       modalHeading={title}
       primaryButtonText="Delete"
       secondaryButtonText="Cancel"
-      onRequestSubmit={onDelete}
+      onRequestSubmit={() => {
+        if (!isConfirmed) {
+          setHasConfirmationError(true);
+          return;
+        }
+
+        onDelete();
+      }}
       onRequestClose={onClose}
       size="md"
     >
@@ -56,6 +68,20 @@ const DeleteDefinitionModal: React.FC<Props> = ({
             actionButtonLabel=""
           />
         )}
+        <Checkbox
+          id="confirmation-checkbox"
+          labelText={confirmationText}
+          invalid={hasConfirmationError}
+          invalidText="Please tick this box if you want to proceed."
+          warnText=""
+          onChange={(_, {checked}) => {
+            if (checked && hasConfirmationError) {
+              setHasConfirmationError(false);
+            }
+
+            setIsConfirmed(checked);
+          }}
+        />
       </Stack>
     </Modal>
   );

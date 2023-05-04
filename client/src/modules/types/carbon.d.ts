@@ -121,6 +121,29 @@ declare module '@carbon/react' {
     subtitle?: string;
     title?: string;
   }>;
+
+  export const Checkbox: React.FunctionComponent<
+    Omit<ReactInputAttr, ExcludedAttributes> & {
+      hideLabel?: boolean | undefined;
+      id: string;
+      labelText: NonNullable<React.ReactNode>;
+      defaultChecked?: boolean | undefined;
+      disabled?: boolean;
+      helperText?: React.ReactNode;
+      hideLabel?: boolean;
+      intermediate?: boolean;
+      invalid?: boolean;
+      invalidText: React.ReactNode;
+      warn?: boolean;
+      warnText: React.ReactNode;
+      onChange?: (
+        evt: React.ChangeEvent<HTMLInputElement>,
+        data: {checked: boolean; id: string}
+      ) => void;
+      onClick?: (evt: React.MouseEvent<HTMLInputElement>) => void;
+    }
+  >;
+
   export * from 'carbon-components-react';
 }
 

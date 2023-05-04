@@ -25,6 +25,8 @@ const Checkbox: React.FC<CheckboxProps> = ({input, labelText, Icon}) => {
           <div>{labelText}</div>
         </Stack>
       }
+      invalidText=""
+      warnText=""
       id={input.name}
     />
   );
