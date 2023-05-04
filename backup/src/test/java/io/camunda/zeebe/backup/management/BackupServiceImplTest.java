@@ -22,6 +22,7 @@ import io.camunda.zeebe.backup.api.BackupStatus;
 import io.camunda.zeebe.backup.api.BackupStatusCode;
 import io.camunda.zeebe.backup.api.BackupStore;
 import io.camunda.zeebe.backup.common.BackupIdentifierImpl;
+import io.camunda.zeebe.backup.common.BackupIdentifierWildcardImpl;
 import io.camunda.zeebe.backup.common.BackupStatusImpl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.testing.TestActorFuture;
