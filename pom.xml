@@ -35,7 +35,7 @@
     <version.elasticsearch>7.17.9</version.elasticsearch>
     <version.spring.boot>3.0.5</version.spring.boot>
     <version.junit>4.13.2</version.junit>
-    <version.springdoc>2.0.4</version.springdoc>
+    <version.springdoc>2.1.0</version.springdoc>
     <version.jakarta.json>2.0.1</version.jakarta.json>
     <version.micrometer>1.10.3</version.micrometer>
     <version.mockito>5.2.0</version.mockito>
@@ -457,8 +457,8 @@
             <id>enforce</id>
             <configuration>
               <rules>
-                <requirePluginVersion />
-                <banDuplicatePomDependencyVersions />
+                <requirePluginVersion/>
+                <banDuplicatePomDependencyVersions/>
               </rules>
             </configuration>
             <goals>
