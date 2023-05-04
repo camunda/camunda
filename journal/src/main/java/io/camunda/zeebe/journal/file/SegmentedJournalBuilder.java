@@ -155,6 +155,6 @@ public class SegmentedJournalBuilder {
     final var journalMetrics = new JournalMetrics(name);
 
     return new SegmentedJournal(
-        directory, maxSegmentSize, journalIndex, segmentsManager, journalMetrics, journalMetaStore);
+        journalIndex, segmentsManager, journalMetrics, journalMetaStore);
   }
 }

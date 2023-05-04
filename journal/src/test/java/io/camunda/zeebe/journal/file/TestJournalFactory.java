@@ -27,9 +27,9 @@ import org.agrona.concurrent.UnsafeBuffer;
  * all entries having the same fixed size. Use {@link #entry()} when appending as data to ensure
  * this always holds.
  *
- * <p>Most external dependencies are reused (e.g. {@link JournalMetrics}, {@link
- * MockJournalMetastore}), but the {@link SegmentsManager} and {@link SegmentedJournal} are always
- * recreated. Make sure to close either of them after creation.
+ * <p>Most external dependencies are reused (e.g. {@link JournalMetrics}, {@link InMemory}), but the
+ * {@link SegmentsManager} and {@link SegmentedJournal} are always recreated. Make sure to close
+ * either of them after creation.
  *
  * <p>By default, the string "test" is the entry data, and there is one entry per segment.
  */
@@ -65,7 +65,7 @@ final class TestJournalFactory {
     size = getSerializedSize(entryData);
     this.maxEntryCount = maxEntryCount;
 
-    loader = new SegmentLoader(2 * maxSegmentSize(), metrics);
+    loader = new SegmentLoader(2 * maxSegmentSize());
   }
 
   int serializedEntrySize() {
@@ -90,12 +90,7 @@ final class TestJournalFactory {
 
   SegmentsManager segmentsManager(final Path directory) {
     return new SegmentsManager(
-        index,
-        maxSegmentSize(),
-        directory.resolve("data").toFile(),
-        "journal",
-        segmentLoader(),
-        metrics);
+        index, maxSegmentSize(), directory.resolve("data").toFile(), "journal", segmentLoader());
   }
 
   SegmentedJournal journal(final SegmentsManager segments) {

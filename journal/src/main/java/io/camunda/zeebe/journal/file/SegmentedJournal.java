@@ -24,7 +24,6 @@ import io.camunda.zeebe.journal.JournalMetaStore;
 import io.camunda.zeebe.journal.JournalReader;
 import io.camunda.zeebe.journal.JournalRecord;
 import io.camunda.zeebe.util.buffer.BufferWriter;
-import java.io.File;
 import java.util.Collection;
 import java.util.Objects;
 import java.util.concurrent.locks.StampedLock;
@@ -33,8 +32,6 @@ import java.util.concurrent.locks.StampedLock;
 public final class SegmentedJournal implements Journal {
   public static final long ASQN_IGNORE = -1;
   private final JournalMetrics journalMetrics;
-  private final File directory;
-  private final int maxSegmentSize;
   private final Collection<SegmentedJournalReader> readers = Sets.newConcurrentHashSet();
   private volatile boolean open = true;
   private final JournalIndex journalIndex;
@@ -45,14 +42,10 @@ public final class SegmentedJournal implements Journal {
   private final JournalMetaStore journalMetaStore;
 
   SegmentedJournal(
-      final File directory,
-      final int maxSegmentSize,
       final JournalIndex journalIndex,
       final SegmentsManager segments,
       final JournalMetrics journalMetrics,
       final JournalMetaStore journalMetaStore) {
-    this.directory = Objects.requireNonNull(directory, "must specify a journal directory");
-    this.maxSegmentSize = maxSegmentSize;
     this.journalMetrics = Objects.requireNonNull(journalMetrics, "must specify journal metrics");
     this.journalIndex = Objects.requireNonNull(journalIndex, "must specify a journal index");
     this.segments = Objects.requireNonNull(segments, "must specify a journal segments manager");
@@ -175,14 +168,6 @@ public final class SegmentedJournal implements Journal {
    */
   private void assertOpen() {
     checkState(segments.getCurrentSegment() != null, "journal not open");
-  }
-
-  private long maxSegmentSize() {
-    return maxSegmentSize;
-  }
-
-  private File directory() {
-    return directory;
   }
 
   /**
