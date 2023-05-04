@@ -40,6 +40,11 @@ public final class DbByte implements DbKey, DbValue {
   }
 
   @Override
+  public long longHashCode() {
+    return Byte.hashCode(value);
+  }
+
+  @Override
   public String toString() {
     return "DbByte{" + "value=" + value + '}';
   }

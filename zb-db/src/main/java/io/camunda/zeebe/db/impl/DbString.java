@@ -12,6 +12,7 @@ import static io.camunda.zeebe.db.impl.ZeebeDbConstants.ZB_DB_BYTE_ORDER;
 import io.camunda.zeebe.db.DbKey;
 import io.camunda.zeebe.db.DbValue;
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import java.util.Arrays;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -53,12 +54,17 @@ public final class DbString implements DbKey, DbValue {
     mutableDirectBuffer.putBytes(offset, bytes, 0, bytes.capacity());
   }
 
+  public DirectBuffer getBuffer() {
+    return bytes;
+  }
+
+  @Override
+  public long longHashCode() {
+    return Arrays.hashCode(bytes.byteArray());
+  }
+
   @Override
   public String toString() {
     return BufferUtil.bufferAsString(bytes);
-  }
-
-  public DirectBuffer getBuffer() {
-    return bytes;
   }
 }

@@ -44,6 +44,7 @@ public class ZeebeTransaction implements ZeebeDbTransaction, AutoCloseable {
       final byte[] value,
       final int valueLength)
       throws Exception {
+
     RocksDbInternal.putWithHandle.invoke(
         transaction, nativeHandle, key, keyLength, value, valueLength, columnFamilyHandle, false);
   }
@@ -127,7 +128,7 @@ public class ZeebeTransaction implements ZeebeDbTransaction, AutoCloseable {
     transaction.rollback();
   }
 
-  public void close() {
+  @Override public void close() {
     transaction.close();
   }
 }

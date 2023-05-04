@@ -60,6 +60,11 @@ public record DbForeignKey<K extends DbKey>(
     return skip.test(inner);
   }
 
+  @Override
+  public long longHashCode() {
+    return inner.longHashCode();
+  }
+
   public enum MatchType {
     Full,
     Prefix,
