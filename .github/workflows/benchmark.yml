@@ -141,11 +141,11 @@ jobs:
         id: image-tag
         run: |
           echo "image-tag=${{ inputs.name }}-$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
-      - run: ./mvnw -B -D skipTests -D skipChecks -pl benchmarks/project -am package
+      - run: mvn -B -D skipTests -D skipChecks -pl benchmarks/project -am package
       - name: Build Starter Image
-        run: ./mvnw -pl benchmarks/project jib:build -P starter -D image="gcr.io/zeebe-io/starter:${{ steps.image-tag.outputs.image-tag }}"
+        run: mvn -pl benchmarks/project jib:build -P starter -D image="gcr.io/zeebe-io/starter:${{ steps.image-tag.outputs.image-tag }}"
       - name: Build Worker Image
-        run: ./mvnw -pl benchmarks/project jib:build -P worker -D image="gcr.io/zeebe-io/worker:${{ steps.image-tag.outputs.image-tag }}"
+        run: mvn -pl benchmarks/project jib:build -P worker -D image="gcr.io/zeebe-io/worker:${{ steps.image-tag.outputs.image-tag }}"
   deploy-benchmark-measurement:
     name: Measure
     needs:
