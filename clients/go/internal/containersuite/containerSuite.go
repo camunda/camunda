@@ -11,6 +11,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
 package containersuite
 
 import (
@@ -164,7 +165,7 @@ type ContainerSuite struct {
 	container testcontainers.Container
 }
 
-func (s *ContainerSuite) AfterTest(suiteName, testName string) {
+func (s *ContainerSuite) AfterTest(_, _ string) {
 	if s.T().Failed() {
 		s.PrintFailedContainerLogs()
 	}
