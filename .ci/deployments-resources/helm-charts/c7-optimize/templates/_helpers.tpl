@@ -44,32 +44,20 @@ camunda.cloud/created-by: "{{ .Values.git.repoUrl }}/blob/{{ .Values.git.branch 
 {{- printf "%s.%s" .Release.Name .Values.ingress.domain | trimPrefix "optimize-" -}}
 {{- end -}}
 
-# defining environment variables between the stage and persistent environment
+# defining environment variables for stage environment
 # This way the deployment scripts are cleaner and simpler
 # This also was the solution after trying to pass the env var from the command line and with the different special
 # Characters that we have here, it was hard to do it using bash.
 
 {{- define "javaOpts" }}
-{{- if eq .Values.env "persistent" -}}
--Xms1g -Xmx1g -XX:MaxMetaspaceSize=256m -Ddb.username=$DB_USERNAME -Ddb.password=$DB_PASSWORD
-{{- else -}}
 -Xms1g -Xmx1g -XX:MaxMetaspaceSize=256m
-{{- end -}}
 {{- end -}}
 
 
 {{- define "postgresUrl" }}
-{{- if eq .Values.env "persistent" -}}
-optimize-persistent-postgres.optimize-persistent:5432
-{{- else -}}
 stage-postgres.optimize:5432
-{{- end -}}
 {{- end -}}
 
 {{- define "elasticsearchUrl" }}
-{{- if eq .Values.env "persistent" -}}
-elasticsearch-es-http:9200
-{{- else -}}
 localhost:9300
-{{- end -}}
 {{- end -}}
