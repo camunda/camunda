@@ -3,7 +3,7 @@
   "version": "8.3.0-SNAPSHOT",
   "private": true,
   "dependencies": {
-    "@apollo/client": "3.7.12",
+    "@apollo/client": "3.7.14",
     "@bpmn-io/form-js-carbon-styles": "0.15.0-alpha.1",
     "@bpmn-io/form-js-viewer": "0.15.0-alpha.0",
     "@camunda/camunda-composite-components": "0.0.35",
