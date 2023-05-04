@@ -57,6 +57,8 @@ public class MetaStore implements JournalMetaStore, AutoCloseable {
   private final MetaStoreSerializer serializer = new MetaStoreSerializer();
   private final FileChannel metaFileChannel;
 
+  private volatile long lastFlushedIndex;
+
   public MetaStore(final RaftStorage storage) throws IOException {
     if (!(storage.directory().isDirectory() || storage.directory().mkdirs())) {
       throw new IllegalArgumentException(
@@ -100,6 +102,7 @@ public class MetaStore implements JournalMetaStore, AutoCloseable {
         FileChannel.open(confFile.toPath(), StandardOpenOption.READ, StandardOpenOption.WRITE);
 
     // Read existing meta info and rewrite with the current version
+    lastFlushedIndex = readLastFlushedIndex();
     initializeMetaBuffer();
   }
 
@@ -181,11 +184,17 @@ public class MetaStore implements JournalMetaStore, AutoCloseable {
 
   @Override
   public synchronized void storeLastFlushedIndex(final long index) {
+    if (index == lastFlushedIndex) {
+      log.trace("Skip storing same last flushed index {}", index);
+      return;
+    }
+
     log.trace("Store last flushed index {}", index);
 
     try {
       serializer.writeLastFlushedIndex(index, new UnsafeBuffer(metaBuffer), VERSION_LENGTH);
       metaFileChannel.write(metaBuffer, 0);
+      lastFlushedIndex = index;
       metaBuffer.position(0);
     } catch (final IOException e) {
       throw new StorageException(e);
@@ -194,13 +203,7 @@ public class MetaStore implements JournalMetaStore, AutoCloseable {
 
   @Override
   public synchronized long loadLastFlushedIndex() {
-    try {
-      metaFileChannel.read(metaBuffer, 0);
-      metaBuffer.position(0);
-    } catch (final IOException e) {
-      throw new StorageException(e);
-    }
-    return serializer.readLastFlushedIndex(new UnsafeBuffer(metaBuffer), VERSION_LENGTH);
+    return lastFlushedIndex;
   }
 
   @Override
@@ -265,5 +268,15 @@ public class MetaStore implements JournalMetaStore, AutoCloseable {
   @Override
   public String toString() {
     return toStringHelper(this).toString();
+  }
+
+  private long readLastFlushedIndex() {
+    try {
+      metaFileChannel.read(metaBuffer, 0);
+      metaBuffer.position(0);
+    } catch (final IOException e) {
+      throw new StorageException(e);
+    }
+    return serializer.readLastFlushedIndex(new UnsafeBuffer(metaBuffer), VERSION_LENGTH);
   }
 }
