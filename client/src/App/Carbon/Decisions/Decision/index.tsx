@@ -6,12 +6,68 @@
  */
 
 import {observer} from 'mobx-react';
-import {PanelHeader} from 'modules/components/Carbon/PanelHeader';
+import {Restricted} from 'modules/components/Restricted';
+import {COLLAPSABLE_PANEL_MIN_WIDTH} from 'modules/constants';
+import {IS_DECISION_DEFINITION_DELETION_ENABLED} from 'modules/feature-flags';
+import {useOperationsPanelResize} from 'modules/hooks/useOperationsPanelResize';
+import {groupedDecisionsStore} from 'modules/stores/groupedDecisions';
+import {useRef} from 'react';
+import {useLocation} from 'react-router-dom';
+import {DecisionOperations} from './DecisionOperations';
+import {PanelHeader} from './styled';
 
 const Decision: React.FC = observer(() => {
+  const location = useLocation();
+
+  const {getDecisionName, getDecisionDefinitionId} = groupedDecisionsStore;
+
+  const params = new URLSearchParams(location.search);
+  const version = params.get('version');
+  const decisionId = params.get('name');
+
+  const isDecisionSelected = decisionId !== null;
+  const isVersionSelected = version !== null && version !== 'all';
+  const decisionName = getDecisionName(decisionId);
+
+  const decisionDefinitionId =
+    isDecisionSelected && isVersionSelected
+      ? getDecisionDefinitionId({
+          decisionId,
+          version: Number(version),
+        })
+      : null;
+
+  const panelHeaderRef = useRef<HTMLDivElement>(null);
+
+  useOperationsPanelResize(panelHeaderRef, (target, width) => {
+    target.style[
+      'marginRight'
+    ] = `calc(${width}px - ${COLLAPSABLE_PANEL_MIN_WIDTH})`;
+  });
+
   return (
     <section>
-      <PanelHeader title="Decision" />
+      <PanelHeader title="Decision" ref={panelHeaderRef}>
+        {IS_DECISION_DEFINITION_DELETION_ENABLED &&
+          isVersionSelected &&
+          decisionDefinitionId !== null && (
+            <Restricted
+              scopes={['write']}
+              resourceBasedRestrictions={{
+                scopes: ['DELETE'],
+                permissions: groupedDecisionsStore.getPermissions(
+                  decisionId ?? undefined
+                ),
+              }}
+            >
+              <DecisionOperations
+                decisionDefinitionId={decisionDefinitionId}
+                decisionName={decisionName || 'Decision'}
+                decisionVersion={version}
+              />
+            </Restricted>
+          )}
+      </PanelHeader>
       <div>decisions - diagram</div>
     </section>
   );

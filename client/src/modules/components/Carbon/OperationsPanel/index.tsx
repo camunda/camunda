@@ -52,6 +52,7 @@ const OperationsPanel: React.FC = observer(() => {
       onToggle={toggleOperationsPanel}
       ref={scrollableContainerRef}
       scrollable={!shouldDisplaySkeleton}
+      collapsablePanelRef={collapsablePanelRef}
     >
       {(() => {
         if (operations.length === 0 && status === 'fetched') {

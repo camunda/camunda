@@ -6,16 +6,10 @@
  */
 
 import styled from 'styled-components';
+import {PanelHeader as BasePanelHeader} from 'modules/components/Carbon/PanelHeader';
 
-const Header = styled.header`
-  background-color: var(--cds-layer);
-  border-bottom: solid 1px var(--cds-border-subtle-01);
-  padding: var(--cds-spacing-04);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  min-height: var(--cds-spacing-09);
-  height: var(--cds-spacing-09);
+const PanelHeader = styled(BasePanelHeader)`
+  padding-right: 0;
 `;
 
-export {Header};
+export {PanelHeader};

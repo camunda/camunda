@@ -7,6 +7,7 @@
 
 import {Header} from './styled';
 import {Title} from '../PanelTitle';
+import {forwardRef} from 'react';
 
 type Props = {
   title: string;
@@ -16,21 +17,20 @@ type Props = {
   hasTopBorder?: boolean;
 };
 
-const PanelHeader: React.FC<Props> = ({
-  title,
-  count = 0,
-  children,
-  className,
-}) => {
-  return (
-    <Header className={className}>
-      <Title>
-        {title}
-        {count > 0 && <>&nbsp;&nbsp;&nbsp;-&nbsp;&nbsp;&nbsp;{count} results</>}
-      </Title>
-      {children}
-    </Header>
-  );
-};
+const PanelHeader = forwardRef<HTMLElement, Props>(
+  ({title, count = 0, children, className}, ref) => {
+    return (
+      <Header className={className} ref={ref}>
+        <Title>
+          {title}
+          {count > 0 && (
+            <>&nbsp;&nbsp;&nbsp;-&nbsp;&nbsp;&nbsp;{count} results</>
+          )}
+        </Title>
+        {children}
+      </Header>
+    );
+  }
+);
 
 export {PanelHeader};

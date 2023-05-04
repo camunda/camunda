@@ -7,15 +7,9 @@
 
 import styled from 'styled-components';
 
-const Header = styled.header`
-  background-color: var(--cds-layer);
-  border-bottom: solid 1px var(--cds-border-subtle-01);
-  padding: var(--cds-spacing-04);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  min-height: var(--cds-spacing-09);
-  height: var(--cds-spacing-09);
+const Ul = styled.ul`
+  display: inline-flex;
+  flex-direction: row;
 `;
 
-export {Header};
+export {Ul};
