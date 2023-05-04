@@ -1,3 +1,74 @@
+# v8.3.0-alpha1
+## 🚀 New Features
+* **backend**: Divide large bulk requests into smaller ones. ([#4450](https://github.com/camunda/operate/issues/4450))
+* **backend**: REST API - Return 403 in Get single variable endpoint ([#4323](https://github.com/camunda/operate/issues/4323))
+* enable search feature for process names, flow nodes and decisions ([#4406](https://github.com/camunda/operate/issues/4406))
+* **feature-flagged**: add decision filter combo boxes ([#4367](https://github.com/camunda/operate/issues/4367))
+* add carbon routes ([#4314](https://github.com/camunda/operate/issues/4314))
+* **feature-flagged**: replace flow node dropdown by combobox ([#4342](https://github.com/camunda/operate/issues/4342))
+* **feature-flagged**: replace process version dropdown by combobox ([#4337](https://github.com/camunda/operate/issues/4337))
+* **feature-flagged**: replace process name dropdown by combobox ([#4325](https://github.com/camunda/operate/issues/4325))
+
+## 💊 Bugfixes
+* pom.xml to reduce vulnerabilities ([#4333](https://github.com/camunda/operate/issues/4333))
+* **backend**: use empty list as default for null value in map ([#4455](https://github.com/camunda/operate/issues/4455))
+* **backend**: Use Public API ErrorController in BackupController ([#4453](https://github.com/camunda/operate/issues/4453))
+* consume `CAMUNDA_OPERATE_IDENTITY_REDIRECT_ROOT_URL` from env vars ([#4351](https://github.com/camunda/operate/issues/4351))
+* docker labels verification ([#4444](https://github.com/camunda/operate/issues/4444))
+* fix broken carbon layer colors
+* **import**: correctly process possible duplicates when import reread ([#4424](https://github.com/camunda/operate/issues/4424))
+* **deps**: update dependency sass to v1.62.0 ([#4423](https://github.com/camunda/operate/issues/4423))
+* **deps**: update dependency mobx to v6.9.0 ([#4422](https://github.com/camunda/operate/issues/4422))
+* **deps**: update dependency @carbon/elements to v11.21.0 ([#4419](https://github.com/camunda/operate/issues/4419))
+* **deps**: update dependency @carbon/react to v1.27.0 ([#4420](https://github.com/camunda/operate/issues/4420))
+* replace version combobox by dropdown ([#4385](https://github.com/camunda/operate/issues/4385))
+* **backend**: Failures ignored reading records from Zeebe aliases ([#4361](https://github.com/camunda/operate/issues/4361))
+
+## 🧹 Chore
+* **backend**: Update Zeebe and Identity to 8.3.0-alpha1 ([#4476](https://github.com/camunda/operate/issues/4476))
+* **els/repo**: remove not needed refresh when getting session ([#4478](https://github.com/camunda/operate/issues/4478))
+* lazy load carbon pages ([#4466](https://github.com/camunda/operate/issues/4466))
+* adjust operations panel and entry tests ([#4452](https://github.com/camunda/operate/issues/4452))
+* convert operation panel skeleton to carbon ([#4451](https://github.com/camunda/operate/issues/4451))
+* add empty and error states to operations panel ([#4449](https://github.com/camunda/operate/issues/4449))
+* add progress bar and change background for running operations ([#4438](https://github.com/camunda/operate/issues/4438))
+* convert operation entry to carbon ([#4437](https://github.com/camunda/operate/issues/4437))
+* add decision state checkboxes to carbon filter panel ([#4435](https://github.com/camunda/operate/issues/4435))
+* add padding to section title ([#4447](https://github.com/camunda/operate/issues/4447))
+* fix layering ([#4443](https://github.com/camunda/operate/issues/4443))
+* processes layout ([#4446](https://github.com/camunda/operate/issues/4446))
+* add decisions fields to carbon filter panel ([#4433](https://github.com/camunda/operate/issues/4433))
+* ui improvements for carbon data table ([#4426](https://github.com/camunda/operate/issues/4426))
+* support loading state for carbon data table ([#4412](https://github.com/camunda/operate/issues/4412))
+* add skeleton state for carbon data table ([#4408](https://github.com/camunda/operate/issues/4408))
+* empty and error state for data table ([#4407](https://github.com/camunda/operate/issues/4407))
+* support infinite scroll in carbon data table ([#4405](https://github.com/camunda/operate/issues/4405))
+* add sorting to carbon datatable ([#4404](https://github.com/camunda/operate/issues/4404))
+* **backend**: docker-compose for testing without identity
+* **backend**: tiny logs cleanup ([#4432](https://github.com/camunda/operate/issues/4432))
+* Update Browserlist DB
+* update monaco editor ([#4417](https://github.com/camunda/operate/issues/4417))
+* data table link and icon ([#4402](https://github.com/camunda/operate/issues/4402))
+* add carbon data table ([#4401](https://github.com/camunda/operate/issues/4401))
+* **deps**: update dependency testcafe to v2.5.0 ([#4414](https://github.com/camunda/operate/issues/4414))
+* **deps**: update dependency @testing-library/dom to v9.2.0 ([#4396](https://github.com/camunda/operate/issues/4396))
+* **deps**: update actions/add-to-project action to v0.5.0 ([#4390](https://github.com/camunda/operate/issues/4390))
+* **deps**: update dependency typescript to v5 ([#4287](https://github.com/camunda/operate/issues/4287))
+* **deps**: update amannn/action-semantic-pull-request action to v5 ([#4178](https://github.com/camunda/operate/issues/4178))
+* support overflowing collapsable panel ([#4391](https://github.com/camunda/operate/issues/4391))
+* add collapsable panel with carbon stylings ([#4389](https://github.com/camunda/operate/issues/4389))
+* create static panel header with carbon ([#4384](https://github.com/camunda/operate/issues/4384))
+* **backend**: update after minor release 8.2 ([#4365](https://github.com/camunda/operate/issues/4365))
+* **deps**: update dependency @testing-library/react to v14 ([#4181](https://github.com/camunda/operate/issues/4181))
+* **Dockerfile**: update hashsum of base images (arm64) ([#4394](https://github.com/camunda/operate/issues/4394))
+* **Dockerfile**: update hashsum of base images ([#4393](https://github.com/camunda/operate/issues/4393))
+* **deps**: update hashicorp/vault-action digest to 1d767e3 ([#4352](https://github.com/camunda/operate/issues/4352))
+* add stack and spacing to process filter combo boxes ([#4364](https://github.com/camunda/operate/issues/4364))
+* create layout for list pages ([#4379](https://github.com/camunda/operate/issues/4379))
+* create general layout for carbon ([#4376](https://github.com/camunda/operate/issues/4376))
+* Update Browserlist DB
+* Update Browserlist DB
+* update CHANGELOG.md
 # v8.2.0
 ## 🚀 New Features
 * support signal start event ([#4339](https://github.com/camunda/operate/issues/4339))
