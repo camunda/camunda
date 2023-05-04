@@ -1,3 +1,68 @@
+# v8.3.0-alpha1
+## 🚀 New Features
+* Consume form-js Carbonisation ([#2872](https://github.com/camunda/tasklist/issues/2872))
+* Enable processes menu item on all saas versions ([#2833](https://github.com/camunda/tasklist/issues/2833))
+* re-enabling processes for saas ([#2840](https://github.com/camunda/tasklist/issues/2840))
+* hide completion and add variable button completed tasks ([#2802](https://github.com/camunda/tasklist/issues/2802))
+* **backend**: consume tasklist identity `redirect_root_url` from env variables ([#2739](https://github.com/camunda/tasklist/issues/2739))
+
+## 💊 Bugfixes
+* **backend**: process duplications properly ([#2825](https://github.com/camunda/tasklist/issues/2825))
+* Fix labels ([#2817](https://github.com/camunda/tasklist/issues/2817))
+* changing dateformat to accept zoned ([#2807](https://github.com/camunda/tasklist/issues/2807))
+* add `alt` property to images ([#2810](https://github.com/camunda/tasklist/issues/2810))
+* **deps**: update dependency @apollo/client to v3.7.12 ([#2724](https://github.com/camunda/tasklist/issues/2724))
+* **deps**: update all non-major dependencies ([#2709](https://github.com/camunda/tasklist/issues/2709))
+* **deps**: update dependency @monaco-editor/react to v4.5.0 ([#2755](https://github.com/camunda/tasklist/issues/2755))
+* **deps**: update dependency @carbon/react to v1.27.0 ([#2794](https://github.com/camunda/tasklist/issues/2794))
+* **deps**: update dependency @carbon/elements to v11.21.0 ([#2793](https://github.com/camunda/tasklist/issues/2793))
+* authentication rest api ([#2796](https://github.com/camunda/tasklist/issues/2796))
+* Fix radio button disabled state style ([#2781](https://github.com/camunda/tasklist/issues/2781))
+* **deps**: update dependency sass to v1.62.0 ([#2754](https://github.com/camunda/tasklist/issues/2754))
+* adding identity check ([#2763](https://github.com/camunda/tasklist/issues/2763))
+* adding extra exception for identity configuration ([#2761](https://github.com/camunda/tasklist/issues/2761))
+* identity resources enabled ([#2760](https://github.com/camunda/tasklist/issues/2760))
+* **deps**: update dependency @carbon/react to v1.26.0 ([#2722](https://github.com/camunda/tasklist/issues/2722))
+
+## 🧹 Chore
+* **els/repo**: remove not needed refresh when getting session ([#2875](https://github.com/camunda/tasklist/issues/2875))
+* updating dependencies to 8.3.0-alpha1 ([#2878](https://github.com/camunda/tasklist/issues/2878))
+* Make visual regression tests more reliable
+* **deps**: update actions/add-to-project digest to 23e1389 ([#2868](https://github.com/camunda/tasklist/issues/2868))
+* **deps**: update dependency @axe-core/playwright to v4.7.0 ([#2858](https://github.com/camunda/tasklist/issues/2858))
+* Add React Query ([#2850](https://github.com/camunda/tasklist/issues/2850))
+* Add strict mode back
+* **deps**: update actions/add-to-project digest to 87685c7 ([#2841](https://github.com/camunda/tasklist/issues/2841))
+* **deps**: update mcr.microsoft.com/playwright docker tag to v1.33.0 ([#2843](https://github.com/camunda/tasklist/issues/2843))
+* removing hard-coded identity version on tests ([#2829](https://github.com/camunda/tasklist/issues/2829))
+* **deps**: update definitelytyped ([#2830](https://github.com/camunda/tasklist/issues/2830))
+* bump version.elasticsearch from 7.17.7 to 7.17.9 ([#2465](https://github.com/camunda/tasklist/issues/2465))
+* bump version.jackson from 2.14.1 to 2.14.2 ([#2442](https://github.com/camunda/tasklist/issues/2442))
+* Simplify Playwright CI ([#2827](https://github.com/camunda/tasklist/issues/2827))
+* **deps**: update dependency @types/node to v18.16.0 ([#2819](https://github.com/camunda/tasklist/issues/2819))
+* **deps**: update actions/add-to-project digest to 25f81e7 ([#2822](https://github.com/camunda/tasklist/issues/2822))
+* Update form-js to 0.14.1 ([#2818](https://github.com/camunda/tasklist/issues/2818))
+* **deps**: update actions/add-to-project digest to 0a7abac ([#2814](https://github.com/camunda/tasklist/issues/2814))
+* adding log4j2.xml file to docker image ([#2805](https://github.com/camunda/tasklist/issues/2805))
+* Update Vault action version
+* **deps**: update dependency msw to v1 ([#2559](https://github.com/camunda/tasklist/issues/2559))
+* **deps**: update dependency @types/node to v18.15.12 ([#2809](https://github.com/camunda/tasklist/issues/2809))
+* Revert to supported mobx-react-lite verison
+* update after minor release 8.2 ([#2790](https://github.com/camunda/tasklist/issues/2790))
+* **deps**: update actions/add-to-project digest to 6319fbf ([#2803](https://github.com/camunda/tasklist/issues/2803))
+* **deps**: update dependency axe-core to v4.7.0 ([#2798](https://github.com/camunda/tasklist/issues/2798))
+* add instruction on how to run app using IntelliJ IDEA ([#2784](https://github.com/camunda/tasklist/issues/2784))
+* **coverage**: setup test code coverage ([#2767](https://github.com/camunda/tasklist/issues/2767))
+* Add missing visual regression tests ([#2785](https://github.com/camunda/tasklist/issues/2785))
+* Mock version on visual regression tests ([#2782](https://github.com/camunda/tasklist/issues/2782))
+* **deps**: update dependency monaco-editor to v0.37.1 ([#2738](https://github.com/camunda/tasklist/issues/2738))
+* Document how to inspect visual regression CI failures ([#2772](https://github.com/camunda/tasklist/issues/2772))
+* **deps**: update dependency testcafe to v2.5.0 ([#2753](https://github.com/camunda/tasklist/issues/2753))
+* **deps**: update actions/add-to-project digest to 16678f0 ([#2756](https://github.com/camunda/tasklist/issues/2756))
+* **deps**: update helm release camunda-platform to v8.2.0 ([#2766](https://github.com/camunda/tasklist/issues/2766))
+* **deps**: update hashicorp/vault-action digest to 1d767e3 ([#2725](https://github.com/camunda/tasklist/issues/2725))
+* **deps**: update actions/add-to-project digest to 80dff83 ([#2714](https://github.com/camunda/tasklist/issues/2714))
+* update CHANGELOG.md
 # v8.2.0
 ## 🚀 New Features
 * adding flag RESOURCE_PERMISSIONS_ENABLED ([#2727](https://github.com/camunda/tasklist/issues/2727))
