@@ -14,7 +14,6 @@ import io.camunda.zeebe.db.ZeebeDbException;
 import io.camunda.zeebe.db.ZeebeDbTransaction;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.lang.reflect.InvocationTargetException;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import org.agrona.DirectBuffer;
@@ -57,11 +56,27 @@ public class ZeebeTransaction implements ZeebeDbTransaction, AutoCloseable {
     RocksDbInternal.putWithHandle.invoke(
         transaction, nativeHandle, key, keyLength, value, valueLength, columnFamilyHandle, false);
 
-    final var keyClone = BufferUtil.cloneBuffer(new UnsafeBuffer(key, 0, keyLength), 0, keyLength);
     final var valueClone =
         BufferUtil.cloneBuffer(new UnsafeBuffer(value, 0, valueLength), 0, valueLength);
 
-    keyValueLRUCache.put(Arrays.hashCode(keyClone.byteArray()), valueClone);
+    final var offset = 0; // CF byte
+    final int reducedLength = keyLength - (offset);
+    keyValueLRUCache.put(hashCode(key, offset, reducedLength), valueClone);
+  }
+
+  public static int hashCode(final byte[] a, final int offset, final int length) {
+    if (a == null) {
+      return 0;
+    } else {
+      int result = 1;
+
+      for (int arrOffset = offset; arrOffset < length; ++arrOffset) {
+        final byte element = a[arrOffset];
+        result = 31 * result + element;
+      }
+
+      return result;
+    }
   }
 
   public byte[] get(
@@ -71,11 +86,12 @@ public class ZeebeTransaction implements ZeebeDbTransaction, AutoCloseable {
       final int keyLength)
       throws Exception {
 
-    final var keyClone = BufferUtil.cloneBuffer(new UnsafeBuffer(key, 0, keyLength), 0, keyLength);
+    final var offset = 0; // CF byte
+    final int reducedLength = keyLength - (offset);
     final DirectBuffer valueBuffer =
         keyValueLRUCache.computeIfAbsent(
-            Arrays.hashCode(keyClone.byteArray()),
-            (kHash) -> {
+            hashCode(key, offset, reducedLength),
+            (h) -> {
               try {
                 final var bytes =
                     (byte[])
@@ -89,7 +105,7 @@ public class ZeebeTransaction implements ZeebeDbTransaction, AutoCloseable {
                 if (bytes != null) {
                   return new UnsafeBuffer(bytes);
                 } else {
-                  return null;
+                  return new UnsafeBuffer(0, 0);
                 }
 
               } catch (final IllegalAccessException e) {
@@ -99,7 +115,7 @@ public class ZeebeTransaction implements ZeebeDbTransaction, AutoCloseable {
               }
             });
 
-    if (valueBuffer == null) {
+    if (valueBuffer.capacity() == 0) {
       return null;
     } else {
       return valueBuffer.byteArray();
@@ -111,8 +127,9 @@ public class ZeebeTransaction implements ZeebeDbTransaction, AutoCloseable {
     RocksDbInternal.removeWithHandle.invoke(
         transaction, nativeHandle, key, keyLength, columnFamilyHandle, false);
 
-    final var keyClone = BufferUtil.cloneBuffer(new UnsafeBuffer(key, 0, keyLength), 0, keyLength);
-    keyValueLRUCache.remove(Arrays.hashCode(keyClone.byteArray()));
+    final var offset = 0; // CF byte
+    final int reducedLength = keyLength - (offset);
+    keyValueLRUCache.remove(hashCode(key, offset, reducedLength));
   }
 
   public RocksIterator newIterator(final ReadOptions options, final ColumnFamilyHandle handle) {
