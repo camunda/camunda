@@ -157,6 +157,7 @@ public final class SegmentedJournal implements Journal {
 
   @Override
   public void close() {
+    flush();
     segments.close();
     open = false;
   }

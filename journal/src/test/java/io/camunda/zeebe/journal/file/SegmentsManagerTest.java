@@ -203,17 +203,19 @@ class SegmentsManagerTest {
       journal.append(2, journalFactory.entry()).index();
       journal.append(3, journalFactory.entry()).index();
       journal.reset(10);
+
+      // when - simulate "failure" by corrupting the descriptor
+      // we cannot close the journal here as we want to avoid flushing. instead, open a separate
+      // instance of the SegmentsManager
+      segments = journalFactory.segmentsManager(directory);
+      segments.open();
+      LogCorrupter.corruptDescriptor(
+          Objects.requireNonNull(segments.getFirstSegment()).file().file());
+      segments.close();
+
+      // then
+      assertThatNoException().isThrownBy(() -> segments.open());
     }
-
-    // when - simulate "failure" by corrupting the descriptor
-    segments = journalFactory.segmentsManager(directory);
-    segments.open();
-    LogCorrupter.corruptDescriptor(
-        Objects.requireNonNull(segments.getFirstSegment()).file().file());
-    segments.close();
-
-    // then
-    assertThatNoException().isThrownBy(() -> segments.open());
   }
 
   @Test
