@@ -11,10 +11,11 @@ import {WarningFilled as BaseWarningFilled} from '@carbon/react/icons';
 
 const Title = styled.h3`
   ${heading01};
+  padding-bottom: ${spacing05};
 `;
 
 const Container = styled.div`
-  padding: 0 ${spacing05};
+  padding: ${spacing05};
 `;
 
 const WarningFilled = styled(BaseWarningFilled)`
