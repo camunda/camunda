@@ -22,6 +22,7 @@ jest.mock('./service', () => ({
       currentUserRole: 'editor',
       lastModified: '2019-11-18T12:29:37+0000',
       name: 'Test Report',
+      description: 'This is a description',
       data: {
         roleCounts: {},
         subEntityCounts: {},
@@ -131,7 +132,7 @@ it('should show entity list component when user is not editor and there no entit
 });
 
 it('should hide edit options for read only users', () => {
-  loadEntities.mockReturnValue([
+  loadEntities.mockReturnValueOnce([
     {
       id: '1',
       entityType: 'report',
@@ -149,7 +150,7 @@ it('should hide edit options for read only users', () => {
 });
 
 it('should hide edit options for collection editors', () => {
-  loadEntities.mockReturnValue([
+  loadEntities.mockReturnValueOnce([
     {
       id: '1',
       entityType: 'collection',
@@ -254,4 +255,13 @@ describe('export authorizations', () => {
         .actions.find(({text}) => text === 'Export')
     ).toBe(undefined);
   });
+});
+
+it('should show entity name and description', () => {
+  const node = shallow(<Home {...props} />);
+
+  runAllEffects();
+
+  expect(node.find('EntityList').prop('data')[0].name).toBe('Test Report');
+  expect(node.find('EntityList').prop('data')[0].meta[0]).toBe('This is a description');
 });
