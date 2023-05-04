@@ -212,7 +212,8 @@ jobs:
       - uses: ./.github/actions/setup-zeebe
       - uses: ./.github/actions/build-zeebe
         id: build-zeebe
-      # Once we're on Go 1.18, use the official gorelease to do this
+      # Once we have breaking changes, this will break since no workaround atm.
+      # Give the official gorelease a try to do this
       - name: Check backwards compatibility
         working-directory: clients/go/
         run: |
