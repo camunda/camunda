@@ -667,6 +667,6 @@ class SegmentedJournalTest {
 
   private SegmentedJournal openJournal(final String data, final int entriesPerSegment) {
     journalFactory = new TestJournalFactory(data, entriesPerSegment);
-    return journalFactory.journal(journalFactory.segmentsManager(directory));
+    return journalFactory.journal(directory);
   }
 }

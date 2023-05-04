@@ -617,6 +617,7 @@ final class JournalTest {
     final var builder =
         SegmentedJournal.builder()
             .withDirectory(directory.resolve("data").toFile())
+            .withMaxSegmentSize(1024 * 1024) // speeds up certain tests, e.g. shouldCompact
             .withMetaStore(metaStore)
             .withJournalIndexDensity(5);
     option.accept(builder);
