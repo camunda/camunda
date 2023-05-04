@@ -123,6 +123,10 @@ public final class SegmentedJournal implements Journal {
     try {
       journalIndex.clear();
       writer.reset(nextIndex);
+      // no need to update the meta store's last flushed index as usage is that we always reset
+      // with a greater index than what we previously had. it's fine if the stored last flushed
+      // index is lower than the real flushed index. every thing will be treated as a partial write
+      // until the next flush, which is fine
     } finally {
       rwlock.unlockWrite(stamp);
     }
