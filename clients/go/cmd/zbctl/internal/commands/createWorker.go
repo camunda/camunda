@@ -45,7 +45,7 @@ var (
 )
 
 // createWorkerCmd represents the createWorker command
-var jobsHandled int64 = 0
+var jobsHandled int64
 var workerDoneChannel = make(chan struct{})
 var createWorkerCmd = &cobra.Command{
 	Use:   "worker <type>",

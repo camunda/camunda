@@ -12,7 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package main
+
+package commands
 
 import (
 	"github.com/zeebe-io/zeebe/benchmarks/project/zbench/internal/commands"
