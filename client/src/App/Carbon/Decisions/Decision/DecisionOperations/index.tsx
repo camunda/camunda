@@ -14,6 +14,7 @@ import {DeleteDefinitionModal} from 'modules/components/Carbon/DeleteDefinitionM
 import {operationsStore} from 'modules/stores/operations';
 import {panelStatesStore} from 'modules/stores/panelStates';
 import {useNotifications} from 'modules/notifications';
+import {DetailTable} from 'modules/components/Carbon/DeleteDefinitionModal/DetailTable';
 
 type Props = {
   decisionDefinitionId: string;
@@ -53,7 +54,21 @@ const DecisionOperations: React.FC<Props> = ({
         confirmationText="Yes, I confirm I want to delete this DRD and all related instances."
         isVisible={isDeleteModalVisible}
         warningContent={'warning'}
-        bodyContent={'detail table'}
+        bodyContent={
+          <DetailTable
+            headerColumns={[
+              {
+                cellContent: 'DRD name',
+              },
+            ]}
+            rows={[
+              {
+                // TODO: remove braces when decision definition name is available (https://github.com/camunda/operate/issues/4369)
+                columns: [{cellContent: 'decisionDefinitionStore.name'}],
+              },
+            ]}
+          />
+        }
         onClose={() => setIsDeleteModalVisible(false)}
         onDelete={() => {
           setIsOperationRunning(true);

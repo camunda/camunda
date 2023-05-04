@@ -5,7 +5,8 @@
  * except in compliance with the proprietary license.
  */
 
-import {Modal} from '@carbon/react';
+import {Modal, Stack} from '@carbon/react';
+import {Description} from './styled';
 
 type Props = {
   isVisible: boolean;
@@ -21,6 +22,8 @@ type Props = {
 const DeleteDefinitionModal: React.FC<Props> = ({
   isVisible,
   title,
+  description,
+  bodyContent,
   onClose,
   onDelete,
 }) => {
@@ -36,7 +39,10 @@ const DeleteDefinitionModal: React.FC<Props> = ({
       onRequestClose={onClose}
       size="md"
     >
-      modal content
+      <Stack gap={6}>
+        <Description>{description}</Description>
+        {bodyContent}
+      </Stack>
     </Modal>
   );
 };
