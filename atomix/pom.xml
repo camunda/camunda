@@ -22,12 +22,12 @@
   <parent>
     <groupId>io.camunda</groupId>
     <artifactId>zeebe-parent</artifactId>
-    <version>8.0.14-SNAPSHOT</version>
+    <version>8.0.15-SNAPSHOT</version>
     <relativePath>../parent/pom.xml</relativePath>
   </parent>
 
   <artifactId>zeebe-atomix-parent</artifactId>
-  <version>8.0.14-SNAPSHOT</version>
+  <version>8.0.15-SNAPSHOT</version>
   <packaging>pom</packaging>
 
   <name>Zeebe Atomix Parent Pom</name>

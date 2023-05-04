@@ -6,12 +6,12 @@
   <parent>
     <groupId>io.camunda</groupId>
     <artifactId>zeebe-bom</artifactId>
-    <version>8.0.14-SNAPSHOT</version>
+    <version>8.0.15-SNAPSHOT</version>
     <relativePath>../bom/pom.xml</relativePath>
   </parent>
 
   <artifactId>zeebe-parent</artifactId>
-  <version>8.0.14-SNAPSHOT</version>
+  <version>8.0.15-SNAPSHOT</version>
   <packaging>pom</packaging>
 
   <name>Zeebe Parent</name>
@@ -155,7 +155,7 @@
     <extension.version.os-maven-plugin>1.7.1</extension.version.os-maven-plugin>
 
     <!-- version against which backwards compatibility is checked -->
-    <backwards.compat.version>8.0.13</backwards.compat.version>
+    <backwards.compat.version>8.0.14</backwards.compat.version>
     <ignored.changes.file>ignored-changes.json</ignored.changes.file>
 
     <!--
