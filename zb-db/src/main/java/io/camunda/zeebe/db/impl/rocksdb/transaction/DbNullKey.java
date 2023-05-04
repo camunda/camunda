@@ -24,17 +24,12 @@ final class DbNullKey implements DbKey {
   }
 
   @Override
-  public int getLength() {
-    return 0;
-  }
-
-  @Override
   public void write(final MutableDirectBuffer buffer, final int offset) {
     // do nothing
   }
 
   @Override
-  public long longHashCode() {
+  public int getLength() {
     return 0;
   }
 }

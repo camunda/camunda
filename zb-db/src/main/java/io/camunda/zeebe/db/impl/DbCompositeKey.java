@@ -72,11 +72,6 @@ public final class DbCompositeKey<FirstKeyType extends DbKey, SecondKeyType exte
   }
 
   @Override
-  public long longHashCode() {
-    return first.longHashCode() ^ second.longHashCode();
-  }
-
-  @Override
   public String toString() {
     return "DbCompositeKey{" + "first=" + first + ", second=" + second + '}';
   }

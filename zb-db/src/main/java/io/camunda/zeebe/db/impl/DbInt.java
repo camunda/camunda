@@ -42,11 +42,6 @@ public final class DbInt implements DbKey, DbValue {
   }
 
   @Override
-  public long longHashCode() {
-    return Integer.hashCode(intValue);
-  }
-
-  @Override
   public String toString() {
     return "DbInt{" + intValue + '}';
   }

@@ -434,11 +434,6 @@ public final class EngineRule extends ExternalResource {
     public DirectBuffer getDirectBuffer() {
       return genericBuffer;
     }
-
-    @Override
-    public long longHashCode() {
-      return Arrays.hashCode(genericBuffer.byteArray());
-    }
   }
 
   /////////////////////////////////////////////////////////////////////////////////////////////////

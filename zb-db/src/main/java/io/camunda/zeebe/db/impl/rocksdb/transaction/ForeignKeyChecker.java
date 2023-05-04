@@ -10,15 +10,12 @@ package io.camunda.zeebe.db.impl.rocksdb.transaction;
 import io.camunda.zeebe.db.ConsistencyChecksSettings;
 import io.camunda.zeebe.db.ContainsForeignKeys;
 import io.camunda.zeebe.db.DbKey;
-import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDbInconsistentException;
 import io.camunda.zeebe.db.impl.DbForeignKey;
 import io.camunda.zeebe.db.impl.ZeebeDbConstants;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.nio.ByteBuffer;
-import java.util.concurrent.atomic.AtomicBoolean;
 import org.agrona.ExpandableArrayBuffer;
-import org.agrona.collections.Long2ObjectCache;
 
 /**
  * Similar to {@link TransactionalColumnFamily} but supports lookups on arbitrary column families.
@@ -28,38 +25,11 @@ public final class ForeignKeyChecker {
   private final ZeebeTransactionDb<?> transactionDb;
   private final ExpandableArrayBuffer keyBuffer = new ExpandableArrayBuffer();
   private final boolean enabled;
-  private final Long2ObjectCache<AtomicBoolean> keyValueLRUCache;
-  private int keyBufferLength;
-  private final TransactionContext context;
 
   public ForeignKeyChecker(
-      final ZeebeTransactionDb<?> transactionDb,
-      final TransactionContext context,
-      final ConsistencyChecksSettings settings) {
+      final ZeebeTransactionDb<?> transactionDb, final ConsistencyChecksSettings settings) {
     this.transactionDb = transactionDb;
     enabled = settings.enableForeignKeyChecks();
-    this.context = context;
-
-    keyValueLRUCache = new Long2ObjectCache<AtomicBoolean>(128, 128, (k) -> {});
-    //    keyValueLRUCache =
-    //        new LongLruCache<>(
-    //            128,
-    //            keyHash -> {
-    //              final var exists = new AtomicBoolean(false);
-    //              context.runInTransaction(
-    //                  () -> {
-    //                    final byte[] value =
-    //                        ((ZeebeTransaction) context.getCurrentTransaction())
-    //                            .get(
-    //                                transactionDb.getDefaultNativeHandle(),
-    //                                transactionDb.getReadOptionsNativeHandle(),
-    //                                keyBuffer.byteArray(),
-    //                                keyBufferLength);
-    //                    exists.set(value != null);
-    //                  });
-    //              return exists;
-    //            },
-    //            (k) -> {});
   }
 
   public void assertExists(
@@ -81,7 +51,7 @@ public final class ForeignKeyChecker {
 
     keyBuffer.putLong(0, foreignKey.columnFamily().ordinal(), ZeebeDbConstants.ZB_DB_BYTE_ORDER);
     foreignKey.write(keyBuffer, Long.BYTES);
-    keyBufferLength = Long.BYTES + foreignKey.getLength();
+    final var keyBufferLength = Long.BYTES + foreignKey.getLength();
 
     switch (foreignKey.match()) {
       case Full -> assertKeyExists(transaction, foreignKey, keyBuffer.byteArray(), keyBufferLength);
@@ -98,27 +68,13 @@ public final class ForeignKeyChecker {
       final byte[] key,
       final int keyLength)
       throws Exception {
-
     final var exists =
-        keyValueLRUCache
-            .computeIfAbsent(
-                foreignKey.longHashCode(),
-                (keyHash) -> {
-                  final var existsInDb = new AtomicBoolean(false);
-                  context.runInTransaction(
-                      () -> {
-                        final byte[] value =
-                            ((ZeebeTransaction) context.getCurrentTransaction())
-                                .get(
-                                    transactionDb.getDefaultNativeHandle(),
-                                    transactionDb.getReadOptionsNativeHandle(),
-                                    keyBuffer.byteArray(),
-                                    keyBufferLength);
-                        existsInDb.set(value != null);
-                      });
-                  return existsInDb;
-                })
-            .get();
+        transaction.get(
+                transactionDb.getDefaultNativeHandle(),
+                transactionDb.getReadOptionsNativeHandle(),
+                key,
+                keyLength)
+            != null;
     if (!exists) {
       throw new ZeebeDbInconsistentException(
           "Foreign key " + foreignKey.inner() + " does not exist in " + foreignKey.columnFamily());

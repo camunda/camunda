@@ -17,16 +17,11 @@ import io.camunda.zeebe.db.DbValue;
 import io.camunda.zeebe.db.KeyValuePairVisitor;
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDbInconsistentException;
-import io.camunda.zeebe.util.Loggers;
-import io.camunda.zeebe.util.buffer.BufferUtil;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import org.agrona.DirectBuffer;
-import org.agrona.concurrent.UnsafeBuffer;
 import org.rocksdb.ReadOptions;
 import org.rocksdb.RocksIterator;
 
@@ -59,7 +54,6 @@ class TransactionalColumnFamily<
   private final ColumnFamilyContext columnFamilyContext;
 
   private final ForeignKeyChecker foreignKeyChecker;
-  private final Map<Long, DirectBuffer> keyValueLRUCache;
 
   TransactionalColumnFamily(
       final ZeebeTransactionDb<ColumnFamilyNames> transactionDb,
@@ -75,36 +69,7 @@ class TransactionalColumnFamily<
     this.keyInstance = keyInstance;
     this.valueInstance = valueInstance;
     columnFamilyContext = new ColumnFamilyContext(columnFamily.ordinal());
-    foreignKeyChecker = new ForeignKeyChecker(transactionDb, context, consistencyChecksSettings);
-
-    // DOESNT WORK KEYS with a small shift like one or two number difference return the same values!
-    //    keyValueLRUCache = new Long2ObjectCache<ValueType>(128, 128, (k) -> {});
-
-    keyValueLRUCache = new HashMap<>();
-
-    // LRU CACHE DOESNT WORK BECAUSE IT KEEPS OLD DATA AND I CANT INSERT NEW
-    //    keyValueLRUCache =
-    //        new LongLruCache<>(
-    //            128,
-    //            keyHash -> {
-    //              ensureInOpenTransaction(
-    //                  transaction -> {
-    //                    final byte[] value =
-    //                        transaction.get(
-    //                            transactionDb.getDefaultNativeHandle(),
-    //                            transactionDb.getReadOptionsNativeHandle(),
-    //                            columnFamilyContext.getKeyBufferArray(),
-    //                            columnFamilyContext.getKeyLength());
-    //                    columnFamilyContext.wrapValueView(value);
-    //                  });
-    //              final var valueBuffer = columnFamilyContext.getValueView();
-    //              if (valueBuffer != null) {
-    //                valueInstance.wrap(valueBuffer, 0, valueBuffer.capacity());
-    //                return valueInstance;
-    //              }
-    //              return null;
-    //            },
-    //            (k) -> {});
+    foreignKeyChecker = new ForeignKeyChecker(transactionDb, consistencyChecksSettings);
   }
 
   @Override
@@ -114,23 +79,14 @@ class TransactionalColumnFamily<
           columnFamilyContext.writeKey(key);
           columnFamilyContext.writeValue(value);
 
-          assertKeyDoesNotExist(key);
-          assertForeignKeysExist(transaction, value);
-
+          assertKeyDoesNotExist(transaction);
+          assertForeignKeysExist(transaction, key, value);
           transaction.put(
               transactionDb.getDefaultNativeHandle(),
               columnFamilyContext.getKeyBufferArray(),
               columnFamilyContext.getKeyLength(),
               columnFamilyContext.getValueBufferArray(),
               value.getLength());
-          //          Loggers.ACTOR_LOGGER.warn(
-          //              "insert for kHash {}, [Key: {}, bytes: {}] value: {} ",
-          //              key.longHashCode(),
-          //              key,
-          //              columnFamilyContext.getKeyBufferArray(),
-          //              value);
-
-          keyValueLRUCache.put(key.longHashCode(), BufferUtil.createCopy(value));
         });
   }
 
@@ -140,22 +96,14 @@ class TransactionalColumnFamily<
         transaction -> {
           columnFamilyContext.writeKey(key);
           columnFamilyContext.writeValue(value);
-          assertKeyExists(key);
+          assertKeyExists(transaction);
           assertForeignKeysExist(transaction, key, value);
-
           transaction.put(
               transactionDb.getDefaultNativeHandle(),
               columnFamilyContext.getKeyBufferArray(),
               columnFamilyContext.getKeyLength(),
               columnFamilyContext.getValueBufferArray(),
               value.getLength());
-          //          Loggers.ACTOR_LOGGER.warn(
-          //              "insert for kHash {}, [Key: {}, bytes: {}] value: {} ",
-          //              key.longHashCode(),
-          //              key,
-          //              columnFamilyContext.getKeyBufferArray(),
-          //              value);
-          keyValueLRUCache.put(key.longHashCode(), BufferUtil.createCopy(value));
         });
   }
 
@@ -166,86 +114,34 @@ class TransactionalColumnFamily<
           columnFamilyContext.writeKey(key);
           columnFamilyContext.writeValue(value);
           assertForeignKeysExist(transaction, key, value);
-
           transaction.put(
               transactionDb.getDefaultNativeHandle(),
               columnFamilyContext.getKeyBufferArray(),
               columnFamilyContext.getKeyLength(),
               columnFamilyContext.getValueBufferArray(),
               value.getLength());
-          //          Loggers.ACTOR_LOGGER.warn(
-          //              "insert for kHash {}, [Key: {}, bytes: {}] value: {} ",
-          //              key.longHashCode(),
-          //              key,
-          //              columnFamilyContext.getKeyBufferArray(),
-          //              value);
-          keyValueLRUCache.put(key.longHashCode(), BufferUtil.createCopy(value));
         });
   }
 
   @Override
   public ValueType get(final KeyType key) {
-    columnFamilyContext.writeKey(key);
-
-    Loggers.ACTOR_LOGGER.warn(
-        "GET for kHash {}, [{}]", key.longHashCode(), columnFamilyContext.getKeyBufferArray());
-    final var valueBuffer =
-        keyValueLRUCache.computeIfAbsent(
-            key.longHashCode(),
-            (kHash) -> {
-              final var valueBuf = new UnsafeBuffer(0, 0);
-              ensureInOpenTransaction(
-                  transaction -> {
-                    //                Loggers.ACTOR_LOGGER.warn(
-                    //                    "Not in cache. COMPUTE for kHash {}, [Key: {}, bytes:
-                    // {}]",
-                    //                    kHash,
-                    //                    key,
-                    //                    columnFamilyContext.getKeyBufferArray());
-                    final byte[] value =
-                        transaction.get(
-                            transactionDb.getDefaultNativeHandle(),
-                            transactionDb.getReadOptionsNativeHandle(),
-                            columnFamilyContext.getKeyBufferArray(),
-                            columnFamilyContext.getKeyLength());
-                    if (value != null) {
-                      valueBuf.wrap(value);
-                    }
-                  });
-              return valueBuf;
-            });
-
-    //                columnFamilyContext.wrapValueView(value);
-
-    if (valueBuffer.capacity() > 0) {
-      columnFamilyContext.wrapValueView(valueBuffer.byteArray());
-      final var valueView = columnFamilyContext.getValueView();
-      if (valueView != null) {
-        valueInstance.wrap(valueView, 0, valueView.capacity());
-        return valueInstance;
-      }
+    ensureInOpenTransaction(
+        transaction -> {
+          columnFamilyContext.writeKey(key);
+          final byte[] value =
+              transaction.get(
+                  transactionDb.getDefaultNativeHandle(),
+                  transactionDb.getReadOptionsNativeHandle(),
+                  columnFamilyContext.getKeyBufferArray(),
+                  columnFamilyContext.getKeyLength());
+          columnFamilyContext.wrapValueView(value);
+        });
+    final var valueBuffer = columnFamilyContext.getValueView();
+    if (valueBuffer != null) {
+      valueInstance.wrap(valueBuffer, 0, valueBuffer.capacity());
+      return valueInstance;
     }
     return null;
-
-    //    keyHash -> {
-    //      ensureInOpenTransaction(
-    //          transaction -> {
-    //            final byte[] value =
-    //                transaction.get(
-    //                    transactionDb.getDefaultNativeHandle(),
-    //                    transactionDb.getReadOptionsNativeHandle(),
-    //                    columnFamilyContext.getKeyBufferArray(),
-    //                    columnFamilyContext.getKeyLength());
-    //            columnFamilyContext.wrapValueView(value);
-    //          });
-    //      final var valueBuffer = columnFamilyContext.getValueView();
-    //      if (valueBuffer != null) {
-    //        valueInstance.wrap(valueBuffer, 0, valueBuffer.capacity());
-    //        return valueInstance;
-    //      }
-    //      return null;
-    //    },
-    //        (k) -> {});
   }
 
   @Override
@@ -315,12 +211,11 @@ class TransactionalColumnFamily<
     ensureInOpenTransaction(
         transaction -> {
           columnFamilyContext.writeKey(key);
-          assertKeyExists(key);
+          assertKeyExists(transaction);
           transaction.delete(
               transactionDb.getDefaultNativeHandle(),
               columnFamilyContext.getKeyBufferArray(),
               columnFamilyContext.getKeyLength());
-          keyValueLRUCache.remove(key.longHashCode());
         });
   }
 
@@ -333,40 +228,23 @@ class TransactionalColumnFamily<
               transactionDb.getDefaultNativeHandle(),
               columnFamilyContext.getKeyBufferArray(),
               columnFamilyContext.getKeyLength());
-          keyValueLRUCache.remove(key.longHashCode());
         });
   }
 
   @Override
   public boolean exists(final KeyType key) {
-
-    final var valueBuffer =
-        keyValueLRUCache.computeIfAbsent(
-            key.longHashCode(),
-            (kHash) -> {
-              final var valueBuf = new UnsafeBuffer(0, 0);
-              ensureInOpenTransaction(
-                  transaction -> {
-                    //                Loggers.ACTOR_LOGGER.warn(
-                    //                    "Not in cache. COMPUTE for kHash {}, [Key: {}, bytes:
-                    // {}]",
-                    //                    kHash,
-                    //                    key,
-                    //                    columnFamilyContext.getKeyBufferArray());
-                    final byte[] value =
-                        transaction.get(
-                            transactionDb.getDefaultNativeHandle(),
-                            transactionDb.getReadOptionsNativeHandle(),
-                            columnFamilyContext.getKeyBufferArray(),
-                            columnFamilyContext.getKeyLength());
-                    if (value != null) {
-                      valueBuf.wrap(value);
-                    }
-                  });
-              return valueBuf;
-            });
-
-    return (valueBuffer.capacity() > 0);
+    ensureInOpenTransaction(
+        transaction -> {
+          columnFamilyContext.writeKey(key);
+          final byte[] value =
+              transaction.get(
+                  transactionDb.getDefaultNativeHandle(),
+                  transactionDb.getReadOptionsNativeHandle(),
+                  columnFamilyContext.getKeyBufferArray(),
+                  columnFamilyContext.getKeyLength());
+          columnFamilyContext.wrapValueView(value);
+        });
+    return !columnFamilyContext.isValueViewEmpty();
   }
 
   @Override
@@ -396,75 +274,33 @@ class TransactionalColumnFamily<
     }
   }
 
-  private void assertKeyDoesNotExist(final KeyType key) throws Exception {
+  private void assertKeyDoesNotExist(final ZeebeTransaction transaction) throws Exception {
     if (!consistencyChecksSettings.enablePreconditions()) {
       return;
     }
-
-    final var valueBuffer =
-        keyValueLRUCache.computeIfAbsent(
-            key.longHashCode(),
-            (kHash) -> {
-              final var valueBuf = new UnsafeBuffer(0, 0);
-              ensureInOpenTransaction(
-                  transaction -> {
-                    //                Loggers.ACTOR_LOGGER.warn(
-                    //                    "Not in cache. COMPUTE for kHash {}, [Key: {}, bytes:
-                    // {}]",
-                    //                    kHash,
-                    //                    key,
-                    //                    columnFamilyContext.getKeyBufferArray());
-                    final byte[] value =
-                        transaction.get(
-                            transactionDb.getDefaultNativeHandle(),
-                            transactionDb.getReadOptionsNativeHandle(),
-                            columnFamilyContext.getKeyBufferArray(),
-                            columnFamilyContext.getKeyLength());
-                    if (value != null) {
-                      valueBuf.wrap(value);
-                    }
-                  });
-              return valueBuf;
-            });
-
-    if (valueBuffer.capacity() > 0) {
+    final var value =
+        transaction.get(
+            transactionDb.getDefaultNativeHandle(),
+            transactionDb.getReadOptionsNativeHandle(),
+            columnFamilyContext.getKeyBufferArray(),
+            columnFamilyContext.getKeyLength());
+    if (value != null) {
       throw new ZeebeDbInconsistentException(
           "Key " + keyInstance + " in ColumnFamily " + columnFamily + " already exists");
     }
   }
 
-  private void assertKeyExists(final KeyType key) throws Exception {
+  private void assertKeyExists(final ZeebeTransaction transaction) throws Exception {
     if (!consistencyChecksSettings.enablePreconditions()) {
       return;
     }
-
-    final var valueBuffer =
-        keyValueLRUCache.computeIfAbsent(
-            key.longHashCode(),
-            (kHash) -> {
-              final var valueBuf = new UnsafeBuffer(0, 0);
-              ensureInOpenTransaction(
-                  transaction -> {
-                    //                Loggers.ACTOR_LOGGER.warn(
-                    //                    "Not in cache. COMPUTE for kHash {}, [Key: {}, bytes:
-                    // {}]",
-                    //                    kHash,
-                    //                    key,
-                    //                    columnFamilyContext.getKeyBufferArray());
-                    final byte[] value =
-                        transaction.get(
-                            transactionDb.getDefaultNativeHandle(),
-                            transactionDb.getReadOptionsNativeHandle(),
-                            columnFamilyContext.getKeyBufferArray(),
-                            columnFamilyContext.getKeyLength());
-                    if (value != null) {
-                      valueBuf.wrap(value);
-                    }
-                  });
-              return valueBuf;
-            });
-
-    if (valueBuffer.capacity() <= 0) {
+    final var value =
+        transaction.get(
+            transactionDb.getDefaultNativeHandle(),
+            transactionDb.getReadOptionsNativeHandle(),
+            columnFamilyContext.getKeyBufferArray(),
+            columnFamilyContext.getKeyLength());
+    if (value == null) {
       throw new ZeebeDbInconsistentException(
           "Key " + keyInstance + " in ColumnFamily " + columnFamily + " does not exist");
     }

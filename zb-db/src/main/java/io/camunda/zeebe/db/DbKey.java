@@ -11,7 +11,4 @@ import io.camunda.zeebe.util.buffer.BufferReader;
 import io.camunda.zeebe.util.buffer.BufferWriter;
 
 /** The key which is used to store a value. */
-public interface DbKey extends BufferReader, BufferWriter {
-
-  long longHashCode();
-}
+public interface DbKey extends BufferReader, BufferWriter {}

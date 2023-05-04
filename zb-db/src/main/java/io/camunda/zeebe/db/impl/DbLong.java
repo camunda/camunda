@@ -42,11 +42,6 @@ public final class DbLong implements DbKey, DbValue {
   }
 
   @Override
-  public long longHashCode() {
-    return longValue;
-  }
-
-  @Override
   public String toString() {
     return "DbLong{" + longValue + '}';
   }
