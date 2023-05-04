@@ -7,9 +7,9 @@
  */
 package io.camunda.zeebe.journal.file;
 
+import io.camunda.zeebe.journal.JournalMetaStore.InMemory;
 import io.camunda.zeebe.journal.record.RecordData;
 import io.camunda.zeebe.journal.record.SBESerializer;
-import io.camunda.zeebe.journal.util.MockJournalMetastore;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import io.camunda.zeebe.util.buffer.BufferWriter;
 import io.camunda.zeebe.util.buffer.DirectBufferWriter;
@@ -34,7 +34,7 @@ import org.agrona.concurrent.UnsafeBuffer;
  * <p>By default, the string "test" is the entry data, and there is one entry per segment.
  */
 final class TestJournalFactory {
-  private final MockJournalMetastore metaStore = new MockJournalMetastore();
+  private final InMemory metaStore = new InMemory();
   private final JournalMetrics metrics = new JournalMetrics("test");
   private final JournalIndex index = new SparseJournalIndex(1);
 
@@ -84,7 +84,7 @@ final class TestJournalFactory {
     return loader;
   }
 
-  MockJournalMetastore metaStore() {
+  InMemory metaStore() {
     return metaStore;
   }
 
