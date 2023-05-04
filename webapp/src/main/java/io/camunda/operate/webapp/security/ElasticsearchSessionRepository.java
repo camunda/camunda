@@ -148,7 +148,6 @@ public class ElasticsearchSessionRepository implements SessionRepository<Elastic
   @Override
   public ElasticsearchSession findById(final String id) {
     logger.debug("Retrieve session {} from Elasticsearch", id);
-    retryElasticsearchClient.refresh(operateWebSessionIndex.getFullQualifiedName());
     Map<String, Object> document;
     try {
       document = retryElasticsearchClient.getDocument(operateWebSessionIndex.getFullQualifiedName(),
