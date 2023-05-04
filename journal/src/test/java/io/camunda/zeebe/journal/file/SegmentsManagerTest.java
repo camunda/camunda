@@ -233,12 +233,11 @@ class SegmentsManagerTest {
         journalFactory.segmentsManager(
             directory,
             new SegmentLoader(
-                Long.MIN_VALUE,
-                journalFactory.metrics(),
                 (channel, segmentSize) -> {
                   SegmentAllocator.fill().allocate(channel, segmentSize);
                   throw expectedRootCause;
-                }))) {
+                },
+                Long.MIN_VALUE))) {
       failingSegments.open();
       // will allocate the next segment
       failingSegments.getNextSegment();

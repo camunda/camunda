@@ -73,7 +73,7 @@ final class SegmentWriter {
     writeBuffer.wrap(buffer);
     firstAsqn = lastWrittenAsqn + 1;
     lastAsqn = lastWrittenAsqn;
-    reset(0, true);
+    reset(0, false);
   }
 
   long getLastIndex() {
