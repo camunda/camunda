@@ -211,7 +211,7 @@
     "digestInfo": "The process digest sends periodic emails with the existing KPI status to the Process Owner. By default, the digest will be sent every Monday at 9:00 AM (To change the default send time, please contact your administrator).",
     "digestConfigured": "Your process digest has been successfully configured. An email has been sent to {name}.",
     "configureKpis": "Learn more about KPIs",
-    "analysing": "Analysing <b>{count}</b> {label}.",
+    "analysing": "Analyzing <b>{count}</b> {label}.",
     "processesListed": "{total} {label} listed",
     "processesListedOf": "{count} of {total} {label} listed",
     "timeGoals": {
