@@ -95,6 +95,32 @@ declare module '@carbon/react' {
   }>;
 
   export const useTheme: any;
+  export const ActionableNotification: React.FunctionComponent<{
+    actionButtonLabel: string;
+    ['aria-label']?: string;
+    children?: node;
+    className?: string;
+    closeOnEscape?: boolean;
+    hasFocus?: boolean;
+    hideCloseButton?: boolean;
+    inline?: boolean;
+    kind:
+      | 'error'
+      | 'info'
+      | 'info-square'
+      | 'success'
+      | 'warning'
+      | 'warning-alt';
+
+    lowContrast?: boolean;
+    onActionButtonClick?: func;
+    onClose?: func;
+    onCloseButtonClick?: func;
+    role?: string;
+    statusIconDescription?: string;
+    subtitle?: string;
+    title?: string;
+  }>;
   export * from 'carbon-components-react';
 }
 

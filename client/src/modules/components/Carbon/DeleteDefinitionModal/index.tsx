@@ -5,8 +5,8 @@
  * except in compliance with the proprietary license.
  */
 
-import {Modal, Stack} from '@carbon/react';
-import {Description} from './styled';
+import {Modal, Stack, ActionableNotification} from '@carbon/react';
+import {Description, WarningContainer} from './styled';
 
 type Props = {
   isVisible: boolean;
@@ -14,6 +14,7 @@ type Props = {
   description: string;
   bodyContent: React.ReactNode;
   confirmationText: string;
+  warningTitle?: string; //TODO: make mandatory after https://github.com/camunda/operate/issues/4020
   warningContent?: React.ReactNode; //TODO: make mandatory after https://github.com/camunda/operate/issues/4020
   onClose: () => void;
   onDelete: () => void;
@@ -24,6 +25,8 @@ const DeleteDefinitionModal: React.FC<Props> = ({
   title,
   description,
   bodyContent,
+  warningTitle,
+  warningContent,
   onClose,
   onDelete,
 }) => {
@@ -42,6 +45,17 @@ const DeleteDefinitionModal: React.FC<Props> = ({
       <Stack gap={6}>
         <Description>{description}</Description>
         {bodyContent}
+        {warningContent && (
+          <ActionableNotification
+            kind="warning"
+            inline
+            hideCloseButton
+            lowContrast
+            title={warningTitle}
+            children={<WarningContainer>{warningContent}</WarningContainer>}
+            actionButtonLabel=""
+          />
+        )}
       </Stack>
     </Modal>
   );

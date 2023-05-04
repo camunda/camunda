@@ -9,12 +9,13 @@ import {useState} from 'react';
 import {DangerButton} from 'modules/components/Carbon/OperationItem/DangerButton';
 import {OperationItems} from 'modules/components/Carbon/OperationItems';
 import {DeleteButtonContainer} from 'modules/components/DeleteDefinition/styled';
-import {InlineLoading} from '@carbon/react';
+import {InlineLoading, Link, ListItem, Stack} from '@carbon/react';
 import {DeleteDefinitionModal} from 'modules/components/Carbon/DeleteDefinitionModal';
 import {operationsStore} from 'modules/stores/operations';
 import {panelStatesStore} from 'modules/stores/panelStates';
 import {useNotifications} from 'modules/notifications';
 import {DetailTable} from 'modules/components/Carbon/DeleteDefinitionModal/DetailTable';
+import {UnorderedList} from 'modules/components/Carbon/DeleteDefinitionModal/Warning/styled';
 
 type Props = {
   decisionDefinitionId: string;
@@ -53,7 +54,35 @@ const DecisionOperations: React.FC<Props> = ({
         description="You are about to delete the following DRD:"
         confirmationText="Yes, I confirm I want to delete this DRD and all related instances."
         isVisible={isDeleteModalVisible}
-        warningContent={'warning'}
+        warningTitle="Deleting a decision definition will delete the DRD and will impact
+        the following:"
+        warningContent={
+          <Stack gap={6}>
+            <UnorderedList nested>
+              <ListItem>
+                By deleting a decision definition, you will be deleting the DRD
+                which contains this decision definition. All other decision
+                tables and literal expressions that are part of the DRD will
+                also be deleted.
+              </ListItem>
+              <ListItem>
+                Deleting the only existing version of a decision definition
+                could result in process incidents.
+              </ListItem>
+              <ListItem>
+                In case the DRD contains decisions which are part of multiple
+                DRDs, these decision definitions and their DRDs will not be
+                deleted.
+              </ListItem>
+            </UnorderedList>
+            <Link
+              href="https://docs.camunda.io/docs/components/operate/operate-introduction/"
+              target="_blank"
+            >
+              Read more about deleting a decision definition
+            </Link>
+          </Stack>
+        }
         bodyContent={
           <DetailTable
             headerColumns={[
