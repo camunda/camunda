@@ -119,7 +119,7 @@
     <version.jnr-posix>3.1.16</version.jnr-posix>
     <version.zpt>8.2.3</version.zpt>
     <version.feign>12.3</version.feign>
-    <version.google-sdk>26.13.0</version.google-sdk>
+    <version.google-sdk>26.14.0</version.google-sdk>
     <version.awssdk>2.20.58</version.awssdk>
     <version.toxiproxy>2.1.7</version.toxiproxy>
     <version.validation-api>3.0.2</version.validation-api>
