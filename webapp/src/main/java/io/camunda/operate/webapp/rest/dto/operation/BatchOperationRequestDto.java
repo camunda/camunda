@@ -6,6 +6,8 @@
  */
 package io.camunda.operate.webapp.rest.dto.operation;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.operate.webapp.rest.dto.listview.SortValuesWrapper;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.util.Arrays;
 
@@ -17,11 +19,11 @@ public class BatchOperationRequestDto {
   /**
    * Search for the batch operations that goes exactly before the given sort values.
    */
-  private Object[] searchBefore;
+  private SortValuesWrapper[] searchBefore;
   /**
    * Search for the batch operations that goes exactly after the given sort values.
    */
-  private Object[] searchAfter;
+  private SortValuesWrapper[] searchAfter;
   /**
    * Page size.
    */
@@ -30,7 +32,7 @@ public class BatchOperationRequestDto {
   public BatchOperationRequestDto() {
   }
 
-  public BatchOperationRequestDto(Integer pageSize, Object[] searchAfter, Object[] searchBefore) {
+  public BatchOperationRequestDto(Integer pageSize, SortValuesWrapper[] searchAfter, SortValuesWrapper[] searchBefore) {
     this.pageSize = pageSize;
     this.searchAfter = searchAfter;
     this.searchBefore = searchBefore;
@@ -38,22 +40,30 @@ public class BatchOperationRequestDto {
 
   @Schema(description= "Array of two strings: copy/paste of sortValues field from one of the operations.",
       example = "[\"9223372036854775807\", \"1583836503404\"]")
-  public Object[] getSearchBefore() {
+  public SortValuesWrapper[] getSearchBefore() {
     return searchBefore;
   }
 
-  public BatchOperationRequestDto setSearchBefore(Object[] searchBefore) {
+  public Object[] getSearchBefore(ObjectMapper objectMapper){
+    return SortValuesWrapper.convertSortValues(searchBefore, objectMapper);
+  }
+
+  public BatchOperationRequestDto setSearchBefore(SortValuesWrapper[] searchBefore) {
     this.searchBefore = searchBefore;
     return this;
   }
 
   @Schema(description= "Array of two strings: copy/paste of sortValues field from one of the operations.",
       example = "[\"1583836151645\", \"1583836128180\"]")
-  public Object[] getSearchAfter() {
+  public SortValuesWrapper[] getSearchAfter() {
     return searchAfter;
   }
 
-  public BatchOperationRequestDto setSearchAfter(Object[] searchAfter) {
+  public Object[] getSearchAfter(ObjectMapper objectMapper){
+    return SortValuesWrapper.convertSortValues(searchAfter, objectMapper);
+  }
+
+  public BatchOperationRequestDto setSearchAfter(SortValuesWrapper[] searchAfter) {
     this.searchAfter = searchAfter;
     return this;
   }

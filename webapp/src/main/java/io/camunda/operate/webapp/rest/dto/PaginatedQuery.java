@@ -7,14 +7,22 @@
 package io.camunda.operate.webapp.rest.dto;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.operate.webapp.es.reader.ListViewReader;
+import io.camunda.operate.webapp.rest.dto.listview.SortValuesWrapper;
 import io.swagger.v3.oas.annotations.media.Schema;
+
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
 import io.camunda.operate.webapp.rest.exception.InvalidRequestException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public abstract class PaginatedQuery<T extends PaginatedQuery<T>> {
+
+  private static final Logger logger = LoggerFactory.getLogger(ListViewReader.class);
 
   private static final int DEFAULT_PAGE_SIZE = 50;
 
@@ -22,15 +30,15 @@ public abstract class PaginatedQuery<T extends PaginatedQuery<T>> {
   /**
    * Search for process instances that goes exactly after the given sort values.
    */
-  private Object[] searchAfter;
+  private SortValuesWrapper[] searchAfter;
 
-  private Object[] searchAfterOrEqual;
+  private SortValuesWrapper[] searchAfterOrEqual;
   /**
    * Search for process instance that goes exactly before the given sort values.
    */
-  private Object[] searchBefore;
+  private SortValuesWrapper[] searchBefore;
 
-  private Object[] searchBeforeOrEqual;
+  private SortValuesWrapper[] searchBeforeOrEqual;
   /**
    * Page size.
    */
@@ -55,42 +63,58 @@ public abstract class PaginatedQuery<T extends PaginatedQuery<T>> {
 
   @Schema(description= "Array of values (can be one): copy/paste of sortValues field from one of the objects.",
       example = "[1605160098477, 4629710542312628000]")
-  public Object[] getSearchAfter() {
+  public SortValuesWrapper[] getSearchAfter() {
     return searchAfter;
   }
 
-  public T setSearchAfter(final Object[] searchAfter) {
+  public T setSearchAfter(final SortValuesWrapper[] searchAfter) {
     this.searchAfter = searchAfter;
     return (T) this;
   }
 
-  public Object[] getSearchAfterOrEqual() {
+  public Object[] getSearchAfter(ObjectMapper objectMapper) {
+    return SortValuesWrapper.convertSortValues(searchAfter, objectMapper);
+  }
+
+  public SortValuesWrapper[] getSearchAfterOrEqual() {
     return searchAfterOrEqual;
   }
 
-  public T setSearchAfterOrEqual(final Object[] searchAfterOrEqual) {
+  public T setSearchAfterOrEqual(final SortValuesWrapper[] searchAfterOrEqual) {
     this.searchAfterOrEqual = searchAfterOrEqual;
     return (T) this;
   }
 
+  public Object[] getSearchAfterOrEqual(ObjectMapper objectMapper) {
+    return SortValuesWrapper.convertSortValues(searchAfterOrEqual, objectMapper);
+  }
+
   @Schema(description= "Array of values (can be one): copy/paste of sortValues field from one of the objects.",
       example = "[1605160098477, 4629710542312628000]")
-  public Object[] getSearchBefore() {
+  public SortValuesWrapper[] getSearchBefore() {
     return searchBefore;
   }
 
-  public T setSearchBefore(final Object[] searchBefore) {
+  public T setSearchBefore(final SortValuesWrapper[] searchBefore) {
     this.searchBefore = searchBefore;
     return (T) this;
   }
 
-  public Object[] getSearchBeforeOrEqual() {
+  public Object[] getSearchBefore(ObjectMapper objectMapper) {
+    return SortValuesWrapper.convertSortValues(searchBefore, objectMapper);
+  }
+
+  public SortValuesWrapper[] getSearchBeforeOrEqual() {
     return searchBeforeOrEqual;
   }
 
-  public T setSearchBeforeOrEqual(final Object[] searchBeforeOrEqual) {
+  public T setSearchBeforeOrEqual(final SortValuesWrapper[] searchBeforeOrEqual) {
     this.searchBeforeOrEqual = searchBeforeOrEqual;
     return (T) this;
+  }
+
+  public Object[] getSearchBeforeOrEqual(ObjectMapper objectMapper) {
+    return SortValuesWrapper.convertSortValues(searchBeforeOrEqual, objectMapper);
   }
 
   public Integer getPageSize() {

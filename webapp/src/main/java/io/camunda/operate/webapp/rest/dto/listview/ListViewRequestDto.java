@@ -57,7 +57,7 @@ public class ListViewRequestDto extends PaginatedQuery<ListViewRequestDto> {
   }
 
   @Override
-  public ListViewRequestDto setSearchAfterOrEqual(final Object[] searchAfterOrEqual) {
+  public ListViewRequestDto setSearchAfterOrEqual(final SortValuesWrapper[] searchAfterOrEqual) {
     if (searchAfterOrEqual != null) {
       throw new InvalidRequestException("SearchAfterOrEqual is not supported.");
     }
@@ -65,7 +65,7 @@ public class ListViewRequestDto extends PaginatedQuery<ListViewRequestDto> {
   }
 
   @Override
-  public ListViewRequestDto setSearchBeforeOrEqual(final Object[] searchBeforeOrEqual) {
+  public ListViewRequestDto setSearchBeforeOrEqual(final SortValuesWrapper[] searchBeforeOrEqual) {
     if (searchBeforeOrEqual != null) {
       throw new InvalidRequestException("SearchBeforeOrEqual is not supported.");
     }

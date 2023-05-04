@@ -7,6 +7,7 @@
 package io.camunda.operate.webapp.rest.dto.dmn.list;
 
 import io.camunda.operate.webapp.rest.dto.PaginatedQuery;
+import io.camunda.operate.webapp.rest.dto.listview.SortValuesWrapper;
 import io.camunda.operate.webapp.rest.exception.InvalidRequestException;
 import java.util.HashSet;
 import java.util.Objects;
@@ -56,7 +57,7 @@ public class DecisionInstanceListRequestDto extends PaginatedQuery<DecisionInsta
   }
 
   @Override
-  public DecisionInstanceListRequestDto setSearchAfterOrEqual(final Object[] searchAfterOrEqual) {
+  public DecisionInstanceListRequestDto setSearchAfterOrEqual(final SortValuesWrapper[] searchAfterOrEqual) {
     if (searchAfterOrEqual != null) {
       throw new InvalidRequestException("SearchAfterOrEqual is not supported.");
     }
@@ -64,7 +65,7 @@ public class DecisionInstanceListRequestDto extends PaginatedQuery<DecisionInsta
   }
 
   @Override
-  public DecisionInstanceListRequestDto setSearchBeforeOrEqual(final Object[] searchBeforeOrEqual) {
+  public DecisionInstanceListRequestDto setSearchBeforeOrEqual(final SortValuesWrapper[] searchBeforeOrEqual) {
     if (searchBeforeOrEqual != null) {
       throw new InvalidRequestException("SearchBeforeOrEqual is not supported.");
     }

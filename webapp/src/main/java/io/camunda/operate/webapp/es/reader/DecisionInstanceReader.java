@@ -124,7 +124,7 @@ public class DecisionInstanceReader extends AbstractReader {
 
     List<DecisionInstanceEntity> entities = queryDecisionInstancesEntities(request, result);
 
-    result.setDecisionInstances(DtoCreator.create(entities, DecisionInstanceForListDto.class));
+    result.setDecisionInstances(DecisionInstanceForListDto.createFrom(entities, objectMapper));
 
     return result;
   }
@@ -191,12 +191,12 @@ public class DecisionInstanceReader extends AbstractReader {
     if (directSorting) { //this sorting is also the default one for 1st page
       sort2 = SortBuilders.fieldSort(KEY).order(SortOrder.ASC);
       sort3 = SortBuilders.fieldSort(EXECUTION_INDEX).order(SortOrder.ASC);
-      querySearchAfter = request.getSearchAfter(); //may be null
+      querySearchAfter = request.getSearchAfter(objectMapper); //may be null
     } else { //searchBefore != null
       //reverse sorting
       sort2 = SortBuilders.fieldSort(KEY).order(SortOrder.DESC);
       sort3 = SortBuilders.fieldSort(EXECUTION_INDEX).order(SortOrder.DESC);
-      querySearchAfter = request.getSearchBefore();
+      querySearchAfter = request.getSearchBefore(objectMapper);
     }
 
     searchSourceBuilder

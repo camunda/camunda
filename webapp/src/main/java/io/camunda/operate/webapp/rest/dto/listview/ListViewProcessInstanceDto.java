@@ -6,6 +6,7 @@
  */
 package io.camunda.operate.webapp.rest.dto.listview;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.entities.OperationEntity;
 import io.camunda.operate.entities.OperationState;
 import io.camunda.operate.entities.listview.ProcessInstanceForListViewEntity;
@@ -16,14 +17,9 @@ import io.camunda.operate.webapp.rest.dto.OperationDto;
 import io.camunda.operate.webapp.rest.dto.ProcessInstanceReferenceDto;
 import io.camunda.operate.webapp.security.identity.PermissionsService;
 import io.camunda.operate.zeebeimport.util.TreePath;
+
 import java.time.OffsetDateTime;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 public class ListViewProcessInstanceDto {
@@ -55,7 +51,7 @@ public class ListViewProcessInstanceDto {
    * Sort values, define the position of process instance in the list and may be used to search
    * for previous or following page.
    */
-  private String[] sortValues;
+  private SortValuesWrapper[] sortValues;
 
   private Set<String> permissions;
 
@@ -177,11 +173,11 @@ public class ListViewProcessInstanceDto {
     return this;
   }
 
-  public String[] getSortValues() {
+  public SortValuesWrapper[] getSortValues() {
     return sortValues;
   }
 
-  public ListViewProcessInstanceDto setSortValues(String[] sortValues) {
+  public ListViewProcessInstanceDto setSortValues(SortValuesWrapper[] sortValues) {
     this.sortValues = sortValues;
     return this;
   }
@@ -195,17 +191,18 @@ public class ListViewProcessInstanceDto {
   }
 
   public static ListViewProcessInstanceDto createFrom(ProcessInstanceForListViewEntity processInstanceEntity,
-      List<OperationEntity> operations) {
-    return createFrom(processInstanceEntity, operations, null, null);
+      List<OperationEntity> operations, ObjectMapper objectMapper) {
+    return createFrom(processInstanceEntity, operations, null, null, objectMapper);
   }
 
   public static ListViewProcessInstanceDto createFrom(ProcessInstanceForListViewEntity processInstanceEntity,
-      List<OperationEntity> operations, List<ProcessInstanceReferenceDto> callHierarchy) {
-    return createFrom(processInstanceEntity, operations, callHierarchy, null);
+      List<OperationEntity> operations, List<ProcessInstanceReferenceDto> callHierarchy, ObjectMapper objectMapper) {
+    return createFrom(processInstanceEntity, operations, callHierarchy, null, objectMapper);
   }
 
   public static ListViewProcessInstanceDto createFrom(ProcessInstanceForListViewEntity processInstanceEntity,
-    List<OperationEntity> operations, List<ProcessInstanceReferenceDto> callHierarchy, PermissionsService permissionsService) {
+    List<OperationEntity> operations, List<ProcessInstanceReferenceDto> callHierarchy, PermissionsService permissionsService,
+      ObjectMapper objectMapper) {
     if (processInstanceEntity == null) {
       return null;
     }
@@ -238,9 +235,7 @@ public class ListViewProcessInstanceDto {
     }
     //convert to String[]
     if (processInstanceEntity.getSortValues() != null) {
-      processInstance.setSortValues(Arrays.stream(processInstanceEntity.getSortValues())
-          .map(String::valueOf)
-          .toArray(String[]::new));
+      processInstance.setSortValues(SortValuesWrapper.createFrom(processInstanceEntity.getSortValues(), objectMapper));
     }
 
     if (processInstanceEntity.getTreePath() != null) {
@@ -258,13 +253,13 @@ public class ListViewProcessInstanceDto {
 
   public static List<ListViewProcessInstanceDto> createFrom(
       List<ProcessInstanceForListViewEntity> processInstanceEntities,
-      Map<Long, List<OperationEntity>> operationsPerProcessInstance) {
+      Map<Long, List<OperationEntity>> operationsPerProcessInstance, ObjectMapper objectMapper) {
     if (processInstanceEntities == null) {
       return new ArrayList<>();
     }
     return processInstanceEntities.stream().filter(item -> item != null)
         .map(item -> createFrom(item,
-            operationsPerProcessInstance.get(item.getProcessInstanceKey())))
+            operationsPerProcessInstance.get(item.getProcessInstanceKey()), objectMapper))
         .collect(Collectors.toList());
   }
 

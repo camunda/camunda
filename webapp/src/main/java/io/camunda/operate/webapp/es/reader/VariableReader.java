@@ -106,9 +106,9 @@ public class VariableReader extends AbstractReader {
       final VariableRequestDto request) {
     String variableName = null;
     if (request.getSearchAfterOrEqual() != null) {
-      variableName = (String) request.getSearchAfterOrEqual()[0];
+      variableName = (String) request.getSearchAfterOrEqual(objectMapper)[0];
     } else if (request.getSearchBeforeOrEqual() != null) {
-      variableName = (String) request.getSearchBeforeOrEqual()[0];
+      variableName = (String) request.getSearchBeforeOrEqual(objectMapper)[0];
     }
 
     VariableRequestDto newRequest = request.createCopy()
@@ -183,7 +183,7 @@ public class VariableReader extends AbstractReader {
           VariableDto.createFrom(
               variableEntities,
               operations,
-              operateProperties.getImporter().getVariableSizeThreshold());
+              operateProperties.getImporter().getVariableSizeThreshold(), objectMapper);
 
       if (variables.size() > 0) {
         if (request.getSearchBefore() != null || request.getSearchBeforeOrEqual() != null) {
@@ -218,9 +218,9 @@ public class VariableReader extends AbstractReader {
       searchSourceBuilder
           .sort(NAME, SortOrder.ASC);
       if (request.getSearchAfter() != null) {
-        searchSourceBuilder.searchAfter(request.getSearchAfter());
+        searchSourceBuilder.searchAfter(request.getSearchAfter(objectMapper));
       } else if (request.getSearchAfterOrEqual() != null) {
-        searchSourceBuilder.searchAfter(request.getSearchAfterOrEqual());
+        searchSourceBuilder.searchAfter(request.getSearchAfterOrEqual(objectMapper));
       }
       searchSourceBuilder.size(request.getPageSize());
     } else { //searchBefore != null
@@ -228,9 +228,9 @@ public class VariableReader extends AbstractReader {
       searchSourceBuilder
           .sort(NAME, SortOrder.DESC);
       if (request.getSearchBefore() != null) {
-        searchSourceBuilder.searchAfter(request.getSearchBefore());
+        searchSourceBuilder.searchAfter(request.getSearchBefore(objectMapper));
       } else if (request.getSearchBeforeOrEqual() != null) {
-        searchSourceBuilder.searchAfter(request.getSearchBeforeOrEqual());
+        searchSourceBuilder.searchAfter(request.getSearchBeforeOrEqual(objectMapper));
       }
       searchSourceBuilder.size(request.getPageSize() + 1);
     }
@@ -249,7 +249,7 @@ public class VariableReader extends AbstractReader {
       final VariableEntity variableEntity = fromSearchHit(
           response.getHits().getHits()[0].getSourceAsString(), objectMapper, VariableEntity.class);
       return VariableDto.createFrom(variableEntity, null, true,
-          operateProperties.getImporter().getVariableSizeThreshold());
+          operateProperties.getImporter().getVariableSizeThreshold(), objectMapper);
     } catch (IOException e) {
       final String message = String.format("Exception occurred, while obtaining variable: %s", e.getMessage());
       logger.error(message, e);
@@ -277,8 +277,8 @@ public class VariableReader extends AbstractReader {
         final VariableEntity variableEntity = ElasticsearchUtil
             .fromSearchHit(response.getHits().getHits()[0].getSourceAsString(),
                 objectMapper, VariableEntity.class);
-        return VariableDto.createFrom(
-            variableEntity, null, true, operateProperties.getImporter().getVariableSizeThreshold());
+        return VariableDto.createFrom(variableEntity, null, true,
+            operateProperties.getImporter().getVariableSizeThreshold(), objectMapper);
       } else {
         return null;
       }

@@ -6,15 +6,19 @@
  */
 package io.camunda.operate.webapp.rest.dto.dmn.list;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.entities.dmn.DecisionInstanceEntity;
-import io.camunda.operate.webapp.rest.dto.CreatableFromEntity;
 import io.camunda.operate.webapp.rest.dto.dmn.DecisionInstanceStateDto;
-import java.time.OffsetDateTime;
-import java.util.Arrays;
-import java.util.Objects;
+import io.camunda.operate.webapp.rest.dto.listview.SortValuesWrapper;
 
-public class DecisionInstanceForListDto implements
-    CreatableFromEntity<DecisionInstanceForListDto, DecisionInstanceEntity> {
+import java.time.OffsetDateTime;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Objects;
+import java.util.stream.Collectors;
+
+public class DecisionInstanceForListDto {
 
   private String id;
   private DecisionInstanceStateDto state;
@@ -27,7 +31,7 @@ public class DecisionInstanceForListDto implements
    * Sort values, define the position of process instance in the list and may be used to search
    * for previous or following page.
    */
-  private String[] sortValues;
+  private SortValuesWrapper[] sortValues;
 
   public String getId() {
     return id;
@@ -84,26 +88,33 @@ public class DecisionInstanceForListDto implements
     return this;
   }
 
-  public String[] getSortValues() {
+  public SortValuesWrapper[] getSortValues() {
     return sortValues;
   }
 
-  public DecisionInstanceForListDto setSortValues(final String[] sortValues) {
+  public DecisionInstanceForListDto setSortValues(final SortValuesWrapper[] sortValues) {
     this.sortValues = sortValues;
     return this;
   }
 
-  @Override
-  public DecisionInstanceForListDto fillFrom(final DecisionInstanceEntity entity) {
-    return this.setDecisionName(entity.getDecisionName())
+  public static DecisionInstanceForListDto createFrom(final DecisionInstanceEntity entity, ObjectMapper objectMapper) {
+    return new DecisionInstanceForListDto().setDecisionName(entity.getDecisionName())
         .setDecisionVersion(entity.getDecisionVersion())
         .setEvaluationDate(entity.getEvaluationDate())
         .setId(entity.getId())
         .setProcessInstanceId(String.valueOf(entity.getProcessInstanceKey()))
         .setState(DecisionInstanceStateDto.getState(entity.getState()))
-        .setSortValues(Arrays.stream(entity.getSortValues())
-            .map(String::valueOf)
-            .toArray(String[]::new));
+        .setSortValues(SortValuesWrapper.createFrom(entity.getSortValues(), objectMapper));
+  }
+
+  public static List<DecisionInstanceForListDto> createFrom(
+      List<DecisionInstanceEntity> decisionInstanceEntities, ObjectMapper objectMapper) {
+    if (decisionInstanceEntities == null) {
+      return new ArrayList<>();
+    }
+    return decisionInstanceEntities.stream().filter(item -> item != null)
+        .map(item -> createFrom(item, objectMapper))
+        .collect(Collectors.toList());
   }
 
   @Override

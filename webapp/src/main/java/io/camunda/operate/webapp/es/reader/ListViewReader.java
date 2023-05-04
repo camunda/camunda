@@ -20,11 +20,7 @@ import io.camunda.operate.entities.listview.ProcessInstanceState;
 import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.schema.templates.ListViewTemplate;
-import io.camunda.operate.webapp.rest.dto.listview.ListViewQueryDto;
-import io.camunda.operate.webapp.rest.dto.listview.ListViewRequestDto;
-import io.camunda.operate.webapp.rest.dto.listview.ListViewResponseDto;
-import io.camunda.operate.webapp.rest.dto.listview.ListViewProcessInstanceDto;
-import io.camunda.operate.webapp.rest.dto.listview.VariablesQueryDto;
+import io.camunda.operate.webapp.rest.dto.listview.*;
 import io.camunda.operate.webapp.rest.exception.InvalidRequestException;
 import io.camunda.operate.util.CollectionUtil;
 import io.camunda.operate.webapp.security.identity.IdentityPermission;
@@ -121,7 +117,7 @@ public class ListViewReader {
 
     final Map<Long, List<OperationEntity>> operationsPerProcessInstance = operationReader.getOperationsPerProcessInstanceKey(processInstanceKeys);
 
-    final List<ListViewProcessInstanceDto> processInstanceDtoList = ListViewProcessInstanceDto.createFrom(processInstanceEntities, operationsPerProcessInstance);
+    final List<ListViewProcessInstanceDto> processInstanceDtoList = ListViewProcessInstanceDto.createFrom(processInstanceEntities, operationsPerProcessInstance, objectMapper);
     result.setProcessInstances(processInstanceDtoList);
     return result;
   }
@@ -187,11 +183,11 @@ public class ListViewReader {
     Object[] querySearchAfter;
     if (directSorting) { //this sorting is also the default one for 1st page
       sort2 = SortBuilders.fieldSort(ListViewTemplate.KEY).order(SortOrder.ASC);
-      querySearchAfter = request.getSearchAfter(); //may be null
+      querySearchAfter = request.getSearchAfter(objectMapper); //may be null
     } else { //searchBefore != null
       //reverse sorting
       sort2 = SortBuilders.fieldSort(ListViewTemplate.KEY).order(SortOrder.DESC);
-      querySearchAfter = request.getSearchBefore();
+      querySearchAfter = request.getSearchBefore(objectMapper);
     }
 
     searchSourceBuilder

@@ -32,8 +32,9 @@ public class SortingDto {
     return sortBy;
   }
 
-  public void setSortBy(String sortBy) {
+  public SortingDto setSortBy(String sortBy) {
     this.sortBy = sortBy;
+    return this;
   }
 
   @Schema(description = "Sort order, default: asc", allowableValues = "asc,desc", required = false)
@@ -41,11 +42,12 @@ public class SortingDto {
     return sortOrder;
   }
 
-  public void setSortOrder(String sortOrder) {
+  public SortingDto setSortOrder(String sortOrder) {
     if (!VALID_SORT_ORDER_VALUES.contains(sortOrder)) {
       throw new InvalidRequestException("SortOrder parameter has invalid value: " + sortOrder);
     }
     this.sortOrder = sortOrder;
+    return this;
   }
 
   @Override

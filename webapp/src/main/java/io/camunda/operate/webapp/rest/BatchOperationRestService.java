@@ -6,10 +6,13 @@
  */
 package io.camunda.operate.webapp.rest;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.webapp.InternalAPIErrorController;
 import io.camunda.operate.webapp.rest.dto.DtoCreator;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+
+import java.util.Arrays;
 import java.util.List;
 import io.camunda.operate.entities.BatchOperationEntity;
 import io.camunda.operate.util.CollectionUtil;
@@ -34,6 +37,9 @@ public class BatchOperationRestService extends InternalAPIErrorController {
   @Autowired
   private BatchOperationReader batchOperationReader;
 
+  @Autowired
+  private ObjectMapper objectMapper;
+
   @Operation(summary = "Query batch operations")
   @PostMapping
   public List<BatchOperationDto> queryBatchOperations(@RequestBody BatchOperationRequestDto batchOperationRequestDto) {
@@ -43,18 +49,16 @@ public class BatchOperationRestService extends InternalAPIErrorController {
     if (batchOperationRequestDto.getSearchAfter() != null && batchOperationRequestDto.getSearchBefore() != null) {
       throw new InvalidRequestException("Only one of parameters must be present in request: either searchAfter or searchBefore.");
     }
-    if (batchOperationRequestDto.getSearchBefore() != null && (batchOperationRequestDto.getSearchBefore().length != 2 || !CollectionUtil
-        .allElementsAreOfType(String.class, batchOperationRequestDto.getSearchBefore()))) {
-      throw new InvalidRequestException("searchBefore must be an array of two string values.");
+    if (batchOperationRequestDto.getSearchBefore() != null && (batchOperationRequestDto.getSearchBefore().length != 2 )) {
+      throw new InvalidRequestException("searchBefore must be an array of two values.");
     }
 
-    if (batchOperationRequestDto.getSearchAfter() != null && (batchOperationRequestDto.getSearchAfter().length != 2 || !CollectionUtil
-        .allElementsAreOfType(String.class, batchOperationRequestDto.getSearchAfter()))) {
-      throw new InvalidRequestException("searchAfter must be an array of two string values.");
+    if (batchOperationRequestDto.getSearchAfter() != null && (batchOperationRequestDto.getSearchAfter().length != 2 )) {
+      throw new InvalidRequestException("searchAfter must be an array of two values.");
     }
 
     List<BatchOperationEntity> batchOperations = batchOperationReader.getBatchOperations(batchOperationRequestDto);
-    return DtoCreator.create(batchOperations, BatchOperationDto.class);
+    return BatchOperationDto.createFrom(batchOperations, objectMapper);
   }
 
 }

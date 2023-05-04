@@ -6,13 +6,17 @@
  */
 package io.camunda.operate.webapp.rest.dto.operation;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.entities.BatchOperationEntity;
-import io.camunda.operate.webapp.rest.dto.CreatableFromEntity;
-import java.time.OffsetDateTime;
-import java.util.Arrays;
+import io.camunda.operate.webapp.rest.dto.listview.SortValuesWrapper;
 
-public class BatchOperationDto implements
-    CreatableFromEntity<BatchOperationDto, BatchOperationEntity> {
+import java.time.OffsetDateTime;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.stream.Collectors;
+
+public class BatchOperationDto {
 
   private String id;
 
@@ -28,7 +32,7 @@ public class BatchOperationDto implements
   /**
    * Sort values, define the position of batch operation in the list and may be used to search for previous of following page.
    */
-  private String[] sortValues;
+  private SortValuesWrapper[] sortValues;
 
   public String getName() {
     return name;
@@ -102,18 +106,17 @@ public class BatchOperationDto implements
     return this;
   }
 
-  public String[] getSortValues() {
+  public SortValuesWrapper[] getSortValues() {
     return sortValues;
   }
 
-  public BatchOperationDto setSortValues(String[] sortValues) {
+  public BatchOperationDto setSortValues(SortValuesWrapper[] sortValues) {
     this.sortValues = sortValues;
     return this;
   }
 
-  @Override
-  public BatchOperationDto fillFrom(final BatchOperationEntity batchOperationEntity) {
-    return this
+  public static BatchOperationDto createFrom(final BatchOperationEntity batchOperationEntity, ObjectMapper objectMapper) {
+    return new BatchOperationDto()
         .setId(batchOperationEntity.getId())
         .setName(batchOperationEntity.getName())
         .setType(OperationTypeDto.getType(batchOperationEntity.getType()))
@@ -123,9 +126,17 @@ public class BatchOperationDto implements
         .setOperationsTotalCount(batchOperationEntity.getOperationsTotalCount())
         .setOperationsFinishedCount(batchOperationEntity.getOperationsFinishedCount())
         //convert to String[]
-        .setSortValues(Arrays.stream(batchOperationEntity.getSortValues())
-            .map(String::valueOf)
-            .toArray(String[]::new));
+        .setSortValues(SortValuesWrapper.createFrom(batchOperationEntity.getSortValues(), objectMapper));
+  }
+
+  public static List<BatchOperationDto> createFrom(
+      List<BatchOperationEntity> batchOperationEntities, ObjectMapper objectMapper) {
+    if (batchOperationEntities == null) {
+      return new ArrayList<>();
+    }
+    return batchOperationEntities.stream().filter(item -> item != null)
+        .map(item -> createFrom(item, objectMapper))
+        .collect(Collectors.toList());
   }
 
   @Override

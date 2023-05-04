@@ -754,6 +754,7 @@ public class ListViewQueryIT extends OperateIntegrationTest {
   private void testPagination() throws Exception {
     //query running instances
     ListViewRequestDto processInstanceRequest = createGetAllProcessInstancesRequest();
+    processInstanceRequest.setSorting(new SortingDto().setSortBy(ListViewTemplate.END_DATE).setSortOrder(SortingDto.SORT_ORDER_DESC_VALUE));
     processInstanceRequest.setPageSize(5);
 
     //page 1

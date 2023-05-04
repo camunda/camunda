@@ -6,6 +6,7 @@
  */
 package io.camunda.operate.rest;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.util.OperateIntegrationTest;
 import io.camunda.operate.util.apps.nobeans.TestApplicationWithNoBeans;
 import io.camunda.operate.webapp.es.reader.BatchOperationReader;
@@ -17,6 +18,8 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.web.servlet.MvcResult;
 
+import static io.camunda.operate.webapp.rest.dto.listview.SortValuesWrapper.createFrom;
+
 @SpringBootTest(
   classes = {TestApplicationWithNoBeans.class, BatchOperationRestService.class, OperateProfileService.class}
 )
@@ -24,6 +27,8 @@ public class BatchOperationRestServiceTest extends OperateIntegrationTest {
 
   @MockBean
   private BatchOperationReader batchOperationReader;
+
+  private ObjectMapper objectMapper = new ObjectMapper();
 
   @Test
   public void testGetBatchOperationWithNoPageSize() throws Exception {
@@ -36,7 +41,9 @@ public class BatchOperationRestServiceTest extends OperateIntegrationTest {
   @Test
   public void testGetBatchOperationWithTooManyParams() throws Exception {
     //when
-    final MvcResult mvcResult = postRequestThatShouldFail(new BatchOperationRequestDto(2, new Object[]{123, 123}, new Object[]{123, 123}));
+    final MvcResult mvcResult = postRequestThatShouldFail(
+        new BatchOperationRequestDto(2, createFrom(new Object[] { 123, 123 }, objectMapper),
+            createFrom(new Object[] { 123, 123 }, objectMapper)));
     //then
     assertErrorMessageContains(mvcResult, "Only one of parameters must be present in request: either searchAfter or searchBefore.");
   }
@@ -44,27 +51,17 @@ public class BatchOperationRestServiceTest extends OperateIntegrationTest {
   @Test
   public void testGetBatchOperationWithWrongSearchAfter() throws Exception {
     //when
-    MvcResult mvcResult = postRequestThatShouldFail(new BatchOperationRequestDto(2, new Object[]{123}, null));
+    MvcResult mvcResult = postRequestThatShouldFail(new BatchOperationRequestDto(2, createFrom(new Object[]{123}, objectMapper), null));
     //then
-    assertErrorMessageContains(mvcResult, "searchAfter must be an array of two string values.");
-
-    //when
-    mvcResult = postRequestThatShouldFail(new BatchOperationRequestDto(2, new Object[]{"adg", 234}, null));
-    //then
-    assertErrorMessageContains(mvcResult, "searchAfter must be an array of two string values.");
+    assertErrorMessageContains(mvcResult, "searchAfter must be an array of two values.");
   }
 
   @Test
   public void testGetBatchOperationWithWrongSearchBefore() throws Exception {
     //when
-    MvcResult mvcResult = postRequestThatShouldFail(new BatchOperationRequestDto(2, null, new Object[]{123}));
+    MvcResult mvcResult = postRequestThatShouldFail(new BatchOperationRequestDto(2, null, createFrom(new Object[]{123}, objectMapper)));
     //then
-    assertErrorMessageContains(mvcResult, "searchBefore must be an array of two string values.");
-
-    //when
-    mvcResult = postRequestThatShouldFail(new BatchOperationRequestDto(2, null, new Object[]{123, "asf"}));
-    //then
-    assertErrorMessageContains(mvcResult, "searchBefore must be an array of two string values.");
+    assertErrorMessageContains(mvcResult, "searchBefore must be an array of two values.");
   }
 
   protected MvcResult postRequestThatShouldFail(Object query) throws Exception {

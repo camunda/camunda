@@ -11,6 +11,7 @@ import static io.camunda.operate.webapp.rest.FlowNodeInstanceRestService.FLOW_NO
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import io.camunda.operate.webapp.rest.dto.activity.FlowNodeStateDto;
+import io.camunda.operate.webapp.rest.dto.listview.SortValuesWrapper;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import java.util.List;
@@ -444,8 +445,8 @@ public class FlowNodeInstanceIT extends OperateZeebeIntegrationTest {
     FlowNodeInstanceQueryDto treeQuery = new FlowNodeInstanceQueryDto()
         .setProcessInstanceId("123")
         .setTreePath("123")
-        .setSearchAfter(new String[]{})
-        .setSearchBeforeOrEqual(new String[]{});
+        .setSearchAfter(new SortValuesWrapper[]{})
+        .setSearchBeforeOrEqual(new SortValuesWrapper[]{});
     FlowNodeInstanceRequestDto treeRequest = new FlowNodeInstanceRequestDto(treeQuery);
 
     MvcResult mvcResult = postRequestThatShouldFail(FLOW_NODE_INSTANCE_URL, treeRequest);
@@ -454,8 +455,8 @@ public class FlowNodeInstanceIT extends OperateZeebeIntegrationTest {
     treeQuery = new FlowNodeInstanceQueryDto()
         .setProcessInstanceId("123")
         .setTreePath("123")
-        .setSearchBefore(new String[]{})
-        .setSearchBeforeOrEqual(new String[]{});
+        .setSearchBefore(new SortValuesWrapper[]{})
+        .setSearchBeforeOrEqual(new SortValuesWrapper[]{});
 
     mvcResult = postRequestThatShouldFail(FLOW_NODE_INSTANCE_URL, new FlowNodeInstanceRequestDto(treeQuery));
     assertErrorMessageIsEqualTo(mvcResult, "Only one of [searchAfter, searchAfterOrEqual, searchBefore, searchBeforeOrEqual] must be present in request.");
@@ -463,8 +464,8 @@ public class FlowNodeInstanceIT extends OperateZeebeIntegrationTest {
     treeQuery = new FlowNodeInstanceQueryDto()
         .setProcessInstanceId("123")
         .setTreePath("123")
-        .setSearchAfter(new String[]{})
-        .setSearchAfterOrEqual(new String[]{});
+        .setSearchAfter(new SortValuesWrapper[]{})
+        .setSearchAfterOrEqual(new SortValuesWrapper[]{});
 
     mvcResult = postRequestThatShouldFail(FLOW_NODE_INSTANCE_URL, new FlowNodeInstanceRequestDto(treeQuery));
     assertErrorMessageIsEqualTo(mvcResult, "Only one of [searchAfter, searchAfterOrEqual, searchBefore, searchBeforeOrEqual] must be present in request.");

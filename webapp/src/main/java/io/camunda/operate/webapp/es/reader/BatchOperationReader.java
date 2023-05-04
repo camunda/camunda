@@ -82,8 +82,8 @@ public class BatchOperationReader {
                 sort2;
     Object[] querySearchAfter;
 
-    Object[] searchAfter = batchOperationRequestDto.getSearchAfter();
-    Object[] searchBefore = batchOperationRequestDto.getSearchBefore();
+    Object[] searchAfter = batchOperationRequestDto.getSearchAfter(objectMapper);
+    Object[] searchBefore = batchOperationRequestDto.getSearchBefore(objectMapper);
     if (searchAfter != null || searchBefore == null) { //this sorting is also the default one for 1st page
       sort1 = new FieldSortBuilder(BatchOperationTemplate.END_DATE).order(SortOrder.DESC).missing("_first");
       sort2 = new FieldSortBuilder(BatchOperationTemplate.START_DATE).order(SortOrder.DESC);

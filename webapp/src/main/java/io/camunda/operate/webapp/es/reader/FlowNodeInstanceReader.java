@@ -172,9 +172,9 @@ public class FlowNodeInstanceReader extends AbstractReader {
       final FlowNodeInstanceQueryDto request) {
     String flowNodeInstanceId = null;
     if (request.getSearchAfterOrEqual() != null) {
-      flowNodeInstanceId = (String) request.getSearchAfterOrEqual()[1];
+      flowNodeInstanceId = (String) request.getSearchAfterOrEqual(objectMapper)[1];
     } else if (request.getSearchBeforeOrEqual() != null) {
-      flowNodeInstanceId = (String) request.getSearchBeforeOrEqual()[1];
+      flowNodeInstanceId = (String) request.getSearchBeforeOrEqual(objectMapper)[1];
     }
 
     FlowNodeInstanceQueryDto newRequest = request.createCopy()
@@ -296,7 +296,7 @@ public class FlowNodeInstanceReader extends AbstractReader {
                 null,
                 getAggsProcessor(incidentPaths, runningParent));
     return new FlowNodeInstanceResponseDto(runningParent[0],
-        DtoCreator.create(children, FlowNodeInstanceDto.class));
+        FlowNodeInstanceDto.createFrom(children, objectMapper));
   }
 
   private Function<SearchHit, FlowNodeInstanceEntity> getSearchHitFunction(
@@ -325,7 +325,7 @@ public class FlowNodeInstanceReader extends AbstractReader {
         .mapSearchHits(searchResponse.getHits().getHits(),
             getSearchHitFunction(incidentPaths));
     return new FlowNodeInstanceResponseDto(runningParent[0],
-        DtoCreator.create(children, FlowNodeInstanceDto.class));
+        FlowNodeInstanceDto.createFrom(children, objectMapper));
   }
 
   private Consumer<Aggregations> getAggsProcessor(Set<String> incidentPaths,
@@ -369,9 +369,9 @@ public class FlowNodeInstanceReader extends AbstractReader {
           .sort(START_DATE, SortOrder.ASC)
           .sort(ID, SortOrder.ASC);
       if (request.getSearchAfter() != null) {
-        searchSourceBuilder.searchAfter(request.getSearchAfter());
+        searchSourceBuilder.searchAfter(request.getSearchAfter(objectMapper));
       } else if (request.getSearchAfterOrEqual() != null) {
-        searchSourceBuilder.searchAfter(request.getSearchAfterOrEqual());
+        searchSourceBuilder.searchAfter(request.getSearchAfterOrEqual(objectMapper));
       }
     } else { //searchBefore != null
       //reverse sorting
@@ -379,9 +379,9 @@ public class FlowNodeInstanceReader extends AbstractReader {
           .sort(START_DATE, SortOrder.DESC)
           .sort(ID, SortOrder.DESC);
       if (request.getSearchBefore() != null) {
-        searchSourceBuilder.searchAfter(request.getSearchBefore());
+        searchSourceBuilder.searchAfter(request.getSearchBefore(objectMapper));
       } else if (request.getSearchBeforeOrEqual() != null) {
-        searchSourceBuilder.searchAfter(request.getSearchBeforeOrEqual());
+        searchSourceBuilder.searchAfter(request.getSearchBeforeOrEqual(objectMapper));
       }
     }
 

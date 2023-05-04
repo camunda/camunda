@@ -6,10 +6,12 @@
  */
 package io.camunda.operate.webapp.rest.dto;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.entities.OperationEntity;
 import io.camunda.operate.entities.OperationState;
 import io.camunda.operate.entities.VariableEntity;
 import io.camunda.operate.util.CollectionUtil;
+import io.camunda.operate.webapp.rest.dto.listview.SortValuesWrapper;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -32,7 +34,7 @@ public class VariableDto {
    * Sort values, define the position of process instance in the list and may be used to search
    * for previous or following page.
    */
-  private String[] sortValues;
+  private SortValuesWrapper[] sortValues;
 
   public String getId() {
     return id;
@@ -84,17 +86,17 @@ public class VariableDto {
     return this;
   }
 
-  public String[] getSortValues() {
+  public SortValuesWrapper[] getSortValues() {
     return sortValues;
   }
 
-  public VariableDto setSortValues(final String[] sortValues) {
+  public VariableDto setSortValues(final SortValuesWrapper[] sortValues) {
     this.sortValues = sortValues;
     return this;
   }
 
   public static VariableDto createFrom(VariableEntity variableEntity, List<OperationEntity> operations,
-      boolean fullValue, int variableSizeThreshold) {
+      boolean fullValue, int variableSizeThreshold, ObjectMapper objectMapper) {
     if (variableEntity == null) {
       return null;
     }
@@ -137,15 +139,13 @@ public class VariableDto {
 
     //convert to String[]
     if (variableEntity.getSortValues() != null) {
-      variable.setSortValues(Arrays.stream(variableEntity.getSortValues())
-          .map(String::valueOf)
-          .toArray(String[]::new));
+      variable.setSortValues(SortValuesWrapper.createFrom(variableEntity.getSortValues(), objectMapper));
     }
     return variable;
   }
 
   public static List<VariableDto> createFrom(List<VariableEntity> variableEntities,
-      Map<String, List<OperationEntity>> operations, int variableSizeThreshold) {
+      Map<String, List<OperationEntity>> operations, int variableSizeThreshold, ObjectMapper objectMapper) {
     if (variableEntities == null) {
       return new ArrayList<>();
     }
@@ -154,7 +154,7 @@ public class VariableDto {
             item,
             operations.get(item.getName()),
             false,
-            variableSizeThreshold))
+            variableSizeThreshold, objectMapper))
         .collect(Collectors.toList());
   }
 

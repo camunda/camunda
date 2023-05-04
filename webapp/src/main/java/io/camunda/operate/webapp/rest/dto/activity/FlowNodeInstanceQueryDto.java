@@ -6,6 +6,8 @@
  */
 package io.camunda.operate.webapp.rest.dto.activity;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.operate.webapp.rest.dto.listview.SortValuesWrapper;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.util.Arrays;
 import java.util.Objects;
@@ -22,19 +24,19 @@ public class FlowNodeInstanceQueryDto {
   /**
    * Search for the flow node instances that goes before the given sort values
    */
-  private Object[] searchBefore;
+  private SortValuesWrapper[] searchBefore;
   /**
    * Search for the flow node instances that goes before the given sort values plus same sort values.
    */
-  private Object[] searchBeforeOrEqual;
+  private SortValuesWrapper[] searchBeforeOrEqual;
   /**
    * Search for the flow node instances that goes exactly after the given sort values.
    */
-  private Object[] searchAfter;
+  private SortValuesWrapper[] searchAfter;
   /**
    * Search for the flow node instances that goes after the given sort values plus same sort values.
    */
-  private Object[] searchAfterOrEqual;
+  private SortValuesWrapper[] searchAfterOrEqual;
 
   /**
    * Page size.
@@ -73,38 +75,54 @@ public class FlowNodeInstanceQueryDto {
     return searchBefore;
   }
 
-  public FlowNodeInstanceQueryDto setSearchBefore(Object[] searchBefore) {
+  public FlowNodeInstanceQueryDto setSearchBefore(SortValuesWrapper[] searchBefore) {
     this.searchBefore = searchBefore;
     return this;
   }
 
-  public Object[] getSearchBeforeOrEqual() {
+  public Object[] getSearchBefore(ObjectMapper objectMapper) {
+    return SortValuesWrapper.convertSortValues(searchBefore, objectMapper);
+  }
+
+  public SortValuesWrapper[] getSearchBeforeOrEqual() {
     return searchBeforeOrEqual;
   }
 
-  public FlowNodeInstanceQueryDto setSearchBeforeOrEqual(final Object[] searchBeforeOrEqual) {
+  public FlowNodeInstanceQueryDto setSearchBeforeOrEqual(final SortValuesWrapper[] searchBeforeOrEqual) {
     this.searchBeforeOrEqual = searchBeforeOrEqual;
     return this;
   }
 
+  public Object[] getSearchBeforeOrEqual(ObjectMapper objectMapper) {
+    return SortValuesWrapper.convertSortValues(searchBeforeOrEqual, objectMapper);
+  }
+
   @Schema(description= "Array of two strings: copy/paste of sortValues field from one of the operations.",
       example = "[\"1583836151645\", \"1583836128180\"]")
-  public Object[] getSearchAfter() {
+  public SortValuesWrapper[] getSearchAfter() {
     return searchAfter;
   }
 
-  public FlowNodeInstanceQueryDto setSearchAfter(Object[] searchAfter) {
+  public FlowNodeInstanceQueryDto setSearchAfter(SortValuesWrapper[] searchAfter) {
     this.searchAfter = searchAfter;
     return this;
   }
 
-  public Object[] getSearchAfterOrEqual() {
+  public Object[] getSearchAfter(ObjectMapper objectMapper) {
+    return SortValuesWrapper.convertSortValues(searchAfter, objectMapper);
+  }
+
+  public SortValuesWrapper[] getSearchAfterOrEqual() {
     return searchAfterOrEqual;
   }
 
-  public FlowNodeInstanceQueryDto setSearchAfterOrEqual(final Object[] searchAfterOrEqual) {
+  public FlowNodeInstanceQueryDto setSearchAfterOrEqual(final SortValuesWrapper[] searchAfterOrEqual) {
     this.searchAfterOrEqual = searchAfterOrEqual;
     return this;
+  }
+
+  public Object[] getSearchAfterOrEqual(ObjectMapper objectMapper) {
+    return SortValuesWrapper.convertSortValues(searchAfterOrEqual, objectMapper);
   }
 
   public Integer getPageSize() {

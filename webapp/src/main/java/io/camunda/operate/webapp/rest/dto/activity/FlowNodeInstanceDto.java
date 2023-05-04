@@ -6,16 +6,20 @@
  */
 package io.camunda.operate.webapp.rest.dto.activity;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.entities.FlowNodeInstanceEntity;
 import io.camunda.operate.entities.FlowNodeState;
 import io.camunda.operate.entities.FlowNodeType;
-import io.camunda.operate.webapp.rest.dto.CreatableFromEntity;
-import java.time.OffsetDateTime;
-import java.util.Arrays;
-import java.util.Objects;
+import io.camunda.operate.webapp.rest.dto.listview.SortValuesWrapper;
 
-public class FlowNodeInstanceDto implements
-    CreatableFromEntity<FlowNodeInstanceDto, FlowNodeInstanceEntity> {
+import java.time.OffsetDateTime;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Objects;
+import java.util.stream.Collectors;
+
+public class FlowNodeInstanceDto {
 
   private String id;
 
@@ -34,88 +38,104 @@ public class FlowNodeInstanceDto implements
   /**
    * Sort values, define the position of batch operation in the list and may be used to search for previous of following page.
    */
-  private Object[] sortValues;
+  private SortValuesWrapper[] sortValues;
 
   public String getId() {
     return id;
   }
 
-  public void setId(String id) {
+  public FlowNodeInstanceDto setId(String id) {
     this.id = id;
+    return this;
   }
 
   public FlowNodeStateDto getState() {
     return state;
   }
 
-  public void setState(FlowNodeStateDto state) {
+  public FlowNodeInstanceDto setState(FlowNodeStateDto state) {
     this.state = state;
+    return this;
   }
 
   public String getFlowNodeId() {
     return flowNodeId;
   }
 
-  public void setFlowNodeId(String flowNodeId) {
+  public FlowNodeInstanceDto setFlowNodeId(String flowNodeId) {
     this.flowNodeId = flowNodeId;
+    return this;
   }
 
   public OffsetDateTime getStartDate() {
     return startDate;
   }
 
-  public void setStartDate(OffsetDateTime startDate) {
+  public FlowNodeInstanceDto setStartDate(OffsetDateTime startDate) {
     this.startDate = startDate;
+    return this;
   }
 
   public OffsetDateTime getEndDate() {
     return endDate;
   }
 
-  public void setEndDate(OffsetDateTime endDate) {
+  public FlowNodeInstanceDto setEndDate(OffsetDateTime endDate) {
     this.endDate = endDate;
+    return this;
   }
 
   public FlowNodeType getType() {
     return type;
   }
 
-  public void setType(FlowNodeType type) {
+  public FlowNodeInstanceDto setType(FlowNodeType type) {
     this.type = type;
+    return this;
   }
 
   public String getTreePath() {
     return treePath;
   }
 
-  public void setTreePath(final String treePath) {
+  public FlowNodeInstanceDto setTreePath(final String treePath) {
     this.treePath = treePath;
+    return this;
   }
 
-  public Object[] getSortValues() {
+  public SortValuesWrapper[] getSortValues() {
     return sortValues;
   }
 
-  public void setSortValues(final Object[] sortValues) {
+  public FlowNodeInstanceDto setSortValues(final SortValuesWrapper[] sortValues) {
     this.sortValues = sortValues;
+    return this;
   }
 
-  @Override
-  public FlowNodeInstanceDto fillFrom(final FlowNodeInstanceEntity flowNodeInstanceEntity) {
-    this.setId(flowNodeInstanceEntity.getId());
-    this.setFlowNodeId(flowNodeInstanceEntity.getFlowNodeId());
-    this.setStartDate(flowNodeInstanceEntity.getStartDate());
-    this.setEndDate(flowNodeInstanceEntity.getEndDate());
+  public static FlowNodeInstanceDto createFrom(final FlowNodeInstanceEntity flowNodeInstanceEntity, final ObjectMapper objectMapper) {
+    FlowNodeInstanceDto instance = new FlowNodeInstanceDto().setId(flowNodeInstanceEntity.getId()).setFlowNodeId(flowNodeInstanceEntity.getFlowNodeId())
+        .setStartDate(flowNodeInstanceEntity.getStartDate())
+        .setEndDate(flowNodeInstanceEntity.getEndDate());
     if (flowNodeInstanceEntity.getState() == FlowNodeState.ACTIVE && flowNodeInstanceEntity
         .isIncident()) {
-      this.setState(FlowNodeStateDto.INCIDENT);
+      instance.setState(FlowNodeStateDto.INCIDENT);
     } else {
-      this.setState(FlowNodeStateDto.getState(flowNodeInstanceEntity.getState()));
+      instance.setState(FlowNodeStateDto.getState(flowNodeInstanceEntity.getState()));
     }
-    this.setType(flowNodeInstanceEntity.getType());
-    this.setSortValues(flowNodeInstanceEntity.getSortValues());
-    this.setTreePath(flowNodeInstanceEntity.getTreePath());
-    return this;
+    instance.setType(flowNodeInstanceEntity.getType())
+        .setSortValues(SortValuesWrapper.createFrom(flowNodeInstanceEntity.getSortValues(), objectMapper))
+        .setTreePath(flowNodeInstanceEntity.getTreePath());
+    return instance;
+  }
+
+  public static List<FlowNodeInstanceDto> createFrom(
+      List<FlowNodeInstanceEntity> flowNodeInstanceEntities, ObjectMapper objectMapper) {
+    if (flowNodeInstanceEntities == null) {
+      return new ArrayList<>();
+    }
+    return flowNodeInstanceEntities.stream().filter(item -> item != null)
+        .map(item -> createFrom(item, objectMapper))
+        .collect(Collectors.toList());
   }
 
   @Override

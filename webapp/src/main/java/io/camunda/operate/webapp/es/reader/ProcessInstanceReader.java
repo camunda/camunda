@@ -102,7 +102,8 @@ public class ProcessInstanceReader extends AbstractReader {
       return ListViewProcessInstanceDto.createFrom(processInstance,
             operationReader.getOperationsByProcessInstanceKey(processInstanceKey),
             callHierarchy,
-            permissionsService
+            permissionsService,
+            objectMapper
       );
     } catch (IOException e) {
       final String message = String.format("Exception occurred, while obtaining process instance with operations: %s", e.getMessage());

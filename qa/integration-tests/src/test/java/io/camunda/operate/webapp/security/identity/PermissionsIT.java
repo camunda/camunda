@@ -16,6 +16,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.entities.ProcessEntity;
 import io.camunda.operate.entities.dmn.definition.DecisionDefinitionEntity;
 import io.camunda.operate.entities.listview.ProcessInstanceForListViewEntity;
@@ -233,7 +234,7 @@ public class PermissionsIT {
         new IdentityAuthorization().setResourceKey(demoProcessId).setResourceType(PermissionsService.RESOURCE_TYPE_PROCESS_DEFINITION)
             .setPermissions(new HashSet<>(List.of(READ, DELETE, UPDATE)))));
 
-    final ListViewProcessInstanceDto listViewProcessInstanceDto = ListViewProcessInstanceDto.createFrom(entity, List.of(), List.of(), permissionsService);
+    final ListViewProcessInstanceDto listViewProcessInstanceDto = ListViewProcessInstanceDto.createFrom(entity, List.of(), List.of(), permissionsService, new ObjectMapper());
 
     // then
     assertThat(listViewProcessInstanceDto.getPermissions()).hasSize(3);
@@ -255,7 +256,7 @@ public class PermissionsIT {
         new IdentityAuthorization().setResourceKey(PermissionsService.RESOURCE_KEY_ALL).setResourceType(PermissionsService.RESOURCE_TYPE_PROCESS_DEFINITION)
             .setPermissions(new HashSet<>(List.of(READ)))));
 
-    final ListViewProcessInstanceDto listViewProcessInstanceDto = ListViewProcessInstanceDto.createFrom(entity, List.of(), List.of(), permissionsService);
+    final ListViewProcessInstanceDto listViewProcessInstanceDto = ListViewProcessInstanceDto.createFrom(entity, List.of(), List.of(), permissionsService, new ObjectMapper());
 
     // then
     assertThat(listViewProcessInstanceDto.getPermissions()).hasSize(2);
