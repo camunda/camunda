@@ -12,6 +12,13 @@ import static io.camunda.zeebe.db.impl.rocksdb.transaction.RocksDbInternal.isRoc
 import io.camunda.zeebe.db.TransactionOperation;
 import io.camunda.zeebe.db.ZeebeDbException;
 import io.camunda.zeebe.db.ZeebeDbTransaction;
+import io.camunda.zeebe.util.buffer.BufferUtil;
+import java.lang.reflect.InvocationTargetException;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
+import org.agrona.DirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
 import org.rocksdb.ColumnFamilyHandle;
 import org.rocksdb.ReadOptions;
 import org.rocksdb.RocksDBException;
@@ -25,6 +32,7 @@ public class ZeebeTransaction implements ZeebeDbTransaction, AutoCloseable {
 
   private boolean inCurrentTransaction;
   private Transaction transaction;
+  private final Map<Integer, DirectBuffer> keyValueLRUCache;
 
   public ZeebeTransaction(
       final Transaction transaction, final TransactionRenovator transactionRenovator) {
@@ -35,6 +43,7 @@ public class ZeebeTransaction implements ZeebeDbTransaction, AutoCloseable {
     } catch (final Exception ex) {
       throw new RuntimeException(ex);
     }
+    keyValueLRUCache = new HashMap<>();
   }
 
   public void put(
@@ -44,8 +53,15 @@ public class ZeebeTransaction implements ZeebeDbTransaction, AutoCloseable {
       final byte[] value,
       final int valueLength)
       throws Exception {
+
     RocksDbInternal.putWithHandle.invoke(
         transaction, nativeHandle, key, keyLength, value, valueLength, columnFamilyHandle, false);
+
+    final var keyClone = BufferUtil.cloneBuffer(new UnsafeBuffer(key, 0, keyLength), 0, keyLength);
+    final var valueClone =
+        BufferUtil.cloneBuffer(new UnsafeBuffer(value, 0, valueLength), 0, valueLength);
+
+    keyValueLRUCache.put(Arrays.hashCode(keyClone.byteArray()), valueClone);
   }
 
   public byte[] get(
@@ -54,15 +70,49 @@ public class ZeebeTransaction implements ZeebeDbTransaction, AutoCloseable {
       final byte[] key,
       final int keyLength)
       throws Exception {
-    return (byte[])
-        RocksDbInternal.getWithHandle.invoke(
-            transaction, nativeHandle, readOptionsHandle, key, keyLength, columnFamilyHandle);
+
+    final var keyClone = BufferUtil.cloneBuffer(new UnsafeBuffer(key, 0, keyLength), 0, keyLength);
+    final DirectBuffer valueBuffer =
+        keyValueLRUCache.computeIfAbsent(
+            Arrays.hashCode(keyClone.byteArray()),
+            (kHash) -> {
+              try {
+                final var bytes =
+                    (byte[])
+                        RocksDbInternal.getWithHandle.invoke(
+                            transaction,
+                            nativeHandle,
+                            readOptionsHandle,
+                            key,
+                            keyLength,
+                            columnFamilyHandle);
+                if (bytes != null) {
+                  return new UnsafeBuffer(bytes);
+                } else {
+                  return null;
+                }
+
+              } catch (final IllegalAccessException e) {
+                throw new RuntimeException(e);
+              } catch (final InvocationTargetException e) {
+                throw new RuntimeException(e);
+              }
+            });
+
+    if (valueBuffer == null) {
+      return null;
+    } else {
+      return valueBuffer.byteArray();
+    }
   }
 
   public void delete(final long columnFamilyHandle, final byte[] key, final int keyLength)
       throws Exception {
     RocksDbInternal.removeWithHandle.invoke(
         transaction, nativeHandle, key, keyLength, columnFamilyHandle, false);
+
+    final var keyClone = BufferUtil.cloneBuffer(new UnsafeBuffer(key, 0, keyLength), 0, keyLength);
+    keyValueLRUCache.remove(Arrays.hashCode(keyClone.byteArray()));
   }
 
   public RocksIterator newIterator(final ReadOptions options, final ColumnFamilyHandle handle) {
@@ -120,14 +170,18 @@ public class ZeebeTransaction implements ZeebeDbTransaction, AutoCloseable {
   void commitInternal() throws RocksDBException {
     inCurrentTransaction = false;
     transaction.commit();
+    keyValueLRUCache.clear();
   }
 
   void rollbackInternal() throws RocksDBException {
     inCurrentTransaction = false;
     transaction.rollback();
+    keyValueLRUCache.clear();
   }
 
+  @Override
   public void close() {
     transaction.close();
+    keyValueLRUCache.clear();
   }
 }
