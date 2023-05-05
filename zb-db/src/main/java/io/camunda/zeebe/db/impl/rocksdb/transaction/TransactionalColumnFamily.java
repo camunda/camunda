@@ -22,6 +22,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import org.agrona.DirectBuffer;
+import org.rocksdb.ColumnFamilyHandle;
 import org.rocksdb.ReadOptions;
 import org.rocksdb.RocksIterator;
 
@@ -54,16 +55,21 @@ class TransactionalColumnFamily<
   private final ColumnFamilyContext columnFamilyContext;
 
   private final ForeignKeyChecker foreignKeyChecker;
+  private final long columnFamilyNativeHandle;
+  private final ColumnFamilyHandle columnFamilyHandle;
 
   TransactionalColumnFamily(
       final ZeebeTransactionDb<ColumnFamilyNames> transactionDb,
       final ConsistencyChecksSettings consistencyChecksSettings,
+      final ColumnFamilyHandle columnFamilyHandle,
       final ColumnFamilyNames columnFamily,
       final TransactionContext context,
       final KeyType keyInstance,
       final ValueType valueInstance) {
     this.transactionDb = transactionDb;
     this.consistencyChecksSettings = consistencyChecksSettings;
+    this.columnFamilyHandle = columnFamilyHandle;
+    columnFamilyNativeHandle = columnFamilyHandle.getNativeHandle();
     this.columnFamily = columnFamily;
     this.context = context;
     this.keyInstance = keyInstance;
@@ -82,7 +88,7 @@ class TransactionalColumnFamily<
           assertKeyDoesNotExist(transaction);
           assertForeignKeysExist(transaction, key, value);
           transaction.put(
-              transactionDb.getDefaultNativeHandle(),
+              columnFamilyNativeHandle,
               columnFamilyContext.getKeyBufferArray(),
               columnFamilyContext.getKeyLength(),
               columnFamilyContext.getValueBufferArray(),
@@ -99,7 +105,7 @@ class TransactionalColumnFamily<
           assertKeyExists(transaction);
           assertForeignKeysExist(transaction, key, value);
           transaction.put(
-              transactionDb.getDefaultNativeHandle(),
+              columnFamilyNativeHandle,
               columnFamilyContext.getKeyBufferArray(),
               columnFamilyContext.getKeyLength(),
               columnFamilyContext.getValueBufferArray(),
@@ -115,7 +121,7 @@ class TransactionalColumnFamily<
           columnFamilyContext.writeValue(value);
           assertForeignKeysExist(transaction, key, value);
           transaction.put(
-              transactionDb.getDefaultNativeHandle(),
+              columnFamilyNativeHandle,
               columnFamilyContext.getKeyBufferArray(),
               columnFamilyContext.getKeyLength(),
               columnFamilyContext.getValueBufferArray(),
@@ -130,7 +136,7 @@ class TransactionalColumnFamily<
           columnFamilyContext.writeKey(key);
           final byte[] value =
               transaction.get(
-                  transactionDb.getDefaultNativeHandle(),
+                  columnFamilyNativeHandle,
                   transactionDb.getReadOptionsNativeHandle(),
                   columnFamilyContext.getKeyBufferArray(),
                   columnFamilyContext.getKeyLength());
@@ -213,7 +219,7 @@ class TransactionalColumnFamily<
           columnFamilyContext.writeKey(key);
           assertKeyExists(transaction);
           transaction.delete(
-              transactionDb.getDefaultNativeHandle(),
+              columnFamilyNativeHandle,
               columnFamilyContext.getKeyBufferArray(),
               columnFamilyContext.getKeyLength());
         });
@@ -225,7 +231,7 @@ class TransactionalColumnFamily<
         transaction -> {
           columnFamilyContext.writeKey(key);
           transaction.delete(
-              transactionDb.getDefaultNativeHandle(),
+              columnFamilyNativeHandle,
               columnFamilyContext.getKeyBufferArray(),
               columnFamilyContext.getKeyLength());
         });
@@ -238,7 +244,7 @@ class TransactionalColumnFamily<
           columnFamilyContext.writeKey(key);
           final byte[] value =
               transaction.get(
-                  transactionDb.getDefaultNativeHandle(),
+                  columnFamilyNativeHandle,
                   transactionDb.getReadOptionsNativeHandle(),
                   columnFamilyContext.getKeyBufferArray(),
                   columnFamilyContext.getKeyLength());
@@ -280,7 +286,7 @@ class TransactionalColumnFamily<
     }
     final var value =
         transaction.get(
-            transactionDb.getDefaultNativeHandle(),
+            columnFamilyNativeHandle,
             transactionDb.getReadOptionsNativeHandle(),
             columnFamilyContext.getKeyBufferArray(),
             columnFamilyContext.getKeyLength());
@@ -296,7 +302,7 @@ class TransactionalColumnFamily<
     }
     final var value =
         transaction.get(
-            transactionDb.getDefaultNativeHandle(),
+            columnFamilyNativeHandle,
             transactionDb.getReadOptionsNativeHandle(),
             columnFamilyContext.getKeyBufferArray(),
             columnFamilyContext.getKeyLength());
@@ -318,7 +324,7 @@ class TransactionalColumnFamily<
 
   RocksIterator newIterator(final TransactionContext context, final ReadOptions options) {
     final var currentTransaction = (ZeebeTransaction) context.getCurrentTransaction();
-    return currentTransaction.newIterator(options, transactionDb.getDefaultHandle());
+    return currentTransaction.newIterator(options, columnFamilyHandle);
   }
 
   /**

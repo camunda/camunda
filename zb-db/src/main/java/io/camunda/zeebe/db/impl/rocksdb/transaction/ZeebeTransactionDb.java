@@ -18,13 +18,15 @@ import io.camunda.zeebe.db.impl.DbNil;
 import io.camunda.zeebe.db.impl.rocksdb.Loggers;
 import io.camunda.zeebe.db.impl.rocksdb.RocksDbConfiguration;
 import java.io.File;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import org.rocksdb.Checkpoint;
+import org.rocksdb.ColumnFamilyDescriptor;
 import org.rocksdb.ColumnFamilyHandle;
+import org.rocksdb.DBOptions;
 import org.rocksdb.OptimisticTransactionDB;
-import org.rocksdb.Options;
 import org.rocksdb.ReadOptions;
 import org.rocksdb.RocksDBException;
 import org.rocksdb.RocksObject;
@@ -46,19 +48,23 @@ public class ZeebeTransactionDb<ColumnFamilyNames extends Enum<ColumnFamilyNames
   private final ColumnFamilyHandle defaultHandle;
   private final long defaultNativeHandle;
   private final ConsistencyChecksSettings consistencyChecksSettings;
+  private final ArrayList<ColumnFamilyHandle> columnFamilyHandles;
+  private ColumnFamilyNames[] enumConstants;
 
   protected ZeebeTransactionDb(
       final ColumnFamilyHandle defaultHandle,
       final OptimisticTransactionDB optimisticTransactionDB,
       final List<AutoCloseable> closables,
       final RocksDbConfiguration rocksDbConfiguration,
-      final ConsistencyChecksSettings consistencyChecksSettings) {
+      final ConsistencyChecksSettings consistencyChecksSettings,
+      final ArrayList<ColumnFamilyHandle> columnFamilyHandles) {
     this.defaultHandle = defaultHandle;
     defaultNativeHandle = getNativeHandle(defaultHandle);
     this.optimisticTransactionDB = optimisticTransactionDB;
     this.closables = closables;
     this.consistencyChecksSettings = consistencyChecksSettings;
 
+    this.columnFamilyHandles = columnFamilyHandles;
     prefixReadOptions =
         new ReadOptions()
             .setPrefixSameAsStart(true)
@@ -76,14 +82,17 @@ public class ZeebeTransactionDb<ColumnFamilyNames extends Enum<ColumnFamilyNames
 
   public static <ColumnFamilyNames extends Enum<ColumnFamilyNames>>
       ZeebeTransactionDb<ColumnFamilyNames> openTransactionalDb(
-          final Options options,
+          final DBOptions options,
           final String path,
           final List<AutoCloseable> closables,
           final RocksDbConfiguration rocksDbConfiguration,
-          final ConsistencyChecksSettings consistencyChecksSettings)
+          final ConsistencyChecksSettings consistencyChecksSettings,
+          final List<ColumnFamilyDescriptor> familyDescriptors)
           throws RocksDBException {
+
+    final var columnFamilyHandles = new ArrayList<ColumnFamilyHandle>();
     final OptimisticTransactionDB optimisticTransactionDB =
-        OptimisticTransactionDB.open(options, path);
+        OptimisticTransactionDB.open(options, path, familyDescriptors, columnFamilyHandles);
     closables.add(optimisticTransactionDB);
     final var defaultColumnFamilyHandle = optimisticTransactionDB.getDefaultColumnFamily();
 
@@ -92,7 +101,8 @@ public class ZeebeTransactionDb<ColumnFamilyNames extends Enum<ColumnFamilyNames
         optimisticTransactionDB,
         closables,
         rocksDbConfiguration,
-        consistencyChecksSettings);
+        consistencyChecksSettings,
+        columnFamilyHandles);
   }
 
   static long getNativeHandle(final RocksObject object) {
@@ -127,8 +137,17 @@ public class ZeebeTransactionDb<ColumnFamilyNames extends Enum<ColumnFamilyNames
           final TransactionContext context,
           final KeyType keyInstance,
           final ValueType valueInstance) {
+
+    enumConstants = columnFamily.getDeclaringClass().getEnumConstants();
+
     return new TransactionalColumnFamily<>(
-        this, consistencyChecksSettings, columnFamily, context, keyInstance, valueInstance);
+        this,
+        consistencyChecksSettings,
+        findCFHandle(columnFamily.name()),
+        columnFamily,
+        context,
+        keyInstance,
+        valueInstance);
   }
 
   @Override
@@ -193,5 +212,31 @@ public class ZeebeTransactionDb<ColumnFamilyNames extends Enum<ColumnFamilyNames
             LOG.error(ERROR_MESSAGE_CLOSE_RESOURCE, e);
           }
         });
+  }
+
+  public long findCFNativeHandle(final long cfOrdinal) {
+    return findCFHandle(cfOrdinal).getNativeHandle();
+  }
+
+  public ColumnFamilyHandle findCFHandle(final long cfOrdinal) {
+    final String cfName = enumConstants[(int) cfOrdinal].name();
+    return findCFHandle(cfName);
+  }
+
+  public ColumnFamilyHandle findCFHandle(final String cfName) {
+    final Optional<ColumnFamilyHandle> first =
+        columnFamilyHandles.stream()
+            .filter(
+                cfHandle -> {
+                  try {
+                    return cfName
+                        .toLowerCase()
+                        .startsWith(new String(cfHandle.getName()).toLowerCase());
+                  } catch (final RocksDBException e) {
+                    return false;
+                  }
+                })
+            .findFirst();
+    return first.orElse(getDefaultHandle());
   }
 }

@@ -14,12 +14,15 @@ import java.io.File;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Properties;
+import java.util.Set;
 import org.agrona.CloseHelper;
 import org.rocksdb.BlockBasedTableConfig;
 import org.rocksdb.BloomFilter;
+import org.rocksdb.ColumnFamilyDescriptor;
 import org.rocksdb.ColumnFamilyOptions;
 import org.rocksdb.CompactionPriority;
 import org.rocksdb.CompactionStyle;
@@ -28,7 +31,6 @@ import org.rocksdb.DBOptions;
 import org.rocksdb.DataBlockIndexType;
 import org.rocksdb.IndexType;
 import org.rocksdb.LRUCache;
-import org.rocksdb.Options;
 import org.rocksdb.RateLimiter;
 import org.rocksdb.RocksDB;
 import org.rocksdb.RocksDBException;
@@ -65,16 +67,26 @@ public final class ZeebeRocksDbFactory<ColumnFamilyType extends Enum<ColumnFamil
       final var dbOptions = createDefaultDbOptions(closeables);
       closeables.add(dbOptions);
 
-      final var options = new Options(dbOptions, columnFamilyOptions);
-      closeables.add(options);
+      //      final var options = new Options(dbOptions, columnFamilyOptions);
+      //      closeables.add(options);
+
+      final Set<String> columnFamiliesPrefix =
+          new HashSet<>(rocksDbConfiguration.getSeparateColumnFamiliesPrefix());
+      columnFamiliesPrefix.add("default");
+
+      final var familyDescriptors =
+          columnFamiliesPrefix.stream()
+              .map(cfName -> new ColumnFamilyDescriptor(cfName.getBytes(), columnFamilyOptions))
+              .toList();
 
       db =
           ZeebeTransactionDb.openTransactionalDb(
-              options,
+              dbOptions,
               pathName.getAbsolutePath(),
               closeables,
               rocksDbConfiguration,
-              consistencyChecksSettings);
+              consistencyChecksSettings,
+              familyDescriptors);
 
     } catch (final RocksDBException e) {
       CloseHelper.quietCloseAll(closeables);
@@ -93,7 +105,7 @@ public final class ZeebeRocksDbFactory<ColumnFamilyType extends Enum<ColumnFamil
             // 1 flush, 1 compaction
             .setMaxBackgroundJobs(2)
             // we only use the default CF
-            .setCreateMissingColumnFamilies(false)
+            .setCreateMissingColumnFamilies(true)
             // may not be necessary when WAL is disabled, but nevertheless recommended to avoid
             // many small SST files
             .setAvoidFlushDuringRecovery(true)

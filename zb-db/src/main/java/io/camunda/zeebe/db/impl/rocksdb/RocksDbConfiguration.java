@@ -8,6 +8,7 @@
 package io.camunda.zeebe.db.impl.rocksdb;
 
 import java.util.Properties;
+import java.util.Set;
 
 public final class RocksDbConfiguration {
 
@@ -41,6 +42,8 @@ public final class RocksDbConfiguration {
   public static final boolean DEFAULT_SST_PARTITIONING_ENABLED = false;
 
   public static final int DEFAULT_IO_RATE_BYTES_PER_SECOND = 0;
+
+  public Set<String> separateColumnFamiliesPrefix = Set.of("job", "element");
 
   private Properties columnFamilyOptions = new Properties();
   private boolean statisticsEnabled = DEFAULT_STATISTICS_ENABLED;
@@ -153,5 +156,13 @@ public final class RocksDbConfiguration {
   public RocksDbConfiguration setSstPartitioningEnabled(final boolean sstPartitioningEnabled) {
     this.sstPartitioningEnabled = sstPartitioningEnabled;
     return this;
+  }
+
+  public Set<String> getSeparateColumnFamiliesPrefix() {
+    return separateColumnFamiliesPrefix;
+  }
+
+  public void setSeparateColumnFamiliesPrefix(final Set<String> separateColumnFamiliesPrefix) {
+    this.separateColumnFamiliesPrefix = separateColumnFamiliesPrefix;
   }
 }

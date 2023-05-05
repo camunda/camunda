@@ -16,6 +16,7 @@ import io.camunda.zeebe.db.impl.ZeebeDbConstants;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.nio.ByteBuffer;
 import org.agrona.ExpandableArrayBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
 
 /**
  * Similar to {@link TransactionalColumnFamily} but supports lookups on arbitrary column families.
@@ -68,9 +69,11 @@ public final class ForeignKeyChecker {
       final byte[] key,
       final int keyLength)
       throws Exception {
+    final long cfOrdinal = new UnsafeBuffer(key).getLong(0, ZeebeDbConstants.ZB_DB_BYTE_ORDER);
+
     final var exists =
         transaction.get(
-                transactionDb.getDefaultNativeHandle(),
+                transactionDb.findCFNativeHandle(cfOrdinal),
                 transactionDb.getReadOptionsNativeHandle(),
                 key,
                 keyLength)
@@ -86,9 +89,10 @@ public final class ForeignKeyChecker {
       final DbForeignKey<? extends DbKey> foreignKey,
       final byte[] prefix,
       final int prefixLength) {
+    final long cfOrdinal = new UnsafeBuffer(prefix).getLong(0, ZeebeDbConstants.ZB_DB_BYTE_ORDER);
     try (final var iterator =
         transaction.newIterator(
-            transactionDb.getPrefixReadOptions(), transactionDb.getDefaultHandle())) {
+            transactionDb.getPrefixReadOptions(), transactionDb.findCFHandle(cfOrdinal))) {
 
       final ByteBuffer bufferView = ByteBuffer.wrap(prefix, 0, prefixLength);
       iterator.seek(bufferView);
