@@ -37,6 +37,12 @@
       "bpmnProcessId": {
         "type": "keyword"
       },
+      "startedByForm": {
+        "type": "boolean"
+      },
+      "formKey": {
+        "type": "keyword"
+      },
       "version": {
         "type": "integer"
       }

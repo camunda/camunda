@@ -20,6 +20,10 @@ public class ProcessDTO {
 
   private String[] sortValues;
 
+  private boolean startedByForm;
+
+  private String formKey;
+
   private Integer version;
 
   public static ProcessDTO createFrom(ProcessEntity processEntity, ObjectMapper objectMapper) {
@@ -83,6 +87,24 @@ public class ProcessDTO {
 
   public ProcessDTO setVersion(Integer version) {
     this.version = version;
+    return this;
+  }
+
+  public boolean isStartedByForm() {
+    return startedByForm;
+  }
+
+  public ProcessDTO setStartedByForm(boolean startedByForm) {
+    this.startedByForm = startedByForm;
+    return this;
+  }
+
+  public String getFormKey() {
+    return formKey;
+  }
+
+  public ProcessDTO setFormKey(String formKey) {
+    this.formKey = formKey;
     return this;
   }
 }

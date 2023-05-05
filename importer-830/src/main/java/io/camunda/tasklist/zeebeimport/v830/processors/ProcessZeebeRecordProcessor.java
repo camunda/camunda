@@ -117,7 +117,9 @@ public class ProcessZeebeRecordProcessor {
         byteArray,
         name -> processEntity.setName(name),
         flowNode -> processEntity.getFlowNodes().add(flowNode),
-        userTaskFormCollector);
+        userTaskFormCollector,
+        formKey -> processEntity.setFormKey(formKey),
+        startedByForm -> processEntity.setStartedByForm(startedByForm));
 
     return processEntity;
   }

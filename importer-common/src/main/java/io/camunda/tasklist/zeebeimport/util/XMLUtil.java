@@ -48,11 +48,18 @@ public class XMLUtil {
       byte[] byteArray,
       Consumer<String> nameConsumer,
       Consumer<ProcessFlowNodeEntity> flowNodeConsumer,
-      BiConsumer<String, String> userTaskFormConsumer) {
+      BiConsumer<String, String> userTaskFormConsumer,
+      Consumer<String> formKeyConsumer,
+      Consumer<Boolean> startedByFormConsumer) {
     final SAXParserFactory saxParserFactory = getSAXParserFactory();
     final InputStream is = new ByteArrayInputStream(byteArray);
     final BpmnXmlParserHandler handler =
-        new BpmnXmlParserHandler(nameConsumer, flowNodeConsumer, userTaskFormConsumer);
+        new BpmnXmlParserHandler(
+            nameConsumer,
+            flowNodeConsumer,
+            userTaskFormConsumer,
+            formKeyConsumer,
+            startedByFormConsumer);
     try {
       saxParserFactory.newSAXParser().parse(is, handler);
     } catch (ParserConfigurationException | SAXException | IOException e) {
@@ -65,8 +72,11 @@ public class XMLUtil {
     private Consumer<String> nameConsumer;
     private Consumer<ProcessFlowNodeEntity> flowNodeConsumer;
     private BiConsumer<String, String> userTaskFormConsumer;
-
+    private Consumer<String> formKeyConsumer;
+    private Consumer<Boolean> startedByFormConsumer;
     private boolean isUserTaskForm = false;
+
+    private boolean isStartEvent = false;
 
     private String userTaskFormId;
     private StringBuilder userTaskFormJson = new StringBuilder();
@@ -74,10 +84,14 @@ public class XMLUtil {
     public BpmnXmlParserHandler(
         final Consumer<String> nameConsumer,
         final Consumer<ProcessFlowNodeEntity> flowNodeConsumer,
-        final BiConsumer<String, String> userTaskFormConsumer) {
+        final BiConsumer<String, String> userTaskFormConsumer,
+        final Consumer<String> formKeyConsumer,
+        final Consumer<Boolean> startedByFormConsumer) {
       this.nameConsumer = nameConsumer;
       this.flowNodeConsumer = flowNodeConsumer;
       this.userTaskFormConsumer = userTaskFormConsumer;
+      this.formKeyConsumer = formKeyConsumer;
+      this.startedByFormConsumer = startedByFormConsumer;
     }
 
     @Override
@@ -97,6 +111,19 @@ public class XMLUtil {
         if (attributes.getValue("id") != null) {
           userTaskFormId = attributes.getValue("id");
         }
+      } else if ("startEvent".equalsIgnoreCase(localName)) {
+        isStartEvent = true;
+      } else if (isStartEvent) {
+        if ("formDefinition".equalsIgnoreCase(localName)) {
+          if (attributes.getValue("formKey") != null) {
+            formKeyConsumer.accept(attributes.getValue("formKey"));
+          }
+        } else if ("property".equalsIgnoreCase(localName)) {
+          if (attributes.getValue("name").equalsIgnoreCase("publicAccess")
+              && attributes.getValue("value").equalsIgnoreCase("true")) {
+            startedByFormConsumer.accept(true);
+          }
+        }
       }
     }
 
@@ -106,6 +133,8 @@ public class XMLUtil {
         userTaskFormConsumer.accept(userTaskFormId, userTaskFormJson.toString());
         isUserTaskForm = false;
         userTaskFormJson = new StringBuilder();
+      } else if ("startEvent".equalsIgnoreCase(localName)) {
+        isStartEvent = false;
       }
     }
 
