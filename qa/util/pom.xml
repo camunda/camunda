@@ -84,10 +84,6 @@
       <artifactId>postgresql</artifactId>
     </dependency>
 
-    <dependency>
-      <groupId>com.github.dasniko</groupId>
-      <artifactId>testcontainers-keycloak</artifactId>
-    </dependency>
   </dependencies>
 
   <build>

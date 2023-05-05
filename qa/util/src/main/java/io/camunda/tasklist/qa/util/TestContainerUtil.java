@@ -6,7 +6,6 @@
  */
 package io.camunda.tasklist.qa.util;
 
-import dasniko.testcontainers.keycloak.KeycloakContainer;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
 import io.zeebe.containers.ZeebeContainer;
 import io.zeebe.containers.ZeebePort;
@@ -81,7 +80,7 @@ public class TestContainerUtil {
   private ZeebeContainer broker;
   private GenericContainer tasklistContainer;
   private GenericContainer identityContainer;
-  private KeycloakContainer keycloakContainer;
+  private GenericContainer keycloakContainer;
   private PostgreSQLContainer postgreSQLContainer;
 
   public void startIdentity(TestContext testContext, String version) {
@@ -136,14 +135,19 @@ public class TestContainerUtil {
 
   public void startKeyCloak(TestContext testContext) {
     LOGGER.info("************ Starting Keycloak ************");
+    final String containerPath = "/opt/jboss/keycloak/imports/realm.json";
     keycloakContainer =
-        new KeycloakContainer("jboss/keycloak:16.1.1")
-            .withAdminPassword("admin")
-            .withAdminUsername("admin")
-            .withRealmImportFile("realm.json")
+        new GenericContainer<>("jboss/keycloak:16.1.1")
+            .withCommand("-Dkeycloak.profile.feature.upload_scripts=enabled")
             .withNetwork(getNetwork())
             .withNetworkAliases(KEYCLOAK_NETWORK_ALIAS)
-            .withExposedPorts(KEYCLOAK_PORT);
+            .withExposedPorts(KEYCLOAK_PORT)
+            .withCopyFileToContainer(
+                MountableFile.forClasspathResource("realm.json"), containerPath)
+            .withEnv("KEYCLOAK_USER", "admin")
+            .withEnv("KEYCLOAK_PASSWORD", "admin")
+            .withEnv("KEYCLOAK_IMPORT", containerPath);
+
     keycloakContainer.start();
     testContext.setExternalKeycloakHost(keycloakContainer.getContainerIpAddress());
     testContext.setExternalKeycloakPort(keycloakContainer.getFirstMappedPort());
