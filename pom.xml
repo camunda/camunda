@@ -38,7 +38,7 @@
     <version.jakarta.json>2.0.1</version.jakarta.json>
     <version.micrometer>1.10.3</version.micrometer>
     <version.mockito>5.0.0</version.mockito>
-    <version.byte.buddy>1.12.22</version.byte.buddy>
+    <version.byte.buddy>1.14.4</version.byte.buddy>
     <version.assertj-core>3.24.2</version.assertj-core>
     <version.jackson>2.14.2</version.jackson>
     <version.graphql>15.0.0</version.graphql>
