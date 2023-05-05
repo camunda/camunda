@@ -10,7 +10,7 @@ import styled from 'styled-components';
 const Header = styled.header`
   background-color: var(--cds-layer);
   border-bottom: solid 1px var(--cds-border-subtle-01);
-  padding: var(--cds-spacing-04);
+  padding: var(--cds-spacing-04) var(--cds-spacing-05);
   display: flex;
   align-items: center;
   justify-content: space-between;
