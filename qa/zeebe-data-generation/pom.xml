@@ -24,7 +24,7 @@
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>zeebe-client-java</artifactId>
-      <version>${zeebe.version}</version>
+      <version>${c8.platform.version}</version>
       <scope>compile</scope>
     </dependency>
     <dependency>
