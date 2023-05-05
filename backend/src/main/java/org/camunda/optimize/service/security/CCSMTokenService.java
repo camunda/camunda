@@ -25,6 +25,7 @@ import javax.ws.rs.NotAuthorizedException;
 import javax.ws.rs.core.NewCookie;
 import java.net.URI;
 import java.util.List;
+import java.util.Optional;
 
 import static org.camunda.optimize.rest.constants.RestConstants.AUTH_COOKIE_TOKEN_VALUE_PREFIX;
 import static org.camunda.optimize.rest.constants.RestConstants.OPTIMIZE_AUTHORIZATION;
@@ -98,7 +99,10 @@ public class CCSMTokenService {
   }
 
   public URI buildAuthorizeUri(final String redirectUri) {
-    return authentication().authorizeUriBuilder(redirectUri).build();
+    // If a redirect root URL is explicitly set, we use that. Otherwise, we use the one provided
+    return authentication().authorizeUriBuilder(
+      Optional.ofNullable(configurationService.getAuthConfiguration().getCcsmAuthConfiguration().getRedirectRootUrl())
+        .orElse(redirectUri)).build();
   }
 
   public AccessToken verifyToken(final String accessToken) {
