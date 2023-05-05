@@ -20,6 +20,7 @@ import {DecisionsFormGroup} from './DecisionsFormGroup';
 import {CollapsablePanel} from './CollapsablePanel';
 import {InstancesStatesFormGroup} from './InstancesStatesFormGroup';
 import {Stack} from '@carbon/react';
+import {OptionalFiltersFormGroup} from './OptionalFiltersFormGroup';
 
 type LocationType = Omit<Location, 'state'> & {
   state: {hideOptionalFilters?: boolean};
@@ -48,9 +49,12 @@ const Filters: React.FC = observer(() => {
               <AutoSubmit
                 fieldsToSkipTimeout={['name', 'version', 'evaluated', 'failed']}
               />
-              <Stack gap={5}>
-                <DecisionsFormGroup />
-                <InstancesStatesFormGroup />
+              <Stack gap={8}>
+                <Stack gap={5}>
+                  <DecisionsFormGroup />
+                  <InstancesStatesFormGroup />
+                </Stack>
+                <OptionalFiltersFormGroup />
               </Stack>
             </form>
           )}

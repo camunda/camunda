@@ -187,4 +187,5 @@ declare module '@carbon/react/icons' {
   export const Tools: Icon;
   export const RetryFailed: Icon;
   export const Edit: Icon;
+  export const Filter: Icon;
 }

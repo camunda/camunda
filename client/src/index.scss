@@ -119,3 +119,15 @@ h5,
 h6 {
   margin: 0;
 }
+
+.cds--overflow-menu-options[aria-label='optional-filters-menu'] {
+  width: unset;
+  button {
+    // filter panel width minus padding
+    max-width: calc(320px - 2rem);
+  }
+  // hide overflow menu caret
+  &::after {
+    display: none;
+  }
+}
