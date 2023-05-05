@@ -26,9 +26,12 @@ on:
 jobs:
   deploy-stage:
     timeout-minutes: 10
-    concurrency: deploy-${{ github.events.inputs.ref }}
-    name: Deploy Optimize Stage Environment
+    concurrency: deploy-${{ github.events.inputs.ref }}-${{ matrix.env }}
+    name: Deploy ${{ matrix.env }} Optimize Stage Environment
     runs-on: ubuntu-20.04
+    strategy:
+      matrix:
+        env: [c7, c8]
     steps:
     #########################################################################
     # Setup: import secrets from vault
@@ -52,7 +55,7 @@ jobs:
     - name: Determine Argocd arguments
       shell: bash
       run: |
-        echo "c7_arguments=--dest-namespace optimize-${app_name} \
+        echo "c7=--dest-namespace optimize-${app_name} \
             --file .ci/deployments-resources/argo/c7-optimize-application.yml \
             --helm-set optimize.image.tag=${docker_tag} \
             --helm-set cambpm.image.tag=${cambpm_version} \
@@ -64,7 +67,7 @@ jobs:
             --project optimize-previews \
             --upsert" >> $GITHUB_ENV
 
-        echo "c8_arguments=--dest-namespace optimize-${app_name}-c8 \
+        echo "c8=--dest-namespace optimize-${app_name}-c8 \
             --file .ci/deployments-resources/argo/c8-optimize-application.yml \
             --helm-set global.identity.auth.publicIssuerUrl=https://keycloak-${app_name}-c8.optimize.camunda.cloud/auth/realms/camunda-platform \
             --helm-set global.identity.auth.optimize.redirectUrl=https://${app_name}-c8.optimize.camunda.cloud \
@@ -88,22 +91,11 @@ jobs:
         app_name: ${{ github.event.inputs.app_name == 'master' && 'stage' || github.event.inputs.app_name }}
     #########################################################################
     # Create Optimize environment
-    - name: Deploy c7 Optimize Environment
+    - name: Deploy ${{ matrix.env }} Optimize Environment
       uses: camunda/infra-global-github-actions/preview-env/create@main
       with:
         revision: ${{ github.event.inputs.chart_ref }}
         argocd_token: ${{ steps.secrets.outputs.ARGOCD_TOKEN }}
-        app_name: optimize-${{ github.event.inputs.app_name == 'master' && 'stage' || github.event.inputs.app_name }}
-        app_url: https://${{ github.event.inputs.app_name == 'master' && 'stage' || github.event.inputs.app_name }}.optimize.camunda.cloud
-        argocd_arguments: ${{ env.c7_arguments }}
-    #########################################################################
-    # Create a c8 Optimize environment
-    - name: Deploy c8 Optimize Environment
-      if: always() # To be deployed even if C7 Optimize deployment is failing
-      uses: camunda/infra-global-github-actions/preview-env/create@main
-      with:
-        revision: ${{ github.event.inputs.chart_ref }}
-        argocd_token: ${{ steps.secrets.outputs.ARGOCD_TOKEN }}
-        app_name: optimize-${{ github.event.inputs.app_name == 'master' && 'stage' || github.event.inputs.app_name }}
-        app_url: https://${{ github.event.inputs.app_name == 'master' && 'stage' || github.event.inputs.app_name }}.optimize.camunda.cloud
-        argocd_arguments: ${{ env.c8_arguments }}
+        app_name: ${{ matrix.env == 'c8' && 'c8-' || '' }}optimize-${{ github.event.inputs.app_name == 'master' && 'stage' || github.event.inputs.app_name }}
+        app_url: https://${{ github.event.inputs.app_name == 'master' && 'stage' || github.event.inputs.app_name }}${{ matrix.env == 'c8' && '-c8' || '' }}.optimize.camunda.cloud
+        argocd_arguments: ${{ env[matrix.env] }}
