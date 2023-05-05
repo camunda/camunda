@@ -48,7 +48,7 @@
     <version.snakeyaml>1.32</version.snakeyaml>
     <version.commons-text>1.10.0</version.commons-text>
     <version.failsafe>2.4.4</version.failsafe>
-    <version.netty>4.1.87.Final</version.netty>
+    <version.netty>4.1.92.Final</version.netty>
     <version.guava>31.1-jre</version.guava>
     <version.apache.http5>5.2.1</version.apache.http5>
 
