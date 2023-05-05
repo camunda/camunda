@@ -34,12 +34,12 @@ public class BrokerAdminServiceWithOutExporterTest {
     // when there are no exporters configured
     // then
     final var partitionStatus = leaderAdminService.getPartitionStatus().get(1);
-    assertThat(partitionStatus.getRole()).isEqualTo(Role.LEADER);
-    assertThat(partitionStatus.getProcessedPosition()).isEqualTo(-1);
-    assertThat(partitionStatus.getSnapshotId()).isNull();
-    assertThat(partitionStatus.getProcessedPositionInSnapshot()).isNull();
-    assertThat(partitionStatus.getStreamProcessorPhase()).isEqualTo(Phase.PROCESSING);
-    assertThat(partitionStatus.getExporterPhase()).isEqualTo(ExporterPhase.CLOSED);
-    assertThat(partitionStatus.getExportedPosition()).isEqualTo(-1);
+    assertThat(partitionStatus.role()).isEqualTo(Role.LEADER);
+    assertThat(partitionStatus.processedPosition()).isEqualTo(-1);
+    assertThat(partitionStatus.snapshotId()).isNull();
+    assertThat(partitionStatus.processedPositionInSnapshot()).isNull();
+    assertThat(partitionStatus.streamProcessorPhase()).isEqualTo(Phase.PROCESSING);
+    assertThat(partitionStatus.exporterPhase()).isEqualTo(ExporterPhase.CLOSED);
+    assertThat(partitionStatus.exportedPosition()).isEqualTo(-1);
   }
 }

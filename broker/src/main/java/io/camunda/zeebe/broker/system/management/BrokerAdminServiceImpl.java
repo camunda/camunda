@@ -134,39 +134,29 @@ public final class BrokerAdminServiceImpl extends Actor implements BrokerAdminSe
             partitionStatus.completeExceptionally(error);
             return;
           }
-          if (currentRoleFuture.join() == Role.LEADER) {
-            final var streamProcessor = streamProcessorFuture.join();
-            final var exporterDirector = exporterDirectorFuture.join();
-            if (streamProcessor.isEmpty() || exporterDirector.isEmpty()) {
-              partitionStatus.completeExceptionally(
-                  new IllegalStateException(
-                      "No streamprocessor or exporter found for leader partition."));
-            } else {
-              getLeaderPartitionStatus(
-                  partition, streamProcessor.get(), exporterDirector.get(), partitionStatus);
-            }
+          final var role = currentRoleFuture.join();
+          final var streamProcessor = streamProcessorFuture.join();
+          final var exporterDirector = exporterDirectorFuture.join();
 
+          if (streamProcessor.isEmpty()) {
+            partitionStatus.completeExceptionally(
+                new IllegalStateException(
+                    "No streamProcessor found for partition: %d."
+                        .formatted(partition.getPartitionId())));
+          } else if (exporterDirector.isEmpty()) {
+            partitionStatus.completeExceptionally(
+                new IllegalStateException(
+                    "No exporter found for partition: %d .".formatted(partition.getPartitionId())));
           } else {
-            getFollowerPartitionStatus(partition, partitionStatus);
+            getPartitionStatus(
+                role, partition, streamProcessor.get(), exporterDirector.get(), partitionStatus);
           }
         });
     return partitionStatus;
   }
 
-  private void getFollowerPartitionStatus(
-      final ZeebePartition partition, final CompletableFuture<PartitionStatus> partitionStatus) {
-    final var snapshotId = getSnapshotId(partition);
-    final var processedPositionInSnapshot =
-        snapshotId
-            .flatMap(FileBasedSnapshotId::ofFileName)
-            .map(FileBasedSnapshotId::getProcessedPosition)
-            .orElse(null);
-    final var status =
-        PartitionStatus.ofFollower(snapshotId.orElse(null), processedPositionInSnapshot);
-    partitionStatus.complete(status);
-  }
-
-  private void getLeaderPartitionStatus(
+  private void getPartitionStatus(
+      final Role role,
       final ZeebePartition partition,
       final StreamProcessor streamProcessor,
       final ExporterDirector exporterDirector,
@@ -199,7 +189,8 @@ public final class BrokerAdminServiceImpl extends Actor implements BrokerAdminSe
           final var exporterPhase = exporterPhaseFuture.join();
           final var exporterPosition = exporterPositionFuture.join();
           final var status =
-              PartitionStatus.ofLeader(
+              new PartitionStatus(
+                  role,
                   processedPosition,
                   snapshotId.orElse(null),
                   processedPositionInSnapshot,

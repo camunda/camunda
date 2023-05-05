@@ -886,7 +886,7 @@ public class ClusteringRule extends ExternalResource {
     final var partitionStatus = partitions.get(partitionId);
 
     return Optional.ofNullable(partitionStatus)
-        .map(PartitionStatus::getSnapshotId)
+        .map(PartitionStatus::snapshotId)
         .flatMap(FileBasedSnapshotId::ofFileName);
   }
 
