@@ -16,6 +16,7 @@ import {panelStatesStore} from 'modules/stores/panelStates';
 import {useNotifications} from 'modules/notifications';
 import {DetailTable} from 'modules/components/Carbon/DeleteDefinitionModal/DetailTable';
 import {UnorderedList} from 'modules/components/Carbon/DeleteDefinitionModal/Warning/styled';
+import {decisionDefinitionStore} from 'modules/stores/decisionDefinition';
 
 type Props = {
   decisionDefinitionId: string;
@@ -92,8 +93,7 @@ const DecisionOperations: React.FC<Props> = ({
             ]}
             rows={[
               {
-                // TODO: remove braces when decision definition name is available (https://github.com/camunda/operate/issues/4369)
-                columns: [{cellContent: 'decisionDefinitionStore.name'}],
+                columns: [{cellContent: decisionDefinitionStore.name}],
               },
             ]}
           />
@@ -121,5 +121,4 @@ const DecisionOperations: React.FC<Props> = ({
     </>
   );
 };
-
 export {DecisionOperations};

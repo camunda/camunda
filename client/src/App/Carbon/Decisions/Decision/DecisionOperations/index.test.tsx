@@ -10,6 +10,7 @@ import {decisionDefinitionStore} from 'modules/stores/decisionDefinition';
 import {
   render,
   screen,
+  waitFor,
   waitForElementToBeRemoved,
 } from 'modules/testing-library';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
@@ -55,38 +56,7 @@ const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
   return <ThemeProvider>{children}</ThemeProvider>;
 };
 
-// TODO: unskip when modal is implemented
-describe.skip('<DecisionOperations />', () => {
-  it('should open and close delete modal', async () => {
-    const {user} = render(
-      <DecisionOperations
-        decisionName="myDecision"
-        decisionVersion="2"
-        decisionDefinitionId="2251799813687094"
-      />,
-      {wrapper: Wrapper}
-    );
-
-    user.click(
-      screen.getByRole('button', {
-        name: /^delete decision definition "myDecision - version 2"$/i,
-      })
-    );
-
-    expect(await screen.findByTestId('modal')).toBeInTheDocument();
-    expect(
-      screen.getByRole('heading', {name: /delete drd/i})
-    ).toBeInTheDocument();
-
-    user.click(
-      screen.getByRole('button', {
-        name: 'Cancel',
-      })
-    );
-
-    await waitForElementToBeRemoved(screen.getByTestId('modal'));
-  });
-
+describe('<DecisionOperations />', () => {
   it('should open modal and show content', async () => {
     const {user} = render(
       <DecisionOperations
@@ -97,13 +67,12 @@ describe.skip('<DecisionOperations />', () => {
       {wrapper: Wrapper}
     );
 
-    user.click(
+    await user.click(
       screen.getByRole('button', {
         name: /^delete decision definition "myDecision - version 2"$/i,
       })
     );
 
-    expect(await screen.findByTestId('modal')).toBeInTheDocument();
     expect(
       screen.getByText(/You are about to delete the following DRD:/)
     ).toBeInTheDocument();
@@ -132,7 +101,7 @@ describe.skip('<DecisionOperations />', () => {
       {wrapper: Wrapper}
     );
 
-    user.click(
+    await user.click(
       screen.getByRole('button', {
         name: /^delete decision definition "myDecision - version 2"$/i,
       })
@@ -140,16 +109,17 @@ describe.skip('<DecisionOperations />', () => {
 
     expect(panelStatesStore.state.isOperationsCollapsed).toBe(true);
 
-    user.click(
+    await user.click(
       await screen.findByLabelText(
         'Yes, I confirm I want to delete this DRD and all related instances.'
       )
     );
 
-    user.click(await screen.findByTestId('delete-button'));
-    await waitForElementToBeRemoved(screen.getByTestId('modal'));
+    await user.click(screen.getByRole('button', {name: /danger Delete/}));
 
-    expect(operationsStore.state.operations).toEqual([mockOperation]);
+    await waitFor(() =>
+      expect(operationsStore.state.operations).toEqual([mockOperation])
+    );
     expect(panelStatesStore.state.isOperationsCollapsed).toBe(false);
   });
 
@@ -165,7 +135,7 @@ describe.skip('<DecisionOperations />', () => {
       {wrapper: Wrapper}
     );
 
-    user.click(
+    await user.click(
       screen.getByRole('button', {
         name: /^delete decision definition "myDecision - version 2"$/i,
       })
@@ -173,19 +143,20 @@ describe.skip('<DecisionOperations />', () => {
 
     expect(panelStatesStore.state.isOperationsCollapsed).toBe(true);
 
-    user.click(
+    await user.click(
       await screen.findByLabelText(
         'Yes, I confirm I want to delete this DRD and all related instances.'
       )
     );
 
-    user.click(await screen.findByTestId('delete-button'));
-    await waitForElementToBeRemoved(screen.getByTestId('modal'));
+    await user.click(screen.getByRole('button', {name: /danger Delete/}));
 
-    expect(panelStatesStore.state.isOperationsCollapsed).toBe(true);
-    expect(mockDisplayNotification).toHaveBeenCalledWith('error', {
-      headline: 'Operation could not be created',
+    await waitFor(() => {
+      expect(mockDisplayNotification).toHaveBeenCalledWith('error', {
+        headline: 'Operation could not be created',
+      });
     });
+    expect(panelStatesStore.state.isOperationsCollapsed).toBe(true);
   });
 
   it('should show notification on operation auth error', async () => {
@@ -200,7 +171,7 @@ describe.skip('<DecisionOperations />', () => {
       {wrapper: Wrapper}
     );
 
-    user.click(
+    await user.click(
       screen.getByRole('button', {
         name: /^delete decision definition "myDecision - version 2"$/i,
       })
@@ -208,20 +179,21 @@ describe.skip('<DecisionOperations />', () => {
 
     expect(panelStatesStore.state.isOperationsCollapsed).toBe(true);
 
-    user.click(
+    await user.click(
       await screen.findByLabelText(
         'Yes, I confirm I want to delete this DRD and all related instances.'
       )
     );
 
-    user.click(await screen.findByTestId('delete-button'));
-    await waitForElementToBeRemoved(screen.getByTestId('modal'));
+    await user.click(screen.getByRole('button', {name: /danger Delete/}));
 
-    expect(panelStatesStore.state.isOperationsCollapsed).toBe(true);
-    expect(mockDisplayNotification).toHaveBeenCalledWith('error', {
-      headline: 'Operation could not be created',
-      description: 'You do not have permission',
+    await waitFor(() => {
+      expect(mockDisplayNotification).toHaveBeenCalledWith('error', {
+        headline: 'Operation could not be created',
+        description: 'You do not have permission',
+      });
     });
+    expect(panelStatesStore.state.isOperationsCollapsed).toBe(true);
   });
 
   it('should disable button and show spinner when delete operation is triggered', async () => {
@@ -236,19 +208,19 @@ describe.skip('<DecisionOperations />', () => {
       {wrapper: Wrapper}
     );
 
-    user.click(
+    await user.click(
       screen.getByRole('button', {
         name: /^delete decision definition "myDecision - version 2"$/i,
       })
     );
 
-    user.click(
+    await user.click(
       await screen.findByLabelText(
         'Yes, I confirm I want to delete this DRD and all related instances.'
       )
     );
 
-    user.click(await screen.findByTestId('delete-button'));
+    await user.click(screen.getByRole('button', {name: /danger Delete/}));
     expect(
       await screen.findByTestId('delete-operation-spinner')
     ).toBeInTheDocument();
@@ -271,19 +243,19 @@ describe.skip('<DecisionOperations />', () => {
       {wrapper: Wrapper}
     );
 
-    user.click(
+    await user.click(
       screen.getByRole('button', {
         name: /^delete decision definition "myDecision - version 2"$/i,
       })
     );
 
-    user.click(
+    await user.click(
       await screen.findByLabelText(
         'Yes, I confirm I want to delete this DRD and all related instances.'
       )
     );
 
-    user.click(await screen.findByTestId('delete-button'));
+    await user.click(screen.getByRole('button', {name: /danger Delete/}));
     expect(
       await screen.findByTestId('delete-operation-spinner')
     ).toBeInTheDocument();

@@ -37,6 +37,7 @@ const DangerButton: React.FC<ItemProps> = ({
         disabled={disabled}
         data-testid={testId}
         title={title}
+        aria-label={title}
       >
         {label}
       </Button>
