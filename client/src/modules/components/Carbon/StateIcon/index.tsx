@@ -5,16 +5,21 @@
  * except in compliance with the proprietary license.
  */
 
-import {WarningFilled, CheckmarkOutline} from './styled';
-import {Icon} from '@carbon/react/icons';
+import {WarningFilled, CheckmarkOutline, RadioButtonChecked} from './styled';
+import {Icon, Error} from '@carbon/react/icons';
 
 const stateIconsMap = {
   FAILED: WarningFilled,
+  INCIDENT: WarningFilled,
+  ACTIVE: RadioButtonChecked,
+  COMPLETED: CheckmarkOutline,
   EVALUATED: CheckmarkOutline,
+  CANCELED: Error,
+  TERMINATED: Error,
 } as const;
 
 type Props = {
-  state: DecisionInstanceEntityState;
+  state: InstanceEntityState | DecisionInstanceEntityState;
   size: React.ComponentProps<Icon>['size'];
 };
 
