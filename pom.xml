@@ -33,7 +33,7 @@
     <!-- We use this for the Zeebe test container version only -->
     <zeebe.docker.version>${c8.platform.version}</zeebe.docker.version>
 
-    <surefire-plugin.version>3.0.0</surefire-plugin.version>
+    <surefire-plugin.version>3.1.0</surefire-plugin.version>
     <!-- maven plugins -->
     <plugin.version.sonar>3.9.1.2184</plugin.version.sonar>
 
