@@ -136,6 +136,13 @@ public final class JobClient {
     return expectation.apply(position);
   }
 
+  public Record<JobRecordValue> yield() {
+    final long jobKey = findJobKey();
+    final long position = environmentRule.writeCommand(jobKey, JobIntent.YIELD, jobRecord);
+
+    return expectation.apply(position);
+  }
+
   public Record<JobRecordValue> updateRetries() {
     final long jobKey = findJobKey();
     final long position = environmentRule.writeCommand(jobKey, JobIntent.UPDATE_RETRIES, jobRecord);
