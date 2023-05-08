@@ -157,6 +157,7 @@ public class CommandApiRequestHandlerTest {
   public void shouldWriteToLog() {
     // given
     final var logWriter = mock(LogStreamWriter.class);
+    when(logWriter.canWriteEvents(anyInt(), anyInt())).thenReturn(true);
     handler.addPartition(0, logWriter, new NoopRequestLimiter<>());
     scheduler.workUntilDone();
 
