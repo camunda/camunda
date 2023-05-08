@@ -40,6 +40,7 @@ const props = {
   mightFail: (promise, cb) => cb(promise),
   getUser: () => ({id: 'demo', name: 'Demo Demo'}),
   entity: 'dashboard',
+  history: {replace: jest.fn()},
 };
 
 const templateState = {
@@ -233,7 +234,7 @@ it('should call loadEntity with template param', async () => {
   expect(loadEntity).toHaveBeenCalledWith('dashboard/instant', '1', {template: 'template.json'});
 });
 
-it('should use instant preview dashboard entity for magic link', async () => {
+it('should redirect to instant preview dashboard from magic link', async () => {
   shallow(
     <Dashboard
       {...props}
@@ -245,7 +246,7 @@ it('should use instant preview dashboard entity for magic link', async () => {
 
   await flushPromises();
 
-  expect(loadEntity).toHaveBeenCalledWith('dashboard/instant', 'id', undefined);
+  expect(props.history.replace).toHaveBeenCalledWith('/dashboard/instant/id');
 });
 
 it('should hide sharing for instant preview dashboard', async () => {

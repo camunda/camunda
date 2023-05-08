@@ -1,0 +1,31 @@
+name: Login to Harbor Registry
+description: |
+  Local action to simplify login to the Harbor registry
+inputs:
+  secrets:
+    description: JSON wrapped secrets for easier secret passing
+    required: true
+  env:
+    description: Environment prefix, e.g. "dev." or "stage."
+    required: false
+    default: ''
+runs:
+  using: composite
+  steps:
+  - name: Import secrets
+    id: secrets
+    uses: hashicorp/vault-action@130d1f5f4fe645bb6c83e4225c04d64cfb62de6e
+    with:
+      url: ${{ fromJSON(inputs.secrets).VAULT_ADDR }}
+      method: approle
+      roleId: ${{ fromJSON(inputs.secrets).VAULT_ROLE_ID }}
+      secretId: ${{ fromJSON(inputs.secrets).VAULT_SECRET_ID }}
+      secrets: |
+        secret/data/products/optimize/ci/optimize NEXUS_USERNAME;
+        secret/data/products/optimize/ci/optimize NEXUS_PASSWORD;
+  - name: Login to Harbor docker registery
+    uses: docker/login-action@v2
+    with:
+      registry: ${{ inputs.env }}registry.camunda.cloud
+      username: ${{ steps.secrets.outputs.NEXUS_USERNAME }}
+      password: ${{ steps.secrets.outputs.NEXUS_PASSWORD }}

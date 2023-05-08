@@ -28,6 +28,7 @@ public class ReportDefinitionDto<D extends ReportDataDto> implements CollectionE
 
   protected String id;
   protected String name;
+  protected String description;
   protected OffsetDateTime lastModified;
   protected OffsetDateTime created;
   protected String owner;

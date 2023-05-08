@@ -11,6 +11,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.camunda.optimize.dto.optimize.query.EntityIdResponseDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionRestDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.InstantDashboardDataDto;
+import org.camunda.optimize.dto.optimize.query.dashboard.tile.DashboardReportTileDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.tile.DashboardTileType;
 import org.camunda.optimize.dto.optimize.query.definition.DefinitionWithTenantIdsDto;
 import org.camunda.optimize.dto.optimize.query.entity.EntityType;
@@ -36,6 +37,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.regex.Matcher;
@@ -126,33 +128,32 @@ public class InstantPreviewDashboardService {
    * conversion on the target sub-component passed under fieldType. The conversion itself is accomplished by the
    * 'converter', which is the method reference passed under transformFunction. Moreover, the additionalParameter
    * value is also passed onto the converter.
-   * @param node Node with which the recursion is started, in the beginning it is the root node of the Dashboard tile
-   * @param fieldType Which node type do we want to transform? E.g. "image", "text", etc
-   * @param transformFunction Once a node of the type "fieldType" is found, this function performs the necessary
-   *                          conversion
+   *
+   * @param node                     Node with which the recursion is started, in the beginning it is the root node of the
+   *                                 Dashboard tile
+   * @param fieldType                Which node type do we want to transform? E.g. "image", "text", etc
+   * @param transformFunction        Once a node of the type "fieldType" is found, this function performs the necessary
+   *                                 conversion
    * @param additionalParameterValue An additional string that is used by the converter. In the case of an image node
-   *                                this is e.g. the clusterId, in the case of a text node it is e.g. the locale
+   *                                 this is e.g. the clusterId, in the case of a text node it is e.g. the locale
    */
   public static void findAndConvertTileContent(Object node,
                                                String fieldType,
-                                               BiConsumerWithParameters<HashMap<String, Object>, String> transformFunction,
+                                               BiConsumerWithParameters<Map<String, Object>, String> transformFunction,
                                                String additionalParameterValue) {
     if (node instanceof HashMap) {
       HashMap<String, Object> tileConfigurationElement = (HashMap<String, Object>) node;
       if (fieldType.equals(tileConfigurationElement.getOrDefault(TYPE_FIELD, ""))) {
-        // Found the leaf of the type I'm looking for, so perform the transformation
+        // Found the leaf of the specified field type, so perform the transformation
         transformFunction.accept(tileConfigurationElement, additionalParameterValue);
       } else {
-        // Not yet what I'm looking for, so keep recursing into the children objects
+        // Otherwise, recursively search again
         tileConfigurationElement
-          .forEach((key, value) -> findAndConvertTileContent(value,
-                                                             fieldType,
-                                                             transformFunction,
-                                                             additionalParameterValue));
+          .forEach((key, value) -> findAndConvertTileContent(value, fieldType, transformFunction, additionalParameterValue));
       }
     } else if (node instanceof ArrayList) {
-      // A list typically happens when I find the "children" node, we want to perform the transformation in each of
-      // the children as well
+      // A list typically happens when the "children" node is found. In this case, we want to perform the transformation in each
+      // of the children nodes as well
       ArrayList<Object> list = (ArrayList<Object>) node;
       list.forEach(item -> findAndConvertTileContent(item, fieldType, transformFunction, additionalParameterValue));
     }
@@ -178,14 +179,11 @@ public class InstantPreviewDashboardService {
             .forEach(reportEntity -> {
               SingleProcessReportDefinitionExportDto singleReport =
                 ((SingleProcessReportDefinitionExportDto) reportEntity);
+              singleReport.getData().setInstantPreviewReport(true);
               singleReport.getData().setDefinitions(
                 List.of(new ReportDataDefinitionDto(
                   processDefinitionKey, List.of(ALL_VERSIONS), processDefinition.getTenantIds()
                 )));
-              singleReport.getData().setInstantPreviewReport(true);
-              // We need to enforce that instant preview reports do not contain KPIs, since we will run into issues
-              // down the line whenever the KpiEvaluationSchedulerService tries to evaluate them
-              singleReport.getData().getConfiguration().getTargetValue().setIsKpi(false);
             }),
         () -> log.warn("Could not retrieve process definition data for {}", processDefinitionKey)
       );
@@ -194,7 +192,7 @@ public class InstantPreviewDashboardService {
       .filter(DashboardDefinitionExportDto.class::isInstance)
       .forEach(dashboardEntity -> {
         DashboardDefinitionExportDto dashboardData = ((DashboardDefinitionExportDto) dashboardEntity);
-        processAllImageUrlsInTiles(dashboardData);
+        processAllImageUrlsInTiles(dashboardData.getTiles());
         dashboardData.setInstantPreviewDashboard(true);
       });
 
@@ -210,13 +208,13 @@ public class InstantPreviewDashboardService {
       .map(EntityIdResponseDto::getId);
   }
 
-  private void processAllImageUrlsInTiles(final DashboardDefinitionExportDto dashboardData) {
-    dashboardData.getTiles().forEach(tile -> {
+  public void processAllImageUrlsInTiles(final List<DashboardReportTileDto> tiles) {
+    tiles.forEach(tile -> {
       if (tile.getType() == DashboardTileType.TEXT) {
-        final HashMap<String, Object> textTileConfiguration = (HashMap<String, Object>) tile.getConfiguration();
+        final Map<String, Object> textTileConfiguration = (Map<String, Object>) tile.getConfiguration();
         // The cluster ID is necessary to calculate the appropriate relative URL
         String clusterId = configurationService.getAuthConfiguration().getCloudAuthConfiguration().getClusterId();
-        if (!clusterId.isEmpty()) {
+        if (StringUtils.isNotEmpty(clusterId)) {
           // If we have a clusterId, we need to add it to the URL with a leading slash
           clusterId = "/" + clusterId;
         }
@@ -225,7 +223,7 @@ public class InstantPreviewDashboardService {
     });
   }
 
-  private void convertAbsoluteUrlsToRelative(HashMap<String, Object> textTileConfigElement, String clusterId) {
+  private void convertAbsoluteUrlsToRelative(Map<String, Object> textTileConfigElement, String clusterId) {
     // If working in cloud mode, the relative URL needs to include the cluster ID for it to work properly
     String srcValue = (String) textTileConfigElement.get(SRC_FIELD);
     String altTextValue = (String) textTileConfigElement.get(ALTTEXT_FIELD);
@@ -234,7 +232,6 @@ public class InstantPreviewDashboardService {
     // dashboard image urls from the template are static and need to be transformed into a relative path that
     // includes the current cluster ID so that e.g. https://www.anyOldUrl.com/MyImage.png becomes
     // /<CLUSTER_ID>/external/static/instant_preview_dashboards/MyImage.png
-    // TODO When implementing OPT-6752 check that the file name below actually exists in the internal folder
     String srcValueFileName = srcValue.substring((srcValue).lastIndexOf('/') + 1);
     textTileConfigElement.put(SRC_FIELD, clusterId + EXTERNAL_STATIC_RESOURCES_SUBPATH + srcValueFileName);
     String altTextValueFileName = altTextValue.substring((altTextValue).lastIndexOf('/') + 1);
@@ -266,32 +263,11 @@ public class InstantPreviewDashboardService {
   }
 
   @EventListener(ApplicationReadyEvent.class)
-  /*
-    This method checks at startup if any of the templates have changed. Should any template have changed, this will
-    trigger the removal of the Instant Preview Dashboard entry as well as the deletion of the related dashboards and
-    reports. Since there is no way with spring boot to check all the files in the "resources" folder, we're assuming
-    the following convention for the template name: templateN.json , where N is any positive integer. We will scan
-    the folder as long as we keep finding templates, so we start with template1.json, template2.json,..., templateN
-    .json. When we don't find any more templates to process we stop.
-   */
-  public void scanForTemplateChanges() {
-    // Generate the hashes for the current templates deployed
-    String currentTemplate = INSTANT_DASHBOARD_DEFAULT_TEMPLATE;
-    List<Long> fileChecksums = new ArrayList<>();
-    InputStream templateInputStream = getClass().getClassLoader()
-      .getResourceAsStream(INSTANT_PREVIEW_DASHBOARD_TEMPLATES_PATH + currentTemplate);
-    while (templateInputStream != null) {
-      try {
-        fileChecksums.add(getChecksumCRC32(templateInputStream, 8192));
-      } catch (IOException e) {
-        log.error("Could not generate checksum for template [{}]", currentTemplate);
-      }
-      currentTemplate = incrementFileName(currentTemplate);
-      templateInputStream = getClass().getClassLoader()
-        .getResourceAsStream(INSTANT_PREVIEW_DASHBOARD_TEMPLATES_PATH + currentTemplate);
-    }
+  public void deleteInstantPreviewDashboardsAndEntitiesForChangedTemplates() {
+    List<Long> templateFileChecksums = getCurrentFileChecksums();
     try {
-      List<String> dashboardsToDelete = instantDashboardMetadataWriter.deleteOutdatedTemplateEntries(fileChecksums);
+      List<String> dashboardsToDelete =
+        instantDashboardMetadataWriter.deleteOutdatedTemplateEntriesAndGetExistingDashboardIds(templateFileChecksums);
       for (String dashboardIdToDelete : dashboardsToDelete) {
         final DashboardDefinitionRestDto dashboardDefinition =
           dashboardService.getDashboardDefinitionAsService(dashboardIdToDelete);
@@ -311,6 +287,26 @@ public class InstantPreviewDashboardService {
     }
   }
 
+  public List<Long> getCurrentFileChecksums() {
+    // Generate the hashes for the current templates deployed. We assume that the default template exists, and that all other
+    // templates are named incrementally
+    String currentTemplate = INSTANT_DASHBOARD_DEFAULT_TEMPLATE;
+    List<Long> fileChecksums = new ArrayList<>();
+    InputStream templateInputStream = getClass().getClassLoader()
+      .getResourceAsStream(INSTANT_PREVIEW_DASHBOARD_TEMPLATES_PATH + currentTemplate);
+    while (templateInputStream != null) {
+      try {
+        fileChecksums.add(getChecksumCRC32(templateInputStream, 8192));
+      } catch (IOException e) {
+        log.error("Could not generate checksum for template [{}]", currentTemplate);
+      }
+      currentTemplate = incrementFileName(currentTemplate);
+      templateInputStream = getClass().getClassLoader()
+        .getResourceAsStream(INSTANT_PREVIEW_DASHBOARD_TEMPLATES_PATH + currentTemplate);
+    }
+    return fileChecksums;
+  }
+
   public static long getChecksumCRC32(InputStream stream, int bufferSize) throws IOException {
     CheckedInputStream checkedInputStream = new CheckedInputStream(stream, new CRC32());
     byte[] buffer = new byte[bufferSize];
@@ -325,12 +321,6 @@ public class InstantPreviewDashboardService {
     return checksum.getValue();
   }
 
-  /**
-   * This method returns the name of the next file to process by incrementing the current file name by one
-   *
-   * @param fileName: name of the file to increment, e.g. template2.json
-   * @return name of the fileName with the suffix incremented by 1, e.g. template3.json
-   */
   private static String incrementFileName(String fileName) {
     String fileNameWithoutExtension = fileName.substring(0, fileName.lastIndexOf("."));
     String fileExtension = fileName.substring(fileName.lastIndexOf("."));
@@ -338,7 +328,7 @@ public class InstantPreviewDashboardService {
     Pattern pattern = Pattern.compile("(.*?)(\\d+)$");
     Matcher matcher = pattern.matcher(fileNameWithoutExtension);
 
-    // If the file has a number as suffix, increment it
+    // If the file has a number as a suffix, increment it
     if (matcher.find()) {
       String prefix = matcher.group(1);
       int suffix = Integer.parseInt(matcher.group(2)) + 1;

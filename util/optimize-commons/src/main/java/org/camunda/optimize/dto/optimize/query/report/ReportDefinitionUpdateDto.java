@@ -16,6 +16,7 @@ public class ReportDefinitionUpdateDto {
 
   protected String id;
   protected String name;
+  protected String description;
   protected OffsetDateTime lastModified;
   protected OffsetDateTime created;
   protected String owner;

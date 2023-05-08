@@ -112,6 +112,7 @@ public class ReportService implements CollectionReferencingService {
   public IdResponseDto createNewSingleDecisionReport(final String userId,
                                                      final SingleDecisionReportDefinitionRequestDto definitionDto) {
     ensureCompliesWithCollectionScope(userId, definitionDto.getCollectionId(), definitionDto);
+    validateReportDescription(definitionDto.getDescription());
     return createReport(
       userId, definitionDto, DecisionReportDataDto::new, reportWriter::createNewSingleDecisionReport
     );
@@ -120,6 +121,7 @@ public class ReportService implements CollectionReferencingService {
   public IdResponseDto createNewSingleProcessReport(final String userId,
                                                     final SingleProcessReportDefinitionRequestDto definitionDto) {
     ensureCompliesWithCollectionScope(userId, definitionDto.getCollectionId(), definitionDto);
+    validateReportDescription(definitionDto.getDescription());
     Optional.ofNullable(definitionDto.getData())
       .ifPresent(data -> {
         ValidationHelper.validateProcessFilters(data.getFilter());
@@ -133,6 +135,7 @@ public class ReportService implements CollectionReferencingService {
 
   public IdResponseDto createNewCombinedProcessReport(final String userId,
                                                       final CombinedReportDefinitionRequestDto combinedReportDefinitionDto) {
+    validateReportDescription(combinedReportDefinitionDto.getDescription());
     verifyValidReportCombination(
       userId,
       combinedReportDefinitionDto.getCollectionId(),
@@ -270,6 +273,7 @@ public class ReportService implements CollectionReferencingService {
                                           final String combinedReportId,
                                           final CombinedReportDefinitionRequestDto updatedReport) {
     ValidationHelper.ensureNotNull("data", updatedReport.getData());
+    validateReportDescription(updatedReport.getDescription());
 
     final ReportDefinitionDto currentReportVersion = getReportDefinition(combinedReportId, userId).getDefinitionDto();
     final AuthorizedReportDefinitionResponseDto authorizedCombinedReport =
@@ -285,59 +289,13 @@ public class ReportService implements CollectionReferencingService {
     reportWriter.updateCombinedReport(reportUpdate);
   }
 
-  private void verifyValidReportCombination(final String userId, final String combinedReportCollectionId,
-                                            final CombinedReportDataDto data) {
-    if (data.getReportIds() != null && !data.getReportIds().isEmpty()) {
-      final List<SingleProcessReportDefinitionRequestDto> reportsOfCombinedReport = reportReader
-        .getAllSingleProcessReportsForIdsOmitXml(data.getReportIds());
-
-      final List<String> reportIds = data.getReportIds();
-      if (reportsOfCombinedReport.size() != reportIds.size()) {
-        final List<String> reportIdsFetched = reportsOfCombinedReport.stream()
-          .map(SingleProcessReportDefinitionRequestDto::getId).collect(toList());
-        final List<String> invalidReportIds = reportIds.stream()
-          .filter(reportIdsFetched::contains)
-          .collect(toList());
-        throw new OptimizeValidationException(String.format(
-          "The following report IDs could not be found or are not single process reports: %s", invalidReportIds));
-      }
-
-      final SingleProcessReportDefinitionRequestDto firstReport = reportsOfCombinedReport.get(0);
-      final boolean allReportsCanBeCombined = reportsOfCombinedReport.stream()
-        .peek(report -> {
-          final ReportDefinitionDto reportDefinition = getReportDefinition(report.getId(), userId).getDefinitionDto();
-
-          if (!Objects.equals(combinedReportCollectionId, reportDefinition.getCollectionId())) {
-            throw new BadRequestException(String.format(
-              REPORT_NOT_IN_SAME_COLLECTION_ERROR_MESSAGE, reportDefinition.getId()
-            ));
-          }
-        })
-        .noneMatch(report -> semanticsForCombinedReportChanged(firstReport, report));
-      if (allReportsCanBeCombined) {
-        final ProcessVisualization visualization = firstReport.getData() == null
-          ? null
-          : firstReport.getData().getVisualization();
-        data.setVisualization(visualization);
-      } else {
-        final String errorMessage =
-          String.format(
-            "Can't create or update combined report. " +
-              "The following report ids are not combinable: [%s]",
-            data.getReportIds()
-          );
-        log.error(errorMessage);
-        throw new UncombinableReportsException(errorMessage);
-      }
-    }
-  }
-
   public void updateSingleProcessReport(String reportId,
                                         SingleProcessReportDefinitionRequestDto updatedReport,
                                         String userId,
                                         boolean force) {
     ValidationHelper.ensureNotNull("data", updatedReport.getData());
     ValidationHelper.validateProcessFilters(updatedReport.getData().getFilter());
+    validateReportDescription(updatedReport.getDescription());
     Optional.ofNullable(updatedReport.getData().getConfiguration())
       .ifPresent(config -> ValidationHelper.validateAggregationTypes(config.getAggregationTypes()));
 
@@ -375,6 +333,7 @@ public class ReportService implements CollectionReferencingService {
                                          String userId,
                                          boolean force) {
     ValidationHelper.ensureNotNull("data", updatedReport.getData());
+    validateReportDescription(updatedReport.getDescription());
     final SingleDecisionReportDefinitionRequestDto currentReportVersion =
       getSingleDecisionReportDefinition(reportId, userId);
     getReportWithEditAuthorization(userId, currentReportVersion);
@@ -424,6 +383,53 @@ public class ReportService implements CollectionReferencingService {
     removeReportAndAssociatedResources(reportId, reportDefinition);
   }
 
+  private void verifyValidReportCombination(final String userId, final String combinedReportCollectionId,
+                                            final CombinedReportDataDto data) {
+    if (data.getReportIds() != null && !data.getReportIds().isEmpty()) {
+      final List<SingleProcessReportDefinitionRequestDto> reportsOfCombinedReport = reportReader
+        .getAllSingleProcessReportsForIdsOmitXml(data.getReportIds());
+
+      final List<String> reportIds = data.getReportIds();
+      if (reportsOfCombinedReport.size() != reportIds.size()) {
+        final List<String> reportIdsFetched = reportsOfCombinedReport.stream()
+          .map(SingleProcessReportDefinitionRequestDto::getId).collect(toList());
+        final List<String> invalidReportIds = reportIds.stream()
+          .filter(reportIdsFetched::contains)
+          .collect(toList());
+        throw new OptimizeValidationException(String.format(
+          "The following report IDs could not be found or are not single process reports: %s", invalidReportIds));
+      }
+
+      final SingleProcessReportDefinitionRequestDto firstReport = reportsOfCombinedReport.get(0);
+      final boolean allReportsCanBeCombined = reportsOfCombinedReport.stream()
+        .peek(report -> {
+          final ReportDefinitionDto reportDefinition = getReportDefinition(report.getId(), userId).getDefinitionDto();
+
+          if (!Objects.equals(combinedReportCollectionId, reportDefinition.getCollectionId())) {
+            throw new BadRequestException(String.format(
+              REPORT_NOT_IN_SAME_COLLECTION_ERROR_MESSAGE, reportDefinition.getId()
+            ));
+          }
+        })
+        .noneMatch(report -> semanticsForCombinedReportChanged(firstReport, report));
+      if (allReportsCanBeCombined) {
+        final ProcessVisualization visualization = firstReport.getData() == null
+          ? null
+          : firstReport.getData().getVisualization();
+        data.setVisualization(visualization);
+      } else {
+        final String errorMessage =
+          String.format(
+            "Can't create or update combined report. " +
+              "The following report ids are not combinable: [%s]",
+            data.getReportIds()
+          );
+        log.error(errorMessage);
+        throw new UncombinableReportsException(errorMessage);
+      }
+    }
+  }
+
   @SuppressWarnings(SuppressionConstants.UNCHECKED_CAST)
   private <T extends ReportDataDto> ReportDefinitionDto<T> getReportOrFail(final String reportId) {
     return reportReader.getReport(reportId)
@@ -459,6 +465,7 @@ public class ReportService implements CollectionReferencingService {
       userId,
       optionalProvidedDefinition.map(ReportDefinitionDto::getData).orElse(defaultDataProvider.get()),
       optionalProvidedDefinition.map(ReportDefinitionDto::getName).orElse(DEFAULT_REPORT_NAME),
+      optionalProvidedDefinition.map(ReportDefinitionDto::getDescription).orElse(null),
       collectionId
     );
   }
@@ -477,6 +484,16 @@ public class ReportService implements CollectionReferencingService {
   public Set<ConflictedItemDto> getConflictedItemsFromReportDefinition(String userId, String reportId) {
     ReportDefinitionDto reportDefinitionDto = getReportDefinition(reportId, userId).getDefinitionDto();
     return getConflictedItemsForDeleteReport(reportDefinitionDto);
+  }
+
+  public void validateReportDescription(final String reportDescription) {
+    if (reportDescription != null) {
+      if (reportDescription.length() > 400) {
+        throw new OptimizeValidationException("Report descriptions cannot be greater than 400 characters");
+      } else if (reportDescription.isEmpty()) {
+        throw new OptimizeValidationException("Report descriptions cannot be non-null and empty");
+      }
+    }
   }
 
   private Set<ConflictedItemDto> mapCombinedReportsToConflictingItems(List<CombinedReportDefinitionRequestDto> combinedReportDtos) {
@@ -507,7 +524,11 @@ public class ReportService implements CollectionReferencingService {
             singleProcessReportDefinitionDto
           );
           return reportWriter.createNewSingleProcessReport(
-            userId, singleProcessReportDefinitionDto.getData(), newReportName, newCollectionId
+            userId,
+            singleProcessReportDefinitionDto.getData(),
+            newReportName,
+            originalReportDefinition.getDescription(),
+            newCollectionId
           );
         case DECISION:
           SingleDecisionReportDefinitionRequestDto singleDecisionReportDefinitionDto =
@@ -518,7 +539,11 @@ public class ReportService implements CollectionReferencingService {
             singleDecisionReportDefinitionDto
           );
           return reportWriter.createNewSingleDecisionReport(
-            userId, singleDecisionReportDefinitionDto.getData(), newReportName, newCollectionId
+            userId,
+            singleDecisionReportDefinitionDto.getData(),
+            newReportName,
+            originalReportDefinition.getDescription(),
+            newCollectionId
           );
         default:
           throw new IllegalStateException("Unsupported reportType: " + originalReportDefinition.getReportType());
@@ -531,7 +556,7 @@ public class ReportService implements CollectionReferencingService {
         newReportName,
         newCollectionId,
         oldCollectionId,
-        combinedReportDefinition.getData(),
+        combinedReportDefinition,
         existingReportCopies,
         keepSubReportNames
       );
@@ -542,9 +567,10 @@ public class ReportService implements CollectionReferencingService {
                                                   final String newName,
                                                   final String newCollectionId,
                                                   final String oldCollectionId,
-                                                  final CombinedReportDataDto oldCombinedReportData,
+                                                  final CombinedReportDefinitionRequestDto oldCombinedReportDef,
                                                   final Map<String, String> existingReportCopies,
                                                   final boolean keepSubReportNames) {
+    final CombinedReportDataDto oldCombinedReportData = oldCombinedReportDef.getData();
     final CombinedReportDataDto newCombinedReportData = new CombinedReportDataDto(
       oldCombinedReportData.getConfiguration(),
       oldCombinedReportData.getVisualization(),
@@ -579,7 +605,13 @@ public class ReportService implements CollectionReferencingService {
       newCombinedReportData.setReports(newReports);
     }
 
-    return reportWriter.createNewCombinedReport(userId, newCombinedReportData, newName, newCollectionId);
+    return reportWriter.createNewCombinedReport(
+      userId,
+      newCombinedReportData,
+      newName,
+      oldCombinedReportDef.getDescription(),
+      newCollectionId
+    );
   }
 
   private Set<ConflictedItemDto> getConflictedItemsForDeleteReport(ReportDefinitionDto reportDefinition) {
@@ -831,6 +863,7 @@ public class ReportService implements CollectionReferencingService {
                                                      String userId) {
     to.setId(from.getId());
     to.setName(from.getName());
+    to.setDescription(from.getDescription());
     to.setLastModifier(userId);
     to.setLastModified(from.getLastModified());
   }
@@ -843,7 +876,7 @@ public class ReportService implements CollectionReferencingService {
 
   @FunctionalInterface
   private interface CreateReportMethod<RD extends ReportDataDto> {
-    IdResponseDto create(String userId, RD reportData, String reportName, String collectionId);
+    IdResponseDto create(String userId, RD reportData, String reportName, String description, String collectionId);
   }
 
 }

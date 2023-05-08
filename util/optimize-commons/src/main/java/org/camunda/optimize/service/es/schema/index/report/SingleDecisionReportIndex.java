@@ -19,7 +19,7 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.TYPE_TEXT;
 
 public class SingleDecisionReportIndex extends AbstractReportIndex {
 
-  public static final int VERSION = 9;
+  public static final int VERSION = 10;
 
   @Override
   public String getIndexName() {

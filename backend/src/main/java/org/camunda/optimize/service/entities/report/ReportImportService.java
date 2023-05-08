@@ -30,10 +30,12 @@ import org.camunda.optimize.service.es.schema.index.report.CombinedReportIndex;
 import org.camunda.optimize.service.es.schema.index.report.SingleDecisionReportIndex;
 import org.camunda.optimize.service.es.schema.index.report.SingleProcessReportIndex;
 import org.camunda.optimize.service.es.writer.ReportWriter;
+import org.camunda.optimize.service.exceptions.OptimizeImportDescriptionNotValidException;
 import org.camunda.optimize.service.exceptions.OptimizeImportDefinitionDoesNotExistException;
 import org.camunda.optimize.service.exceptions.OptimizeImportForbiddenException;
 import org.camunda.optimize.service.exceptions.OptimizeImportIncorrectIndexVersionException;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
+import org.camunda.optimize.service.exceptions.OptimizeValidationException;
 import org.camunda.optimize.service.exceptions.conflict.OptimizeNonDefinitionScopeCompliantException;
 import org.camunda.optimize.service.exceptions.conflict.OptimizeNonTenantScopeCompliantException;
 import org.camunda.optimize.service.report.ReportService;
@@ -106,6 +108,7 @@ public class ReportImportService {
     final Set<DefinitionExceptionItemDto> forbiddenDefinitions = new HashSet<>();
     final Set<ConflictedItemDto> definitionsNotInScope = new HashSet<>();
     final Set<ConflictedItemDto> tenantsNotInScope = new HashSet<>();
+    final Set<String> invalidReportIds = new HashSet<>();
 
     reportsToImport.forEach(
       reportExportDto -> {
@@ -121,6 +124,8 @@ public class ReportImportService {
           definitionsNotInScope.addAll(e.getConflictedItems());
         } catch (OptimizeNonTenantScopeCompliantException e) {
           tenantsNotInScope.addAll(e.getConflictedItems());
+        } catch (OptimizeImportDescriptionNotValidException e) {
+          invalidReportIds.addAll(e.getInvalidEntityIds());
         }
       }
     );
@@ -156,6 +161,10 @@ public class ReportImportService {
 
     if (!tenantsNotInScope.isEmpty()) {
       throw new OptimizeNonTenantScopeCompliantException(tenantsNotInScope);
+    }
+
+    if (!invalidReportIds.isEmpty()) {
+      throw new OptimizeImportDescriptionNotValidException(invalidReportIds);
     }
   }
 
@@ -239,6 +248,7 @@ public class ReportImportService {
           Optional.ofNullable(userId).orElse(API_IMPORT_OWNER_NAME),
           ((CombinedProcessReportDefinitionExportDto) reportToImport).getData(),
           reportToImport.getName(),
+          reportToImport.getDescription(),
           newCollectionId
         );
       case SINGLE_PROCESS_REPORT:
@@ -246,6 +256,7 @@ public class ReportImportService {
           Optional.ofNullable(userId).orElse(API_IMPORT_OWNER_NAME),
           ((SingleProcessReportDefinitionExportDto) reportToImport).getData(),
           reportToImport.getName(),
+          reportToImport.getDescription(),
           newCollectionId
         );
       case SINGLE_DECISION_REPORT:
@@ -253,6 +264,7 @@ public class ReportImportService {
           Optional.ofNullable(userId).orElse(API_IMPORT_OWNER_NAME),
           ((SingleDecisionReportDefinitionExportDto) reportToImport).getData(),
           reportToImport.getName(),
+          reportToImport.getDescription(),
           newCollectionId
         );
       default:
@@ -357,6 +369,11 @@ public class ReportImportService {
   private void validateReportOrFail(final String userId,
                                     final CollectionDefinitionDto collection,
                                     final ReportDefinitionExportDto reportToImport) {
+    try {
+      reportService.validateReportDescription(reportToImport.getDescription());
+    } catch (OptimizeValidationException ex) {
+      throw new OptimizeImportDescriptionNotValidException(Set.of(reportToImport.getId()));
+    }
     switch (reportToImport.getExportEntityType()) {
       case SINGLE_PROCESS_REPORT:
         final SingleProcessReportDefinitionExportDto processExport =

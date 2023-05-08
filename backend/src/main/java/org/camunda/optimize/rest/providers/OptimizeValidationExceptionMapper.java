@@ -28,7 +28,7 @@ public class OptimizeValidationExceptionMapper implements ExceptionMapper<Optimi
 
   @Override
   public Response toResponse(final OptimizeValidationException validationException) {
-    log.warn("Mapping OptimizeValidationException");
+    log.info("Mapping OptimizeValidationException");
 
     return Response
       .status(Response.Status.BAD_REQUEST)

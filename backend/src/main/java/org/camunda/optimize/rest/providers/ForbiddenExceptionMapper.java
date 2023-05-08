@@ -29,7 +29,7 @@ public class ForbiddenExceptionMapper implements ExceptionMapper<ForbiddenExcept
 
   @Override
   public Response toResponse(ForbiddenException forbiddenException) {
-    log.warn("Mapping ForbiddenException");
+    log.info("Mapping ForbiddenException");
 
     return Response
       .status(Response.Status.FORBIDDEN)

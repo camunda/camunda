@@ -2,7 +2,8 @@
   "id" : "de508893-50e2-4647-a44c-e7b955f5a77c",
   "exportEntityType" : "single_process_report",
   "name" : "30DayThroughput",
-  "sourceIndexVersion" : 10,
+  "description" : null,
+  "sourceIndexVersion" : 11,
   "collectionId" : "AnalysisTestingProcess",
   "data" : {
     "configuration" : {
@@ -54,7 +55,7 @@
           "isBelow" : false,
           "value" : "2"
         },
-        "isKpi" : true
+        "isKpi" : false
       },
       "heatmapTargetValue" : {
         "active" : false,
@@ -125,13 +126,15 @@
     },
     "visualization" : "number",
     "managementReport" : false,
+    "instantPreviewReport" : true,
     "userTaskReport" : false
   }
 }, {
   "id" : "a7fe3d92-e8d2-4288-9209-a6e30fb70cbd",
   "exportEntityType" : "single_process_report",
   "name" : "p75Duration",
-  "sourceIndexVersion" : 10,
+  "description" : null,
+  "sourceIndexVersion" : 11,
   "collectionId" : "AnalysisTestingProcess",
   "data" : {
     "configuration" : {
@@ -183,7 +186,7 @@
           "isBelow" : false,
           "value" : "2"
         },
-        "isKpi" : true
+        "isKpi" : false
       },
       "heatmapTargetValue" : {
         "active" : false,
@@ -240,13 +243,15 @@
     },
     "visualization" : "number",
     "managementReport" : false,
+    "instantPreviewReport" : true,
     "userTaskReport" : false
   }
 }, {
   "id" : "c7304ec0-f532-413f-bd4b-dc8adf5d3183",
   "exportEntityType" : "single_process_report",
   "name" : "percentNoIncidents",
-  "sourceIndexVersion" : 10,
+  "description" : null,
+  "sourceIndexVersion" : 11,
   "collectionId" : "AnalysisTestingProcess",
   "data" : {
     "configuration" : {
@@ -298,7 +303,7 @@
           "isBelow" : false,
           "value" : "2"
         },
-        "isKpi" : true
+        "isKpi" : false
       },
       "heatmapTargetValue" : {
         "active" : false,
@@ -360,13 +365,15 @@
     },
     "visualization" : "number",
     "managementReport" : false,
+    "instantPreviewReport" : true,
     "userTaskReport" : false
   }
 }, {
   "id" : "d816cc24-87e9-4086-a791-fc0624662819",
   "exportEntityType" : "single_process_report",
   "name" : "percentSLAMet",
-  "sourceIndexVersion" : 10,
+  "description" : null,
+  "sourceIndexVersion" : 11,
   "collectionId" : "AnalysisTestingProcess",
   "data" : {
     "configuration" : {
@@ -418,7 +425,7 @@
           "isBelow" : false,
           "value" : "2"
         },
-        "isKpi" : true
+        "isKpi" : false
       },
       "heatmapTargetValue" : {
         "active" : false,
@@ -485,13 +492,15 @@
     },
     "visualization" : "number",
     "managementReport" : false,
+    "instantPreviewReport" : true,
     "userTaskReport" : false
   }
 }, {
   "id" : "754367b4-485a-4e6b-9b16-8423d2760ef3",
   "exportEntityType" : "single_process_report",
   "name" : "p99Duration",
-  "sourceIndexVersion" : 10,
+  "description" : null,
+  "sourceIndexVersion" : 11,
   "collectionId" : "AnalysisTestingProcess",
   "data" : {
     "configuration" : {
@@ -543,7 +552,7 @@
           "isBelow" : false,
           "value" : "2"
         },
-        "isKpi" : true
+        "isKpi" : false
       },
       "heatmapTargetValue" : {
         "active" : false,
@@ -600,6 +609,7 @@
     },
     "visualization" : "number",
     "managementReport" : false,
+    "instantPreviewReport" : true,
     "userTaskReport" : false
   }
 }, {

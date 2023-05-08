@@ -102,6 +102,31 @@ public class PublicApiEntityImportIT extends AbstractExportImportEntityDefinitio
   }
 
   @Test
+  public void importReportWithInvalidDescription() {
+    // given
+    final ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder
+      .createReportData()
+      .setProcessDefinitionKey(DEFINITION_KEY)
+      .setProcessDefinitionVersion(DEFINITION_VERSION)
+      .setReportDataType(ProcessReportDataType.RAW_DATA)
+      .build();
+    final SingleProcessReportDefinitionRequestDto processReportDefinition = createProcessReportDefinition(reportData);
+    processReportDefinition.setDescription("");
+
+    // when
+    final Response response = embeddedOptimizeExtension.getRequestExecutor()
+      .buildPublicImportEntityDefinitionsRequest(
+        collectionId,
+        Sets.newHashSet(createExportDto(processReportDefinition)),
+        ACCESS_TOKEN
+      )
+      .execute();
+
+    // then
+    assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
+  }
+
+  @Test
   public void importManagementReportNotPossible() {
     // given
     final ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder

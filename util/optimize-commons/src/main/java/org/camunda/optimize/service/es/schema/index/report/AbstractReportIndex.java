@@ -8,7 +8,6 @@ package org.camunda.optimize.service.es.schema.index.report;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.SingleReportConfigurationDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
 import org.camunda.optimize.service.es.schema.DefaultIndexMappingCreator;
 import org.elasticsearch.xcontent.XContentBuilder;
 
@@ -19,11 +18,13 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.OPTIMIZE_DA
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.TYPE_BOOLEAN;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.TYPE_DATE;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.TYPE_KEYWORD;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.TYPE_TEXT;
 
 public abstract class AbstractReportIndex extends DefaultIndexMappingCreator {
 
   public static final String ID = ReportDefinitionDto.Fields.id;
   public static final String NAME = ReportDefinitionDto.Fields.name;
+  public static final String DESCRIPTION = ReportDefinitionDto.Fields.description;
   public static final String LAST_MODIFIED = ReportDefinitionDto.Fields.lastModified;
   public static final String CREATED = ReportDefinitionDto.Fields.created;
   public static final String OWNER = ReportDefinitionDto.Fields.owner;
@@ -47,6 +48,10 @@ public abstract class AbstractReportIndex extends DefaultIndexMappingCreator {
       .endObject()
       .startObject(NAME)
         .field(MAPPING_PROPERTY_TYPE, TYPE_KEYWORD)
+      .endObject()
+      .startObject(DESCRIPTION)
+        .field(MAPPING_PROPERTY_TYPE, TYPE_TEXT)
+         .field("index", false)
       .endObject()
       .startObject(LAST_MODIFIED)
         .field(MAPPING_PROPERTY_TYPE, TYPE_DATE)

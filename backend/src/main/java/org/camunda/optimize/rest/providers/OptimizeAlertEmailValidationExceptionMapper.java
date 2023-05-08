@@ -21,7 +21,7 @@ public class OptimizeAlertEmailValidationExceptionMapper
 
   @Override
   public Response toResponse(final OptimizeAlertEmailValidationException optimizeAlertEmailValidationException) {
-    log.warn("Mapping OptimizeAlertEmailValidationException");
+    log.info("Mapping OptimizeAlertEmailValidationException");
 
     return Response
       .status(Response.Status.BAD_REQUEST)

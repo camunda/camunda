@@ -29,13 +29,13 @@ import static org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension.D
 @ClientEndpoint
 @Slf4j
 public class StatusClientSocket {
-  private ObjectMapper objectMapper = new ObjectMapper();
+  private final ObjectMapper objectMapper = new ObjectMapper();
 
   @Getter
-  private CountDownLatch initialStatusReceivedLatch = new CountDownLatch(1);
+  private final CountDownLatch initialStatusReceivedLatch = new CountDownLatch(1);
 
   @Getter
-  private CountDownLatch importingStatusReceivedLatch = new CountDownLatch(1);
+  private final CountDownLatch importingStatusReceivedLatch = new CountDownLatch(1);
 
 
   @OnMessage

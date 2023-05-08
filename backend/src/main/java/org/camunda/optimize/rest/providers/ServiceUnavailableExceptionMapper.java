@@ -19,7 +19,7 @@ public class ServiceUnavailableExceptionMapper implements ExceptionMapper<Servic
 
   @Override
   public Response toResponse(ServiceUnavailableException exception) {
-    log.warn("Mapping ServiceUnavailableException");
+    log.info("Mapping ServiceUnavailableException");
 
     return Response
       .status(Response.Status.SERVICE_UNAVAILABLE)

@@ -14,7 +14,7 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.MAPPING_ENA
 
 public class CombinedReportIndex extends AbstractReportIndex {
 
-  public static final int VERSION = 4;
+  public static final int VERSION = 5;
 
   public static final String VISUALIZATION = "visualization";
   public static final String CONFIGURATION = "configuration";

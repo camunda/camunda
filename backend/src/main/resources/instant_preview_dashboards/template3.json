@@ -2,7 +2,8 @@
   "id" : "ed074e77-c858-4dbf-9d97-5976833cfe9c",
   "exportEntityType" : "single_process_report",
   "name" : "percentSLAMet",
-  "sourceIndexVersion" : 10,
+  "description" : null,
+  "sourceIndexVersion" : 11,
   "collectionId" : null,
   "data" : {
     "configuration" : {
@@ -54,7 +55,7 @@
           "isBelow" : false,
           "value" : "2"
         },
-        "isKpi" : true
+        "isKpi" : false
       },
       "heatmapTargetValue" : {
         "active" : false,
@@ -121,13 +122,15 @@
     },
     "visualization" : "number",
     "managementReport" : false,
+    "instantPreviewReport" : true,
     "userTaskReport" : false
   }
 }, {
   "id" : "1b61bacb-6c3a-49ab-883d-bc4d2e68c990",
   "exportEntityType" : "single_process_report",
   "name" : "flownodeDuration",
-  "sourceIndexVersion" : 10,
+  "description" : null,
+  "sourceIndexVersion" : 11,
   "collectionId" : null,
   "data" : {
     "configuration" : {
@@ -242,13 +245,15 @@
     },
     "visualization" : "heat",
     "managementReport" : false,
+    "instantPreviewReport" : true,
     "userTaskReport" : false
   }
 }, {
   "id" : "a1794d51-b6c7-48b0-8cbd-aa1145097385",
   "exportEntityType" : "single_process_report",
   "name" : "controlChart",
-  "sourceIndexVersion" : 10,
+  "description" : null,
+  "sourceIndexVersion" : 11,
   "collectionId" : null,
   "data" : {
     "configuration" : {
@@ -368,13 +373,15 @@
     },
     "visualization" : "line",
     "managementReport" : false,
+    "instantPreviewReport" : true,
     "userTaskReport" : false
   }
 }, {
   "id" : "a972ff98-aa84-4e24-82c0-154881104598",
   "exportEntityType" : "single_process_report",
   "name" : "activeIncidentsHeatmap",
-  "sourceIndexVersion" : 10,
+  "description" : null,
+  "sourceIndexVersion" : 11,
   "collectionId" : null,
   "data" : {
     "configuration" : {
@@ -483,13 +490,15 @@
     },
     "visualization" : "heat",
     "managementReport" : false,
+    "instantPreviewReport" : true,
     "userTaskReport" : false
   }
 }, {
   "id" : "9e2aa98e-645a-4ddd-973f-bf529d27fac4",
   "exportEntityType" : "single_process_report",
   "name" : "percentNoIncidents",
-  "sourceIndexVersion" : 10,
+  "description" : null,
+  "sourceIndexVersion" : 11,
   "collectionId" : null,
   "data" : {
     "configuration" : {
@@ -541,7 +550,7 @@
           "isBelow" : false,
           "value" : "2"
         },
-        "isKpi" : true
+        "isKpi" : false
       },
       "heatmapTargetValue" : {
         "active" : false,
@@ -603,13 +612,15 @@
     },
     "visualization" : "number",
     "managementReport" : false,
+    "instantPreviewReport" : true,
     "userTaskReport" : false
   }
 }, {
   "id" : "d5d98acb-0012-431c-901f-92c882712e39",
   "exportEntityType" : "single_process_report",
   "name" : "incidentDurationHeatmap",
-  "sourceIndexVersion" : 10,
+  "description" : null,
+  "sourceIndexVersion" : 11,
   "collectionId" : null,
   "data" : {
     "configuration" : {
@@ -724,13 +735,15 @@
     },
     "visualization" : "heat",
     "managementReport" : false,
+    "instantPreviewReport" : true,
     "userTaskReport" : false
   }
 }, {
   "id" : "d615daa1-dfff-488a-8b15-4a0d49a110f7",
   "exportEntityType" : "single_process_report",
   "name" : "p99Duration",
-  "sourceIndexVersion" : 10,
+  "description" : null,
+  "sourceIndexVersion" : 11,
   "collectionId" : null,
   "data" : {
     "configuration" : {
@@ -782,7 +795,7 @@
           "isBelow" : false,
           "value" : "2"
         },
-        "isKpi" : true
+        "isKpi" : false
       },
       "heatmapTargetValue" : {
         "active" : false,
@@ -839,13 +852,15 @@
     },
     "visualization" : "number",
     "managementReport" : false,
+    "instantPreviewReport" : true,
     "userTaskReport" : false
   }
 }, {
   "id" : "b8760b8e-56b3-4fcf-83f4-2d2367090287",
   "exportEntityType" : "single_process_report",
   "name" : "incidentDurationTrend",
-  "sourceIndexVersion" : 10,
+  "description" : null,
+  "sourceIndexVersion" : 11,
   "collectionId" : null,
   "data" : {
     "configuration" : {
@@ -961,13 +976,15 @@
     },
     "visualization" : "barLine",
     "managementReport" : false,
+    "instantPreviewReport" : true,
     "userTaskReport" : false
   }
 }, {
   "id" : "f69bfb9e-2853-4d5e-8640-667d2c10c220",
   "exportEntityType" : "single_process_report",
   "name" : "30DayThroughput",
-  "sourceIndexVersion" : 10,
+  "description" : null,
+  "sourceIndexVersion" : 11,
   "collectionId" : null,
   "data" : {
     "configuration" : {
@@ -1019,7 +1036,7 @@
           "isBelow" : false,
           "value" : "2"
         },
-        "isKpi" : true
+        "isKpi" : false
       },
       "heatmapTargetValue" : {
         "active" : false,
@@ -1090,13 +1107,15 @@
     },
     "visualization" : "number",
     "managementReport" : false,
+    "instantPreviewReport" : true,
     "userTaskReport" : false
   }
 }, {
   "id" : "a6f36410-de07-4403-a27b-a02e2e1c30c6",
   "exportEntityType" : "single_process_report",
   "name" : "p75Duration",
-  "sourceIndexVersion" : 10,
+  "description" : null,
+  "sourceIndexVersion" : 11,
   "collectionId" : null,
   "data" : {
     "configuration" : {
@@ -1148,7 +1167,7 @@
           "isBelow" : false,
           "value" : "2"
         },
-        "isKpi" : true
+        "isKpi" : false
       },
       "heatmapTargetValue" : {
         "active" : false,
@@ -1205,13 +1224,15 @@
     },
     "visualization" : "number",
     "managementReport" : false,
+    "instantPreviewReport" : true,
     "userTaskReport" : false
   }
 }, {
   "id" : "31db7857-85b1-46ce-936f-7afecc36b4df",
   "exportEntityType" : "single_process_report",
   "name" : "instanceTrends",
-  "sourceIndexVersion" : 10,
+  "description" : null,
+  "sourceIndexVersion" : 11,
   "collectionId" : null,
   "data" : {
     "configuration" : {
@@ -1322,13 +1343,15 @@
     },
     "visualization" : "bar",
     "managementReport" : false,
+    "instantPreviewReport" : true,
     "userTaskReport" : false
   }
 }, {
   "id" : "16a124c6-869b-4d16-b01a-363026ab888e",
   "exportEntityType" : "single_process_report",
   "name" : "flownodeFrequency",
-  "sourceIndexVersion" : 10,
+  "description" : null,
+  "sourceIndexVersion" : 11,
   "collectionId" : null,
   "data" : {
     "configuration" : {
@@ -1437,6 +1460,7 @@
     },
     "visualization" : "heat",
     "managementReport" : false,
+    "instantPreviewReport" : true,
     "userTaskReport" : false
   }
 }, {

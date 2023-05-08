@@ -188,6 +188,7 @@ public class ZeebeProcessDefinitionImportIT extends AbstractZeebeIT {
       .containsExactlyInAnyOrder(firstProcessName, secondProcessName);
   }
 
+  // Elements such as data stores, date objects, link events, escalation events and undefined tasks were introduced with 8.2
   @DisabledIf("isZeebeVersionPre82")
   @Test
   public void importZeebeProcess_processContainsNewBpmnElementsIntroducedWith820() {

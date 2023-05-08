@@ -23,7 +23,7 @@ public class SingleProcessReportIndex extends AbstractReportIndex {
   public static final String MANAGEMENT_REPORT = ProcessReportDataDto.Fields.managementReport;
   public static final String INSTANT_PREVIEW_REPORT = ProcessReportDataDto.Fields.instantPreviewReport;
 
-  public static final int VERSION = 10;
+  public static final int VERSION = 11;
 
   @Override
   public String getIndexName() {
@@ -80,4 +80,5 @@ public class SingleProcessReportIndex extends AbstractReportIndex {
       .endObject();
     // @formatter:on
   }
+
 }

@@ -27,7 +27,7 @@ public class OptimizeUserOrGroupIdNotFoundExceptionMapper implements ExceptionMa
 
   @Override
   public Response toResponse(final OptimizeUserOrGroupIdNotFoundException idNotFoundException) {
-    log.warn("Mapping OptimizeIdNotFoundException");
+    log.info("Mapping OptimizeIdNotFoundException");
 
     return Response
       .status(Response.Status.BAD_REQUEST)

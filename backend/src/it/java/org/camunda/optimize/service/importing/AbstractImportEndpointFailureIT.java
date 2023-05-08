@@ -54,7 +54,7 @@ import static org.mockserver.model.HttpRequest.request;
 @TestInstance(PER_CLASS)
 @SpringBootTest(
   webEnvironment = SpringBootTest.WebEnvironment.DEFINED_PORT,
-  properties = { INTEGRATION_TESTS + "=true" }
+  properties = {INTEGRATION_TESTS + "=true"}
 )
 @Configuration
 public abstract class AbstractImportEndpointFailureIT {
@@ -76,7 +76,7 @@ public abstract class AbstractImportEndpointFailureIT {
   protected static EngineIntegrationExtension engineIntegrationExtension = new EngineIntegrationExtension(false);
   @RegisterExtension
   @Order(3)
-  protected EmbeddedOptimizeExtension embeddedOptimizeExtension = new EmbeddedOptimizeExtension();
+  protected static EmbeddedOptimizeExtension embeddedOptimizeExtension = new EmbeddedOptimizeExtension();
 
   @RegisterExtension
   @Order(4)

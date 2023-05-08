@@ -167,14 +167,11 @@ void integrationTestSteps(String version, boolean snapshot) {
   container('maven') {
     runMaven("test -Dskip.fe.build");
     withCredentials([usernamePassword(credentialsId: 'camunda-nexus', usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD')]) {
-      def zeebeVersionToUse =
-        (version == "latest") ? getZeebeVersionFromTag("${version}", snapshot) : version
-      def identityVersionToUse =
-        (version == "latest") ? getIdentityVersionFromTag("${version}", snapshot, "$USERNAME", "$PASSWORD") : version
+      def zeebeVersionToUse = (version == "latest") ? getZeebeVersionFromTag("${version}", snapshot) : version
       sh("""    
-        echo "running zeebe tests using Zeebe version: ${zeebeVersionToUse}, Identity version: ${identityVersionToUse}"
+        echo "running zeebe tests using Zeebe version: ${zeebeVersionToUse}"
       """)
-      runMaven("verify -Didentity.version=${identityVersionToUse} -Dzeebe.docker.version=${snapshot ? "SNAPSHOT" : zeebeVersionToUse} -Dit.test.includedGroups='Zeebe-test' -Dskip.docker -Pit,engine-latest -pl backend -am")
+      runMaven("verify -Dzeebe.docker.version=${snapshot ? "SNAPSHOT" : zeebeVersionToUse} -Dit.test.includedGroups='Zeebe-test' -Dskip.docker -Pit,engine-latest -pl backend -am")
     }
   }
 }
@@ -258,6 +255,32 @@ pipeline {
                 sh 'kubectl logs -l jenkins/label=$LABEL -c elasticsearch > elasticsearch_zeebe810.log'
               }
               archiveArtifacts artifacts: 'elasticsearch_zeebe810.log', onlyIfSuccessful: false
+            }
+          }
+        }
+        stage("8.2.0") {
+          agent {
+            kubernetes {
+              cloud 'optimize-ci'
+              label "optimize-ci-build-zeebe-8-2-0_${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(20)}-${env.BUILD_ID}"
+              defaultContainer 'jnlp'
+              yaml mavenIntegrationTestSpec("${env.CAMBPM_VERSION}", "${env.ES_VERSION}")
+            }
+          }
+          environment {
+            LABEL = "optimize-ci-build-zeebe-8-2-0_${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(20)}-${env.BUILD_ID}"
+          }
+          steps {
+            integrationTestSteps("8.2.0", false)
+          }
+          post {
+            always {
+              junit testResults: 'backend/target/failsafe-reports/**/*.xml', allowEmptyResults: true, keepLongStdio: true
+              container('gcloud'){
+                sh 'apt-get install kubectl'
+                sh 'kubectl logs -l jenkins/label=$LABEL -c elasticsearch > elasticsearch_zeebe820.log'
+              }
+              archiveArtifacts artifacts: 'elasticsearch_zeebe820.log', onlyIfSuccessful: false
             }
           }
         }

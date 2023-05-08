@@ -10,7 +10,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.beanutils.PropertyUtils;
 import org.apache.http.client.methods.HttpGet;
 import org.camunda.optimize.dto.optimize.ImportRequestDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
@@ -35,7 +34,6 @@ import org.elasticsearch.script.Script;
 import org.elasticsearch.script.ScriptType;
 
 import java.io.IOException;
-import java.lang.reflect.InvocationTargetException;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.TemporalAccessor;
 import java.util.Arrays;
@@ -62,9 +60,19 @@ public class ElasticsearchWriterUtil {
   private static final String NESTED_DOC_LIMIT_MESSAGE = "The number of nested documents has exceeded the allowed " +
     "limit of";
 
-  static Script createFieldUpdateScript(final Set<String> fields,
-                                        final Object entityDto,
-                                        final ObjectMapper objectMapper) {
+  public static Script createFieldUpdateScript(final Set<String> fields,
+                                               final Object entityDto,
+                                               final ObjectMapper objectMapper) {
+    final Map<String, Object> params = createFieldUpdateScriptParams(fields, entityDto, objectMapper);
+    return createDefaultScriptWithPrimitiveParams(
+      ElasticsearchWriterUtil.createUpdateFieldsScript(params.keySet()),
+      params
+    );
+  }
+
+  public static Map<String, Object> createFieldUpdateScriptParams(final Set<String> fields,
+                                                                  final Object entityDto,
+                                                                  final ObjectMapper objectMapper) {
     Map<String, Object> entityAsMap =
       objectMapper.convertValue(entityDto, new TypeReference<>() {
       });
@@ -78,11 +86,7 @@ public class ElasticsearchWriterUtil {
         params.put(fieldName, fieldValue);
       }
     }
-
-    return createDefaultScriptWithPrimitiveParams(
-      ElasticsearchWriterUtil.createUpdateFieldsScript(params.keySet()),
-      params
-    );
+    return params;
   }
 
   public static Script createDefaultScriptWithPrimitiveParams(final String inlineUpdateScript,

@@ -62,6 +62,7 @@ import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
 import static org.camunda.optimize.dto.optimize.ReportConstants.APPLIED_TO_ALL_DEFINITIONS;
 import static org.camunda.optimize.dto.optimize.ReportConstants.DEFAULT_TENANT_IDS;
 import static org.camunda.optimize.dto.optimize.ReportType.DECISION;
+import static org.camunda.optimize.dto.optimize.ReportType.PROCESS;
 import static org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType.AVERAGE;
 import static org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType.MAX;
 import static org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType.MIN;
@@ -157,7 +158,6 @@ public class ReportRestServiceIT extends AbstractReportRestServiceIT {
     final List<ReportDataDefinitionDto> definitions = createSingleDefinitionListWithIdentifier(null);
 
     // when
-
     Response response;
     switch (reportType) {
       case PROCESS:
@@ -391,6 +391,7 @@ public class ReportRestServiceIT extends AbstractReportRestServiceIT {
   public void createNewCombinedReport() {
     // when
     String id = reportClient.createNewCombinedReport();
+
     // then
     assertThat(id).isNotNull();
   }
@@ -404,6 +405,7 @@ public class ReportRestServiceIT extends AbstractReportRestServiceIT {
       .getRequestExecutor()
       .buildCreateCombinedReportRequest(combinedReportDefinitionDto)
       .execute(IdResponseDto.class, OK.getStatusCode());
+
     // then
     assertThat(idDto).isNotNull();
   }
@@ -489,7 +491,7 @@ public class ReportRestServiceIT extends AbstractReportRestServiceIT {
   @Test
   public void updateSingleProcessReportWithFiltersAppliedToSetToProvidedDefinition() {
     // given
-    final String reportId = addReportToOptimizeWithDefinitionAndRandomXml(ReportType.PROCESS);
+    final String reportId = addReportToOptimizeWithDefinitionAndRandomXml(PROCESS);
     final SingleProcessReportDefinitionRequestDto reportDefinition = reportClient.getSingleProcessReportById(reportId);
     final String definitionIdentifier = reportDefinition.getData().getDefinitions().get(0).getIdentifier();
     reportDefinition.getData().setFilter(
@@ -506,7 +508,7 @@ public class ReportRestServiceIT extends AbstractReportRestServiceIT {
   @Test
   public void updateSingleProcessReportWithFiltersAppliedToSetToInvalidIdFails() {
     // given
-    final String reportId = addReportToOptimizeWithDefinitionAndRandomXml(ReportType.PROCESS);
+    final String reportId = addReportToOptimizeWithDefinitionAndRandomXml(PROCESS);
     final SingleProcessReportDefinitionRequestDto reportDefinition = reportClient.getSingleProcessReportById(reportId);
     reportDefinition.getData().setFilter(
       ProcessFilterBuilder.filter().completedInstancesOnly().appliedTo("invalid").add().buildList()
@@ -522,7 +524,7 @@ public class ReportRestServiceIT extends AbstractReportRestServiceIT {
   @Test
   public void updateSingleProcessReportWithEmptyFiltersAppliedToFails() {
     // given
-    final String reportId = addReportToOptimizeWithDefinitionAndRandomXml(ReportType.PROCESS);
+    final String reportId = addReportToOptimizeWithDefinitionAndRandomXml(PROCESS);
     final SingleProcessReportDefinitionRequestDto reportDefinition = reportClient.getSingleProcessReportById(reportId);
     reportDefinition.getData().setFilter(
       ProcessFilterBuilder.filter().completedInstancesOnly().appliedTo(Collections.emptyList()).add().buildList()
@@ -664,7 +666,7 @@ public class ReportRestServiceIT extends AbstractReportRestServiceIT {
   public void getStoredReportsWithNameFromXml() {
     // given
     String idProcessReport = reportClient.createEmptySingleProcessReport();
-    updateReportWithValidXml(idProcessReport, ReportType.PROCESS);
+    updateReportWithValidXml(idProcessReport, PROCESS);
     String idDecisionReport = reportClient.createEmptySingleDecisionReport();
     updateReportWithValidXml(idDecisionReport, DECISION);
 
@@ -1298,19 +1300,8 @@ public class ReportRestServiceIT extends AbstractReportRestServiceIT {
     assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
   }
 
-  private List<ReportDataDefinitionDto> createSingleDefinitionListWithIdentifier(final String definitionIdentifier) {
-    return List.of(new ReportDataDefinitionDto(
-      definitionIdentifier,
-      RANDOM_KEY,
-      RANDOM_STRING,
-      RANDOM_STRING,
-      Collections.singletonList(ALL_VERSIONS),
-      DEFAULT_TENANT_IDS
-    ));
-  }
-
   private Response updateReportRequest(final String id, final ReportType reportType) {
-    if (ReportType.PROCESS.equals(reportType)) {
+    if (PROCESS.equals(reportType)) {
       return reportClient.updateSingleProcessReport(id, constructProcessReportWithFakePD());
     } else {
       return reportClient.updateDecisionReport(id, constructDecisionReportWithFakeDD());
@@ -1318,13 +1309,13 @@ public class ReportRestServiceIT extends AbstractReportRestServiceIT {
   }
 
   private String addEmptyReportToOptimize(final ReportType reportType, String collectionId) {
-    return ReportType.PROCESS.equals(reportType)
+    return PROCESS.equals(reportType)
       ? reportClient.createEmptySingleProcessReportInCollection(collectionId)
       : reportClient.createEmptySingleDecisionReportInCollection(collectionId);
   }
 
   private String addEmptyReportToOptimize(final ReportType reportType) {
-    return ReportType.PROCESS.equals(reportType)
+    return PROCESS.equals(reportType)
       ? reportClient.createEmptySingleProcessReport()
       : reportClient.createEmptySingleDecisionReport();
   }
@@ -1349,7 +1340,7 @@ public class ReportRestServiceIT extends AbstractReportRestServiceIT {
   @SneakyThrows
   private Response updateReportWithValidXml(final String id, final ReportType reportType) {
     final Response response;
-    if (ReportType.PROCESS.equals(reportType)) {
+    if (PROCESS.equals(reportType)) {
       SingleProcessReportDefinitionRequestDto reportDefinitionDto = getProcessReportDefinitionDtoWithXml(
         createProcessDefinitionXmlWithName("Simple Process")
       );
@@ -1421,9 +1412,9 @@ public class ReportRestServiceIT extends AbstractReportRestServiceIT {
 
   private String findManagementReportId() {
     return elasticSearchIntegrationTestExtension.getAllDocumentsOfIndexAs(
-      SINGLE_PROCESS_REPORT_INDEX_NAME,
-      SingleProcessReportDefinitionRequestDto.class
-    )
+        SINGLE_PROCESS_REPORT_INDEX_NAME,
+        SingleProcessReportDefinitionRequestDto.class
+      )
       .stream()
       .filter(reportDef -> reportDef.getData().isManagementReport())
       .findFirst()

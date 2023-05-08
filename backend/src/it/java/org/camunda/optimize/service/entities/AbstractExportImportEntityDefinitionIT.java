@@ -15,13 +15,13 @@ import org.camunda.optimize.dto.optimize.datasource.EngineDataSourceDto;
 import org.camunda.optimize.dto.optimize.importing.DecisionInstanceDto;
 import org.camunda.optimize.dto.optimize.query.EntityIdResponseDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionRestDto;
-import org.camunda.optimize.dto.optimize.query.dashboard.tile.DashboardTileType;
-import org.camunda.optimize.dto.optimize.query.dashboard.tile.DimensionDto;
-import org.camunda.optimize.dto.optimize.query.dashboard.tile.PositionDto;
-import org.camunda.optimize.dto.optimize.query.dashboard.tile.DashboardReportTileDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.filter.DashboardInstanceEndDateFilterDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.filter.DashboardInstanceStartDateFilterDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.filter.data.DashboardDateFilterDataDto;
+import org.camunda.optimize.dto.optimize.query.dashboard.tile.DashboardReportTileDto;
+import org.camunda.optimize.dto.optimize.query.dashboard.tile.DashboardTileType;
+import org.camunda.optimize.dto.optimize.query.dashboard.tile.DimensionDto;
+import org.camunda.optimize.dto.optimize.query.dashboard.tile.PositionDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.SingleReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDataDto;
@@ -81,15 +81,15 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.dto.optimize.query.report.single.ViewProperty.FREQUENCY;
 import static org.camunda.optimize.dto.optimize.query.report.single.ViewProperty.RAW_DATA;
 import static org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto.SORT_BY_VALUE;
+import static org.camunda.optimize.service.util.ProcessReportDataType.FLOW_NODE_DUR_GROUP_BY_FLOW_NODE;
+import static org.camunda.optimize.service.util.ProcessReportDataType.PROC_INST_FREQ_GROUP_BY_END_DATE;
+import static org.camunda.optimize.service.util.ProcessReportDataType.PROC_INST_FREQ_GROUP_BY_START_DATE;
+import static org.camunda.optimize.service.util.ProcessReportDataType.USER_TASK_DUR_GROUP_BY_USER_TASK;
 import static org.camunda.optimize.service.util.importing.EngineConstants.RESOURCE_TYPE_DECISION_DEFINITION;
 import static org.camunda.optimize.service.util.importing.EngineConstants.RESOURCE_TYPE_PROCESS_DEFINITION;
 import static org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension.DEFAULT_ENGINE_ALIAS;
 import static org.camunda.optimize.test.it.extension.EngineIntegrationExtension.DEFAULT_FIRSTNAME;
 import static org.camunda.optimize.test.it.extension.EngineIntegrationExtension.DEFAULT_LASTNAME;
-import static org.camunda.optimize.service.util.ProcessReportDataType.FLOW_NODE_DUR_GROUP_BY_FLOW_NODE;
-import static org.camunda.optimize.service.util.ProcessReportDataType.PROC_INST_FREQ_GROUP_BY_END_DATE;
-import static org.camunda.optimize.service.util.ProcessReportDataType.PROC_INST_FREQ_GROUP_BY_START_DATE;
-import static org.camunda.optimize.service.util.ProcessReportDataType.USER_TASK_DUR_GROUP_BY_USER_TASK;
 import static org.camunda.optimize.test.util.decision.DecisionFilterUtilHelper.createRollingEvaluationDateFilter;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_DEFINITION_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_DEFINITION_INDEX_NAME;
@@ -354,6 +354,7 @@ public abstract class AbstractExportImportEntityDefinitionIT extends AbstractIT 
     combinedReportDef.setData(combinedReportData);
     combinedReportDef.setId("combinedReportId");
     combinedReportDef.setName("combinedReportName");
+    combinedReportDef.setDescription("combined report description");
     combinedReportDef.setCreated(OffsetDateTime.parse("2019-01-01T00:00:00+00:00"));
     combinedReportDef.setLastModified(OffsetDateTime.parse("2019-01-02T00:00:00+00:00"));
     combinedReportDef.setLastModifier("lastModifierId");
@@ -533,6 +534,7 @@ public abstract class AbstractExportImportEntityDefinitionIT extends AbstractIT 
     final SingleProcessReportDefinitionRequestDto reportDef = new SingleProcessReportDefinitionRequestDto();
     reportDef.setId(VALID_PROCESS_REPORT_ID);
     reportDef.setName("Test Process Report");
+    reportDef.setDescription("Test Process Report Description");
     reportDef.setData(reportData);
     reportDef.setCreated(OffsetDateTime.parse("2019-01-01T00:00:00+00:00"));
     reportDef.setLastModified(OffsetDateTime.parse("2019-01-02T00:00:00+00:00"));
@@ -546,6 +548,7 @@ public abstract class AbstractExportImportEntityDefinitionIT extends AbstractIT 
     final SingleDecisionReportDefinitionRequestDto reportDef = new SingleDecisionReportDefinitionRequestDto();
     reportDef.setId(VALID_DECISION_REPORT_ID);
     reportDef.setName("Test Decision Report");
+    reportDef.setDescription("Test Decision Report Description");
     reportDef.setData(reportData);
     reportDef.setCreated(OffsetDateTime.parse("2019-01-01T00:00:00+00:00"));
     reportDef.setLastModified(OffsetDateTime.parse("2019-01-02T00:00:00+00:00"));
@@ -609,6 +612,7 @@ public abstract class AbstractExportImportEntityDefinitionIT extends AbstractIT 
     return decisionReportData;
   }
 
+  @SuppressWarnings(UNUSED)
   private static Stream<Arguments> reportAndAuthType() {
     return Stream.of(
       Arguments.of(ReportType.PROCESS, SuperUserType.USER),

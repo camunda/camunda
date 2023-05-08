@@ -74,6 +74,21 @@ public class ProcessReportDefinitionImportIT extends AbstractExportImportEntityD
   }
 
   @Test
+  public void importReportWithInvalidDescription() {
+    // given
+    final SingleProcessReportDefinitionExportDto simpleProcessExportDto = createSimpleProcessExportDto();
+    simpleProcessExportDto.setDescription("");
+
+    // when
+    final Response response = importClient.importEntity(simpleProcessExportDto);
+
+    // then
+    assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
+    final ErrorResponseDto invalidDescriptionResponseDto = response.readEntity(ErrorResponseDto.class);
+    assertThat(invalidDescriptionResponseDto.getErrorCode()).isEqualTo("importDescriptionInvalid");
+  }
+
+  @Test
   public void importReport_incorrectIndexVersion() {
     // given a report with report index version different from the current version
     final SingleProcessReportDefinitionExportDto exportedReportDto = createSimpleProcessExportDto();
@@ -84,9 +99,10 @@ public class ProcessReportDefinitionImportIT extends AbstractExportImportEntityD
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
-    assertThat(response.readEntity(ImportedIndexMismatchResponseDto.class).getErrorCode())
-      .isEqualTo("importIndexVersionMismatch");
-    assertThat(response.readEntity(ImportedIndexMismatchResponseDto.class).getMismatchingIndices())
+    final ImportedIndexMismatchResponseDto importedIndexMismatchResponseDto =
+      response.readEntity(ImportedIndexMismatchResponseDto.class);
+    assertThat(importedIndexMismatchResponseDto.getErrorCode()).isEqualTo("importIndexVersionMismatch");
+    assertThat(importedIndexMismatchResponseDto.getMismatchingIndices())
       .hasSize(1)
       .containsExactly(
         ImportIndexMismatchDto.builder()
@@ -107,9 +123,10 @@ public class ProcessReportDefinitionImportIT extends AbstractExportImportEntityD
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
-    assertThat(response.readEntity(DefinitionExceptionResponseDto.class).getErrorCode())
-      .isEqualTo("importDefinitionDoesNotExist");
-    assertThat(response.readEntity(DefinitionExceptionResponseDto.class).getDefinitions())
+    final DefinitionExceptionResponseDto definitionExceptionResponseDto =
+      response.readEntity(DefinitionExceptionResponseDto.class);
+    assertThat(definitionExceptionResponseDto.getErrorCode()).isEqualTo("importDefinitionDoesNotExist");
+    assertThat(definitionExceptionResponseDto.getDefinitions())
       .hasSize(1)
       .containsExactly(
         DefinitionExceptionItemDto.builder()
@@ -132,9 +149,10 @@ public class ProcessReportDefinitionImportIT extends AbstractExportImportEntityD
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
-    assertThat(response.readEntity(DefinitionExceptionResponseDto.class).getErrorCode())
-      .isEqualTo("importDefinitionDoesNotExist");
-    assertThat(response.readEntity(DefinitionExceptionResponseDto.class).getDefinitions())
+    final DefinitionExceptionResponseDto definitionExceptionResponseDto =
+      response.readEntity(DefinitionExceptionResponseDto.class);
+    assertThat(definitionExceptionResponseDto.getErrorCode()).isEqualTo("importDefinitionDoesNotExist");
+    assertThat(definitionExceptionResponseDto.getDefinitions())
       .hasSize(1)
       .containsExactly(
         DefinitionExceptionItemDto.builder()

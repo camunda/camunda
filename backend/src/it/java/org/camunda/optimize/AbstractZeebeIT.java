@@ -148,8 +148,12 @@ public abstract class AbstractZeebeIT extends AbstractIT {
     return Bpmn.readModelFromStream(inputStream);
   }
 
+  protected static boolean isZeebeVersionPre81() {
+    final Pattern zeebeVersionPreSequenceField = Pattern.compile("8.0.*");
+    return zeebeVersionPreSequenceField.matcher(IntegrationTestConfigurationUtil.getZeebeDockerVersion()).matches();
+  }
+
   protected static boolean isZeebeVersionPre82() {
-    // data stores, date objects, link events, escalation events and undefined tasks were introduced with 8.2
     final Pattern zeebeVersionPreSequenceField = Pattern.compile("8.0.*|8.1.*");
     return zeebeVersionPreSequenceField.matcher(IntegrationTestConfigurationUtil.getZeebeDockerVersion()).matches();
   }

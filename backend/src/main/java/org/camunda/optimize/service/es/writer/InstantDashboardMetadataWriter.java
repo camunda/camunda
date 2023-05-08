@@ -12,6 +12,7 @@ import org.camunda.optimize.dto.optimize.query.dashboard.InstantDashboardDataDto
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.elasticsearch.action.DocWriteResponse;
+import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.delete.DeleteRequest;
 import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.index.IndexResponse;
@@ -50,7 +51,7 @@ public class InstantDashboardMetadataWriter {
       IndexResponse indexResponse = esClient.index(request);
 
       if (!indexResponse.getResult().equals(DocWriteResponse.Result.CREATED) &&
-          !indexResponse.getResult().equals(DocWriteResponse.Result.UPDATED)) {
+        !indexResponse.getResult().equals(DocWriteResponse.Result.UPDATED)) {
         String message = "Could not write Instant Preview Dashboard data to Elasticsearch. " +
           "Maybe the connection to Elasticsearch got lost?";
         log.error(message);
@@ -64,27 +65,24 @@ public class InstantDashboardMetadataWriter {
     log.debug("Instant Preview Dashboard information with id [{}] has been created", id);
   }
 
-  public List<String> deleteOutdatedTemplateEntries(List<Long> hashesAllowed) throws IOException {
-
+  public List<String> deleteOutdatedTemplateEntriesAndGetExistingDashboardIds(List<Long> hashesAllowed) throws IOException {
     List<String> dashboardIdsToBeDeleted = new ArrayList<>();
     SearchRequest searchRequest = new SearchRequest(INSTANT_DASHBOARD_INDEX_NAME);
     SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
     BoolQueryBuilder boolQueryBuilder = QueryBuilders.boolQuery()
-    .mustNot(QueryBuilders.termsQuery(InstantDashboardDataDto.Fields.templateHash, hashesAllowed));
+      .mustNot(QueryBuilders.termsQuery(InstantDashboardDataDto.Fields.templateHash, hashesAllowed));
     searchSourceBuilder.query(boolQueryBuilder);
     searchRequest.source(searchSourceBuilder);
 
     SearchResponse searchResponse = esClient.search(searchRequest);
-    searchResponse.getHits().forEach(hit -> {
-      dashboardIdsToBeDeleted.add((String)hit.getSourceAsMap().get(InstantDashboardDataDto.Fields.dashboardId));
-      DeleteRequest deleteRequest = new DeleteRequest(INSTANT_DASHBOARD_INDEX_NAME, hit.getId());
-      try {
-        esClient.delete(deleteRequest);
-      } catch (IOException e) {
-        log.error(String.format("There was an error deleting data from an outdated Instant Preview Dashboard: %s",
-                                hit.getId()), e);
-      }
-    });
+    final BulkRequest bulkRequest = new BulkRequest();
+    log.debug("Deleting [{}] instant dashboard documents by id with bulk request.", searchResponse.getHits().getHits().length);
+    searchResponse.getHits()
+      .forEach(hit -> {
+        dashboardIdsToBeDeleted.add((String) hit.getSourceAsMap().get(InstantDashboardDataDto.Fields.dashboardId));
+        bulkRequest.add(new DeleteRequest(INSTANT_DASHBOARD_INDEX_NAME, hit.getId()));
+      });
+    ElasticsearchWriterUtil.doBulkRequest(esClient, bulkRequest, INSTANT_DASHBOARD_INDEX_NAME, false);
     return dashboardIdsToBeDeleted;
   }
 }

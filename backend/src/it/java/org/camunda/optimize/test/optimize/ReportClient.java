@@ -97,6 +97,10 @@ public class ReportClient {
       .execute();
   }
 
+  public Response updateCombinedReport(final String combinedReportId, final ReportDefinitionDto combinedReportData) {
+    return updateCombinedReport(combinedReportId, combinedReportData, DEFAULT_USERNAME, DEFAULT_PASSWORD);
+  }
+
   public Response updateCombinedReport(final String combinedReportId, final ReportDefinitionDto combinedReportData,
                                        String username, String password) {
     return getRequestExecutor()

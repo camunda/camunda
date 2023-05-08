@@ -28,7 +28,7 @@ public class OptimizeConflictExceptionMapper implements ExceptionMapper<Optimize
 
   @Override
   public Response toResponse(OptimizeConflictException conflictException) {
-    log.warn("Mapping OptimizeConflictException");
+    log.info("Mapping OptimizeConflictException");
 
     return Response
       .status(Response.Status.CONFLICT)

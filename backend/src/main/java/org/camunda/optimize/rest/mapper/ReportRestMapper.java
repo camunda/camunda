@@ -143,14 +143,10 @@ public class ReportRestMapper {
   }
 
   private void resolveOwnerAndModifierNames(ReportDefinitionDto<?> reportDefinitionDto) {
-    // We are assuming that if the owner/last modifier field contains empty spaces, that we already have the
-    // display name (and not the user ID), therefore no transformation necessary, so we're filtering it out
     Optional.ofNullable(reportDefinitionDto.getOwner())
-      .filter(owner -> !owner.contains(" "))
       .flatMap(identityService::getIdentityNameById)
       .ifPresent(reportDefinitionDto::setOwner);
     Optional.ofNullable(reportDefinitionDto.getLastModifier())
-      .filter(lastModifier-> !lastModifier.contains(" "))
       .flatMap(identityService::getIdentityNameById)
       .ifPresent(reportDefinitionDto::setLastModifier);
   }

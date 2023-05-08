@@ -61,11 +61,6 @@ public class ReportRestService {
   private final SessionService sessionService;
   private final ReportRestMapper reportRestMapper;
 
-  /**
-   * Creates a new single process report.
-   *
-   * @return the id of the report
-   */
   @POST
   @Path("/process/single/")
   @Produces(MediaType.APPLICATION_JSON)
@@ -83,11 +78,6 @@ public class ReportRestService {
     );
   }
 
-  /**
-   * Creates a new single decision report.
-   *
-   * @return the id of the report
-   */
   @POST
   @Path("/decision/single/")
   @Produces(MediaType.APPLICATION_JSON)
@@ -101,11 +91,6 @@ public class ReportRestService {
     );
   }
 
-  /**
-   * Creates a new combined process report.
-   *
-   * @return the id of the report
-   */
   @POST
   @Path("/process/combined/")
   @Produces(MediaType.APPLICATION_JSON)
@@ -137,9 +122,6 @@ public class ReportRestService {
     }
   }
 
-  /**
-   * Get a list of all private reports for current user
-   */
   @GET
   @Produces(MediaType.APPLICATION_JSON)
   public List<AuthorizedReportDefinitionResponseDto> getAuthorizedPrivateReports(@Context UriInfo uriInfo,
@@ -152,9 +134,6 @@ public class ReportRestService {
     return reportDefinitions;
   }
 
-  /**
-   * Retrieve the report to the specified id.
-   */
   @GET
   @Path("/{id}")
   @Produces(MediaType.APPLICATION_JSON)
@@ -166,10 +145,6 @@ public class ReportRestService {
     return reportDefinition;
   }
 
-  /**
-   * Retrieves the report definition to the given report id and then
-   * evaluate this report using the supplied filters and return the result.
-   */
   @POST
   @Path("/{id}/evaluate")
   @Consumes(MediaType.APPLICATION_JSON)
@@ -194,11 +169,6 @@ public class ReportRestService {
     );
   }
 
-  /**
-   * Evaluates the given report and returns the result.
-   *
-   * @return A report definition that is also containing the actual result of the report evaluation.
-   */
   @POST
   @Path("/evaluate")
   @Produces(MediaType.APPLICATION_JSON)
@@ -223,9 +193,6 @@ public class ReportRestService {
       reportEvaluationResult, requestContext.getHeaderString(X_OPTIMIZE_CLIENT_LOCALE));
   }
 
-  /**
-   * Updates the given fields of a single process report to the given id.
-   */
   @PUT
   @Path("/process/single/{id}")
   @Produces(MediaType.APPLICATION_JSON)
@@ -245,9 +212,6 @@ public class ReportRestService {
     reportService.updateSingleProcessReport(reportId, updatedReport, userId, force);
   }
 
-  /**
-   * Updates the given fields of a single decision report to the given id.
-   */
   @PUT
   @Path("/decision/single/{id}")
   @Produces(MediaType.APPLICATION_JSON)
@@ -263,9 +227,6 @@ public class ReportRestService {
     reportService.updateSingleDecisionReport(reportId, updatedReport, userId, force);
   }
 
-  /**
-   * Updates the given fields of a combined process report to the given id.
-   */
   @PUT
   @Path("/process/combined/{id}")
   @Produces(MediaType.APPLICATION_JSON)
@@ -281,9 +242,6 @@ public class ReportRestService {
     reportService.updateCombinedProcessReport(userId, reportId, updatedReport);
   }
 
-  /**
-   * Retrieve the conflicting items that would occur on performing a delete.
-   */
   @GET
   @Path("/{id}/delete-conflicts")
   @Produces(MediaType.APPLICATION_JSON)
@@ -293,9 +251,6 @@ public class ReportRestService {
     return reportService.getReportDeleteConflictingItems(userId, reportId);
   }
 
-  /**
-   * Delete the report to the specified id.
-   */
   @DELETE
   @Path("/{id}")
   @Produces(MediaType.APPLICATION_JSON)

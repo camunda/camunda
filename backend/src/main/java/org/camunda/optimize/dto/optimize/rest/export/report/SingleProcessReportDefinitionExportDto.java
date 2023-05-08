@@ -32,6 +32,7 @@ public class SingleProcessReportDefinitionExportDto extends ReportDefinitionExpo
       SINGLE_PROCESS_REPORT,
       SingleProcessReportIndex.VERSION,
       reportDefinition.getName(),
+      reportDefinition.getDescription(),
       reportDefinition.getCollectionId()
     );
     this.data = reportDefinition.getData();

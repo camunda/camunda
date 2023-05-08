@@ -29,8 +29,8 @@
     <camunda.maven.artifacts.version>7.18.0-ee</camunda.maven.artifacts.version>
 
     <!-- We use this version to compile but run IT against containers with zeebe.docker.version -->
-    <zeebe.version>8.2.0</zeebe.version>
-    <identity.version>8.2.0</identity.version>
+    <zeebe.version>8.3.0-alpha1</zeebe.version>
+    <identity.version>8.3.0-alpha1</identity.version>
     <!-- We use this for the Zeebe test container version only -->
     <zeebe.docker.version>${zeebe.version}</zeebe.docker.version>
 
@@ -38,7 +38,7 @@
     <!-- maven plugins -->
     <plugin.version.sonar>3.9.1.2184</plugin.version.sonar>
 
-    <jackson.version>2.14.1</jackson.version>
+    <jackson.version>2.14.2</jackson.version>
     <jsonpath.version>2.8.0</jsonpath.version>
     <elasticsearch.version>7.17.9</elasticsearch.version>
     <!-- The default es 8 version we are going to be testing with-->
@@ -50,8 +50,8 @@
     <!-- https://www.elastic.co/guide/en/elasticsearch/client/java-api/6.5/_using_another_logger.html -->
     <elasticsearch.log4j.version>2.20.0</elasticsearch.log4j.version>
     <guava.version>31.1-jre</guava.version>
-    <spring.boot.version>2.7.10</spring.boot.version>
-    <spring.version>5.3.26</spring.version>
+    <spring.boot.version>2.7.11</spring.boot.version>
+    <spring.version>5.3.27</spring.version>
     <mockito.version>5.2.0</mockito.version>
     <httpclient.version>4.5.14</httpclient.version>
     <junit.jupiter.version>5.9.2</junit.jupiter.version>
@@ -345,7 +345,7 @@
     <dependency>
       <groupId>io.netty</groupId>
       <artifactId>netty-codec-http</artifactId>
-      <version>4.1.90.Final</version>
+      <version>4.1.91.Final</version>
     </dependency>
   </dependencies>
 

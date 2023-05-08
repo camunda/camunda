@@ -25,9 +25,9 @@ public abstract class ReportDefinitionExportDto extends OptimizeEntityExportDto 
   private String collectionId;
 
   protected ReportDefinitionExportDto(final String id, final ExportEntityType exportEntityType,
-                                      final int sourceIndexVersion, final String name,
+                                      final int sourceIndexVersion, final String name, final String description,
                                       final String collectionId) {
-    super(id, exportEntityType, name, sourceIndexVersion);
+    super(id, exportEntityType, name, description, sourceIndexVersion);
     this.collectionId = collectionId;
   }
 

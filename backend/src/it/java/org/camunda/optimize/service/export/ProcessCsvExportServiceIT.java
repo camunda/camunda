@@ -177,7 +177,6 @@ public class ProcessCsvExportServiceIT extends AbstractProcessDefinitionIT {
     assertThat(actualContent).isEqualTo(stringExpected);
   }
 
-  @Disabled("Timezone sensitive IT disabled temporarily to be re enabled with OPT-6833")
   @Test
   public void durationIsSetCorrectlyEvenWhenNotSortingByDurationOnCsvExport() {
     // given
@@ -255,7 +254,6 @@ public class ProcessCsvExportServiceIT extends AbstractProcessDefinitionIT {
     assertThat(getResponseContentAsString(response)).isNotEmpty();
   }
 
-  @Disabled("Timezone sensitive IT disabled temporarily to be re enabled with OPT-6833")
   @MethodSource("getSortingParamsAndExpectedResults")
   @ParameterizedTest
   public void runningAndCompletedProcessInstancesSortByDuration(SortOrder order) {

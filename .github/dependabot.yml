@@ -45,6 +45,50 @@ updates:
     labels:
       - "dependencies"
 
+  # maintenance/3.10
+  - package-ecosystem: "maven"
+    directory: "/"
+    schedule:
+      interval: "daily"
+    open-pull-requests-limit: 10
+    target-branch: "maintenance/3.10"
+    commit-message:
+      prefix: "chore"
+      include: "scope"
+    ignore:
+      - dependency-name: "org.camunda.bpm:camunda-engine"
+      - dependency-name: "com.h2database:h2"
+      - dependency-name: "org.jboss.resteasy:resteasy-jaxrs"
+      - dependency-name: "org.elasticsearch.client:elasticsearch-rest-high-level-client"
+        update-types: [ "version-update:semver-major", "version-update:semver-minor" ]
+    labels:
+      - "dependencies"
+      - "backend"
+
+  - package-ecosystem: "npm"
+    directory: "/client"
+    schedule:
+      interval: "daily"
+    open-pull-requests-limit: 10
+    target-branch: "maintenance/3.10"
+    commit-message:
+      prefix: "chore"
+      include: "scope"
+    labels:
+      - "dependencies"
+      - "frontend"
+
+  - package-ecosystem: "docker"
+    directory: "/"
+    schedule:
+      interval: "daily"
+    open-pull-requests-limit: 10
+    target-branch: "maintenance/3.10"
+    commit-message:
+      prefix: "chore"
+      include: "scope"
+    labels:
+      - "dependencies"
 
   # maintenance/3.9
   - package-ecosystem: "maven"
@@ -62,8 +106,6 @@ updates:
       - dependency-name: "org.jboss.resteasy:resteasy-jaxrs"
       - dependency-name: "org.elasticsearch.client:elasticsearch-rest-high-level-client"
         update-types: [ "version-update:semver-major", "version-update:semver-minor" ]
-      - dependency-name: "*"
-        update-types: ["version-update:semver-major", "version-update:semver-minor"]
     labels:
       - "dependencies"
       - "backend"
@@ -77,9 +119,6 @@ updates:
     commit-message:
       prefix: "chore"
       include: "scope"
-    ignore:
-      - dependency-name: "*"
-        update-types: [ "version-update:semver-major", "version-update:semver-minor" ]
     labels:
       - "dependencies"
       - "frontend"
@@ -96,6 +135,50 @@ updates:
     labels:
       - "dependencies"
 
+  # maintenance/3.8
+  - package-ecosystem: "maven"
+    directory: "/"
+    schedule:
+      interval: "daily"
+    open-pull-requests-limit: 10
+    target-branch: "maintenance/3.8"
+    commit-message:
+      prefix: "chore"
+      include: "scope"
+    ignore:
+      - dependency-name: "org.camunda.bpm:camunda-engine"
+      - dependency-name: "com.h2database:h2"
+      - dependency-name: "org.jboss.resteasy:resteasy-jaxrs"
+      - dependency-name: "org.elasticsearch.client:elasticsearch-rest-high-level-client"
+        update-types: [ "version-update:semver-major", "version-update:semver-minor" ]
+    labels:
+      - "dependencies"
+      - "backend"
+
+  - package-ecosystem: "npm"
+    directory: "/client"
+    schedule:
+      interval: "daily"
+    open-pull-requests-limit: 10
+    target-branch: "maintenance/3.8"
+    commit-message:
+      prefix: "chore"
+      include: "scope"
+    labels:
+      - "dependencies"
+      - "frontend"
+
+  - package-ecosystem: "docker"
+    directory: "/"
+    schedule:
+      interval: "daily"
+    open-pull-requests-limit: 10
+    target-branch: "maintenance/3.8"
+    commit-message:
+      prefix: "chore"
+      include: "scope"
+    labels:
+      - "dependencies"
 
   # maintenance/3.7
   - package-ecosystem: "maven"
@@ -113,8 +196,6 @@ updates:
       - dependency-name: "org.jboss.resteasy:resteasy-jaxrs"
       - dependency-name: "org.elasticsearch.client:elasticsearch-rest-high-level-client"
         update-types: [ "version-update:semver-major", "version-update:semver-minor" ]
-      - dependency-name: "*"
-        update-types: ["version-update:semver-major", "version-update:semver-minor"]
     labels:
       - "dependencies"
       - "backend"
@@ -128,9 +209,6 @@ updates:
     commit-message:
       prefix: "chore"
       include: "scope"
-    ignore:
-      - dependency-name: "*"
-        update-types: [ "version-update:semver-major", "version-update:semver-minor" ]
     labels:
       - "dependencies"
       - "frontend"

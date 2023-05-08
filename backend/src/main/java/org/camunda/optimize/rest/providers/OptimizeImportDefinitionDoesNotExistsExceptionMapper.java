@@ -30,7 +30,7 @@ public class OptimizeImportDefinitionDoesNotExistsExceptionMapper
 
   @Override
   public Response toResponse(final OptimizeImportDefinitionDoesNotExistException exception) {
-    log.warn("Mapping OptimizeImportDefinitionDoesNotExistException");
+    log.info("Mapping OptimizeImportDefinitionDoesNotExistException");
 
     return Response
       .status(Response.Status.BAD_REQUEST)

@@ -649,8 +649,9 @@ public class ReportEvaluationRestServiceIT extends AbstractReportRestServiceIT {
 
     // then
     assertThat(result.getCurrentUserRole()).isEqualTo(RoleType.EDITOR);
-    assertThat(result.getReportDefinition().getOwner()).isEqualTo(reportDefinitionDto.getOwner());
-    assertThat(result.getReportDefinition().getLastModifier()).isEqualTo(reportDefinitionDto.getLastModifier());
+    // on response, unsaved reports have no owner or last modifier
+    assertThat(result.getReportDefinition().getOwner()).isNull();
+    assertThat(result.getReportDefinition().getLastModifier()).isNull();
   }
 
   @ParameterizedTest
@@ -826,7 +827,7 @@ public class ReportEvaluationRestServiceIT extends AbstractReportRestServiceIT {
           .build()),
       Stream.of(ProcessReportDataType.values())
         .filter(type -> !ProcessReportDataType.RAW_DATA.equals(type))
-        .map(type -> createProcessReportData(type))
+        .map(ReportEvaluationRestServiceIT::createProcessReportData)
     );
   }
 
@@ -873,7 +874,7 @@ public class ReportEvaluationRestServiceIT extends AbstractReportRestServiceIT {
         .getObjectMapper()
         .readValue(
           jsonString,
-          new TypeReference<AuthorizedProcessReportEvaluationResponseDto<List<RawDataInstanceDto>>>() {
+          new TypeReference<>() {
           }
         );
     } catch (IOException e) {
@@ -1025,7 +1026,7 @@ public class ReportEvaluationRestServiceIT extends AbstractReportRestServiceIT {
   private String toXml(final BpmnModelInstance processModel) {
     final ByteArrayOutputStream xmlOutput = new ByteArrayOutputStream();
     Bpmn.writeModelToStream(xmlOutput, processModel);
-    return new String(xmlOutput.toByteArray(), StandardCharsets.UTF_8);
+    return xmlOutput.toString(StandardCharsets.UTF_8);
   }
 
   private List<ProcessFilterDto<?>> runningInstancesOnlyFilter() {
