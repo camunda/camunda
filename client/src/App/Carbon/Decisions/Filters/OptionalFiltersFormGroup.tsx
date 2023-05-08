@@ -23,8 +23,8 @@ import {
 } from 'modules/validators';
 import {mergeValidators} from 'modules/utils/validators/mergeValidators';
 import {tracking} from 'modules/tracking';
-import {dateRangePopoverStore} from 'modules/stores/dateRangePopover';
 import {OptionalFiltersMenu} from 'modules/components/Carbon/OptionalFilters';
+import {DateRangeField} from 'modules/components/Carbon/DateRangeField';
 
 type OptionalFilter =
   | 'decisionInstanceIds'
@@ -113,6 +113,9 @@ const OptionalFiltersFormGroup: React.FC = observer(() => {
     });
   }, [location.search]);
 
+  const [isDateRangeModalOpen, setIsDateRangeModalOpen] =
+    useState<boolean>(false);
+
   return (
     <div>
       <OptionalFiltersMenu<OptionalFilter>
@@ -131,14 +134,29 @@ const OptionalFiltersFormGroup: React.FC = observer(() => {
           });
           if (filter === 'evaluationDateRange') {
             setTimeout(() => {
-              dateRangePopoverStore.setVisiblePopover(filter);
+              setIsDateRangeModalOpen(true);
             });
           }
         }}
       />
       <div>
         {visibleFilters.map((filter) => (
-          <div key={filter}>{filter}</div>
+          <div key={filter}>
+            {filter === 'evaluationDateRange' ? (
+              <DateRangeField
+                isModalOpen={isDateRangeModalOpen}
+                onModalClose={() => setIsDateRangeModalOpen(false)}
+                onClick={() => setIsDateRangeModalOpen(true)}
+                filterName={filter}
+                popoverTitle="Filter decisions by evaluation date"
+                label={OPTIONAL_FILTER_FIELDS[filter].label}
+                fromDateTimeKey="evaluationDateAfter"
+                toDateTimeKey="evaluationDateBefore"
+              />
+            ) : (
+              <div key={filter}>{filter}</div>
+            )}
+          </div>
         ))}
       </div>
     </div>
