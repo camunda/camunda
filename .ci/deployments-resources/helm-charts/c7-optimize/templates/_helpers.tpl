@@ -49,15 +49,15 @@ camunda.cloud/created-by: "{{ .Values.git.repoUrl }}/blob/{{ .Values.git.branch 
 # This also was the solution after trying to pass the env var from the command line and with the different special
 # Characters that we have here, it was hard to do it using bash.
 
-{{- define "javaOpts" }}
+{{- define "javaOpts" -}}
 -Xms1g -Xmx1g -XX:MaxMetaspaceSize=256m
 {{- end -}}
 
 
-{{- define "postgresUrl" }}
+{{- define "postgresUrl" -}}
 stage-postgres.optimize:5432
 {{- end -}}
 
-{{- define "elasticsearchUrl" }}
+{{- define "elasticsearchUrl" -}}
 localhost:9300
 {{- end -}}
