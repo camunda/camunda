@@ -72,18 +72,18 @@ public class BrokerAdminServiceClusterTest {
     // then
     followerStatus.forEach(
         partitionStatus -> {
-          assertThat(partitionStatus.getRole()).isEqualTo(Role.FOLLOWER);
-          assertThat(partitionStatus.getProcessedPosition()).isNull();
-          assertThat(partitionStatus.getSnapshotId()).isNull();
-          assertThat(partitionStatus.getProcessedPositionInSnapshot()).isNull();
-          assertThat(partitionStatus.getStreamProcessorPhase()).isNull();
+          assertThat(partitionStatus.role()).isEqualTo(Role.FOLLOWER);
+          assertThat(partitionStatus.processedPosition()).isEqualTo(-1L);
+          assertThat(partitionStatus.snapshotId()).isNull();
+          assertThat(partitionStatus.processedPositionInSnapshot()).isNull();
+          assertThat(partitionStatus.streamProcessorPhase()).isEqualTo(Phase.REPLAY);
         });
 
-    assertThat(leaderStatus.getRole()).isEqualTo(Role.LEADER);
-    assertThat(leaderStatus.getProcessedPosition()).isEqualTo(-1);
-    assertThat(leaderStatus.getSnapshotId()).isNull();
-    assertThat(leaderStatus.getProcessedPositionInSnapshot()).isNull();
-    assertThat(leaderStatus.getStreamProcessorPhase()).isEqualTo(Phase.PROCESSING);
+    assertThat(leaderStatus.role()).isEqualTo(Role.LEADER);
+    assertThat(leaderStatus.processedPosition()).isEqualTo(-1);
+    assertThat(leaderStatus.snapshotId()).isNull();
+    assertThat(leaderStatus.processedPositionInSnapshot()).isNull();
+    assertThat(leaderStatus.streamProcessorPhase()).isEqualTo(Phase.PROCESSING);
   }
 
   @Test
@@ -129,7 +129,7 @@ public class BrokerAdminServiceClusterTest {
         .values()
         .forEach(
             status ->
-                assertThat(status.getProcessedPositionInSnapshot())
+                assertThat(status.processedPositionInSnapshot())
                     .describedAs(status.toString())
                     .isNotNull());
   }
@@ -143,6 +143,6 @@ public class BrokerAdminServiceClusterTest {
                     .getPartitionStatus()
                     .forEach(
                         (p, status) ->
-                            assertThat(status.getStreamProcessorPhase()).isEqualTo(expected)));
+                            assertThat(status.streamProcessorPhase()).isEqualTo(expected)));
   }
 }

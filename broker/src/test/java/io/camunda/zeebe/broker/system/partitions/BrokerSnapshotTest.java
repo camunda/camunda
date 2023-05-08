@@ -97,9 +97,9 @@ public class BrokerSnapshotTest {
                         adminService
                             .getPartitionStatus()
                             .get(partitionId)
-                            .getProcessedPositionInSnapshot())
+                            .processedPositionInSnapshot())
                     .isNotNull());
     final PartitionStatus partitionStatus = brokerAdminService.getPartitionStatus().get(1);
-    return FileBasedSnapshotId.ofFileName(partitionStatus.getSnapshotId()).get();
+    return FileBasedSnapshotId.ofFileName(partitionStatus.snapshotId()).get();
   }
 }

@@ -109,8 +109,7 @@ final class ClusteredSnapshotTest {
         .until(
             () -> {
               final var partitionStatus = adminService.getPartitionStatus().get(1);
-              return partitionStatus.getExportedPosition()
-                  >= partitionStatus.getProcessedPosition();
+              return partitionStatus.exportedPosition() >= partitionStatus.processedPosition();
             });
 
     snapshotTrigger.accept(clusteringRule);

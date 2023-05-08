@@ -92,7 +92,7 @@ public class DiskSpaceMonitoringFailOverTest {
                     .getBrokerAdminService()
                     .getPartitionStatus()
                     .get(1)
-                    .getStreamProcessorPhase(),
+                    .streamProcessorPhase(),
             p -> p == Phase.PAUSED);
   }
 

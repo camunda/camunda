@@ -11,102 +11,11 @@ import io.atomix.raft.RaftServer.Role;
 import io.camunda.zeebe.broker.exporter.stream.ExporterPhase;
 import io.camunda.zeebe.stream.impl.StreamProcessor.Phase;
 
-public final class PartitionStatus {
-
-  private final Role role;
-  private final String snapshotId;
-  private final Long processedPosition;
-  private final Long processedPositionInSnapshot;
-  private final Phase streamProcessorPhase;
-  private final ExporterPhase exporterPhase;
-  private final Long exportedPosition;
-
-  private PartitionStatus(
-      final Role role,
-      final Long processedPosition,
-      final String snapshotId,
-      final Long processedPositionInSnapshot,
-      final Phase streamProcessorPhase,
-      final ExporterPhase exporterPhase,
-      final Long exportedPosition) {
-    this.role = role;
-    this.processedPosition = processedPosition;
-    this.snapshotId = snapshotId;
-    this.processedPositionInSnapshot = processedPositionInSnapshot;
-    this.streamProcessorPhase = streamProcessorPhase;
-    this.exporterPhase = exporterPhase;
-    this.exportedPosition = exportedPosition;
-  }
-
-  public static PartitionStatus ofLeader(
-      final Long processedPosition,
-      final String snapshotId,
-      final Long processedPositionInSnapshot,
-      final Phase streamProcessorPhase,
-      final ExporterPhase exporterPhase,
-      final long exportedPosition) {
-    return new PartitionStatus(
-        Role.LEADER,
-        processedPosition,
-        snapshotId,
-        processedPositionInSnapshot,
-        streamProcessorPhase,
-        exporterPhase,
-        exportedPosition);
-  }
-
-  public static PartitionStatus ofFollower(
-      final String snapshotId, final Long processedPositionInSnapshot) {
-    return new PartitionStatus(
-        Role.FOLLOWER, null, snapshotId, processedPositionInSnapshot, null, null, null);
-  }
-
-  public Role getRole() {
-    return role;
-  }
-
-  public Long getProcessedPosition() {
-    return processedPosition;
-  }
-
-  public String getSnapshotId() {
-    return snapshotId;
-  }
-
-  public Long getProcessedPositionInSnapshot() {
-    return processedPositionInSnapshot;
-  }
-
-  public Phase getStreamProcessorPhase() {
-    return streamProcessorPhase;
-  }
-
-  public ExporterPhase getExporterPhase() {
-    return exporterPhase;
-  }
-
-  public Long getExportedPosition() {
-    return exportedPosition;
-  }
-
-  @Override
-  public String toString() {
-    return "PartitionStatus{"
-        + "role="
-        + role
-        + ", snapshotId='"
-        + snapshotId
-        + '\''
-        + ", processedPosition="
-        + processedPosition
-        + ", processedPositionInSnapshot="
-        + processedPositionInSnapshot
-        + ", streamProcessorPhase="
-        + streamProcessorPhase
-        + ", exporterPhase="
-        + exporterPhase
-        + ", exportedPosition="
-        + exportedPosition
-        + '}';
-  }
-}
+public record PartitionStatus(
+    Role role,
+    Long processedPosition,
+    String snapshotId,
+    Long processedPositionInSnapshot,
+    Phase streamProcessorPhase,
+    ExporterPhase exporterPhase,
+    Long exportedPosition) {}

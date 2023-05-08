@@ -206,7 +206,7 @@ public class BrokerAdminServiceTest {
                     .getPartitionStatus()
                     .forEach(
                         (p, status) ->
-                            assertThat(status.getStreamProcessorPhase()).isEqualTo(expected)));
+                            assertThat(status.streamProcessorPhase()).isEqualTo(expected)));
   }
 
   private void assertExporterPhase(
@@ -217,7 +217,7 @@ public class BrokerAdminServiceTest {
                 brokerAdminService
                     .getPartitionStatus()
                     .forEach(
-                        (p, status) -> assertThat(status.getExporterPhase()).isEqualTo(expected)));
+                        (p, status) -> assertThat(status.exporterPhase()).isEqualTo(expected)));
   }
 
   private void assertProcessedPositionIsInSnapshot(final BrokerAdminService brokerAdminService) {
@@ -228,8 +228,8 @@ public class BrokerAdminServiceTest {
                     .getPartitionStatus()
                     .forEach(
                         (p, status) ->
-                            assertThat(status.getProcessedPosition())
-                                .isEqualTo(status.getProcessedPositionInSnapshot())));
+                            assertThat(status.processedPosition())
+                                .isEqualTo(status.processedPositionInSnapshot())));
   }
 
   private void waitForSnapshotAtBroker(final BrokerAdminService adminService) {
@@ -240,6 +240,6 @@ public class BrokerAdminServiceTest {
                     .getPartitionStatus()
                     .values()
                     .forEach(
-                        status -> assertThat(status.getProcessedPositionInSnapshot()).isNotNull()));
+                        status -> assertThat(status.processedPositionInSnapshot()).isNotNull()));
   }
 }
