@@ -180,7 +180,7 @@ type userAgentRT struct {
 }
 
 func (rt *userAgentRT) RoundTrip(req *http.Request) (*http.Response, error) {
-	req.Header.Add("User-Agent", "zeebe-client-go/"+getVersion())
+	req.Header.Add("User-Agent", "zeebe-client-go/"+Version)
 	return rt.r.RoundTrip(req)
 }
 

@@ -190,7 +190,7 @@ func (s *clientTestSuite) TestDefaultUserAgent() {
 
 	// then
 	s.Require().Len(userAgent, 1)
-	s.Require().Contains(userAgent[0], "zeebe-client-go/"+getVersion())
+	s.Require().Contains(userAgent[0], "zeebe-client-go/"+Version)
 }
 
 func (s *clientTestSuite) TestSpecificUserAgent() {
