@@ -40,7 +40,7 @@ To run these locally you can follow the steps below:
 
 #### Updating screenshots
 
-If you made feature changes and want to purposely wants to update the UI baseline you can follow the steps before, but on step 4 you should run `yarn playwright --update-snapshots`. Beware the this will update all screenshots, so make sure you only have the changes you want to update in your branch.
+If you made feature changes and want to purposely wants to update the UI baseline you can follow the steps before, but on step 4 you should run `yarn playwright visual --update-snapshots`. Beware the this will update all screenshots, so make sure you only have the changes you want to update in your branch.
 
 #### Inspecting failures in the CI
 
