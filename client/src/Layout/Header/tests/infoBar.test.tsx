@@ -56,15 +56,13 @@ describe('Info bar', () => {
       '_blank',
     );
 
-    await user.click(screen.getByRole('button', {name: 'Camunda Academy'}));
+    await user.click(screen.getByText('Camunda Academy'));
     expect(mockOpenFn).toHaveBeenLastCalledWith(
       'https://academy.camunda.com/',
       '_blank',
     );
 
-    await user.click(
-      screen.getByRole('button', {name: 'Slack Community Channel'}),
-    );
+    await user.click(screen.getByText('Slack Community Channel'));
     expect(mockOpenFn).toHaveBeenLastCalledWith(
       'https://camunda.com/slack',
       '_blank',

@@ -180,6 +180,8 @@ test.describe('tasks page', () => {
       waitUntil: 'networkidle',
     });
 
+    expect(page.getByText('No tasks found')).toBeVisible();
+
     await expect(page).toHaveScreenshot();
   });
 
@@ -230,6 +232,8 @@ test.describe('tasks page', () => {
       waitUntil: 'networkidle',
     });
 
+    expect(page.getByText('Welcome to Tasklist')).toBeVisible();
+
     await expect(page).toHaveScreenshot();
   });
 
@@ -269,6 +273,8 @@ test.describe('tasks page', () => {
     await page.goto('/?filter=assigned-to-me&sortBy=follow-up', {
       waitUntil: 'networkidle',
     });
+
+    expect(page.getByText('Welcome to Tasklist')).toBeVisible();
 
     await expect(page).toHaveScreenshot();
   });
@@ -627,6 +633,8 @@ test.describe('tasks page', () => {
       waitUntil: 'networkidle',
     });
 
+    expect(page.getByText('I am a textfield*')).toBeVisible();
+
     await expect(page).toHaveScreenshot();
   });
 
@@ -660,7 +668,7 @@ test.describe('tasks page', () => {
       waitUntil: 'networkidle',
     });
 
-    expect(page.getByText('I am a texfield*')).toBeVisible();
+    expect(page.getByText('I am a textfield*')).toBeVisible();
 
     await expect(page).toHaveScreenshot();
   });

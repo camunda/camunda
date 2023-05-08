@@ -9,11 +9,11 @@
       }
     },
     {
-      "label": "I am a texfield",
+      "label": "I am a textfield",
       "type": "textfield",
       "id": "Field_1l0t1m5",
       "key": "textfield",
-      "description": "I am a texfield description",
+      "description": "I am a textfield description",
       "validate": {
         "required": true
       },
@@ -24,11 +24,11 @@
       }
     },
     {
-      "label": "I am a disabled texfield",
+      "label": "I am a disabled textfield",
       "type": "textfield",
       "id": "Field_1r9b6p2",
       "key": "disabled_textfield",
-      "description": "I am a disabled texfield description",
+      "description": "I am a disabled textfield description",
       "disabled": true,
       "defaultValue": "value",
       "layout": {

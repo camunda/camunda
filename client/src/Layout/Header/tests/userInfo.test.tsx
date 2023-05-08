@@ -100,11 +100,7 @@ describe('User info', () => {
 
     expect(await screen.findByText('Demo User')).toBeInTheDocument();
 
-    await user.click(
-      await screen.findByRole('button', {
-        name: /log out/i,
-      }),
-    );
+    await user.click(screen.getByText('Log out'));
 
     expect(logoutSpy).toHaveBeenCalled();
     logoutSpy.mockRestore();
@@ -133,19 +129,19 @@ describe('User info', () => {
 
     expect(await screen.findByText('Demo User')).toBeInTheDocument();
 
-    await user.click(screen.getByRole('button', {name: 'Terms of use'}));
+    await user.click(screen.getByText('Terms of use'));
     expect(mockOpenFn).toHaveBeenLastCalledWith(
       'https://camunda.com/legal/terms/camunda-platform/camunda-platform-8-saas-trial/',
       '_blank',
     );
 
-    await user.click(screen.getByRole('button', {name: 'Privacy policy'}));
+    await user.click(screen.getByText('Privacy policy'));
     expect(mockOpenFn).toHaveBeenLastCalledWith(
       'https://camunda.com/legal/privacy/',
       '_blank',
     );
 
-    await user.click(screen.getByRole('button', {name: 'Imprint'}));
+    await user.click(screen.getByText('Imprint'));
     expect(mockOpenFn).toHaveBeenLastCalledWith(
       'https://camunda.com/legal/imprint/',
       '_blank',
@@ -190,7 +186,7 @@ describe('User info', () => {
 
     expect(await screen.findByText('Demo User')).toBeInTheDocument();
 
-    await user.click(screen.getByRole('button', {name: 'Cookie preferences'}));
+    await user.click(screen.getByText('Cookie preferences'));
 
     expect(mockShowDrawer).toHaveBeenLastCalledWith(
       'osano-cm-dom-info-dialog-open',
