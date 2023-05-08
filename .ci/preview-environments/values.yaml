@@ -14,7 +14,7 @@ ingress:
 
 git:
   # Defines the branch name to use for annotating resources
-  branch: main
+  branch: master
   # Defines the repository URL to use for annotating resources
   repoUrl: https://github.com/camunda/tasklist
 
