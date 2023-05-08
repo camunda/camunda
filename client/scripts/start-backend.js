@@ -314,7 +314,7 @@ function setVersionInfo() {
         const properties = data.project.properties;
         elasticSearchVersion = properties['elasticsearch.version'];
         cambpmVersion = properties['camunda.engine.version'];
-        zeebeVersion = properties['c8.platform.version'];
+        zeebeVersion = properties['zeebe.version'];
         resolve();
       });
     });

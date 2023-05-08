@@ -79,12 +79,12 @@
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>zeebe-protocol</artifactId>
-      <version>${c8.platform.version}</version>
+      <version>${zeebe.version}</version>
     </dependency>
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>zeebe-client-java</artifactId>
-      <version>${c8.platform.version}</version>
+      <version>${zeebe.version}</version>
       <scope>test</scope>
     </dependency>
 
@@ -92,7 +92,7 @@
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>identity-sdk</artifactId>
-      <version>${c8.platform.version}</version>
+      <version>${identity.version}</version>
     </dependency>
 
     <!-- Javax XML -->

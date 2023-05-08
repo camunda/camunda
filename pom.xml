@@ -29,9 +29,10 @@
     <camunda.maven.artifacts.version>7.18.0-ee</camunda.maven.artifacts.version>
 
     <!-- We use this version to compile but run IT against containers with zeebe.docker.version -->
-    <c8.platform.version>8.3.0-alpha1</c8.platform.version>
+    <zeebe.version>8.2.3</zeebe.version>
+    <identity.version>8.2.3</identity.version>
     <!-- We use this for the Zeebe test container version only -->
-    <zeebe.docker.version>${c8.platform.version}</zeebe.docker.version>
+    <zeebe.docker.version>${zeebe.version}</zeebe.docker.version>
 
     <surefire-plugin.version>3.1.0</surefire-plugin.version>
     <!-- maven plugins -->
