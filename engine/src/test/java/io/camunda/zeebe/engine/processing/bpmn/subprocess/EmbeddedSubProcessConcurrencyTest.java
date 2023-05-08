@@ -18,6 +18,7 @@ import io.camunda.zeebe.model.bpmn.builder.EventSubProcessBuilder;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageRecord;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.MessageIntent;
+import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessEventIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
@@ -95,10 +96,15 @@ public class EmbeddedSubProcessConcurrencyTest {
             .withVariable("correlationKey", "correlationKey")
             .create();
 
-    RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
-        .withProcessInstanceKey(processInstanceKey)
-        .withElementId("task")
-        .await();
+    assertThat(
+            RecordingExporter.messageSubscriptionRecords(MessageSubscriptionIntent.CREATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .limit(2))
+        .describedAs(
+            "The 2 message subscriptions must be created before we publish the "
+                + "messages. As the messages have a TTL of 0 seconds")
+        .describedAs("")
+        .hasSize(2);
 
     // when
     // We need to make sure no records are written in between the publish commands. This could
