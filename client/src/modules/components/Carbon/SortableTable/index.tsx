@@ -22,6 +22,8 @@ import {
   DataTableHeader,
   DataTableRow,
   Loading,
+  TableSelectAll,
+  TableSelectRow,
 } from '@carbon/react';
 import {ColumnHeader} from './ColumnHeader';
 import {InfiniteScroller} from 'modules/components/InfiniteScroller';
@@ -36,9 +38,15 @@ type HeaderColumn = {
 
 type Props = {
   state: 'skeleton' | 'loading' | 'error' | 'empty' | 'content';
+  isSelectable?: boolean;
   headerColumns: HeaderColumn[];
   rows: DataTableRow[];
   emptyMessage: {message: string; additionalInfo?: string};
+  onSelectAll?: () => void;
+  onSelect?: (rowId: string) => void;
+  checkIsRowSelected?: (rowId: string) => boolean; //must be a function because it depends on a store update: https://mobx.js.org/react-optimizations.html#function-props-
+  checkIsAllSelected?: () => boolean; //must be a function because it depends on a store update: https://mobx.js.org/react-optimizations.html#function-props-
+  checkIsIndeterminate?: () => boolean; //must be a function because it depends on a store update: https://mobx.js.org/react-optimizations.html#function-props-
   onSort?: React.ComponentProps<typeof ColumnHeader>['onSort'];
 } & Pick<
   React.ComponentProps<typeof InfiniteScroller>,
@@ -47,9 +55,15 @@ type Props = {
 
 const SortableTable: React.FC<Props> = ({
   state,
+  isSelectable,
   headerColumns,
   rows,
   emptyMessage,
+  onSelectAll,
+  onSelect,
+  checkIsIndeterminate,
+  checkIsAllSelected,
+  checkIsRowSelected,
   onVerticalScrollStartReach,
   onVerticalScrollEndReach,
 }) => {
@@ -97,6 +111,7 @@ const SortableTable: React.FC<Props> = ({
           headers,
           getHeaderProps,
           getRowProps,
+          getSelectionProps,
           getTableProps,
         }) => (
           <TableContainer>
@@ -104,6 +119,17 @@ const SortableTable: React.FC<Props> = ({
             <Table {...getTableProps()} isSortable>
               <TableHead>
                 <TableRow>
+                  {isSelectable && (
+                    <TableSelectAll
+                      {...getSelectionProps()}
+                      onSelect={(event) => {
+                        getSelectionProps().onSelect(event);
+                        onSelectAll?.();
+                      }}
+                      checked={checkIsAllSelected?.() ?? false}
+                      indeterminate={checkIsIndeterminate?.() ?? false}
+                    />
+                  )}
                   {headers.map((header) => {
                     return (
                       <ColumnHeader
@@ -127,8 +153,23 @@ const SortableTable: React.FC<Props> = ({
                 >
                   <tbody aria-live="polite">
                     {rows.map((row) => {
+                      const isSelected = checkIsRowSelected?.(row.id) ?? false;
+
                       return (
-                        <TableRow {...getRowProps({row})}>
+                        <TableRow
+                          {...getRowProps({row})}
+                          isSelected={isSelected}
+                        >
+                          {isSelectable && (
+                            <TableSelectRow
+                              {...getSelectionProps({row})}
+                              checked={isSelected}
+                              onSelect={(event) => {
+                                getSelectionProps({row}).onSelect(event);
+                                onSelect?.(row.id);
+                              }}
+                            />
+                          )}
                           {row.cells.map((cell) => (
                             <TableCell key={cell.id}>{cell.value}</TableCell>
                           ))}

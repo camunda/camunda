@@ -20,6 +20,9 @@ import {
   processInstancesStore,
 } from 'modules/stores/processInstances';
 import {getProcessName} from 'modules/utils/instance';
+import {processInstancesSelectionStore} from 'modules/stores/processInstancesSelection';
+import {authenticationStore} from 'modules/stores/authentication';
+import {Toolbar} from './Toolbar';
 
 const ROW_HEIGHT = 34;
 
@@ -63,8 +66,33 @@ const InstancesTable: React.FC = observer(() => {
         title="Process Instances"
         count={filteredProcessInstancesCount}
       />
+
+      <Toolbar
+        selectedInstancesCount={processInstancesSelectionStore.getSelectedProcessInstanceCount()}
+      />
       <SortableTable
         state={getTableState()}
+        isSelectable={
+          authenticationStore.hasPermission(['write']) ? true : false
+        }
+        onSelectAll={
+          processInstancesSelectionStore.selectAllProcessInstancesCarbon
+        }
+        onSelect={(rowId) => {
+          return processInstancesSelectionStore.selectProcessInstanceCarbon(
+            rowId
+          );
+        }}
+        checkIsAllSelected={() =>
+          processInstancesSelectionStore.state.isAllChecked
+        }
+        checkIsIndeterminate={() =>
+          !processInstancesSelectionStore.state.isAllChecked &&
+          processInstancesSelectionStore.getSelectedProcessInstanceCount() > 0
+        }
+        checkIsRowSelected={(rowId) => {
+          return processInstancesSelectionStore.isProcessInstanceChecked(rowId);
+        }}
         emptyMessage={getEmptyListMessage()}
         onVerticalScrollStartReach={async (scrollDown) => {
           if (processInstancesStore.shouldFetchPreviousInstances() === false) {

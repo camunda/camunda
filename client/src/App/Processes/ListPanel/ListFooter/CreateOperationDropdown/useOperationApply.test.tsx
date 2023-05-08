@@ -12,7 +12,6 @@ import {processInstancesSelectionStore} from 'modules/stores/processInstancesSel
 import {operationsStore} from 'modules/stores/operations';
 import {processInstancesStore} from 'modules/stores/processInstances';
 import {processesStore} from 'modules/stores/processes';
-import {INSTANCE_SELECTION_MODE} from 'modules/constants';
 import {mockData} from './useOperationApply.setup';
 import {
   groupedProcessesMock,
@@ -150,7 +149,7 @@ describe('useOperationApply', () => {
       expect(processInstancesStore.state.status).toBe('fetched')
     );
 
-    processInstancesSelectionStore.setMode(INSTANCE_SELECTION_MODE.EXCLUDE);
+    processInstancesSelectionStore.setMode('EXCLUDE');
     processInstancesSelectionStore.selectProcessInstance('1');
 
     expect(operationsStore.state.operations).toEqual([]);
@@ -200,7 +199,7 @@ describe('useOperationApply', () => {
 
   it('should poll all visible instances', async () => {
     const {expectedBody, ...context} = mockData.setFilterSelectAll;
-    processInstancesSelectionStore.setMode(INSTANCE_SELECTION_MODE.ALL);
+    processInstancesSelectionStore.setMode('ALL');
 
     jest.useFakeTimers();
     processInstancesStore.init();
