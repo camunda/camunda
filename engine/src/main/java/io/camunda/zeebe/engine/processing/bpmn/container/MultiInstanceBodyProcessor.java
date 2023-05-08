@@ -274,7 +274,7 @@ public final class MultiInstanceBodyProcessor
     if (loopCharacteristics.isSequential()) {
       createInnerInstance(element, activated);
     } else {
-      inputCollection.forEach(item -> createInnerInstance(element, activated));
+      stateTransitionBehavior.activateChildInstancesInBatches(context, inputCollection.size());
     }
   }
 
