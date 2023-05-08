@@ -96,19 +96,11 @@ jobs:
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
-      - name: Additional Go tooling setup
-        run: |
-          go install github.com/go-bindata/go-bindata/...@v3
-          if ! command -v go-bindata > /dev/null 2>&1; then
-            echo "Failed to install go-bindata, go-bindata is not available on the path"
-            exit 1
-          fi
 
       - name: Set and commit Go Client version
         run: |
           pushd clients/go/internal/embedded
           echo "${RELEASE_VERSION}" > data/VERSION
-          go-bindata -pkg embedded -o embedded.go -prefix data data/
 
           git commit -am "build(project): update go embedded version data"
       - name: Build Go Client & Zeebe
@@ -202,7 +194,6 @@ jobs:
           pushd "clients/go/internal/embedded" || exit $?
 
           echo "${DEVELOPMENT_VERSION}" > data/VERSION
-          go-bindata -pkg embedded -o embedded.go -prefix data/ data/
 
           git commit -am "build(project): prepare next development version (Go client)"
       - name: Push Changes to Release branch
