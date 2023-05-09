@@ -49,6 +49,7 @@ type Props = {
   checkIsAllSelected?: () => boolean; //must be a function because it depends on a store update: https://mobx.js.org/react-optimizations.html#function-props-
   checkIsIndeterminate?: () => boolean; //must be a function because it depends on a store update: https://mobx.js.org/react-optimizations.html#function-props-
   onSort?: React.ComponentProps<typeof ColumnHeader>['onSort'];
+  columnsWithNoContentPadding?: string[];
 } & Pick<
   React.ComponentProps<typeof InfiniteScroller>,
   'onVerticalScrollStartReach' | 'onVerticalScrollEndReach'
@@ -67,6 +68,7 @@ const SortableTable: React.FC<Props> = ({
   checkIsRowSelected,
   onVerticalScrollStartReach,
   onVerticalScrollEndReach,
+  columnsWithNoContentPadding,
 }) => {
   let scrollableContentRef = useRef<HTMLDivElement | null>(null);
 
@@ -173,7 +175,14 @@ const SortableTable: React.FC<Props> = ({
                             />
                           )}
                           {row.cells.map((cell) => (
-                            <TableCell key={cell.id}>{cell.value}</TableCell>
+                            <TableCell
+                              key={cell.id}
+                              $hideCellPadding={columnsWithNoContentPadding?.includes(
+                                cell.info.header
+                              )}
+                            >
+                              {cell.value}
+                            </TableCell>
                           ))}
                         </TableRow>
                       );

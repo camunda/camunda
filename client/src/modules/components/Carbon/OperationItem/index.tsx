@@ -6,8 +6,8 @@
  */
 
 import {Error, Tools, RetryFailed} from '@carbon/react/icons';
-import {Button} from '@carbon/react';
 import {Icon} from 'carbon-components-react';
+import {Button, ButtonSize} from '@carbon/react';
 
 type ItemProps = {
   type:
@@ -17,6 +17,7 @@ type ItemProps = {
   onClick: () => void;
   title: string;
   disabled?: boolean;
+  size?: ButtonSize;
 };
 
 const TYPE_DETAILS: Readonly<
@@ -35,6 +36,7 @@ const OperationItem: React.FC<ItemProps> = ({
   onClick,
   type,
   disabled,
+  size,
 }) => {
   const {icon, testId} = TYPE_DETAILS[type];
   return (
@@ -49,6 +51,7 @@ const OperationItem: React.FC<ItemProps> = ({
         data-testid={testId}
         title={title}
         hasIconOnly
+        size={size}
       />
     </li>
   );

@@ -5,13 +5,14 @@
  * except in compliance with the proprietary license.
  */
 
-import {Button} from '@carbon/react';
+import {Button, ButtonSize} from '@carbon/react';
 
 type ItemProps = {
   type: 'DELETE';
   onClick: () => void;
   title: string;
   disabled?: boolean;
+  size?: ButtonSize;
 };
 
 const TYPE_DETAILS: Readonly<
@@ -25,6 +26,7 @@ const DangerButton: React.FC<ItemProps> = ({
   onClick,
   type,
   disabled,
+  size,
 }) => {
   const {testId, label} = TYPE_DETAILS[type];
   return (
@@ -38,6 +40,7 @@ const DangerButton: React.FC<ItemProps> = ({
         data-testid={testId}
         title={title}
         aria-label={title}
+        size={size}
       >
         {label}
       </Button>

@@ -39,10 +39,23 @@ const TableContainer = styled(BaseTableContainer)`
   }
 `;
 
-const TableCell = styled(BaseTableCell)`
-  white-space: nowrap;
-`;
+type TableCellProps = {
+  $hideCellPadding?: boolean;
+};
 
+const TableCell = styled(BaseTableCell)<TableCellProps>`
+  ${({$hideCellPadding}) => {
+    return css`
+      white-space: nowrap;
+      ${$hideCellPadding &&
+      css`
+        white-space: normal;
+        padding-top: 0 !important;
+        padding-bottom: 0 !important;
+      `}
+    `;
+  }}
+`;
 const TableHead = styled(BaseTableHead)`
   white-space: nowrap;
 `;

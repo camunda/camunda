@@ -25,6 +25,9 @@ import {authenticationStore} from 'modules/stores/authentication';
 import {Toolbar} from './Toolbar';
 import {getProcessInstanceFilters} from 'modules/utils/filter';
 import {useLocation} from 'react-router-dom';
+import {useNotifications} from 'modules/notifications';
+import {processesStore} from 'modules/stores/processes';
+import {Operations} from 'modules/components/Carbon/Operations';
 
 const ROW_HEIGHT = 34;
 
@@ -36,6 +39,7 @@ const InstancesTable: React.FC = observer(() => {
 
   const filters = useFilters();
   const location = useLocation();
+  const notifications = useNotifications();
 
   const {canceled, completed} = getProcessInstanceFilters(location.search);
   const listHasFinishedInstances = canceled || completed;
@@ -78,6 +82,7 @@ const InstancesTable: React.FC = observer(() => {
       />
       <SortableTable
         state={getTableState()}
+        columnsWithNoContentPadding={['operations']}
         isSelectable={
           authenticationStore.hasPermission(['write']) ? true : false
         }
@@ -179,7 +184,42 @@ const InstancesTable: React.FC = observer(() => {
               </>
             ),
             operations: authenticationStore.hasPermission(['write']) ? (
-              <div>operations</div>
+              <Operations
+                instance={instance}
+                onOperation={(operationType) =>
+                  processInstancesStore.markProcessInstancesWithActiveOperations(
+                    {
+                      ids: [instance.id],
+                      operationType,
+                    }
+                  )
+                }
+                onError={({operationType, statusCode}) => {
+                  processInstancesStore.unmarkProcessInstancesWithActiveOperations(
+                    {
+                      instanceIds: [instance.id],
+                      operationType,
+                    }
+                  );
+                  notifications.displayNotification('error', {
+                    headline: 'Operation could not be created',
+                    description:
+                      statusCode === 403
+                        ? 'You do not have permission'
+                        : undefined,
+                  });
+                }}
+                onSuccess={(operationType) => {
+                  tracking.track({
+                    eventName: 'single-operation',
+                    operationType,
+                    source: 'instances-list',
+                  });
+                }}
+                permissions={processesStore.getPermissions(
+                  instance.bpmnProcessId
+                )}
+              />
             ) : undefined,
           };
         })}
