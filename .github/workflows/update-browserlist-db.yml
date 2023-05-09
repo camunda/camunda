@@ -20,7 +20,7 @@ jobs:
       - run: npx update-browserslist-db@latest --yes
         name: Update DB
       - run: |
-          echo "::set-output name=is-changed::$(git diff --exit-code)";
+          echo "is-changed=$(git diff --exit-code)" >> $GITHUB_OUTPUT;
         name: Verify if files changed
         id: changed-files
       - if: ${{ steps.changed-files.outputs.is-changed }}

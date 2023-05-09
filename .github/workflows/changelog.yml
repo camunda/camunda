@@ -25,9 +25,9 @@ jobs:
         run: |-
           if [[ -z "${{ github.event.inputs.branch }}" ]]; then
             # no branch is entered
-            echo "::set-output name=branch::master";
+            echo "branch=master" >> "$GITHUB_OUTPUT";
           else
-            echo "::set-output name=branch::${{ github.event.inputs.branch }}";
+            echo "branch=${{ github.event.inputs.branch }}" >> "$GITHUB_OUTPUT";
           fi
 
       - name: Checkout repository
