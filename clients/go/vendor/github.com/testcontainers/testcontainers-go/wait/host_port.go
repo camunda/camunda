@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log"
 	"net"
 	"os"
 	"strconv"
@@ -14,22 +15,24 @@ import (
 
 // Implement interface
 var _ Strategy = (*HostPortStrategy)(nil)
+var _ StrategyTimeout = (*HostPortStrategy)(nil)
+
+var errShellNotExecutable = errors.New("/bin/sh command not executable")
 
 type HostPortStrategy struct {
 	// Port is a string containing port number and protocol in the format "80/tcp"
 	// which
 	Port nat.Port
 	// all WaitStrategies should have a startupTimeout to avoid waiting infinitely
-	startupTimeout time.Duration
-	PollInterval   time.Duration
+	timeout      *time.Duration
+	PollInterval time.Duration
 }
 
 // NewHostPortStrategy constructs a default host port strategy
 func NewHostPortStrategy(port nat.Port) *HostPortStrategy {
 	return &HostPortStrategy{
-		Port:           port,
-		startupTimeout: defaultStartupTimeout(),
-		PollInterval:   defaultPollInterval(),
+		Port:         port,
+		PollInterval: defaultPollInterval(),
 	}
 }
 
@@ -49,8 +52,9 @@ func ForExposedPort() *HostPortStrategy {
 	return NewHostPortStrategy("")
 }
 
+// WithStartupTimeout can be used to change the default startup timeout
 func (hp *HostPortStrategy) WithStartupTimeout(startupTimeout time.Duration) *HostPortStrategy {
-	hp.startupTimeout = startupTimeout
+	hp.timeout = &startupTimeout
 	return hp
 }
 
@@ -60,11 +64,19 @@ func (hp *HostPortStrategy) WithPollInterval(pollInterval time.Duration) *HostPo
 	return hp
 }
 
+func (hp *HostPortStrategy) Timeout() *time.Duration {
+	return hp.timeout
+}
+
 // WaitUntilReady implements Strategy.WaitUntilReady
 func (hp *HostPortStrategy) WaitUntilReady(ctx context.Context, target StrategyTarget) (err error) {
-	// limit context to startupTimeout
-	ctx, cancelContext := context.WithTimeout(ctx, hp.startupTimeout)
-	defer cancelContext()
+	timeout := defaultStartupTimeout()
+	if hp.timeout != nil {
+		timeout = *hp.timeout
+	}
+
+	ctx, cancel := context.WithTimeout(ctx, timeout)
+	defer cancel()
 
 	ipAddress, err := target.Host(ctx)
 	if err != nil {
@@ -104,6 +116,9 @@ func (hp *HostPortStrategy) WaitUntilReady(ctx context.Context, target StrategyT
 		case <-ctx.Done():
 			return fmt.Errorf("%s:%w", ctx.Err(), err)
 		case <-time.After(waitInterval):
+			if err := checkTarget(ctx, target); err != nil {
+				return err
+			}
 			port, err = target.MappedPort(ctx, internalPort)
 			if err != nil {
 				fmt.Printf("(%d) [%s] %s\n", i, port, err)
@@ -111,14 +126,31 @@ func (hp *HostPortStrategy) WaitUntilReady(ctx context.Context, target StrategyT
 		}
 	}
 
+	if err := externalCheck(ctx, ipAddress, port, target, waitInterval); err != nil {
+		return err
+	}
+
+	err = internalCheck(ctx, internalPort, target)
+	if err != nil && errors.Is(errShellNotExecutable, err) {
+		log.Println("Shell not executable in container, only external port check will be performed")
+	} else {
+		return err
+	}
+
+	return nil
+}
+
+func externalCheck(ctx context.Context, ipAddress string, port nat.Port, target StrategyTarget, waitInterval time.Duration) error {
 	proto := port.Proto()
 	portNumber := port.Int()
 	portString := strconv.Itoa(portNumber)
 
-	//external check
 	dialer := net.Dialer{}
 	address := net.JoinHostPort(ipAddress, portString)
 	for {
+		if err := checkTarget(ctx, target); err != nil {
+			return err
+		}
 		conn, err := dialer.DialContext(ctx, proto, address)
 		if err != nil {
 			if v, ok := err.(*net.OpError); ok {
@@ -135,12 +167,17 @@ func (hp *HostPortStrategy) WaitUntilReady(ctx context.Context, target StrategyT
 			break
 		}
 	}
+	return nil
+}
 
-	//internal check
+func internalCheck(ctx context.Context, internalPort nat.Port, target StrategyTarget) error {
 	command := buildInternalCheckCommand(internalPort.Int())
 	for {
 		if ctx.Err() != nil {
 			return ctx.Err()
+		}
+		if err := checkTarget(ctx, target); err != nil {
+			return err
 		}
 		exitCode, _, err := target.Exec(ctx, []string{"/bin/sh", "-c", command})
 		if err != nil {
@@ -150,10 +187,9 @@ func (hp *HostPortStrategy) WaitUntilReady(ctx context.Context, target StrategyT
 		if exitCode == 0 {
 			break
 		} else if exitCode == 126 {
-			return errors.New("/bin/sh command not executable")
+			return errShellNotExecutable
 		}
 	}
-
 	return nil
 }
 
