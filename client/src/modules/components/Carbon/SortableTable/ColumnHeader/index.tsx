@@ -33,6 +33,7 @@ type Props = {
   label: string | React.ReactNode;
   sortKey: string;
   isDefault?: boolean;
+  isDisabled?: boolean;
   onSort?: (sortKey: string) => void;
 } & React.ComponentProps<typeof Header>;
 
@@ -40,6 +41,7 @@ const ColumnHeader: React.FC<Props> = ({
   sortKey,
   label,
   isDefault = false,
+  isDisabled = false,
   onSort,
   ...rest
 }) => {
@@ -52,7 +54,7 @@ const ColumnHeader: React.FC<Props> = ({
       ? existingSortParams.sortBy === sortKey
       : isDefault;
 
-  const displaySortIcon = isActive;
+  const displaySortIcon = isActive && !isDisabled;
   const currentSortOrder =
     existingSortParams?.sortOrder === undefined && isDefault
       ? INITIAL_SORT_ORDER
@@ -69,7 +71,7 @@ const ColumnHeader: React.FC<Props> = ({
           search: toggleSorting(location.search, sortKey, currentSortOrder),
         });
       }}
-      isSortHeader={true}
+      isSortHeader={!isDisabled}
       title={`Sort by ${label}`}
       aria-label={`Sort by ${label}`}
       sortDirection={
@@ -81,6 +83,7 @@ const ColumnHeader: React.FC<Props> = ({
             : 'NONE'
           : 'NONE'
       }
+      isSortable={!isDisabled}
     >
       {label}
     </TableHeader>

@@ -34,6 +34,7 @@ const NUMBER_OF_SKELETON_ROWS = 10;
 type HeaderColumn = {
   isDefault?: boolean;
   sortKey?: string;
+  isDisabled?: boolean;
 } & DataTableHeader;
 
 type Props = {
@@ -140,6 +141,7 @@ const SortableTable: React.FC<Props> = ({
                         label={header.header}
                         sortKey={header.sortKey ?? header.key}
                         isDefault={header.isDefault}
+                        isDisabled={header.isDisabled}
                       />
                     );
                   })}

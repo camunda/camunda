@@ -23,6 +23,8 @@ import {getProcessName} from 'modules/utils/instance';
 import {processInstancesSelectionStore} from 'modules/stores/processInstancesSelection';
 import {authenticationStore} from 'modules/stores/authentication';
 import {Toolbar} from './Toolbar';
+import {getProcessInstanceFilters} from 'modules/utils/filter';
+import {useLocation} from 'react-router-dom';
 
 const ROW_HEIGHT = 34;
 
@@ -33,6 +35,10 @@ const InstancesTable: React.FC = observer(() => {
   } = processInstancesStore;
 
   const filters = useFilters();
+  const location = useLocation();
+
+  const {canceled, completed} = getProcessInstanceFilters(location.search);
+  const listHasFinishedInstances = canceled || completed;
 
   const getTableState = () => {
     if (['initial', 'first-fetch'].includes(status)) {
@@ -172,6 +178,9 @@ const InstancesTable: React.FC = observer(() => {
                 )}
               </>
             ),
+            operations: authenticationStore.hasPermission(['write']) ? (
+              <div>operations</div>
+            ) : undefined,
           };
         })}
         headerColumns={[
@@ -196,13 +205,21 @@ const InstancesTable: React.FC = observer(() => {
           {
             header: 'End Date',
             key: 'endDate',
-            //isDisabled: !listHasFinishedInstances, TODO: support is disabled
+            isDisabled: !listHasFinishedInstances,
           },
           {
             header: 'Parent Process Instance Key',
             key: 'parentInstanceId',
           },
-          // TODO: add operations column
+          ...(authenticationStore.hasPermission(['write'])
+            ? [
+                {
+                  header: 'Operations',
+                  key: 'operations',
+                  isDisabled: true,
+                },
+              ]
+            : []),
         ]}
       />
     </Container>
