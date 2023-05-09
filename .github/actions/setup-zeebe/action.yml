@@ -91,14 +91,16 @@ runs:
     - name: Configure Maven
       if: inputs.java == 'true'
       shell: bash
-      # --errors ensures errors will also spit out a stack trace, which is always useful, and has no impact on normal builds
-      # maven.wagon.* and maven.resolver.transport set the resolver's network transport to Wagon,
-      # the old provider pre 3.9. Until Maven 3.9.2, we have to do this if we want to retry on
-      # network issues, as otherwise any issue will fail the build.
-      # aether.enhancedLocalRepository.split splits between local and remote artifacts.
-      # aether.enhancedLocalRepository.splitRemote splits remote artifacts into released and snapshot
-      # aether.syncContext.* config ensures that maven uses file locks to prevent corruption from
-      # downloading multiple artifacts at the same time.
+      # `--errors` ensures errors will also spit out a stack trace, which is always useful, and has no impact on normal builds
+      #
+      # `maven.wagon.*` and `maven.resolver.transport` set the resolver's network transport to Wagon,
+      #    the old provider pre 3.9. Until Maven 3.9.2, we have to do this if we want to retry on
+      #    network issues, as otherwise any issue will fail the build.
+      #
+      # `aether.enhancedLocalRepository.split` splits between local and remote artifacts.
+      # `aether.enhancedLocalRepository.splitRemote` splits remote artifacts into released and snapshot
+      # `aether.syncContext.*` config ensures that maven uses file locks to prevent corruption
+      #      from downloading multiple artifacts at the same time.
       run: |
         tee .mvn/maven.config <<EOF
         --errors
@@ -119,6 +121,9 @@ runs:
       if: inputs.java == 'true' && startsWith(runner.name, 'actions-runner-')
       uses: actions/cache@v3
       with:
+        # This is the path used by the `enhancedLocalRepository` set up in the 'Configure Maven' step.
+        # `aether.enhancedLocalRepository.remotePrefix` defaults to 'cached'
+        # `aether.enhancedLocalRepository.releasesPrefix` defaults to 'releases'
         path: ~/.m2/repository/cached/releases/
         key: self-hosted-${{ runner.os }}-mvn-${{ inputs.maven-cache-key-modifier }}-${{ hashFiles('**/pom.xml') }}
         restore-keys: |
@@ -127,6 +132,9 @@ runs:
       if: inputs.java == 'true' && !startsWith(runner.name, 'actions-runner-')
       uses: actions/cache@v3
       with:
+        # This is the path used by the `enhancedLocalRepository` set up in the 'Configure Maven' step.
+        # `aether.enhancedLocalRepository.remotePrefix` defaults to 'cached'
+        # `aether.enhancedLocalRepository.releasesPrefix` defaults to 'releases'
         path: ~/.m2/repository/cached/releases/
         key: gh-hosted-${{ runner.os }}-mvn-${{ inputs.maven-cache-key-modifier }}-${{ hashFiles('**/pom.xml') }}
         restore-keys: |
