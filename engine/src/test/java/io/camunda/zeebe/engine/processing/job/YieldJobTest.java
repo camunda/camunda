@@ -47,7 +47,12 @@ public final class YieldJobTest {
 
     // when
     final Record<JobRecordValue> yieldRecord =
-        ENGINE.job().withKey(jobKey).ofInstance(job.getProcessInstanceKey()).yield();
+        ENGINE
+            .job()
+            .withKey(jobKey)
+            .withType(jobType)
+            .ofInstance(job.getProcessInstanceKey())
+            .yield();
 
     // then
     Assertions.assertThat(yieldRecord).hasRecordType(RecordType.EVENT).hasIntent(JobIntent.YIELDED);
@@ -74,6 +79,11 @@ public final class YieldJobTest {
             .yield();
 
     // then
-    Assertions.assertThat(yieldRecord).hasRejectionType(RejectionType.NOT_FOUND);
+    Assertions.assertThat(yieldRecord)
+        .hasRejectionType(RejectionType.INVALID_STATE)
+        .hasRejectionReason(
+            String.format(
+                "Expected to yield activated job with key '%d', but it is marked as failed",
+                jobKey));
   }
 }

@@ -50,7 +50,7 @@ public class BpmnJobActivationBehavior {
     notifyJobAvailable(jobType);
   }
 
-  public void notifyJobAvailable(final JobRecord jobRecord) {
+  public void notifyJobAvailableAsSideEffect(final JobRecord jobRecord) {
     final String jobType = jobRecord.getType();
     notifyJobAvailable(jobType);
   }

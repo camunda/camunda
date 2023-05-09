@@ -42,6 +42,7 @@ public enum JobIntent implements ProcessInstanceRelatedIntent {
   ERROR_THROWN((short) 12),
   RECUR_AFTER_BACKOFF((short) 13),
   RECURRED_AFTER_BACKOFF((short) 14),
+
   YIELD((short) 15),
   YIELDED((short) 16);
 

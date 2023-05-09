@@ -24,7 +24,7 @@ import io.camunda.zeebe.stream.api.records.TypedRecord;
 public final class JobYieldProcessor implements TypedRecordProcessor<JobRecord> {
 
   public static final String NOT_ACTIVATED_JOB_MESSAGE =
-      "Expected to time out activated job with key '%d', but %s";
+      "Expected to yield activated job with key '%d', but %s";
   private final JobState jobState;
   private final BpmnJobActivationBehavior jobActivationBehavior;
   private final StateWriter stateWriter;
@@ -43,10 +43,10 @@ public final class JobYieldProcessor implements TypedRecordProcessor<JobRecord> 
     final long key = record.getKey();
     final JobState.State state = jobState.getState(key);
     if (state == State.ACTIVATED) {
-      final JobRecord yieldedJob = jobState.getJob(key);
+      final JobRecord yieldedJob = record.getValue();
 
       stateWriter.appendFollowUpEvent(key, JobIntent.YIELDED, yieldedJob);
-      jobActivationBehavior.notifyJobAvailable(yieldedJob);
+      jobActivationBehavior.notifyJobAvailableAsSideEffect(yieldedJob);
     } else {
       final String textState;
 
@@ -64,7 +64,7 @@ public final class JobYieldProcessor implements TypedRecordProcessor<JobRecord> 
 
       rejectionWriter.appendRejection(
           record,
-          RejectionType.NOT_FOUND,
+          RejectionType.INVALID_STATE,
           String.format(NOT_ACTIVATED_JOB_MESSAGE, key, textState));
     }
   }
