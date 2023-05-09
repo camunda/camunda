@@ -16,6 +16,7 @@ package embedded
 
 import (
 	"embed"
+	"strings"
 )
 
 var (
@@ -29,6 +30,6 @@ func init() {
 		// log error
 		Version = "development"
 	} else {
-		Version = string(version)
+		Version = strings.TrimSpace(string(version))
 	}
 }
