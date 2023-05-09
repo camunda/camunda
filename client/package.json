@@ -11,7 +11,7 @@
     "@carbon/react": "^1.28.0",
     "@ibm/plex": "^6.3.0",
     "@lexical/react": "^0.7.6",
-    "@ungap/structured-clone": "^1.0.2",
+    "@ungap/structured-clone": "^1.2.0",
     "bpmn-js": "13.0.4",
     "bpmn-js-disable-collapsed-subprocess": "^0.1.7",
     "chart.js": "^4.3.0",
