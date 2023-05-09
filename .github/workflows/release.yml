@@ -187,13 +187,17 @@ jobs:
           fi
 
           pushd clients/go
-          git commit -am "build(project): update go versions"
+          if [[ -n $(git status --porcelain) ]]; then
+            git commit -am "build(project): update go versions"
+          fi
           popd
 
           ./mvnw -B versions:set-property -DgenerateBackupPoms=false -Dproperty=backwards.compat.version -DnewVersion="${RELEASE_VERSION}"
           FILE=$(./mvnw -B help:evaluate -Dexpression=ignored.changes.file -q -DforceStdout)
           rm -f "clients/java/${FILE}" "test/${FILE}" "exporter-api/${FILE}" "protocol/${FILE}" "bpmn-model/${FILE}"
-          git commit -am "build(project): update java compat versions"
+          if [[ -n $(git status --porcelain) ]]; then
+            git commit -am "build(project): update java compat versions"
+          fi
       - name: Go Post-Release
         run: |
           # Publish Go tag for the release
