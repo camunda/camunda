@@ -5,9 +5,10 @@
  * except in compliance with the proprietary license.
  */
 
+import {Stack} from '@carbon/react';
 import styled from 'styled-components';
 
-const OperationsContainer = styled.div`
+const OperationsContainer = styled(Stack)`
   .cds--popover[role='tooltip'] {
     display: none;
   }

@@ -18,22 +18,24 @@ import {OperationItem} from 'modules/components/Carbon/OperationItem';
 import {DangerButton} from 'modules/components/Carbon/OperationItem/DangerButton';
 import {modificationsStore} from 'modules/stores/modifications';
 import {Restricted} from 'modules/components/Restricted';
-import {Modal} from '@carbon/react';
+import {Modal, InlineLoading} from '@carbon/react';
 import {CarbonPaths} from 'modules/carbonRoutes';
 import {Link} from 'modules/components/Carbon/Link';
 import {OperationsContainer} from './styled';
+import {processInstancesStore} from 'modules/stores/processInstances';
 
 type Props = {
   instance: ProcessInstanceEntity;
   onOperation?: (operationType: OperationEntityType) => void;
   onError?: ErrorHandler;
   onSuccess?: (operationType: OperationEntityType) => void;
+  forceSpinner?: boolean;
   isInstanceModificationVisible?: boolean;
   permissions?: ResourceBasedPermissionDto[] | null;
 };
 
 const Operations: React.FC<Props> = observer(
-  ({instance, onOperation, onError, onSuccess, permissions}) => {
+  ({instance, onOperation, onError, onSuccess, forceSpinner, permissions}) => {
     const [isDeleteModalVisible, setIsDeleteModalVisible] = useState(false);
     const [isCancellationModalVisible, setIsCancellationModalVisible] =
       useState(false);
@@ -64,7 +66,16 @@ const Operations: React.FC<Props> = observer(
     };
 
     return (
-      <OperationsContainer>
+      <OperationsContainer orientation="horizontal">
+        {(forceSpinner ||
+          processInstancesStore.processInstanceIdsWithActiveOperations.includes(
+            instance.id
+          )) && (
+          <InlineLoading
+            data-testid="operation-spinner"
+            title={`Instance ${instance.id} has scheduled Operations`}
+          />
+        )}
         <OperationItems>
           {hasIncident(instance) && !isModificationModeEnabled && (
             <Restricted
