@@ -11,6 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.scheduler.testing.TestActorFuture;
+import io.camunda.zeebe.scheduler.testing.TestConcurrencyControl;
 import io.camunda.zeebe.transport.stream.api.ClientStreamConsumer;
 import io.camunda.zeebe.transport.stream.api.ClientStreamId;
 import io.camunda.zeebe.util.buffer.BufferUtil;
@@ -34,6 +35,8 @@ class AggregatedClientStreamTest {
       new AggregatedClientStream<>(
           UUID.randomUUID(), new LogicalId<>(streamType, metadata), metrics);
 
+  private final TestConcurrencyControl executor = new TestConcurrencyControl();
+
   @Test
   void shouldRetryWithAllAvailableClientsIfPushFailed() {
     // given
@@ -46,7 +49,7 @@ class AggregatedClientStreamTest {
 
     // when
     final TestActorFuture<Void> future = new TestActorFuture<>();
-    stream.push(null, future);
+    stream.push(null, future, executor);
 
     // then
     assertThat(future).failsWithin(Duration.ofMillis(100));
@@ -61,16 +64,11 @@ class AggregatedClientStreamTest {
 
     final AtomicBoolean pushSucceeded = new AtomicBoolean(false);
     final ClientStreamIdImpl streamId = getNextStreamId();
-    addClient(
-        streamId,
-        p -> {
-          pushSucceeded.set(true);
-          return TestActorFuture.completedFuture(null);
-        });
+    addClient(streamId, p -> pushSucceeded.set(true));
 
     // when
     final TestActorFuture<Void> future = new TestActorFuture<>();
-    stream.push(null, future);
+    stream.push(null, future, executor);
 
     // then
     assertThat(future).succeedsWithin(Duration.ofMillis(100));
@@ -113,7 +111,7 @@ class AggregatedClientStreamTest {
         streamId,
         p -> {
           consumer.accept(streamId);
-          return TestActorFuture.failedFuture(new RuntimeException("fail"));
+          throw new RuntimeException("Failed");
         });
     return streamId;
   }

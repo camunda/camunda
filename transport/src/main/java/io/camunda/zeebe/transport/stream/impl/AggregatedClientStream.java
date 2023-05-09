@@ -8,6 +8,7 @@
 package io.camunda.zeebe.transport.stream.impl;
 
 import io.atomix.cluster.MemberId;
+import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.transport.stream.api.ClientStreamMetrics;
 import io.camunda.zeebe.transport.stream.api.NoSuchStreamException;
@@ -124,7 +125,10 @@ final class AggregatedClientStream<M extends BufferWriter> {
     return logicalId;
   }
 
-  void push(final DirectBuffer buffer, final ActorFuture<Void> future) {
+  void push(
+      final DirectBuffer buffer,
+      final ActorFuture<Void> future,
+      final ConcurrencyControl executor) {
     final var streams = clientStreams.values();
     if (streams.isEmpty()) {
       throw new NoSuchStreamException();
@@ -133,7 +137,7 @@ final class AggregatedClientStream<M extends BufferWriter> {
     final var targets = new ArrayList<>(streams);
     final var index = ThreadLocalRandom.current().nextInt(streams.size());
 
-    tryPush(targets, index, 1, buffer, future);
+    tryPush(targets, index, 1, buffer, future, executor);
   }
 
   private void tryPush(
@@ -141,14 +145,14 @@ final class AggregatedClientStream<M extends BufferWriter> {
       final int index,
       final int currentCount,
       final DirectBuffer buffer,
-      final ActorFuture<Void> future) {
+      final ActorFuture<Void> future,
+      final ConcurrencyControl executor) {
     // Try with clients in a round-robin starting from the randomly picked startIndex
     final var clientStream = targets.get(index);
 
     LOGGER.trace("Pushing data from stream [{}] to client [{}]", streamId, clientStream.streamId());
     clientStream
-        .clientStreamConsumer()
-        .push(buffer)
+        .push(buffer, executor)
         .onComplete(
             (ok, pushFailed) -> {
               if (pushFailed == null) {
@@ -165,7 +169,13 @@ final class AggregatedClientStream<M extends BufferWriter> {
                       "Failed to push data to client [{}], retrying with next client.",
                       clientStream.streamId(),
                       pushFailed);
-                  tryPush(targets, (index + 1) % targets.size(), currentCount + 1, buffer, future);
+                  tryPush(
+                      targets,
+                      (index + 1) % targets.size(),
+                      currentCount + 1,
+                      buffer,
+                      future,
+                      executor);
                 }
               }
             });

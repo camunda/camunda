@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.transport.stream.api;
 
-import io.camunda.zeebe.scheduler.future.ActorFuture;
 import org.agrona.DirectBuffer;
 
 /**
@@ -22,5 +21,5 @@ public interface ClientStreamConsumer {
    *
    * @param payload the data to be consumed by the client
    */
-  ActorFuture<Void> push(DirectBuffer payload);
+  void push(DirectBuffer payload);
 }

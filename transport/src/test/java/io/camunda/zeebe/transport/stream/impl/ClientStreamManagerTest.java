@@ -46,6 +46,7 @@ class ClientStreamManagerTest {
           registry,
           new ClientStreamRequestManager<>(mockTransport, new TestConcurrencyControl()),
           metrics);
+  private final TestConcurrencyControl executor = new TestConcurrencyControl();
 
   @BeforeEach
   void setup() {
@@ -194,21 +195,14 @@ class ClientStreamManagerTest {
   void shouldPushPayloadToClient() {
     // given
     final DirectBuffer payloadReceived = new UnsafeBuffer();
-    final var clientStreamId =
-        clientStreamManager.add(
-            streamType,
-            metadata,
-            p -> {
-              payloadReceived.wrap(p);
-              return TestActorFuture.completedFuture(null);
-            });
+    final var clientStreamId = clientStreamManager.add(streamType, metadata, payloadReceived::wrap);
     final var streamId = getServerStreamId(clientStreamId);
 
     // when
     final var payloadPushed = BufferUtil.wrapString("data");
     final var request = new PushStreamRequest().streamId(streamId).payload(payloadPushed);
     final var future = new TestActorFuture<Void>();
-    clientStreamManager.onPayloadReceived(request, future);
+    clientStreamManager.onPayloadReceived(request, future, executor);
 
     // then
     assertThat(future).succeedsWithin(Duration.ofMillis(100));
@@ -224,7 +218,7 @@ class ClientStreamManagerTest {
     final var payloadPushed = BufferUtil.wrapString("data");
     final var request = new PushStreamRequest().streamId(UUID.randomUUID()).payload(payloadPushed);
     final var future = new TestActorFuture<Void>();
-    clientStreamManager.onPayloadReceived(request, future);
+    clientStreamManager.onPayloadReceived(request, future, executor);
 
     // then
     assertThat(future)
@@ -250,7 +244,7 @@ class ClientStreamManagerTest {
     final var payloadPushed = BufferUtil.wrapString("data");
     final var request = new PushStreamRequest().streamId(streamId).payload(payloadPushed);
     final var future = new TestActorFuture<Void>();
-    clientStreamManager.onPayloadReceived(request, future);
+    clientStreamManager.onPayloadReceived(request, future, executor);
 
     // then
     assertThat(future)

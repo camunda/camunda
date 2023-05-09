@@ -67,7 +67,7 @@ public final class ClientStreamServiceImpl<M extends BufferWriter> extends Actor
               () -> {
                 try {
                   final ActorFuture<Void> payloadPushed = new CompletableActorFuture<>();
-                  clientStreamManager.onPayloadReceived(request, payloadPushed);
+                  clientStreamManager.onPayloadReceived(request, payloadPushed, actor);
                   payloadPushed.onComplete(
                       (ok, error) -> {
                         if (error == null) {
@@ -108,10 +108,12 @@ public final class ClientStreamServiceImpl<M extends BufferWriter> extends Actor
     return schedulingService.submitActor(this);
   }
 
+  @Override
   public void onServerJoined(final MemberId memberId) {
     actor.run(() -> clientStreamManager.onServerJoined(memberId));
   }
 
+  @Override
   public void onServerRemoved(final MemberId memberId) {
     actor.run(() -> clientStreamManager.onServerRemoved(memberId));
   }

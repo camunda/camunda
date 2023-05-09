@@ -138,7 +138,6 @@ class StreamIntegrationTest {
               payload.wrap(p, 0, p.capacity());
               payloads.get().add(payload.data());
               latch.countDown();
-              return TestActorFuture.completedFuture(null);
             })
         .join();
 

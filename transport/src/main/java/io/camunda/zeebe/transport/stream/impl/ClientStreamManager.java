@@ -8,6 +8,7 @@
 package io.camunda.zeebe.transport.stream.impl;
 
 import io.atomix.cluster.MemberId;
+import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.transport.stream.api.ClientStreamConsumer;
 import io.camunda.zeebe.transport.stream.api.ClientStreamId;
@@ -95,7 +96,9 @@ final class ClientStreamManager<M extends BufferWriter> {
   }
 
   public void onPayloadReceived(
-      final PushStreamRequest pushStreamRequest, final ActorFuture<Void> responseFuture) {
+      final PushStreamRequest pushStreamRequest,
+      final ActorFuture<Void> responseFuture,
+      final ConcurrencyControl executor) {
     final var streamId = pushStreamRequest.streamId();
     final var payload = pushStreamRequest.payload();
 
@@ -112,7 +115,7 @@ final class ClientStreamManager<M extends BufferWriter> {
     clientStream.ifPresentOrElse(
         stream -> {
           try {
-            stream.push(payload, responseFuture);
+            stream.push(payload, responseFuture, executor);
           } catch (final Exception e) {
             responseFuture.completeExceptionally(e);
           }
