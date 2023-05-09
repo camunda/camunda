@@ -51,13 +51,7 @@ public interface JobStreamer {
      * handler does not close over any shared state.
      *
      * @param payload the data to push to the remote gateway
-     * @param errorHandler logic to execute if the data could not be pushed to the underlying stream
      */
-    void push(final ActivatedJob payload, ErrorHandler errorHandler);
-  }
-
-  /** Logic which is executed when the job cannot be pushed downstream. */
-  interface ErrorHandler {
-    void handleError(final Throwable error, ActivatedJob job);
+    void push(final ActivatedJob payload);
   }
 }
