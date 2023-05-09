@@ -196,9 +196,9 @@ public class RetryElasticsearchClient {
 
   public Map<String, Object> getDocument(String name, String id) {
     return executeWithGivenRetries(10,String.format("Get document from %s with id %s", name, id), () -> {
-      GetRequest request = new GetRequest(name).id(id);
-      if( esClient.exists(request, requestOptions)) {
-        final GetResponse response = esClient.get(request, requestOptions);
+      final GetRequest request = new GetRequest(name).id(id);
+      final GetResponse response = esClient.get(request, requestOptions);
+      if(response.isExists()) {
         return response.getSourceAsMap();
       } else {
         return null;
