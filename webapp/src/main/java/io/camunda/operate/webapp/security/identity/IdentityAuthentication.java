@@ -168,7 +168,7 @@ public class IdentityAuthentication extends AbstractAuthenticationToken implemen
 
   private Tokens renewTokens(final String refreshToken) throws Exception {
     return IdentityService.requestWithRetry(
-        () -> getIdentity().authentication().renewToken(refreshToken));
+        () -> getIdentity().authentication().renewToken(refreshToken), "IdentityAuthentication#renewTokens");
   }
 
   public IdentityAuthentication setExpires(final Date expires) {

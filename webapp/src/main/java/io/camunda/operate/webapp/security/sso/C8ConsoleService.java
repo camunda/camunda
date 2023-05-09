@@ -58,6 +58,7 @@ public class C8ConsoleService {
         .retryConsumer(() ->
             getClusterMetadataFromConsole(accessToken)
         )
+        .message("C8ConsoleService#retrieveClusterMetadata")
         .build()
         .retry();
     return addModelerAndConsoleLinksIfNotExists(clusterMetadata);

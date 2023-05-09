@@ -134,6 +134,7 @@ public class StatefulRestTemplate extends RestTemplate {
               .noOfRetry(50)
               .delayInterval(6, TimeUnit.SECONDS)
               .retryOn(IOException.class, RestClientException.class, ElasticsearchException.class)
+              .message("StatefulRestTemplate#tryLoginAs")
               .build().retry();
     } catch (Exception e) {
       throw new OperateRuntimeException("Unable to connect to Operate ", e);

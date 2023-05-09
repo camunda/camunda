@@ -128,7 +128,7 @@ public class RetryOperation<T> {
           return result;
         }
       } catch (Exception e) {
-        logger.warn(e.getMessage());
+        logger.warn(String.format("Retry Operation %s failed: %s", message, e.getMessage()), e);
         retries = handleException(retries, e);
       }
     }

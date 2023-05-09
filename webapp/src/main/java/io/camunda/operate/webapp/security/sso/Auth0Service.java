@@ -127,6 +127,7 @@ public class Auth0Service {
         .delayInterval(500, TimeUnit.MILLISECONDS)
         .retryOn(IdentityVerificationException.class)
         .retryConsumer(() -> authenticationController.handle(req, res))
+        .message("Auth0Service#retrieveTokens")
         .build()
         .retry();
   }

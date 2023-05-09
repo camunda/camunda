@@ -80,19 +80,21 @@ public class IdentityService {
             () ->
                 identity
                     .authentication()
-                    .exchangeAuthCode(authCodeDto, getRedirectURI(req, IDENTITY_CALLBACK_URI)));
+                    .exchangeAuthCode(authCodeDto, getRedirectURI(req, IDENTITY_CALLBACK_URI)),
+            "IdentityService#getAuthentication");
     final IdentityAuthentication authentication = new IdentityAuthentication();
     authentication.authenticate(tokens);
     return authentication;
   }
 
-  public static <T> T requestWithRetry(final RetryOperation.RetryConsumer<T> retryConsumer)
+  public static <T> T requestWithRetry(final RetryOperation.RetryConsumer<T> retryConsumer, final String operationName)
       throws Exception {
     return RetryOperation.<T>newBuilder()
         .noOfRetry(10)
         .delayInterval(500, TimeUnit.MILLISECONDS)
         .retryOn(IdentityException.class)
         .retryConsumer(retryConsumer)
+        .message(operationName)
         .build()
         .retry();
   }

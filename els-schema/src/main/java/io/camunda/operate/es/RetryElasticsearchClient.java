@@ -169,7 +169,7 @@ public class RetryElasticsearchClient {
   }
 
   public boolean createOrUpdateDocument(String name, String id, Map source) {
-    return executeWithRetries(() -> {
+    return executeWithRetries("RetryElasticsearchClient#createOrUpdateDocument", () -> {
       final IndexResponse response = esClient
           .index(new IndexRequest(name).id(id)
               .source(source, XContentType.JSON), requestOptions);
@@ -179,7 +179,7 @@ public class RetryElasticsearchClient {
   }
 
   public boolean createOrUpdateDocument(String name, String id, String source) {
-    return executeWithRetries(() -> {
+    return executeWithRetries("RetryElasticsearchClient#createOrUpdateDocument", () -> {
       final IndexResponse response = esClient
           .index(new IndexRequest(name).id(id)
               .source(source, XContentType.JSON), requestOptions);
@@ -207,7 +207,7 @@ public class RetryElasticsearchClient {
   }
 
   public boolean deleteDocument(String name, String id) {
-    return executeWithRetries(() -> {
+    return executeWithRetries("RetryElasticsearchClient#deleteDocument", () -> {
       final DeleteResponse response = esClient.delete(new DeleteRequest(name).id( id), requestOptions);
       DocWriteResponse.Result result = response.getResult();
       return result.equals(DocWriteResponse.Result.DELETED);
@@ -388,7 +388,7 @@ public class RetryElasticsearchClient {
   }
 
   public int doWithEachSearchResult(SearchRequest searchRequest, Consumer<SearchHit> searchHitConsumer) {
-    return executeWithRetries(() -> {
+    return executeWithRetries("RetryElasticsearchClient#doWithEachSearchResult", () -> {
       int doneOnSearchHits = 0;
       searchRequest.scroll(TimeValue.timeValueMillis(SCROLL_KEEP_ALIVE_MS));
       SearchResponse response = esClient.search(searchRequest, requestOptions);
@@ -449,9 +449,6 @@ public class RetryElasticsearchClient {
   }
 
   // ------------------- Retry part ------------------
-  private <T> T executeWithRetries(RetryOperation.RetryConsumer<T> retryConsumer) {
-    return executeWithRetries("", retryConsumer, null);
-  }
 
   private <T> T executeWithRetries(String operationName, RetryOperation.RetryConsumer<T> retryConsumer) {
     return executeWithRetries(operationName, retryConsumer, null);
