@@ -33,7 +33,7 @@
     <version.identity>8.3.0-alpha1</version.identity>
     <version.log4j>2.17.2</version.log4j>
     <version.elasticsearch>7.17.9</version.elasticsearch>
-    <version.spring.boot>3.0.5</version.spring.boot>
+    <version.spring.boot>3.0.6</version.spring.boot>
     <version.junit>4.13.2</version.junit>
     <version.springdoc>2.1.0</version.springdoc>
     <version.jakarta.json>2.0.1</version.jakarta.json>
