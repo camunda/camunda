@@ -11,7 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 
 import io.atomix.cluster.MemberId;
-import io.camunda.zeebe.transport.stream.api.RemoteStream.ErrorHandler;
+import io.camunda.zeebe.transport.stream.api.RemoteStreamErrorHandler;
 import io.camunda.zeebe.transport.stream.api.RemoteStreamMetrics;
 import io.camunda.zeebe.transport.stream.impl.AggregatedRemoteStream.StreamId;
 import io.camunda.zeebe.transport.stream.impl.RemoteStreamPusher.Transport;
@@ -121,7 +121,7 @@ final class RemoteStreamPusherTest {
     }
   }
 
-  private record TestErrorHandler(List<Error> errors) implements ErrorHandler<Payload> {
+  private record TestErrorHandler(List<Error> errors) implements RemoteStreamErrorHandler<Payload> {
 
     private TestErrorHandler() {
       this(new ArrayList<>());

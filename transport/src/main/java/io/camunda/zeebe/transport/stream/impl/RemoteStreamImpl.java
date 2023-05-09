@@ -8,6 +8,7 @@
 package io.camunda.zeebe.transport.stream.impl;
 
 import io.camunda.zeebe.transport.stream.api.RemoteStream;
+import io.camunda.zeebe.transport.stream.api.RemoteStreamErrorHandler;
 import io.camunda.zeebe.transport.stream.impl.AggregatedRemoteStream.StreamConsumer;
 import io.camunda.zeebe.util.buffer.BufferReader;
 import io.camunda.zeebe.util.buffer.BufferWriter;
@@ -27,14 +28,17 @@ public class RemoteStreamImpl<M extends BufferReader, P extends BufferWriter>
   private final AggregatedRemoteStream<M> stream;
   private final RemoteStreamPusher<P> streamer;
   private final Executor executor;
+  private final RemoteStreamErrorHandler<P> errorHandler;
 
   public RemoteStreamImpl(
       final AggregatedRemoteStream<M> stream,
       final RemoteStreamPusher<P> streamer,
+      final RemoteStreamErrorHandler<P> errorHandler,
       final Executor executor) {
     this.stream = stream;
     this.streamer = streamer;
     this.executor = executor;
+    this.errorHandler = errorHandler;
   }
 
   @Override
@@ -43,7 +47,7 @@ public class RemoteStreamImpl<M extends BufferReader, P extends BufferWriter>
   }
 
   @Override
-  public void push(final P payload, final ErrorHandler<P> errorHandler) {
+  public void push(final P payload) {
     executor.execute(
         () -> {
           final List<StreamConsumer<M>> streamConsumers = stream.streamConsumers();
@@ -63,10 +67,10 @@ public class RemoteStreamImpl<M extends BufferReader, P extends BufferWriter>
 
   private final class RetryHandler {
     private final Iterator<StreamConsumer<M>> iter;
-    private final ErrorHandler<P> errorHandler;
+    private final RemoteStreamErrorHandler<P> errorHandler;
 
     public RetryHandler(
-        final ErrorHandler<P> errorHandler, final List<StreamConsumer<M>> consumers) {
+        final RemoteStreamErrorHandler<P> errorHandler, final List<StreamConsumer<M>> consumers) {
       this.errorHandler = errorHandler;
       iter = consumers.iterator();
     }

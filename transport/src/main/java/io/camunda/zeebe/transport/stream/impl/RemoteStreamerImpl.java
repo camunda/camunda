@@ -11,6 +11,7 @@ import io.atomix.cluster.MemberId;
 import io.atomix.cluster.messaging.ClusterCommunicationService;
 import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.transport.stream.api.RemoteStream;
+import io.camunda.zeebe.transport.stream.api.RemoteStreamErrorHandler;
 import io.camunda.zeebe.transport.stream.api.RemoteStreamMetrics;
 import io.camunda.zeebe.transport.stream.api.RemoteStreamer;
 import io.camunda.zeebe.transport.stream.impl.messages.PushStreamRequest;
@@ -31,8 +32,7 @@ import org.agrona.concurrent.UnsafeBuffer;
  *
  * <p>NOTE: any payload pushed is sent via the stream from {@link #streamFor(DirectBuffer)} will be
  * asynchronous, so the payload should be immutable, and the errors reported to the given {@link
- * io.camunda.zeebe.transport.stream.api.RemoteStream.ErrorHandler} may be reported on different
- * threads.
+ * RemoteStreamErrorHandler} may be reported on different threads.
  */
 public final class RemoteStreamerImpl<M extends BufferReader, P extends BufferWriter> extends Actor
     implements RemoteStreamer<M, P> {
@@ -41,16 +41,18 @@ public final class RemoteStreamerImpl<M extends BufferReader, P extends BufferWr
   private final RemoteStreamPicker<M> streamPicker = new RandomStreamPicker<>();
   private final ClusterCommunicationService transport;
   private final ImmutableStreamRegistry<M> registry;
-  private final RemoteStreamMetrics metrics;
   private final RemoteStreamPusher<P> remoteStreamPusher;
+  private final RemoteStreamErrorHandler<P> errorHandler;
 
   public RemoteStreamerImpl(
       final ClusterCommunicationService transport,
       final ImmutableStreamRegistry<M> registry,
+      final RemoteStreamErrorHandler<P> errorHandler,
       final RemoteStreamMetrics metrics) {
     this.transport = Objects.requireNonNull(transport, "must specify a network transport");
     this.registry = Objects.requireNonNull(registry, "must specify a job stream registry");
-    this.metrics = metrics;
+    this.errorHandler = Objects.requireNonNull(errorHandler, "must specify an error handler");
+
     remoteStreamPusher = new RemoteStreamPusher<>(this::send, actor::run, metrics);
   }
 
@@ -65,7 +67,7 @@ public final class RemoteStreamerImpl<M extends BufferReader, P extends BufferWr
     final var target = streamPicker.pickStream(consumers);
 
     final RemoteStreamImpl<M, P> gatewayStream =
-        new RemoteStreamImpl<>(target, remoteStreamPusher, actor::run);
+        new RemoteStreamImpl<>(target, remoteStreamPusher, errorHandler, actor::run);
     return Optional.of(gatewayStream);
   }
 

@@ -17,10 +17,8 @@ import io.camunda.zeebe.util.buffer.BufferWriter;
  * <p>NOTE: it's up to consumers of this API to interpret the metadata {@link #metadata()} and its
  * relation to the payload.
  *
- * <p>NOTE: implementations of the {@link RemoteStream#push(Object, ErrorHandler)} method are likely
- * asynchronous. As such, errors handled via the {@link ErrorHandler} may be executed after the
- * initial call. Callers should be careful with the state they close on in the implementations of
- * their {@link ErrorHandler}.
+ * <p>NOTE: implementations of the {@link RemoteStream#push(BufferWriter)}, so the payload should be
+ * immutable.
  *
  * @param <M> associated metadata with the stream
  * @param <P> the payload type that can be pushed to the stream
@@ -35,17 +33,6 @@ public interface RemoteStream<M extends BufferReader, P extends BufferWriter> {
    * does not close over any shared state.
    *
    * @param payload the data to push to the remote gateway
-   * @param errorHandler logic to execute if the data could not be pushed to the underlying stream
    */
-  void push(final P payload, ErrorHandler<P> errorHandler);
-
-  /**
-   * Allows consumers of this API to specify error handling logic when a payload cannot be pushed
-   * out.
-   *
-   * @param <P> the payload type
-   */
-  interface ErrorHandler<P extends BufferWriter> {
-    void handleError(final Throwable error, P data);
-  }
+  void push(final P payload);
 }

@@ -40,7 +40,7 @@ class RemoteStreamImplTest {
       new RemoteStreamPusher<>(transport, executor, RemoteStreamMetrics.noop());
 
   private final RemoteStreamImpl<TestSerializableData, TestSerializableData> remoteStream =
-      new RemoteStreamImpl<>(aggregatedStream, pusher, executor);
+      new RemoteStreamImpl<>(aggregatedStream, pusher, (e, d) -> {}, executor);
 
   @BeforeEach
   void setup() {
@@ -63,7 +63,7 @@ class RemoteStreamImplTest {
         aggregatedStream.streamConsumers().stream().map(s -> s.id().streamId()).toList();
 
     // when
-    remoteStream.push(payload, (e, p) -> {});
+    remoteStream.push(payload);
 
     // then
     assertThat(transport.attemptedStreams).containsExactlyInAnyOrderElementsOf(streams);
@@ -75,7 +75,7 @@ class RemoteStreamImplTest {
     transport.succeedAfterAttempts(1);
 
     // when
-    remoteStream.push(payload, (e, p) -> {});
+    remoteStream.push(payload);
 
     // then
     assertThat(transport.attemptedStreams).hasSize(2);
