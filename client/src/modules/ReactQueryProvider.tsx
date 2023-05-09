@@ -5,12 +5,18 @@
  * except in compliance with the proprietary license.
  */
 
-import {Suspense, lazy} from 'react';
+import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
+import {ReactQueryDevtools} from '@tanstack/react-query-devtools';
+import {lazy, useEffect, useState, Suspense} from 'react';
 
-const ReactQueryProviderReal = lazy(() =>
-  import('./ReactQueryProviderReal').then((module) => ({
-    default: module.ReactQueryProvider,
-  })),
+const queryClient = new QueryClient();
+
+const ReactQueryDevtoolsProduction: React.FC = lazy(() =>
+  import('@tanstack/react-query-devtools/build/lib/index.prod.js').then(
+    (module) => ({
+      default: module.ReactQueryDevtools,
+    }),
+  ),
 );
 
 type Props = {
@@ -18,15 +24,23 @@ type Props = {
 };
 
 const ReactQueryProvider: React.FC<Props> = ({children}) => {
-  if (process.env.NODE_ENV === 'development') {
-    return (
-      <Suspense fallback={null}>
-        <ReactQueryProviderReal>{children}</ReactQueryProviderReal>
-      </Suspense>
-    );
-  }
+  const [isProdDevtoolsOpen, setIsProdDevtoolsOpen] = useState(false);
 
-  return <>{children}</>;
+  useEffect(() => {
+    window.toggleDevtools = () => setIsProdDevtoolsOpen((old) => !old);
+  }, []);
+
+  return (
+    <QueryClientProvider client={queryClient}>
+      {children}
+      <ReactQueryDevtools />
+      {isProdDevtoolsOpen ? (
+        <Suspense fallback={null}>
+          <ReactQueryDevtoolsProduction />
+        </Suspense>
+      ) : null}
+    </QueryClientProvider>
+  );
 };
 
 export {ReactQueryProvider};
