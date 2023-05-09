@@ -55,9 +55,9 @@ const Login: React.FC = () => {
       <Form<FormValues>
         onSubmit={async ({username, password}) => {
           try {
-            const response = await handleLogin(username, password);
+            const {error} = await handleLogin(username, password);
 
-            if (response.ok) {
+            if (error === null) {
               return navigate(
                 stateHasReferrer(location.state)
                   ? location.state.referrer
@@ -68,7 +68,7 @@ const Login: React.FC = () => {
               );
             }
 
-            if (response.status === 401) {
+            if (error.response?.status === 401) {
               return {
                 [FORM_ERROR]: 'Username and password do not match',
               };

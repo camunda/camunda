@@ -6,12 +6,9 @@
  */
 
 import {makeObservable, observable, action} from 'mobx';
-
 import {resetApolloStore} from 'modules/apollo-client';
-import {mergePathname} from 'modules/utils/mergePathname';
+import {request} from 'modules/request';
 import {getStateLocally, storeStateLocally} from 'modules/utils/localStorage';
-
-const BASENAME = window.clientConfig?.contextPath ?? '/';
 
 const Endpoints = {
   Login: '/api/login',
@@ -40,7 +37,7 @@ class Authentication {
   }
 
   handleLogin = async (username: string, password: string) => {
-    const response = await request(Endpoints.Login, {
+    const {response, error} = await request(Endpoints.Login, {
       method: 'POST',
       body: new URLSearchParams({username, password}).toString(),
       headers: {
@@ -48,11 +45,11 @@ class Authentication {
       },
     });
 
-    if (response.ok) {
+    if (error === null) {
       this.activateSession();
     }
 
-    return response;
+    return {response, error};
   };
 
   setStatus = (status: Status) => {
@@ -74,15 +71,15 @@ class Authentication {
   };
 
   handleLogout = async () => {
-    const response = await request(Endpoints.Logout, {
+    const {error} = await request(Endpoints.Logout, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
     });
 
-    if (!response.ok) {
-      throw new Error('Logout failed');
+    if (error !== null) {
+      return error;
     }
 
     resetApolloStore();
@@ -96,6 +93,7 @@ class Authentication {
     }
 
     this.setStatus('logged-out');
+    return;
   };
 
   activateSession = () => {
@@ -127,15 +125,6 @@ class Authentication {
   reset = () => {
     this.status = DEFAULT_STATUS;
   };
-}
-
-/* istanbul ignore next */
-function request(input: string, init?: RequestInit) {
-  return fetch(mergePathname(BASENAME, input), {
-    ...init,
-    credentials: 'include',
-    mode: 'cors',
-  });
 }
 
 const authenticationStore = new Authentication();

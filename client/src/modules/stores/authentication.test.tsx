@@ -41,7 +41,16 @@ describe('authentication store', () => {
     );
 
     expect(await authenticationStore.handleLogin('demo', 'demo')).toStrictEqual(
-      expect.objectContaining({status: 401}),
+      {
+        response: null,
+        error: {
+          variant: 'failed-response',
+          response: expect.objectContaining({
+            status: 401,
+          }),
+          error: null,
+        },
+      },
     );
     expect(authenticationStore.status).toBe('initial');
   });
@@ -91,7 +100,7 @@ describe('authentication store', () => {
       ),
     );
 
-    await expect(authenticationStore.handleLogout()).rejects.toThrow();
+    expect(await authenticationStore.handleLogout()).not.toBeUndefined();
   });
 
   it('should disable session', async () => {
