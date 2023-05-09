@@ -24,8 +24,7 @@ public record UninitializedSegment(
    * Creates a proper, initialized segment by writing a {@link SegmentDescriptor } with the given
    * index.
    */
-  public Segment initializeForUse(
-      final long index, final long lastWrittenAsqn, final long lastWrittenIndex) {
+  public Segment initializeForUse(final long index, final long lastWrittenAsqn) {
     final var updatedDescriptor =
         SegmentDescriptor.builder()
             .withId(segmentId)
@@ -33,7 +32,6 @@ public record UninitializedSegment(
             .withMaxSegmentSize(maxSegmentSize)
             .build();
     updatedDescriptor.copyTo(buffer);
-    return new Segment(
-        file, updatedDescriptor, buffer, lastWrittenIndex, lastWrittenAsqn, journalIndex);
+    return new Segment(file, updatedDescriptor, buffer, lastWrittenAsqn, journalIndex);
   }
 }

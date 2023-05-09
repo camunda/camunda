@@ -10,6 +10,7 @@ package io.camunda.zeebe.journal;
 import static io.camunda.zeebe.journal.file.SegmentedJournal.ASQN_IGNORE;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.zeebe.journal.JournalMetaStore.InMemory;
 import io.camunda.zeebe.journal.file.SegmentedJournal;
 import io.camunda.zeebe.util.buffer.BufferWriter;
 import io.camunda.zeebe.util.buffer.DirectBufferWriter;
@@ -37,7 +38,11 @@ final class JournalReaderTest {
     final File directory = tempDir.resolve("data").toFile();
 
     journal =
-        SegmentedJournal.builder().withDirectory(directory).withJournalIndexDensity(5).build();
+        SegmentedJournal.builder()
+            .withDirectory(directory)
+            .withJournalIndexDensity(5)
+            .withMetaStore(new InMemory())
+            .build();
     reader = journal.openReader();
   }
 

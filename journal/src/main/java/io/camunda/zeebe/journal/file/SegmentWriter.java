@@ -19,7 +19,7 @@ package io.camunda.zeebe.journal.file;
 import static io.camunda.zeebe.journal.file.SegmentedJournal.ASQN_IGNORE;
 
 import io.camunda.zeebe.journal.CorruptedJournalException;
-import io.camunda.zeebe.journal.JournalException.InvalidASqn;
+import io.camunda.zeebe.journal.JournalException.InvalidAsqn;
 import io.camunda.zeebe.journal.JournalException.InvalidChecksum;
 import io.camunda.zeebe.journal.JournalException.InvalidIndex;
 import io.camunda.zeebe.journal.JournalException.SegmentFull;
@@ -37,9 +37,13 @@ import java.nio.BufferUnderflowException;
 import java.nio.MappedByteBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /** Segment writer. */
 final class SegmentWriter {
+
+  private static final Logger LOG = LoggerFactory.getLogger(SegmentWriter.class);
 
   private final MappedByteBuffer buffer;
   private final Segment segment;
@@ -59,7 +63,6 @@ final class SegmentWriter {
       final MappedByteBuffer buffer,
       final Segment segment,
       final JournalIndex index,
-      final long lastWrittenIndex,
       final long lastWrittenAsqn) {
     this.segment = segment;
     descriptorLength = segment.descriptor().length();
@@ -70,7 +73,7 @@ final class SegmentWriter {
     writeBuffer.wrap(buffer);
     firstAsqn = lastWrittenAsqn + 1;
     lastAsqn = lastWrittenAsqn;
-    reset(0, lastWrittenIndex);
+    reset(0, false);
   }
 
   long getLastIndex() {
@@ -121,7 +124,7 @@ final class SegmentWriter {
     }
 
     if (asqn != SegmentedJournal.ASQN_IGNORE && asqn <= lastAsqn) {
-      throw new InvalidASqn(
+      throw new InvalidAsqn(
           String.format(
               "The records asqn is not big enough. Expected it to be bigger than %d but was %d",
               lastAsqn, asqn));
@@ -200,11 +203,7 @@ final class SegmentWriter {
     FrameUtil.markAsIgnored(buffer, position);
   }
 
-  private void reset(final long index) {
-    reset(index, -1);
-  }
-
-  private void reset(final long index, final long lastWrittenIndex) {
+  private void reset(final long index, final boolean detectCorruption) {
     long nextIndex = firstIndex;
 
     // Clear the buffer indexes.
@@ -225,26 +224,23 @@ final class SegmentWriter {
     } catch (final BufferUnderflowException e) {
       // Reached end of the segment
     } catch (final CorruptedJournalException e) {
-      handleChecksumMismatch(e, nextIndex, lastWrittenIndex, position);
+      if (detectCorruption) {
+        throw e;
+      }
+      resetPartiallyWrittenEntry(e, position);
     } finally {
       buffer.reset();
     }
   }
 
-  private void handleChecksumMismatch(
-      final CorruptedJournalException e,
-      final long nextIndex,
-      final long lastWrittenIndex,
-      final int position) {
-    // entry wasn't acked (likely a partial write): it's safe to delete it
-    if (nextIndex > lastWrittenIndex) {
-      FrameUtil.markAsIgnored(buffer, position);
-      buffer.position(position);
-      buffer.mark();
-      return;
-    }
-
-    throw e;
+  private void resetPartiallyWrittenEntry(final CorruptedJournalException e, final int position) {
+    LOG.debug(
+        "{} Found a corrupted or partially written entry at position {}. Considering it as a partially written entry and resetting the position.",
+        e.getMessage(),
+        position);
+    FrameUtil.markAsIgnored(buffer, position);
+    buffer.position(position);
+    buffer.mark();
   }
 
   public void truncate(final long index) {
@@ -264,7 +260,7 @@ final class SegmentWriter {
       buffer.position(descriptorLength);
       invalidateNextEntry(descriptorLength);
     } else {
-      reset(index);
+      reset(index, true);
       invalidateNextEntry(buffer.position());
     }
   }

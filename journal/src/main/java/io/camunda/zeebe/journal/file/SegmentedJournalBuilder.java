@@ -19,6 +19,7 @@ package io.camunda.zeebe.journal.file;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 
+import io.camunda.zeebe.journal.JournalMetaStore;
 import java.io.File;
 
 /** Raft log builder. */
@@ -38,8 +39,9 @@ public class SegmentedJournalBuilder {
 
   private long freeDiskSpace = DEFAULT_MIN_FREE_DISK_SPACE;
   private int journalIndexDensity = DEFAULT_JOURNAL_INDEX_DENSITY;
-  private long lastWrittenIndex = -1L;
   private boolean preallocateSegmentFiles = DEFAULT_PREALLOCATE_SEGMENT_FILES;
+
+  private JournalMetaStore journalMetaStore;
 
   protected SegmentedJournalBuilder() {}
 
@@ -121,17 +123,6 @@ public class SegmentedJournalBuilder {
   }
 
   /**
-   * Writes the last index to have been persisted to the metastore.
-   *
-   * @param lastWrittenIndex last index to have been persisted in the log
-   * @return the storage builder
-   */
-  public SegmentedJournalBuilder withLastWrittenIndex(final long lastWrittenIndex) {
-    this.lastWrittenIndex = lastWrittenIndex;
-    return this;
-  }
-
-  /**
    * Sets whether segment files are pre-allocated at creation. If true, segment files are
    * pre-allocated to the maximum segment size (see {@link #withMaxSegmentSize(int)}}) at creation
    * before any writes happen.
@@ -145,6 +136,15 @@ public class SegmentedJournalBuilder {
     return this;
   }
 
+  /**
+   * @param metaStore journal metastore to update lastFlushedIndex
+   * @return this builder for chaining
+   */
+  public SegmentedJournalBuilder withMetaStore(final JournalMetaStore metaStore) {
+    journalMetaStore = metaStore;
+    return this;
+  }
+
   public SegmentedJournal build() {
     final var journalIndex = new SparseJournalIndex(journalIndexDensity);
     final var segmentAllocator =
@@ -152,10 +152,9 @@ public class SegmentedJournalBuilder {
     final var segmentLoader = new SegmentLoader(segmentAllocator, freeDiskSpace);
     final var segmentsManager =
         new SegmentsManager(
-            journalIndex, maxSegmentSize, directory, lastWrittenIndex, name, segmentLoader);
+            journalIndex, maxSegmentSize, directory, name, segmentLoader, journalMetaStore);
     final var journalMetrics = new JournalMetrics(name);
 
-    return new SegmentedJournal(
-        directory, maxSegmentSize, journalIndex, segmentsManager, journalMetrics);
+    return new SegmentedJournal(journalIndex, segmentsManager, journalMetrics, journalMetaStore);
   }
 }

@@ -21,7 +21,9 @@ import static com.google.common.base.MoreObjects.toStringHelper;
 import io.atomix.cluster.MemberId;
 import io.atomix.raft.storage.RaftStorage;
 import io.atomix.raft.storage.StorageException;
+import io.atomix.raft.storage.serializer.MetaEncoder;
 import io.atomix.raft.storage.serializer.MetaStoreSerializer;
+import io.camunda.zeebe.journal.JournalMetaStore;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -38,13 +40,12 @@ import org.slf4j.LoggerFactory;
 /**
  * Manages persistence of server configurations.
  *
- * <p>The server metastore is responsible for persisting server configurations according to the
- * configured {@link RaftStorage#storageLevel() storage level}. Each server persists their current
- * {@link #loadTerm() term} and last {@link #loadVote() vote} as is dictated by the Raft consensus
- * algorithm. Additionally, the metastore is responsible for storing the last know server {@link
- * Configuration}, including cluster membership.
+ * <p>The server metastore is responsible for persisting server configurations. Each server persists
+ * their current {@link #loadTerm() term} and last {@link #loadVote() vote} as is dictated by the
+ * Raft consensus algorithm. Additionally, the metastore is responsible for storing the last know
+ * server {@link Configuration}, including cluster membership.
  */
-public class MetaStore implements AutoCloseable {
+public class MetaStore implements JournalMetaStore, AutoCloseable {
 
   private static final byte VERSION = 1;
   private static final int VERSION_LENGTH = Byte.BYTES;
@@ -55,6 +56,8 @@ public class MetaStore implements AutoCloseable {
   private final File confFile;
   private final MetaStoreSerializer serializer = new MetaStoreSerializer();
   private final FileChannel metaFileChannel;
+
+  private volatile long lastFlushedIndex;
 
   public MetaStore(final RaftStorage storage) throws IOException {
     if (!(storage.directory().isDirectory() || storage.directory().mkdirs())) {
@@ -72,6 +75,10 @@ public class MetaStore implements AutoCloseable {
           StandardOpenOption.CREATE_NEW,
           StandardOpenOption.WRITE,
           StandardOpenOption.SYNC);
+
+      // initialize the lastFlushedIndex to its null value; otherwise it will read it as 0 since
+      // all bytes in the empty file are now 0
+      lastFlushedIndex = MetaEncoder.lastFlushedIndexNullValue();
     }
 
     metaFileChannel =
@@ -95,16 +102,18 @@ public class MetaStore implements AutoCloseable {
         FileChannel.open(confFile.toPath(), StandardOpenOption.READ, StandardOpenOption.WRITE);
 
     // Read existing meta info and rewrite with the current version
+    lastFlushedIndex = readLastFlushedIndex();
     initializeMetaBuffer();
   }
 
   private void initializeMetaBuffer() {
     final var term = loadTerm();
-    final long index = loadLastWrittenIndex();
+    final long index = loadLastFlushedIndex();
     final var voted = loadVote();
+
     metaBuffer.put(0, VERSION);
     storeTerm(term);
-    storeLastWrittenIndex(index);
+    storeLastFlushedIndex(index);
     storeVote(voted);
   }
 
@@ -173,26 +182,38 @@ public class MetaStore implements AutoCloseable {
     return id.isEmpty() ? null : MemberId.from(id);
   }
 
-  public synchronized long loadLastWrittenIndex() {
-    try {
-      metaFileChannel.read(metaBuffer, 0);
-      metaBuffer.position(0);
-    } catch (final IOException e) {
-      throw new StorageException(e);
+  @Override
+  public synchronized void storeLastFlushedIndex(final long index) {
+    if (index == lastFlushedIndex) {
+      log.trace("Skip storing same last flushed index {}", index);
+      return;
     }
-    return serializer.readLastWrittenIndex(new UnsafeBuffer(metaBuffer), VERSION_LENGTH);
-  }
 
-  public synchronized void storeLastWrittenIndex(final long index) {
     log.trace("Store last flushed index {}", index);
 
     try {
-      serializer.writeLastWrittenIndex(index, new UnsafeBuffer(metaBuffer), VERSION_LENGTH);
+      serializer.writeLastFlushedIndex(index, new UnsafeBuffer(metaBuffer), VERSION_LENGTH);
       metaFileChannel.write(metaBuffer, 0);
+      lastFlushedIndex = index;
       metaBuffer.position(0);
     } catch (final IOException e) {
       throw new StorageException(e);
     }
+  }
+
+  @Override
+  public synchronized long loadLastFlushedIndex() {
+    return lastFlushedIndex;
+  }
+
+  @Override
+  public void resetLastFlushedIndex() {
+    storeLastFlushedIndex(MetaEncoder.lastFlushedIndexNullValue());
+  }
+
+  @Override
+  public boolean hasLastFlushedIndex() {
+    return lastFlushedIndex != MetaEncoder.lastFlushedIndexNullValue();
   }
 
   /**
@@ -247,5 +268,15 @@ public class MetaStore implements AutoCloseable {
   @Override
   public String toString() {
     return toStringHelper(this).toString();
+  }
+
+  private long readLastFlushedIndex() {
+    try {
+      metaFileChannel.read(metaBuffer, 0);
+      metaBuffer.position(0);
+    } catch (final IOException e) {
+      throw new StorageException(e);
+    }
+    return serializer.readLastFlushedIndex(new UnsafeBuffer(metaBuffer), VERSION_LENGTH);
   }
 }

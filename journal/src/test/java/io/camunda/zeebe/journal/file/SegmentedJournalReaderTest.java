@@ -17,6 +17,7 @@ package io.camunda.zeebe.journal.file;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.zeebe.journal.JournalMetaStore.InMemory;
 import io.camunda.zeebe.journal.JournalReader;
 import io.camunda.zeebe.journal.record.RecordData;
 import io.camunda.zeebe.journal.record.SBESerializer;
@@ -55,6 +56,7 @@ class SegmentedJournalReaderTest {
             .withMaxSegmentSize(
                 entrySize * ENTRIES_PER_SEGMENT + SegmentDescriptor.getEncodingLength())
             .withJournalIndexDensity(5)
+            .withMetaStore(new InMemory())
             .build();
     reader = journal.openReader();
   }

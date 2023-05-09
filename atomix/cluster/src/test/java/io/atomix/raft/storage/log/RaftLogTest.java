@@ -28,6 +28,7 @@ import io.atomix.raft.storage.log.entry.ConfigurationEntry;
 import io.atomix.raft.storage.log.entry.InitialEntry;
 import io.atomix.raft.storage.log.entry.RaftLogEntry;
 import io.camunda.zeebe.journal.Journal;
+import io.camunda.zeebe.journal.JournalMetaStore.InMemory;
 import java.io.File;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -56,7 +57,12 @@ class RaftLogTest {
 
   @BeforeEach
   void setup(@TempDir final File directory) {
-    raftlog = RaftLog.builder().withDirectory(directory).withName("test").build();
+    raftlog =
+        RaftLog.builder()
+            .withDirectory(directory)
+            .withName("test")
+            .withMetaStore(new InMemory())
+            .build();
     reader = raftlog.openUncommittedReader();
   }
 
@@ -76,7 +82,7 @@ class RaftLogTest {
     // then
     assertThat(reader.hasNext()).isTrue();
     final var entryRead = reader.next();
-    assertThat(entryRead.term()).isEqualTo(1);
+    assertThat(entryRead.term()).isOne();
     assertThat(entryRead.entry()).isInstanceOf(InitialEntry.class);
     assertThat(appended).isEqualTo(entryRead);
   }
@@ -91,7 +97,7 @@ class RaftLogTest {
     // then
     assertThat(reader.hasNext()).isTrue();
     final var entryRead = reader.next();
-    assertThat(entryRead.term()).isEqualTo(1);
+    assertThat(entryRead.term()).isOne();
     assertThat(entryRead.entry()).isInstanceOf(ConfigurationEntry.class);
     final var configurationRead = (ConfigurationEntry) entryRead.entry();
     assertThat(configurationRead.members())
@@ -109,9 +115,9 @@ class RaftLogTest {
     // then
     assertThat(reader.hasNext()).isTrue();
     final var entryRead = reader.next();
-    assertThat(entryRead.term()).isEqualTo(1);
+    assertThat(entryRead.term()).isOne();
     assertThat(entryRead.isApplicationEntry()).isTrue();
-    assertThat(entryRead.getApplicationEntry().lowestPosition()).isEqualTo(1);
+    assertThat(entryRead.getApplicationEntry().lowestPosition()).isOne();
     assertThat(entryRead.getApplicationEntry().highestPosition()).isEqualTo(2);
     assertThat(entryRead.getApplicationEntry().data()).isEqualTo(new UnsafeBuffer(data));
     assertThat(appended).isEqualTo(entryRead);
@@ -134,14 +140,18 @@ class RaftLogTest {
     final RaftLogEntry entry = new RaftLogEntry(1, firstApplicationEntry);
     final var persistedRaftRecord = raftlog.append(entry).getPersistedRaftRecord();
     final var raftlogFollower =
-        RaftLog.builder().withDirectory(directory).withName("test-follower").build();
+        RaftLog.builder()
+            .withDirectory(directory)
+            .withName("test-follower")
+            .withMetaStore(new InMemory())
+            .build();
 
     // when
     final var appended = raftlogFollower.append(persistedRaftRecord);
 
     // then
     assertThat(raftlogFollower.getLastEntry()).isEqualTo(appended);
-    assertThat(appended.index()).isEqualTo(1);
+    assertThat(appended.index()).isOne();
     assertThat(appended.entry()).isEqualTo(firstApplicationEntry);
     assertThat(appended.getPersistedRaftRecord().asqn())
         .isEqualTo(firstApplicationEntry.lowestPosition());

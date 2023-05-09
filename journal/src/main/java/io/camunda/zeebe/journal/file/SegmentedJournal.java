@@ -20,10 +20,10 @@ import static com.google.common.base.Preconditions.checkState;
 
 import com.google.common.collect.Sets;
 import io.camunda.zeebe.journal.Journal;
+import io.camunda.zeebe.journal.JournalMetaStore;
 import io.camunda.zeebe.journal.JournalReader;
 import io.camunda.zeebe.journal.JournalRecord;
 import io.camunda.zeebe.util.buffer.BufferWriter;
-import java.io.File;
 import java.util.Collection;
 import java.util.Objects;
 import java.util.concurrent.locks.StampedLock;
@@ -32,8 +32,6 @@ import java.util.concurrent.locks.StampedLock;
 public final class SegmentedJournal implements Journal {
   public static final long ASQN_IGNORE = -1;
   private final JournalMetrics journalMetrics;
-  private final File directory;
-  private final int maxSegmentSize;
   private final Collection<SegmentedJournalReader> readers = Sets.newConcurrentHashSet();
   private volatile boolean open = true;
   private final JournalIndex journalIndex;
@@ -41,17 +39,18 @@ public final class SegmentedJournal implements Journal {
   private final StampedLock rwlock = new StampedLock();
   private final SegmentsManager segments;
 
+  private final JournalMetaStore journalMetaStore;
+
   SegmentedJournal(
-      final File directory,
-      final int maxSegmentSize,
       final JournalIndex journalIndex,
       final SegmentsManager segments,
-      final JournalMetrics journalMetrics) {
-    this.directory = Objects.requireNonNull(directory, "must specify a journal directory");
-    this.maxSegmentSize = maxSegmentSize;
+      final JournalMetrics journalMetrics,
+      final JournalMetaStore journalMetaStore) {
     this.journalMetrics = Objects.requireNonNull(journalMetrics, "must specify journal metrics");
     this.journalIndex = Objects.requireNonNull(journalIndex, "must specify a journal index");
     this.segments = Objects.requireNonNull(segments, "must specify a journal segments manager");
+    this.journalMetaStore =
+        Objects.requireNonNull(journalMetaStore, "must specify a journal meta store");
 
     this.segments.open();
     writer = new SegmentedJournalWriter(this);
@@ -112,6 +111,10 @@ public final class SegmentedJournal implements Journal {
     try {
       journalIndex.clear();
       writer.reset(nextIndex);
+      // no need to update the meta store's last flushed index as usage is that we always reset
+      // with a greater index than what we previously had. it's fine if the stored last flushed
+      // index is lower than the real flushed index. every thing will be treated as a partial write
+      // until the next flush, which is fine
     } finally {
       rwlock.unlockWrite(stamp);
     }
@@ -136,6 +139,7 @@ public final class SegmentedJournal implements Journal {
   @Override
   public void flush() {
     writer.flush();
+    journalMetaStore.storeLastFlushedIndex(getLastIndex());
   }
 
   @Override
@@ -157,6 +161,7 @@ public final class SegmentedJournal implements Journal {
 
   @Override
   public void close() {
+    flush();
     segments.close();
     open = false;
   }
@@ -168,14 +173,6 @@ public final class SegmentedJournal implements Journal {
    */
   private void assertOpen() {
     checkState(segments.getCurrentSegment() != null, "journal not open");
-  }
-
-  private long maxSegmentSize() {
-    return maxSegmentSize;
-  }
-
-  private File directory() {
-    return directory;
   }
 
   /**
