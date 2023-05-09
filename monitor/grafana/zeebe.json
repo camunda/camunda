@@ -1,83 +1,4 @@
 {
-  "__inputs": [
-    {
-      "name": "DS_PROMETHEUS",
-      "label": "Prometheus",
-      "description": "",
-      "type": "datasource",
-      "pluginId": "prometheus",
-      "pluginName": "Prometheus"
-    }
-  ],
-  "__elements": {},
-  "__requires": [
-    {
-      "type": "panel",
-      "id": "bargauge",
-      "name": "Bar gauge",
-      "version": ""
-    },
-    {
-      "type": "panel",
-      "id": "gauge",
-      "name": "Gauge",
-      "version": ""
-    },
-    {
-      "type": "grafana",
-      "id": "grafana",
-      "name": "Grafana",
-      "version": "9.3.6"
-    },
-    {
-      "type": "panel",
-      "id": "graph",
-      "name": "Graph (old)",
-      "version": ""
-    },
-    {
-      "type": "panel",
-      "id": "heatmap",
-      "name": "Heatmap",
-      "version": ""
-    },
-    {
-      "type": "datasource",
-      "id": "prometheus",
-      "name": "Prometheus",
-      "version": "1.0.0"
-    },
-    {
-      "type": "panel",
-      "id": "stat",
-      "name": "Stat",
-      "version": ""
-    },
-    {
-      "type": "panel",
-      "id": "state-timeline",
-      "name": "State timeline",
-      "version": ""
-    },
-    {
-      "type": "panel",
-      "id": "table",
-      "name": "Table",
-      "version": ""
-    },
-    {
-      "type": "panel",
-      "id": "table-old",
-      "name": "Table (old)",
-      "version": ""
-    },
-    {
-      "type": "panel",
-      "id": "timeseries",
-      "name": "Time series",
-      "version": ""
-    }
-  ],
   "annotations": {
     "list": [
       {
@@ -103,7 +24,7 @@
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 1,
-  "id": null,
+  "id": 32,
   "links": [],
   "liveNow": false,
   "panels": [
@@ -192,7 +113,7 @@
             "h": 6,
             "w": 8,
             "x": 0,
-            "y": 1
+            "y": 57
           },
           "id": 68,
           "interval": "1s",
@@ -250,7 +171,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "PBFA97CFB590B2093"
           },
           "description": "Shows accumulated health per partition",
           "fieldConfig": {
@@ -291,7 +212,7 @@
             "h": 6,
             "w": 9,
             "x": 8,
-            "y": 1
+            "y": 57
           },
           "id": 243,
           "options": {
@@ -314,7 +235,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "PBFA97CFB590B2093"
               },
               "expr": "min(zeebe_health{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\", pod=~\"$pod\"}) by (partition)",
               "instant": true,
@@ -347,7 +268,7 @@
             "h": 6,
             "w": 7,
             "x": 17,
-            "y": 1
+            "y": 57
           },
           "hiddenSeries": false,
           "id": 116,
@@ -462,7 +383,7 @@
             "h": 5,
             "w": 12,
             "x": 0,
-            "y": 7
+            "y": 63
           },
           "hiddenSeries": false,
           "id": 58,
@@ -569,7 +490,7 @@
             "h": 5,
             "w": 12,
             "x": 12,
-            "y": 7
+            "y": 63
           },
           "hiddenSeries": false,
           "id": 270,
@@ -669,7 +590,7 @@
             "h": 6,
             "w": 8,
             "x": 0,
-            "y": 12
+            "y": 68
           },
           "hiddenSeries": false,
           "id": 62,
@@ -743,7 +664,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "PBFA97CFB590B2093"
           },
           "description": "Flow node instances completed or terminated per second over all partitions.",
           "fieldConfig": {
@@ -784,7 +705,7 @@
             "h": 2,
             "w": 9,
             "x": 8,
-            "y": 12
+            "y": 68
           },
           "id": 232,
           "links": [],
@@ -808,7 +729,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "PBFA97CFB590B2093"
               },
               "expr": "sum(rate(zeebe_element_instance_events_total{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\", type!=\"PROCESS\", action!=\"activated\"}[$__rate_interval]))",
               "instant": true,
@@ -841,7 +762,7 @@
             "h": 6,
             "w": 7,
             "x": 17,
-            "y": 12
+            "y": 68
           },
           "hiddenSeries": false,
           "id": 74,
@@ -954,7 +875,7 @@
             "h": 2,
             "w": 9,
             "x": 8,
-            "y": 14
+            "y": 70
           },
           "id": 118,
           "links": [],
@@ -1030,7 +951,7 @@
             "h": 2,
             "w": 9,
             "x": 8,
-            "y": 16
+            "y": 72
           },
           "id": 117,
           "links": [],
@@ -1085,7 +1006,7 @@
             "h": 6,
             "w": 8,
             "x": 0,
-            "y": 18
+            "y": 74
           },
           "hiddenSeries": false,
           "id": 39,
@@ -1168,7 +1089,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "PBFA97CFB590B2093"
           },
           "fieldConfig": {
             "defaults": {
@@ -1196,7 +1117,7 @@
             "h": 6,
             "w": 9,
             "x": 8,
-            "y": 18
+            "y": 74
           },
           "id": 190,
           "links": [],
@@ -1220,7 +1141,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "PBFA97CFB590B2093"
               },
               "expr": "(sum(rate(zeebe_dropped_request_count_total{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\"}[$__rate_interval])) by (partition) / sum(rate(zeebe_received_request_count_total{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\"}[$__rate_interval])) by (partition) ) * 100",
               "interval": "",
@@ -1230,7 +1151,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "PBFA97CFB590B2093"
               },
               "expr": "",
               "interval": "",
@@ -1262,7 +1183,7 @@
             "h": 6,
             "w": 7,
             "x": 17,
-            "y": 18
+            "y": 74
           },
           "hiddenSeries": false,
           "id": 33,
@@ -1400,7 +1321,7 @@
           "dashes": false,
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "PBFA97CFB590B2093"
           },
           "description": "Shows the processing queue size over time. Processing queue defines, what is already appended but not yet processed by the stream processor.",
           "fill": 1,
@@ -1409,7 +1330,7 @@
             "h": 7,
             "w": 24,
             "x": 0,
-            "y": 2
+            "y": 58
           },
           "hiddenSeries": false,
           "id": 272,
@@ -1441,7 +1362,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "PBFA97CFB590B2093"
               },
               "expr": "max by (partition) (zeebe_log_appender_last_appended_position{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\"}) - max by (partition) (zeebe_stream_processor_last_processed_position{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\"})",
               "interval": "",
@@ -1500,7 +1421,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "PBFA97CFB590B2093"
           },
           "description": "Show the distribution of commands in the batches over time",
           "fieldConfig": {
@@ -1522,7 +1443,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 9
+            "y": 65
           },
           "id": 418,
           "options": {
@@ -1563,7 +1484,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "PBFA97CFB590B2093"
               },
               "editorMode": "code",
               "expr": "sum(increase(zeebe_stream_processor_batch_processing_commands_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\", partition=~\"$partition\"}[$__rate_interval])) by (le)",
@@ -1579,7 +1500,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "PBFA97CFB590B2093"
           },
           "description": "Shows how often we have retried batch processing due to reaching the maximum batch size.",
           "fieldConfig": {
@@ -1637,7 +1558,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 9
+            "y": 65
           },
           "id": 421,
           "options": {
@@ -1657,7 +1578,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "PBFA97CFB590B2093"
               },
               "editorMode": "code",
               "expr": "sum(rate(zeebe_stream_processor_batch_processing_retry_total{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\", partition=~\"$partition\"}[$__rate_interval])) by(partition)",
@@ -1676,7 +1597,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "PBFA97CFB590B2093"
           },
           "description": "Shows how many positions are not updated by exporters per partition. Means what is the difference between last committed exporter position and committed log position.",
           "fieldConfig": {
@@ -1734,7 +1655,7 @@
             "h": 4,
             "w": 12,
             "x": 0,
-            "y": 17
+            "y": 73
           },
           "id": 192,
           "options": {
@@ -1754,7 +1675,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "PBFA97CFB590B2093"
               },
               "editorMode": "code",
               "expr": "max by (exporter, pod, partition) (zeebe_exporter_last_exported_position{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\"}) - max by (exporter, pod, partition) (zeebe_exporter_last_updated_exported_position{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\"})",
@@ -1774,7 +1695,7 @@
           "columns": [],
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "PBFA97CFB590B2093"
           },
           "description": "Shows the position, which was appended last by the leader per partition.",
           "fontSize": "80%",
@@ -1782,7 +1703,7 @@
             "h": 4,
             "w": 7,
             "x": 12,
-            "y": 17
+            "y": 73
           },
           "id": 196,
           "showHeader": true,
@@ -1833,7 +1754,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "PBFA97CFB590B2093"
               },
               "expr": "max by (partition) (zeebe_log_appender_last_appended_position{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\"})",
               "format": "table",
@@ -1851,7 +1772,7 @@
           "columns": [],
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "PBFA97CFB590B2093"
           },
           "description": "Shows the last committed log position.",
           "fontSize": "80%",
@@ -1859,7 +1780,7 @@
             "h": 4,
             "w": 5,
             "x": 19,
-            "y": 17
+            "y": 73
           },
           "id": 200,
           "showHeader": true,
@@ -1910,7 +1831,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "PBFA97CFB590B2093"
               },
               "expr": "max by (partition) (zeebe_log_appender_last_committed_position{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\"})",
               "format": "table",
@@ -1927,7 +1848,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "PBFA97CFB590B2093"
           },
           "description": "Shows how many records are not exported yet.",
           "fieldConfig": {
@@ -1985,7 +1906,7 @@
             "h": 6,
             "w": 5,
             "x": 0,
-            "y": 21
+            "y": 77
           },
           "id": 194,
           "options": {
@@ -2005,7 +1926,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "PBFA97CFB590B2093"
               },
               "editorMode": "code",
               "expr": "max (zeebe_log_appender_last_committed_position{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\"}) by (partition) - max (zeebe_exporter_last_exported_position{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\", exporter=\"elasticsearch\"}) by (partition)",
@@ -2023,7 +1944,7 @@
           "columns": [],
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "PBFA97CFB590B2093"
           },
           "description": "Shows the last exported position which was committed by the given exporter per partition.",
           "fontSize": "80%",
@@ -2031,7 +1952,7 @@
             "h": 6,
             "w": 7,
             "x": 5,
-            "y": 21
+            "y": 77
           },
           "id": 199,
           "showHeader": true,
@@ -2082,7 +2003,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "PBFA97CFB590B2093"
               },
               "expr": "max by (exporter, partition) (zeebe_exporter_last_updated_exported_position{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\"})",
               "format": "table",
@@ -2100,7 +2021,7 @@
           "columns": [],
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "PBFA97CFB590B2093"
           },
           "description": "Shows the last processed position by the stream processor per partition.",
           "fontSize": "80%",
@@ -2108,7 +2029,7 @@
             "h": 12,
             "w": 5,
             "x": 12,
-            "y": 21
+            "y": 77
           },
           "id": 198,
           "showHeader": true,
@@ -2159,7 +2080,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "PBFA97CFB590B2093"
               },
               "expr": "max by (partition) (zeebe_stream_processor_last_processed_position{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\"})",
               "format": "table",
@@ -2177,7 +2098,7 @@
           "columns": [],
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "PBFA97CFB590B2093"
           },
           "description": "Shows the last replayed source position by the stream processor per partition and pod",
           "fontSize": "80%",
@@ -2185,7 +2106,7 @@
             "h": 12,
             "w": 7,
             "x": 17,
-            "y": 21
+            "y": 77
           },
           "id": 268,
           "showHeader": true,
@@ -2236,7 +2157,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "PBFA97CFB590B2093"
               },
               "expr": "max by (partition, pod) (zeebe_replay_last_source_position{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\"})",
               "format": "table",
@@ -2253,7 +2174,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "PBFA97CFB590B2093"
           },
           "description": "Shows how many records the stream processor has not processed yet.",
           "fieldConfig": {
@@ -2311,7 +2232,7 @@
             "h": 6,
             "w": 5,
             "x": 0,
-            "y": 27
+            "y": 83
           },
           "id": 189,
           "options": {
@@ -2331,7 +2252,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "PBFA97CFB590B2093"
               },
               "editorMode": "code",
               "expr": "max by (partition) (zeebe_log_appender_last_committed_position{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\"}) - max by (partition) (zeebe_stream_processor_last_processed_position{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\"})",
@@ -2351,7 +2272,7 @@
           "columns": [],
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "PBFA97CFB590B2093"
           },
           "description": "Shows the last exported position per partition.",
           "fontSize": "80%",
@@ -2359,7 +2280,7 @@
             "h": 6,
             "w": 7,
             "x": 5,
-            "y": 27
+            "y": 83
           },
           "id": 201,
           "showHeader": true,
@@ -2410,7 +2331,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "PBFA97CFB590B2093"
               },
               "expr": "max by (partition) (zeebe_exporter_last_exported_position{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\", exporter=\"elasticsearch\"})",
               "format": "table",
@@ -2459,7 +2380,7 @@
             "h": 5,
             "w": 12,
             "x": 0,
-            "y": 34
+            "y": 90
           },
           "hideTimeOverride": false,
           "id": 12,
@@ -2520,7 +2441,7 @@
             "h": 5,
             "w": 12,
             "x": 12,
-            "y": 34
+            "y": 90
           },
           "hideTimeOverride": false,
           "id": 13,
@@ -2592,7 +2513,7 @@
             "h": 6,
             "w": 12,
             "x": 0,
-            "y": 39
+            "y": 95
           },
           "hiddenSeries": false,
           "id": 2,
@@ -2693,7 +2614,7 @@
             "h": 6,
             "w": 12,
             "x": 12,
-            "y": 39
+            "y": 95
           },
           "hiddenSeries": false,
           "id": 3,
@@ -2796,7 +2717,7 @@
             "h": 6,
             "w": 9,
             "x": 0,
-            "y": 45
+            "y": 101
           },
           "hiddenSeries": false,
           "id": 4,
@@ -2890,7 +2811,7 @@
             "h": 6,
             "w": 7,
             "x": 9,
-            "y": 45
+            "y": 101
           },
           "hiddenSeries": false,
           "id": 266,
@@ -2985,7 +2906,7 @@
             "h": 6,
             "w": 8,
             "x": 16,
-            "y": 45
+            "y": 101
           },
           "hiddenSeries": false,
           "id": 267,
@@ -3066,7 +2987,7 @@
           "dashes": false,
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "PBFA97CFB590B2093"
           },
           "description": "Shows the process instance creation rate over all partitions in the namespace. It will only count root process instances, so call activity process instance creations are excluded.",
           "fill": 1,
@@ -3075,7 +2996,7 @@
             "h": 8,
             "w": 6,
             "x": 0,
-            "y": 51
+            "y": 107
           },
           "hiddenSeries": false,
           "id": 290,
@@ -3107,7 +3028,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "PBFA97CFB590B2093"
               },
               "expr": "sum(rate(zeebe_executed_instances_total{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\", action=\"activated\"}[$__rate_interval])) by (namespace)",
               "interval": "",
@@ -3153,7 +3074,7 @@
           "dashes": false,
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "PBFA97CFB590B2093"
           },
           "description": "Shows the process instance completion rate over all partitions in the namespace. It will only count root process instances, so call activity process instance creations are excluded.",
           "fill": 1,
@@ -3162,7 +3083,7 @@
             "h": 8,
             "w": 6,
             "x": 6,
-            "y": 51
+            "y": 107
           },
           "hiddenSeries": false,
           "id": 291,
@@ -3194,7 +3115,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "PBFA97CFB590B2093"
               },
               "expr": "sum(rate(zeebe_executed_instances_total{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\", action=\"completed\"}[$__rate_interval])) by (namespace)",
               "interval": "",
@@ -3240,7 +3161,7 @@
           "dashes": false,
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "PBFA97CFB590B2093"
           },
           "description": "Shows the Job creation rate over all partitions in the namespace",
           "fill": 1,
@@ -3249,7 +3170,7 @@
             "h": 8,
             "w": 6,
             "x": 12,
-            "y": 51
+            "y": 107
           },
           "hiddenSeries": false,
           "id": 288,
@@ -3281,7 +3202,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "PBFA97CFB590B2093"
               },
               "expr": "sum(rate(zeebe_job_events_total{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\", action=\"created\"}[$__rate_interval])) by (namespace)",
               "interval": "",
@@ -3327,7 +3248,7 @@
           "dashes": false,
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "PBFA97CFB590B2093"
           },
           "description": "Shows the Job completion rate over all partitions in the namespace.",
           "fill": 1,
@@ -3336,7 +3257,7 @@
             "h": 8,
             "w": 6,
             "x": 18,
-            "y": 51
+            "y": 107
           },
           "hiddenSeries": false,
           "id": 289,
@@ -3368,7 +3289,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "PBFA97CFB590B2093"
               },
               "expr": "sum(rate(zeebe_job_events_total{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\", action=\"completed\"}[$__rate_interval])) by (namespace)",
               "interval": "",
@@ -3453,7 +3374,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 51
+            "y": 107
           },
           "hiddenSeries": false,
           "id": 102,
@@ -3557,7 +3478,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 51
+            "y": 107
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -3656,7 +3577,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 59
+            "y": 115
           },
           "hiddenSeries": false,
           "id": 105,
@@ -3757,7 +3678,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 59
+            "y": 115
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -3839,7 +3760,7 @@
           "dashes": false,
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "PBFA97CFB590B2093"
           },
           "fieldConfig": {
             "defaults": {
@@ -3853,7 +3774,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 67
+            "y": 123
           },
           "hiddenSeries": false,
           "id": 182,
@@ -3885,7 +3806,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "PBFA97CFB590B2093"
               },
               "expr": "zeebe_snapshot_chunks_count{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\"}",
               "interval": "",
@@ -3969,7 +3890,7 @@
             "h": 7,
             "w": 24,
             "x": 0,
-            "y": 109
+            "y": 165
           },
           "hiddenSeries": false,
           "id": 261,
@@ -4082,7 +4003,7 @@
           "dashes": false,
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "PBFA97CFB590B2093"
           },
           "description": "Shows the number of garbage collections (GC) per second, aggregated per pod and GC type.",
           "fill": 1,
@@ -4091,7 +4012,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 116
+            "y": 172
           },
           "hiddenSeries": false,
           "id": 285,
@@ -4123,7 +4044,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "PBFA97CFB590B2093"
               },
               "expr": "sum(rate(jvm_gc_collection_seconds_count{cluster=~\"$cluster\", namespace=~\"$namespace\",pod=~\"$pod\"}[$__rate_interval])) by (gc, pod)",
               "interval": "",
@@ -4168,7 +4089,7 @@
           "dashes": false,
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "PBFA97CFB590B2093"
           },
           "description": "Shows the garbage collection (GC) time proportion per second. Means shows the rate which is spent in GC in a second.",
           "fill": 1,
@@ -4177,7 +4098,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 116
+            "y": 172
           },
           "hiddenSeries": false,
           "id": 286,
@@ -4209,7 +4130,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "PBFA97CFB590B2093"
               },
               "expr": "rate(jvm_gc_collection_seconds_sum{cluster=~\"$cluster\", namespace=~\"$namespace\",pod=~\"$pod\"}[$__rate_interval])",
               "instant": false,
@@ -4268,7 +4189,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 124
+            "y": 180
           },
           "hiddenSeries": false,
           "id": 98,
@@ -4384,7 +4305,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 124
+            "y": 180
           },
           "hiddenSeries": false,
           "id": 35,
@@ -4501,7 +4422,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 14
+            "y": 70
           },
           "hiddenSeries": false,
           "id": 64,
@@ -4602,7 +4523,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 14
+            "y": 70
           },
           "hiddenSeries": false,
           "id": 294,
@@ -4726,7 +4647,7 @@
             "h": 5,
             "w": 24,
             "x": 0,
-            "y": 15
+            "y": 71
           },
           "hiddenSeries": false,
           "id": 260,
@@ -4809,7 +4730,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "PBFA97CFB590B2093"
           },
           "fieldConfig": {
             "defaults": {
@@ -4866,7 +4787,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 20
+            "y": 76
           },
           "id": 379,
           "options": {
@@ -4885,7 +4806,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "PBFA97CFB590B2093"
               },
               "editorMode": "code",
               "expr": "ceil(sum by(pod) (rate(container_fs_reads_total{cluster=~\"$cluster\",namespace=~\"$namespace\", pod=~\"$pod\"}[$__rate_interval])))",
@@ -4900,7 +4821,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "PBFA97CFB590B2093"
           },
           "fieldConfig": {
             "defaults": {
@@ -4957,7 +4878,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 20
+            "y": 76
           },
           "id": 381,
           "options": {
@@ -4976,7 +4897,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "PBFA97CFB590B2093"
               },
               "editorMode": "code",
               "expr": "ceil(sum by(pod) (rate(container_fs_writes_total{cluster=~\"$cluster\",namespace=~\"$namespace\", pod=~\"$pod\"}[$__rate_interval])))",
@@ -5008,7 +4929,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 28
+            "y": 84
           },
           "hiddenSeries": false,
           "id": 37,
@@ -5117,7 +5038,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 28
+            "y": 84
           },
           "hiddenSeries": false,
           "id": 40,
@@ -5210,7 +5131,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 36
+            "y": 92
           },
           "hiddenSeries": false,
           "id": 122,
@@ -5300,7 +5221,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 36
+            "y": 92
           },
           "hiddenSeries": false,
           "id": 124,
@@ -5390,7 +5311,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 44
+            "y": 100
           },
           "hiddenSeries": false,
           "id": 126,
@@ -5480,7 +5401,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 44
+            "y": 100
           },
           "hiddenSeries": false,
           "id": 127,
@@ -5605,7 +5526,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 32
+            "y": 88
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -5731,7 +5652,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 32
+            "y": 88
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -5885,7 +5806,7 @@
             "h": 10,
             "w": 12,
             "x": 0,
-            "y": 40
+            "y": 96
           },
           "id": 343,
           "links": [],
@@ -6006,7 +5927,7 @@
             "h": 10,
             "w": 12,
             "x": 12,
-            "y": 40
+            "y": 96
           },
           "id": 345,
           "links": [],
@@ -6068,7 +5989,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "PBFA97CFB590B2093"
           },
           "fieldConfig": {
             "defaults": {
@@ -6125,7 +6046,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 50
+            "y": 106
           },
           "id": 347,
           "options": {
@@ -6144,7 +6065,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "PBFA97CFB590B2093"
               },
               "editorMode": "code",
               "expr": "sum(zeebe_messaging_inflight_requests) by (pod, address)",
@@ -6159,7 +6080,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "PBFA97CFB590B2093"
           },
           "fieldConfig": {
             "defaults": {
@@ -6216,7 +6137,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 50
+            "y": 106
           },
           "id": 349,
           "options": {
@@ -6235,7 +6156,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "PBFA97CFB590B2093"
               },
               "editorMode": "code",
               "expr": "sum(rate(zeebe_messaging_request_count_total{namespace=~\"$namespace\", pod=~\"$pod\"}[$__rate_interval])) by (pod, address, topic)",
@@ -6250,7 +6171,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "PBFA97CFB590B2093"
           },
           "fieldConfig": {
             "defaults": {
@@ -6307,7 +6228,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 58
+            "y": 114
           },
           "id": 353,
           "options": {
@@ -6326,7 +6247,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "PBFA97CFB590B2093"
               },
               "editorMode": "code",
               "expr": "sum(rate(zeebe_messaging_response_count_total{namespace=~\"$namespace\", pod=~\"$pod\", outcome!=\"SUCCESS\"}[$__rate_interval])) by (address, topic, outcome)",
@@ -6341,7 +6262,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "PBFA97CFB590B2093"
           },
           "fieldConfig": {
             "defaults": {
@@ -6399,7 +6320,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 58
+            "y": 114
           },
           "id": 351,
           "options": {
@@ -6418,7 +6339,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "PBFA97CFB590B2093"
               },
               "editorMode": "code",
               "expr": "sum(rate(zeebe_messaging_request_count_total{namespace=~\"$namespace\", pod=~\"$pod\"}[$__rate_interval])) by (type)",
@@ -6480,7 +6401,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 9
+            "y": 17
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -6580,7 +6501,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 9
+            "y": 17
           },
           "hiddenSeries": false,
           "id": 222,
@@ -6699,7 +6620,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 17
+            "y": 25
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -6810,7 +6731,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 17
+            "y": 25
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -6922,7 +6843,7 @@
             "h": 7,
             "w": 24,
             "x": 0,
-            "y": 25
+            "y": 33
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -7036,7 +6957,7 @@
             "h": 7,
             "w": 12,
             "x": 0,
-            "y": 32
+            "y": 40
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -7149,7 +7070,7 @@
             "h": 7,
             "w": 12,
             "x": 12,
-            "y": 32
+            "y": 40
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -7230,7 +7151,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "PBFA97CFB590B2093"
           },
           "description": "Time spent executing post-commit tasks after batch processing (in seconds)",
           "fieldConfig": {
@@ -7252,7 +7173,7 @@
             "h": 7,
             "w": 12,
             "x": 0,
-            "y": 39
+            "y": 47
           },
           "id": 420,
           "options": {
@@ -7294,7 +7215,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "PBFA97CFB590B2093"
               },
               "editorMode": "code",
               "expr": "sum(increase(zeebe_stream_processor_batch_processing_post_commit_tasks_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\", partition=~\"$partition\"}[$__rate_interval])) by (le)",
@@ -7311,7 +7232,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "PBFA97CFB590B2093"
           },
           "description": "Time spent in processing a batch of commands (excluding transaction commit, side effects, etc.)",
           "fieldConfig": {
@@ -7333,7 +7254,7 @@
             "h": 7,
             "w": 12,
             "x": 12,
-            "y": 39
+            "y": 47
           },
           "id": 419,
           "options": {
@@ -7375,7 +7296,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "PBFA97CFB590B2093"
               },
               "editorMode": "code",
               "expr": "sum(increase(zeebe_stream_processor_batch_processing_duration_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\", partition=~\"$partition\"}[$__rate_interval])) by (le)",
@@ -7404,7 +7325,7 @@
             "h": 7,
             "w": 12,
             "x": 0,
-            "y": 46
+            "y": 54
           },
           "hiddenSeries": false,
           "id": 310,
@@ -7521,7 +7442,7 @@
             "h": 7,
             "w": 12,
             "x": 12,
-            "y": 46
+            "y": 54
           },
           "hiddenSeries": false,
           "id": 311,
@@ -7656,7 +7577,7 @@
             "h": 7,
             "w": 12,
             "x": 0,
-            "y": 53
+            "y": 61
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -7767,7 +7688,7 @@
             "h": 7,
             "w": 12,
             "x": 12,
-            "y": 53
+            "y": 61
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -7892,7 +7813,7 @@
             "h": 7,
             "w": 12,
             "x": 0,
-            "y": 112
+            "y": 168
           },
           "hiddenSeries": false,
           "id": 26,
@@ -7985,7 +7906,7 @@
             "h": 7,
             "w": 12,
             "x": 12,
-            "y": 112
+            "y": 168
           },
           "hiddenSeries": false,
           "id": 27,
@@ -8090,7 +8011,7 @@
             "h": 9,
             "w": 8,
             "x": 0,
-            "y": 119
+            "y": 175
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -8153,7 +8074,7 @@
             "h": 9,
             "w": 8,
             "x": 8,
-            "y": 119
+            "y": 175
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -8216,7 +8137,7 @@
             "h": 9,
             "w": 8,
             "x": 16,
-            "y": 119
+            "y": 175
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -8305,7 +8226,7 @@
             "h": 8,
             "w": 24,
             "x": 0,
-            "y": 113
+            "y": 169
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -8364,7 +8285,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 121
+            "y": 177
           },
           "hiddenSeries": false,
           "id": 166,
@@ -8456,7 +8377,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 121
+            "y": 177
           },
           "hiddenSeries": false,
           "id": 168,
@@ -8559,7 +8480,7 @@
           "dashes": false,
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "PBFA97CFB590B2093"
           },
           "description": "Shows the rate of different raft requests send from the leader to different followers",
           "fill": 1,
@@ -8568,7 +8489,7 @@
             "h": 7,
             "w": 24,
             "x": 0,
-            "y": 12
+            "y": 68
           },
           "hiddenSeries": false,
           "id": 278,
@@ -8602,7 +8523,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "PBFA97CFB590B2093"
               },
               "editorMode": "code",
               "expr": "sum(rate(atomix_raft_messages_send_total{cluster=~\"$cluster\", namespace=~\"$namespace\"}[$__rate_interval])) by (partition, to, type)",
@@ -8647,7 +8568,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "PBFA97CFB590B2093"
           },
           "description": "How many entries are committed per second",
           "fieldConfig": {
@@ -8707,7 +8628,7 @@
             "h": 8,
             "w": 24,
             "x": 0,
-            "y": 19
+            "y": 75
           },
           "id": 373,
           "options": {
@@ -8727,7 +8648,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "PBFA97CFB590B2093"
               },
               "editorMode": "code",
               "expr": "sum(rate(atomix_commit_entries_rate_total{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\"}[$__rate_interval])) by (partition)",
@@ -8742,7 +8663,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "PBFA97CFB590B2093"
           },
           "description": "Rate in KiB at which we append data on followers",
           "fieldConfig": {
@@ -8802,7 +8723,7 @@
             "h": 7,
             "w": 12,
             "x": 0,
-            "y": 27
+            "y": 83
           },
           "id": 363,
           "options": {
@@ -8822,7 +8743,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "PBFA97CFB590B2093"
               },
               "editorMode": "code",
               "expr": "sum(rate(atomix_append_entries_data_rate_total{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\"}[$__rate_interval])) by (partition, follower)",
@@ -8837,7 +8758,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "PBFA97CFB590B2093"
           },
           "description": "Rate of entries we append data on followers, counting entries, per partition, per follower",
           "fieldConfig": {
@@ -8897,7 +8818,7 @@
             "h": 7,
             "w": 12,
             "x": 12,
-            "y": 27
+            "y": 83
           },
           "id": 406,
           "options": {
@@ -8917,7 +8838,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "PBFA97CFB590B2093"
               },
               "editorMode": "code",
               "expr": "sum(rate(atomix_append_entries_rate_total{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\"}[$__rate_interval])) by (partition, follower)",
@@ -8932,7 +8853,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "PBFA97CFB590B2093"
           },
           "description": "The rate, in KiB/s, of data appended to the local journal",
           "fieldConfig": {
@@ -8992,7 +8913,7 @@
             "h": 7,
             "w": 12,
             "x": 0,
-            "y": 34
+            "y": 90
           },
           "id": 368,
           "options": {
@@ -9012,7 +8933,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "PBFA97CFB590B2093"
               },
               "editorMode": "code",
               "expr": "sum(rate(atomix_journal_append_data_rate_total{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\"}[$__rate_interval])) by (pod, partition)",
@@ -9027,7 +8948,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "PBFA97CFB590B2093"
           },
           "description": "The rate of entries appended to the local journal (by entry count), per pod, per partition",
           "fieldConfig": {
@@ -9087,7 +9008,7 @@
             "h": 7,
             "w": 12,
             "x": 12,
-            "y": 34
+            "y": 90
           },
           "id": 411,
           "options": {
@@ -9107,7 +9028,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "PBFA97CFB590B2093"
               },
               "editorMode": "code",
               "expr": "sum(rate(atomix_journal_append_rate_total{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\"}[$__rate_interval])) by (pod, partition)",
@@ -9153,7 +9074,7 @@
             "h": 7,
             "w": 12,
             "x": 0,
-            "y": 41
+            "y": 97
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -9248,7 +9169,7 @@
             "h": 7,
             "w": 12,
             "x": 12,
-            "y": 41
+            "y": 97
           },
           "hiddenSeries": false,
           "id": 416,
@@ -9388,7 +9309,7 @@
             "h": 6,
             "w": 12,
             "x": 0,
-            "y": 48
+            "y": 104
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -9499,7 +9420,7 @@
             "h": 6,
             "w": 12,
             "x": 12,
-            "y": 48
+            "y": 104
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -9611,7 +9532,7 @@
             "h": 6,
             "w": 12,
             "x": 0,
-            "y": 54
+            "y": 110
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -9722,7 +9643,7 @@
             "h": 6,
             "w": 12,
             "x": 12,
-            "y": 54
+            "y": 110
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -9808,7 +9729,7 @@
           "dashes": false,
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "PBFA97CFB590B2093"
           },
           "description": "Shows the total count of send install requests from the leader to the followers",
           "fill": 1,
@@ -9817,7 +9738,7 @@
             "h": 7,
             "w": 24,
             "x": 0,
-            "y": 60
+            "y": 116
           },
           "hiddenSeries": false,
           "id": 283,
@@ -9851,7 +9772,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "PBFA97CFB590B2093"
               },
               "expr": "atomix_raft_messages_send_total{cluster=~\"$cluster\", namespace=~\"$namespace\", type=\"InstallRequest\"}",
               "interval": "",
@@ -9912,7 +9833,7 @@
             "h": 7,
             "w": 12,
             "x": 0,
-            "y": 67
+            "y": 123
           },
           "hiddenSeries": false,
           "id": 79,
@@ -10005,7 +9926,7 @@
             "h": 7,
             "w": 12,
             "x": 12,
-            "y": 67
+            "y": 123
           },
           "hiddenSeries": false,
           "id": 114,
@@ -10108,7 +10029,7 @@
             "h": 7,
             "w": 12,
             "x": 0,
-            "y": 74
+            "y": 130
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -10190,7 +10111,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "PBFA97CFB590B2093"
           },
           "description": "Overall latency to flush the complete journal",
           "fieldConfig": {
@@ -10249,7 +10170,7 @@
             "h": 7,
             "w": 12,
             "x": 12,
-            "y": 74
+            "y": 130
           },
           "id": 300,
           "options": {
@@ -10269,7 +10190,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "PBFA97CFB590B2093"
               },
               "editorMode": "code",
               "expr": "sum(rate(atomix_journal_flush_time_sum{cluster=~\"$cluster\", namespace=~\"$namespace\",pod=~\"$pod\", partition=~\"$partition\"}[$__rate_interval])) by (pod) / sum(rate(atomix_journal_flush_time_count{cluster=~\"$cluster\", namespace=~\"$namespace\",pod=~\"$pod\", partition=~\"$partition\"}[$__rate_interval]))  by (pod)",
@@ -10281,7 +10202,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "PBFA97CFB590B2093"
               },
               "editorMode": "code",
               "expr": "histogram_quantile(0.50, sum(rate(atomix_journal_flush_time_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\",pod=~\"$pod\", partition=~\"$partition\"}[$__rate_interval])) by (le))",
@@ -10328,7 +10249,7 @@
             "h": 7,
             "w": 12,
             "x": 0,
-            "y": 81
+            "y": 137
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -10408,7 +10329,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "PBFA97CFB590B2093"
           },
           "description": "Overall latency of flushing a single segment",
           "fieldConfig": {
@@ -10467,7 +10388,7 @@
             "h": 7,
             "w": 12,
             "x": 12,
-            "y": 81
+            "y": 137
           },
           "id": 427,
           "options": {
@@ -10487,7 +10408,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "PBFA97CFB590B2093"
               },
               "expr": "sum(rate(atomix_segment_flush_time_sum{cluster=~\"$cluster\", namespace=~\"$namespace\",pod=~\"$pod\", partition=~\"$partition\"}[$__rate_interval])) by (pod) / sum(rate(atomix_segment_flush_time_count{cluster=~\"$cluster\", namespace=~\"$namespace\",pod=~\"$pod\", partition=~\"$partition\"}[$__rate_interval]))  by (pod)",
               "interval": "",
@@ -10497,7 +10418,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "PBFA97CFB590B2093"
               },
               "expr": "histogram_quantile(0.50, sum(rate(atomix_segment_flush_time_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\",pod=~\"$pod\", partition=~\"$partition\"}[$__rate_interval])) by (le))",
               "hide": false,
@@ -10541,7 +10462,7 @@
             "h": 7,
             "w": 12,
             "x": 0,
-            "y": 88
+            "y": 144
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -10626,7 +10547,7 @@
           "dashes": false,
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "PBFA97CFB590B2093"
           },
           "fill": 1,
           "fillGradient": 0,
@@ -10634,7 +10555,7 @@
             "h": 7,
             "w": 12,
             "x": 12,
-            "y": 88
+            "y": 144
           },
           "hiddenSeries": false,
           "id": 305,
@@ -10666,7 +10587,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "PBFA97CFB590B2093"
               },
               "expr": "sum(rate(atomix_append_entries_latency_sum{cluster=~\"$cluster\", namespace=~\"$namespace\",pod=~\"$pod\", partition=~\"$partition\"}[$__rate_interval])) / sum(rate(atomix_append_entries_latency_count{cluster=~\"$cluster\", namespace=~\"$namespace\",pod=~\"$pod\", partition=~\"$partition\"}[$__rate_interval]))",
               "interval": "",
@@ -10676,7 +10597,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "PBFA97CFB590B2093"
               },
               "expr": "histogram_quantile(0.50, sum(rate(atomix_append_entries_latency_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\",pod=~\"$pod\", partition=~\"$partition\"}[$__rate_interval])) by (le))",
               "hide": false,
@@ -10747,7 +10668,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 95
+            "y": 151
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -10846,7 +10767,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 95
+            "y": 151
           },
           "hiddenSeries": false,
           "id": 72,
@@ -10979,7 +10900,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 103
+            "y": 159
           },
           "id": 432,
           "interval": "1s",
@@ -11055,7 +10976,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 103
+            "y": 159
           },
           "hiddenSeries": false,
           "id": 95,
@@ -11156,7 +11077,7 @@
             "h": 5,
             "w": 8,
             "x": 0,
-            "y": 112
+            "y": 168
           },
           "id": 205,
           "maxPerRow": 6,
@@ -11224,7 +11145,7 @@
             "h": 5,
             "w": 8,
             "x": 0,
-            "y": 117
+            "y": 173
           },
           "id": 209,
           "maxPerRow": 6,
@@ -11305,7 +11226,7 @@
             "h": 5,
             "w": 12,
             "x": 0,
-            "y": 122
+            "y": 178
           },
           "id": 215,
           "options": {
@@ -11345,7 +11266,7 @@
           "dashes": false,
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "PBFA97CFB590B2093"
           },
           "description": "",
           "fieldConfig": {
@@ -11360,7 +11281,7 @@
             "h": 8,
             "w": 24,
             "x": 0,
-            "y": 104
+            "y": 160
           },
           "hiddenSeries": false,
           "id": 180,
@@ -11392,7 +11313,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "PBFA97CFB590B2093"
               },
               "expr": "atomix_segment_count{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\"}",
               "interval": "",
@@ -11458,7 +11379,7 @@
             "h": 5,
             "w": 12,
             "x": 12,
-            "y": 122
+            "y": 178
           },
           "id": 396,
           "options": {
@@ -11574,7 +11495,7 @@
             "h": 6,
             "w": 24,
             "x": 0,
-            "y": 37
+            "y": 93
           },
           "id": 356,
           "links": [],
@@ -11644,7 +11565,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 43
+            "y": 99
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -11757,7 +11678,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 43
+            "y": 99
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -11861,7 +11782,7 @@
           "dashes": false,
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "PBFA97CFB590B2093"
           },
           "description": "Sum of memtable, table reader and cache memory capacity.",
           "fieldConfig": {
@@ -11876,7 +11797,7 @@
             "h": 12,
             "w": 12,
             "x": 0,
-            "y": 115
+            "y": 171
           },
           "hiddenSeries": false,
           "id": 154,
@@ -11907,7 +11828,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "PBFA97CFB590B2093"
               },
               "expr": "(sum(zeebe_rocksdb_memory_estimate_table_readers_mem{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\", partition=~\"$partition\"}) by (pod, partition)) + (sum(zeebe_rocksdb_memory_size_all_mem_tables{cluster=~\"$cluster\", namespace=~\"$namespace\",pod=~\"$pod\",  partition=~\"$partition\"}) by (pod, partition)) + (sum(zeebe_rocksdb_memory_block_cache_capacity{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\", partition=~\"$partition\"}) by (pod, partition)) + (sum(rate(zeebe_rocksdb_live_estimate_num_keys{cluster=~\"$cluster\", namespace=~\"$namespace\",pod=~\"$pod\",  partition=~\"$partition\"}[$__rate_interval])) by (pod, partition) * 10)",
               "hide": false,
@@ -11954,7 +11875,7 @@
           "dashes": false,
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "PBFA97CFB590B2093"
           },
           "description": "Estimated total number of keys in the database per column family",
           "fieldConfig": {
@@ -11969,7 +11890,7 @@
             "h": 6,
             "w": 12,
             "x": 12,
-            "y": 115
+            "y": 171
           },
           "hiddenSeries": false,
           "id": 144,
@@ -12000,7 +11921,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "PBFA97CFB590B2093"
               },
               "expr": "zeebe_rocksdb_live_estimate_num_keys{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\", pod=~\"$pod\"}",
               "interval": "",
@@ -12045,7 +11966,7 @@
           "dashes": false,
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "PBFA97CFB590B2093"
           },
           "description": "Estimated amount of live data in bytes per column family",
           "fieldConfig": {
@@ -12060,7 +11981,7 @@
             "h": 6,
             "w": 12,
             "x": 12,
-            "y": 121
+            "y": 177
           },
           "hiddenSeries": false,
           "id": 142,
@@ -12091,7 +12012,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "PBFA97CFB590B2093"
               },
               "expr": "sum(zeebe_rocksdb_live_estimate_live_data_size{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\", pod=~\"$pod\"}) by (pod, partition)",
               "interval": "",
@@ -12136,7 +12057,7 @@
           "dashes": false,
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "PBFA97CFB590B2093"
           },
           "description": "Returns approximate size of active, unflushed immutable, and pinned immutable memtables (bytes) per partition.\n\nhttps://github.com/facebook/rocksdb/blob/e66199d848cd484b816d07359f1dc0f0b99e5351/include/rocksdb/db.h#L807",
           "fieldConfig": {
@@ -12151,7 +12072,7 @@
             "h": 12,
             "w": 12,
             "x": 0,
-            "y": 127
+            "y": 183
           },
           "hiddenSeries": false,
           "id": 151,
@@ -12182,7 +12103,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "PBFA97CFB590B2093"
               },
               "expr": "sum(zeebe_rocksdb_memory_size_all_mem_tables{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\", pod=~\"$pod\"}) by (pod, partition)",
               "interval": "",
@@ -12228,7 +12149,7 @@
           "dashes": false,
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "PBFA97CFB590B2093"
           },
           "description": "Approximate size of active and unflushed immutable memtables (bytes) per partition.\n\nhttps://github.com/facebook/rocksdb/blob/e66199d848cd484b816d07359f1dc0f0b99e5351/include/rocksdb/db.h#L803",
           "fieldConfig": {
@@ -12243,7 +12164,7 @@
             "h": 6,
             "w": 12,
             "x": 12,
-            "y": 127
+            "y": 183
           },
           "hiddenSeries": false,
           "id": 152,
@@ -12274,7 +12195,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "PBFA97CFB590B2093"
               },
               "expr": "sum(zeebe_rocksdb_memory_cur_size_all_mem_tables{cluster=~\"$cluster\", namespace=~\"$namespace\",pod=~\"$pod\", partition=~\"$partition\"}) by (pod, partition)",
               "interval": "",
@@ -12320,7 +12241,7 @@
           "dashes": false,
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "PBFA97CFB590B2093"
           },
           "description": "Approximate size of active memtable (bytes) per partition.\n\nhttps://github.com/facebook/rocksdb/blob/e66199d848cd484b816d07359f1dc0f0b99e5351/include/rocksdb/db.h#L799",
           "fieldConfig": {
@@ -12335,7 +12256,7 @@
             "h": 6,
             "w": 12,
             "x": 12,
-            "y": 133
+            "y": 189
           },
           "hiddenSeries": false,
           "id": 150,
@@ -12366,7 +12287,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "PBFA97CFB590B2093"
               },
               "expr": "sum(zeebe_rocksdb_memory_cur_size_active_mem_table{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\", pod=~\"$pod\"}) by (pod, partition)",
               "interval": "",
@@ -12412,7 +12333,7 @@
           "dashes": false,
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "PBFA97CFB590B2093"
           },
           "description": "The block cache capacity per column family",
           "fieldConfig": {
@@ -12427,7 +12348,7 @@
             "h": 13,
             "w": 12,
             "x": 0,
-            "y": 139
+            "y": 195
           },
           "hiddenSeries": false,
           "id": 147,
@@ -12458,7 +12379,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "PBFA97CFB590B2093"
               },
               "expr": "sum(zeebe_rocksdb_memory_block_cache_capacity{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\", pod=~\"$pod\"}) by (pod, partition)",
               "interval": "",
@@ -12504,7 +12425,7 @@
           "dashes": false,
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "PBFA97CFB590B2093"
           },
           "description": "The current usage of the block cache per column family\n\nhttps://github.com/facebook/rocksdb/blob/618bf638aabce21262228509e9f99c1c13de2b57/include/rocksdb/cache.h#L261",
           "fieldConfig": {
@@ -12519,7 +12440,7 @@
             "h": 7,
             "w": 12,
             "x": 12,
-            "y": 139
+            "y": 195
           },
           "hiddenSeries": false,
           "id": 149,
@@ -12551,7 +12472,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "PBFA97CFB590B2093"
               },
               "expr": "sum(zeebe_rocksdb_memory_block_cache_usage{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\", pod=~\"$pod\"}) by (pod, partition)",
               "interval": "",
@@ -12597,7 +12518,7 @@
           "dashes": false,
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "PBFA97CFB590B2093"
           },
           "description": "The current pinned usage of the block cache per column family\n\nhttps://github.com/facebook/rocksdb/blob/618bf638aabce21262228509e9f99c1c13de2b57/include/rocksdb/cache.h#L261",
           "fieldConfig": {
@@ -12612,7 +12533,7 @@
             "h": 6,
             "w": 12,
             "x": 12,
-            "y": 146
+            "y": 202
           },
           "hiddenSeries": false,
           "id": 148,
@@ -12643,7 +12564,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "PBFA97CFB590B2093"
               },
               "expr": "sum(zeebe_rocksdb_memory_block_cache_pinned_usage{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\", pod=~\"$pod\"}) by (pod, partition)",
               "interval": "",
@@ -12688,7 +12609,7 @@
           "dashes": false,
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "PBFA97CFB590B2093"
           },
           "description": "Total size (bytes) of all SST  files belong to the latest LSM tree.\n\nhttps://github.com/facebook/rocksdb/blob/e66199d848cd484b816d07359f1dc0f0b99e5351/include/rocksdb/db.h#L882",
           "fieldConfig": {
@@ -12703,7 +12624,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 152
+            "y": 208
           },
           "hiddenSeries": false,
           "id": 155,
@@ -12734,7 +12655,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "PBFA97CFB590B2093"
               },
               "expr": "sum(zeebe_rocksdb_sst_live_sst_files_size{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\", pod=~\"$pod\"}) by (pod, partition)",
               "interval": "",
@@ -12779,7 +12700,7 @@
           "dashes": false,
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "PBFA97CFB590B2093"
           },
           "description": "Total size (bytes) of all SST files.\n\nWARNING: may slow down online queries if there are too many files.\n\nhttps://github.com/facebook/rocksdb/blob/e66199d848cd484b816d07359f1dc0f0b99e5351/include/rocksdb/db.h#L878",
           "fieldConfig": {
@@ -12794,7 +12715,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 152
+            "y": 208
           },
           "hiddenSeries": false,
           "id": 156,
@@ -12825,7 +12746,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "PBFA97CFB590B2093"
               },
               "expr": "sum(zeebe_rocksdb_sst_total_sst_files_size{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\", pod=~\"$pod\"}) by (pod, partition)",
               "interval": "",
@@ -12872,7 +12793,7 @@
           ],
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "PBFA97CFB590B2093"
           },
           "description": "Return 1 if write has been stopped.\n\nhttps://github.com/facebook/rocksdb/blob/e66199d848cd484b816d07359f1dc0f0b99e5351/include/rocksdb/db.h#L908",
           "fieldConfig": {
@@ -12886,7 +12807,7 @@
             "h": 6,
             "w": 6,
             "x": 0,
-            "y": 160
+            "y": 216
           },
           "id": 158,
           "pluginVersion": "6.7.1",
@@ -12961,7 +12882,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "PBFA97CFB590B2093"
               },
               "expr": "sum(zeebe_rocksdb_writes_is_write_stopped{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\", pod=~\"$pod\"}) by (pod, partition)",
               "instant": true,
@@ -12981,7 +12902,7 @@
           "dashes": false,
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "PBFA97CFB590B2093"
           },
           "description": "The current actual delayed write rate. 0 means no delay.\n\nhttps://github.com/facebook/rocksdb/blob/e66199d848cd484b816d07359f1dc0f0b99e5351/include/rocksdb/db.h#L905",
           "fieldConfig": {
@@ -12996,7 +12917,7 @@
             "h": 6,
             "w": 6,
             "x": 6,
-            "y": 160
+            "y": 216
           },
           "hiddenSeries": false,
           "id": 157,
@@ -13027,7 +12948,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "PBFA97CFB590B2093"
               },
               "expr": "zeebe_rocksdb_writes_actual_delayed_write_rate{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\", pod=~\"$pod\"}",
               "interval": "",
@@ -13072,7 +12993,7 @@
           "dashes": false,
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "PBFA97CFB590B2093"
           },
           "description": " Return sum of number of entries in all the immutable mem tables.",
           "fieldConfig": {
@@ -13087,7 +13008,7 @@
             "h": 6,
             "w": 12,
             "x": 12,
-            "y": 160
+            "y": 216
           },
           "hiddenSeries": false,
           "id": 146,
@@ -13118,7 +13039,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "PBFA97CFB590B2093"
               },
               "expr": "zeebe_rocksdb_live_num_entries_imm_mem_tables{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\", pod=~\"$pod\"}",
               "interval": "",
@@ -13163,7 +13084,7 @@
           "dashes": false,
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "PBFA97CFB590B2093"
           },
           "description": "Returns the number of currently running flushes.\n\nhttps://github.com/facebook/rocksdb/blob/e66199d848cd484b816d07359f1dc0f0b99e5351/include/rocksdb/db.h#L783",
           "fieldConfig": {
@@ -13178,7 +13099,7 @@
             "h": 7,
             "w": 6,
             "x": 0,
-            "y": 166
+            "y": 222
           },
           "hiddenSeries": false,
           "id": 159,
@@ -13209,7 +13130,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "PBFA97CFB590B2093"
               },
               "expr": "sum(zeebe_rocksdb_writes_num_running_flushes{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\", pod=~\"$pod\"}) by (pod, partition)",
               "interval": "",
@@ -13254,7 +13175,7 @@
           "dashes": false,
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "PBFA97CFB590B2093"
           },
           "description": "The number of currently running compactions.\n\nhttps://github.com/facebook/rocksdb/blob/e66199d848cd484b816d07359f1dc0f0b99e5351/include/rocksdb/db.h#L791",
           "fieldConfig": {
@@ -13269,7 +13190,7 @@
             "h": 7,
             "w": 6,
             "x": 6,
-            "y": 166
+            "y": 222
           },
           "hiddenSeries": false,
           "id": 160,
@@ -13300,7 +13221,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "PBFA97CFB590B2093"
               },
               "expr": "sum(zeebe_rocksdb_writes_num_running_compactions{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\", pod=~\"$pod\"}) by (pod, partition)",
               "interval": "",
@@ -13345,7 +13266,7 @@
           "dashes": false,
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "PBFA97CFB590B2093"
           },
           "description": "Returns estimated memory used for reading SST tables, excluding memory used in block cache (e.g., filter and index blocks).\n\nhttps://github.com/facebook/rocksdb/blob/e66199d848cd484b816d07359f1dc0f0b99e5351/include/rocksdb/db.h#L832",
           "fieldConfig": {
@@ -13360,7 +13281,7 @@
             "h": 7,
             "w": 12,
             "x": 12,
-            "y": 166
+            "y": 222
           },
           "hiddenSeries": false,
           "id": 153,
@@ -13391,7 +13312,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "PBFA97CFB590B2093"
               },
               "expr": "sum(zeebe_rocksdb_memory_estimate_table_readers_mem{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\", pod=~\"$pod\"}) by (pod, partition)",
               "interval": "",
@@ -13478,7 +13399,7 @@
             "h": 10,
             "w": 12,
             "x": 0,
-            "y": 116
+            "y": 172
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -13539,7 +13460,7 @@
             "h": 10,
             "w": 12,
             "x": 12,
-            "y": 116
+            "y": 172
           },
           "hiddenSeries": false,
           "id": 255,
@@ -13633,7 +13554,7 @@
             "h": 10,
             "w": 12,
             "x": 0,
-            "y": 126
+            "y": 182
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -13693,7 +13614,7 @@
             "h": 10,
             "w": 12,
             "x": 12,
-            "y": 126
+            "y": 182
           },
           "hiddenSeries": false,
           "id": 185,
@@ -13789,7 +13710,7 @@
             "h": 10,
             "w": 24,
             "x": 0,
-            "y": 136
+            "y": 192
           },
           "height": "400",
           "hiddenSeries": false,
@@ -13911,7 +13832,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "PBFA97CFB590B2093"
           },
           "description": "Time taken to start and bootstrap partition servers.",
           "fieldConfig": {
@@ -13942,7 +13863,7 @@
             "h": 6,
             "w": 8,
             "x": 0,
-            "y": 118
+            "y": 174
           },
           "id": 170,
           "maxPerRow": 6,
@@ -13968,7 +13889,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "PBFA97CFB590B2093"
               },
               "expr": "atomix_partition_server_startup_time{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\", partition=~\"$partition\"}",
               "interval": "",
@@ -13978,7 +13899,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "PBFA97CFB590B2093"
               },
               "expr": "atomix_partition_server_bootstrap_time{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\", partition=~\"$partition\"}",
               "interval": "",
@@ -13992,7 +13913,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "PBFA97CFB590B2093"
           },
           "description": "Time taken to recover and reprocess events",
           "fieldConfig": {
@@ -14022,7 +13943,7 @@
             "h": 6,
             "w": 12,
             "x": 0,
-            "y": 124
+            "y": 180
           },
           "id": 174,
           "options": {
@@ -14045,7 +13966,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "PBFA97CFB590B2093"
               },
               "expr": "zeebe_stream_processor_startup_recovery_time{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\", partition=~\"$partition\"}",
               "interval": "",
@@ -14059,7 +13980,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "PBFA97CFB590B2093"
           },
           "description": "The time needed to install all leader services on a newly elected leader until it is ready to process new requests.",
           "fieldConfig": {
@@ -14088,7 +14009,7 @@
             "h": 6,
             "w": 12,
             "x": 12,
-            "y": 124
+            "y": 180
           },
           "id": 265,
           "options": {
@@ -14111,7 +14032,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "PBFA97CFB590B2093"
               },
               "expr": "zeebe_leader_transition_latency{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\", pod=~\"$pod\"}",
               "interval": "",
@@ -14150,7 +14071,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "PBFA97CFB590B2093"
           },
           "fieldConfig": {
             "defaults": {
@@ -14170,7 +14091,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 119
+            "y": 175
           },
           "id": 329,
           "options": {
@@ -14193,7 +14114,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "PBFA97CFB590B2093"
               },
               "exemplar": false,
               "expr": "max(zeebe_backup_operations_in_progress{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\", pod=~\"$pod\", operation=\"take\"}) by (partition)",
@@ -14210,7 +14131,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "PBFA97CFB590B2093"
           },
           "fieldConfig": {
             "defaults": {
@@ -14236,7 +14157,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 119
+            "y": 175
           },
           "id": 319,
           "options": {
@@ -14259,7 +14180,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "PBFA97CFB590B2093"
               },
               "expr": "max(zeebe_backup_operations_total{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\", operation=\"take\", result=\"completed\"}) by (partition)",
               "interval": "",
@@ -14282,7 +14203,7 @@
           "dataFormat": "tsbuckets",
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "PBFA97CFB590B2093"
           },
           "fieldConfig": {
             "defaults": {
@@ -14294,7 +14215,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 127
+            "y": 183
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -14310,7 +14231,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "PBFA97CFB590B2093"
               },
               "expr": "sum(increase(zeebe_backup_operations_latency_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\", operation=\"status\"}[$__interval])) by (le)",
               "format": "heatmap",
@@ -14339,7 +14260,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "PBFA97CFB590B2093"
           },
           "fieldConfig": {
             "defaults": {
@@ -14368,7 +14289,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 127
+            "y": 183
           },
           "id": 325,
           "options": {
@@ -14391,7 +14312,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "PBFA97CFB590B2093"
               },
               "expr": "max by (partition) (rate(zeebe_backup_operations_latency_sum{cluster=~\"$cluster\", namespace=~\"$namespace\",pod=~\"$pod\", partition=~\"$partition\", operation=\"take\"}[1h]) / rate(zeebe_backup_operations_latency_count{cluster=~\"$cluster\", namespace=~\"$namespace\",pod=~\"$pod\", partition=~\"$partition\", operation=\"take\"}[1h]))",
               "hide": false,
@@ -14406,7 +14327,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "PBFA97CFB590B2093"
           },
           "description": "",
           "fieldConfig": {
@@ -14452,7 +14373,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 135
+            "y": 191
           },
           "id": 313,
           "options": {
@@ -14471,7 +14392,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "PBFA97CFB590B2093"
               },
               "expr": "sum(zeebe_backup_operations_total{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\"}) by (operation, result)",
               "hide": false,
@@ -14487,7 +14408,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "PBFA97CFB590B2093"
           },
           "fieldConfig": {
             "defaults": {
@@ -14512,7 +14433,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 135
+            "y": 191
           },
           "id": 321,
           "options": {
@@ -14535,7 +14456,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "PBFA97CFB590B2093"
               },
               "expr": "max(zeebe_backup_operations_total{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\", operation=\"take\", result=\"failed\"}) by (partition)",
               "interval": "",
@@ -14549,7 +14470,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "PBFA97CFB590B2093"
           },
           "fieldConfig": {
             "defaults": {
@@ -14594,7 +14515,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 143
+            "y": 199
           },
           "id": 335,
           "options": {
@@ -14614,7 +14535,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "PBFA97CFB590B2093"
               },
               "expr": "max(zeebe_checkpoint_records_total{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\", pod=~\"$pod\"}) by (partition)",
               "interval": "",
@@ -14628,7 +14549,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "PBFA97CFB590B2093"
           },
           "fieldConfig": {
             "defaults": {
@@ -14652,7 +14573,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 143
+            "y": 199
           },
           "id": 317,
           "options": {
@@ -14675,7 +14596,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "PBFA97CFB590B2093"
               },
               "expr": "max(zeebe_checkpoint_position{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\"}) by (partition)",
               "interval": "",
@@ -14690,7 +14611,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "PBFA97CFB590B2093"
           },
           "fieldConfig": {
             "defaults": {
@@ -14714,7 +14635,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 151
+            "y": 207
           },
           "id": 327,
           "options": {
@@ -14737,7 +14658,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "PBFA97CFB590B2093"
               },
               "expr": "max(zeebe_checkpoint_id{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\", pod=~\"$pod\"}) by (partition)",
               "interval": "",
@@ -14759,6 +14680,421 @@
       ],
       "title": "Backups",
       "type": "row"
+    },
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 17
+      },
+      "id": 434,
+      "panels": [],
+      "title": "Actor",
+      "type": "row"
+    },
+    {
+      "aliasColors": {},
+      "bars": false,
+      "dashLength": 10,
+      "dashes": false,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "$DS_PROMETHEUS"
+      },
+      "description": "Execution time of a certain actor task instance and completing it.",
+      "fieldConfig": {
+        "defaults": {
+          "links": []
+        },
+        "overrides": []
+      },
+      "fill": 1,
+      "fillGradient": 0,
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 18
+      },
+      "hiddenSeries": false,
+      "id": 444,
+      "legend": {
+        "avg": false,
+        "current": false,
+        "max": false,
+        "min": false,
+        "show": true,
+        "total": false,
+        "values": false
+      },
+      "lines": true,
+      "linewidth": 1,
+      "links": [],
+      "nullPointMode": "null",
+      "options": {
+        "alertThreshold": true
+      },
+      "percentage": false,
+      "pluginVersion": "9.3.6",
+      "pointradius": 2,
+      "points": false,
+      "renderer": "flot",
+      "seriesOverrides": [],
+      "spaceLength": 10,
+      "stack": false,
+      "steppedLine": false,
+      "targets": [
+        {
+          "datasource": {
+            "uid": "$DS_PROMETHEUS"
+          },
+          "editorMode": "code",
+          "expr": "histogram_quantile(0.50, sum(rate(zeebe_actor_task_execution_latency_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\",pod=~\"$pod\", partition=~\"$partition\"}[$__rate_interval])) by (le, actorName))",
+          "format": "heatmap",
+          "interval": "30s",
+          "intervalFactor": 1,
+          "legendFormat": "p50 {{actorName}}",
+          "range": true,
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "uid": "$DS_PROMETHEUS"
+          },
+          "editorMode": "code",
+          "expr": "histogram_quantile(0.99, sum(rate(zeebe_actor_task_execution_latency_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\",pod=~\"$pod\", partition=~\"$partition\"}[$__rate_interval])) by (le, actorName))",
+          "interval": "",
+          "legendFormat": "p99 {{actorName}}",
+          "range": true,
+          "refId": "B"
+        }
+      ],
+      "thresholds": [],
+      "timeRegions": [],
+      "title": "Actor Task Execution Latency",
+      "tooltip": {
+        "shared": true,
+        "sort": 0,
+        "value_type": "individual"
+      },
+      "type": "graph",
+      "xaxis": {
+        "mode": "time",
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
+        {
+          "format": "short",
+          "label": "seconds",
+          "logBase": 1,
+          "show": true
+        },
+        {
+          "format": "short",
+          "logBase": 1,
+          "show": true
+        }
+      ],
+      "yaxis": {
+        "align": false
+      }
+    },
+    {
+      "aliasColors": {},
+      "bars": false,
+      "dashLength": 10,
+      "dashes": false,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "$DS_PROMETHEUS"
+      },
+      "description": "The time between scheduling and executing a job.",
+      "fieldConfig": {
+        "defaults": {
+          "links": []
+        },
+        "overrides": []
+      },
+      "fill": 1,
+      "fillGradient": 0,
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 18
+      },
+      "hiddenSeries": false,
+      "id": 446,
+      "legend": {
+        "avg": false,
+        "current": false,
+        "max": false,
+        "min": false,
+        "show": true,
+        "total": false,
+        "values": false
+      },
+      "lines": true,
+      "linewidth": 1,
+      "links": [],
+      "nullPointMode": "null",
+      "options": {
+        "alertThreshold": true
+      },
+      "percentage": false,
+      "pluginVersion": "9.3.6",
+      "pointradius": 2,
+      "points": false,
+      "renderer": "flot",
+      "seriesOverrides": [],
+      "spaceLength": 10,
+      "stack": false,
+      "steppedLine": false,
+      "targets": [
+        {
+          "datasource": {
+            "uid": "$DS_PROMETHEUS"
+          },
+          "editorMode": "code",
+          "expr": "histogram_quantile(0.50, sum(rate(zeebe_actor_job_scheduling_latency_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\",pod=~\"$pod\", partition=~\"$partition\"}[$__rate_interval])) by (le, subscriptionType))",
+          "format": "heatmap",
+          "interval": "30s",
+          "intervalFactor": 1,
+          "legendFormat": "p50 {{subscriptionType}}",
+          "range": true,
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "uid": "$DS_PROMETHEUS"
+          },
+          "editorMode": "code",
+          "expr": "histogram_quantile(0.99, sum(rate(zeebe_actor_job_scheduling_latency_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\",pod=~\"$pod\", partition=~\"$partition\"}[$__rate_interval])) by (le, subscriptionType))",
+          "interval": "",
+          "legendFormat": "p99 {{subscriptionType}}",
+          "range": true,
+          "refId": "B"
+        }
+      ],
+      "thresholds": [],
+      "timeRegions": [],
+      "title": "Actor Job Scheduling Latency",
+      "tooltip": {
+        "shared": true,
+        "sort": 0,
+        "value_type": "individual"
+      },
+      "type": "graph",
+      "xaxis": {
+        "mode": "time",
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
+        {
+          "format": "short",
+          "label": "seconds",
+          "logBase": 1,
+          "show": true
+        },
+        {
+          "format": "short",
+          "logBase": 1,
+          "show": true
+        }
+      ],
+      "yaxis": {
+        "align": false
+      }
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "description": "Number of times a certain actor task was executed successfully.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 26
+      },
+      "id": 440,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": false
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "editorMode": "code",
+          "expr": "sum(rate(zeebe_actor_task_execution_count_total{namespace=~\"$namespace\", pod=~\"$pod\"}[1m])) by (actorName)",
+          "legendFormat": "{{actorName}}",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "Actor Task Execution Count",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "description": "The length of the job queue for an actor task.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 26
+      },
+      "id": 442,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": false
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "editorMode": "code",
+          "expr": "sum(rate(zeebe_actor_task_queue_length{namespace=~\"$namespace\", pod=~\"$pod\"}[1m])) by (actorName)",
+          "legendFormat": "{{topic}}: {{pod}} => {{address}}",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "Actor Task Queue Length",
+      "type": "timeseries"
     }
   ],
   "refresh": "10s",
@@ -14787,10 +15123,14 @@
       },
       {
         "allValue": ".*",
-        "current": {},
+        "current": {
+          "selected": false,
+          "text": "All",
+          "value": "$__all"
+        },
         "datasource": {
           "type": "prometheus",
-          "uid": "${DS_PROMETHEUS}"
+          "uid": "PBFA97CFB590B2093"
         },
         "definition": "label_values(atomix_role, cluster)",
         "description": "Kubernetes cluster",
@@ -14814,10 +15154,14 @@
       },
       {
         "allValue": ".*",
-        "current": {},
+        "current": {
+          "selected": false,
+          "text": "All",
+          "value": "$__all"
+        },
         "datasource": {
           "type": "prometheus",
-          "uid": "${DS_PROMETHEUS}"
+          "uid": "PBFA97CFB590B2093"
         },
         "definition": "label_values(atomix_role{cluster=~\"$cluster\"}, namespace)",
         "hide": 0,
@@ -14840,10 +15184,14 @@
       },
       {
         "allValue": ".*",
-        "current": {},
+        "current": {
+          "selected": false,
+          "text": "All",
+          "value": "$__all"
+        },
         "datasource": {
           "type": "prometheus",
-          "uid": "${DS_PROMETHEUS}"
+          "uid": "PBFA97CFB590B2093"
         },
         "definition": "label_values(atomix_role{cluster=~\"$cluster\", namespace=~\"$namespace\"}, pod)",
         "hide": 0,
@@ -14866,10 +15214,14 @@
       },
       {
         "allValue": ".*",
-        "current": {},
+        "current": {
+          "selected": false,
+          "text": "All",
+          "value": "$__all"
+        },
         "datasource": {
           "type": "prometheus",
-          "uid": "${DS_PROMETHEUS}"
+          "uid": "PBFA97CFB590B2093"
         },
         "definition": "label_values(atomix_role{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\"}, partition)",
         "hide": 0,
