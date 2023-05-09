@@ -285,7 +285,7 @@
     <dependency>
       <groupId>io.micrometer</groupId>
       <artifactId>micrometer-registry-prometheus</artifactId>
-      <version>1.10.6</version>
+      <version>1.11.0</version>
     </dependency>
 
     <!--Test dependencies-->
