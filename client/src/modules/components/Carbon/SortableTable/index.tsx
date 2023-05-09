@@ -91,6 +91,7 @@ const SortableTable: React.FC<Props> = ({
   if (state === 'skeleton') {
     return (
       <DataTableSkeleton
+        data-testid="data-table-skeleton"
         columnCount={headerColumns.length}
         rowCount={NUMBER_OF_SKELETON_ROWS}
         showHeader={false}

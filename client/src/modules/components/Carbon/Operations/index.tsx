@@ -145,6 +145,7 @@ const Operations: React.FC<Props> = observer(
                 }}
                 onRequestClose={() => setIsCancellationModalVisible(false)}
                 size="md"
+                data-testid="confirm-cancellation-modal"
               >
                 <p>{`About to cancel Instance ${instance.id}. In case there are called instances, these will be canceled too.`}</p>
                 <p>Click "Apply" to proceed.</p>
@@ -157,6 +158,7 @@ const Operations: React.FC<Props> = observer(
                 passiveModal
                 onRequestClose={() => setIsCancellationModalVisible(false)}
                 size="md"
+                data-testid="passive-cancellation-modal"
               >
                 <p>
                   To cancel this instance, the root instance{' '}
@@ -187,6 +189,7 @@ const Operations: React.FC<Props> = observer(
             }}
             onRequestClose={() => setIsDeleteModalVisible(false)}
             size="md"
+            data-testid="confirm-deletion-modal"
           >
             <p>About to delete Instance {instance.id}.</p>
             <p>Click "Delete" to proceed.</p>
