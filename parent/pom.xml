@@ -51,7 +51,7 @@
     <version.cron-utils>9.2.1</version.cron-utils>
     <version.docker-java-api>3.3.0</version.docker-java-api>
     <version.elasticsearch>7.17.10</version.elasticsearch>
-    <version.error-prone>2.18.0</version.error-prone>
+    <version.error-prone>2.19.0</version.error-prone>
     <version.grpc>1.55.1</version.grpc>
     <version.gson>2.10.1</version.gson>
     <version.guava>31.1-jre</version.guava>
@@ -76,7 +76,7 @@
     <version.opensearch-java>2.4.0</version.opensearch-java>
     <version.opensearch.testcontainers>2.0.0</version.opensearch.testcontainers>
     <version.prometheus>0.16.0</version.prometheus>
-    <version.protobuf>3.22.4</version.protobuf>
+    <version.protobuf>3.23.0</version.protobuf>
     <version.protobuf-common>2.17.0</version.protobuf-common>
     <version.micrometer>1.10.6</version.micrometer>
     <version.rocksdbjni>8.1.1.1</version.rocksdbjni>
