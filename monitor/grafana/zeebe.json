@@ -110,7 +110,7 @@
     {
       "collapsed": true,
       "datasource": {
-        "uid": "${DS_PROMETHEUS}"
+        "uid": "PBFA97CFB590B2093"
       },
       "gridPos": {
         "h": 1,
@@ -121,45 +121,22 @@
       "id": 56,
       "panels": [
         {
-          "id": 68,
-          "gridPos": {
-            "x": 0,
-            "y": 1,
-            "w": 8,
-            "h": 6
-          },
-          "type": "table",
-          "title": "Topology",
-          "transformations": [
-            {
-              "id": "joinByLabels",
-              "options": {
-                "join": [
-                  "pod"
-                ],
-                "value": "partition"
-              }
-            },
-            {
-              "id": "seriesToRows",
-              "options": {}
-            }
-          ],
           "datasource": {
             "type": "prometheus",
             "uid": "$DS_PROMETHEUS"
           },
-          "pluginVersion": "9.3.6",
-          "interval": "1s",
           "description": "Displays the roles of each node per partition.",
-          "links": [],
           "fieldConfig": {
             "defaults": {
+              "color": {
+                "mode": "thresholds"
+              },
               "custom": {
                 "align": "auto",
                 "displayMode": "color-background-solid",
                 "inspect": false
               },
+              "links": [],
               "mappings": [
                 {
                   "options": {
@@ -191,15 +168,10 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "red",
-                    "value": null
+                    "color": "red"
                   }
                 ]
-              },
-              "color": {
-                "mode": "thresholds"
-              },
-              "links": []
+              }
             },
             "overrides": [
               {
@@ -216,19 +188,29 @@
               }
             ]
           },
+          "gridPos": {
+            "h": 6,
+            "w": 8,
+            "x": 0,
+            "y": 1
+          },
+          "id": 68,
+          "interval": "1s",
+          "links": [],
           "options": {
-            "showHeader": true,
             "footer": {
-              "show": false,
+              "enablePagination": false,
+              "fields": "",
               "reducer": [
                 "sum"
               ],
-              "fields": "",
-              "enablePagination": false
+              "show": false
             },
             "frameIndex": 0,
+            "showHeader": true,
             "sortBy": []
           },
+          "pluginVersion": "9.3.6",
           "targets": [
             {
               "datasource": {
@@ -246,7 +228,24 @@
               "range": false,
               "refId": "A"
             }
-          ]
+          ],
+          "title": "Topology",
+          "transformations": [
+            {
+              "id": "joinByLabels",
+              "options": {
+                "join": [
+                  "pod"
+                ],
+                "value": "partition"
+              }
+            },
+            {
+              "id": "seriesToRows",
+              "options": {}
+            }
+          ],
+          "type": "table"
         },
         {
           "datasource": {
@@ -1373,7 +1372,7 @@
       "targets": [
         {
           "datasource": {
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "PBFA97CFB590B2093"
           },
           "refId": "A"
         }
@@ -1384,7 +1383,7 @@
     {
       "collapsed": true,
       "datasource": {
-        "uid": "${DS_PROMETHEUS}"
+        "uid": "PBFA97CFB590B2093"
       },
       "gridPos": {
         "h": 1,
@@ -2429,7 +2428,7 @@
       "targets": [
         {
           "datasource": {
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "PBFA97CFB590B2093"
           },
           "refId": "A"
         }
@@ -2440,7 +2439,7 @@
     {
       "collapsed": true,
       "datasource": {
-        "uid": "${DS_PROMETHEUS}"
+        "uid": "PBFA97CFB590B2093"
       },
       "gridPos": {
         "h": 1,
@@ -3412,7 +3411,7 @@
       "targets": [
         {
           "datasource": {
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "PBFA97CFB590B2093"
           },
           "refId": "A"
         }
@@ -3423,7 +3422,7 @@
     {
       "collapsed": true,
       "datasource": {
-        "uid": "${DS_PROMETHEUS}"
+        "uid": "PBFA97CFB590B2093"
       },
       "gridPos": {
         "h": 1,
@@ -3928,7 +3927,7 @@
       "targets": [
         {
           "datasource": {
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "PBFA97CFB590B2093"
           },
           "refId": "A"
         }
@@ -3939,7 +3938,7 @@
     {
       "collapsed": true,
       "datasource": {
-        "uid": "${DS_PROMETHEUS}"
+        "uid": "PBFA97CFB590B2093"
       },
       "gridPos": {
         "h": 1,
@@ -4460,7 +4459,7 @@
       "targets": [
         {
           "datasource": {
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "PBFA97CFB590B2093"
           },
           "refId": "A"
         }
@@ -4471,7 +4470,7 @@
     {
       "collapsed": true,
       "datasource": {
-        "uid": "${DS_PROMETHEUS}"
+        "uid": "PBFA97CFB590B2093"
       },
       "gridPos": {
         "h": 1,
@@ -4686,7 +4685,7 @@
       "targets": [
         {
           "datasource": {
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "PBFA97CFB590B2093"
           },
           "refId": "A"
         }
@@ -4697,7 +4696,7 @@
     {
       "collapsed": true,
       "datasource": {
-        "uid": "${DS_PROMETHEUS}"
+        "uid": "PBFA97CFB590B2093"
       },
       "gridPos": {
         "h": 1,
@@ -5554,7 +5553,7 @@
       "targets": [
         {
           "datasource": {
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "PBFA97CFB590B2093"
           },
           "refId": "A"
         }
@@ -6438,7 +6437,7 @@
     {
       "collapsed": true,
       "datasource": {
-        "uid": "${DS_PROMETHEUS}"
+        "uid": "PBFA97CFB590B2093"
       },
       "gridPos": {
         "h": 1,
@@ -7850,7 +7849,7 @@
       "targets": [
         {
           "datasource": {
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "PBFA97CFB590B2093"
           },
           "refId": "A"
         }
@@ -7861,7 +7860,7 @@
     {
       "collapsed": true,
       "datasource": {
-        "uid": "${DS_PROMETHEUS}"
+        "uid": "PBFA97CFB590B2093"
       },
       "gridPos": {
         "h": 1,
@@ -8261,7 +8260,7 @@
       "targets": [
         {
           "datasource": {
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "PBFA97CFB590B2093"
           },
           "refId": "A"
         }
@@ -8272,7 +8271,7 @@
     {
       "collapsed": true,
       "datasource": {
-        "uid": "${DS_PROMETHEUS}"
+        "uid": "PBFA97CFB590B2093"
       },
       "gridPos": {
         "h": 1,
@@ -8532,7 +8531,7 @@
       "targets": [
         {
           "datasource": {
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "PBFA97CFB590B2093"
           },
           "refId": "A"
         }
@@ -8543,7 +8542,7 @@
     {
       "collapsed": true,
       "datasource": {
-        "uid": "${DS_PROMETHEUS}"
+        "uid": "PBFA97CFB590B2093"
       },
       "gridPos": {
         "h": 1,
@@ -8692,8 +8691,7 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green",
-                    "value": null
+                    "color": "green"
                   },
                   {
                     "color": "red",
@@ -8788,8 +8786,7 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green",
-                    "value": null
+                    "color": "green"
                   },
                   {
                     "color": "red",
@@ -8884,8 +8881,7 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green",
-                    "value": null
+                    "color": "green"
                   },
                   {
                     "color": "red",
@@ -8980,8 +8976,7 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green",
-                    "value": null
+                    "color": "green"
                   },
                   {
                     "color": "red",
@@ -9076,8 +9071,7 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green",
-                    "value": null
+                    "color": "green"
                   },
                   {
                     "color": "red",
@@ -10239,8 +10233,7 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green",
-                    "value": null
+                    "color": "green"
                   },
                   {
                     "color": "red",
@@ -10458,8 +10451,7 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green",
-                    "value": null
+                    "color": "green"
                   },
                   {
                     "color": "red",
@@ -10929,47 +10921,22 @@
           }
         },
         {
-          "id": 432,
-          "gridPos": {
-            "h": 8,
-            "w": 12,
-            "x": 0,
-            "y": 103
-          },
-          "type": "state-timeline",
-          "title": "Role changes over time",
-          "transformations": [
-            {
-              "id": "convertFieldType",
-              "options": {
-                "conversions": [
-                  {
-                    "destinationType": "string",
-                    "targetField": "Value"
-                  }
-                ],
-                "fields": {}
-              }
-            }
-          ],
           "datasource": {
             "type": "prometheus",
             "uid": "$DS_PROMETHEUS"
           },
-          "pluginVersion": "9.3.6",
-          "interval": "1s",
           "description": "Shows when a role change has happened",
-          "links": [],
           "fieldConfig": {
             "defaults": {
-              "custom": {
-                "lineWidth": 1,
-                "fillOpacity": 70,
-                "spanNulls": false
-              },
               "color": {
                 "mode": "thresholds"
               },
+              "custom": {
+                "fillOpacity": 70,
+                "lineWidth": 1,
+                "spanNulls": false
+              },
+              "links": [],
               "mappings": [
                 {
                   "options": {
@@ -11001,30 +10968,38 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "red",
-                    "value": null
+                    "color": "red"
                   }
                 ]
-              },
-              "links": []
+              }
             },
             "overrides": []
           },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 0,
+            "y": 103
+          },
+          "id": 432,
+          "interval": "1s",
+          "links": [],
           "options": {
-            "mergeValues": true,
-            "showValue": "auto",
             "alignValue": "center",
-            "rowHeight": 0.9,
             "legend": {
-              "showLegend": false,
               "displayMode": "list",
-              "placement": "bottom"
+              "placement": "bottom",
+              "showLegend": false
             },
+            "mergeValues": true,
+            "rowHeight": 0.9,
+            "showValue": "auto",
             "tooltip": {
               "mode": "single",
               "sort": "none"
             }
           },
+          "pluginVersion": "9.3.6",
           "targets": [
             {
               "datasource": {
@@ -11040,7 +11015,23 @@
               "legendFormat": "{{pod}} p{{partition}} ",
               "refId": "A"
             }
-          ]
+          ],
+          "title": "Role changes over time",
+          "transformations": [
+            {
+              "id": "convertFieldType",
+              "options": {
+                "conversions": [
+                  {
+                    "destinationType": "string",
+                    "targetField": "Value"
+                  }
+                ],
+                "fields": {}
+              }
+            }
+          ],
+          "type": "state-timeline"
         },
         {
           "aliasColors": {},
@@ -11505,7 +11496,7 @@
       "targets": [
         {
           "datasource": {
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "PBFA97CFB590B2093"
           },
           "refId": "A"
         }
@@ -11853,7 +11844,7 @@
     {
       "collapsed": true,
       "datasource": {
-        "uid": "${DS_PROMETHEUS}"
+        "uid": "PBFA97CFB590B2093"
       },
       "gridPos": {
         "h": 1,
@@ -13443,7 +13434,7 @@
       "targets": [
         {
           "datasource": {
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "PBFA97CFB590B2093"
           },
           "refId": "A"
         }
@@ -13454,7 +13445,7 @@
     {
       "collapsed": true,
       "datasource": {
-        "uid": "${DS_PROMETHEUS}"
+        "uid": "PBFA97CFB590B2093"
       },
       "gridPos": {
         "h": 1,
@@ -13896,7 +13887,7 @@
       "targets": [
         {
           "datasource": {
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "PBFA97CFB590B2093"
           },
           "refId": "A"
         }
@@ -13907,7 +13898,7 @@
     {
       "collapsed": true,
       "datasource": {
-        "uid": "${DS_PROMETHEUS}"
+        "uid": "PBFA97CFB590B2093"
       },
       "gridPos": {
         "h": 1,
@@ -14135,7 +14126,7 @@
       "targets": [
         {
           "datasource": {
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "PBFA97CFB590B2093"
           },
           "refId": "A"
         }
@@ -14146,7 +14137,7 @@
     {
       "collapsed": true,
       "datasource": {
-        "uid": "${DS_PROMETHEUS}"
+        "uid": "PBFA97CFB590B2093"
       },
       "gridPos": {
         "h": 1,
@@ -14761,7 +14752,7 @@
       "targets": [
         {
           "datasource": {
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "PBFA97CFB590B2093"
           },
           "refId": "A"
         }
