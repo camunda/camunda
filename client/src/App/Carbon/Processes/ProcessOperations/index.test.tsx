@@ -5,8 +5,9 @@
  * except in compliance with the proprietary license.
  */
 
-import {mockApplyDeleteDefinitionOperation} from 'modules/mocks/api/decisions/operations';
-import {decisionDefinitionStore} from 'modules/stores/decisionDefinition';
+import {mockApplyProcessDefinitionOperation} from 'modules/mocks/api/processes/operations';
+import {operationsStore} from 'modules/stores/operations';
+import {panelStatesStore} from 'modules/stores/panelStates';
 import {
   render,
   screen,
@@ -15,9 +16,7 @@ import {
 } from 'modules/testing-library';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {useEffect} from 'react';
-import {DecisionOperations} from '.';
-import {panelStatesStore} from 'modules/stores/panelStates';
-import {operationsStore} from 'modules/stores/operations';
+import {ProcessOperations} from '.';
 
 const mockDisplayNotification = jest.fn();
 
@@ -31,8 +30,8 @@ jest.mock('modules/notifications', () => {
 
 const mockOperation: OperationEntity = {
   id: '2251799813687094',
-  name: 'Delete MyDecisionDefinition - Version 1',
-  type: 'DELETE_DECISION_DEFINITION',
+  name: 'myProcess - Version 2',
+  type: 'DELETE_PROCESS_DEFINITION',
   startDate: '2023-02-16T14:23:45.306+0100',
   endDate: null,
   instancesCount: 10,
@@ -42,68 +41,92 @@ const mockOperation: OperationEntity = {
 
 const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
   useEffect(() => {
-    decisionDefinitionStore.setDefinition({
-      name: 'My Definition',
-      id: 'myDefinition',
-    });
-
     return () => {
-      decisionDefinitionStore.reset();
       panelStatesStore.reset();
       operationsStore.reset();
     };
   }, []);
+
   return <ThemeProvider>{children}</ThemeProvider>;
 };
 
-describe('<DecisionOperations />', () => {
+describe('<ProcessOperations />', () => {
   it('should open modal and show content', async () => {
     const {user} = render(
-      <DecisionOperations
-        decisionName="myDecision"
-        decisionVersion="2"
-        decisionDefinitionId="2251799813687094"
+      <ProcessOperations
+        processDefinitionId="2251799813687094"
+        processName="myProcess"
+        processVersion="2"
       />,
       {wrapper: Wrapper}
     );
 
     await user.click(
       screen.getByRole('button', {
-        name: /^delete decision definition "myDecision - version 2"$/i,
+        name: /^delete process definition "myProcess - version 2"$/i,
       })
     );
 
     expect(
-      screen.getByText(/You are about to delete the following DRD:/)
+      screen.getByText(
+        /You are about to delete the following process definition:/
+      )
     ).toBeInTheDocument();
-    expect(screen.getByText(/My Definition/)).toBeInTheDocument();
+    expect(screen.getByText(/myProcess - Version 2/)).toBeInTheDocument();
+
     expect(
       screen.getByText(
-        /Deleting a decision definition will delete the DRD and will impact the following/
+        /Deleting a process definition will permanently remove it and will impact the following:/i
       )
     ).toBeInTheDocument();
     expect(
       screen.getByText(
-        /^Yes, I confirm I want to delete this DRD and all related instances.$/
+        /All the deleted process definition’s running process instances will be immediately canceled and deleted./i
+      )
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        /All the deleted process definition’s finished process instances will be deleted from the application./i
+      )
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        /All decision and process instances referenced by the deleted process instances will be deleted./i
+      )
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        /If a process definition contains user tasks, they will be canceled and deleted from Tasklist./i
+      )
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        /For a detailed overview, please view our guide on deleting a process definition/i
+      )
+    ).toBeInTheDocument();
+
+    expect(
+      screen.getByText(
+        /Yes, I confirm I want to delete this process definition./i
       )
     ).toBeInTheDocument();
   });
 
   it('should apply delete definition operation', async () => {
-    mockApplyDeleteDefinitionOperation().withSuccess(mockOperation);
+    mockApplyProcessDefinitionOperation().withSuccess(mockOperation);
 
     const {user} = render(
-      <DecisionOperations
-        decisionName="myDecision"
-        decisionVersion="2"
-        decisionDefinitionId="2251799813687094"
+      <ProcessOperations
+        processDefinitionId="2251799813687094"
+        processName="myProcess"
+        processVersion="2"
       />,
       {wrapper: Wrapper}
     );
 
     await user.click(
       screen.getByRole('button', {
-        name: /^delete decision definition "myDecision - version 2"$/i,
+        name: /^delete process definition "myProcess - version 2"$/i,
       })
     );
 
@@ -111,7 +134,7 @@ describe('<DecisionOperations />', () => {
 
     await user.click(
       await screen.findByLabelText(
-        'Yes, I confirm I want to delete this DRD and all related instances.'
+        /Yes, I confirm I want to delete this process definition./i
       )
     );
 
@@ -124,20 +147,20 @@ describe('<DecisionOperations />', () => {
   });
 
   it('should show notification on operation error', async () => {
-    mockApplyDeleteDefinitionOperation().withServerError(500);
+    mockApplyProcessDefinitionOperation().withServerError(500);
 
     const {user} = render(
-      <DecisionOperations
-        decisionName="myDecision"
-        decisionVersion="2"
-        decisionDefinitionId="2251799813687094"
+      <ProcessOperations
+        processDefinitionId="2251799813687094"
+        processName="myProcess"
+        processVersion="2"
       />,
       {wrapper: Wrapper}
     );
 
     await user.click(
       screen.getByRole('button', {
-        name: /^delete decision definition "myDecision - version 2"$/i,
+        name: /^delete process definition "myProcess - version 2"$/i,
       })
     );
 
@@ -145,7 +168,7 @@ describe('<DecisionOperations />', () => {
 
     await user.click(
       await screen.findByLabelText(
-        'Yes, I confirm I want to delete this DRD and all related instances.'
+        /Yes, I confirm I want to delete this process definition./i
       )
     );
 
@@ -160,20 +183,20 @@ describe('<DecisionOperations />', () => {
   });
 
   it('should show notification on operation auth error', async () => {
-    mockApplyDeleteDefinitionOperation().withServerError(403);
+    mockApplyProcessDefinitionOperation().withServerError(403);
 
     const {user} = render(
-      <DecisionOperations
-        decisionName="myDecision"
-        decisionVersion="2"
-        decisionDefinitionId="2251799813687094"
+      <ProcessOperations
+        processDefinitionId="2251799813687094"
+        processName="myProcess"
+        processVersion="2"
       />,
       {wrapper: Wrapper}
     );
 
     await user.click(
       screen.getByRole('button', {
-        name: /^delete decision definition "myDecision - version 2"$/i,
+        name: /^delete process definition "myProcess - version 2"$/i,
       })
     );
 
@@ -181,7 +204,7 @@ describe('<DecisionOperations />', () => {
 
     await user.click(
       await screen.findByLabelText(
-        'Yes, I confirm I want to delete this DRD and all related instances.'
+        /Yes, I confirm I want to delete this process definition./i
       )
     );
 
@@ -197,26 +220,26 @@ describe('<DecisionOperations />', () => {
   });
 
   it('should disable button and show spinner when delete operation is triggered', async () => {
-    mockApplyDeleteDefinitionOperation().withSuccess(mockOperation);
+    mockApplyProcessDefinitionOperation().withSuccess(mockOperation);
 
     const {user} = render(
-      <DecisionOperations
-        decisionName="myDecision"
-        decisionVersion="2"
-        decisionDefinitionId="2251799813687094"
+      <ProcessOperations
+        processDefinitionId="2251799813687094"
+        processName="myProcess"
+        processVersion="2"
       />,
       {wrapper: Wrapper}
     );
 
     await user.click(
       screen.getByRole('button', {
-        name: /^delete decision definition "myDecision - version 2"$/i,
+        name: /^delete process definition "myProcess - version 2"$/i,
       })
     );
 
     await user.click(
       await screen.findByLabelText(
-        'Yes, I confirm I want to delete this DRD and all related instances.'
+        /Yes, I confirm I want to delete this process definition./i
       )
     );
 
@@ -226,32 +249,32 @@ describe('<DecisionOperations />', () => {
     ).toBeInTheDocument();
     expect(
       screen.getByRole('button', {
-        name: /^delete decision definition "myDecision - version 2"$/i,
+        name: /^delete process definition "myProcess - version 2"$/i,
       })
     ).toBeDisabled();
   });
 
   it('should enable button and remove spinner when delete operation failed', async () => {
-    mockApplyDeleteDefinitionOperation().withNetworkError();
+    mockApplyProcessDefinitionOperation().withNetworkError();
 
     const {user} = render(
-      <DecisionOperations
-        decisionName="myDecision"
-        decisionVersion="2"
-        decisionDefinitionId="2251799813687094"
+      <ProcessOperations
+        processDefinitionId="2251799813687094"
+        processName="myProcess"
+        processVersion="2"
       />,
       {wrapper: Wrapper}
     );
 
     await user.click(
       screen.getByRole('button', {
-        name: /^delete decision definition "myDecision - version 2"$/i,
+        name: /^delete process definition "myProcess - version 2"$/i,
       })
     );
 
     await user.click(
       await screen.findByLabelText(
-        'Yes, I confirm I want to delete this DRD and all related instances.'
+        /Yes, I confirm I want to delete this process definition./i
       )
     );
 
@@ -261,7 +284,7 @@ describe('<DecisionOperations />', () => {
     ).toBeInTheDocument();
     expect(
       screen.getByRole('button', {
-        name: /^delete decision definition "myDecision - version 2"$/i,
+        name: /^delete process definition "myProcess - version 2"$/i,
       })
     ).toBeDisabled();
 
@@ -271,26 +294,26 @@ describe('<DecisionOperations />', () => {
 
     expect(
       screen.getByRole('button', {
-        name: /^delete decision definition "myDecision - version 2"$/i,
+        name: /^delete process definition "myProcess - version 2"$/i,
       })
     ).toBeEnabled();
   });
 
   it('should show warning when clicking apply without confirmation', async () => {
-    mockApplyDeleteDefinitionOperation().withServerError(500);
+    mockApplyProcessDefinitionOperation().withSuccess(mockOperation);
 
     const {user} = render(
-      <DecisionOperations
-        decisionName="myDecision"
-        decisionVersion="2"
-        decisionDefinitionId="2251799813687094"
+      <ProcessOperations
+        processDefinitionId="2251799813687094"
+        processName="myProcess"
+        processVersion="2"
       />,
       {wrapper: Wrapper}
     );
 
     await user.click(
       screen.getByRole('button', {
-        name: /^delete decision definition "myDecision - version 2"$/i,
+        name: /^delete process definition "myProcess - version 2"$/i,
       })
     );
 
@@ -306,7 +329,7 @@ describe('<DecisionOperations />', () => {
 
     await user.click(
       screen.getByRole('button', {
-        name: /^delete decision definition "myDecision - version 2"$/i,
+        name: /^delete process definition "myProcess - version 2"$/i,
       })
     );
 

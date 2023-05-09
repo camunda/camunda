@@ -9,6 +9,7 @@ import {InstancesList} from '../Layout/InstancesList';
 import {VisuallyHiddenH1} from 'modules/components/VisuallyHiddenH1';
 import {Filters} from './Filters';
 import {InstancesTable} from './InstancesTable';
+import {DiagramPanel} from './DiagramPanel';
 import {observer} from 'mobx-react';
 import {useEffect} from 'react';
 import {processesStore} from 'modules/stores/processes';
@@ -90,7 +91,7 @@ const Processes: React.FC = observer(() => {
       <VisuallyHiddenH1>Operate Process Instances</VisuallyHiddenH1>
       <InstancesList
         filters={<Filters />}
-        diagram={<div>diagram</div>}
+        diagram={<DiagramPanel />}
         instances={<InstancesTable />}
       />
     </>

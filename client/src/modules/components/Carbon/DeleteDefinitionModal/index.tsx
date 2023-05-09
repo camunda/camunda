@@ -51,7 +51,10 @@ const DeleteDefinitionModal: React.FC<Props> = ({
 
         onDelete();
       }}
-      onRequestClose={onClose}
+      onRequestClose={() => {
+        setHasConfirmationError(false);
+        onClose();
+      }}
       size="md"
     >
       <Stack gap={6}>
