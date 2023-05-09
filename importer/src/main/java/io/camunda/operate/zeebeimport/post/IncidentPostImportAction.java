@@ -16,7 +16,6 @@ import static io.camunda.operate.schema.templates.ListViewTemplate.ID;
 import static io.camunda.operate.schema.templates.TemplateDescriptor.PARTITION_ID;
 import static io.camunda.operate.util.ElasticsearchUtil.*;
 import static java.time.temporal.ChronoUnit.MILLIS;
-import static java.util.Collections.EMPTY_LIST;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.idsQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
@@ -25,7 +24,6 @@ import static org.springframework.beans.factory.config.BeanDefinition.SCOPE_PROT
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.entities.IncidentEntity;
-import io.camunda.operate.entities.IncidentState;
 import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.exceptions.PersistenceException;
 import io.camunda.operate.property.OperateProperties;
@@ -61,6 +59,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Scope;
+import org.springframework.lang.Nullable;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 import org.springframework.stereotype.Component;
 
@@ -156,16 +155,15 @@ public class IncidentPostImportAction implements PostImportAction {
                 .collect(Collectors.toSet());
           }
 
-          updateProcessInstancesState(incident.getState(), piIds, processInstanceIndices, piIdsWithIncidents,
+          updateProcessInstancesState(incident, piIds, processInstanceIndices, piIdsWithIncidents,
               bulkProcessAndFlowNodeInstanceUpdate);
           final List<String> fniIds = new TreePath(incidentTreePath).extractFlowNodeInstanceIds();
-          updateFlowNodeInstancesState(incident.getState(), fniIds, flowNodeInstanceIndices,
+          updateFlowNodeInstancesState(incident, fniIds, flowNodeInstanceIndices,
               flowNodeInstanceInListViewIndices, fniIdsWithIncidents, bulkProcessAndFlowNodeInstanceUpdate);
-          updateIncidents(incident.getId(), incidentIndices.get(incident.getId()),
-              incident.getState(), incidentTreePath, bulkProcessAndFlowNodeInstanceUpdate);
+          updateIncidents(incident, incidentIndices.get(incident.getId()), incidentTreePath, bulkProcessAndFlowNodeInstanceUpdate);
 
           updatePendingIncidentState(flowNodeInstanceId, listViewFlowNodeIndices.get(flowNodeInstanceId),
-              incident.getId(), bulkPendingIncidentUpdate);
+              incident, bulkPendingIncidentUpdate);
         }
       }
 
@@ -293,14 +291,14 @@ public class IncidentPostImportAction implements PostImportAction {
     }
   }
 
-  private void updateProcessInstancesState(final IncidentState state, final List<String> piIds,
+  private void updateProcessInstancesState(final IncidentEntity incident, final List<String> piIds,
       Map<String, String> processInstanceIndices, final Set<String> piIdsWithIncidents,
       final BulkRequest bulkUpdateRequest) {
 
     final List<String> piIds2Update = new ArrayList<>(piIds);
 
     Map<String, Object> updateFields = new HashMap<>();
-    if (state.equals(ACTIVE)) {
+    if (incident.getState().equals(ACTIVE)) {
       updateFields.put(ListViewTemplate.INCIDENT, true);
     } else {
       updateFields.put(ListViewTemplate.INCIDENT, false);
@@ -313,14 +311,13 @@ public class IncidentPostImportAction implements PostImportAction {
     }
 
     for (String piId: piIds2Update) {
-      bulkUpdateRequest.add(new UpdateRequest(processInstanceIndices.get(piId), piId)
-          .doc(updateFields)
-          .retryOnConflict(UPDATE_RETRY_COUNT));
+      String index = processInstanceIndices.get(piId);
+      UpdateRequest updateRequest = createUpdateRequestFor(index, piId, updateFields, null, incident.getProcessInstanceKey().toString());
+      bulkUpdateRequest.add(updateRequest);
     }
-
   }
 
-  private void updateFlowNodeInstancesState(final IncidentState state, final List<String> fniIds,
+  private void updateFlowNodeInstancesState(final IncidentEntity incident, final List<String> fniIds,
       Map<String, List<String>> flowNodeInstanceIndices,
       Map<String, List<String>> flowNodeInstanceInListViewIndices,
       final Set<String> fniIdsWithIncidents, final BulkRequest bulkUpdateRequest) {
@@ -328,7 +325,7 @@ public class IncidentPostImportAction implements PostImportAction {
     final List<String> fniIds2Update = new ArrayList<>(fniIds);
 
     Map<String, Object> updateFields = new HashMap<>();
-    if (state.equals(ACTIVE)) {
+    if (incident.getState().equals(ACTIVE)) {
       updateFields.put(ListViewTemplate.INCIDENT, true);
     } else {
       updateFields.put(ListViewTemplate.INCIDENT, false);
@@ -346,9 +343,8 @@ public class IncidentPostImportAction implements PostImportAction {
 
     for (String fniId : fniIds2Update) {
       flowNodeInstanceIndices.getOrDefault(fniId, List.of()).forEach(index -> {
-        bulkUpdateRequest.add(new UpdateRequest(index, fniId)
-            .doc(updateFields)
-            .retryOnConflict(UPDATE_RETRY_COUNT));
+        UpdateRequest updateRequest = createUpdateRequestFor(index, fniId, updateFields, null, incident.getProcessInstanceKey().toString());
+        bulkUpdateRequest.add(updateRequest);
       });
       if (flowNodeInstanceInListViewIndices.get(fniId) == null) {
         throw new OperateRuntimeException(
@@ -357,38 +353,28 @@ public class IncidentPostImportAction implements PostImportAction {
                 fniId));
       } else {
         flowNodeInstanceInListViewIndices.getOrDefault(fniId, List.of()).forEach(index -> {
-          bulkUpdateRequest.add(new UpdateRequest(index, fniId)
-              .doc(updateFields)
-              .retryOnConflict(UPDATE_RETRY_COUNT));
+          UpdateRequest updateRequest = createUpdateRequestFor(index, fniId, updateFields, null, incident.getProcessInstanceKey().toString());
+          bulkUpdateRequest.add(updateRequest);
         });
       }
     }
   }
 
-  private void updateIncidents(final String incidentId, final String index,
-      final IncidentState state, final String incidentTreePath, final BulkRequest bulkUpdateRequest) {
-    if (state.equals(ACTIVE)) {
-      Map<String, Object> updateFields = new HashMap<>();
-      updateFields.put(IncidentTemplate.PENDING, false);
+  private void updateIncidents(final IncidentEntity incident, final String index, final String incidentTreePath, final BulkRequest bulkUpdateRequest) {
+    Map<String, Object> updateFields = new HashMap<>();
+    updateFields.put(IncidentTemplate.PENDING, false);
+    if (incident.getState().equals(ACTIVE)) {
       updateFields.put(TREE_PATH, incidentTreePath);
-      bulkUpdateRequest.add(new UpdateRequest(index, incidentId)
-          .doc(updateFields)
-          .retryOnConflict(UPDATE_RETRY_COUNT));
-    } else {
-      //we don't remove resolved incidents any more
-      Map<String, Object> updateFields = new HashMap<>();
-      updateFields.put(IncidentTemplate.PENDING, false);
-      bulkUpdateRequest.add(new UpdateRequest(index, incidentId)
-          .doc(updateFields)
-          .retryOnConflict(UPDATE_RETRY_COUNT));
     }
+    UpdateRequest updateRequest = createUpdateRequestFor(index, incident.getId(), updateFields, null, incident.getProcessInstanceKey().toString());
+    bulkUpdateRequest.add(updateRequest);
   }
 
-  private void updatePendingIncidentState(final String flowNodeInstanceId, final String index, final String incidentId,
+  private void updatePendingIncidentState(final String flowNodeInstanceId, final String index, final IncidentEntity incident,
       final BulkRequest bulkUpdateRequest) {
-    bulkUpdateRequest.add(new UpdateRequest(index, flowNodeInstanceId)
-        .script(getUpdatePendingIncidentScript(incidentId))
-        .retryOnConflict(UPDATE_RETRY_COUNT));
+    UpdateRequest updateRequest = createUpdateRequestFor(index, flowNodeInstanceId, null, getUpdatePendingIncidentScript(incident.getId()),
+        incident.getProcessInstanceKey().toString());
+    bulkUpdateRequest.add(updateRequest);
   }
 
   private Script getUpdatePendingIncidentScript(final String incidentId) {
@@ -471,6 +457,22 @@ public class IncidentPostImportAction implements PostImportAction {
           CollectionUtil.addToMap(flowNodeInstanceInListViewIndices, hit.getId(), hit.getIndex())
       );
     });
+  }
+
+  private UpdateRequest createUpdateRequestFor(String index, String id, @Nullable Map<String,Object> doc, @Nullable Script script, String routing) {
+    if ((doc == null) == (script == null)) {
+      throw new OperateRuntimeException("One and only one of 'doc' or 'script' must be provided for the update request");
+    }
+    UpdateRequest updateRequest = new UpdateRequest(index, id).retryOnConflict(UPDATE_RETRY_COUNT);
+    if (doc == null) {
+      updateRequest.script(script);
+    } else {
+      updateRequest.doc(doc);
+    }
+    if (index.contains(ListViewTemplate.INDEX_NAME)) {
+      updateRequest.routing(routing);
+    }
+    return updateRequest;
   }
 
   /**
