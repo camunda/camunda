@@ -19,6 +19,8 @@ import io.camunda.zeebe.client.api.response.ActivatedJob;
 import io.camunda.zeebe.client.api.worker.BackoffSupplier;
 import io.camunda.zeebe.client.api.worker.JobWorker;
 import io.camunda.zeebe.client.impl.Loggers;
+import io.camunda.zeebe.client.metric.JobWorkerMetrics;
+import io.camunda.zeebe.client.metric.impl.MeasurableAtomicIntegerWrapper;
 import java.io.Closeable;
 import java.time.Duration;
 import java.util.Optional;
@@ -55,10 +57,13 @@ public final class JobWorkerImpl implements JobWorker, Closeable {
   private static final String SUPPLY_RETRY_DELAY_FAILURE_MESSAGE =
       "Expected to supply retry delay, but an exception was thrown. Falling back to default backoff supplier";
 
+  // metrics
+  private final JobWorkerMetrics jobWorkerMetrics;
+
   // job queue state
   private final int maxJobsActive;
   private final int activationThreshold;
-  private final AtomicInteger remainingJobs;
+  private final MeasurableAtomicIntegerWrapper measurableAtomicIntegerWrapper;
 
   // job execution facilities
   private final ScheduledExecutorService executor;
@@ -79,12 +84,17 @@ public final class JobWorkerImpl implements JobWorker, Closeable {
       final Duration pollInterval,
       final JobRunnableFactory jobHandlerFactory,
       final JobPoller jobPoller,
-      final BackoffSupplier backoffSupplier) {
+      final BackoffSupplier backoffSupplier,
+      final JobWorkerMetrics jobWorkerMetrics) {
+    this.jobWorkerMetrics = jobWorkerMetrics;
+
     this.maxJobsActive = maxJobsActive;
     activationThreshold = Math.round(maxJobsActive * 0.3f);
-    remainingJobs = new AtomicInteger(0);
+    measurableAtomicIntegerWrapper =
+        new MeasurableAtomicIntegerWrapper(
+            new AtomicInteger(0), jobWorkerMetrics::currentRemainingJobs);
 
-    this.executor = executor;
+    this.executor = jobWorkerMetrics.wrapMonitorableScheduledExecutorService(executor);
     this.jobHandlerFactory = jobHandlerFactory;
     initialPollInterval = pollInterval.toMillis();
     this.backoffSupplier = backoffSupplier;
@@ -102,7 +112,9 @@ public final class JobWorkerImpl implements JobWorker, Closeable {
 
   @Override
   public boolean isClosed() {
-    return !isOpen() && claimableJobPoller.get() != null && remainingJobs.get() <= 0;
+    return !isOpen()
+        && claimableJobPoller.get() != null
+        && measurableAtomicIntegerWrapper.get() <= 0;
   }
 
   @Override
@@ -123,7 +135,7 @@ public final class JobWorkerImpl implements JobWorker, Closeable {
   /** Frees up the scheduler and polls for new jobs. */
   private void onScheduledPoll() {
     isPollScheduled.set(false);
-    final int actualRemainingJobs = remainingJobs.get();
+    final int actualRemainingJobs = measurableAtomicIntegerWrapper.get();
     if (shouldPoll(actualRemainingJobs)) {
       tryPoll();
     }
@@ -161,7 +173,7 @@ public final class JobWorkerImpl implements JobWorker, Closeable {
   private void poll(final JobPoller jobPoller) {
     // check the condition again within the critical section
     // to avoid race conditions that would let us exceed the buffer size
-    final int actualRemainingJobs = remainingJobs.get();
+    final int actualRemainingJobs = measurableAtomicIntegerWrapper.get();
     if (!shouldPoll(actualRemainingJobs)) {
       LOG.trace("Expected to activate for jobs, but still enough remain. Reschedule poll.");
       releaseJobPoller(jobPoller);
@@ -180,7 +192,7 @@ public final class JobWorkerImpl implements JobWorker, Closeable {
   private void onPollSuccess(final JobPoller jobPoller, final int activatedJobs) {
     // first release, then lookup remaining jobs, to allow handleJobFinished() to poll
     releaseJobPoller(jobPoller);
-    final int actualRemainingJobs = remainingJobs.addAndGet(activatedJobs);
+    final int actualRemainingJobs = measurableAtomicIntegerWrapper.addAndGet(activatedJobs);
     pollInterval = initialPollInterval;
     if (actualRemainingJobs <= 0) {
       schedulePoll();
@@ -210,11 +222,18 @@ public final class JobWorkerImpl implements JobWorker, Closeable {
   }
 
   private void handleJob(final ActivatedJob job) {
-    executor.execute(jobHandlerFactory.create(job, this::handleJobFinished));
+    executor.execute(
+        jobHandlerFactory.create(
+            job,
+            () -> {
+              handleJobFinished();
+              jobWorkerMetrics.jobFinished(job);
+            }));
+    jobWorkerMetrics.jobCreated(job);
   }
 
   private void handleJobFinished() {
-    final int actualRemainingJobs = remainingJobs.decrementAndGet();
+    final int actualRemainingJobs = measurableAtomicIntegerWrapper.decrementAndGet();
     if (!isPollScheduled.get() && shouldPoll(actualRemainingJobs)) {
       tryPoll();
     }

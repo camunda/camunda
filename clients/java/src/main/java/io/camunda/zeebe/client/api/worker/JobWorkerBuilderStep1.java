@@ -16,6 +16,7 @@
 package io.camunda.zeebe.client.api.worker;
 
 import io.camunda.zeebe.client.ZeebeClientConfiguration;
+import io.camunda.zeebe.client.metric.JobWorkerMetricsProvider;
 import java.time.Duration;
 import java.util.List;
 
@@ -190,6 +191,9 @@ public interface JobWorkerBuilderStep1 {
      * @return the builder for this worker
      */
     JobWorkerBuilderStep3 backoffSupplier(BackoffSupplier backoffSupplier);
+
+    JobWorkerBuilderStep3 jobWorkerMerticsProvider(
+        final JobWorkerMetricsProvider jobWorkerMetricsProvider);
 
     /**
      * Open the worker and start to work on available tasks.

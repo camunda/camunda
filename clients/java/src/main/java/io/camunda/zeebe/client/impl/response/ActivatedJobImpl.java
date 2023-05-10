@@ -20,6 +20,7 @@ import io.camunda.zeebe.client.api.JsonMapper;
 import io.camunda.zeebe.client.api.response.ActivatedJob;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass;
 import java.util.Map;
+import java.util.Objects;
 
 public final class ActivatedJobImpl implements ActivatedJob {
 
@@ -140,5 +141,49 @@ public final class ActivatedJobImpl implements ActivatedJob {
   @Override
   public String toString() {
     return toJson();
+  }
+
+  @Override
+  public boolean equals(final Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final ActivatedJobImpl that = (ActivatedJobImpl) o;
+    return key == that.key
+        && processInstanceKey == that.processInstanceKey
+        && processDefinitionVersion == that.processDefinitionVersion
+        && processDefinitionKey == that.processDefinitionKey
+        && elementInstanceKey == that.elementInstanceKey
+        && retries == that.retries
+        && deadline == that.deadline
+        && Objects.equals(jsonMapper, that.jsonMapper)
+        && Objects.equals(type, that.type)
+        && Objects.equals(customHeaders, that.customHeaders)
+        && Objects.equals(bpmnProcessId, that.bpmnProcessId)
+        && Objects.equals(elementId, that.elementId)
+        && Objects.equals(worker, that.worker)
+        && Objects.equals(variables, that.variables);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(
+        jsonMapper,
+        key,
+        type,
+        customHeaders,
+        processInstanceKey,
+        bpmnProcessId,
+        processDefinitionVersion,
+        processDefinitionKey,
+        elementId,
+        elementInstanceKey,
+        worker,
+        retries,
+        deadline,
+        variables);
   }
 }

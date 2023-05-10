@@ -28,6 +28,8 @@ import io.camunda.zeebe.client.api.worker.JobWorker;
 import io.camunda.zeebe.client.api.worker.JobWorkerBuilderStep1;
 import io.camunda.zeebe.client.api.worker.JobWorkerBuilderStep1.JobWorkerBuilderStep2;
 import io.camunda.zeebe.client.api.worker.JobWorkerBuilderStep1.JobWorkerBuilderStep3;
+import io.camunda.zeebe.client.metric.JobWorkerMetricsProvider;
+import io.camunda.zeebe.client.metric.impl.NoopJobWorkerMetricsProvider;
 import java.io.Closeable;
 import java.time.Duration;
 import java.util.Arrays;
@@ -51,6 +53,8 @@ public final class JobWorkerBuilderImpl
   private Duration requestTimeout;
   private List<String> fetchVariables;
   private BackoffSupplier backoffSupplier;
+
+  private JobWorkerMetricsProvider jobWorkerMetricsProvider = new NoopJobWorkerMetricsProvider();
 
   public JobWorkerBuilderImpl(
       final ZeebeClientConfiguration configuration,
@@ -134,6 +138,13 @@ public final class JobWorkerBuilderImpl
   }
 
   @Override
+  public JobWorkerBuilderStep3 jobWorkerMerticsProvider(
+      final JobWorkerMetricsProvider jobWorkerMetricsProvider) {
+    this.jobWorkerMetricsProvider = jobWorkerMetricsProvider;
+    return this;
+  }
+
+  @Override
   public JobWorker open() {
     ensureNotNullNorEmpty("jobType", jobType);
     ensureNotNull("jobHandler", handler);
@@ -153,7 +164,8 @@ public final class JobWorkerBuilderImpl
             pollInterval,
             jobRunnableFactory,
             jobPoller,
-            backoffSupplier);
+            backoffSupplier,
+            jobWorkerMetricsProvider.provide(workerName, jobType));
     closeables.add(jobWorker);
     return jobWorker;
   }
