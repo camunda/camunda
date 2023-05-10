@@ -5,8 +5,6 @@
  * except in compliance with the proprietary license.
  */
 
-import {mergePathname} from 'modules/utils/mergePathname';
-
 type RequestError = {
   variant: 'network-error' | 'failed-response';
   response: Response | null;
@@ -14,8 +12,8 @@ type RequestError = {
 };
 
 async function request(
-  input: string,
-  init?: RequestInit,
+  input: RequestInfo | URL,
+  init?: RequestInit | undefined,
 ): Promise<
   | {
       response: Response;
@@ -26,13 +24,8 @@ async function request(
       error: RequestError;
     }
 > {
-  const BASENAME = window.clientConfig?.contextPath ?? '/';
   try {
-    const response = await fetch(mergePathname(BASENAME, input), {
-      ...init,
-      credentials: 'include',
-      mode: 'cors',
-    });
+    const response = await fetch(input, init);
 
     if (response.ok) {
       return {

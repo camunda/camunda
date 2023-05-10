@@ -7,13 +7,9 @@
 
 import {makeObservable, observable, action} from 'mobx';
 import {resetApolloStore} from 'modules/apollo-client';
+import {api} from 'modules/api';
 import {request} from 'modules/request';
 import {getStateLocally, storeStateLocally} from 'modules/utils/localStorage';
-
-const Endpoints = {
-  Login: '/api/login',
-  Logout: '/api/logout',
-} as const;
 
 type Status =
   | 'initial'
@@ -37,13 +33,7 @@ class Authentication {
   }
 
   handleLogin = async (username: string, password: string) => {
-    const {response, error} = await request(Endpoints.Login, {
-      method: 'POST',
-      body: new URLSearchParams({username, password}).toString(),
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-      },
-    });
+    const {response, error} = await request(api.login({username, password}));
 
     if (error === null) {
       this.activateSession();
@@ -71,12 +61,7 @@ class Authentication {
   };
 
   handleLogout = async () => {
-    const {error} = await request(Endpoints.Logout, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
+    const {error} = await request(api.logout);
 
     if (error !== null) {
       return error;

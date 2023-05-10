@@ -30,7 +30,7 @@ type Variable = Readonly<{
   isValueTruncated: boolean;
 }>;
 
-type TaskState = 'CREATED' | 'COMPLETED';
+type TaskState = 'CREATED' | 'COMPLETED' | 'CANCELED';
 
 type Task = Readonly<{
   __typename: string;
@@ -71,6 +71,35 @@ type ProcessInstance = Readonly<{
   id: string;
 }>;
 
+type DateSearch = {
+  from: string;
+  to: string;
+};
+
+type PaginationSearchPair = [string, string];
+
+type TasksSearchBody = {
+  state?: TaskState;
+  followUpDate?: DateSearch;
+  dueDate?: DateSearch;
+  assigned?: boolean;
+  assignee?: string;
+  taskDefinitionId?: string;
+  candidateGroup?: string;
+  candidateUser?: string;
+  processDefinitionKey?: string;
+  processInstanceKey?: string;
+  pageSize?: number;
+  sort: Array<{
+    field: 'completionTime' | 'creationTime' | 'followUpDate' | 'dueDate';
+    order: 'ASC' | 'DESC';
+  }>;
+  searchAfter?: PaginationSearchPair;
+  searchAfterOrEqual?: PaginationSearchPair;
+  searchBefore?: PaginationSearchPair;
+  searchBeforeOrEqual?: PaginationSearchPair;
+};
+
 export type {
   User,
   Variable,
@@ -80,4 +109,5 @@ export type {
   Permissions,
   Process,
   ProcessInstance,
+  TasksSearchBody,
 };

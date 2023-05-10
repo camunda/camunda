@@ -8,16 +8,10 @@
 import {rest} from 'msw';
 import {nodeMockServer} from './mockServer/nodeMockServer';
 import {request} from './request';
-import {DEFAULT_MOCK_CLIENT_CONFIG} from './mocks/window';
 
 const MOCK_URL = '/api/login';
-const MOCK_CONTEXT_PATH = '/cloud';
 
 describe('request', () => {
-  afterEach(() => {
-    window.clientConfig = DEFAULT_MOCK_CLIENT_CONFIG;
-  });
-
   it('should handle a successful request', async () => {
     nodeMockServer.use(
       rest.post(MOCK_URL, (_, res, ctx) =>
@@ -81,30 +75,6 @@ describe('request', () => {
           message: 'Failed to connect',
         }),
       }),
-    });
-  });
-
-  it('should handle a different base url', async () => {
-    window.clientConfig = {
-      ...DEFAULT_MOCK_CLIENT_CONFIG,
-      contextPath: MOCK_CONTEXT_PATH,
-    };
-    nodeMockServer.use(
-      rest.post(`${MOCK_CONTEXT_PATH}${MOCK_URL}`, (_, res, ctx) =>
-        res.once(ctx.status(200), ctx.json({})),
-      ),
-    );
-
-    const response = await request(MOCK_URL, {
-      method: 'POST',
-      body: JSON.stringify({username: 'demo', password: 'demo'}),
-    });
-
-    expect(response).toStrictEqual({
-      response: expect.objectContaining({
-        status: 200,
-      }),
-      error: null,
     });
   });
 });
