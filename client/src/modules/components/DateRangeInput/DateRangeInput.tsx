@@ -35,7 +35,8 @@ export default function DateRangeInput({
   customNum,
   onChange,
 }: DateRangeInputProps) {
-  const isFixed = ['before', 'between', 'after'].includes(type);
+  const isFixed = (type: string): type is 'before' | 'after' | 'between' =>
+    ['before', 'between', 'after'].includes(type);
   return (
     <Form.Group className="DateRangeInput">
       <Form.InputGroup className="selectGroup">
@@ -65,7 +66,7 @@ export default function DateRangeInput({
           </Select.Option>
         </Select>
         <div className="unitSelection">
-          {!isFixed && type !== 'custom' && (
+          {!isFixed(type) && type !== 'custom' && (
             <Select
               disabled={type !== 'this' && type !== 'last'}
               onChange={(unit) => onChange({unit})}
@@ -77,7 +78,7 @@ export default function DateRangeInput({
               <Select.Option value="quarters">{t('common.unit.quarter.label')}</Select.Option>
             </Select>
           )}
-          {isFixed && (
+          {isFixed(type) && (
             <DatePicker
               key={type}
               type={type}

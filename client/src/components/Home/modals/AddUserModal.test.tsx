@@ -32,7 +32,7 @@ it('should call the onConfirm prop', () => {
   const node = shallow(<AddUserModal {...props} />);
 
   node.find(UserTypeahead).prop('onChange')([
-    {id: 'USER:testUser', identity: {id: 'testUser', type: 'user'}},
+    {id: 'USER:testUser', identity: {id: 'testUser', type: 'user', name: ''}},
   ]);
 
   node.find({type: 'radio'}).at(1).simulate('change');
@@ -40,6 +40,6 @@ it('should call the onConfirm prop', () => {
   node.find('.confirm').simulate('click');
 
   expect(props.onConfirm).toHaveBeenCalledWith([
-    {identity: {id: 'testUser', type: 'user'}, role: 'editor'},
+    {identity: {id: 'testUser', type: 'user', name: ''}, role: 'editor'},
   ]);
 });

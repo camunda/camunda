@@ -15,7 +15,7 @@ import {isDateValid, DATE_FORMAT} from './service';
 
 interface DatePickerProps {
   initialDates: {startDate: Date | null; endDate: Date | null};
-  type: string;
+  type: 'between' | 'after' | 'before';
   forceOpen?: boolean;
   onDateChange: (options: {endDate: Date | null; startDate: Date | null; valid?: boolean}) => void;
 }

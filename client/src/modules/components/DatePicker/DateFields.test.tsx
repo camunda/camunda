@@ -23,7 +23,7 @@ const props = {
   startDate: format(parseISO('2017-08-29'), dateFormat),
   endDate: format(parseISO('2020-06-05'), dateFormat),
   format: dateFormat,
-  type: 'between',
+  type: 'between' as const,
   onDateChange: jest.fn(),
 };
 

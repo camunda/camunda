@@ -23,7 +23,7 @@ interface DateFieldsProps {
   startDate: string;
   endDate: string;
   forceOpen?: boolean;
-  type: string;
+  type: 'between' | 'after' | 'before';
   format: string;
   onDateChange: (type: DateFieldName, value: string) => void;
 }
