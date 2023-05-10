@@ -1159,10 +1159,10 @@
     preact-markup "^2.1.1"
     showdown "^2.1.0"
 
-"@camunda/camunda-composite-components@0.0.37":
-  version "0.0.37"
-  resolved "https://registry.yarnpkg.com/@camunda/camunda-composite-components/-/camunda-composite-components-0.0.37.tgz#7141227a1490e4f685b4b701f3b9794f91357cba"
-  integrity sha512-6UfOlrfBMLvd5k6V6C+eiEDxwqBYXbe0elaLLsDRmfQ/MCKmEvVemFsHp7TPq8BLs3GB5PmJVbOONkvE+U5U3A==
+"@camunda/camunda-composite-components@0.0.38":
+  version "0.0.38"
+  resolved "https://registry.yarnpkg.com/@camunda/camunda-composite-components/-/camunda-composite-components-0.0.38.tgz#820ab88e91df7c23085f45787089af9be79e9724"
+  integrity sha512-HMkVlewLLBJkD8y158GL4dw9kpRzsT2OT1QUKf3Mu5umdkE9OeRcT8PIKTxj8E4+wqzZq+iogN4ntPqx808ZHg==
 
 "@carbon/colors@^11.14.0":
   version "11.14.0"
@@ -2638,10 +2638,10 @@
   resolved "https://registry.yarnpkg.com/@types/node/-/node-18.16.5.tgz#bf64e42719dc2e74da24709a2e1c0b50a966120a"
   integrity sha512-seOA34WMo9KB+UA78qaJoCO20RJzZGVXQ5Sh6FWu0g/hfT44nKXnej3/tCQl7FL97idFpBhisLYCTB50S0EirA==
 
-"@types/node@18.16.6":
-  version "18.16.6"
-  resolved "https://registry.yarnpkg.com/@types/node/-/node-18.16.6.tgz#d0ffffe201b253989b17ea157ddabec677a4f4fe"
-  integrity sha512-N7KINmeB8IN3vRR8dhgHEp+YpWvGFcpDoh5XZ8jB5a00AdFKCKEyyGTOPTddUf4JqU1ZKTVxkOxakDvchNVI2Q==
+"@types/node@18.16.7":
+  version "18.16.7"
+  resolved "https://registry.yarnpkg.com/@types/node/-/node-18.16.7.tgz#86d0ba2541f808cb78d4dc5d3e40242a349d6db8"
+  integrity sha512-MFg7ua/bRtnA1hYE3pVyWxGd/r7aMqjNOdHvlSsXV3n8iaeGKkOaPzpJh6/ovf4bEXWcojkeMJpTsq3mzXW4IQ==
 
 "@types/node@^12.20.10":
   version "12.20.55"
