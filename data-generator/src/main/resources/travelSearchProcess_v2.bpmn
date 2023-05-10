@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:modeler="http://camunda.org/schema/modeler/1.0" id="Definitions_1pg20dm" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="5.10.0" modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="8.2.0">
+  <bpmn:process id="travelSearchProcess" isExecutable="true">
+    <bpmn:extensionElements>
+      <zeebe:userTaskForm id="travelForm">
+        {
+  "components": [
+    {
+      "values": [
+        {
+          "label": "GRU - Guarulhos",
+          "value": "GRU"
+        },
+        {
+          "label": "DUB - Dublin",
+          "value": "DUB"
+        },
+        {
+          "label": "SSA - Salvador",
+          "value": "SSA"
+        }
+      ],
+      "label": "From",
+      "type": "select",
+      "layout": {
+        "row": "Row_15ghdy6",
+        "columns": null
+      },
+      "id": "Field_1jklxeu",
+      "key": "from",
+      "searchable": true
+    },
+    {
+      "values": [
+        {
+          "label": "DUB - Dublin",
+          "value": "DUB"
+        },
+        {
+          "label": "GRU - Guarulhos",
+          "value": "GRU"
+        },
+        {
+          "label": "SSA - Salvador",
+          "value": "SSA"
+        }
+      ],
+      "label": "To",
+      "type": "select",
+      "layout": {
+        "row": "Row_0o6k2js",
+        "columns": null
+      },
+      "id": "Field_08t3eab",
+      "key": "to",
+      "searchable": true
+    }
+  ],
+  "type": "default",
+  "id": "travelForm",
+  "executionPlatform": "Camunda Cloud",
+  "executionPlatformVersion": "8.2.0",
+  "exporter": {
+    "name": "Camunda Modeler",
+    "version": "5.10.0"
+  },
+  "schemaVersion": 8
+}
+  </zeebe:userTaskForm>
+    </bpmn:extensionElements>
+    <bpmn:startEvent id="StartEvent_1">
+      <bpmn:outgoing>Flow_15vkolf</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:sequenceFlow id="Flow_15vkolf" sourceRef="StartEvent_1" targetRef="humanTask" />
+    <bpmn:userTask id="humanTask" name="humanTask">
+      <bpmn:extensionElements />
+      <bpmn:incoming>Flow_15vkolf</bpmn:incoming>
+      <bpmn:outgoing>Flow_1i3gdwk</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:sequenceFlow id="Flow_1i3gdwk" sourceRef="humanTask" targetRef="Event_07rdhb7" />
+    <bpmn:endEvent id="Event_07rdhb7">
+      <bpmn:incoming>Flow_1i3gdwk</bpmn:incoming>
+    </bpmn:endEvent>
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="startedByForm">
+      <bpmndi:BPMNShape id="_BPMNShape_StartEvent_2" bpmnElement="StartEvent_1">
+        <dc:Bounds x="179" y="99" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_087m3l3_di" bpmnElement="humanTask">
+        <dc:Bounds x="270" y="77" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_07rdhb7_di" bpmnElement="Event_07rdhb7">
+        <dc:Bounds x="442" y="99" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_15vkolf_di" bpmnElement="Flow_15vkolf">
+        <di:waypoint x="215" y="117" />
+        <di:waypoint x="270" y="117" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1i3gdwk_di" bpmnElement="Flow_1i3gdwk">
+        <di:waypoint x="370" y="117" />
+        <di:waypoint x="442" y="117" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>
