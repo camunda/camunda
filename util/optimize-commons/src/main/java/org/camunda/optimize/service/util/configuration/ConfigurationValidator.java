@@ -13,11 +13,9 @@ import com.jayway.jsonpath.Option;
 import com.jayway.jsonpath.ReadContext;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.service.exceptions.OptimizeConfigurationException;
-import org.camunda.optimize.service.metadata.Version;
 import org.camunda.optimize.util.SuppressionConstants;
 
 import java.io.InputStream;
-import java.text.MessageFormat;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -33,43 +31,42 @@ import static org.camunda.optimize.service.util.configuration.ConfigurationUtil.
 @Slf4j
 public class ConfigurationValidator {
 
-  public static final String DOC_URL = MessageFormat.format(
-    "https://docs.camunda.org/optimize/{0}.{1}", Version.VERSION_MAJOR, Version.VERSION_MINOR
-  );
-  private static final String[] DEFAULT_DEPRECATED_CONFIG_LOCATIONS = {"deprecated-config.yaml"};
+  public static final String DOC_URL =
+    "https://docs.camunda.io/optimize/next/self-managed/optimize-deployment/configuration/system-configuration/";
+  private static final String[] DEFAULT_DELETED_CONFIG_LOCATIONS = {"deleted-config.yaml"};
 
-  private final Map<String, String> deprecatedConfigKeys;
+  private final Map<String, String> deletedConfigKeys;
 
   public ConfigurationValidator() {
     this(null);
   }
 
   @SuppressWarnings(SuppressionConstants.UNCHECKED_CAST)
-  public ConfigurationValidator(String[] deprecatedConfigLocations) {
-    final List<InputStream> deprecatedConfigStreams = getLocationsAsInputStream(
-      deprecatedConfigLocations == null ? DEFAULT_DEPRECATED_CONFIG_LOCATIONS : deprecatedConfigLocations
+  public ConfigurationValidator(String[] deletedConfigLocations) {
+    final List<InputStream> deletedConfigStreams = getLocationsAsInputStream(
+      deletedConfigLocations == null ? DEFAULT_DELETED_CONFIG_LOCATIONS : deletedConfigLocations
     );
 
-    this.deprecatedConfigKeys = (Map<String, String>) parseConfigFromLocations(deprecatedConfigStreams)
+    this.deletedConfigKeys = (Map<String, String>) parseConfigFromLocations(deletedConfigStreams)
       .map(ReadContext::json).orElse(Collections.emptyMap());
   }
 
   public void validate(ConfigurationService configurationService) {
-    validateNoDeprecatedConfigKeysUsed(configurationService.getConfigJsonContext());
+    validateNoDeletedConfigKeysUsed(configurationService.getConfigJsonContext());
     configurationService.getEmailAuthenticationConfiguration().validate();
     validateWebhooks(configurationService);
   }
 
-  public static ConfigurationValidator createValidatorWithoutDeprecations() {
+  public static ConfigurationValidator createValidatorWithoutDeletions() {
     return new ConfigurationValidator(new String[]{});
   }
 
-  private void validateNoDeprecatedConfigKeysUsed(ReadContext configJsonContext) {
+  private void validateNoDeletedConfigKeysUsed(ReadContext configJsonContext) {
     final Configuration conf = Configuration.defaultConfiguration().addOptions(Option.SUPPRESS_EXCEPTIONS);
     final DocumentContext failsafeConfigurationJsonContext = JsonPath.using(conf)
       .parse((Object) configJsonContext.json());
 
-    final Map<String, String> usedDeprecationKeysWithNewDocumentationPath = deprecatedConfigKeys.entrySet()
+    final Map<String, String> usedDeletionKeysWithNewDocumentationPath = deletedConfigKeys.entrySet()
       .stream()
       .filter(entry -> Optional.ofNullable(failsafeConfigurationJsonContext.read("$." + entry.getKey()))
         // in case of array structures we always a list as result, thus we need to check if it contains actual results
@@ -79,16 +76,17 @@ public class ConfigurationValidator {
         )
         .isPresent()
       )
-      .peek(keyAndPath -> keyAndPath.setValue(DOC_URL + keyAndPath.getValue()))
+      // We now set the URL to be the generic docs URL because we don't have consistent versioning across docs
+      .peek(keyAndUrl -> keyAndUrl.setValue(DOC_URL))
       .peek(keyAndUrl -> log.error(
-        "Deprecated setting used with key {}, please checkout the updated documentation {}",
-        keyAndUrl.getKey(), keyAndUrl.getValue()
+        "Deleted setting used with key {}, please see the updated documentation {}",
+        keyAndUrl.getKey(), DOC_URL
       ))
       .collect(toMap(Map.Entry::getKey, Map.Entry::getValue));
 
-    if (!usedDeprecationKeysWithNewDocumentationPath.isEmpty()) {
+    if (!usedDeletionKeysWithNewDocumentationPath.isEmpty()) {
       throw new OptimizeConfigurationException(
-        "Configuration contains deprecated entries", usedDeprecationKeysWithNewDocumentationPath
+        "Configuration contains deleted entries", usedDeletionKeysWithNewDocumentationPath
       );
     }
   }

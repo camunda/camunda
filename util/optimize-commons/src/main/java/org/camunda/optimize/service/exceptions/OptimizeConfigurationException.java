@@ -10,7 +10,7 @@ import java.util.Map;
 import java.util.Optional;
 
 public class OptimizeConfigurationException extends OptimizeRuntimeException {
-  private Map<String, String> deprecatedKeysAndDocumentationLink = Collections.emptyMap();
+  private Map<String, String> deletedKeysAndDocumentationLink = Collections.emptyMap();
 
   public OptimizeConfigurationException(String message) {
     super(message);
@@ -20,13 +20,13 @@ public class OptimizeConfigurationException extends OptimizeRuntimeException {
     super(message, e);
   }
 
-  public OptimizeConfigurationException(String message, Map<String, String> deprecatedKeysAndDocumentationLink) {
+  public OptimizeConfigurationException(String message, Map<String, String> deletedKeysAndDocumentationLink) {
     super(message);
-    this.deprecatedKeysAndDocumentationLink = Optional.ofNullable(deprecatedKeysAndDocumentationLink)
+    this.deletedKeysAndDocumentationLink = Optional.ofNullable(deletedKeysAndDocumentationLink)
       .orElse(Collections.emptyMap());
   }
 
-  public Map<String, String> getDeprecatedKeysAndDocumentationLink() {
-    return deprecatedKeysAndDocumentationLink;
+  public Map<String, String> getDeletedKeysAndDocumentationLink() {
+    return deletedKeysAndDocumentationLink;
   }
 }
