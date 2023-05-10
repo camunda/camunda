@@ -104,7 +104,7 @@ export default withErrorHandling(
       const translatedType = t(`common.deleter.types.${type}`);
 
       return (
-        <Modal open onClose={this.close} onConfirm={this.delete} className="Deleter">
+        <Modal open onClose={this.close} className="Deleter">
           <Modal.Header>
             {deleteText || t('common.deleteEntity', {entity: translatedType})}
           </Modal.Header>

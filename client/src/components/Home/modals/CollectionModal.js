@@ -75,12 +75,7 @@ export function CollectionModal({
 
   return (
     <>
-      <Modal
-        className="CollectionModal"
-        open={!displaySourcesModal}
-        onClose={onClose}
-        onConfirm={confirm}
-      >
+      <Modal className="CollectionModal" open={!displaySourcesModal} onClose={onClose}>
         <Modal.Header>{title}</Modal.Header>
         <Modal.Content>
           <Form>

@@ -44,7 +44,7 @@ export default class CopyModal extends React.Component {
     const {name, moving, collection, gotoNew} = this.state;
 
     return (
-      <Modal className="CopyModal" open onClose={onClose} onConfirm={this.onConfirm}>
+      <Modal className="CopyModal" open onClose={onClose}>
         <Modal.Header>{t('common.copyName', {name: entity.name})}</Modal.Header>
         <Modal.Content>
           <Form>
