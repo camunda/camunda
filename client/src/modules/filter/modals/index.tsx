@@ -10,3 +10,4 @@ export {DateFilter, DateFilterPreview} from './date';
 export {DurationFilter} from './duration';
 export {NodeFilter, NodeListPreview} from './node';
 export {NodeDateFilter} from './nodeDate';
+export {NodeDuration} from './NodeDuration';

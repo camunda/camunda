@@ -5,26 +5,43 @@
  * except in compliance with the proprietary license.
  */
 
-import React, {useRef, useEffect} from 'react';
-import {Table, Select, Input} from 'components';
+import {useRef, useEffect} from 'react';
 import update from 'immutability-helper';
+
+import {Table, Select, Input} from 'components';
 import {t} from 'translation';
+import {FilterData} from 'types';
+
 import {isValidInput} from './service';
 
 import './NodesTable.scss';
 
 const defaultValue = {operator: '>', value: '', unit: 'hours'};
 
-export default function NodesTable({focus, updateFocus, values, nodeNames, onChange}) {
-  const inputsRef = useRef({});
+interface NodesTableProps {
+  focus?: string | null;
+  updateFocus: (id: string | null) => void;
+  values: Record<string, FilterData>;
+  nodeNames: Record<string, string>;
+  onChange: (value: NodesTableProps['values']) => void;
+}
+
+export default function NodesTable({
+  focus,
+  updateFocus,
+  values,
+  nodeNames,
+  onChange,
+}: NodesTableProps) {
+  const inputsRef = useRef<Record<string, HTMLElement | null>>({});
 
   useEffect(() => {
     if (focus) {
-      inputsRef.current[focus].focus();
+      inputsRef.current[focus]?.focus();
     }
   }, [focus]);
 
-  function setTarget(type, id, value) {
+  function setTarget(type: string, id: string, value: string) {
     if (values[id]) {
       onChange(update(values, {[id]: {[type]: {$set: value}}}));
     } else {
@@ -44,11 +61,15 @@ export default function NodesTable({focus, updateFocus, values, nodeNames, onCha
   return (
     <Table
       className="NodesTable"
-      head={[t('report.heatTarget.table.activity'), t('common.filter.types.duration')]}
-      body={Object.keys(values).map((id) => {
+      head={[
+        t('report.heatTarget.table.activity').toString(),
+        t('common.filter.types.duration').toString(),
+      ]}
+      body={Object.keys(values).map<(string | JSX.Element)[]>((id) => {
         const settings = values[id] || defaultValue;
+        const nodeName = nodeNames[id]!;
         return [
-          nodeNames[id],
+          nodeName,
           <div className="selection">
             <Select
               className="operator"
@@ -90,7 +111,6 @@ export default function NodesTable({focus, updateFocus, values, nodeNames, onCha
           </div>,
         ];
       })}
-      foot={[]}
       disablePagination
     />
   );

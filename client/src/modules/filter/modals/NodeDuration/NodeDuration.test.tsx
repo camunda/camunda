@@ -5,14 +5,16 @@
  * except in compliance with the proprietary license.
  */
 
-import React from 'react';
+import {ComponentProps} from 'react';
 import {shallow} from 'enzyme';
 
 import {BPMNDiagram} from 'components';
 import {loadProcessDefinitionXml} from 'services';
 
 import FilterSingleDefinitionSelection from '../FilterSingleDefinitionSelection';
+
 import {NodeDuration} from './NodeDuration';
+import NodesTable from './NodesTable';
 
 jest.mock('services', () => ({
   ...jest.requireActual('services'),
@@ -21,6 +23,8 @@ jest.mock('services', () => ({
 
 jest.mock('bpmn-js/lib/NavigatedViewer', () => {
   return class Viewer {
+    elements: {id: string; name: string}[];
+    elementRegistry: {filter: () => {map: () => any}};
     constructor() {
       this.elements = [
         {id: 'a', name: 'Element A'},
@@ -45,14 +49,15 @@ jest.mock('bpmn-js/lib/NavigatedViewer', () => {
 });
 
 beforeEach(() => {
-  loadProcessDefinitionXml.mockClear();
+  (loadProcessDefinitionXml as jest.Mock).mockClear();
 });
 
-const props = {
-  mightFail: (data, fn) => fn(data),
+const props: ComponentProps<typeof NodeDuration> = {
+  filterLevel: 'instance',
+  filterType: 'flowNodeDuration',
+  mightFail: jest.fn().mockImplementation((data, cb) => cb(data)),
   close: jest.fn(),
   addFilter: jest.fn(),
-  data: [],
   definitions: [
     {identifier: 'definition', key: 'definitionKey', versions: ['all'], tenantIds: [null]},
   ],
@@ -71,9 +76,9 @@ it('should add duration filters correctly', async () => {
   const node = shallow(<NodeDuration {...props} addFilter={spy} />);
   await flushPromises();
 
-  node.find('NodesTable').prop('onChange')({a: {unit: 'years', value: '12', operator: '>'}});
+  node.find(NodesTable).prop('onChange')?.({a: {unit: 'years', value: '12', operator: '>'}});
 
-  node.find('[primary]').simulate('click');
+  node.find('.confirm').simulate('click');
 
   expect(spy).toHaveBeenCalledWith({
     data: {a: {operator: '>', unit: 'years', value: 12}},
@@ -83,7 +88,7 @@ it('should add duration filters correctly', async () => {
 });
 
 it('should apply previously defined values', async () => {
-  const node = shallow(
+  const node = shallow<NodeDuration>(
     <NodeDuration
       {...props}
       filterData={{
@@ -94,11 +99,10 @@ it('should apply previously defined values', async () => {
     />
   );
 
-  node.setProps({open: true});
   await flushPromises();
 
-  expect(node.state('values').a.value).toBe('12');
-  expect(node.state('values').a.unit).toBe('years');
+  expect(node.state('values').a?.value).toBe('12');
+  expect(node.state('values').a?.unit).toBe('years');
 });
 
 it('should initially load xml', async () => {

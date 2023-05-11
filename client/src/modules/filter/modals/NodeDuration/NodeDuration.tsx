@@ -5,32 +5,51 @@
  * except in compliance with the proprietary license.
  */
 
-import React from 'react';
+import {Component} from 'react';
 import Viewer from 'bpmn-js/lib/NavigatedViewer';
+import {Button} from '@carbon/react';
 
 import {
-  Button,
-  Modal,
+  CarbonModal as Modal,
   BPMNDiagram,
   TargetValueBadge,
   Message,
   LoadingIndicator,
   ClickBehavior,
+  RegistryElement,
 } from 'components';
 import {t} from 'translation';
 import {loadProcessDefinitionXml} from 'services';
-import {withErrorHandling} from 'HOC';
+import {WithErrorHandlingProps, withErrorHandling} from 'HOC';
 import {showError} from 'notifications';
+import {Definition, FilterData} from 'types';
 
 import FilterSingleDefinitionSelection from '../FilterSingleDefinitionSelection';
+import {FilterProps} from '../types';
 
 import {isValidInput} from './service';
 import NodesTable from './NodesTable';
 
 import './NodeDuration.scss';
 
-export class NodeDuration extends React.Component {
-  state = {
+interface NodeDurationProps
+  extends WithErrorHandlingProps,
+    FilterProps<Record<string, FilterData>> {
+  filterLevel: 'instance';
+  filterType: 'flowNodeDuration';
+}
+
+interface NodeDurationState {
+  focus: string | null;
+  values: Record<string, FilterData>;
+  nodeNames: Record<string, string>;
+  loading: boolean;
+  applyTo?: Definition | null;
+  xml: string | null;
+}
+
+export class NodeDuration extends Component<NodeDurationProps, NodeDurationState> {
+  state: NodeDurationState = {
     focus: null,
     values: {},
     nodeNames: {},
@@ -43,7 +62,7 @@ export class NodeDuration extends React.Component {
     this.setState({loading: true});
 
     const validDefinitions = this.props.definitions.filter(
-      (definition) => definition.versions.length && definition.tenantIds.length
+      (definition) => definition.versions?.length && definition.tenantIds?.length
     );
 
     const applyTo =
@@ -64,7 +83,7 @@ export class NodeDuration extends React.Component {
     });
   }
 
-  async componentDidUpdate(prevProps, prevState) {
+  async componentDidUpdate(prevProps: NodeDurationProps, prevState: NodeDurationState) {
     if (prevState.applyTo && prevState.applyTo !== this.state.applyTo) {
       this.setState({loading: true});
 
@@ -79,18 +98,22 @@ export class NodeDuration extends React.Component {
     }
   }
 
-  constructValues = ({key, versions, tenantIds}, predefinedValues = {}) => {
+  constructValues = (
+    definition: Definition | null = {identifier: ''},
+    predefinedValues: Record<string, FilterData> = {}
+  ) => {
+    const {key, tenantIds, versions} = definition || {};
     return this.props.mightFail(
-      loadProcessDefinitionXml(key, versions[0], tenantIds[0]),
+      loadProcessDefinitionXml(key, versions?.[0], tenantIds?.[0]),
       async (xml) => {
         const viewer = new Viewer();
         await viewer.importXML(xml);
-        const values = {};
-        const nodeNames = {};
+        const values: Record<string, object | undefined> = {};
+        const nodeNames: Record<string, string> = {};
 
-        const set = new Set();
+        const set = new Set<RegistryElement>();
         viewer
-          .get('elementRegistry')
+          .get<RegistryElement[]>('elementRegistry')
           .filter((element) => element.businessObject.$instanceOf('bpmn:FlowNode'))
           .map((element) => element.businessObject)
           .forEach((element) => set.add(element));
@@ -108,14 +131,14 @@ export class NodeDuration extends React.Component {
 
   cleanUpValues = () => {
     // this function removes all entries without value and converts values into numbers
-    const values = {};
+    const values: Record<string, FilterData> = {};
 
     Object.keys(this.state.values).forEach((key) => {
       const entry = this.state.values[key];
-      if (entry && entry.value.trim()) {
+      if (entry && entry.value.toString().trim()) {
         values[key] = {
           operator: entry.operator,
-          value: parseFloat(entry.value),
+          value: parseFloat(entry.value.toString()),
           unit: entry.unit,
         };
       }
@@ -145,14 +168,14 @@ export class NodeDuration extends React.Component {
       });
   };
 
-  updateFocus = (focus) => this.setState({focus});
+  updateFocus = (focus: string | null) => this.setState({focus});
 
   confirmModal = () => {
     const data = this.cleanUpValues();
     this.props.addFilter({
       type: 'flowNodeDuration',
       data,
-      appliedTo: [this.state.applyTo.identifier],
+      appliedTo: [this.state.applyTo?.identifier],
     });
   };
 
@@ -167,9 +190,9 @@ export class NodeDuration extends React.Component {
     }
 
     return (
-      <Modal size="max" open onClose={close} className="NodeDuration">
+      <Modal isOverflowVisible size="lg" open onClose={close} className="NodeDuration">
         <Modal.Header>{t('common.filter.types.flowNodeDuration')} </Modal.Header>
-        <Modal.Content className="content-container">
+        <Modal.Content className="contentContainer">
           <FilterSingleDefinitionSelection
             availableDefinitions={definitions}
             applyTo={applyTo}
@@ -178,7 +201,7 @@ export class NodeDuration extends React.Component {
           {loading && <LoadingIndicator />}
           {!loading && (
             <>
-              <div className="diagram-container">
+              <div className="diagramContainer">
                 <BPMNDiagram xml={xml}>
                   <ClickBehavior
                     onClick={({id}) => this.updateFocus(id)}
@@ -200,20 +223,24 @@ export class NodeDuration extends React.Component {
             <Message error>{t('report.heatTarget.invalidValue')}</Message>
           )}
         </Modal.Content>
-        <Modal.Actions>
-          <Button main onClick={close}>
+        <Modal.Footer>
+          <Button kind="secondary" className="cancel" onClick={close}>
             {t('common.cancel')}
           </Button>
-          <Button main primary onClick={this.confirmModal} disabled={empty || !this.validChanges()}>
+          <Button
+            onClick={this.confirmModal}
+            className="confirm"
+            disabled={empty || !this.validChanges()}
+          >
             {filterData ? t('common.filter.updateFilter') : t('common.filter.addFilter')}
           </Button>
-        </Modal.Actions>
+        </Modal.Footer>
       </Modal>
     );
   }
 }
 
-function copyObjectIfExistsAndStringifyValue(obj) {
+function copyObjectIfExistsAndStringifyValue<T extends {value: unknown}>(obj?: T) {
   if (obj) {
     return {
       ...obj,

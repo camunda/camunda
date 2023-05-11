@@ -7,6 +7,6 @@
 
 import {numberParser} from 'services';
 
-export function isValidInput(value) {
-  return value.trim() === '' || numberParser.isPositiveNumber(value);
+export function isValidInput(value?: string | number) {
+  return value?.toString().trim() === '' || numberParser.isPositiveNumber(value);
 }

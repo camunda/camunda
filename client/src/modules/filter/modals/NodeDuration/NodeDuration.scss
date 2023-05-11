@@ -1,17 +1,24 @@
 .NodeDuration {
-  .content-container {
+  &.overflowVisible .cds--modal-container--lg {
+    height: 96%;
+  }
+
+  .cds--modal-content {
     display: flex;
     flex-direction: column;
-    height: 100%;
     min-height: 0;
-  }
 
-  .diagram-container {
-    height: 70%;
-    display: flex;
-  }
+    .diagramContainer {
+      flex-grow: 2;
+      display: flex;
+    }
 
-  .Message {
-    text-align: right;
+    .NodesTable {
+      flex: 1;
+    }
+
+    .Message {
+      text-align: right;
+    }
   }
 }

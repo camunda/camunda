@@ -5,12 +5,12 @@
  * except in compliance with the proprietary license.
  */
 
-import React from 'react';
 import {shallow} from 'enzyme';
+
 import NodesTable from './NodesTable';
 
 const props = {
-  focus: false,
+  focus: 'focus',
   updateFocus: jest.fn(),
   values: {a: {unit: 'days', value: '12', operator: '>'}},
   nodeNames: {a: 'Element A'},
@@ -20,9 +20,9 @@ const props = {
 it('should display a list of flow nodes in a table', async () => {
   const node = shallow(<NodesTable {...props} />);
 
-  const body = node.find('Table').prop('body');
+  const body = node.find('Table').prop<string[][]>('body');
 
-  expect(body[0][0]).toBe('Element A');
+  expect(body[0]?.[0]).toBe('Element A');
 });
 
 it('should set isInvalid property for input if value is invalid', async () => {
@@ -36,9 +36,9 @@ it('should set isInvalid property for input if value is invalid', async () => {
 it('should invoke update focus when changing a value of a flownode', async () => {
   const node = shallow(<NodesTable {...props} />);
 
-  const body = node.find('Table').prop('body');
+  const body = node.find('Table').prop<JSX.Element[][]>('body');
 
-  body[0][1].props.children[0].props.onChange('<');
+  body[0]?.[1]?.props.children[0].props.onChange('<');
 
   expect(props.updateFocus).toHaveBeenCalledWith('a');
 });
