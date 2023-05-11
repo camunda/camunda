@@ -16,7 +16,8 @@
 package io.camunda.zeebe.protocol.record.intent;
 
 public enum ProcessInstanceBatchIntent implements ProcessInstanceRelatedIntent {
-  TERMINATE(0);
+  TERMINATE(0),
+  ACTIVATE(1);
 
   private final short value;
   private final boolean shouldBlacklist;
@@ -34,6 +35,8 @@ public enum ProcessInstanceBatchIntent implements ProcessInstanceRelatedIntent {
     switch (value) {
       case 0:
         return TERMINATE;
+      case 1:
+        return ACTIVATE;
       default:
         return UNKNOWN;
     }

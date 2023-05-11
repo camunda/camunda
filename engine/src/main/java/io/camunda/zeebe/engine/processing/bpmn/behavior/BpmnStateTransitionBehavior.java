@@ -304,6 +304,23 @@ public final class BpmnStateTransitionBehavior {
     return childInstanceKey;
   }
 
+  /**
+   * Activate a given amount of children of a multi-instance element.
+   *
+   * @param context the context of the multi-instance element
+   * @param amount the amount of children for which we will write an activate command
+   */
+  public void activateChildInstancesInBatches(final BpmnElementContext context, final int amount) {
+    final var record =
+        new ProcessInstanceBatchRecord()
+            .setProcessInstanceKey(context.getProcessInstanceKey())
+            .setBatchElementInstanceKey(context.getElementInstanceKey())
+            .setIndex(amount);
+
+    final var key = keyGenerator.nextKey();
+    commandWriter.appendFollowUpCommand(key, ProcessInstanceBatchIntent.ACTIVATE, record);
+  }
+
   public void activateElementInstanceInFlowScope(
       final BpmnElementContext context, final ExecutableFlowElement element) {
 
