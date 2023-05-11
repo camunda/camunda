@@ -5,10 +5,9 @@
  * except in compliance with the proprietary license.
  */
 
-import React from 'react';
+import {shallow} from 'enzyme';
 
 import NodeListPreview from './NodeListPreview';
-import {shallow} from 'enzyme';
 
 const props = {
   nodes: [{id: 'bar', name: 'foo'}],

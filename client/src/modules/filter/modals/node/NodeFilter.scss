@@ -1,6 +1,10 @@
 @import 'shared-styles/shared-styles.scss';
 
 .NodeFilter {
+  .cds--modal-container {
+    height: 100%;
+  }
+
   .modalContent {
     display: flex;
     flex-direction: column;

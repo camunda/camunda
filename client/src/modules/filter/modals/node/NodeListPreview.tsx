@@ -5,14 +5,20 @@
  * except in compliance with the proprietary license.
  */
 
-import {Tooltip} from 'components';
-import React from 'react';
+import {ReactNode} from 'react';
 
+import {Tooltip, ModdleElement} from 'components';
 import {t} from 'translation';
 
-export default function NodeListPreview({nodes, operator, type}) {
-  const previewList = [];
-  const createOperator = (name) => {
+interface NodeListPreviewProps {
+  nodes: ModdleElement[];
+  operator?: string;
+  type: string;
+}
+
+export default function NodeListPreview({nodes, operator, type}: NodeListPreviewProps) {
+  const previewList: JSX.Element[] = [];
+  const createOperator = (name: ReactNode) => {
     return <span className="previewItemOperator"> {name} </span>;
   };
 

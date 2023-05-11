@@ -5,25 +5,51 @@
  * except in compliance with the proprietary license.
  */
 
-import React, {useEffect, useState} from 'react';
+import {useEffect, useState} from 'react';
+import {Button} from '@carbon/react';
 
-import {Modal, ButtonGroup, Button, BPMNDiagram, ClickBehavior, LoadingIndicator} from 'components';
+import {
+  CarbonModal as Modal,
+  ButtonGroup,
+  Button as LegacyButton,
+  BPMNDiagram,
+  ClickBehavior,
+  LoadingIndicator,
+  ModdleElement,
+} from 'components';
 import {t} from 'translation';
 import {loadProcessDefinitionXml} from 'services';
-import {withErrorHandling} from 'HOC';
+import {WithErrorHandlingProps, withErrorHandling} from 'HOC';
 import {showError} from 'notifications';
 
 import FilterSingleDefinitionSelection from '../FilterSingleDefinitionSelection';
+import {FilterProps} from '../types';
 
 import NodeListPreview from './NodeListPreview';
 
 import './NodeFilter.scss';
 
-export function NodeFilter({filterData, definitions, mightFail, close, addFilter}) {
-  const [selectedNodes, setSelectedNodes] = useState([]);
+interface NodeFilterProps
+  extends WithErrorHandlingProps,
+    FilterProps<{
+      values?: string[];
+      operator?: string;
+    }> {
+  filterLevel: 'instance';
+  filterType: 'executedFlowNodes' | 'executingFlowNodes' | 'canceledFlowNodes';
+}
+
+export function NodeFilter({
+  filterData,
+  definitions,
+  mightFail,
+  close,
+  addFilter,
+}: NodeFilterProps) {
+  const [selectedNodes, setSelectedNodes] = useState<(string | ModdleElement)[]>([]);
   const [applyTo, setApplyTo] = useState(() => {
     const validDefinitions = definitions.filter(
-      (definition) => definition.versions.length && definition.tenantIds.length
+      (definition) => definition.versions?.length && definition.tenantIds?.length
     );
 
     return (
@@ -31,8 +57,10 @@ export function NodeFilter({filterData, definitions, mightFail, close, addFilter
       validDefinitions[0]
     );
   });
-  const [xml, setXml] = useState(null);
-  const [operator, setOperator] = useState(filterData?.data ? filterData?.data.operator : 'in');
+  const [xml, setXml] = useState<string | null>(null);
+  const [operator, setOperator] = useState<string | undefined>(
+    filterData?.data ? filterData?.data.operator : 'in'
+  );
   const [type, setType] = useState(filterData?.type ?? 'executedFlowNodes');
 
   useEffect(() => {
@@ -40,7 +68,7 @@ export function NodeFilter({filterData, definitions, mightFail, close, addFilter
       setXml(null);
       setSelectedNodes([]);
       mightFail(
-        loadProcessDefinitionXml(applyTo.key, applyTo.versions[0], applyTo.tenantIds[0]),
+        loadProcessDefinitionXml(applyTo.key, applyTo.versions?.[0], applyTo.tenantIds?.[0]),
         setXml,
         showError
       );
@@ -51,11 +79,10 @@ export function NodeFilter({filterData, definitions, mightFail, close, addFilter
     if (!filterData) {
       return;
     }
-
-    setSelectedNodes(filterData.data.values);
+    setSelectedNodes(filterData.data.values || []);
   }, [filterData]);
 
-  const toggleNode = (toggledNode) => {
+  const toggleNode = (toggledNode: ModdleElement) => {
     if (selectedNodes.includes(toggledNode)) {
       setSelectedNodes(selectedNodes.filter((node) => node !== toggledNode));
     } else {
@@ -64,11 +91,11 @@ export function NodeFilter({filterData, definitions, mightFail, close, addFilter
   };
 
   const createFilter = () => {
-    const values = selectedNodes.map((node) => node.id);
+    const values = (selectedNodes as ModdleElement[]).map((node) => node.id);
     addFilter({
       type,
       data: {operator, values},
-      appliedTo: [applyTo.identifier],
+      appliedTo: [applyTo?.identifier],
     });
   };
 
@@ -76,19 +103,13 @@ export function NodeFilter({filterData, definitions, mightFail, close, addFilter
     return selectedNodes.length > 0;
   };
 
-  const setTypeAndOperator = ({type, operator}) => {
+  const setTypeAndOperator = ({type, operator}: {type: string; operator?: string}) => {
     setType(type);
     setOperator(operator);
   };
 
   return (
-    <Modal
-      open
-      onClose={close}
-      onConfirm={isNodeSelected() ? createFilter : undefined}
-      className="NodeFilter"
-      size="max"
-    >
+    <Modal open onClose={close} className="NodeFilter" size="lg">
       <Modal.Header>
         {t('common.filter.modalHeader', {
           type: t('common.filter.types.flowNode'),
@@ -104,35 +125,39 @@ export function NodeFilter({filterData, definitions, mightFail, close, addFilter
         {xml && (
           <>
             <div className="preview">
-              <NodeListPreview nodes={selectedNodes} operator={operator} type={type} />
+              <NodeListPreview
+                nodes={selectedNodes as ModdleElement[]}
+                operator={operator}
+                type={type}
+              />
             </div>
             <ButtonGroup>
-              <Button
+              <LegacyButton
                 active={type === 'executingFlowNodes'}
                 onClick={() =>
                   setTypeAndOperator({operator: undefined, type: 'executingFlowNodes'})
                 }
               >
                 {t('common.filter.nodeModal.executingFlowNodes')}
-              </Button>
-              <Button
+              </LegacyButton>
+              <LegacyButton
                 active={operator === 'in'}
                 onClick={() => setTypeAndOperator({operator: 'in', type: 'executedFlowNodes'})}
               >
                 {t('common.filter.nodeModal.executedFlowNodes')}
-              </Button>
-              <Button
+              </LegacyButton>
+              <LegacyButton
                 active={operator === 'not in'}
                 onClick={() => setTypeAndOperator({operator: 'not in', type: 'executedFlowNodes'})}
               >
                 {t('common.filter.nodeModal.notExecutedFlowNodes')}
-              </Button>
-              <Button
+              </LegacyButton>
+              <LegacyButton
                 active={type === 'canceledFlowNodes'}
                 onClick={() => setTypeAndOperator({operator: undefined, type: 'canceledFlowNodes'})}
               >
                 {t('common.filter.nodeModal.canceledFlowNodes')}
-              </Button>
+              </LegacyButton>
             </ButtonGroup>
             <div className="diagramContainer">
               <BPMNDiagram xml={xml}>
@@ -146,14 +171,14 @@ export function NodeFilter({filterData, definitions, mightFail, close, addFilter
           </>
         )}
       </Modal.Content>
-      <Modal.Actions>
-        <Button main onClick={close}>
+      <Modal.Footer>
+        <Button kind="secondary" className="cancel" onClick={close}>
           {t('common.cancel')}
         </Button>
-        <Button main primary disabled={!isNodeSelected()} onClick={createFilter}>
+        <Button className="confirm" disabled={!isNodeSelected()} onClick={createFilter}>
           {filterData ? t('common.filter.updateFilter') : t('common.filter.addFilter')}
         </Button>
-      </Modal.Actions>
+      </Modal.Footer>
     </Modal>
   );
 }

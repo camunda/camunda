@@ -5,15 +5,16 @@
  * except in compliance with the proprietary license.
  */
 
-import React, {runAllEffects} from 'react';
+import {runAllEffects} from '__mocks__/react';
 import {shallow} from 'enzyme';
 
-import {Button} from 'components';
+import {Button, ClickBehavior} from 'components';
 import {loadProcessDefinitionXml} from 'services';
 
 import FilterSingleDefinitionSelection from '../FilterSingleDefinitionSelection';
 import {NodeFilter} from './NodeFilter';
 import NodeListPreview from './NodeListPreview';
+import {ComponentProps} from 'react';
 
 jest.mock('services', () => ({
   ...jest.requireActual('services'),
@@ -21,15 +22,18 @@ jest.mock('services', () => ({
 }));
 
 beforeEach(() => {
-  loadProcessDefinitionXml.mockClear();
+  (loadProcessDefinitionXml as jest.Mock).mockClear();
 });
 
-const props = {
-  mightFail: (data, fn) => fn(data),
+const props: ComponentProps<typeof NodeFilter> = {
+  mightFail: jest.fn().mockImplementation((data, cb) => cb(data)),
   definitions: [
     {identifier: 'definition', key: 'definitionKey', versions: ['all'], tenantIds: [null]},
   ],
   addFilter: jest.fn(),
+  close: jest.fn(),
+  filterLevel: 'instance',
+  filterType: 'executedFlowNodes',
 };
 
 it('should contain a modal', () => {
@@ -56,9 +60,9 @@ it('should add an unselected node to the selectedNodes on toggle', () => {
 
   runAllEffects();
 
-  node.find('ClickBehavior').prop('onClick')(flowNode);
+  node.find(ClickBehavior).prop('onClick')(flowNode);
 
-  expect(node.find('ClickBehavior').prop('selectedNodes')).toContain(flowNode);
+  expect(node.find(ClickBehavior).prop('selectedNodes')).toContain(flowNode);
 });
 
 it('should remove a selected node from the selectedNodes on toggle', () => {
@@ -71,10 +75,10 @@ it('should remove a selected node from the selectedNodes on toggle', () => {
 
   runAllEffects();
 
-  node.find('ClickBehavior').prop('onClick')(flowNode);
-  node.find('ClickBehavior').prop('onClick')(flowNode);
+  node.find(ClickBehavior).prop('onClick')(flowNode);
+  node.find(ClickBehavior).prop('onClick')(flowNode);
 
-  expect(node.find('ClickBehavior').prop('selectedNodes')).not.toContain(flowNode);
+  expect(node.find(ClickBehavior).prop('selectedNodes')).not.toContain(flowNode);
 });
 
 it('should create an executed node filter when operator is specified', () => {
@@ -93,10 +97,10 @@ it('should create an executed node filter when operator is specified', () => {
 
   runAllEffects();
 
-  node.find('ClickBehavior').prop('onClick')(flowNode1);
-  node.find('ClickBehavior').prop('onClick')(flowNode2);
+  node.find(ClickBehavior).prop('onClick')(flowNode1);
+  node.find(ClickBehavior).prop('onClick')(flowNode2);
 
-  node.find('[primary]').simulate('click');
+  node.find('.confirm').simulate('click');
 
   expect(spy).toHaveBeenCalledWith({
     type: 'executedFlowNodes',
@@ -121,9 +125,9 @@ it('should set filter type depending on selected operation', () => {
 
   node.find(Button).at(0).simulate('click');
 
-  node.find('ClickBehavior').prop('onClick')(flowNode1);
+  node.find(ClickBehavior).prop('onClick')?.(flowNode1);
 
-  node.find('[primary]').simulate('click');
+  node.find('.confirm').simulate('click');
 
   expect(spy).toHaveBeenCalledWith({
     type: 'executingFlowNodes',
@@ -135,7 +139,7 @@ it('should set filter type depending on selected operation', () => {
   });
 
   node.find(Button).at(3).simulate('click');
-  node.find('[primary]').simulate('click');
+  node.find('.confirm').simulate('click');
 
   expect(spy).toHaveBeenCalledWith({
     type: 'canceledFlowNodes',
@@ -152,7 +156,7 @@ it('should disable create filter button if no node was selected', () => {
 
   runAllEffects();
 
-  expect(node.find('[primary]').prop('disabled')).toBeTruthy(); // create filter
+  expect(node.find('.confirm').prop('disabled')).toBeTruthy(); // create filter
 });
 
 it('should create preview list of selected node', () => {
@@ -165,7 +169,7 @@ it('should create preview list of selected node', () => {
 
   runAllEffects();
 
-  node.find('ClickBehavior').prop('onClick')(flowNode);
+  node.find(ClickBehavior).prop('onClick')(flowNode);
 
   expect(node.find('NodeListPreview').props()).toEqual({
     nodes: [{id: 'bar', name: 'foo'}],
@@ -222,7 +226,7 @@ it('should load new xml after changing definition', () => {
   runAllEffects();
 
   node.find(FilterSingleDefinitionSelection).prop('setApplyTo')(definitions[1]);
-  node.find('ClickBehavior').prop('onClick')({
+  node.find(ClickBehavior).prop('onClick')({
     name: 'foo',
     id: 'bar',
   });

@@ -8,11 +8,11 @@
 import {get} from 'request';
 
 export async function loadProcessDefinitionXml(
-  key: string,
+  key?: string,
   version?: string,
   tenantId?: string | null
 ): Promise<string | null> {
-  const payload: {key: string; version?: string; tenantId?: string} = {key, version};
+  const payload: {key?: string; version?: string; tenantId?: string} = {key, version};
   if (tenantId) {
     payload.tenantId = tenantId;
   }
