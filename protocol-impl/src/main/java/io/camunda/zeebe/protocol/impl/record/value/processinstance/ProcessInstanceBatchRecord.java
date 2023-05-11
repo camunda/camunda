@@ -19,9 +19,17 @@ public final class ProcessInstanceBatchRecord extends UnifiedRecordValue
       new LongProperty("batchElementInstanceKey");
 
   /**
-   * The index is used to determine the beginning of the next batch. If the index equals -1 it means
-   * there won't be another batch. For the TERMINATE intent this index will be the element instance
-   * key of the first child instance of the next batch.
+   * The index is used to keep track of the position in the batch. When the index is -1, there won't
+   * be another batch.
+   *
+   * <p>Depending on the Intent the index is used differently:
+   *
+   * <ul>
+   *   <li>TERMINATE - The index is the element instance key of the first child instance of the next
+   *       batch.
+   *   <li>ACTIVATE - The index is a counter, indicating how many more child instances need to be
+   *       activated.
+   * </ul>
    */
   private final LongProperty indexProperty = new LongProperty("index", -1L);
 
