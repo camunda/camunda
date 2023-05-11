@@ -1,6 +1,6 @@
 {
   "extends": ["config:base", ":rebaseStalePrs"],
-  "includePaths": ["client/**", ".github/**", ".ci/**"],
+  "includePaths": ["client/**", ".github/**", ".ci/**", "Dockerfile"],
   "ignorePaths": ["client/pom.xml"],
   "helmv3": {
     "registryAliases": {
@@ -25,6 +25,16 @@
       "matchUpdateTypes": ["patch"],
       "groupName": "all non-major dependencies",
       "groupSlug": "all-minor-patch"
+    },
+    {
+      "matchManagers": [
+        "Dockerfile"
+      ],
+      "matchUpdateTypes": [
+        "major",
+        "minor"
+      ],
+      "enabled": false
     }
   ],
   "branchPrefix": "fe-renovate/"
