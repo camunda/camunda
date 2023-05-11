@@ -6,3 +6,7 @@
  */
 
 export {default as BPMNDiagram} from './BPMNDiagram';
+export {default as ClickBehavior} from './ClickBehavior';
+
+export type {Canvas, ModdleElement} from './BPMNDiagram';
+export type {RegistryElement} from './ClickBehavior';

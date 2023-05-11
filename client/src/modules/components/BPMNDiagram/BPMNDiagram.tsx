@@ -31,6 +31,23 @@ const availableViewers: {
   xml: string | null;
 }[] = [];
 
+export interface ModdleElement {
+  id: string;
+  name?: string;
+}
+
+export type Canvas = {
+  zoom: (fit: string, center?: string) => void;
+  resized: () => void;
+  viewbox: () => DOMRect;
+  removeMarker: (id: string, selector: string) => void;
+  addMarker: (id: string | ModdleElement, selector: string) => void;
+};
+
+type ZoomScroll = {
+  stepZoom: (step: number) => void;
+};
+
 export interface BPMNDiagramProps extends WithErrorHandlingProps, ThemeContextProps {
   xml: string | null;
   loading?: boolean;
@@ -44,16 +61,6 @@ export interface BPMNDiagramProps extends WithErrorHandlingProps, ThemeContextPr
 export interface BPMNDiagramState {
   loaded: boolean;
 }
-
-type Canvas = {
-  zoom: (fit: string, center?: string) => void;
-  resized: () => void;
-  viewbox: () => DOMRect;
-};
-
-type ZoomScroll = {
-  stepZoom: (step: number) => void;
-};
 
 export class BPMNDiagram extends Component<BPMNDiagramProps, BPMNDiagramState> {
   resizeObserver: ResizeObserver;
