@@ -122,6 +122,9 @@
 
         <!-- disable basic quarkus logging -->
         <quarkus.log.console.enable>false</quarkus.log.console.enable>
+
+        <!-- native image compression -->
+        <quarkus.native.compression.level>5</quarkus.native.compression.level>
       </properties>
     </profile>
   </profiles>
