@@ -9,7 +9,6 @@ package io.camunda.zeebe.engine.processing.job;
 
 import io.camunda.zeebe.engine.state.immutable.JobState;
 import io.camunda.zeebe.engine.state.immutable.VariableState;
-import io.camunda.zeebe.msgpack.value.DocumentValue;
 import io.camunda.zeebe.msgpack.value.LongValue;
 import io.camunda.zeebe.msgpack.value.StringValue;
 import io.camunda.zeebe.msgpack.value.ValueArray;
@@ -35,7 +34,7 @@ final class JobBatchCollector {
   private final ObjectHashSet<DirectBuffer> variableNames = new ObjectHashSet<>();
 
   private final JobState jobState;
-  private final VariableState variableState;
+  private final JobVariablesCollector jobVariablesCollector;
   private final Predicate<Integer> canWriteEventOfLength;
 
   /**
@@ -51,8 +50,8 @@ final class JobBatchCollector {
       final VariableState variableState,
       final Predicate<Integer> canWriteEventOfLength) {
     this.jobState = jobState;
-    this.variableState = variableState;
     this.canWriteEventOfLength = canWriteEventOfLength;
+    jobVariablesCollector = new JobVariablesCollector(variableState);
   }
 
   /**
@@ -83,7 +82,8 @@ final class JobBatchCollector {
           // adding it to the batch
           final var deadline = record.getTimestamp() + value.getTimeout();
           jobRecord.setDeadline(deadline).setWorker(value.getWorkerBuffer());
-          setJobVariables(requestedVariables, jobRecord, jobRecord.getElementInstanceKey());
+          jobVariablesCollector.setJobVariables(
+              requestedVariables, jobRecord, jobRecord.getElementInstanceKey());
 
           // the expected length is based on the current record's length plus the length of the job
           // record we would add to the batch, the number of bytes taken by the additional job key,
@@ -116,18 +116,6 @@ final class JobBatchCollector {
     return Either.right(activatedCount.value);
   }
 
-  private void setJobVariables(
-      final Collection<DirectBuffer> requestedVariables,
-      final JobRecord jobRecord,
-      final long elementInstanceKey) {
-    if (elementInstanceKey >= 0) {
-      final DirectBuffer variables = collectVariables(requestedVariables, elementInstanceKey);
-      jobRecord.setVariables(variables);
-    } else {
-      jobRecord.setVariables(DocumentValue.EMPTY_DOCUMENT);
-    }
-  }
-
   private void appendJobToBatch(
       final ValueArray<JobRecord> jobIterator,
       final ValueArray<LongValue> jobKeyIterator,
@@ -150,19 +138,6 @@ final class JobBatchCollector {
         variable -> variableNames.add(BufferUtil.cloneBuffer(variable.getValue())));
 
     return variableNames;
-  }
-
-  private DirectBuffer collectVariables(
-      final Collection<DirectBuffer> variableNames, final long elementInstanceKey) {
-    final DirectBuffer variables;
-
-    if (variableNames.isEmpty()) {
-      variables = variableState.getVariablesAsDocument(elementInstanceKey);
-    } else {
-      variables = variableState.getVariablesAsDocument(elementInstanceKey, variableNames);
-    }
-
-    return variables;
   }
 
   record TooLargeJob(long key, JobRecord jobRecord, int expectedEventLength) {}

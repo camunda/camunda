@@ -8,6 +8,7 @@
 package io.camunda.zeebe.engine.processing.bpmn.behavior;
 
 import io.camunda.zeebe.engine.metrics.JobMetrics;
+import io.camunda.zeebe.engine.processing.job.JobVariablesCollector;
 import io.camunda.zeebe.engine.processing.streamprocessor.JobActivationProperties;
 import io.camunda.zeebe.engine.processing.streamprocessor.JobStreamer;
 import io.camunda.zeebe.engine.processing.streamprocessor.JobStreamer.JobStream;
@@ -37,7 +38,7 @@ import org.agrona.ExpandableArrayBuffer;
  */
 public class BpmnJobActivationBehavior {
   private final JobStreamer jobStreamer;
-  private final VariableState variableState;
+  private final JobVariablesCollector jobVariablesCollector;
   private final StateWriter stateWriter;
   private final SideEffectWriter sideEffectWriter;
   private final KeyGenerator keyGenerator;
@@ -50,11 +51,11 @@ public class BpmnJobActivationBehavior {
       final KeyGenerator keyGenerator,
       final JobMetrics jobMetrics) {
     this.jobStreamer = jobStreamer;
-    this.variableState = variableState;
-    stateWriter = writers.state();
-    sideEffectWriter = writers.sideEffect();
     this.keyGenerator = keyGenerator;
     this.jobMetrics = jobMetrics;
+    jobVariablesCollector = new JobVariablesCollector(variableState);
+    stateWriter = writers.state();
+    sideEffectWriter = writers.sideEffect();
   }
 
   public void publishWork(final long jobKey, final JobRecord jobRecord) {
@@ -63,6 +64,11 @@ public class BpmnJobActivationBehavior {
     if (optionalJobStream.isPresent()) {
       final JobStream jobStream = optionalJobStream.get();
       final JobActivationProperties properties = jobStream.properties();
+
+      final var deadline = System.currentTimeMillis() + properties.timeout();
+      jobRecord.setDeadline(deadline);
+      jobRecord.setWorker(properties.worker());
+      jobVariablesCollector.setJobVariables(properties.fetchVariables(), jobRecord, jobRecord.getElementInstanceKey());
 
       // job activation through a job batch
       final JobBatchRecord jobBatchRecord = new JobBatchRecord();
