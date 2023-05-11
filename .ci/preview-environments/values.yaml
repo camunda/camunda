@@ -114,6 +114,9 @@ camunda-platform:
         operator: "Exists"
         effect: "NoSchedule"
 
+  connectors:
+    enabled: false
+
   # Configuration for ElasticSearch. Persistence is disabled by default,
   # and we're setting some reasonable defaults for the `PersistentVolumeClaim` size
   # in order to avoid being too wasteful.
