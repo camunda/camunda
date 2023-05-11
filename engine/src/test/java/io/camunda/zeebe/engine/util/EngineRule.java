@@ -69,6 +69,7 @@ import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -328,6 +329,11 @@ public final class EngineRule extends ExternalResource {
   }
 
   public Record<JobRecordValue> createJob(final String type, final String processId) {
+    return createJob(type, processId, Collections.EMPTY_MAP);
+  }
+
+  public Record<JobRecordValue> createJob(
+      final String type, final String processId, final Map<String, Object> variables) {
     deployment()
         .withXmlResource(
             processId + ".bpmn",
@@ -338,7 +344,8 @@ public final class EngineRule extends ExternalResource {
                 .done())
         .deploy();
 
-    final long instanceKey = processInstance().ofBpmnProcessId(processId).create();
+    final long instanceKey =
+        processInstance().ofBpmnProcessId(processId).withVariables(variables).create();
 
     return jobRecords(JobIntent.CREATED)
         .withType(type)
