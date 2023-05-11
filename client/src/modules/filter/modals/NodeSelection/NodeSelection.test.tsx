@@ -5,10 +5,12 @@
  * except in compliance with the proprietary license.
  */
 
-import React, {runAllEffects} from 'react';
+import {ComponentProps} from 'react';
+import {runAllEffects} from '__mocks__/react';
 import {shallow} from 'enzyme';
+import {Button} from '@carbon/react';
 
-import {Modal, BPMNDiagram, Button} from 'components';
+import {CarbonModal as Modal, Button as LegacyButton, BPMNDiagram, ClickBehavior} from 'components';
 import {loadProcessDefinitionXml} from 'services';
 
 import FilterSingleDefinitionSelection from '../FilterSingleDefinitionSelection';
@@ -17,6 +19,8 @@ import {NodeSelection} from './NodeSelection';
 
 jest.mock('bpmn-js/lib/NavigatedViewer', () => {
   return class Viewer {
+    elements: {id: string; name: string}[];
+    elementRegistry: {filter: () => {map: () => any}};
     constructor() {
       this.elements = [
         {id: 'a', name: 'Element A'},
@@ -46,14 +50,15 @@ jest.mock('services', () => ({
 }));
 
 beforeEach(() => {
-  loadProcessDefinitionXml.mockClear();
+  (loadProcessDefinitionXml as jest.Mock).mockClear();
 });
 
-const props = {
+const props: ComponentProps<typeof NodeSelection> = {
+  filterLevel: 'view',
+  filterType: 'executingFlowNodes',
   close: jest.fn(),
   addFilter: jest.fn(),
-  data: [],
-  mightFail: (data, fn) => fn(data),
+  mightFail: jest.fn().mockImplementation((data, cb) => cb(data)),
   definitions: [
     {identifier: 'definition', key: 'definitionKey', versions: ['all'], tenantIds: [null]},
   ],
@@ -83,9 +88,9 @@ it('should add an unselected node to the selectedNodes on toggle', async () => {
 
   await runAllEffects();
 
-  node.find('ClickBehavior').prop('onClick')(flowNode);
+  node.find(ClickBehavior).prop('onClick')(flowNode);
 
-  expect(node.find('ClickBehavior').prop('selectedNodes')).toContain('bar');
+  expect(node.find(ClickBehavior).prop('selectedNodes')).toContain('bar');
 });
 
 it('should remove a selected node from the selectedNodes on toggle', async () => {
@@ -98,21 +103,21 @@ it('should remove a selected node from the selectedNodes on toggle', async () =>
 
   await runAllEffects();
 
-  node.find('ClickBehavior').prop('onClick')(flowNode);
-  node.find('ClickBehavior').prop('onClick')(flowNode);
+  node.find(ClickBehavior).prop('onClick')(flowNode);
+  node.find(ClickBehavior).prop('onClick')(flowNode);
 
-  expect(node.find('ClickBehavior').prop('selectedNodes')).not.toContain('bar');
+  expect(node.find(ClickBehavior).prop('selectedNodes')).not.toContain('bar');
 });
 
 it('should invoke addFilter when applying the filter', async () => {
   const spy = jest.fn();
-  const node = shallow(<NodeSelection {...props} onClose={() => {}} addFilter={spy} />);
+  const node = shallow(<NodeSelection {...props} addFilter={spy} />);
 
   await runAllEffects();
 
-  node.find('ClickBehavior').prop('onClick')({id: 'a'});
+  node.find(ClickBehavior).prop('onClick')({id: 'a'});
 
-  node.find(Modal.Actions).find(Button).at(1).simulate('click');
+  node.find(Modal.Footer).find('.confirm').simulate('click');
 
   expect(spy).toHaveBeenCalledWith({
     data: {operator: 'not in', values: ['a']},
@@ -123,10 +128,10 @@ it('should invoke addFilter when applying the filter', async () => {
 
 it('should disable create filter button if no node was selected', () => {
   const node = shallow(
-    <NodeSelection {...props} filterData={{appliedTo: '', data: {flowNodeIds: []}}} />
+    <NodeSelection {...props} filterData={{type: '', appliedTo: [], data: {values: []}}} />
   );
 
-  const buttons = node.find(Modal.Actions).find(Button);
+  const buttons = node.find(Modal.Footer).find(Button);
   expect(buttons.at(0).prop('disabled')).toBeFalsy(); // abort
   expect(buttons.at(1).prop('disabled')).toBeTruthy(); // apply filter
 });
@@ -136,11 +141,11 @@ it('should disable create filter button if all nodes are selected', async () => 
 
   await runAllEffects();
 
-  node.find('ClickBehavior').prop('onClick')({id: 'a'});
-  node.find('ClickBehavior').prop('onClick')({id: 'b'});
-  node.find('ClickBehavior').prop('onClick')({id: 'c'});
+  node.find(ClickBehavior).prop('onClick')({id: 'a'});
+  node.find(ClickBehavior).prop('onClick')({id: 'b'});
+  node.find(ClickBehavior).prop('onClick')({id: 'c'});
 
-  expect(node.find(Modal.Actions).find(Button).at(1).prop('disabled')).toBeTruthy();
+  expect(node.find(Modal.Footer).find('.confirm').prop('disabled')).toBeTruthy();
 });
 
 it('should deselect All nodes if deselectAll button is clicked', async () => {
@@ -148,9 +153,9 @@ it('should deselect All nodes if deselectAll button is clicked', async () => {
 
   await runAllEffects();
 
-  node.find(Modal.Content).find(Button).at(1).simulate('click');
+  node.find(Modal.Content).find(LegacyButton).at(1).simulate('click');
 
-  expect(node.find('ClickBehavior').prop('selectedNodes')).toEqual([]);
+  expect(node.find(ClickBehavior).prop('selectedNodes')).toEqual([]);
 });
 
 it('should initially load xml', async () => {

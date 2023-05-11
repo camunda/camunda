@@ -5,29 +5,55 @@
  * except in compliance with the proprietary license.
  */
 
-import React, {useEffect, useState} from 'react';
+import {useEffect, useState} from 'react';
 import Viewer from 'bpmn-js/lib/NavigatedViewer';
+import {Button} from '@carbon/react';
 
-import {Modal, Button, BPMNDiagram, ClickBehavior, LoadingIndicator} from 'components';
+import {
+  CarbonModal as Modal,
+  Button as LegacyButton,
+  BPMNDiagram,
+  ClickBehavior,
+  LoadingIndicator,
+  RegistryElement,
+  ModdleElement,
+} from 'components';
 import {loadProcessDefinitionXml} from 'services';
 import {t} from 'translation';
-import {withErrorHandling} from 'HOC';
+import {WithErrorHandlingProps, withErrorHandling} from 'HOC';
 import {showError} from 'notifications';
 
 import FilterSingleDefinitionSelection from '../FilterSingleDefinitionSelection';
+import {FilterProps} from '../types';
 
 import './NodeSelection.scss';
 
-export function NodeSelection({filterData, definitions, mightFail, close, addFilter}) {
-  const [allFlowNodes, setAllFlowNodes] = useState([]);
-  const [selectedNodes, setSelectedNodes] = useState([]);
+interface NodeSelectionProps
+  extends WithErrorHandlingProps,
+    FilterProps<{
+      values?: string[];
+      operator?: string;
+    }> {
+  filterLevel: 'view';
+  filterType: 'executedFlowNodes' | 'executingFlowNodes' | 'canceledFlowNodes';
+}
+
+export function NodeSelection({
+  filterData,
+  definitions,
+  mightFail,
+  close,
+  addFilter,
+}: NodeSelectionProps) {
+  const [allFlowNodes, setAllFlowNodes] = useState<string[]>([]);
+  const [selectedNodes, setSelectedNodes] = useState<string[]>([]);
   const [applyTo, setApplyTo] = useState(() => {
     const validDefinitions = definitions.filter(
-      (definition) => definition.versions.length && definition.tenantIds.length
+      (definition) => definition.versions?.length && definition.tenantIds?.length
     );
 
     return (
-      validDefinitions.find(({identifier}) => filterData?.appliedTo[0] === identifier) ||
+      validDefinitions.find(({identifier}) => filterData?.appliedTo?.[0] === identifier) ||
       validDefinitions[0]
     );
   });
@@ -38,14 +64,14 @@ export function NodeSelection({filterData, definitions, mightFail, close, addFil
       setSelectedNodes([]);
       setXml(null);
       mightFail(
-        loadProcessDefinitionXml(applyTo.key, applyTo.versions[0], applyTo.tenantIds[0]),
+        loadProcessDefinitionXml(applyTo.key, applyTo.versions?.[0], applyTo.tenantIds?.[0]),
         async (xml) => {
           const viewer = new Viewer();
           await viewer.importXML(xml);
 
-          const flowNodes = new Set();
+          const flowNodes = new Set<string>();
           viewer
-            .get('elementRegistry')
+            .get<RegistryElement[]>('elementRegistry')
             .filter((element) => element.businessObject.$instanceOf('bpmn:FlowNode'))
             .map((element) => element.businessObject)
             .forEach((element) => flowNodes.add(element.id));
@@ -53,7 +79,7 @@ export function NodeSelection({filterData, definitions, mightFail, close, addFil
 
           let preExistingValues;
           if (filterData?.data.values) {
-            preExistingValues = allFlowNodes.filter((id) => !filterData?.data.values.includes(id));
+            preExistingValues = allFlowNodes.filter((id) => !filterData?.data.values?.includes(id));
           }
 
           setAllFlowNodes(allFlowNodes);
@@ -66,7 +92,7 @@ export function NodeSelection({filterData, definitions, mightFail, close, addFil
     }
   }, [applyTo, mightFail, filterData]);
 
-  const toggleNode = (toggledNode) => {
+  const toggleNode = (toggledNode: ModdleElement) => {
     if (selectedNodes.includes(toggledNode.id)) {
       setSelectedNodes(selectedNodes.filter((node) => node !== toggledNode.id));
     } else {
@@ -78,7 +104,7 @@ export function NodeSelection({filterData, definitions, mightFail, close, addFil
     addFilter({
       type: 'executedFlowNodes',
       data: {operator: 'not in', values: allFlowNodes.filter((id) => !selectedNodes.includes(id))},
-      appliedTo: [applyTo.identifier],
+      appliedTo: [applyTo?.identifier],
     });
   };
 
@@ -103,13 +129,7 @@ export function NodeSelection({filterData, definitions, mightFail, close, addFil
   };
 
   return (
-    <Modal
-      open
-      onClose={close}
-      onConfirm={isValidSelection() ? createFilter : undefined}
-      className="NodeSelection"
-      size="max"
-    >
+    <Modal open onClose={close} className="NodeSelection" size="lg">
       <Modal.Header>{t('common.filter.types.flowNodeSelection')}</Modal.Header>
       <Modal.Content className="modalContent">
         <FilterSingleDefinitionSelection
@@ -121,12 +141,12 @@ export function NodeSelection({filterData, definitions, mightFail, close, addFil
         {xml && (
           <>
             <div className="diagramActions">
-              <Button disabled={false} onClick={selectAll}>
+              <LegacyButton disabled={false} onClick={selectAll}>
                 {t('common.selectAll')}
-              </Button>
-              <Button disabled={!isNodeSelected()} onClick={deselectAll}>
+              </LegacyButton>
+              <LegacyButton disabled={!isNodeSelected()} onClick={deselectAll}>
                 {t('common.deselectAll')}
-              </Button>
+              </LegacyButton>
             </div>
             <div className="diagramContainer">
               <BPMNDiagram xml={xml}>
@@ -140,14 +160,14 @@ export function NodeSelection({filterData, definitions, mightFail, close, addFil
           </>
         )}
       </Modal.Content>
-      <Modal.Actions>
-        <Button main onClick={close}>
+      <Modal.Footer>
+        <Button kind="secondary" className="cancel" onClick={close}>
           {t('common.cancel')}
         </Button>
-        <Button main primary disabled={!isValidSelection()} onClick={createFilter}>
+        <Button disabled={!isValidSelection()} className="confirm" onClick={createFilter}>
           {filterData ? t('common.filter.updateFilter') : t('common.filter.addFilter')}
         </Button>
-      </Modal.Actions>
+      </Modal.Footer>
     </Modal>
   );
 }

@@ -1,5 +1,9 @@
 .NodeSelection {
-  .Modal__content {
+  .cds--modal-container {
+    height: 100%;
+  }
+
+  .cds--modal-content {
     display: flex;
     flex-direction: column;
 
