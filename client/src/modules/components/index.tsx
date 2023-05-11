@@ -12,6 +12,7 @@ export {Message} from './Message';
 export {MessageBox} from './MessageBox';
 export {Icon} from './Icon';
 export {ActionItem} from './ActionItem';
+export {Switch} from './Switch';
 export {Form} from './Form';
 export {Input} from './Input';
 export {LabeledInput} from './LabeledInput';

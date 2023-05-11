@@ -5,13 +5,18 @@
  * except in compliance with the proprietary license.
  */
 
-import React from 'react';
 import classnames from 'classnames';
 
-import {Input, Tooltip} from 'components';
+import {Input, InputProps, Tooltip} from 'components';
+
 import './Switch.scss';
 
-export default function Switch({label, labelPosition = 'right', ...props}) {
+interface SwitchProps extends InputProps {
+  label?: string | JSX.Element[];
+  labelPosition?: 'left' | 'right';
+}
+
+export default function Switch({label, labelPosition = 'right', ...props}: SwitchProps) {
   return (
     <Tooltip content={props.title}>
       <label

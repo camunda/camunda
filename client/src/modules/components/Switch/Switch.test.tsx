@@ -5,11 +5,11 @@
  * except in compliance with the proprietary license.
  */
 
-import React from 'react';
 import {shallow} from 'enzyme';
 
-import Switch from './Switch';
 import {Input} from 'components';
+
+import Switch from './Switch';
 
 it('should render without crashing', () => {
   shallow(<Switch />);
