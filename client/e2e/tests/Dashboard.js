@@ -332,7 +332,7 @@ test('filters', async (t) => {
 
   await t.click(Filter.customValueCheckbox);
 
-  await t.click(Common.modalConfirmButton);
+  await t.click(Common.carbonModalConfirmBtn);
 
   await t.resizeWindow(1200, 550);
   await t.takeElementScreenshot(e.dashboardContainer, 'img/filter-editMode.png', {

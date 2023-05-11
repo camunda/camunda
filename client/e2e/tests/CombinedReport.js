@@ -34,7 +34,7 @@ async function createReport(
     await t.click(Report.filterButton);
     await t.click(Report.filterOption('Instance State'));
     await t.click(Report.modalOption('Completed'));
-    await t.click(Common.modalConfirmButton);
+    await t.click(Common.carbonModalConfirmBtn);
   }
 
   await t.typeText(Common.nameEditField, name, {replace: true});

@@ -44,12 +44,13 @@ export const tooltip = reportRenderer.find('.Tooltip');
 export const badge = (id) =>
   Selector(`.BPMNDiagram .djs-overlay-container [data-container-id="${id}"] .djs-overlay`);
 export const targetValueButton = Selector('.toggleButton');
-export const targetValueInput = (name) => Selector('.Modal tbody tr').withText(name).find('.Input');
+export const targetValueInput = (name) =>
+  Selector('.CarbonModal tbody tr').withText(name).find('.Input');
 // This stays only until filters modal are carbonized
 export const carbonTargetValueInput = (name) =>
   Selector('.CarbonModal tbody tr').withText(name).find('.Input');
 export const nodeFilterOperator = (name) =>
-  Selector('.Modal tbody tr').withText(name).find('.Dropdown:first-child');
+  Selector('.CarbonModal tbody tr').withText(name).find('.Dropdown:first-child');
 export const warning = Selector('.Message--warning');
 export const processPartButton = Selector('.ReportControlPanel .Button').withText(
   'Process Instance Part'
@@ -68,8 +69,7 @@ export const filterOption = (text) =>
   Selector('.Filter__dropdown.is-open .DropdownOption').withExactText(text);
 export const subFilterOption = (text) =>
   Selector('.Filter__dropdown.is-open .Submenu .DropdownOption').withText(text);
-export const modalOption = (text) =>
-  Selector('.Modal__content label').withText(text).find('.Input');
+export const modalOption = (text) => Selector('.CarbonModal label').withText(text).find('.Input');
 export const collectionsDropdown = Selector(`.CollectionsDropdown`);
 export const createCollectionButton = Selector('.Modal button').withText('Create Collection');
 export const collectionOption = (text) =>

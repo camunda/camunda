@@ -88,7 +88,7 @@ it('should delete the entity', () => {
 
   node.setProps({entity});
 
-  node.find(Modal).prop('onConfirm')();
+  node.find(Modal).find('.confirm').simulate('click');
 
   expect(deleteEntity).toHaveBeenCalledWith(entity.entityType, entity.id);
 });
@@ -102,7 +102,7 @@ it('should accept a custom delete executor', () => {
 
   node.setProps({entity});
 
-  node.find(Modal).prop('onConfirm')();
+  node.find(Modal).find('.confirm').simulate('click');
 
   expect(spy).toHaveBeenCalledWith(entity);
   expect(deleteEntity).not.toHaveBeenCalled();
@@ -115,7 +115,7 @@ it('should show an error message if deletion goes wrong', () => {
   setupRef(node);
 
   node.setProps({entity});
-  node.find(Modal).prop('onConfirm')();
+  node.find(Modal).find('.confirm').simulate('click');
 
   expect(showError).toHaveBeenCalledWith('Deleting failed');
 });
@@ -128,7 +128,7 @@ it('should call the close handler', () => {
 
   node.setProps({entity});
 
-  node.find(Modal).prop('onConfirm')();
+  node.find(Modal).find('.confirm').simulate('click');
 
   expect(spy).toHaveBeenCalled();
 });

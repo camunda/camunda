@@ -570,7 +570,7 @@ test('aggregators', async (t) => {
   await t.click(e.filterButton);
   await t.click(e.filterOption('Instance State'));
   await t.click(e.modalOption('Completed'));
-  await t.click(Common.modalConfirmButton);
+  await t.click(Common.carbonModalConfirmBtn);
 
   const avg = await e.reportNumber.textContent;
 

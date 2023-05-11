@@ -4,7 +4,6 @@ exports[`should match snapshot 1`] = `
 <Modal
   className="EditSourceModal"
   onClose={[MockFunction]}
-  onConfirm={[Function]}
   open={true}
 >
   <ForwardRef(ModalHeader)

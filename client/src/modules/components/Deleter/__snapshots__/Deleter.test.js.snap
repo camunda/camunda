@@ -19,7 +19,6 @@ exports[`should show the confirmation modal when entity is set 1`] = `
 <Modal
   className="Deleter"
   onClose={[Function]}
-  onConfirm={[Function]}
   open={true}
 >
   <ForwardRef(ModalHeader)
@@ -68,7 +67,6 @@ exports[`should use provided delete text for title and button 1`] = `
 <Modal
   className="Deleter"
   onClose={[Function]}
-  onConfirm={[Function]}
   open={true}
 >
   <ForwardRef(ModalHeader)
