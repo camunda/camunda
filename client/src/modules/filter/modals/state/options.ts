@@ -7,7 +7,18 @@
 
 import {t} from 'translation';
 
-export default function getMapping(type) {
+import {FlowNodeStateFilterType, IncidentFilterType, InstanceStateFilterType} from '../types';
+
+export default function getMapping(type: string):
+  | {
+      modalTitle: string | JSX.Element[];
+      pretext: string | JSX.Element[];
+      mappings: {
+        key: InstanceStateFilterType | FlowNodeStateFilterType | IncidentFilterType;
+        label: string | JSX.Element[];
+      }[];
+    }
+  | undefined {
   switch (type) {
     case 'instanceState':
       return {

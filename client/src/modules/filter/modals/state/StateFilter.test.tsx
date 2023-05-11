@@ -5,10 +5,10 @@
  * except in compliance with the proprietary license.
  */
 
-import React from 'react';
 import {shallow} from 'enzyme';
 
 import StateFilter from './StateFilter';
+import {ComponentProps} from 'react';
 
 jest.mock('./options', () => () => ({
   modalTitle: 'State Filter',
@@ -25,13 +25,21 @@ jest.mock('./options', () => () => ({
   ],
 }));
 
+const props: ComponentProps<typeof StateFilter> = {
+  close: jest.fn(),
+  definitions: [],
+  filterType: 'instanceState',
+  filterLevel: 'instance',
+  addFilter: jest.fn(),
+};
+
 it('should call the addFilter prop with the selected filter option', () => {
   const spy = jest.fn();
 
-  const node = shallow(<StateFilter addFilter={spy} />);
+  const node = shallow(<StateFilter {...props} addFilter={spy} />);
 
   node.find({label: 'Filter Option 2'}).simulate('change');
-  node.find({primary: true}).simulate('click');
+  node.find('.confirm').simulate('click');
 
   expect(spy).toHaveBeenCalledWith({type: 'option2', appliedTo: ['all']});
 });

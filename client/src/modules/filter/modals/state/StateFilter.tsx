@@ -5,39 +5,42 @@
  * except in compliance with the proprietary license.
  */
 
-import React, {useState} from 'react';
+import {useState} from 'react';
+import {Button} from '@carbon/react';
 
-import {Modal, Button, Form, LabeledInput} from 'components';
+import {CarbonModal as Modal, Form, LabeledInput} from 'components';
 import {t} from 'translation';
+import {Definition, FilterData} from 'types';
 
 import FilterDefinitionSelection from '../FilterDefinitionSelection';
+import {FilterProps} from '../types';
 
 import getMapping from './options';
 
 import './StateFilter.scss';
 
-export default function StateFilter({addFilter, close, filterType, definitions}) {
-  const [selectedOption, setSelectedOption] = useState();
-  const [applyTo, setApplyTo] = useState([
+interface StateFilterProps extends FilterProps<FilterData | undefined> {
+  filterType: 'instanceState' | 'incident' | 'incidentInstances' | 'flowNodeStatus';
+}
+
+export default function StateFilter({addFilter, close, filterType, definitions}: StateFilterProps) {
+  const [selectedOption, setSelectedOption] = useState<number>(0);
+  const [applyTo, setApplyTo] = useState<Definition[]>([
     {identifier: 'all', displayName: t('common.filter.definitionSelection.allProcesses')},
   ]);
 
   const options = getMapping(filterType);
 
   function createFilter() {
-    const type = options.mappings[selectedOption].key;
-    addFilter({type, appliedTo: applyTo.map(({identifier}) => identifier)});
+    const type = options?.mappings[selectedOption]?.key;
+    type &&
+      addFilter({type, appliedTo: applyTo.map(({identifier}) => identifier), data: undefined});
   }
 
   const isFilterValid = typeof selectedOption !== 'undefined' && applyTo.length > 0;
 
   return (
-    <Modal
-      open
-      onClose={close}
-      onConfirm={isFilterValid ? createFilter : undefined}
-      className="StateFilter"
-    >
+    <Modal size="sm" open onClose={close} className="StateFilter">
       <Modal.Header>{options?.modalTitle}</Modal.Header>
       <Modal.Content>
         <FilterDefinitionSelection
@@ -60,14 +63,14 @@ export default function StateFilter({addFilter, close, filterType, definitions})
           </fieldset>
         </Form>
       </Modal.Content>
-      <Modal.Actions>
-        <Button main onClick={close}>
+      <Modal.Footer>
+        <Button kind="secondary" className="cancel" onClick={close}>
           {t('common.cancel')}
         </Button>
-        <Button main primary disabled={!isFilterValid} onClick={createFilter}>
+        <Button className="confirm" disabled={!isFilterValid} onClick={createFilter}>
           {t('common.filter.addFilter')}
         </Button>
-      </Modal.Actions>
+      </Modal.Footer>
     </Modal>
   );
 }
