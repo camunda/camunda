@@ -5,28 +5,43 @@
  * except in compliance with the proprietary license.
  */
 
-import React from 'react';
+import {ChangeEventHandler, Component} from 'react';
+import {Button} from '@carbon/react';
 
-import {Modal, Button, Input, Select, Message, Form} from 'components';
+import {CarbonModal as Modal, Input, Select, Message, Form} from 'components';
 import {numberParser} from 'services';
-
-import FilterDefinitionSelection from '../FilterDefinitionSelection';
-
-import './DurationFilter.scss';
+import {Definition, FilterData} from 'types';
 import {t} from 'translation';
 
-export default class DurationFilter extends React.Component {
-  constructor(props) {
+import FilterDefinitionSelection from '../FilterDefinitionSelection';
+import {FilterProps} from '../types';
+
+import './DurationFilter.scss';
+
+interface DurationFilterProps extends FilterProps {
+  filterType: 'processInstanceDuration';
+  filterLevel: 'instance';
+}
+
+interface DurationFilterState extends FilterData {
+  applyTo: Definition[];
+}
+
+export default class DurationFilter extends Component<DurationFilterProps, DurationFilterState> {
+  constructor(props: DurationFilterProps) {
     super(props);
 
-    let applyTo = [
-      {identifier: 'all', displayName: t('common.filter.definitionSelection.allProcesses')},
+    let applyTo: Definition[] = [
+      {
+        identifier: 'all',
+        displayName: t('common.filter.definitionSelection.allProcesses'),
+      },
     ];
 
     if (props.filterData && props.filterData.appliedTo?.[0] !== 'all') {
-      applyTo = props.filterData.appliedTo.map((id) =>
-        props.definitions.find(({identifier}) => identifier === id)
-      );
+      applyTo = props.filterData.appliedTo
+        .map((id) => props.definitions.find(({identifier}) => identifier === id))
+        .filter((definition): definition is Definition => !!definition);
     }
 
     this.state = {
@@ -43,7 +58,7 @@ export default class DurationFilter extends React.Component {
     this.props.addFilter({
       type: 'processInstanceDuration',
       data: {
-        value: parseFloat(value),
+        value: parseFloat(value.toString()),
         operator,
         unit,
       },
@@ -59,12 +74,7 @@ export default class DurationFilter extends React.Component {
     const isValidFilter = isValidInput && applyTo.length > 0;
 
     return (
-      <Modal
-        open={true}
-        onClose={this.props.close}
-        onConfirm={isValidFilter ? this.createFilter : undefined}
-        className="DurationFilter"
-      >
+      <Modal size="sm" open onClose={this.props.close} className="DurationFilter" isOverflowVisible>
         <Modal.Header>
           {t('common.filter.modalHeader', {
             type: t('common.filter.types.processInstanceDuration'),
@@ -94,7 +104,7 @@ export default class DurationFilter extends React.Component {
                   isInvalid={!isValidInput}
                   value={value}
                   onChange={this.setValue}
-                  maxLength="8"
+                  maxLength={8}
                 />
                 <Select value={unit} onChange={this.setUnit}>
                   <Select.Option value="millis">
@@ -119,19 +129,19 @@ export default class DurationFilter extends React.Component {
             </Form.Group>
           </Form>
         </Modal.Content>
-        <Modal.Actions>
-          <Button main onClick={this.props.close}>
+        <Modal.Footer>
+          <Button kind="secondary" className="cancel" onClick={this.props.close}>
             {t('common.cancel')}
           </Button>
-          <Button main primary disabled={!isValidFilter} onClick={this.createFilter}>
+          <Button className="confirm" disabled={!isValidFilter} onClick={this.createFilter}>
             {this.props.filterData ? t('common.filter.updateFilter') : t('common.filter.addFilter')}
           </Button>
-        </Modal.Actions>
+        </Modal.Footer>
       </Modal>
     );
   }
 
-  setOperator = (operator) => this.setState({operator});
-  setUnit = (unit) => this.setState({unit});
-  setValue = ({target: {value}}) => this.setState({value});
+  setOperator = (operator: string) => this.setState({operator});
+  setUnit = (unit: string) => this.setState({unit});
+  setValue: ChangeEventHandler<HTMLInputElement> = ({target: {value}}) => this.setState({value});
 }
