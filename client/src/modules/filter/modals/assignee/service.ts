@@ -5,21 +5,36 @@
  * except in compliance with the proprietary license.
  */
 
+import {User} from 'components';
 import {post, get} from 'request';
+import {Definition} from 'types';
 
-export async function loadUsersByDefinition(type, payload) {
+export async function loadUsersByDefinition(
+  type: string,
+  payload: {
+    processDefinitionKey: Definition['key'];
+    tenantIds: Definition['tenantIds'];
+    terms: string;
+  }
+) {
   const response = await post(`api/${type}/search`, payload);
 
   return await response.json();
 }
 
-export async function loadUsersByReportIds(type, payload) {
+export async function loadUsersByReportIds(
+  type: string,
+  payload: {
+    reportIds: string[];
+    terms: string;
+  }
+) {
   const response = await post(`api/${type}/search/reports`, payload);
 
   return await response.json();
 }
 
-export async function getUsersById(type, ids) {
+export async function getUsersById(type: string, ids: (string | null)[]): Promise<User[]> {
   const response = await get(`api/${type}`, {idIn: ids.join(',')});
 
   return await response.json();

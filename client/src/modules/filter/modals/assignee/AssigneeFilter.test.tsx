@@ -5,10 +5,11 @@
  * except in compliance with the proprietary license.
  */
 
-import React, {runLastEffect} from 'react';
+import {ComponentProps} from 'react';
+import {runLastEffect} from '__mocks__/react';
 import {shallow} from 'enzyme';
 
-import {UserTypeahead, CarbonModal as Modal} from 'components';
+import {User, UserTypeahead} from 'components';
 
 import {AssigneeFilter} from './AssigneeFilter';
 import {loadUsersByDefinition, loadUsersByReportIds, getUsersById} from './service';
@@ -22,10 +23,13 @@ jest.mock('./service', () => ({
   ]),
 }));
 
-const props = {
+const props: ComponentProps<typeof AssigneeFilter> = {
   mightFail: jest.fn().mockImplementation((data, cb) => cb(data)),
   definitions: [{identifier: 'definition', key: 'key', versions: ['1'], tenantIds: ['tenant1']}],
   filterType: 'assignee',
+  filterLevel: 'view',
+  close: jest.fn(),
+  addFilter: jest.fn(),
 };
 
 const filterData = {
@@ -38,29 +42,27 @@ const filterData = {
 };
 
 beforeEach(() => {
-  loadUsersByDefinition.mockClear();
-  loadUsersByReportIds.mockClear();
-  getUsersById.mockClear();
+  (loadUsersByDefinition as jest.Mock).mockClear();
+  (loadUsersByReportIds as jest.Mock).mockClear();
+  (getUsersById as jest.Mock).mockClear();
 });
 
 it('should load existing roles', async () => {
   const node = shallow(<AssigneeFilter {...props} />);
 
-  await node.find(UserTypeahead).prop('fetchUsers')('demo');
+  await node.find(UserTypeahead).prop('fetchUsers')?.('demo');
 
   expect(loadUsersByDefinition).toHaveBeenCalledWith('assignee', {
-    processDefinitionKey: props.definitions[0].key,
-    tenantIds: props.definitions[0].tenantIds,
+    processDefinitionKey: props.definitions[0]?.key,
+    tenantIds: props.definitions[0]?.tenantIds,
     terms: 'demo',
   });
 });
 
 it('should load existing roles by provided report ids', async () => {
-  const node = shallow(
-    <AssigneeFilter mightFail={props.mightFail} filterType="assignee" reportIds={['1', '2']} />
-  );
+  const node = shallow(<AssigneeFilter {...props} reportIds={['1', '2']} />);
 
-  await node.find(UserTypeahead).prop('fetchUsers')('demo');
+  await node.find(UserTypeahead).prop('fetchUsers')?.('demo');
 
   expect(loadUsersByReportIds).toHaveBeenCalledWith('assignee', {
     reportIds: ['1', '2'],
@@ -70,11 +72,11 @@ it('should load existing roles by provided report ids', async () => {
 
 it('should add/remove a role', async () => {
   const spy = jest.fn();
-  const node = shallow(<AssigneeFilter addFilter={spy} {...props} />);
+  const node = shallow(<AssigneeFilter {...props} addFilter={spy} />);
 
   node.find(UserTypeahead).prop('onChange')([
-    {id: 'USER:null', identity: {id: null, name: 'Unassigned'}},
-    {id: 'USER:demo', identity: {id: 'demo', name: 'Demo Demo'}},
+    {id: 'USER:null', identity: {id: null, name: 'Unassigned'}} as User,
+    {id: 'USER:demo', identity: {id: 'demo', name: 'Demo Demo'}} as User,
   ]);
 
   node.find('.confirm').simulate('click');
@@ -87,7 +89,7 @@ it('should add/remove a role', async () => {
   spy.mockClear();
 
   node.find(UserTypeahead).prop('onChange')([
-    {id: 'USER:null', identity: {id: null, name: 'Unassigned'}},
+    {id: 'USER:null', identity: {id: null, name: 'Unassigned'}} as User,
   ]);
 
   node.find('.confirm').simulate('click');

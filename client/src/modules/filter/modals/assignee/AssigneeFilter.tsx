@@ -5,7 +5,7 @@
  * except in compliance with the proprietary license.
  */
 
-import React, {useEffect, useState} from 'react';
+import {ReactNode, useEffect, useState} from 'react';
 import classnames from 'classnames';
 import {Button} from '@carbon/react';
 
@@ -16,38 +16,54 @@ import {
   Labeled,
   Form,
   UserTypeahead,
+  User,
 } from 'components';
 import {t} from 'translation';
 import {showError} from 'notifications';
-import {withErrorHandling} from 'HOC';
+import {WithErrorHandlingProps, withErrorHandling} from 'HOC';
 
 import FilterSingleDefinitionSelection from '../FilterSingleDefinitionSelection';
+import {FilterProps} from '../types';
 
 import {loadUsersByDefinition, loadUsersByReportIds, getUsersById} from './service';
 
 import './AssigneeFilter.scss';
 
-export function AssigneeFilter({
-  filterData,
-  close,
-  definitions,
-  reportIds,
-  getPretext,
-  getPosttext,
-  className,
-  forceEnabled,
-  mightFail,
-  filterType,
-  addFilter,
-}) {
+interface AssigneeFilterProps
+  extends WithErrorHandlingProps,
+    FilterProps<{
+      values?: (string | null)[];
+      operator?: string;
+    }> {
+  filterType: 'assignee' | 'candidateGroup';
+  filterLevel: 'view';
+  forceEnabled?: (users: User[], operator?: string) => boolean;
+  getPretext?: (users: User[], operator?: string) => ReactNode;
+  getPosttext?: (users: User[], operator?: string) => ReactNode;
+}
+
+export function AssigneeFilter(props: AssigneeFilterProps) {
+  const {
+    filterData,
+    close,
+    definitions,
+    reportIds,
+    getPretext,
+    getPosttext,
+    className,
+    forceEnabled,
+    mightFail,
+    filterType,
+    addFilter,
+  } = props;
   const validDefinitions = definitions?.filter(
-    (definition) => definition.versions.length && definition.tenantIds.length
+    (definition) => definition.versions?.length && definition.tenantIds?.length
   );
 
-  const [users, setUsers] = useState([]);
-  const [operator, setOperator] = useState('in');
+  const [users, setUsers] = useState<User[]>([]);
+  const [operator, setOperator] = useState<string | undefined>('in');
   const [applyTo, setApplyTo] = useState(
-    validDefinitions?.find(({identifier}) => filterData?.appliedTo[0] === identifier) ??
+    validDefinitions?.find(({identifier}) => filterData?.appliedTo[0] === identifier) ||
       validDefinitions?.[0]
   );
 
@@ -56,21 +72,28 @@ export function AssigneeFilter({
       if (filterData) {
         setOperator(filterData.data.operator);
 
-        const hasUnassigned = filterData.data.values.includes(null);
-        const existingUsers = filterData.data.values.filter((id) => !!id);
-        const combined = [];
+        const hasUnassigned = filterData.data.values?.includes(null);
+        const existingUsers = filterData.data.values?.filter((id) => !!id) || [];
+        const combined: User[] = [];
 
         if (hasUnassigned) {
           combined.push({
             id: 'USER:null',
-            identity: {id: null, name: t('common.filter.assigneeModal.unassigned'), type: 'user'},
+            identity: {
+              id: null,
+              name: t('common.filter.assigneeModal.unassigned').toString(),
+              type: 'user',
+            },
           });
         }
         if (existingUsers.length > 0) {
-          const users = await mightFail(
+          const users: User[] = await mightFail(
             getUsersById(filterType, existingUsers),
-            (users) =>
-              users.map((user) => ({id: `${user.type.toUpperCase()}:${user.id}`, identity: user})),
+            (users: User[]) =>
+              users.map((user) => ({
+                id: `${user.type?.toUpperCase()}:${user.id}`,
+                identity: user,
+              })),
             showError
           );
           combined.push(...users);
@@ -85,7 +108,7 @@ export function AssigneeFilter({
     addFilter({
       type: filterType,
       data: {operator, values: users.map((user) => user.identity.id)},
-      appliedTo: [applyTo?.identifier],
+      appliedTo: [applyTo?.identifier].filter((definition): definition is string => !!definition),
     });
   };
 
