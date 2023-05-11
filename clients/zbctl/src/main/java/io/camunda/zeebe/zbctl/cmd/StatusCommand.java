@@ -16,17 +16,19 @@ import picocli.CommandLine.Command;
 import picocli.CommandLine.Mixin;
 
 @Command(name = "status", description = "Checks the current status of the cluster")
-public final class StatusCommand implements Callable<String> {
+public final class StatusCommand implements Callable<Integer> {
   private static final ObjectWriter JSON_WRITER =
       new ObjectMapper().writerWithDefaultPrettyPrinter().forType(Topology.class);
 
   @Mixin private ClientMixin clientMixin;
 
   @Override
-  public String call() throws Exception {
+  public Integer call() throws Exception {
     try (final var client = clientMixin.client()) {
       final var topology = client.newTopologyRequest().send().join();
-      return JSON_WRITER.writeValueAsString(topology);
+      System.out.println(JSON_WRITER.writeValueAsString(topology));
     }
+
+    return 0;
   }
 }

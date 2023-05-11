@@ -1,5 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 
   <modelVersion>4.0.0</modelVersion>
 
@@ -13,7 +15,24 @@
   <artifactId>zeebe-cli</artifactId>
   <packaging>jar</packaging>
 
-  <name>Zeebe Journal</name>
+  <name>Zeebe CLI</name>
+
+  <properties>
+    <version.quarkus>3.0.2.Final</version.quarkus>
+    <version.picocli>4.7.3</version.picocli>
+  </properties>
+
+  <dependencyManagement>
+    <dependencies>
+      <dependency>
+        <groupId>io.quarkus.platform</groupId>
+        <artifactId>quarkus-bom</artifactId>
+        <version>${version.quarkus}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
 
   <dependencies>
     <dependency>
@@ -21,27 +40,33 @@
       <artifactId>zeebe-client-java</artifactId>
     </dependency>
 
+    <!-- CLI arguments/interface -->
+
     <dependency>
       <groupId>info.picocli</groupId>
       <artifactId>picocli</artifactId>
-      <version>4.7.3</version>
+      <version>${version.picocli}</version>
+    </dependency>
+
+    <!-- Application framework; prepares the native image build for us -->
+    <dependency>
+      <groupId>io.quarkus</groupId>
+      <artifactId>quarkus-grpc-common</artifactId>
     </dependency>
 
     <dependency>
-      <groupId>org.slf4j</groupId>
-      <artifactId>slf4j-api</artifactId>
+      <groupId>io.quarkus</groupId>
+      <artifactId>quarkus-netty</artifactId>
     </dependency>
 
     <dependency>
-      <groupId>org.apache.logging.log4j</groupId>
-      <artifactId>log4j-core</artifactId>
-      <scope>runtime</scope>
+      <groupId>io.quarkus</groupId>
+      <artifactId>quarkus-jackson</artifactId>
     </dependency>
 
     <dependency>
-      <groupId>org.apache.logging.log4j</groupId>
-      <artifactId>log4j-slf4j2-impl</artifactId>
-      <scope>runtime</scope>
+      <groupId>io.quarkus</groupId>
+      <artifactId>quarkus-picocli</artifactId>
     </dependency>
 
     <!-- Test dependencies -->
@@ -62,23 +87,43 @@
     <finalName>zbctl</finalName>
 
     <plugins>
+      <!-- quarkus packaging -->
       <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-compiler-plugin</artifactId>
-        <configuration>
-          <annotationProcessorPaths>
-            <path>
-              <groupId>info.picocli</groupId>
-              <artifactId>picocli-codegen</artifactId>
-              <version>4.7.3</version>
-            </path>
-          </annotationProcessorPaths>
-          <compilerArgs>
-            <arg>-Aproject=${project.groupId}/${project.artifactId}</arg>
-          </compilerArgs>
-        </configuration>
+        <groupId>io.quarkus.platform</groupId>
+        <artifactId>quarkus-maven-plugin</artifactId>
+        <version>${version.quarkus}</version>
+        <extensions>true</extensions>
+        <executions>
+          <execution>
+            <goals>
+              <goal>build</goal>
+              <goal>generate-code</goal>
+              <goal>generate-code-tests</goal>
+            </goals>
+          </execution>
+        </executions>
       </plugin>
     </plugins>
   </build>
+
+  <profiles>
+    <profile>
+      <id>native</id>
+
+      <properties>
+        <!-- package as a native image -->
+        <quarkus.package.type>native</quarkus.package.type>
+
+        <!-- allow linux users to build without GraalVM installed -->
+        <!--        <quarkus.native.container-build>true</quarkus.native.container-build>-->
+
+        <!-- build a Docker image out of the native image -->
+        <quarkus.container-image.build>false</quarkus.container-image.build>
+
+        <!-- disable basic quarkus logging -->
+        <quarkus.log.console.enable>false</quarkus.log.console.enable>
+      </properties>
+    </profile>
+  </profiles>
 
 </project>
