@@ -56,6 +56,7 @@ export declare global {
       REACT_APP_OSANO_PROD_ENV_URL: string;
       REACT_APP_MIXPANEL_TOKEN: string;
       REACT_APP_CUES_HOST: string;
+      REACT_SKIP_STRICT_MODE: string;
     }
   }
 }

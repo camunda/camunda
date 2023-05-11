@@ -32,7 +32,7 @@
   },
   "scripts": {
     "start": "TSC_COMPILE_ON_ERROR=true react-scripts start",
-    "start:e2e": "BROWSER=none PORT=3001 IS_E2E=true react-scripts start",
+    "start:e2e": "BROWSER=none PORT=3001 IS_E2E=true REACT_APP_SKIP_STRICT_MODE=true react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test --env=jsdom",
     "test:ci": "CI=true yarn test --ci --testTimeout 7000",

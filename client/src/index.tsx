@@ -35,8 +35,12 @@ const root = createRoot(container!);
 
 Promise.all([tracking.loadAnalyticsToWillingUsers(), mock()]).then(() => {
   root.render(
-    <StrictMode>
+    process.env.REACT_APP_SKIP_STRICT_MODE === 'true' ? (
       <App />
-    </StrictMode>,
+    ) : (
+      <StrictMode>
+        <App />
+      </StrictMode>
+    ),
   );
 });

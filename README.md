@@ -26,6 +26,16 @@ docker-compose up elasticsearch zeebe
 
 And then start the spring-boot application under webapp folder in your preferred IDE.
 
+### Running E2E tests
+
+We use Testcafe for E2E tests, which are executed on every push to any branch via Github Actions.
+
+To run these tests locally, follow the steps:
+
+1. In the root folder, execute `make env-up` and confirm Tasklist is running by checking `localhost:8080`.
+2. In the same root folder, execute `make start-e2e`.
+3. In the `client/` folder, execute yarn start:e2e.
+4. Lastly, run `yarn test:e2e`.
 
 ### Running visual regression tests
 
