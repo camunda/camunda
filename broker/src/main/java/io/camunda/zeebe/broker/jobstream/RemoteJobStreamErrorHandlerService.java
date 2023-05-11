@@ -10,9 +10,9 @@ package io.camunda.zeebe.broker.jobstream;
 import static io.camunda.zeebe.scheduler.Actor.buildActorName;
 
 import io.camunda.zeebe.broker.PartitionListener;
-import io.camunda.zeebe.engine.processing.streamprocessor.ActivatedJob;
 import io.camunda.zeebe.engine.state.QueryService;
 import io.camunda.zeebe.logstreams.log.LogStream;
+import io.camunda.zeebe.protocol.impl.stream.job.ActivatedJob;
 import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;

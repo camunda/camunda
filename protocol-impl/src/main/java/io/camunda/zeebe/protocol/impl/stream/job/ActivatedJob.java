@@ -5,7 +5,7 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.camunda.zeebe.engine.processing.streamprocessor;
+package io.camunda.zeebe.protocol.impl.stream.job;
 
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.util.buffer.BufferWriter;
@@ -20,5 +20,5 @@ public interface ActivatedJob extends BufferWriter {
   long jobKey();
 
   /** Returns the actual job, with the variables collected during activation. */
-  JobRecord record();
+  JobRecord jobRecord();
 }

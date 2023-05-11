@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.broker.jobstream;
 
-import io.camunda.zeebe.engine.processing.streamprocessor.ActivatedJob;
+import io.camunda.zeebe.protocol.impl.stream.job.ActivatedJob;
 import io.camunda.zeebe.stream.api.scheduling.TaskResultBuilder;
 
 /**

@@ -7,10 +7,10 @@
  */
 package io.camunda.zeebe.broker.jobstream;
 
-import io.camunda.zeebe.engine.processing.streamprocessor.ActivatedJob;
 import io.camunda.zeebe.logstreams.log.LogAppendEntry;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
+import io.camunda.zeebe.protocol.impl.stream.job.ActivatedJob;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.scheduler.testing.TestConcurrencyControl;
 import io.camunda.zeebe.stream.api.scheduling.TaskResultBuilder;
@@ -94,11 +94,11 @@ final class RemoteJobStreamErrorHandlerTest {
         .hasSize(1)
         .first()
         .extracting(LogAppendEntry::key, LogAppendEntry::recordValue)
-        .containsExactly(1L, job.record());
+        .containsExactly(1L, job.jobRecord());
   }
 
   // TODO: use actual one if possible
-  private record TestActivatedJob(long jobKey, JobRecord record) implements ActivatedJob {
+  private record TestActivatedJob(long jobKey, JobRecord jobRecord) implements ActivatedJob {
 
     @Override
     public int getLength() {
@@ -119,7 +119,7 @@ final class RemoteJobStreamErrorHandlerTest {
     @Override
     public void handleError(
         final ActivatedJob job, final Throwable error, final TaskResultBuilder resultBuilder) {
-      resultBuilder.appendCommandRecord(1, JobIntent.FAIL, job.record());
+      resultBuilder.appendCommandRecord(1, JobIntent.FAIL, job.jobRecord());
       errors.add(new TestErrorHandler.Error(job, error));
     }
 

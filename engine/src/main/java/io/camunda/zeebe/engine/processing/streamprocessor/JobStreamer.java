@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.streamprocessor;
 
+import io.camunda.zeebe.protocol.impl.stream.job.ActivatedJob;
 import java.util.Optional;
 import org.agrona.DirectBuffer;
 
