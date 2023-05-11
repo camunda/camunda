@@ -57,6 +57,14 @@ public final class JobMetrics {
     jobEvent("error thrown", type);
   }
 
+  public void jobNotification(final String type) {
+    jobEvent("workers notified", type);
+  }
+
+  public void jobPush(final String type) {
+    jobEvent("pushed", type);
+  }
+
   /** Clears the metrics counter. You probably only want to use this during testing. */
   static void clear() {
     JOB_EVENTS.clear();
