@@ -354,3 +354,93 @@ export interface DashboardTile {
   type: 'optimize_report' | 'external_url' | 'text';
   configuration: {external?: string; text?: SerializedEditorState};
 }
+
+export interface Definition {
+  identifier: string;
+  displayName?: string | JSX.Element[];
+  name?: string;
+  key?: string;
+  tenantIds?: (string | null)[];
+  versions?: string[];
+  flowNodeIds?: string[];
+}
+
+export type Variable = {id?: string; name: string; type: string; label?: string | null};
+
+export interface FilterData {
+  value: string | number;
+  unit: string;
+  operator?: string;
+}
+
+type CommonFilter = {includeUndefined?: boolean; excludeUndefined?: boolean; name?: string};
+
+type FixedFilter = {
+  type: 'fixed';
+  start: string | null;
+  end: string | null;
+};
+
+type RollingFilter = {
+  type: 'rolling' | 'custom';
+  start: {value?: number | string; unit?: string} | null;
+  end: string | null;
+  customNum?: string;
+};
+
+type OtherFilter = {
+  type: '' | 'relative' | 'today' | 'yesterday' | 'this' | 'last' | 'between' | 'after' | 'before';
+  start: {value?: number | string; unit?: string} | null;
+  end: string | null;
+};
+
+export type Filter = CommonFilter & (FixedFilter | RollingFilter | OtherFilter);
+
+interface CommonFilterState {
+  type: string;
+  unit: string;
+  valid?: boolean;
+  startDate: Date | null;
+  endDate: Date | null;
+  includeUndefined?: boolean;
+  excludeUndefined?: boolean;
+  applyTo?: Definition[];
+  values?: (string | number | boolean | null)[];
+  operator?: string;
+  customNum: string;
+}
+
+export interface NoDateFilterState extends CommonFilterState {
+  type: 'this' | 'last' | 'yesterday' | 'today';
+  startDate: null;
+  endDate: null;
+}
+
+export interface BetweenFilterState extends CommonFilterState {
+  type: 'between';
+  startDate: Date;
+  endDate: Date;
+}
+
+export interface BeforeFilterState extends CommonFilterState {
+  type: 'before';
+  startDate: Date | null;
+  endDate: Date;
+}
+
+export interface AfterFilterState extends CommonFilterState {
+  type: 'after';
+  startDate: Date;
+  endDate: Date | null;
+}
+
+export interface CustomFilterState extends CommonFilterState {
+  type: 'custom';
+}
+
+export type FilterState =
+  | CommonFilterState
+  | BetweenFilterState
+  | BeforeFilterState
+  | AfterFilterState
+  | CustomFilterState;

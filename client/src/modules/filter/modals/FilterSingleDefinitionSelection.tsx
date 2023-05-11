@@ -5,18 +5,23 @@
  * except in compliance with the proprietary license.
  */
 
-import React from 'react';
-
 import {Labeled, Typeahead} from 'components';
 import {t} from 'translation';
+import {Definition} from 'types';
 
 import './FilterSingleDefinitionSelection.scss';
+
+interface FilterSingleDefinitionSelectionProps {
+  availableDefinitions: Definition[];
+  applyTo?: Definition | null;
+  setApplyTo: (definition?: Definition) => void;
+}
 
 export default function FilterSingleDefinitionSelection({
   availableDefinitions,
   applyTo,
   setApplyTo,
-}) {
+}: FilterSingleDefinitionSelectionProps) {
   if (availableDefinitions.length <= 1) {
     return null;
   }
@@ -25,12 +30,12 @@ export default function FilterSingleDefinitionSelection({
     <div className="FilterSingleDefinitionSelection">
       <Labeled label={t('common.definitionSelection.select.process')}>
         <Typeahead
-          initialValue={applyTo}
+          initialValue={applyTo ?? undefined}
           placeholder={t('dashboard.addButton.selectReportPlaceholder')}
           onChange={setApplyTo}
         >
           {availableDefinitions
-            .filter((definition) => definition.versions.length && definition.tenantIds.length)
+            .filter((definition) => definition.versions?.length && definition.tenantIds?.length)
             .map((definition) => (
               <Typeahead.Option key={definition.identifier} value={definition}>
                 {definition.displayName || definition.name || definition.key}

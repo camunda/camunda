@@ -5,15 +5,24 @@
  * except in compliance with the proprietary license.
  */
 
-import React from 'react';
-
 import {Labeled, MultiSelect} from 'components';
 import {t} from 'translation';
+import {Definition} from 'types';
 
 import './FilterDefinitionSelection.scss';
 
-export default function FilterDefinitionSelection({availableDefinitions, applyTo, setApplyTo}) {
-  function onAdd(definition) {
+export interface FilterDefinitionSelectionProps {
+  availableDefinitions: Definition[];
+  applyTo: Definition[];
+  setApplyTo: (definitions: Definition[]) => void;
+}
+
+export default function FilterDefinitionSelection({
+  availableDefinitions,
+  applyTo,
+  setApplyTo,
+}: FilterDefinitionSelectionProps) {
+  function onAdd(definition: Definition) {
     if (definition.identifier === 'all') {
       setApplyTo([definition]);
     } else {
@@ -25,8 +34,8 @@ export default function FilterDefinitionSelection({availableDefinitions, applyTo
     setApplyTo([]);
   }
 
-  function onRemove(definition) {
-    setApplyTo(applyTo.filter((applied) => applied.identifier !== definition.identifier));
+  function onRemove(definition: Definition | undefined) {
+    setApplyTo(applyTo.filter((applied) => applied.identifier !== definition?.identifier));
   }
 
   if (availableDefinitions.length <= 1) {
@@ -72,7 +81,7 @@ export default function FilterDefinitionSelection({availableDefinitions, applyTo
           onRemove={onRemove}
           values={applyTo.map((definition) => ({
             value: definition,
-            label: definition.displayName || definition.name || definition.key,
+            label: definition.displayName?.toString() || definition.name || definition.key || '',
           }))}
           persistMenu={false}
         >

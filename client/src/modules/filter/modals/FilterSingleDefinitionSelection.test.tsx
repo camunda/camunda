@@ -29,7 +29,7 @@ const props = {
       displayName: 'missing Tenant',
     },
   ],
-  applyTo: null,
+  applyTo: undefined,
   setApplyTo: () => {},
 };
 
