@@ -5,20 +5,32 @@
  * except in compliance with the proprietary license.
  */
 
-import React from 'react';
+import {Component} from 'react';
+import {Button} from '@carbon/react';
 
 import {t} from 'translation';
-import {Modal, Button, Form, MessageBox, DateRangeInput} from 'components';
+import {CarbonModal as Modal, Form, MessageBox, DateRangeInput} from 'components';
+import {Definition, Filter, FilterState} from 'types';
+
+import {FilterProps} from '../types';
 
 import FilterDefinitionSelection from '../FilterDefinitionSelection';
-
 import DateFilterPreview from './DateFilterPreview';
 import {convertFilterToState, convertStateToFilter, isValid} from './service';
 
 import './DateFilter.scss';
 
-export default class DateFilter extends React.Component {
-  state = {
+interface DateFilterProps extends FilterProps<Partial<Filter>> {
+  filterType: 'instanceStartDate' | 'instanceEndDate';
+  filterLevel: 'instance';
+}
+
+type DateFilterState = FilterState & {
+  applyTo?: Definition[] | string[];
+};
+
+export default class DateFilter extends Component<DateFilterProps, DateFilterState> {
+  state: DateFilterState = {
     valid: false,
     type: '',
     unit: '',
@@ -40,9 +52,9 @@ export default class DateFilter extends React.Component {
 
     if (filterData.appliedTo?.[0] !== 'all') {
       this.setState({
-        applyTo: filterData.appliedTo.map((id) =>
-          definitions.find(({identifier}) => identifier === id)
-        ),
+        applyTo: filterData.appliedTo
+          .map((id) => definitions.find(({identifier}) => identifier === id))
+          .filter((definition): definition is Definition => !!definition),
       });
     }
   }
@@ -53,8 +65,8 @@ export default class DateFilter extends React.Component {
     if (isValid(this.state)) {
       return addFilter({
         type: filterType,
-        data: convertStateToFilter({type, unit, customNum, startDate, endDate}),
-        appliedTo: applyTo.map(({identifier}) => identifier),
+        data: convertStateToFilter({type, unit, customNum, startDate, endDate} as FilterState),
+        appliedTo: applyTo?.map(({identifier}) => identifier) || [],
       });
     }
   };
@@ -64,7 +76,7 @@ export default class DateFilter extends React.Component {
     const {close, filterData, filterType, definitions} = this.props;
 
     return (
-      <Modal open={true} onClose={close} onConfirm={this.confirm} className="DateFilter">
+      <Modal size="sm" open onClose={close} isOverflowVisible className="DateFilter">
         <Modal.Header>
           {t('common.filter.modalHeader', {
             type: t(`common.filter.types.${filterType}`),
@@ -73,7 +85,7 @@ export default class DateFilter extends React.Component {
         <Modal.Content>
           <FilterDefinitionSelection
             availableDefinitions={definitions}
-            applyTo={applyTo}
+            applyTo={applyTo as Definition[]}
             setApplyTo={(applyTo) => this.setState({applyTo})}
           />
           {filterType === 'instanceEndDate' && (
@@ -87,7 +99,7 @@ export default class DateFilter extends React.Component {
               startDate={startDate}
               endDate={endDate}
               customNum={customNum}
-              onChange={(change) => this.setState(change)}
+              onChange={(change) => this.setState({...this.state, ...change})}
             />
             <Form.Group className="previewContainer">
               {isValid(this.state) && (
@@ -105,14 +117,14 @@ export default class DateFilter extends React.Component {
             </Form.Group>
           </Form>
         </Modal.Content>
-        <Modal.Actions>
-          <Button main onClick={close}>
+        <Modal.Footer>
+          <Button kind="secondary" className="cancel" onClick={close}>
             {t('common.cancel')}
           </Button>
-          <Button main primary disabled={!isValid(this.state)} onClick={this.confirm}>
+          <Button className="confirm" disabled={!isValid(this.state)} onClick={this.confirm}>
             {filterData ? t('common.filter.updateFilter') : t('common.filter.addFilter')}
           </Button>
-        </Modal.Actions>
+        </Modal.Footer>
       </Modal>
     );
   }

@@ -9,36 +9,43 @@ import {parseISO, startOfDay, endOfDay} from 'date-fns';
 
 import {format, BACKEND_DATE_FORMAT} from 'dates';
 import {numberParser} from 'services';
+import {FilterState, Filter, BetweenFilterState, BeforeFilterState, AfterFilterState} from 'types';
 
-export function convertFilterToState(filter) {
+export function convertFilterToState(filter: Partial<Filter>): FilterState {
   const {type, start, end, ...commonProps} = filter;
-  let state = {};
+  let state: FilterState = {
+    type: '',
+    unit: '',
+    startDate: null,
+    endDate: null,
+    customNum: '',
+  };
 
   if (type === 'fixed') {
     if (!start && !end) {
-      state = {type: ''};
+      state = {...state, type: ''};
     } else {
       state = {
-        type: getFixedType(start, end),
-        startDate: start ? parseISO(start) : null,
-        endDate: end ? parseISO(end) : null,
+        ...state,
+        ...getFixedType(start, end),
         valid: true,
       };
     }
   } else {
-    const {value, unit} = start || {};
+    const {value = '', unit = ''} = start && typeof start === 'object' ? start : {};
     if (type === 'rolling') {
       state = {
+        ...state,
         type: 'custom',
-        unit: unit,
-        customNum: value,
+        unit,
+        customNum: value?.toString(),
       };
     } else if (value === 0) {
       const type = unit === 'days' ? 'today' : 'this';
-      state = {type, unit};
+      state = {...state, type, unit} as FilterState;
     } else if (value === 1) {
       const type = unit === 'days' ? 'yesterday' : 'last';
-      state = {type, unit};
+      state = {...state, type, unit} as FilterState;
     }
   }
 
@@ -53,8 +60,8 @@ export function convertStateToFilter({
   endDate,
   valid,
   ...commonProps
-}) {
-  let filter = {type: 'relative', end: null};
+}: Partial<FilterState>): Filter {
+  let filter: Filter = {type: 'relative', end: null, start: null};
   switch (type) {
     case 'today':
       filter.start = {value: 0, unit: 'days'};
@@ -68,7 +75,7 @@ export function convertStateToFilter({
     case 'last':
       filter.start = {
         value: 1,
-        unit: unit,
+        unit,
       };
       break;
     case 'between':
@@ -105,7 +112,7 @@ export function isValid({
   includeUndefined,
   excludeUndefined,
   applyTo,
-}) {
+}: Partial<FilterState>): boolean {
   if (applyTo?.length === 0) {
     return false;
   }
@@ -115,24 +122,39 @@ export function isValid({
       return true;
     case 'this':
     case 'last':
-      return unit;
+      return !!unit;
     case 'between':
     case 'before':
     case 'after':
-      return valid;
+      return !!valid;
     case 'custom':
-      return numberParser.isPositiveInt(customNum);
+      return customNum ? numberParser.isPositiveInt(customNum) : false;
     default:
-      return includeUndefined || excludeUndefined;
+      return !!(includeUndefined || excludeUndefined);
   }
 }
 
-function getFixedType(start, end) {
+function getFixedType(
+  start?: string | null,
+  end?: string | null
+): Partial<BetweenFilterState | BeforeFilterState | AfterFilterState> {
   if (start && end) {
-    return 'between';
+    return {
+      type: 'between',
+      startDate: parseISO(start),
+      endDate: parseISO(end),
+    };
   } else if (start) {
-    return 'after';
+    return {
+      type: 'after',
+      startDate: parseISO(start),
+      endDate: null,
+    };
   } else {
-    return 'before';
+    return {
+      type: 'before',
+      startDate: null,
+      endDate: parseISO(end!),
+    };
   }
 }

@@ -6,3 +6,4 @@
  */
 
 export {AssigneeFilter} from './assignee';
+export {DateFilter, DateFilterPreview} from './date';

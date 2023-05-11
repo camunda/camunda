@@ -5,20 +5,27 @@
  * except in compliance with the proprietary license.
  */
 
-import React from 'react';
-
+import {ComponentProps} from 'react';
 import DateFilter from './DateFilter';
 import {shallow} from 'enzyme';
 
+import {Filter} from 'types';
+
+import {FilterProps} from '../types';
+
 import {convertFilterToState, isValid} from './service';
-isValid.mockReturnValue(true);
+
+(isValid as jest.Mock).mockReturnValue(true);
 
 jest.mock('./service');
 
-const props = {
+const props: ComponentProps<typeof DateFilter> = {
   filterType: 'instanceStartDate',
-  filterData: null,
+  filterLevel: 'instance',
+  filterData: {appliedTo: [], data: {}, type: ''},
   definitions: [{identifier: 'definition'}],
+  close: jest.fn(),
+  addFilter: jest.fn(),
 };
 
 it('should contain a modal', () => {
@@ -28,8 +35,8 @@ it('should contain a modal', () => {
 });
 
 it('should render preview if the filter is valid', async () => {
-  convertFilterToState.mockReturnValue({dateType: 'yesterday'});
-  const filter = {
+  (convertFilterToState as jest.Mock).mockReturnValue({dateType: 'yesterday'});
+  const filter: FilterProps<Partial<Filter>>['filterData'] = {
     type: 'instanceStartDate',
     data: {type: 'relative', start: {value: '1', unit: 'days'}},
     appliedTo: ['definition'],
@@ -43,13 +50,13 @@ it('should render preview if the filter is valid', async () => {
 
 it('should have a create filter button', () => {
   const spy = jest.fn();
-  const filter = {
+  const filter: FilterProps<Partial<Filter>>['filterData'] = {
     type: 'instanceStartDate',
     data: {type: 'rolling', start: {value: '5', unit: 'days'}},
     appliedTo: ['definition'],
   };
   const node = shallow(<DateFilter {...props} addFilter={spy} filterData={filter} />);
-  const addButton = node.find('[primary]');
+  const addButton = node.find('.confirm');
 
   addButton.simulate('click');
 

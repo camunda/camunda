@@ -88,5 +88,9 @@ it('should default to an empty date filter if no type is set', () => {
 it('should not crash when parsing a fixed date filter without values', () => {
   expect(convertFilterToState({type: 'fixed', start: null, end: null})).toEqual({
     type: '',
+    unit: '',
+    startDate: null,
+    endDate: null,
+    customNum: '',
   });
 });
