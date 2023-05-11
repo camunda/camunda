@@ -7,6 +7,7 @@
 
 import {forwardRef, ComponentPropsWithoutRef, UIEvent} from 'react';
 import classnames from 'classnames';
+
 import {Icon} from 'components';
 
 import './Input.scss';
@@ -24,10 +25,6 @@ export default forwardRef<HTMLInputElement, InputProps>(function Input(
   {isInvalid, onClear, placeholder, ...props},
   ref
 ): JSX.Element {
-  if (placeholder && typeof placeholder !== 'string') {
-    throw new Error('Input: Placeholder should be of type string');
-  }
-
   let inputEl: HTMLInputElement;
   const setRef = (el: HTMLInputElement) => {
     inputEl = el;
@@ -64,7 +61,7 @@ export default forwardRef<HTMLInputElement, InputProps>(function Input(
           }
         }}
         {...props}
-        placeholder={placeholder}
+        placeholder={placeholder?.toString()}
         className={classnames('Input', props.className, {isInvalid})}
         ref={setRef}
       >

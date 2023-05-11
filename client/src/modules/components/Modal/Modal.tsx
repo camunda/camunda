@@ -24,7 +24,7 @@ export default function Modal({children, className, isOverflowVisible, ...props}
           {...props}
           className={classnames('CarbonModal', {overflowVisible: isOverflowVisible}, className)}
         >
-          {props.open ? children : null}
+          {props.open && children}
         </ComposedModal>,
         document.body
       );

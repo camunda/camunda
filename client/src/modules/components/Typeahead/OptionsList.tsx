@@ -25,9 +25,9 @@ import {highlightText} from './service';
 
 import './OptionsList.scss';
 
-export interface OptionProps {
+export interface OptionProps<T = unknown> {
   label: string;
-  value: string;
+  value: T;
   children: ReactNode;
   disabled?: boolean;
   className: string;
@@ -35,11 +35,11 @@ export interface OptionProps {
   onMouseDown?: (evt: MouseEvent<HTMLDivElement, MouseEvent>) => void;
 }
 
-interface OptionsListProps {
+interface OptionsListProps<T> {
   loading?: boolean;
   hasMore?: boolean;
   input: HTMLInputElement | null;
-  onSelect: (option: ReactElement<OptionProps>) => void;
+  onSelect: (option: ReactElement<OptionProps<T>>) => void;
   filter?: string;
   children: ReactNode;
   onMouseDown?: (evt: MouseEvent<HTMLDivElement, MouseEvent>) => void;
@@ -50,7 +50,7 @@ interface OptionsListProps {
   onClose: () => void;
 }
 
-export default function OptionsList({
+export default function OptionsList<T = unknown>({
   loading,
   hasMore,
   input,
@@ -61,11 +61,11 @@ export default function OptionsList({
   async,
   typedOption,
   ...props
-}: OptionsListProps): JSX.Element | null {
+}: OptionsListProps<T>): JSX.Element | null {
   const [selectedOption, setSelectedOption] = useState<number>(-1);
   const optionList = createRef<HTMLDivElement>();
-  const optionsArr = Children.toArray(children).filter(isValidElement<OptionProps>);
-  let filteredOptions: ReactElement<OptionProps>[] = optionsArr;
+  const optionsArr = Children.toArray(children).filter(isValidElement<OptionProps<T>>);
+  let filteredOptions: ReactElement<OptionProps<T>>[] = optionsArr;
 
   if (!async && filter) {
     filteredOptions = optionsArr.filter(({props: {label, children}}) => {

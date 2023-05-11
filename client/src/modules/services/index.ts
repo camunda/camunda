@@ -24,5 +24,3 @@ export {TEXT_REPORT_MAX_CHARACTERS, isTextReportTooLong, isTextReportValid} from
 export {default as getScreenBounds} from './getScreenBounds';
 export {default as ignoreFragments} from './ignoreFragments';
 export {default as isReactElement} from './isReactElement';
-
-export type {TimeObject} from './formatters';

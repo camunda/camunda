@@ -65,9 +65,3 @@ it('should focus on input when clicking the clear button', () => {
   expect(document.activeElement?.getAttribute('class')).toBe('Input');
   expect(spy).toHaveBeenCalled();
 });
-
-it('should throw en error if you pass placeholder thats nor a string', () => {
-  expect(() => shallow(<Input placeholder={[<div />]} />)).toThrow(
-    'Input: Placeholder should be of type string'
-  );
-});

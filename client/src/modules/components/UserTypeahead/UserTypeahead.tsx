@@ -21,7 +21,7 @@ export interface UserTypeaheadProps extends WithErrorHandlingProps {
   onChange: (users: User[]) => void;
   fetchUsers?: (
     query: string,
-    excludeGroups: boolean
+    excludeGroups?: boolean
   ) => Promise<{total: number; result: User['identity'][]}>;
   optionsOnly?: boolean;
   excludeGroups?: boolean;

@@ -16,16 +16,16 @@ import Typeahead from './Typeahead';
 
 import './MultiSelect.scss';
 
-type MultiSelectProps = {
+type MultiSelectProps<T> = {
   onSearch?: (query: string) => void;
   onOpen?: (query: string) => void;
   onClose?: () => void;
-  values?: {label: string; value: string}[];
+  values?: {label: string; value: T}[];
   noValuesMessage?: string;
   placeholder?: ReactNode;
   className?: string;
-  onAdd: (value: string) => void;
-  onRemove: (value: string, index: number) => void;
+  onAdd: (value: T) => void;
+  onRemove: (value: T, index: number) => void;
   async?: boolean;
   onClear: () => void;
   typedOption?: boolean;
@@ -36,7 +36,7 @@ type MultiSelectProps = {
   persistMenu?: boolean;
 };
 
-export default function MultiSelect({
+export default function MultiSelect<T = unknown>({
   onSearch = () => {},
   onOpen = () => {},
   onClose = () => {},
@@ -54,7 +54,7 @@ export default function MultiSelect({
   disabled,
   children,
   persistMenu = true,
-}: MultiSelectProps): JSX.Element {
+}: MultiSelectProps<T>): JSX.Element {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState('');
   const [insideClick, setInsideClick] = useState(false);
@@ -88,7 +88,7 @@ export default function MultiSelect({
     setInsideClick(false);
   }
 
-  function selectOption({props: {value}}: ReactElement<OptionProps>) {
+  function selectOption({props: {value}}: ReactElement<OptionProps<T>>) {
     if (query) {
       setQuery('');
       onSearch('');

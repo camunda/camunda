@@ -14,21 +14,21 @@ import {
   isValidElement,
   ReactNode,
 } from 'react';
+import classnames from 'classnames';
 
 import {Input, Button, Icon, Dropdown} from 'components';
 import {t} from 'translation';
-import classnames from 'classnames';
 
 import OptionsList from './OptionsList';
 
 import './Typeahead.scss';
 
-interface TypeaheadProps {
+interface TypeaheadProps<T> {
   children: ReactNode;
-  initialValue?: string;
-  value?: string;
+  initialValue?: T;
+  value?: T;
   onSearch: (query: string) => void;
-  onChange: (value: string) => void;
+  onChange: (value: T) => void;
   onOpen: () => void;
   onClose: () => void;
   placeholder?: string | JSX.Element[];
@@ -41,19 +41,20 @@ interface TypeaheadProps {
   className?: string;
 }
 
-interface TypeaheadState {
+interface TypeaheadState<T> {
   query: string;
   open: boolean;
-  selected: string | undefined;
+  selected?: T;
 }
 
-const defaultState: TypeaheadState = {
+const defaultState = {
   query: '',
   open: false,
-  selected: '',
 };
-
-export default class Typeahead extends Component<TypeaheadProps, TypeaheadState> {
+export default class Typeahead<T = unknown> extends Component<
+  TypeaheadProps<T>,
+  TypeaheadState<T>
+> {
   static defaultProps = {
     onSearch: () => {},
     onChange: () => {},
@@ -61,7 +62,7 @@ export default class Typeahead extends Component<TypeaheadProps, TypeaheadState>
     onClose: () => {},
   };
 
-  state = defaultState;
+  state: TypeaheadState<T> = defaultState;
 
   optionClicked = false;
 
@@ -79,7 +80,7 @@ export default class Typeahead extends Component<TypeaheadProps, TypeaheadState>
     this.findAndSelect(value);
   }
 
-  componentDidUpdate(prevProps: TypeaheadProps) {
+  componentDidUpdate(prevProps: TypeaheadProps<T>) {
     if (prevProps.value !== this.props.value) {
       if (typeof this.props.value === 'undefined') {
         this.setState(defaultState);
@@ -93,7 +94,7 @@ export default class Typeahead extends Component<TypeaheadProps, TypeaheadState>
     }
   }
 
-  findAndSelect = (value?: string) => {
+  findAndSelect = (value?: T) => {
     const {children, typedOption} = this.props;
     const foundOption = Children.toArray(children).find(
       (option) => (option as ReactElement).props.value === value
@@ -102,7 +103,7 @@ export default class Typeahead extends Component<TypeaheadProps, TypeaheadState>
     if (typedOption) {
       this.setState({
         selected: value,
-        query: value || '',
+        query: value?.toString() || '',
       });
     } else if (isValidElement(foundOption)) {
       const {label, children} = foundOption.props;
@@ -125,11 +126,11 @@ export default class Typeahead extends Component<TypeaheadProps, TypeaheadState>
     this.optionClicked = false;
   };
 
-  getPlaceholderText = (isEmpty: boolean) => {
+  getPlaceholderText = (isEmpty: boolean): string | JSX.Element[] | undefined => {
     const {placeholder, disabled, noValuesMessage} = this.props;
     const {selected} = this.state;
     if (selected) {
-      return selected;
+      return `${selected}`;
     }
     if (disabled || isEmpty) {
       return noValuesMessage || t('common.notFound');
@@ -144,7 +145,7 @@ export default class Typeahead extends Component<TypeaheadProps, TypeaheadState>
 
   close = () => {
     this.props.onClose();
-    this.setState(({selected}) => ({open: false, query: selected || ''}));
+    this.setState(({selected}) => ({open: false, query: selected?.toString() || ''}));
   };
 
   render() {

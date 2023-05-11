@@ -106,7 +106,7 @@ export default function MultiUserInput({
             {subTexts && (
               <span className="subTexts">
                 {subTexts
-                  .filter((subText) => subText)
+                  .filter((subText): subText is string => !!subText)
                   .map((subText, i) => (
                     <span className="subText" key={i}>
                       <MultiSelect.Highlight matchFromStart>{subText}</MultiSelect.Highlight>
@@ -121,8 +121,12 @@ export default function MultiUserInput({
   );
 }
 
-function formatTypeaheadOption({name, email, id, type}: User['identity']) {
-  const subTexts: string[] = [];
+function formatTypeaheadOption({name, email, id, type}: User['identity']): {
+  text: string;
+  tag: string | null;
+  subTexts: (string | null)[];
+} {
+  const subTexts: (string | null)[] = [];
   if (name && email) {
     subTexts.push(email);
   }
@@ -132,8 +136,8 @@ function formatTypeaheadOption({name, email, id, type}: User['identity']) {
   }
 
   return {
-    text: name || email || id,
-    tag: type === 'group' && ` (${t('common.user-group.label')})`,
+    text: name || email || id || '',
+    tag: type === 'group' ? ` (${t('common.user-group.label')})` : null,
     subTexts,
   };
 }

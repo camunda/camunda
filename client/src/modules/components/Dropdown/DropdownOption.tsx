@@ -13,7 +13,7 @@ import {Icon, Tooltip} from 'components';
 
 import './DropdownOption.scss';
 
-interface CommonProps<T extends object | string | number = string> {
+interface CommonProps<T> {
   value?: T;
   active?: boolean;
   disabled?: boolean;
@@ -21,23 +21,17 @@ interface CommonProps<T extends object | string | number = string> {
   label?: string | JSX.Element;
 }
 
-interface LinkProps<T extends object | string | number = string>
-  extends CommonProps<T>,
-    Partial<ComponentPropsWithoutRef<Link>> {
+interface LinkProps<T> extends CommonProps<T>, Partial<ComponentPropsWithoutRef<Link>> {
   link: string;
 }
 
-interface DivProps<T extends object | string | number = string>
-  extends CommonProps<T>,
-    Partial<ComponentPropsWithoutRef<'div'>> {
+interface DivProps<T> extends CommonProps<T>, Partial<ComponentPropsWithoutRef<'div'>> {
   link?: never;
 }
 
-export type DropdownOptionProps<T extends object | string | number = string> =
-  | LinkProps<T>
-  | DivProps<T>;
+export type DropdownOptionProps<T> = LinkProps<T> | DivProps<T>;
 
-function DropdownOption<T extends object | string | number = string>(
+function DropdownOption<T>(
   {active, link, disabled, ...props}: DropdownOptionProps<T>,
   ref: ForwardedRef<HTMLElement>
 ) {
@@ -58,7 +52,7 @@ function DropdownOption<T extends object | string | number = string>(
   if (link) {
     return (
       <Tooltip content={content} overflowOnly>
-        <Link {...(commonProps as Partial<LinkProps>)} to={link}>
+        <Link {...(commonProps as Partial<LinkProps<T>>)} to={link}>
           {content}
         </Link>
       </Tooltip>
@@ -68,8 +62,8 @@ function DropdownOption<T extends object | string | number = string>(
   return (
     <Tooltip content={content} overflowOnly>
       <div
-        {...(commonProps as Partial<DivProps>)}
-        onClick={(evt) => !disabled && (props as DivProps).onClick?.(evt)}
+        {...(commonProps as Partial<DivProps<T>>)}
+        onClick={(evt) => !disabled && (props as DivProps<T>).onClick?.(evt)}
       >
         {content}
       </div>
@@ -77,6 +71,6 @@ function DropdownOption<T extends object | string | number = string>(
   );
 }
 
-export default forwardRef(DropdownOption) as <T extends object | string | number = string>(
+export default forwardRef(DropdownOption) as <T extends object | string | number | null = string>(
   props: DropdownOptionProps<T> & {ref?: ForwardedRef<HTMLElement>}
 ) => ReturnType<typeof DropdownOption>;

@@ -17,14 +17,16 @@ interface DateRangeInputProps {
   startDate: Date | null;
   endDate: Date | null;
   customNum: string;
-  onChange: (params: {
-    type?: string;
-    unit?: string;
-    startDate?: Date | null;
-    endDate?: Date | null;
-    valid?: boolean;
-    customNum?: string;
-  }) => void;
+  onChange: (
+    params: Partial<{
+      type: string;
+      unit: string;
+      startDate: Date | null;
+      endDate: Date | null;
+      valid: boolean;
+      customNum: string;
+    }>
+  ) => void;
 }
 
 export default function DateRangeInput({
@@ -108,7 +110,7 @@ export default function DateRangeInput({
                 <Select.Option value="months">{t('common.unit.month.label-plural')}</Select.Option>
                 <Select.Option value="years">{t('common.unit.year.label-plural')}</Select.Option>
               </Select>
-              {!numberParser.isPositiveInt(customNum) && (
+              {customNum && !numberParser.isPositiveInt(customNum) && (
                 <Message error>{t('common.errors.positiveInt')}</Message>
               )}
             </>

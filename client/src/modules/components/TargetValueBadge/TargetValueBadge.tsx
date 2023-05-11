@@ -8,7 +8,8 @@
 import {useEffect} from 'react';
 import BaseViewer from 'bpmn-js/lib/BaseViewer';
 
-import {formatters, TimeObject} from 'services';
+import {formatters} from 'services';
+import {FilterData} from 'types';
 
 import './TargetValueBadge.scss';
 
@@ -34,14 +35,14 @@ export interface Overlay extends BaseViewer {
 }
 
 interface TargetValueBadgeProps {
-  viewer: BaseViewer;
-  values: Record<string, TimeObject>;
+  viewer?: BaseViewer;
+  values: Record<string, FilterData>;
 }
 
 export default function TargetValueBadge({values, viewer}: TargetValueBadgeProps) {
   useEffect(() => {
     return () => {
-      viewer.get<Overlay>('overlays').remove({type: badgeType});
+      viewer?.get<Overlay>('overlays').remove({type: badgeType});
     };
   }, [viewer]);
 

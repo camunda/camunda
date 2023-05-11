@@ -12,10 +12,11 @@ export interface User {
   identity: {
     name: string;
     email?: string;
-    id: string;
+    id: string | null;
     type: string;
     memberCount?: string;
   };
+  type?: string;
 }
 
 export async function searchIdentities(

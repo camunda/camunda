@@ -5,7 +5,7 @@
  * except in compliance with the proprietary license.
  */
 
-import React, {ReactNode, useState} from 'react';
+import {ReactNode, useState} from 'react';
 import classnames from 'classnames';
 
 import {LabeledInput, Tag, LoadingIndicator, SearchInput} from 'components';
@@ -22,8 +22,8 @@ interface ChecklistProps<T> {
     allItems: T[],
     selectedItems: T[]
   ) => {
-    label: string;
-    id: string | number | boolean | null;
+    label: string | JSX.Element[];
+    id: string | number | boolean | null | undefined;
     checked?: boolean;
     disabled?: boolean;
   }[];
@@ -35,7 +35,7 @@ interface ChecklistProps<T> {
 }
 
 export default function Checklist<
-  T extends string | boolean | number | null | {id: string; key?: string}
+  T extends string | boolean | number | null | undefined | {id: string; key?: string}
 >({
   onSearch = () => {},
   selectedItems,
@@ -66,7 +66,7 @@ export default function Checklist<
   );
   const allSelectedInView = filteredData.every(({checked}) => checked);
 
-  const updateItems = (itemId: string | number | boolean | null, checked: boolean) => {
+  const updateItems = (itemId: string | number | boolean | null | undefined, checked: boolean) => {
     if (checked) {
       const itemToSelect = allItems.find((item) => getIdentifier(item) === itemId);
       onChange([...selectedItems, itemToSelect]);
@@ -166,8 +166,8 @@ export default function Checklist<
 }
 
 function getIdentifier(
-  item: string | boolean | number | null | {id: string; key?: string}
-): string | boolean | number | null {
+  item: string | boolean | number | null | undefined | {id: string; key?: string}
+): string | boolean | number | null | undefined {
   if (typeof item === 'object' && item !== null) {
     return item.key || item.id;
   }
