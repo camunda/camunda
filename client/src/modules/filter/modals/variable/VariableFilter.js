@@ -5,9 +5,12 @@
  * except in compliance with the proprietary license.
  */
 
-import React, {useEffect, useState} from 'react';
+import {useEffect, useState} from 'react';
 import classnames from 'classnames';
-import {Modal, Button, Typeahead, Labeled} from 'components';
+import {Button} from '@carbon/react';
+
+import {CarbonModal as Modal, Typeahead, Labeled} from 'components';
+import {t} from 'translation';
 
 import FilterSingleDefinitionSelection from '../FilterSingleDefinitionSelection';
 
@@ -17,7 +20,6 @@ import {StringInput} from './string';
 import {DateInput} from './date';
 
 import './VariableFilter.scss';
-import {t} from 'translation';
 
 export default function VariableFilter({
   addFilter,
@@ -133,7 +135,12 @@ export default function VariableFilter({
   const ValueInput = getInputComponentForVariable(selectedVariable);
 
   return (
-    <Modal open onClose={close} className={classnames('VariableFilter__modal', className)}>
+    <Modal
+      isOverflowVisible
+      open
+      onClose={close}
+      className={classnames('VariableFilter__modal', className)}
+    >
       <Modal.Header>
         {t('common.filter.modalHeader', {
           type: t(`common.filter.types.${filterType}`),
@@ -178,19 +185,18 @@ export default function VariableFilter({
         />
         {getPosttext?.(selectedVariable)}
       </Modal.Content>
-      <Modal.Actions>
-        <Button main onClick={close}>
+      <Modal.Footer>
+        <Button kind="secondary" className="cancel" onClick={close}>
           {t('common.cancel')}
         </Button>
         <Button
-          main
-          primary
+          className="confirm"
           disabled={!valid && !forceEnabled?.(selectedVariable)}
           onClick={createFilter}
         >
           {filterData ? t('common.filter.updateFilter') : t('common.filter.addFilter')}
         </Button>
-      </Modal.Actions>
+      </Modal.Footer>
     </Modal>
   );
 }

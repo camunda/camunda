@@ -5,12 +5,15 @@
  * except in compliance with the proprietary license.
  */
 
-import React, {useState, useEffect} from 'react';
+import {useState, useEffect} from 'react';
 import classnames from 'classnames';
-import {Modal, Button} from 'components';
+import {Button} from '@carbon/react';
+
+import {CarbonModal as Modal} from 'components';
 import {t} from 'translation';
 
 import FilterSingleDefinitionSelection from '../FilterSingleDefinitionSelection';
+
 import FilterInstance from './FilterInstance';
 import {BooleanInput} from './boolean';
 import {NumberInput} from './number';
@@ -131,7 +134,12 @@ export default function MultipleVariableFilter({
   };
 
   return (
-    <Modal open onClose={close} className={classnames('MultipleVariableFilterModal', className)}>
+    <Modal
+      isOverflowVisible
+      open
+      onClose={close}
+      className={classnames('MultipleVariableFilterModal', className)}
+    >
       <Modal.Header>
         {t('common.filter.modalHeader', {
           type: t(`common.filter.types.${filterType}`),
@@ -183,14 +191,14 @@ export default function MultipleVariableFilter({
           + {t('common.filter.variableModal.or')}
         </Button>
       </Modal.Content>
-      <Modal.Actions>
-        <Button main onClick={close}>
+      <Modal.Footer>
+        <Button kind="secondary" className="cancel" onClick={close}>
           {t('common.cancel')}
         </Button>
-        <Button main primary disabled={!valid} onClick={createFilter}>
+        <Button className="confirm" disabled={!valid} onClick={createFilter}>
           {filterData ? t('common.filter.updateFilter') : t('common.filter.addFilter')}
         </Button>
-      </Modal.Actions>
+      </Modal.Footer>
     </Modal>
   );
 }
