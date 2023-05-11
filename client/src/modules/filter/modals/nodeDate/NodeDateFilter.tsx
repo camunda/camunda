@@ -5,27 +5,37 @@
  * except in compliance with the proprietary license.
  */
 
-import React, {useEffect, useState} from 'react';
+import {useEffect, useState} from 'react';
+import {Button} from '@carbon/react';
 import classnames from 'classnames';
 
 import {
-  Modal,
-  Button,
+  CarbonModal as Modal,
   Form,
   DateRangeInput,
   BPMNDiagram,
   ClickBehavior,
   LoadingIndicator,
+  ModdleElement,
 } from 'components';
 import {loadProcessDefinitionXml} from 'services';
 import {t} from 'translation';
 import {showError} from 'notifications';
-import {withErrorHandling} from 'HOC';
+import {WithErrorHandlingProps, withErrorHandling} from 'HOC';
+import {Filter, FilterState} from 'types';
 
 import FilterSingleDefinitionSelection from '../FilterSingleDefinitionSelection';
 import {convertFilterToState, convertStateToFilter, isValid} from '../date/service';
+import {FilterProps} from '../types';
 
 import './NodeDateFilter.scss';
+
+interface NodeDateFilterProps
+  extends WithErrorHandlingProps,
+    FilterProps<Partial<Filter & {flowNodeIds: string[] | null}>> {
+  filterType: 'flowNodeStartDate' | 'flowNodeEndDate';
+  filterLevel: 'instance';
+}
 
 export function NodeDateFilter({
   filterData,
@@ -36,11 +46,11 @@ export function NodeDateFilter({
   filterType,
   addFilter,
   filterLevel,
-}) {
-  const [selectedNodes, setSelectedNodes] = useState([]);
+}: NodeDateFilterProps) {
+  const [selectedNodes, setSelectedNodes] = useState<(string | ModdleElement)[]>([]);
   const [applyTo, setApplyTo] = useState(() => {
     const validDefinitions = definitions.filter(
-      (definition) => definition.versions.length && definition.tenantIds.length
+      (definition) => definition.versions?.length && definition.tenantIds?.length
     );
 
     return (
@@ -49,7 +59,7 @@ export function NodeDateFilter({
     );
   });
   const [xml, setXml] = useState(null);
-  const [dateRange, setDateRange] = useState({
+  const [dateRange, setDateRange] = useState<FilterState>({
     type: '',
     unit: '',
     customNum: '2',
@@ -62,7 +72,7 @@ export function NodeDateFilter({
       setSelectedNodes([]);
       setXml(null);
       mightFail(
-        loadProcessDefinitionXml(applyTo.key, applyTo.versions[0], applyTo.tenantIds[0]),
+        loadProcessDefinitionXml(applyTo.key, applyTo.versions?.[0], applyTo.tenantIds?.[0]),
         (xml) => {
           setXml(xml);
         },
@@ -79,10 +89,10 @@ export function NodeDateFilter({
     const {flowNodeIds, ...dateRangeData} = filterData.data;
 
     setDateRange(convertFilterToState(dateRangeData));
-    setSelectedNodes(flowNodeIds);
+    setSelectedNodes(flowNodeIds || []);
   }, [filterData]);
 
-  const toggleNode = (toggledNode) => {
+  const toggleNode = (toggledNode: ModdleElement) => {
     if (selectedNodes.includes(toggledNode.id)) {
       setSelectedNodes(selectedNodes.filter((node) => node !== toggledNode.id));
     } else {
@@ -94,7 +104,7 @@ export function NodeDateFilter({
     addFilter({
       type: filterType,
       data: {
-        flowNodeIds: filterLevel === 'instance' ? selectedNodes : null,
+        flowNodeIds: filterLevel === 'instance' ? (selectedNodes as string[]) : null,
         ...convertStateToFilter(dateRange),
       },
       appliedTo: [applyTo?.identifier],
@@ -108,7 +118,7 @@ export function NodeDateFilter({
       open
       onClose={close}
       className={classnames('NodeDateFilter', className)}
-      size={filterLevel === 'instance' ? 'max' : undefined}
+      size={filterLevel === 'instance' ? 'lg' : 'sm'}
     >
       <Modal.Header>
         {t('common.filter.modalHeader', {
@@ -134,7 +144,7 @@ export function NodeDateFilter({
                 startDate={startDate}
                 endDate={endDate}
                 customNum={customNum}
-                onChange={(change) => setDateRange({...dateRange, ...change})}
+                onChange={(change) => setDateRange({...dateRange, ...change} as FilterState)}
               />
             </Form>
             {filterLevel === 'instance' && (
@@ -151,13 +161,12 @@ export function NodeDateFilter({
           </>
         )}
       </Modal.Content>
-      <Modal.Actions>
-        <Button main onClick={close}>
+      <Modal.Footer>
+        <Button kind="secondary" className="cancel" onClick={close}>
           {t('common.cancel')}
         </Button>
         <Button
-          main
-          primary
+          className="confirm"
           onClick={confirm}
           disabled={
             (filterLevel === 'instance' && selectedNodes?.length === 0) || !isValid(dateRange)
@@ -165,7 +174,7 @@ export function NodeDateFilter({
         >
           {filterData ? t('common.filter.updateFilter') : t('common.filter.addFilter')}
         </Button>
-      </Modal.Actions>
+      </Modal.Footer>
     </Modal>
   );
 }
