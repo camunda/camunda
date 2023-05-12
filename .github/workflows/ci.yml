@@ -271,51 +271,6 @@ jobs:
       - name: Run Go tests
         working-directory: clients/go
         run: go test -mod=vendor -v ./...
-  java-client:
-    name: Java client tests
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-    steps:
-      - uses: actions/checkout@v3
-      # First package the complete application
-      - uses: ./.github/actions/setup-zeebe
-        with:
-          go: false
-          maven-cache-key-modifier: java-client
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
-          secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
-      - uses: ./.github/actions/build-zeebe
-        with:
-          go: false
-          maven-extra-args: -am -pl clients/java -T1C
-      # This is a workaround for java 8, which does not support the --add-exports options
-      - run: rm .mvn/jvm.config
-      # Then run client tests with JDK 8
-      - uses: actions/setup-java@v3.11.0
-        with:
-          java-version: '8'
-          distribution: 'temurin'
-      - name: Create build output log file
-        run: echo "BUILD_OUTPUT_FILE_PATH=$(mktemp)" >> $GITHUB_ENV
-      - name: Maven Test Build
-        run: >
-          ./mvnw -B --no-snapshot-updates
-          -P disableCheckstyle,extract-flaky-tests,'!autoFormat'
-          -D skipChecks -D skipITs
-          -D surefire.rerunFailingTestsCount=3
-          -pl clients/java
-          verify
-          | tee "${BUILD_OUTPUT_FILE_PATH}"
-      - name: Duplicate Test Check
-        uses: ./.github/actions/check-duplicate-tests
-        with:
-          buildOutputFilePath: ${{ env.BUILD_OUTPUT_FILE_PATH }}
-      - name: Upload test artifacts
-        uses: ./.github/actions/collect-test-artifacts
-        if: failure()
-        with:
-          name: Java 8 Client
   codeql:
     name: CodeQL
     runs-on: [ self-hosted, linux, amd64, "16" ]
@@ -448,7 +403,6 @@ jobs:
       - smoke-tests
       - property-tests
       - go-client
-      - java-client
       - codeql
       - java-checks
       - go-lint
@@ -467,7 +421,6 @@ jobs:
       - smoke-tests
       - property-tests
       - go-client
-      - java-client
     if: always()
     steps:
       - name: Upload
