@@ -51,22 +51,48 @@
     <!-- Application framework; prepares the native image build for us -->
     <dependency>
       <groupId>io.quarkus</groupId>
-      <artifactId>quarkus-grpc-common</artifactId>
+      <artifactId>quarkus-grpc-common-deployment</artifactId>
+      <exclusions>
+        <exclusion>
+          <groupId>io.quarkus</groupId>
+          <artifactId>quarkus-vertx-http-deployment</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>io.quarkus</groupId>
+          <artifactId>quarkus-devtools-utilities</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>io.quarkus</groupId>
+          <artifactId>quarkus-vertx-deployment</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>io.vertx</groupId>
+          <artifactId>vertx-grpc</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>io.vertx</groupId>
+          <artifactId>vertx-grpc-client</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>io.vertx</groupId>
+          <artifactId>vertx-grpc-server</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
 
     <dependency>
       <groupId>io.quarkus</groupId>
-      <artifactId>quarkus-netty</artifactId>
+      <artifactId>quarkus-netty-deployment</artifactId>
     </dependency>
 
     <dependency>
       <groupId>io.quarkus</groupId>
-      <artifactId>quarkus-jackson</artifactId>
+      <artifactId>quarkus-jackson-deployment</artifactId>
     </dependency>
 
     <dependency>
       <groupId>io.quarkus</groupId>
-      <artifactId>quarkus-picocli</artifactId>
+      <artifactId>quarkus-picocli-deployment</artifactId>
     </dependency>
 
     <!-- Test dependencies -->
@@ -121,7 +147,7 @@
         <quarkus.container-image.build>false</quarkus.container-image.build>
 
         <!-- disable basic quarkus logging -->
-        <quarkus.log.console.enable>false</quarkus.log.console.enable>
+        <quarkus.log.console.enable>true</quarkus.log.console.enable>
 
         <!-- native image compression -->
         <quarkus.native.compression.level>5</quarkus.native.compression.level>
