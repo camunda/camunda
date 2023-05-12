@@ -63,6 +63,7 @@ final class FileSetManagerTest {
         .hasMessageContaining("expected");
   }
 
+  @SuppressWarnings("unchecked")
   @Test
   void shouldDeleteFileSet() {
     // given
@@ -70,8 +71,8 @@ final class FileSetManagerTest {
     final var manager = new FileSetManager(mockClient, BucketInfo.of("bucket"), "basePath");
     final var backupIdentifier = new BackupIdentifierImpl(1, 2, 3);
 
-    final Blob mockBlob = mock(Blob.class);
-    final Page mockPage = mock(Page.class);
+    final var mockBlob = mock(Blob.class);
+    final var mockPage = mock(Page.class);
     when(mockPage.iterateAll()).thenReturn(List.of(mockBlob));
     when(mockClient.list(eq("bucket"), any())).thenReturn(mockPage);
 
@@ -79,7 +80,7 @@ final class FileSetManagerTest {
     manager.delete(backupIdentifier, "filesetName");
 
     // then
-    verify(mockBlob).delete(any());
+    verify(mockBlob).delete();
   }
 
   @Test
@@ -96,6 +97,7 @@ final class FileSetManagerTest {
         .hasMessageContaining("expected");
   }
 
+  @SuppressWarnings("unchecked")
   @Test
   void shouldThrowExceptionOnDeleteFileSetWhenBlobDeleteThrows() {
     // given
@@ -104,8 +106,8 @@ final class FileSetManagerTest {
     final var backupIdentifier = new BackupIdentifierImpl(1, 2, 3);
 
     final Blob mockBlob = mock(Blob.class);
-    when(mockBlob.delete(any())).thenThrow(new StorageException(412, "expected"));
-    final Page mockPage = mock(Page.class);
+    when(mockBlob.delete()).thenThrow(new StorageException(412, "expected"));
+    final var mockPage = mock(Page.class);
     when(mockPage.iterateAll()).thenReturn(List.of(mockBlob));
     when(mockClient.list(eq("bucket"), any())).thenReturn(mockPage);
 
@@ -150,7 +152,7 @@ final class FileSetManagerTest {
     final Path restorePath = Path.of("restorePath");
     doThrow(new StorageException(412, "expected"))
         .when(mockClient)
-        .downloadTo(any(), any(Path.class), any());
+        .downloadTo(any(), any(Path.class));
 
     // when - then throw
     assertThatThrownBy(() -> manager.restore(backupIdentifier, "filesetName", fileSet, restorePath))
