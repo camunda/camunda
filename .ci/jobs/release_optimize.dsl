@@ -30,6 +30,7 @@ pipelineJob('camunda-optimize-release') {
     stringParam('BRANCH', binding.variables.get('GIT_LOCAL_BRANCH', 'master'), 'The branch used for the release checkout.')
     booleanParam('PUSH_CHANGES', true, 'Should the changes be pushed to remote locations.')
     booleanParam('DOCKER_LATEST', true, 'Should the docker image be tagged as latest.')
+    stringParam('ADDITIONAL_DOCKER_TAG', '', '(Optional) Any additional tag that should be added to the docker image.')
     booleanParam('RELEASE_EXAMPLE', true, 'Should an example repository be released.')
   }
 
