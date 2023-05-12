@@ -97,7 +97,7 @@ jobs:
       run: gsutil -q -m cp gs://optimize-data/optimize_data-e2e.sqlc dump.sqlc
 
     - name: restore dump
-      run: cat dump.sqlc | docker exec -i postgres pg_restore --clean -U camunda -d engine        
+      run: docker exec -i postgres pg_restore --clean -U camunda -d engine < dump.sqlc
 
     - name: create backend logs file
       run: mkdir -p ./client/build && touch ./client/build/backendLogs.log

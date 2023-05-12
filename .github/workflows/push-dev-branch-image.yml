@@ -72,8 +72,7 @@ jobs:
       - name: Compute metadata
         id: meta
         run: |
-          export SHA="$(git rev-parse ${{ github.sha }})"
-          echo "sha=${SHA}" >> "$GITHUB_OUTPUT"
+          echo "sha=${{ github.sha }}" >> "$GITHUB_OUTPUT"
           echo "docker_image=gcr.io/${{ steps.auth.outputs.project_id }}/${{ env.IMAGE_NAME }}:${{ github.event.inputs.image_tag }}" >> "$GITHUB_OUTPUT"
 
       # This action equates to:

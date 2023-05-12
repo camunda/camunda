@@ -2,10 +2,26 @@
 . "$(dirname "$0")/_/husky.sh"
 . "$(dirname "$0")/common.sh"
 
+################################################################################################################################
+
 if ! command -v yarn &> /dev/null; then
   echo "Skipping pre-commit because yarn does not exist"
   exit
 fi
 
+echo "Running client / lint-staged"
+
 cd client
 yarn lint-staged
+
+
+################################################################################################################################
+
+if ! command -v pre-commit &> /dev/null; then
+  echo "Skipping pre-commit because pre-commit does not exist"
+  exit
+fi
+
+echo "Running pre-commit"
+
+pre-commit
