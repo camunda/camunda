@@ -54,6 +54,35 @@ public class ProcessReader {
   @Autowired private TasklistProperties tasklistProperties;
 
   /** Gets the process by id. */
+  public ProcessDTO getProcessByBpmnProcessId(String bpmnProcessId) {
+    final SearchRequest searchRequest =
+        new SearchRequest(processIndex.getAlias())
+            .source(
+                new SearchSourceBuilder()
+                    .query(
+                        QueryBuilders.termQuery(ProcessIndex.PROCESS_DEFINITION_ID, bpmnProcessId))
+                    .collapse(new CollapseBuilder(ProcessIndex.PROCESS_DEFINITION_ID))
+                    .sort(SortBuilders.fieldSort(ProcessIndex.VERSION).order(SortOrder.DESC)));
+    try {
+      final SearchResponse response = esClient.search(searchRequest, RequestOptions.DEFAULT);
+      if (response.getHits().getTotalHits().value == 1) {
+        final ProcessEntity processEntity =
+            fromSearchHit(response.getHits().getHits()[0].getSourceAsString());
+        return ProcessDTO.createFrom(processEntity, objectMapper);
+      } else if (response.getHits().getTotalHits().value > 1) {
+        throw new TasklistRuntimeException(
+            String.format("Could not find unique process with id '%s'.", bpmnProcessId));
+      } else {
+        throw new TasklistRuntimeException(
+            String.format("Could not find process with id '%s'.", bpmnProcessId));
+      }
+    } catch (IOException e) {
+      final String message =
+          String.format("Exception occurred, while obtaining the process: %s", e.getMessage());
+      throw new TasklistRuntimeException(message, e);
+    }
+  }
+
   public ProcessEntity getProcess(String processId) {
     final SearchRequest searchRequest =
         new SearchRequest(processIndex.getAlias())

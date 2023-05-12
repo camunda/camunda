@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:modeler="http://camunda.org/schema/modeler/1.0" id="Definitions_1pg20dm" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="5.10.0" modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="8.2.0">
+  <bpmn:process id="startedByForm" isExecutable="true">
+    <bpmn:extensionElements>
+      <zeebe:userTaskForm id="userTaskForm_1isk9gd">{
+  "components": [
+    {
+      "label": "Field 1",
+      "type": "textfield",
+      "layout": {
+        "row": "Row_15ghdy6",
+        "columns": null
+      },
+      "id": "Field_0ibsmz4",
+      "key": "field_1lfayry"
+    },
+    {
+      "label": "Field 2",
+      "type": "textfield",
+      "layout": {
+        "row": "Row_1klibf9",
+        "columns": null
+      },
+      "id": "Field_0msuoi3",
+      "key": "field_1prtdvl"
+    }
+  ],
+  "type": "default",
+  "id": "Field1",
+  "executionPlatform": "Camunda Cloud",
+  "executionPlatformVersion": "8.2.0",
+  "exporter": {
+    "name": "Camunda Modeler",
+    "version": "5.10.0"
+  },
+  "schemaVersion": 8
+}</zeebe:userTaskForm>
+      <zeebe:userTaskForm id="testForm">{
+  "components": [
+    {
+      "label": "Field 1",
+      "type": "textfield",
+      "layout": {
+        "row": "Row_15ghdy6",
+        "columns": null
+      },
+      "id": "Field_0ibsmz4",
+      "key": "field_1lfayry"
+    },
+    {
+      "label": "Field 2",
+      "type": "textfield",
+      "layout": {
+        "row": "Row_1klibf9",
+        "columns": null
+      },
+      "id": "Field_0msuoi3",
+      "key": "field_1prtdvl"
+    }
+  ],
+  "type": "default",
+  "id": "Field1",
+  "executionPlatform": "Camunda Cloud",
+  "executionPlatformVersion": "8.2.0",
+  "exporter": {
+    "name": "Camunda Modeler",
+    "version": "5.10.0"
+  },
+  "schemaVersion": 8
+}</zeebe:userTaskForm>
+    </bpmn:extensionElements>
+    <bpmn:startEvent id="StartEvent_1">
+      <bpmn:extensionElements>
+        <zeebe:formDefinition formKey="camunda-forms:bpmn:testForm" />
+        <zeebe:properties>
+          <zeebe:property name="publicAccess" value="true" />
+        </zeebe:properties>
+      </bpmn:extensionElements>
+      <bpmn:outgoing>Flow_15vkolf</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:sequenceFlow id="Flow_15vkolf" sourceRef="StartEvent_1" targetRef="humanTask" />
+    <bpmn:userTask id="humanTask" name="humanTask">
+      <bpmn:extensionElements>
+        <zeebe:formDefinition formKey="camunda-forms:bpmn:userTaskForm_1isk9gd" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_15vkolf</bpmn:incoming>
+      <bpmn:outgoing>Flow_1i3gdwk</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:sequenceFlow id="Flow_1i3gdwk" sourceRef="humanTask" targetRef="Event_07rdhb7" />
+    <bpmn:endEvent id="Event_07rdhb7">
+      <bpmn:incoming>Flow_1i3gdwk</bpmn:incoming>
+    </bpmn:endEvent>
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="startedByForm">
+      <bpmndi:BPMNShape id="_BPMNShape_StartEvent_2" bpmnElement="StartEvent_1">
+        <dc:Bounds x="179" y="99" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_087m3l3_di" bpmnElement="humanTask">
+        <dc:Bounds x="270" y="77" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_07rdhb7_di" bpmnElement="Event_07rdhb7">
+        <dc:Bounds x="612" y="212" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_15vkolf_di" bpmnElement="Flow_15vkolf">
+        <di:waypoint x="215" y="117" />
+        <di:waypoint x="270" y="117" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1i3gdwk_di" bpmnElement="Flow_1i3gdwk">
+        <di:waypoint x="370" y="117" />
+        <di:waypoint x="491" y="117" />
+        <di:waypoint x="491" y="230" />
+        <di:waypoint x="612" y="230" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

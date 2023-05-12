@@ -39,6 +39,12 @@ public class OpenApiConfig {
     return versionedInternalApi("v1");
   }
 
+  @Profile("dev")
+  @Bean
+  public GroupedOpenApi externalApiV1() {
+    return versionedExternalApi("v1");
+  }
+
   @Bean
   public GroupedOpenApi publicApiV1() {
     return versionedPublicApi("v1");
@@ -72,6 +78,36 @@ public class OpenApiConfig {
                       .addList(BEARER_SECURITY_SCHEMA_NAME));
             })
         .pathsToMatch(String.format("/%s/internal/**", version))
+        .build();
+  }
+
+  private GroupedOpenApi versionedExternalApi(final String version) {
+    return GroupedOpenApi.builder()
+        .group("external-api")
+        .addOpenApiCustomizer(
+            openApi -> {
+              openApi
+                  .info(
+                      new Info()
+                          .title("Tasklist webapp External API")
+                          .description(
+                              "<b>NOTE:</b> For public use.</br>"
+                                  + "This API is exposed publicly but should only be used by internal apps.")
+                          .contact(new Contact().url("https://www.camunda.com"))
+                          .license(
+                              new License()
+                                  .name("License")
+                                  .url("https://docs.camunda.io/docs/reference/licenses/")))
+                  .getComponents()
+                  .addSecuritySchemes(COOKIE_SECURITY_SCHEMA_NAME, COOKIE_SECURITY_SCHEMA)
+                  .addSecuritySchemes(BEARER_SECURITY_SCHEMA_NAME, BEARER_SECURITY_SCHEMA);
+
+              openApi.addSecurityItem(
+                  new SecurityRequirement()
+                      .addList(COOKIE_SECURITY_SCHEMA_NAME)
+                      .addList(BEARER_SECURITY_SCHEMA_NAME));
+            })
+        .pathsToMatch(String.format("/%s/external/**", version))
         .build();
   }
 

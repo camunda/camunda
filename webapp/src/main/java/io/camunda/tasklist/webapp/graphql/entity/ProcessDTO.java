@@ -37,7 +37,9 @@ public class ProcessDTO {
             .setId(processEntity.getId())
             .setName(processEntity.getName())
             .setProcessDefinitionId(processEntity.getBpmnProcessId())
-            .setVersion(processEntity.getVersion());
+            .setVersion(processEntity.getVersion())
+            .setStartedByForm(processEntity.isStartedByForm())
+            .setFormKey(processEntity.getFormKey());
 
     if (sortValues != null) {
       processDTO.setSortValues(CollectionUtil.toArrayOfStrings(sortValues));
