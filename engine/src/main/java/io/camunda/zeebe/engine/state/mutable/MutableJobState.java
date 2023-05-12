@@ -32,6 +32,8 @@ public interface MutableJobState extends JobState {
 
   void fail(long key, JobRecord updatedValue);
 
+  void yield(long key, JobRecord updatedValue);
+
   void resolve(long key, JobRecord updatedValue);
 
   JobRecord updateJobRetries(long jobKey, int retries);

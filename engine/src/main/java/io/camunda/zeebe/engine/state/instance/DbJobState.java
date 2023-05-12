@@ -195,6 +195,11 @@ public final class DbJobState implements JobState, MutableJobState {
   }
 
   @Override
+  public void yield(final long key, final JobRecord updatedValue) {
+    updateJob(key, updatedValue, State.ACTIVATABLE);
+  }
+
+  @Override
   public void resolve(final long key, final JobRecord updatedValue) {
     updateJob(key, updatedValue, State.ACTIVATABLE);
   }

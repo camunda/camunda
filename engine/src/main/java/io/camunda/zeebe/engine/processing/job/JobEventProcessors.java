@@ -56,6 +56,10 @@ public final class JobEventProcessors {
                 bpmnBehaviors))
         .onCommand(
             ValueType.JOB,
+            JobIntent.YIELD,
+            new JobYieldProcessor(processingState, bpmnBehaviors, writers))
+        .onCommand(
+            ValueType.JOB,
             JobIntent.THROW_ERROR,
             new JobThrowErrorProcessor(
                 processingState,
