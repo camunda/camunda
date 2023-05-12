@@ -6,7 +6,8 @@
  */
 
 import {runAllEffects} from '__mocks__/react';
-import {shallow} from 'enzyme';
+import {shallow, mount} from 'enzyme';
+import {act} from 'react-dom/test-utils';
 
 import {Icon, Select} from 'components';
 
@@ -78,28 +79,28 @@ it('should format structured body data', () => {
 });
 
 it('should show pagination if data contains more than 20 rows', () => {
-  const node = shallow(<Table {...{head: ['a'], body: generateData(21), foot: []}} />);
+  const node = mount(<Table {...{head: ['a'], body: generateData(21), foot: []}} />);
 
-  expect(node.find('.controls')).toExist();
+  expect(node.find('.cds--pagination')).toExist();
 });
 
 it('should not show pagination if data contains more than 20 rows, but disablePagination flag is set', () => {
-  const node = shallow(
+  const node = mount(
     <Table {...{head: ['a'], body: generateData(21), foot: []}} disablePagination />
   );
 
-  expect(node.find('.controls')).not.toExist();
+  expect(node.find('.cds--pagination')).not.toExist();
 });
 
 it('should not show pagination if data contains less than or equal to 20 rows', () => {
   const node = shallow(<Table {...{head: ['a'], body: generateData(20), foot: []}} />);
 
-  expect(node.find('.controls')).not.toExist();
+  expect(node.find('.cds--pagination')).not.toExist();
 });
 
 it('should call the updateSorting method on click on header', () => {
   const spy = jest.fn();
-  const node = shallow(
+  const node = mount(
     <Table {...{head: ['a'], body: generateData(20), foot: []}} updateSorting={spy} />
   );
 
@@ -110,7 +111,7 @@ it('should call the updateSorting method on click on header', () => {
 
 it('should call the updateSorting method to sort by key/value if result is map', () => {
   const spy = jest.fn();
-  const node = shallow(
+  const node = mount(
     <Table
       {...{head: ['a'], body: generateData(20), foot: [], resultType: 'map'}}
       updateSorting={spy}
@@ -124,7 +125,7 @@ it('should call the updateSorting method to sort by key/value if result is map',
 
 it('should call the updateSorting method to sort by Label if sortByLabel is true', () => {
   const spy = jest.fn();
-  const node = shallow(
+  const node = mount(
     <Table
       {...{head: ['a'], body: generateData(20), foot: [], sortByLabel: true, resultType: 'map'}}
       updateSorting={spy}
@@ -149,54 +150,61 @@ it('should show empty message if all columns are hidden', () => {
 });
 
 it('should add a noOverflow classname to tds with Selects', () => {
-  const node = shallow(<Table head={['a']} body={[[<Select />]]} />);
+  const node = mount(<Table head={['a']} body={[[<Select />]]} />);
 
   expect(node.find('td')).toHaveClassName('noOverflow');
 });
 
 it('should show a loading state when specified', () => {
-  const node = shallow(<Table head={['a']} body={[]} loading={true} />);
+  const node = mount(<Table head={['a']} body={[]} loading={true} />);
 
   expect(node.find('.loading')).toExist();
   expect(node.find('LoadingIndicator')).toExist();
 });
 
 it('should use manual pagination values if specified', () => {
-  const node = shallow(<Table head={['a']} body={[]} totalEntries={250} defaultPageSize={50} />);
+  const node = mount(<Table head={['a']} body={[]} totalEntries={250} defaultPageSize={100} />);
 
-  expect(node.find('.tableFooter')).toIncludeText('page 1 of 5');
+  expect(node.find('.cds--pagination')).toIncludeText('page 1 of 3');
 });
 
-it('should invoke fetchData when the page is change', () => {
+it('should invoke fetchData when the page is change', async () => {
   const spy = jest.fn();
-  const node = shallow(
-    <Table head={['a']} body={[]} fetchData={spy} totalEntries={250} defaultPageSize={50} />
+  const node = mount(
+    <Table head={['a']} body={[]} fetchData={spy} totalEntries={250} defaultPageSize={100} />
   );
 
-  runAllEffects();
-  node.find('.next').simulate('click');
-  runAllEffects();
+  await act(async () => {
+    await runAllEffects();
+    node.find('button.cds--pagination__button--forward').simulate('click');
+    runAllEffects();
 
-  expect(spy).toHaveBeenCalledWith({pageIndex: 1, pageSize: 50});
+    expect(spy).toHaveBeenCalledWith({pageIndex: 1, pageSize: 100});
+  });
 });
 
-it('should go to the last page if data changes in a way that current page is empty', () => {
+it('should go to the last page if data changes in a way that current page is empty', async () => {
   const spy = jest.fn();
-  const node = shallow(<Table head={['a']} body={[]} fetchData={spy} totalEntries={100} />);
+  const node = mount(<Table head={['a']} body={[]} fetchData={spy} totalEntries={100} />);
 
-  runAllEffects();
-  node.find('.last').simulate('click');
-  runAllEffects();
+  await act(async () => {
+    await runAllEffects();
 
-  spy.mockClear();
-  node.setProps({totalEntries: 50});
-  runAllEffects();
+    while (!node.find('button.cds--pagination__button--forward').prop('disabled')) {
+      node.find('button.cds--pagination__button--forward').simulate('click');
+      runAllEffects();
+    }
 
-  expect(spy).toHaveBeenCalledWith({pageIndex: 4, pageSize: 20});
+    spy.mockClear();
+    node.setProps({totalEntries: 50});
+    runAllEffects();
+
+    expect(spy).toHaveBeenCalledWith({pageIndex: 4, pageSize: 20});
+  });
 });
 
 it('should be sorted desc by default when allowed to sort locally', () => {
-  const node = shallow(
+  const node = mount(
     <Table {...{head: ['a'], body: generateData(21), foot: []}} allowLocalSorting />
   );
 
@@ -205,7 +213,7 @@ it('should be sorted desc by default when allowed to sort locally', () => {
 });
 
 it('should change sorting to asc when clicked on header', () => {
-  const node = shallow(
+  const node = mount(
     <Table {...{head: ['a'], body: generateData(21), foot: []}} allowLocalSorting />
   );
 

@@ -107,8 +107,9 @@ export const objectVariableModalCloseButton = Selector('.ObjectVariableModal .cl
 export const rawDataModalCloseButton = Selector('.RawDataModal .close');
 export const bucketSizeSwitch = Selector('.BucketSize .Switch');
 export const bucketSizeUnitSelect = Selector('.BucketSize .Select').nth(0);
-export const nextPageButton = Selector('.Table .Button.next');
-export const rowsPerPageButton = Selector('.Table .size .Button');
+export const nextPageButton = Selector('.Table .cds--pagination__button--forward');
+export const rowsPerPageButton = Selector('.Table .cds--select-input');
+export const rowsPerPageOption = (text) => Selector('.Table .cds--select-option').withText(text);
 export const addMeasureButton = Selector('.addMeasure button');
 export const removeMeasureButton = Selector('.Measure').nth(1).find('.SelectionPreview .Button');
 export const heatDropdown = Selector('.Heatmap .Select');

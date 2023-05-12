@@ -164,7 +164,7 @@ test('raw data table pagination', async (t) => {
   await u.selectView(t, 'Raw Data');
   await t.click(e.nextPageButton);
   await t.click(e.rowsPerPageButton);
-  await t.click(Common.option('100'));
+  await t.click(e.rowsPerPageOption('100'));
   await t.expect(e.reportTable.visible).ok();
 });
 

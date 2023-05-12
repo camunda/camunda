@@ -5,7 +5,23 @@
  * except in compliance with the proprietary license.
  */
 
-import {ComponentProps, ReactNode, RefObject} from 'react';
+import {
+  FC,
+  ComponentProps,
+  ReactNode,
+  RefObject,
+  HTMLAttributes,
+  ButtonHTMLAttributes,
+  ThHTMLAttributes,
+  Component,
+  TableHTMLAttributes,
+  ForwardRefExoticComponent,
+  PropsWithoutRef,
+  PropsWithChildren,
+  RefAttributes,
+  TdHTMLAttributes,
+  ChangeEvent,
+} from 'react';
 
 declare module '@carbon/react' {
   declare function Button(
@@ -131,4 +147,136 @@ declare module '@carbon/react' {
       secondaryClassName?: string;
     } & ComponentProps<'div'>
   );
+
+  export interface ReactAttr<T = HTMLElement> extends HTMLAttributes<T> {}
+  export interface ReactButtonAttr<T = HTMLButtonElement> extends ButtonHTMLAttributes<T> {}
+  export interface ReactDivAttr extends ReactAttr<HTMLDivElement> {}
+  export interface ReactInputAttr<T = HTMLInputElement> extends React.InputHTMLAttributes<T> {}
+  export type ForwardRefProps<T, P = {}> = PropsWithoutRef<PropsWithChildren<P>> & RefAttributes<T>;
+  export type ForwardRefReturn<T, P = {}> = ForwardRefExoticComponent<ForwardRefProps<T, P>>;
+  export interface RequiresIdProps<T = ReactAttr['id']> {
+    id: NonNullable<T>;
+  }
+  export interface DataTableRow<ID extends string = string> {
+    disabled?: boolean | undefined;
+    id: ID;
+    isExpanded?: boolean | undefined;
+    isSelected?: boolean | undefined;
+  }
+
+  export interface DataTableHeader<K extends string = string> {
+    header: NonNullable<ReactNode>;
+    key: K;
+  }
+
+  export interface DataTableProps<
+    R extends DataTableRow = DataTableRow,
+    H extends DataTableHeader = DataTableHeader
+  > extends TableCarbonProps {
+    filterRows?(data: FilterRowsData<R, H>): Array<R['id']>;
+    headers: H[];
+    locale?: string | undefined;
+    radio?: boolean | undefined;
+    render?(props: DataTableCustomRenderProps<R, H>): ReactNode;
+    rows: R[];
+    sortRow?(cellA: any, cellB: any, data: SortRowData): number;
+    stickyHeader?: boolean | undefined;
+  }
+
+  declare class DataTable<
+    R extends DataTableRow = DataTableRow,
+    H extends DataTableHeader = DataTableHeader
+  > extends Component<DataTableProps<R, H>> {}
+
+  interface InheritedProps extends TableHTMLAttributes<HTMLTableElement> {}
+
+  export type DataTableSize = 'xs' | 'sm' | 'md' | 'lg' | 'xl';
+
+  export interface TableCarbonProps {
+    isSortable?: boolean | undefined;
+    overflowMenuOnHover?: boolean | undefined;
+    size?: DataTableSize | undefined;
+    useStaticWidth?: boolean | undefined;
+    useZebraStyles?: boolean | undefined;
+  }
+
+  export interface TableProps extends InheritedProps, TableCarbonProps {}
+
+  declare const Table: FC<TableProps>;
+
+  export interface TableHeadProps extends ReactAttr<HTMLTableSectionElement> {}
+
+  declare const TableHead: FC<TableHeadProps>;
+
+  export interface TableHeaderProps
+    extends ReactButtonAttr<HTMLElement>,
+      ThHTMLAttributes<HTMLElement> {
+    isSortable?: boolean | undefined;
+    isSortHeader?: boolean | undefined;
+    sortDirection?: DataTableSortState | undefined;
+  }
+
+  interface TableHeaderFC extends ForwardRefReturn<HTMLTableHeaderCellElement, TableHeaderProps> {
+    readonly translationKeys: ReadonlyArray<TableHeaderTranslationKey>;
+  }
+
+  declare const TableHeader: TableHeaderFC;
+
+  export interface TableBodyProps extends ReactAttr<HTMLTableSectionElement> {}
+
+  declare const TableBody: FC<TableBodyProps>;
+
+  export interface TableRowProps extends ReactAttr<HTMLTableRowElement> {
+    isSelected?: boolean | undefined;
+  }
+
+  declare const TableRow: FC<TableRowProps>;
+
+  export interface TableCellProps extends TdHTMLAttributes<HTMLTableDataCellElement> {}
+
+  declare const TableCell: FC<TableCellProps>;
+
+  type ExcludedAttributes = 'id' | 'onChange';
+
+  export interface PaginationPageSize {
+    text: string;
+    value: string;
+  }
+
+  export interface PaginationProps extends Omit<ReactDivAttr, ExcludedAttributes> {
+    backwardText?: string | undefined;
+    forwardedRef?: React.ForwardedRef<HTMLDivElement>;
+    forwardText?: string | undefined;
+    id?: number | string | undefined;
+    isLastPage?: boolean | undefined;
+    itemsPerPageText?: string | undefined;
+    itemRangeText?(min: number, max: number, total: number): string;
+    itemText?(min: number, max: number): string;
+    onChange(data: {page: number; pageSize: number}): void;
+    page?: number | undefined;
+    pageInputDisabled?: boolean | undefined;
+    pageNumberText?: string | undefined;
+    pageRangeText?(current: number, total: number): string;
+    pageSize?: number | undefined;
+    pageSizeInputDisabled?: boolean | undefined;
+    pageSizes: readonly number[] | readonly PaginationPageSize[];
+    pageText?(page: number): string;
+    pagesUnknown?: boolean | undefined;
+    size?: 'sm' | 'md' | 'lg' | undefined;
+    totalItems?: number | undefined;
+  }
+
+  declare class Pagination extends Component<PaginationProps> {}
+
+  type ExcludedAttributes = 'aria-label' | 'className' | 'id' | 'onChange' | 'ref' | 'type';
+
+  export interface InlineCheckboxProps
+    extends Omit<ReactInputAttr, ExcludedAttributes>,
+      RequiresIdProps {
+    ariaLabel?: ReactInputAttr['aria-label'] | undefined;
+    indeterminate?: boolean | undefined;
+    onChange?(checked: boolean, id: string, event: ChangeEvent<HTMLInputElement>): void;
+  }
 }
+
+export {};

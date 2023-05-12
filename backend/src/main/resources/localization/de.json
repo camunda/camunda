@@ -534,11 +534,13 @@
     },
     "table": {
       "noData": "Sie müssen mindestens eine Tabellenspalte aktivieren",
-      "info": "Zeigt <b>{firstRowIndex}</b> bis <b>{lastRowIndex}</b> von <b>{totalRows}</b>",
+      "info": "Zeigt {firstRowIndex} bis {lastRowIndex} von {totalRows}",
       "page": "Seite",
       "of": "von",
       "rows": "Zeilen pro Seite",
       "relativeFrequency": "Relative Frequenz",
+      "nextPage":"Nächste Seite",
+      "previousPage":"Vorherige Seite",
       "rawData": {
         "processDefinitionKey": "Prozess Definitions Schlüssel",
         "processDefinitionId": "Prozess Definitions Id",

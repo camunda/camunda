@@ -534,11 +534,13 @@
     },
     "table": {
       "noData": "You need to enable at least one table column",
-      "info": "Showing <b>{firstRowIndex}</b> to <b>{lastRowIndex}</b> of <b>{totalRows}</b>",
+      "info": "Showing {firstRowIndex} to {lastRowIndex} of {totalRows}",
       "page": "page",
       "of": "of",
       "rows": "Rows per page",
       "relativeFrequency": "Relative Frequency ",
+      "nextPage":"Next page",
+      "previousPage":"Previous page",
       "rawData": {
         "processDefinitionKey": "Process Definition Key",
         "processDefinitionId": "Process Definition Id",

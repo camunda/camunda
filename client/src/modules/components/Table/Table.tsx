@@ -23,9 +23,20 @@ import {
   UseTableOptions,
   UsePaginationState,
 } from 'react-table';
+import {
+  DataTable,
+  Table as CarbonTable,
+  Pagination,
+  TableHead,
+  TableBody,
+  TableRow,
+  TableHeader,
+  TableCell,
+  DataTableSize,
+} from '@carbon/react';
 
-import {t} from 'translation';
-import {Select, Icon, Button, LoadingIndicator, Tooltip, NoDataNotice} from 'components';
+import {t, getLanguage} from 'translation';
+import {Select, Icon, LoadingIndicator, Tooltip, NoDataNotice} from 'components';
 
 import {flatten} from './service';
 
@@ -68,6 +79,7 @@ interface TableProps {
   totalEntries?: number;
   loading?: boolean;
   allowLocalSorting?: boolean;
+  size?: DataTableSize;
 }
 
 export default function Table<T extends object>({
@@ -89,6 +101,7 @@ export default function Table<T extends object>({
   totalEntries,
   loading,
   allowLocalSorting = false,
+  size = 'lg',
 }: TableProps) {
   const columnWidths = useRef<Record<string, string | number | undefined>>({});
   const columns = React.useMemo(() => Table.formatColumns(head, '', columnWidths.current), [head]);
@@ -103,11 +116,8 @@ export default function Table<T extends object>({
     getTableBodyProps,
     headerGroups,
     prepareRow,
-    nextPage,
-    previousPage,
-    canPreviousPage,
-    canNextPage,
     page,
+    headers,
     pageCount,
     setPageSize,
     gotoPage,
@@ -136,10 +146,8 @@ export default function Table<T extends object>({
   ) as TableInstanceWithHooks<T>;
 
   const firstRowIndex = pageIndex * pageSize;
-  const maxLastRow = firstRowIndex + pageSize;
   const totalRows = totalEntries || body.length;
   const empty = !loading && (totalRows === 0 || head.length === 0);
-  const lastRowIndex = maxLastRow > totalRows ? totalRows : maxLastRow;
 
   function getSortingProps(column: Column & UseSortByOptions<T> & UseSortByColumnProps<T>) {
     if (!updateSorting && !allowLocalSorting) {
@@ -168,27 +176,6 @@ export default function Table<T extends object>({
     };
   }
 
-  const thead = useRef<HTMLTableSectionElement>(null);
-  const tbody = useRef<HTMLTableSectionElement>(null);
-  useEffect(() => {
-    if (window.ResizeObserver) {
-      const ro = new ResizeObserver((entries) => {
-        // We wrap it in requestAnimationFrame to avoid this error - ResizeObserver loop limit exceeded
-        window.requestAnimationFrame(() => {
-          if (!Array.isArray(entries) || !entries.length) {
-            return;
-          }
-          if (tbody.current && thead.current) {
-            thead.current.style.width = tbody.current.clientWidth + 'px';
-          }
-        });
-      });
-      if (tbody.current) {
-        ro.observe(tbody.current);
-      }
-    }
-  }, []);
-
   useEffect(() => {
     if (firstRowIndex >= totalRows) {
       gotoPage(pageCount - 1);
@@ -215,101 +202,93 @@ export default function Table<T extends object>({
 
   return (
     <div className={classnames('Table', className, {highlight: !noHighlight, loading})}>
-      <table {...getTableProps()}>
-        <thead ref={thead}>
-          {headerGroups.map((headerGroup, i) => (
-            <tr
-              {...headerGroup.getHeaderGroupProps()}
-              className={classnames({groupRow: i === 0 && headerGroups.length > 1})}
-            >
-              {headerGroup.headers.map((column: any) => (
-                <th
-                  className={classnames('tableHeader', {placeholder: column.placeholderOf})}
-                  {...column.getHeaderProps()}
-                  data-group={column.group}
+      <DataTable
+        locale={getLanguage()}
+        headers={headers.map((header) => ({key: header.id, header: header.render('Header')!}))}
+        rows={page}
+        render={() => (
+          <CarbonTable size={size} useZebraStyles {...getTableProps()}>
+            <TableHead>
+              {headerGroups.map((headerGroup, i) => (
+                <TableRow
+                  {...headerGroup.getHeaderGroupProps()}
+                  className={classnames({groupRow: i === 0 && headerGroups.length > 1})}
                 >
-                  <div className="cellContent" {...getSortingProps(column)} title={undefined}>
-                    <Tooltip content={column.title} overflowOnly>
-                      <span className="text">{column.render('Header')}</span>
-                    </Tooltip>
-                    {column.isSorted && <Icon type={isSortedDesc(column) ? 'down' : 'up'} />}
-                  </div>
-                  <div {...column.getResizerProps()} className="resizer" />
-                </th>
+                  {headerGroup.headers.map((column: any) => (
+                    <TableHeader
+                      className={classnames('tableHeader', {placeholder: column.placeholderOf})}
+                      {...column.getHeaderProps()}
+                      data-group={column.group}
+                    >
+                      <div className="cellContent" {...getSortingProps(column)} title={undefined}>
+                        <Tooltip content={column.title} overflowOnly>
+                          <span className="text">{column.render('Header')}</span>
+                        </Tooltip>
+                        {column.isSorted && <Icon type={isSortedDesc(column) ? 'down' : 'up'} />}
+                      </div>
+                      <div {...column.getResizerProps()} className="resizer" />
+                    </TableHeader>
+                  ))}
+                </TableRow>
               ))}
-            </tr>
-          ))}
-        </thead>
-        <tbody {...getTableBodyProps()} onScroll={onScroll} ref={tbody}>
-          {!error &&
-            page.map((row) => {
-              prepareRow(row);
-              return (
-                <tr {...row.getRowProps((row.original as any).__props)}>
-                  {row.cells.map((cell) => {
-                    const props = cell.getCellProps();
-                    return (
-                      <td
-                        {...props}
-                        className={classnames(props.className, {
-                          noOverflow: cell.value?.type === Select,
-                        })}
-                      >
-                        {cell.render('Cell')}
-                      </td>
-                    );
-                  })}
-                </tr>
-              );
-            })}
-        </tbody>
-      </table>
+            </TableHead>
+            <TableBody {...getTableBodyProps()} onScroll={onScroll}>
+              {!error &&
+                page.map((row) => {
+                  prepareRow(row);
+                  return (
+                    <TableRow {...row.getRowProps((row.original as any).__props)}>
+                      {row.cells.map((cell) => {
+                        const props = cell.getCellProps();
+                        return (
+                          <TableCell
+                            {...props}
+                            className={classnames(props.className, {
+                              noOverflow: cell.value?.type === Select,
+                            })}
+                          >
+                            {cell.render('Cell')}
+                          </TableCell>
+                        );
+                      })}
+                    </TableRow>
+                  );
+                })}
+            </TableBody>
+          </CarbonTable>
+        )}
+      />
       {loading && <LoadingIndicator />}
       {error && <div>{error}</div>}
       {empty && <div className="noData">{noData}</div>}
       {!disablePagination && !empty && (totalRows > defaultPageSize || totalEntries) && (
-        <div className="tableFooter">
-          <div className="size">
-            {t('report.table.rows')}
-            <Select value={pageSize} onChange={(val) => setPageSize(Number(val))}>
-              <Select.Option value={20}>20</Select.Option>
-              <Select.Option value={100}>100</Select.Option>
-              <Select.Option value={500}>500</Select.Option>
-              <Select.Option value={1000}>1000</Select.Option>
-            </Select>
-          </div>
-          <div className="info">
-            {t('report.table.info', {firstRowIndex, lastRowIndex, totalRows})}
-          </div>
-          <div className="controls">
-            <Button className="first" icon onClick={() => gotoPage(0)} disabled={!canPreviousPage}>
-              <Icon type="expand" />
-            </Button>
-            <Button
-              className="previous"
-              icon
-              onClick={() => previousPage()}
-              disabled={!canPreviousPage}
-            >
-              <Icon type="left" />
-            </Button>
-            <span>
-              {t('report.table.page')} <b>{pageIndex + 1}</b> {t('report.table.of')}{' '}
-              <b>{pageCount}</b>
-            </span>
-            <Button className="next" icon onClick={() => nextPage()} disabled={!canNextPage}>
-              <Icon type="right" />
-            </Button>
-            <Button
-              className="last"
-              icon
-              onClick={() => gotoPage(pageCount - 1)}
-              disabled={!canNextPage}
-            >
-              <Icon type="collapse" />
-            </Button>
-          </div>
-        </div>
+        <Pagination
+          onChange={({page, pageSize}) => {
+            // react-table is counting index from 0, and the `page` here is counted form 1
+            // for the `page` prop below, the situation is oposite
+            gotoPage(page - 1);
+            setPageSize(pageSize);
+          }}
+          totalItems={totalRows}
+          page={pageIndex + 1}
+          pageSize={pageSize}
+          pageSizes={[20, 100, 500, 1000]}
+          pageNumberText={t('report.table.page').toString()}
+          itemsPerPageText={t('report.table.rows').toString()}
+          itemRangeText={(min, max, total) =>
+            t('report.table.info', {
+              firstRowIndex: min,
+              lastRowIndex: max,
+              totalRows: total,
+            }).toString()
+          }
+          itemText={(min, max) => `${min} to ${max}`}
+          pageRangeText={(current, total) =>
+            `${t('report.table.page')} ${current} ${t('report.table.of')} ${total}`
+          }
+          forwardText={t('report.table.nextPage').toString()}
+          backwardText={t('report.table.previousPage').toString()}
+        />
       )}
     </div>
   );
