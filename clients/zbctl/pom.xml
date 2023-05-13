@@ -18,26 +18,30 @@
   <name>Zeebe CLI</name>
 
   <properties>
-    <version.quarkus>3.0.2.Final</version.quarkus>
     <version.picocli>4.7.3</version.picocli>
+    <version.graalvm>0.9.21</version.graalvm>
+    <version.graalsdk>22.3.2</version.graalsdk>
   </properties>
-
-  <dependencyManagement>
-    <dependencies>
-      <dependency>
-        <groupId>io.quarkus.platform</groupId>
-        <artifactId>quarkus-bom</artifactId>
-        <version>${version.quarkus}</version>
-        <type>pom</type>
-        <scope>import</scope>
-      </dependency>
-    </dependencies>
-  </dependencyManagement>
 
   <dependencies>
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>zeebe-client-java</artifactId>
+    </dependency>
+
+    <!-- GraalVM native substitutions -->
+    <dependency>
+      <groupId>org.graalvm.nativeimage</groupId>
+      <artifactId>svm</artifactId>
+      <version>22.3.2</version>
+      <scope>provided</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.graalvm.sdk</groupId>
+      <artifactId>graal-sdk</artifactId>
+      <version>${version.graalsdk}</version>
+      <scope>provided</scope>
     </dependency>
 
     <!-- CLI arguments/interface -->
@@ -48,51 +52,11 @@
       <version>${version.picocli}</version>
     </dependency>
 
-    <!-- Application framework; prepares the native image build for us -->
+    <!-- Logging -->
     <dependency>
-      <groupId>io.quarkus</groupId>
-      <artifactId>quarkus-grpc-common-deployment</artifactId>
-      <exclusions>
-        <exclusion>
-          <groupId>io.quarkus</groupId>
-          <artifactId>quarkus-vertx-http-deployment</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>io.quarkus</groupId>
-          <artifactId>quarkus-devtools-utilities</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>io.quarkus</groupId>
-          <artifactId>quarkus-vertx-deployment</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>io.vertx</groupId>
-          <artifactId>vertx-grpc</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>io.vertx</groupId>
-          <artifactId>vertx-grpc-client</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>io.vertx</groupId>
-          <artifactId>vertx-grpc-server</artifactId>
-        </exclusion>
-      </exclusions>
-    </dependency>
-
-    <dependency>
-      <groupId>io.quarkus</groupId>
-      <artifactId>quarkus-netty-deployment</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>io.quarkus</groupId>
-      <artifactId>quarkus-jackson-deployment</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>io.quarkus</groupId>
-      <artifactId>quarkus-picocli-deployment</artifactId>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-simple</artifactId>
+      <version>${version.slf4j}</version>
     </dependency>
 
     <!-- Test dependencies -->
@@ -109,49 +73,79 @@
     </dependency>
   </dependencies>
 
-  <build>
-    <finalName>zbctl</finalName>
-
-    <plugins>
-      <!-- quarkus packaging -->
-      <plugin>
-        <groupId>io.quarkus.platform</groupId>
-        <artifactId>quarkus-maven-plugin</artifactId>
-        <version>${version.quarkus}</version>
-        <extensions>true</extensions>
-        <executions>
-          <execution>
-            <goals>
-              <goal>build</goal>
-              <goal>generate-code</goal>
-              <goal>generate-code-tests</goal>
-            </goals>
-          </execution>
-        </executions>
-      </plugin>
-    </plugins>
-  </build>
-
   <profiles>
     <profile>
       <id>native</id>
 
-      <properties>
-        <!-- package as a native image -->
-        <quarkus.package.type>native</quarkus.package.type>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-compiler-plugin</artifactId>
+            <configuration>
+              <annotationProcessorPaths>
+                <path>
+                  <groupId>info.picocli</groupId>
+                  <artifactId>picocli-codegen</artifactId>
+                  <version>${version.picocli}</version>
+                </path>
+              </annotationProcessorPaths>
+            </configuration>
+          </plugin>
 
-        <!-- allow linux users to build without GraalVM installed -->
-        <!--        <quarkus.native.container-build>true</quarkus.native.container-build>-->
+          <plugin>
+            <groupId>org.graalvm.buildtools</groupId>
+            <artifactId>native-maven-plugin</artifactId>
+            <version>${version.graalvm}</version>
+            <extensions>true</extensions>
+            <executions>
+              <execution>
+                <id>build-native</id>
+                <goals>
+                  <goal>compile-no-fork</goal>
+                </goals>
+                <phase>package</phase>
+              </execution>
+              <execution>
+                <id>test-native</id>
+                <goals>
+                  <goal>test</goal>
+                </goals>
+                <phase>test</phase>
+              </execution>
+            </executions>
+            <configuration>
+              <mainClass>io.camunda.zeebe.zbctl.Application</mainClass>
+              <imageName>${build.finalName}</imageName>
+              <metadataRepository>
+                <enabled>true</enabled>
+              </metadataRepository>
+            </configuration>
+          </plugin>
 
-        <!-- build a Docker image out of the native image -->
-        <quarkus.container-image.build>false</quarkus.container-image.build>
-
-        <!-- disable basic quarkus logging -->
-        <quarkus.log.console.enable>true</quarkus.log.console.enable>
-
-        <!-- native image compression -->
-        <quarkus.native.compression.level>5</quarkus.native.compression.level>
-      </properties>
+          <plugin>
+            <groupId>org.codehaus.mojo</groupId>
+            <artifactId>exec-maven-plugin</artifactId>
+            <executions>
+              <execution>
+                <goals>
+                  <goal>exec</goal>
+                </goals>
+                <phase>package</phase>
+              </execution>
+            </executions>
+            <configuration>
+              <executable>upx</executable>
+              <arguments>
+                <argument>-9</argument>
+                <argument>-o</argument>
+                <argument>${project.build.directory}/zbctl</argument>
+                <argument>${project.build.directory}/${build.finalName}</argument>
+              </arguments>
+            </configuration>
+          </plugin>
+        </plugins>
+      </build>
     </profile>
   </profiles>
 
