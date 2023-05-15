@@ -20,6 +20,38 @@ import {panelStatesStore} from 'modules/stores/panelStates';
 import {modificationsStore} from 'modules/stores/modifications';
 import {tracking} from 'modules/tracking';
 import {InstanceHeader} from 'modules/components/Carbon/InstanceHeader';
+import {Skeleton} from 'modules/components/Carbon/InstanceHeader/Skeleton';
+
+const headerColumns = [
+  {
+    name: 'Process Name',
+    skeletonWidth: '94px',
+  },
+  {
+    name: 'Process Instance Key',
+    skeletonWidth: '136px',
+  },
+  {
+    name: 'Version',
+    skeletonWidth: '34px',
+  },
+  {
+    name: 'Start Date',
+    skeletonWidth: '142px',
+  },
+  {
+    name: 'End Date',
+    skeletonWidth: '142px',
+  },
+  {
+    name: 'Parent Process Instance Key',
+    skeletonWidth: '142px',
+  },
+  {
+    name: 'Called Process Instances',
+    skeletonWidth: '142px',
+  },
+];
 
 const ProcessInstanceHeader: React.FC = observer(() => {
   const {processInstance} = processInstanceDetailsStore.state;
@@ -29,7 +61,7 @@ const ProcessInstanceHeader: React.FC = observer(() => {
     processInstance === null ||
     !processInstanceDetailsDiagramStore.areDiagramDefinitionsAvailable
   ) {
-    return <div>skeleton</div>;
+    return <Skeleton headerColumns={headerColumns} />;
   }
 
   const {
@@ -45,15 +77,7 @@ const ProcessInstanceHeader: React.FC = observer(() => {
   return (
     <InstanceHeader
       state={state}
-      headerColumns={[
-        'Process Name',
-        'Process Instance Key',
-        'Version',
-        'Start Date',
-        'End Date',
-        'Parent Process Instance Key',
-        'Called Process Instances',
-      ]}
+      headerColumns={headerColumns.map(({name}) => name)}
       bodyColumns={[
         {
           title: getProcessName(processInstance),

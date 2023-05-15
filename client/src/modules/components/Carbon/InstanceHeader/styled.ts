@@ -7,6 +7,10 @@
 
 import styled from 'styled-components';
 import {styles} from '@carbon/elements';
+import {
+  SkeletonText as BaseSkeletonText,
+  SkeletonIcon as BaseSkeletonIcon,
+} from '@carbon/react';
 
 const Table = styled.table`
   width: 100%;
@@ -40,4 +44,13 @@ const Container = styled.header`
   border-bottom: 1px solid var(--cds-border-subtle-01);
 `;
 
-export {Table, Td, Th, Container};
+const SkeletonText = styled(BaseSkeletonText)`
+  margin: 0;
+`;
+
+const SkeletonIcon = styled(BaseSkeletonIcon)`
+  width: var(--cds-spacing-06);
+  height: var(--cds-spacing-06);
+`;
+
+export {Table, Td, Th, Container, SkeletonText, SkeletonIcon};
