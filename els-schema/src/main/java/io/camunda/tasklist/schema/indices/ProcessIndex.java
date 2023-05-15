@@ -23,7 +23,7 @@ public class ProcessIndex extends AbstractIndexDescriptor implements Prio4Backup
   public static final String FLOWNODES = "flowNodes";
   public static final String FLOWNODE_ID = "id";
   public static final String FLOWNODE_NAME = "name";
-  public static final String IS_STARTED_BY_FORM = "isStartedByForm";
+  public static final String IS_STARTED_BY_FORM = "startedByForm";
   public static final String FORM_KEY = "formKey";
 
   @Override

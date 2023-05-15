@@ -33,13 +33,13 @@ public class OpenApiConfig {
   public static final SecurityScheme BEARER_SECURITY_SCHEMA =
       new SecurityScheme().type(SecurityScheme.Type.HTTP).scheme("bearer").bearerFormat("JWT");
 
-  @Profile("dev")
+  @Profile({"dev", "preview"})
   @Bean
   public GroupedOpenApi internalApiV1() {
     return versionedInternalApi("v1");
   }
 
-  @Profile("dev")
+  @Profile({"dev", "preview"})
   @Bean
   public GroupedOpenApi externalApiV1() {
     return versionedExternalApi("v1");

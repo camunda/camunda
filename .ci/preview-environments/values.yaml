@@ -38,7 +38,7 @@ camunda-platform:
     - name: JAVA_OPTS
       value: "-XX:MaxRAMFraction=1"
     - name: SPRING_PROFILES_ACTIVE
-      value: "dev-data"
+      value: "dev-data,preview"
     resources:
       limits:
         cpu: 1

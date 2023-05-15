@@ -8,6 +8,7 @@ package io.camunda.tasklist.webapp.api.rest.v1.controllers.internal;
 
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
 import io.camunda.tasklist.webapp.api.rest.v1.controllers.ApiErrorController;
+import io.camunda.tasklist.webapp.api.rest.v1.entities.ProcessPublicEndpointsResponse;
 import io.camunda.tasklist.webapp.api.rest.v1.entities.ProcessResponse;
 import io.camunda.tasklist.webapp.es.ProcessInstanceWriter;
 import io.camunda.tasklist.webapp.es.cache.ProcessReader;
@@ -130,5 +131,23 @@ public class ProcessInternalController extends ApiErrorController {
                 "The deletion of process with processInstanceId: '%s' could not be deleted",
                 processInstanceId));
     }
+  }
+
+  @Operation(
+      summary = "Return all the public endpoints to start a process by a form.",
+      description = "Return all the public endpoints to start a process by a form.",
+      responses = {
+        @ApiResponse(
+            description = "On success returned",
+            responseCode = "200",
+            useReturnTypeSchema = true),
+      })
+  @GetMapping("publicEndpoints")
+  public ResponseEntity<List<ProcessPublicEndpointsResponse>> getPublicEndpoints() {
+    final var publicEndpoints =
+        processReader.getProcessesStartedByForm().stream()
+            .map(ProcessPublicEndpointsResponse::fromProcessDTO)
+            .collect(Collectors.toList());
+    return ResponseEntity.ok(publicEndpoints);
   }
 }

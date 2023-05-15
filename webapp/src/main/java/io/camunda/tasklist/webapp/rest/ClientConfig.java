@@ -19,7 +19,6 @@ public class ClientConfig {
 
   public boolean isEnterprise;
   public boolean canLogout;
-
   public boolean isLoginDelegated;
   public String contextPath;
   // Cloud related properties for mixpanel events

@@ -20,6 +20,7 @@ import io.camunda.tasklist.webapp.security.identity.IdentityAuthorization;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
@@ -281,5 +282,34 @@ public class ProcessReader {
               return entity;
             });
     return processes;
+  }
+
+  public List<ProcessDTO> getProcessesStartedByForm() {
+    final QueryBuilder qb;
+
+    qb =
+        QueryBuilders.boolQuery()
+            .must(QueryBuilders.existsQuery(ProcessIndex.PROCESS_DEFINITION_ID))
+            .mustNot(QueryBuilders.termQuery(ProcessIndex.PROCESS_DEFINITION_ID, ""));
+
+    final SearchRequest searchRequest =
+        new SearchRequest(processIndex.getAlias())
+            .source(
+                new SearchSourceBuilder()
+                    .query(qb)
+                    .collapse(new CollapseBuilder(ProcessIndex.PROCESS_DEFINITION_ID))
+                    .sort(SortBuilders.fieldSort(ProcessIndex.VERSION).order(SortOrder.DESC)));
+
+    final SearchResponse response;
+    try {
+      response = esClient.search(searchRequest, RequestOptions.DEFAULT);
+      return mapResponse(response).stream()
+          .filter(p -> p.isStartedByForm())
+          .collect(Collectors.toList());
+    } catch (IOException e) {
+      final String message =
+          String.format("Exception occurred, while obtaining the process: %s", e.getMessage());
+      throw new TasklistRuntimeException(message, e);
+    }
   }
 }

@@ -17,6 +17,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import io.camunda.tasklist.webapp.CommonUtils;
+import io.camunda.tasklist.webapp.api.rest.v1.entities.ProcessPublicEndpointsResponse;
 import io.camunda.tasklist.webapp.api.rest.v1.entities.ProcessResponse;
 import io.camunda.tasklist.webapp.es.ProcessInstanceWriter;
 import io.camunda.tasklist.webapp.es.cache.ProcessReader;
@@ -184,5 +185,45 @@ class ProcessInternalControllerTest {
     // then
     assertThat(result.getStatus()).isEqualTo(expectedHttpStatus.value());
     assertThat(result.getMessage()).isEqualTo(errorMessageTemplate, processInstanceId);
+  }
+
+  @Test
+  void getPublicEndpoints() throws Exception {
+    // given
+
+    final var processDto =
+        new ProcessDTO()
+            .setId("1")
+            .setFormKey("camunda:bpmn:publicForm")
+            .setProcessDefinitionId("publicProcess")
+            .setVersion(1)
+            .setName("publicProcess")
+            .setStartedByForm(true);
+
+    final var expectedEndpointsResponse =
+        new ProcessPublicEndpointsResponse()
+            .setEndpoint(TasklistURIs.START_PUBLIC_PROCESS.concat("publicProcess"))
+            .setProcessId("1")
+            .setProcessDefinitionKey("publicProcess");
+
+    when(processReader.getProcessesStartedByForm()).thenReturn(List.of(processDto));
+
+    // when
+    final var responseAsString =
+        mockMvc
+            .perform(get(TasklistURIs.PROCESSES_URL_V1.concat("/publicEndpoints")))
+            .andDo(print())
+            .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+            .andExpect(status().isOk())
+            .andReturn()
+            .getResponse()
+            .getContentAsString();
+
+    final var result =
+        CommonUtils.OBJECT_MAPPER.readValue(
+            responseAsString, new TypeReference<List<ProcessPublicEndpointsResponse>>() {});
+
+    // then
+    assertThat(result).containsExactly(expectedEndpointsResponse);
   }
 }
