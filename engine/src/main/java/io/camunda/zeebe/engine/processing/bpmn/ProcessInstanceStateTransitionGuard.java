@@ -9,14 +9,25 @@ package io.camunda.zeebe.engine.processing.bpmn;
 
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateBehavior;
 import io.camunda.zeebe.engine.processing.common.Failure;
+import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableActivity;
+import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableBoundaryEvent;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowElement;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowNode;
+import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableProcess;
+import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableSequenceFlow;
+import io.camunda.zeebe.engine.state.deployment.DeployedProcess;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.Arrays;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
+import org.agrona.DirectBuffer;
 
 /**
  * Checks the preconditions of a state transition command.
@@ -48,7 +59,8 @@ public final class ProcessInstanceStateTransitionGuard {
       final BpmnElementContext context, final ExecutableFlowElement element) {
     return switch (context.getIntent()) {
       case ACTIVATE_ELEMENT -> hasActiveFlowScopeInstance(context)
-          .flatMap(ok -> canActivateParallelGateway(context, element));
+          .flatMap(ok -> canActivateParallelGateway(context, element))
+          .flatMap(ok -> canActivateInclusiveGateway(context, element));
       case COMPLETE_ELEMENT ->
       // an incident is resolved by writing a COMPLETE command when the element instance is in
       // state COMPLETING
@@ -183,5 +195,93 @@ public final class ProcessInstanceStateTransitionGuard {
                       + " but not all sequence flows have been taken.",
                   BufferUtil.bufferAsString(element.getId())));
     }
+  }
+
+  private Either<String, ?> canActivateInclusiveGateway(
+      final BpmnElementContext context, final ExecutableFlowElement executableFlowElement) {
+    if (context.getBpmnElementType() == BpmnElementType.INCLUSIVE_GATEWAY) {
+      final var element = (ExecutableFlowNode) executableFlowElement;
+      final int numberOfIncomingSequenceFlows = element.getIncoming().size();
+      final int numberOfTakenSequenceFlows =
+          stateBehavior.getNumberOfTakenSequenceFlows(context.getFlowScopeKey(), element.getId());
+
+      if (numberOfTakenSequenceFlows < numberOfIncomingSequenceFlows) {
+        final boolean exist = doesPathExist(context, element);
+        if (exist || numberOfTakenSequenceFlows == 0) {
+          return Either.left(
+              String.format(
+                  "Expected to be able to activate inclusive gateway '%s',"
+                      + " but not all satisfied sequence flows have been taken.",
+                  BufferUtil.bufferAsString(element.getId())));
+        }
+      }
+    }
+
+    return Either.right(null);
+  }
+
+  private boolean doesPathExist(
+      final BpmnElementContext context, final ExecutableFlowElement executableFlowElement) {
+    final Optional<DeployedProcess> deployedProcess =
+        stateBehavior.getProcess(context.getProcessDefinitionKey());
+
+    return deployedProcess
+        .map(
+            executableProcess -> {
+              final Set<DirectBuffer> visited = new HashSet<>();
+              final var process = executableProcess.getProcess();
+              final var targetElementId = executableFlowElement.getId();
+              final var activateElementIds =
+                  findActivateElementInFlowScope(context, executableFlowElement);
+
+              return activateElementIds.stream()
+                  .anyMatch(
+                      elementId -> doesPathExist(process, elementId, targetElementId, visited));
+            })
+        .orElse(false);
+  }
+
+  public Set<DirectBuffer> findActivateElementInFlowScope(
+      final BpmnElementContext context, final ExecutableFlowElement executableFlowElement) {
+    final var flowScopeContext = stateBehavior.getFlowScopeContext(context);
+    final var childInstances = stateBehavior.getChildInstances(flowScopeContext);
+
+    // activate element id in flow scope
+    return childInstances.stream()
+        .map(BpmnElementContext::getElementId)
+        .filter(elementId -> elementId != executableFlowElement.getId())
+        .collect(Collectors.toSet());
+  }
+
+  public boolean doesPathExist(
+      final ExecutableProcess process,
+      final DirectBuffer sourceElementId,
+      final DirectBuffer targetElementId,
+      final Set<DirectBuffer> visited) {
+    // found path from sourceElement to targetElement
+    if (sourceElementId == targetElementId) {
+      return true;
+    }
+
+    if (!visited.contains(sourceElementId)) {
+      visited.add(sourceElementId);
+      final ExecutableFlowNode sourceElement =
+          process.getElementById(sourceElementId, ExecutableFlowNode.class);
+      final List<DirectBuffer> sourceElementIds =
+          sourceElement.getOutgoing().stream()
+              .map(ExecutableSequenceFlow::getTarget)
+              .map(ExecutableFlowNode::getId)
+              .collect(Collectors.toList());
+
+      if (sourceElement instanceof ExecutableActivity) {
+        final List<ExecutableBoundaryEvent> boundaryEvents =
+            ((ExecutableActivity) sourceElement).getBoundaryEvents();
+        boundaryEvents.forEach(event -> sourceElementIds.add(event.getId()));
+      }
+
+      return sourceElementIds.stream()
+          .anyMatch(elementId -> doesPathExist(process, elementId, targetElementId, visited));
+    }
+    return false;
   }
 }

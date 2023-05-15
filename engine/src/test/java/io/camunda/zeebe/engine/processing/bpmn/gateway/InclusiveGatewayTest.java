@@ -13,7 +13,6 @@ import static org.assertj.core.api.Assertions.tuple;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
-import io.camunda.zeebe.model.bpmn.instance.ServiceTask;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
@@ -24,7 +23,9 @@ import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.camunda.zeebe.test.util.Strings;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
+import java.time.Duration;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 import org.junit.ClassRule;
 import org.junit.Rule;
@@ -676,9 +677,294 @@ public final class InclusiveGatewayTest {
             tuple(processInstance, "end3"));
   }
 
-  private static boolean isServiceTaskInProcess(
-      final String activityId, final BpmnModelInstance process) {
-    return process.getModelElementsByType(ServiceTask.class).stream()
-        .anyMatch(t -> t.getId().equals(activityId));
+  @Test
+  public void shouldJoinOnInclusiveGateway() {
+    // given
+    final var process =
+        Bpmn.createExecutableProcess(PROCESS_ID)
+            .startEvent("start")
+            .parallelGateway("fork")
+            .sequenceFlowId("joinFlow1")
+            .inclusiveGateway("join")
+            .endEvent("end")
+            .moveToNode("fork")
+            .sequenceFlowId("joinFlow2")
+            .connectTo("join")
+            .done();
+    ENGINE.deployment().withXmlResource(process).deploy();
+
+    // when
+    ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    // then
+    final List<Record<ProcessInstanceRecordValue>> events =
+        RecordingExporter.processInstanceRecords()
+            .limitToProcessInstanceCompleted()
+            .collect(Collectors.toList());
+
+    assertThat(events)
+        .extracting(e -> e.getValue().getElementId(), Record::getIntent)
+        .containsSubsequence(
+            tuple("joinFlow1", ProcessInstanceIntent.SEQUENCE_FLOW_TAKEN),
+            tuple("join", ProcessInstanceIntent.ELEMENT_ACTIVATING))
+        .containsSubsequence(
+            tuple("joinFlow2", ProcessInstanceIntent.SEQUENCE_FLOW_TAKEN),
+            tuple("join", ProcessInstanceIntent.ELEMENT_ACTIVATING))
+        .containsOnlyOnce(tuple("join", ProcessInstanceIntent.ELEMENT_ACTIVATING));
+  }
+
+  @Test
+  public void shouldTriggerGatewayWhenOnlyOneSatisfiedBranchIsActivated() {
+    // given
+    final var process =
+        Bpmn.createExecutableProcess(PROCESS_ID)
+            .startEvent()
+            .inclusiveGateway("fork")
+            .sequenceFlowId("joinFlow1")
+            .conditionExpression("a > 0")
+            .inclusiveGateway("join")
+            .moveToNode("fork")
+            .conditionExpression("a < 0")
+            .sequenceFlowId("joinFlow2")
+            .connectTo("join")
+            .endEvent()
+            .done();
+
+    ENGINE.deployment().withXmlResource(process).deploy();
+
+    // when
+    ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).withVariable("a", 10).create();
+
+    // then
+    final List<Record<ProcessInstanceRecordValue>> events =
+        RecordingExporter.processInstanceRecords()
+            .limit(
+                r ->
+                    "join".equals(r.getValue().getElementId())
+                        && ProcessInstanceIntent.ELEMENT_COMPLETED == r.getIntent())
+            .collect(Collectors.toList());
+
+    assertThat(events)
+        .extracting(e -> e.getValue().getElementId(), Record::getIntent)
+        .containsOnlyOnce(
+            tuple("joinFlow1", ProcessInstanceIntent.SEQUENCE_FLOW_TAKEN),
+            tuple("join", ProcessInstanceIntent.ELEMENT_ACTIVATING))
+        .doesNotContain(tuple("joinFlow2", ProcessInstanceIntent.SEQUENCE_FLOW_TAKEN));
+  }
+
+  @Test
+  public void shouldTriggerGatewayWhenMultiSatisfiedBranchesAreActivated() {
+    // given
+    final var process =
+        Bpmn.createExecutableProcess(PROCESS_ID)
+            .startEvent()
+            .inclusiveGateway("fork")
+            .sequenceFlowId("joinFlow1")
+            .conditionExpression("a > 0")
+            .inclusiveGateway("join")
+            .moveToNode("fork")
+            .conditionExpression("a > 5")
+            .sequenceFlowId("joinFlow2")
+            .connectTo("join")
+            .moveToNode("fork")
+            .conditionExpression("a > 100")
+            .sequenceFlowId("joinFlow3")
+            .connectTo("join")
+            .endEvent()
+            .done();
+
+    ENGINE.deployment().withXmlResource(process).deploy();
+
+    // when
+    ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).withVariable("a", 10).create();
+
+    // then
+    final List<Record<ProcessInstanceRecordValue>> events =
+        RecordingExporter.processInstanceRecords()
+            .limit(
+                r ->
+                    "join".equals(r.getValue().getElementId())
+                        && ProcessInstanceIntent.ELEMENT_COMPLETED == r.getIntent())
+            .collect(Collectors.toList());
+
+    assertThat(events)
+        .extracting(e -> e.getValue().getElementId(), Record::getIntent)
+        .containsSubsequence(
+            tuple("joinFlow1", ProcessInstanceIntent.SEQUENCE_FLOW_TAKEN),
+            tuple("join", ProcessInstanceIntent.ELEMENT_ACTIVATING))
+        .containsSubsequence(
+            tuple("joinFlow2", ProcessInstanceIntent.SEQUENCE_FLOW_TAKEN),
+            tuple("join", ProcessInstanceIntent.ELEMENT_ACTIVATING))
+        .doesNotContain(tuple("joinFlow3", ProcessInstanceIntent.SEQUENCE_FLOW_TAKEN))
+        .containsOnlyOnce(tuple("join", ProcessInstanceIntent.ELEMENT_ACTIVATING));
+  }
+
+  @Test
+  public void shouldTriggerGatewayWhenAllSatisfiedBranchesAreActivated() {
+    // given
+    final var process =
+        Bpmn.createExecutableProcess(PROCESS_ID)
+            .startEvent()
+            .parallelGateway("fork")
+            .sequenceFlowId("joinFlow1")
+            .inclusiveGateway("join")
+            .moveToNode("fork")
+            .serviceTask("task", b -> b.zeebeJobType("type"))
+            .sequenceFlowId("joinFlow2")
+            .connectTo("join")
+            .endEvent()
+            .done();
+
+    ENGINE.deployment().withXmlResource(process).deploy();
+
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    // when
+    // complete the job
+    ENGINE.job().ofInstance(processInstanceKey).withType("type").complete();
+
+    // then
+    final List<Record<ProcessInstanceRecordValue>> events =
+        RecordingExporter.processInstanceRecords()
+            .limit(
+                r ->
+                    "join".equals(r.getValue().getElementId())
+                        && ProcessInstanceIntent.ELEMENT_COMPLETED == r.getIntent())
+            .collect(Collectors.toList());
+
+    assertThat(events)
+        .extracting(e -> e.getValue().getElementId(), Record::getIntent)
+        .containsSubsequence(
+            tuple("joinFlow1", ProcessInstanceIntent.SEQUENCE_FLOW_TAKEN),
+            tuple("joinFlow2", ProcessInstanceIntent.SEQUENCE_FLOW_TAKEN))
+        .containsOnlyOnce(tuple("join", ProcessInstanceIntent.ELEMENT_ACTIVATING));
+  }
+
+  @Test
+  public void shouldTriggerGatewayWhenAllSatisfiedBranchesAreActivatedWithBoundaryEvent() {
+    // given
+    final var process =
+        Bpmn.createExecutableProcess(PROCESS_ID)
+            .startEvent()
+            .parallelGateway("fork")
+            .sequenceFlowId("joinFlow1")
+            .inclusiveGateway("join")
+            .moveToNode("fork")
+            .serviceTask("task", b -> b.zeebeJobType("type"))
+            .boundaryEvent("event", b -> b.timerWithDuration("PT5S"))
+            .sequenceFlowId("joinFlow2")
+            .connectTo("join")
+            .endEvent()
+            .done();
+
+    ENGINE.deployment().withXmlResource(process).deploy();
+    ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    // when
+    ENGINE.increaseTime(Duration.ofSeconds(10));
+
+    // then
+    final List<Record<ProcessInstanceRecordValue>> events =
+        RecordingExporter.processInstanceRecords()
+            .limit(
+                r ->
+                    "join".equals(r.getValue().getElementId())
+                        && ProcessInstanceIntent.ELEMENT_COMPLETED == r.getIntent())
+            .collect(Collectors.toList());
+
+    assertThat(events)
+        .extracting(e -> e.getValue().getElementId(), Record::getIntent)
+        .containsSubsequence(
+            tuple("joinFlow1", ProcessInstanceIntent.SEQUENCE_FLOW_TAKEN),
+            tuple("joinFlow2", ProcessInstanceIntent.SEQUENCE_FLOW_TAKEN))
+        .containsOnlyOnce(tuple("join", ProcessInstanceIntent.ELEMENT_ACTIVATING));
+  }
+
+  @Test
+  public void shouldMergeAndSplitInOneGateway() {
+    // given
+    final var process =
+        Bpmn.createExecutableProcess(PROCESS_ID)
+            .startEvent("start")
+            .parallelGateway("fork")
+            .inclusiveGateway("join")
+            .moveToNode("fork")
+            .connectTo("join")
+            .conditionExpression("a > 0")
+            .serviceTask("task1", b -> b.zeebeJobType("type1"))
+            .moveToLastGateway()
+            .conditionExpression("a > 5")
+            .serviceTask("task2", b -> b.zeebeJobType("type2"))
+            .done();
+
+    ENGINE.deployment().withXmlResource(process).deploy();
+
+    // when
+    ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).withVariable("a", 10).create();
+
+    // then
+    final List<Record<ProcessInstanceRecordValue>> elementInstances =
+        RecordingExporter.processInstanceRecords()
+            .filter(
+                r ->
+                    r.getIntent() == ProcessInstanceIntent.ELEMENT_ACTIVATED
+                        && r.getValue().getBpmnElementType() == BpmnElementType.SERVICE_TASK)
+            .limit(2)
+            .collect(Collectors.toList());
+
+    assertThat(elementInstances)
+        .extracting(e -> e.getValue().getElementId())
+        .contains("task1", "task2");
+  }
+
+  @Test
+  public void shouldMergeAndSplitInOneGatewayWhenSubsetOfTheSequenceFlowsHasBeenTaken() {
+    // given
+    final var process =
+        Bpmn.createExecutableProcess(PROCESS_ID)
+            .startEvent("start")
+            .parallelGateway("fork")
+            .task("task1")
+            .moveToNode("fork")
+            .exclusiveGateway("exclusive")
+            .conditionExpression("a >= 0")
+            .task("task2")
+            .inclusiveGateway("join")
+            .moveToNode("task1")
+            .connectTo("join")
+            .moveToNode("exclusive")
+            .conditionExpression("a < 0")
+            .task("task3")
+            .connectTo("join")
+            .moveToNode("join")
+            .conditionExpression("b > 0")
+            .task("task4")
+            .moveToLastGateway()
+            .conditionExpression("b > 5")
+            .task("task5")
+            .done();
+
+    ENGINE.deployment().withXmlResource(process).deploy();
+
+    // when
+    ENGINE
+        .processInstance()
+        .ofBpmnProcessId(PROCESS_ID)
+        .withVariables(Map.of("a", 1, "b", 10))
+        .create();
+
+    // then
+    final List<Record<ProcessInstanceRecordValue>> elementInstances =
+        RecordingExporter.processInstanceRecords()
+            .filter(
+                r ->
+                    r.getIntent() == ProcessInstanceIntent.ELEMENT_ACTIVATED
+                        && r.getValue().getBpmnElementType() == BpmnElementType.TASK)
+            .limit(4)
+            .collect(Collectors.toList());
+
+    assertThat(elementInstances)
+        .extracting(e -> e.getValue().getElementId())
+        .contains("task1", "task2", "task4", "task5");
   }
 }
