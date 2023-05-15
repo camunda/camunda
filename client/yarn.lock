@@ -1159,10 +1159,10 @@
     preact-markup "^2.1.1"
     showdown "^2.1.0"
 
-"@camunda/camunda-composite-components@0.0.39":
-  version "0.0.39"
-  resolved "https://registry.yarnpkg.com/@camunda/camunda-composite-components/-/camunda-composite-components-0.0.39.tgz#ee50a8aeddcc3d3d89c22c7be59b42a0b6f7850f"
-  integrity sha512-JBqBx2N+rEVkZ6UWCBTzrpFDn2o+oAs9lhmCXRDXZAjPPcqnAjj2lFxNK1PCglKX0HtLpgzdX7w2o8Tasqy+uw==
+"@camunda/camunda-composite-components@0.0.40":
+  version "0.0.40"
+  resolved "https://registry.yarnpkg.com/@camunda/camunda-composite-components/-/camunda-composite-components-0.0.40.tgz#12c6c8fd72b37f54b00a301c4c1068ac157dbbf8"
+  integrity sha512-9l469jjf19g77rRQY6WAusquB5b25u15rID0AWl+HcDgh+OtFDJL4pYBBoQp92jV0TSfY3Uliy7BJB00qQpFEQ==
 
 "@carbon/colors@^11.14.0":
   version "11.14.0"
@@ -3455,7 +3455,12 @@ available-typed-arrays@^1.0.5:
   resolved "https://registry.yarnpkg.com/available-typed-arrays/-/available-typed-arrays-1.0.5.tgz#92f95616501069d07d10edb2fc37d3e1c65123b7"
   integrity sha512-DMD0KiN46eipeziST1LPP/STfDU0sufISXmjSgvVsoU2tqxctQeASejWcfNtxYKqETM1UxQ8sp2OrSBWpHY6sw==
 
-axe-core@4.7.0, axe-core@^4.6.2, axe-core@^4.7.0:
+axe-core@4.7.1:
+  version "4.7.1"
+  resolved "https://registry.yarnpkg.com/axe-core/-/axe-core-4.7.1.tgz#04392c9ccb3d7d7c5d2f8684f148d56d3442f33d"
+  integrity sha512-sCXXUhA+cljomZ3ZAwb8i1p3oOlkABzPy08ZDAoGcYuvtBPlQ1Ytde129ArXyHWDhfeewq7rlx9F+cUx2SSlkg==
+
+axe-core@^4.6.2, axe-core@^4.7.0:
   version "4.7.0"
   resolved "https://registry.yarnpkg.com/axe-core/-/axe-core-4.7.0.tgz#34ba5a48a8b564f67e103f0aa5768d76e15bbbbf"
   integrity sha512-M0JtH+hlOL5pLQwHOLNYZaXuhqmvS8oExsqB1SBYgA4Dk7u/xx+YdGHXaK5pyUfed5mYXdlYiphWq3G8cRi5JQ==
