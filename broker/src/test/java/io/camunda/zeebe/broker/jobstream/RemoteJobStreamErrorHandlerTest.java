@@ -28,7 +28,7 @@ final class RemoteJobStreamErrorHandlerTest {
   @Test
   void shouldNotCallDelegateHandlerIfNoWriter() {
     // given
-    final var handler = new RemoteJobStreamErrorHandler(jobErrorHandler, executor);
+    final var handler = new RemoteJobStreamErrorHandler(jobErrorHandler);
     final var job = new TestActivatedJob(1, new JobRecord());
 
     // when
@@ -41,11 +41,10 @@ final class RemoteJobStreamErrorHandlerTest {
   @Test
   void shouldDelegateToJobHandler() {
     // given
-    final var handler = new RemoteJobStreamErrorHandler(jobErrorHandler, executor);
+    final var handler = new RemoteJobStreamErrorHandler(jobErrorHandler);
     final var job = new TestActivatedJob(Protocol.encodePartitionId(1, 1), new JobRecord());
     final var error = new RuntimeException("Failure");
-    handler.addWriter(
-        1, executor.completedFuture((entries, ignored) -> 1), executor.createFuture());
+    handler.addWriter(1, (entries, ignored) -> 1);
 
     // when
     handler.handleError(error, job);
@@ -61,10 +60,9 @@ final class RemoteJobStreamErrorHandlerTest {
   @Test
   void shouldRemoveWriter() {
     // given
-    final var handler = new RemoteJobStreamErrorHandler(jobErrorHandler, executor);
+    final var handler = new RemoteJobStreamErrorHandler(jobErrorHandler);
     final var job = new TestActivatedJob(1, new JobRecord());
-    handler.addWriter(
-        1, executor.completedFuture((entries, ignored) -> 1), executor.createFuture());
+    handler.addWriter(1, (entries, ignored) -> 1);
 
     // when
     handler.removeWriter(1);
@@ -77,17 +75,15 @@ final class RemoteJobStreamErrorHandlerTest {
   @Test
   void shouldWriteResultingEntries() {
     // given
-    final var handler = new RemoteJobStreamErrorHandler(jobErrorHandler, executor);
+    final var handler = new RemoteJobStreamErrorHandler(jobErrorHandler);
     final var job = new TestActivatedJob(Protocol.encodePartitionId(1, 1), new JobRecord());
     final var writtenEntries = new ArrayList<LogAppendEntry>();
     handler.addWriter(
         1,
-        executor.completedFuture(
-            (entries, ignored) -> {
-              writtenEntries.addAll(entries);
-              return 1;
-            }),
-        executor.createFuture());
+        (entries, ignored) -> {
+          writtenEntries.addAll(entries);
+          return 1;
+        });
 
     // when
     handler.handleError(new RuntimeException("failure"), job);

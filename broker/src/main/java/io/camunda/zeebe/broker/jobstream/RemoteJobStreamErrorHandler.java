@@ -13,8 +13,6 @@ import io.camunda.zeebe.broker.bootstrap.BrokerStartupContext;
 import io.camunda.zeebe.engine.processing.streamprocessor.ActivatedJob;
 import io.camunda.zeebe.logstreams.log.LogStreamWriter;
 import io.camunda.zeebe.protocol.Protocol;
-import io.camunda.zeebe.scheduler.ConcurrencyControl;
-import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.stream.api.scheduling.TaskResult;
 import io.camunda.zeebe.stream.impl.BufferedTaskResultBuilder;
 import io.camunda.zeebe.transport.stream.api.RemoteStreamErrorHandler;
@@ -44,14 +42,11 @@ final class RemoteJobStreamErrorHandler implements RemoteStreamErrorHandler<Acti
       new ThrottledLogger(LOGGER, Duration.ofSeconds(1));
 
   private final JobStreamErrorHandler errorHandler;
-  private final ConcurrencyControl executor;
 
   private final Int2ObjectHashMap<LogStreamWriter> partitionWriters = new Int2ObjectHashMap<>();
 
-  RemoteJobStreamErrorHandler(
-      final JobStreamErrorHandler errorHandler, final ConcurrencyControl executor) {
+  RemoteJobStreamErrorHandler(final JobStreamErrorHandler errorHandler) {
     this.errorHandler = errorHandler;
-    this.executor = executor;
   }
 
   @Override
@@ -74,21 +69,8 @@ final class RemoteJobStreamErrorHandler implements RemoteStreamErrorHandler<Acti
     writeEntries(partitionId, job, writer, result);
   }
 
-  void addWriter(
-      final int partitionId,
-      final ActorFuture<LogStreamWriter> writerFuture,
-      final ActorFuture<Void> onComplete) {
-    executor.runOnCompletion(
-        writerFuture,
-        (writer, error) -> {
-          if (error != null) {
-            onComplete.completeExceptionally(error);
-            return;
-          }
-
-          partitionWriters.put(partitionId, writer);
-          onComplete.complete(null);
-        });
+  void addWriter(final int partitionId, final LogStreamWriter writer) {
+    partitionWriters.put(partitionId, writer);
   }
 
   void removeWriter(final int partitionId) {

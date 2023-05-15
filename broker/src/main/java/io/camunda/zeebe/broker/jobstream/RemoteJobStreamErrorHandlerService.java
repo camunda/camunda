@@ -31,7 +31,7 @@ public final class RemoteJobStreamErrorHandlerService extends Actor
 
   public RemoteJobStreamErrorHandlerService(
       final JobStreamErrorHandler errorHandler, final int nodeId) {
-    delegate = new RemoteJobStreamErrorHandler(errorHandler, this);
+    delegate = new RemoteJobStreamErrorHandler(errorHandler);
     name = buildActorName(nodeId, "RemoteJobStreamErrorHandler");
   }
 
@@ -54,7 +54,21 @@ public final class RemoteJobStreamErrorHandlerService extends Actor
     final var result = new CompletableActorFuture<Void>();
     final var onLogStreamWriter =
         Objects.requireNonNull(logStream, "must specify a log stream").newLogStreamWriter();
-    actor.call(() -> delegate.addWriter(partitionId, onLogStreamWriter, result));
+    actor.run(
+        () -> {
+          actor.runOnCompletion(
+              onLogStreamWriter,
+              (writer, error) -> {
+                if (error != null) {
+                  result.completeExceptionally(error);
+                  return;
+                }
+
+                delegate.addWriter(partitionId, writer);
+                result.complete(null);
+              });
+        });
+
     return result;
   }
 
