@@ -130,6 +130,7 @@ final class JsonSerializableToJsonTest {
                   .intent(intent)
                   .protocolVersion(protocolVersion)
                   .brokerVersion(brokerVersion)
+                  .recordVersion(10)
                   .valueType(valueType)
                   .recordType(recordType)
                   .rejectionReason(rejectionReason)
@@ -167,7 +168,7 @@ final class JsonSerializableToJsonTest {
               return new CopiedRecord<>(
                   record, recordMetadata, key, 0, position, sourcePosition, timestamp);
             },
-        "{'valueType':'DEPLOYMENT','key':1234,'position':4321,'timestamp':2191,'recordType':'COMMAND','intent':'CREATE','partitionId':0,'rejectionType':'INVALID_ARGUMENT','rejectionReason':'fails','brokerVersion':'1.2.3','sourceRecordPosition':231,'value':{'processesMetadata':[{'version':12,'bpmnProcessId':'testProcess','resourceName':'resource','checksum':'Y2hlY2tzdW0=','processDefinitionKey':123, 'duplicate':false}],'resources':[{'resourceName':'resource','resource':'Y29udGVudHM='}],'decisionsMetadata':[],'decisionRequirementsMetadata':[]}}"
+        "{'valueType':'DEPLOYMENT','key':1234,'position':4321,'timestamp':2191,'recordType':'COMMAND','intent':'CREATE','partitionId':0,'rejectionType':'INVALID_ARGUMENT','rejectionReason':'fails','brokerVersion':'1.2.3','recordVersion':10,'sourceRecordPosition':231,'value':{'processesMetadata':[{'version':12,'bpmnProcessId':'testProcess','resourceName':'resource','checksum':'Y2hlY2tzdW0=','processDefinitionKey':123, 'duplicate':false}],'resources':[{'resourceName':'resource','resource':'Y29udGVudHM='}],'decisionsMetadata':[],'decisionRequirementsMetadata':[]}}"
       },
       /////////////////////////////////////////////////////////////////////////////////////////////
       //////////////////////////////////// DeploymentRecord ///////////////////////////////////////
