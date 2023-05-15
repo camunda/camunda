@@ -23,6 +23,8 @@ import {CarbonPaths} from 'modules/carbonRoutes';
 import {Link} from 'modules/components/Carbon/Link';
 import {OperationsContainer} from './styled';
 import {processInstancesStore} from 'modules/stores/processInstances';
+import {getStateLocally} from 'modules/utils/localStorage';
+import {ModificationHelperModal} from './ModificationHelperModal';
 
 type Props = {
   instance: ProcessInstanceEntity;
@@ -35,10 +37,22 @@ type Props = {
 };
 
 const Operations: React.FC<Props> = observer(
-  ({instance, onOperation, onError, onSuccess, forceSpinner, permissions}) => {
+  ({
+    instance,
+    onOperation,
+    onError,
+    onSuccess,
+    forceSpinner,
+    isInstanceModificationVisible = false,
+    permissions,
+  }) => {
     const [isDeleteModalVisible, setIsDeleteModalVisible] = useState(false);
     const [isCancellationModalVisible, setIsCancellationModalVisible] =
       useState(false);
+    const [
+      isModificationModeHelperModalVisible,
+      setIsModificationModeHelperModalVisible,
+    ] = useState(false);
 
     const {isModificationModeEnabled} = modificationsStore;
 
@@ -128,6 +142,31 @@ const Operations: React.FC<Props> = observer(
               />
             </Restricted>
           )}
+
+          {isInstanceModificationVisible &&
+            isRunning(instance) &&
+            !isModificationModeEnabled && (
+              <Restricted
+                scopes={['write']}
+                resourceBasedRestrictions={{
+                  scopes: ['UPDATE_PROCESS_INSTANCE'],
+                  permissions,
+                }}
+              >
+                <OperationItem
+                  type="ENTER_MODIFICATION_MODE"
+                  onClick={() => {
+                    if (getStateLocally()?.hideModificationHelperModal) {
+                      modificationsStore.enableModificationMode();
+                    } else {
+                      setIsModificationModeHelperModalVisible(true);
+                    }
+                  }}
+                  title={`Modify Instance ${instance.id}`}
+                  size="sm"
+                />
+              </Restricted>
+            )}
         </OperationItems>
 
         {isCancellationModalVisible && (
@@ -194,6 +233,16 @@ const Operations: React.FC<Props> = observer(
             <p>About to delete Instance {instance.id}.</p>
             <p>Click "Delete" to proceed.</p>
           </Modal>
+        )}
+
+        {isModificationModeHelperModalVisible && (
+          <ModificationHelperModal
+            isVisible={isModificationModeHelperModalVisible}
+            onClose={() => {
+              setIsModificationModeHelperModalVisible(false);
+              modificationsStore.enableModificationMode();
+            }}
+          />
         )}
       </OperationsContainer>
     );

@@ -5,12 +5,7 @@
  * except in compliance with the proprietary license.
  */
 
-import {
-  render,
-  screen,
-  act,
-  waitForElementToBeRemoved,
-} from 'modules/testing-library';
+import {render, screen, act} from 'modules/testing-library';
 import {modificationsStore} from 'modules/stores/modifications';
 import {Operations} from '../index';
 import {INSTANCE, Wrapper} from './mocks';
@@ -109,8 +104,7 @@ describe('Operations - Cancel Operation', () => {
     );
   });
 
-  // TODO: unskip when modification button is added
-  it.skip('should display helper modal when clicking modify instance, until user clicks do not show', async () => {
+  it('should display helper modal when clicking modify instance, until user clicks do not show', async () => {
     const {user} = render(
       <Operations
         instance={{...INSTANCE, state: 'INCIDENT'}}
@@ -135,13 +129,14 @@ describe('Operations - Cancel Operation', () => {
     await user.click(
       screen.getByRole('checkbox', {name: 'Do not show this message again'})
     );
-    await user.click(screen.getByTestId('continue-button'));
+    await user.click(screen.getByRole('button', {name: 'Continue'}));
 
-    await waitForElementToBeRemoved(() =>
-      screen.getByText(
+    expect(
+      screen.queryByText(
         'Process instance modification mode allows you to plan multiple modifications on a process instance.'
       )
-    );
+    ).not.toBeInTheDocument();
+
     expect(modificationsStore.state.status).toBe('enabled');
 
     act(() => {

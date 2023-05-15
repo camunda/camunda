@@ -27,8 +27,7 @@ describe('Operations - Buttons', () => {
     expect(
       screen.queryByTitle('Delete Instance instance_1')
     ).not.toBeInTheDocument();
-    // TODO: uncomment when modification button is added
-    // expect(screen.getByTitle('Modify Instance instance_1')).toBeInTheDocument();
+    expect(screen.getByTitle('Modify Instance instance_1')).toBeInTheDocument();
   });
 
   it('should render cancel and modify buttons if instance is running and does not have an incident', () => {
@@ -49,9 +48,7 @@ describe('Operations - Buttons', () => {
     expect(
       screen.queryByTitle('Delete Instance instance_1')
     ).not.toBeInTheDocument();
-    // TODO: uncomment when modification button is added
-
-    // expect(screen.getByTitle('Modify Instance instance_1')).toBeInTheDocument();
+    expect(screen.getByTitle('Modify Instance instance_1')).toBeInTheDocument();
   });
 
   it('should render delete button if instance is completed', () => {
@@ -73,11 +70,10 @@ describe('Operations - Buttons', () => {
       screen.queryByTitle('Cancel Instance instance_1')
     ).not.toBeInTheDocument();
     expect(screen.getByTitle('Delete Instance instance_1')).toBeInTheDocument();
-    // TODO: uncomment when modification button is added
 
-    // expect(
-    //   screen.queryByTitle('Modify Instance instance_1')
-    // ).not.toBeInTheDocument();
+    expect(
+      screen.queryByTitle('Modify Instance instance_1')
+    ).not.toBeInTheDocument();
   });
 
   it('should render delete button if instance is canceled', () => {
@@ -99,16 +95,12 @@ describe('Operations - Buttons', () => {
       screen.queryByTitle('Cancel Instance instance_1')
     ).not.toBeInTheDocument();
     expect(screen.getByTitle('Delete Instance instance_1')).toBeInTheDocument();
-
-    // TODO: uncomment when modification button is added
-
-    // expect(
-    //   screen.queryByTitle('Modify Instance instance_1')
-    // ).not.toBeInTheDocument();
+    expect(
+      screen.queryByTitle('Modify Instance instance_1')
+    ).not.toBeInTheDocument();
   });
 
-  // TODO: unskip when modification button is added
-  it.skip('should hide operation buttons in process instance modification mode', async () => {
+  it('should hide operation buttons in process instance modification mode', async () => {
     const {user} = render(
       <Operations
         instance={{...INSTANCE, state: 'INCIDENT'}}
@@ -157,8 +149,6 @@ describe('Operations - Buttons', () => {
     expect(
       screen.queryByTitle('Delete Instance instance_1')
     ).not.toBeInTheDocument();
-
-    // TODO: uncomment when modification button is added
 
     expect(
       screen.queryByTitle('Modify Instance instance_1')
