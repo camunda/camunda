@@ -5,16 +5,8 @@
  * except in compliance with the proprietary license.
  */
 
-import styled from 'styled-components';
-import {styles} from '@carbon/elements';
+@use '@carbon/styles/scss/reset'; // TODO: after #2773, this won't be necessary because we would be using it by default
 
-const Description = styled.p`
-  margin: 0;
-  ${styles.bodyShort01};
-`;
-
-const WarningContainer = styled.section`
-  margin-top: var(--cds-spacing-06);
-`;
-
-export {Description, WarningContainer};
+p {
+  margin: var(--cds-spacing-05) 0;
+}

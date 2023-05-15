@@ -9,6 +9,7 @@ import {Outlet} from 'react-router-dom';
 import {AppHeader} from './AppHeader';
 import {PageContent} from './styled';
 import {observer} from 'mobx-react';
+import 'index-carbon.scss';
 
 const Layout: React.FC = observer(() => {
   return (
