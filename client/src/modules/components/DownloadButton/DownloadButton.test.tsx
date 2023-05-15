@@ -55,8 +55,9 @@ it('invoke get with the provided href', async () => {
 it('invoke the retriever function when provided', () => {
   const retriever = jest.fn();
   const spy = jest.fn();
+  const {href, ...restOfProps} = props;
   const node = shallow(
-    <DownloadButton retriever={retriever} fileName="testName" {...props} mightFail={spy} />
+    <DownloadButton retriever={retriever} {...restOfProps} fileName="testName" mightFail={spy} />
   );
 
   node.find(Button).first().simulate('click');

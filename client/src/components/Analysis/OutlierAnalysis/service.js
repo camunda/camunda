@@ -5,25 +5,11 @@
  * except in compliance with the proprietary license.
  */
 
-import {get, formatQuery} from 'request';
+import {get} from 'request';
 
 export async function loadNodesOutliers(config) {
   const response = await get('api/analysis/flowNodeOutliers', config);
   return await response.json();
 }
 
-export async function loadDurationData(params) {
-  const response = await get('api/analysis/durationChart', params);
-  return await response.json();
-}
-
-export async function loadCommonOutliersVariables(params) {
-  const response = await get('api/analysis/significantOutlierVariableTerms', params);
-  return await response.json();
-}
-
-export function getInstancesDownloadUrl(query) {
-  return `api/analysis/significantOutlierVariableTerms/processInstanceIdsExport?${formatQuery(
-    query
-  )}`;
-}
+export {loadDurationData, loadCommonOutliersVariables, getInstancesDownloadUrl} from './service.ts';

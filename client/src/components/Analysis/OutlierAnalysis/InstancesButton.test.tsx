@@ -5,9 +5,9 @@
  * except in compliance with the proprietary license.
  */
 
-import React from 'react';
 import {shallow} from 'enzyme';
 
+import {User} from 'HOC';
 import {loadRawData} from 'services';
 import {DownloadButton} from 'components';
 
@@ -16,7 +16,7 @@ import {InstancesButton} from './InstancesButton';
 jest.mock('services', () => ({
   ...jest.requireActual('services'),
   formatters: {
-    formatFileName: (name) => name,
+    formatFileName: (name: string) => name,
   },
   loadRawData: jest.fn(),
 }));
@@ -30,12 +30,14 @@ const props = {
     processDefinitionVersions: ['1'],
     tenantIds: ['sales'],
   },
+  user: {} as User,
+  totalCount: 0,
 };
 
 it('invoke loadRawData on button Click', async () => {
   const node = shallow(<InstancesButton {...props} />);
 
-  await node.find(DownloadButton).prop('retriever')();
+  await node.find(DownloadButton).prop('retriever')?.();
 
   expect(loadRawData).toHaveBeenCalledWith({
     filter: [

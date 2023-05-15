@@ -5,18 +5,29 @@
  * except in compliance with the proprietary license.
  */
 
-import React from 'react';
+import {runLastEffect} from '__mocks__/react';
 import {shallow} from 'enzyme';
 
 import {VariablesTable} from './VariablesTable';
-
-import {loadCommonOutliersVariables} from './service';
+import {SelectedNode, loadCommonOutliersVariables} from './service';
 
 const selectedNode = {
-  id: 'test',
+  name: 'test',
   higherOutlier: {
     boundValue: 23,
   },
+} as SelectedNode;
+
+const props = {
+  config: {
+    processDefinitionKey: '',
+    processDefinitionVersions: [],
+    tenantIds: [],
+  },
+  getUser: jest.fn(),
+  refreshUser: jest.fn(),
+  totalCount: 0,
+  selectedNode: selectedNode,
 };
 
 jest.mock('./service', () => ({
@@ -34,20 +45,22 @@ jest.mock('./service', () => ({
 }));
 
 it('should Load common outliers variables on mount', async () => {
-  shallow(<VariablesTable config={{}} selectedNode={selectedNode} />);
+  shallow(<VariablesTable {...props} />);
+  runLastEffect();
 
   expect(loadCommonOutliersVariables).toHaveBeenCalled();
 });
 
 it('should render a table with correct data', async () => {
-  const node = shallow(<VariablesTable config={{}} selectedNode={selectedNode} />);
+  const node = shallow(<VariablesTable {...props} />);
+  runLastEffect();
   await node.update();
 
   expect(node).toMatchSnapshot();
 });
 
 it('should render a loading indicator while loading the data', async () => {
-  const node = shallow(<VariablesTable config={{}} selectedNode={selectedNode} />);
+  const node = shallow(<VariablesTable {...props} />);
 
   expect(node).toMatchSnapshot();
 });

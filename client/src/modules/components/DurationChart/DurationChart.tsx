@@ -5,40 +5,48 @@
  * except in compliance with the proprietary license.
  */
 
-import React, {useRef, useEffect, useCallback} from 'react';
-import {Chart} from 'chart.js';
+import {useRef, useEffect, useCallback} from 'react';
+import {Chart, ChartTypeRegistry, TooltipItem} from 'chart.js';
 
 import {t} from 'translation';
 import {formatters} from 'services';
+import {AnalysisDurationChartEntry} from 'types';
 
 import './DurationChart.scss';
 
 const {createDurationFormattingOptions, duration} = formatters;
 
-function DurationChart({data, colors}) {
+interface DurationChartProps {
+  data: AnalysisDurationChartEntry[];
+  colors: string[];
+}
+
+function DurationChart({data, colors}: DurationChartProps) {
   const canvas = useRef(null);
 
   const createTooltipTitle = useCallback(
-    (tooltipData) => {
+    (tooltipData: TooltipItem<keyof ChartTypeRegistry>[]) => {
       if (!tooltipData.length) {
         return;
       }
       let key = 'common.instance';
-      if (data[tooltipData[0].dataIndex].outlier) {
+      const idx = tooltipData[0]?.dataIndex;
+      if (idx && data[idx]?.outlier) {
         key = 'analysis.outlier.tooltip.outlier';
       }
 
-      const unitLabel = t(`${key}.label${+tooltipData[0].formattedValue !== 1 ? '-plural' : ''}`);
+      const unitLabel = t(`${key}.label${+tooltipData[0]!.formattedValue !== 1 ? '-plural' : ''}`);
 
-      return tooltipData[0].formattedValue + ' ' + unitLabel;
+      return tooltipData[0]!.formattedValue + ' ' + unitLabel;
     },
     [data]
   );
 
   useEffect(() => {
-    const maxDuration = data && data.length > 0 ? data[data.length - 1].key : 0;
+    const lastDataElement = data[data.length - 1];
+    const maxDuration = lastDataElement ? lastDataElement.key : 0;
 
-    const chart = new Chart(canvas.current, {
+    const chart = new Chart(canvas.current!, {
       type: 'bar',
       data: {
         labels: data.map(({key}) => key),
@@ -79,7 +87,7 @@ function DurationChart({data, colors}) {
           x: {
             title: {
               display: true,
-              text: t('analysis.outlier.detailsModal.axisLabels.duration'),
+              text: t('analysis.outlier.detailsModal.axisLabels.duration').toString(),
               font: {weight: 'bold'},
             },
             ticks: {
@@ -89,7 +97,7 @@ function DurationChart({data, colors}) {
           y: {
             title: {
               display: true,
-              text: t('analysis.outlier.detailsModal.axisLabels.instanceCount'),
+              text: t('analysis.outlier.detailsModal.axisLabels.instanceCount').toString(),
               font: {weight: 'bold'},
             },
           },

@@ -5,18 +5,28 @@
  * except in compliance with the proprietary license.
  */
 
-import React from 'react';
-
 import {CarbonModal as Modal, Tabs, DurationChart} from 'components';
 import {t} from 'translation';
-import {withUser} from 'HOC';
+import {WithUserProps, withUser} from 'HOC';
 
+import {AnalysisProcessDefinitionParameters, SelectedNode} from './service';
 import VariablesTable from './VariablesTable';
 import InstancesButton from './InstancesButton';
 
 import './OutlierDetailsModal.scss';
 
-export function OutlierDetailsModal({selectedNode, onClose, config, user}) {
+interface OutlierDetailsModalProps extends WithUserProps {
+  selectedNode: SelectedNode;
+  onClose: () => void;
+  config: AnalysisProcessDefinitionParameters;
+}
+
+export function OutlierDetailsModal({
+  selectedNode,
+  onClose,
+  config,
+  user,
+}: OutlierDetailsModalProps) {
   const {id, name, higherOutlier, data, totalCount} = selectedNode;
 
   return (

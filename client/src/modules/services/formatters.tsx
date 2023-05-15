@@ -5,8 +5,10 @@
  * except in compliance with the proprietary license.
  */
 
-import {FilterData} from 'types';
+import {Chart, Scale, Tick} from 'chart.js';
+
 import {t} from 'translation';
+import {FilterData} from 'types';
 
 export function getHighlightedText(
   text: string,
@@ -163,3 +165,75 @@ const timeUnits: Record<string, {value: number; abbreviation: string; label: str
   months: {value: 30 * 24 * 60 * 60 * 1000, abbreviation: 'm', label: 'month'},
   years: {value: 12 * 30 * 24 * 60 * 60 * 1000, abbreviation: 'y', label: 'year'},
 };
+
+interface DurationFormattingOptions {
+  callback: (this: Scale, value: string | number, index: number, ticks: Tick[]) => string;
+  stepSize: number;
+}
+
+export function createDurationFormattingOptions(
+  targetLine: number | null,
+  dataMinStep: number,
+  logScale?: boolean
+): DurationFormattingOptions | undefined {
+  // since the duration is given in milliseconds, chart.js cannot create nice y axis
+  // ticks. So we define our own set of possible stepSizes and find one that the maximum
+  // value of the dataset fits into or the maximum target line value if it is defined.
+  const targetLineMinStep = targetLine ? targetLine : 0;
+  const minimumStepSize = Math.max(targetLineMinStep, dataMinStep) / 10;
+
+  const steps: {value: number; unit: string; base: number}[] = [
+    {value: 1, unit: 'ms', base: 1},
+    {value: 10, unit: 'ms', base: 1},
+    {value: 100, unit: 'ms', base: 1},
+    {value: 1000, unit: 's', base: 1000},
+    {value: 1000 * 10, unit: 's', base: 1000},
+    {value: 1000 * 60, unit: 'min', base: 1000 * 60},
+    {value: 1000 * 60 * 10, unit: 'min', base: 1000 * 60},
+    {value: 1000 * 60 * 60, unit: 'h', base: 1000 * 60 * 60},
+    {value: 1000 * 60 * 60 * 6, unit: 'h', base: 1000 * 60 * 60},
+    {value: 1000 * 60 * 60 * 24, unit: 'd', base: 1000 * 60 * 60 * 24},
+    {value: 1000 * 60 * 60 * 24 * 7, unit: 'wk', base: 1000 * 60 * 60 * 24 * 7},
+    {value: 1000 * 60 * 60 * 24 * 30, unit: 'm', base: 1000 * 60 * 60 * 24 * 30},
+    {value: 1000 * 60 * 60 * 24 * 30 * 6, unit: 'm', base: 1000 * 60 * 60 * 24 * 30},
+    {value: 1000 * 60 * 60 * 24 * 30 * 12, unit: 'y', base: 1000 * 60 * 60 * 24 * 30 * 12},
+    {value: 10 * 1000 * 60 * 60 * 24 * 30 * 12, unit: 'y', base: 1000 * 60 * 60 * 24 * 30 * 12}, //10s of years
+    {value: 100 * 1000 * 60 * 60 * 24 * 30 * 12, unit: 'y', base: 1000 * 60 * 60 * 24 * 30 * 12}, //100s of years
+  ];
+
+  const niceStepSize = steps.find(({value}) => value > minimumStepSize);
+  if (!niceStepSize) {
+    return;
+  }
+
+  return {
+    callback: function (this: Scale, value: string | number, index: number, ticks: Tick[]) {
+      let durationMs = Number(value);
+
+      if (this.type === 'category') {
+        const labels = this.getLabels();
+        durationMs = Number(labels[Number(value)]);
+      }
+
+      if (logScale) {
+        const logValue = Chart.defaults.scales.logarithmic.ticks.callback.call(
+          this,
+          value,
+          index,
+          ticks
+        );
+
+        if (!logValue) {
+          return '';
+        }
+      }
+
+      return +(durationMs / niceStepSize.base).toFixed(2) + niceStepSize.unit;
+    },
+    stepSize: niceStepSize.value,
+  };
+}
+
+export function formatFileName(name: string) {
+  return name.replace(/[^a-zA-Z0-9-_.]/gi, '_').toLowerCase();
+}

@@ -444,3 +444,9 @@ export type FilterState =
   | BeforeFilterState
   | AfterFilterState
   | CustomFilterState;
+
+export interface AnalysisDurationChartEntry {
+  key: number;
+  value: number;
+  outlier: boolean;
+}

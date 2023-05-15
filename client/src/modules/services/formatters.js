@@ -6,10 +6,11 @@
  */
 
 import {parseISO, isValid} from 'date-fns';
-import {Chart} from 'chart.js';
 
 import {format} from 'dates';
 import {t} from 'translation';
+
+export {createDurationFormattingOptions, formatFileName} from './formatters.tsx';
 
 const scaleUnits = [
   {exponent: 18, label: 'quintillion'},
@@ -123,65 +124,6 @@ export function formatReportResult(data, result) {
   return formattedResult;
 }
 
-export function createDurationFormattingOptions(targetLine, dataMinStep, logScale) {
-  // since the duration is given in milliseconds, chart.js cannot create nice y axis
-  // ticks. So we define our own set of possible stepSizes and find one that the maximum
-  // value of the dataset fits into or the maximum target line value if it is defined.
-
-  const targetLineMinStep = targetLine ? targetLine : 0;
-  const minimumStepSize = Math.max(targetLineMinStep, dataMinStep) / 10;
-
-  const steps = [
-    {value: 1, unit: 'ms', base: 1},
-    {value: 10, unit: 'ms', base: 1},
-    {value: 100, unit: 'ms', base: 1},
-    {value: 1000, unit: 's', base: 1000},
-    {value: 1000 * 10, unit: 's', base: 1000},
-    {value: 1000 * 60, unit: 'min', base: 1000 * 60},
-    {value: 1000 * 60 * 10, unit: 'min', base: 1000 * 60},
-    {value: 1000 * 60 * 60, unit: 'h', base: 1000 * 60 * 60},
-    {value: 1000 * 60 * 60 * 6, unit: 'h', base: 1000 * 60 * 60},
-    {value: 1000 * 60 * 60 * 24, unit: 'd', base: 1000 * 60 * 60 * 24},
-    {value: 1000 * 60 * 60 * 24 * 7, unit: 'wk', base: 1000 * 60 * 60 * 24 * 7},
-    {value: 1000 * 60 * 60 * 24 * 30, unit: 'm', base: 1000 * 60 * 60 * 24 * 30},
-    {value: 1000 * 60 * 60 * 24 * 30 * 6, unit: 'm', base: 1000 * 60 * 60 * 24 * 30},
-    {value: 1000 * 60 * 60 * 24 * 30 * 12, unit: 'y', base: 1000 * 60 * 60 * 24 * 30 * 12},
-    {value: 10 * 1000 * 60 * 60 * 24 * 30 * 12, unit: 'y', base: 1000 * 60 * 60 * 24 * 30 * 12}, //10s of years
-    {value: 100 * 1000 * 60 * 60 * 24 * 30 * 12, unit: 'y', base: 1000 * 60 * 60 * 24 * 30 * 12}, //100s of years
-  ];
-
-  const niceStepSize = steps.find(({value}) => value > minimumStepSize);
-  if (!niceStepSize) {
-    return;
-  }
-
-  return {
-    callback: function (value, ...args) {
-      let durationMs = value;
-
-      if (this.type === 'category') {
-        const labels = this.getLabels();
-        durationMs = Number(labels[value]);
-      }
-
-      if (logScale) {
-        const logValue = Chart.defaults.scales.logarithmic.ticks.callback.call(
-          this,
-          value,
-          ...args
-        );
-
-        if (!logValue) {
-          return '';
-        }
-      }
-
-      return +(durationMs / niceStepSize.base).toFixed(2) + niceStepSize.unit;
-    },
-    stepSize: niceStepSize.value,
-  };
-}
-
 function determineUnit(unit, resultData) {
   if (unit === 'automatic') {
     return determineUnitForAutomaticIntervalSelection(resultData);
@@ -277,10 +219,6 @@ export function formatTenantName({id, name}) {
   }
 
   return name || id;
-}
-
-export function formatFileName(name) {
-  return name.replace(/[^a-zA-Z0-9-_.]/gi, '_').toLowerCase();
 }
 
 export function formatLabel(label, numbersOnly) {

@@ -5,11 +5,13 @@
  * except in compliance with the proprietary license.
  */
 
-import React from 'react';
 import {shallow} from 'enzyme';
+
+import {AnalysisDurationChartEntry} from 'types';
 
 import VariablesTable from './VariablesTable';
 import {OutlierDetailsModal} from './OutlierDetailsModal';
+import {SelectedNode, AnalysisProcessDefinitionParameters} from './service';
 
 const selectedNode = {
   name: 'test',
@@ -18,13 +20,21 @@ const selectedNode = {
     relation: 1.1,
   },
   data: [
-    {key: '1', outlier: false},
-    {key: '2', outlier: true},
-  ],
+    {key: 1, value: 1, outlier: false},
+    {key: 2, value: 2, outlier: true},
+  ] as AnalysisDurationChartEntry[],
+} as SelectedNode;
+
+const props = {
+  selectedNode,
+  onClose: jest.fn(),
+  config: {} as AnalysisProcessDefinitionParameters,
+  getUser: jest.fn(),
+  refreshUser: jest.fn(),
 };
 
 it('should pass outlier data to DurationChart and VariablesTable', () => {
-  const node = shallow(<OutlierDetailsModal selectedNode={selectedNode} />);
+  const node = shallow(<OutlierDetailsModal {...props} />);
 
   expect(node.find('DurationChart').prop('data')).toEqual(selectedNode.data);
   expect(node.find('DurationChart').prop('colors')).toEqual(['#eeeeee', '#1991c8']);

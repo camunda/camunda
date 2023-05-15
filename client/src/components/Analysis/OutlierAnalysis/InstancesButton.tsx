@@ -5,13 +5,23 @@
  * except in compliance with the proprietary license.
  */
 
-import React from 'react';
-
+import {User} from 'HOC';
 import {Icon, DownloadButton} from 'components';
 import {loadRawData, formatters} from 'services';
 import {t} from 'translation';
 
-export function InstancesButton({id, name, config, value, totalCount, user}) {
+import {AnalysisProcessDefinitionParameters} from './service';
+
+interface InstancesButtonProps {
+  id: string;
+  name: string;
+  config: AnalysisProcessDefinitionParameters;
+  user?: User;
+  value: number;
+  totalCount: number;
+}
+
+export function InstancesButton({id, name, config, value, totalCount, user}: InstancesButtonProps) {
   return (
     <DownloadButton
       retriever={() =>

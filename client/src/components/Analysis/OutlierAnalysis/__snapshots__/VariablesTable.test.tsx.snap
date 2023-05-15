@@ -7,7 +7,6 @@ exports[`should render a loading indicator while loading the data 1`] = `
   <Table
     body={Array []}
     disablePagination={true}
-    foot={Array []}
     head={Array []}
     noData={<LoadingIndicator />}
   />
@@ -30,6 +29,7 @@ exports[`should render a table with correct data 1`] = `
             instances
             <ComponentErrorHandler
               fileName="department_Outliers.csv"
+              totalCount={0}
             >
               <Icon
                 type="save"
@@ -37,14 +37,13 @@ exports[`should render a table with correct data 1`] = `
               Instance IDs
             </ComponentErrorHandler>
           </div>,
-          1,
-          10,
+          "1",
+          "10",
           "department=engineering",
         ],
       ]
     }
     disablePagination={true}
-    foot={Array []}
     head={
       Array [
         "Number of Outlier Instances",

@@ -5,7 +5,8 @@
  * except in compliance with the proprietary license.
  */
 
-import React, {useState, useEffect, MouseEvent, MouseEventHandler} from 'react';
+import {useState, useEffect, ComponentPropsWithoutRef} from 'react';
+import {Button} from '@carbon/react';
 
 import {Button as LegacyButton, CarbonModal as Modal} from 'components';
 import {
@@ -21,20 +22,27 @@ import {showError} from 'notifications';
 import {getExportCsvLimit} from 'config';
 
 import {t} from 'translation';
-import {Button} from '@carbon/react';
 
-export interface DownloadButtonProps extends WithUserProps, WithErrorHandlingProps, WithDocsProps {
-  href: string;
-  fileName?: string;
-  onClick?: MouseEventHandler<HTMLButtonElement>;
-  retriever?: () => Promise<Blob>;
+type LinkProps = {href: string; fileName?: string; retriever?: never};
+type RetrieverProps = {
+  retriever: () => Promise<Blob>;
+  fileName: string;
+  href?: never;
+};
+
+interface CommonProps
+  extends WithUserProps,
+    WithErrorHandlingProps,
+    WithDocsProps,
+    ComponentPropsWithoutRef<'button'> {
   totalCount: number;
 }
+
+export type DownloadButtonProps = CommonProps & (LinkProps | RetrieverProps);
 
 export function DownloadButton({
   href,
   fileName,
-  onClick,
   mightFail,
   error,
   resetError,
@@ -56,14 +64,23 @@ export function DownloadButton({
     })();
   }, []);
 
-  function triggerDownload(evt: MouseEvent<HTMLButtonElement>) {
-    onClick?.(evt);
+  function getDownloadedFileName() {
+    if (retriever) {
+      return fileName;
+    }
+
+    if (href) {
+      return fileName || href.substring(href.lastIndexOf('/') + 1);
+    }
+  }
+
+  function triggerDownload() {
     mightFail(
       retriever ? retriever() : getData(href),
       (data) => {
         const hiddenElement = document.createElement('a');
         hiddenElement.href = window.URL.createObjectURL(data);
-        hiddenElement.download = fileName || href.substring(href.lastIndexOf('/') + 1);
+        hiddenElement.download = getDownloadedFileName()!;
         hiddenElement.click();
         setModalOpen(false);
       },
@@ -83,7 +100,7 @@ export function DownloadButton({
     <>
       <LegacyButton
         {...props}
-        onClick={(evt) => (totalCount > exportLimit ? setModalOpen(true) : triggerDownload(evt))}
+        onClick={() => (totalCount > exportLimit ? setModalOpen(true) : triggerDownload())}
       />
       <Modal open={modalOpen} onClose={closeModal}>
         <Modal.Header>{t('report.downloadCSV')}</Modal.Header>

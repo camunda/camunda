@@ -41,6 +41,7 @@ export {DatePicker} from './DatePicker';
 export {DateRangeInput} from './DateRangeInput';
 export {SearchInput} from './SearchInput';
 export {Checklist} from './Checklist';
+export {DurationChart} from './DurationChart';
 
 export type {InputProps} from './Input';
 export type {LabeledProps} from './Labeled';

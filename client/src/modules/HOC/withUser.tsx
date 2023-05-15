@@ -57,7 +57,7 @@ export function UserProvider({children}: {children: ReactNode}): JSX.Element {
 }
 
 export default function withuser<T extends object>(Component: ComponentType<T>) {
-  return (props: Omit<T, keyof WithUserProps>) => (
+  return (props: Omit<T, keyof WithUserProps> & Partial<WithUserProps>) => (
     <Component {...useContext(UserContext)} {...(props as T)} />
   );
 }
