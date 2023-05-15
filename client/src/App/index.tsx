@@ -47,6 +47,20 @@ const CarbonProcesses = loadable(() => import('./Carbon/Processes/index'), {
   resolveComponent: (components) => components.Processes,
 });
 
+const CarbonProcessInstance = loadable(
+  () => import('./Carbon/ProcessInstance/index'),
+  {
+    resolveComponent: (components) => components.ProcessInstance,
+  }
+);
+
+const CarbonDecisionInstance = loadable(
+  () => import('./Carbon/DecisionInstance/index'),
+  {
+    resolveComponent: (components) => components.DecisionInstance,
+  }
+);
+
 const App: React.FC = () => {
   useEffect(() => {
     tracking.track({
@@ -107,7 +121,7 @@ const App: React.FC = () => {
               />
               <Route
                 path={CarbonPaths.processInstance()}
-                element={<div>Carbon - Process Instance</div>}
+                element={<CarbonProcessInstance />}
               />
               <Route
                 path={CarbonPaths.decisions()}
@@ -115,7 +129,7 @@ const App: React.FC = () => {
               />
               <Route
                 path={CarbonPaths.decisionInstance()}
-                element={<div>Carbon - Decision Instance</div>}
+                element={<CarbonDecisionInstance />}
               />
             </Route>
           </Routes>
