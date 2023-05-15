@@ -105,6 +105,8 @@ class StreamIntegrationTest {
                           .createRemoteStreamServer(
                               serverService,
                               TestSerializableData::new,
+                              // reference the errorHandler indirectly to allow changing its value
+                              // during tests
                               (e, d) -> errorHandler.handleError(e, d),
                               RemoteStreamMetrics.noop());
               closeables.add(
