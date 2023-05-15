@@ -39,9 +39,7 @@ final class SegmentLoader {
   }
 
   Segment createSegment(
-      final Path segmentFile,
-      final SegmentDescriptor descriptor,
-      final JournalIndex journalIndex) {
+      final Path segmentFile, final SegmentDescriptor descriptor, final JournalIndex journalIndex) {
     final MappedByteBuffer mappedSegment;
 
     try {
