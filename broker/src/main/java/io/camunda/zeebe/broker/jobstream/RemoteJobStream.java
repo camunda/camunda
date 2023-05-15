@@ -9,7 +9,6 @@ package io.camunda.zeebe.broker.jobstream;
 
 import io.camunda.zeebe.engine.processing.streamprocessor.ActivatedJob;
 import io.camunda.zeebe.engine.processing.streamprocessor.JobActivationProperties;
-import io.camunda.zeebe.engine.processing.streamprocessor.JobStreamer.ErrorHandler;
 import io.camunda.zeebe.engine.processing.streamprocessor.JobStreamer.JobStream;
 import io.camunda.zeebe.transport.stream.api.RemoteStream;
 
@@ -27,7 +26,7 @@ final class RemoteJobStream implements JobStream {
   }
 
   @Override
-  public void push(final ActivatedJob job, final ErrorHandler errorHandler) {
-    remoteStream.push(job, errorHandler::handleError);
+  public void push(final ActivatedJob job) {
+    remoteStream.push(job);
   }
 }

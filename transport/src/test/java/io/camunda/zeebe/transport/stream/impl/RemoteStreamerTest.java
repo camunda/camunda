@@ -38,7 +38,8 @@ final class RemoteStreamerTest {
       new RemoteStreamRegistry<>(RemoteStreamMetrics.noop());
 
   private final RemoteStreamerImpl<TestMetadata, TestPayload> streamer =
-      new RemoteStreamerImpl<>(communicationService, registry, RemoteStreamMetrics.noop());
+      new RemoteStreamerImpl<>(
+          communicationService, registry, (e, d) -> {}, RemoteStreamMetrics.noop());
 
   @RegisterExtension
   private final ControlledActorSchedulerExtension scheduler =
@@ -85,7 +86,7 @@ final class RemoteStreamerTest {
 
     // when
     final var stream = streamer.streamFor(type).orElseThrow();
-    stream.push(payload, (job, error) -> {});
+    stream.push(payload);
     scheduler.workUntilDone();
 
     // then

@@ -9,6 +9,7 @@ package io.camunda.zeebe.broker.bootstrap;
 
 import io.camunda.zeebe.broker.jobstream.JobStreamMetrics;
 import io.camunda.zeebe.broker.jobstream.JobStreamService;
+import io.camunda.zeebe.broker.jobstream.RemoteJobStreamErrorHandlerService;
 import io.camunda.zeebe.broker.jobstream.RemoteJobStreamer;
 import io.camunda.zeebe.engine.processing.streamprocessor.ActivatedJob;
 import io.camunda.zeebe.engine.processing.streamprocessor.JobActivationProperties;
@@ -25,7 +26,6 @@ import org.agrona.concurrent.UnsafeBuffer;
  * Sets up the {@link JobStreamService}, which manages the lifecycle of the job specific stream API
  * remoteStreamService, pusher, and registry.
  */
-@SuppressWarnings("resource")
 public final class JobStreamServiceStep extends AbstractBrokerStartupStep {
 
   @Override
@@ -34,29 +34,47 @@ public final class JobStreamServiceStep extends AbstractBrokerStartupStep {
       final ConcurrencyControl concurrencyControl,
       final ActorFuture<BrokerStartupContext> startupFuture) {
     final var clusterServices = brokerStartupContext.getClusterServices();
+    // TODO: replace the JobStreamErrorHandler implementation here
+    final var errorHandlerService =
+        new RemoteJobStreamErrorHandlerService(
+            (job, error, builder) -> {}, brokerStartupContext.getBrokerInfo().getNodeId());
+    final var scheduler = brokerStartupContext.getActorSchedulingService();
     final RemoteStreamService<JobActivationProperties, ActivatedJob> remoteStreamService =
-        new TransportFactory(brokerStartupContext.getActorSchedulingService())
+        new TransportFactory(scheduler)
             .createRemoteStreamServer(
                 clusterServices.getCommunicationService(),
                 DummyActivationProperties::new,
+                errorHandlerService,
                 new JobStreamMetrics());
+    final var errorHandlerStarted = scheduler.submitActor(errorHandlerService);
 
-    remoteStreamService
-        .start(brokerStartupContext.getActorSchedulingService(), concurrencyControl)
-        .onComplete(
-            (streamer, error) -> {
-              if (error != null) {
-                startupFuture.completeExceptionally(error);
-              } else {
-                final var jobStreamService =
-                    new JobStreamService(
-                        remoteStreamService,
-                        new RemoteJobStreamer(streamer, clusterServices.getEventService()));
-                clusterServices.getMembershipService().addListener(remoteStreamService);
-                brokerStartupContext.setJobStreamService(jobStreamService);
-                startupFuture.complete(brokerStartupContext);
-              }
-            });
+    errorHandlerStarted.onComplete(
+        (ok, err) -> {
+          if (err != null) {
+            startupFuture.completeExceptionally(err);
+            return;
+          }
+
+          remoteStreamService
+              .start(scheduler, concurrencyControl)
+              .onComplete(
+                  (streamer, error) -> {
+                    if (error != null) {
+                      startupFuture.completeExceptionally(error);
+                      return;
+                    }
+
+                    final var jobStreamService =
+                        new JobStreamService(
+                            remoteStreamService,
+                            new RemoteJobStreamer(streamer, clusterServices.getEventService()),
+                            errorHandlerService);
+                    clusterServices.getMembershipService().addListener(remoteStreamService);
+                    brokerStartupContext.addPartitionListener(errorHandlerService);
+                    brokerStartupContext.setJobStreamService(jobStreamService);
+                    startupFuture.complete(brokerStartupContext);
+                  });
+        });
   }
 
   @Override
@@ -65,7 +83,14 @@ public final class JobStreamServiceStep extends AbstractBrokerStartupStep {
       final ConcurrencyControl concurrencyControl,
       final ActorFuture<BrokerStartupContext> shutdownFuture) {
     final var service = brokerShutdownContext.getJobStreamService();
+
     if (service != null) {
+      brokerShutdownContext
+          .getClusterServices()
+          .getMembershipService()
+          .removeListener(service.remoteStreamService());
+      brokerShutdownContext.removePartitionListener(service.errorHandlerService());
+
       service
           .closeAsync(concurrencyControl)
           .onComplete(

@@ -8,7 +8,7 @@
 package io.camunda.zeebe.transport.stream.impl;
 
 import io.atomix.cluster.MemberId;
-import io.camunda.zeebe.transport.stream.api.RemoteStream.ErrorHandler;
+import io.camunda.zeebe.transport.stream.api.RemoteStreamErrorHandler;
 import io.camunda.zeebe.transport.stream.api.RemoteStreamMetrics;
 import io.camunda.zeebe.transport.stream.impl.AggregatedRemoteStream.StreamId;
 import io.camunda.zeebe.transport.stream.impl.messages.PushStreamRequest;
@@ -33,13 +33,13 @@ final class RemoteStreamPusher<P extends BufferWriter> {
 
   RemoteStreamPusher(
       final Transport transport, final Executor executor, final RemoteStreamMetrics metrics) {
-    this.metrics = metrics;
+    this.metrics = Objects.requireNonNull(metrics, "must specify remote stream metrics");
     this.transport = Objects.requireNonNull(transport, "must provide a network transport");
     this.executor = Objects.requireNonNull(executor, "must provide an asynchronous executor");
   }
 
   public void pushAsync(
-      final P payload, final ErrorHandler<P> errorHandler, final StreamId streamId) {
+      final P payload, final RemoteStreamErrorHandler<P> errorHandler, final StreamId streamId) {
     Objects.requireNonNull(payload, "must specify a payload");
     Objects.requireNonNull(errorHandler, "must specify a error handler");
 
@@ -47,8 +47,8 @@ final class RemoteStreamPusher<P extends BufferWriter> {
         () -> push(payload, instrumentingErrorHandler(errorHandler, streamId), streamId));
   }
 
-  private ErrorHandler<P> instrumentingErrorHandler(
-      final ErrorHandler<P> errorHandler, final StreamId streamId) {
+  private RemoteStreamErrorHandler<P> instrumentingErrorHandler(
+      final RemoteStreamErrorHandler<P> errorHandler, final StreamId streamId) {
     return (error, payload) -> {
       if (error != null) {
         metrics.pushFailed();
@@ -58,7 +58,8 @@ final class RemoteStreamPusher<P extends BufferWriter> {
     };
   }
 
-  private void push(final P payload, final ErrorHandler<P> errorHandler, final StreamId streamId) {
+  private void push(
+      final P payload, final RemoteStreamErrorHandler<P> errorHandler, final StreamId streamId) {
     final var request = new PushStreamRequest().streamId(streamId.streamId()).payload(payload);
     try {
       transport
@@ -70,7 +71,8 @@ final class RemoteStreamPusher<P extends BufferWriter> {
     }
   }
 
-  private void onPush(final P payload, final ErrorHandler<P> errorHandler, final Throwable error) {
+  private void onPush(
+      final P payload, final RemoteStreamErrorHandler<P> errorHandler, final Throwable error) {
     if (error != null) {
       errorHandler.handleError(error, payload);
     } else {

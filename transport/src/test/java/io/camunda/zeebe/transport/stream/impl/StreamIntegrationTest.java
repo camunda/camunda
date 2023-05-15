@@ -15,6 +15,7 @@ import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.scheduler.testing.TestActorFuture;
 import io.camunda.zeebe.transport.TransportFactory;
 import io.camunda.zeebe.transport.stream.api.NoSuchStreamException;
+import io.camunda.zeebe.transport.stream.api.RemoteStreamErrorHandler;
 import io.camunda.zeebe.transport.stream.api.RemoteStreamMetrics;
 import io.camunda.zeebe.transport.stream.api.RemoteStreamService;
 import io.camunda.zeebe.transport.stream.api.RemoteStreamer;
@@ -36,14 +37,15 @@ import org.junit.jupiter.api.Test;
 /** Tests end-to-end stream management from client to server */
 class StreamIntegrationTest {
 
+  private final List<AutoCloseable> closeables = new ArrayList<>();
+
   private ClientStreamServiceImpl<TestSerializableData> clientStreamer;
   private RemoteStreamer<TestSerializableData, TestSerializableData> remoteStreamer;
 
   private final DirectBuffer streamType = BufferUtil.wrapString("foo");
   private final TestSerializableData metadata = new TestSerializableData(1);
   private ActorScheduler actorScheduler;
-
-  private final List<AutoCloseable> closeables = new ArrayList<>();
+  private RemoteStreamErrorHandler<TestSerializableData> errorHandler = (e, d) -> {};
 
   @BeforeEach
   void setup() {
@@ -101,7 +103,12 @@ class StreamIntegrationTest {
                   remoteStreamService =
                       new TransportFactory(actorScheduler)
                           .createRemoteStreamServer(
-                              serverService, TestSerializableData::new, RemoteStreamMetrics.noop());
+                              serverService,
+                              TestSerializableData::new,
+                              // reference the errorHandler indirectly to allow changing its value
+                              // during tests
+                              (e, d) -> errorHandler.handleError(e, d),
+                              RemoteStreamMetrics.noop());
               closeables.add(
                   () -> testActor.call(() -> remoteStreamService.closeAsync(testActor)).join());
               return remoteStreamService.start(actorScheduler, testActor);
@@ -150,23 +157,23 @@ class StreamIntegrationTest {
   @Test
   void shouldReturnErrorWhenClientStreamIsClosed() throws InterruptedException {
     // given
+    final AtomicReference<Throwable> error = new AtomicReference<>();
+    final CountDownLatch latch = new CountDownLatch(1);
     final var clientStreamId =
         clientStreamer.add(streamType, metadata, p -> TestActorFuture.completedFuture(null)).join();
     Awaitility.await().until(() -> remoteStreamer.streamFor(streamType).isPresent());
     final var serverStream = remoteStreamer.streamFor(streamType).orElseThrow();
+    errorHandler =
+        (e, p) -> {
+          error.set(e);
+          latch.countDown();
+        };
 
     // when
     clientStreamer.remove(clientStreamId);
 
-    final AtomicReference<Throwable> error = new AtomicReference<>();
-    final CountDownLatch latch = new CountDownLatch(1);
     // Use serverStream obtained before stream is removed
-    serverStream.push(
-        new TestSerializableData(100),
-        (e, p) -> {
-          error.set(e);
-          latch.countDown();
-        });
+    serverStream.push(new TestSerializableData(100));
 
     // then
     latch.await();
@@ -174,7 +181,7 @@ class StreamIntegrationTest {
   }
 
   private void pushPayload(final TestSerializableData data) {
-    remoteStreamer.streamFor(streamType).orElseThrow().push(data, (p, e) -> {});
+    remoteStreamer.streamFor(streamType).orElseThrow().push(data);
   }
 
   private static final class TestActor extends Actor {}

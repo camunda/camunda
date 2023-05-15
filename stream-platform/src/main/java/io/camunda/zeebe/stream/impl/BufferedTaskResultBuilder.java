@@ -23,11 +23,11 @@ import io.camunda.zeebe.stream.impl.records.RecordBatch;
  * task execution the {@link #build()} will turn the result into a immutable {@link TaskResult},
  * which allows to process the result further.
  */
-final class BufferedTaskResultBuilder implements TaskResultBuilder {
+public final class BufferedTaskResultBuilder implements TaskResultBuilder {
 
   private final MutableRecordBatch mutableRecordBatch;
 
-  BufferedTaskResultBuilder(final RecordBatchSizePredicate predicate) {
+  public BufferedTaskResultBuilder(final RecordBatchSizePredicate predicate) {
     mutableRecordBatch = new RecordBatch(predicate);
   }
 
