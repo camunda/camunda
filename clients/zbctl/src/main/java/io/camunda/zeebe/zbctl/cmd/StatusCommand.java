@@ -7,26 +7,24 @@
  */
 package io.camunda.zeebe.zbctl.cmd;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.ObjectWriter;
-import io.camunda.zeebe.client.api.response.Topology;
 import io.camunda.zeebe.zbctl.mixin.ClientMixin;
+import io.camunda.zeebe.zbctl.mixin.OutputMixin;
+import java.io.BufferedOutputStream;
 import java.util.concurrent.Callable;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Mixin;
 
 @Command(name = "status", description = "Checks the current status of the cluster")
 public final class StatusCommand implements Callable<Integer> {
-  private static final ObjectWriter JSON_WRITER =
-      new ObjectMapper().writerWithDefaultPrettyPrinter().forType(Topology.class);
-
   @Mixin private ClientMixin clientMixin;
+  @Mixin private OutputMixin outputMixin;
 
   @Override
   public Integer call() throws Exception {
-    try (final var client = clientMixin.client()) {
+    try (final var client = clientMixin.client();
+        final var output = new BufferedOutputStream(System.out)) {
       final var topology = client.newTopologyRequest().send().join();
-      System.out.println(JSON_WRITER.writeValueAsString(topology));
+      outputMixin.formatter().write(output, topology);
     }
 
     return 0;

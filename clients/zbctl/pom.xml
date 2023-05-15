@@ -29,23 +29,7 @@
       <artifactId>zeebe-client-java</artifactId>
     </dependency>
 
-    <!-- GraalVM native substitutions -->
-    <dependency>
-      <groupId>org.graalvm.nativeimage</groupId>
-      <artifactId>svm</artifactId>
-      <version>22.3.2</version>
-      <scope>provided</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>org.graalvm.sdk</groupId>
-      <artifactId>graal-sdk</artifactId>
-      <version>${version.graalsdk}</version>
-      <scope>provided</scope>
-    </dependency>
-
     <!-- CLI arguments/interface -->
-
     <dependency>
       <groupId>info.picocli</groupId>
       <artifactId>picocli</artifactId>
@@ -57,6 +41,21 @@
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-simple</artifactId>
       <version>${version.slf4j}</version>
+      <scope>runtime</scope>
+    </dependency>
+
+    <!-- JSON serialization -->
+    <dependency>
+      <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-core</artifactId>
+    </dependency>
+
+    <!-- GraalVM packages to add substitutions or build-time features -->
+    <dependency>
+      <groupId>org.graalvm.sdk</groupId>
+      <artifactId>graal-sdk</artifactId>
+      <version>${version.graalsdk}</version>
+      <scope>provided</scope>
     </dependency>
 
     <!-- Test dependencies -->
@@ -73,9 +72,47 @@
     </dependency>
   </dependencies>
 
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-surefire-plugin</artifactId>
+      </plugin>
+
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-dependency-plugin</artifactId>
+        <configuration>
+          <ignoredUnusedDeclaredDependencies>
+            <!-- used at runtime as the logger binding -->
+            <dependency>org.slf4j:slf4j-simple:jar</dependency>
+          </ignoredUnusedDeclaredDependencies>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
+
   <profiles>
     <profile>
       <id>native</id>
+
+      <properties>
+        <!-- by default, skip compressing the native executable; this will avoid requiring
+             everyone to have it present on their own machines -->
+        <skipUpx>true</skipUpx>
+        <!-- set this to false in order to run tests inside a native executable; this can be very
+             useful to detect reflection, resource ,or JNI issues -->
+        <skipNativeTests>true</skipNativeTests>
+      </properties>
+
+      <dependencies>
+        <dependency>
+          <groupId>org.graalvm.buildtools</groupId>
+          <artifactId>junit-platform-native</artifactId>
+          <version>${version.graalvm}</version>
+          <scope>test</scope>
+        </dependency>
+      </dependencies>
 
       <build>
         <plugins>
@@ -115,6 +152,7 @@
               </execution>
             </executions>
             <configuration>
+              <skipNativeTests>${skipNativeTests}</skipNativeTests>
               <mainClass>io.camunda.zeebe.zbctl.Application</mainClass>
               <imageName>${build.finalName}</imageName>
               <metadataRepository>
@@ -123,6 +161,8 @@
             </configuration>
           </plugin>
 
+          <!-- Compresses the final executable; this can easily cut down on executable size by
+               30% or more, at the cost of a very small startup overhead  -->
           <plugin>
             <groupId>org.codehaus.mojo</groupId>
             <artifactId>exec-maven-plugin</artifactId>
@@ -135,6 +175,7 @@
               </execution>
             </executions>
             <configuration>
+              <skip>${skipUpx}</skip>
               <executable>upx</executable>
               <arguments>
                 <argument>-9</argument>
