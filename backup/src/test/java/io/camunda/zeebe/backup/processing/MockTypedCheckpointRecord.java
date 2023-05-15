@@ -68,6 +68,11 @@ record MockTypedCheckpointRecord(
   }
 
   @Override
+  public int getRecordVersion() {
+    return 1;
+  }
+
+  @Override
   public ValueType getValueType() {
     return ValueType.CHECKPOINT;
   }

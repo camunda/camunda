@@ -140,6 +140,7 @@
     <!-- populated when RecordType is COMMAND_REJECTION -->
     <field name="rejectionType" id="7" type="RejectionType"/>
     <field name="brokerVersion" id="9" type="Version" sinceVersion="2" presence="optional"/>
+    <field name="recordVersion" id="10" type="uint16" sinceVersion="3" presence="optional"/>
     <!-- populated when RecordType is COMMAND_REJECTION, UTF-8-encoded String -->
     <data name="rejectionReason" id="8" type="varDataEncoding"/>
   </sbe:message>
