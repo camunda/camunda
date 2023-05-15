@@ -188,8 +188,8 @@ public final class AtomixLogStorageRule extends ExternalResource
     }
 
     raftStorage = builder.apply(buildDefaultStorage()).withDirectory(directory).build();
-    raftLog = raftStorage.openLog();
     metaStore = raftStorage.openMetaStore();
+    raftLog = raftStorage.openLog(metaStore);
 
     storage = spy(new AtomixLogStorage(this, this));
   }

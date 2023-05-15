@@ -159,6 +159,7 @@ class SegmentsManagerTest {
     journal.append(2, journalFactory.entryData()).index();
     final var firstSegmentFile = journal.getFirstSegment().file().file();
     journal.close();
+    journalFactory.metaStore().storeLastFlushedIndex(0);
 
     LogCorrupter.corruptRecord(firstSegmentFile, indexInFirstSegment);
 
@@ -191,9 +192,9 @@ class SegmentsManagerTest {
   void shouldHandleCrashOnResetAfterDeletionBeforeSegmentIsCreated() throws IOException {
     // given
     try (final var journal = openJournal()) {
-      journal.append(1, journalFactory.entry()).index();
-      journal.append(2, journalFactory.entry()).index();
-      journal.append(3, journalFactory.entry()).index();
+      journal.append(1, journalFactory.entryData()).index();
+      journal.append(2, journalFactory.entryData()).index();
+      journal.append(3, journalFactory.entryData()).index();
       journal.reset(10);
 
       // when - simulate "failure" by corrupting the descriptor
@@ -214,9 +215,9 @@ class SegmentsManagerTest {
   void shouldHandleCrashOnTruncateAfterDeletionBeforeSegmentIsCreated() {
     // given
     try (final var journal = openJournal()) {
-      journal.append(1, journalFactory.entry()).index();
-      final var index = journal.append(2, journalFactory.entry()).index();
-      journal.append(3, journalFactory.entry()).index();
+      journal.append(1, journalFactory.entryData()).index();
+      final var index = journal.append(2, journalFactory.entryData()).index();
+      journal.append(3, journalFactory.entryData()).index();
       journal.deleteAfter(index);
     }
 
@@ -230,8 +231,7 @@ class SegmentsManagerTest {
                 (channel, segmentSize) -> {
                   SegmentAllocator.fill().allocate(channel, segmentSize);
                   throw expectedRootCause;
-                },
-                Long.MIN_VALUE))) {
+                }))) {
       failingSegments.open();
       // will allocate the next segment
       failingSegments.getNextSegment();

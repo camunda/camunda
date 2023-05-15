@@ -16,7 +16,6 @@
  */
 package io.atomix.raft.metrics;
 
-import io.camunda.zeebe.util.VisibleForTesting;
 import io.prometheus.client.Counter;
 import io.prometheus.client.Gauge;
 import io.prometheus.client.Histogram;
@@ -96,7 +95,6 @@ public class RaftRoleMetrics extends RaftMetrics {
     heartbeatTime.observe(milliseconds / 1000f);
   }
 
-  @VisibleForTesting
   public static double getHeartbeatMissCount(final String partition) {
     return HEARTBEAT_MISS.labels(partition, partition).get();
   }

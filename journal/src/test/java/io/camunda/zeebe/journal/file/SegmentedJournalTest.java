@@ -365,7 +365,7 @@ class SegmentedJournalTest {
   @Test
   void shouldContinueAppendAfterDetectingPartiallyWrittenDescriptor() throws Exception {
     // given
-    final File dataFile = directory.toFile();
+    final File dataFile = getJournalDirectory();
     assertThat(dataFile.mkdirs()).isTrue();
     final File emptyLog = new File(dataFile, "journal-1.log");
     assertThat(emptyLog.createNewFile()).isTrue();
@@ -382,12 +382,16 @@ class SegmentedJournalTest {
     assertThat(reader.hasNext()).isFalse();
   }
 
+  private File getJournalDirectory() {
+    return directory.resolve("data").toFile();
+  }
+
   @Test
   void shouldContinueWritingAfterDetectingCorruptedDescriptorWithOutAckEntries() throws Exception {
     // given
     var journal = openJournal(1);
     journal.close();
-    final File dataFile = directory.toFile();
+    final File dataFile = getJournalDirectory();
     final File logFile =
         Objects.requireNonNull(dataFile.listFiles(f -> f.getName().endsWith(".log")))[0];
     LogCorrupter.corruptDescriptor(logFile);
@@ -424,7 +428,7 @@ class SegmentedJournalTest {
     journal.close();
     journalFactory.metaStore().storeLastFlushedIndex(lastFlushedIndex);
 
-    final File dataFile = directory.resolve("data").toFile();
+    final File dataFile = getJournalDirectory();
     final File logFile =
         Objects.requireNonNull(dataFile.listFiles(f -> f.getName().endsWith("2.log")))[0];
     LogCorrupter.corruptDescriptor(logFile);
@@ -455,7 +459,7 @@ class SegmentedJournalTest {
     journal.reset(100);
 
     // then
-    final File logDirectory = directory.toFile();
+    final File logDirectory = getJournalDirectory();
     assertThat(logDirectory)
         .isDirectoryContaining(
             file -> SegmentFile.isDeletedSegmentFile(JOURNAL_NAME, file.getName()))
@@ -529,7 +533,7 @@ class SegmentedJournalTest {
     reader.close();
 
     // then
-    final File logDirectory = directory.toFile();
+    final var logDirectory = getJournalDirectory();
     assertThat(logDirectory)
         .isDirectoryNotContaining(
             file -> SegmentFile.isDeletedSegmentFile(JOURNAL_NAME, file.getName()))
@@ -546,7 +550,7 @@ class SegmentedJournalTest {
     journal.reset(100);
 
     // then
-    final File logDirectory = directory.toFile();
+    final var logDirectory = getJournalDirectory();
     assertThat(logDirectory)
         .isDirectoryNotContaining(
             file -> SegmentFile.isDeletedSegmentFile(JOURNAL_NAME, file.getName()))
@@ -565,10 +569,8 @@ class SegmentedJournalTest {
     // when
     journal.reset(200);
 
-    // then
-    final File logDirectory = directory.toFile();
-
-    // there are two files deferred for deletion
+    // then - there are two files deferred for deletion
+    final var logDirectory = getJournalDirectory();
     assertThat(
             logDirectory.listFiles(
                 file -> SegmentFile.isDeletedSegmentFile(JOURNAL_NAME, file.getName())))
