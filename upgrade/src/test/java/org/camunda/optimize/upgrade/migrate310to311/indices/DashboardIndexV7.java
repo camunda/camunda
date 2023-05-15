@@ -3,8 +3,9 @@
  * Licensed under a proprietary license. See the License.txt file for more information.
  * You may not use this file except in compliance with the proprietary license.
  */
-package org.camunda.optimize.service.es.schema.index;
+package org.camunda.optimize.upgrade.migrate310to311.indices;
 
+import lombok.AllArgsConstructor;
 import org.camunda.optimize.dto.optimize.query.dashboard.BaseDashboardDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionRestDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.filter.DashboardFilterDto;
@@ -24,15 +25,14 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.TYPE_DATE;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.TYPE_KEYWORD;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.TYPE_NESTED;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.TYPE_OBJECT;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.TYPE_TEXT;
 
-public class DashboardIndex extends DefaultIndexMappingCreator {
+@AllArgsConstructor
+public class DashboardIndexV7 extends DefaultIndexMappingCreator {
 
-  public static final int VERSION = 8;
+  public static final int VERSION = 7;
 
   public static final String ID = BaseDashboardDefinitionDto.Fields.id;
   public static final String NAME = BaseDashboardDefinitionDto.Fields.name;
-  public static final String DESCRIPTION = BaseDashboardDefinitionDto.Fields.description;
   public static final String LAST_MODIFIED = BaseDashboardDefinitionDto.Fields.lastModified;
   public static final String CREATED = BaseDashboardDefinitionDto.Fields.created;
   public static final String OWNER = BaseDashboardDefinitionDto.Fields.owner;
@@ -72,59 +72,55 @@ public class DashboardIndex extends DefaultIndexMappingCreator {
   @Override
   public XContentBuilder addProperties(XContentBuilder xContentBuilder) throws IOException {
     // @formatter:off
-     XContentBuilder newBuilder = xContentBuilder
+    XContentBuilder newBuilder = xContentBuilder
       .startObject(ID)
-        .field(MAPPING_PROPERTY_TYPE, TYPE_KEYWORD)
+      .field(MAPPING_PROPERTY_TYPE, TYPE_KEYWORD)
       .endObject()
       .startObject(NAME)
-        .field(MAPPING_PROPERTY_TYPE, TYPE_KEYWORD)
-      .endObject()
-      .startObject(DESCRIPTION)
-        .field(MAPPING_PROPERTY_TYPE, TYPE_TEXT)
-        .field("index", false)
+      .field(MAPPING_PROPERTY_TYPE, TYPE_KEYWORD)
       .endObject()
       .startObject(LAST_MODIFIED)
-        .field(MAPPING_PROPERTY_TYPE, TYPE_DATE)
-        .field("format", OPTIMIZE_DATE_FORMAT)
+      .field(MAPPING_PROPERTY_TYPE, TYPE_DATE)
+      .field("format", OPTIMIZE_DATE_FORMAT)
       .endObject()
       .startObject(CREATED)
-        .field(MAPPING_PROPERTY_TYPE, TYPE_DATE)
-        .field("format", OPTIMIZE_DATE_FORMAT)
+      .field(MAPPING_PROPERTY_TYPE, TYPE_DATE)
+      .field("format", OPTIMIZE_DATE_FORMAT)
       .endObject()
       .startObject(OWNER)
-        .field(MAPPING_PROPERTY_TYPE, TYPE_KEYWORD)
+      .field(MAPPING_PROPERTY_TYPE, TYPE_KEYWORD)
       .endObject()
       .startObject(LAST_MODIFIER)
-        .field(MAPPING_PROPERTY_TYPE, TYPE_KEYWORD)
+      .field(MAPPING_PROPERTY_TYPE, TYPE_KEYWORD)
       .endObject()
       .startObject(REFRESH_RATE_SECONDS)
-        .field(MAPPING_PROPERTY_TYPE, TYPE_KEYWORD)
+      .field(MAPPING_PROPERTY_TYPE, TYPE_KEYWORD)
       .endObject()
       .startObject(TILES)
-        .field(MAPPING_PROPERTY_TYPE, TYPE_NESTED)
-        .startObject("properties");
-          addNestedReportsField(newBuilder)
-        .endObject()
+      .field(MAPPING_PROPERTY_TYPE, TYPE_NESTED)
+      .startObject("properties");
+    addNestedReportsField(newBuilder)
+      .endObject()
       .endObject()
       .startObject(COLLECTION_ID)
-        .field(MAPPING_PROPERTY_TYPE,TYPE_KEYWORD)
+      .field(MAPPING_PROPERTY_TYPE,TYPE_KEYWORD)
       .endObject()
       .startObject(MANAGEMENT_DASHBOARD)
-        .field(MAPPING_PROPERTY_TYPE,TYPE_BOOLEAN)
+      .field(MAPPING_PROPERTY_TYPE,TYPE_BOOLEAN)
       .endObject()
       .startObject(INSTANT_PREVIEW_DASHBOARD)
-        .field(MAPPING_PROPERTY_TYPE,TYPE_BOOLEAN)
+      .field(MAPPING_PROPERTY_TYPE,TYPE_BOOLEAN)
       .endObject()
       .startObject(AVAILABLE_FILTERS)
-        .field(MAPPING_PROPERTY_TYPE, TYPE_OBJECT)
-        .startObject("properties")
-          .startObject(FILTER_TYPE)
-            .field(MAPPING_PROPERTY_TYPE, TYPE_KEYWORD)
-          .endObject()
-          .startObject(FILTER_DATA)
-            .field("enabled", false)
-          .endObject()
-        .endObject()
+      .field(MAPPING_PROPERTY_TYPE, TYPE_OBJECT)
+      .startObject("properties")
+      .startObject(FILTER_TYPE)
+      .field(MAPPING_PROPERTY_TYPE, TYPE_KEYWORD)
+      .endObject()
+      .startObject(FILTER_DATA)
+      .field("enabled", false)
+      .endObject()
+      .endObject()
       .endObject();
     // @formatter:on
     return newBuilder;
@@ -134,25 +130,25 @@ public class DashboardIndex extends DefaultIndexMappingCreator {
     // @formatter:off
     XContentBuilder newBuilder = builder
       .startObject(REPORT_ID)
-        .field(MAPPING_PROPERTY_TYPE, TYPE_KEYWORD)
+      .field(MAPPING_PROPERTY_TYPE, TYPE_KEYWORD)
       .endObject()
       .startObject(REPORT_TILE_TYPE)
-        .field(REPORT_TILE_TYPE, TYPE_KEYWORD)
+      .field(REPORT_TILE_TYPE, TYPE_KEYWORD)
       .endObject()
       .startObject(POSITION)
-        .field(MAPPING_PROPERTY_TYPE, TYPE_NESTED)
-        .startObject("properties");
-          addNestedPositionField(newBuilder)
-        .endObject()
+      .field(MAPPING_PROPERTY_TYPE, TYPE_NESTED)
+      .startObject("properties");
+    addNestedPositionField(newBuilder)
+      .endObject()
       .endObject()
       .startObject(DIMENSION)
-        .field(MAPPING_PROPERTY_TYPE, TYPE_NESTED)
-        .startObject("properties");
-          addNestedDimensionField(newBuilder)
-        .endObject()
+      .field(MAPPING_PROPERTY_TYPE, TYPE_NESTED)
+      .startObject("properties");
+    addNestedDimensionField(newBuilder)
+      .endObject()
       .endObject()
       .startObject(CONFIGURATION)
-        .field("enabled", false)
+      .field("enabled", false)
       .endObject();
     // @formatter:on
     return newBuilder;
@@ -162,10 +158,10 @@ public class DashboardIndex extends DefaultIndexMappingCreator {
     // @formatter:off
     return builder
       .startObject(X_POSITION)
-        .field(MAPPING_PROPERTY_TYPE, TYPE_KEYWORD)
+      .field(MAPPING_PROPERTY_TYPE, TYPE_KEYWORD)
       .endObject()
       .startObject(Y_POSITION)
-        .field(MAPPING_PROPERTY_TYPE, TYPE_KEYWORD)
+      .field(MAPPING_PROPERTY_TYPE, TYPE_KEYWORD)
       .endObject();
     // @formatter:on
   }
@@ -174,12 +170,11 @@ public class DashboardIndex extends DefaultIndexMappingCreator {
     // @formatter:off
     return builder
       .startObject(WIDTH)
-        .field(MAPPING_PROPERTY_TYPE, TYPE_KEYWORD)
+      .field(MAPPING_PROPERTY_TYPE, TYPE_KEYWORD)
       .endObject()
       .startObject(HEIGHT)
-        .field(MAPPING_PROPERTY_TYPE, TYPE_KEYWORD)
+      .field(MAPPING_PROPERTY_TYPE, TYPE_KEYWORD)
       .endObject();
     // @formatter:on
   }
-
 }

@@ -51,7 +51,7 @@ public abstract class AbstractReportIndex extends DefaultIndexMappingCreator {
       .endObject()
       .startObject(DESCRIPTION)
         .field(MAPPING_PROPERTY_TYPE, TYPE_TEXT)
-         .field("index", false)
+        .field("index", false)
       .endObject()
       .startObject(LAST_MODIFIED)
         .field(MAPPING_PROPERTY_TYPE, TYPE_DATE)

@@ -68,6 +68,43 @@ public class DashboardUpdateRestServiceIT extends AbstractDashboardRestServiceIT
     assertThat(response.getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
   }
 
+  @ParameterizedTest
+  @MethodSource("validDescription")
+  public void updateDashboardWithValidDescription(final String description) {
+    // given
+    String id = dashboardClient.createEmptyDashboard(null);
+    final DashboardDefinitionRestDto dashboardUpdate = new DashboardDefinitionRestDto();
+    dashboardUpdate.setDescription(description);
+
+    // when
+    Response response = embeddedOptimizeExtension
+      .getRequestExecutor()
+      .buildUpdateDashboardRequest(id, dashboardUpdate)
+      .execute();
+
+    // then
+    assertThat(response.getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
+    assertThat(dashboardClient.getDashboard(id).getDescription()).isEqualTo(description);
+  }
+
+  @ParameterizedTest
+  @MethodSource("invalidDescription")
+  public void updateDashboardWithInvalidDescription(final String description) {
+    // given
+    String id = dashboardClient.createEmptyDashboard(null);
+    final DashboardDefinitionRestDto dashboardUpdate = new DashboardDefinitionRestDto();
+    dashboardUpdate.setDescription(description);
+
+    // when
+    Response response = embeddedOptimizeExtension
+      .getRequestExecutor()
+      .buildUpdateDashboardRequest(id, dashboardUpdate)
+      .execute();
+
+    // then
+    assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
+  }
+
   @Test
   public void updateManagementDashboardNotSupported() {
     // given

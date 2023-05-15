@@ -165,6 +165,34 @@ public class DashboardDefinitionImportIT extends AbstractExportImportEntityDefin
   }
 
   @Test
+  public void importDashboard_validDescription() {
+    // given
+    final DashboardDefinitionExportDto dashboardExport = createSimpleDashboardExportDto();
+    final String dashboardDescription = "This is a valid dashboard description";
+    dashboardExport.setDescription(dashboardDescription);
+
+    // when
+    final EntityIdResponseDto entityIdResponseDto = importClient.importEntityAndReturnId(dashboardExport);
+
+    // then
+    assertThat(retrieveImportedDashboard(List.of(entityIdResponseDto))).isPresent().get()
+      .satisfies(dashboard -> assertThat(dashboard.getDescription()).isEqualTo(dashboardDescription));
+  }
+
+  @Test
+  public void importDashboard_invalidDescription() {
+    // given
+    final DashboardDefinitionExportDto exportedDashboard = createSimpleDashboardExportDto();
+    exportedDashboard.setDescription("");
+
+    // when
+    final Response response = importClient.importEntity(exportedDashboard);
+
+    // then
+    assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
+  }
+
+  @Test
   public void importIncompleteDashboard_throwsInvalidImportFileException() {
     // given
     final SingleProcessReportDefinitionExportDto reportExport = createSimpleProcessExportDto();

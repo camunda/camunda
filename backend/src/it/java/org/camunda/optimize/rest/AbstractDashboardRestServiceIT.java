@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.rest;
 
+import org.apache.commons.lang3.RandomStringUtils;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.AbstractIT;
@@ -518,6 +519,14 @@ public abstract class AbstractDashboardRestServiceIT extends AbstractIT {
       DashboardReportTileDto.builder().id("someId").type(DashboardTileType.EXTERNAL_URL).build(),
       DashboardReportTileDto.builder().id("someId").type(DashboardTileType.TEXT).build()
     );
+  }
+
+  protected static Stream<String> invalidDescription() {
+    return Stream.of("", RandomStringUtils.randomAlphabetic(450));
+  }
+
+  protected static Stream<String> validDescription() {
+    return Stream.of(null, RandomStringUtils.randomAlphabetic(300));
   }
 
 }

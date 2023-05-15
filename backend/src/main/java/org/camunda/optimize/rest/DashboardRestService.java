@@ -57,11 +57,6 @@ public class DashboardRestService {
   private final SessionService sessionService;
   private final DashboardRestMapper dashboardRestMapper;
 
-  /**
-   * Creates a new dashboard.
-   *
-   * @return the id of the dashboard
-   */
   @POST
   @Produces(MediaType.APPLICATION_JSON)
   @Consumes(MediaType.APPLICATION_JSON)
@@ -72,8 +67,7 @@ public class DashboardRestService {
       if (dashboardDefinitionDto.isManagementDashboard() || dashboardDefinitionDto.isInstantPreviewDashboard()) {
         throw new OptimizeValidationException("Management and Instant Preview Dashboards cannot be created");
       }
-      validateDashboardTileTypes(dashboardDefinitionDto);
-      validateExternalDashboardLinks(dashboardDefinitionDto);
+      validateDashboard(dashboardDefinitionDto);
     }
     return dashboardService.createNewDashboardAndReturnId(
       userId, Optional.ofNullable(dashboardDefinitionDto).orElseGet(DashboardDefinitionRestDto::new));
@@ -96,9 +90,6 @@ public class DashboardRestService {
     }
   }
 
-  /**
-   * Retrieve the dashboard to the specified id.
-   */
   @GET
   @Path("/{id}")
   @Produces(MediaType.APPLICATION_JSON)
@@ -123,9 +114,6 @@ public class DashboardRestService {
     return dashboardDefinition;
   }
 
-  /**
-   * Retrieve the Instant Preview Dashboard for the specified process and template
-   */
   @GET
   @Path("/instant/{procDefKey}")
   @Produces(MediaType.APPLICATION_JSON)
@@ -160,14 +148,10 @@ public class DashboardRestService {
                               @Valid DashboardDefinitionRestDto updatedDashboard) {
     updatedDashboard.setId(dashboardId);
     String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
-    validateDashboardTileTypes(updatedDashboard);
-    validateExternalDashboardLinks(updatedDashboard);
+    validateDashboard(updatedDashboard);
     dashboardService.updateDashboard(updatedDashboard, userId);
   }
 
-  /**
-   * Delete the dashboard to the specified id.
-   */
   @DELETE
   @Path("/{id}")
   @Produces(MediaType.APPLICATION_JSON)
@@ -187,6 +171,12 @@ public class DashboardRestService {
           throw new OptimizeValidationException("Text and external URL tiles must not have an ID");
         }
       });
+  }
+
+  private void validateDashboard(final DashboardDefinitionRestDto updatedDashboard) {
+    validateDashboardTileTypes(updatedDashboard);
+    validateExternalDashboardLinks(updatedDashboard);
+    dashboardService.validateDashboardDescription(updatedDashboard.getDescription());
   }
 
   private void validateExternalDashboardLinks(final DashboardDefinitionRestDto dashboardDefinitionDto) {

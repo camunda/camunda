@@ -60,7 +60,10 @@ public class DashboardImportService {
         }
       });
 
-    dashboardsToImport.forEach(exportedDto -> validateDashboardFiltersOrFail(userId, exportedDto));
+    dashboardsToImport.forEach(exportedDto -> {
+      dashboardService.validateDashboardDescription(exportedDto.getDescription());
+      validateDashboardFiltersOrFail(userId, exportedDto);
+    });
 
     if (!indexMismatches.isEmpty()) {
       throw new OptimizeImportIncorrectIndexVersionException(
@@ -143,6 +146,7 @@ public class DashboardImportService {
                                                                final DashboardDefinitionExportDto dashboardToImport) {
     final DashboardDefinitionRestDto dashboardDefinition = new DashboardDefinitionRestDto();
     dashboardDefinition.setName(dashboardToImport.getName());
+    dashboardDefinition.setDescription(dashboardToImport.getDescription());
     dashboardDefinition.setCollectionId(collectionId);
     dashboardDefinition.setAvailableFilters(dashboardToImport.getAvailableFilters());
     dashboardDefinition.setTiles(dashboardToImport.getTiles());

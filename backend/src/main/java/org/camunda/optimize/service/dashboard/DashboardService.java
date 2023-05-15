@@ -14,7 +14,6 @@ import org.camunda.optimize.dto.optimize.query.IdResponseDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionRestDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionUpdateDto;
-import org.camunda.optimize.dto.optimize.query.dashboard.tile.DashboardReportTileDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.filter.DashboardAssigneeFilterDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.filter.DashboardCandidateGroupFilterDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.filter.DashboardFilterDto;
@@ -24,6 +23,7 @@ import org.camunda.optimize.dto.optimize.query.dashboard.filter.DashboardStateFi
 import org.camunda.optimize.dto.optimize.query.dashboard.filter.DashboardVariableFilterDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.filter.data.DashboardIdentityFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.filter.data.DashboardVariableFilterDataDto;
+import org.camunda.optimize.dto.optimize.query.dashboard.tile.DashboardReportTileDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.operator.MembershipFilterOperator;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
@@ -37,7 +37,6 @@ import org.camunda.optimize.service.es.reader.DashboardReader;
 import org.camunda.optimize.service.es.reader.ReportReader;
 import org.camunda.optimize.service.es.writer.DashboardWriter;
 import org.camunda.optimize.service.exceptions.InvalidDashboardVariableFilterException;
-import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.exceptions.OptimizeValidationException;
 import org.camunda.optimize.service.identity.AbstractIdentityService;
 import org.camunda.optimize.service.relations.CollectionReferencingService;
@@ -148,24 +147,6 @@ public class DashboardService implements ReportReferencingService, CollectionRef
     return dashboardWriter.createNewDashboard(userId, dashboardDefinitionDto);
   }
 
-  public void createNewDashboardWithPresetId(final String userId,
-                                             final DashboardDefinitionRestDto dashboardDefinitionDto,
-                                             final String presetId) {
-    collectionService.verifyUserAuthorizedToEditCollectionResources(userId, dashboardDefinitionDto.getCollectionId());
-    validateDashboardFilters(userId, dashboardDefinitionDto);
-    try {
-      dashboardWriter.createNewDashboard(userId, dashboardDefinitionDto, presetId);
-    } catch (OptimizeRuntimeException e) {
-      // This can happen if the collection has been created in parallel, let's check if it already exists
-      if (Optional.ofNullable(getDashboardDefinition(presetId, userId)).isEmpty()) {
-        // If it doesn't exist yet and it could not be created, then we have another
-        // problem, log it and rethrow exception
-        log.error("Unexpected error when trying to create dashboard with ID " + presetId, e);
-        throw e;
-      }
-    }
-  }
-
   public IdResponseDto copyDashboard(final String dashboardId, final String userId, final String name) {
     final AuthorizedDashboardDefinitionResponseDto authorizedDashboard = getDashboardDefinition(dashboardId, userId);
     final DashboardDefinitionRestDto dashboardDefinition = authorizedDashboard.getDefinitionDto();
@@ -227,9 +208,20 @@ public class DashboardService implements ReportReferencingService, CollectionRef
     DashboardDefinitionRestDto newDashboardDefinitionDto = new DashboardDefinitionRestDto();
     newDashboardDefinitionDto.setCollectionId(collectionId);
     newDashboardDefinitionDto.setName(newDashboardName);
+    newDashboardDefinitionDto.setDescription(dashboardDefinition.getDescription());
     newDashboardDefinitionDto.setTiles(newDashboardReports);
     newDashboardDefinitionDto.setAvailableFilters(dashboardDefinition.getAvailableFilters());
     return dashboardWriter.createNewDashboard(userId, newDashboardDefinitionDto);
+  }
+
+  public void validateDashboardDescription(final String dashboardDescription) {
+    if (dashboardDescription != null) {
+      if (dashboardDescription.length() > 400) {
+        throw new OptimizeValidationException("Dashboard descriptions cannot be greater than 400 characters");
+      } else if (dashboardDescription.isEmpty()) {
+        throw new OptimizeValidationException("Dashboard descriptions cannot be non-null and empty");
+      }
+    }
   }
 
   private void removeVariableFiltersFromDashboardsIfUnavailable(final List<ProcessVariableNameResponseDto> filters,
@@ -237,7 +229,7 @@ public class DashboardService implements ReportReferencingService, CollectionRef
     final List<DashboardDefinitionRestDto> dashboardsForReport = dashboardReader.getDashboardsForReport(reportId);
     dashboardsForReport
       .stream()
-      .filter(dashboard -> !extractFilters(dashboard.getAvailableFilters(), DashboardVariableFilterDto.class).isEmpty())
+      .filter(dashboard -> !extractDashboardVariableFilters(dashboard.getAvailableFilters()).isEmpty())
       .forEach(dashboard -> {
         final List<String> otherReportIdsInDashboard = dashboard.getTiles()
           .stream()
@@ -258,7 +250,7 @@ public class DashboardService implements ReportReferencingService, CollectionRef
             .peek(variableName -> variableName.setLabel(null))
             .collect(Collectors.toList());
         final List<DashboardVariableFilterDto> filtersToRemove =
-          extractFilters(dashboard.getAvailableFilters(), DashboardVariableFilterDto.class).stream()
+          extractDashboardVariableFilters(dashboard.getAvailableFilters()).stream()
             .filter(variableFilter -> {
               final DashboardVariableFilterDataDto filterData = variableFilter.getData();
               final ProcessVariableNameResponseDto processVariableForFilter =
@@ -591,18 +583,18 @@ public class DashboardService implements ReportReferencingService, CollectionRef
   private DashboardDefinitionUpdateDto convertToUpdateDto(final DashboardDefinitionRestDto updatedDashboard) {
     final DashboardDefinitionUpdateDto updateDto = new DashboardDefinitionUpdateDto();
     updateDto.setName(updatedDashboard.getName());
+    updateDto.setDescription(updatedDashboard.getDescription());
     updateDto.setTiles(updatedDashboard.getTiles());
     updateDto.setAvailableFilters(updatedDashboard.getAvailableFilters());
     updateDto.setRefreshRateSeconds(updatedDashboard.getRefreshRateSeconds());
     return updateDto;
   }
 
-  public <T extends DashboardFilterDto<?>> List<T> extractFilters(final List<DashboardFilterDto<?>> availableFilters,
-                                                                  final Class<T> filterClass) {
+  public List<DashboardVariableFilterDto> extractDashboardVariableFilters(final List<DashboardFilterDto<?>> availableFilters) {
     return availableFilters
       .stream()
-      .filter(filterClass::isInstance)
-      .map(filterClass::cast)
+      .filter(DashboardVariableFilterDto.class::isInstance)
+      .map(DashboardVariableFilterDto.class::cast)
       .collect(toList());
   }
 

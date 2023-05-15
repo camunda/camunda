@@ -54,16 +54,39 @@ public class DashboardCreateRestServiceIT extends AbstractDashboardRestServiceIT
     assertThat(idDto).isNotNull();
   }
 
-  @Test
-  public void createNewDashboardWithDefinition() {
+  @ParameterizedTest
+  @MethodSource("validDescription")
+  public void createNewDashboardWithDescription(final String description) {
+    // given
+    final DashboardDefinitionRestDto dashboardDefinitionDto = generateDashboardDefinitionDto();
+    dashboardDefinitionDto.setDescription(description);
+
     // when
     IdResponseDto idDto = embeddedOptimizeExtension
       .getRequestExecutor()
-      .buildCreateDashboardRequest(generateDashboardDefinitionDto())
+      .buildCreateDashboardRequest(dashboardDefinitionDto)
       .execute(IdResponseDto.class, Response.Status.OK.getStatusCode());
 
     // then
     assertThat(idDto).isNotNull();
+    assertThat(dashboardClient.getDashboard(idDto.getId()).getDescription()).isEqualTo(description);
+  }
+
+  @ParameterizedTest
+  @MethodSource("invalidDescription")
+  public void createNewDashboardWithInvalidDescription(final String description) {
+    // given
+    final DashboardDefinitionRestDto dashboardDefinitionDto = generateDashboardDefinitionDto();
+    dashboardDefinitionDto.setDescription(description);
+
+    // when
+    final Response response = embeddedOptimizeExtension
+      .getRequestExecutor()
+      .buildCreateDashboardRequest(dashboardDefinitionDto)
+      .execute();
+
+    // then
+    assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
   }
 
   @Test

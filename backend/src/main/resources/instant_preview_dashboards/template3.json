@@ -1467,7 +1467,8 @@
   "id" : "87dbcaff-bc21-4ccd-a754-247f7110e91f",
   "exportEntityType" : "dashboard",
   "name" : "IP_DashboardName",
-  "sourceIndexVersion" : 7,
+  "description" : null,
+  "sourceIndexVersion" : 8,
   "tiles" : [ {
     "id" : "f69bfb9e-2853-4d5e-8640-667d2c10c220",
     "type": "optimize_report",

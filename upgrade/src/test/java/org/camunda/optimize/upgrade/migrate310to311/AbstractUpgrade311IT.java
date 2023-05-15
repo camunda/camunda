@@ -7,6 +7,7 @@ package org.camunda.optimize.upgrade.migrate310to311;
 
 import org.camunda.optimize.upgrade.AbstractUpgradeIT;
 import org.camunda.optimize.upgrade.migrate310to311.indices.CombinedDecisionReportIndexV4;
+import org.camunda.optimize.upgrade.migrate310to311.indices.DashboardIndexV7;
 import org.camunda.optimize.upgrade.migrate310to311.indices.SingleDecisionReportIndexV9;
 import org.camunda.optimize.upgrade.migrate310to311.indices.SingleProcessReportIndexV10;
 import org.camunda.optimize.upgrade.plan.UpgradePlan;
@@ -22,11 +23,12 @@ public abstract class AbstractUpgrade311IT extends AbstractUpgradeIT {
   protected final SingleProcessReportIndexV10 SINGLE_PROCESS_REPORT_INDEX = new SingleProcessReportIndexV10();
   protected final SingleDecisionReportIndexV9 SINGLE_DECISION_REPORT_INDEX = new SingleDecisionReportIndexV9();
   protected final CombinedDecisionReportIndexV4 COMBINED_REPORT_INDEX = new CombinedDecisionReportIndexV4();
+  protected final DashboardIndexV7 DASHBOARD_INDEX = new DashboardIndexV7();
 
   @BeforeEach
   protected void setUp() throws Exception {
     super.setUp();
-    initSchema(List.of(SINGLE_PROCESS_REPORT_INDEX, SINGLE_DECISION_REPORT_INDEX, COMBINED_REPORT_INDEX));
+    initSchema(List.of(SINGLE_PROCESS_REPORT_INDEX, SINGLE_DECISION_REPORT_INDEX, COMBINED_REPORT_INDEX, DASHBOARD_INDEX));
     setMetadataVersion(FROM_VERSION);
   }
 
