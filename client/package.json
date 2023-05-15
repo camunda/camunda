@@ -10,7 +10,7 @@
     "@carbon/elements": "11.22.0",
     "@carbon/react": "1.29.1",
     "@monaco-editor/react": "4.5.1",
-    "@tanstack/react-query": "4.29.5",
+    "@tanstack/react-query": "4.29.7",
     "date-fns": "2.30.0",
     "event-source-polyfill": "1.0.31",
     "final-form": "4.20.9",
@@ -60,7 +60,7 @@
   "devDependencies": {
     "@axe-core/playwright": "4.7.0",
     "@playwright/test": "1.32.3",
-    "@tanstack/react-query-devtools": "4.29.6",
+    "@tanstack/react-query-devtools": "4.29.7",
     "@testing-library/jest-dom": "5.16.5",
     "@testing-library/react": "14.0.0",
     "@testing-library/testcafe": "5.0.0",
@@ -69,7 +69,7 @@
     "@types/carbon__elements": "11.10.0",
     "@types/jest": "29.5.1",
     "@types/mixpanel-browser": "2.38.1",
-    "@types/node": "18.16.8",
+    "@types/node": "18.16.9",
     "@types/react": "18.2.6",
     "@types/react-dom": "18.2.4",
     "@types/react-transition-group": "4.4.6",
@@ -90,7 +90,7 @@
     "testcafe": "2.6.0",
     "ts-toolbelt": "9.6.0",
     "typescript": "5.0.4",
-    "zeebe-node": "8.2.1"
+    "zeebe-node": "8.2.2"
   },
   "lint-staged": {
     "*": [
