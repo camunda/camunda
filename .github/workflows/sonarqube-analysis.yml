@@ -1,0 +1,35 @@
+name: Sonarqube Analysis
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: 0 0 * * 1-5
+
+jobs:
+  sonarqube-analysis:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Import secrets
+        id: secrets
+        uses: hashicorp/vault-action@v2.5.0
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secrets: |
+            secret/data/products/optimize/ci/jenkins SONARCLOUD_TOKEN;
+
+      - name: Setup Maven
+        uses: ./.github/actions/setup-maven
+        with:
+          secrets: ${{ toJSON(secrets) }}
+
+      - name: Run Sonarqube Analysis
+        uses: ./.github/actions/run-maven
+        with:
+          parameters: verify sonar:sonar -DskipTests -Dskip.docker -Pit,coverage -pl backend,upgrade,util/optimize-reimport-preparation,test-coverage -am -Dsonar.projectKey=camunda_camunda-optimize -Dsonar.login=${{ steps.secrets.outputs.SONARCLOUD_TOKEN }}
