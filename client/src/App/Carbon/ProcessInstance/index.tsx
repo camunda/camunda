@@ -26,6 +26,7 @@ import {CarbonLocations} from 'modules/carbonRoutes';
 import {processInstanceDetailsDiagramStore} from 'modules/stores/processInstanceDetailsDiagram';
 import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
 import {flowNodeTimeStampStore} from 'modules/stores/flowNodeTimeStamp';
+import {ProcessInstanceHeader} from './ProcessInstanceHeader';
 
 const ProcessInstance: React.FC = observer(() => {
   const {processInstanceId = ''} = useProcessInstancePageParams();
@@ -137,7 +138,7 @@ const ProcessInstance: React.FC = observer(() => {
             />
           ) : undefined
         }
-        header={<div>header</div>}
+        header={<ProcessInstanceHeader />}
         topPanel={<div>top panel</div>}
         bottomPanel={<div>bottom panel</div>}
         id="process"
