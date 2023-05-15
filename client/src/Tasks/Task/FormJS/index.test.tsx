@@ -23,6 +23,7 @@ import {client} from 'modules/apollo-client';
 import {nodeMockServer} from 'modules/mockServer/nodeMockServer';
 import {graphql} from 'msw';
 import noop from 'lodash/noop';
+import {convertToGraphqlTask} from 'modules/utils/convertToGraphqlTask';
 
 type Props = {
   children?: React.ReactNode;
@@ -92,7 +93,7 @@ describe('<FormJS />', () => {
       <FormJS
         id="form-0"
         processDefinitionId="process"
-        task={unassignedTaskWithForm()}
+        task={convertToGraphqlTask(unassignedTaskWithForm())}
         user={mockGetCurrentUser.currentUser}
         onSubmit={() => Promise.resolve()}
         onSubmitFailure={noop}
@@ -139,7 +140,7 @@ describe('<FormJS />', () => {
       <FormJS
         id="form-0"
         processDefinitionId="process"
-        task={assignedTaskWithForm()}
+        task={convertToGraphqlTask(assignedTaskWithForm())}
         user={mockGetCurrentUser.currentUser}
         onSubmit={() => Promise.resolve()}
         onSubmitFailure={noop}
@@ -185,7 +186,7 @@ describe('<FormJS />', () => {
       <FormJS
         id="form-0"
         processDefinitionId="process"
-        task={assignedTaskWithForm()}
+        task={convertToGraphqlTask(assignedTaskWithForm())}
         user={mockGetCurrentUser.currentUser}
         onSubmit={() => Promise.resolve()}
         onSubmitFailure={noop}
@@ -229,7 +230,7 @@ describe('<FormJS />', () => {
       <FormJS
         id="form-0"
         processDefinitionId="process"
-        task={assignedTaskWithForm()}
+        task={convertToGraphqlTask(assignedTaskWithForm())}
         user={mockGetCurrentUser.currentUser}
         onSubmit={mockOnSubmit}
         onSubmitFailure={noop}
@@ -288,7 +289,7 @@ describe('<FormJS />', () => {
       <FormJS
         id="form-0"
         processDefinitionId="process"
-        task={assignedTaskWithForm()}
+        task={convertToGraphqlTask(assignedTaskWithForm())}
         user={mockGetCurrentUser.currentUser}
         onSubmit={mockOnSubmit}
         onSubmitFailure={noop}
@@ -361,7 +362,7 @@ describe('<FormJS />', () => {
       <FormJS
         id="form-0"
         processDefinitionId="process"
-        task={assignedTaskWithForm()}
+        task={convertToGraphqlTask(assignedTaskWithForm())}
         user={mockGetCurrentUser.currentUser}
         onSubmit={() => Promise.resolve()}
         onSubmitFailure={noop}

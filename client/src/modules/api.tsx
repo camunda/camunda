@@ -48,7 +48,8 @@ const api = {
     );
   },
   getProcesses: (query?: string) => {
-    const url = new URL(mergePathname(BASENAME, '/v1/internal/processes'));
+    const url = new URL(window.location.href);
+    url.pathname = mergePathname(BASENAME, '/v1/internal/processes');
 
     if (query !== undefined && query !== '') {
       url.searchParams.set('query', query);

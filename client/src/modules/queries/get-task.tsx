@@ -6,7 +6,7 @@
  */
 
 import {gql, useApolloClient, useQuery} from '@apollo/client';
-import {Task} from 'modules/types';
+import {GraphqlTask} from 'modules/types';
 
 import {
   unassignedTask,
@@ -17,12 +17,13 @@ import {
   completedTaskWithForm,
 } from 'modules/mock-schema/mocks/task';
 import {useEffect, useState} from 'react';
+import {convertToGraphqlTask} from 'modules/utils/convertToGraphqlTask';
 
-type TaskQueryVariables = Pick<Task, 'id'>;
+type TaskQueryVariables = Pick<GraphqlTask, 'id'>;
 
 interface GetTask {
   task: Pick<
-    Task,
+    GraphqlTask,
     | 'id'
     | 'assignee'
     | 'name'
@@ -68,7 +69,7 @@ const mockGetTaskUnassigned = (id = '0') => ({
   },
   result: {
     data: {
-      task: unassignedTask(id),
+      task: convertToGraphqlTask(unassignedTask(id)),
     },
   },
 });
@@ -82,7 +83,7 @@ const mockGetTaskUnassignedWithForm = (id = '0') => ({
   },
   result: {
     data: {
-      task: unassignedTaskWithForm(id),
+      task: convertToGraphqlTask(unassignedTaskWithForm(id)),
     },
   },
 });
@@ -96,7 +97,7 @@ const mockGetTaskCompleted = (id = '0') => ({
   },
   result: {
     data: {
-      task: completedTask(id),
+      task: convertToGraphqlTask(completedTask(id)),
     },
   },
 });
@@ -110,7 +111,7 @@ const mockGetTaskAssigned = (id = '0') => ({
   },
   result: {
     data: {
-      task: assignedTask(id),
+      task: convertToGraphqlTask(assignedTask(id)),
     },
   },
 });
@@ -124,7 +125,7 @@ const mockGetTaskAssignedWithForm = (id = '0') => ({
   },
   result: {
     data: {
-      task: assignedTaskWithForm(id),
+      task: convertToGraphqlTask(assignedTaskWithForm(id)),
     },
   },
 });
@@ -138,12 +139,12 @@ const mockGetTaskCompletedWithForm = (id = '0') => ({
   },
   result: {
     data: {
-      task: completedTaskWithForm(id),
+      task: convertToGraphqlTask(completedTaskWithForm(id)),
     },
   },
 });
 
-function useTask(id: Task['id']) {
+function useTask(id: GraphqlTask['id']) {
   const [usePreviousData, setUsePrevious] = useState(true);
   const result = useQuery<GetTask, TaskQueryVariables>(GET_TASK, {
     variables: {id},

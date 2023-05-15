@@ -9,10 +9,11 @@
 
 import gql from 'graphql-tag';
 import {unassignedTask} from 'modules/mock-schema/mocks/task';
-import {Task} from 'modules/types';
+import {GraphqlTask} from 'modules/types';
+import {convertToGraphqlTask} from 'modules/utils/convertToGraphqlTask';
 
 type UnassignTaskVariables = {
-  id: Task['id'];
+  id: GraphqlTask['id'];
 };
 
 const UNASSIGN_TASK = gql`
@@ -31,7 +32,7 @@ const mockUnassignTask = {
   },
   result: {
     data: {
-      unclaimTask: unassignedTask(),
+      unclaimTask: convertToGraphqlTask(unassignedTask()),
     },
   },
 };

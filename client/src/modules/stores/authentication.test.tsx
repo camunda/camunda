@@ -48,7 +48,7 @@ describe('authentication store', () => {
           response: expect.objectContaining({
             status: 401,
           }),
-          error: null,
+          networkError: null,
         },
       },
     );

@@ -5,25 +5,20 @@
  * except in compliance with the proprietary license.
  */
 
-import {ApolloProvider} from '@apollo/client';
 import {
   render,
   screen,
   waitFor,
   waitForElementToBeRemoved,
 } from 'modules/testing-library';
-import {client} from 'modules/apollo-client';
 import {nodeMockServer} from 'modules/mockServer/nodeMockServer';
-import {
-  createMockProcess,
-  GetProcesses,
-  GetProcessesVariables,
-} from 'modules/queries/get-processes';
+import {createMockProcess} from 'modules/queries/useProcesses';
 import {MockThemeProvider} from 'modules/theme/MockProvider';
-import {graphql} from 'msw';
+import {rest} from 'msw';
 import {MemoryRouter} from 'react-router-dom';
 import {Processes} from './index';
 import {notificationsStore} from 'modules/stores/notifications';
+import {ReactQueryProvider} from 'modules/ReactQueryProvider';
 
 jest.mock('modules/stores/notifications', () => ({
   notificationsStore: {
@@ -41,11 +36,11 @@ type Props = {
 
 const Wrapper: React.FC<Props> = ({children}) => {
   return (
-    <ApolloProvider client={client}>
+    <ReactQueryProvider>
       <MemoryRouter initialEntries={['/']}>
         <MockThemeProvider>{children}</MockThemeProvider>
       </MemoryRouter>
-    </ApolloProvider>
+    </ReactQueryProvider>
   );
 };
 
@@ -58,16 +53,9 @@ describe('Processes', () => {
   it('should render an empty state message', async () => {
     window.localStorage.setItem('hasConsentedToStartProcess', 'true');
     nodeMockServer.use(
-      graphql.query<GetProcesses, GetProcessesVariables>(
-        'GetProcesses',
-        (_, res, ctx) => {
-          return res(
-            ctx.data({
-              processes: [],
-            }),
-          );
-        },
-      ),
+      rest.get('/v1/internal/processes', (_, res, ctx) => {
+        return res(ctx.json([]));
+      }),
     );
 
     render(<Processes />, {
@@ -103,19 +91,14 @@ describe('Processes', () => {
   it('should render a list of processes', async () => {
     window.localStorage.setItem('hasConsentedToStartProcess', 'true');
     nodeMockServer.use(
-      graphql.query<GetProcesses, GetProcessesVariables>(
-        'GetProcesses',
-        (_, res, ctx) => {
-          return res(
-            ctx.data({
-              processes: [
-                createMockProcess('process-0'),
-                createMockProcess('process-1'),
-              ],
-            }),
-          );
-        },
-      ),
+      rest.get('/v1/internal/processes', (_, res, ctx) => {
+        return res(
+          ctx.json([
+            createMockProcess('process-0'),
+            createMockProcess('process-1'),
+          ]),
+        );
+      }),
     );
 
     render(<Processes />, {
@@ -132,18 +115,9 @@ describe('Processes', () => {
   it('should show an error toast when the query fails', async () => {
     window.localStorage.setItem('hasConsentedToStartProcess', 'true');
     nodeMockServer.use(
-      graphql.query<GetProcesses, GetProcessesVariables>(
-        'GetProcesses',
-        (_, res, ctx) => {
-          return res.once(
-            ctx.errors([
-              {
-                message: 'Something went wrong',
-              },
-            ]),
-          );
-        },
-      ),
+      rest.get('/v1/internal/processes', (_, res) => {
+        return res.networkError('Error');
+      }),
     );
 
     render(<Processes />, {

@@ -15,7 +15,12 @@ const BASENAME = process.env.BASENAME === undefined ? '' : process.env.BASENAME;
 
 module.exports = function (app) {
   app.use(
-    [`${BASENAME}/api`, `${BASENAME}/graphql`, `${BASENAME}/client-config.js`],
+    [
+      `${BASENAME}/api`,
+      `${BASENAME}/graphql`,
+      `${BASENAME}/v1`,
+      `${BASENAME}/client-config.js`,
+    ],
     createProxyMiddleware({
       target: `http://localhost:${process.env.IS_E2E ? '8081' : '8080'}`,
     }),

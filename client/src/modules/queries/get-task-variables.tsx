@@ -6,13 +6,13 @@
  */
 
 import {gql, useQuery} from '@apollo/client';
-import {Task, Variable} from 'modules/types';
+import {GraphqlTask, Task, Variable} from 'modules/types';
 import {useState} from 'react';
 
-type TaskVariablesQueryVariables = Pick<Task, 'id'>;
+type TaskVariablesQueryVariables = Pick<GraphqlTask, 'id'>;
 
 interface GetTaskVariables {
-  task: Pick<Task, 'id' | 'variables'>;
+  task: Pick<GraphqlTask, 'id' | 'variables'>;
 }
 
 const GET_TASK_VARIABLES = gql`

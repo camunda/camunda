@@ -5,11 +5,11 @@
  * except in compliance with the proprietary license.
  */
 
-import {Task} from 'modules/types';
+import {GraphqlTask} from 'modules/types';
 import {TaskStates} from 'modules/constants/taskStates';
 import {currentUser} from './current-user';
 
-const tasks: ReadonlyArray<Task> = [
+const tasks: ReadonlyArray<GraphqlTask> = [
   {
     __typename: 'Task',
     id: '0',
@@ -23,7 +23,9 @@ const tasks: ReadonlyArray<Task> = [
     sortValues: ['0', '1'],
     isFirst: true,
     formKey: null,
-    processDefinitionId: null,
+    processDefinitionId: 'process',
+    taskDefinitionId: 'task-0',
+    processInstanceKey: '123',
     followUpDate: null,
     dueDate: null,
     candidateGroups: [],
@@ -57,7 +59,9 @@ const tasks: ReadonlyArray<Task> = [
     sortValues: ['1', '2'],
     isFirst: false,
     formKey: null,
-    processDefinitionId: null,
+    processDefinitionId: 'process',
+    taskDefinitionId: 'task-0',
+    processInstanceKey: '123',
     followUpDate: null,
     dueDate: null,
     candidateGroups: [],
@@ -76,7 +80,9 @@ const tasks: ReadonlyArray<Task> = [
     sortValues: ['2', '3'],
     isFirst: false,
     formKey: null,
-    processDefinitionId: null,
+    processDefinitionId: 'process',
+    taskDefinitionId: 'task-0',
+    processInstanceKey: '123',
     followUpDate: null,
     dueDate: null,
     candidateGroups: [],
@@ -84,25 +90,28 @@ const tasks: ReadonlyArray<Task> = [
   },
 ];
 
-const tasksAssignedToDemoUser: ReadonlyArray<Task> = tasks.map((task) => ({
-  ...task,
-  assignee: currentUser.userId,
-}));
+const tasksAssignedToDemoUser: ReadonlyArray<GraphqlTask> = tasks.map(
+  (task) => ({
+    ...task,
+    assignee: currentUser.userId,
+  }),
+);
 
-const unassignedTasks: ReadonlyArray<Task> = tasks.map((task) => ({
+const unassignedTasks: ReadonlyArray<GraphqlTask> = tasks.map((task) => ({
   ...task,
   assignee: null,
 }));
 
-const completedTasks: ReadonlyArray<Task> = tasks.map((task) => ({
+const completedTasks: ReadonlyArray<GraphqlTask> = tasks.map((task) => ({
   ...task,
   assignee: task.assignee === null ? currentUser.userId : task.assignee,
   taskState: TaskStates.Completed,
 }));
 
-const generateTask = (id: string, name?: string): Task => {
+const generateTask = (id: string, name?: string): GraphqlTask => {
   return {
     id,
+    __typename: 'Task',
     name: name ?? `TASK ${id}`,
     processName: 'Flight registration',
     assignee: 'demo',
@@ -112,8 +121,9 @@ const generateTask = (id: string, name?: string): Task => {
     followUpDate: null,
     dueDate: null,
     isFirst: false,
-    __typename: 'Task',
-    processDefinitionId: null,
+    processDefinitionId: 'process',
+    taskDefinitionId: 'task-0',
+    processInstanceKey: '123',
     completionTime: null,
     formKey: null,
     variables: [],

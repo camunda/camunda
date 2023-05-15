@@ -5,70 +5,74 @@
  * except in compliance with the proprietary license.
  */
 
-import {useQuery} from '@apollo/client';
 import {observer} from 'mobx-react-lite';
 import {Pages} from 'modules/constants/pages';
 import {newProcessInstance} from 'modules/stores/newProcessInstance';
-import {ProcessInstance} from 'modules/types';
-import {useEffect} from 'react';
+import {Task} from 'modules/types';
 import {useLocation, useNavigate} from 'react-router-dom';
-import {TaskStates} from 'modules/constants/taskStates';
-import {
-  GetNewTasks,
-  GetNewTasksVariables,
-  GET_NEW_TASKS,
-} from 'modules/queries/get-new-tasks';
 import {tracking} from 'modules/tracking';
+import {useQuery} from '@tanstack/react-query';
+import {request, RequestError} from 'modules/request';
+import {api} from 'modules/api';
+import {useEffect} from 'react';
+
+type NewTasksResponse = Task[];
 
 const NewProcessInstanceTasksPolling: React.FC = observer(() => {
-  if (newProcessInstance.instance === null) {
-    return null;
-  }
-
-  const {id} = newProcessInstance.instance;
-
-  return <PollForTasks processInstanceId={id} />;
-});
-
-type Props = {
-  processInstanceId: ProcessInstance['id'];
-};
-
-const PollForTasks: React.FC<Props> = observer(({processInstanceId}) => {
+  const {instance} = newProcessInstance;
   const navigate = useNavigate();
   const location = useLocation();
-  const {data} = useQuery<GetNewTasks, GetNewTasksVariables>(GET_NEW_TASKS, {
-    fetchPolicy: 'network-only',
-    pollInterval: 1000,
-    variables: {
-      pageSize: 10,
-      processInstanceId,
-      state: TaskStates.Created,
+
+  useQuery<NewTasksResponse, RequestError | Error>({
+    queryKey: ['newTasks'],
+    enabled: instance !== null,
+    refetchInterval: 1000,
+    queryFn: async () => {
+      if (instance?.id === undefined) {
+        throw new Error('Process instance id is undefined');
+      }
+
+      const {response, error} = await request(
+        api.searchTasks({
+          pageSize: 10,
+          processInstanceKey: instance.id,
+          state: 'CREATED',
+        }),
+      );
+
+      if (response !== null) {
+        return await response.json();
+      }
+
+      if (error !== null) {
+        throw error;
+      }
+
+      throw new Error('No tasks found');
+    },
+    cacheTime: 0,
+    refetchOnWindowFocus: false,
+    onSuccess(data) {
+      if (data.length === 0) {
+        return;
+      }
+
+      newProcessInstance.removeInstance(data);
+
+      if (data.length === 1 && location.pathname === `/${Pages.Processes}`) {
+        const [{id}] = data;
+
+        tracking.track({
+          eventName: 'process-tasks-polling-ended',
+          outcome: 'single-task-found',
+        });
+
+        navigate({pathname: Pages.TaskDetails(id)});
+
+        return;
+      }
     },
   });
-
-  useEffect(() => {
-    if (data === undefined || data.tasks.length <= 0) {
-      return;
-    }
-
-    const {tasks} = data;
-
-    newProcessInstance.removeInstance(tasks);
-
-    if (tasks.length === 1 && location.pathname === `/${Pages.Processes}`) {
-      const [{id}] = tasks;
-
-      tracking.track({
-        eventName: 'process-tasks-polling-ended',
-        outcome: 'single-task-found',
-      });
-
-      navigate({pathname: Pages.TaskDetails(id)});
-
-      return;
-    }
-  }, [data, processInstanceId, navigate, location]);
 
   useEffect(() => {
     return () => {

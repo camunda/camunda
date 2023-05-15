@@ -9,8 +9,7 @@ import {Task} from 'modules/types';
 import {TaskStates} from 'modules/constants/taskStates';
 import {currentUser} from 'modules/mock-schema/mocks/current-user';
 
-const unassignedTask = (id = '0'): Omit<Task, 'variables'> => ({
-  __typename: 'Task',
+const unassignedTask = (id = '0'): Task => ({
   id,
   name: 'My Task',
   processName: 'Nice Process',
@@ -21,15 +20,16 @@ const unassignedTask = (id = '0'): Omit<Task, 'variables'> => ({
   isFirst: false,
   sortValues: ['1', '2'],
   formKey: null,
-  processDefinitionId: null,
+  taskDefinitionId: 'task-0',
+  processDefinitionKey: 'process',
+  processInstanceKey: '123',
   followUpDate: null,
   dueDate: null,
   candidateGroups: ['accounting candidate'],
   candidateUsers: ['jane candidate'],
 });
 
-const unassignedTaskWithForm = (id = '0'): Omit<Task, 'variables'> => ({
-  __typename: 'Task',
+const unassignedTaskWithForm = (id = '0'): Task => ({
   id,
   name: 'My Task',
   processName: 'Nice Process',
@@ -40,15 +40,16 @@ const unassignedTaskWithForm = (id = '0'): Omit<Task, 'variables'> => ({
   isFirst: false,
   sortValues: ['1', '2'],
   formKey: 'camunda-forms:bpmn:form-0',
-  processDefinitionId: 'process',
+  taskDefinitionId: 'task-0',
+  processDefinitionKey: 'process',
+  processInstanceKey: '123',
   followUpDate: null,
   dueDate: null,
   candidateGroups: [],
   candidateUsers: [],
 });
 
-const completedTask = (id = '0'): Omit<Task, 'variables'> => ({
-  __typename: 'Task',
+const completedTask = (id = '0'): Task => ({
   id,
   name: 'My Task',
   processName: 'Nice Process',
@@ -59,15 +60,16 @@ const completedTask = (id = '0'): Omit<Task, 'variables'> => ({
   isFirst: false,
   sortValues: ['1', '2'],
   formKey: null,
-  processDefinitionId: null,
+  taskDefinitionId: 'task-0',
+  processDefinitionKey: 'process',
+  processInstanceKey: '123',
   followUpDate: null,
   dueDate: null,
   candidateGroups: [],
   candidateUsers: [],
 });
 
-const completedTaskWithForm = (id = '0'): Omit<Task, 'variables'> => ({
-  __typename: 'Task',
+const completedTaskWithForm = (id = '0'): Task => ({
   id,
   name: 'My Task',
   processName: 'Nice Process',
@@ -78,15 +80,16 @@ const completedTaskWithForm = (id = '0'): Omit<Task, 'variables'> => ({
   isFirst: false,
   sortValues: ['1', '2'],
   formKey: 'camunda-forms:bpmn:form-0',
-  processDefinitionId: 'process',
+  taskDefinitionId: 'task-0',
+  processDefinitionKey: 'process',
+  processInstanceKey: '123',
   followUpDate: null,
   dueDate: null,
   candidateGroups: [],
   candidateUsers: [],
 });
 
-const assignedTask = (id = '0'): Omit<Task, 'variables'> => ({
-  __typename: 'Task',
+const assignedTask = (id = '0'): Task => ({
   id,
   name: 'My Task',
   processName: 'Nice Process',
@@ -97,15 +100,16 @@ const assignedTask = (id = '0'): Omit<Task, 'variables'> => ({
   isFirst: false,
   sortValues: ['1', '2'],
   formKey: null,
-  processDefinitionId: null,
+  taskDefinitionId: 'task-0',
+  processDefinitionKey: 'process',
+  processInstanceKey: '123',
   followUpDate: null,
   dueDate: null,
   candidateGroups: [],
   candidateUsers: [],
 });
 
-const assignedTaskWithForm = (id = '0'): Omit<Task, 'variables'> => ({
-  __typename: 'Task',
+const assignedTaskWithForm = (id = '0'): Task => ({
   id,
   name: 'My Task',
   processName: 'Nice Process',
@@ -116,7 +120,9 @@ const assignedTaskWithForm = (id = '0'): Omit<Task, 'variables'> => ({
   isFirst: false,
   sortValues: ['1', '2'],
   formKey: 'camunda-forms:bpmn:form-0',
-  processDefinitionId: 'process',
+  taskDefinitionId: 'task-0',
+  processDefinitionKey: 'process',
+  processInstanceKey: '123',
   followUpDate: null,
   dueDate: null,
   candidateGroups: [],

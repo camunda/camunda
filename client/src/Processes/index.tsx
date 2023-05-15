@@ -5,13 +5,7 @@
  * except in compliance with the proprietary license.
  */
 
-import {useQuery, NetworkStatus} from '@apollo/client';
 import {Search, Stack, Link} from '@carbon/react';
-import {
-  GetProcesses,
-  GetProcessesVariables,
-  GET_PROCESSES,
-} from 'modules/queries/get-processes';
 import {ProcessTile} from './ProcessTile';
 import {
   Container,
@@ -31,6 +25,7 @@ import {notificationsStore} from 'modules/stores/notifications';
 import {logger} from 'modules/utils/logger';
 import {NewProcessInstanceTasksPolling} from './NewProcessInstanceTasksPolling';
 import {tracking} from 'modules/tracking';
+import {useProcesses} from 'modules/queries/useProcesses';
 
 const Processes: React.FC = observer(() => {
   const {instance} = newProcessInstance;
@@ -38,23 +33,7 @@ const Processes: React.FC = observer(() => {
   const navigate = useNavigate();
   const searchParam =
     new URLSearchParams(location.search).get('search') ?? undefined;
-  const {data, previousData, networkStatus, variables, error} = useQuery<
-    GetProcesses,
-    GetProcessesVariables
-  >(GET_PROCESSES, {
-    variables: {
-      search: searchParam,
-    },
-    pollInterval: 5000,
-    onCompleted: () => {
-      tracking.track({
-        eventName: 'processes-loaded',
-        filter: variables?.search ?? '',
-        count: data?.processes.length ?? 0,
-      });
-    },
-  });
-  const isExecutingFirstFetch = networkStatus === NetworkStatus.loading;
+  const {data, error, isInitialLoading} = useProcesses(searchParam);
   const debouncedNavigate = useRef(
     debounce(function navigateSearchParams(
       search: string,
@@ -75,11 +54,11 @@ const Processes: React.FC = observer(() => {
     500),
   ).current;
   const [searchValue, setSearchValue] = useState(searchParam ?? '');
-  const processes = (data ?? previousData)?.processes ?? [];
-  const isFiltered = Boolean(variables?.search);
+  const isFiltered = data?.query !== undefined && data.query !== '';
+  const processes = data?.processes ?? [];
 
   useEffect(() => {
-    if (error !== undefined) {
+    if (error !== null) {
       tracking.track({
         eventName: 'processes-fetch-failed',
       });
@@ -107,10 +86,10 @@ const Processes: React.FC = observer(() => {
               setSearchValue(event.target.value);
               debouncedNavigate(event.target.value, location.search);
             }}
-            disabled={isExecutingFirstFetch}
+            disabled={isInitialLoading}
           />
         </SearchContainer>
-        {!isExecutingFirstFetch && processes.length === 0 ? (
+        {!isInitialLoading && processes.length === 0 ? (
           <C3EmptyState
             icon={
               isFiltered ? undefined : {path: EmptyMessageImage, altText: ''}
@@ -142,18 +121,18 @@ const Processes: React.FC = observer(() => {
           />
         ) : (
           <ProcessesContainer>
-            {isExecutingFirstFetch
+            {isInitialLoading
               ? Array.from({length: 5}).map((_, index) => (
                   <TileSkeleton key={index} data-testid="process-skeleton" />
                 ))
-              : processes.map(({name, processDefinitionId}, idx) => (
+              : processes.map(({name, processDefinitionKey}, idx) => (
                   <ProcessTile
                     name={name}
-                    processDefinitionId={processDefinitionId}
-                    key={processDefinitionId}
+                    processDefinitionKey={processDefinitionKey}
+                    key={processDefinitionKey}
                     isFirst={idx === 0}
                     isStartButtonDisabled={
-                      instance !== null && instance.id !== processDefinitionId
+                      instance !== null && instance.id !== processDefinitionKey
                     }
                     data-testid="process-tile"
                   />

@@ -6,11 +6,10 @@
  */
 
 import {action, makeObservable, observable} from 'mobx';
-import {GetNewTasks} from 'modules/queries/get-new-tasks';
-import type {ProcessInstance} from 'modules/types';
+import type {ProcessInstance, Task} from 'modules/types';
 
 type NewProcessInstanceType = ProcessInstance & {
-  removeCallback: (tasks: GetNewTasks['tasks'] | null) => void;
+  removeCallback: (tasks: Task[] | null) => void;
 };
 
 class NewProcessInstance {
@@ -34,7 +33,7 @@ class NewProcessInstance {
     }, 15000);
   };
 
-  removeInstance = (tasks: GetNewTasks['tasks'] | null = []) => {
+  removeInstance = (tasks: Task[] | null = []) => {
     this.instance?.removeCallback(tasks);
     this.instance = null;
     if (this.intervalId !== null) {

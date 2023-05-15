@@ -8,11 +8,12 @@
 /* istanbul ignore file */
 
 import gql from 'graphql-tag';
-import {Task} from 'modules/types';
+import {GraphqlTask} from 'modules/types';
 import {assignedTask} from 'modules/mock-schema/mocks/task';
+import {convertToGraphqlTask} from 'modules/utils/convertToGraphqlTask';
 
 type AssignTaskVariables = {
-  id: Task['id'];
+  id: GraphqlTask['id'];
 };
 
 const ASSIGN_TASK = gql`
@@ -31,7 +32,7 @@ const mockAssignTask = {
   },
   result: {
     data: {
-      claimTask: assignedTask(),
+      claimTask: convertToGraphqlTask(assignedTask()),
     },
   },
 };

@@ -51,7 +51,7 @@ describe('request', () => {
         response: expect.objectContaining({
           status: 401,
         }),
-        error: null,
+        networkError: null,
       }),
     });
   });
@@ -71,7 +71,7 @@ describe('request', () => {
       error: expect.objectContaining({
         variant: 'network-error',
         response: null,
-        error: expect.objectContaining({
+        networkError: expect.objectContaining({
           message: 'Failed to connect',
         }),
       }),

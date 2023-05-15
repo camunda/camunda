@@ -5,6 +5,11 @@
  * except in compliance with the proprietary license.
  */
 
+type ToGraphqlEntity<T, K extends string> = T & {
+  __typename: K;
+  variables: Variable[];
+};
+
 type NonEmptyArray<T> = [T, ...T[]];
 
 type Permissions = NonEmptyArray<'read' | 'write'>;
@@ -32,25 +37,32 @@ type Variable = Readonly<{
 
 type TaskState = 'CREATED' | 'COMPLETED' | 'CANCELED';
 
-type Task = Readonly<{
-  __typename: string;
+type Task = {
   id: string;
   name: string;
+  taskDefinitionId: string;
   processName: string;
   creationTime: string;
   followUpDate: string | null;
   dueDate: string | null;
   completionTime: string | null;
   assignee: string | null;
-  variables: ReadonlyArray<Variable>;
   taskState: TaskState;
   sortValues: [string, string];
   isFirst: boolean;
   formKey: string | null;
-  processDefinitionId: string | null;
-  candidateGroups: ReadonlyArray<string>;
-  candidateUsers: ReadonlyArray<string>;
-}>;
+  processInstanceKey: string;
+  processDefinitionKey: string;
+  candidateGroups: string[];
+  candidateUsers: string[];
+};
+
+type GraphqlTask = ToGraphqlEntity<
+  Omit<Task, 'processDefinitionKey'> & {
+    processDefinitionId: string;
+  },
+  'Task'
+>;
 
 type Form = Readonly<{
   __typename: string;
@@ -59,17 +71,18 @@ type Form = Readonly<{
   schema: string;
 }>;
 
-type Process = Readonly<{
-  __typename: string;
+type Process = {
   id: string;
   name: string | null;
-  processDefinitionId: string;
-}>;
+  processDefinitionKey: string;
+  sortValues: [string];
+  version: number;
+};
 
-type ProcessInstance = Readonly<{
+type ProcessInstance = {
   __typename: string;
   id: string;
-}>;
+};
 
 type DateSearch = {
   from: string;
@@ -90,7 +103,7 @@ type TasksSearchBody = {
   processDefinitionKey?: string;
   processInstanceKey?: string;
   pageSize?: number;
-  sort: Array<{
+  sort?: Array<{
     field: 'completionTime' | 'creationTime' | 'followUpDate' | 'dueDate';
     order: 'ASC' | 'DESC';
   }>;
@@ -110,4 +123,5 @@ export type {
   Process,
   ProcessInstance,
   TasksSearchBody,
+  GraphqlTask,
 };

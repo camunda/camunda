@@ -9,7 +9,18 @@ import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {ReactQueryDevtools} from '@tanstack/react-query-devtools';
 import {lazy, useEffect, useState, Suspense} from 'react';
 
-const queryClient = new QueryClient();
+const reactQueryClient = new QueryClient({
+  logger: {
+    log: console.log,
+    warn: console.warn,
+    error: process.env.NODE_ENV === 'test' ? () => {} : console.error,
+  },
+  defaultOptions: {
+    queries: {
+      retry: process.env.NODE_ENV === 'test' ? false : undefined,
+    },
+  },
+});
 
 const ReactQueryDevtoolsProduction: React.FC = lazy(() =>
   import('@tanstack/react-query-devtools/build/lib/index.prod.js').then(
@@ -31,7 +42,7 @@ const ReactQueryProvider: React.FC<Props> = ({children}) => {
   }, []);
 
   return (
-    <QueryClientProvider client={queryClient}>
+    <QueryClientProvider client={reactQueryClient}>
       {children}
       <ReactQueryDevtools />
       {isProdDevtoolsOpen ? (
@@ -43,4 +54,4 @@ const ReactQueryProvider: React.FC<Props> = ({children}) => {
   );
 };
 
-export {ReactQueryProvider};
+export {ReactQueryProvider, reactQueryClient};

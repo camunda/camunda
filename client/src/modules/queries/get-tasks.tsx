@@ -14,11 +14,11 @@ import {
   unassignedTasks,
   completedTasks,
 } from 'modules/mock-schema/mocks/tasks';
-import {Task} from 'modules/types';
+import {GraphqlTask} from 'modules/types';
 import {TaskStates} from 'modules/constants/taskStates';
 
 type QueryTask = Pick<
-  Task,
+  GraphqlTask,
   | 'id'
   | 'name'
   | 'assignee'
@@ -57,7 +57,7 @@ const GET_TASKS = gql`
     $searchBefore: [String!]
     $searchAfterOrEqual: [String!]
     $processInstanceId: String
-    $processDefinitionId: String
+    $processDefinitionKey: String
     $sort: [TaskOrderBy!]
   ) {
     tasks(
@@ -70,7 +70,7 @@ const GET_TASKS = gql`
         searchBefore: $searchBefore
         searchAfterOrEqual: $searchAfterOrEqual
         processInstanceId: $processInstanceId
-        processDefinitionId: $processDefinitionId
+        processDefinitionId: $processDefinitionKey
         sort: $sort
       }
     ) {

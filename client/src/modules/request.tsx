@@ -8,7 +8,7 @@
 type RequestError = {
   variant: 'network-error' | 'failed-response';
   response: Response | null;
-  error: unknown | null;
+  networkError: unknown | null;
 };
 
 async function request(
@@ -38,7 +38,7 @@ async function request(
       response: null,
       error: {
         response,
-        error: null,
+        networkError: null,
         variant: 'failed-response',
       },
     };
@@ -47,7 +47,7 @@ async function request(
       response: null,
       error: {
         response: null,
-        error,
+        networkError: error,
         variant: 'network-error',
       },
     };
@@ -55,3 +55,4 @@ async function request(
 }
 
 export {request};
+export type {RequestError};

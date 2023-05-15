@@ -14,6 +14,7 @@ import {clearClientCache} from 'modules/apollo-client';
 import {nodeMockServer} from 'modules/mockServer/nodeMockServer';
 import {configure} from 'modules/testing-library';
 import {DEFAULT_MOCK_CLIENT_CONFIG} from 'modules/mocks/window';
+import {reactQueryClient} from 'modules/ReactQueryProvider';
 
 function mockMatchMedia() {
   Object.defineProperty(window, 'matchMedia', {
@@ -81,6 +82,7 @@ beforeAll(() => {
 
 afterEach(async () => {
   await clearClientCache();
+  reactQueryClient.clear();
 });
 
 afterAll(() => nodeMockServer.close());

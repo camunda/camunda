@@ -8,18 +8,19 @@
 /* istanbul ignore file */
 
 import gql from 'graphql-tag';
-import {Task, Variable} from 'modules/types';
+import {GraphqlTask, Variable} from 'modules/types';
 import {completedTask} from 'modules/mock-schema/mocks/task';
+import {convertToGraphqlTask} from 'modules/utils/convertToGraphqlTask';
 
 type Variables = Pick<Variable, 'name' | 'value'>[];
 
 interface CompleteTask {
-  id: Task['id'];
+  id: GraphqlTask['id'];
   variables: Variables;
 }
 
 interface CompleteTaskVariables {
-  id: Task['id'];
+  id: GraphqlTask['id'];
   variables: Variables;
 }
 
@@ -48,7 +49,7 @@ const mockCompleteTask = () => ({
   result: {
     data: {
       completeTask: {
-        ...completedTask(),
+        ...convertToGraphqlTask(completedTask()),
         variables: [],
       },
     },
@@ -65,7 +66,7 @@ const mockCompleteTaskWithAddedVariable = {
   },
   result: {
     data: {
-      completeTask: completedTask(),
+      completeTask: convertToGraphqlTask(completedTask()),
     },
   },
 };

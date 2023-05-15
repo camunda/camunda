@@ -36,6 +36,7 @@ import {nodeMockServer} from 'modules/mockServer/nodeMockServer';
 import {graphql} from 'msw';
 import noop from 'lodash/noop';
 import {currentUser} from 'modules/mock-schema/mocks/current-user';
+import {convertToGraphqlTask} from 'modules/utils/convertToGraphqlTask';
 
 type Props = {
   children?: React.ReactNode;
@@ -80,7 +81,7 @@ describe('<Variables />', () => {
 
     render(
       <Variables
-        task={unassignedTask()}
+        task={convertToGraphqlTask(unassignedTask())}
         user={currentUser}
         onSubmit={() => Promise.resolve()}
         onSubmitFailure={noop}
@@ -107,7 +108,7 @@ describe('<Variables />', () => {
 
     render(
       <Variables
-        task={assignedTask()}
+        task={convertToGraphqlTask(assignedTask())}
         user={currentUser}
         onSubmit={() => Promise.resolve()}
         onSubmitFailure={noop}
@@ -135,7 +136,7 @@ describe('<Variables />', () => {
 
     const {user} = render(
       <Variables
-        task={assignedTask()}
+        task={convertToGraphqlTask(assignedTask())}
         user={currentUser}
         onSubmit={() => Promise.resolve()}
         onSubmitFailure={noop}
@@ -168,7 +169,7 @@ describe('<Variables />', () => {
 
     const {user} = render(
       <Variables
-        task={assignedTask()}
+        task={convertToGraphqlTask(assignedTask())}
         user={currentUser}
         onSubmit={() => Promise.resolve()}
         onSubmitFailure={noop}
@@ -215,7 +216,7 @@ describe('<Variables />', () => {
 
     const {user} = render(
       <Variables
-        task={assignedTask()}
+        task={convertToGraphqlTask(assignedTask())}
         user={currentUser}
         onSubmit={() => Promise.resolve()}
         onSubmitFailure={noop}
@@ -243,7 +244,7 @@ describe('<Variables />', () => {
 
     const {user} = render(
       <Variables
-        task={assignedTask()}
+        task={convertToGraphqlTask(assignedTask())}
         user={currentUser}
         onSubmit={() => Promise.resolve()}
         onSubmitFailure={noop}
@@ -276,7 +277,7 @@ describe('<Variables />', () => {
 
     const {user} = render(
       <Variables
-        task={assignedTask()}
+        task={convertToGraphqlTask(assignedTask())}
         user={currentUser}
         onSubmit={() => Promise.resolve()}
         onSubmitFailure={noop}
@@ -322,7 +323,7 @@ describe('<Variables />', () => {
 
     const {user} = render(
       <Variables
-        task={assignedTask()}
+        task={convertToGraphqlTask(assignedTask())}
         user={currentUser}
         onSubmit={() => Promise.resolve()}
         onSubmitFailure={noop}
@@ -352,7 +353,7 @@ describe('<Variables />', () => {
 
     const {user} = render(
       <Variables
-        task={assignedTask()}
+        task={convertToGraphqlTask(assignedTask())}
         user={currentUser}
         onSubmit={() => Promise.resolve()}
         onSubmitFailure={noop}
@@ -389,7 +390,7 @@ describe('<Variables />', () => {
 
     const {user} = render(
       <Variables
-        task={assignedTask()}
+        task={convertToGraphqlTask(assignedTask())}
         user={currentUser}
         onSubmit={() => Promise.resolve()}
         onSubmitFailure={noop}
@@ -435,7 +436,7 @@ describe('<Variables />', () => {
     const {rerender, user} = render(
       <Variables
         key="id_0"
-        task={assignedTask()}
+        task={convertToGraphqlTask(assignedTask())}
         user={currentUser}
         onSubmit={mockOnSubmit}
         onSubmitFailure={noop}
@@ -480,7 +481,7 @@ describe('<Variables />', () => {
     rerender(
       <Variables
         key="id_1"
-        task={assignedTask()}
+        task={convertToGraphqlTask(assignedTask())}
         user={currentUser}
         onSubmit={mockOnSubmit}
         onSubmitFailure={noop}
@@ -522,7 +523,7 @@ describe('<Variables />', () => {
 
     const {user} = render(
       <Variables
-        task={assignedTask()}
+        task={convertToGraphqlTask(assignedTask())}
         user={currentUser}
         onSubmit={mockOnSubmit}
         onSubmitFailure={noop}
@@ -573,7 +574,7 @@ describe('<Variables />', () => {
       <>
         <UserName />
         <Variables
-          task={assignedTask()}
+          task={convertToGraphqlTask(assignedTask())}
           user={currentUser}
           onSubmit={mockOnSubmit}
           onSubmitFailure={noop}
@@ -604,7 +605,7 @@ describe('<Variables />', () => {
 
     const {user} = render(
       <Variables
-        task={assignedTask()}
+        task={convertToGraphqlTask(assignedTask())}
         user={currentUser}
         onSubmit={mockOnSubmit}
         onSubmitFailure={noop}
@@ -649,7 +650,7 @@ describe('<Variables />', () => {
 
     render(
       <Variables
-        task={completedTask()}
+        task={convertToGraphqlTask(completedTask())}
         user={currentUser}
         onSubmit={() => Promise.resolve()}
         onSubmitFailure={noop}
@@ -674,7 +675,7 @@ describe('<Variables />', () => {
 
     const {user} = render(
       <Variables
-        task={assignedTask()}
+        task={convertToGraphqlTask(assignedTask())}
         user={currentUser}
         onSubmit={() => Promise.resolve()}
         onSubmitFailure={noop}
@@ -705,7 +706,7 @@ describe('<Variables />', () => {
 
     const {user} = render(
       <Variables
-        task={assignedTask()}
+        task={convertToGraphqlTask(assignedTask())}
         user={currentUser}
         onSubmit={() => Promise.resolve()}
         onSubmitFailure={noop}
@@ -740,7 +741,7 @@ describe('<Variables />', () => {
 
     const {user} = render(
       <Variables
-        task={assignedTask()}
+        task={convertToGraphqlTask(assignedTask())}
         user={currentUser}
         onSubmit={() => Promise.resolve()}
         onSubmitFailure={noop}
@@ -765,7 +766,7 @@ describe('<Variables />', () => {
 
     render(
       <Variables
-        task={completedTask()}
+        task={convertToGraphqlTask(completedTask())}
         user={currentUser}
         onSubmit={() => Promise.resolve()}
         onSubmitFailure={noop}
@@ -798,7 +799,7 @@ describe('<Variables />', () => {
     const mockOnSubmit = jest.fn();
     const {user} = render(
       <Variables
-        task={assignedTask()}
+        task={convertToGraphqlTask(assignedTask())}
         user={currentUser}
         onSubmit={mockOnSubmit}
         onSubmitFailure={noop}
@@ -861,7 +862,7 @@ describe('<Variables />', () => {
     );
     const {user} = render(
       <Variables
-        task={assignedTask()}
+        task={convertToGraphqlTask(assignedTask())}
         user={currentUser}
         onSubmit={() => Promise.resolve()}
         onSubmitFailure={noop}
@@ -903,7 +904,7 @@ describe('<Variables />', () => {
 
       const {user} = render(
         <Variables
-          task={assignedTask()}
+          task={convertToGraphqlTask(assignedTask())}
           user={currentUser}
           onSubmit={() => Promise.resolve()}
           onSubmitFailure={noop}
@@ -936,7 +937,7 @@ describe('<Variables />', () => {
 
       const {user} = render(
         <Variables
-          task={assignedTask()}
+          task={convertToGraphqlTask(assignedTask())}
           user={currentUser}
           onSubmit={() => Promise.resolve()}
           onSubmitFailure={noop}
@@ -992,7 +993,7 @@ describe('<Variables />', () => {
 
       const {user} = render(
         <Variables
-          task={assignedTask()}
+          task={convertToGraphqlTask(assignedTask())}
           user={currentUser}
           onSubmit={() => Promise.resolve()}
           onSubmitFailure={noop}
@@ -1037,7 +1038,7 @@ describe('<Variables />', () => {
 
       const {user} = render(
         <Variables
-          task={assignedTask()}
+          task={convertToGraphqlTask(assignedTask())}
           user={currentUser}
           onSubmit={() => Promise.resolve()}
           onSubmitFailure={noop}
