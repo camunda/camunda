@@ -111,7 +111,7 @@ final class RemoteJobStreamErrorHandler implements RemoteStreamErrorHandler<Acti
     } else if (position < 0) {
       FAILED_WRITER_LOGGER.warn(
           """
-          Failed to handled failed job push {} on partition {};
+          Failed to handle failed job push {} on partition {};
           job will remain activated until it times out""",
           job.jobKey(),
           partitionId);
