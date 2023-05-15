@@ -10,55 +10,64 @@ package io.camunda.zeebe.zbctl.mixin;
 import io.camunda.zeebe.client.CredentialsProvider;
 import io.camunda.zeebe.client.ZeebeClient;
 import picocli.CommandLine.Option;
+import picocli.CommandLine.ScopeType;
 
 public final class ClientMixin {
   @Option(
       names = "--address",
       description =
-          "Specify a contact point address. If omitted, will read from the environment variable 'ZEEBE_ADDRESS'")
+          "Specify a contact point address. If omitted, will read from the environment variable 'ZEEBE_ADDRESS'",
+      scope = ScopeType.INHERIT)
   private String address;
 
   @Option(
       names = "--audience",
       description =
-          "Specify the resource that the access token should be valid for. If omitted, will read from the environment variable 'ZEEBE_TOKEN_AUDIENCE'")
+          "Specify the resource that the access token should be valid for. If omitted, will read from the environment variable 'ZEEBE_TOKEN_AUDIENCE'",
+      scope = ScopeType.INHERIT)
   private String audience;
 
   @Option(
       names = "--authzUrl",
       description =
-          "Specify an authorization server URL from which to request an access token. If omitted, will read from the environment variable 'ZEEBE_AUTHORIZATION_SERVER_URL'")
+          "Specify an authorization server URL from which to request an access token. If omitted, will read from the environment variable 'ZEEBE_AUTHORIZATION_SERVER_URL'",
+      scope = ScopeType.INHERIT)
   private String authzUrl;
 
   @Option(
       names = "--certPath",
       description =
-          "Specify a path to a certificate with which to validate gateway requests. If omitted, will read from the environment variable 'ZEEBE_CA_CERTIFICATE_PATH'")
+          "Specify a path to a certificate with which to validate gateway requests. If omitted, will read from the environment variable 'ZEEBE_CA_CERTIFICATE_PATH'",
+      scope = ScopeType.INHERIT)
   private String certPath;
 
   @Option(
       names = "--clientCache",
       description =
-          "Specify the path to use for the OAuth credentials cache. If omitted, will read from the environment variable 'ZEEBE_CLIENT_CONFIG_PATH'")
+          "Specify the path to use for the OAuth credentials cache. If omitted, will read from the environment variable 'ZEEBE_CLIENT_CONFIG_PATH'",
+      scope = ScopeType.INHERIT)
   private String clientCache;
 
   @Option(
       names = "--clientId",
       description =
-          "Specify a client identifier to request an access token. If omitted, will read from the environment variable 'ZEEBE_CLIENT_ID'")
+          "Specify a client identifier to request an access token. If omitted, will read from the environment variable 'ZEEBE_CLIENT_ID'",
+      scope = ScopeType.INHERIT)
   private String clientId;
 
   @Option(
       names = "--clientSecret",
       description =
-          "Specify a client secret to request an access token. If omitted, will read from the environment variable 'ZEEBE_CLIENT_SECRET'")
+          "Specify a client secret to request an access token. If omitted, will read from the environment variable 'ZEEBE_CLIENT_SECRET'",
+      scope = ScopeType.INHERIT)
   private String clientSecret;
 
   @Option(
       names = "--host",
       description =
           "Specify the host part of the gateway address. If omitted, will read from the environment variable 'ZEEBE_HOST'",
-      defaultValue = "127.0.0.1")
+      defaultValue = "127.0.0.1",
+      scope = ScopeType.INHERIT)
   private String host;
 
   @Option(
@@ -66,7 +75,8 @@ public final class ClientMixin {
       description =
           "Specify the port part of the gateway address. If omitted, will read from the environment variable 'ZEEBE_PORT'",
       defaultValue = "26500",
-      type = Integer.class)
+      type = Integer.class,
+      scope = ScopeType.INHERIT)
   private int port;
 
   @Option(
@@ -74,7 +84,8 @@ public final class ClientMixin {
       description =
           "Specify if zbctl should use an unsecured connection. If omitted, will read from the environment variable 'ZEEBE_INSECURE_CONNECTION'",
       defaultValue = "false",
-      type = Boolean.class)
+      type = Boolean.class,
+      scope = ScopeType.INHERIT)
   private boolean insecure;
 
   public ZeebeClient client() {
