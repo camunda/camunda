@@ -144,6 +144,48 @@ declare module '@carbon/react' {
     }
   >;
 
+  export const OverflowMenu: ForwardRefReturn<
+    HTMLButtonElement,
+    React.FunctionComponent<
+      Omit<ReactInputAttr, ExcludedAttributes> & {
+        ariaLabel?: string | undefined;
+        direction?: VerticalDirection | undefined;
+        iconClass?: ReactAttr['className'] | undefined;
+        iconDescription?: string | undefined;
+        flipped?: boolean | undefined;
+        focusTrap?: boolean | undefined;
+        /**
+         * @deprecated The `light` prop for `OverflowMenu` is no longer needed and has been deprecated. It will be removed in the next major release. Use the Layer component instead.
+         */
+        light?: boolean | undefined;
+        menuOffset?: MenuOffsetValue | undefined;
+        menuOffsetFlip?: MenuOffsetValue | undefined;
+        menuOptionsClass?: ReactAttr['className'] | undefined;
+        onClick?(
+          event:
+            | React.MouseEvent<HTMLElement>
+            | React.KeyboardEvent<HTMLElement>
+        ): void;
+        onClose?(): void;
+        onOpen?(): void;
+        open?: boolean | undefined;
+        renderIcon?: any;
+        selectorPrimaryFocus?: string | undefined;
+        size?: MenuProps['size'];
+      } & {
+        align?:
+          | 'top'
+          | 'top-left'
+          | 'top-right'
+          | 'bottom'
+          | 'bottom-left'
+          | 'bottom-right'
+          | 'left'
+          | 'right';
+      }
+    >
+  >;
+
   export * from 'carbon-components-react';
 }
 

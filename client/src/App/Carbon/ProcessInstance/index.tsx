@@ -7,12 +7,136 @@
 
 import {VisuallyHiddenH1} from 'modules/components/VisuallyHiddenH1';
 import {InstanceDetail} from '../Layout/InstanceDetail';
+import {Breadcrumb} from './Breadcrumb';
+import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
+import {observer} from 'mobx-react';
+import {useProcessInstancePageParams} from './useProcessInstancePageParams';
+import {useLocation, useNavigate} from 'react-router-dom';
+import {useNotifications} from 'modules/notifications';
+import {useEffect} from 'react';
+import {modificationsStore} from 'modules/stores/modifications';
+import {reaction, when} from 'mobx';
+import {variablesStore} from 'modules/stores/variables';
+import {sequenceFlowsStore} from 'modules/stores/sequenceFlows';
+import {incidentsStore} from 'modules/stores/incidents';
+import {processInstanceDetailsStatisticsStore} from 'modules/stores/processInstanceDetailsStatistics';
+import {flowNodeInstanceStore} from 'modules/stores/flowNodeInstance';
+import {instanceHistoryModificationStore} from 'modules/stores/instanceHistoryModification';
+import {CarbonLocations} from 'modules/carbonRoutes';
+import {processInstanceDetailsDiagramStore} from 'modules/stores/processInstanceDetailsDiagram';
+import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
+import {flowNodeTimeStampStore} from 'modules/stores/flowNodeTimeStamp';
 
-const ProcessInstance: React.FC = () => {
+const ProcessInstance: React.FC = observer(() => {
+  const {processInstanceId = ''} = useProcessInstancePageParams();
+  const navigate = useNavigate();
+  const notifications = useNotifications();
+  const location = useLocation();
+
+  useEffect(() => {
+    const disposer = reaction(
+      () => modificationsStore.isModificationModeEnabled,
+      (isModificationModeEnabled) => {
+        if (isModificationModeEnabled) {
+          variablesStore.stopPolling();
+          sequenceFlowsStore.stopPolling();
+          processInstanceDetailsStore.stopPolling();
+          incidentsStore.stopPolling();
+          flowNodeInstanceStore.stopPolling();
+          processInstanceDetailsStatisticsStore.stopPolling();
+        } else {
+          instanceHistoryModificationStore.reset();
+          variablesStore.startPolling(processInstanceId);
+          sequenceFlowsStore.startPolling(processInstanceId);
+          processInstanceDetailsStore.startPolling(processInstanceId);
+          flowNodeInstanceStore.startPolling();
+          processInstanceDetailsStatisticsStore.startPolling(processInstanceId);
+        }
+      }
+    );
+
+    return () => {
+      disposer();
+    };
+  }, [processInstanceId]);
+
+  useEffect(() => {
+    const {
+      state: {processInstance},
+    } = processInstanceDetailsStore;
+
+    if (processInstanceId !== processInstance?.id) {
+      processInstanceDetailsStore.init({
+        id: processInstanceId,
+        onRefetchFailure: () => {
+          navigate(
+            CarbonLocations.processes({
+              active: true,
+              incidents: true,
+            })
+          );
+          notifications?.displayNotification('error', {
+            headline: `Instance ${processInstanceId} could not be found`,
+          });
+        },
+        onPollingFailure: () => {
+          navigate(CarbonLocations.processes());
+          notifications?.displayNotification('success', {
+            headline: 'Instance deleted',
+          });
+        },
+      });
+      flowNodeInstanceStore.init();
+      processInstanceDetailsStatisticsStore.init(processInstanceId);
+      processInstanceDetailsDiagramStore.init();
+      flowNodeSelectionStore.init();
+    }
+  }, [processInstanceId, navigate, notifications, location]);
+
+  useEffect(() => {
+    return () => {
+      instanceHistoryModificationStore.reset();
+      processInstanceDetailsStore.reset();
+      processInstanceDetailsStatisticsStore.reset();
+      flowNodeInstanceStore.reset();
+      processInstanceDetailsDiagramStore.reset();
+      flowNodeTimeStampStore.reset();
+      flowNodeSelectionStore.reset();
+      modificationsStore.reset();
+    };
+  }, [processInstanceId]);
+
+  useEffect(() => {
+    let processTitleDisposer = when(
+      () => processInstanceDetailsStore.processTitle !== null,
+      () => {
+        document.title = processInstanceDetailsStore.processTitle ?? '';
+      }
+    );
+
+    return () => {
+      processTitleDisposer();
+    };
+  }, []);
+
+  const isBreadcrumbVisible =
+    processInstanceDetailsStore.state.processInstance !== null &&
+    processInstanceDetailsStore.state.processInstance?.callHierarchy?.length >
+      0;
+
   return (
     <>
       <VisuallyHiddenH1>Operate Process Instance</VisuallyHiddenH1>
       <InstanceDetail
+        breadcrumb={
+          isBreadcrumbVisible ? (
+            <Breadcrumb
+              processInstance={
+                processInstanceDetailsStore.state.processInstance!
+              }
+            />
+          ) : undefined
+        }
         header={<div>header</div>}
         topPanel={<div>top panel</div>}
         bottomPanel={<div>bottom panel</div>}
@@ -20,6 +144,6 @@ const ProcessInstance: React.FC = () => {
       />
     </>
   );
-};
+});
 
 export {ProcessInstance};
