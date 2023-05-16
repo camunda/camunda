@@ -54,6 +54,9 @@ camunda-platform:
   optimize:
     enabled: false
 
+  connectors:
+    enabled: false
+
   tasklist:
     enabled: false
 
