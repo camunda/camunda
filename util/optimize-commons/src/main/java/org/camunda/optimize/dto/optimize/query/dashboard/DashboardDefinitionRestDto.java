@@ -45,7 +45,7 @@ public class DashboardDefinitionRestDto extends BaseDashboardDefinitionDto imple
   @Override
   public EntityResponseDto toEntityDto(final RoleType roleType) {
     return new EntityResponseDto(
-      getId(), getName(), getLastModified(), getCreated(), getOwner(), getLastModifier(), EntityType.DASHBOARD,
+      getId(), getName(), getDescription(), getLastModified(), getCreated(), getOwner(), getLastModifier(), EntityType.DASHBOARD,
       new EntityData(Map.of(EntityType.REPORT, (long) getTiles().size())),
       roleType
     );

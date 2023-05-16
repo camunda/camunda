@@ -53,6 +53,7 @@ public class ReportDefinitionDto<D extends ReportDataDto> implements CollectionE
     return new EntityResponseDto(
       getId(),
       getName(),
+      getDescription(),
       getLastModified(),
       getCreated(),
       getOwner(),
