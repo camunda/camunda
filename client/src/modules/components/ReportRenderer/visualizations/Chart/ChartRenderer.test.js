@@ -7,9 +7,11 @@
 
 import React from 'react';
 import {shallow} from 'enzyme';
+import {Chart} from 'chart.js';
 
 import ChartRenderer from './ChartRenderer';
-import {Chart} from 'chart.js';
+
+jest.mock('chart.js');
 
 const chartData = {
   type: 'visualization_type',
