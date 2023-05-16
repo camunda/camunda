@@ -725,7 +725,9 @@ public final class NettyMessagingService implements ManagedMessagingService {
                   if (!onConnect.isSuccess()) {
                     future.completeExceptionally(
                         new ConnectException(
-                            String.format("Failed to connect channel for address %s", address)));
+                            String.format(
+                                "Failed to connect channel for address %s (resolved: %s) : %s",
+                                address, address.address(), onConnect.cause())));
                   }
                 })
             .channel();
