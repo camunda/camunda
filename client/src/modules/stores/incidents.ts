@@ -70,6 +70,8 @@ class Incidents extends NetworkReconnectionHandler {
       toggleErrorTypeSelection: action,
       clearSelection: action,
       setIncidentBarOpen: action,
+      setFlowNodeSelection: action,
+      setErrorTypeSelection: action,
     });
   }
 
@@ -165,6 +167,14 @@ class Incidents extends NetworkReconnectionHandler {
     } else {
       selectedErrorTypes.push(errorType);
     }
+  };
+
+  setFlowNodeSelection = (selectedFlowNodes: string[]) => {
+    this.state.selectedFlowNodes = selectedFlowNodes;
+  };
+
+  setErrorTypeSelection = (selectedErrorTypes: string[]) => {
+    this.state.selectedErrorTypes = selectedErrorTypes;
   };
 
   clearSelection = () => {

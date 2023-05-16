@@ -10,7 +10,8 @@ import React, {useEffect} from 'react';
 import {IncidentsOverlay} from './IncidentsOverlay';
 import {incidentsStore} from 'modules/stores/incidents';
 import {observer} from 'mobx-react';
-import {Transition} from './styled';
+import {Transition, PanelHeader} from './styled';
+import {IncidentsFilter} from './IncidentsFilter';
 
 type Props = {
   setIsInTransition: (isTransitionActive: boolean) => void;
@@ -42,7 +43,12 @@ const IncidentsWrapper: React.FC<Props> = observer(({setIsInTransition}) => {
         timeout={400}
       >
         <IncidentsOverlay>
-          <div>header and filters</div>
+          <PanelHeader
+            title="Incidents View"
+            count={incidentsStore.filteredIncidents.length}
+          >
+            <IncidentsFilter />
+          </PanelHeader>
           <div>incidents table</div>
         </IncidentsOverlay>
       </Transition>

@@ -7,6 +7,7 @@
 
 import styled, {css} from 'styled-components';
 import {Transition as TransitionComponent} from 'modules/components/Transition';
+import {PanelHeader as BasePanelHeader} from 'modules/components/Carbon/PanelHeader';
 
 type TransitionProps = {
   timeout: number;
@@ -37,4 +38,9 @@ const Transition = styled(TransitionComponent)<TransitionProps>`
   }}
 `;
 
-export {Transition};
+const PanelHeader = styled(BasePanelHeader)`
+  min-height: var(--cds-spacing-08);
+  height: var(--cds-spacing-08);
+`;
+
+export {Transition, PanelHeader};
