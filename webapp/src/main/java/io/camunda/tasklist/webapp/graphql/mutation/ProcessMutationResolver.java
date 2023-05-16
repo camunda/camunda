@@ -21,9 +21,4 @@ public class ProcessMutationResolver implements GraphQLMutationResolver {
   public ProcessInstanceDTO startProcess(final String processDefinitionId) {
     return processService.startProcessInstance(processDefinitionId);
   }
-
-  @PreAuthorize("hasPermission('write')")
-  public ProcessInstanceDTO startProcess(final String processDefinitionId, final String payload) {
-    return processService.startProcessInstance(processDefinitionId, payload);
-  }
 }

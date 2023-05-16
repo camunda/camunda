@@ -139,6 +139,7 @@ public class OpenApiConfig {
             })
         .pathsToMatch(String.format("/%s/**", version))
         .pathsToExclude(String.format("/%s/internal/**", version))
+        .pathsToExclude(String.format("/%s/external/**", version))
         .build();
   }
 

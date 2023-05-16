@@ -15,6 +15,7 @@ import io.camunda.tasklist.schema.indices.ProcessIndex;
 import io.camunda.tasklist.util.ElasticsearchUtil;
 import io.camunda.tasklist.util.SpringContextHolder;
 import io.camunda.tasklist.webapp.graphql.entity.ProcessDTO;
+import io.camunda.tasklist.webapp.rest.exception.NotFoundException;
 import io.camunda.tasklist.webapp.security.identity.IdentityAuthentication;
 import io.camunda.tasklist.webapp.security.identity.IdentityAuthorization;
 import java.io.IOException;
@@ -56,25 +57,25 @@ public class ProcessReader {
 
   /** Gets the process by id. */
   public ProcessDTO getProcessByBpmnProcessId(String bpmnProcessId) {
+    final QueryBuilder qb =
+        QueryBuilders.termQuery(ProcessIndex.PROCESS_DEFINITION_ID, bpmnProcessId);
+
     final SearchRequest searchRequest =
         new SearchRequest(processIndex.getAlias())
             .source(
                 new SearchSourceBuilder()
-                    .query(
-                        QueryBuilders.termQuery(ProcessIndex.PROCESS_DEFINITION_ID, bpmnProcessId))
+                    .query(qb)
                     .collapse(new CollapseBuilder(ProcessIndex.PROCESS_DEFINITION_ID))
-                    .sort(SortBuilders.fieldSort(ProcessIndex.VERSION).order(SortOrder.DESC)));
+                    .sort(SortBuilders.fieldSort(ProcessIndex.VERSION).order(SortOrder.DESC))
+                    .size(1));
     try {
       final SearchResponse response = esClient.search(searchRequest, RequestOptions.DEFAULT);
-      if (response.getHits().getTotalHits().value == 1) {
+      if (response.getHits().getTotalHits().value > 0) {
         final ProcessEntity processEntity =
             fromSearchHit(response.getHits().getHits()[0].getSourceAsString());
         return ProcessDTO.createFrom(processEntity, objectMapper);
-      } else if (response.getHits().getTotalHits().value > 1) {
-        throw new TasklistRuntimeException(
-            String.format("Could not find unique process with id '%s'.", bpmnProcessId));
       } else {
-        throw new TasklistRuntimeException(
+        throw new NotFoundException(
             String.format("Could not find process with id '%s'.", bpmnProcessId));
       }
     } catch (IOException e) {

@@ -6,15 +6,19 @@
  */
 package io.camunda.tasklist.webapp.api.rest.v1.controllers.external;
 
+import static java.util.Objects.requireNonNullElse;
+
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
 import io.camunda.tasklist.webapp.api.rest.v1.controllers.ApiErrorController;
 import io.camunda.tasklist.webapp.api.rest.v1.entities.FormResponse;
+import io.camunda.tasklist.webapp.api.rest.v1.entities.StartProcessRequest;
 import io.camunda.tasklist.webapp.es.FormReader;
 import io.camunda.tasklist.webapp.es.cache.ProcessReader;
 import io.camunda.tasklist.webapp.graphql.entity.ProcessDTO;
-import io.camunda.tasklist.webapp.rest.exception.Error;
+import io.camunda.tasklist.webapp.graphql.entity.ProcessInstanceDTO;
 import io.camunda.tasklist.webapp.rest.exception.NotFoundException;
 import io.camunda.tasklist.webapp.security.TasklistURIs;
+import io.camunda.tasklist.webapp.service.ProcessService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -24,6 +28,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -37,6 +42,9 @@ import org.springframework.web.bind.annotation.RestController;
 public class ProcessExternalController extends ApiErrorController {
 
   @Autowired private ProcessReader processReader;
+
+  @Autowired private ProcessService processService;
+
   @Autowired private FormReader formReader;
 
   @Operation(
@@ -56,20 +64,41 @@ public class ProcessExternalController extends ApiErrorController {
                     mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
                     schema = @Schema(implementation = Error.class)))
       })
-  @GetMapping("{bpmnProcessId}/form")
-  public ResponseEntity<FormResponse> getFormFromProcess(@PathVariable String bpmnProcessId) {
+  @GetMapping("{processDefinitionKey}/form")
+  public ResponseEntity<FormResponse> getFormFromProcess(
+      @PathVariable String processDefinitionKey) {
     try {
-      final ProcessDTO process = processReader.getProcessByBpmnProcessId(bpmnProcessId);
+      final ProcessDTO process = processReader.getProcessByBpmnProcessId(processDefinitionKey);
       if (!process.isStartedByForm()) {
         throw new NotFoundException(
-            String.format("The process with bpmnProcessId: '%s' is not found", bpmnProcessId));
+            String.format(
+                "The process with bpmnProcessId: '%s' is not found", processDefinitionKey));
       } else {
         final String formId = StringUtils.substringAfterLast(process.getFormKey(), ":");
         final var form = formReader.getFormDTO(formId, process.getId());
         return ResponseEntity.ok(FormResponse.fromFormDTO(form));
       }
     } catch (TasklistRuntimeException e) {
-      throw new NotFoundException("Page not found");
+      throw new NotFoundException("Not found");
+    }
+  }
+
+  @PatchMapping("{processDefinitionKey}/start")
+  public ResponseEntity<ProcessInstanceDTO> startProcess(
+      @PathVariable String processDefinitionKey,
+      @RequestBody(required = false) StartProcessRequest startProcessRequest) {
+
+    final ProcessDTO process = processReader.getProcessByBpmnProcessId(processDefinitionKey);
+    if (!process.isStartedByForm()) {
+      throw new NotFoundException(
+          String.format(
+              "The process with processDefinitionKey: '%s' is not found", processDefinitionKey));
+    } else {
+      final var variables =
+          requireNonNullElse(startProcessRequest, new StartProcessRequest()).getVariables();
+      final ProcessInstanceDTO processInstanceDTO =
+          processService.startProcessInstance(processDefinitionKey, variables);
+      return ResponseEntity.ok(processInstanceDTO);
     }
   }
 }

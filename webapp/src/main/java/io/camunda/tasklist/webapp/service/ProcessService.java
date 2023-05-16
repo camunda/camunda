@@ -6,8 +6,12 @@
  */
 package io.camunda.tasklist.webapp.service;
 
+import static java.util.Objects.requireNonNullElse;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
 import io.camunda.tasklist.webapp.graphql.entity.ProcessInstanceDTO;
+import io.camunda.tasklist.webapp.graphql.entity.VariableInputDTO;
 import io.camunda.tasklist.webapp.rest.exception.NotFoundException;
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.client.api.command.ClientException;
@@ -15,6 +19,11 @@ import io.camunda.zeebe.client.api.command.ClientStatusException;
 import io.camunda.zeebe.client.api.command.CreateProcessInstanceCommandStep1;
 import io.camunda.zeebe.client.api.response.ProcessInstanceEvent;
 import io.grpc.Status;
+import java.io.IOException;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,13 +35,14 @@ public class ProcessService {
 
   @Autowired private ZeebeClient zeebeClient;
 
+  @Autowired private ObjectMapper objectMapper;
+
   public ProcessInstanceDTO startProcessInstance(final String processDefinitionKey) {
     return startProcessInstance(processDefinitionKey, null);
   }
 
   public ProcessInstanceDTO startProcessInstance(
-      final String processDefinitionKey, final String payload) {
-
+      final String processDefinitionKey, final List<VariableInputDTO> variables) {
     final CreateProcessInstanceCommandStep1.CreateProcessInstanceCommandStep3
         createProcessInstanceCommandStep3 =
             zeebeClient
@@ -40,8 +50,11 @@ public class ProcessService {
                 .bpmnProcessId(processDefinitionKey)
                 .latestVersion();
 
-    if (payload != null) {
-      createProcessInstanceCommandStep3.variables(payload);
+    if (variables != null && variables.size() > 0) {
+      final Map<String, Object> variablesMap =
+          requireNonNullElse(variables, Collections.<VariableInputDTO>emptyList()).stream()
+              .collect(Collectors.toMap(VariableInputDTO::getName, this::extractTypedValue));
+      createProcessInstanceCommandStep3.variables(variablesMap);
     }
 
     ProcessInstanceEvent processInstanceEvent = null;
@@ -62,5 +75,13 @@ public class ProcessService {
     }
 
     return new ProcessInstanceDTO().setId(processInstanceEvent.getProcessInstanceKey());
+  }
+
+  private Object extractTypedValue(VariableInputDTO variable) {
+    try {
+      return objectMapper.readValue(variable.getValue(), Object.class);
+    } catch (IOException e) {
+      throw new TasklistRuntimeException(e.getMessage(), e);
+    }
   }
 }
