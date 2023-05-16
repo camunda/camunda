@@ -8,7 +8,7 @@
 import React from 'react';
 import {Button} from '@carbon/react';
 
-import {CarbonModal as Modal, Form, Checklist} from 'components';
+import {Modal, Form, Checklist} from 'components';
 import {t} from 'translation';
 import {withErrorHandling} from 'HOC';
 

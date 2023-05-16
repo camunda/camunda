@@ -9,7 +9,7 @@ import {useState, useEffect} from 'react';
 import ReactMarkdown from 'react-markdown';
 import {Button} from '@carbon/react';
 
-import {CarbonModal as Modal, LoadingIndicator} from 'components';
+import {Modal, LoadingIndicator} from 'components';
 import {withErrorHandling, WithErrorHandlingProps} from 'HOC';
 import {t, getLanguage} from 'translation';
 import {showError} from 'notifications';

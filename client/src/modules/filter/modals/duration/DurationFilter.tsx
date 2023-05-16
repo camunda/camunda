@@ -8,7 +8,7 @@
 import {ChangeEventHandler, Component} from 'react';
 import {Button} from '@carbon/react';
 
-import {CarbonModal as Modal, Input, Select, Message, Form} from 'components';
+import {Modal, Input, Select, Message, Form} from 'components';
 import {numberParser} from 'services';
 import {Definition, FilterData} from 'types';
 import {t} from 'translation';

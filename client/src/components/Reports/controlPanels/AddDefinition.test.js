@@ -8,7 +8,7 @@
 import React, {runLastEffect} from 'react';
 import {shallow} from 'enzyme';
 
-import {Button, CarbonModal as Modal} from 'components';
+import {Button, Modal} from 'components';
 
 import {AddDefinition} from './AddDefinition';
 import {loadDefinitions, loadTenants} from './service';

@@ -8,7 +8,7 @@
 import {useState} from 'react';
 import {Button} from '@carbon/react';
 
-import {LabeledInput, CarbonModal as Modal, Form} from 'components';
+import {LabeledInput, Modal, Form} from 'components';
 import {t} from 'translation';
 
 interface EditUserModalProps {

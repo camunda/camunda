@@ -8,7 +8,7 @@
 import React, {runLastEffect} from 'react';
 import {shallow} from 'enzyme';
 
-import {ReportRenderer, CarbonModal as Modal} from 'components';
+import {ReportRenderer, Modal} from 'components';
 import {evaluateReport} from 'services';
 
 import {RawDataModal} from './RawDataModal';

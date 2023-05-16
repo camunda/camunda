@@ -29,7 +29,7 @@ test('create a report from a template', async (t) => {
   await t.takeScreenshot('img/reportTemplate.png', {fullPage: true});
   await t.maximizeWindow();
 
-  await t.click(Common.carbonModalConfirmBtn);
+  await t.click(Common.modalConfirmButton);
 
   await t.expect(Common.nameEditField.value).eql('Heatmap: Flownode count');
   await t.expect(e.groupbyDropdownButton.textContent).contains('Flow Nodes');
@@ -570,7 +570,7 @@ test('aggregators', async (t) => {
   await t.click(e.filterButton);
   await t.click(e.filterOption('Instance State'));
   await t.click(e.modalOption('Completed'));
-  await t.click(Common.carbonModalConfirmBtn);
+  await t.click(Common.modalConfirmButton);
 
   const avg = await e.reportNumber.textContent;
 
@@ -675,16 +675,16 @@ test('heatmap target values', async (t) => {
   await t.expect(e.tooltip.textContent).notContains('Target duration');
 
   await t.click(e.targetValueButton);
-  await t.typeText(e.carbonTargetValueInput('Approve Invoice'), '1');
-  await t.typeText(e.carbonTargetValueInput('Prepare Bank Transfer'), '5');
-  await t.typeText(e.carbonTargetValueInput('Review Invoice'), '1');
+  await t.typeText(e.targetValueInput('Approve Invoice'), '1');
+  await t.typeText(e.targetValueInput('Prepare Bank Transfer'), '5');
+  await t.typeText(e.targetValueInput('Review Invoice'), '1');
 
   await t.takeElementScreenshot(
     Common.modalContainer,
     'process-analysis/report-analysis/img/targetvalue-2.png'
   );
 
-  await t.click(Common.carbonModalConfirmBtn);
+  await t.click(Common.modalConfirmButton);
 
   await t.hover(e.flowNode('approveInvoice'));
 
@@ -853,7 +853,7 @@ test('process parts', async (t) => {
   );
   await t.maximizeWindow();
 
-  await t.click(Common.carbonModalConfirmBtn);
+  await t.click(Common.modalConfirmButton);
 
   const withPart = await e.reportNumber.textContent;
 
@@ -865,7 +865,7 @@ test('deleting', async (t) => {
 
   await u.save(t);
   await t.click(Common.deleteButton);
-  await t.click(Common.carbonModalConfirmBtn);
+  await t.click(Common.modalConfirmButton);
 
   await t.expect(e.report.exists).notOk();
 });
@@ -1153,7 +1153,7 @@ test('variable renaming', async (t) => {
   await t.click(e.definitionEditor);
   await t.click(e.renameVariablesBtn);
   await t.typeText(e.newNameInput('amount'), 'renamed amount', {replace: true});
-  await t.click(Common.carbonModalConfirmBtn);
+  await t.click(Common.modalConfirmButton);
   await t.click(e.definitionEditor);
 
   await t.expect(e.viewSelect.textContent).contains('renamed amount');
@@ -1164,7 +1164,7 @@ test('variable renaming', async (t) => {
   await t.click(e.definitionEditor);
   await t.click(e.renameVariablesBtn);
   await t.selectText(e.newNameInput('amount')).pressKey('delete');
-  await t.click(Common.carbonModalConfirmBtn);
+  await t.click(Common.modalConfirmButton);
   await t.click(e.definitionEditor);
 
   await t.expect(e.viewSelect.textContent).contains('amount');

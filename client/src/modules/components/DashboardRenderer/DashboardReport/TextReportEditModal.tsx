@@ -9,7 +9,7 @@ import {useState} from 'react';
 import {Button} from '@carbon/react';
 import {SerializedEditorState} from 'lexical';
 
-import {CarbonModal as Modal, TextEditor} from 'components';
+import {Modal, TextEditor} from 'components';
 import {isTextReportValid} from 'services';
 import {t} from 'translation';
 

@@ -10,7 +10,7 @@ import classnames from 'classnames';
 import {Button} from '@carbon/react';
 
 import {
-  CarbonModal as Modal,
+  Modal,
   Button as LegacyButton,
   ButtonGroup,
   Labeled,

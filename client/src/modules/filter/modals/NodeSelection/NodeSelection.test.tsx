@@ -10,7 +10,7 @@ import {runAllEffects} from '__mocks__/react';
 import {shallow} from 'enzyme';
 import {Button} from '@carbon/react';
 
-import {CarbonModal as Modal, Button as LegacyButton, BPMNDiagram, ClickBehavior} from 'components';
+import {Modal, Button as LegacyButton, BPMNDiagram, ClickBehavior} from 'components';
 import {loadProcessDefinitionXml} from 'services';
 
 import FilterSingleDefinitionSelection from '../FilterSingleDefinitionSelection';

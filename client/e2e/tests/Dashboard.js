@@ -20,8 +20,8 @@ fixture('Dashboard').page(config.endpoint).beforeEach(u.login).afterEach(cleanEn
 
 test('create a dashboard and reports from a template', async (t) => {
   await t.click(Common.createNewMenu).click(Common.option('Collection'));
-  await t.click(Common.carbonModalConfirmBtn);
-  await t.click(Common.carbonModalConfirmBtn);
+  await t.click(Common.modalConfirmButton);
+  await t.click(Common.modalConfirmButton);
 
   await t.resizeWindow(1300, 750);
   await t.click(Common.createNewMenu);
@@ -34,7 +34,7 @@ test('create a dashboard and reports from a template', async (t) => {
   await t.takeScreenshot('img/dashboardTemplate.png', {fullPage: true});
   await t.resizeWindow(1200, 600);
 
-  await t.click(Common.carbonModalConfirmBtn);
+  await t.click(Common.modalConfirmButton);
 
   await t.takeScreenshot('img/dashboard-dashboardEditActions.png', {fullPage: true});
 
@@ -142,7 +142,7 @@ test('sharing', async (t) => {
 
   await t.click(Common.templateModalProcessField);
   await t.click(Common.option('Invoice Receipt with alternative correlation variable'));
-  await t.click(Common.carbonModalConfirmBtn);
+  await t.click(Common.modalConfirmButton);
 
   await u.save(t);
 
@@ -299,7 +299,7 @@ test('deleting', async (t) => {
   await u.save(t);
 
   await t.click(Common.deleteButton);
-  await t.click(Common.carbonModalConfirmBtn);
+  await t.click(Common.modalConfirmButton);
 
   await t.expect(e.dashboard.exists).notOk();
 });
@@ -332,7 +332,7 @@ test('filters', async (t) => {
 
   await t.click(Filter.customValueCheckbox);
 
-  await t.click(Common.carbonModalConfirmBtn);
+  await t.click(Common.modalConfirmButton);
 
   await t.resizeWindow(1200, 550);
   await t.takeElementScreenshot(e.dashboardContainer, 'img/filter-editMode.png', {
@@ -388,8 +388,8 @@ test('filters', async (t) => {
 
 test('version selection', async (t) => {
   await t.click(Common.createNewMenu).click(Common.option('Collection'));
-  await t.click(Common.carbonModalConfirmBtn);
-  await t.click(Common.carbonModalConfirmBtn);
+  await t.click(Common.modalConfirmButton);
+  await t.click(Common.modalConfirmButton);
 
   await u.createNewReport(t);
   await t.typeText(Common.nameEditField, 'Number Report', {replace: true});
@@ -409,21 +409,21 @@ test('version selection', async (t) => {
   await t.click(Common.typeahead);
   await t.click(Common.typeaheadOption('Number Report'));
   await t.typeText(Alert.inputWithLabel('Send Email to'), 'test@email.com ');
-  await t.click(Common.carbonModalConfirmBtn);
+  await t.click(Common.modalConfirmButton);
   await t.click(Common.notificationCloseButton);
 
   // editing
   await t.click(e.alertsDropdown);
   await t.click(Common.option('Test alert'));
   await t.typeText(Alert.inputWithLabel('Alert Name'), 'another alert name', {replace: true});
-  await t.click(Common.carbonModalConfirmBtn);
+  await t.click(Common.modalConfirmButton);
   await t.click(Common.notificationCloseButton);
 
   // deleting
   await t.click(e.alertsDropdown);
   await t.click(Common.option('another alert name'));
   await t.click(e.alertDeleteButton);
-  await t.click(Common.carbonModalConfirmBtn);
+  await t.click(Common.modalConfirmButton);
   await t.click(Common.notificationCloseButton);
   await t.click(e.alertsDropdown);
   await t.expect(Common.option('Test alert').exists).notOk();
@@ -442,7 +442,7 @@ test('add a report from the dashboard', async (t) => {
     .click(Common.templateModalProcessField)
     .click(Common.option('Invoice Receipt with alternative correlation variable'))
     .click(e.blankReportButton)
-    .click(Common.carbonModalConfirmBtn)
+    .click(Common.modalConfirmButton)
     .click('.DashboardRenderer');
 
   await t
@@ -458,7 +458,7 @@ test('add a report from the dashboard', async (t) => {
     )
     .ok();
 
-  await t.click(Common.carbonModalConfirmBtn).click('.DashboardRenderer');
+  await t.click(Common.modalConfirmButton).click('.DashboardRenderer');
 
   await u.save(t);
 

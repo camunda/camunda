@@ -10,7 +10,7 @@ import {Button} from '@carbon/react';
 import classnames from 'classnames';
 
 import {
-  CarbonModal as Modal,
+  Modal,
   Form,
   DateRangeInput,
   BPMNDiagram,

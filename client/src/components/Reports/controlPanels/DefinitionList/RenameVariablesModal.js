@@ -8,7 +8,7 @@
 import React, {useEffect, useState} from 'react';
 import {Button} from '@carbon/react';
 
-import {Icon, Input, CarbonModal as Modal, Table} from 'components';
+import {Icon, Input, Modal, Table} from 'components';
 import {loadVariables} from 'services';
 import {t} from 'translation';
 import {withErrorHandling} from 'HOC';

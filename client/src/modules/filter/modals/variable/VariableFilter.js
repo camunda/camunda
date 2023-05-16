@@ -9,7 +9,7 @@ import {useEffect, useState} from 'react';
 import classnames from 'classnames';
 import {Button} from '@carbon/react';
 
-import {CarbonModal as Modal, Typeahead, Labeled} from 'components';
+import {Modal, Typeahead, Labeled} from 'components';
 import {t} from 'translation';
 
 import FilterSingleDefinitionSelection from '../FilterSingleDefinitionSelection';

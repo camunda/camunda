@@ -7,7 +7,7 @@
 
 export {Table} from './Table';
 export {Button} from './Button';
-export {Modal, CarbonModal} from './Modal';
+export {Modal} from './Modal';
 export {MessageBox} from './MessageBox';
 export {Dropdown} from './Dropdown';
 export {Deleter} from './Deleter';

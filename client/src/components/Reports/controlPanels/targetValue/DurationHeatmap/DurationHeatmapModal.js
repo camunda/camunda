@@ -12,7 +12,7 @@ import Viewer from 'bpmn-js/lib/NavigatedViewer';
 import {Button} from '@carbon/react';
 
 import {
-  CarbonModal as Modal,
+  Modal,
   BPMNDiagram,
   Table,
   Input,

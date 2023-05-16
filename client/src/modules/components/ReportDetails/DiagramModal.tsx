@@ -8,7 +8,7 @@
 import {useEffect, useState} from 'react';
 import {Button} from '@carbon/react';
 
-import {CarbonModal as Modal, BPMNDiagram, DMNDiagram, LoadingIndicator} from 'components';
+import {Modal, BPMNDiagram, DMNDiagram, LoadingIndicator} from 'components';
 import {WithErrorHandlingProps, withErrorHandling} from 'HOC';
 import {t} from 'translation';
 import {showError} from 'notifications';

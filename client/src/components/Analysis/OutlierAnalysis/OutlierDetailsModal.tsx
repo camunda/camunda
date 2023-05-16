@@ -5,7 +5,7 @@
  * except in compliance with the proprietary license.
  */
 
-import {CarbonModal as Modal, Tabs, DurationChart} from 'components';
+import {Modal, Tabs, DurationChart} from 'components';
 import {t} from 'translation';
 import {WithUserProps, withUser} from 'HOC';
 

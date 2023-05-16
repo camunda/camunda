@@ -8,15 +8,7 @@
 import React, {useEffect, useState} from 'react';
 import {Button} from '@carbon/react';
 
-import {
-  Icon,
-  Labeled,
-  MessageBox,
-  CarbonModal as Modal,
-  Switch,
-  Tooltip,
-  UserTypeahead,
-} from 'components';
+import {Icon, Labeled, MessageBox, Modal, Switch, Tooltip, UserTypeahead} from 'components';
 import {t} from 'translation';
 import {getOptimizeProfile, isEmailEnabled} from 'config';
 import {withDocs} from 'HOC';

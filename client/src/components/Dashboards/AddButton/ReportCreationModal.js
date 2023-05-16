@@ -54,9 +54,9 @@ export function ReportCreationModal({onClose, existingReport, mightFail, onConfi
   if (!initialTemplateDefinitions) {
     return (
       <Modal open>
-        <Modal.Content>
+        <Modal.Footer>
           <LoadingIndicator />
-        </Modal.Content>
+        </Modal.Footer>
       </Modal>
     );
   }

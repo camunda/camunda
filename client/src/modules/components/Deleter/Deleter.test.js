@@ -8,7 +8,7 @@
 import React from 'react';
 import {shallow} from 'enzyme';
 
-import {CarbonModal as Modal} from 'components';
+import {Modal} from 'components';
 import {showError} from 'notifications';
 import {deleteEntity} from 'services';
 

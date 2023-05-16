@@ -54,7 +54,7 @@ test('add sources, map and publish a process', async (t) => {
 
   await t.takeElementScreenshot(Common.modalContainer, 'additional-features/img/sourceModal.png');
 
-  await t.click(Common.carbonModalConfirmBtn);
+  await t.click(Common.modalConfirmButton);
 
   await t.click(e.addSource);
   await t.click(e.externalEvents);
@@ -64,12 +64,12 @@ test('add sources, map and publish a process', async (t) => {
     Common.modalContainer,
     'additional-features/img/externalEvents.png'
   );
-  await t.click(Common.carbonModalConfirmBtn);
+  await t.click(Common.modalConfirmButton);
 
   await t.click(e.addSource);
   await t.click(e.externalEvents);
   await t.click(e.externalEventgroup(0));
-  await t.click(Common.carbonModalConfirmBtn);
+  await t.click(Common.modalConfirmButton);
 
   await t.takeElementScreenshot(e.eventsTable, 'additional-features/img/eventsTable.png');
 
@@ -112,8 +112,8 @@ test('add sources, map and publish a process', async (t) => {
     'additional-features/img/usersModal.png'
   );
 
-  await t.click(Common.carbonModalConfirmBtn);
-  await t.click(Common.carbonModalConfirmBtn);
+  await t.click(Common.modalConfirmButton);
+  await t.click(Common.modalConfirmButton);
   await t.expect(Common.notification.exists).ok({timeout: 5000});
   await t.click(Common.notificationCloseButton(Common.notification));
   await t.expect(Common.notification.exists).notOk({timeout: 5000});
@@ -142,18 +142,18 @@ test('auto generate a process', async (t) => {
   await t.typeText(e.typeaheadInput(e.processTypeahead), 'Invoice', {replace: true});
   await t.click(e.typeaheadOption(e.processTypeahead, 'Invoice Receipt'));
   await t.click(e.businessKey);
-  await t.click(Common.carbonModalConfirmBtn);
+  await t.click(Common.modalConfirmButton);
 
   await t.click(e.addEventSourceBtn);
   await t.click(e.externalEvents);
-  await t.click(Common.carbonModalConfirmBtn);
+  await t.click(Common.modalConfirmButton);
 
   await t.takeElementScreenshot(
     Common.modalContainer,
     'additional-features/img/auto-generation.png'
   );
 
-  await t.click(Common.carbonModalConfirmBtn);
+  await t.click(Common.modalConfirmButton);
 
   await t.expect(e.diagram.visible).ok();
 });
@@ -174,5 +174,5 @@ test('delete multiple external events', async (t) => {
   await t.takeScreenshot('additional-features/img/deleting-events.png', {fullPage: true});
 
   await t.click(Common.option('Delete'));
-  await t.click(Common.carbonModalConfirmBtn);
+  await t.click(Common.modalConfirmButton);
 });

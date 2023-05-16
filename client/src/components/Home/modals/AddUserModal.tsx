@@ -8,7 +8,7 @@
 import {useState} from 'react';
 import {Button} from '@carbon/react';
 
-import {LabeledInput, CarbonModal as Modal, Form, UserTypeahead, User} from 'components';
+import {LabeledInput, Modal, Form, UserTypeahead, User} from 'components';
 import {getOptimizeProfile} from 'config';
 import {t} from 'translation';
 

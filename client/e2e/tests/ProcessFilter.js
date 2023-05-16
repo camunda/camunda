@@ -90,7 +90,7 @@ test('filter for custom string variable values', async (t) => {
 
   await t.expect(Filter.stringValues.textContent).contains('custom value');
 
-  await t.click(Common.carbonModalConfirmBtn);
+  await t.click(Common.modalConfirmButton);
 
   await t.expect(Report.controlPanelFilter.textContent).contains('custom value');
 });
@@ -114,7 +114,7 @@ test('should apply a filter to the report result', async (t) => {
 
   await t.typeText(Filter.variableFilterValueInput, '100', {replace: true});
 
-  await t.click(Common.carbonModalConfirmBtn);
+  await t.click(Common.modalConfirmButton);
 
   const filtered = +(await Report.reportNumber.textContent);
 
@@ -129,36 +129,36 @@ test('instance state filters', async (t) => {
   await t.click(Report.filterButton);
   await t.click(Report.filterOption('Instance State'));
   await t.click(Report.modalOption('Running'));
-  await t.click(Common.carbonModalConfirmBtn);
+  await t.click(Common.modalConfirmButton);
   await t.click(Report.filterButton);
   await t.click(Report.filterOption('Instance State'));
   await t.click(Report.modalOption('Completed'));
-  await t.click(Common.carbonModalConfirmBtn);
+  await t.click(Common.modalConfirmButton);
   await t.expect(Report.warningMessage.visible).ok();
   await t.click(Report.filterRemoveButton);
   await t.click(Report.filterRemoveButton);
   await t.click(Report.filterButton);
   await t.click(Report.filterOption('Instance State'));
   await t.click(Report.modalOption('Canceled'));
-  await t.click(Common.carbonModalConfirmBtn);
+  await t.click(Common.modalConfirmButton);
   await t.expect(Report.reportRenderer.visible).ok();
   await t.click(Report.filterRemoveButton);
   await t.click(Report.filterButton);
   await t.click(Report.filterOption('Instance State'));
   await t.click(Report.modalOption('Non Canceled'));
-  await t.click(Common.carbonModalConfirmBtn);
+  await t.click(Common.modalConfirmButton);
   await t.expect(Report.reportRenderer.visible).ok();
   await t.click(Report.filterRemoveButton);
   await t.click(Report.filterButton);
   await t.click(Report.filterOption('Instance State'));
   await t.click(Report.modalOption('Suspended'));
-  await t.click(Common.carbonModalConfirmBtn);
+  await t.click(Common.modalConfirmButton);
   await t.expect(Report.reportRenderer.visible).ok();
   await t.click(Report.filterRemoveButton);
   await t.click(Report.filterButton);
   await t.click(Report.filterOption('Instance State'));
   await t.click(Report.modalOption('Non Suspended'));
-  await t.click(Common.carbonModalConfirmBtn);
+  await t.click(Common.modalConfirmButton);
   await t.expect(Report.reportRenderer.visible).ok();
 });
 
@@ -178,7 +178,7 @@ test('pick a start date from the date picker', async (t) => {
   await t.click(Filter.pickerDate('22'));
   await t.click(Filter.infoText);
 
-  await t.click(Common.carbonModalConfirmBtn);
+  await t.click(Common.modalConfirmButton);
   await t.expect(Report.reportRenderer.visible).ok();
 
   await t.click(Filter.editButton);
@@ -187,7 +187,7 @@ test('pick a start date from the date picker', async (t) => {
   await t.click(Filter.dateFilterStartInput);
   await t.click(Filter.pickerDate('5'));
   await t.click(Filter.infoText);
-  await t.click(Common.carbonModalConfirmBtn);
+  await t.click(Common.modalConfirmButton);
 
   await t.expect(Report.reportRenderer.visible).ok();
 });
@@ -205,7 +205,7 @@ test('add relative current month start date filter', async (t) => {
   await t.click(Filter.unitSelect);
   await t.click(Common.option('month'));
 
-  await t.click(Common.carbonModalConfirmBtn);
+  await t.click(Common.modalConfirmButton);
   await t.expect(Report.reportRenderer.visible).ok();
 });
 
@@ -223,7 +223,7 @@ test('add rolling last 5 days end date filter', async (t) => {
   await t.click(Common.option('days'));
   await t.typeText(Filter.customDateInput, '5', {replace: true});
 
-  await t.click(Common.carbonModalConfirmBtn);
+  await t.click(Common.modalConfirmButton);
   await t.expect(Report.reportRenderer.visible).ok();
 });
 
@@ -242,7 +242,7 @@ test('add process instance duration filter', async (t) => {
 
   await t.takeElementScreenshot(Common.modalContainer, 'process-analysis/img/duration-filter.png');
 
-  await t.click(Common.carbonModalConfirmBtn);
+  await t.click(Common.modalConfirmButton);
   await t.expect(Report.reportRenderer.visible).ok();
 });
 
@@ -267,7 +267,7 @@ test('add flow node duration filter', async (t) => {
     'process-analysis/img/flowNode-duration-filter.png'
   );
 
-  await t.click(Common.carbonModalConfirmBtn);
+  await t.click(Common.modalConfirmButton);
   await t.expect(Report.reportRenderer.visible).ok();
 });
 
@@ -287,7 +287,7 @@ test('add assignee filter', async (t) => {
 
   await t.takeElementScreenshot(Common.modalContainer, 'process-analysis/img/assignee-filter.png');
 
-  await t.click(Common.carbonModalConfirmBtn);
+  await t.click(Common.modalConfirmButton);
   await t.expect(Report.reportRenderer.visible).ok();
 });
 
@@ -309,7 +309,7 @@ test('add Flow Node filter', async (t) => {
     .takeElementScreenshot(Common.modalContainer, 'process-analysis/img/flownode-filter.png')
     .maximizeWindow();
 
-  await t.click(Common.carbonModalConfirmBtn);
+  await t.click(Common.modalConfirmButton);
   await t.expect(Report.reportRenderer.visible).ok();
 });
 
@@ -321,7 +321,7 @@ test('the filter is visible in the control panel and contains correct informatio
   await t.click(Report.filterButton);
   await t.click(Report.filterOption('Flow Node Execution'));
   await t.click(Report.flowNode('approveInvoice'));
-  await t.click(Common.carbonModalConfirmBtn);
+  await t.click(Common.modalConfirmButton);
   const controlPanelFilterText = Report.controlPanelFilter.textContent;
 
   await t.expect(controlPanelFilterText).contains('Running, Canceled or Completed');
@@ -335,12 +335,12 @@ test('the filter is visible in the control panel and contains correct informatio
   await t.click(Common.option('This...'));
   await t.click(Filter.unitSelect);
   await t.click(Common.option('month'));
-  await t.click(Common.carbonModalConfirmBtn);
+  await t.click(Common.modalConfirmButton);
 
   await t.click(Report.filterButton);
   await t.click(Report.filterOption('Instance State'));
   await t.click(Report.modalOption('Running'));
-  await t.click(Common.carbonModalConfirmBtn);
+  await t.click(Common.modalConfirmButton);
 
   await t.resizeWindow(1300, 900);
 
@@ -363,7 +363,7 @@ test('add an incident filter', async (t) => {
 
   await t.click(Report.filterOption('Incident'));
   await t.click(Report.modalOption('Open Incidents'));
-  await t.click(Common.carbonModalConfirmBtn);
+  await t.click(Common.modalConfirmButton);
 
   await t.expect(Report.reportRenderer.visible).ok();
   await t.click(Report.filterRemoveButton);
@@ -372,7 +372,7 @@ test('add an incident filter', async (t) => {
 
   await t.click(Report.filterOption('Incident'));
   await t.click(Report.modalOption('Resolved Incidents'));
-  await t.click(Common.carbonModalConfirmBtn);
+  await t.click(Common.modalConfirmButton);
 
   await t.expect(Report.reportRenderer.visible).ok();
 });
@@ -387,7 +387,7 @@ test('add flow node status filter', async (t) => {
 
   await t.click(Report.filterOption('Flow Node State'));
   await t.click(Report.modalOption('Running'));
-  await t.click(Common.carbonModalConfirmBtn);
+  await t.click(Common.modalConfirmButton);
 
   await t.expect(Report.reportRenderer.visible).ok();
   await t.click(Report.filterRemoveButton);
@@ -395,7 +395,7 @@ test('add flow node status filter', async (t) => {
 
   await t.click(Report.filterOption('Flow Node State'));
   await t.click(Report.modalOption('Completed or Canceled'));
-  await t.click(Common.carbonModalConfirmBtn);
+  await t.click(Common.modalConfirmButton);
 
   await t.expect(Report.reportRenderer.visible).ok();
 });
@@ -424,7 +424,7 @@ test('select which flow nodes to show from the configuration', async (t) => {
     .takeElementScreenshot(Common.modalContainer, 'process-analysis/img/flowNodeSelection.png')
     .maximizeWindow();
 
-  await t.click(Common.carbonModalConfirmBtn);
+  await t.click(Common.modalConfirmButton);
 
   await t.expect(Report.nodeTableCell('Assign Approver Group').exists).notOk();
 });
@@ -450,7 +450,7 @@ test('multi definition filters', async (t) => {
   await t.click(Filter.stateFilterMultiSelect);
   await t.click(Filter.stateFilterMultiSelectOption('Book Request One Tenant'));
 
-  await t.click(Common.carbonModalConfirmBtn);
+  await t.click(Common.modalConfirmButton);
 
   await t.expect(Report.reportRenderer.visible).ok();
   await t.expect(Common.controlPanel.textContent).contains('Applied to: 2 Processes');
@@ -464,7 +464,7 @@ test('multi definition filters', async (t) => {
   await t.click(Report.flowNode('Task_0th4ivq'));
   await t.click(Report.flowNode('Task_1q83i19'));
 
-  await t.click(Common.carbonModalConfirmBtn);
+  await t.click(Common.modalConfirmButton);
 
   await t.expect(Report.reportRenderer.visible).ok();
 
@@ -497,6 +497,6 @@ test('add flow node start date filter', async (t) => {
     .takeElementScreenshot(Common.modalContainer, 'process-analysis/img/flowNode-date-filter.png')
     .maximizeWindow();
 
-  await t.click(Common.carbonModalConfirmBtn);
+  await t.click(Common.modalConfirmButton);
   await t.expect(Report.reportRenderer.visible).ok();
 });

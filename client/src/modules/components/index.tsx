@@ -18,7 +18,7 @@ export {Input} from './Input';
 export {LabeledInput} from './LabeledInput';
 export {Labeled} from './Labeled';
 export {Tooltip} from './Tooltip';
-export {Modal, CarbonModal} from './Modal';
+export {Modal} from './Modal';
 export {Dropdown} from './Dropdown';
 export {Select} from './Select';
 export {TextEditor} from './TextEditor';

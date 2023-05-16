@@ -9,7 +9,7 @@ import {useEffect, useState} from 'react';
 import {Button} from '@carbon/react';
 
 import {
-  CarbonModal as Modal,
+  Modal,
   ButtonGroup,
   Button as LegacyButton,
   BPMNDiagram,

@@ -11,7 +11,7 @@ import {Button} from '@carbon/react';
 import {SerializedEditorState} from 'lexical';
 
 import {
-  CarbonModal as Modal,
+  Modal,
   Input,
   Typeahead,
   LoadingIndicator,

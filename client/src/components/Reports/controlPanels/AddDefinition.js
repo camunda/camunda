@@ -9,13 +9,7 @@ import {useState, useEffect} from 'react';
 import {withRouter} from 'react-router-dom';
 import {Button} from '@carbon/react';
 
-import {
-  Button as LegacyButton,
-  Icon,
-  CarbonModal as Modal,
-  Checklist,
-  MessageBox,
-} from 'components';
+import {Button as LegacyButton, Icon, Modal, Checklist, MessageBox} from 'components';
 import {withErrorHandling} from 'HOC';
 import {getCollection, getRandomId} from 'services';
 import {t} from 'translation';

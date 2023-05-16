@@ -5,5 +5,4 @@
  * except in compliance with the proprietary license.
  */
 
-export {default as Modal} from './legacy/Modal';
-export {default as CarbonModal} from './Modal';
+export {default as Modal} from './Modal';

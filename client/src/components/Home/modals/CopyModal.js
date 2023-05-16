@@ -8,7 +8,7 @@
 import React from 'react';
 import {Button} from '@carbon/react';
 
-import {LabeledInput, CarbonModal as Modal, Form, Message} from 'components';
+import {LabeledInput, Modal, Form, Message} from 'components';
 import {t} from 'translation';
 import MoveCopy from './MoveCopy';
 

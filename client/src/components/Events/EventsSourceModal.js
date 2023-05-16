@@ -10,7 +10,7 @@ import update from 'immutability-helper';
 import {Button} from '@carbon/react';
 
 import {
-  CarbonModal as Modal,
+  Modal,
   DefinitionSelection,
   LabeledInput,
   Typeahead,

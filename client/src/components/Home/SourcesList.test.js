@@ -8,7 +8,7 @@
 import React from 'react';
 import {shallow} from 'enzyme';
 
-import {EntityList, Deleter, CarbonModal as Modal} from 'components';
+import {EntityList, Deleter, Modal} from 'components';
 
 import {getSources, removeSource, editSource, addSources} from './service';
 

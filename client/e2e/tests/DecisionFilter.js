@@ -36,7 +36,7 @@ test('should apply a filter to the report result', async (t) => {
 
   await t.typeText(Filter.variableFilterValueInput, '100', {replace: true});
 
-  await t.click(Common.carbonModalConfirmBtn);
+  await t.click(Common.modalConfirmButton);
 
   const filtered = +(await ProcessReport.reportNumber.textContent);
 

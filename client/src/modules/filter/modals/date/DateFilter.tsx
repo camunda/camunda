@@ -9,7 +9,7 @@ import {Component} from 'react';
 import {Button} from '@carbon/react';
 
 import {t} from 'translation';
-import {CarbonModal as Modal, Form, MessageBox, DateRangeInput} from 'components';
+import {Modal, Form, MessageBox, DateRangeInput} from 'components';
 import {Definition, Filter, FilterState} from 'types';
 
 import {FilterProps} from '../types';

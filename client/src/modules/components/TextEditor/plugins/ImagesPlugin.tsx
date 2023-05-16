@@ -18,7 +18,7 @@ import {
 import {$wrapNodeInElement, mergeRegister} from '@lexical/utils';
 import {useLexicalComposerContext} from '@lexical/react/LexicalComposerContext';
 
-import {Form, Input, Labeled, CarbonModal as Modal} from 'components';
+import {Form, Input, Labeled, Modal} from 'components';
 import {t} from 'translation';
 
 import {validateUrl} from './service';

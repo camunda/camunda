@@ -12,7 +12,7 @@ import deepEqual from 'fast-deep-equal';
 import {Button, Column, Grid} from '@carbon/react';
 
 import {
-  CarbonModal as Modal,
+  Modal,
   DefinitionSelection,
   BPMNDiagram,
   DiagramScrollLock,

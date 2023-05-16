@@ -22,7 +22,7 @@ export default function Modal({children, className, isOverflowVisible, ...props}
     : ReactDOM.createPortal(
         <ComposedModal
           {...props}
-          className={classnames('CarbonModal', {overflowVisible: isOverflowVisible}, className)}
+          className={classnames('Modal', {overflowVisible: isOverflowVisible}, className)}
         >
           {props.open && children}
         </ComposedModal>,

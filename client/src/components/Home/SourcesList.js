@@ -9,13 +9,7 @@ import React from 'react';
 import {Button} from '@carbon/react';
 
 import {t} from 'translation';
-import {
-  EntityList,
-  Deleter,
-  BulkDeleter,
-  CarbonModal as Modal,
-  Button as LegacyButton,
-} from 'components';
+import {EntityList, Deleter, BulkDeleter, Modal, Button as LegacyButton} from 'components';
 import {showError} from 'notifications';
 import {withErrorHandling} from 'HOC';
 import {formatters} from 'services';

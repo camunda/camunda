@@ -71,7 +71,7 @@ test('complex Homepage actions', async (t) => {
   await t.click(Common.submenuOption('Process Report'));
   await t.click(Common.templateModalProcessField);
   await t.click(Common.firstTypeaheadOption);
-  await t.click(Common.carbonModalConfirmBtn);
+  await t.click(Common.modalConfirmButton);
 
   await t.typeText(Common.nameEditField, 'Invoice Evaluation Count', {replace: true});
   await save(t);
@@ -81,7 +81,7 @@ test('complex Homepage actions', async (t) => {
   await t.click(Common.submenuOption('Process Report'));
   await t.click(Common.templateModalProcessField);
   await t.click(Common.firstTypeaheadOption);
-  await t.click(Common.carbonModalConfirmBtn);
+  await t.click(Common.modalConfirmButton);
 
   await t.typeText(Common.nameEditField, 'Monthly Sales From Marketing', {replace: true});
   await save(t);
@@ -116,8 +116,8 @@ test('complex Homepage actions', async (t) => {
 
   await t.click(Common.createNewMenu).click(Common.option('Collection'));
   await t.typeText(Common.modalNameInput, 'Marketing', {replace: true});
-  await t.click(Common.carbonModalConfirmBtn);
-  await t.click(Common.carbonModalConfirmBtn);
+  await t.click(Common.modalConfirmButton);
+  await t.click(Common.modalConfirmButton);
 
   await createNewDashboard(t);
   await save(t);
@@ -126,14 +126,14 @@ test('complex Homepage actions', async (t) => {
 
   await t.click(Common.createNewMenu).click(Common.option('Collection'));
   await t.typeText(Common.modalNameInput, 'Sales', {replace: true});
-  await t.click(Common.carbonModalConfirmBtn);
-  await t.click(Common.carbonModalConfirmBtn);
+  await t.click(Common.modalConfirmButton);
+  await t.click(Common.modalConfirmButton);
 
   await t.click(Common.createNewMenu).hover(Common.newReportOption);
   await t.click(Common.submenuOption('Process Report'));
   await t.click(Common.templateModalProcessField);
   await t.click(Common.firstTypeaheadOption);
-  await t.click(Common.carbonModalConfirmBtn);
+  await t.click(Common.modalConfirmButton);
 
   await t.typeText(Common.nameEditField, 'Incoming Leads', {replace: true});
   await save(t);
@@ -143,7 +143,7 @@ test('complex Homepage actions', async (t) => {
   await t.click(Common.submenuOption('Process Report'));
   await t.click(Common.templateModalProcessField);
   await t.click(Common.firstTypeaheadOption);
-  await t.click(Common.carbonModalConfirmBtn);
+  await t.click(Common.modalConfirmButton);
 
   await t.typeText(Common.nameEditField, 'Sales Goal this Quarter', {replace: true});
   await save(t);
@@ -234,7 +234,7 @@ test('multi definition selection', async (t) => {
     .typeText(Common.templateModalProcessField, secondDefinition, {replace: true})
     .click(Common.option(secondDefinition));
 
-  await t.click(Common.carbonModalConfirmBtn);
+  await t.click(Common.modalConfirmButton);
 });
 
 test('create new dashboard from an empty state component', async (t) => {
@@ -243,7 +243,7 @@ test('create new dashboard from an empty state component', async (t) => {
   await t.click(e.createNewDashboardButton);
   await t.click(e.blankDashboardButton);
 
-  await t.click(Common.carbonModalConfirmBtn);
+  await t.click(Common.modalConfirmButton);
 
   await save(t);
 

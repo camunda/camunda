@@ -10,7 +10,7 @@ import {Button} from '@carbon/react';
 
 import {
   Button as LegacyButton,
-  CarbonModal as Modal,
+  Modal,
   BPMNDiagram,
   ClickBehavior,
   PartHighlight,

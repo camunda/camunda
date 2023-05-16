@@ -8,7 +8,7 @@
 import {useState, useEffect, ComponentPropsWithoutRef} from 'react';
 import {Button} from '@carbon/react';
 
-import {Button as LegacyButton, CarbonModal as Modal} from 'components';
+import {Button as LegacyButton, Modal} from 'components';
 import {
   withErrorHandling,
   withDocs,

@@ -9,7 +9,7 @@ import React, {useState} from 'react';
 import {Redirect} from 'react-router';
 import {Button} from '@carbon/react';
 
-import {Button as LegacyButton, CarbonModal as Modal, EntityList, Icon, DocsLink} from 'components';
+import {Button as LegacyButton, Modal, EntityList, Icon, DocsLink} from 'components';
 import {t} from 'translation';
 import {withErrorHandling} from 'HOC';
 import {showError} from 'notifications';

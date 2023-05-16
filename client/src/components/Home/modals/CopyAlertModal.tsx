@@ -8,7 +8,7 @@
 import {useState} from 'react';
 import {Button} from '@carbon/react';
 
-import {CarbonModal as Modal, Form, LabeledInput} from 'components';
+import {Modal, Form, LabeledInput} from 'components';
 import {t} from 'translation';
 
 interface CopyAlertModalProps {

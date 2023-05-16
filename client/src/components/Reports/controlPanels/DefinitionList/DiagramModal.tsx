@@ -7,7 +7,7 @@
 
 import {Button} from '@carbon/react';
 
-import {BPMNDiagram, CarbonModal as Modal} from 'components';
+import {BPMNDiagram, Modal} from 'components';
 import {t} from 'translation';
 
 import './DiagramModal.scss';

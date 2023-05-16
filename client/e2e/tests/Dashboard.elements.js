@@ -44,7 +44,7 @@ export const switchElement = (text) => Selector('.Switch').withText(text);
 export const dashboardContainer = Selector('.Dashboard');
 export const templateModalProcessTag = Selector('.TemplateModal .Tag');
 export const templateOption = (text) =>
-  Selector('.CarbonModal .templateContainer .Button').withText(text);
+  Selector('.Modal .templateContainer .Button').withText(text);
 export const reportTile = Selector('.OptimizeReport');
 export const customValueAddButton = Selector('.customValueAddButton');
 export const typeaheadInput = Selector('.Typeahead .Input');

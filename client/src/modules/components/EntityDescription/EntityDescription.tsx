@@ -6,9 +6,10 @@
  */
 
 import {useEffect, useRef, useState} from 'react';
+import {Button} from '@carbon/react';
 import classnames from 'classnames';
 
-import {Button, Icon, Modal, TextEditor} from 'components';
+import {Button as LegacyButton, Icon, Modal, TextEditor} from 'components';
 import {t} from 'translation';
 
 import './EntityDescription.scss';
@@ -96,10 +97,10 @@ export default function EntityDescription({description, onEdit}: EntityDescripti
           </span>
         )}
         {onEdit && (
-          <Button className="edit" link onClick={openModal}>
+          <LegacyButton className="edit" link onClick={openModal}>
             <Icon size={12} type={editedDescription ? 'edit' : 'plus'} />
             {t(`common.${editedDescription ? 'edit' : 'add'}`)}
-          </Button>
+          </LegacyButton>
         )}
       </div>
       <Modal className="EntityDescriptionEditModal" open={isEditModalOpen} onClose={handleCancel}>
@@ -120,14 +121,14 @@ export default function EntityDescription({description, onEdit}: EntityDescripti
             limit={DESCRIPTION_MAX_CHARACTERS}
           />
         </Modal.Content>
-        <Modal.Actions>
-          <Button main className="cancel" onClick={handleCancel}>
+        <Modal.Footer>
+          <Button kind="secondary" className="cancel" onClick={handleCancel}>
             {t('common.cancel')}
           </Button>
-          <Button main primary className="confirm" onClick={handleConfirm} disabled={isTextTooLong}>
+          <Button className="confirm" onClick={handleConfirm} disabled={isTextTooLong}>
             {t('common.save')}
           </Button>
-        </Modal.Actions>
+        </Modal.Footer>
       </Modal>
     </>
   );

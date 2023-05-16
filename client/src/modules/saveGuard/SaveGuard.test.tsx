@@ -9,7 +9,7 @@ import {shallow} from 'enzyme';
 import {Prompt} from 'react-router-dom';
 import {Button} from '@carbon/react';
 
-import {CarbonModal as Modal} from 'components';
+import {Modal} from 'components';
 import {default as SaveGuard, nowDirty} from './SaveGuard';
 
 it('should pass dirty state to Prompt', () => {

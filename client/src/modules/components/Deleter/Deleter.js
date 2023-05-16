@@ -9,7 +9,7 @@ import React from 'react';
 import {Button} from '@carbon/react';
 
 import {withErrorHandling} from 'HOC';
-import {CarbonModal as Modal, LoadingIndicator} from 'components';
+import {Modal, LoadingIndicator} from 'components';
 import {showError} from 'notifications';
 import {deleteEntity} from 'services';
 import {t} from 'translation';

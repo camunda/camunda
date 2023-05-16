@@ -8,7 +8,7 @@
 import React, {runAllEffects} from 'react';
 import {shallow} from 'enzyme';
 
-import {DefinitionSelection, Button, BPMNDiagram, CarbonModal as Modal} from 'components';
+import {DefinitionSelection, Button, BPMNDiagram, Modal} from 'components';
 import {loadProcessDefinitionXml} from 'services';
 
 import {TemplateModal} from './TemplateModal';

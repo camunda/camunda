@@ -8,7 +8,7 @@
 import {useState, useEffect} from 'react';
 import {Button} from '@carbon/react';
 
-import {CarbonModal as Modal, Button as LegacyButton, User} from 'components';
+import {Modal, Button as LegacyButton, User} from 'components';
 import {t} from 'translation';
 import {withErrorHandling, WithErrorHandlingProps, withUser, WithUserProps} from 'HOC';
 import {showError, addNotification} from 'notifications';

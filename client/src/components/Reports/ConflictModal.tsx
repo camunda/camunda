@@ -8,7 +8,7 @@
 import {useState} from 'react';
 import {Button} from '@carbon/react';
 
-import {CarbonModal as Modal} from 'components';
+import {Modal} from 'components';
 import {t} from 'translation';
 
 interface ConflictModalProps {

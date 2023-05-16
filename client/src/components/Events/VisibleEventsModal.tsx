@@ -8,7 +8,7 @@
 import {useState} from 'react';
 import {Button} from '@carbon/react';
 
-import {Form, LabeledInput, CarbonModal as Modal, MessageBox, DocsLink} from 'components';
+import {Form, LabeledInput, Modal, MessageBox, DocsLink} from 'components';
 import {t} from 'translation';
 
 interface VisibleEventsModalProps {

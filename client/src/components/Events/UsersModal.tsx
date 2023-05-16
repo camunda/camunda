@@ -8,7 +8,7 @@
 import {useState, useEffect} from 'react';
 import {Button} from '@carbon/react';
 
-import {CarbonModal as Modal, UserTypeahead, Labeled, User} from 'components';
+import {Modal, UserTypeahead, Labeled, User} from 'components';
 import {showError} from 'notifications';
 import {WithErrorHandlingProps, withErrorHandling} from 'HOC';
 import {getOptimizeProfile} from 'config';

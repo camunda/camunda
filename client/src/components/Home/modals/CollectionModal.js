@@ -9,7 +9,7 @@ import {useState} from 'react';
 import {Redirect} from 'react-router-dom';
 import {Button} from '@carbon/react';
 
-import {LabeledInput, CarbonModal as Modal, Form} from 'components';
+import {LabeledInput, Modal, Form} from 'components';
 import {t} from 'translation';
 import {withErrorHandling} from 'HOC';
 import {showError} from 'notifications';

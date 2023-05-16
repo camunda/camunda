@@ -49,7 +49,7 @@ export async function createNewReport(t) {
   await t.click(Selector('.Submenu').withText('Report'));
   await t.click(Selector('.Submenu .DropdownOption').withText('Process Report'));
   await t.click(Selector('.Button').withText('Blank report'));
-  await t.click(Selector(Common.carbonModalConfirmBtn));
+  await t.click(Selector(Common.modalConfirmButton));
   await toggleReportAutoPreviewUpdate(t);
 }
 
@@ -87,7 +87,7 @@ export async function selectReportDefinition(t, name, version) {
   await t
     .click('.AddDefinition')
     .click(Selector('.Checklist .label').withText(name))
-    .click(Common.carbonModalConfirmBtn);
+    .click(Common.modalConfirmButton);
 
   if (version) {
     selectVersion(t, Selector('.DefinitionList li').withText(name), version);
@@ -154,7 +154,7 @@ export async function createNewDashboard(t) {
   await t.click(Common.createNewMenu);
   await t.click(Common.option('Dashboard'));
   await t.click(Homepage.blankDashboardButton);
-  await t.click(Common.carbonModalConfirmBtn);
+  await t.click(Common.modalConfirmButton);
 }
 
 export async function addReportToDashboard(t, name) {
@@ -171,7 +171,7 @@ export async function bulkDeleteAllItems(t) {
   await t.click(Common.selectAllCheckbox);
   await t.click(Common.bulkMenu);
   await t.click(Common.del(Common.bulkMenu));
-  await t.click(Common.carbonModalConfirmBtn);
+  await t.click(Common.modalConfirmButton);
 }
 
 export async function toggleReportAutoPreviewUpdate(t) {

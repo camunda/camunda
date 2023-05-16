@@ -8,7 +8,7 @@
 import {useState, useEffect} from 'react';
 import {Button} from '@carbon/react';
 
-import {CarbonModal as Modal, LabeledInput, DocsLink} from 'components';
+import {Modal, LabeledInput, DocsLink} from 'components';
 import {t} from 'translation';
 import {withErrorHandling, WithErrorHandlingProps} from 'HOC';
 import {showError, addNotification} from 'notifications';

@@ -8,7 +8,7 @@
 import {useState, useCallback, useEffect} from 'react';
 import {Button} from '@carbon/react';
 
-import {CarbonModal as Modal, ReportRenderer, LoadingIndicator} from 'components';
+import {Modal, ReportRenderer, LoadingIndicator} from 'components';
 import {withErrorHandling} from 'HOC';
 import {evaluateReport} from 'services';
 import {t} from 'translation';

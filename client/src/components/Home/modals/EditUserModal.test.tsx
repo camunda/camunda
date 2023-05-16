@@ -8,7 +8,7 @@
 import {shallow} from 'enzyme';
 import {Button} from '@carbon/react';
 
-import {CarbonModal as Modal} from 'components';
+import {Modal} from 'components';
 
 import EditUserModal from './EditUserModal';
 

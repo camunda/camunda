@@ -9,15 +9,7 @@ import {useState, useEffect} from 'react';
 import classnames from 'classnames';
 import {Button, TableSelectRow, TableSelectAll} from '@carbon/react';
 
-import {
-  CarbonModal as Modal,
-  Table,
-  TenantPopover,
-  Typeahead,
-  Labeled,
-  Tag,
-  SearchInput,
-} from 'components';
+import {Modal, Table, TenantPopover, Typeahead, Labeled, Tag, SearchInput} from 'components';
 import {formatters} from 'services';
 import {t} from 'translation';
 import {withErrorHandling} from 'HOC';

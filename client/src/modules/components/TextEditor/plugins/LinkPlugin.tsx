@@ -21,7 +21,7 @@ import {mergeRegister, $insertNodeToNearestRoot} from '@lexical/utils';
 import {useLexicalComposerContext} from '@lexical/react/LexicalComposerContext';
 import {LinkPlugin as LexicalLinkPlugin} from '@lexical/react/LexicalLinkPlugin';
 
-import {Form, Input, Labeled, CarbonModal as Modal} from 'components';
+import {Form, Input, Labeled, Modal} from 'components';
 import {t} from 'translation';
 
 import {validateUrl} from './service';

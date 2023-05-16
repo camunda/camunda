@@ -10,10 +10,10 @@ import {Selector} from 'testcafe';
 export const createNewMenu = Selector('.CreateNewButton');
 export const editButton = Selector('.edit-button');
 export const confirmButton = Selector('button.confirm');
-export const carbonModalConfirmBtn = Selector('.CarbonModal.is-visible')
+export const modalConfirmButton = Selector('.Modal.is-visible')
   .nth(-1)
   .find('.cds--modal-footer .cds--btn:last-child');
-export const modalNameInput = Selector('.CarbonModal.is-visible input[type="text"]');
+export const modalNameInput = Selector('.Modal.is-visible input[type="text"]');
 export const option = (text) => Selector('.DropdownOption').withText(text);
 export const submenuOption = (text) => Selector('.Submenu .DropdownOption').withText(text);
 export const entityList = Selector('.EntityList');
@@ -36,7 +36,7 @@ export const collectionItem = listItem.filter(
 export const reportLabel = reportItem.find('.name .type');
 export const listItemCheckbox = (item) => item.find('input[type="checkbox"]');
 export const newReportOption = createNewMenu.find('.Submenu');
-export const templateModalProcessField = Selector('.CarbonModal .MultiSelect');
+export const templateModalProcessField = Selector('.Modal .MultiSelect');
 export const firstTypeaheadOption = Selector('.TemplateModal .DropdownOption');
 export const modalContainer = Selector('.cds--modal-container');
 export const controlPanel = Selector('.ReportControlPanel');
