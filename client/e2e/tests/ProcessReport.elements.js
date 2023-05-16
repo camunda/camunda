@@ -71,7 +71,6 @@ export const subFilterOption = (text) =>
   Selector('.Filter__dropdown.is-open .Submenu .DropdownOption').withText(text);
 export const modalOption = (text) => Selector('.CarbonModal label').withText(text).find('.Input');
 export const collectionsDropdown = Selector(`.CollectionsDropdown`);
-export const createCollectionButton = Selector('.Modal button').withText('Create Collection');
 export const collectionOption = (text) =>
   Selector('.CollectionsDropdown.is-open .DropdownOption').withText(text);
 export const limitPrecisionSwitch = Selector('.PrecisionConfig .Switch').withText(

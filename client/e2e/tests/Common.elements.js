@@ -10,7 +10,6 @@ import {Selector} from 'testcafe';
 export const createNewMenu = Selector('.CreateNewButton');
 export const editButton = Selector('.edit-button');
 export const confirmButton = Selector('button.confirm');
-export const modalConfirmButton = Selector('.Modal button.primary');
 export const carbonModalConfirmBtn = Selector('.CarbonModal.is-visible')
   .nth(-1)
   .find('.cds--modal-footer .cds--btn:last-child');
@@ -39,7 +38,7 @@ export const listItemCheckbox = (item) => item.find('input[type="checkbox"]');
 export const newReportOption = createNewMenu.find('.Submenu');
 export const templateModalProcessField = Selector('.CarbonModal .MultiSelect');
 export const firstTypeaheadOption = Selector('.TemplateModal .DropdownOption');
-export const modalContainer = Selector('.Modal__content-container');
+export const modalContainer = Selector('.cds--modal-container');
 export const controlPanel = Selector('.ReportControlPanel');
 export const nameEditField = Selector('.EntityNameForm .name-input');
 export const typeahead = Selector('.Typeahead');

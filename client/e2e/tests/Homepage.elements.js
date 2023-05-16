@@ -21,8 +21,5 @@ export const moveCopySwitch = Selector('.moveSection .Switch');
 export const copyTargetsInput = Selector('.CopyModal .Typeahead .Input');
 export const copyTarget = (text) => Selector('.CopyModal .Typeahead .OptionsList').withText(text);
 export const copyModal = Selector('.CopyModal');
-export const processTypeahead = Selector('.Modal .Typeahead');
-export const templateOption = (text) =>
-  Selector('.Modal .templateContainer .Button').withText(text);
 export const bulkDelete = Selector('.bulkMenu .DropdownOption');
 export const definitionSelection = Selector('.DefinitionSelection');
