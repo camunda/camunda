@@ -125,7 +125,7 @@
     <version.validation-api>3.0.2</version.validation-api>
     <version.jackson-databind-nullable>0.2.6</version.jackson-databind-nullable>
     <version.jackson-annotations>2.15.0</version.jackson-annotations>
-    <version.swagger-annotations>2.2.9</version.swagger-annotations>
+    <version.swagger-annotations>2.2.10</version.swagger-annotations>
     <version.checker-qual>3.34.0</version.checker-qual>
 
     <!-- maven plugins -->
