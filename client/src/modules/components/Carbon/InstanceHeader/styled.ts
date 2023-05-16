@@ -5,7 +5,7 @@
  * except in compliance with the proprietary license.
  */
 
-import styled from 'styled-components';
+import styled, {css} from 'styled-components';
 import {styles} from '@carbon/elements';
 import {
   SkeletonText as BaseSkeletonText,
@@ -36,12 +36,24 @@ const Td = styled.td`
   ${styles.label02};
 `;
 
-const Container = styled.header`
-  display: flex;
-  align-items: center;
-  background-color: var(--cds-layer-01);
-  padding: var(--cds-spacing-02) var(--cds-spacing-05);
-  border-bottom: 1px solid var(--cds-border-subtle-01);
+type ContainerProps = {
+  $hideBottomBorder?: boolean;
+};
+
+const Container = styled.header<ContainerProps>`
+  ${({$hideBottomBorder}) => {
+    return css`
+      display: flex;
+      align-items: center;
+      background-color: var(--cds-layer-01);
+      padding: var(--cds-spacing-02) var(--cds-spacing-05);
+      border-bottom: 1px solid var(--cds-border-subtle-01);
+      ${$hideBottomBorder &&
+      css`
+        border-bottom: none;
+      `}
+    `;
+  }}
 `;
 
 const SkeletonText = styled(BaseSkeletonText)`

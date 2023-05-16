@@ -19,6 +19,7 @@ type Props = {
   headerColumns: string[];
   bodyColumns: Column[];
   additionalContent?: React.ReactNode;
+  hideBottomBorder?: boolean;
 };
 
 const InstanceHeader: React.FC<Props> = ({
@@ -26,9 +27,13 @@ const InstanceHeader: React.FC<Props> = ({
   headerColumns,
   bodyColumns,
   additionalContent,
+  hideBottomBorder = false,
 }) => {
   return (
-    <Container data-testid="instance-header">
+    <Container
+      data-testid="instance-header"
+      $hideBottomBorder={hideBottomBorder}
+    >
       <StateIcon state={state} size={24} />
 
       <Table>

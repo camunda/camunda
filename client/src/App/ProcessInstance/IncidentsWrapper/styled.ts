@@ -12,7 +12,6 @@ type TransitionProps = {
   timeout: number;
 };
 
-// @ts-expect-error ts-migrate(2769) FIXME: Type 'undefined' is not assignable to type 'ReactE... Remove this comment to see the full error message
 const Transition = styled(TransitionComponent)<TransitionProps>`
   ${({theme, timeout}) => {
     return css`

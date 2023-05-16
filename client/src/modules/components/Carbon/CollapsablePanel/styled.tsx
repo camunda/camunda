@@ -13,7 +13,7 @@ import {
 import {IconButton as BaseIconButton} from '@carbon/react';
 import {Header as BaseHeader} from '../PanelHeader/styled';
 import {COLLAPSABLE_PANEL_MIN_WIDTH} from 'modules/constants';
-import {zOverlayCollapsable} from 'modules/constants/componentHierarchy';
+import {zOverlayCollapsable} from 'modules/constants/carbonComponentHierarchy';
 
 type CollapsableProps = {
   isCollapsed: boolean;

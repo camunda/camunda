@@ -6,15 +6,7 @@
  */
 
 import styled, {css} from 'styled-components';
-
-import {ReactComponent as Right} from 'modules/components/Icon/right.svg';
 import {Transition as TransitionComponent} from 'modules/components/Transition';
-
-const ArrowIcon = styled(Right)`
-  width: 16px;
-  height: 16px;
-  object-fit: contain;
-`;
 
 type TransitionProps = {
   timeout: number;
@@ -24,36 +16,25 @@ const Transition = styled(TransitionComponent)<TransitionProps>`
   ${({timeout}) => {
     return css`
       &.transition-enter {
-        transform: none;
+        border-bottom: 1px solid var(--cds-border-subtle-01);
+        top: -100%;
       }
-
       &.transition-enter-active {
-        transform: rotate(90deg);
-        transition: transform ${timeout}ms;
+        border-bottom: 1px solid var(--cds-border-subtle-01);
+        top: 0%;
+        transition: top ${timeout}ms;
       }
-
-      &.transition-enter-done {
-        transform: rotate(90deg);
-      }
-
       &.transition-exit {
-        transform: rotate(90deg);
+        top: 0%;
+        border: none;
       }
-
       &.transition-exit-active {
-        transform: none;
-        transition: transform ${timeout}ms;
-      }
-
-      &.transition-exit-done {
-        transform: none;
-      }
-
-      &.transition-appear {
-        transform: rotate(90deg);
+        top: -100%;
+        border-bottom: 1px solid var(--cds-border-subtle-01);
+        transition: top ${timeout}ms;
       }
     `;
   }}
 `;
 
-export {ArrowIcon, Transition};
+export {Transition};

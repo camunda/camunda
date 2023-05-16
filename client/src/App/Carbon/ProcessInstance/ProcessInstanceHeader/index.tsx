@@ -77,6 +77,7 @@ const ProcessInstanceHeader: React.FC = observer(() => {
   return (
     <InstanceHeader
       state={state}
+      hideBottomBorder={state === 'INCIDENT'}
       headerColumns={headerColumns.map(({name}) => name)}
       bodyColumns={[
         {

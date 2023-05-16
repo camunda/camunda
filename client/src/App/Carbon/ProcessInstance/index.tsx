@@ -27,6 +27,7 @@ import {processInstanceDetailsDiagramStore} from 'modules/stores/processInstance
 import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
 import {flowNodeTimeStampStore} from 'modules/stores/flowNodeTimeStamp';
 import {ProcessInstanceHeader} from './ProcessInstanceHeader';
+import {TopPanel} from './TopPanel';
 
 const ProcessInstance: React.FC = observer(() => {
   const {processInstanceId = ''} = useProcessInstancePageParams();
@@ -139,7 +140,7 @@ const ProcessInstance: React.FC = observer(() => {
           ) : undefined
         }
         header={<ProcessInstanceHeader />}
-        topPanel={<div>top panel</div>}
+        topPanel={<TopPanel />}
         bottomPanel={<div>bottom panel</div>}
         id="process"
       />

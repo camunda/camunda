@@ -14,11 +14,13 @@ const below = -1;
 
 const zNotification = above + zLayoutTopBase;
 const zModificationFrame = above + zLayoutTopBase;
+const zIconButton = above + zLayoutBase;
+const zIncidentBanner = above + zLayoutBase;
+
 const zModificationLoadingOverlay = below + zModificationFrame;
 const zOverlayCollapsable = below + zAppHeader;
 const zModal = above + zModificationFrame;
 const zDateRangePopover = below + zOverlayCollapsable;
-const zIconButton = above + zLayoutBase;
 const zDataTableHeader = above + zIconButton;
 const zLicenseNote = above + zModificationLoadingOverlay;
 const zUserDropdown = above + zModificationLoadingOverlay;
@@ -34,4 +36,5 @@ export {
   zLicenseNote,
   zUserDropdown,
   zOverlayCollapsable,
+  zIncidentBanner,
 };

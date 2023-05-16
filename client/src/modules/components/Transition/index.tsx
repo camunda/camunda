@@ -10,17 +10,14 @@ import {CSSTransition, TransitionGroup} from 'react-transition-group';
 
 type Props = {
   children: React.ReactNode;
-};
+} & React.ComponentProps<typeof CSSTransition>;
 
-function Transition(props: Props) {
+const Transition: React.FC<Props> = (props) => {
   return (
-    props.children && (
-      // @ts-expect-error
-      <CSSTransition classNames="transition" {...props}>
-        {Children.only(props.children)}
-      </CSSTransition>
-    )
+    <CSSTransition classNames="transition" {...props}>
+      {Children.only(props.children)}
+    </CSSTransition>
   );
-}
+};
 
 export {Transition, TransitionGroup};
