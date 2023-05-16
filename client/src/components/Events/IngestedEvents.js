@@ -7,13 +7,13 @@
 
 import React, {useCallback, useEffect, useState, useMemo} from 'react';
 import debounce from 'debounce';
+import {TableSelectRow, TableSelectAll} from '@carbon/react';
 
 import {
   Deleter,
   DocsLink,
   Dropdown,
   Icon,
-  Input,
   PageTitle,
   SearchInput,
   Table,
@@ -85,6 +85,8 @@ export function IngestedEvents({mightFail}) {
   const currentViewIds = eventsResponse.results.map(({id}) => id);
   const allSelectedInView =
     currentViewIds.length > 0 && currentViewIds.every((id) => selected.includes(id));
+  const someSelectedInView =
+    !allSelectedInView && currentViewIds.some((id) => selected.includes(id));
   const maxDeletionReached = selected.length > 1000;
 
   const head = headerKeys.map((key) => ({
@@ -96,10 +98,13 @@ export function IngestedEvents({mightFail}) {
   if (head.length) {
     head.unshift({
       label: (
-        <Input
-          type="checkbox"
+        <TableSelectAll
+          id="checked"
+          name="checked"
+          ariaLabel="checked"
+          indeterminate={someSelectedInView}
           checked={allSelectedInView}
-          onChange={({target: {checked}}) =>
+          onSelect={({target: {checked}}) =>
             checked
               ? setSelected([...new Set([...selected, ...currentViewIds])])
               : setSelected(selected.filter((id) => !currentViewIds.includes(id)))
@@ -149,10 +154,12 @@ export function IngestedEvents({mightFail}) {
       <Table
         head={head}
         body={eventsResponse.results.map((event) => [
-          <Input
-            type="checkbox"
+          <TableSelectRow
+            id={event.id}
+            name={event.eventName}
+            ariaLabel={event.eventName}
             checked={selected.includes(event.id)}
-            onChange={({target: {checked}}) =>
+            onSelect={({target: {checked}}) =>
               checked
                 ? setSelected([...selected, event.id])
                 : setSelected(selected.filter((id) => id !== event.id))

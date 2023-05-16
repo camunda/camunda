@@ -115,7 +115,7 @@ it('should call callback when changing mapping', async () => {
   node
     .find(Table)
     .prop('body')[0]
-    .content[0].props.onChange({target: {checked: false}});
+    .content[0].props.onSelect({target: {checked: false}});
 
   await flushPromises();
 

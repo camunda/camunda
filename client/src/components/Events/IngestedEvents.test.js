@@ -93,11 +93,11 @@ it('should be possible to delete multiple events from the table', () => {
   node
     .find('Table')
     .prop('body')[0][0]
-    .props.onChange({target: {checked: true}});
+    .props.onSelect({target: {checked: true}});
   node
     .find('Table')
     .prop('body')[1][0]
-    .props.onChange({target: {checked: true}});
+    .props.onSelect({target: {checked: true}});
 
   node.find(Dropdown.Option).simulate('click');
 
@@ -118,7 +118,7 @@ it('should select all events in view', () => {
   node
     .find('Table')
     .prop('head')[0]
-    .label.props.onChange({target: {checked: true}});
+    .label.props.onSelect({target: {checked: true}});
 
   expect(node.find('.selectionActions').prop('label')).toBe('2 Selected');
 });

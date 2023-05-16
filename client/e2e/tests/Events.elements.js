@@ -27,12 +27,12 @@ export const typeaheadOption = (typeahead, text) =>
 export const externalEvents = Selector('.Button').withText('External Events');
 export const startNode = Selector('g[data-element-id=StartEvent_1]');
 export const startAndEndEvents = Selector('input[type=radio]').nth(3);
-export const startEvent = Selector('.StartEvent_1 input[type=checkbox]');
+export const startEvent = Selector('.StartEvent_1 .cds--table-column-checkbox label');
 export const activity = Selector('g[data-element-id=Activity_1s5va7f]');
-export const bankStart = Selector('.BankTransferStart input[type=checkbox]');
-export const bankEnd = Selector('.BankTransferEnd input[type=checkbox]');
+export const bankStart = Selector('.BankTransferStart .cds--table-column-checkbox label');
+export const bankEnd = Selector('.BankTransferEnd .cds--table-column-checkbox label');
 export const endNode = Selector('g[data-element-id=Event_0m3kxux]');
-export const endEvent = Selector('.invoiceProcessed input[type=checkbox]');
+export const endEvent = Selector('.invoiceProcessed .cds--table-column-checkbox label');
 export const eventsTable = Selector('.EventTable');
 export const publishButton = Selector('.publish-button');
 export const permissionButton = Selector('.permission button');
@@ -43,7 +43,7 @@ export const diagram = Selector('.ProcessView .BPMNDiagram');
 export const businessKey = Selector('.label').withText('Business Key').prevSibling();
 export const externalEventsTab = Selector('.NavItem').withText('External Events');
 export const eventCheckbox = (index) =>
-  Selector('.Table tbody tr').nth(index).find('input[type=checkbox]');
+  Selector('.Table tbody tr').nth(index).find('.cds--table-column-checkbox label');
 export const selectionDropdown = Selector('.selectionActions button');
 export const externalEventsTable = Selector('.Table');
 export const externalEventgroup = (index) =>

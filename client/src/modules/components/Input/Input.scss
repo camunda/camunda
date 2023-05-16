@@ -62,7 +62,7 @@ textarea {
 }
 
 input[type='radio'],
-input[type='checkbox'] {
+input[type='checkbox']:not(.cds--checkbox) {
   min-width: 14px;
   height: 14px;
   vertical-align: middle;
@@ -84,7 +84,7 @@ input[type='checkbox'] {
   }
 }
 
-input[type='checkbox'] {
+input[type='checkbox']:not(.cds--checkbox) {
   border-radius: 3px;
 
   &:checked {

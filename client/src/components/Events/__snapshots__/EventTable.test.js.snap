@@ -49,11 +49,13 @@ exports[`should match snapshot 1`] = `
       Array [
         Object {
           "content": Array [
-            <ForwardRef(Input)
+            <TableSelectRow
+              ariaLabel="OrderProcessed"
               checked={true}
               disabled={false}
-              onChange={[Function]}
-              type="checkbox"
+              id="OrderProcessed"
+              name="OrderProcessed"
+              onSelect={[Function]}
             />,
             <Select
               onChange={[Function]}
@@ -84,11 +86,13 @@ exports[`should match snapshot 1`] = `
         },
         Object {
           "content": Array [
-            <ForwardRef(Input)
+            <TableSelectRow
+              ariaLabel="OrderAccepted"
               checked={false}
               disabled={true}
-              onChange={[Function]}
-              type="checkbox"
+              id="OrderAccepted"
+              name="OrderAccepted"
+              onSelect={[Function]}
             />,
             <span
               className="disabled"

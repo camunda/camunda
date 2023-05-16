@@ -44,6 +44,6 @@ export const logoutButton = Selector('header button').withText('Logout');
 export const usernameDropdown = Selector('header button').withAttribute('aria-label', 'Open User');
 export const usersTypeahead = Selector('.MultiUserInput .Input');
 export const searchField = Selector('.SearchInput input');
-export const selectAllCheckbox = Selector('.Table thead input[type="checkbox"]');
+export const selectAllCheckbox = Selector('.Table thead .cds--table-column-checkbox label');
 export const itemCheckbox = (idx) =>
-  Selector('.Table tbody tr').nth(idx).find('input[type="checkbox"]');
+  Selector('.Table tbody tr').nth(idx).find('.cds--table-column-checkbox label');

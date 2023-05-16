@@ -5,7 +5,7 @@
  * except in compliance with the proprietary license.
  */
 
-import React, {MouseEvent, UIEventHandler, useEffect, useRef} from 'react';
+import {MouseEvent, UIEventHandler, useEffect, useMemo, useRef} from 'react';
 import classnames from 'classnames';
 import {
   useTable,
@@ -25,6 +25,7 @@ import {
 } from 'react-table';
 import {
   DataTable,
+  TableContainer,
   Table as CarbonTable,
   Pagination,
   TableHead,
@@ -33,6 +34,8 @@ import {
   TableHeader,
   TableCell,
   DataTableSize,
+  TableSelectAll,
+  TableSelectRow,
 } from '@carbon/react';
 
 import {t, getLanguage} from 'translation';
@@ -104,15 +107,15 @@ export default function Table<T extends object>({
   size = 'lg',
 }: TableProps) {
   const columnWidths = useRef<Record<string, string | number | undefined>>({});
-  const columns = React.useMemo(() => Table.formatColumns(head, '', columnWidths.current), [head]);
-  const data = React.useMemo(() => Table.formatData(head, body), [head, body]);
-  const initialSorting = React.useMemo(
+  const columns = useMemo(() => Table.formatColumns(head, '', columnWidths.current), [head]);
+  const data = useMemo(() => Table.formatData(head, body), [head, body]);
+  const initialSorting = useMemo(
     () => formatSorting(sorting, resultType, columns, allowLocalSorting),
     [columns, resultType, sorting, allowLocalSorting]
   );
 
   const {
-    getTableProps,
+    getTableProps: getReactTableProps,
     getTableBodyProps,
     headerGroups,
     prepareRow,
@@ -206,56 +209,76 @@ export default function Table<T extends object>({
         locale={getLanguage()}
         headers={headers.map((header) => ({key: header.id, header: header.render('Header')!}))}
         rows={page}
-        render={() => (
-          <CarbonTable size={size} useZebraStyles {...getTableProps()}>
-            <TableHead>
-              {headerGroups.map((headerGroup, i) => (
-                <TableRow
-                  {...headerGroup.getHeaderGroupProps()}
-                  className={classnames({groupRow: i === 0 && headerGroups.length > 1})}
-                >
-                  {headerGroup.headers.map((column: any) => (
-                    <TableHeader
-                      className={classnames('tableHeader', {placeholder: column.placeholderOf})}
-                      {...column.getHeaderProps()}
-                      data-group={column.group}
-                    >
-                      <div className="cellContent" {...getSortingProps(column)} title={undefined}>
-                        <Tooltip content={column.title} overflowOnly>
-                          <span className="text">{column.render('Header')}</span>
-                        </Tooltip>
-                        {column.isSorted && <Icon type={isSortedDesc(column) ? 'down' : 'up'} />}
-                      </div>
-                      <div {...column.getResizerProps()} className="resizer" />
-                    </TableHeader>
-                  ))}
-                </TableRow>
-              ))}
-            </TableHead>
-            <TableBody {...getTableBodyProps()} onScroll={onScroll}>
-              {!error &&
-                page.map((row) => {
-                  prepareRow(row);
-                  return (
-                    <TableRow {...row.getRowProps((row.original as any).__props)}>
-                      {row.cells.map((cell) => {
-                        const props = cell.getCellProps();
-                        return (
-                          <TableCell
-                            {...props}
-                            className={classnames(props.className, {
-                              noOverflow: cell.value?.type === Select,
-                            })}
+        isSortable
+        useZebraStyles
+        render={({getTableContainerProps, getTableProps}) => (
+          <TableContainer {...getTableContainerProps}>
+            <CarbonTable size={size} {...getReactTableProps()} {...getTableProps()}>
+              <TableHead>
+                {headerGroups.map((headerGroup, i) => (
+                  <TableRow
+                    {...headerGroup.getHeaderGroupProps()}
+                    className={classnames({groupRow: i === 0 && headerGroups.length > 1})}
+                  >
+                    {headerGroup.headers.map((header: any) => {
+                      if (header.Header.type === TableSelectAll) {
+                        return header.render('Header', {key: header.Header.props.id});
+                      }
+
+                      return (
+                        <TableHeader
+                          className={classnames('tableHeader', {placeholder: header.placeholderOf})}
+                          {...header.getHeaderProps()}
+                          data-group={header.group}
+                        >
+                          <div
+                            className="cellContent"
+                            {...getSortingProps(header)}
+                            title={undefined}
                           >
-                            {cell.render('Cell')}
-                          </TableCell>
-                        );
-                      })}
-                    </TableRow>
-                  );
-                })}
-            </TableBody>
-          </CarbonTable>
+                            <Tooltip content={header.title} overflowOnly>
+                              <span className="text">{header.render('Header')}</span>
+                            </Tooltip>
+                            {header.isSorted && (
+                              <Icon type={isSortedDesc(header) ? 'down' : 'up'} />
+                            )}
+                          </div>
+                          <div {...header.getResizerProps()} className="resizer" />
+                        </TableHeader>
+                      );
+                    })}
+                  </TableRow>
+                ))}
+              </TableHead>
+              <TableBody {...getTableBodyProps()} onScroll={onScroll}>
+                {!error &&
+                  page.map((row) => {
+                    prepareRow(row);
+                    return (
+                      <TableRow {...row.getRowProps((row.original as any).__props)}>
+                        {row.cells.map((cell) => {
+                          if (cell.value?.type === TableSelectRow) {
+                            return cell.render('Cell', {key: cell.value.props.id});
+                          }
+
+                          const props = cell.getCellProps();
+                          return (
+                            <TableCell
+                              {...props}
+                              className={classnames(props.className, {
+                                noOverflow: cell.value?.type === Select,
+                              })}
+                            >
+                              {cell.render('Cell')}
+                            </TableCell>
+                          );
+                        })}
+                      </TableRow>
+                    );
+                  })}
+              </TableBody>
+            </CarbonTable>
+          </TableContainer>
         )}
       />
       {loading && <LoadingIndicator />}

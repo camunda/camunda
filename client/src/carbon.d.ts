@@ -5,6 +5,7 @@
  * except in compliance with the proprietary license.
  */
 
+import {RadioButtonSkeletonProps} from '@carbon/react';
 import {
   FC,
   ComponentProps,
@@ -21,6 +22,7 @@ import {
   RefAttributes,
   TdHTMLAttributes,
   ChangeEvent,
+  MouseEvent,
 } from 'react';
 
 declare module '@carbon/react' {
@@ -148,15 +150,32 @@ declare module '@carbon/react' {
     } & ComponentProps<'div'>
   );
 
+  export type ShapeOf<B extends object, E extends object = {[key: string]: any}> = (E extends never
+    ? {}
+    : E) &
+    B;
   export interface ReactAttr<T = HTMLElement> extends HTMLAttributes<T> {}
   export interface ReactButtonAttr<T = HTMLButtonElement> extends ButtonHTMLAttributes<T> {}
   export interface ReactDivAttr extends ReactAttr<HTMLDivElement> {}
-  export interface ReactInputAttr<T = HTMLInputElement> extends React.InputHTMLAttributes<T> {}
+  export interface ReactInputAttr<T = HTMLInputElement> extends InputHTMLAttributes<T> {}
   export type ForwardRefProps<T, P = {}> = PropsWithoutRef<PropsWithChildren<P>> & RefAttributes<T>;
   export type ForwardRefReturn<T, P = {}> = ForwardRefExoticComponent<ForwardRefProps<T, P>>;
   export interface RequiresIdProps<T = ReactAttr['id']> {
     id: NonNullable<T>;
   }
+
+  export interface DataTableCell<V = any, H extends DataTableHeader = DataTableHeader> {
+    errors?: any[] | null | undefined;
+    id: string;
+    info: {
+      header: H['key'];
+    };
+    isEditable: boolean;
+    isEditing: boolean;
+    isValid: boolean;
+    value?: V | undefined;
+  }
+
   export interface DataTableRow<ID extends string = string> {
     disabled?: boolean | undefined;
     id: ID;
@@ -164,9 +183,86 @@ declare module '@carbon/react' {
     isSelected?: boolean | undefined;
   }
 
+  export type DenormalizedRow = DataTableRow & {cells: DataTableCell[]};
+
   export interface DataTableHeader<K extends string = string> {
     header: NonNullable<ReactNode>;
     key: K;
+  }
+
+  export interface DataTableCustomHeaderData<H extends DataTableHeader = DataTableHeader> {
+    header: H;
+    isSortable?: boolean | undefined;
+    onClick?(event: MouseEvent<HTMLElement>): void;
+  }
+
+  export interface DataTableCustomHeaderProps<H extends {key: string} = DataTableHeader> {
+    isSortable?: boolean | undefined;
+    isSortHeader: boolean;
+    key: H['key'];
+    onClick(event: MouseEvent<HTMLElement>): void;
+    sortDirection: DataTableSortState;
+  }
+
+  export interface DataTableCustomBatchActionsData {}
+
+  export interface DataTableCustomBatchActionsProps {
+    onCancel(): void;
+    shouldShowBatchActions?: boolean | undefined;
+    totalSelected: number;
+  }
+
+  export interface DataTableCustomRowData<R extends DataTableRow = DataTableRow> {
+    onClick?(event: React.MouseEvent<HTMLElement>): void;
+    row: R;
+  }
+
+  export interface DataTableCustomRowProps<R extends DataTableRow = DataTableRow> {
+    ariaLabel: string;
+    disabled: Exclude<R['disabled'], undefined>;
+    isExpanded: Exclude<R['isExpanded'], undefined>;
+    isSelected: Exclude<R['isSelected'], undefined>;
+    key: R['id'];
+    onExpand(event: React.MouseEvent<HTMLElement>): void;
+  }
+
+  export interface DataTableCustomSelectionData<R extends DataTableRow = DataTableRow> {
+    onClick?(event: React.MouseEvent<HTMLElement>): void;
+    row?: R | undefined;
+  }
+
+  export interface DataTableCustomRenderProps<
+    R extends DataTableRow = DataTableRow,
+    H extends DataTableHeader = DataTableHeader
+  > {
+    expandAll(): void;
+    expandRow(rowId: R['id']): void;
+    getBatchActionProps<E extends object = ReactDivAttr>(
+      data?: ShapeOf<DataTableCustomBatchActionsData, E>
+    ): ShapeOf<DataTableCustomBatchActionsProps, E>;
+    getExpandHeaderProps(props?: TableExpandHeaderProps): TableExpandHeaderProps;
+    getHeaderProps<E extends object = ReactAttr>(
+      data: ShapeOf<DataTableCustomHeaderData<H>, E>
+    ): ShapeOf<DataTableCustomHeaderProps<H>, E>;
+    getRowProps<E extends object = ReactAttr<HTMLTableRowElement>>(
+      data: ShapeOf<DataTableCustomRowData, E>
+    ): ShapeOf<DataTableCustomRowProps, E>;
+    getSelectionProps<E extends object = {}>(
+      data?: ShapeOf<DataTableCustomSelectionData, E>
+    ):
+      | ShapeOf<DataTableCustomSelectionProps<R>, E>
+      | ShapeOf<DataTableCustomSelectionProps<never>, E>;
+    getTableContainerProps(): Pick<TableContainerProps, 'stickyHeader' | 'useStaticWidth'>;
+    getTableProps(): TableCarbonProps;
+    getToolbarProps(props?: TableToolbarProps): TableToolbarProps;
+    headers: DataTableProps<R, H>['headers'];
+    onInputChange(event: SyntheticEvent<HTMLInputElement>): void;
+    radio?: DataTableProps<R, H>['radio'] | undefined;
+    rows: ReadonlyArray<DenormalizedRow>;
+    selectAll(): void;
+    selectedRows: ReadonlyArray<DenormalizedRow>;
+    selectRow(rowId: R['id']): void;
+    sortBy(headerKey: H['key']): void;
   }
 
   export interface DataTableProps<
@@ -204,9 +300,29 @@ declare module '@carbon/react' {
 
   declare const Table: FC<TableProps>;
 
+  export interface TableContainerProps extends Omit<ReactDivAttr, 'title'> {
+    description?: ReactNode | undefined;
+    stickyHeader?: boolean | undefined;
+    useStaticWidth?: boolean | undefined;
+    title?: ReactNode | undefined;
+  }
+
+  declare const TableContainer: FC<TableContainerProps>;
+
   export interface TableHeadProps extends ReactAttr<HTMLTableSectionElement> {}
 
   declare const TableHead: FC<TableHeadProps>;
+
+  export type DataTableSortState = 'ASC' | 'DESC' | 'NONE';
+
+  export type DataTableSortStates = Readonly<{
+    ASC: Extract<DataTableSortState, 'ASC'>;
+    DESC: Extract<DataTableSortState, 'DESC'>;
+    NONE: Extract<DataTableSortState, 'NONE'>;
+  }>;
+
+  export declare const sortStates: DataTableSortStates;
+  export declare const initialSortState: Extract<DataTableSortState, 'NONE'>;
 
   export interface TableHeaderProps
     extends ReactButtonAttr<HTMLElement>,
@@ -236,16 +352,14 @@ declare module '@carbon/react' {
 
   declare const TableCell: FC<TableCellProps>;
 
-  type ExcludedAttributes = 'id' | 'onChange';
-
   export interface PaginationPageSize {
     text: string;
     value: string;
   }
 
-  export interface PaginationProps extends Omit<ReactDivAttr, ExcludedAttributes> {
+  export interface PaginationProps extends Omit<ReactDivAttr, 'id' | 'onChange'> {
     backwardText?: string | undefined;
-    forwardedRef?: React.ForwardedRef<HTMLDivElement>;
+    forwardedRef?: ForwardedRef<HTMLDivElement>;
     forwardText?: string | undefined;
     id?: number | string | undefined;
     isLastPage?: boolean | undefined;
@@ -268,15 +382,44 @@ declare module '@carbon/react' {
 
   declare class Pagination extends Component<PaginationProps> {}
 
-  type ExcludedAttributes = 'aria-label' | 'className' | 'id' | 'onChange' | 'ref' | 'type';
+  export interface TableSelectAllProps {
+    ariaLabel?: InlineCheckboxProps['ariaLabel'] | undefined; // required but has default value
+    checked: NonNullable<InlineCheckboxProps['checked']>;
+    className?: ReactAttr['className'] | undefined;
+    disabled?: InlineCheckboxProps['disabled'] | undefined;
+    id: NonNullable<InlineCheckboxProps['id']>;
+    indeterminate?: InlineCheckboxProps['indeterminate'] | undefined;
+    name: NonNullable<InlineCheckboxProps['name']>;
+    onSelect: InlineCheckboxProps['onClick'];
+  }
+
+  declare const TableSelectAll: FC<TableSelectAllProps>;
 
   export interface InlineCheckboxProps
-    extends Omit<ReactInputAttr, ExcludedAttributes>,
+    extends Omit<ReactInputAttr, 'aria-label' | 'className' | 'id' | 'onChange' | 'ref' | 'type'>,
       RequiresIdProps {
     ariaLabel?: ReactInputAttr['aria-label'] | undefined;
     indeterminate?: boolean | undefined;
     onChange?(checked: boolean, id: string, event: ChangeEvent<HTMLInputElement>): void;
   }
-}
 
-export {};
+  export type TableSelectRowOnChange = (
+    value: RadioButtonSkeletonProps['value'] | InlineCheckboxProps['checked'],
+    idOrName: RadioButtonProps['name'] | InlineCheckboxProps['id'],
+    evt: ChangeEvent<HTMLInputElement>
+  ) => void;
+
+  export interface TableSelectRowProps {
+    ariaLabel?: string | undefined;
+    checked: boolean;
+    className?: string | undefined;
+    disabled?: boolean | undefined;
+    id: string;
+    name: string;
+    onChange?: TableSelectRowOnChange | undefined;
+    onSelect(event: MouseEvent<HTMLInputElement>): void;
+    radio?: boolean | undefined;
+  }
+
+  declare const TableSelectRow: FC<TableSelectRowProps>;
+}

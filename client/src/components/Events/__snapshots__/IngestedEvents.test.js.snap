@@ -31,10 +31,12 @@ exports[`should match snapshot 1`] = `
     body={
       Array [
         Array [
-          <ForwardRef(Input)
+          <TableSelectRow
+            ariaLabel="InvoiceProcessed"
             checked={false}
-            onChange={[Function]}
-            type="checkbox"
+            id="8edc4160-74e5-4ffc-af59-2d281cf5aca347"
+            name="InvoiceProcessed"
+            onSelect={[Function]}
           />,
           "8edc4160-74e5-4ffc-af59-2d281cf5aca347",
           "correlationValue_3",
@@ -44,10 +46,12 @@ exports[`should match snapshot 1`] = `
           "Invoice Processed",
         ],
         Array [
-          <ForwardRef(Input)
+          <TableSelectRow
+            ariaLabel="OrderProcessed"
             checked={false}
-            onChange={[Function]}
-            type="checkbox"
+            id="7edc4160-74e5-4ffc-af59-2d281cf5aca346"
+            name="OrderProcessed"
+            onSelect={[Function]}
           />,
           "7edc4160-74e5-4ffc-af59-2d281cf5aca346",
           "correlationValue_3",
@@ -64,10 +68,13 @@ exports[`should match snapshot 1`] = `
       Array [
         Object {
           "id": "selectedAll",
-          "label": <ForwardRef(Input)
+          "label": <TableSelectAll
+            ariaLabel="checked"
             checked={false}
-            onChange={[Function]}
-            type="checkbox"
+            id="checked"
+            indeterminate={false}
+            name="checked"
+            onSelect={[Function]}
           />,
           "sortable": false,
           "width": 50,

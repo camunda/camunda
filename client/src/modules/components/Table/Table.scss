@@ -37,6 +37,11 @@
   height: 100%;
   overflow: hidden;
 
+  .cds--data-table-container {
+    display: flex;
+    overflow: hidden;
+  }
+
   .cds--data-table-content {
     flex: 1 1 auto;
   }
@@ -54,6 +59,10 @@
     min-height: 0;
     min-width: 100% !important;
     overflow: auto;
+
+    tr .cds--table-column-checkbox {
+      padding-inline: 0.5rem;
+    }
   }
 
   thead {
@@ -61,6 +70,15 @@
       user-select: none;
       overflow: hidden;
       min-width: max-content !important;
+
+      .cds--table-column-checkbox {
+        display: flex;
+        align-items: center;
+
+        .cds--checkbox--inline {
+          min-width: 100%;
+        }
+      }
 
       &.groupRow th {
         font-weight: normal;

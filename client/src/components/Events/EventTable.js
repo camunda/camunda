@@ -8,17 +8,9 @@
 import React from 'react';
 import classnames from 'classnames';
 import deepEqual from 'fast-deep-equal';
+import {TableSelectRow} from '@carbon/react';
 
-import {
-  Table,
-  LoadingIndicator,
-  Input,
-  Select,
-  Switch,
-  Icon,
-  Button,
-  SearchInput,
-} from 'components';
+import {Table, LoadingIndicator, Select, Switch, Icon, Button, SearchInput} from 'components';
 import {withErrorHandling} from 'HOC';
 import {showError} from 'notifications';
 import {t} from 'translation';
@@ -240,16 +232,19 @@ export default withErrorHandling(
                     const eventAsMapping = asMapping(event);
                     const mappedToSelection =
                       deepEqual(start, asMapping(event)) || deepEqual(end, asMapping(event));
-                    const disabled = !selection || (!mappedToSelection && (allMapped || mappedAs));
+                    const disabled =
+                      !selection || (!mappedToSelection && (allMapped || !!mappedAs));
                     const showDropdown = mappedAs && !disabled && !isNonTimerEvent(selection);
 
                     return {
                       content: [
-                        <Input
-                          type="checkbox"
+                        <TableSelectRow
                           checked={!!mappedAs}
+                          id={eventName}
+                          name={eventName}
+                          ariaLabel={eventName}
                           disabled={disabled}
-                          onChange={({target: {checked}}) =>
+                          onSelect={({target: {checked}}) =>
                             onMappingChange(eventAsMapping, checked)
                           }
                         />,

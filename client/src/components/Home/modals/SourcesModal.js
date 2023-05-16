@@ -7,12 +7,11 @@
 
 import {useState, useEffect} from 'react';
 import classnames from 'classnames';
-import {Button} from '@carbon/react';
+import {Button, TableSelectRow, TableSelectAll} from '@carbon/react';
 
 import {
   CarbonModal as Modal,
   Table,
-  Input,
   TenantPopover,
   Typeahead,
   Labeled,
@@ -98,16 +97,23 @@ export function SourcesModal({onClose, onConfirm, mightFail, confirmText, preSel
     );
   }
 
+  const isInSelected = ({key}) => selected.some(({definitionKey}) => key === definitionKey);
+
+  const allChecked = filteredDefinitions.every(isInSelected);
+
+  const allIndeterminate = !allChecked && filteredDefinitions.some(isInSelected);
+
   const tableHead = [
     {
       label: (
-        <Input
-          type="checkbox"
+        <TableSelectAll
+          id="checked"
+          name="checked"
+          ariaLabel="checked"
           className={classnames({hidden: !filteredDefinitions.length})}
-          checked={filteredDefinitions.every(({key}) =>
-            selected.some(({definitionKey}) => key === definitionKey)
-          )}
-          onChange={({target: {checked}}) => (checked ? deselectAll() : selectAll())}
+          indeterminate={allIndeterminate}
+          checked={allChecked}
+          onSelect={({target: {checked}}) => (checked ? deselectAll() : selectAll())}
         />
       ),
       id: 'checked',
@@ -182,10 +188,12 @@ export function SourcesModal({onClose, onConfirm, mightFail, confirmText, preSel
             );
 
             const body = [
-              <Input
-                type="checkbox"
+              <TableSelectRow
                 checked={!!selectedDefinition}
-                onChange={({target: {checked}}) =>
+                id={def.name || def.key}
+                name={def.name || def.key}
+                ariaLabel={def.name || def.key}
+                onSelect={({target: {checked}}) =>
                   checked
                     ? setSelected([...selected, removeExtraTenants(format(def))])
                     : setSelected((selected) =>
