@@ -91,6 +91,7 @@ const InstancesTable: React.FC = observer(() => {
       />
       <SortableTable
         state={getTableState()}
+        useZebraStyles
         emptyMessage={getEmptyListMessage()}
         onVerticalScrollStartReach={async (scrollDown) => {
           if (decisionInstancesStore.shouldFetchPreviousInstances() === false) {

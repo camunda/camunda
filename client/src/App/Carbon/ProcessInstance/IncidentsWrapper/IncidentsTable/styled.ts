@@ -6,16 +6,17 @@
  */
 
 import styled from 'styled-components';
-import {INCIDENT_WRAPPER_HEADER_HEIGHT} from 'modules/constants';
 
-const Overlay = styled.div`
-  width: 100%;
-  height: 60%;
-  position: absolute;
-  background-color: var(--cds-layer-01);
-  border-bottom: 1px solid var(--cds-border-subtle-01);
-  display: grid;
-  grid-template-rows: ${INCIDENT_WRAPPER_HEADER_HEIGHT} 1fr;
+const ErrorMessageCell = styled.div`
+  max-width: 404px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 `;
 
-export {Overlay};
+const FlexContainer = styled.div`
+  display: flex;
+  align-items: center;
+`;
+
+export {ErrorMessageCell, FlexContainer};

@@ -14,7 +14,7 @@ type ItemProps = {
     | 'RESOLVE_INCIDENT'
     | 'CANCEL_PROCESS_INSTANCE'
     | 'ENTER_MODIFICATION_MODE';
-  onClick: () => void;
+  onClick: React.ComponentProps<'button'>['onClick'];
   title: string;
   disabled?: boolean;
   size?: ButtonSize;

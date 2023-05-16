@@ -12,6 +12,7 @@ import {incidentsStore} from 'modules/stores/incidents';
 import {observer} from 'mobx-react';
 import {Transition, PanelHeader} from './styled';
 import {IncidentsFilter} from './IncidentsFilter';
+import {IncidentsTable} from './IncidentsTable';
 
 type Props = {
   setIsInTransition: (isTransitionActive: boolean) => void;
@@ -49,7 +50,7 @@ const IncidentsWrapper: React.FC<Props> = observer(({setIsInTransition}) => {
           >
             <IncidentsFilter />
           </PanelHeader>
-          <div>incidents table</div>
+          <IncidentsTable />
         </IncidentsOverlay>
       </Transition>
     </>

@@ -82,9 +82,10 @@ const InstancesTable: React.FC = observer(() => {
       />
       <SortableTable
         state={getTableState()}
+        useZebraStyles
         columnsWithNoContentPadding={['operations']}
-        isSelectable={
-          authenticationStore.hasPermission(['write']) ? true : false
+        selectionType={
+          authenticationStore.hasPermission(['write']) ? 'checkbox' : 'none'
         }
         onSelectAll={
           processInstancesSelectionStore.selectAllProcessInstancesCarbon

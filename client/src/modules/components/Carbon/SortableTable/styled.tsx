@@ -11,6 +11,7 @@ import {
   TableCell as BaseTableCell,
   TableHead as BaseTableHead,
   DataTableSkeleton as BaseDataTableSkeleton,
+  TableRow as BaseTableRow,
 } from '@carbon/react';
 
 type ContainerProps = {
@@ -74,6 +75,17 @@ const DataTableSkeleton = styled(BaseDataTableSkeleton)`
   }
 `;
 
+type TableRowProps = {
+  $isClickable?: boolean;
+};
+const TableRow = styled(BaseTableRow)<TableRowProps>`
+  ${({$isClickable}) => {
+    return css`
+      ${$isClickable && `cursor: pointer;`}
+    `;
+  }}
+`;
+
 export {
   Container,
   TableContainer,
@@ -81,4 +93,5 @@ export {
   TableHead,
   EmptyMessageContainer,
   DataTableSkeleton,
+  TableRow,
 };

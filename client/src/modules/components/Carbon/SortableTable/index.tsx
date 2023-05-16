@@ -13,12 +13,12 @@ import {
   TableHead,
   EmptyMessageContainer,
   DataTableSkeleton,
+  TableRow,
 } from './styled';
 
 import {
   DataTable,
   Table,
-  TableRow,
   DataTableHeader,
   DataTableRow,
   Loading,
@@ -39,10 +39,10 @@ type HeaderColumn = {
 
 type Props = {
   state: 'skeleton' | 'loading' | 'error' | 'empty' | 'content';
-  isSelectable?: boolean;
+  selectionType?: 'checkbox' | 'row' | 'none';
   headerColumns: HeaderColumn[];
   rows: DataTableRow[];
-  emptyMessage: {message: string; additionalInfo?: string};
+  emptyMessage?: {message: string; additionalInfo?: string};
   onSelectAll?: () => void;
   onSelect?: (rowId: string) => void;
   checkIsRowSelected?: (rowId: string) => boolean; //must be a function because it depends on a store update: https://mobx.js.org/react-optimizations.html#function-props-
@@ -50,6 +50,7 @@ type Props = {
   checkIsIndeterminate?: () => boolean; //must be a function because it depends on a store update: https://mobx.js.org/react-optimizations.html#function-props-
   onSort?: React.ComponentProps<typeof ColumnHeader>['onSort'];
   columnsWithNoContentPadding?: string[];
+  useZebraStyles?: boolean;
 } & Pick<
   React.ComponentProps<typeof InfiniteScroller>,
   'onVerticalScrollStartReach' | 'onVerticalScrollEndReach'
@@ -57,7 +58,7 @@ type Props = {
 
 const SortableTable: React.FC<Props> = ({
   state,
-  isSelectable,
+  selectionType = 'none',
   headerColumns,
   rows,
   emptyMessage,
@@ -69,6 +70,7 @@ const SortableTable: React.FC<Props> = ({
   onVerticalScrollStartReach,
   onVerticalScrollEndReach,
   columnsWithNoContentPadding,
+  useZebraStyles,
 }) => {
   let scrollableContentRef = useRef<HTMLDivElement | null>(null);
 
@@ -76,7 +78,9 @@ const SortableTable: React.FC<Props> = ({
     return (
       <EmptyMessageContainer>
         <>
-          {state === 'empty' && <EmptyMessage {...emptyMessage} />}
+          {state === 'empty' && emptyMessage !== undefined && (
+            <EmptyMessage {...emptyMessage} />
+          )}
           {state === 'error' && (
             <EmptyMessage
               message="Data could not be fetched"
@@ -106,7 +110,7 @@ const SortableTable: React.FC<Props> = ({
   return (
     <Container ref={scrollableContentRef} $isScrollable={state === 'content'}>
       <DataTable
-        useZebraStyles
+        useZebraStyles={useZebraStyles}
         rows={rows}
         headers={headerColumns}
         size="sm"
@@ -123,7 +127,7 @@ const SortableTable: React.FC<Props> = ({
             <Table {...getTableProps()} isSortable>
               <TableHead>
                 <TableRow>
-                  {isSelectable && (
+                  {selectionType === 'checkbox' && (
                     <TableSelectAll
                       {...getSelectionProps()}
                       onSelect={(event) => {
@@ -164,8 +168,14 @@ const SortableTable: React.FC<Props> = ({
                         <TableRow
                           {...getRowProps({row})}
                           isSelected={isSelected}
+                          $isClickable={selectionType === 'row'}
+                          onClick={() => {
+                            if (selectionType === 'row') {
+                              onSelect?.(row.id);
+                            }
+                          }}
                         >
-                          {isSelectable && (
+                          {selectionType === 'checkbox' && (
                             <TableSelectRow
                               {...getSelectionProps({row})}
                               checked={isSelected}

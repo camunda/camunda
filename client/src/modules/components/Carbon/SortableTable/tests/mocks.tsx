@@ -64,13 +64,13 @@ const mockSelectableProps: Pick<
   | 'onSelectAll'
   | 'onSelect'
   | 'checkIsRowSelected'
-  | 'isSelectable'
+  | 'selectionType'
 > = {
   checkIsAllSelected: jest.fn(),
   onSelectAll: jest.fn(),
   onSelect: jest.fn(),
   checkIsRowSelected: jest.fn(),
-  isSelectable: true,
+  selectionType: 'checkbox',
 };
 
 const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {

@@ -5,17 +5,13 @@
  * except in compliance with the proprietary license.
  */
 
+import {Stack} from '@carbon/react';
 import styled from 'styled-components';
-import {INCIDENT_WRAPPER_HEADER_HEIGHT} from 'modules/constants';
 
-const Overlay = styled.div`
-  width: 100%;
-  height: 60%;
-  position: absolute;
-  background-color: var(--cds-layer-01);
-  border-bottom: 1px solid var(--cds-border-subtle-01);
-  display: grid;
-  grid-template-rows: ${INCIDENT_WRAPPER_HEADER_HEIGHT} 1fr;
+const Container = styled(Stack)`
+  .cds--popover[role='tooltip'] {
+    display: none;
+  }
 `;
 
-export {Overlay};
+export {Container};
