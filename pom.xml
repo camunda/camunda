@@ -62,7 +62,7 @@
     <!-- If any of the following version changes, -->
     <!-- please check if they are compatible with "mvc-auth-commons" -->
     <version.auth0>1.44.2</version.auth0>
-    <version.auth0.commons>1.9.4</version.auth0.commons>
+    <version.auth0.commons>1.9.5</version.auth0.commons>
     <version.auth0.jwt>4.4.0</version.auth0.jwt>
     <version.jakarta.servlet>6.0.0</version.jakarta.servlet>
     <version.jwks-rsa>0.22.0</version.jwks-rsa>
