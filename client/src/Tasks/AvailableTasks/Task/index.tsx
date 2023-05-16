@@ -7,7 +7,7 @@
 
 import React from 'react';
 import {Row, Label, TaskLink, Stack, Container, Tag} from './styled';
-import {Pages} from 'modules/constants/pages';
+import {pages} from 'modules/routing';
 import {formatDate} from 'modules/utils/formatDate';
 import {Task as TaskType} from 'modules/types';
 import {useLocation, useMatch} from 'react-router-dom';
@@ -60,7 +60,7 @@ const Task = React.forwardRef<HTMLElement, Props>(
         <TaskLink
           to={{
             ...location,
-            pathname: Pages.TaskDetails(taskId),
+            pathname: pages.taskDetails(taskId),
           }}
           aria-label={
             isUnassigned

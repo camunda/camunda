@@ -14,7 +14,7 @@ import {NetworkStatusWatcher} from './NetworkStatusWatcher';
 import {AuthenticationCheck} from './AuthenticationCheck';
 import {Layout} from './Layout';
 import {Login} from './Login';
-import {Pages} from 'modules/constants/pages';
+import {pages} from 'modules/routing';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {client} from './modules/apollo-client';
 import {SessionWatcher} from './SessionWatcher';
@@ -22,6 +22,15 @@ import {Tasks} from './Tasks';
 import {TrackPagination} from 'modules/tracking/TrackPagination';
 import {Processes} from 'Processes';
 import {ReactQueryProvider} from 'modules/ReactQueryProvider';
+
+import {Suspense, lazy} from 'react';
+import {Loading} from '@carbon/react';
+
+const StartProcessFromForm = lazy(() =>
+  import('./StartProcessFromForm').then(({StartProcessFromForm}) => ({
+    default: StartProcessFromForm,
+  })),
+);
 
 const App: React.FC = () => {
   return (
@@ -34,17 +43,25 @@ const App: React.FC = () => {
             <SessionWatcher />
             <TrackPagination />
             <Routes>
-              <Route path={Pages.Login} element={<Login />} />
+              <Route path={pages.login} element={<Login />} />
+              <Route
+                path={pages.startProcessFromForm}
+                element={
+                  <Suspense fallback={<Loading withOverlay />}>
+                    <StartProcessFromForm />
+                  </Suspense>
+                }
+              />
               <Route
                 path="*"
                 element={
-                  <AuthenticationCheck redirectPath={Pages.Login}>
+                  <AuthenticationCheck redirectPath={pages.login}>
                     <Layout />
                   </AuthenticationCheck>
                 }
               >
                 <Route path="*" element={<Tasks />} />
-                <Route path={Pages.Processes} element={<Processes />} />
+                <Route path={pages.processes} element={<Processes />} />
               </Route>
             </Routes>
           </BrowserRouter>

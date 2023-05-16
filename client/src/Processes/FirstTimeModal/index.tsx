@@ -11,7 +11,7 @@ import {useLocation, useNavigate} from 'react-router-dom';
 import Placeholder from './placeholder.svg';
 import {Container, Image} from './styled';
 import {getStateLocally, storeStateLocally} from 'modules/utils/localStorage';
-import {Pages} from 'modules/constants/pages';
+import {pages} from 'modules/routing';
 import {tracking} from 'modules/tracking';
 
 const FirstTimeModal: React.FC = () => {
@@ -27,7 +27,7 @@ const FirstTimeModal: React.FC = () => {
     navigate(
       {
         ...location,
-        pathname: Pages.Initial(),
+        pathname: pages.initial,
       },
       {
         replace: true,

@@ -9,7 +9,7 @@ import {useEffect, useRef} from 'react';
 import {authenticationStore} from 'modules/stores/authentication';
 import {observer} from 'mobx-react-lite';
 import {useLocation} from 'react-router-dom';
-import {Pages} from 'modules/constants/pages';
+import {pages} from 'modules/routing';
 import {notificationsStore} from 'modules/stores/notifications';
 
 const SessionWatcher: React.FC = observer(() => {
@@ -26,13 +26,13 @@ const SessionWatcher: React.FC = observer(() => {
       });
     }
 
-    if (location.pathname === Pages.Login) {
+    if (location.pathname === pages.login) {
       return;
     }
 
     if (
       status === 'session-expired' ||
-      (status === 'session-invalid' && location.pathname !== Pages.Initial())
+      (status === 'session-invalid' && location.pathname !== pages.initial)
     ) {
       handleSessionExpiration();
     }

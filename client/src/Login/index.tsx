@@ -9,7 +9,7 @@ import {useLocation, useNavigate, Location} from 'react-router-dom';
 import {Form, Field} from 'react-final-form';
 import {FORM_ERROR} from 'final-form';
 import {authenticationStore} from 'modules/stores/authentication';
-import {Pages} from 'modules/constants/pages';
+import {pages} from 'modules/routing';
 import {
   Container,
   CopyrightNotice,
@@ -61,7 +61,7 @@ const Login: React.FC = () => {
               return navigate(
                 stateHasReferrer(location.state)
                   ? location.state.referrer
-                  : {...location, pathname: Pages.Initial()},
+                  : {...location, pathname: pages.initial},
                 {
                   replace: true,
                 },

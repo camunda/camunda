@@ -6,7 +6,7 @@
  */
 
 import {useEffect} from 'react';
-import {useParams, useLocation, useNavigate} from 'react-router-dom';
+import {useLocation, useNavigate} from 'react-router-dom';
 import {useQuery, useMutation} from '@apollo/client';
 import {GetTask, useTask} from 'modules/queries/get-task';
 import {
@@ -21,7 +21,7 @@ import {
   GetCurrentUser,
   GET_CURRENT_USER,
 } from 'modules/queries/get-current-user';
-import {Pages} from 'modules/constants/pages';
+import {pages, useTaskDetailsParams} from 'modules/routing';
 import {Task as TaskType, Variable} from 'modules/types';
 import {FormJS} from './FormJS';
 import {tracking} from 'modules/tracking';
@@ -46,7 +46,7 @@ type Props = {
 };
 
 const Task: React.FC<Props> = ({hasRemainingTasks, onCompleted}) => {
-  const {id = ''} = useParams<'id'>();
+  const {id} = useTaskDetailsParams();
   const navigate = useNavigate();
   const location = useLocation();
   const {fetchMore, data} = useTask(id);
@@ -97,7 +97,7 @@ const Task: React.FC<Props> = ({hasRemainingTasks, onCompleted}) => {
   function handleSubmissionSuccess() {
     storeStateLocally('hasCompletedTask', true);
     navigate({
-      pathname: Pages.Initial(),
+      pathname: pages.initial,
       search: location.search,
     });
   }

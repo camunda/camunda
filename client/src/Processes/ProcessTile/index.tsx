@@ -12,7 +12,7 @@ import {newProcessInstance} from 'modules/stores/newProcessInstance';
 import {useEffect, useState} from 'react';
 import {Container, Title, Subtitle} from './styled';
 import {useNavigate} from 'react-router-dom';
-import {Pages} from 'modules/constants/pages';
+import {pages} from 'modules/routing';
 import {logger} from 'modules/utils/logger';
 import {tracking} from 'modules/tracking';
 import {useStartProcess} from 'modules/mutations/useStartProcess';
@@ -129,7 +129,7 @@ const ProcessTile: React.FC<Props> = ({
                   tracking.track({
                     eventName: 'process-task-toast-clicked',
                   });
-                  navigate({pathname: Pages.TaskDetails(id)});
+                  navigate({pathname: pages.taskDetails(id)});
                 },
               });
             });

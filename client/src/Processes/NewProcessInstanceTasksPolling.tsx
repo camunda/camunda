@@ -6,7 +6,7 @@
  */
 
 import {observer} from 'mobx-react-lite';
-import {Pages} from 'modules/constants/pages';
+import {pages} from 'modules/routing';
 import {newProcessInstance} from 'modules/stores/newProcessInstance';
 import {Task} from 'modules/types';
 import {useLocation, useNavigate} from 'react-router-dom';
@@ -59,7 +59,7 @@ const NewProcessInstanceTasksPolling: React.FC = observer(() => {
 
       newProcessInstance.removeInstance(data);
 
-      if (data.length === 1 && location.pathname === `/${Pages.Processes}`) {
+      if (data.length === 1 && location.pathname === `/${pages.processes}`) {
         const [{id}] = data;
 
         tracking.track({
@@ -67,7 +67,7 @@ const NewProcessInstanceTasksPolling: React.FC = observer(() => {
           outcome: 'single-task-found',
         });
 
-        navigate({pathname: Pages.TaskDetails(id)});
+        navigate({pathname: pages.taskDetails(id)});
 
         return;
       }

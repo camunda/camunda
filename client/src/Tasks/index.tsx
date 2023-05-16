@@ -11,7 +11,7 @@ import {Filters} from './Filters';
 import {AvailableTasks} from './AvailableTasks';
 import {EmptyPage} from './EmptyPage';
 import {Route, Routes} from 'react-router-dom';
-import {Pages} from 'modules/constants/pages';
+import {pages} from 'modules/routing';
 import {useTasks} from 'modules/hooks/useTasks';
 
 const Tasks: React.FC = () => {
@@ -41,7 +41,7 @@ const Tasks: React.FC = () => {
             }
           />
           <Route
-            path={Pages.TaskDetails()}
+            path={pages.taskDetails()}
             element={
               <Task
                 hasRemainingTasks={tasks.length > 0}

@@ -6,7 +6,7 @@
  */
 
 import {InlineLink} from './styled';
-import {Pages} from 'modules/constants/pages';
+import {pages} from 'modules/routing';
 import {tracking} from 'modules/tracking';
 import {authenticationStore} from 'modules/stores/authentication';
 import {C3Navigation} from '@camunda/camunda-composite-components';
@@ -43,7 +43,7 @@ const Header: React.FC = observer(() => {
     window.clientConfig?.isResourcePermissionsEnabled === true;
   const location = useLocation();
   const isProcessesPage =
-    matchPath(Pages.Processes, location.pathname) !== null;
+    matchPath(pages.processes, location.pathname) !== null;
   const {data} = useQuery<GetCurrentUser>(GET_CURRENT_USER);
   const {selectedTheme, changeTheme} = themeStore;
   const {displayName, salesPlanType, c8Links} = data?.currentUser ?? {
@@ -69,7 +69,7 @@ const Header: React.FC = observer(() => {
             target: '_blank',
             active: appName === 'tasklist',
             routeProps:
-              appName === 'tasklist' ? {to: Pages.Initial()} : undefined,
+              appName === 'tasklist' ? {to: pages.initial} : undefined,
           },
     )
     .filter((entry): entry is AppSwitcherElementType => entry !== undefined);
@@ -91,7 +91,7 @@ const Header: React.FC = observer(() => {
         name: 'Tasklist',
         prefix: 'Camunda',
         routeProps: {
-          to: Pages.Initial(),
+          to: pages.initial,
           onClick: () => {
             tracking.track({
               eventName: 'navigation',
@@ -109,7 +109,7 @@ const Header: React.FC = observer(() => {
                 key: 'tasks',
                 label: 'Tasks',
                 routeProps: {
-                  to: Pages.Initial(),
+                  to: pages.initial,
                   onClick: () => {
                     tracking.track({
                       eventName: 'navigation',
@@ -123,7 +123,7 @@ const Header: React.FC = observer(() => {
                 key: 'processes',
                 label: 'Processes',
                 routeProps: {
-                  to: Pages.Processes,
+                  to: pages.processes,
                   onClick: () => {
                     tracking.track({
                       eventName: 'navigation',
