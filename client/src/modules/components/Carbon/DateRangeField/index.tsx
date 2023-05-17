@@ -6,10 +6,10 @@
  */
 
 import {useRef} from 'react';
-import {Field, useField} from 'react-final-form';
+import {Field, useField, useForm} from 'react-final-form';
 import {observer} from 'mobx-react';
 import {tracking} from 'modules/tracking';
-import {formatDate, formatTime} from './formatDate';
+import {formatDate, formatISODate, formatTime} from './formatDate';
 import {Calendar} from '@carbon/react/icons';
 import {DateRangeModal} from './DateRangeModal';
 import {IconTextInput} from '../IconTextInput';
@@ -46,6 +46,7 @@ const DateRangeField: React.FC<Props> = observer(
     onClick,
   }) => {
     const textFieldRef = useRef<HTMLDivElement>(null);
+    const form = useForm();
     const fromDateTime = useField<string>(fromDateTimeKey).input.value;
     const toDateTime = useField<string>(toDateTimeKey).input.value;
 
@@ -95,9 +96,20 @@ const DateRangeField: React.FC<Props> = observer(
           title={popoverTitle}
           filterName={filterName}
           onCancel={onModalClose}
-          onApply={() => {
+          onApply={({fromDateTime, toDateTime}) => {
             onModalClose();
+            form.change(fromDateTimeKey, formatISODate(fromDateTime));
+            form.change(toDateTimeKey, formatISODate(toDateTime));
           }}
+          defaultValues={{
+            fromDate:
+              fromDateTime === '' ? '' : formatDate(new Date(fromDateTime)),
+            fromTime:
+              fromDateTime === '' ? '' : formatTime(new Date(fromDateTime)),
+            toDate: toDateTime === '' ? '' : formatDate(new Date(toDateTime)),
+            toTime: toDateTime === '' ? '' : formatTime(new Date(toDateTime)),
+          }}
+          key={`date-range-modal-${isModalOpen ? 'open' : 'closed'}`}
         />
       </>
     );

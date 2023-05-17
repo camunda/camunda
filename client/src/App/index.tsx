@@ -73,7 +73,6 @@ const App: React.FC = () => {
     <ThemeProvider>
       <ThemeSwitcher />
       <NotificationProvider>
-        <GlobalStyles />
         <NetworkStatusWatcher />
         <CommonUiContext />
         <HistoryRouter
@@ -84,12 +83,21 @@ const App: React.FC = () => {
           <SessionWatcher />
           <TrackPagination />
           <Routes>
-            <Route path={Paths.login()} element={<Login />} />
+            <Route
+              path={Paths.login()}
+              element={
+                <>
+                  <GlobalStyles />
+                  <Login />
+                </>
+              }
+            />
             <Route path={CarbonPaths.login()} element={<Login />} />
             <Route
               path={Paths.dashboard()}
               element={
                 <AuthenticationCheck redirectPath={Paths.login()}>
+                  <GlobalStyles />
                   <Layout />
                 </AuthenticationCheck>
               }
