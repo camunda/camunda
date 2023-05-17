@@ -8,12 +8,14 @@
 package io.camunda.zeebe.logstreams.storage.atomix;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
 
 import io.atomix.raft.storage.log.IndexedRaftLogEntry;
 import io.atomix.raft.storage.log.RaftLog;
 import io.atomix.raft.storage.log.entry.ApplicationEntry;
 import io.atomix.raft.storage.log.entry.RaftLogEntry;
 import io.atomix.raft.zeebe.ZeebeLogAppender;
+import io.camunda.zeebe.journal.JournalMetaStore;
 import io.camunda.zeebe.logstreams.storage.LogStorage.AppendListener;
 import java.io.File;
 import java.nio.ByteBuffer;
@@ -32,8 +34,12 @@ final class AtomixLogStorageReaderTest {
   private AtomixLogStorageReader reader;
 
   @BeforeEach
-  void beforeEach(final @TempDir File tempDir) {
-    log = RaftLog.builder().withDirectory(tempDir).build();
+  void beforeEach(@TempDir final File tempDir) {
+    log =
+        RaftLog.builder()
+            .withDirectory(tempDir)
+            .withMetaStore(mock(JournalMetaStore.class))
+            .build();
     final Appender appender = new Appender();
     logStorage = new AtomixLogStorage(log::openUncommittedReader, appender);
     reader = logStorage.newReader();

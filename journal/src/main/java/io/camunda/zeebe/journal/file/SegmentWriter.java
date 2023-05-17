@@ -34,9 +34,13 @@ import java.nio.MappedByteBuffer;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /** Segment writer. */
 final class SegmentWriter {
+
+  private static final Logger LOG = LoggerFactory.getLogger(SegmentWriter.class);
 
   private final MappedByteBuffer buffer;
   private final Segment segment;
@@ -50,11 +54,7 @@ final class SegmentWriter {
   private final MutableDirectBuffer writeBuffer = new UnsafeBuffer();
   private final int descriptorLength;
 
-  SegmentWriter(
-      final MappedByteBuffer buffer,
-      final Segment segment,
-      final JournalIndex index,
-      final long lastWrittenIndex) {
+  SegmentWriter(final MappedByteBuffer buffer, final Segment segment, final JournalIndex index) {
     this.segment = segment;
     descriptorLength = segment.descriptor().length();
     recordUtil = new JournalRecordReaderUtil(serializer);
@@ -62,7 +62,7 @@ final class SegmentWriter {
     firstIndex = segment.index();
     this.buffer = buffer;
     writeBuffer.wrap(buffer);
-    reset(0, lastWrittenIndex);
+    reset(0, false);
   }
 
   long getLastIndex() {
@@ -189,11 +189,7 @@ final class SegmentWriter {
     FrameUtil.markAsIgnored(buffer, position);
   }
 
-  private void reset(final long index) {
-    reset(index, -1);
-  }
-
-  private void reset(final long index, final long lastWrittenIndex) {
+  private void reset(final long index, final boolean detectCorruption) {
     long nextIndex = firstIndex;
 
     // Clear the buffer indexes.
@@ -213,26 +209,23 @@ final class SegmentWriter {
     } catch (final BufferUnderflowException e) {
       // Reached end of the segment
     } catch (final CorruptedJournalException e) {
-      handleChecksumMismatch(e, nextIndex, lastWrittenIndex, position);
+      if (detectCorruption) {
+        throw e;
+      }
+      resetPartiallyWrittenEntry(e, position);
     } finally {
       buffer.reset();
     }
   }
 
-  private void handleChecksumMismatch(
-      final CorruptedJournalException e,
-      final long nextIndex,
-      final long lastWrittenIndex,
-      final int position) {
-    // entry wasn't acked (likely a partial write): it's safe to delete it
-    if (nextIndex > lastWrittenIndex) {
-      FrameUtil.markAsIgnored(buffer, position);
-      buffer.position(position);
-      buffer.mark();
-      return;
-    }
-
-    throw e;
+  private void resetPartiallyWrittenEntry(final CorruptedJournalException e, final int position) {
+    LOG.debug(
+        "{} Found a corrupted or partially written entry at position {}. Considering it as a partially written entry and resetting the position.",
+        e.getMessage(),
+        position);
+    FrameUtil.markAsIgnored(buffer, position);
+    buffer.position(position);
+    buffer.mark();
   }
 
   public void truncate(final long index) {
@@ -251,7 +244,7 @@ final class SegmentWriter {
       buffer.position(descriptorLength);
       invalidateNextEntry(descriptorLength);
     } else {
-      reset(index);
+      reset(index, true);
       invalidateNextEntry(buffer.position());
     }
   }

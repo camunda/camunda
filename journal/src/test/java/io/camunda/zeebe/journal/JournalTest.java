@@ -12,6 +12,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.zeebe.journal.JournalException.InvalidChecksum;
 import io.camunda.zeebe.journal.JournalException.InvalidIndex;
+import io.camunda.zeebe.journal.JournalMetaStore.InMemory;
 import io.camunda.zeebe.journal.file.LogCorrupter;
 import io.camunda.zeebe.journal.file.SegmentedJournal;
 import io.camunda.zeebe.journal.file.SegmentedJournalBuilder;
@@ -36,7 +37,7 @@ import org.junit.jupiter.api.io.TempDir;
 final class JournalTest {
 
   @TempDir Path directory;
-
+  final JournalMetaStore metaStore = new InMemory();
   private byte[] entry;
   private final DirectBuffer data = new UnsafeBuffer();
   private final DirectBuffer dataOther = new UnsafeBuffer();
@@ -74,8 +75,8 @@ final class JournalTest {
     final var recordAppended = journal.append(1, data);
 
     // then
-    assertThat(recordAppended.index()).isEqualTo(1);
-    assertThat(recordAppended.asqn()).isEqualTo(1);
+    assertThat(recordAppended.index()).isOne();
+    assertThat(recordAppended.asqn()).isOne();
   }
 
   @Test
@@ -98,7 +99,7 @@ final class JournalTest {
     final var secondRecord = journal.append(20, dataOther);
 
     // then
-    assertThat(firstRecord.index()).isEqualTo(1);
+    assertThat(firstRecord.index()).isOne();
     assertThat(firstRecord.asqn()).isEqualTo(10);
 
     assertThat(secondRecord.index()).isEqualTo(2);
@@ -169,7 +170,7 @@ final class JournalTest {
   void shouldReset() {
     // given
     long asqn = 1;
-    assertThat(journal.getLastIndex()).isEqualTo(0);
+    assertThat(journal.getLastIndex()).isZero();
     journal.append(asqn++, data);
     journal.append(asqn++, data);
 
@@ -178,9 +179,10 @@ final class JournalTest {
 
     // then
     assertThat(journal.isEmpty()).isTrue();
-    assertThat(journal.getLastIndex()).isEqualTo(1);
+    assertThat(journal.getLastIndex()).isOne();
     final var record = journal.append(asqn, data);
     assertThat(record.index()).isEqualTo(2);
+    assertThat(metaStore.hasLastFlushedIndex()).isFalse();
   }
 
   @Test
@@ -188,11 +190,10 @@ final class JournalTest {
     // given
     final var reader = journal.openReader();
     long asqn = 1;
-    assertThat(journal.getLastIndex()).isEqualTo(0);
+    assertThat(journal.getLastIndex()).isZero();
     journal.append(asqn++, data);
     journal.append(asqn++, data);
-    final var record1 = reader.next();
-    assertThat(record1.index()).isEqualTo(1);
+    assertThat(reader.next().index()).isOne();
 
     // when
     journal.reset(2);
@@ -206,18 +207,17 @@ final class JournalTest {
   void shouldWriteToTruncatedIndex() {
     // given
     final var reader = journal.openReader();
-    assertThat(journal.getLastIndex()).isEqualTo(0);
+    assertThat(journal.getLastIndex()).isZero();
     journal.append(1, data);
     journal.append(2, data);
     journal.append(3, data);
-    final var record1 = reader.next();
-    assertThat(record1.index()).isEqualTo(1);
+    assertThat(reader.next().index()).isOne();
 
     // when
     journal.deleteAfter(1);
 
     // then
-    assertThat(journal.getLastIndex()).isEqualTo(1);
+    assertThat(journal.getLastIndex()).isOne();
     final var record = journal.append(4, data);
     assertThat(record.index()).isEqualTo(2);
     assertThat(record.asqn()).isEqualTo(4);
@@ -231,18 +231,17 @@ final class JournalTest {
   void shouldTruncate() {
     // given
     final var reader = journal.openReader();
-    assertThat(journal.getLastIndex()).isEqualTo(0);
+    assertThat(journal.getLastIndex()).isZero();
     journal.append(1, data);
     journal.append(2, data);
     journal.append(3, data);
-    final var record1 = reader.next();
-    assertThat(record1.index()).isEqualTo(1);
+    assertThat(reader.next().index()).isOne();
 
     // when
     journal.deleteAfter(1);
 
     // then
-    assertThat(journal.getLastIndex()).isEqualTo(1);
+    assertThat(journal.getLastIndex()).isOne();
     assertThat(reader.hasNext()).isFalse();
   }
 
@@ -291,7 +290,7 @@ final class JournalTest {
   void shouldNotReadTruncatedEntriesWhenReaderPastTruncateIndex() {
     // given
     final var reader = journal.openReader();
-    assertThat(journal.getLastIndex()).isEqualTo(0);
+    assertThat(journal.getLastIndex()).isZero();
     journal.append(1, data);
     journal.append(2, data);
     journal.append(3, data);
@@ -303,7 +302,7 @@ final class JournalTest {
     journal.deleteAfter(1);
 
     // then
-    assertThat(journal.getLastIndex()).isEqualTo(1);
+    assertThat(journal.getLastIndex()).isOne();
     assertThat(reader.hasNext()).isFalse();
   }
 
@@ -311,7 +310,7 @@ final class JournalTest {
   void shouldNotReadTruncatedEntriesWhenReaderAtTruncateIndex() {
     // given
     final var reader = journal.openReader();
-    assertThat(journal.getLastIndex()).isEqualTo(0);
+    assertThat(journal.getLastIndex()).isZero();
     journal.append(1, data);
     journal.append(2, data);
     journal.append(3, data);
@@ -331,7 +330,7 @@ final class JournalTest {
   void shouldNotReadTruncatedEntriesWhenReaderBeforeTruncateIndex() {
     // given
     final var reader = journal.openReader();
-    assertThat(journal.getLastIndex()).isEqualTo(0);
+    assertThat(journal.getLastIndex()).isZero();
     journal.append(1, data);
     journal.append(2, data);
     journal.append(3, data);
@@ -354,6 +353,7 @@ final class JournalTest {
         SegmentedJournal.builder()
             .withDirectory(directory.resolve("data-2").toFile())
             .withJournalIndexDensity(5)
+            .withMetaStore(new InMemory())
             .build();
     final var expected = journal.append(10, data);
 
@@ -384,6 +384,7 @@ final class JournalTest {
         SegmentedJournal.builder()
             .withDirectory(directory.resolve("data-2").toFile())
             .withJournalIndexDensity(5)
+            .withMetaStore(new InMemory())
             .build();
     journal.append(1, data);
     final var record = journal.append(1, data);
@@ -408,6 +409,7 @@ final class JournalTest {
         SegmentedJournal.builder()
             .withDirectory(directory.resolve("data-2").toFile())
             .withJournalIndexDensity(5)
+            .withMetaStore(new InMemory())
             .build();
     final var record = journal.append(1, data);
 
@@ -565,8 +567,8 @@ final class JournalTest {
     assertThat(LogCorrupter.corruptRecord(log, secondRecord.index())).isTrue();
 
     // then
-    assertThatThrownBy(
-            () -> journal = openJournal(b -> b.withLastWrittenIndex(secondRecord.index())))
+    metaStore.storeLastFlushedIndex(secondRecord.index());
+    assertThatThrownBy(() -> journal = openJournal(b -> b.withMetaStore(metaStore)))
         .isInstanceOf(CorruptedJournalException.class);
   }
 
@@ -578,11 +580,13 @@ final class JournalTest {
     final var secondRecord = copyRecord(journal.append(data));
     final File dataFile = Objects.requireNonNull(directory.toFile().listFiles())[0];
     final File log = Objects.requireNonNull(dataFile.listFiles())[0];
+    final var metaStore = new InMemory();
+    metaStore.storeLastFlushedIndex(firstRecord.index());
 
     // when
     journal.close();
     assertThat(LogCorrupter.corruptRecord(log, secondRecord.index())).isTrue();
-    journal = openJournal(b -> b.withLastWrittenIndex(firstRecord.index()));
+    journal = openJournal(b -> b.withMetaStore(metaStore));
     data.wrap("111".getBytes(StandardCharsets.UTF_8));
     final var lastRecord = journal.append(data);
     final var reader = journal.openReader();
@@ -613,6 +617,8 @@ final class JournalTest {
     final var builder =
         SegmentedJournal.builder()
             .withDirectory(directory.resolve("data").toFile())
+            .withMaxSegmentSize(1024 * 1024) // speeds up certain tests, e.g. shouldCompact
+            .withMetaStore(metaStore)
             .withJournalIndexDensity(5);
     option.accept(builder);
 

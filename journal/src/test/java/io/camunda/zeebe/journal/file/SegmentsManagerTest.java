@@ -8,104 +8,166 @@
 package io.camunda.zeebe.journal.file;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.zeebe.journal.CorruptedJournalException;
-import io.camunda.zeebe.journal.record.RecordData;
-import io.camunda.zeebe.journal.record.SBESerializer;
 import java.io.File;
-import java.nio.ByteBuffer;
-import java.nio.charset.StandardCharsets;
+import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Objects;
-import org.agrona.DirectBuffer;
-import org.agrona.concurrent.UnsafeBuffer;
+import org.agrona.CloseHelper;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 class SegmentsManagerTest {
-
   private static final String JOURNAL_NAME = "journal";
-
   @TempDir Path directory;
-  private final int journalIndexDensity = 1;
-  private final DirectBuffer data = new UnsafeBuffer("test".getBytes(StandardCharsets.UTF_8));
-  private final int entrySize = getSerializedSize(data);
+  private final TestJournalFactory journalFactory = new TestJournalFactory();
+  private SegmentsManager segments;
+
+  @AfterEach
+  void afterEach() {
+    CloseHelper.quietClose(segments);
+  }
 
   @Test
   void shouldDeleteFilesMarkedForDeletionsOnLoad() {
     // given
-    final var segments = createSegmentsManager(0);
+    segments = journalFactory.segmentsManager(directory);
     segments.open();
-    segments.getFirstSegment().createReader();
+    Objects.requireNonNull(segments.getFirstSegment()).createReader();
     segments.getFirstSegment().delete();
 
     // when
     // if we close the current journal, it will delete the files on closing. So we cannot test this
     // scenario.
-    createSegmentsManager(0).open();
-
-    // then
-    final File logDirectory = directory.resolve("data").toFile();
-    assertThat(logDirectory)
-        .isDirectoryNotContaining(
-            file -> SegmentFile.isDeletedSegmentFile(JOURNAL_NAME, file.getName()))
-        .isDirectoryContaining(file -> SegmentFile.isSegmentFile(JOURNAL_NAME, file.getName()));
+    try (final var newSegments = journalFactory.segmentsManager(directory)) {
+      newSegments.open();
+      // then
+      final File logDirectory = directory.resolve("data").toFile();
+      assertThat(logDirectory)
+          .isDirectoryNotContaining(
+              file -> SegmentFile.isDeletedSegmentFile(JOURNAL_NAME, file.getName()))
+          .isDirectoryContaining(file -> SegmentFile.isSegmentFile(JOURNAL_NAME, file.getName()));
+    }
   }
 
   @Test
   void shouldDetectCorruptionAtDescriptorWithAckedEntries() throws Exception {
     // given
-    final var journal = openJournal(1);
-    final long index = journal.append(data).index();
+    try (final var journal = openJournal()) {
+      journal.append(journalFactory.entryData()).index();
+    }
 
-    journal.close();
     final File dataFile = directory.resolve("data").toFile();
     final File logFile =
         Objects.requireNonNull(dataFile.listFiles(f -> f.getName().endsWith(".log")))[0];
     LogCorrupter.corruptDescriptor(logFile);
 
     // when/then
-    final var segments = createSegmentsManager(index);
-    assertThatThrownBy(segments::open).isInstanceOf(CorruptedJournalException.class);
+    segments = journalFactory.segmentsManager(directory);
+    assertThatThrownBy(() -> segments.open()).isInstanceOf(CorruptedJournalException.class);
   }
 
   @Test
   void shouldNotThrowExceptionWhenCorruptionAtNotAckEntries() throws Exception {
     // given
-    final var journal = openJournal(1);
-    final var index = journal.append(data).index();
-    journal.append(data);
+    final long index;
+    try (final var journal = openJournal()) {
+      index = journal.append(journalFactory.entryData()).index();
+      journal.append(journalFactory.entryData());
+    }
+    journalFactory.metaStore().storeLastFlushedIndex(index);
 
-    journal.close();
     final File dataFile = directory.resolve("data").toFile();
     final File logFile =
         Objects.requireNonNull(dataFile.listFiles(f -> f.getName().endsWith("2.log")))[0];
     LogCorrupter.corruptDescriptor(logFile);
 
-    // when/then
-    final var segments = createSegmentsManager(index);
-    assertThatNoException().isThrownBy(segments::open);
-    assertThat(segments.getFirstSegment().index()).isEqualTo(index);
-    assertThat(segments.getLastSegment().index()).isEqualTo(index);
+    // when
+    segments = journalFactory.segmentsManager(directory);
+
+    // then
+    assertThatNoException().isThrownBy(() -> segments.open());
+    assertThat(segments.getFirstSegment())
+        .extracting(Segment::index, Segment::lastIndex)
+        .containsExactly(index, index);
   }
 
   @Test
   void shouldNotThrowExceptionWhenCorruptionAtDescriptorWithoutAckedEntries() throws Exception {
     // given
-    final var journal = openJournal(1);
+    final var journal = openJournal();
     journal.close();
     final File dataFile = directory.resolve("data").toFile();
     final File logFile =
         Objects.requireNonNull(dataFile.listFiles(f -> f.getName().endsWith(".log")))[0];
     LogCorrupter.corruptDescriptor(logFile);
 
-    // when/then
-    final var segments = createSegmentsManager(0);
+    // when
+    segments = journalFactory.segmentsManager(directory);
+
+    // then
+    assertThatNoException().isThrownBy(() -> segments.open());
+    assertThat(segments.getFirstSegment())
+        .extracting(Segment::index, Segment::lastIndex)
+        .containsExactly(1L, 0L);
+  }
+
+  @Test
+  void shouldDetectMissingEntryAsCorruption() {
+    // given
+    final var journal = openJournal();
+    final var indexInFirstSegment = journal.append(1, journalFactory.entryData()).index();
+    journal.close();
+    journalFactory.metaStore().storeLastFlushedIndex(indexInFirstSegment + 1);
+
+    // when
+    segments = journalFactory.segmentsManager(directory);
+
+    // then
+    assertThatCode(segments::open).isInstanceOf(CorruptedJournalException.class);
+  }
+
+  @Test
+  void shouldDetectCorruptionInIntermediateSegments() throws Exception {
+    // given
+    final var journal = openJournal();
+    final var indexInFirstSegment = journal.append(1, journalFactory.entryData()).index();
+    final var lastFlushedIndex = journal.append(2, journalFactory.entryData()).index();
+    final var firstSegmentFile = journal.getFirstSegment().file().file();
+    journal.close();
+
+    LogCorrupter.corruptRecord(firstSegmentFile, indexInFirstSegment);
+
+    // when
+    segments = journalFactory.segmentsManager(directory);
+    journalFactory.metaStore().storeLastFlushedIndex(lastFlushedIndex);
+
+    // then
+    assertThatCode(segments::open).isInstanceOf(CorruptedJournalException.class);
+  }
+
+  @Test
+  void shouldNotDetectCorruptionWithUnflushedIndexInIntermediateSegments() throws Exception {
+    // given
+    final var journal = openJournal();
+    final var indexInFirstSegment = journal.append(1, journalFactory.entryData()).index();
+    journal.append(2, journalFactory.entryData()).index();
+    final var firstSegmentFile = journal.getFirstSegment().file().file();
+    journal.close();
+    journalFactory.metaStore().storeLastFlushedIndex(0);
+
+    LogCorrupter.corruptRecord(firstSegmentFile, indexInFirstSegment);
+
+    // when
+    segments = journalFactory.segmentsManager(directory);
+
+    // then
     assertThatNoException().isThrownBy(segments::open);
-    assertThat(segments.getFirstSegment().index()).isEqualTo(1);
-    assertThat(segments.getFirstSegment().lastIndex()).isEqualTo(0);
   }
 
   @Test
@@ -117,45 +179,73 @@ class SegmentsManagerTest {
     assertThat(emptyLog.createNewFile()).isTrue();
 
     // when
-    final var segments = createSegmentsManager(0);
+    segments = journalFactory.segmentsManager(directory);
 
     // then
-    assertThatNoException().isThrownBy(segments::open);
-    assertThat(segments.getFirstSegment().index()).isEqualTo(1);
-    assertThat(segments.getFirstSegment().lastIndex()).isEqualTo(0);
+    assertThatNoException().isThrownBy(() -> segments.open());
+    assertThat(segments.getFirstSegment())
+        .extracting(Segment::index, Segment::lastIndex)
+        .containsExactly(1L, 0L);
   }
 
-  private SegmentsManager createSegmentsManager(final long lastWrittenIndex) {
-    final var journalIndex = new SparseJournalIndex(journalIndexDensity);
-    return new SegmentsManager(
-        journalIndex,
-        entrySize + SegmentDescriptor.getEncodingLength(),
-        directory.resolve("data").toFile(),
-        lastWrittenIndex,
-        JOURNAL_NAME,
-        new SegmentLoader());
+  @Test
+  void shouldHandleCrashOnResetAfterDeletionBeforeSegmentIsCreated() throws IOException {
+    // given
+    try (final var journal = openJournal()) {
+      journal.append(1, journalFactory.entryData()).index();
+      journal.append(2, journalFactory.entryData()).index();
+      journal.append(3, journalFactory.entryData()).index();
+      journal.reset(10);
+
+      // when - simulate "failure" by corrupting the descriptor
+      // we cannot close the journal here as we want to avoid flushing. instead, open a separate
+      // instance of the SegmentsManager
+      segments = journalFactory.segmentsManager(directory);
+      segments.open();
+      LogCorrupter.corruptDescriptor(
+          Objects.requireNonNull(segments.getFirstSegment()).file().file());
+      segments.close();
+
+      // then
+      assertThatNoException().isThrownBy(() -> segments.open());
+    }
   }
 
-  private SegmentedJournal openJournal(final float entriesPerSegment) {
-    return openJournal(entriesPerSegment, entrySize);
+  @Test
+  void shouldHandleCrashOnTruncateAfterDeletionBeforeSegmentIsCreated() {
+    // given
+    try (final var journal = openJournal()) {
+      journal.append(1, journalFactory.entryData()).index();
+      final var index = journal.append(2, journalFactory.entryData()).index();
+      journal.append(3, journalFactory.entryData()).index();
+      journal.deleteAfter(index);
+    }
+
+    // when - simulate crash after creating the next segment but before writing or flushing anything
+    final var expectedRootCause = new IOException("failed");
+    Exception invalidSegmentWasCreated = null;
+    try (final var failingSegments =
+        journalFactory.segmentsManager(
+            directory,
+            new SegmentLoader(
+                (channel, segmentSize) -> {
+                  SegmentAllocator.fill().allocate(channel, segmentSize);
+                  throw expectedRootCause;
+                }))) {
+      failingSegments.open();
+      // will allocate the next segment
+      failingSegments.getNextSegment();
+    } catch (final Exception error) {
+      invalidSegmentWasCreated = error;
+    }
+
+    // then
+    assertThat(invalidSegmentWasCreated).hasRootCause(expectedRootCause);
+    segments = journalFactory.segmentsManager(directory);
+    assertThatNoException().isThrownBy(() -> segments.open());
   }
 
-  private SegmentedJournal openJournal(final float entriesPerSegment, final int entrySize) {
-    return SegmentedJournal.builder()
-        .withDirectory(directory.resolve("data").toFile())
-        .withMaxSegmentSize(
-            (int) (entrySize * entriesPerSegment) + SegmentDescriptor.getEncodingLength())
-        .withJournalIndexDensity(journalIndexDensity)
-        .withName(JOURNAL_NAME)
-        .build();
-  }
-
-  private int getSerializedSize(final DirectBuffer data) {
-    final var record = new RecordData(1, 1, data);
-    final var serializer = new SBESerializer();
-    final ByteBuffer buffer = ByteBuffer.allocate(128);
-    return serializer.writeData(record, new UnsafeBuffer(buffer), 0).get()
-        + FrameUtil.getLength()
-        + serializer.getMetadataLength();
+  private SegmentedJournal openJournal() {
+    return journalFactory.journal(directory);
   }
 }

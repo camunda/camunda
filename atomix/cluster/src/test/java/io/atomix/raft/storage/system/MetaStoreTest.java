@@ -73,7 +73,7 @@ public class MetaStoreTest {
   }
 
   @Test
-  public void shouldStoreAndLoadTerm() throws IOException {
+  public void shouldStoreAndLoadTerm() {
     // when
     metaStore.storeTerm(2L);
 
@@ -218,58 +218,58 @@ public class MetaStoreTest {
   }
 
   @Test
-  public void shouldStoreAndLoadLastWrittenIndex() {
+  public void shouldStoreAndLoadLastFlushedIndex() {
     // given
-    metaStore.storeLastWrittenIndex(5L);
+    metaStore.storeLastFlushedIndex(5L);
 
     // when/then
-    assertThat(metaStore.loadLastWrittenIndex()).isEqualTo(5L);
+    assertThat(metaStore.loadLastFlushedIndex()).isEqualTo(5L);
   }
 
   @Test
-  public void shouldStoreAndLoadLastWrittenIndexAfterRestart() throws IOException {
+  public void shouldStoreAndLoadLastFlushedIndexAfterRestart() throws IOException {
     // given
-    metaStore.storeLastWrittenIndex(5L);
+    metaStore.storeLastFlushedIndex(5L);
 
     // when
     metaStore.close();
     metaStore = new MetaStore(storage);
 
     // then
-    assertThat(metaStore.loadLastWrittenIndex()).isEqualTo(5L);
+    assertThat(metaStore.loadLastFlushedIndex()).isEqualTo(5L);
   }
 
   @Test
   public void shouldLoadLatestWrittenIndex() throws IOException {
     // given
-    metaStore.storeLastWrittenIndex(5L);
+    metaStore.storeLastFlushedIndex(5L);
 
     // when
-    metaStore.storeLastWrittenIndex(7L);
+    metaStore.storeLastFlushedIndex(7L);
 
     // then
-    assertThat(metaStore.loadLastWrittenIndex()).isEqualTo(7L);
+    assertThat(metaStore.loadLastFlushedIndex()).isEqualTo(7L);
 
     // when
-    metaStore.storeLastWrittenIndex(8L);
+    metaStore.storeLastFlushedIndex(8L);
 
     metaStore.close();
     metaStore = new MetaStore(storage);
 
     // then
-    assertThat(metaStore.loadLastWrittenIndex()).isEqualTo(8L);
+    assertThat(metaStore.loadLastFlushedIndex()).isEqualTo(8L);
   }
 
   @Test
   public void shouldStoreAndLoadAllMetadata() {
     // when
     metaStore.storeTerm(1L);
-    metaStore.storeLastWrittenIndex(2L);
+    metaStore.storeLastFlushedIndex(2L);
     metaStore.storeVote(MemberId.from("a"));
 
     // then
     assertThat(metaStore.loadTerm()).isEqualTo(1L);
-    assertThat(metaStore.loadLastWrittenIndex()).isEqualTo(2L);
+    assertThat(metaStore.loadLastFlushedIndex()).isEqualTo(2L);
     assertThat(metaStore.loadVote()).isEqualTo(MemberId.from("a"));
   }
 }

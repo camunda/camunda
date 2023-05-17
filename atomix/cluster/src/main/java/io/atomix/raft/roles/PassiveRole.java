@@ -85,7 +85,7 @@ public class PassiveRole extends InactiveRole {
       raft.getLog().deleteAfter(raft.getCommitIndex());
 
       raft.getLog().flush();
-      raft.setLastWrittenIndex(raft.getCommitIndex());
+      raft.setLastFlushedIndex(raft.getCommitIndex());
     }
   }
 
@@ -542,10 +542,10 @@ public class PassiveRole extends InactiveRole {
     succeedAppend(lastLogIndex, future);
   }
 
-  private void flush(final long lastWrittenIndex, final long previousEntryIndex) {
-    if (raft.getLog().shouldFlushExplicitly() && lastWrittenIndex > previousEntryIndex) {
+  private void flush(final long lastFlushedIndex, final long previousEntryIndex) {
+    if (raft.getLog().shouldFlushExplicitly() && lastFlushedIndex > previousEntryIndex) {
       raft.getLog().flush();
-      raft.setLastWrittenIndex(lastWrittenIndex);
+      raft.setLastFlushedIndex(lastFlushedIndex);
     }
   }
 
@@ -569,7 +569,7 @@ public class PassiveRole extends InactiveRole {
         if (lastEntry.term() != entry.term()) {
           raft.getLog().deleteAfter(index - 1);
           raft.getLog().flush();
-          raft.setLastWrittenIndex(index - 1);
+          raft.setLastFlushedIndex(index - 1);
 
           failedToAppend = !appendEntry(index, entry, future);
         }
@@ -622,7 +622,7 @@ public class PassiveRole extends InactiveRole {
       if (existingEntry.term() != entry.term()) {
         raft.getLog().deleteAfter(index - 1);
         raft.getLog().flush();
-        raft.setLastWrittenIndex(index - 1);
+        raft.setLastFlushedIndex(index - 1);
 
         return appendEntry(index, entry, future);
       }
