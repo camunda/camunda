@@ -262,8 +262,8 @@ jobs:
         working-directory: clients/go/
         run: |
           go install github.com/joelanford/go-apidiff@latest
-          LATEST_TAG_REF=$(git rev-list --tags --max-count=1)
-          go-apidiff --repo-path=../../ $LATEST_TAG_REF
+          LATEST_MINOR_TAG_REF=$(git rev-list -n 1 `git tag --sort=committerdate --list 'clients/go/v8\.1\.[0-9]' 'clients/go/v8\.1\.[0-9][0-9]' | tail -1`)
+          go-apidiff --repo-path=../../ $LATEST_MINOR_TAG_REF
       - uses: ./.github/actions/build-docker
         id: build-docker
         with:
