@@ -35,7 +35,6 @@
     <module>import-performance-tests</module>
     <module>query-performance-tests</module>
     <module>data-generation</module>
-    <module>zeebe-data-generation</module>
     <module>upgrade-tests</module>
     <module>connect-to-secured-es-tests</module>
     <module>cleanup-performance-tests</module>
