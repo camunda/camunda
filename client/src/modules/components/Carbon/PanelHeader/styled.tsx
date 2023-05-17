@@ -5,17 +5,33 @@
  * except in compliance with the proprietary license.
  */
 
-import styled from 'styled-components';
+import styled, {css} from 'styled-components';
 
-const Header = styled.header`
-  background-color: var(--cds-layer);
-  border-bottom: solid 1px var(--cds-border-subtle-01);
-  padding: var(--cds-spacing-04) var(--cds-spacing-05);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  min-height: var(--cds-spacing-09);
-  height: var(--cds-spacing-09);
+type HeaderProps = {
+  $size?: 'sm' | 'md';
+};
+
+const Header = styled.header<HeaderProps>`
+  ${({$size = 'md'}) => {
+    return css`
+      background-color: var(--cds-layer);
+      border-bottom: solid 1px var(--cds-border-subtle-01);
+      padding: var(--cds-spacing-04) var(--cds-spacing-05);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      ${$size === 'md' &&
+      css`
+        min-height: var(--cds-spacing-09);
+        height: var(--cds-spacing-09);
+      `}
+      ${$size === 'sm' &&
+      css`
+        min-height: var(--cds-spacing-08);
+        height: var(--cds-spacing-08);
+      `}
+    `;
+  }}
 `;
 
 export {Header};

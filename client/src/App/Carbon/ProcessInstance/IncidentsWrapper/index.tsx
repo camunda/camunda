@@ -10,9 +10,10 @@ import React, {useEffect} from 'react';
 import {IncidentsOverlay} from './IncidentsOverlay';
 import {incidentsStore} from 'modules/stores/incidents';
 import {observer} from 'mobx-react';
-import {Transition, PanelHeader} from './styled';
+import {Transition} from './styled';
 import {IncidentsFilter} from './IncidentsFilter';
 import {IncidentsTable} from './IncidentsTable';
+import {PanelHeader} from 'modules/components/Carbon/PanelHeader';
 
 type Props = {
   setIsInTransition: (isTransitionActive: boolean) => void;
@@ -47,6 +48,7 @@ const IncidentsWrapper: React.FC<Props> = observer(({setIsInTransition}) => {
           <PanelHeader
             title="Incidents View"
             count={incidentsStore.filteredIncidents.length}
+            size="sm"
           >
             <IncidentsFilter />
           </PanelHeader>

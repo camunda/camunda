@@ -7,14 +7,10 @@
 
 import styled from 'styled-components';
 
-const Overlay = styled.div`
-  width: 100%;
-  height: 60%;
-  position: absolute;
-  background-color: var(--cds-layer-01);
-  border-bottom: 1px solid var(--cds-border-subtle-01);
-  display: grid;
-  grid-template-rows: var(--cds-spacing-08) 1fr;
+import {Toggle as BaseToggle} from '@carbon/react';
+
+const Toggle = styled(BaseToggle)`
+  padding-left: var(--cds-spacing-08);
 `;
 
-export {Overlay};
+export {Toggle};

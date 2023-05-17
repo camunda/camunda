@@ -6,15 +6,14 @@
  */
 
 import styled from 'styled-components';
+import {PanelHeader as BasePanelHeader} from 'modules/components/Carbon/PanelHeader';
 
-const Overlay = styled.div`
-  width: 100%;
-  height: 60%;
-  position: absolute;
-  background-color: var(--cds-layer-01);
-  border-bottom: 1px solid var(--cds-border-subtle-01);
-  display: grid;
-  grid-template-rows: var(--cds-spacing-08) 1fr;
+const Container = styled.div`
+  border-right: solid 1px var(--cds-border-subtle-01);
 `;
 
-export {Overlay};
+const PanelHeader = styled(BasePanelHeader)`
+  justify-content: flex-start;
+`;
+
+export {Container, PanelHeader};

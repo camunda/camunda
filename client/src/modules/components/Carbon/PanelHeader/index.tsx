@@ -15,12 +15,13 @@ type Props = {
   children?: React.ReactNode;
   className?: string;
   hasTopBorder?: boolean;
+  size?: 'sm' | 'md';
 };
 
 const PanelHeader = forwardRef<HTMLElement, Props>(
-  ({title, count = 0, children, className}, ref) => {
+  ({title, count = 0, children, className, size = 'md'}, ref) => {
     return (
-      <Header className={className} ref={ref}>
+      <Header className={className} ref={ref} $size={size}>
         <Title>
           {title}
           {count > 0 && (

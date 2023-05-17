@@ -7,8 +7,6 @@
 
 import styled, {css} from 'styled-components';
 import {Transition as TransitionComponent} from 'modules/components/Transition';
-import {PanelHeader as BasePanelHeader} from 'modules/components/Carbon/PanelHeader';
-import {INCIDENT_WRAPPER_HEADER_HEIGHT} from 'modules/constants';
 
 type TransitionProps = {
   timeout: number;
@@ -39,9 +37,4 @@ const Transition = styled(TransitionComponent)<TransitionProps>`
   }}
 `;
 
-const PanelHeader = styled(BasePanelHeader)`
-  min-height: ${INCIDENT_WRAPPER_HEADER_HEIGHT};
-  height: ${INCIDENT_WRAPPER_HEADER_HEIGHT};
-`;
-
-export {Transition, PanelHeader};
+export {Transition};

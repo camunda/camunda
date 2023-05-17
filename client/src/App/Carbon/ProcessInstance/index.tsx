@@ -28,6 +28,8 @@ import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
 import {flowNodeTimeStampStore} from 'modules/stores/flowNodeTimeStamp';
 import {ProcessInstanceHeader} from './ProcessInstanceHeader';
 import {TopPanel} from './TopPanel';
+import {BottomPanel} from './styled';
+import {FlowNodeInstanceLog} from './FlowNodeInstanceLog';
 
 const ProcessInstance: React.FC = observer(() => {
   const {processInstanceId = ''} = useProcessInstancePageParams();
@@ -141,7 +143,12 @@ const ProcessInstance: React.FC = observer(() => {
         }
         header={<ProcessInstanceHeader />}
         topPanel={<TopPanel />}
-        bottomPanel={<div>bottom panel</div>}
+        bottomPanel={
+          <BottomPanel>
+            <FlowNodeInstanceLog />
+            <div>variables panel</div>
+          </BottomPanel>
+        }
         id="process"
       />
     </>

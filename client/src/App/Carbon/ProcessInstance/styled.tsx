@@ -7,14 +7,10 @@
 
 import styled from 'styled-components';
 
-const Overlay = styled.div`
-  width: 100%;
-  height: 60%;
-  position: absolute;
-  background-color: var(--cds-layer-01);
-  border-bottom: 1px solid var(--cds-border-subtle-01);
+const BottomPanel = styled.div`
   display: grid;
-  grid-template-rows: var(--cds-spacing-08) 1fr;
+  grid-template-columns: 1fr 1fr;
+  height: 100%;
 `;
 
-export {Overlay};
+export {BottomPanel};
