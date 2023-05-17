@@ -8,22 +8,26 @@
 import styled, {css} from 'styled-components';
 
 type Props = {
-  $hasModificationHeader?: boolean;
+  $hasFrameHeader?: boolean;
   $hasBreadcrumb?: boolean;
 };
 
 const Container = styled.div<Props>`
-  ${({$hasModificationHeader = false, $hasBreadcrumb = false}) => {
+  ${({$hasFrameHeader = false, $hasBreadcrumb = false}) => {
     return css`
       display: grid;
       height: 100%;
-      grid-template-rows: ${`${
-        $hasModificationHeader ? 'var(--cds-spacing-07)' : ''
-      }
+      grid-template-rows: ${`${$hasFrameHeader ? 'var(--cds-spacing-07)' : ''}
         ${
           $hasBreadcrumb ? 'var(--cds-spacing-07)' : ''
         } var(--cds-spacing-09) 1fr
       `};
+
+      ${$hasFrameHeader &&
+      css`
+        border: 4px solid var(--cds-interactive);
+        border-top: none;
+      `}
     `;
   }}
 `;

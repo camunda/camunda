@@ -28,8 +28,15 @@ import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
 import {flowNodeTimeStampStore} from 'modules/stores/flowNodeTimeStamp';
 import {ProcessInstanceHeader} from './ProcessInstanceHeader';
 import {TopPanel} from './TopPanel';
-import {BottomPanel} from './styled';
+import {
+  BottomPanel,
+  ModificationHeader,
+  ModificationFooter,
+  Buttons,
+} from './styled';
 import {FlowNodeInstanceLog} from './FlowNodeInstanceLog';
+import {Button} from '@carbon/react';
+import {tracking} from 'modules/tracking';
 
 const ProcessInstance: React.FC = observer(() => {
   const {processInstanceId = ''} = useProcessInstancePageParams();
@@ -123,6 +130,11 @@ const ProcessInstance: React.FC = observer(() => {
     };
   }, []);
 
+  const {
+    isModificationModeEnabled,
+    state: {modifications},
+  } = modificationsStore;
+
   const isBreadcrumbVisible =
     processInstanceDetailsStore.state.processInstance !== null &&
     processInstanceDetailsStore.state.processInstance?.callHierarchy?.length >
@@ -130,7 +142,11 @@ const ProcessInstance: React.FC = observer(() => {
 
   return (
     <>
-      <VisuallyHiddenH1>Operate Process Instance</VisuallyHiddenH1>
+      <VisuallyHiddenH1>
+        {`Operate Process Instance${
+          isModificationModeEnabled ? ' - Modification Mode' : ''
+        }`}
+      </VisuallyHiddenH1>
       <InstanceDetail
         breadcrumb={
           isBreadcrumbVisible ? (
@@ -148,6 +164,49 @@ const ProcessInstance: React.FC = observer(() => {
             <FlowNodeInstanceLog />
             <div>variables panel</div>
           </BottomPanel>
+        }
+        frameHeader={
+          isModificationModeEnabled ? (
+            <ModificationHeader>
+              Process Instance Modification Mode
+            </ModificationHeader>
+          ) : undefined
+        }
+        frameFooter={
+          isModificationModeEnabled ? (
+            <ModificationFooter>
+              <div>last modification</div>
+              <Buttons orientation="horizontal" gap={4}>
+                <Button
+                  kind="secondary"
+                  size="sm"
+                  onClick={() => {
+                    tracking.track({
+                      eventName: 'discard-all-summary',
+                      hasPendingModifications:
+                        modificationsStore.state.modifications.length > 0,
+                    });
+                  }}
+                  data-testid="discard-all-button"
+                >
+                  Discard All
+                </Button>
+                <Button
+                  kind="primary"
+                  size="sm"
+                  onClick={() => {
+                    tracking.track({
+                      eventName: 'apply-modifications-summary',
+                      hasPendingModifications: modifications.length > 0,
+                    });
+                  }}
+                  data-testid="apply-modifications-button"
+                >
+                  Apply Modifications
+                </Button>
+              </Buttons>
+            </ModificationFooter>
+          ) : undefined
         }
         id="process"
       />

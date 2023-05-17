@@ -15,14 +15,23 @@ import {useEffect, useRef, useState} from 'react';
 
 type Props = {
   header: React.ReactNode;
-  modificationHeader?: React.ReactNode;
+  frameHeader?: React.ReactNode;
+  frameFooter?: React.ReactNode;
   breadcrumb?: React.ReactNode;
   topPanel: React.ReactNode;
   bottomPanel: React.ReactNode;
   id: 'process' | 'decision';
 };
 const InstanceDetail: React.FC<Props> = observer(
-  ({id, header, breadcrumb, modificationHeader, topPanel, bottomPanel}) => {
+  ({
+    id,
+    header,
+    breadcrumb,
+    frameHeader,
+    frameFooter,
+    topPanel,
+    bottomPanel,
+  }) => {
     const [clientHeight, setClientHeight] = useState(0);
     const containerRef = useRef<HTMLDivElement | null>(null);
 
@@ -35,9 +44,9 @@ const InstanceDetail: React.FC<Props> = observer(
     return (
       <Container
         $hasBreadcrumb={breadcrumb !== undefined}
-        $hasModificationHeader={modificationHeader !== undefined}
+        $hasFrameHeader={frameHeader !== undefined}
       >
-        {modificationHeader}
+        {frameHeader}
         {breadcrumb}
         {header}
         <div ref={containerRef}>
@@ -50,6 +59,7 @@ const InstanceDetail: React.FC<Props> = observer(
             {bottomPanel}
           </ResizablePanel>
         </div>
+        {frameFooter}
       </Container>
     );
   }

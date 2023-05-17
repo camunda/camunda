@@ -6,6 +6,8 @@
  */
 
 import styled from 'styled-components';
+import {Stack} from '@carbon/react';
+import {styles} from '@carbon/elements';
 
 const BottomPanel = styled.div`
   display: grid;
@@ -13,4 +15,25 @@ const BottomPanel = styled.div`
   height: 100%;
 `;
 
-export {BottomPanel};
+const ModificationHeader = styled.div`
+  display: flex;
+  align-items: center;
+  padding-left: var(--cds-spacing-05);
+  background-color: var(--cds-interactive);
+  color: var(--cds-text-on-color);
+  ${styles.bodyShort01};
+`;
+
+const ModificationFooter = styled.div`
+  display: flex;
+  justify-content: space-between;
+  background-color: var(--cds-layer-01);
+  padding: var(--cds-spacing-03) var(--cds-spacing-05);
+  border-top: 1px solid var(--cds-border-subtle-01);
+`;
+
+const Buttons = styled(Stack)`
+  margin-left: auto;
+`;
+
+export {BottomPanel, ModificationHeader, ModificationFooter, Buttons};
