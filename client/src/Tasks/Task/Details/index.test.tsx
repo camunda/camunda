@@ -82,13 +82,20 @@ describe('<Details />', () => {
       }),
     );
 
-    render(<Details task={MOCK_TASK_COMPLETED} onAssignmentError={noop} />, {
-      wrapper: getWrapper(),
-    });
+    render(
+      <Details
+        task={MOCK_TASK_COMPLETED}
+        user={mockGetCurrentUser.currentUser}
+        onAssignmentError={noop}
+      />,
+      {
+        wrapper: getWrapper(),
+      },
+    );
 
     expect(screen.getByText('My Task')).toBeInTheDocument();
     expect(screen.getByText('Nice Process')).toBeInTheDocument();
-    expect(screen.getByText('Assigned')).toBeInTheDocument();
+    expect(screen.getByText('Assigned to me')).toBeInTheDocument();
     expect(
       screen.queryByRole('button', {name: /^unassign$/i}),
     ).not.toBeInTheDocument();
@@ -104,9 +111,16 @@ describe('<Details />', () => {
       }),
     );
 
-    render(<Details task={MOCK_UNASSIGNED_TASK} onAssignmentError={noop} />, {
-      wrapper: getWrapper(),
-    });
+    render(
+      <Details
+        task={MOCK_UNASSIGNED_TASK}
+        user={mockGetCurrentUser.currentUser}
+        onAssignmentError={noop}
+      />,
+      {
+        wrapper: getWrapper(),
+      },
+    );
 
     expect(await screen.findByText('My Task')).toBeInTheDocument();
     expect(
@@ -132,7 +146,11 @@ describe('<Details />', () => {
     );
 
     const {user, rerender} = render(
-      <Details task={MOCK_UNASSIGNED_TASK} onAssignmentError={noop} />,
+      <Details
+        task={MOCK_UNASSIGNED_TASK}
+        user={mockGetCurrentUser.currentUser}
+        onAssignmentError={noop}
+      />,
       {
         wrapper: getWrapper(),
       },
@@ -153,13 +171,19 @@ describe('<Details />', () => {
     ).toBeInTheDocument();
     expect(screen.queryByText('Assigning...')).not.toBeInTheDocument();
 
-    rerender(<Details task={MOCK_ASSIGNED_TASK} onAssignmentError={noop} />);
+    rerender(
+      <Details
+        task={MOCK_ASSIGNED_TASK}
+        user={mockGetCurrentUser.currentUser}
+        onAssignmentError={noop}
+      />,
+    );
 
     expect(
       await screen.findByRole('button', {name: /^unassign$/i}),
     ).toBeInTheDocument();
     expect(screen.queryByText('Assignment successful')).not.toBeInTheDocument();
-    expect(screen.getByText('Assigned')).toBeInTheDocument();
+    expect(screen.getByText('Assigned to me')).toBeInTheDocument();
   });
 
   it('should render assigned task and unassign it', async () => {
@@ -173,7 +197,11 @@ describe('<Details />', () => {
     );
 
     const {user, rerender} = render(
-      <Details task={MOCK_ASSIGNED_TASK} onAssignmentError={noop} />,
+      <Details
+        task={MOCK_ASSIGNED_TASK}
+        user={mockGetCurrentUser.currentUser}
+        onAssignmentError={noop}
+      />,
       {
         wrapper: getWrapper(),
       },
@@ -182,7 +210,7 @@ describe('<Details />', () => {
     expect(
       await screen.findByRole('button', {name: /^unassign$/i}),
     ).toBeInTheDocument();
-    expect(screen.getByText('Assigned')).toBeInTheDocument();
+    expect(screen.getByText('Assigned to me')).toBeInTheDocument();
 
     await user.click(screen.getByRole('button', {name: /^unassign$/i}));
 
@@ -191,7 +219,13 @@ describe('<Details />', () => {
       await screen.findByText('Unassignment successful'),
     ).toBeInTheDocument();
 
-    rerender(<Details task={MOCK_UNASSIGNED_TASK} onAssignmentError={noop} />);
+    rerender(
+      <Details
+        task={MOCK_UNASSIGNED_TASK}
+        user={mockGetCurrentUser.currentUser}
+        onAssignmentError={noop}
+      />,
+    );
 
     expect(
       await screen.findByRole('button', {name: /^assign to me$/i}),
@@ -216,12 +250,19 @@ describe('<Details />', () => {
       }),
     );
 
-    render(<Details task={MOCK_ASSIGNED_TASK} onAssignmentError={noop} />, {
-      wrapper: getWrapper(),
-    });
+    render(
+      <Details
+        task={MOCK_ASSIGNED_TASK}
+        user={mockGetCurrentRestrictedUser.currentUser}
+        onAssignmentError={noop}
+      />,
+      {
+        wrapper: getWrapper(),
+      },
+    );
 
     expect(screen.getByText('Nice Process')).toBeInTheDocument();
-    expect(screen.getByText('Assigned')).toBeInTheDocument();
+    expect(screen.getByText('Assigned to me')).toBeInTheDocument();
     expect(
       screen.queryByRole('button', {name: /^unassign$/i}),
     ).not.toBeInTheDocument();
@@ -237,14 +278,46 @@ describe('<Details />', () => {
       }),
     );
 
-    render(<Details task={MOCK_UNASSIGNED_TASK} onAssignmentError={noop} />, {
-      wrapper: getWrapper(),
-    });
+    render(
+      <Details
+        task={MOCK_UNASSIGNED_TASK}
+        user={mockGetCurrentRestrictedUser.currentUser}
+        onAssignmentError={noop}
+      />,
+      {
+        wrapper: getWrapper(),
+      },
+    );
 
     expect(screen.getByText('Nice Process')).toBeInTheDocument();
     expect(screen.getByText('Unassigned')).toBeInTheDocument();
     expect(
       screen.queryByRole('button', {name: /^assign$/i}),
     ).not.toBeInTheDocument();
+  });
+
+  it('should render a task assigned to someone else', async () => {
+    nodeMockServer.use(
+      graphql.query('GetCurrentUser', (_, res, ctx) => {
+        return res.once(ctx.data(mockGetCurrentUser));
+      }),
+    );
+
+    const MOCK_OTHER_ASSIGNEE = 'jane';
+
+    render(
+      <Details
+        task={{...MOCK_ASSIGNED_TASK, assignee: MOCK_OTHER_ASSIGNEE}}
+        user={mockGetCurrentUser.currentUser}
+        onAssignmentError={noop}
+      />,
+      {
+        wrapper: getWrapper(),
+      },
+    );
+
+    expect(screen.getByTestId('assignee')).toHaveTextContent(
+      `Assigned to${MOCK_OTHER_ASSIGNEE}`,
+    );
   });
 });

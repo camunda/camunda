@@ -33,6 +33,7 @@ import {notificationsStore} from 'modules/stores/notifications';
 import {AsyncActionButton} from 'modules/components/AsyncActionButton';
 import {BodyCompact, Label} from 'modules/components/FontTokens';
 import {ContainedList, ContainedListItem, Tag} from '@carbon/react';
+import {User} from 'modules/types';
 
 type AssignmentStatus =
   | 'off'
@@ -52,9 +53,15 @@ type Props = {
   children?: React.ReactNode;
   task: GetTask['task'];
   onAssignmentError: () => void;
+  user: User;
 };
 
-const Details: React.FC<Props> = ({children, onAssignmentError, task}) => {
+const Details: React.FC<Props> = ({
+  children,
+  onAssignmentError,
+  task,
+  user,
+}) => {
   const {
     id,
     name,
@@ -70,6 +77,7 @@ const Details: React.FC<Props> = ({children, onAssignmentError, task}) => {
   } = task;
   const candidates = [...(candidateUsers ?? []), ...(candidateGroups ?? [])];
   const isAssigned = assignee !== null;
+  const isAssignedToMe = assignee === user.userId;
   const [assignmentStatus, setAssignmentStatus] =
     useState<AssignmentStatus>('off');
   const [assignTask, {loading: assignLoading}] = useMutation<
@@ -141,8 +149,25 @@ const Details: React.FC<Props> = ({children, onAssignmentError, task}) => {
             <Label $color="secondary">{processName}</Label>
           </HeaderLeftContainer>
           <HeaderRightContainer>
-            <Label $color="secondary">
-              {isAssigned ? 'Assigned' : 'Unassigned'}
+            <Label $color="secondary" data-testid="assignee">
+              {isAssigned ? (
+                <>
+                  {isAssignedToMe ? (
+                    <Tag size="sm" type="gray">
+                      Assigned to me
+                    </Tag>
+                  ) : (
+                    <>
+                      Assigned to
+                      <Tag size="sm" type="gray">
+                        {assignee}
+                      </Tag>
+                    </>
+                  )}
+                </>
+              ) : (
+                'Unassigned'
+              )}
             </Label>
             {taskState === TaskStates.Created && (
               <Restricted scopes={['write']}>

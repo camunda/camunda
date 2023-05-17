@@ -79,7 +79,7 @@ test('assign and unassign task', async (t) => {
     .click(screen.getByRole('button', {name: 'Assign to me'}))
     .expect(screen.queryByRole('button', {name: 'Unassign'}).exists)
     .ok()
-    .expect(taskDetailsHeader.getByText('Assigned').exists)
+    .expect(taskDetailsHeader.getByText('Assigned to me').exists)
     .ok()
     .expect(
       screen
@@ -168,7 +168,9 @@ test('task completion with form on Assigned to Me filter', async (t) => {
     )
     .notOk()
     .click(screen.queryByText('All open'))
-    .click(screen.queryByText('Assigned to me'))
+    .click(
+      within(screen.getByLabelText('Left panel')).queryByText('Assigned to me'),
+    )
     .click(
       within(screen.getByLabelText('Left panel')).queryByText(
         /^user registration$/i,

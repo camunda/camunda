@@ -26,6 +26,8 @@ type LabelProps = {
 
 const Label = styled.span<LabelProps>`
   ${({theme, $color = 'primary', $variant = '01'}) => css`
+    display: inline-flex;
+    align-items: center;
     color: var(--cds-text-${$color});
     ${$variant === '01' ? theme.label01 : theme.label02};
   `}
