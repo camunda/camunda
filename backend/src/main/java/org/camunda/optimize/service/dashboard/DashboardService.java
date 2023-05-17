@@ -24,6 +24,7 @@ import org.camunda.optimize.dto.optimize.query.dashboard.filter.DashboardVariabl
 import org.camunda.optimize.dto.optimize.query.dashboard.filter.data.DashboardIdentityFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.filter.data.DashboardVariableFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.tile.DashboardReportTileDto;
+import org.camunda.optimize.dto.optimize.query.dashboard.tile.DashboardTileType;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.operator.MembershipFilterOperator;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
@@ -233,6 +234,7 @@ public class DashboardService implements ReportReferencingService, CollectionRef
       .forEach(dashboard -> {
         final List<String> otherReportIdsInDashboard = dashboard.getTiles()
           .stream()
+          .filter(tile -> tile.getType() == DashboardTileType.OPTIMIZE_REPORT)
           .map(DashboardReportTileDto::getId)
           .filter(reportInDashboardId -> !reportId.equals(reportInDashboardId))
           .collect(toList());
