@@ -13,7 +13,7 @@ type Props = {
 
 const Skeleton: React.FC<Props> = ({headerColumns}) => {
   return (
-    <Container>
+    <Container data-testid="instance-header-skeleton">
       <SkeletonIcon />
       <Table>
         <thead>

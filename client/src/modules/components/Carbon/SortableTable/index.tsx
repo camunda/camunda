@@ -169,6 +169,7 @@ const SortableTable: React.FC<Props> = ({
                           {...getRowProps({row})}
                           isSelected={isSelected}
                           $isClickable={selectionType === 'row'}
+                          aria-selected={isSelected}
                           onClick={() => {
                             if (selectionType === 'row') {
                               onSelect?.(row.id);
