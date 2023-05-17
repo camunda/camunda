@@ -25,6 +25,10 @@ import {mergeValidators} from 'modules/utils/validators/mergeValidators';
 import {tracking} from 'modules/tracking';
 import {OptionalFiltersMenu} from 'modules/components/Carbon/OptionalFilters';
 import {DateRangeField} from 'modules/components/Carbon/DateRangeField';
+import {Field} from 'react-final-form';
+import {Stack} from '@carbon/react';
+import {TextInputField} from 'modules/components/Carbon/TextInputField';
+import {TextAreaField} from 'modules/components/Carbon/TextAreaField';
 
 type OptionalFilter =
   | 'decisionInstanceIds'
@@ -117,7 +121,7 @@ const OptionalFiltersFormGroup: React.FC = observer(() => {
     useState<boolean>(false);
 
   return (
-    <div>
+    <Stack gap={8}>
       <OptionalFiltersMenu<OptionalFilter>
         visibleFilters={visibleFilters}
         optionalFilters={optionalFilters.map((id) => ({
@@ -139,7 +143,7 @@ const OptionalFiltersFormGroup: React.FC = observer(() => {
           }
         }}
       />
-      <div>
+      <Stack gap={5}>
         {visibleFilters.map((filter) => (
           <div key={filter}>
             {filter === 'evaluationDateRange' ? (
@@ -154,12 +158,44 @@ const OptionalFiltersFormGroup: React.FC = observer(() => {
                 toDateTimeKey="evaluationDateBefore"
               />
             ) : (
-              <div key={filter}>{filter}</div>
+              <Field
+                name={filter}
+                validate={OPTIONAL_FILTER_FIELDS[filter].validate}
+              >
+                {({input}) => {
+                  const field = OPTIONAL_FILTER_FIELDS[filter];
+
+                  if (field.type === 'text') {
+                    return (
+                      <TextInputField
+                        {...input}
+                        id={filter}
+                        size="sm"
+                        labelText={field.label}
+                        placeholder={field.placeholder}
+                        autoFocus
+                      />
+                    );
+                  }
+                  if (field.type === 'multiline') {
+                    return (
+                      <TextAreaField
+                        {...input}
+                        id={filter}
+                        labelText={field.label}
+                        placeholder={field.placeholder}
+                        rows={field.rows}
+                        autoFocus
+                      />
+                    );
+                  }
+                }}
+              </Field>
             )}
           </div>
         ))}
-      </div>
-    </div>
+      </Stack>
+    </Stack>
   );
 });
 
