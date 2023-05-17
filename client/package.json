@@ -58,7 +58,7 @@
     "not op_mini all"
   ],
   "devDependencies": {
-    "@axe-core/playwright": "4.7.0",
+    "@axe-core/playwright": "4.7.1",
     "@playwright/test": "1.32.3",
     "@tanstack/react-query-devtools": "4.29.7",
     "@testing-library/jest-dom": "5.16.5",

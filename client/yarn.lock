@@ -43,10 +43,10 @@
     tslib "^2.3.0"
     zen-observable-ts "^1.2.5"
 
-"@axe-core/playwright@4.7.0":
-  version "4.7.0"
-  resolved "https://registry.yarnpkg.com/@axe-core/playwright/-/playwright-4.7.0.tgz#7f1d621e9b3bb91849d1fedcec7dac82b4bc29e3"
-  integrity sha512-zcE5DXD8fA1joWSCdug/X7rtrugCWkPTG20XDw3Bgr0n7AZYNzwdtBdlnHvbxErAz0H1SQDInTJkIu++n3b6YQ==
+"@axe-core/playwright@4.7.1":
+  version "4.7.1"
+  resolved "https://registry.yarnpkg.com/@axe-core/playwright/-/playwright-4.7.1.tgz#e0ed94013da9bdd9d221483c5f7c9ff2560e53de"
+  integrity sha512-09UDwLChlGiqw9004QJib6Maesy99EOZ9zsLfhBYAt2s5UwufabnD+MoTAmwe+PCv2Jex9k1taeUhebDwIJKqw==
   dependencies:
     axe-core "^4.7.0"
 
