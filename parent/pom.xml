@@ -124,7 +124,7 @@
     <version.toxiproxy>2.1.7</version.toxiproxy>
     <version.validation-api>3.0.2</version.validation-api>
     <version.jackson-databind-nullable>0.2.6</version.jackson-databind-nullable>
-    <version.jackson-annotations>2.15.0</version.jackson-annotations>
+    <version.jackson-annotations>2.15.1</version.jackson-annotations>
     <version.swagger-annotations>2.2.10</version.swagger-annotations>
     <version.checker-qual>3.34.0</version.checker-qual>
 
