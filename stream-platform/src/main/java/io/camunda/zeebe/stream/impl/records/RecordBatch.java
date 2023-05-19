@@ -9,10 +9,6 @@ package io.camunda.zeebe.stream.impl.records;
 
 import io.camunda.zeebe.logstreams.log.LogAppendEntry;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
-import io.camunda.zeebe.protocol.record.RecordType;
-import io.camunda.zeebe.protocol.record.RejectionType;
-import io.camunda.zeebe.protocol.record.ValueType;
-import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.stream.api.records.ExceededBatchRecordSizeException;
 import io.camunda.zeebe.stream.api.records.ImmutableRecordBatch;
 import io.camunda.zeebe.stream.api.records.MutableRecordBatch;
@@ -43,20 +39,9 @@ public final class RecordBatch implements MutableRecordBatch {
   @Override
   public Either<RuntimeException, Void> appendRecord(
       final long key,
+      final RecordMetadata metadata,
       final int sourceIndex,
-      final RecordType recordType,
-      final Intent intent,
-      final RejectionType rejectionType,
-      final String rejectionReason,
-      final ValueType valueType,
       final BufferWriter valueWriter) {
-    final var metadata =
-        new RecordMetadata()
-            .recordType(recordType)
-            .intent(intent)
-            .rejectionType(rejectionType)
-            .rejectionReason(rejectionReason)
-            .valueType(valueType);
     final var recordBatchEntry =
         RecordBatchEntry.createEntry(key, metadata, sourceIndex, valueWriter);
     final var entryLength = recordBatchEntry.getLength();

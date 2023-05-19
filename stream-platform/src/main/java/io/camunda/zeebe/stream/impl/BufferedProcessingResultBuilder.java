@@ -59,9 +59,14 @@ final class BufferedProcessingResultBuilder implements ProcessingResultBuilder {
     }
 
     if (value instanceof UnifiedRecordValue unifiedRecordValue) {
-      final var either =
-          mutableRecordBatch.appendRecord(
-              key, -1, type, intent, rejectionType, rejectionReason, valueType, unifiedRecordValue);
+      final var metadata =
+          new RecordMetadata()
+              .recordType(type)
+              .intent(intent)
+              .rejectionType(rejectionType)
+              .rejectionReason(rejectionReason)
+              .valueType(valueType);
+      final var either = mutableRecordBatch.appendRecord(key, metadata, -1, unifiedRecordValue);
       if (either.isLeft()) {
         return Either.left(either.getLeft());
       }

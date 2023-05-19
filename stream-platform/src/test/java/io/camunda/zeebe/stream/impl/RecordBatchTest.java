@@ -24,6 +24,19 @@ import org.junit.jupiter.api.Test;
 
 class RecordBatchTest {
 
+  private static final RecordType RECORD_TYPE = RecordType.COMMAND;
+  private static final ProcessInstanceIntent INTENT = ProcessInstanceIntent.ACTIVATE_ELEMENT;
+  private static final RejectionType REJECTION_TYPE = RejectionType.ALREADY_EXISTS;
+  private static final String REJECTION_REASON = "broken somehow";
+  private static final ValueType VALUE_TYPE = ValueType.PROCESS_INSTANCE;
+  private static final RecordMetadata RECORD_METADATA =
+      new RecordMetadata()
+          .recordType(RECORD_TYPE)
+          .intent(INTENT)
+          .rejectionType(REJECTION_TYPE)
+          .rejectionReason(REJECTION_REASON)
+          .valueType(VALUE_TYPE);
+
   @Test
   void shouldAppendToRecordBatch() {
     // given
@@ -31,15 +44,7 @@ class RecordBatchTest {
     final var processInstanceRecord = Records.processInstance(1);
 
     // when
-    recordBatch.appendRecord(
-        1,
-        -1,
-        RecordType.COMMAND,
-        ProcessInstanceIntent.ACTIVATE_ELEMENT,
-        RejectionType.ALREADY_EXISTS,
-        "broken somehow",
-        ValueType.PROCESS_INSTANCE,
-        processInstanceRecord);
+    recordBatch.appendRecord(1, RECORD_METADATA, -1, processInstanceRecord);
 
     // then
     final var batchSize = recordBatch.getBatchSize();
@@ -50,23 +55,23 @@ class RecordBatchTest {
     assertThat(recordBatch)
         .map(RecordBatchEntry::recordMetadata)
         .map(RecordMetadata::getIntent)
-        .containsOnly(ProcessInstanceIntent.ACTIVATE_ELEMENT);
+        .containsOnly(INTENT);
     assertThat(recordBatch)
         .map(RecordBatchEntry::recordMetadata)
         .map(RecordMetadata::getRecordType)
-        .containsOnly(RecordType.COMMAND);
+        .containsOnly(RECORD_TYPE);
     assertThat(recordBatch)
         .map(RecordBatchEntry::recordMetadata)
         .map(RecordMetadata::getRejectionType)
-        .containsOnly(RejectionType.ALREADY_EXISTS);
+        .containsOnly(REJECTION_TYPE);
     assertThat(recordBatch)
         .map(RecordBatchEntry::recordMetadata)
         .map(RecordMetadata::getValueType)
-        .containsOnly(ValueType.PROCESS_INSTANCE);
+        .containsOnly(VALUE_TYPE);
     assertThat(recordBatch)
         .map(RecordBatchEntry::recordMetadata)
         .map(RecordMetadata::getRejectionReason)
-        .containsOnly("broken somehow");
+        .containsOnly(REJECTION_REASON);
     assertThat(recordBatch).map(RecordBatchEntry::recordValue).containsOnly(processInstanceRecord);
   }
 
@@ -88,15 +93,7 @@ class RecordBatchTest {
     final var processInstanceRecord = Records.processInstance(1);
 
     // when
-    recordBatch.appendRecord(
-        1,
-        -1,
-        RecordType.COMMAND,
-        ProcessInstanceIntent.ACTIVATE_ELEMENT,
-        RejectionType.ALREADY_EXISTS,
-        "broken somehow",
-        ValueType.PROCESS_INSTANCE,
-        processInstanceRecord);
+    recordBatch.appendRecord(1, RECORD_METADATA, -1, processInstanceRecord);
 
     // then
     assertThat(recordBatch.getBatchSize()).isEqualTo(batchSize.get());
@@ -120,26 +117,10 @@ class RecordBatchTest {
         };
     final var recordBatch = new RecordBatch(batchSizePredicate);
     final var processInstanceRecord = Records.processInstance(1);
-    recordBatch.appendRecord(
-        1,
-        -1,
-        RecordType.COMMAND,
-        ProcessInstanceIntent.ACTIVATE_ELEMENT,
-        RejectionType.ALREADY_EXISTS,
-        "broken somehow",
-        ValueType.PROCESS_INSTANCE,
-        processInstanceRecord);
+    recordBatch.appendRecord(1, RECORD_METADATA, -1, processInstanceRecord);
 
     // when
-    recordBatch.appendRecord(
-        1,
-        -1,
-        RecordType.COMMAND,
-        ProcessInstanceIntent.ACTIVATE_ELEMENT,
-        RejectionType.ALREADY_EXISTS,
-        "broken somehow",
-        ValueType.PROCESS_INSTANCE,
-        processInstanceRecord);
+    recordBatch.appendRecord(1, RECORD_METADATA, -1, processInstanceRecord);
 
     // then
     assertThat(recordBatch.getBatchSize()).isEqualTo(batchSize.get());
@@ -154,16 +135,7 @@ class RecordBatchTest {
     final var processInstanceRecord = Records.processInstance(1);
 
     // when
-    final var either =
-        recordBatch.appendRecord(
-            1,
-            -1,
-            RecordType.COMMAND,
-            ProcessInstanceIntent.ACTIVATE_ELEMENT,
-            RejectionType.ALREADY_EXISTS,
-            "broken somehow",
-            ValueType.PROCESS_INSTANCE,
-            processInstanceRecord);
+    final var either = recordBatch.appendRecord(1, RECORD_METADATA, -1, processInstanceRecord);
 
     // then
     assertThat(either.isLeft()).isTrue();
@@ -178,27 +150,10 @@ class RecordBatchTest {
     final var recordBatch = new RecordBatch((count, size) -> count < 2);
     final var processInstanceRecord = Records.processInstance(1);
 
-    recordBatch.appendRecord(
-        1,
-        -1,
-        RecordType.COMMAND,
-        ProcessInstanceIntent.ACTIVATE_ELEMENT,
-        RejectionType.ALREADY_EXISTS,
-        "broken somehow",
-        ValueType.PROCESS_INSTANCE,
-        processInstanceRecord);
+    recordBatch.appendRecord(1, RECORD_METADATA, -1, processInstanceRecord);
 
     // when
-    final var either =
-        recordBatch.appendRecord(
-            1,
-            -1,
-            RecordType.COMMAND,
-            ProcessInstanceIntent.ACTIVATE_ELEMENT,
-            RejectionType.ALREADY_EXISTS,
-            "broken somehow",
-            ValueType.PROCESS_INSTANCE,
-            processInstanceRecord);
+    final var either = recordBatch.appendRecord(1, RECORD_METADATA, -1, processInstanceRecord);
 
     // then
     assertThat(either.isLeft()).isTrue();
@@ -237,15 +192,7 @@ class RecordBatchTest {
     final var recordBatch = new RecordBatch((count, size) -> size < 300);
     final var processInstanceRecord = Records.processInstance(1);
 
-    recordBatch.appendRecord(
-        1,
-        -1,
-        RecordType.COMMAND,
-        ProcessInstanceIntent.ACTIVATE_ELEMENT,
-        RejectionType.ALREADY_EXISTS,
-        "broken somehow",
-        ValueType.PROCESS_INSTANCE,
-        processInstanceRecord);
+    recordBatch.appendRecord(1, RECORD_METADATA, -1, processInstanceRecord);
 
     // when
     final var canAppend = recordBatch.canAppendRecordOfLength(recordBatch.getBatchSize());
@@ -260,15 +207,7 @@ class RecordBatchTest {
     final var recordBatch = new RecordBatch((count, size) -> count < 2);
     final var processInstanceRecord = Records.processInstance(1);
 
-    recordBatch.appendRecord(
-        1,
-        -1,
-        RecordType.COMMAND,
-        ProcessInstanceIntent.ACTIVATE_ELEMENT,
-        RejectionType.ALREADY_EXISTS,
-        "broken somehow",
-        ValueType.PROCESS_INSTANCE,
-        processInstanceRecord);
+    recordBatch.appendRecord(1, RECORD_METADATA, -1, processInstanceRecord);
 
     // when
     final var canAppend = recordBatch.canAppendRecordOfLength(recordBatch.getBatchSize());
