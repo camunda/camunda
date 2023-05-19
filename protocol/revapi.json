@@ -168,6 +168,20 @@
           "code": "java.class.removed",
           "old": "class io.camunda.zeebe.protocol.management.GroupSizeEncodingEncoder",
           "justification": "This is no longer used for listing backups"
+        },
+        {
+          "ignore": true,
+          "code": "java.field.constantValueChanged",
+          "old": "field io.camunda.zeebe.protocol.record.RecordMetadataDecoder.BLOCK_LENGTH",
+          "newValue": "32",
+          "justification": "The recordVersion property is added as an optional property where it gets version `1` if the property isn't set on records appended in old Zeebe versions. This is a backward compatible change and therefore acceptable."
+        },
+        {
+          "ignore": true,
+          "code": "java.field.constantValueChanged",
+          "old": "field io.camunda.zeebe.protocol.record.RecordMetadataEncoder.BLOCK_LENGTH",
+          "newValue": "32",
+          "justification": "The recordVersion property is added as an optional property where it gets version `1` if the property isn't set on records appended in old Zeebe versions. This is a backward compatible change and therefore acceptable."
         }
       ]
     }
