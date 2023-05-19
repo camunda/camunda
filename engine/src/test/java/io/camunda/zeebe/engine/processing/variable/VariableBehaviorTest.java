@@ -42,8 +42,9 @@ final class VariableBehaviorTest {
 
   @BeforeEach
   void beforeEach() {
-    final var stateWriter =
-        new EventApplyingStateWriter(eventWriter, new EventAppliers(processingState));
+    final var eventAppliers = new EventAppliers();
+    eventAppliers.registerEventAppliers(processingState);
+    final var stateWriter = new EventApplyingStateWriter(eventWriter, eventAppliers);
 
     state = processingState.getVariableState();
     behavior = new VariableBehavior(state, stateWriter, processingState.getKeyGenerator());

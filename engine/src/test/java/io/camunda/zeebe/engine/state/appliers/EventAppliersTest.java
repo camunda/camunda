@@ -11,8 +11,6 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 
 import io.camunda.zeebe.engine.state.TypedEventApplier;
-import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
-import io.camunda.zeebe.engine.util.ProcessingStateExtension;
 import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import org.junit.jupiter.api.BeforeEach;
@@ -22,12 +20,8 @@ import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-@ExtendWith(ProcessingStateExtension.class)
 @ExtendWith(MockitoExtension.class)
 public class EventAppliersTest {
-
-  /** Injected by {@link ProcessingStateExtension}. */
-  private MutableProcessingState state;
 
   private EventAppliers eventAppliers;
 
@@ -36,7 +30,7 @@ public class EventAppliersTest {
 
   @BeforeEach
   void setup() {
-    eventAppliers = new EventAppliers(state);
+    eventAppliers = new EventAppliers();
   }
 
   @Test

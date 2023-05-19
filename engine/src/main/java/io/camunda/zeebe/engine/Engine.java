@@ -79,7 +79,7 @@ public class Engine implements RecordProcessor {
             recordProcessorContext.getKeyGenerator());
     final var scheduledTaskDbState = new ScheduledTaskDbState(zeebeDb, zeebeDb.createContext());
 
-    eventApplier = new EventAppliers(processingState);
+    eventApplier = new EventAppliers().registerEventAppliers(processingState);
 
     writers = new Writers(resultBuilderMutex, eventApplier);
 

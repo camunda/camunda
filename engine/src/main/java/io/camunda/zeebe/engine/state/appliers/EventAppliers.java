@@ -51,7 +51,7 @@ public final class EventAppliers implements EventApplier {
 
   private final Map<IntentAndVersion, TypedEventApplier> mapping = new HashMap<>();
 
-  public EventAppliers(final MutableProcessingState state) {
+  public EventAppliers registerEventAppliers(final MutableProcessingState state) {
     registerProcessInstanceEventAppliers(state);
     registerProcessInstanceCreationAppliers(state);
     registerProcessInstanceModificationAppliers(state);
@@ -78,6 +78,7 @@ public final class EventAppliers implements EventApplier {
     registerSignalSubscriptionAppliers(state);
 
     registerCommandDistributionAppliers(state);
+    return this;
   }
 
   private void registerTimeEventAppliers(final MutableProcessingState state) {
