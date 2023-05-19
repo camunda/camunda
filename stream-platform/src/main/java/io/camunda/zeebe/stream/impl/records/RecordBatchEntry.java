@@ -12,10 +12,6 @@ import static io.camunda.zeebe.stream.impl.TypedEventRegistry.EVENT_REGISTRY;
 import io.camunda.zeebe.logstreams.log.LogAppendEntry;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
-import io.camunda.zeebe.protocol.record.RecordType;
-import io.camunda.zeebe.protocol.record.RejectionType;
-import io.camunda.zeebe.protocol.record.ValueType;
-import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.util.ReflectUtil;
 import io.camunda.zeebe.util.buffer.BufferWriter;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -31,20 +27,9 @@ public record RecordBatchEntry(
 
   public static RecordBatchEntry createEntry(
       final long key,
+      final RecordMetadata metadata,
       final int sourceIndex,
-      final RecordType recordType,
-      final Intent intent,
-      final RejectionType rejectionType,
-      final String rejectionReason,
-      final ValueType valueType,
       final BufferWriter valueWriter) {
-    final var recordMetadata =
-        new RecordMetadata()
-            .recordType(recordType)
-            .intent(intent)
-            .rejectionType(rejectionType)
-            .rejectionReason(rejectionReason)
-            .valueType(valueType);
 
     // we need to copy the value, to make sure that it will not change later
     final var bytes = new byte[valueWriter.getLength()];
@@ -52,9 +37,9 @@ public record RecordBatchEntry(
     valueWriter.write(recordValueBuffer, 0);
 
     final UnifiedRecordValue unifiedRecordValue =
-        ReflectUtil.newInstance(EVENT_REGISTRY.get(recordMetadata.getValueType()));
+        ReflectUtil.newInstance(EVENT_REGISTRY.get(metadata.getValueType()));
     unifiedRecordValue.wrap(recordValueBuffer, 0, recordValueBuffer.capacity());
 
-    return new RecordBatchEntry(recordMetadata, key, sourceIndex, unifiedRecordValue);
+    return new RecordBatchEntry(metadata, key, sourceIndex, unifiedRecordValue);
   }
 }

@@ -8,6 +8,7 @@
 package io.camunda.zeebe.stream.impl.records;
 
 import io.camunda.zeebe.logstreams.log.LogAppendEntry;
+import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;
@@ -49,16 +50,15 @@ public final class RecordBatch implements MutableRecordBatch {
       final String rejectionReason,
       final ValueType valueType,
       final BufferWriter valueWriter) {
+    final var metadata =
+        new RecordMetadata()
+            .recordType(recordType)
+            .intent(intent)
+            .rejectionType(rejectionType)
+            .rejectionReason(rejectionReason)
+            .valueType(valueType);
     final var recordBatchEntry =
-        RecordBatchEntry.createEntry(
-            key,
-            sourceIndex,
-            recordType,
-            intent,
-            rejectionType,
-            rejectionReason,
-            valueType,
-            valueWriter);
+        RecordBatchEntry.createEntry(key, metadata, sourceIndex, valueWriter);
     final var entryLength = recordBatchEntry.getLength();
 
     if (!recordBatchSizePredicate.test(recordBatchEntries.size() + 1, batchSize + entryLength)) {

@@ -8,6 +8,7 @@
 package io.camunda.zeebe.stream.impl;
 
 import io.camunda.zeebe.msgpack.UnpackedObject;
+import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RecordValue;
@@ -85,9 +86,14 @@ final class BufferedProcessingResultBuilder implements ProcessingResultBuilder {
       final String rejectionReason,
       final long requestId,
       final int requestStreamId) {
-    final var entry =
-        RecordBatchEntry.createEntry(
-            key, -1, recordType, intent, rejectionType, rejectionReason, valueType, value);
+    final var metadata =
+        new RecordMetadata()
+            .recordType(recordType)
+            .intent(intent)
+            .rejectionType(rejectionType)
+            .rejectionReason(rejectionReason)
+            .valueType(valueType);
+    final var entry = RecordBatchEntry.createEntry(key, metadata, -1, value);
     processingResponse = new ProcessingResponseImpl(entry, requestId, requestStreamId);
     return this;
   }
