@@ -19,6 +19,7 @@ public interface EventApplier {
    * @param key the key of the event
    * @param intent the intent of the event
    * @param recordValue the value of the event
+   * @param recordVersion the record version of the event
    */
-  void applyState(long key, Intent intent, RecordValue recordValue);
+  void applyState(long key, Intent intent, RecordValue recordValue, final int recordVersion);
 }

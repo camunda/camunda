@@ -107,7 +107,8 @@ public class Engine implements RecordProcessor {
 
   @Override
   public void replay(final TypedRecord event) {
-    eventApplier.applyState(event.getKey(), event.getIntent(), event.getValue());
+    eventApplier.applyState(
+        event.getKey(), event.getIntent(), event.getValue(), event.getRecordVersion());
   }
 
   @Override

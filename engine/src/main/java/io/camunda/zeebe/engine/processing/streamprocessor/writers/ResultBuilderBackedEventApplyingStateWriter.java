@@ -52,7 +52,7 @@ final class ResultBuilderBackedEventApplyingStateWriter extends AbstractResultBu
             .rejectionType(RejectionType.NULL_VAL)
             .rejectionReason("");
     resultBuilder().appendRecord(key, value, metadata);
-    eventApplier.applyState(key, intent, value);
+    eventApplier.applyState(key, intent, value, recordVersion);
   }
 
   @Override
