@@ -258,12 +258,7 @@ jobs:
         id: build-zeebe
       # Once we have breaking changes, this will break since no workaround atm.
       # Give the official gorelease a try to do this
-      - name: Check backwards compatibility
-        working-directory: clients/go/
-        run: |
-          go install github.com/joelanford/go-apidiff@latest
-          LATEST_MINOR_TAG_REF=$(git rev-list -n 1 `git tag --sort=committerdate --list 'clients/go/v8\.1\.[0-9]' 'clients/go/v8\.1\.[0-9][0-9]' | tail -1`)
-          go-apidiff --repo-path=../../ $LATEST_MINOR_TAG_REF
+      - uses: joelanford/go-apidiff@main
       - uses: ./.github/actions/build-docker
         id: build-docker
         with:
