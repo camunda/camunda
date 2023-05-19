@@ -7,9 +7,7 @@
 package io.camunda.tasklist.zeebeimport.v820.processors;
 
 import static io.camunda.tasklist.util.ElasticsearchUtil.UPDATE_RETRY_COUNT;
-import static io.camunda.tasklist.zeebeimport.v820.record.Intent.CANCELED;
-import static io.camunda.tasklist.zeebeimport.v820.record.Intent.COMPLETED;
-import static io.camunda.tasklist.zeebeimport.v820.record.Intent.CREATED;
+import static io.camunda.tasklist.zeebeimport.v820.record.Intent.*;
 import static io.camunda.zeebe.protocol.Protocol.*;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -20,6 +18,7 @@ import io.camunda.tasklist.exceptions.PersistenceException;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.schema.templates.TaskTemplate;
 import io.camunda.tasklist.util.DateUtil;
+import io.camunda.tasklist.zeebeimport.v820.record.Intent;
 import io.camunda.tasklist.zeebeimport.v820.record.value.JobRecordValueImpl;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.record.Record;
@@ -50,7 +49,10 @@ public class JobZeebeRecordProcessor {
   public void processJobRecord(Record record, BulkRequest bulkRequest) throws PersistenceException {
     final JobRecordValueImpl recordValue = (JobRecordValueImpl) record.getValue();
     if (recordValue.getType().equals(Protocol.USER_TASK_JOB_TYPE)) {
-      bulkRequest.add(persistTask(record, recordValue));
+      if (record.getIntent() != null
+          && !record.getIntent().name().equals(Intent.TIMED_OUT.name())) {
+        bulkRequest.add(persistTask(record, recordValue));
+      }
     }
     // else skip task
   }
