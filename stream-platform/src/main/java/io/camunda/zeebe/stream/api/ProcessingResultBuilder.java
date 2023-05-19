@@ -8,6 +8,7 @@
 package io.camunda.zeebe.stream.api;
 
 import io.camunda.zeebe.msgpack.UnpackedObject;
+import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.RejectionType;
@@ -27,15 +28,9 @@ public interface ProcessingResultBuilder {
    *     RecordBatch
    */
   default ProcessingResultBuilder appendRecord(
-      final long key,
-      final RecordType type,
-      final Intent intent,
-      final RejectionType rejectionType,
-      final String rejectionReason,
-      final RecordValue value)
+      final long key, final RecordValue value, final RecordMetadata metadata)
       throws RuntimeException {
-    final var either =
-        appendRecordReturnEither(key, type, intent, rejectionType, rejectionReason, value);
+    final var either = appendRecordReturnEither(key, value, metadata);
 
     if (either.isLeft()) {
       // This is how we handled too big record batches as well, except that this is now a
@@ -56,12 +51,7 @@ public interface ProcessingResultBuilder {
    * @return returns either a failure or itself for chaining
    */
   Either<RuntimeException, ProcessingResultBuilder> appendRecordReturnEither(
-      final long key,
-      final RecordType type,
-      final Intent intent,
-      final RejectionType rejectionType,
-      final String rejectionReason,
-      final RecordValue value);
+      final long key, final RecordValue value, final RecordMetadata metadata);
 
   /**
    * Sets the response for the result; will be overwritten if called more than once

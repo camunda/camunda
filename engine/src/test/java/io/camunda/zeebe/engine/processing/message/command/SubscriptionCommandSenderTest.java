@@ -67,8 +67,7 @@ public class SubscriptionCommandSenderTest {
 
     // then
     verify(mockProcessingResultBuilder).appendPostCommitTask(any());
-    verify(mockProcessingResultBuilder, never())
-        .appendRecord(anyLong(), any(), any(), any(), any(), any());
+    verify(mockProcessingResultBuilder, never()).appendRecord(anyLong(), any(), any());
   }
 
   @Test
@@ -81,7 +80,7 @@ public class SubscriptionCommandSenderTest {
 
     // then
     verify(mockProcessingResultBuilder, never()).appendPostCommitTask(any());
-    verify(mockProcessingResultBuilder).appendRecord(anyLong(), any(), any(), any(), any(), any());
+    verify(mockProcessingResultBuilder).appendRecord(anyLong(), any(), any());
   }
 
   @Test
@@ -100,8 +99,7 @@ public class SubscriptionCommandSenderTest {
 
     // then
     verify(mockProcessingResultBuilder).appendPostCommitTask(any());
-    verify(mockProcessingResultBuilder, never())
-        .appendRecord(anyLong(), any(), any(), any(), any(), any());
+    verify(mockProcessingResultBuilder, never()).appendRecord(anyLong(), any(), any());
   }
 
   @Test
@@ -120,7 +118,7 @@ public class SubscriptionCommandSenderTest {
 
     // then
     verify(mockProcessingResultBuilder, never()).appendPostCommitTask(any());
-    verify(mockProcessingResultBuilder).appendRecord(anyLong(), any(), any(), any(), any(), any());
+    verify(mockProcessingResultBuilder).appendRecord(anyLong(), any(), any());
   }
 
   @Test
@@ -145,8 +143,7 @@ public class SubscriptionCommandSenderTest {
             eq(ProcessMessageSubscriptionIntent.CORRELATE),
             any());
     verify(mockProcessingResultBuilder, never()).appendPostCommitTask(any());
-    verify(mockProcessingResultBuilder, never())
-        .appendRecord(anyLong(), any(), any(), any(), any(), any());
+    verify(mockProcessingResultBuilder, never()).appendRecord(anyLong(), any(), any());
   }
 
   @Test
@@ -162,8 +159,7 @@ public class SubscriptionCommandSenderTest {
 
     // then
     verify(mockProcessingResultBuilder).appendPostCommitTask(any());
-    verify(mockProcessingResultBuilder, never())
-        .appendRecord(anyLong(), any(), any(), any(), any(), any());
+    verify(mockProcessingResultBuilder, never()).appendRecord(anyLong(), any(), any());
   }
 
   @Test
@@ -179,7 +175,7 @@ public class SubscriptionCommandSenderTest {
 
     // then
     verify(mockProcessingResultBuilder, never()).appendPostCommitTask(any());
-    verify(mockProcessingResultBuilder).appendRecord(anyLong(), any(), any(), any(), any(), any());
+    verify(mockProcessingResultBuilder).appendRecord(anyLong(), any(), any());
   }
 
   @Test
@@ -201,8 +197,7 @@ public class SubscriptionCommandSenderTest {
             eq(MessageSubscriptionIntent.DELETE),
             any());
     verify(mockProcessingResultBuilder, never()).appendPostCommitTask(any());
-    verify(mockProcessingResultBuilder, never())
-        .appendRecord(anyLong(), any(), any(), any(), any(), any());
+    verify(mockProcessingResultBuilder, never()).appendRecord(anyLong(), any(), any());
   }
 
   @Test
@@ -221,8 +216,7 @@ public class SubscriptionCommandSenderTest {
 
     // then
     verify(mockProcessingResultBuilder).appendPostCommitTask(any());
-    verify(mockProcessingResultBuilder, never())
-        .appendRecord(anyLong(), any(), any(), any(), any(), any());
+    verify(mockProcessingResultBuilder, never()).appendRecord(anyLong(), any(), any());
   }
 
   @Test
@@ -241,7 +235,7 @@ public class SubscriptionCommandSenderTest {
 
     // then
     verify(mockProcessingResultBuilder, never()).appendPostCommitTask(any());
-    verify(mockProcessingResultBuilder).appendRecord(anyLong(), any(), any(), any(), any(), any());
+    verify(mockProcessingResultBuilder).appendRecord(anyLong(), any(), any());
   }
 
   @Test
@@ -266,8 +260,7 @@ public class SubscriptionCommandSenderTest {
             eq(MessageSubscriptionIntent.CREATE),
             any());
     verify(mockProcessingResultBuilder, never()).appendPostCommitTask(any());
-    verify(mockProcessingResultBuilder, never())
-        .appendRecord(anyLong(), any(), any(), any(), any(), any());
+    verify(mockProcessingResultBuilder, never()).appendRecord(anyLong(), any(), any());
   }
 
   @Test
@@ -280,8 +273,7 @@ public class SubscriptionCommandSenderTest {
 
     // then
     verify(mockProcessingResultBuilder).appendPostCommitTask(any());
-    verify(mockProcessingResultBuilder, never())
-        .appendRecord(anyLong(), any(), any(), any(), any(), any());
+    verify(mockProcessingResultBuilder, never()).appendRecord(anyLong(), any(), any());
   }
 
   @Test
@@ -294,7 +286,7 @@ public class SubscriptionCommandSenderTest {
 
     // then
     verify(mockProcessingResultBuilder, never()).appendPostCommitTask(any());
-    verify(mockProcessingResultBuilder).appendRecord(anyLong(), any(), any(), any(), any(), any());
+    verify(mockProcessingResultBuilder).appendRecord(anyLong(), any(), any());
   }
 
   @Test
@@ -311,8 +303,7 @@ public class SubscriptionCommandSenderTest {
 
     // then
     verify(mockProcessingResultBuilder).appendPostCommitTask(any());
-    verify(mockProcessingResultBuilder, never())
-        .appendRecord(anyLong(), any(), any(), any(), any(), any());
+    verify(mockProcessingResultBuilder, never()).appendRecord(anyLong(), any(), any());
   }
 
   @Test
@@ -329,7 +320,7 @@ public class SubscriptionCommandSenderTest {
 
     // then
     verify(mockProcessingResultBuilder, never()).appendPostCommitTask(any());
-    verify(mockProcessingResultBuilder).appendRecord(anyLong(), any(), any(), any(), any(), any());
+    verify(mockProcessingResultBuilder).appendRecord(anyLong(), any(), any());
   }
 
   @Test
@@ -346,8 +337,7 @@ public class SubscriptionCommandSenderTest {
 
     // then
     verify(mockProcessingResultBuilder).appendPostCommitTask(any());
-    verify(mockProcessingResultBuilder, never())
-        .appendRecord(anyLong(), any(), any(), any(), any(), any());
+    verify(mockProcessingResultBuilder, never()).appendRecord(anyLong(), any(), any());
   }
 
   @Test
@@ -364,6 +354,6 @@ public class SubscriptionCommandSenderTest {
 
     // then
     verify(mockProcessingResultBuilder, never()).appendPostCommitTask(any());
-    verify(mockProcessingResultBuilder).appendRecord(anyLong(), any(), any(), any(), any(), any());
+    verify(mockProcessingResultBuilder).appendRecord(anyLong(), any(), any());
   }
 }

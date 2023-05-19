@@ -279,18 +279,20 @@ public final class StreamProcessorTest {
               final var resultBuilder = resultBuilderCaptor.getValue();
               resultBuilder.appendRecordReturnEither(
                   1,
-                  RecordType.EVENT,
-                  ACTIVATE_ELEMENT,
-                  RejectionType.NULL_VAL,
-                  "",
-                  Records.processInstance(1));
+                  Records.processInstance(1),
+                  new RecordMetadata()
+                      .recordType(RecordType.EVENT)
+                      .intent(ACTIVATE_ELEMENT)
+                      .rejectionType(RejectionType.NULL_VAL)
+                      .rejectionReason(""));
               resultBuilder.appendRecordReturnEither(
                   2,
-                  RecordType.COMMAND,
-                  ACTIVATE_ELEMENT,
-                  RejectionType.NULL_VAL,
-                  "",
-                  Records.processInstance(1));
+                  Records.processInstance(1),
+                  new RecordMetadata()
+                      .recordType(RecordType.COMMAND)
+                      .intent(ACTIVATE_ELEMENT)
+                      .rejectionType(RejectionType.NULL_VAL)
+                      .rejectionReason(""));
               return resultBuilder.build();
             })
         .thenAnswer(
@@ -298,11 +300,12 @@ public final class StreamProcessorTest {
               final var resultBuilder = resultBuilderCaptor.getValue();
               resultBuilder.appendRecordReturnEither(
                   3,
-                  RecordType.EVENT,
-                  ACTIVATE_ELEMENT,
-                  RejectionType.NULL_VAL,
-                  "",
-                  Records.processInstance(1));
+                  Records.processInstance(1),
+                  new RecordMetadata()
+                      .recordType(RecordType.EVENT)
+                      .intent(ACTIVATE_ELEMENT)
+                      .rejectionType(RejectionType.NULL_VAL)
+                      .rejectionReason(""));
               return resultBuilder.build();
             });
 
@@ -344,18 +347,20 @@ public final class StreamProcessorTest {
     final var resultBuilder = new BufferedProcessingResultBuilder((c, v) -> true);
     resultBuilder.appendRecordReturnEither(
         1,
-        RecordType.EVENT,
-        ACTIVATE_ELEMENT,
-        RejectionType.NULL_VAL,
-        "",
-        Records.processInstance(1));
+        Records.processInstance(1),
+        new RecordMetadata()
+            .recordType(RecordType.EVENT)
+            .intent(ACTIVATE_ELEMENT)
+            .rejectionType(RejectionType.NULL_VAL)
+            .rejectionReason(""));
     resultBuilder.appendRecordReturnEither(
         2,
-        RecordType.COMMAND,
-        COMPLETE_ELEMENT,
-        RejectionType.NULL_VAL,
-        "",
-        Records.processInstance(1));
+        Records.processInstance(1),
+        new RecordMetadata()
+            .recordType(RecordType.COMMAND)
+            .intent(COMPLETE_ELEMENT)
+            .rejectionType(RejectionType.NULL_VAL)
+            .rejectionReason(""));
 
     when(defaultRecordProcessor.process(any(), any())).thenReturn(resultBuilder.build());
 
@@ -843,11 +848,12 @@ public final class StreamProcessorTest {
             12)
         .appendRecord(
             4,
-            RecordType.COMMAND,
-            ELEMENT_ACTIVATING,
-            RejectionType.NULL_VAL,
-            "",
-            Records.processInstance(1));
+            Records.processInstance(1),
+            new RecordMetadata()
+                .recordType(RecordType.COMMAND)
+                .intent(ELEMENT_ACTIVATING)
+                .rejectionType(RejectionType.NULL_VAL)
+                .rejectionReason(""));
     final var secondResultBuilder = new BufferedProcessingResultBuilder((c, s) -> true);
     secondResultBuilder.withResponse(
         RecordType.EVENT,
@@ -899,33 +905,36 @@ public final class StreamProcessorTest {
                         12)
                     .appendRecord(
                         4,
-                        RecordType.COMMAND,
-                        ELEMENT_ACTIVATING,
-                        RejectionType.NULL_VAL,
-                        "",
-                        Records.processInstance(1))
+                        Records.processInstance(1),
+                        new RecordMetadata()
+                            .recordType(RecordType.COMMAND)
+                            .intent(ELEMENT_ACTIVATING)
+                            .rejectionType(RejectionType.NULL_VAL)
+                            .rejectionReason(""))
                     .build())
         .thenAnswer(
             invocation ->
                 ((ProcessingResultBuilder) invocation.getArgument(1))
                     .appendRecord(
                         5,
-                        RecordType.COMMAND,
-                        ELEMENT_ACTIVATING,
-                        RejectionType.NULL_VAL,
-                        "",
-                        Records.processInstance(2))
+                        Records.processInstance(2),
+                        new RecordMetadata()
+                            .recordType(RecordType.COMMAND)
+                            .intent(ELEMENT_ACTIVATING)
+                            .rejectionType(RejectionType.NULL_VAL)
+                            .rejectionReason(""))
                     .build())
         .thenAnswer(
             invocation ->
                 ((ProcessingResultBuilder) invocation.getArgument(1))
                     .appendRecord(
                         6,
-                        RecordType.EVENT,
-                        ELEMENT_ACTIVATING,
-                        RejectionType.NULL_VAL,
-                        "",
-                        Records.processInstance(2))
+                        Records.processInstance(2),
+                        new RecordMetadata()
+                            .recordType(RecordType.EVENT)
+                            .intent(ELEMENT_ACTIVATING)
+                            .rejectionType(RejectionType.NULL_VAL)
+                            .rejectionReason(""))
                     .build());
 
     streamPlatform.startStreamProcessor();
@@ -999,11 +1008,12 @@ public final class StreamProcessorTest {
             12)
         .appendRecord(
             4,
-            RecordType.COMMAND,
-            ELEMENT_ACTIVATING,
-            RejectionType.NULL_VAL,
-            "",
-            Records.processInstance(1));
+            Records.processInstance(1),
+            new RecordMetadata()
+                .recordType(RecordType.COMMAND)
+                .intent(ELEMENT_ACTIVATING)
+                .rejectionType(RejectionType.NULL_VAL)
+                .rejectionReason(""));
 
     final var defaultMockedRecordProcessor = streamPlatform.getDefaultMockedRecordProcessor();
     when(defaultMockedRecordProcessor.process(any(), any()))
@@ -1068,11 +1078,12 @@ public final class StreamProcessorTest {
     final var resultBuilder = new BufferedProcessingResultBuilder((c, s) -> true);
     resultBuilder.appendRecordReturnEither(
         1,
-        RecordType.COMMAND_REJECTION,
-        ACTIVATE_ELEMENT,
-        RejectionType.NULL_VAL,
-        "",
-        Records.processInstance(1));
+        Records.processInstance(1),
+        new RecordMetadata()
+            .recordType(RecordType.COMMAND_REJECTION)
+            .intent(ACTIVATE_ELEMENT)
+            .rejectionType(RejectionType.NULL_VAL)
+            .rejectionReason(""));
     when(defaultMockedRecordProcessor.onProcessingError(any(), any(), any()))
         .thenReturn(resultBuilder.build());
 
@@ -1169,11 +1180,12 @@ public final class StreamProcessorTest {
     final var resultBuilder = new BufferedProcessingResultBuilder((c, s) -> true);
     resultBuilder.appendRecordReturnEither(
         1,
-        RecordType.EVENT,
-        ELEMENT_ACTIVATING,
-        RejectionType.NULL_VAL,
-        "",
-        Records.processInstance(1));
+        Records.processInstance(1),
+        new RecordMetadata()
+            .recordType(RecordType.EVENT)
+            .intent(ELEMENT_ACTIVATING)
+            .rejectionType(RejectionType.NULL_VAL)
+            .rejectionReason(""));
     when(defaultMockedRecordProcessor.process(any(), any())).thenReturn(resultBuilder.build());
     streamPlatform.startStreamProcessor();
 

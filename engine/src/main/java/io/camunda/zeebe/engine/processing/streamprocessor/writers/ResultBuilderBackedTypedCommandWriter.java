@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.streamprocessor.writers;
 
+import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.RejectionType;
@@ -38,7 +39,12 @@ final class ResultBuilderBackedTypedCommandWriter extends AbstractResultBuilderB
   }
 
   private void appendRecord(final long key, final Intent intent, final RecordValue value) {
-    resultBuilder()
-        .appendRecord(key, RecordType.COMMAND, intent, RejectionType.NULL_VAL, "", value);
+    final var metadata =
+        new RecordMetadata()
+            .recordType(RecordType.COMMAND)
+            .intent(intent)
+            .rejectionType(RejectionType.NULL_VAL)
+            .rejectionReason("");
+    resultBuilder().appendRecord(key, value, metadata);
   }
 }

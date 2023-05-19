@@ -45,12 +45,7 @@ final class BufferedProcessingResultBuilder implements ProcessingResultBuilder {
 
   @Override
   public Either<RuntimeException, ProcessingResultBuilder> appendRecordReturnEither(
-      final long key,
-      final RecordType type,
-      final Intent intent,
-      final RejectionType rejectionType,
-      final String rejectionReason,
-      final RecordValue value) {
+      final long key, final RecordValue value, final RecordMetadata metadata) {
 
     final ValueType valueType = TypedEventRegistry.TYPE_REGISTRY.get(value.getClass());
     if (valueType == null) {
@@ -59,14 +54,9 @@ final class BufferedProcessingResultBuilder implements ProcessingResultBuilder {
     }
 
     if (value instanceof UnifiedRecordValue unifiedRecordValue) {
-      final var metadata =
-          new RecordMetadata()
-              .recordType(type)
-              .intent(intent)
-              .rejectionType(rejectionType)
-              .rejectionReason(rejectionReason)
-              .valueType(valueType);
-      final var either = mutableRecordBatch.appendRecord(key, metadata, -1, unifiedRecordValue);
+      final var metadataWithValueType = metadata.valueType(valueType);
+      final var either =
+          mutableRecordBatch.appendRecord(key, metadataWithValueType, -1, unifiedRecordValue);
       if (either.isLeft()) {
         return Either.left(either.getLeft());
       }
