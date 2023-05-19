@@ -100,6 +100,7 @@ export function IngestedEvents({mightFail}) {
       label: (
         <TableSelectAll
           id="checked"
+          key="checked"
           name="checked"
           ariaLabel="checked"
           indeterminate={someSelectedInView}
@@ -109,11 +110,6 @@ export function IngestedEvents({mightFail}) {
               ? setSelected([...new Set([...selected, ...currentViewIds])])
               : setSelected(selected.filter((id) => !currentViewIds.includes(id)))
           }
-          ref={(input) => {
-            if (input != null && selected.length !== eventsResponse.total) {
-              input.indeterminate = selected.length;
-            }
-          }}
         />
       ),
       id: 'selectedAll',

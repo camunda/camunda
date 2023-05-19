@@ -66,8 +66,6 @@
     }
 
     table {
-      border: none;
-
       thead tr {
         .tableHeader:first-child {
           min-width: 0;
@@ -102,17 +100,7 @@
 
         tr {
           &.mapped:hover {
-            background-color: var(--silver-darken-94);
             cursor: pointer;
-          }
-
-          &:not(.disabled).mapped {
-            color: var(--white);
-            background-color: var(--blue-darken-62);
-
-            .Button {
-              color: var(--white);
-            }
           }
 
           &.suggested {

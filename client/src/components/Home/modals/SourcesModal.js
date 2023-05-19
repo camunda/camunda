@@ -98,9 +98,7 @@ export function SourcesModal({onClose, onConfirm, mightFail, confirmText, preSel
   }
 
   const isInSelected = ({key}) => selected.some(({definitionKey}) => key === definitionKey);
-
   const allChecked = filteredDefinitions.every(isInSelected);
-
   const allIndeterminate = !allChecked && filteredDefinitions.some(isInSelected);
 
   const tableHead = [
@@ -187,12 +185,13 @@ export function SourcesModal({onClose, onConfirm, mightFail, confirmText, preSel
               ({definitionKey}) => def.key === definitionKey
             );
 
+            const key = def.name || def.key;
             const body = [
               <TableSelectRow
                 checked={!!selectedDefinition}
-                id={def.name || def.key}
-                name={def.name || def.key}
-                ariaLabel={def.name || def.key}
+                id={key}
+                name={key}
+                ariaLabel={key}
                 onSelect={({target: {checked}}) =>
                   checked
                     ? setSelected([...selected, removeExtraTenants(format(def))])
@@ -201,7 +200,7 @@ export function SourcesModal({onClose, onConfirm, mightFail, confirmText, preSel
                       )
                 }
               />,
-              def.name || def.key,
+              key,
               def.type,
             ];
 

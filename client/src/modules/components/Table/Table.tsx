@@ -17,11 +17,14 @@ import {
   UseSortByColumnProps,
   UseSortByOptions,
   TableInstance,
-  UseTableInstanceProps,
   UsePaginationInstanceProps,
   UseRowSelectInstanceProps,
   UseTableOptions,
   UsePaginationState,
+  UseResizeColumnsColumnProps,
+  HeaderGroup as HG,
+  ColumnInstance,
+  TableState,
 } from 'react-table';
 import {
   DataTable,
@@ -40,16 +43,34 @@ import {
 
 import {t, getLanguage} from 'translation';
 import {Select, Icon, LoadingIndicator, Tooltip, NoDataNotice} from 'components';
+import {isReactElement} from 'services';
 
 import {flatten} from './service';
 
 import './Table.scss';
 
-export type TableInstanceWithHooks<T extends object> = TableInstance<T> &
-  UseTableInstanceProps<T> &
-  UsePaginationInstanceProps<T> & {
-    state: UsePaginationState<T>;
-  } & UseRowSelectInstanceProps<T>;
+export interface Header<T extends object = object>
+  extends ColumnInstance<T>,
+    UseSortByColumnProps<T>,
+    UseSortByOptions<T>,
+    UseResizeColumnsColumnProps<T> {
+  group: any;
+  title?: string;
+}
+
+interface HeaderGroup<T extends object = object> extends Omit<HG<T>, 'headers'> {
+  headers: Header[];
+}
+
+export type TableInstanceWithHooks<T extends object = object> = Omit<
+  TableInstance<T>,
+  'headerGroups'
+> &
+  UsePaginationInstanceProps<T> &
+  UseRowSelectInstanceProps<T> & {
+    state: TableState<T> & UsePaginationState<T>;
+    headerGroups: HeaderGroup[];
+  };
 
 export type Head =
   | string
@@ -141,18 +162,18 @@ export default function Table<T extends object>({
       ...(totalEntries
         ? {manualPagination: true, pageCount: Math.ceil(totalEntries / defaultPageSize)}
         : {}),
-    } as UseTableOptions<T>,
+    } as UseTableOptions<T> & UseSortByOptions<T>,
     useSortBy,
     usePagination,
     useFlexLayout,
     useResizeColumns
-  ) as TableInstanceWithHooks<T>;
+  ) as unknown as TableInstanceWithHooks<T>;
 
   const firstRowIndex = pageIndex * pageSize;
   const totalRows = totalEntries || body.length;
   const empty = !loading && (totalRows === 0 || head.length === 0);
 
-  function getSortingProps(column: Column & UseSortByOptions<T> & UseSortByColumnProps<T>) {
+  function getSortingProps(column: Header) {
     if (!updateSorting && !allowLocalSorting) {
       return {};
     }
@@ -220,15 +241,20 @@ export default function Table<T extends object>({
                     {...headerGroup.getHeaderGroupProps()}
                     className={classnames({groupRow: i === 0 && headerGroups.length > 1})}
                   >
-                    {headerGroup.headers.map((header: any) => {
-                      if (header.Header.type === TableSelectAll) {
-                        return header.render('Header', {key: header.Header.props.id});
+                    {headerGroup.headers.map((header: Header) => {
+                      if (
+                        typeof header.Header === 'object' &&
+                        isReactElement(header.Header) &&
+                        header.Header?.type === TableSelectAll
+                      ) {
+                        return header.render('Header');
                       }
 
                       return (
                         <TableHeader
                           className={classnames('tableHeader', {placeholder: header.placeholderOf})}
                           {...header.getHeaderProps()}
+                          scope="col"
                           data-group={header.group}
                         >
                           <div
