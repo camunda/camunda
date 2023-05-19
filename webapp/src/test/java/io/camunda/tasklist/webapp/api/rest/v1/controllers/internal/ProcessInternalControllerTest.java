@@ -16,6 +16,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.fasterxml.jackson.core.type.TypeReference;
+import io.camunda.tasklist.property.FeatureFlagProperties;
+import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.webapp.CommonUtils;
 import io.camunda.tasklist.webapp.api.rest.v1.entities.ProcessPublicEndpointsResponse;
 import io.camunda.tasklist.webapp.api.rest.v1.entities.ProcessResponse;
@@ -49,7 +51,7 @@ class ProcessInternalControllerTest {
   @Mock private ProcessReader processReader;
   @Mock private ProcessService processService;
   @Mock private ProcessInstanceWriter processInstanceWriter;
-
+  @Mock private TasklistProperties tasklistProperties;
   @InjectMocks private ProcessInternalController instance;
 
   private MockMvc mockMvc;
@@ -206,6 +208,10 @@ class ProcessInternalControllerTest {
             .setProcessId("1")
             .setProcessDefinitionKey("publicProcess");
 
+    final var expectedFeatureFlag = new FeatureFlagProperties().setProcessPublicEndpoints(true);
+
+    when(processReader.getProcessesStartedByForm()).thenReturn(List.of(processDto));
+    when(tasklistProperties.getFeatureFlag()).thenReturn(expectedFeatureFlag);
     when(processReader.getProcessesStartedByForm()).thenReturn(List.of(processDto));
 
     // when

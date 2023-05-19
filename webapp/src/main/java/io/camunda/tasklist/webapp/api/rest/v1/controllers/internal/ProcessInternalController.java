@@ -7,6 +7,7 @@
 package io.camunda.tasklist.webapp.api.rest.v1.controllers.internal;
 
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
+import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.webapp.api.rest.v1.controllers.ApiErrorController;
 import io.camunda.tasklist.webapp.api.rest.v1.entities.ProcessPublicEndpointsResponse;
 import io.camunda.tasklist.webapp.api.rest.v1.entities.ProcessResponse;
@@ -22,6 +23,7 @@ import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 import org.apache.commons.lang3.StringUtils;
@@ -29,13 +31,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PatchMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @Tag(name = "Process", description = "API to manage processes.")
 @RestController
@@ -45,6 +41,7 @@ public class ProcessInternalController extends ApiErrorController {
   @Autowired private ProcessReader processReader;
   @Autowired private ProcessService processService;
   @Autowired private ProcessInstanceWriter processInstanceWriter;
+  @Autowired private TasklistProperties tasklistProperties;
 
   @Operation(
       summary = "Returns the list of processes by search query",
@@ -144,10 +141,18 @@ public class ProcessInternalController extends ApiErrorController {
       })
   @GetMapping("publicEndpoints")
   public ResponseEntity<List<ProcessPublicEndpointsResponse>> getPublicEndpoints() {
-    final var publicEndpoints =
-        processReader.getProcessesStartedByForm().stream()
-            .map(ProcessPublicEndpointsResponse::fromProcessDTO)
-            .collect(Collectors.toList());
+
+    final List<ProcessPublicEndpointsResponse> publicEndpoints;
+
+    if (tasklistProperties.getFeatureFlag().getProcessPublicEndpoints()) {
+      publicEndpoints =
+          processReader.getProcessesStartedByForm().stream()
+              .map(ProcessPublicEndpointsResponse::fromProcessDTO)
+              .collect(Collectors.toList());
+    } else {
+      publicEndpoints = new ArrayList<ProcessPublicEndpointsResponse>();
+    }
+
     return ResponseEntity.ok(publicEndpoints);
   }
 }

@@ -70,6 +70,9 @@ public class TasklistProperties {
   @NestedConfigurationProperty private CloudProperties cloud = new CloudProperties();
 
   @NestedConfigurationProperty
+  private FeatureFlagProperties featureFlag = new FeatureFlagProperties();
+
+  @NestedConfigurationProperty
   private ClusterNodeProperties clusterNode = new ClusterNodeProperties();
 
   @NestedConfigurationProperty private Auth0Properties auth0 = new Auth0Properties();
@@ -290,6 +293,15 @@ public class TasklistProperties {
 
   public TasklistProperties setSecurityProperties(SecurityProperties securityProperties) {
     this.securityProperties = securityProperties;
+    return this;
+  }
+
+  public FeatureFlagProperties getFeatureFlag() {
+    return featureFlag;
+  }
+
+  public TasklistProperties setFeatureFlag(FeatureFlagProperties featureFlag) {
+    this.featureFlag = featureFlag;
     return this;
   }
 }

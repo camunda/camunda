@@ -52,6 +52,7 @@ public class ProcessInternalControllerIT extends TasklistZeebeIntegrationTest {
   static void registerProperties(DynamicPropertyRegistry registry) {
     registry.add("camunda.tasklist.cloud.clusterId", () -> "449ac2ad-d3c6-4c73-9c68-7752e39ae616");
     registry.add("camunda.tasklist.client.clusterId", () -> "449ac2ad-d3c6-4c73-9c68-7752e39ae616");
+    registry.add("camunda.tasklist.featureFlag.processPublicEndpoints", () -> true);
   }
 
   @Before
@@ -246,6 +247,7 @@ public class ProcessInternalControllerIT extends TasklistZeebeIntegrationTest {
 
   @Test
   public void shouldReturnPublicEndpointJustForLatestVersions() {
+    tasklistProperties.getFeatureFlag().setProcessPublicEndpoints(true);
     // given
     final String processId1 = ZeebeTestUtil.deployProcess(zeebeClient, "subscribeFormProcess.bpmn");
     final String processId2 = ZeebeTestUtil.deployProcess(zeebeClient, "travelSearchProcess.bpmn");
@@ -279,6 +281,31 @@ public class ProcessInternalControllerIT extends TasklistZeebeIntegrationTest {
     // given
     final String processId1 = ZeebeTestUtil.deployProcess(zeebeClient, "simple_process.bpmn");
     elasticsearchTestRule.processAllRecordsAndWait(processIsDeployedCheck, processId1);
+
+    // when
+    final var result =
+        mockMvcHelper.doRequest(get(TasklistURIs.PROCESSES_URL_V1.concat("/publicEndpoints")));
+
+    // then
+    assertThat(result)
+        .hasOkHttpStatus()
+        .hasApplicationJsonContentType()
+        .extractingListContent(objectMapper, ProcessPublicEndpointsResponse.class)
+        .isEmpty();
+  }
+
+  @Test
+  public void shouldNotReturnPublicEndPointsAsFeatureFlagIsFalse() {
+    tasklistProperties.getFeatureFlag().setProcessPublicEndpoints(false);
+    // given
+    final String processId1 = ZeebeTestUtil.deployProcess(zeebeClient, "subscribeFormProcess.bpmn");
+    final String processId2 = ZeebeTestUtil.deployProcess(zeebeClient, "travelSearchProcess.bpmn");
+    final String processId3 =
+        ZeebeTestUtil.deployProcess(zeebeClient, "travelSearchProcess_v2.bpmn");
+
+    elasticsearchTestRule.processAllRecordsAndWait(processIsDeployedCheck, processId1);
+    elasticsearchTestRule.processAllRecordsAndWait(processIsDeployedCheck, processId2);
+    elasticsearchTestRule.processAllRecordsAndWait(processIsDeployedCheck, processId3);
 
     // when
     final var result =

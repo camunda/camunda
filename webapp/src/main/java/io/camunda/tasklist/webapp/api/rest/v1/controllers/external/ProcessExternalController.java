@@ -16,6 +16,7 @@ import io.camunda.tasklist.webapp.es.FormReader;
 import io.camunda.tasklist.webapp.es.cache.ProcessReader;
 import io.camunda.tasklist.webapp.graphql.entity.ProcessDTO;
 import io.camunda.tasklist.webapp.graphql.entity.ProcessInstanceDTO;
+import io.camunda.tasklist.webapp.rest.exception.Error;
 import io.camunda.tasklist.webapp.rest.exception.NotFoundException;
 import io.camunda.tasklist.webapp.security.TasklistURIs;
 import io.camunda.tasklist.webapp.service.ProcessService;
@@ -26,6 +27,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -36,6 +38,9 @@ import org.springframework.web.bind.annotation.RestController;
 
 @Tag(name = "External Process", description = "API to manage processes by external consumers.")
 @RestController
+@ConditionalOnProperty(
+    value = "camunda.tasklist.featureFlag.processPublicEndpoints",
+    matchIfMissing = true)
 @RequestMapping(
     value = TasklistURIs.EXTERNAL_PROCESS_URL_V1,
     produces = MediaType.APPLICATION_JSON_VALUE)
