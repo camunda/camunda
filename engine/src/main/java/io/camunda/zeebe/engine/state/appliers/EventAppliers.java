@@ -297,7 +297,7 @@ public final class EventAppliers implements EventApplier {
     register(intent, RecordMetadata.DEFAULT_RECORD_VERSION, applier);
   }
 
-  private <I extends Intent> void register(
+  <I extends Intent> void register(
       final I intent, final int version, final TypedEventApplier<I, ?> applier) {
     mapping.put(new IntentAndVersion(intent, version), applier);
   }
