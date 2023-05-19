@@ -212,14 +212,6 @@ jobs:
       - uses: ./.github/actions/setup-zeebe
       - uses: ./.github/actions/build-zeebe
         id: build-zeebe
-      # Once we have breaking changes, this will break since no workaround atm.
-      # Give the official gorelease a try to do this
-      - name: Check backwards compatibility
-        working-directory: clients/go/
-        run: |
-          go install github.com/joelanford/go-apidiff@latest
-          LATEST_TAG_REF=$(git rev-list --tags --max-count=1)
-          go-apidiff --repo-path=../../ $LATEST_TAG_REF
       - uses: ./.github/actions/build-docker
         id: build-docker
         with:
@@ -323,6 +315,20 @@ jobs:
           # fixed to avoid triggering false positive; see https://github.com/golangci/golangci-lint-action/issues/535
           version: v1.52.2
           working-directory: clients/go
+  go-apidiff:
+    name: Go Backward Compatibility
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0 #we need to fetch stable/* branches in order to be run compatibility checks
+      - uses: ./.github/actions/setup-zeebe
+        with:
+          java: false
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+      - uses: joelanford/go-apidiff@main
   java-checks:
     name: Java checks
     runs-on: ubuntu-latest
@@ -383,6 +389,7 @@ jobs:
       - codeql
       - java-checks
       - go-lint
+      - go-apidiff
       - docker-checks
     steps:
       - run: exit 0
