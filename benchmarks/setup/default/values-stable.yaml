@@ -14,15 +14,16 @@ camunda-platform:
 
   zeebe-gateway:
     # Prefer scheduling on any non-spot VM
+    # GKE does not let us add the cloud.google.com/gke-spot label manually, so when an instance is
+    # not a spot VM, that node label simply is not present. When it is a spot VM, then the value is
+    # set to true.
     affinity:
-      podAffinity:
+      nodeAffinity:
         requiredDuringSchedulingIgnoredDuringExecution:
-          - labelSelector:
-              matchExpressions:
-                - key: cloud.google.com/gke-spot
-                  operator: In
-                  values: [ 'false' ]
-            topologyKey: "kubernetes.io/hostname"
+          nodeSelectorTerms:
+            - matchExpressions:
+              - key: cloud.google.com/gke-spot
+                operator: DoesNotExist
 
     # Ignore the stable VM node taints
     tolerations:
