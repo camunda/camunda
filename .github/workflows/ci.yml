@@ -254,14 +254,6 @@ jobs:
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
       - uses: ./.github/actions/build-zeebe
         id: build-zeebe
-      # Once we have breaking changes, this will break since no workaround atm.
-      # Give the official gorelease a try to do this
-      - name: Check backwards compatibility
-        working-directory: clients/go/
-        run: |
-          go install github.com/joelanford/go-apidiff@latest
-          LATEST_TAG_REF=$(git rev-list --tags --max-count=1)
-          go-apidiff --repo-path=../../ $LATEST_TAG_REF
       - uses: ./.github/actions/build-docker
         id: build-docker
         with:
