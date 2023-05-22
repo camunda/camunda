@@ -30,6 +30,7 @@ import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.scheduler.testing.ControlledActorSchedulerRule;
 import io.camunda.zeebe.transport.ServerOutput;
 import io.camunda.zeebe.util.Either;
+import io.camunda.zeebe.util.buffer.BufferUtil;
 import io.camunda.zeebe.util.buffer.BufferWriter;
 import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
@@ -43,11 +44,13 @@ import org.mockito.Mockito;
 public class CommandApiRequestHandlerTest {
   @Rule public final ControlledActorSchedulerRule scheduler = new ControlledActorSchedulerRule();
   final CommandApiRequestHandler handler = new CommandApiRequestHandler();
+  private LogStreamWriter logStreamWriter;
 
   @Before
   public void setup() {
     scheduler.submitActor(handler);
-    handler.addPartition(0, mock(LogStreamWriter.class), new NoopRequestLimiter<>());
+    logStreamWriter = mock(LogStreamWriter.class);
+    handler.addPartition(0, logStreamWriter, new NoopRequestLimiter<>());
     scheduler.workUntilDone();
   }
 
@@ -154,6 +157,7 @@ public class CommandApiRequestHandlerTest {
   public void shouldWriteToLog() {
     // given
     final var logWriter = mock(LogStreamWriter.class);
+    when(logWriter.canWriteEvents(anyInt(), anyInt())).thenReturn(true);
     handler.addPartition(0, logWriter, new NoopRequestLimiter<>());
     scheduler.workUntilDone();
 
@@ -166,6 +170,28 @@ public class CommandApiRequestHandlerTest {
 
     // then
     verify(logWriter).tryWrite(Mockito.<LogAppendEntry>any());
+  }
+
+  @Test
+  public void shouldRejectRequestIfTooLarge() {
+    when(logStreamWriter.canWriteEvents(anyInt(), anyInt())).thenReturn(false);
+
+    final var request =
+        new BrokerPublishMessageRequest("test", "1").setMessageId("1").setTimeToLive(0);
+    request.serializeValue();
+
+    // when
+    final var responseFuture = handleRequest(request);
+
+    // then
+    assertThat(responseFuture)
+        .succeedsWithin(Duration.ofMinutes(1))
+        .matches(Either::isLeft)
+        .extracting(Either::getLeft)
+        .extracting(ErrorResponse::getErrorCode, e -> BufferUtil.bufferAsString(e.getErrorData()))
+        .containsExactly(
+            ErrorCode.INTERNAL_ERROR,
+            "Failed writing request: Request size is above configured maxMessageSize.");
   }
 
   private CompletableFuture<Either<ErrorResponse, ExecuteCommandResponse>> handleRequest(

@@ -110,22 +110,34 @@ final class CommandApiRequestHandler
       return Either.left(errorWriter);
     }
 
-    boolean written = false;
     try {
-      written = writeCommand(command.key(), metadata, value, logStreamWriter);
-      return Either.right(responseWriter);
+      return writeCommand(command.key(), metadata, value, logStreamWriter)
+          .map(b -> responseWriter)
+          .mapLeft(
+              failure ->
+                  handleErrorOnWrite(
+                      partitionId, requestId, errorWriter, limiter, intent, failure));
+
     } catch (final Exception ex) {
-      LOG.error("Unexpected error on writing {} command", intent, ex);
-      errorWriter.internalError("Failed writing response: %s", ex);
-      return Either.left(errorWriter);
-    } finally {
-      if (!written) {
-        limiter.onIgnore(partitionId, requestId);
-      }
+      return Either.left(
+          handleErrorOnWrite(partitionId, requestId, errorWriter, limiter, intent, ex.toString()));
     }
   }
 
-  private boolean writeCommand(
+  private static ErrorResponseWriter handleErrorOnWrite(
+      final int partitionId,
+      final long requestId,
+      final ErrorResponseWriter errorWriter,
+      final RequestLimiter<Intent> limiter,
+      final Intent intent,
+      final String failure) {
+    limiter.onIgnore(partitionId, requestId);
+    LOG.error("Unexpected error on writing {} command {}", intent, failure);
+    errorWriter.internalError("Failed writing request: %s", failure);
+    return errorWriter;
+  }
+
+  private Either<String, Boolean> writeCommand(
       final long key,
       final RecordMetadata metadata,
       final UnifiedRecordValue value,
@@ -137,7 +149,13 @@ final class CommandApiRequestHandler
       appendEntry = LogAppendEntry.of(metadata, value);
     }
 
-    return logStreamWriter.tryWrite(appendEntry) >= 0;
+    if (logStreamWriter.canWriteEvents(1, appendEntry.getLength())) {
+      return logStreamWriter.tryWrite(appendEntry) >= 0
+          ? Either.right(true)
+          : Either.left("Failed to write request to logstream");
+    } else {
+      return Either.left("Request size is above configured maxMessageSize.");
+    }
   }
 
   void addPartition(

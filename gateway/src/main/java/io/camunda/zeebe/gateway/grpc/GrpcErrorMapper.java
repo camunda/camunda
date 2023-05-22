@@ -152,7 +152,8 @@ public final class GrpcErrorMapper {
         builder.setCode(Code.INTERNAL_VALUE);
         message =
             String.format(
-                "Unexpected error occurred between gateway and broker (code: %s)", error.getCode());
+                "Unexpected error occurred between gateway and broker (code: %s) (message: %s)",
+                error.getCode(), error.getMessage());
         break;
     }
 
