@@ -217,10 +217,9 @@ jobs:
       - name: Summarize deployment
         if: success()
         run: |
-
           cat >> $GITHUB_STEP_SUMMARY <<EOF
-            ## Benchmark `${{ inputs.name }}` values
-            ```yaml
-              $(helm get values ${{ inputs.name }} -n ${{ inputs.name }})
-            ```
+            ## Benchmark \`${{ inputs.name }}\` values
+            \`\`\`yaml
+            $(helm get values ${{ inputs.name }} -n ${{ inputs.name }})
+            \`\`\`
           EOF
