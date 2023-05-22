@@ -33,7 +33,7 @@
     <version.identity>8.3.0-alpha1</version.identity>
     <version.log4j>2.17.2</version.log4j>
     <version.elasticsearch>7.17.9</version.elasticsearch>
-    <version.spring.boot>3.0.6</version.spring.boot>
+    <version.spring.boot>3.0.7</version.spring.boot>
     <version.junit>4.13.2</version.junit>
     <version.springdoc>2.1.0</version.springdoc>
     <version.jakarta.json>2.0.1</version.jakarta.json>
@@ -44,7 +44,7 @@
     <version.gson>2.10.1</version.gson>
     <version.node>v16.20.0</version.node>
     <version.yarn>v1.22.10</version.yarn>
-    <version.snakeyaml>1.33</version.snakeyaml>
+    <version.snakeyaml>2.0</version.snakeyaml>
     <version.apache.http5>5.2.1</version.apache.http5>
 
     <zeebe-test-container.version>3.5.2</zeebe-test-container.version>
