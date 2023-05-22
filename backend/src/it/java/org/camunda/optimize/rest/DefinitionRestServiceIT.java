@@ -918,10 +918,8 @@ public class DefinitionRestServiceIT extends AbstractIT {
     final List<DefinitionWithTenantsResponseDto> definitionsWithTenants =
       definitionClient.resolveDefinitionTenantsByTypeMultipleKeyAndVersions(
         definitionType,
-        MultiDefinitionTenantsRequestDto.builder()
-          .definition(DefinitionDto.builder().key(definitionKey1).version("1").version("2").build())
-          .definition(DefinitionDto.builder().key(definitionKey2).version("1").build())
-          .build()
+        createMultiDefinitionTenantsRequestDto(
+          new DefinitionDto(definitionKey1, List.of("1", "2")), new DefinitionDto(definitionKey2, List.of("1")))
       );
 
     // then all tenants are returned
@@ -944,10 +942,8 @@ public class DefinitionRestServiceIT extends AbstractIT {
     final List<DefinitionWithTenantsResponseDto> definitionsWithTenantsForVersion1 =
       definitionClient.resolveDefinitionTenantsByTypeMultipleKeyAndVersions(
         definitionType,
-        MultiDefinitionTenantsRequestDto.builder()
-          .definition(DefinitionDto.builder().key(definitionKey1).version("1").build())
-          .definition(DefinitionDto.builder().key(definitionKey2).version("1").build())
-          .build()
+        createMultiDefinitionTenantsRequestDto(
+          new DefinitionDto(definitionKey1, List.of("1")), new DefinitionDto(definitionKey2, List.of("1")))
       );
 
     // then only the tenants belonging to those versions are included
@@ -985,10 +981,8 @@ public class DefinitionRestServiceIT extends AbstractIT {
     final List<DefinitionWithTenantsResponseDto> definitionsWithTenants =
       definitionClient.resolveDefinitionTenantsByTypeMultipleKeyAndVersions(
         definitionType,
-        MultiDefinitionTenantsRequestDto.builder()
-          .definition(DefinitionDto.builder().key(definitionKey1).version(ALL_VERSIONS).build())
-          .definition(DefinitionDto.builder().key(definitionKey2).version(ALL_VERSIONS).build())
-          .build()
+        createMultiDefinitionTenantsRequestDto(
+          new DefinitionDto(definitionKey1, List.of(ALL_VERSIONS)), new DefinitionDto(definitionKey2, List.of(ALL_VERSIONS)))
       );
 
     // then all tenants are returned
@@ -1003,10 +997,10 @@ public class DefinitionRestServiceIT extends AbstractIT {
     final List<DefinitionWithTenantsResponseDto> definitionsWithTenantsForSpecificAndAllVersion =
       definitionClient.resolveDefinitionTenantsByTypeMultipleKeyAndVersions(
         definitionType,
-        MultiDefinitionTenantsRequestDto.builder()
-          .definition(DefinitionDto.builder().key(definitionKey1).version(ALL_VERSIONS).version("2").build())
-          .definition(DefinitionDto.builder().key(definitionKey2).version(ALL_VERSIONS).version("3").build())
-          .build()
+        createMultiDefinitionTenantsRequestDto(
+          new DefinitionDto(definitionKey1, List.of(ALL_VERSIONS, "2")),
+          new DefinitionDto(definitionKey2, List.of(ALL_VERSIONS, "3"))
+        )
       );
 
     // then all tenants are returned
@@ -1039,10 +1033,10 @@ public class DefinitionRestServiceIT extends AbstractIT {
     final List<DefinitionWithTenantsResponseDto> definitionsWithTenantsForLatestVersion =
       definitionClient.resolveDefinitionTenantsByTypeMultipleKeyAndVersions(
         definitionType,
-        MultiDefinitionTenantsRequestDto.builder()
-          .definition(DefinitionDto.builder().key(definitionKey1).version(LATEST_VERSION).build())
-          .definition(DefinitionDto.builder().key(definitionKey2).version(LATEST_VERSION).build())
-          .build()
+        createMultiDefinitionTenantsRequestDto(
+          new DefinitionDto(definitionKey1, List.of(LATEST_VERSION)),
+          new DefinitionDto(definitionKey2, List.of(LATEST_VERSION))
+        )
       );
 
     // then only the available tenant for the latest version are returned
@@ -1057,10 +1051,10 @@ public class DefinitionRestServiceIT extends AbstractIT {
     final List<DefinitionWithTenantsResponseDto> definitionsWithTenantsForLatestAndOtherVersion =
       definitionClient.resolveDefinitionTenantsByTypeMultipleKeyAndVersions(
         definitionType,
-        MultiDefinitionTenantsRequestDto.builder()
-          .definition(DefinitionDto.builder().key(definitionKey1).version(LATEST_VERSION).version("2").build())
-          .definition(DefinitionDto.builder().key(definitionKey2).version(LATEST_VERSION).version("1").build())
-          .build()
+        createMultiDefinitionTenantsRequestDto(
+          new DefinitionDto(definitionKey1, List.of(LATEST_VERSION, "2")),
+          new DefinitionDto(definitionKey2, List.of(LATEST_VERSION, "1"))
+        )
       );
 
     // then the available tenants for the latest version as well as the other version are returned
@@ -1092,10 +1086,10 @@ public class DefinitionRestServiceIT extends AbstractIT {
     final List<DefinitionWithTenantsResponseDto> definitionsWithTenantsForAllVersions =
       definitionClient.resolveDefinitionTenantsByTypeMultipleKeyAndVersions(
         definitionType,
-        MultiDefinitionTenantsRequestDto.builder()
-          .definition(DefinitionDto.builder().key(definitionKey1).version(ALL_VERSIONS).build())
-          .definition(DefinitionDto.builder().key(definitionKey2).version(ALL_VERSIONS).build())
-          .build()
+        createMultiDefinitionTenantsRequestDto(
+          new DefinitionDto(definitionKey1, List.of(ALL_VERSIONS)),
+          new DefinitionDto(definitionKey2, List.of(ALL_VERSIONS))
+        )
       );
 
     // then all tenants are returned
@@ -1114,10 +1108,10 @@ public class DefinitionRestServiceIT extends AbstractIT {
     final List<DefinitionWithTenantsResponseDto> definitionsWithTenantsForSpecificVersions =
       definitionClient.resolveDefinitionTenantsByTypeMultipleKeyAndVersions(
         definitionType,
-        MultiDefinitionTenantsRequestDto.builder()
-          .definition(DefinitionDto.builder().key(definitionKey1).version("1").build())
-          .definition(DefinitionDto.builder().key(definitionKey2).version("1").build())
-          .build()
+        createMultiDefinitionTenantsRequestDto(
+          new DefinitionDto(definitionKey1, List.of("1")),
+          new DefinitionDto(definitionKey2, List.of("1"))
+        )
       );
 
     // then still all tenants are available
@@ -1165,10 +1159,10 @@ public class DefinitionRestServiceIT extends AbstractIT {
     final List<DefinitionWithTenantsResponseDto> definitionsWithTenantsForAllVersions =
       definitionClient.resolveDefinitionTenantsByTypeMultipleKeyAndVersions(
         definitionType,
-        MultiDefinitionTenantsRequestDto.builder()
-          .definition(DefinitionDto.builder().key(definitionKey1).version(ALL_VERSIONS).build())
-          .definition(DefinitionDto.builder().key(definitionKey2).version(ALL_VERSIONS).build())
-          .build()
+        createMultiDefinitionTenantsRequestDto(
+          new DefinitionDto(definitionKey1, List.of(ALL_VERSIONS)),
+          new DefinitionDto(definitionKey2, List.of(ALL_VERSIONS))
+        )
       );
 
     // then all tenants are returned
@@ -1188,10 +1182,10 @@ public class DefinitionRestServiceIT extends AbstractIT {
     final List<DefinitionWithTenantsResponseDto> definitionsWithTenantsForVersion1 =
       definitionClient.resolveDefinitionTenantsByTypeMultipleKeyAndVersions(
         definitionType,
-        MultiDefinitionTenantsRequestDto.builder()
-          .definition(DefinitionDto.builder().key(definitionKey1).version("1").build())
-          .definition(DefinitionDto.builder().key(definitionKey2).version("1").build())
-          .build()
+        createMultiDefinitionTenantsRequestDto(
+          new DefinitionDto(definitionKey1, List.of("1")),
+          new DefinitionDto(definitionKey2, List.of("1"))
+        )
       );
 
     // then still all tenants are returned
@@ -1211,10 +1205,10 @@ public class DefinitionRestServiceIT extends AbstractIT {
     final List<DefinitionWithTenantsResponseDto> definitionsWithTenantsForVersion3 =
       definitionClient.resolveDefinitionTenantsByTypeMultipleKeyAndVersions(
         definitionType,
-        MultiDefinitionTenantsRequestDto.builder()
-          .definition(DefinitionDto.builder().key(definitionKey1).version("3").build())
-          .definition(DefinitionDto.builder().key(definitionKey2).version("2").build())
-          .build()
+        createMultiDefinitionTenantsRequestDto(
+          new DefinitionDto(definitionKey1, List.of("3")),
+          new DefinitionDto(definitionKey2, List.of("2"))
+        )
       );
 
     // then only the specific tenant is returned
@@ -1241,10 +1235,10 @@ public class DefinitionRestServiceIT extends AbstractIT {
     final List<DefinitionWithTenantsResponseDto> definitionsWithTenants =
       definitionClient.resolveDefinitionTenantsByTypeMultipleKeyAndVersions(
         PROCESS,
-        MultiDefinitionTenantsRequestDto.builder()
-          .definition(DefinitionDto.builder().key(eventProcessDefinition1.getKey()).version("1").build())
-          .definition(DefinitionDto.builder().key(eventProcessDefinition2.getKey()).version(ALL_VERSIONS).build())
-          .build()
+        createMultiDefinitionTenantsRequestDto(
+          new DefinitionDto(eventProcessDefinition1.getKey(), List.of("1")),
+          new DefinitionDto(eventProcessDefinition2.getKey(), List.of(ALL_VERSIONS))
+        )
       );
 
     // then
@@ -1273,10 +1267,10 @@ public class DefinitionRestServiceIT extends AbstractIT {
     final List<DefinitionWithTenantsResponseDto> definitionsWithTenants =
       definitionClient.resolveDefinitionTenantsByTypeMultipleKeyAndVersions(
         definitionType,
-        MultiDefinitionTenantsRequestDto.builder()
-          .definition(DefinitionDto.builder().key(definitionKey1).build())
-          .definition(DefinitionDto.builder().key(definitionKey2).build())
-          .build()
+        createMultiDefinitionTenantsRequestDto(
+          new DefinitionDto(definitionKey1, Collections.emptyList()),
+          new DefinitionDto(definitionKey2, Collections.emptyList())
+        )
       );
 
     // then all versions are considered
@@ -1309,10 +1303,10 @@ public class DefinitionRestServiceIT extends AbstractIT {
     final List<DefinitionWithTenantsResponseDto> definitionsWithTenants =
       definitionClient.resolveDefinitionTenantsByTypeMultipleKeyAndVersions(
         definitionType,
-        MultiDefinitionTenantsRequestDto.builder()
-          .definition(DefinitionDto.builder().key(definitionKey1).build())
-          .definition(DefinitionDto.builder().key(definitionKey2).build())
-          .build()
+        createMultiDefinitionTenantsRequestDto(
+          new DefinitionDto(definitionKey1, Collections.emptyList()),
+          new DefinitionDto(definitionKey2, Collections.emptyList())
+        )
       );
 
     // then only the non-deleted tenants are returned
@@ -1741,6 +1735,12 @@ public class DefinitionRestServiceIT extends AbstractIT {
   private void toggleCamundaEventImportsConfiguration(final boolean enabled) {
     embeddedOptimizeExtension.getDefaultEngineConfiguration().setEventImportEnabled(enabled);
     embeddedOptimizeExtension.reloadConfiguration();
+  }
+
+  private MultiDefinitionTenantsRequestDto createMultiDefinitionTenantsRequestDto(DefinitionDto... definitionDtos) {
+    final MultiDefinitionTenantsRequestDto multiDefinitionTenantsRequestDto = new MultiDefinitionTenantsRequestDto();
+    multiDefinitionTenantsRequestDto.setDefinitions(List.of(definitionDtos));
+    return multiDefinitionTenantsRequestDto;
   }
 
 }

@@ -24,6 +24,7 @@ import org.mockserver.model.HttpError;
 import org.mockserver.verify.VerificationTimes;
 
 import javax.ws.rs.core.Response;
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -316,9 +317,10 @@ public class MultiEngineDefinitionAuthorizationIT extends AbstractMultiEngineIT 
     final List<DefinitionWithTenantsResponseDto> definitionWithTenantsResponse = definitionClient.
       resolveDefinitionTenantsByTypeMultipleKeyAndVersions(
         DefinitionResourceTypeUtil.getDefinitionTypeByResourceType(definitionResourceType),
-        MultiDefinitionTenantsRequestDto.builder().definition(
-          MultiDefinitionTenantsRequestDto.DefinitionDto.builder().key(definitionKey).build()
-        ).build(),
+        new MultiDefinitionTenantsRequestDto(List.of(new MultiDefinitionTenantsRequestDto.DefinitionDto(
+          definitionKey,
+          Collections.emptyList()
+        ))),
         KERMIT_USER,
         KERMIT_USER
       );

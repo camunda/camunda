@@ -926,9 +926,7 @@ public class EngineDefinitionAuthorizationIT extends AbstractIT {
     final Response response = embeddedOptimizeExtension.getRequestExecutor()
       .buildResolveDefinitionTenantsByTypeMultipleKeysAndVersionsRequest(
         definitionType.getId(),
-        MultiDefinitionTenantsRequestDto.builder()
-          .definition(MultiDefinitionTenantsRequestDto.DefinitionDto.builder().key(definitionKey).build())
-          .build()
+        new MultiDefinitionTenantsRequestDto(List.of(createDefinitionDto(definitionKey)))
       )
       .withUserAuthentication(KERMIT_USER, KERMIT_USER)
       .execute();
@@ -956,9 +954,8 @@ public class EngineDefinitionAuthorizationIT extends AbstractIT {
     final Response response = embeddedOptimizeExtension.getRequestExecutor()
       .buildResolveDefinitionTenantsByTypeMultipleKeysAndVersionsRequest(
         definitionType.getId(),
-        MultiDefinitionTenantsRequestDto.builder()
-          .definition(MultiDefinitionTenantsRequestDto.DefinitionDto.builder().key(definitionKey).build())
-          .build()
+        new MultiDefinitionTenantsRequestDto(List.of(createDefinitionDto(
+          definitionKey)))
       )
       .withUserAuthentication(KERMIT_USER, KERMIT_USER)
       .execute();
@@ -992,9 +989,7 @@ public class EngineDefinitionAuthorizationIT extends AbstractIT {
     final List<DefinitionWithTenantsResponseDto> definitionsWithTenants = definitionClient
       .resolveDefinitionTenantsByTypeMultipleKeyAndVersions(
         definitionType,
-        MultiDefinitionTenantsRequestDto.builder()
-          .definition(MultiDefinitionTenantsRequestDto.DefinitionDto.builder().key(definitionKey).build())
-          .build(),
+        new MultiDefinitionTenantsRequestDto(List.of(createDefinitionDto(definitionKey))),
         KERMIT_USER, KERMIT_USER
       );
 
@@ -1209,6 +1204,12 @@ public class EngineDefinitionAuthorizationIT extends AbstractIT {
   private String deploySimpleDecisionDefinition(final String decisionKey, final String tenantId) {
     final DmnModelInstance modelInstance = createSimpleDmnModel(decisionKey);
     return engineIntegrationExtension.deployDecisionDefinition(modelInstance, tenantId).getId();
+  }
+
+  private static MultiDefinitionTenantsRequestDto.DefinitionDto createDefinitionDto(final String definitionKey) {
+    final MultiDefinitionTenantsRequestDto.DefinitionDto definitionDto = new MultiDefinitionTenantsRequestDto.DefinitionDto();
+    definitionDto.setKey(definitionKey);
+    return definitionDto;
   }
 
 }
