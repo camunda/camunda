@@ -35,7 +35,7 @@ import org.junit.jupiter.api.Test;
 class ClientStreamManagerTest {
 
   private static final ClientStreamConsumer NOOP_CONSUMER =
-      p -> TestActorFuture.completedFuture(null);
+      p -> CompletableFuture.completedFuture(null);
   private final DirectBuffer streamType = BufferUtil.wrapString("foo");
   private final TestMetadata metadata = new TestMetadata(1);
   private final ClientStreamRegistry<TestMetadata> registry = new ClientStreamRegistry<>();
@@ -68,10 +68,7 @@ class ClientStreamManagerTest {
   void shouldAggregateStreamsWithSameStreamTypeAndMetadata() {
     // when
     final var uuid1 =
-        clientStreamManager.add(
-            BufferUtil.wrapString("foo"),
-            new TestMetadata(1),
-            p -> TestActorFuture.completedFuture(null));
+        clientStreamManager.add(BufferUtil.wrapString("foo"), new TestMetadata(1), NOOP_CONSUMER);
     final var uuid2 =
         clientStreamManager.add(BufferUtil.wrapString("foo"), new TestMetadata(1), NOOP_CONSUMER);
     final var stream1 = registry.getClient(uuid1).orElseThrow();
@@ -195,7 +192,14 @@ class ClientStreamManagerTest {
   void shouldPushPayloadToClient() {
     // given
     final DirectBuffer payloadReceived = new UnsafeBuffer();
-    final var clientStreamId = clientStreamManager.add(streamType, metadata, payloadReceived::wrap);
+    final var clientStreamId =
+        clientStreamManager.add(
+            streamType,
+            metadata,
+            directBuffer -> {
+              payloadReceived.wrap(directBuffer);
+              return CompletableFuture.completedFuture(null);
+            });
     final var streamId = getServerStreamId(clientStreamId);
 
     // when
@@ -258,8 +262,7 @@ class ClientStreamManagerTest {
     // given
     final MemberId server = MemberId.from("1");
     clientStreamManager.onServerJoined(server);
-    final var uuid =
-        clientStreamManager.add(streamType, metadata, p -> TestActorFuture.completedFuture(null));
+    final var uuid = clientStreamManager.add(streamType, metadata, NOOP_CONSUMER);
     final var stream = registry.get(getServerStreamId(uuid)).orElseThrow();
     assertThat(stream.isConnected(server)).isTrue();
 

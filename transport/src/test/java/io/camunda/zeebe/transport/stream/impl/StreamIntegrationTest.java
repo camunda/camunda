@@ -12,7 +12,6 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.ActorScheduler;
-import io.camunda.zeebe.scheduler.testing.TestActorFuture;
 import io.camunda.zeebe.transport.TransportFactory;
 import io.camunda.zeebe.transport.stream.api.NoSuchStreamException;
 import io.camunda.zeebe.transport.stream.api.RemoteStreamErrorHandler;
@@ -23,6 +22,7 @@ import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
@@ -138,6 +138,7 @@ class StreamIntegrationTest {
               payload.wrap(p, 0, p.capacity());
               payloads.get().add(payload.data());
               latch.countDown();
+              return CompletableFuture.completedFuture(null);
             })
         .join();
 
@@ -159,7 +160,9 @@ class StreamIntegrationTest {
     final AtomicReference<Throwable> error = new AtomicReference<>();
     final CountDownLatch latch = new CountDownLatch(1);
     final var clientStreamId =
-        clientStreamer.add(streamType, metadata, p -> TestActorFuture.completedFuture(null)).join();
+        clientStreamer
+            .add(streamType, metadata, p -> CompletableFuture.completedFuture(null))
+            .join();
     Awaitility.await().until(() -> remoteStreamer.streamFor(streamType).isPresent());
     final var serverStream = remoteStreamer.streamFor(streamType).orElseThrow();
     errorHandler =

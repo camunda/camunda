@@ -9,15 +9,15 @@ package io.camunda.zeebe.transport.stream.impl;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.transport.stream.api.ClientStreamConsumer;
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import java.util.concurrent.CompletableFuture;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 final class ClientStreamRegistryTest {
   private static final ClientStreamConsumer CLIENT_STREAM_CONSUMER =
-      p -> CompletableActorFuture.completed(null);
+      p -> CompletableFuture.completedFuture(null);
 
   private final TestClientStreamMetrics metrics = new TestClientStreamMetrics();
   private final ClientStreamRegistry<TestSerializableData> registry =

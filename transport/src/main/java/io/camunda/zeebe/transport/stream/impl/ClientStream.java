@@ -23,15 +23,18 @@ record ClientStream<M extends BufferWriter>(
 
   ActorFuture<Void> push(final DirectBuffer payload, final ConcurrencyControl executor) {
     final ActorFuture<Void> result = executor.createFuture();
-    executor.run(
-        () -> {
-          try {
-            clientStreamConsumer.push(payload);
-            result.complete(null);
-          } catch (final Exception e) {
-            result.completeExceptionally(e);
-          }
-        });
+    try {
+      clientStreamConsumer
+          .push(payload)
+          .thenAccept(ignore -> result.complete(null))
+          .exceptionally(
+              error -> {
+                result.completeExceptionally(error);
+                return null;
+              });
+    } catch (final Exception e) {
+      result.completeExceptionally(e);
+    }
     return result;
   }
 }

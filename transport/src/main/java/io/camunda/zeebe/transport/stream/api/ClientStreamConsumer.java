@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.transport.stream.api;
 
+import java.util.concurrent.CompletableFuture;
 import org.agrona.DirectBuffer;
 
 /**
@@ -16,10 +17,11 @@ import org.agrona.DirectBuffer;
 public interface ClientStreamConsumer {
 
   /**
-   * Consumes the payload received from the server to the client. Implementation of this method can
-   * be asynchronous.
+   * Consumes the payload received from the server to the client. It is recommended to make the
+   * implementation to be asynchronous. Otherwise, it could block the thread of {@link
+   * ClientStreamService} and thus possibly delaying data from other streams being pushed.
    *
    * @param payload the data to be consumed by the client
    */
-  void push(DirectBuffer payload);
+  CompletableFuture<Void> push(DirectBuffer payload);
 }
