@@ -58,7 +58,7 @@ const OPTIONAL_FILTER_FIELDS: Record<
     keys: ['decisionInstanceIds'],
     label: 'Decision Instance Key(s)',
     type: 'multiline',
-    placeholder: 'separated by space or comma',
+    placeholder: 'Separated by space or comma',
     rows: 1,
     validate: mergeValidators(
       validateDecisionIdsCharacters,
@@ -86,142 +86,149 @@ type LocationType = Omit<Location, 'state'> & {
   state: {hideOptionalFilters?: boolean};
 };
 
-const OptionalFiltersFormGroup: React.FC = observer(() => {
-  const location = useLocation() as LocationType;
-  const [visibleFilters, setVisibleFilters] = useState<OptionalFilter[]>([]);
-  const form = useForm();
+type Props = {
+  visibleFilters: OptionalFilter[];
+  onVisibleFilterChange: React.Dispatch<React.SetStateAction<OptionalFilter[]>>;
+};
 
-  useEffect(() => {
-    if (location.state?.hideOptionalFilters) {
-      setVisibleFilters([]);
-    }
-  }, [location.state]);
+const OptionalFiltersFormGroup: React.FC<Props> = observer(
+  ({visibleFilters, onVisibleFilterChange}) => {
+    const location = useLocation() as LocationType;
+    const form = useForm();
 
-  useEffect(() => {
-    const params = Array.from(
-      new URLSearchParams(location.search).keys()
-    ).filter((param) =>
-      (optionalFilters as string[]).includes(param)
-    ) as OptionalFilter[];
+    useEffect(() => {
+      if (location.state?.hideOptionalFilters) {
+        onVisibleFilterChange([]);
+      }
+    }, [location.state, onVisibleFilterChange]);
 
-    const filters = getDecisionInstanceFilters(location.search);
+    useEffect(() => {
+      const params = Array.from(
+        new URLSearchParams(location.search).keys()
+      ).filter((param) =>
+        (optionalFilters as string[]).includes(param)
+      ) as OptionalFilter[];
 
-    setVisibleFilters((currentVisibleFilters) => {
-      return Array.from(
-        new Set([
-          ...currentVisibleFilters,
-          ...params,
-          ...('evaluationDateAfter' in filters &&
-          'evaluationDateBefore' in filters
-            ? ['evaluationDateRange']
-            : []),
-        ] as OptionalFilter[])
+      const filters = getDecisionInstanceFilters(location.search);
+
+      onVisibleFilterChange((currentVisibleFilters) =>
+        Array.from(
+          new Set([
+            ...currentVisibleFilters,
+            ...params,
+            ...('evaluationDateAfter' in filters &&
+            'evaluationDateBefore' in filters
+              ? ['evaluationDateRange']
+              : []),
+          ] as OptionalFilter[])
+        )
       );
-    });
-  }, [location.search]);
+    }, [location.search, onVisibleFilterChange]);
 
-  const [isDateRangeModalOpen, setIsDateRangeModalOpen] =
-    useState<boolean>(false);
+    const [isDateRangeModalOpen, setIsDateRangeModalOpen] =
+      useState<boolean>(false);
 
-  return (
-    <Stack gap={8}>
-      <OptionalFiltersMenu<OptionalFilter>
-        visibleFilters={visibleFilters}
-        optionalFilters={optionalFilters.map((id) => ({
-          id,
-          label: OPTIONAL_FILTER_FIELDS[id].label,
-        }))}
-        onFilterSelect={(filter) => {
-          setVisibleFilters(
-            Array.from(new Set([...visibleFilters, ...[filter]]))
-          );
-          tracking.track({
-            eventName: 'optional-filter-selected',
-            filterName: filter,
-          });
-          if (filter === 'evaluationDateRange') {
-            setTimeout(() => {
-              setIsDateRangeModalOpen(true);
+    return (
+      <Stack gap={8}>
+        <OptionalFiltersMenu<OptionalFilter>
+          visibleFilters={visibleFilters}
+          optionalFilters={optionalFilters.map((id) => ({
+            id,
+            label: OPTIONAL_FILTER_FIELDS[id].label,
+          }))}
+          onFilterSelect={(filter) => {
+            onVisibleFilterChange(
+              Array.from(new Set([...visibleFilters, ...[filter]]))
+            );
+            tracking.track({
+              eventName: 'optional-filter-selected',
+              filterName: filter,
             });
-          }
-        }}
-      />
-      <Stack gap={5}>
-        {visibleFilters.map((filter) => (
-          <FieldContainer key={filter}>
-            {filter === 'evaluationDateRange' ? (
-              <DateRangeField
-                isModalOpen={isDateRangeModalOpen}
-                onModalClose={() => setIsDateRangeModalOpen(false)}
-                onClick={() => setIsDateRangeModalOpen(true)}
-                filterName={filter}
-                popoverTitle="Filter decisions by evaluation date"
-                label={OPTIONAL_FILTER_FIELDS[filter].label}
-                fromDateTimeKey="evaluationDateAfter"
-                toDateTimeKey="evaluationDateBefore"
-              />
-            ) : (
-              <Field
-                name={filter}
-                validate={OPTIONAL_FILTER_FIELDS[filter].validate}
-              >
-                {({input}) => {
-                  const field = OPTIONAL_FILTER_FIELDS[filter];
+            if (filter === 'evaluationDateRange') {
+              setTimeout(() => {
+                setIsDateRangeModalOpen(true);
+              });
+            }
+          }}
+        />
+        <Stack gap={5}>
+          {visibleFilters.map((filter) => (
+            <FieldContainer key={filter}>
+              {filter === 'evaluationDateRange' ? (
+                <DateRangeField
+                  isModalOpen={isDateRangeModalOpen}
+                  onModalClose={() => setIsDateRangeModalOpen(false)}
+                  onClick={() => setIsDateRangeModalOpen(true)}
+                  filterName={filter}
+                  popoverTitle="Filter decisions by evaluation date"
+                  label={OPTIONAL_FILTER_FIELDS[filter].label}
+                  fromDateTimeKey="evaluationDateAfter"
+                  toDateTimeKey="evaluationDateBefore"
+                />
+              ) : (
+                <Field
+                  name={filter}
+                  validate={OPTIONAL_FILTER_FIELDS[filter].validate}
+                >
+                  {({input}) => {
+                    const field = OPTIONAL_FILTER_FIELDS[filter];
 
-                  if (field.type === 'text') {
-                    return (
-                      <TextInputField
-                        {...input}
-                        id={filter}
-                        size="sm"
-                        labelText={field.label}
-                        placeholder={field.placeholder}
-                        autoFocus
-                      />
+                    if (field.type === 'text') {
+                      return (
+                        <TextInputField
+                          {...input}
+                          id={filter}
+                          size="sm"
+                          labelText={field.label}
+                          placeholder={field.placeholder}
+                          autoFocus
+                        />
+                      );
+                    }
+                    if (field.type === 'multiline') {
+                      return (
+                        <TextAreaField
+                          {...input}
+                          id={filter}
+                          labelText={field.label}
+                          placeholder={field.placeholder}
+                          rows={field.rows}
+                          autoFocus
+                        />
+                      );
+                    }
+                  }}
+                </Field>
+              )}
+              <ButtonContainer>
+                <IconButton
+                  kind="ghost"
+                  label={`Remove ${OPTIONAL_FILTER_FIELDS[filter].label} Filter`}
+                  align="top-right"
+                  size="sm"
+                  onClick={() => {
+                    onVisibleFilterChange(
+                      visibleFilters.filter(
+                        (visibleFilter) => visibleFilter !== filter
+                      )
                     );
-                  }
-                  if (field.type === 'multiline') {
-                    return (
-                      <TextAreaField
-                        {...input}
-                        id={filter}
-                        labelText={field.label}
-                        placeholder={field.placeholder}
-                        rows={field.rows}
-                        autoFocus
-                      />
-                    );
-                  }
-                }}
-              </Field>
-            )}
-            <ButtonContainer>
-              <IconButton
-                kind="ghost"
-                label={`Remove ${OPTIONAL_FILTER_FIELDS[filter].label} Filter`}
-                align="top-right"
-                size="sm"
-                onClick={() => {
-                  setVisibleFilters(
-                    visibleFilters.filter(
-                      (visibleFilter) => visibleFilter !== filter
-                    )
-                  );
 
-                  OPTIONAL_FILTER_FIELDS[filter].keys.forEach((key) => {
-                    form.change(key, undefined);
-                  });
-                  form.submit();
-                }}
-              >
-                <Close />
-              </IconButton>
-            </ButtonContainer>
-          </FieldContainer>
-        ))}
+                    OPTIONAL_FILTER_FIELDS[filter].keys.forEach((key) => {
+                      form.change(key, undefined);
+                    });
+                    form.submit();
+                  }}
+                >
+                  <Close />
+                </IconButton>
+              </ButtonContainer>
+            </FieldContainer>
+          ))}
+        </Stack>
       </Stack>
-    </Stack>
-  );
-});
+    );
+  }
+);
 
 export {OptionalFiltersFormGroup};
+export type {OptionalFilter};

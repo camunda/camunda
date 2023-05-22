@@ -12,9 +12,10 @@ import {CollapsablePanel as BaseCollapsablePanel} from 'modules/components/Carbo
 type Props = {
   label: string;
   children: React.ReactNode;
+  footer?: React.ReactNode;
 };
 
-const CollapsablePanel: React.FC<Props> = ({label, children}) => {
+const CollapsablePanel: React.FC<Props> = ({label, children, footer}) => {
   const {isDecisionsFiltersCollapsed = false} = getStateLocally('panelStates');
   const [panelState, setPanelState] = useState<'expanded' | 'collapsed'>(
     isDecisionsFiltersCollapsed ? 'collapsed' : 'expanded'
@@ -44,6 +45,7 @@ const CollapsablePanel: React.FC<Props> = ({label, children}) => {
           return 'collapsed';
         });
       }}
+      footer={footer}
     >
       {children}
     </BaseCollapsablePanel>

@@ -148,8 +148,10 @@ type ContentProps = {
 };
 
 const Content = styled.div<ContentProps>`
+  flex-grow: 1;
   ${({$scrollable}) => {
     return css`
+      position: relative;
       overflow: ${$scrollable ? 'auto' : 'hidden'};
     `;
   }}

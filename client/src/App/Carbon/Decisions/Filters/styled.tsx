@@ -16,10 +16,18 @@ const Title = styled.h3`
 
 const Container = styled.div`
   padding: ${spacing05};
+  position: absolute;
+  width: 100%;
 `;
 
 const WarningFilled = styled(BaseWarningFilled)`
   fill: ${supportError};
+`;
+
+const Footer = styled.div`
+  display: flex;
+  justify-content: center;
+  padding: var(--cds-spacing-02);
 `;
 
 const ButtonContainer = styled.div`
@@ -38,4 +46,11 @@ const FieldContainer = styled.div`
   }
 `;
 
-export {Container, Title, WarningFilled, FieldContainer, ButtonContainer};
+export {
+  Container,
+  Title,
+  WarningFilled,
+  FieldContainer,
+  ButtonContainer,
+  Footer,
+};

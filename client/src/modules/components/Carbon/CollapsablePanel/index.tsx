@@ -26,6 +26,7 @@ type Props = {
   onToggle: () => void;
   isCollapsed: boolean;
   children?: React.ReactNode;
+  footer?: React.ReactNode;
   maxWidth: number;
   scrollable?: boolean;
   collapsablePanelRef?: React.RefObject<HTMLDivElement>;
@@ -40,6 +41,7 @@ const CollapsablePanel = forwardRef<HTMLDivElement, Props>(
       isOverlay = false,
       scrollable = true,
       children,
+      footer,
       isCollapsed,
       onToggle,
       collapsablePanelRef,
@@ -92,6 +94,7 @@ const CollapsablePanel = forwardRef<HTMLDivElement, Props>(
             <Content ref={ref} $scrollable={scrollable}>
               <Layer>{children}</Layer>
             </Content>
+            {footer !== undefined && <>{footer}</>}
           </Panel>
         )}
       </Collapsable>
