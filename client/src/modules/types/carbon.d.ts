@@ -233,4 +233,5 @@ declare module '@carbon/react/icons' {
   export const RadioButtonChecked: Icon;
   export const Calendar: Icon;
   export const Add: Icon;
+  export const Close: Icon;
 }

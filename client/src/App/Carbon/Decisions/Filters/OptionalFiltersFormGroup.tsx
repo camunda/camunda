@@ -25,10 +25,12 @@ import {mergeValidators} from 'modules/utils/validators/mergeValidators';
 import {tracking} from 'modules/tracking';
 import {OptionalFiltersMenu} from 'modules/components/Carbon/OptionalFilters';
 import {DateRangeField} from 'modules/components/Carbon/DateRangeField';
-import {Field} from 'react-final-form';
-import {Stack} from '@carbon/react';
+import {Field, useForm} from 'react-final-form';
+import {IconButton, Stack} from '@carbon/react';
 import {TextInputField} from 'modules/components/Carbon/TextInputField';
 import {TextAreaField} from 'modules/components/Carbon/TextAreaField';
+import {ButtonContainer, FieldContainer} from './styled';
+import {Close} from '@carbon/react/icons';
 
 type OptionalFilter =
   | 'decisionInstanceIds'
@@ -87,6 +89,7 @@ type LocationType = Omit<Location, 'state'> & {
 const OptionalFiltersFormGroup: React.FC = observer(() => {
   const location = useLocation() as LocationType;
   const [visibleFilters, setVisibleFilters] = useState<OptionalFilter[]>([]);
+  const form = useForm();
 
   useEffect(() => {
     if (location.state?.hideOptionalFilters) {
@@ -145,7 +148,7 @@ const OptionalFiltersFormGroup: React.FC = observer(() => {
       />
       <Stack gap={5}>
         {visibleFilters.map((filter) => (
-          <div key={filter}>
+          <FieldContainer key={filter}>
             {filter === 'evaluationDateRange' ? (
               <DateRangeField
                 isModalOpen={isDateRangeModalOpen}
@@ -192,7 +195,29 @@ const OptionalFiltersFormGroup: React.FC = observer(() => {
                 }}
               </Field>
             )}
-          </div>
+            <ButtonContainer>
+              <IconButton
+                kind="ghost"
+                label={`Remove ${OPTIONAL_FILTER_FIELDS[filter].label} Filter`}
+                align="top-right"
+                size="sm"
+                onClick={() => {
+                  setVisibleFilters(
+                    visibleFilters.filter(
+                      (visibleFilter) => visibleFilter !== filter
+                    )
+                  );
+
+                  OPTIONAL_FILTER_FIELDS[filter].keys.forEach((key) => {
+                    form.change(key, undefined);
+                  });
+                  form.submit();
+                }}
+              >
+                <Close />
+              </IconButton>
+            </ButtonContainer>
+          </FieldContainer>
         ))}
       </Stack>
     </Stack>

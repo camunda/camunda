@@ -22,4 +22,20 @@ const WarningFilled = styled(BaseWarningFilled)`
   fill: ${supportError};
 `;
 
-export {Container, Title, WarningFilled};
+const ButtonContainer = styled.div`
+  position: absolute;
+  display: none;
+  right: 0;
+  top: -8px;
+`;
+
+const FieldContainer = styled.div`
+  position: relative;
+  &:hover {
+    ${ButtonContainer} {
+      display: block;
+    }
+  }
+`;
+
+export {Container, Title, WarningFilled, FieldContainer, ButtonContainer};
