@@ -2,13 +2,12 @@ package wait
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net"
 	"os"
 	"strconv"
 	"time"
-
-	"github.com/pkg/errors"
 
 	"github.com/docker/go-connections/nat"
 )
@@ -17,6 +16,8 @@ import (
 var _ Strategy = (*HostPortStrategy)(nil)
 
 type HostPortStrategy struct {
+	// Port is a string containing port number and protocol in the format "80/tcp"
+	// which
 	Port nat.Port
 	// all WaitStrategies should have a startupTimeout to avoid waiting infinitely
 	startupTimeout time.Duration
@@ -40,6 +41,12 @@ func ForListeningPort(port nat.Port) *HostPortStrategy {
 	return NewHostPortStrategy(port)
 }
 
+// ForExposedPort constructs an exposed port strategy. Alias for `NewHostPortStrategy("")`.
+// This strategy waits for the first port exposed in the Docker container.
+func ForExposedPort() *HostPortStrategy {
+	return NewHostPortStrategy("")
+}
+
 func (hp *HostPortStrategy) WithStartupTimeout(startupTimeout time.Duration) *HostPortStrategy {
 	hp.startupTimeout = startupTimeout
 	return hp
@@ -58,8 +65,28 @@ func (hp *HostPortStrategy) WaitUntilReady(ctx context.Context, target StrategyT
 
 	var waitInterval = 100 * time.Millisecond
 
+	internalPort := hp.Port
+	if internalPort == "" {
+		var ports nat.PortMap
+		ports, err = target.Ports(ctx)
+		if err != nil {
+			return
+		}
+		if len(ports) > 0 {
+			for p := range ports {
+				internalPort = p
+				break
+			}
+		}
+	}
+
+	if internalPort == "" {
+		err = fmt.Errorf("no port to wait for")
+		return
+	}
+
 	var port nat.Port
-	port, err = target.MappedPort(ctx, hp.Port)
+	port, err = target.MappedPort(ctx, internalPort)
 	var i = 0
 
 	for port == "" {
@@ -69,7 +96,7 @@ func (hp *HostPortStrategy) WaitUntilReady(ctx context.Context, target StrategyT
 		case <-ctx.Done():
 			return fmt.Errorf("%s:%w", ctx.Err(), err)
 		case <-time.After(waitInterval):
-			port, err = target.MappedPort(ctx, hp.Port)
+			port, err = target.MappedPort(ctx, internalPort)
 			if err != nil {
 				fmt.Printf("(%d) [%s] %s\n", i, port, err)
 			}
@@ -96,20 +123,20 @@ func (hp *HostPortStrategy) WaitUntilReady(ctx context.Context, target StrategyT
 			}
 			return err
 		} else {
-			conn.Close()
+			_ = conn.Close()
 			break
 		}
 	}
 
 	//internal check
-	command := buildInternalCheckCommand(hp.Port.Int())
+	command := buildInternalCheckCommand(internalPort.Int())
 	for {
 		if ctx.Err() != nil {
 			return ctx.Err()
 		}
-		exitCode, err := target.Exec(ctx, []string{"/bin/sh", "-c", command})
+		exitCode, _, err := target.Exec(ctx, []string{"/bin/sh", "-c", command})
 		if err != nil {
-			return errors.Wrapf(err, "host port waiting failed")
+			return fmt.Errorf("%w, host port waiting failed", err)
 		}
 
 		if exitCode == 0 {
