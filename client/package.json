@@ -69,7 +69,7 @@
     "@types/carbon__elements": "11.10.0",
     "@types/jest": "29.5.1",
     "@types/mixpanel-browser": "2.38.1",
-    "@types/node": "18.16.13",
+    "@types/node": "18.16.14",
     "@types/react": "18.2.6",
     "@types/react-dom": "18.2.4",
     "@types/react-transition-group": "4.4.6",
