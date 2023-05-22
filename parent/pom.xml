@@ -46,7 +46,7 @@
     <version.commons-math>3.6.1</version.commons-math>
     <version.commons-codec>1.15</version.commons-codec>
     <version.commons-compress>1.23.0</version.commons-compress>
-    <version.zstd-jni>1.5.5-2</version.zstd-jni>
+    <version.zstd-jni>1.5.5-3</version.zstd-jni>
     <version.commons-text>1.10.0</version.commons-text>
     <version.cron-utils>9.2.1</version.cron-utils>
     <version.docker-java-api>3.2.14</version.docker-java-api>
@@ -120,7 +120,7 @@
     <version.zpt>8.1.9</version.zpt>
     <version.feign>12.2</version.feign>
     <version.google-sdk>26.11.0</version.google-sdk>
-    <version.awssdk>2.20.68</version.awssdk>
+    <version.awssdk>2.20.69</version.awssdk>
     <version.toxiproxy>2.1.7</version.toxiproxy>
     <version.validation-api>3.0.2</version.validation-api>
     <version.jackson-databind-nullable>0.2.6</version.jackson-databind-nullable>
