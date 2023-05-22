@@ -100,11 +100,6 @@ jobs:
             exit 1
           fi
 
-          go install github.com/smola/gocompat/...@v0.3.0
-          if ! command -v gocompat > /dev/null 2>&1; then
-            echo "Failed to install gocompat, gocompat is not available on the path"
-            exit 1
-          fi
       - name: Set and commit Go Client version
         run: |
           pushd clients/go/internal/embedded
@@ -180,7 +175,6 @@ jobs:
           fi
 
           pushd clients/go
-          gocompat save ./...
           git commit -am "build(project): update go versions"
           popd
 
