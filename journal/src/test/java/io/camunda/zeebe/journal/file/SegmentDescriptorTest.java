@@ -166,9 +166,9 @@ class SegmentDescriptorTest {
     directBuffer.putByte(0, version);
 
     // descriptor header
-    final int VERSION_LENGTH = Byte.BYTES;
+    final int versionLength = Byte.BYTES;
     final int descHeaderOffset =
-        VERSION_LENGTH
+        versionLength
             + MessageHeaderEncoder.ENCODED_LENGTH
             + DescriptorMetadataEncoder.BLOCK_LENGTH;
 
@@ -195,7 +195,7 @@ class SegmentDescriptorTest {
     final DescriptorMetadataEncoder metadataEncoder = new DescriptorMetadataEncoder();
 
     metadataEncoder
-        .wrapAndApplyHeader(directBuffer, VERSION_LENGTH, headerEncoder)
+        .wrapAndApplyHeader(directBuffer, versionLength, headerEncoder)
         .checksum(checksum);
   }
 }
