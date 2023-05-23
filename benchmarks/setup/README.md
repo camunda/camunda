@@ -82,6 +82,31 @@ In order to do this easily, just run:
 
 This will switch to the default namespace, delete the given namespace and delete the corresponding folder.
 
+## Running on stable/non-spot VMs
+
+You may sometimes want to run benchmarks on non-spot (or non-preemptible) VMs, for example, if you
+want to test for slow memory leaks.
+
+In order to do this, simply pass the copied `values-stable.yaml` file as an additional argument to
+Helm. For example:
+
+```shell
+helm install myRelease zeebe-benchmark/zeebe-benchmark -f values.yaml -f values-stable.yaml
+```
+
+You can also use the `*-stable` Makefile jobs, namely:
+
+```shell
+# Deploys the Zeebe pods on stable nodes
+make benchmark-stable
+# Spits out the rendered templates targeting stable nodes
+make template-stable
+# Updates a benchmark targeting stable nodes
+make update-stable
+```
+
+The `clean` job works regardless.
+
 ## Benchmarking Camunda Cloud SaaS
 
 _You need a Kubernetes Cluster at your disposal to run the benchmark itself, which then connects to your Camunda Cloud Cluster._

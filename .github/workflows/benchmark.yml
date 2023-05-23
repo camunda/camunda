@@ -26,10 +26,15 @@ on:
         type: string
         required: false
       measure:
-        description: 'If enabled, impact of network latency is measured.'
-        type: string
+        description: 'Measure impact of network latency'
+        type: boolean
         required: false
-        default: 'true'
+        default: true
+      stable-vms:
+        description: 'Deploy to non-spot VMs'
+        type: boolean
+        required: false
+        default: false
 
   workflow_call:
     inputs:
@@ -57,15 +62,21 @@ on:
         type: string
         required: false
       measure:
-        description: 'If enabled, impact of network latency is measured.'
-        type: string
+        description: 'Measure impact of network latency'
+        type: boolean
         required: false
-        default: 'true'
+        default: true
       publish:
         description: 'Where to publish the results, can be "slack" or "comment"'
         default: ""
         type: string
         required: false
+      stable-vms:
+        description: 'Deploy to non-spot VMs'
+        type: boolean
+        required: false
+        default: false
+
 jobs:
   build-zeebe-image:
     name: Build Zeebe
@@ -153,7 +164,7 @@ jobs:
       - build-benchmark-images
     uses: zeebe-io/zeebe-performance-test/.github/workflows/measure.yaml@main
     secrets: inherit
-    if: inputs.measure == 'true'
+    if: inputs.measure
     with:
       name: measurement-${{ github.run_id }}
       chaos: network-latency-5
@@ -201,4 +212,14 @@ jobs:
           --set camunda-platform.zeebe.image.tag=${{ needs.build-zeebe-image.outputs.image-tag }}
           --set camunda-platform.zeebe-gateway.image.repository=gcr.io/zeebe-io/zeebe
           --set camunda-platform.zeebe-gateway.image.tag=${{ needs.build-zeebe-image.outputs.image-tag }}
+          ${{ inputs.stable-vms && '-f benchmarks/setup/default/values-stable.yaml' || '' }}
           ${{ inputs.benchmark-load }}
+      - name: Summarize deployment
+        if: success()
+        run: |
+          cat >> $GITHUB_STEP_SUMMARY <<EOF
+            ## Benchmark \`${{ inputs.name }}\` values
+            \`\`\`yaml
+            $(helm get values ${{ inputs.name }} -n ${{ inputs.name }})
+            \`\`\`
+          EOF
