@@ -14,7 +14,7 @@
   min-height: 0;
 
   &.ReportEdit {
-    .header {
+    .reportHeader {
       .headerTopLine {
         .RunPreviewButton {
           margin-left: 6px;
@@ -43,41 +43,41 @@
       }
     }
   }
+}
 
-  .header {
-    margin-bottom: 20px;
-    margin: 0 40px;
+.reportHeader {
+  margin-bottom: 20px;
+  margin: 0 40px;
 
-    .headerTopLine,
-    .headerBottomLine {
+  .headerTopLine,
+  .headerBottomLine {
+    display: flex;
+  }
+
+  .head {
+    display: flex;
+    flex-grow: 1;
+
+    .info {
       display: flex;
-    }
-
-    .head {
-      display: flex;
+      flex-direction: column;
+      overflow: hidden;
       flex-grow: 1;
+    }
+  }
 
-      .info {
-        display: flex;
-        flex-direction: column;
-        overflow: hidden;
-        flex-grow: 1;
-      }
+  .tools {
+    display: flex;
+    flex-wrap: nowrap;
+    align-items: baseline;
+    flex-shrink: 0;
+
+    .tool-button {
+      margin-right: 6px;
     }
 
-    .tools {
-      display: flex;
-      flex-wrap: nowrap;
-      align-items: baseline;
-      flex-shrink: 0;
-
-      .tool-button {
-        margin-right: 6px;
-      }
-
-      .tool-button:last-child {
-        margin-right: 0;
-      }
+    .tool-button:last-child {
+      margin-right: 0;
     }
   }
 }

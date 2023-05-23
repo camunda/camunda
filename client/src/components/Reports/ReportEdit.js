@@ -292,7 +292,7 @@ export class ReportEdit extends React.Component {
 
     return (
       <div className="ReportEdit Report">
-        <div className="header">
+        <div className="reportHeader">
           <div className="headerTopLine">
             <EntityNameForm
               name={name}

@@ -74,7 +74,7 @@ export class ReportView extends React.Component {
 
     return (
       <div className="ReportView Report">
-        <div className="header">
+        <div className="reportHeader">
           <div className="head">
             <div className="info">
               <EntityName details={<ReportDetails report={report} />}>{name}</EntityName>
