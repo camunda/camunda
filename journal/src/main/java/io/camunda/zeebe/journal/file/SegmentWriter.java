@@ -77,7 +77,13 @@ final class SegmentWriter {
     lastAsqn = lastWrittenAsqn;
     lastEntryPosition = segment.descriptor().lastEntryPosition();
     this.metrics = metrics;
-    reset(0, false);
+    if (lastEntryPosition > 0) {
+      // jump to last entry
+      jumpToLastEntry(lastEntryPosition, segment.descriptor().lastIndex());
+    } else {
+      // iterate over all entries
+      reset(0, false);
+    }
   }
 
   long getLastIndex() {
@@ -253,10 +259,29 @@ final class SegmentWriter {
     FrameUtil.markAsIgnored(buffer, position);
   }
 
+  private void jumpToLastEntry(final int lastPosition, final long lastIndex) {
+    try {
+      buffer.position(lastPosition);
+      buffer.mark();
+      FrameUtil.readVersion(buffer);
+      lastEntry = recordUtil.read(buffer, lastIndex);
+      updateLastAsqn(lastEntry.asqn());
+      index.index(lastEntry, lastPosition);
+      buffer.mark();
+    } catch (final Exception e) {
+      /*
+      Exception can occur if
+      - the last entry is corrupted
+      - the last entry read does not have the expected index
+       To simplify handling of such cases, reset the writer by scanning the whole segment.
+       */
+      reset(0, false);
+    }
+  }
+
   private void reset(final long index, final boolean detectCorruption) {
     long nextIndex = firstIndex;
 
-    // Clear the buffer indexes.
     buffer.position(descriptorLength);
     buffer.mark();
     int position = buffer.position();

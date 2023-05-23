@@ -366,6 +366,10 @@ final class SegmentDescriptor {
     // will overwrite the first entry.
   }
 
+  long lastIndex() {
+    return lastIndex;
+  }
+
   /** Segment descriptor builder. */
   static final class Builder {
 
