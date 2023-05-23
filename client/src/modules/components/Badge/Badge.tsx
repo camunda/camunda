@@ -5,11 +5,13 @@
  * except in compliance with the proprietary license.
  */
 
-import React from 'react';
+import {ComponentPropsWithRef} from 'react';
 import classnames from 'classnames';
 
 import './Badge.scss';
 
-export default function Badge({className, ...props}) {
+interface BadgeProps extends ComponentPropsWithRef<'span'> {}
+
+export default function Badge({className, ...props}: BadgeProps) {
   return <span {...props} className={classnames('Badge', className)} />;
 }
