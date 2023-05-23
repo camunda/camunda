@@ -46,17 +46,21 @@ import org.agrona.concurrent.UnsafeBuffer;
 final class SegmentDescriptor {
 
   private static final int VERSION_LENGTH = Byte.BYTES;
-  // current descriptor version containing: header, metadata, header and descriptor
-  private static final byte CUR_VERSION = 2;
+  // current descriptor version containing: header, metadata, header and descriptor. descriptor
+  // contains lastIndex and lastPosition.
+  private static final byte CUR_VERSION = 3;
   // previous descriptor version containing: header and descriptor
   private static final byte NO_META_VERSION = 1;
   // the combined length for each version of the descriptor (starting at version 1)
   // V1 - 29: version byte (1) + header (8) + descriptor (20)
-  private static final int[] VERSION_LENGTHS = {29, getEncodingLength()};
+  private static final int[] VERSION_LENGTHS = {29, 45, getEncodingLength()};
 
+  private byte version = CUR_VERSION;
   private long id;
   private long index;
   private int maxSegmentSize;
+  private long lastIndex;
+  private int lastPosition;
   private int encodedLength;
   private long checksum;
 
@@ -74,8 +78,8 @@ final class SegmentDescriptor {
   SegmentDescriptor(final ByteBuffer buffer) {
     directBuffer.wrap(buffer);
 
-    final byte version = directBuffer.getByte(0);
-    if (version == CUR_VERSION) {
+    version = directBuffer.getByte(0);
+    if (version >= 2) {
       readV2Descriptor(directBuffer);
     } else if (version == NO_META_VERSION) {
       readV1Descriptor(directBuffer);
@@ -91,6 +95,8 @@ final class SegmentDescriptor {
     this.id = id;
     this.index = index;
     this.maxSegmentSize = maxSegmentSize;
+    lastIndex = 0;
+    lastPosition = 0;
     encodedLength = getEncodingLength();
   }
 
@@ -157,6 +163,8 @@ final class SegmentDescriptor {
     id = segmentDescriptorDecoder.id();
     index = segmentDescriptorDecoder.index();
     maxSegmentSize = segmentDescriptorDecoder.maxSegmentSize();
+    lastIndex = version >= 3 ? segmentDescriptorDecoder.lastIndex() : 0;
+    lastPosition = version >= 3 ? segmentDescriptorDecoder.lastPosition() : 0;
     encodedLength =
         offset + headerDecoder.encodedLength() + segmentDescriptorDecoder.encodedLength();
 
@@ -289,7 +297,9 @@ final class SegmentDescriptor {
         .wrapAndApplyHeader(directBuffer, descHeaderOffset, headerEncoder)
         .id(id)
         .index(index)
-        .maxSegmentSize(maxSegmentSize);
+        .maxSegmentSize(maxSegmentSize)
+        .lastIndex(lastIndex)
+        .lastPosition(lastPosition);
 
     final long checksum =
         checksumGen.compute(
@@ -322,13 +332,17 @@ final class SegmentDescriptor {
 
   @Override
   public String toString() {
-    return "JournalSegmentDescriptor{"
+    return "SegmentDescriptor{"
         + "id="
         + id
         + ", index="
         + index
         + ", maxSegmentSize="
         + maxSegmentSize
+        + ", lastIndex="
+        + lastIndex
+        + ", lastPosition="
+        + lastPosition
         + '}';
   }
 

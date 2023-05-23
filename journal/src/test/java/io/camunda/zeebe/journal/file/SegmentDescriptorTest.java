@@ -32,6 +32,8 @@ class SegmentDescriptorTest {
     // given
     SegmentDescriptor descriptor =
         SegmentDescriptor.builder().withId(2).withIndex(100).withMaxSegmentSize(1024).build();
+    descriptor.setLastPosition(100);
+    descriptor.setLastIndex(10);
     final ByteBuffer buffer = ByteBuffer.allocate(SegmentDescriptor.getEncodingLength());
     descriptor = descriptor.copyTo(buffer);
 
@@ -43,6 +45,8 @@ class SegmentDescriptorTest {
     assertThat(descriptorRead.id()).isEqualTo(2);
     assertThat(descriptorRead.index()).isEqualTo(100);
     assertThat(descriptorRead.maxSegmentSize()).isEqualTo(1024);
+    assertThat(descriptorRead.lastIndex()).isEqualTo(10);
+    assertThat(descriptorRead.lastEntryPosition()).isEqualTo(100);
     assertThat(descriptorRead.length()).isEqualTo(SegmentDescriptor.getEncodingLength());
   }
 
