@@ -381,6 +381,28 @@ class SegmentedJournalTest {
   }
 
   @Test
+  void shouldNotUpdateIndexMappingsAfterRestartIfLastPositionIsInDescriptor() {
+    // given
+    final int entriesPerSegment = 2;
+    journal = openJournal(entriesPerSegment);
+    final var firstIndex = journal.append(1, journalFactory.entry()).index();
+    journal.append(2, journalFactory.entry()).index();
+    final var thirdIndex = journal.append(3, journalFactory.entry()).index();
+    final JournalIndex indexBeforeRestart = journal.getJournalIndex();
+
+    // when
+    journal.close();
+    journal = openJournal(entriesPerSegment);
+
+    // then
+    final JournalIndex indexAfterRestart = journal.getJournalIndex();
+
+    assertThat(indexAfterRestart.lookup(firstIndex)).isNull();
+    assertThat(indexAfterRestart.lookup(thirdIndex))
+        .isEqualTo(indexBeforeRestart.lookup(thirdIndex));
+  }
+
+  @Test
   void shouldContinueAppendAfterDetectingPartiallyWrittenDescriptor() throws Exception {
     // given
     final File dataFile = directory.resolve("data").toFile();
