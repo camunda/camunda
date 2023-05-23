@@ -42,6 +42,8 @@ import org.agrona.concurrent.UnsafeBuffer;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledOnOs;
+import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.api.io.TempDir;
 
 @SuppressWarnings("resource")
@@ -643,7 +645,9 @@ class SegmentedJournalTest {
     PosixPathAssert.assertThat(firstSegment).hasRealSize(segmentSize);
   }
 
+  // This test fails on MAC OS. See issue: #12664
   @Test
+  @DisabledOnOs(OS.MAC)
   void shouldNotPreallocateSegmentFiles(final @TempDir Path tmpDir) {
     // given
     final var segmentSize = 4 * 1024 * 1024;
