@@ -20,6 +20,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.zeebe.journal.CorruptedJournalException;
+import io.camunda.zeebe.journal.util.ChecksumGenerator;
 import java.nio.ByteBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -30,12 +31,12 @@ class SegmentDescriptorTest {
   @Test
   void shouldWriteAndReadDescriptor() {
     // given
-    SegmentDescriptor descriptor =
+    final SegmentDescriptor descriptor =
         SegmentDescriptor.builder().withId(2).withIndex(100).withMaxSegmentSize(1024).build();
     descriptor.setLastPosition(100);
     descriptor.setLastIndex(10);
     final ByteBuffer buffer = ByteBuffer.allocate(SegmentDescriptor.getEncodingLength());
-    descriptor = descriptor.copyTo(buffer);
+    descriptor.copyTo(buffer);
 
     // when
     final SegmentDescriptor descriptorRead = new SegmentDescriptor(buffer);
@@ -99,5 +100,102 @@ class SegmentDescriptorTest {
     // then
     assertThatThrownBy(() -> new SegmentDescriptor(buffer))
         .isInstanceOf(CorruptedJournalException.class);
+  }
+
+  @Test
+  void shouldReadV2Message() {
+    // given
+    final SegmentDescriptor descriptor =
+        SegmentDescriptor.builder().withId(2).withIndex(100).withMaxSegmentSize(1024).build();
+
+    final ByteBuffer buffer = ByteBuffer.allocate(SegmentDescriptor.getEncodingLength());
+    final UnsafeBuffer directBuffer = new UnsafeBuffer();
+    directBuffer.wrap(buffer);
+    writeDescriptorV2(descriptor, directBuffer, buffer);
+
+    // when
+    final SegmentDescriptor descriptorRead = new SegmentDescriptor(buffer);
+
+    // then
+    assertThat(descriptorRead).isEqualTo(descriptor);
+    assertThat(descriptorRead.id()).isEqualTo(2);
+    assertThat(descriptorRead.index()).isEqualTo(100);
+    assertThat(descriptorRead.maxSegmentSize()).isEqualTo(1024);
+    assertThat(descriptorRead.lastIndex()).isZero();
+    assertThat(descriptorRead.lastEntryPosition()).isZero();
+    assertThat(descriptorRead.length())
+        .isEqualTo(SegmentDescriptor.getEncodingLengthForVersion((byte) (2)));
+  }
+
+  @Test
+  void shouldNotOverwriteV2Descriptor() {
+    // given
+    final SegmentDescriptor descriptor =
+        SegmentDescriptor.builder().withId(2).withIndex(100).withMaxSegmentSize(1024).build();
+
+    final ByteBuffer buffer = ByteBuffer.allocate(SegmentDescriptor.getEncodingLength());
+    final UnsafeBuffer directBuffer = new UnsafeBuffer();
+    directBuffer.wrap(buffer);
+    writeDescriptorV2(descriptor, directBuffer, buffer);
+
+    // when
+    final SegmentDescriptor descriptorToUpdate = new SegmentDescriptor(buffer);
+    descriptorToUpdate.setLastIndex(100);
+    descriptorToUpdate.setLastPosition(100);
+    descriptorToUpdate.updateIfCurrentVersion(buffer);
+
+    final SegmentDescriptor descriptorRead = new SegmentDescriptor(buffer);
+
+    // then
+    assertThat(descriptorRead).isEqualTo(descriptor);
+    assertThat(descriptorRead.id()).isEqualTo(2);
+    assertThat(descriptorRead.index()).isEqualTo(100);
+    assertThat(descriptorRead.maxSegmentSize()).isEqualTo(1024);
+    assertThat(descriptorRead.lastIndex()).isZero();
+    assertThat(descriptorRead.lastEntryPosition()).isZero();
+    assertThat(descriptorRead.length())
+        .isEqualTo(SegmentDescriptor.getEncodingLengthForVersion((byte) (2)));
+  }
+
+  private static void writeDescriptorV2(
+      final SegmentDescriptor descriptor,
+      final UnsafeBuffer directBuffer,
+      final ByteBuffer buffer) {
+
+    final byte version = 2;
+    directBuffer.putByte(0, version);
+
+    // descriptor header
+    final int VERSION_LENGTH = Byte.BYTES;
+    final int descHeaderOffset =
+        VERSION_LENGTH
+            + MessageHeaderEncoder.ENCODED_LENGTH
+            + DescriptorMetadataEncoder.BLOCK_LENGTH;
+
+    final SegmentDescriptorEncoder segmentDescriptorEncoder = new SegmentDescriptorEncoder();
+    final MessageHeaderEncoder headerEncoder = new MessageHeaderEncoder();
+
+    headerEncoder
+        .wrap(directBuffer, descHeaderOffset)
+        .blockLength(20)
+        .templateId(SegmentDescriptorEncoder.TEMPLATE_ID)
+        .schemaId(SegmentDescriptorEncoder.SCHEMA_ID)
+        .version(1);
+
+    segmentDescriptorEncoder.wrap(
+        directBuffer, descHeaderOffset + MessageHeaderEncoder.ENCODED_LENGTH);
+    segmentDescriptorEncoder
+        .id(descriptor.id())
+        .index(descriptor.index())
+        .maxSegmentSize(descriptor.maxSegmentSize());
+
+    final long checksum =
+        new ChecksumGenerator()
+            .compute(buffer, descHeaderOffset, headerEncoder.encodedLength() + 20);
+    final DescriptorMetadataEncoder metadataEncoder = new DescriptorMetadataEncoder();
+
+    metadataEncoder
+        .wrapAndApplyHeader(directBuffer, VERSION_LENGTH, headerEncoder)
+        .checksum(checksum);
   }
 }
