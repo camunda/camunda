@@ -212,17 +212,6 @@ jobs:
       - uses: ./.github/actions/setup-zeebe
       - uses: ./.github/actions/build-zeebe
         id: build-zeebe
-      # Once we're on Go 1.18, use the official gorelease to do this
-      - name: Check backwards compatibility
-        working-directory: clients/go/
-        run: |
-          go install github.com/smola/gocompat/...@v0.3.0
-          PREFIX=github.com/camunda/zeebe/clients/go/v8
-          EXCLUDE=""
-          for file in {internal,cmd/zbctl/internal}/*; do
-            EXCLUDE="$EXCLUDE --exclude-package $PREFIX/$file"
-          done
-          gocompat compare --go1compat ${EXCLUDE} ./...
       - uses: ./.github/actions/build-docker
         id: build-docker
         with:
@@ -324,8 +313,25 @@ jobs:
         uses: golangci/golangci-lint-action@v3
         with:
           # fixed to avoid triggering false positive; see https://github.com/golangci/golangci-lint-action/issues/535
-          version: v1.47.3
+          version: v1.52.2
           working-directory: clients/go
+  go-apidiff:
+    name: Go Backward Compatibility
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0 #we need to fetch stable/* branches in order to be run compatibility checks
+      - uses: ./.github/actions/setup-zeebe
+        with:
+          java: false
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+      - uses: joelanford/go-apidiff@main
+        with:
+          # bors-ng fails to set ${GITHUB_BASE_REF} to the target PR branch which breaks go-apidiff
+          base-ref: origin/stable/8.1
   java-checks:
     name: Java checks
     runs-on: ubuntu-latest
@@ -386,6 +392,7 @@ jobs:
       - codeql
       - java-checks
       - go-lint
+      - go-apidiff
       - docker-checks
     steps:
       - run: exit 0

@@ -30,6 +30,7 @@ faces-config.NavData
 *.lock.db
 .cache-main
 .cache-tests
+.dccache
 .jqwik-database
 
 *.DS_Store
