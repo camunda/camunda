@@ -379,6 +379,9 @@ jobs:
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
       - uses: joelanford/go-apidiff@main
+        with:
+          # bors-ng fails to set ${GITHUB_BASE_REF} to the target PR branch which breaks go-apidiff
+          base-ref: origin/stable/8.2
   java-checks:
     name: Java checks
     runs-on: ubuntu-latest
