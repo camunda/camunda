@@ -263,11 +263,15 @@ final class SegmentWriter {
     try {
       buffer.position(lastPosition);
       buffer.mark();
-      FrameUtil.readVersion(buffer);
-      lastEntry = recordUtil.read(buffer, lastIndex);
-      updateLastAsqn(lastEntry.asqn());
-      index.index(lastEntry, lastPosition);
-      buffer.mark();
+      if (FrameUtil.hasValidVersion(buffer)) {
+        FrameUtil.readVersion(buffer);
+        lastEntry = recordUtil.read(buffer, lastIndex);
+        updateLastAsqn(lastEntry.asqn());
+        index.index(lastEntry, lastPosition);
+        buffer.mark();
+      } else {
+        reset(0, false);
+      }
     } catch (final Exception e) {
       /*
       Exception can occur if
@@ -336,6 +340,12 @@ final class SegmentWriter {
       buffer.position(descriptorLength);
       invalidateNextEntry(descriptorLength);
     } else {
+      if (lastEntryPosition > 0) {
+        // There can be race condition between truncating the segment, updating the descriptor, and
+        // flushing to disk. For safety, invalidate entry so that after a restart if the descriptor
+        // contains the old entry then we switch to whole segment scan.
+        invalidateNextEntry(lastEntryPosition);
+      }
       reset(index, true);
       invalidateNextEntry(buffer.position());
     }

@@ -256,6 +256,29 @@ class SegmentedJournalTest {
   }
 
   @Test
+  void shouldReadTruncatedSegmentCorrectlyAfterRestart() {
+    final int entryPerSegment = 5;
+    journal = openJournal(entryPerSegment);
+    for (int i = 0; i < entryPerSegment * 2; i++) {
+      journal.append(i + 1, journalFactory.entry()).index();
+    }
+
+    final long truncateIndex = 3;
+    journal.deleteAfter(truncateIndex);
+
+    // when
+    journal.close();
+    journal = openJournal(entryPerSegment);
+    final var reader = journal.openReader();
+    journal.append(10, journalFactory.entry());
+
+    // then
+    assertThat(reader.seek(truncateIndex)).isEqualTo(truncateIndex);
+    assertThat(reader.next().index()).isEqualTo(truncateIndex);
+    assertThat(journal.getLastIndex()).isEqualTo(truncateIndex + 1);
+  }
+
+  @Test
   void shouldCompactUpToStartOfSegment() {
     final int entryPerSegment = 2;
     journal = openJournal(entryPerSegment);

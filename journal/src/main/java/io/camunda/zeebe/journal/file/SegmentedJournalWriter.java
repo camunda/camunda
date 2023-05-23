@@ -110,6 +110,9 @@ final class SegmentedJournalWriter {
       currentWriter = currentSegment.writer();
     }
 
+    // Reset last entry position in descriptor to 0, to ensure that after a restart it is not using
+    // the old truncated entry.
+    currentSegment.resetLastEntryInDescriptor();
     // Truncate down to the current index, such that the last index is `index`, and the next index
     // `index + 1`
     currentWriter.truncate(index);
