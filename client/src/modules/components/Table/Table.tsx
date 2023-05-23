@@ -37,15 +37,16 @@ import {
   TableHeader,
   TableCell,
   DataTableSize,
+  DataTableSortState,
   TableSelectAll,
   TableSelectRow,
 } from '@carbon/react';
 
 import {t, getLanguage} from 'translation';
-import {Select, Icon, LoadingIndicator, Tooltip, NoDataNotice} from 'components';
+import {Select, LoadingIndicator, Tooltip, NoDataNotice} from 'components';
 import {isReactElement} from 'services';
 
-import {flatten} from './service';
+import {flatten, rewriteHeaderStyles} from './service';
 
 import './Table.scss';
 
@@ -173,20 +174,41 @@ export default function Table<T extends object>({
   const totalRows = totalEntries || body.length;
   const empty = !loading && (totalRows === 0 || head.length === 0);
 
-  function getSortingProps(column: Header) {
+  function getHeaderSortingDirection(header: Header): DataTableSortState {
+    if (sorting?.order) {
+      return sorting.order === 'desc' ? 'DESC' : 'ASC';
+    }
+    if (!header.isSorted) {
+      return 'NONE';
+    }
+    if (header.isSortedDesc) {
+      return 'DESC';
+    }
+    return 'ASC';
+  }
+
+  function getHeaderSortingProps(header: Header) {
     if (!updateSorting && !allowLocalSorting) {
       return {};
     }
-    const props = column.getSortByToggleProps();
+    const props = header.getSortByToggleProps();
     return {
       ...props,
-      style: {
-        cursor: column.disableSortBy ? 'default' : 'pointer',
-      },
+      isSortable: isSortable && header.canSort,
+      isSortHeader: header.isSorted,
+      sortDirection: getHeaderSortingDirection(header),
       onClick: (evt: MouseEvent) => {
+        // dont do anything when clicker on column rearrangement or resizing
+        if (
+          evt?.target instanceof HTMLElement &&
+          (evt.target.classList.contains('::after') || evt.target.classList.contains('resizer'))
+        ) {
+          return;
+        }
+
         if (props.onClick) {
           props.onClick(evt);
-          let sortColumn = column.id;
+          let sortColumn = header.id;
           if (resultType === 'map') {
             if (sortColumn === columns[0]?.id) {
               sortColumn = sortByLabel ? 'label' : 'key';
@@ -221,20 +243,20 @@ export default function Table<T extends object>({
     );
   });
 
-  const isSortedDesc = (column: UseSortByColumnProps<T>) =>
-    sorting ? sorting?.order === 'desc' : column.isSortedDesc;
+  const isSortable = headerGroups.some(({headers}) => headers.some((header) => header.canSort));
 
   return (
     <div className={classnames('Table', className, {highlight: !noHighlight, loading})}>
       <DataTable
+        isSortable={isSortable}
         locale={getLanguage()}
         headers={headers.map((header) => ({key: header.id, header: header.render('Header')!}))}
         rows={page}
-        isSortable
+        size={size}
         useZebraStyles
         render={({getTableContainerProps, getTableProps}) => (
-          <TableContainer {...getTableContainerProps}>
-            <CarbonTable size={size} {...getReactTableProps()} {...getTableProps()}>
+          <TableContainer {...getTableContainerProps()}>
+            <CarbonTable {...getReactTableProps()} {...getTableProps()}>
               <TableHead>
                 {headerGroups.map((headerGroup, i) => (
                   <TableRow
@@ -250,25 +272,23 @@ export default function Table<T extends object>({
                         return header.render('Header');
                       }
 
+                      const headerProps = {
+                        ...getHeaderSortingProps(header),
+                        ...header.getHeaderProps(),
+                      };
+
                       return (
                         <TableHeader
                           className={classnames('tableHeader', {placeholder: header.placeholderOf})}
-                          {...header.getHeaderProps()}
-                          scope="col"
+                          {...headerProps}
                           data-group={header.group}
+                          scope="col"
+                          title={undefined}
+                          ref={rewriteHeaderStyles(headerProps.style)}
                         >
-                          <div
-                            className="cellContent"
-                            {...getSortingProps(header)}
-                            title={undefined}
-                          >
-                            <Tooltip content={header.title} overflowOnly>
-                              <span className="text">{header.render('Header')}</span>
-                            </Tooltip>
-                            {header.isSorted && (
-                              <Icon type={isSortedDesc(header) ? 'down' : 'up'} />
-                            )}
-                          </div>
+                          <Tooltip content={header.title} overflowOnly>
+                            <span className="text">{header.render('Header')}</span>
+                          </Tooltip>
                           <div {...header.getResizerProps()} className="resizer" />
                         </TableHeader>
                       );
@@ -352,7 +372,7 @@ function formatSorting<T extends object>(
   if (allowLocalSorting) {
     const firstSortableColumn = columns.find((column) => !column.disableSortBy);
     if (firstSortableColumn) {
-      return [{id: firstSortableColumn.id, order: 'desc'}];
+      return [{id: firstSortableColumn.id, desc: false}];
     }
     return [];
   }

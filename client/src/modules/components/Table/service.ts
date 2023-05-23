@@ -5,6 +5,7 @@
  * except in compliance with the proprietary license.
  */
 
+import {CSSProperties} from 'react';
 import {Head} from './Table';
 
 type Entry = Head;
@@ -19,5 +20,21 @@ export function flatten(ctx: string = '', suffix: (entry: Entry) => string | und
       // normal column, return current context with optional suffix
       return flat.concat(ctx + suffix(entry));
     }
+  };
+}
+
+// We have to do this, because when header is sortable, style props are only passed to the button that is rendered inside the header
+// see implementation here: https://github.com/carbon-design-system/carbon/blob/main/packages/react/src/components/DataTable/TableHeader.tsx#L179
+export function rewriteHeaderStyles(styles?: CSSProperties) {
+  return function (th: HTMLTableCellElement | null) {
+    if (!th) {
+      return;
+    }
+
+    styles &&
+      Object.entries(styles).forEach(([key, value]) => {
+        // @ts-ignore
+        th.style[key] = value;
+      });
   };
 }

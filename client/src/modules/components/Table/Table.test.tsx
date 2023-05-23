@@ -9,7 +9,7 @@ import {runAllEffects} from '__mocks__/react';
 import {shallow, mount} from 'enzyme';
 import {act} from 'react-dom/test-utils';
 
-import {Icon, Select} from 'components';
+import {Select} from 'components';
 
 import Table from './Table';
 
@@ -104,7 +104,7 @@ it('should call the updateSorting method on click on header', () => {
     <Table {...{head: ['a'], body: generateData(20), foot: []}} updateSorting={spy} />
   );
 
-  node.find('thead .cellContent').at(0).simulate('click', {persist: jest.fn()});
+  node.find('thead th button').at(0).simulate('click', {persist: jest.fn()});
 
   expect(spy).toHaveBeenCalledWith('a', 'asc');
 });
@@ -118,7 +118,7 @@ it('should call the updateSorting method to sort by key/value if result is map',
     />
   );
 
-  node.find('thead .cellContent').at(0).simulate('click', {persist: jest.fn()});
+  node.find('thead th button').at(0).simulate('click', {persist: jest.fn()});
 
   expect(spy).toHaveBeenCalledWith('key', 'asc');
 });
@@ -132,7 +132,7 @@ it('should call the updateSorting method to sort by Label if sortByLabel is true
     />
   );
 
-  node.find('thead .cellContent').at(0).simulate('click', {persist: jest.fn()});
+  node.find('thead th button').at(0).simulate('click', {persist: jest.fn()});
 
   expect(spy).toHaveBeenCalledWith('label', 'asc');
 });
@@ -203,21 +203,21 @@ it('should go to the last page if data changes in a way that current page is emp
   });
 });
 
-it('should be sorted desc by default when allowed to sort locally', () => {
+it('should be sorted asc by default when allowed to sort locally', () => {
   const node = mount(
     <Table {...{head: ['a'], body: generateData(21), foot: []}} allowLocalSorting />
   );
 
-  expect(node.find(Icon).at(0).prop('type')).toBe('up');
+  expect(node.find('TableHeader').prop('sortDirection')).toBe('ASC');
   expect(node.find('td').at(0).childAt(0).prop('value')).toBe('0');
 });
 
-it('should change sorting to asc when clicked on header', () => {
+it('should change sorting to desc when clicked on header', () => {
   const node = mount(
     <Table {...{head: ['a'], body: generateData(21), foot: []}} allowLocalSorting />
   );
 
-  node.find('thead .cellContent').at(0).simulate('click', {persist: jest.fn()});
-  expect(node.find(Icon).at(0).prop('type')).toBe('down');
+  node.find('thead th button').simulate('click', {persist: jest.fn()});
+  expect(node.find('TableHeader').prop('sortDirection')).toBe('DESC');
   expect(node.find('td').at(0).childAt(0).prop('value')).toBe('20');
 });
