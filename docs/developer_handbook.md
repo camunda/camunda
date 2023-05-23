@@ -13,13 +13,6 @@ This document contains instructions for developers who want to contribute to thi
 * Go sources are generated on demand [Go Code Generation](../gateway-protocol-impl/README.md#go-code-generation).
 * Remember to also update the GRPC API documentation https://docs.camunda.io/docs/apis-clients/grpc/
 
-## How to update the `.gocompat.json` file?
-
-* This file is to detect changes to the Go interface
-* The comparison is part of the build process
-* If changes are deliberate it is necessary to regenerate this file for the build to pass
-* This is achieved by running ``cd clients/go && gocompat save ./...` and comitting the changes
-
 ## How to create a new record?
 
 Generally, you'll need to do 4 things:

@@ -64,9 +64,7 @@ func MapStructMarshal(value reflect.Value, tag string, omitempty, omitminus bool
 			dostrconv = strings.Contains(tagvalue, ",string")
 		}
 		if name == "-" {
-			if omitminus {
-				continue
-			} else {
+			if !omitminus {
 				name = ""
 			}
 		}
