@@ -37,7 +37,6 @@ import io.camunda.zeebe.protocol.record.intent.TimerIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableIntent;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.function.Function;
 
 /**
  * Applies state changes from events to the {@link MutableProcessingState}.
@@ -46,8 +45,8 @@ import java.util.function.Function;
  */
 public final class EventAppliers implements EventApplier {
 
-  private static final Function<Intent, TypedEventApplier<?, ?>> UNIMPLEMENTED_EVENT_APPLIER =
-      intent -> (key, value) -> {};
+  public static final TypedEventApplier<Intent, RecordValue> NOOP_EVENT_APPLIER =
+      (key, value) -> {};
 
   private final Map<IntentAndVersion, TypedEventApplier> mapping = new HashMap<>();
 
@@ -307,8 +306,7 @@ public final class EventAppliers implements EventApplier {
   public void applyState(
       final long key, final Intent intent, final RecordValue value, final int recordVersion) {
     final var eventApplier =
-        mapping.getOrDefault(
-            new IntentAndVersion(intent, recordVersion), UNIMPLEMENTED_EVENT_APPLIER.apply(intent));
+        mapping.getOrDefault(new IntentAndVersion(intent, recordVersion), NOOP_EVENT_APPLIER);
     eventApplier.applyState(key, value);
   }
 
