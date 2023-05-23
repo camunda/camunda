@@ -263,14 +263,19 @@ final class SegmentWriter {
     try {
       buffer.position(lastPosition);
       buffer.mark();
-      if (FrameUtil.hasValidVersion(buffer)) {
-        FrameUtil.readVersion(buffer);
-        lastEntry = recordUtil.read(buffer, lastIndex);
-        updateLastAsqn(lastEntry.asqn());
-        index.index(lastEntry, lastPosition);
-        buffer.mark();
-      } else {
+      if (!FrameUtil.hasValidVersion(buffer)) {
+        // last position in the descriptor and last entry in the segment does not match. This might
+        // be a corruption or a race condition between updating the description and flushing the
+        // segment. To simplify the handling, we switch to scanning the whole segment.
         reset(0, false);
+      } else {
+        // Here normally we expect to jump to last entry directly. But to handle the case where new
+        // entries where written after descriptor was updated, iterate until the end.
+        long nextIndex = lastIndex;
+        while (FrameUtil.hasValidVersion(buffer)) {
+          advanceToNextEntry(nextIndex);
+          nextIndex++;
+        }
       }
     } catch (final Exception e) {
       /*
@@ -283,6 +288,17 @@ final class SegmentWriter {
     }
   }
 
+  // Reads the current entry and advance the buffer position to the start of next entry.
+  private void advanceToNextEntry(final long nextIndex) {
+    final int position = buffer.position();
+    FrameUtil.readVersion(buffer);
+    lastEntry = recordUtil.read(buffer, nextIndex);
+    updateLastAsqn(lastEntry.asqn());
+    lastEntryPosition = position;
+    index.index(lastEntry, position);
+    buffer.mark();
+  }
+
   private void reset(final long index, final boolean detectCorruption) {
     long nextIndex = firstIndex;
 
@@ -291,14 +307,8 @@ final class SegmentWriter {
     int position = buffer.position();
     try {
       while ((index == 0 || nextIndex <= index) && FrameUtil.hasValidVersion(buffer)) {
-        // read version so that buffer's position is advanced
-        FrameUtil.readVersion(buffer);
-        lastEntry = recordUtil.read(buffer, nextIndex);
-        updateLastAsqn(lastEntry.asqn());
-        lastEntryPosition = position;
+        advanceToNextEntry(nextIndex);
         nextIndex++;
-        this.index.index(lastEntry, position);
-        buffer.mark();
         position = buffer.position();
       }
     } catch (final BufferUnderflowException e) {
