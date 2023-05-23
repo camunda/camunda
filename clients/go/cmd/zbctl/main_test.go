@@ -195,7 +195,7 @@ func TestZbctlWithInsecureGateway(t *testing.T) {
 		})
 }
 
-func (s *integrationTestSuite) AfterTest(suiteName, testName string) {
+func (s *integrationTestSuite) AfterTest(_, _ string) {
 	// overload to ignore the parent behavior; we instead print the container logs after each failed
 	// test and not at the very end of all test cases, where it's more difficult to know what went
 	// wrong; if you add more top level tests, like TestCommonCommands, make sure to also add a block
