@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.job;
 
+import io.camunda.zeebe.engine.state.immutable.JobState.State;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.Record;
@@ -83,7 +84,7 @@ public final class YieldJobTest {
         .hasRejectionType(RejectionType.INVALID_STATE)
         .hasRejectionReason(
             String.format(
-                "Expected to yield activated job with key '%d', but it is marked as failed",
-                jobKey));
+                "Expected to yield job with key '%d', but it is in state '%s'",
+                jobKey, State.FAILED));
   }
 }

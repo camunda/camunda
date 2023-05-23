@@ -17,18 +17,16 @@ import io.camunda.zeebe.engine.state.immutable.JobState;
 import io.camunda.zeebe.engine.state.immutable.JobState.State;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
-import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
+import java.util.List;
 
 public final class JobYieldProcessor implements TypedRecordProcessor<JobRecord> {
-
-  public static final String NOT_ACTIVATED_JOB_MESSAGE =
-      "Expected to yield activated job with key '%d', but %s";
   private final JobState jobState;
   private final BpmnJobActivationBehavior jobActivationBehavior;
   private final StateWriter stateWriter;
   private final TypedRejectionWriter rejectionWriter;
+  private final JobCommandPreconditionChecker preconditionChecker;
 
   public JobYieldProcessor(
       final ProcessingState state, final BpmnBehaviors bpmnBehaviors, final Writers writers) {
@@ -36,36 +34,24 @@ public final class JobYieldProcessor implements TypedRecordProcessor<JobRecord> 
     jobActivationBehavior = bpmnBehaviors.jobActivationBehavior();
     stateWriter = writers.state();
     rejectionWriter = writers.rejection();
+    preconditionChecker = new JobCommandPreconditionChecker("yield", List.of(State.ACTIVATED));
   }
 
   @Override
   public void processRecord(final TypedRecord<JobRecord> record) {
-    final long key = record.getKey();
-    final JobState.State state = jobState.getState(key);
-    if (state == State.ACTIVATED) {
-      final JobRecord yieldedJob = record.getValue();
+    final long jobKey = record.getKey();
+    final JobState.State state = jobState.getState(jobKey);
 
-      stateWriter.appendFollowUpEvent(key, JobIntent.YIELDED, yieldedJob);
-      jobActivationBehavior.notifyJobAvailableAsSideEffect(yieldedJob);
-    } else {
-      final String textState;
+    preconditionChecker
+        .check(state, jobKey)
+        .ifRightOrLeft(
+            ok -> {
+              final JobRecord yieldedJob = record.getValue();
 
-      switch (state) {
-        case ACTIVATABLE:
-          textState = "it must be activated first";
-          break;
-        case FAILED:
-          textState = "it is marked as failed";
-          break;
-        default:
-          textState = "no such job was found";
-          break;
-      }
-
-      rejectionWriter.appendRejection(
-          record,
-          RejectionType.INVALID_STATE,
-          String.format(NOT_ACTIVATED_JOB_MESSAGE, key, textState));
-    }
+              stateWriter.appendFollowUpEvent(jobKey, JobIntent.YIELDED, yieldedJob);
+              jobActivationBehavior.notifyJobAvailableAsSideEffect(yieldedJob);
+            },
+            violation ->
+                rejectionWriter.appendRejection(record, violation.getLeft(), violation.getRight()));
   }
 }
