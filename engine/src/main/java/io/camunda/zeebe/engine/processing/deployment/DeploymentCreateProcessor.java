@@ -140,7 +140,7 @@ public final class DeploymentCreateProcessor implements TypedRecordProcessor<Dep
 
     final long key = keyGenerator.nextKey();
     responseWriter.writeEventOnCommand(key, DeploymentIntent.CREATED, deploymentEvent, command);
-    stateWriter.appendFollowUpEvent(key, DeploymentIntent.CREATED, deploymentEvent);
+    stateWriter.appendFollowUpEvent(key, DeploymentIntent.CREATED, deploymentEvent, 2);
 
     distributionBehavior.distributeCommand(command);
   }
@@ -149,7 +149,7 @@ public final class DeploymentCreateProcessor implements TypedRecordProcessor<Dep
     final var deploymentEvent = command.getValue();
     createBpmnResources(deploymentEvent);
     createDmnResources(command, deploymentEvent);
-    stateWriter.appendFollowUpEvent(command.getKey(), DeploymentIntent.CREATED, deploymentEvent);
+    stateWriter.appendFollowUpEvent(command.getKey(), DeploymentIntent.CREATED, deploymentEvent, 2);
     distributionBehavior.acknowledgeCommand(command.getKey());
   }
 
