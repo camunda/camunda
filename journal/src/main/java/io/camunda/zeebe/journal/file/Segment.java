@@ -277,4 +277,10 @@ final class Segment implements AutoCloseable, FlushableSegment {
     }
     markedForDeletion = true;
   }
+
+  void updateDescriptor() {
+    descriptor.setLastIndex(writer.getLastIndex());
+    descriptor.setLastPosition(writer.getLastEntryPosition());
+    descriptor.updateIfCurrentVersion(buffer);
+  }
 }

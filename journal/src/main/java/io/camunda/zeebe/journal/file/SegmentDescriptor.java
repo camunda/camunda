@@ -346,6 +346,26 @@ final class SegmentDescriptor {
         + '}';
   }
 
+  int lastEntryPosition() {
+    return lastPosition;
+  }
+
+  void setLastPosition(final int lastPosition) {
+    this.lastPosition = lastPosition;
+  }
+
+  void setLastIndex(final long lastIndex) {
+    this.lastIndex = lastIndex;
+  }
+
+  void updateIfCurrentVersion(final ByteBuffer buffer) {
+    if (version >= 3) {
+      copyTo(buffer);
+    }
+    // Do not overwrite the descriptor for older versions. The new version has a higher length and
+    // will overwrite the first entry.
+  }
+
   /** Segment descriptor builder. */
   static final class Builder {
 
