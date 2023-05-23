@@ -5,7 +5,7 @@
  * except in compliance with the proprietary license.
  */
 
-import React from 'react';
+import {MouseEventHandler} from 'react';
 import classnames from 'classnames';
 
 import colorsObj from './colors.json';
@@ -14,8 +14,19 @@ import './ColorPicker.scss';
 
 const {colors} = colorsObj;
 
-export const ColorPicker = ({onChange, className, selectedColor = ColorPicker.dark.steelBlue}) => {
-  const handleChange = ({target}) => onChange(target.getAttribute('color'));
+interface ColorPickerProps {
+  onChange: (value: string | null) => void;
+  className?: string;
+  selectedColor?: string;
+}
+
+export function ColorPicker({
+  onChange,
+  className,
+  selectedColor = ColorPicker.dark.steelBlue,
+}: ColorPickerProps) {
+  const handleChange: MouseEventHandler<HTMLDivElement> = ({target}) =>
+    onChange((target as HTMLDivElement).getAttribute('color'));
   const colors = [...Object.values(ColorPicker.dark), ...Object.values(ColorPicker.light)];
 
   return (
@@ -33,7 +44,7 @@ export const ColorPicker = ({onChange, className, selectedColor = ColorPicker.da
       </div>
     </div>
   );
-};
+}
 
 ColorPicker.dark = {
   cherry: '#B80000',
@@ -57,7 +68,7 @@ ColorPicker.light = {
   steelBlue: '#b3d5e5',
 };
 
-ColorPicker.getGeneratedColors = (amount) => {
+ColorPicker.getGeneratedColors = (amount: number) => {
   const repeatCount = Math.ceil(amount / colors.length);
 
   return Array(repeatCount).fill(colors).flat().slice(0, amount);
