@@ -27,7 +27,7 @@ const pickDateTimeRange = async ({
   fromTime?: string;
   toTime?: string;
 }) => {
-  expect(await screen.findByTestId('popover')).toBeInTheDocument();
+  expect(screen.getByTestId('date-range-modal')).toHaveClass('is-visible');
   const monthName = document.querySelector('.cur-month')?.textContent;
   const year = document.querySelector<HTMLInputElement>('.cur-year')?.value;
   const month = new Date(`${monthName} 01, ${year}`).getMonth() + 1;
@@ -69,9 +69,9 @@ const applyDateRange = async (user: UserEvent, screen: Screen) => {
   expect(applyButton).not.toBeDisabled();
   await user.click(applyButton);
 
-  await waitFor(() => {
-    expect(screen.queryByTestId('popover')).not.toBeInTheDocument();
-  });
+  await waitFor(() =>
+    expect(screen.getByTestId('date-range-modal')).not.toHaveClass('is-visible')
+  );
 };
 
 export {pickDateTimeRange, applyDateRange};

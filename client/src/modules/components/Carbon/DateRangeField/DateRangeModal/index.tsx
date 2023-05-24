@@ -14,6 +14,7 @@ import {DateInput} from './DateInput';
 import {TimeInput} from './TimeInput';
 import {TimeInputStack} from './styled';
 import {tracking} from 'modules/tracking';
+import {createPortal} from 'react-dom';
 
 const defaultTime = {
   from: '00:00:00',
@@ -109,98 +110,104 @@ const DateRangeModal: React.FC<Props> = ({
     <Form onSubmit={handleApply} initialValues={defaultValues}>
       {({handleSubmit, form}) => (
         <Layer level={0}>
-          <Modal
-            open={isModalOpen}
-            size="xs"
-            modalHeading={title}
-            primaryButtonText="Apply"
-            secondaryButtonText="Cancel"
-            onRequestClose={onCancel}
-            onRequestSubmit={handleSubmit}
-            primaryButtonDisabled={
-              !form.getFieldState('fromDate')?.value ||
-              !form.getFieldState('fromTime')?.value ||
-              !form.getFieldState('toDate')?.value ||
-              !form.getFieldState('toTime')?.value ||
-              form.getState().invalid
-            }
-          >
-            <Stack gap={6}>
-              <div>
-                <DatePicker
-                  datePickerType="range"
-                  onChange={(event) => {
-                    const [fromDateTime, toDateTime] = event;
-                    if (fromDateTime !== undefined) {
-                      form.change('fromDate', formatDate(fromDateTime));
-                      if (form.getFieldState('fromTime')?.value === '') {
-                        form.change('fromTime', defaultTime.from);
+          <>
+            {createPortal(
+              <Modal
+                data-testid="date-range-modal"
+                open={isModalOpen}
+                size="xs"
+                modalHeading={title}
+                primaryButtonText="Apply"
+                secondaryButtonText="Cancel"
+                onRequestClose={onCancel}
+                onRequestSubmit={handleSubmit}
+                primaryButtonDisabled={
+                  !form.getFieldState('fromDate')?.value ||
+                  !form.getFieldState('fromTime')?.value ||
+                  !form.getFieldState('toDate')?.value ||
+                  !form.getFieldState('toTime')?.value ||
+                  form.getState().invalid
+                }
+              >
+                <Stack gap={6}>
+                  <div>
+                    <DatePicker
+                      datePickerType="range"
+                      onChange={(event) => {
+                        const [fromDateTime, toDateTime] = event;
+                        if (fromDateTime !== undefined) {
+                          form.change('fromDate', formatDate(fromDateTime));
+                          if (form.getFieldState('fromTime')?.value === '') {
+                            form.change('fromTime', defaultTime.from);
+                          }
+                        }
+                        if (toDateTime !== undefined) {
+                          form.change('toDate', formatDate(toDateTime));
+                          if (form.getFieldState('toTime')?.value === '') {
+                            form.change('toTime', defaultTime.to);
+                          }
+                        }
+                      }}
+                      dateFormat="Y-m-d"
+                      short
+                      onOpen={() => {
+                        setCalendarRef(
+                          document.querySelector('.flatpickr-calendar')
+                        );
+                      }}
+                      onClose={() => setCalendarRef(null)}
+                    >
+                      <DateInput
+                        id="date-picker-input-id-start"
+                        type="from"
+                        labelText="From date"
+                        onChange={() =>
+                          setDateSelectionMethods((prevState) => ({
+                            ...prevState,
+                            dateInput: true,
+                          }))
+                        }
+                      />
+                      <DateInput
+                        id="date-picker-input-id-finish"
+                        type="to"
+                        labelText="To date"
+                        onChange={() =>
+                          setDateSelectionMethods((prevState) => ({
+                            ...prevState,
+                            dateInput: true,
+                          }))
+                        }
+                      />
+                    </DatePicker>
+                  </div>
+                  <TimeInputStack orientation="horizontal">
+                    <TimeInput
+                      type="from"
+                      labelText="From time"
+                      onChange={() =>
+                        setDateSelectionMethods((prevState) => ({
+                          ...prevState,
+                          timeInput: true,
+                        }))
                       }
-                    }
-                    if (toDateTime !== undefined) {
-                      form.change('toDate', formatDate(toDateTime));
-                      if (form.getFieldState('toTime')?.value === '') {
-                        form.change('toTime', defaultTime.to);
+                    />
+                    <TimeInput
+                      type="to"
+                      labelText="To time"
+                      onChange={() =>
+                        setDateSelectionMethods((prevState) => ({
+                          ...prevState,
+                          timeInput: true,
+                        }))
                       }
-                    }
-                  }}
-                  dateFormat="Y-m-d"
-                  short
-                  onOpen={() => {
-                    setCalendarRef(
-                      document.querySelector('.flatpickr-calendar')
-                    );
-                  }}
-                  onClose={() => setCalendarRef(null)}
-                >
-                  <DateInput
-                    id="date-picker-input-id-start"
-                    type="from"
-                    labelText="From date"
-                    onChange={() =>
-                      setDateSelectionMethods((prevState) => ({
-                        ...prevState,
-                        dateInput: true,
-                      }))
-                    }
-                  />
-                  <DateInput
-                    id="date-picker-input-id-finish"
-                    type="to"
-                    labelText="To date"
-                    onChange={() =>
-                      setDateSelectionMethods((prevState) => ({
-                        ...prevState,
-                        dateInput: true,
-                      }))
-                    }
-                  />
-                </DatePicker>
-              </div>
-              <TimeInputStack orientation="horizontal">
-                <TimeInput
-                  type="from"
-                  labelText="From time"
-                  onChange={() =>
-                    setDateSelectionMethods((prevState) => ({
-                      ...prevState,
-                      timeInput: true,
-                    }))
-                  }
-                />
-                <TimeInput
-                  type="to"
-                  labelText="To time"
-                  onChange={() =>
-                    setDateSelectionMethods((prevState) => ({
-                      ...prevState,
-                      timeInput: true,
-                    }))
-                  }
-                />
-              </TimeInputStack>
-            </Stack>
-          </Modal>
+                    />
+                  </TimeInputStack>
+                </Stack>
+              </Modal>,
+              document.body
+            )}
+          </>
         </Layer>
       )}
     </Form>
