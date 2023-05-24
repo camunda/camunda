@@ -325,6 +325,7 @@ pipeline {
     string(name: 'RELEASE_VERSION', defaultValue: '0.0.0', description: 'Version to release. Applied to pom.xml and Git tag.')
     string(name: 'DEVELOPMENT_VERSION', defaultValue: '0.1.0-SNAPSHOT', description: 'Next development version.')
     string(name: 'BRANCH', defaultValue: 'master', description: 'The branch used for the release checkout.')
+    string(name: 'ADDITIONAL_DOCKER_TAG', defaultValue: '', description: '(Optional) Any additional tag that should be added to the docker image.')
     booleanParam(name: 'PUSH_CHANGES', defaultValue: false, description: 'Should the changes be pushed to remote locations.')
   }
 
