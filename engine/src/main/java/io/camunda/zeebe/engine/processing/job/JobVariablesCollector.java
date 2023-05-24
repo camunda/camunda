@@ -22,9 +22,8 @@ public class JobVariablesCollector {
   }
 
   public void setJobVariables(
-      final Collection<DirectBuffer> requestedVariables,
-      final JobRecord jobRecord,
-      final long elementInstanceKey) {
+      final Collection<DirectBuffer> requestedVariables, final JobRecord jobRecord) {
+    final long elementInstanceKey = jobRecord.getElementInstanceKey();
     if (elementInstanceKey >= 0) {
       final DirectBuffer variables = collectVariables(requestedVariables, elementInstanceKey);
       jobRecord.setVariables(variables);

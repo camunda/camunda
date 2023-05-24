@@ -82,8 +82,7 @@ final class JobBatchCollector {
           // adding it to the batch
           final var deadline = record.getTimestamp() + value.getTimeout();
           jobRecord.setDeadline(deadline).setWorker(value.getWorkerBuffer());
-          jobVariablesCollector.setJobVariables(
-              requestedVariables, jobRecord, jobRecord.getElementInstanceKey());
+          jobVariablesCollector.setJobVariables(requestedVariables, jobRecord);
 
           // the expected length is based on the current record's length plus the length of the job
           // record we would add to the batch, the number of bytes taken by the additional job key,

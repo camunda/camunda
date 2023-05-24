@@ -70,23 +70,14 @@ public class BpmnJobActivationBehavior {
       final JobStream jobStream = optionalJobStream.get();
       final JobActivationProperties properties = jobStream.properties();
 
-      // we push the job immediately, so the deadline is always calculated from the current time
-      final var deadline = ActorClock.currentTimeMillis() + properties.timeout();
-      wrappedJobRecord.setDeadline(deadline);
-      wrappedJobRecord.setWorker(properties.worker());
-
-      // reuse the existing JobBatch activation mechanism
-      final JobBatchRecord jobBatchRecord = new JobBatchRecord();
-      jobBatchRecord
-          .setType(jobType)
-          .setTimeout(properties.timeout())
-          .setWorker(properties.worker());
+      // activate job in state
+      setJobProperties(wrappedJobRecord, properties);
+      final JobBatchRecord jobBatchRecord = createJobBatchRecord(wrappedJobRecord, properties);
       appendJobToBatch(jobBatchRecord, jobKey, wrappedJobRecord);
       final var jobBatchKey = keyGenerator.nextKey();
       stateWriter.appendFollowUpEvent(jobBatchKey, JobBatchIntent.ACTIVATED, jobBatchRecord);
 
-      jobVariablesCollector.setJobVariables(
-          properties.fetchVariables(), wrappedJobRecord, wrappedJobRecord.getElementInstanceKey());
+      jobVariablesCollector.setJobVariables(properties.fetchVariables(), wrappedJobRecord);
       final var pushableJobRecord = new JobRecord();
       cloneJob(wrappedJobRecord, pushableJobRecord);
       final var activatedJob = new ActivatedJobImpl();
@@ -116,6 +107,25 @@ public class BpmnJobActivationBehavior {
           jobMetrics.jobNotification(jobType);
           return true;
         });
+  }
+
+  private void setJobProperties(
+      final JobRecord jobRecord, final JobActivationProperties properties) {
+    // we push the job immediately, so the deadline is always calculated from the current time
+    final var deadline = ActorClock.currentTimeMillis() + properties.timeout();
+    jobRecord.setDeadline(deadline);
+    jobRecord.setWorker(properties.worker());
+  }
+
+  private JobBatchRecord createJobBatchRecord(
+      final JobRecord jobRecord, final JobActivationProperties properties) {
+    // reuse the existing JobBatch activation mechanism
+    final JobBatchRecord jobBatchRecord = new JobBatchRecord();
+    jobBatchRecord
+        .setType(jobRecord.getType())
+        .setTimeout(properties.timeout())
+        .setWorker(properties.worker());
+    return jobBatchRecord;
   }
 
   private void appendJobToBatch(
