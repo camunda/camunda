@@ -116,6 +116,9 @@ public class SwimMembershipProtocol
   private ScheduledFuture<?> probeFuture;
   private ScheduledFuture<?> syncFuture;
 
+  private final SwimMembershipProtocolMetrics swimMembershipProtocolMetrics =
+      new SwimMembershipProtocolMetrics();
+
   SwimMembershipProtocol(final SwimMembershipProtocolConfig config) {
     this.config = config;
   }
@@ -372,6 +375,8 @@ public class SwimMembershipProtocol
    */
   private void recordUpdate(final ImmutableMember member) {
     updates.put(member.id(), member);
+    SwimMembershipProtocolMetrics.updateMemberIncarnationNumber(
+        member.id().id(), member.incarnationNumber);
   }
 
   /** Checks suspect nodes for failures. */
