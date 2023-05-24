@@ -59,7 +59,8 @@ export default function EntityDescription({description, onEdit}: EntityDescripti
 
   const isTextTooLong = (editedDescription?.length || 0) > DESCRIPTION_MAX_CHARACTERS;
 
-  useEffect(() => {
+  const calculateShowLessButton = () => {
+    setShowToggleButton(false);
     if (descriptionRef.current) {
       const CONTAINER_RIGHT_MARGIN = 48;
       const TOGGLE_BUTTON_TRESHOLD = 10;
@@ -77,6 +78,16 @@ export default function EntityDescription({description, onEdit}: EntityDescripti
         setShowToggleButton(true);
       }
     }
+  };
+
+  useEffect(() => {
+    // This is needed to get the new description field size after update
+    setTimeout(() => {
+      calculateShowLessButton();
+    });
+    window.addEventListener('resize', calculateShowLessButton, false);
+
+    return () => window.removeEventListener('resize', calculateShowLessButton);
   }, []);
 
   return (

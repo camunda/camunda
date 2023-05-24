@@ -11,6 +11,8 @@ import {runLastEffect} from '__mocks__/react';
 import EntityDescription from './EntityDescription';
 import {useRef} from 'react';
 
+jest.useFakeTimers();
+
 jest.mock('react', () => {
   const outstandingEffects: (() => void)[] = [];
   const useRef = jest.fn().mockReturnValue({
@@ -93,6 +95,7 @@ it('should show more/less button when text is not longer then container', () => 
   });
   const node = shallow(<EntityDescription description={'description'} />);
   runLastEffect();
+  jest.runAllTimers();
 
   expect(node.find('.toggle')).toExist();
 });
@@ -107,6 +110,7 @@ it('should toggle show more/less text', () => {
   });
   const node = shallow(<EntityDescription description={'description'} />);
   runLastEffect();
+  jest.runAllTimers();
 
   expect(node.find('.toggle').text()).toBe('More');
 

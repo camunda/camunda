@@ -23,11 +23,12 @@
 
       .head {
         display: flex;
+        min-width: 0;
 
         .info {
           display: flex;
           flex-direction: column;
-          overflow: hidden;
+          min-width: 0;
           flex-grow: 1;
         }
       }
