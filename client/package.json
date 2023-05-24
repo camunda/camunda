@@ -12,7 +12,7 @@
     "@ibm/plex": "^6.3.0",
     "@lexical/react": "^0.7.6",
     "@ungap/structured-clone": "^1.2.0",
-    "bpmn-js": "13.0.8",
+    "bpmn-js": "13.1.0",
     "bpmn-js-disable-collapsed-subprocess": "^0.1.7",
     "chart.js": "^4.3.0",
     "chartjs-plugin-datalabels": "^2.2.0",
