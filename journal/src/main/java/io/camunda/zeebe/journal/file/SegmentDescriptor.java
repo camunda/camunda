@@ -47,7 +47,7 @@ final class SegmentDescriptor {
 
   private static final int VERSION_LENGTH = Byte.BYTES;
   // current descriptor version containing: header, metadata, header and descriptor. descriptor
-  // contains lastIndex and lastPosition.
+  // contains lastIndex and lastPosition. Version 2 does not contain lastIndex and lastPosition.
   private static final byte CUR_VERSION = 3;
   // previous descriptor version containing: header and descriptor
   private static final byte NO_META_VERSION = 1;
@@ -59,7 +59,9 @@ final class SegmentDescriptor {
   private long id;
   private long index;
   private int maxSegmentSize;
+  // index of the last entry in this segment. Can be 0 if not set, even if an entry exists.
   private long lastIndex;
+  // position of the last entry in this segment. Can be 0 if not set, even if an entry exists.
   private int lastPosition;
   private int encodedLength;
   private long checksum;
@@ -346,7 +348,7 @@ final class SegmentDescriptor {
         + '}';
   }
 
-  int lastEntryPosition() {
+  int lastPosition() {
     return lastPosition;
   }
 

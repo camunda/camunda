@@ -75,7 +75,7 @@ final class SegmentWriter {
     writeBuffer.wrap(buffer);
     firstAsqn = lastWrittenAsqn + 1;
     lastAsqn = lastWrittenAsqn;
-    lastEntryPosition = segment.descriptor().lastEntryPosition();
+    lastEntryPosition = segment.descriptor().lastPosition();
     this.metrics = metrics;
     if (lastEntryPosition > 0) {
       // jump to last entry

@@ -47,7 +47,7 @@ class SegmentDescriptorTest {
     assertThat(descriptorRead.index()).isEqualTo(100);
     assertThat(descriptorRead.maxSegmentSize()).isEqualTo(1024);
     assertThat(descriptorRead.lastIndex()).isEqualTo(10);
-    assertThat(descriptorRead.lastEntryPosition()).isEqualTo(100);
+    assertThat(descriptorRead.lastPosition()).isEqualTo(100);
     assertThat(descriptorRead.length()).isEqualTo(SegmentDescriptor.getEncodingLength());
   }
 
@@ -122,7 +122,7 @@ class SegmentDescriptorTest {
     assertThat(descriptorRead.index()).isEqualTo(100);
     assertThat(descriptorRead.maxSegmentSize()).isEqualTo(1024);
     assertThat(descriptorRead.lastIndex()).isZero();
-    assertThat(descriptorRead.lastEntryPosition()).isZero();
+    assertThat(descriptorRead.lastPosition()).isZero();
     assertThat(descriptorRead.length())
         .isEqualTo(SegmentDescriptor.getEncodingLengthForVersion((byte) (2)));
   }
@@ -152,7 +152,7 @@ class SegmentDescriptorTest {
     assertThat(descriptorRead.index()).isEqualTo(100);
     assertThat(descriptorRead.maxSegmentSize()).isEqualTo(1024);
     assertThat(descriptorRead.lastIndex()).isZero();
-    assertThat(descriptorRead.lastEntryPosition()).isZero();
+    assertThat(descriptorRead.lastPosition()).isZero();
     assertThat(descriptorRead.length())
         .isEqualTo(SegmentDescriptor.getEncodingLengthForVersion((byte) (2)));
   }
