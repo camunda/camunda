@@ -35,7 +35,7 @@ import org.junit.jupiter.api.Test;
 class ClientStreamManagerTest {
 
   private static final ClientStreamConsumer NOOP_CONSUMER =
-      p -> TestActorFuture.completedFuture(null);
+      p -> CompletableFuture.completedFuture(null);
   private final DirectBuffer streamType = BufferUtil.wrapString("foo");
   private final TestMetadata metadata = new TestMetadata(1);
   private final ClientStreamRegistry<TestMetadata> registry = new ClientStreamRegistry<>();
@@ -46,6 +46,7 @@ class ClientStreamManagerTest {
           registry,
           new ClientStreamRequestManager<>(mockTransport, new TestConcurrencyControl()),
           metrics);
+  private final TestConcurrencyControl executor = new TestConcurrencyControl();
 
   @BeforeEach
   void setup() {
@@ -67,10 +68,7 @@ class ClientStreamManagerTest {
   void shouldAggregateStreamsWithSameStreamTypeAndMetadata() {
     // when
     final var uuid1 =
-        clientStreamManager.add(
-            BufferUtil.wrapString("foo"),
-            new TestMetadata(1),
-            p -> TestActorFuture.completedFuture(null));
+        clientStreamManager.add(BufferUtil.wrapString("foo"), new TestMetadata(1), NOOP_CONSUMER);
     final var uuid2 =
         clientStreamManager.add(BufferUtil.wrapString("foo"), new TestMetadata(1), NOOP_CONSUMER);
     final var stream1 = registry.getClient(uuid1).orElseThrow();
@@ -198,9 +196,9 @@ class ClientStreamManagerTest {
         clientStreamManager.add(
             streamType,
             metadata,
-            p -> {
-              payloadReceived.wrap(p);
-              return TestActorFuture.completedFuture(null);
+            directBuffer -> {
+              payloadReceived.wrap(directBuffer);
+              return CompletableFuture.completedFuture(null);
             });
     final var streamId = getServerStreamId(clientStreamId);
 
@@ -208,7 +206,7 @@ class ClientStreamManagerTest {
     final var payloadPushed = BufferUtil.wrapString("data");
     final var request = new PushStreamRequest().streamId(streamId).payload(payloadPushed);
     final var future = new TestActorFuture<Void>();
-    clientStreamManager.onPayloadReceived(request, future);
+    clientStreamManager.onPayloadReceived(request, future, executor);
 
     // then
     assertThat(future).succeedsWithin(Duration.ofMillis(100));
@@ -224,7 +222,7 @@ class ClientStreamManagerTest {
     final var payloadPushed = BufferUtil.wrapString("data");
     final var request = new PushStreamRequest().streamId(UUID.randomUUID()).payload(payloadPushed);
     final var future = new TestActorFuture<Void>();
-    clientStreamManager.onPayloadReceived(request, future);
+    clientStreamManager.onPayloadReceived(request, future, executor);
 
     // then
     assertThat(future)
@@ -250,7 +248,7 @@ class ClientStreamManagerTest {
     final var payloadPushed = BufferUtil.wrapString("data");
     final var request = new PushStreamRequest().streamId(streamId).payload(payloadPushed);
     final var future = new TestActorFuture<Void>();
-    clientStreamManager.onPayloadReceived(request, future);
+    clientStreamManager.onPayloadReceived(request, future, executor);
 
     // then
     assertThat(future)
@@ -264,8 +262,7 @@ class ClientStreamManagerTest {
     // given
     final MemberId server = MemberId.from("1");
     clientStreamManager.onServerJoined(server);
-    final var uuid =
-        clientStreamManager.add(streamType, metadata, p -> TestActorFuture.completedFuture(null));
+    final var uuid = clientStreamManager.add(streamType, metadata, NOOP_CONSUMER);
     final var stream = registry.get(getServerStreamId(uuid)).orElseThrow();
     assertThat(stream.isConnected(server)).isTrue();
 

@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.transport.stream.impl;
 
+import io.camunda.zeebe.scheduler.ConcurrencyControl;
+import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.transport.stream.api.ClientStreamConsumer;
 import io.camunda.zeebe.util.buffer.BufferWriter;
 import org.agrona.DirectBuffer;
@@ -17,4 +19,15 @@ record ClientStream<M extends BufferWriter>(
     AggregatedClientStream<M> serverStream,
     DirectBuffer streamType,
     M metadata,
-    ClientStreamConsumer clientStreamConsumer) {}
+    ClientStreamConsumer clientStreamConsumer) {
+
+  ActorFuture<Void> push(final DirectBuffer payload, final ConcurrencyControl executor) {
+    final ActorFuture<Void> result = executor.createFuture();
+    try {
+      clientStreamConsumer.push(payload).whenComplete(result);
+    } catch (final Exception e) {
+      result.completeExceptionally(e);
+    }
+    return result;
+  }
+}
