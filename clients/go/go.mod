@@ -3,14 +3,14 @@ module github.com/camunda/zeebe/clients/go/v8
 go 1.19
 
 require (
-	github.com/docker/docker v20.10.24+incompatible
+	github.com/docker/docker v20.10.25+incompatible
 	github.com/docker/go-connections v0.4.0
 	github.com/go-ozzo/ozzo-validation/v4 v4.3.0
 	github.com/golang/mock v1.6.0
 	github.com/google/go-cmp v0.5.9
 	github.com/mitchellh/go-homedir v1.1.0
 	github.com/spf13/cobra v1.7.0
-	github.com/stretchr/testify v1.8.2
+	github.com/stretchr/testify v1.8.3
 	github.com/testcontainers/testcontainers-go v0.15.0
 	golang.org/x/net v0.9.0
 	golang.org/x/oauth2 v0.7.0
