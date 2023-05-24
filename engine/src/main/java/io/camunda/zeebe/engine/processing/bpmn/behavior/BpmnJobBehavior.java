@@ -180,7 +180,7 @@ public final class BpmnJobBehavior {
     final var jobKey = keyGenerator.nextKey();
     stateWriter.appendFollowUpEvent(jobKey, JobIntent.CREATED, jobRecord);
 
-    jobActivationBehavior.publishWork(jobRecord);
+    jobActivationBehavior.publishWork(jobKey, jobRecord);
   }
 
   private DirectBuffer encodeHeaders(

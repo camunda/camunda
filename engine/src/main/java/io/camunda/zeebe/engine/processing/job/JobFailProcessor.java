@@ -115,8 +115,8 @@ public final class JobFailProcessor implements CommandProcessor<JobRecord> {
 
   private void acceptCommand(
       final TypedRecord<JobRecord> command, final CommandControl<JobRecord> commandControl) {
-    final long key = command.getKey();
-    final JobRecord failedJob = jobState.getJob(key);
+    final long jobKey = command.getKey();
+    final JobRecord failedJob = jobState.getJob(jobKey);
     final var retries = command.getValue().getRetries();
     final var retryBackOff = command.getValue().getRetryBackoff();
     failedJob.setRetries(retries);
@@ -139,7 +139,7 @@ public final class JobFailProcessor implements CommandProcessor<JobRecord> {
 
     final boolean retryImmediately = retries > 0 && retryBackOff <= 0;
     if (retryImmediately) {
-      jobActivationBehavior.publishWork(failedJob);
+      jobActivationBehavior.publishWork(jobKey, failedJob);
     }
   }
 }

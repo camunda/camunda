@@ -98,6 +98,11 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
     elementInstanceKeyProp.setValue(record.getElementInstanceKey());
   }
 
+  public void wrap(final JobRecord record) {
+    wrapWithoutVariables(record);
+    variableProp.setValue(record.getVariablesBuffer());
+  }
+
   public JobRecord resetVariables() {
     variableProp.reset();
     return this;

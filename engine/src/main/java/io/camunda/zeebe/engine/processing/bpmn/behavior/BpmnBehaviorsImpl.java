@@ -123,7 +123,11 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
 
     jobActivationBehavior =
         new BpmnJobActivationBehavior(
-            jobStreamer, processingState.getVariableState(), writers, jobMetrics);
+            jobStreamer,
+            processingState.getVariableState(),
+            writers,
+            processingState.getKeyGenerator(),
+            jobMetrics);
 
     jobBehavior =
         new BpmnJobBehavior(

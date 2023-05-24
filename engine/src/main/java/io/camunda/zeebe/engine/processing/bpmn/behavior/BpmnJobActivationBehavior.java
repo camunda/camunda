@@ -8,12 +8,22 @@
 package io.camunda.zeebe.engine.processing.bpmn.behavior;
 
 import io.camunda.zeebe.engine.metrics.JobMetrics;
+import io.camunda.zeebe.engine.processing.job.JobVariablesCollector;
+import io.camunda.zeebe.engine.processing.streamprocessor.JobActivationProperties;
 import io.camunda.zeebe.engine.processing.streamprocessor.JobStreamer;
+import io.camunda.zeebe.engine.processing.streamprocessor.JobStreamer.JobStream;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.SideEffectWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.immutable.VariableState;
+import io.camunda.zeebe.protocol.impl.record.value.job.JobBatchRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
+import io.camunda.zeebe.protocol.impl.stream.job.ActivatedJobImpl;
+import io.camunda.zeebe.protocol.record.intent.JobBatchIntent;
+import io.camunda.zeebe.scheduler.clock.ActorClock;
+import io.camunda.zeebe.stream.api.state.KeyGenerator;
+import java.util.Optional;
+import org.agrona.concurrent.UnsafeBuffer;
 
 /**
  * A behavior class which allows processors to activate a job. Use this anywhere a job should
@@ -28,26 +38,61 @@ import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
  */
 public class BpmnJobActivationBehavior {
   private final JobStreamer jobStreamer;
-  private final VariableState variableState;
+  private final JobVariablesCollector jobVariablesCollector;
   private final StateWriter stateWriter;
   private final SideEffectWriter sideEffectWriter;
+  private final KeyGenerator keyGenerator;
   private final JobMetrics jobMetrics;
 
   public BpmnJobActivationBehavior(
       final JobStreamer jobStreamer,
       final VariableState variableState,
       final Writers writers,
+      final KeyGenerator keyGenerator,
       final JobMetrics jobMetrics) {
     this.jobStreamer = jobStreamer;
-    this.variableState = variableState;
+    this.keyGenerator = keyGenerator;
+    this.jobMetrics = jobMetrics;
+    jobVariablesCollector = new JobVariablesCollector(variableState);
     stateWriter = writers.state();
     sideEffectWriter = writers.sideEffect();
-    this.jobMetrics = jobMetrics;
   }
 
-  public void publishWork(final JobRecord jobRecord) {
-    final String jobType = jobRecord.getType();
-    notifyJobAvailable(jobType);
+  public void publishWork(final long jobKey, final JobRecord jobRecord) {
+    final JobRecord wrappedJobRecord = new JobRecord();
+    wrappedJobRecord.wrapWithoutVariables(jobRecord);
+
+    final String jobType = wrappedJobRecord.getType();
+    final Optional<JobStream> optionalJobStream =
+        jobStreamer.streamFor(wrappedJobRecord.getTypeBuffer());
+
+    if (optionalJobStream.isPresent()) {
+      final JobStream jobStream = optionalJobStream.get();
+      final JobActivationProperties properties = jobStream.properties();
+
+      // activate job in state
+      setJobProperties(wrappedJobRecord, properties);
+      final JobBatchRecord jobBatchRecord = createJobBatchRecord(wrappedJobRecord, properties);
+      appendJobToBatch(jobBatchRecord, jobKey, wrappedJobRecord);
+      final var jobBatchKey = keyGenerator.nextKey();
+      stateWriter.appendFollowUpEvent(jobBatchKey, JobBatchIntent.ACTIVATED, jobBatchRecord);
+
+      jobVariablesCollector.setJobVariables(properties.fetchVariables(), wrappedJobRecord);
+      final var pushableJobRecord = new JobRecord();
+      cloneJob(wrappedJobRecord, pushableJobRecord);
+      final var activatedJob = new ActivatedJobImpl();
+      activatedJob.setJobKey(jobKey).setRecord(pushableJobRecord);
+
+      // job push through side effect
+      sideEffectWriter.appendSideEffect(
+          () -> {
+            jobStream.push(activatedJob);
+            jobMetrics.jobPush(jobType);
+            return true;
+          });
+    } else {
+      notifyJobAvailable(jobType);
+    }
   }
 
   public void notifyJobAvailableAsSideEffect(final JobRecord jobRecord) {
@@ -59,7 +104,42 @@ public class BpmnJobActivationBehavior {
     sideEffectWriter.appendSideEffect(
         () -> {
           jobStreamer.notifyWorkAvailable(jobType);
+          jobMetrics.jobNotification(jobType);
           return true;
         });
+  }
+
+  private void setJobProperties(
+      final JobRecord jobRecord, final JobActivationProperties properties) {
+    // we push the job immediately, so the deadline is always calculated from the current time
+    final var deadline = ActorClock.currentTimeMillis() + properties.timeout();
+    jobRecord.setDeadline(deadline);
+    jobRecord.setWorker(properties.worker());
+  }
+
+  private JobBatchRecord createJobBatchRecord(
+      final JobRecord jobRecord, final JobActivationProperties properties) {
+    // reuse the existing JobBatch activation mechanism
+    final JobBatchRecord jobBatchRecord = new JobBatchRecord();
+    jobBatchRecord
+        .setType(jobRecord.getType())
+        .setTimeout(properties.timeout())
+        .setWorker(properties.worker());
+    return jobBatchRecord;
+  }
+
+  private void appendJobToBatch(
+      final JobBatchRecord jobBatchRecord, final Long jobKey, final JobRecord jobRecord) {
+
+    // we don't need to clone the job record, as the buffer isn't reused
+    jobBatchRecord.jobKeys().add().setValue(jobKey);
+    jobBatchRecord.jobs().add().wrapWithoutVariables(jobRecord);
+  }
+
+  private void cloneJob(final JobRecord jobRecord, final JobRecord jobRecordClone) {
+    final var bytes = new byte[jobRecord.getLength()];
+    final var jobCopyBuffer = new UnsafeBuffer(bytes);
+    jobRecord.write(jobCopyBuffer, 0);
+    jobRecordClone.wrap(jobCopyBuffer, 0, jobRecord.getLength());
   }
 }

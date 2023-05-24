@@ -148,7 +148,7 @@ public final class ResolveIncidentProcessor implements TypedRecordProcessor<Inci
     final boolean isJobRelatedIncident = jobKey > 0;
     if (isJobRelatedIncident) {
       final JobRecord failedJobRecord = jobState.getJob(jobKey);
-      jobActivationBehavior.publishWork(failedJobRecord);
+      jobActivationBehavior.publishWork(jobKey, failedJobRecord);
     }
   }
 }
