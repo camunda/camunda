@@ -10,8 +10,12 @@ package io.camunda.zeebe.journal.file;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import java.io.IOException;
+import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
+import java.nio.channels.FileChannel.MapMode;
 import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 import org.agrona.CloseHelper;
 import org.agrona.IoUtil;
 import org.junit.jupiter.api.AfterEach;
@@ -83,16 +87,43 @@ final class SegmentedJournalWriterTest {
     while (segments.getFirstSegment() == segments.getLastSegment()) {
       writer.append(-1, journalFactory.entry());
     }
+    final var lastIndexInFirstSegment = segments.getLastSegment().index() - 1;
 
     // when
     segments.close();
     segments.open();
 
     // then
-    final var lastIndexInFirstSegment = segments.getLastSegment().index() - 1;
     final SegmentDescriptor descriptor = segments.getFirstSegment().descriptor();
     assertThat(descriptor.lastIndex()).isEqualTo(lastIndexInFirstSegment);
     assertThat(descriptor.lastPosition()).isNotZero();
+  }
+
+  @Test
+  void shouldResetToLastEntryEvenIfLastPositionInDescriptorIsIncorrect() throws IOException {
+    // given
+    while (segments.getFirstSegment() == segments.getLastSegment()) {
+      writer.append(-1, journalFactory.entry());
+    }
+    final var lastIndexInFirstSegment = segments.getLastSegment().index() - 1;
+
+    final SegmentDescriptor descriptorToCorrupt = segments.getFirstSegment().descriptor();
+    final Segment firstSegment = segments.getFirstSegment();
+    descriptorToCorrupt.setLastPosition(firstSegment.descriptor().lastPosition() + 1);
+    final var segmentFile = firstSegment.file().file().toPath();
+    try (final FileChannel channel =
+        FileChannel.open(segmentFile, StandardOpenOption.READ, StandardOpenOption.WRITE)) {
+      final MappedByteBuffer buffer =
+          channel.map(MapMode.READ_WRITE, 0, descriptorToCorrupt.length());
+      descriptorToCorrupt.updateIfCurrentVersion(buffer);
+    }
+
+    // when
+    segments.close();
+    segments.open();
+
+    // then
+    assertThat(segments.getFirstSegment().lastIndex()).isEqualTo(lastIndexInFirstSegment);
   }
 
   @Test
