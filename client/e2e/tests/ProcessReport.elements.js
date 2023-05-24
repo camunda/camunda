@@ -9,6 +9,7 @@ import {Selector} from 'testcafe';
 
 export const templateOption = (text) =>
   Selector('.TemplateModal .templateContainer .Button').withText(text);
+export const reportContainer = Selector('.Report');
 export const reportName = Selector('.ReportView .name');
 export const reportRenderer = Selector('.ReportRenderer');
 export const report = Selector('.ListItem.report');

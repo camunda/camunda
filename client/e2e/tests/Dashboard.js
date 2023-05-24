@@ -465,3 +465,53 @@ test('add a report from the dashboard', async (t) => {
   await t.expect(e.reportTile.nth(0).textContent).contains('Blank report');
   await t.expect(e.reportTile.nth(1).textContent).contains('KPI: 75th Percentile Duration');
 });
+
+test('add, edit and remove dashboards description', async (t) => {
+  await u.createNewDashboard(t);
+
+  // Add description
+  const description = 'This is a description of the dashboard.';
+  await u.addEditEntityDescription(t, description);
+
+  await t.expect(Common.descriptionField.textContent).contains(description);
+
+  await u.save(t);
+  await u.gotoOverview(t);
+  await t.expect(Common.dashboardItem.textContent).contains(description);
+
+  await t.click(Common.dashboardItem);
+  await t.expect(Common.descriptionField.textContent).contains(description);
+
+  // Edit description
+  await t.resizeWindow(1200, 600);
+  await t.click(Common.editButton);
+  const newDescription =
+    'This is a new description of the dashboard. This time the description is very long and will not fit in one line. It will display ellipsis and More button.';
+  await u.addEditEntityDescription(t, newDescription);
+
+  await t.expect(Common.descriptionField.textContent).contains(newDescription);
+
+  await u.save(t);
+
+  // Toggle show less/more
+  await t.expect(Common.descriptionField.find('p').hasClass('overflowHidden')).ok();
+  await t.expect(Common.showLessMoreDescriptionButton.textContent).contains('More');
+
+  await t.click(Common.showLessMoreDescriptionButton);
+
+  await t.expect(Common.descriptionField.find('p').hasClass('overflowHidden')).notOk();
+  await t.expect(Common.showLessMoreDescriptionButton.textContent).contains('Less');
+
+  await t.click(Common.showLessMoreDescriptionButton);
+  await t.expect(Common.descriptionField.find('p').hasClass('overflowHidden')).ok();
+  await t.expect(Common.showLessMoreDescriptionButton.textContent).contains('More');
+
+  // Remove description
+  await t.click(Common.editButton);
+  await u.addEditEntityDescription(t);
+  await t.expect(Common.descriptionField.textContent).contains('No description yet');
+
+  await u.save(t);
+
+  await t.expect(Common.descriptionField.exists).notOk();
+});

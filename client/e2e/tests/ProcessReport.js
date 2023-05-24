@@ -1263,3 +1263,53 @@ test('Display precision properly', async (t) => {
   await t.expect(b.textContent).match(/\d(\.\d)?%/);
   await t.expect(c.textContent).match(/\d+.[a-zA-Z]*/);
 });
+
+test('add, edit and remove reports description', async (t) => {
+  await u.createNewReport(t);
+
+  // Add description
+  const description = 'This is a description of the report.';
+  await u.addEditEntityDescription(t, description);
+
+  await t.expect(Common.descriptionField.textContent).contains(description);
+
+  await u.save(t);
+  await u.gotoOverview(t);
+  await t.expect(Common.reportItem.textContent).contains(description);
+
+  await t.click(Common.reportItem);
+  await t.expect(Common.descriptionField.textContent).contains(description);
+
+  // Edit description
+  await t.resizeWindow(1200, 600);
+  await t.click(Common.editButton);
+  const newDescription =
+    'This is a new description of the report. This time the description is very long and it will not fit in one line. It will display ellipsis and More button.';
+  await u.addEditEntityDescription(t, newDescription);
+
+  await t.expect(Common.descriptionField.textContent).contains(newDescription);
+
+  await u.save(t);
+
+  // Toggle show less/more
+  await t.expect(Common.descriptionField.find('p').hasClass('overflowHidden')).ok();
+  await t.expect(Common.showLessMoreDescriptionButton.textContent).contains('More');
+
+  await t.click(Common.showLessMoreDescriptionButton);
+
+  await t.expect(Common.descriptionField.find('p').hasClass('overflowHidden')).notOk();
+  await t.expect(Common.showLessMoreDescriptionButton.textContent).contains('Less');
+
+  await t.click(Common.showLessMoreDescriptionButton);
+  await t.expect(Common.descriptionField.find('p').hasClass('overflowHidden')).ok();
+  await t.expect(Common.showLessMoreDescriptionButton.textContent).contains('More');
+
+  // Remove description
+  await t.click(Common.editButton);
+  await u.addEditEntityDescription(t);
+  await t.expect(Common.descriptionField.textContent).contains('No description yet');
+
+  await u.save(t);
+
+  await t.expect(Common.descriptionField.exists).notOk();
+});

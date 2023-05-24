@@ -13,6 +13,11 @@ export const confirmButton = Selector('button.confirm');
 export const modalConfirmButton = Selector('.Modal.is-visible')
   .nth(-1)
   .find('.cds--modal-footer .cds--btn:last-child');
+export const descriptionField = Selector('.EntityDescription');
+export const addDescriptionButton = descriptionField.find('button');
+export const showLessMoreDescriptionButton = descriptionField.find('span.toggle');
+export const descriptionModal = Selector('.EntityDescriptionEditModal');
+export const descriptionModalInput = descriptionModal.find('textarea');
 export const modalNameInput = Selector('.Modal.is-visible input[type="text"]');
 export const option = (text) => Selector('.DropdownOption').withText(text);
 export const submenuOption = (text) => Selector('.Submenu .DropdownOption').withText(text);

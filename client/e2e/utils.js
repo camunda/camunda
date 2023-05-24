@@ -177,3 +177,15 @@ export async function bulkDeleteAllItems(t) {
 export async function toggleReportAutoPreviewUpdate(t) {
   await t.click('.updatePreview .Switch');
 }
+
+export async function addEditEntityDescription(t, description) {
+  await t.click(Common.addDescriptionButton);
+
+  if (!description) {
+    await t.selectText(Common.descriptionModalInput).pressKey('delete');
+  } else {
+    await t.typeText(Common.descriptionModalInput, description, {replace: true});
+  }
+
+  await t.click(Common.confirmButton);
+}
