@@ -126,6 +126,7 @@ export class Dashboard extends React.Component {
         const {
           id,
           name,
+          description,
           lastModifier,
           currentUserRole,
           lastModified,
@@ -144,6 +145,7 @@ export class Dashboard extends React.Component {
           currentUserRole,
           loaded: true,
           name,
+          description,
           tiles: tiles || [],
           availableFilters: availableFilters || [],
           isAuthorizedToShare: await isAuthorizedToShareDashboard(id),
