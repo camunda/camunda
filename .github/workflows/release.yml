@@ -174,10 +174,6 @@ jobs:
             exit 0
           fi
 
-          pushd clients/go
-          git commit -am "build(project): update go versions"
-          popd
-
           mvn -B versions:set-property -DgenerateBackupPoms=false -Dproperty=backwards.compat.version -DnewVersion="${RELEASE_VERSION}"
           FILE=$(mvn -B help:evaluate -Dexpression=ignored.changes.file -q -DforceStdout)
           rm -f "clients/java/${FILE}" "test/${FILE}" "exporter-api/${FILE}" "protocol/${FILE}" "bpmn-model/${FILE}"
