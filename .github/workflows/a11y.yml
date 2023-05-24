@@ -5,7 +5,7 @@ jobs:
   test:
     runs-on: ubuntu-latest
     container:
-      image: mcr.microsoft.com/playwright:v1.34.1
+      image: mcr.microsoft.com/playwright:v1.34.2
       options: --user 1001:1000
     steps:
       - name: Check out repository code
