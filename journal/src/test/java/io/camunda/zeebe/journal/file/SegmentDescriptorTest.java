@@ -157,7 +157,7 @@ class SegmentDescriptorTest {
         .isEqualTo(SegmentDescriptor.getEncodingLengthForVersion((byte) (2)));
   }
 
-  private static void writeDescriptorV2(
+  private void writeDescriptorV2(
       final SegmentDescriptor descriptor,
       final UnsafeBuffer directBuffer,
       final ByteBuffer buffer) {
