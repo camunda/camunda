@@ -430,7 +430,7 @@ pipeline {
             fi
             # an additional docker tag can optionally be provided. Checking against an empty variable was not working
              properly, therefore setting default value to NONE and checking against it
-            if [ ! "${ADDITIONAL_DOCKER_TAG}" = "NONE" ]; then
+            if [ "${ADDITIONAL_DOCKER_TAG}" != "NONE" ]; then
                tags+=('${DOCKER_REGISTRY_IMAGE(params.PUSH_CHANGES)}:${ADDITIONAL_DOCKER_TAG}')
                tags+=('${DOCKERHUB_IMAGE()}:${ADDITIONAL_DOCKER_TAG}')
             fi
