@@ -400,11 +400,6 @@ pipeline {
         VERSION = "${params.RELEASE_VERSION}"
         PUSH_CHANGES = "${params.PUSH_CHANGES}"
         DOCKER_LATEST = "${params.DOCKER_LATEST}"
-        if(params.containsKey("ADDITIONAL_DOCKER_TAG")) {
-          ADDITIONAL_DOCKER_TAG = "${params.ADDITIONAL_DOCKER_TAG}"
-        } else {
-          ADDITIONAL_DOCKER_TAG = ""
-        }
         DOCKERHUB_REGISTRY_CREDENTIALS = credentials('camunda-dockerhub')
         REGISTRY_CAMUNDA_CLOUD = credentials('registry-camunda-cloud')
         MAJOR_OR_MINOR = isMajorOrMinorRelease(params.RELEASE_VERSION)
@@ -432,7 +427,7 @@ pipeline {
                tags+=('${DOCKERHUB_IMAGE()}:latest')
             fi
             # an additional docker tag can optionally be provided
-            if [ ! -z "${ADDITIONAL_DOCKER_TAG}" ]; then
+            if [ ! -z "${params.ADDITIONAL_DOCKER_TAG}" ]; then
                tags+=('${DOCKER_REGISTRY_IMAGE(params.PUSH_CHANGES)}:${ADDITIONAL_DOCKER_TAG}')
                tags+=('${DOCKERHUB_IMAGE()}:${ADDITIONAL_DOCKER_TAG}')
             fi
