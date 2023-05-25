@@ -325,7 +325,8 @@ pipeline {
     string(name: 'RELEASE_VERSION', defaultValue: '0.0.0', description: 'Version to release. Applied to pom.xml and Git tag.')
     string(name: 'DEVELOPMENT_VERSION', defaultValue: '0.1.0-SNAPSHOT', description: 'Next development version.')
     string(name: 'BRANCH', defaultValue: 'master', description: 'The branch used for the release checkout.')
-    string(name: 'ADDITIONAL_DOCKER_TAG', defaultValue: '', description: '(Optional) Any additional tag that should be added to the docker image.')
+    string(name: 'ADDITIONAL_DOCKER_TAG', defaultValue: 'NONE', description: '(Optional) Any additional tag that ' +
+      'should be added to the docker image.')
     booleanParam(name: 'PUSH_CHANGES', defaultValue: false, description: 'Should the changes be pushed to remote locations.')
   }
 
@@ -400,6 +401,7 @@ pipeline {
         VERSION = "${params.RELEASE_VERSION}"
         PUSH_CHANGES = "${params.PUSH_CHANGES}"
         DOCKER_LATEST = "${params.DOCKER_LATEST}"
+        ADDITIONAL_DOCKER_TAG = "${params.ADDITIONAL_DOCKER_TAG}"
         DOCKERHUB_REGISTRY_CREDENTIALS = credentials('camunda-dockerhub')
         REGISTRY_CAMUNDA_CLOUD = credentials('registry-camunda-cloud')
         MAJOR_OR_MINOR = isMajorOrMinorRelease(params.RELEASE_VERSION)
@@ -426,8 +428,9 @@ pipeline {
                tags+=('${DOCKER_REGISTRY_IMAGE(params.PUSH_CHANGES)}:latest')
                tags+=('${DOCKERHUB_IMAGE()}:latest')
             fi
-            # an additional docker tag can optionally be provided
-            if [ ! -z "${params.ADDITIONAL_DOCKER_TAG}" ]; then
+            # an additional docker tag can optionally be provided. Checking against an empty variable was not working
+             properly, therefore setting default value to NONE and checking against it
+            if [ ! "${ADDITIONAL_DOCKER_TAG}" = "NONE" ]; then
                tags+=('${DOCKER_REGISTRY_IMAGE(params.PUSH_CHANGES)}:${ADDITIONAL_DOCKER_TAG}')
                tags+=('${DOCKERHUB_IMAGE()}:${ADDITIONAL_DOCKER_TAG}')
             fi
