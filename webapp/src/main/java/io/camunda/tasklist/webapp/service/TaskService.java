@@ -6,12 +6,7 @@
  */
 package io.camunda.tasklist.webapp.service;
 
-import static io.camunda.tasklist.Metrics.COUNTER_NAME_CLAIMED_TASKS;
-import static io.camunda.tasklist.Metrics.COUNTER_NAME_COMPLETED_TASKS;
-import static io.camunda.tasklist.Metrics.TAG_KEY_BPMN_PROCESS_ID;
-import static io.camunda.tasklist.Metrics.TAG_KEY_FLOW_NODE_ID;
-import static io.camunda.tasklist.Metrics.TAG_KEY_ORGANIZATION_ID;
-import static io.camunda.tasklist.Metrics.TAG_KEY_USER_ID;
+import static io.camunda.tasklist.Metrics.*;
 import static io.camunda.tasklist.util.CollectionUtil.countNonNullObjects;
 import static java.util.Objects.requireNonNullElse;
 
@@ -34,9 +29,9 @@ import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.client.api.command.CompleteJobCommandStep1;
 import java.io.IOException;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -111,9 +106,14 @@ public class TaskService {
   }
 
   public TaskDTO completeTask(String taskId, List<VariableInputDTO> variables) {
-    final Map<String, Object> variablesMap =
-        requireNonNullElse(variables, Collections.<VariableInputDTO>emptyList()).stream()
-            .collect(Collectors.toMap(VariableInputDTO::getName, this::extractTypedValue));
+    final Map<String, Object> variablesMap = new HashMap<>();
+
+    requireNonNullElse(variables, Collections.<VariableInputDTO>emptyList())
+        .forEach(
+            variable -> {
+              variablesMap.put(variable.getName(), this.extractTypedValue(variable));
+            });
+
     final TaskEntity task = taskReaderWriter.getTask(taskId);
     taskValidator.validateCanComplete(task);
 
