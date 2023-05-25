@@ -110,8 +110,8 @@ describe('<FormJS />', () => {
     jest.runOnlyPendingTimers();
     expect(screen.getByLabelText(/is cool\?/i)).toBeInTheDocument();
     expect(screen.getAllByRole('textbox')).toHaveLength(2);
-    expect(screen.getByLabelText(/my variable/i)).toBeDisabled();
-    expect(screen.getByLabelText(/is cool\?/i)).toBeDisabled();
+    expect(screen.getByLabelText(/my variable/i)).toHaveAttribute('readonly');
+    expect(screen.getByLabelText(/is cool\?/i)).toHaveAttribute('readonly');
     expect(
       screen.getByRole('button', {
         name: /complete task/i,

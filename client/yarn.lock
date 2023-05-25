@@ -1133,18 +1133,15 @@
     "@codemirror/language" "^6.2.1"
     lezer-feel "^0.15.0"
 
-"@bpmn-io/form-js-carbon-styles@0.15.0-alpha.1":
-  version "0.15.0-alpha.1"
-  resolved "https://registry.yarnpkg.com/@bpmn-io/form-js-carbon-styles/-/form-js-carbon-styles-0.15.0-alpha.1.tgz#e7f8c978f663f22c3af843c3c5cce8a28c1761a8"
-  integrity sha512-VYCvC18y3XKhlsjXs0hoL3Ls4DgUv8u7U0N5u1rbxI7mB+x6bwwbNiRJRwmDizCFYjoLka0dYJ4ujzjLrz7Tyg==
-  dependencies:
-    "@carbon/elements" "^11.19.1"
-    styled-components "^5.3.6"
+"@bpmn-io/form-js-carbon-styles@1.0.0-alpha.0":
+  version "1.0.0-alpha.0"
+  resolved "https://registry.yarnpkg.com/@bpmn-io/form-js-carbon-styles/-/form-js-carbon-styles-1.0.0-alpha.0.tgz#fb6c0acde055a94d07c381d111ae7ed1591e834c"
+  integrity sha512-fhDBPI5ZRYMobzCjrh/qiEJ9Y7LB3+orzrH3zI2X/6ffJ86vwpc0ItHk2iKnL79jfnEnYJ6yBOeq9sn6GeCSrw==
 
-"@bpmn-io/form-js-viewer@0.15.0-alpha.0":
-  version "0.15.0-alpha.0"
-  resolved "https://registry.yarnpkg.com/@bpmn-io/form-js-viewer/-/form-js-viewer-0.15.0-alpha.0.tgz#40b5179f209e0473f0de73a4d4261c3693d9dbc1"
-  integrity sha512-Tt0o+wJYCxMiQsaFHz838O6XLV+LtDeMhhaSxc5HJNcZxpDhZkImdC5fj2HURlBGziGDoZLkaYm2y8Y6AQmyGw==
+"@bpmn-io/form-js-viewer@1.0.0-alpha.0":
+  version "1.0.0-alpha.0"
+  resolved "https://registry.yarnpkg.com/@bpmn-io/form-js-viewer/-/form-js-viewer-1.0.0-alpha.0.tgz#e88ba42a46c172f44852dad150df5b33d78a2cab"
+  integrity sha512-8MrL9CgrV03/vXA8Yo1mYy3Kmx75mQwhJjoGlJFt7fKr2ymnpjfwnLdoJINAH5DHc4T7vNLVTxpgeB/ZNxwEDg==
   dependencies:
     "@carbon/grid" "^11.11.0"
     big.js "^6.2.1"
@@ -1169,7 +1166,7 @@
   resolved "https://registry.yarnpkg.com/@carbon/colors/-/colors-11.14.0.tgz#cdf73558dca2f63b6167a962cb26a8cae843b0e1"
   integrity sha512-SkjAmmUwdLEvu/JKPOcslbx+mrvqp+ZSvBvFP/7tjv0HYC0Khs3ltjYeSiusg/KpCoSyFM+fzEJm2qdURxC1+w==
 
-"@carbon/elements@11.22.0", "@carbon/elements@^11.19.1":
+"@carbon/elements@11.22.0":
   version "11.22.0"
   resolved "https://registry.yarnpkg.com/@carbon/elements/-/elements-11.22.0.tgz#4b1d3e5b570bb16b6791e0f2f86a9c1160881da7"
   integrity sha512-kUifQJsGdv6Q30/0NA2L5pmmuiBnzUDONz8EmVcEFAyf08ayTioql/2yJcZixV2YS4Jj0AKeFzVAwrYAFtu0HQ==
@@ -2633,12 +2630,7 @@
   resolved "https://registry.yarnpkg.com/@types/ms/-/ms-0.7.31.tgz#31b7ca6407128a3d2bbc27fe2d21b345397f6197"
   integrity sha512-iiUgKzV9AuaEkZqkOLDIvlQiL6ltuZd9tGcW3gwpnX8JbuiuhFlEGmmFXEXkN50Cvq7Os88IY2v0dkDqXYWVgA==
 
-"@types/node@*", "@types/node@>=12.12.47", "@types/node@>=13.7.0":
-  version "18.16.5"
-  resolved "https://registry.yarnpkg.com/@types/node/-/node-18.16.5.tgz#bf64e42719dc2e74da24709a2e1c0b50a966120a"
-  integrity sha512-seOA34WMo9KB+UA78qaJoCO20RJzZGVXQ5Sh6FWu0g/hfT44nKXnej3/tCQl7FL97idFpBhisLYCTB50S0EirA==
-
-"@types/node@18.16.14":
+"@types/node@*", "@types/node@18.16.14", "@types/node@>=12.12.47", "@types/node@>=13.7.0":
   version "18.16.14"
   resolved "https://registry.yarnpkg.com/@types/node/-/node-18.16.14.tgz#ab67bb907f1146afc6fedb9ce60ae8a99c989631"
   integrity sha512-+ImzUB3mw2c5ISJUq0punjDilUQ5GnUim0ZRvchHIWJmOC0G+p0kzhXBqj6cDjK0QdPFwzrHWgrJp3RPvCG5qg==
@@ -2692,16 +2684,7 @@
   dependencies:
     "@types/react" "*"
 
-"@types/react@*":
-  version "18.2.6"
-  resolved "https://registry.yarnpkg.com/@types/react/-/react-18.2.6.tgz#5cd53ee0d30ffc193b159d3516c8c8ad2f19d571"
-  integrity sha512-wRZClXn//zxCFW+ye/D2qY65UsYP1Fpex2YXorHc8awoNamkMZSvBxwxdYVInsHOZZd2Ppq8isnSzJL5Mpf8OA==
-  dependencies:
-    "@types/prop-types" "*"
-    "@types/scheduler" "*"
-    csstype "^3.0.2"
-
-"@types/react@18.2.7":
+"@types/react@*", "@types/react@18.2.7":
   version "18.2.7"
   resolved "https://registry.yarnpkg.com/@types/react/-/react-18.2.7.tgz#dfb4518042a3117a045b8c222316f83414a783b3"
   integrity sha512-ojrXpSH2XFCmHm7Jy3q44nXDyN54+EYKP2lBhJ2bqfyPj6cIUW/FZW/Csdia34NQgq7KYcAlHi5184m4X88+yw==
@@ -3464,15 +3447,10 @@ available-typed-arrays@^1.0.5:
   resolved "https://registry.yarnpkg.com/available-typed-arrays/-/available-typed-arrays-1.0.5.tgz#92f95616501069d07d10edb2fc37d3e1c65123b7"
   integrity sha512-DMD0KiN46eipeziST1LPP/STfDU0sufISXmjSgvVsoU2tqxctQeASejWcfNtxYKqETM1UxQ8sp2OrSBWpHY6sw==
 
-axe-core@4.7.1:
+axe-core@4.7.1, axe-core@^4.6.2, axe-core@^4.7.0:
   version "4.7.1"
   resolved "https://registry.yarnpkg.com/axe-core/-/axe-core-4.7.1.tgz#04392c9ccb3d7d7c5d2f8684f148d56d3442f33d"
   integrity sha512-sCXXUhA+cljomZ3ZAwb8i1p3oOlkABzPy08ZDAoGcYuvtBPlQ1Ytde129ArXyHWDhfeewq7rlx9F+cUx2SSlkg==
-
-axe-core@^4.6.2, axe-core@^4.7.0:
-  version "4.7.0"
-  resolved "https://registry.yarnpkg.com/axe-core/-/axe-core-4.7.0.tgz#34ba5a48a8b564f67e103f0aa5768d76e15bbbbf"
-  integrity sha512-M0JtH+hlOL5pLQwHOLNYZaXuhqmvS8oExsqB1SBYgA4Dk7u/xx+YdGHXaK5pyUfed5mYXdlYiphWq3G8cRi5JQ==
 
 axobject-query@^3.1.1:
   version "3.1.1"
@@ -5633,13 +5611,6 @@ eslint@^8.3.0:
     strip-ansi "^6.0.1"
     strip-json-comments "^3.1.0"
     text-table "^0.2.0"
-
-esotope-hammerhead@0.6.3:
-  version "0.6.3"
-  resolved "https://registry.yarnpkg.com/esotope-hammerhead/-/esotope-hammerhead-0.6.3.tgz#0cd6f7503c7fe285daf366ff7d42a338316d59ac"
-  integrity sha512-Aq6gUznvm0xPtjpbZo9OSsRO1+m+NM0hjZOYufH3HDlJWeOZpBskR/vuP9/tiMaQFD3+ES5BQq5fAY1qOLKWUA==
-  dependencies:
-    "@types/estree" "0.0.46"
 
 esotope-hammerhead@0.6.4:
   version "0.6.4"
@@ -11287,7 +11258,7 @@ style-mod@^4.0.0:
   resolved "https://registry.yarnpkg.com/style-mod/-/style-mod-4.0.2.tgz#ef9e14c4c67428bcf31cc886787e81ca7f8f5021"
   integrity sha512-C4myMmRTO8iaC5Gg+N1ftK2WT4eXUTMAa+HEFPPrfVeO/NtqLTtAmV1HbqnuGtLwCek44Ra76fdGUkSqjiMPcQ==
 
-styled-components@5.3.10, styled-components@^5.3.6:
+styled-components@5.3.10:
   version "5.3.10"
   resolved "https://registry.yarnpkg.com/styled-components/-/styled-components-5.3.10.tgz#42f7245f58fe960362a63f543dda23c0ac107c0f"
   integrity sha512-3kSzSBN0TiCnGJM04UwO1HklIQQSXW7rCARUk+VyMR7clz8XVlA3jijtf5ypqoDIdNMKx3la4VvaPFR855SFcg==
@@ -11522,7 +11493,7 @@ testcafe-browser-tools@2.0.23:
     read-file-relative "^1.2.0"
     which-promise "^1.0.0"
 
-testcafe-hammerhead@31.4.0:
+testcafe-hammerhead@31.4.0, testcafe-hammerhead@>=19.4.0:
   version "31.4.0"
   resolved "https://registry.yarnpkg.com/testcafe-hammerhead/-/testcafe-hammerhead-31.4.0.tgz#980119278a0042e60c32b2d110ee00fac61d44a1"
   integrity sha512-f848w3OMvCsn7ul6GorllM/n7RI5SfknoDaur0amtHd2wZxmB7yI+NxgKTCEKwu+k/cAF4ItS7cZDP1hndD3xA==
@@ -11534,36 +11505,6 @@ testcafe-hammerhead@31.4.0:
     css "2.2.3"
     debug "4.3.1"
     esotope-hammerhead "0.6.4"
-    http-cache-semantics "^4.1.0"
-    httpntlm "^1.8.10"
-    iconv-lite "0.5.1"
-    lodash "^4.17.20"
-    lru-cache "2.6.3"
-    match-url-wildcard "0.0.4"
-    merge-stream "^1.0.1"
-    mime "~1.4.1"
-    mustache "^2.1.1"
-    nanoid "^3.1.12"
-    os-family "^1.0.0"
-    parse5 "2.2.3"
-    pinkie "2.0.4"
-    read-file-relative "^1.2.0"
-    semver "5.5.0"
-    tough-cookie "4.0.0"
-    tunnel-agent "0.6.0"
-
-testcafe-hammerhead@>=19.4.0:
-  version "30.1.0"
-  resolved "https://registry.yarnpkg.com/testcafe-hammerhead/-/testcafe-hammerhead-30.1.0.tgz#cbf2af734d95ef1e62a236b57e5752e20a19f3c8"
-  integrity sha512-82vSAAQvBEsgUNVIusb6mSEpyUGv0r0bzT0vXRqLqKSSYRjgXSK8k0PR5Q+YErGlR5k5gmBqVQYuFgMsWUQpWg==
-  dependencies:
-    "@electron/asar" "^3.2.3"
-    acorn-hammerhead "0.6.1"
-    bowser "1.6.0"
-    crypto-md5 "^1.0.0"
-    css "2.2.3"
-    debug "4.3.1"
-    esotope-hammerhead "0.6.3"
     http-cache-semantics "^4.1.0"
     httpntlm "^1.8.10"
     iconv-lite "0.5.1"

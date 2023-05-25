@@ -24,7 +24,7 @@
       "defaultValue": "value",
       "layout": {
         "row": "Row_14setyc",
-        "columns": 10
+        "columns": null
       }
     },
     {
@@ -37,8 +37,21 @@
       "defaultValue": "value",
       "layout": {
         "row": "Row_14setyc",
-        "columns": 6
+        "columns": null
       }
+    },
+    {
+      "label": "I am a readonly textfield",
+      "type": "textfield",
+      "layout": {
+        "row": "Row_14setyc",
+        "columns": null
+      },
+      "id": "Field_0wdruyf",
+      "key": "readonly_textfield",
+      "description": "I am a readonly textfield description",
+      "defaultValue": "readonly field value",
+      "readonly": true
     },
     {
       "label": "I am a number field",
@@ -120,7 +133,7 @@
       "description": "I am checklist description",
       "layout": {
         "row": "Row_0luakh3",
-        "columns": 8
+        "columns": null
       }
     },
     {
@@ -142,8 +155,30 @@
       "disabled": true,
       "layout": {
         "row": "Row_0luakh3",
-        "columns": 8
+        "columns": null
       }
+    },
+    {
+      "values": [
+        {
+          "label": "Option 1",
+          "value": "option_1"
+        },
+        {
+          "label": "Option 2",
+          "value": "option_2"
+        }
+      ],
+      "label": "I am readonly checklist",
+      "type": "checklist",
+      "layout": {
+        "row": "Row_0luakh3",
+        "columns": null
+      },
+      "id": "Field_1vlq4xt",
+      "key": "readonly_checklist",
+      "description": "I am readonly checklist description",
+      "readonly": true
     },
     {
       "values": [
@@ -302,7 +337,7 @@
       "defaultValue": "option_2",
       "layout": {
         "row": "Row_084h2jt",
-        "columns": 10
+        "columns": null
       }
     },
     {
@@ -363,8 +398,8 @@
     },
     {
       "type": "image",
+      "alt": "An image",
       "id": "Field_1mv8qs4",
-      "alt": "An placeholder",
       "source": "https://via.placeholder.com/150C",
       "layout": {
         "row": "Row_069d2ee"
@@ -401,6 +436,7 @@
       "id": "Field_0h7fnn7",
       "key": "date_field",
       "description": "I am a date field description",
+      "defaultValue": "2023-04-05T16:06:09.526+0000",
       "validate": {
         "required": true
       },
@@ -479,7 +515,7 @@
   "executionPlatformVersion": "8.2.0",
   "exporter": {
     "name": "Camunda Modeler",
-    "version": "5.10.0-dev"
+    "version": "5.12.0-nightly.20230524"
   },
   "schemaVersion": 8
 }
