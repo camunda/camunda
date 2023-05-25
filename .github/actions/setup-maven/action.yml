@@ -9,7 +9,7 @@ inputs:
   distribution:
     description: Java distribution to be used
     required: false
-    default: 'adopt'
+    default: 'temurin'
   maven-version:
     description: Maven version to be used
     required: false

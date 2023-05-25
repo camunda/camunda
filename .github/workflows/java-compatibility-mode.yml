@@ -1,0 +1,175 @@
+name: Java Compatibility Job
+
+on:
+  schedule:
+    # Runs "At 1AM on every day-of-week from Monday through Friday"
+    - cron: '0 1 * * 1-5'
+  # Manually retrigger the workflow
+  workflow_dispatch:
+
+jobs:
+  unit-tests-backend:
+    name: Unit Tests - Backend
+    runs-on: n1-standard-8-netssd-preempt
+    strategy:
+      fail-fast: false
+      matrix:
+        javaVersion: [ 11, 16 ]
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v3
+      - name: Setup Maven
+        uses: ./.github/actions/setup-maven
+        with:
+          java-version: ${{ matrix.javaVersion }}
+          secrets: ${{ toJSON(secrets) }}
+      - name: Test
+        uses: ./.github/actions/run-maven
+        with:
+          parameters: test -Dskip.fe.build -Dskip.docker
+      - name: Upload Test Results
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: unit-tests-backend-${{ matrix.javaVersion}}-junit
+          path: |
+            **/surefire-reports/**/*.xml
+          retention-days: 7
+          if-no-files-found: ignore
+
+  integration-tests:
+    runs-on: n1-standard-32-netssd-preempt
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        javaVersion: [ 11, 17, 20 ]
+        includedGroups: [ 'Zeebe-test', '' ]
+        include:
+          - includedGroups: 'Zeebe-test'
+            excludedGroups: ''
+          - includedGroups: ''
+            excludedGroups: 'Zeebe-test'
+    steps:
+      - uses: actions/checkout@v3
+      - name: Setup Maven
+        uses: ./.github/actions/setup-maven
+        with:
+          java-version: ${{ matrix.javaVersion }}
+          secrets: ${{ toJSON(secrets) }}
+      - name: Login to Harbor registry
+        uses: ./.github/actions/login-registry
+        with:
+          secrets: ${{ toJSON(secrets) }}
+      - name: "Read Java / Version Info"
+        id: "java_info"
+        uses: YunaBraska/java-info-action@main
+      - name: Start Cambpm
+        uses: ./.github/actions/compose
+        with:
+          compose_file: ${{ github.workspace }}/.github/actions/compose/docker-compose.cambpm.yml
+          project_name: cambpm
+        env:
+          CAMBPM_VERSION: ${{ steps.java_info.outputs.x_camunda_engine_version }}
+          CAMBPM_JVM_MEMORY: 12
+      - name: Start Elastic
+        uses: ./.github/actions/compose
+        with:
+          compose_file: ${{ github.workspace }}/.github/actions/compose/docker-compose.elasticsearch.yml
+          project_name: elasticsearch
+        env:
+          ELASTIC_VERSION: ${{ steps.java_info.outputs.x_elasticsearch_version }}
+          ELASTIC_JVM_MEMORY: 12
+      - name: Verify integration
+        uses: ./.github/actions/run-maven
+        env:
+          LIMITS_CPU: 8
+        with:
+          threads: 8
+          parameters: verify -Dit.test.excludedGroups=${{ matrix.excludedGroups }} -Dit.test.includedGroups=${{ matrix.includedGroups }} -Dskip.docker -Dskip.fe.build -Pit,engine-latest -pl backend -am
+      - name: Upload Test Results
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: integration-test-${{ matrix.javaVersion}}-${{ matrix.includedGroups }}-junit
+          path: |
+            **/failsafe-reports/**/*.xml
+          retention-days: 7
+          if-no-files-found: ignore
+      - name: Docker log dump
+        uses: ./.github/actions/docker-logs
+        if: always()
+        with:
+          archive_name: integration-tests-${{ matrix.javaVersion}}-${{ matrix.includedGroups }}-docker
+
+  data-upgrade-test:
+    name: Data Upgrade Test
+    runs-on: n1-standard-8-netssd-preempt
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        javaVersion: [ 11, 17, 20 ]
+    steps:
+      - uses: actions/checkout@v3
+      - name: Setup Maven
+        uses: ./.github/actions/setup-maven
+        with:
+          java-version: ${{ matrix.javaVersion }}
+          secrets: ${{ toJSON(secrets) }}
+      - name: Login to Harbor registry
+        uses: ./.github/actions/login-registry
+        with:
+          secrets: ${{ toJSON(secrets) }}
+      - name: "Read Java / Version Info"
+        id: "java_info"
+        uses: YunaBraska/java-info-action@main
+      - name: Start Cambpm
+        uses: ./.github/actions/compose
+        with:
+          compose_file: ${{ github.workspace }}/.github/actions/compose/docker-compose.cambpm.yml
+          project_name: cambpm
+        env:
+          CAMBPM_VERSION: ${{ steps.java_info.outputs.x_camunda_engine_version }}
+          CAMBPM_JVM_MEMORY: 1
+      - name: Start Elastic - Old
+        uses: ./.github/actions/compose
+        with:
+          compose_file: ${{ github.workspace }}/.github/actions/compose/docker-compose.elasticsearch.yml
+          project_name: elasticsearch-old
+        env:
+          ELASTIC_VERSION: ${{ steps.java_info.outputs.x_previous_optimize_elasticsearch_version }}
+          ELASTIC_JVM_MEMORY: 1
+          ELASTIC_HTTP_PORT: ${{ steps.java_info.outputs.x_old_elasticsearch_port }}
+      - name: Start Elastic - New
+        uses: ./.github/actions/compose
+        with:
+          compose_file: ${{ github.workspace }}/.github/actions/compose/docker-compose.elasticsearch.yml
+          project_name: elasticsearch-new
+        env:
+          ELASTIC_VERSION: ${{ steps.java_info.outputs.x_elasticsearch_test_version }}
+          ELASTIC_JVM_MEMORY: 1
+          ELASTIC_HTTP_PORT: ${{ steps.java_info.outputs.x_new_elasticsearch_port }}
+      - name: Install
+        uses: ./.github/actions/run-maven
+        with:
+          parameters: install -Dskip.docker -Dskip.fe.build -DskipTests -pl backend,upgrade,qa/data-generation,qa/optimize-data-generator -am -Pengine-latest
+      - name: Verify qa/upgrade-tests
+        uses: ./.github/actions/run-maven
+        with:
+          parameters: verify -Dskip.docker -Dskip.fe.build -f qa/upgrade-tests -Pupgrade-optimize-data
+      - name: Upload Test Results
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: data-upgrade-test-junit-${{ matrix.javaVersion }}
+          path: |
+            **/failsafe-reports/**/*.xml
+            **/*.log
+          retention-days: 7
+          if-no-files-found: ignore
+      - name: Docker log dump
+        uses: ./.github/actions/docker-logs
+        if: always()
+        with:
+          archive_name: data-upgrade-test-docker-${{ matrix.includedGroups }}-docker
