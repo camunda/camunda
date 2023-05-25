@@ -345,7 +345,7 @@
     <dependency>
       <groupId>io.netty</groupId>
       <artifactId>netty-codec-http</artifactId>
-      <version>4.1.92.Final</version>
+      <version>4.1.93.Final</version>
     </dependency>
   </dependencies>
 
