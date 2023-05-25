@@ -1,0 +1,89 @@
+name: E2E Tests (Playwright)
+on: push
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    services:
+      elasticsearch:
+        image: docker.elastic.co/elasticsearch/elasticsearch:7.17.7
+        env:
+          discovery.type: single-node
+          cluster.name: docker-cluster
+          bootstrap.memory_lock: true
+          xpack.security.enabled: false
+          ES_JAVA_OPTS: -Xms1024m -Xmx1024m
+        ports:
+          - 9200:9200
+          - 9300:9300
+      zeebe:
+        image: camunda/zeebe:8.2.5
+        env:
+          JAVA_TOOL_OPTIONS: "-Xms512m -Xmx512m"
+          ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_CLASSNAME: io.camunda.zeebe.exporter.ElasticsearchExporter
+          ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_URL: http://elasticsearch:9200
+          ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_BULK_SIZE: 1
+          ZEEBE_BROKER_BACKPRESSURE_ENABLED: false
+        ports:
+          - 26500:26500
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@v3
+      - name: Import Secrets
+        id: secrets
+        uses: hashicorp/vault-action@130d1f5f4fe645bb6c83e4225c04d64cfb62de6e
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secrets: |
+            secret/data/github.com/organizations/camunda NEXUS_USR;
+            secret/data/github.com/organizations/camunda NEXUS_PSW;
+      - name: Setup yarn cache
+        uses: actions/setup-node@v3
+        with:
+          node-version: "19"
+          cache: "yarn"
+          cache-dependency-path: client/yarn.lock
+      - name: Install node dependencies
+        working-directory: ./client
+        run: yarn install
+      - name: Install Playwright
+        run: yarn exec playwright install -- --with-deps chromium
+        working-directory: ./client
+      - name: Build frontend
+        working-directory: ./client
+        run: yarn build
+      - name: Setup Java
+        uses: actions/setup-java@v3
+        with:
+          distribution: "adopt"
+          java-version: "17"
+          cache: "maven"
+      # Use CI Nexus as co-located pull-through cache for Maven artifacts via ~/.m2/settings.xml
+      - name: "Create settings.xml"
+        uses: s4u/maven-settings-action@v2.8.0
+        with:
+          githubServer: false
+          servers: |
+            [{
+              "id": "camunda-nexus",
+              "username": "${{ steps.secrets.outputs.NEXUS_USR }}",
+              "password": "${{ steps.secrets.outputs.NEXUS_PSW }}"
+            }]
+          mirrors: '[{"url": "https://repository.nexus.camunda.cloud/content/groups/internal/", "id": "camunda-nexus", "mirrorOf": "*", "name": "camunda Nexus"}]'
+      - name: Build backend
+        run: mvn clean install -P -docker,skipFrontendBuild -DskipTests=true -B -DskipRemoteStaging=true -Dmaven.deploy.skip=true
+      - name: Start Tasklist
+        run: mvn -q -B spring-boot:start -f webapp/pom.xml -Dspring-boot.run.fork=true
+      - name: Run tests
+        working-directory: ./client
+        run: yarn run test:e2e:playwright
+        env:
+          ZEEBE_GATEWAY_ADDRESS: localhost:26500
+      - uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: Playwright report
+          path: client/playwright-report/
+          retention-days: 30

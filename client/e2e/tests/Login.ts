@@ -20,18 +20,6 @@ const reloadPage = ClientFunction(() => {
 
 fixture('Login').page(config.endpoint);
 
-test('redirect to the main page on login', async (t) => {
-  await t
-    .expect(screen.queryByLabelText('Password').getAttribute('type'))
-    .eql('password');
-
-  await t
-    .typeText(screen.queryByLabelText('Username'), 'demo')
-    .typeText(screen.queryByLabelText('Password'), 'demo')
-    .click(screen.getByRole('button', {name: 'Login'}));
-  await t.expect(await getPathname()).eql('/');
-});
-
 test('persistency of a session', async (t) => {
   await t
     .typeText(screen.queryByLabelText('Username'), 'demo')

@@ -8,6 +8,7 @@
 import {devices, PlaywrightTestConfig} from '@playwright/test';
 
 const IS_CI = Boolean(process.env.CI);
+const IS_E2E = Boolean(process.env.IS_E2E);
 
 /**
  * See https://playwright.dev/docs/test-configuration.
@@ -34,7 +35,7 @@ const config: PlaywrightTestConfig = {
   outputDir: 'test-results/',
   use: {
     actionTimeout: 0,
-    baseURL: 'http://localhost:8080',
+    baseURL: `http://localhost:${IS_CI && IS_E2E ? 8080 : 8081}`,
     trace: 'on-first-retry',
   },
 };

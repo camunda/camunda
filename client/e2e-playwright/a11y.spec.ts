@@ -5,22 +5,12 @@
  * except in compliance with the proprietary license.
  */
 
-import {test, expect} from '@playwright/test';
-
-import AxeBuilder from '@axe-core/playwright';
-
+import {expect} from '@playwright/test';
+import {test} from './axe-test';
 import schema from './bigForm.json';
 
-const DEFAULT_AXE_RULES = [
-  'best-practice',
-  'wcag2a',
-  'wcag2aa',
-  'cat.semantics',
-  'cat.forms',
-];
-
 test.describe('a11y', () => {
-  test('have no violations', async ({page}) => {
+  test('have no violations', async ({page, makeAxeBuilder}) => {
     await page.route('**/graphql', (route) => {
       const {operationName} = route.request().postDataJSON();
 
@@ -113,9 +103,7 @@ test.describe('a11y', () => {
     await page.goto('/');
     await page.getByText('Big form process').click();
 
-    const results = await new AxeBuilder({page})
-      .withTags(DEFAULT_AXE_RULES)
-      .analyze();
+    const results = await makeAxeBuilder().analyze();
 
     expect(results.violations).toHaveLength(0);
     expect(results.passes.length).toBeGreaterThan(0);

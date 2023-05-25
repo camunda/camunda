@@ -38,6 +38,7 @@
     "test:ci": "CI=true yarn test --ci --testTimeout 7000",
     "eject": "react-scripts eject",
     "test:e2e": "ZEEBE_GATEWAY_ADDRESS=localhost:26503 PORT=3001 testcafe chrome e2e/tests/*.ts --compiler-options typescript.configPath='e2e/tsconfig.json'",
+    "test:e2e:playwright": "IS_E2E=true ZEEBE_GATEWAY_ADDRESS=localhost:26503 yarn playwright e2e-playwright/tests",
     "test:e2e:ci": "PORT=8080 testcafe chrome:headless e2e/tests/*.ts --compiler-options typescript.configPath='e2e/tsconfig.json'",
     "ts-check": "tsc && tsc --noEmit --project e2e/tsconfig.json",
     "eslint": "eslint .",
@@ -48,7 +49,7 @@
     "analyze-bundle": "yarn build && source-map-explorer 'build/static/js/*.js'",
     "playwright": "playwright test",
     "start-visual-regression-docker": "docker run --rm --network host -v $(pwd):/work/ -w /work/ -it mcr.microsoft.com/playwright:v1.34.3 /bin/bash",
-    "start:visual-regression": "serve build/ -p 8080 -n -s -L",
+    "start:visual-regression": "serve build/ -p 8081 -n -s -L",
     "build:visual-regression": "REACT_APP_VERSION=0.0.0-SNAPSHOT yarn build"
   },
   "browserslist": [
