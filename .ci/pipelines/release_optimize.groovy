@@ -400,7 +400,7 @@ pipeline {
         VERSION = "${params.RELEASE_VERSION}"
         PUSH_CHANGES = "${params.PUSH_CHANGES}"
         DOCKER_LATEST = "${params.DOCKER_LATEST}"
-        ADDITIONAL_DOCKER_TAG = "${params.ADDITIONAL_DOCKER_TAG}"
+        ADDITIONAL_DOCKER_TAG = params.ADDITIONAL_DOCKER_TAG ? "${params.ADDITIONAL_DOCKER_TAG}" : ""
         DOCKERHUB_REGISTRY_CREDENTIALS = credentials('camunda-dockerhub')
         REGISTRY_CAMUNDA_CLOUD = credentials('registry-camunda-cloud')
         MAJOR_OR_MINOR = isMajorOrMinorRelease(params.RELEASE_VERSION)
