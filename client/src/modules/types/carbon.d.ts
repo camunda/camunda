@@ -127,15 +127,16 @@ declare module '@carbon/react' {
       hideLabel?: boolean | undefined;
       id: string;
       labelText: NonNullable<React.ReactNode>;
+      checked?: boolean;
       defaultChecked?: boolean | undefined;
       disabled?: boolean;
       helperText?: React.ReactNode;
       hideLabel?: boolean;
-      intermediate?: boolean;
+      indeterminate?: boolean;
       invalid?: boolean;
-      invalidText: React.ReactNode;
+      invalidText?: React.ReactNode;
       warn?: boolean;
-      warnText: React.ReactNode;
+      warnText?: React.ReactNode;
       onChange?: (
         evt: React.ChangeEvent<HTMLInputElement>,
         data: {checked: boolean; id: string}
