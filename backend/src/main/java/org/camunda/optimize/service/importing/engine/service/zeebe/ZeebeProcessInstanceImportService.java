@@ -61,7 +61,10 @@ public class ZeebeProcessInstanceImportService
     List<ZeebeProcessInstanceRecordDto> zeebeRecords) {
     final List<ProcessInstanceDto> optimizeDtos = new ArrayList<>(
       zeebeRecords.stream()
-        .filter(zeebeRecord -> !TYPES_TO_IGNORE.contains(zeebeRecord.getValue().getBpmnElementType()))
+        .filter(zeebeRecord -> {
+          final BpmnElementType bpmnElementType = zeebeRecord.getValue().getBpmnElementType();
+          return bpmnElementType != null && !TYPES_TO_IGNORE.contains(bpmnElementType);
+        })
         .filter(zeebeRecord -> INTENTS_TO_IMPORT.contains(zeebeRecord.getIntent()))
         .collect(Collectors.groupingBy(
           zeebeRecord -> zeebeRecord.getValue().getProcessInstanceKey(),
