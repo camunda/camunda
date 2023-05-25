@@ -18,20 +18,25 @@ import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.impl.stream.job.ActivatedJobImpl;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.stream.api.scheduling.TaskResultBuilder;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 public class YieldingJobStreamErrorHandlerTest {
 
   private final YieldingJobStreamErrorHandler errorHandler = new YieldingJobStreamErrorHandler();
+  private final TaskResultBuilder mockTaskResultBuilder = mock(TaskResultBuilder.class);
+
+  @BeforeEach
+  public void setUp() {
+    when(mockTaskResultBuilder.appendCommandRecord(anyLong(), any(), any())).thenReturn(true);
+  }
 
   @Test
-  void shouldYieldJob() {
+  public void shouldYieldJob() {
     // given
     final ActivatedJobImpl activatedJob =
         new ActivatedJobImpl().setJobKey(1L).setRecord(new JobRecord());
-    final var mockTaskResultBuilder = mock(TaskResultBuilder.class);
-    when(mockTaskResultBuilder.appendCommandRecord(anyLong(), any(), any())).thenReturn(true);
-    
+
     // when
     errorHandler.handleError(
         activatedJob, new RuntimeException("job push failed"), mockTaskResultBuilder);
