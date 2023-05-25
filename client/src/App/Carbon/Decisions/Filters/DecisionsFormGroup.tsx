@@ -8,7 +8,7 @@
 import {Field, useField, useForm} from 'react-final-form';
 import {observer} from 'mobx-react';
 import {groupedDecisionsStore} from 'modules/stores/groupedDecisions';
-import {Title} from './styled';
+import {Title} from 'modules/components/Carbon/FiltersPanel/styled';
 import {ComboBox} from 'modules/components/ComboBox';
 import {Dropdown, Stack} from '@carbon/react';
 

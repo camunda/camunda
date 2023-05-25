@@ -7,7 +7,10 @@
 
 import {Field} from 'react-final-form';
 import {observer} from 'mobx-react';
-import {Title, WarningFilled} from './styled';
+import {
+  Title,
+  WarningFilled,
+} from 'modules/components/Carbon/FiltersPanel/styled';
 import {CheckmarkOutline} from '@carbon/react/icons';
 import {Checkbox} from 'modules/components/Carbon/Checkbox';
 

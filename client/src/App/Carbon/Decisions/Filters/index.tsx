@@ -12,14 +12,15 @@ import {
 } from 'modules/utils/filter';
 import {Form} from 'react-final-form';
 import {useLocation, useNavigate, Location} from 'react-router-dom';
-import {Container, Footer} from './styled';
-
+import {
+  Container,
+  Form as StyledForm,
+} from 'modules/components/Carbon/FiltersPanel/styled';
 import {observer} from 'mobx-react';
 import {AutoSubmit} from 'modules/components/AutoSubmit';
 import {DecisionsFormGroup} from './DecisionsFormGroup';
-import {CollapsablePanel} from './CollapsablePanel';
 import {InstancesStatesFormGroup} from './InstancesStatesFormGroup';
-import {Button, Stack} from '@carbon/react';
+import {Stack} from '@carbon/react';
 import {
   OptionalFilter,
   OptionalFiltersFormGroup,
@@ -27,6 +28,7 @@ import {
 import {isEqual} from 'lodash';
 import {useState} from 'react';
 import {CarbonLocations} from 'modules/carbonRoutes';
+import {FiltersPanel} from 'modules/components/Carbon/FiltersPanel';
 
 const initialValues: DecisionInstanceFilters = {
   evaluated: true,
@@ -52,28 +54,16 @@ const Filters: React.FC = observer(() => {
       initialValues={getDecisionInstanceFilters(location.search)}
     >
       {({handleSubmit, form, values}) => (
-        <form onSubmit={handleSubmit} style={{height: '100%'}}>
-          <CollapsablePanel
-            label="Filters"
-            footer={
-              <Footer>
-                <Button
-                  kind="ghost"
-                  size="sm"
-                  disabled={
-                    isEqual(initialValues, values) &&
-                    visibleFilters.length === 0
-                  }
-                  type="reset"
-                  onClick={() => {
-                    form.reset();
-                    navigate(CarbonLocations.decisions(initialValues));
-                    setVisibleFilters([]);
-                  }}
-                >
-                  Reset filters
-                </Button>
-              </Footer>
+        <StyledForm onSubmit={handleSubmit}>
+          <FiltersPanel
+            localStorageKey="isDecisionsFiltersCollapsed"
+            onResetClick={() => {
+              form.reset();
+              navigate(CarbonLocations.decisions(initialValues));
+              setVisibleFilters([]);
+            }}
+            isResetButtonDisabled={
+              isEqual(initialValues, values) && visibleFilters.length === 0
             }
           >
             <Container>
@@ -91,8 +81,8 @@ const Filters: React.FC = observer(() => {
                 />
               </Stack>
             </Container>
-          </CollapsablePanel>
-        </form>
+          </FiltersPanel>
+        </StyledForm>
       )}
     </Form>
   );

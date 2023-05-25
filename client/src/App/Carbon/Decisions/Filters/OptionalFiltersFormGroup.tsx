@@ -29,7 +29,10 @@ import {Field, useForm} from 'react-final-form';
 import {IconButton, Stack} from '@carbon/react';
 import {TextInputField} from 'modules/components/Carbon/TextInputField';
 import {TextAreaField} from 'modules/components/Carbon/TextAreaField';
-import {ButtonContainer, FieldContainer} from './styled';
+import {
+  ButtonContainer,
+  FieldContainer,
+} from 'modules/components/Carbon/FiltersPanel/styled';
 import {Close} from '@carbon/react/icons';
 
 type OptionalFilter =

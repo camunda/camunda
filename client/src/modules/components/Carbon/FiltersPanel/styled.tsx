@@ -46,6 +46,10 @@ const FieldContainer = styled.div`
   }
 `;
 
+const Form = styled.form`
+  height: 100%;
+`;
+
 export {
   Container,
   Title,
@@ -53,4 +57,5 @@ export {
   FieldContainer,
   ButtonContainer,
   Footer,
+  Form,
 };
