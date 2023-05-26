@@ -8,18 +8,11 @@
 import {Details} from '.';
 import {render, screen} from 'modules/testing-library';
 import {Route, MemoryRouter, Routes} from 'react-router-dom';
-import {
-  mockGetTaskUnassigned,
-  mockGetTaskCompleted,
-  mockGetTaskAssigned,
-} from 'modules/queries/get-task';
-import {mockAssignTask} from 'modules/mutations/assign-task';
-import {mockUnassignTask} from 'modules/mutations/unassign-task';
 import {MockThemeProvider} from 'modules/theme/MockProvider';
 import {ApolloProvider, useQuery} from '@apollo/client';
 import {client} from 'modules/apollo-client';
 import {nodeMockServer} from 'modules/mockServer/nodeMockServer';
-import {graphql} from 'msw';
+import {graphql, rest} from 'msw';
 import {
   GET_CURRENT_USER,
   GetCurrentUser,
@@ -27,6 +20,8 @@ import {
   mockGetCurrentRestrictedUser,
 } from 'modules/queries/get-current-user';
 import noop from 'lodash/noop';
+import * as taskMocks from 'modules/mock-schema/mocks/task';
+import {ReactQueryProvider} from 'modules/ReactQueryProvider';
 
 const UserName = () => {
   const {data} = useQuery<GetCurrentUser>(GET_CURRENT_USER);
@@ -34,24 +29,22 @@ const UserName = () => {
   return <div>{data?.currentUser.displayName}</div>;
 };
 
-const MOCK_ASSIGNED_TASK = mockGetTaskAssigned().result.data.task;
-const MOCK_TASK_COMPLETED = mockGetTaskCompleted().result.data.task;
-const MOCK_UNASSIGNED_TASK = mockGetTaskUnassigned().result.data.task;
-
 const getWrapper = (id: string = '0') => {
   const Wrapper: React.FC<{
     children?: React.ReactNode;
   }> = ({children}) => (
-    <ApolloProvider client={client}>
-      <UserName />
-      <MockThemeProvider>
-        <MemoryRouter initialEntries={[`/${id}`]}>
-          <Routes>
-            <Route path="/:id" element={children} />
-          </Routes>
-        </MemoryRouter>
-      </MockThemeProvider>
-    </ApolloProvider>
+    <ReactQueryProvider>
+      <ApolloProvider client={client}>
+        <UserName />
+        <MockThemeProvider>
+          <MemoryRouter initialEntries={[`/${id}`]}>
+            <Routes>
+              <Route path="/:id" element={children} />
+            </Routes>
+          </MemoryRouter>
+        </MockThemeProvider>
+      </ApolloProvider>
+    </ReactQueryProvider>
   );
 
   return Wrapper;
@@ -84,7 +77,7 @@ describe('<Details />', () => {
 
     render(
       <Details
-        task={MOCK_TASK_COMPLETED}
+        task={taskMocks.completedTask()}
         user={mockGetCurrentUser.currentUser}
         onAssignmentError={noop}
       />,
@@ -113,7 +106,7 @@ describe('<Details />', () => {
 
     render(
       <Details
-        task={MOCK_UNASSIGNED_TASK}
+        task={taskMocks.unassignedTask()}
         user={mockGetCurrentUser.currentUser}
         onAssignmentError={noop}
       />,
@@ -140,14 +133,14 @@ describe('<Details />', () => {
       graphql.query('GetCurrentUser', (_, res, ctx) => {
         return res.once(ctx.data(mockGetCurrentUser));
       }),
-      graphql.mutation('ClaimTask', (_, res, ctx) => {
-        return res.once(ctx.data(mockAssignTask.result.data));
+      rest.patch('/v1/tasks/:taskId/assign', (_, res, ctx) => {
+        return res(ctx.json(taskMocks.assignedTask('0')));
       }),
     );
 
     const {user, rerender} = render(
       <Details
-        task={MOCK_UNASSIGNED_TASK}
+        task={taskMocks.unassignedTask('0')}
         user={mockGetCurrentUser.currentUser}
         onAssignmentError={noop}
       />,
@@ -173,7 +166,7 @@ describe('<Details />', () => {
 
     rerender(
       <Details
-        task={MOCK_ASSIGNED_TASK}
+        task={taskMocks.assignedTask()}
         user={mockGetCurrentUser.currentUser}
         onAssignmentError={noop}
       />,
@@ -191,14 +184,14 @@ describe('<Details />', () => {
       graphql.query('GetCurrentUser', (_, res, ctx) => {
         return res.once(ctx.data(mockGetCurrentUser));
       }),
-      graphql.mutation('UnclaimTask', (_, res, ctx) => {
-        return res.once(ctx.data(mockUnassignTask.result.data));
+      rest.patch('/v1/tasks/:taskId/unassign', (_, res, ctx) => {
+        return res(ctx.json(taskMocks.unassignedTask('0')));
       }),
     );
 
     const {user, rerender} = render(
       <Details
-        task={MOCK_ASSIGNED_TASK}
+        task={taskMocks.assignedTask('0')}
         user={mockGetCurrentUser.currentUser}
         onAssignmentError={noop}
       />,
@@ -221,7 +214,7 @@ describe('<Details />', () => {
 
     rerender(
       <Details
-        task={MOCK_UNASSIGNED_TASK}
+        task={taskMocks.unassignedTask()}
         user={mockGetCurrentUser.currentUser}
         onAssignmentError={noop}
       />,
@@ -245,14 +238,14 @@ describe('<Details />', () => {
       graphql.query('GetCurrentUser', (_, res, ctx) => {
         return res.once(ctx.data(mockGetCurrentRestrictedUser));
       }),
-      graphql.mutation('UnclaimTask', (_, res, ctx) => {
-        return res.once(ctx.data(mockUnassignTask.result.data));
+      rest.patch('/v1/tasks/:taskId/unassign', (_, res, ctx) => {
+        return res(ctx.json(taskMocks.unassignedTask));
       }),
     );
 
     render(
       <Details
-        task={MOCK_ASSIGNED_TASK}
+        task={taskMocks.assignedTask()}
         user={mockGetCurrentRestrictedUser.currentUser}
         onAssignmentError={noop}
       />,
@@ -273,14 +266,14 @@ describe('<Details />', () => {
       graphql.query('GetCurrentUser', (_, res, ctx) => {
         return res.once(ctx.data(mockGetCurrentRestrictedUser));
       }),
-      graphql.mutation('ClaimTask', (_, res, ctx) => {
-        return res.once(ctx.data(mockAssignTask.result.data));
+      rest.patch('/v1/tasks/:taskId/assign', (_, res, ctx) => {
+        return res(ctx.json(taskMocks.assignedTask));
       }),
     );
 
     render(
       <Details
-        task={MOCK_UNASSIGNED_TASK}
+        task={taskMocks.unassignedTask()}
         user={mockGetCurrentRestrictedUser.currentUser}
         onAssignmentError={noop}
       />,
@@ -307,7 +300,7 @@ describe('<Details />', () => {
 
     render(
       <Details
-        task={{...MOCK_ASSIGNED_TASK, assignee: MOCK_OTHER_ASSIGNEE}}
+        task={{...taskMocks.assignedTask(), assignee: MOCK_OTHER_ASSIGNEE}}
         user={mockGetCurrentUser.currentUser}
         onAssignmentError={noop}
       />,

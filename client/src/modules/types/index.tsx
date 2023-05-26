@@ -5,11 +5,6 @@
  * except in compliance with the proprietary license.
  */
 
-type ToGraphqlEntity<T, K extends string> = T & {
-  __typename: K;
-  variables: Variable[];
-};
-
 type NonEmptyArray<T> = [T, ...T[]];
 
 type Permissions = NonEmptyArray<'read' | 'write'>;
@@ -42,10 +37,10 @@ type Task = {
   name: string;
   taskDefinitionId: string;
   processName: string;
-  creationTime: string;
+  creationDate: string;
   followUpDate: string | null;
   dueDate: string | null;
-  completionTime: string | null;
+  completionDate: string | null;
   assignee: string | null;
   taskState: TaskState;
   sortValues: [string, string];
@@ -57,19 +52,11 @@ type Task = {
   candidateUsers: string[];
 };
 
-type GraphqlTask = ToGraphqlEntity<
-  Omit<Task, 'processDefinitionKey'> & {
-    processDefinitionId: string;
-  },
-  'Task'
->;
-
-type Form = Readonly<{
-  __typename: string;
+type Form = {
   id: string;
-  processDefinitionId: string;
+  processDefinitionKey: string;
   schema: string;
-}>;
+};
 
 type Process = {
   id: string;
@@ -123,5 +110,4 @@ export type {
   Process,
   ProcessInstance,
   TasksSearchBody,
-  GraphqlTask,
 };

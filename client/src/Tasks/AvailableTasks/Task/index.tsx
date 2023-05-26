@@ -24,14 +24,14 @@ type Props = {
   name: TaskType['name'];
   processName: TaskType['processName'];
   assignee: TaskType['assignee'];
-  creationTime: TaskType['creationTime'];
+  creationDate: TaskType['creationDate'];
   followUpDate: TaskType['followUpDate'];
   dueDate: TaskType['dueDate'];
 };
 
 const Task = React.forwardRef<HTMLElement, Props>(
   (
-    {taskId, name, processName, assignee, creationTime, followUpDate, dueDate},
+    {taskId, name, processName, assignee, creationDate, followUpDate, dueDate},
     ref,
   ) => {
     const {data} = useQuery<GetCurrentUser>(GET_CURRENT_USER);
@@ -96,14 +96,14 @@ const Task = React.forwardRef<HTMLElement, Props>(
               </Label>
             </Row>
             <Row data-testid="creation-time" $direction="row">
-              {formatDate(creationTime) === '' ? null : (
+              {formatDate(creationDate) === '' ? null : (
                 <Label
                   $variant="primary"
-                  title={`Created at ${formatDate(creationTime)}`}
+                  title={`Created at ${formatDate(creationDate)}`}
                 >
                   <Label $variant="secondary">Created</Label>
                   <br />
-                  {formatDate(creationTime)}
+                  {formatDate(creationDate)}
                 </Label>
               )}
               {showFollowupDate ? (

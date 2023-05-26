@@ -13,29 +13,18 @@ import {
   waitFor,
   waitForElementToBeRemoved,
 } from 'modules/testing-library';
-import {
-  mockGetTaskAssigned,
-  mockGetTaskCompletedWithForm,
-  mockGetTaskAssignedWithForm,
-  mockGetTaskCompleted,
-} from 'modules/queries/get-task';
 import {MockThemeProvider} from 'modules/theme/MockProvider';
 import {mockGetCurrentUser} from 'modules/queries/get-current-user';
-import {mockCompleteTask} from 'modules/mutations/complete-task';
-import {mockAssignTask} from 'modules/mutations/assign-task';
-import {mockUnassignTask} from 'modules/mutations/unassign-task';
-import {mockGetForm, mockGetInvalidForm} from 'modules/queries/get-form';
-import {
-  mockGetTaskVariables,
-  mockGetTaskEmptyVariables,
-} from 'modules/queries/get-task-variables';
-import {mockGetSelectedVariables} from 'modules/queries/get-selected-variables';
 import {ApolloProvider} from '@apollo/client';
 import {client} from 'modules/apollo-client';
-import {graphql} from 'msw';
+import {graphql, rest} from 'msw';
 import {nodeMockServer} from 'modules/mockServer/nodeMockServer';
 import {LocationLog} from 'modules/utils/LocationLog';
 import {notificationsStore} from 'modules/stores/notifications';
+import * as formMocks from 'modules/mock-schema/mocks/form';
+import * as variableMocks from 'modules/mock-schema/mocks/variables';
+import * as taskMocks from 'modules/mock-schema/mocks/task';
+import {ReactQueryProvider} from 'modules/ReactQueryProvider';
 
 jest.mock('modules/stores/notifications', () => ({
   notificationsStore: {
@@ -52,16 +41,18 @@ const getWrapper = (
 
   const Wrapper: React.FC<Props> = ({children}) => {
     return (
-      <ApolloProvider client={client}>
-        <MockThemeProvider>
-          <MemoryRouter initialEntries={initialEntries}>
-            <Routes>
-              <Route path="/:id" element={children} />
-              <Route path="*" element={<LocationLog />} />
-            </Routes>
-          </MemoryRouter>
-        </MockThemeProvider>
-      </ApolloProvider>
+      <ReactQueryProvider>
+        <ApolloProvider client={client}>
+          <MockThemeProvider>
+            <MemoryRouter initialEntries={initialEntries}>
+              <Routes>
+                <Route path="/:id" element={children} />
+                <Route path="*" element={<LocationLog />} />
+              </Routes>
+            </MemoryRouter>
+          </MockThemeProvider>
+        </ApolloProvider>
+      </ReactQueryProvider>
     );
   };
 
@@ -88,14 +79,14 @@ describe('<Task />', () => {
 
   it('should render created task', async () => {
     nodeMockServer.use(
-      graphql.query('GetTask', (_, res, ctx) => {
-        return res.once(ctx.data(mockGetTaskAssigned().result.data));
+      rest.get('/v1/tasks/:taskId', (_, res, ctx) => {
+        return res.once(ctx.json(taskMocks.assignedTask()));
       }),
       graphql.query('GetCurrentUser', (_, res, ctx) => {
         return res.once(ctx.data(mockGetCurrentUser));
       }),
-      graphql.query('GetTaskVariables', (_, res, ctx) => {
-        return res(ctx.data(mockGetTaskVariables().result.data));
+      rest.post('/v1/tasks/:taskId/variables/search', (_, res, ctx) => {
+        return res.once(ctx.json(variableMocks.variables));
       }),
     );
 
@@ -110,20 +101,20 @@ describe('<Task />', () => {
 
   it('should render created task with embedded form', async () => {
     nodeMockServer.use(
-      graphql.query('GetTask', (_, res, ctx) => {
-        return res.once(ctx.data(mockGetTaskAssignedWithForm().result.data));
+      rest.get('/v1/tasks/:taskId', (_, res, ctx) => {
+        return res.once(ctx.json(taskMocks.assignedTaskWithForm()));
       }),
       graphql.query('GetCurrentUser', (_, res, ctx) => {
         return res.once(ctx.data(mockGetCurrentUser));
       }),
-      graphql.query('GetForm', (_, res, ctx) => {
-        return res.once(ctx.data(mockGetForm.result.data));
+      rest.get('/v1/forms/:formId', (_, res, ctx) => {
+        return res.once(ctx.json(formMocks.form));
       }),
-      graphql.query('GetSelectedVariables', (_, res, ctx) => {
-        return res.once(ctx.data(mockGetSelectedVariables().result.data));
+      rest.post('/v1/tasks/:taskId/variables/search', async (_, res, ctx) => {
+        return res.once(ctx.json(variableMocks.variables));
       }),
-      graphql.query('GetTaskVariables', (_, res, ctx) => {
-        return res(ctx.data(mockGetTaskVariables().result.data));
+      rest.post('/v1/tasks/:taskId/variables/search', (_, res, ctx) => {
+        return res.once(ctx.json(variableMocks.variables));
       }),
     );
 
@@ -144,14 +135,14 @@ describe('<Task />', () => {
 
   it('should render completed task', async () => {
     nodeMockServer.use(
-      graphql.query('GetTask', (_, res, ctx) => {
-        return res.once(ctx.data(mockGetTaskCompleted().result.data));
+      rest.get('/v1/tasks/:taskId', (_, res, ctx) => {
+        return res.once(ctx.json(taskMocks.completedTask()));
       }),
       graphql.query('GetCurrentUser', (_, res, ctx) => {
         return res.once(ctx.data(mockGetCurrentUser));
       }),
-      graphql.query('GetTaskVariables', (_, res, ctx) => {
-        return res.once(ctx.data(mockGetTaskVariables().result.data));
+      rest.post('/v1/tasks/:taskId/variables/search', (_, res, ctx) => {
+        return res.once(ctx.json(variableMocks.variables));
       }),
     );
 
@@ -168,17 +159,17 @@ describe('<Task />', () => {
 
   it('should render completed task with embedded form', async () => {
     nodeMockServer.use(
-      graphql.query('GetTask', (_, res, ctx) => {
-        return res.once(ctx.data(mockGetTaskCompletedWithForm().result.data));
+      rest.get('/v1/tasks/:taskId', (_, res, ctx) => {
+        return res.once(ctx.json(taskMocks.completedTaskWithForm()));
       }),
       graphql.query('GetCurrentUser', (_, res, ctx) => {
         return res.once(ctx.data(mockGetCurrentUser));
       }),
-      graphql.query('GetForm', (_, res, ctx) => {
-        return res.once(ctx.data(mockGetForm.result.data));
+      rest.get('/v1/forms/:formId', (_, res, ctx) => {
+        return res.once(ctx.json(formMocks.form));
       }),
-      graphql.query('GetTaskVariables', (_, res, ctx) => {
-        return res.once(ctx.data(mockGetTaskVariables().result.data));
+      rest.post('/v1/tasks/:taskId/variables/search', async (_, res, ctx) => {
+        return res.once(ctx.json(variableMocks.variables));
       }),
     );
 
@@ -193,17 +184,17 @@ describe('<Task />', () => {
 
   it('should complete task without variables', async () => {
     nodeMockServer.use(
-      graphql.query('GetTask', (_, res, ctx) => {
-        return res.once(ctx.data(mockGetTaskAssigned().result.data));
+      rest.get('/v1/tasks/:taskId', (_, res, ctx) => {
+        return res.once(ctx.json(taskMocks.assignedTask()));
       }),
       graphql.query('GetCurrentUser', (_, res, ctx) => {
         return res.once(ctx.data(mockGetCurrentUser));
       }),
-      graphql.mutation('CompleteTask', (_, res, ctx) => {
-        return res.once(ctx.data(mockCompleteTask().result.data));
+      rest.patch('/v1/tasks/:taskId/complete', (_, res, ctx) => {
+        return res.once(ctx.json(taskMocks.completedTask()));
       }),
-      graphql.query('GetTaskVariables', (_, res, ctx) => {
-        return res.once(ctx.data(mockGetTaskEmptyVariables().result.data));
+      rest.post('/v1/tasks/:taskId/variables/search', (_, res, ctx) => {
+        return res.once(ctx.json([]));
       }),
     );
 
@@ -228,17 +219,17 @@ describe('<Task />', () => {
 
   it('should get error on complete task', async () => {
     nodeMockServer.use(
-      graphql.query('GetTask', (_, res, ctx) => {
-        return res.once(ctx.data(mockGetTaskAssigned().result.data));
+      rest.get('/v1/tasks/:taskId', (_, res, ctx) => {
+        return res.once(ctx.json(taskMocks.assignedTask()));
       }),
       graphql.query('GetCurrentUser', (_, res, ctx) => {
         return res.once(ctx.data(mockGetCurrentUser));
       }),
-      graphql.mutation('CompleteTask', (_, res) => {
+      rest.patch('/v1/tasks/:taskId/complete', (_, res) => {
         return res.networkError('Network error');
       }),
-      graphql.query('GetTaskVariables', (_, res, ctx) => {
-        return res.once(ctx.data(mockGetTaskVariables().result.data));
+      rest.post('/v1/tasks/:taskId/variables/search', (_, res, ctx) => {
+        return res(ctx.json(variableMocks.variables));
       }),
     );
 
@@ -269,17 +260,17 @@ describe('<Task />', () => {
 
   it('should show a skeleton while loading', async () => {
     nodeMockServer.use(
-      graphql.query('GetTask', (_, res, ctx) => {
-        return res.once(ctx.data(mockGetTaskAssigned().result.data));
+      rest.get('/v1/tasks/:taskId', (_, res, ctx) => {
+        return res.once(ctx.json(taskMocks.assignedTask()));
       }),
       graphql.query('GetCurrentUser', (_, res, ctx) => {
         return res.once(ctx.data(mockGetCurrentUser));
       }),
-      graphql.query('GetTaskVariables', (_, res, ctx) => {
-        return res.once(ctx.data(mockGetTaskVariables().result.data));
+      rest.post('/v1/tasks/:taskId/variables/search', (_, res, ctx) => {
+        return res.once(ctx.json(variableMocks.variables));
       }),
-      graphql.query('GetTaskVariables', (_, res, ctx) => {
-        return res.once(ctx.data(mockGetTaskVariables().result.data));
+      rest.post('/v1/tasks/:taskId/variables/search', (_, res, ctx) => {
+        return res.once(ctx.json(variableMocks.variables));
       }),
     );
 
@@ -296,26 +287,26 @@ describe('<Task />', () => {
 
   it('should reset variables', async () => {
     nodeMockServer.use(
-      graphql.query('GetTask', (_, res, ctx) => {
-        return res.once(ctx.data(mockGetTaskAssigned().result.data));
+      rest.get('/v1/tasks/:taskId', (_, res, ctx) => {
+        return res.once(ctx.json(taskMocks.assignedTask()));
       }),
       graphql.query('GetCurrentUser', (_, res, ctx) => {
         return res.once(ctx.data(mockGetCurrentUser));
       }),
-      graphql.query('GetTaskVariables', (_, res, ctx) => {
-        return res.once(ctx.data(mockGetTaskEmptyVariables().result.data));
+      rest.post('/v1/tasks/:taskId/variables/search', (_, res, ctx) => {
+        return res.once(ctx.json([]));
       }),
-      graphql.mutation('UnclaimTask', (_, res, ctx) => {
-        return res.once(ctx.data(mockUnassignTask.result.data));
+      rest.patch('/v1/tasks/:taskId/unassign', (_, res, ctx) => {
+        return res(ctx.json(taskMocks.unassignedTask()));
       }),
-      graphql.mutation('ClaimTask', (_, res, ctx) => {
-        return res.once(ctx.data(mockAssignTask.result.data));
+      rest.patch('/v1/tasks/:taskId/assign', (_, res, ctx) => {
+        return res(ctx.json(taskMocks.assignedTask()));
       }),
-      graphql.query('GetTask', (_, res, ctx) => {
-        return res.once(ctx.data(mockGetTaskAssigned().result.data));
+      rest.get('/v1/tasks/:taskId', (_, res, ctx) => {
+        return res.once(ctx.json(taskMocks.assignedTask()));
       }),
-      graphql.query('GetTaskVariables', (_, res, ctx) => {
-        return res.once(ctx.data(mockGetTaskEmptyVariables().result.data));
+      rest.post('/v1/tasks/:taskId/variables/search', (_, res, ctx) => {
+        return res.once(ctx.json([]));
       }),
     );
 
@@ -347,18 +338,18 @@ describe('<Task />', () => {
       graphql.query('GetCurrentUser', (_, res, ctx) =>
         res.once(ctx.data(mockGetCurrentUser)),
       ),
-      graphql.query('GetTask', (_, res, ctx) =>
-        res.once(ctx.data(mockGetTaskAssignedWithForm().result.data)),
+      rest.get('/v1/tasks/:taskId', (_, res, ctx) => {
+        return res.once(ctx.json(taskMocks.assignedTaskWithForm()));
+      }),
+      rest.get('/v1/forms/:formId', (_, res, ctx) =>
+        res.once(ctx.json(formMocks.invalidForm)),
       ),
-      graphql.query('GetForm', (_, res, ctx) =>
-        res.once(ctx.data(mockGetInvalidForm.result.data)),
-      ),
-      graphql.query('GetTaskVariables', (_, res, ctx) =>
-        res.once(ctx.data(mockGetTaskVariables().result.data)),
-      ),
-      graphql.query('GetTaskVariables', (_, res, ctx) =>
-        res.once(ctx.data(mockGetTaskVariables().result.data)),
-      ),
+      rest.post('/v1/tasks/:taskId/variables/search', (_, res, ctx) => {
+        return res.once(ctx.json(variableMocks.variables));
+      }),
+      rest.post('/v1/tasks/:taskId/variables/search', (_, res, ctx) => {
+        return res.once(ctx.json(variableMocks.variables));
+      }),
     );
 
     render(<Task hasRemainingTasks />, {

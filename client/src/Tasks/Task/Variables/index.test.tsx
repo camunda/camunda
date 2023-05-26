@@ -17,35 +17,29 @@ import {
   GetCurrentUser,
   GET_CURRENT_USER,
 } from 'modules/queries/get-current-user';
-import {
-  mockGetTaskVariables,
-  mockGetTaskEmptyVariables,
-  mockGetTaskVariablesTruncatedValues,
-  mockGetFullVariableValue,
-} from 'modules/queries/get-task-variables';
 import {MockThemeProvider} from 'modules/theme/MockProvider';
 import {Variables} from './index';
-import {
-  assignedTask,
-  completedTask,
-  unassignedTask,
-} from 'modules/mock-schema/mocks/task';
+import * as taskMocks from 'modules/mock-schema/mocks/task';
+import * as variableMocks from 'modules/mock-schema/mocks/variables';
 import {ApolloProvider, useQuery} from '@apollo/client';
 import {client} from 'modules/apollo-client';
 import {nodeMockServer} from 'modules/mockServer/nodeMockServer';
-import {graphql} from 'msw';
+import {graphql, rest} from 'msw';
 import noop from 'lodash/noop';
 import {currentUser} from 'modules/mock-schema/mocks/current-user';
-import {convertToGraphqlTask} from 'modules/utils/convertToGraphqlTask';
+import {Variable} from 'modules/types';
+import {ReactQueryProvider} from 'modules/ReactQueryProvider';
 
 type Props = {
   children?: React.ReactNode;
 };
 
 const Wrapper: React.FC<Props> = ({children}) => (
-  <ApolloProvider client={client}>
-    <MockThemeProvider>{children}</MockThemeProvider>
-  </ApolloProvider>
+  <ReactQueryProvider>
+    <ApolloProvider client={client}>
+      <MockThemeProvider>{children}</MockThemeProvider>
+    </ApolloProvider>
+  </ReactQueryProvider>
 );
 
 describe('<Variables />', () => {
@@ -74,14 +68,14 @@ describe('<Variables />', () => {
 
   it('should show existing variables for unassigned tasks', async () => {
     nodeMockServer.use(
-      graphql.query('GetTaskVariables', (_, res, ctx) => {
-        return res.once(ctx.data(mockGetTaskVariables().result.data));
+      rest.post('/v1/tasks/:taskId/variables/search', (_, res, ctx) => {
+        return res(ctx.json(variableMocks.variables));
       }),
     );
 
     render(
       <Variables
-        task={convertToGraphqlTask(unassignedTask())}
+        task={taskMocks.unassignedTask()}
         user={currentUser}
         onSubmit={() => Promise.resolve()}
         onSubmitFailure={noop}
@@ -101,14 +95,14 @@ describe('<Variables />', () => {
 
   it('should show a message when the tasks has no variables', async () => {
     nodeMockServer.use(
-      graphql.query('GetTaskVariables', (_, res, ctx) => {
-        return res.once(ctx.data(mockGetTaskEmptyVariables().result.data));
+      rest.post('/v1/tasks/:taskId/variables/search', (_, res, ctx) => {
+        return res(ctx.json([]));
       }),
     );
 
     render(
       <Variables
-        task={convertToGraphqlTask(assignedTask())}
+        task={taskMocks.assignedTask()}
         user={currentUser}
         onSubmit={() => Promise.resolve()}
         onSubmitFailure={noop}
@@ -129,14 +123,14 @@ describe('<Variables />', () => {
 
   it('should edit variable', async () => {
     nodeMockServer.use(
-      graphql.query('GetTaskVariables', (_, res, ctx) => {
-        return res.once(ctx.data(mockGetTaskVariables().result.data));
+      rest.post('/v1/tasks/:taskId/variables/search', (_, res, ctx) => {
+        return res(ctx.json(variableMocks.variables));
       }),
     );
 
     const {user} = render(
       <Variables
-        task={convertToGraphqlTask(assignedTask())}
+        task={taskMocks.assignedTask()}
         user={currentUser}
         onSubmit={() => Promise.resolve()}
         onSubmitFailure={noop}
@@ -162,14 +156,14 @@ describe('<Variables />', () => {
 
   it('should add two variables and remove one', async () => {
     nodeMockServer.use(
-      graphql.query('GetTaskVariables', (_, res, ctx) => {
-        return res.once(ctx.data(mockGetTaskVariables().result.data));
+      rest.post('/v1/tasks/:taskId/variables/search', (_, res, ctx) => {
+        return res.once(ctx.json(variableMocks.variables));
       }),
     );
 
     const {user} = render(
       <Variables
-        task={convertToGraphqlTask(assignedTask())}
+        task={taskMocks.assignedTask()}
         user={currentUser}
         onSubmit={() => Promise.resolve()}
         onSubmitFailure={noop}
@@ -209,14 +203,14 @@ describe('<Variables />', () => {
 
   it('should add variable on task without variables', async () => {
     nodeMockServer.use(
-      graphql.query('GetTaskVariables', (_, res, ctx) => {
-        return res.once(ctx.data(mockGetTaskVariables().result.data));
+      rest.post('/v1/tasks/:taskId/variables/search', (_, res, ctx) => {
+        return res.once(ctx.json(variableMocks.variables));
       }),
     );
 
     const {user} = render(
       <Variables
-        task={convertToGraphqlTask(assignedTask())}
+        task={taskMocks.assignedTask()}
         user={currentUser}
         onSubmit={() => Promise.resolve()}
         onSubmitFailure={noop}
@@ -237,14 +231,14 @@ describe('<Variables />', () => {
 
   it('should validate an empty variable name', async () => {
     nodeMockServer.use(
-      graphql.query('GetTaskVariables', (_, res, ctx) => {
-        return res.once(ctx.data(mockGetTaskVariables().result.data));
+      rest.post('/v1/tasks/:taskId/variables/search', (_, res, ctx) => {
+        return res.once(ctx.json(variableMocks.variables));
       }),
     );
 
     const {user} = render(
       <Variables
-        task={convertToGraphqlTask(assignedTask())}
+        task={taskMocks.assignedTask()}
         user={currentUser}
         onSubmit={() => Promise.resolve()}
         onSubmitFailure={noop}
@@ -270,14 +264,14 @@ describe('<Variables />', () => {
 
   it('should validate an invalid variable name', async () => {
     nodeMockServer.use(
-      graphql.query('GetTaskVariables', (_, res, ctx) => {
-        return res.once(ctx.data(mockGetTaskVariables().result.data));
+      rest.post('/v1/tasks/:taskId/variables/search', (_, res, ctx) => {
+        return res.once(ctx.json(variableMocks.variables));
       }),
     );
 
     const {user} = render(
       <Variables
-        task={convertToGraphqlTask(assignedTask())}
+        task={taskMocks.assignedTask()}
         user={currentUser}
         onSubmit={() => Promise.resolve()}
         onSubmitFailure={noop}
@@ -316,14 +310,14 @@ describe('<Variables />', () => {
 
   it('should validate an empty variable value', async () => {
     nodeMockServer.use(
-      graphql.query('GetTaskVariables', (_, res, ctx) => {
-        return res.once(ctx.data(mockGetTaskVariables().result.data));
+      rest.post('/v1/tasks/:taskId/variables/search', (_, res, ctx) => {
+        return res.once(ctx.json(variableMocks.variables));
       }),
     );
 
     const {user} = render(
       <Variables
-        task={convertToGraphqlTask(assignedTask())}
+        task={taskMocks.assignedTask()}
         user={currentUser}
         onSubmit={() => Promise.resolve()}
         onSubmitFailure={noop}
@@ -346,14 +340,14 @@ describe('<Variables />', () => {
 
   it('should validate an invalid variable value', async () => {
     nodeMockServer.use(
-      graphql.query('GetTaskVariables', (_, res, ctx) => {
-        return res.once(ctx.data(mockGetTaskVariables().result.data));
+      rest.post('/v1/tasks/:taskId/variables/search', (_, res, ctx) => {
+        return res.once(ctx.json(variableMocks.variables));
       }),
     );
 
     const {user} = render(
       <Variables
-        task={convertToGraphqlTask(assignedTask())}
+        task={taskMocks.assignedTask()}
         user={currentUser}
         onSubmit={() => Promise.resolve()}
         onSubmitFailure={noop}
@@ -383,14 +377,14 @@ describe('<Variables />', () => {
 
   it('should not validate valid variables', async () => {
     nodeMockServer.use(
-      graphql.query('GetTaskVariables', (_, res, ctx) => {
-        return res.once(ctx.data(mockGetTaskVariables().result.data));
+      rest.post('/v1/tasks/:taskId/variables/search', (_, res, ctx) => {
+        return res.once(ctx.json(variableMocks.variables));
       }),
     );
 
     const {user} = render(
       <Variables
-        task={convertToGraphqlTask(assignedTask())}
+        task={taskMocks.assignedTask()}
         user={currentUser}
         onSubmit={() => Promise.resolve()}
         onSubmitFailure={noop}
@@ -427,8 +421,11 @@ describe('<Variables />', () => {
 
   it('should handle submission', async () => {
     nodeMockServer.use(
-      graphql.query('GetTaskVariables', (_, res, ctx) => {
-        return res.once(ctx.data(mockGetTaskVariables().result.data));
+      rest.post('/v1/tasks/:taskId/variables/search', (_, res, ctx) => {
+        return res.once(ctx.json(variableMocks.variables));
+      }),
+      rest.post('/v1/tasks/:taskId/variables/search', (_, res, ctx) => {
+        return res.once(ctx.json(variableMocks.variables));
       }),
     );
 
@@ -436,7 +433,7 @@ describe('<Variables />', () => {
     const {rerender, user} = render(
       <Variables
         key="id_0"
-        task={convertToGraphqlTask(assignedTask())}
+        task={taskMocks.assignedTask()}
         user={currentUser}
         onSubmit={mockOnSubmit}
         onSubmitFailure={noop}
@@ -481,7 +478,7 @@ describe('<Variables />', () => {
     rerender(
       <Variables
         key="id_1"
-        task={convertToGraphqlTask(assignedTask())}
+        task={taskMocks.assignedTask()}
         user={currentUser}
         onSubmit={mockOnSubmit}
         onSubmitFailure={noop}
@@ -514,8 +511,8 @@ describe('<Variables />', () => {
 
   it('should change variable and complete task', async () => {
     nodeMockServer.use(
-      graphql.query('GetTaskVariables', (_, res, ctx) => {
-        return res.once(ctx.data(mockGetTaskVariables().result.data));
+      rest.post('/v1/tasks/:taskId/variables/search', (_, res, ctx) => {
+        return res.once(ctx.json(variableMocks.variables));
       }),
     );
 
@@ -523,7 +520,7 @@ describe('<Variables />', () => {
 
     const {user} = render(
       <Variables
-        task={convertToGraphqlTask(assignedTask())}
+        task={taskMocks.assignedTask()}
         user={currentUser}
         onSubmit={mockOnSubmit}
         onSubmitFailure={noop}
@@ -563,8 +560,8 @@ describe('<Variables />', () => {
       graphql.query('GetCurrentUser', (_, res, ctx) => {
         return res.once(ctx.data(mockGetCurrentRestrictedUser));
       }),
-      graphql.query('GetTaskVariables', (_, res, ctx) => {
-        return res.once(ctx.data(mockGetTaskVariables().result.data));
+      rest.post('/v1/tasks/:taskId/variables/search', (_, res, ctx) => {
+        return res.once(ctx.json(variableMocks.variables));
       }),
     );
 
@@ -574,7 +571,7 @@ describe('<Variables />', () => {
       <>
         <UserName />
         <Variables
-          task={convertToGraphqlTask(assignedTask())}
+          task={taskMocks.assignedTask()}
           user={currentUser}
           onSubmit={mockOnSubmit}
           onSubmitFailure={noop}
@@ -596,8 +593,8 @@ describe('<Variables />', () => {
 
   it('should add new variable and complete task', async () => {
     nodeMockServer.use(
-      graphql.query('GetTaskVariables', (_, res, ctx) => {
-        return res.once(ctx.data(mockGetTaskVariables().result.data));
+      rest.post('/v1/tasks/:taskId/variables/search', (_, res, ctx) => {
+        return res.once(ctx.json(variableMocks.variables));
       }),
     );
 
@@ -605,7 +602,7 @@ describe('<Variables />', () => {
 
     const {user} = render(
       <Variables
-        task={convertToGraphqlTask(assignedTask())}
+        task={taskMocks.assignedTask()}
         user={currentUser}
         onSubmit={mockOnSubmit}
         onSubmitFailure={noop}
@@ -643,14 +640,14 @@ describe('<Variables />', () => {
 
   it('should hide add variable button on completed tasks', async () => {
     nodeMockServer.use(
-      graphql.query('GetTaskVariables', (_, res, ctx) => {
-        return res.once(ctx.data(mockGetTaskVariables().result.data));
+      rest.post('/v1/tasks/:taskId/variables/search', (_, res, ctx) => {
+        return res.once(ctx.json(variableMocks.variables));
       }),
     );
 
     render(
       <Variables
-        task={convertToGraphqlTask(completedTask())}
+        task={taskMocks.completedTask()}
         user={currentUser}
         onSubmit={() => Promise.resolve()}
         onSubmitFailure={noop}
@@ -668,14 +665,14 @@ describe('<Variables />', () => {
 
   it('should disable submit button on form errors for existing variables', async () => {
     nodeMockServer.use(
-      graphql.query('GetTaskVariables', (_, res, ctx) => {
-        return res.once(ctx.data(mockGetTaskVariables().result.data));
+      rest.post('/v1/tasks/:taskId/variables/search', (_, res, ctx) => {
+        return res.once(ctx.json(variableMocks.variables));
       }),
     );
 
     const {user} = render(
       <Variables
-        task={convertToGraphqlTask(assignedTask())}
+        task={taskMocks.assignedTask()}
         user={currentUser}
         onSubmit={() => Promise.resolve()}
         onSubmitFailure={noop}
@@ -699,14 +696,14 @@ describe('<Variables />', () => {
 
   it('should disable submit button on form errors for new variables', async () => {
     nodeMockServer.use(
-      graphql.query('GetTaskVariables', (_, res, ctx) => {
-        return res.once(ctx.data(mockGetTaskVariables().result.data));
+      rest.post('/v1/tasks/:taskId/variables/search', (_, res, ctx) => {
+        return res.once(ctx.json(variableMocks.variables));
       }),
     );
 
     const {user} = render(
       <Variables
-        task={convertToGraphqlTask(assignedTask())}
+        task={taskMocks.assignedTask()}
         user={currentUser}
         onSubmit={() => Promise.resolve()}
         onSubmitFailure={noop}
@@ -734,14 +731,14 @@ describe('<Variables />', () => {
 
   it('should disable completion button', async () => {
     nodeMockServer.use(
-      graphql.query('GetTaskVariables', (_, res, ctx) => {
-        return res.once(ctx.data(mockGetTaskVariables().result.data));
+      rest.post('/v1/tasks/:taskId/variables/search', (_, res, ctx) => {
+        return res.once(ctx.json(variableMocks.variables));
       }),
     );
 
     const {user} = render(
       <Variables
-        task={convertToGraphqlTask(assignedTask())}
+        task={taskMocks.assignedTask()}
         user={currentUser}
         onSubmit={() => Promise.resolve()}
         onSubmitFailure={noop}
@@ -759,14 +756,14 @@ describe('<Variables />', () => {
 
   it('should hide completion button on completed tasks', async () => {
     nodeMockServer.use(
-      graphql.query('GetTaskVariables', (_, res, ctx) => {
-        return res.once(ctx.data(mockGetTaskVariables().result.data));
+      rest.post('/v1/tasks/:taskId/variables/search', (_, res, ctx) => {
+        return res.once(ctx.json(variableMocks.variables));
       }),
     );
 
     render(
       <Variables
-        task={convertToGraphqlTask(completedTask())}
+        task={taskMocks.completedTask()}
         user={currentUser}
         onSubmit={() => Promise.resolve()}
         onSubmitFailure={noop}
@@ -787,19 +784,17 @@ describe('<Variables />', () => {
       graphql.query('GetCurrentUser', (_, res, ctx) => {
         return res.once(ctx.data(mockGetCurrentUser));
       }),
-      graphql.query('GetTaskVariables', (_, res, ctx) => {
-        return res.once(
-          ctx.data(mockGetTaskVariablesTruncatedValues().result.data),
-        );
+      rest.post('/v1/tasks/:taskId/variables/search', (_, res, ctx) => {
+        return res.once(ctx.json(variableMocks.truncatedVariables));
       }),
-      graphql.query('GetFullVariableValue', (_, res, ctx) => {
-        return res.once(ctx.data(mockGetFullVariableValue().result.data));
+      rest.get('/v1/variables/:variableId', (_, res, ctx) => {
+        return res.once(ctx.json(variableMocks.fullVariable()));
       }),
     );
     const mockOnSubmit = jest.fn();
     const {user} = render(
       <Variables
-        task={convertToGraphqlTask(assignedTask())}
+        task={taskMocks.assignedTask()}
         user={currentUser}
         onSubmit={mockOnSubmit}
         onSubmitFailure={noop}
@@ -840,29 +835,35 @@ describe('<Variables />', () => {
   });
 
   it('should preserve full value', async () => {
-    const mockVariable = {id: '1-myVar', value: '"1112"'};
+    const mockVariable: Variable = {
+      id: '1-myVar',
+      value: '"1112"',
+      previewValue: '"1112"',
+      name: 'myVar1',
+      isValueTruncated: false,
+    };
     const mockNewValue = '"new-value"';
     nodeMockServer.use(
       graphql.query('GetCurrentUser', (_, res, ctx) => {
         return res.once(ctx.data(mockGetCurrentUser));
       }),
-      graphql.query('GetTaskVariables', (_, res, ctx) => {
-        return res.once(
-          ctx.data(mockGetTaskVariablesTruncatedValues().result.data),
-        );
+      rest.post('/v1/tasks/:taskId/variables/search', (_, res, ctx) => {
+        return res.once(ctx.json(variableMocks.truncatedVariables));
       }),
-      graphql.query('GetFullVariableValue', (_, res, ctx) => {
-        return res.once(ctx.data(mockGetFullVariableValue().result.data));
-      }),
-      graphql.query('GetFullVariableValue', (_, res, ctx) => {
-        return res.once(
-          ctx.data(mockGetFullVariableValue(mockVariable).result.data),
-        );
+      rest.get('/v1/variables/:variableId', (req, res, ctx) => {
+        switch (req.params.variableId) {
+          case '0-myVar':
+            return res(ctx.json(variableMocks.fullVariable()));
+          case '1-myVar':
+            return res(ctx.json(variableMocks.fullVariable(mockVariable)));
+          default:
+            return res.networkError('Failed to fetch full variable');
+        }
       }),
     );
     const {user} = render(
       <Variables
-        task={convertToGraphqlTask(assignedTask())}
+        task={taskMocks.assignedTask()}
         user={currentUser}
         onSubmit={() => Promise.resolve()}
         onSubmitFailure={noop}
@@ -897,14 +898,14 @@ describe('<Variables />', () => {
   describe('Duplicate variable validations', () => {
     it('should display error if name is the same with one of the existing variables', async () => {
       nodeMockServer.use(
-        graphql.query('GetTaskVariables', (_, res, ctx) => {
-          return res.once(ctx.data(mockGetTaskVariables().result.data));
+        rest.post('/v1/tasks/:taskId/variables/search', (_, res, ctx) => {
+          return res.once(ctx.json(variableMocks.variables));
         }),
       );
 
       const {user} = render(
         <Variables
-          task={convertToGraphqlTask(assignedTask())}
+          task={taskMocks.assignedTask()}
           user={currentUser}
           onSubmit={() => Promise.resolve()}
           onSubmitFailure={noop}
@@ -930,14 +931,14 @@ describe('<Variables />', () => {
 
     it('should display duplicate name error on last edited variable', async () => {
       nodeMockServer.use(
-        graphql.query('GetTaskVariables', (_, res, ctx) => {
-          return res.once(ctx.data(mockGetTaskVariables().result.data));
+        rest.post('/v1/tasks/:taskId/variables/search', (_, res, ctx) => {
+          return res.once(ctx.json(variableMocks.variables));
         }),
       );
 
       const {user} = render(
         <Variables
-          task={convertToGraphqlTask(assignedTask())}
+          task={taskMocks.assignedTask()}
           user={currentUser}
           onSubmit={() => Promise.resolve()}
           onSubmitFailure={noop}
@@ -986,14 +987,14 @@ describe('<Variables />', () => {
 
     it('should display error if duplicate name is used and immediately started typing on to the value field', async () => {
       nodeMockServer.use(
-        graphql.query('GetTaskVariables', (_, res, ctx) => {
-          return res.once(ctx.data(mockGetTaskVariables().result.data));
+        rest.post('/v1/tasks/:taskId/variables/search', (_, res, ctx) => {
+          return res.once(ctx.json(variableMocks.variables));
         }),
       );
 
       const {user} = render(
         <Variables
-          task={convertToGraphqlTask(assignedTask())}
+          task={taskMocks.assignedTask()}
           user={currentUser}
           onSubmit={() => Promise.resolve()}
           onSubmitFailure={noop}
@@ -1031,14 +1032,14 @@ describe('<Variables />', () => {
 
     it('should continue to display existing duplicate name error', async () => {
       nodeMockServer.use(
-        graphql.query('GetTaskVariables', (_, res, ctx) => {
-          return res.once(ctx.data(mockGetTaskVariables().result.data));
+        rest.post('/v1/tasks/:taskId/variables/search', (_, res, ctx) => {
+          return res.once(ctx.json(variableMocks.variables));
         }),
       );
 
       const {user} = render(
         <Variables
-          task={convertToGraphqlTask(assignedTask())}
+          task={taskMocks.assignedTask()}
           user={currentUser}
           onSubmit={() => Promise.resolve()}
           onSubmitFailure={noop}

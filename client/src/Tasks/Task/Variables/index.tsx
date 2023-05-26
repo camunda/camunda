@@ -37,12 +37,10 @@ import {
   createNewVariableFieldName,
 } from './createVariableFieldName';
 import {getVariableFieldName} from './getVariableFieldName';
-import {Variable, User} from 'modules/types';
+import {Variable, User, Task} from 'modules/types';
 import {DetailsFooter} from 'modules/components/DetailsFooter';
 import {ResetForm} from './ResetForm';
-import {GetTask} from 'modules/queries/get-task';
 import {FormValues} from './types';
-import {useTaskVariables} from 'modules/queries/get-task-variables';
 import {LoadingTextarea} from './LoadingTextarea';
 import {usePermissions} from 'modules/hooks/usePermissions';
 import {OnNewVariableAdded} from './OnNewVariableAdded';
@@ -68,6 +66,7 @@ import {
 } from 'modules/components/TaskDetailsLayout';
 import {C3EmptyState} from '@camunda/camunda-composite-components';
 import {Separator} from 'modules/components/Separator';
+import {useVariables} from 'modules/queries/useVariables';
 
 const CODE_EDITOR_BUTTON_TOOLTIP_LABEL = 'Open JSON code editor';
 
@@ -94,7 +93,7 @@ type Props = {
   onSubmit: (variables: Pick<Variable, 'name' | 'value'>[]) => Promise<void>;
   onSubmitSuccess: () => void;
   onSubmitFailure: (error: Error) => void;
-  task: GetTask['task'];
+  task: Task;
   user: User;
 };
 
@@ -106,22 +105,29 @@ const Variables: React.FC<Props> = ({
   user,
 }) => {
   const formRef = useRef<HTMLFormElement | null>(null);
+  const {assignee, taskState} = task;
   const {hasPermission} = usePermissions(['write']);
-  const {queryFullVariable, variablesLoadingFullValue, variables, loading} =
-    useTaskVariables(task.id);
+  const {data, isInitialLoading, fetchFullVariable, variablesLoadingFullValue} =
+    useVariables(
+      {
+        taskId: task.id,
+      },
+      {
+        refetchOnWindowFocus: assignee === null,
+        refetchOnReconnect: assignee === null,
+      },
+    );
   const [editingVariable, setEditingVariable] = useState<string | undefined>();
   const [submissionState, setSubmissionState] =
     useState<InlineLoadingStatus>('inactive');
   const isModalOpen = editingVariable !== undefined;
-
-  const {assignee, taskState} = task;
   const canCompleteTask =
     user.userId === assignee && taskState === 'CREATED' && hasPermission;
-
   const hasEmptyNewVariable = (values: FormValues) =>
     values.newVariables?.some((variable) => variable === undefined);
+  const variables = data ?? [];
 
-  if (loading) {
+  if (isInitialLoading) {
     return null;
   }
 
@@ -250,7 +256,7 @@ const Variables: React.FC<Props> = ({
                                       )}
                                       onFocus={(event) => {
                                         if (variable.isValueTruncated) {
-                                          queryFullVariable(variable.id);
+                                          fetchFullVariable(variable.id);
                                         }
                                         input.onFocus(event);
                                       }}
@@ -269,7 +275,7 @@ const Variables: React.FC<Props> = ({
                                     label={CODE_EDITOR_BUTTON_TOOLTIP_LABEL}
                                     onClick={() => {
                                       if (variable.isValueTruncated) {
-                                        queryFullVariable(variable.id);
+                                        fetchFullVariable(variable.id);
                                       }
 
                                       setEditingVariable(
@@ -416,7 +422,9 @@ const Variables: React.FC<Props> = ({
                   <TaskDetailsRow>
                     <C3EmptyState
                       heading="Task has no variables"
-                      description="Click on Add Variable"
+                      description={
+                        taskState === 'COMPLETED' ? '' : 'Click on Add Variable'
+                      }
                     />
                   </TaskDetailsRow>
                 )}

@@ -13,8 +13,16 @@ import {mockGetCurrentUser} from 'modules/queries/get-current-user';
 import {Tasks} from './index';
 import {ApolloProvider} from '@apollo/client';
 import {client} from 'modules/apollo-client';
-import {graphql} from 'msw';
+import {graphql, rest} from 'msw';
 import {nodeMockServer} from 'modules/mockServer/nodeMockServer';
+import {ReactQueryProvider} from 'modules/ReactQueryProvider';
+
+const FIRST_PAGE = Array.from({length: 50}).map((_, index) =>
+  generateTask(`${index}`),
+);
+const SECOND_PAGE = Array.from({length: 50}).map((_, index) =>
+  generateTask(`${index + 50}`),
+);
 
 type Props = {
   children?: React.ReactNode;
@@ -22,11 +30,13 @@ type Props = {
 
 const Wrapper: React.FC<Props> = ({children}) => {
   return (
-    <ApolloProvider client={client}>
-      <MemoryRouter initialEntries={['/']}>
-        <MockThemeProvider>{children}</MockThemeProvider>
-      </MemoryRouter>
-    </ApolloProvider>
+    <ReactQueryProvider>
+      <ApolloProvider client={client}>
+        <MemoryRouter initialEntries={['/']}>
+          <MockThemeProvider>{children}</MockThemeProvider>
+        </MemoryRouter>
+      </ApolloProvider>
+    </ReactQueryProvider>
   );
 };
 
@@ -36,32 +46,13 @@ describe('<Layout />', () => {
       graphql.query('GetCurrentUser', (_, res, ctx) => {
         return res.once(ctx.data(mockGetCurrentUser));
       }),
-      graphql.query('GetTasks', (_, res, ctx) => {
-        return res.once(
-          ctx.data({
-            tasks: Array.from({length: 50}).map((_, index) =>
-              generateTask(`${index}`),
-            ),
-          }),
-        );
-      }),
-      graphql.query('GetTasks', (_, res, ctx) => {
-        return res.once(
-          ctx.data({
-            tasks: Array.from({length: 50}).map((_, index) =>
-              generateTask(`${index + 50}`),
-            ),
-          }),
-        );
-      }),
-      graphql.query('GetTasks', (_, res, ctx) => {
-        return res.once(
-          ctx.data({
-            tasks: Array.from({length: 50}).map((_, index) =>
-              generateTask(`${index + 50}`),
-            ),
-          }),
-        );
+      rest.post('/v1/tasks/search', async (req, res, ctx) => {
+        const {searchAfter} = await req.json();
+        if (searchAfter === undefined) {
+          return res(ctx.json(FIRST_PAGE));
+        }
+
+        return res(ctx.json(SECOND_PAGE));
       }),
     );
 

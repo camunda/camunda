@@ -9,12 +9,12 @@ import {Form} from '@bpmn-io/form-js-viewer';
 
 class FormManager {
   #form = new Form();
-  #schema: Parameters<Form['importSchema']>[0] = null;
+  #schema: string | null = null;
   #onSubmit: (result: {errors: any; data: any}) => void = () => {};
 
   render = async (options: {
-    schema: any;
-    data: any;
+    schema: string;
+    data: Parameters<Form['importSchema']>[1];
     onSubmit: (result: {errors: any; data: any}) => void;
     onImportError: () => void;
     container: HTMLElement;
@@ -33,7 +33,7 @@ class FormManager {
 
     try {
       this.#form.attachTo(container);
-      await this.#form.importSchema(schema, data);
+      await this.#form.importSchema(JSON.parse(schema), data);
       this.#schema = schema;
     } catch {
       onImportError();

@@ -51,7 +51,7 @@ function mockResponses(
 
 test.describe('processes page', () => {
   test('consent modal', async ({page}) => {
-    await page.route('**/{graphql,v1/internal/processes}', mockResponses());
+    await page.route(/^.*\/(graphql|v1).*$/i, mockResponses());
 
     await page.goto('/processes', {
       waitUntil: 'networkidle',
@@ -64,7 +64,7 @@ test.describe('processes page', () => {
     await page.addInitScript(() => {
       window.localStorage.setItem('hasConsentedToStartProcess', 'true');
     });
-    await page.route('**/{graphql,v1/internal/processes}', mockResponses());
+    await page.route(/^.*\/(graphql|v1).*$/i, mockResponses());
 
     await page.goto('/processes', {
       waitUntil: 'networkidle',
@@ -78,7 +78,7 @@ test.describe('processes page', () => {
       window.localStorage.setItem('hasConsentedToStartProcess', 'true');
       window.localStorage.setItem('theme', '"dark"');
     });
-    await page.route('**/{graphql,v1/internal/processes}', mockResponses());
+    await page.route(/^.*\/(graphql|v1).*$/i, mockResponses());
 
     await page.goto('/processes', {
       waitUntil: 'networkidle',
@@ -105,7 +105,7 @@ test.describe('processes page', () => {
       window.localStorage.setItem('hasConsentedToStartProcess', 'true');
     });
     await page.route(
-      '**/{graphql,v1/internal/processes}',
+      /^.*\/(graphql|v1).*$/i,
       mockResponses([
         {
           id: '2251799813685285',

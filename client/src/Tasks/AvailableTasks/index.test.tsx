@@ -9,15 +9,12 @@ import {render, screen, within} from 'modules/testing-library';
 import {AvailableTasks} from './index';
 import {MockThemeProvider} from 'modules/theme/MockProvider';
 import {Link, MemoryRouter} from 'react-router-dom';
-import {
-  mockGetAllOpenTasks,
-  mockGetEmptyTasks,
-} from 'modules/queries/get-tasks';
 import {nodeMockServer} from 'modules/mockServer/nodeMockServer';
 import {graphql} from 'msw';
 import {mockGetCurrentUser} from 'modules/queries/get-current-user';
 import {ApolloProvider} from '@apollo/client';
 import {client} from 'modules/apollo-client';
+import * as tasksMocks from 'modules/mock-schema/mocks/tasks';
 
 function noop() {
   return Promise.resolve([]);
@@ -74,7 +71,7 @@ describe('<Tasks />', () => {
         loading={false}
         onScrollDown={noop}
         onScrollUp={noop}
-        tasks={mockGetAllOpenTasks}
+        tasks={tasksMocks.tasks}
       />,
     );
 
@@ -88,12 +85,12 @@ describe('<Tasks />', () => {
         loading={false}
         onScrollDown={noop}
         onScrollUp={noop}
-        tasks={mockGetAllOpenTasks}
+        tasks={tasksMocks.tasks}
       />,
       {wrapper: getWrapper()},
     );
 
-    const [firstTask, secondTask] = mockGetAllOpenTasks;
+    const [firstTask, secondTask] = tasksMocks.tasks;
 
     const withinFirstTask = within(screen.getByTestId('task-0'));
     const withinSecondTask = within(screen.getByTestId('task-1'));
@@ -125,7 +122,7 @@ describe('<Tasks />', () => {
         loading={false}
         onScrollDown={noop}
         onScrollUp={noop}
-        tasks={mockGetEmptyTasks}
+        tasks={[]}
       />,
       {wrapper: getWrapper()},
     );

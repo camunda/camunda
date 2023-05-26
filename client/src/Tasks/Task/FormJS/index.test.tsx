@@ -11,19 +11,22 @@ import {
   unassignedTaskWithForm,
 } from 'modules/mock-schema/mocks/task';
 import {mockGetCurrentUser} from 'modules/queries/get-current-user';
-import {mockGetDynamicForm, mockGetForm} from 'modules/queries/get-form';
 import {MockThemeProvider} from 'modules/theme/MockProvider';
 import {FormJS} from './index';
-import {
-  mockGetDynamicFormsVariables,
-  mockGetSelectedVariables,
-} from 'modules/queries/get-selected-variables';
+import {nodeMockServer} from 'modules/mockServer/nodeMockServer';
+import {rest, graphql} from 'msw';
+import noop from 'lodash/noop';
+import * as formMocks from 'modules/mock-schema/mocks/form';
+import * as variableMocks from 'modules/mock-schema/mocks/variables';
+import {ReactQueryProvider} from 'modules/ReactQueryProvider';
 import {ApolloProvider} from '@apollo/client';
 import {client} from 'modules/apollo-client';
-import {nodeMockServer} from 'modules/mockServer/nodeMockServer';
-import {graphql} from 'msw';
-import noop from 'lodash/noop';
-import {convertToGraphqlTask} from 'modules/utils/convertToGraphqlTask';
+
+const MOCK_FORM_ID = 'form-0';
+const MOCK_PROCESS_DEFINITION_KEY = 'process';
+const MOCK_TASK_ID = 'task-0';
+const REQUESTED_VARIABLES = ['myVar', 'isCool'];
+const DYNAMIC_FORM_REQUESTED_VARIABLES = ['radio_field', 'radio_field_options'];
 
 type Props = {
   children?: React.ReactNode;
@@ -31,7 +34,9 @@ type Props = {
 
 const Wrapper: React.FC<Props> = ({children}) => (
   <ApolloProvider client={client}>
-    <MockThemeProvider>{children}</MockThemeProvider>
+    <ReactQueryProvider>
+      <MockThemeProvider>{children}</MockThemeProvider>
+    </ReactQueryProvider>
   </ApolloProvider>
 );
 
@@ -44,8 +49,6 @@ function areArraysEqual(firstArray: unknown[], secondArray: unknown[]) {
   );
 }
 
-const REQUESTED_VARIABLES = ['myVar', 'isCool'];
-
 describe('<FormJS />', () => {
   beforeAll(() => {
     global.IS_REACT_ACT_ENVIRONMENT = false;
@@ -57,8 +60,8 @@ describe('<FormJS />', () => {
 
   beforeEach(() => {
     nodeMockServer.use(
-      graphql.query('GetForm', (_, res, ctx) => {
-        return res.once(ctx.data(mockGetForm.result.data));
+      rest.get('/v1/forms/:formId', (_, res, ctx) => {
+        return res.once(ctx.json(formMocks.form));
       }),
       graphql.query('GetCurrentUser', (_, res, ctx) => {
         return res.once(ctx.data(mockGetCurrentUser));
@@ -74,26 +77,28 @@ describe('<FormJS />', () => {
 
   it('should render form for unassigned task', async () => {
     nodeMockServer.use(
-      graphql.query('GetSelectedVariables', (req, res, ctx) => {
-        if (areArraysEqual(REQUESTED_VARIABLES, req.variables?.variableNames)) {
-          return res(ctx.data(mockGetSelectedVariables().result.data));
+      rest.post('/v1/tasks/:taskId/variables/search', async (req, res, ctx) => {
+        const body = await req.json();
+        if (areArraysEqual(REQUESTED_VARIABLES, body.variableNames)) {
+          return res.once(ctx.json(variableMocks.variables));
         }
 
         return res(
-          ctx.errors([
+          ctx.json([
             {
               message: 'Invalid variables',
             },
           ]),
+          ctx.status(404),
         );
       }),
     );
 
     render(
       <FormJS
-        id="form-0"
-        processDefinitionId="process"
-        task={convertToGraphqlTask(unassignedTaskWithForm())}
+        id={MOCK_FORM_ID}
+        processDefinitionKey={MOCK_PROCESS_DEFINITION_KEY}
+        task={unassignedTaskWithForm(MOCK_TASK_ID)}
         user={mockGetCurrentUser.currentUser}
         onSubmit={() => Promise.resolve()}
         onSubmitFailure={noop}
@@ -121,26 +126,28 @@ describe('<FormJS />', () => {
 
   it('should render form for assigned task', async () => {
     nodeMockServer.use(
-      graphql.query('GetSelectedVariables', (req, res, ctx) => {
-        if (areArraysEqual(REQUESTED_VARIABLES, req.variables?.variableNames)) {
-          return res(ctx.data(mockGetSelectedVariables().result.data));
+      rest.post('/v1/tasks/:taskId/variables/search', async (req, res, ctx) => {
+        const body = await req.json();
+        if (areArraysEqual(REQUESTED_VARIABLES, body.variableNames)) {
+          return res.once(ctx.json(variableMocks.variables));
         }
 
         return res(
-          ctx.errors([
+          ctx.json([
             {
               message: 'Invalid variables',
             },
           ]),
+          ctx.status(404),
         );
       }),
     );
 
     render(
       <FormJS
-        id="form-0"
-        processDefinitionId="process"
-        task={convertToGraphqlTask(assignedTaskWithForm())}
+        id={MOCK_FORM_ID}
+        processDefinitionKey={MOCK_PROCESS_DEFINITION_KEY}
+        task={assignedTaskWithForm(MOCK_TASK_ID)}
         user={mockGetCurrentUser.currentUser}
         onSubmit={() => Promise.resolve()}
         onSubmitFailure={noop}
@@ -167,26 +174,28 @@ describe('<FormJS />', () => {
 
   it('should render a prefilled form', async () => {
     nodeMockServer.use(
-      graphql.query('GetSelectedVariables', (req, res, ctx) => {
-        if (areArraysEqual(REQUESTED_VARIABLES, req.variables?.variableNames)) {
-          return res(ctx.data(mockGetSelectedVariables().result.data));
+      rest.post('/v1/tasks/:taskId/variables/search', async (req, res, ctx) => {
+        const body = await req.json();
+        if (areArraysEqual(REQUESTED_VARIABLES, body.variableNames)) {
+          return res.once(ctx.json(variableMocks.variables));
         }
 
         return res(
-          ctx.errors([
+          ctx.json([
             {
               message: 'Invalid variables',
             },
           ]),
+          ctx.status(404),
         );
       }),
     );
 
     render(
       <FormJS
-        id="form-0"
-        processDefinitionId="process"
-        task={convertToGraphqlTask(assignedTaskWithForm())}
+        id={MOCK_FORM_ID}
+        processDefinitionKey={MOCK_PROCESS_DEFINITION_KEY}
+        task={assignedTaskWithForm(MOCK_TASK_ID)}
         user={mockGetCurrentUser.currentUser}
         onSubmit={() => Promise.resolve()}
         onSubmitFailure={noop}
@@ -210,17 +219,19 @@ describe('<FormJS />', () => {
 
   it('should submit prefilled form', async () => {
     nodeMockServer.use(
-      graphql.query('GetSelectedVariables', (req, res, ctx) => {
-        if (areArraysEqual(REQUESTED_VARIABLES, req.variables?.variableNames)) {
-          return res(ctx.data(mockGetSelectedVariables().result.data));
+      rest.post('/v1/tasks/:taskId/variables/search', async (req, res, ctx) => {
+        const body = await req.json();
+        if (areArraysEqual(REQUESTED_VARIABLES, body.variableNames)) {
+          return res.once(ctx.json(variableMocks.variables));
         }
 
         return res(
-          ctx.errors([
+          ctx.json([
             {
               message: 'Invalid variables',
             },
           ]),
+          ctx.status(404),
         );
       }),
     );
@@ -228,9 +239,9 @@ describe('<FormJS />', () => {
     const mockOnSubmit = jest.fn();
     const {user} = render(
       <FormJS
-        id="form-0"
-        processDefinitionId="process"
-        task={convertToGraphqlTask(assignedTaskWithForm())}
+        id={MOCK_FORM_ID}
+        processDefinitionKey={MOCK_PROCESS_DEFINITION_KEY}
+        task={assignedTaskWithForm(MOCK_TASK_ID)}
         user={mockGetCurrentUser.currentUser}
         onSubmit={mockOnSubmit}
         onSubmitFailure={noop}
@@ -269,17 +280,19 @@ describe('<FormJS />', () => {
 
   it('should submit edited form', async () => {
     nodeMockServer.use(
-      graphql.query('GetSelectedVariables', (req, res, ctx) => {
-        if (areArraysEqual(REQUESTED_VARIABLES, req.variables?.variableNames)) {
-          return res(ctx.data(mockGetSelectedVariables().result.data));
+      rest.post('/v1/tasks/:taskId/variables/search', async (req, res, ctx) => {
+        const body = await req.json();
+        if (areArraysEqual(REQUESTED_VARIABLES, body.variableNames)) {
+          return res.once(ctx.json(variableMocks.variables));
         }
 
         return res(
-          ctx.errors([
+          ctx.json([
             {
               message: 'Invalid variables',
             },
           ]),
+          ctx.status(404),
         );
       }),
     );
@@ -287,9 +300,9 @@ describe('<FormJS />', () => {
     const mockOnSubmit = jest.fn();
     const {user} = render(
       <FormJS
-        id="form-0"
-        processDefinitionId="process"
-        task={convertToGraphqlTask(assignedTaskWithForm())}
+        id={MOCK_FORM_ID}
+        processDefinitionKey={MOCK_PROCESS_DEFINITION_KEY}
+        task={assignedTaskWithForm(MOCK_TASK_ID)}
         user={mockGetCurrentUser.currentUser}
         onSubmit={mockOnSubmit}
         onSubmitFailure={noop}
@@ -331,38 +344,36 @@ describe('<FormJS />', () => {
     );
   });
 
-  it('should render a prefilled form', async () => {
+  it('should render a prefilled dynamic form', async () => {
     nodeMockServer.use(
-      graphql.query('GetForm', (_, res, ctx) => {
-        return res(ctx.data(mockGetDynamicForm.result.data));
+      rest.get('/v1/forms/:formId', (_, res, ctx) => {
+        return res(ctx.json(formMocks.dynamicForm));
       }),
-      graphql.query('GetSelectedVariables', async (req, res, ctx) => {
+      rest.post('/v1/tasks/:taskId/variables/search', async (req, res, ctx) => {
         const body = await req.json();
 
         if (
-          areArraysEqual(
-            mockGetDynamicFormsVariables().request.variables.variableNames,
-            body?.variables?.variableNames,
-          )
+          areArraysEqual(DYNAMIC_FORM_REQUESTED_VARIABLES, body.variableNames)
         ) {
-          return res(ctx.data(mockGetDynamicFormsVariables().result.data));
+          return res.once(ctx.json(variableMocks.dynamicFormVariables));
         }
 
         return res(
-          ctx.errors([
+          ctx.json([
             {
               message: 'Invalid variables',
             },
           ]),
+          ctx.status(404),
         );
       }),
     );
 
     render(
       <FormJS
-        id="form-0"
-        processDefinitionId="process"
-        task={convertToGraphqlTask(assignedTaskWithForm())}
+        id={MOCK_FORM_ID}
+        processDefinitionKey={MOCK_PROCESS_DEFINITION_KEY}
+        task={assignedTaskWithForm(MOCK_TASK_ID)}
         user={mockGetCurrentUser.currentUser}
         onSubmit={() => Promise.resolve()}
         onSubmitFailure={noop}

@@ -27,11 +27,7 @@ function useStartProcess() {
         return response.json();
       }
 
-      if (error !== null) {
-        throw error;
-      }
-
-      throw new Error('Could not start process');
+      throw error ?? new Error('Could not start process');
     },
   });
 }

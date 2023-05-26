@@ -18,13 +18,13 @@ import {
 import {Task} from './Task';
 import {Stack} from '@carbon/react';
 import {Skeleton} from './Skeleton';
-import {QueryTask} from 'modules/queries/get-tasks';
 import {useTaskFilters} from 'modules/hooks/useTaskFilters';
+import {Task as TaskType} from 'modules/types';
 
 type Props = {
-  onScrollUp: () => Promise<ReadonlyArray<QueryTask>>;
-  onScrollDown: () => Promise<ReadonlyArray<QueryTask>>;
-  tasks: ReadonlyArray<QueryTask>;
+  onScrollUp: () => Promise<TaskType[]>;
+  onScrollDown: () => Promise<TaskType[]>;
+  tasks: TaskType[];
   loading: boolean;
 };
 
@@ -34,8 +34,8 @@ const AvailableTasks: React.FC<Props> = ({
   onScrollUp,
   tasks,
 }) => {
-  const taskRef = useRef<HTMLDivElement>(null);
-  const scrollableListRef = useRef<HTMLDivElement>(null);
+  const taskRef = useRef<HTMLDivElement | null>(null);
+  const scrollableListRef = useRef<HTMLDivElement | null>(null);
   const {filter} = useTaskFilters();
 
   useEffect(() => {
@@ -78,7 +78,7 @@ const AvailableTasks: React.FC<Props> = ({
                 name={task.name}
                 processName={task.processName}
                 assignee={task.assignee}
-                creationTime={task.creationTime}
+                creationDate={task.creationDate}
                 followUpDate={task.followUpDate}
                 dueDate={task.dueDate}
               />

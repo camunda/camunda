@@ -5,17 +5,14 @@
  * except in compliance with the proprietary license.
  */
 
-import {useEffect, useRef, useState} from 'react';
-import {useQuery} from '@apollo/client';
-import {GET_FORM, GetForm, FormQueryVariables} from 'modules/queries/get-form';
-import {Form, Variable, User} from 'modules/types';
-import {GetTask, useRemoveFormReference} from 'modules/queries/get-task';
+import {useEffect, useMemo, useRef, useState} from 'react';
+import {Form, Variable, User, Task} from 'modules/types';
+import {useRemoveFormReference} from 'modules/queries/useTask';
 import {getSchemaVariables} from '@bpmn-io/form-js-viewer';
 import '@bpmn-io/form-js-viewer/dist/assets/form-js-base.css';
 import {DetailsFooter} from 'modules/components/DetailsFooter';
 import {InlineLoadingStatus} from '@carbon/react';
 import {FormCustomStyling} from './styled';
-import {useSelectedVariables} from 'modules/queries/get-selected-variables';
 import {usePermissions} from 'modules/hooks/usePermissions';
 import {notificationsStore} from 'modules/stores/notifications';
 import {AsyncActionButton} from 'modules/components/AsyncActionButton';
@@ -27,8 +24,10 @@ import {
   TaskDetailsRow,
 } from 'modules/components/TaskDetailsLayout';
 import {Separator} from 'modules/components/Separator';
+import {useForm} from 'modules/queries/useForm';
+import {useVariables} from 'modules/queries/useVariables';
 
-function formatVariablesToFormData(variables: ReadonlyArray<Variable>) {
+function formatVariablesToFormData(variables: Variable[]) {
   return variables.reduce(
     (accumulator, {name, value}) => ({
       ...accumulator,
@@ -54,8 +53,8 @@ function extractVariablesFromFormSchema(
 
 type Props = {
   id: Form['id'];
-  processDefinitionId: Form['processDefinitionId'];
-  task: GetTask['task'];
+  processDefinitionKey: Form['processDefinitionKey'];
+  task: Task;
   onSubmit: (variables: Variable[]) => Promise<void>;
   onSubmitSuccess: () => void;
   onSubmitFailure: (error: Error) => void;
@@ -64,7 +63,7 @@ type Props = {
 
 const FormJS: React.FC<Props> = ({
   id,
-  processDefinitionId,
+  processDefinitionKey,
   task,
   onSubmit,
   onSubmitSuccess,
@@ -74,25 +73,32 @@ const FormJS: React.FC<Props> = ({
   const containerRef = useRef<HTMLDivElement | null>(null);
   const [submissionState, setSubmissionState] =
     useState<InlineLoadingStatus>('inactive');
-  const {data} = useQuery<GetForm, FormQueryVariables>(GET_FORM, {
-    variables: {
-      id,
-      processDefinitionId,
-    },
-  });
-  const {hasPermission} = usePermissions(['write']);
   const {assignee, taskState} = task;
-  const {
-    form: {schema},
-  } = data ?? {
-    form: {
-      schema: null,
+  const {data, isInitialLoading} = useForm(
+    {
+      id,
+      processDefinitionKey,
     },
-  };
-  const {updateSelectedVariables, loading, variables} = useSelectedVariables(
-    task.id,
-    extractVariablesFromFormSchema(schema),
+    {
+      refetchOnReconnect: false,
+      refetchOnWindowFocus: false,
+    },
   );
+  const {hasPermission} = usePermissions(['write']);
+  const {schema} = data;
+  const extractedVariables = extractVariablesFromFormSchema(schema);
+  const {isFetching, data: variablesData} = useVariables(
+    {
+      taskId: task.id,
+      variableNames: extractedVariables,
+    },
+    {
+      enabled: !isInitialLoading && extractedVariables.length > 0,
+      refetchOnReconnect: assignee === null,
+      refetchOnWindowFocus: assignee === null,
+    },
+  );
+  const variables = useMemo(() => variablesData ?? [], [variablesData]);
   const isAssignedToMe = user.userId === assignee;
   const canCompleteTask =
     user.userId === assignee && taskState === 'CREATED' && hasPermission;
@@ -118,17 +124,9 @@ const FormJS: React.FC<Props> = ({
       });
     }
 
-    function parseSchema(schema: string) {
-      try {
-        return JSON.parse(schema);
-      } catch {
-        onImportError();
-      }
-    }
-
     if (
       schema !== null &&
-      !loading &&
+      !isFetching &&
       container !== null &&
       submissionState === 'inactive'
     ) {
@@ -136,7 +134,7 @@ const FormJS: React.FC<Props> = ({
       formManager.render({
         container,
         data,
-        schema: parseSchema(schema),
+        schema,
         onImportError,
         onSubmit: async ({errors, data}: any) => {
           if (Object.keys(errors).length === 0) {
@@ -150,7 +148,6 @@ const FormJS: React.FC<Props> = ({
             try {
               setSubmissionState('active');
               await onSubmit(variables);
-              updateSelectedVariables(variables);
               setSubmissionState('finished');
             } catch (error) {
               onSubmitFailure(error as Error);
@@ -163,11 +160,10 @@ const FormJS: React.FC<Props> = ({
       });
     }
   }, [
-    loading,
+    isFetching,
     variables,
     schema,
     removeFormReference,
-    updateSelectedVariables,
     onSubmit,
     onSubmitFailure,
     submissionState,

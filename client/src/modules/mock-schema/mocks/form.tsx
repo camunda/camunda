@@ -8,9 +8,8 @@
 import {Form} from 'modules/types';
 
 const form: Form = {
-  __typename: 'Form',
   id: 'camunda-forms:bpmn:form-0',
-  processDefinitionId: 'process',
+  processDefinitionKey: 'process',
   schema: JSON.stringify({
     components: [
       {
@@ -41,9 +40,8 @@ const form: Form = {
 };
 
 const invalidForm: Form = {
-  __typename: 'Form',
   id: 'camunda-forms:bpmn:form-0',
-  processDefinitionId: 'process',
+  processDefinitionKey: 'process',
   schema: `
     {
       components: [
@@ -67,9 +65,8 @@ const invalidForm: Form = {
 };
 
 const dynamicForm: Form = {
-  __typename: 'Form',
   id: 'camunda-forms:bpmn:form-0',
-  processDefinitionId: 'process',
+  processDefinitionKey: 'process',
   schema: JSON.stringify({
     components: [
       {

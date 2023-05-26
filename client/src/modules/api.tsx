@@ -5,7 +5,7 @@
  * except in compliance with the proprietary license.
  */
 
-import {Task, TasksSearchBody} from './types';
+import {Form, Task, TasksSearchBody, Variable} from './types';
 import {mergePathname} from './utils/mergePathname';
 
 const BASENAME = window.clientConfig?.contextPath ?? '/';
@@ -60,6 +60,7 @@ const api = {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
+        'x-is-polling': 'true',
       },
     });
   },
@@ -73,8 +74,16 @@ const api = {
       },
     },
   ),
-  getForm: (formId: string) => {
-    return new Request(mergePathname(BASENAME, `/v1/forms/${formId}`), {
+  getForm: ({
+    id,
+    processDefinitionKey,
+  }: Pick<Form, 'id' | 'processDefinitionKey'>) => {
+    const url = new URL(window.location.href);
+
+    url.pathname = mergePathname(BASENAME, `/v1/forms/${id}`);
+    url.searchParams.set('processDefinitionKey', processDefinitionKey);
+
+    return new Request(url, {
       ...BASE_REQUEST_OPTIONS,
       method: 'GET',
       headers: {
@@ -82,7 +91,7 @@ const api = {
       },
     });
   },
-  getFullVariable: (variableId: string) => {
+  getFullVariable: (variableId: Variable['id']) => {
     return new Request(mergePathname(BASENAME, `/v1/variables/${variableId}`), {
       ...BASE_REQUEST_OPTIONS,
       method: 'GET',
@@ -117,6 +126,7 @@ const api = {
       body: JSON.stringify(body),
       headers: {
         'Content-Type': 'application/json',
+        'x-is-polling': 'true',
       },
     });
   },
@@ -141,7 +151,13 @@ const api = {
       },
     });
   },
-  completeTask: (taskId: Task['id']) => {
+  completeTask: ({
+    taskId,
+    ...body
+  }: {
+    taskId: Task['id'];
+    variables: Pick<Variable, 'name' | 'value'>[];
+  }) => {
     return new Request(
       mergePathname(BASENAME, `/v1/tasks/${taskId}/complete`),
       {
@@ -150,6 +166,7 @@ const api = {
         headers: {
           'Content-Type': 'application/json',
         },
+        body: JSON.stringify(body),
       },
     );
   },

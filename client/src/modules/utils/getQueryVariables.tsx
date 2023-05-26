@@ -5,74 +5,76 @@
  * except in compliance with the proprietary license.
  */
 
-import {TaskStates} from 'modules/constants/taskStates';
 import {TaskFilters} from 'modules/hooks/useTaskFilters';
-import {GetTasksVariables} from 'modules/queries/get-tasks';
+import {TasksSearchBody} from 'modules/types';
 
-const SORT_BY_FIELD: Record<TaskFilters['sortBy'], string> = {
+const SORT_BY_FIELD: Record<
+  TaskFilters['sortBy'],
+  'creationTime' | 'dueDate' | 'followUpDate'
+> = {
   creation: 'creationTime',
   due: 'dueDate',
   'follow-up': 'followUpDate',
-} as const;
+};
 
 const getQueryVariables = (
   filters: TaskFilters,
   {
-    userId,
+    assignee,
     pageSize,
     searchBefore,
     searchAfter,
     searchAfterOrEqual,
-  }: {
-    userId?: string;
-    pageSize?: number;
-    searchBefore?: string[];
-    searchAfter?: string[];
-    searchAfterOrEqual?: string[];
-  },
-): GetTasksVariables => {
+  }: Pick<
+    TasksSearchBody,
+    | 'assignee'
+    | 'pageSize'
+    | 'searchBefore'
+    | 'searchAfter'
+    | 'searchAfterOrEqual'
+  >,
+): TasksSearchBody => {
   const {filter, sortBy, sortOrder} = filters;
-  const BASE_QUERY_VARIABLES = {
+  const BASE_QUERY_VARIABLES: TasksSearchBody = {
     sort: [
       {
         field: SORT_BY_FIELD[sortBy],
-        order: sortOrder.toUpperCase(),
+        order: sortOrder.toUpperCase() as 'ASC' | 'DESC',
       },
     ],
-    sortOrder,
     pageSize,
     searchBefore,
     searchAfter,
     searchAfterOrEqual,
-  } as const;
+  };
 
   switch (filter) {
     case 'assigned-to-me': {
       return {
         ...BASE_QUERY_VARIABLES,
         assigned: true,
-        assignee: userId!,
-        state: TaskStates.Created,
+        assignee: assignee!,
+        state: 'CREATED',
       };
     }
     case 'unassigned': {
       return {
         ...BASE_QUERY_VARIABLES,
         assigned: false,
-        state: TaskStates.Created,
+        state: 'CREATED',
       };
     }
     case 'completed': {
       return {
         ...BASE_QUERY_VARIABLES,
-        state: TaskStates.Completed,
+        state: 'COMPLETED',
       };
     }
     case 'all-open':
     default: {
       return {
         ...BASE_QUERY_VARIABLES,
-        state: TaskStates.Created,
+        state: 'CREATED',
       };
     }
   }

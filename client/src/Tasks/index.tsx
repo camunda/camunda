@@ -12,18 +12,25 @@ import {AvailableTasks} from './AvailableTasks';
 import {EmptyPage} from './EmptyPage';
 import {Route, Routes} from 'react-router-dom';
 import {pages} from 'modules/routing';
-import {useTasks} from 'modules/hooks/useTasks';
+import {useTasks} from 'modules/queries/useTasks';
 
 const Tasks: React.FC = () => {
-  const {fetchPreviousTasks, fetchNextTasks, loading, tasks, refetch} =
-    useTasks();
+  const {
+    fetchPreviousTasks,
+    fetchNextTasks,
+    isInitialLoading,
+    isLoading,
+    data,
+    refetch,
+  } = useTasks();
+  const tasks = data?.pages.flat() ?? [];
 
   return (
     <Container>
       <TasksPanel aria-label="Left panel" forwardedAs="section">
-        <Filters disabled={loading} />
+        <Filters disabled={isLoading} />
         <AvailableTasks
-          loading={loading}
+          loading={isInitialLoading}
           onScrollDown={fetchNextTasks}
           onScrollUp={fetchPreviousTasks}
           tasks={tasks}
@@ -36,7 +43,7 @@ const Tasks: React.FC = () => {
             element={
               <EmptyPage
                 hasNoTasks={tasks.length === 0}
-                isLoadingTasks={loading}
+                isLoadingTasks={isLoading}
               />
             }
           />

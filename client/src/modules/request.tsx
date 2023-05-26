@@ -54,5 +54,18 @@ async function request(
   }
 }
 
-export {request};
+function isRequestError(error: unknown): error is {
+  variant: 'network-error';
+  response: null;
+  networkError: Error;
+} {
+  return (
+    typeof error === 'object' &&
+    error !== null &&
+    'variant' in error &&
+    error.variant === 'network-error'
+  );
+}
+
+export {request, isRequestError};
 export type {RequestError};

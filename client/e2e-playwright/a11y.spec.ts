@@ -9,9 +9,77 @@ import {expect} from '@playwright/test';
 import {test} from './axe-test';
 import schema from './bigForm.json';
 
+const MOCK_TASK = {
+  id: 'task123',
+  formKey: 'camunda-forms:bpmn:userTaskForm_1',
+  processDefinitionKey: '2251799813685255',
+  assignee: 'demo',
+  name: 'Big form task',
+  taskState: 'CREATED',
+  processName: 'Big form process',
+  creationDate: '2023-03-03T14:16:18.441+0100',
+  completionDate: null,
+  taskDefinitionId: 'Activity_0aecztp',
+  processInstanceKey: '4503599627371425',
+  dueDate: null,
+  followUpDate: null,
+  candidateGroups: null,
+  candidateUsers: null,
+};
+
 test.describe('a11y', () => {
   test('have no violations', async ({page, makeAxeBuilder}) => {
-    await page.route('**/graphql', (route) => {
+    await page.route(/^.*\/(graphql|v1).*$/i, (route) => {
+      if (route.request().url().includes('v1/tasks/task123/variables/search')) {
+        return route.fulfill({
+          status: 200,
+          body: JSON.stringify([]),
+          headers: {
+            'content-type': 'application/json',
+          },
+        });
+      }
+
+      if (route.request().url().includes('v1/tasks/search')) {
+        return route.fulfill({
+          status: 200,
+          body: JSON.stringify([
+            {
+              ...MOCK_TASK,
+              isFirst: true,
+              sortValues: ['1684878523864', '4503599627371430'],
+            },
+          ]),
+          headers: {
+            'content-type': 'application/json',
+          },
+        });
+      }
+
+      if (route.request().url().includes('v1/tasks/task123')) {
+        return route.fulfill({
+          status: 200,
+          body: JSON.stringify(MOCK_TASK),
+          headers: {
+            'content-type': 'application/json',
+          },
+        });
+      }
+
+      if (route.request().url().includes('v1/forms/userTaskForm_1')) {
+        return route.fulfill({
+          status: 200,
+          body: JSON.stringify({
+            id: 'userTaskForm_3j0n396',
+            processDefinitionKey: '2251799813685255',
+            schema: JSON.stringify(schema),
+          }),
+          headers: {
+            'content-type': 'application/json',
+          },
+        });
+      }
+
       const {operationName} = route.request().postDataJSON();
 
       switch (operationName) {
@@ -29,64 +97,6 @@ test.describe('a11y', () => {
                   c8Links: [],
                   __typename: 'User',
                 },
-              },
-            }),
-          });
-        case 'GetTasks':
-          return route.fulfill({
-            status: 200,
-            body: JSON.stringify({
-              data: {
-                tasks: [
-                  {
-                    id: 'task123',
-                    name: 'Big form task',
-                    processName: 'Big form process',
-                    assignee: 'demo',
-                    creationTime: '2023-03-03T14:16:18.441+0100',
-                    taskState: 'CREATED',
-                    isFirst: true,
-                  },
-                ],
-              },
-            }),
-          });
-        case 'GetTask':
-          return route.fulfill({
-            status: 200,
-            body: JSON.stringify({
-              data: {
-                task: {
-                  id: 'task123',
-                  formKey: 'camunda-forms:bpmn:userTaskForm_1',
-                  processDefinitionId: '2251799813685255',
-                  assignee: 'demo',
-                  name: 'Big form task',
-                  taskState: 'CREATED',
-                  processName: 'Big form process',
-                  creationTime: '2023-03-03T14:16:18.441+0100',
-                  completionTime: null,
-                },
-              },
-            }),
-          });
-        case 'GetForm':
-          return route.fulfill({
-            status: 200,
-            body: JSON.stringify({
-              data: {
-                form: {
-                  schema: JSON.stringify(schema),
-                },
-              },
-            }),
-          });
-        case 'GetSelectedVariables':
-          return route.fulfill({
-            status: 200,
-            body: JSON.stringify({
-              data: {
-                variables: [],
               },
             }),
           });

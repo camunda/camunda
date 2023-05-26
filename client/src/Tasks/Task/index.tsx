@@ -7,12 +7,8 @@
 
 import {useEffect} from 'react';
 import {useLocation, useNavigate} from 'react-router-dom';
-import {useQuery, useMutation} from '@apollo/client';
-import {GetTask, useTask} from 'modules/queries/get-task';
-import {
-  COMPLETE_TASK,
-  CompleteTaskVariables,
-} from 'modules/mutations/complete-task';
+import {useQuery} from '@apollo/client';
+import {useCompleteTask} from 'modules/mutations/useCompleteTask';
 import {getCompleteTaskErrorMessage} from './getCompleteTaskErrorMessage';
 import {shouldFetchMore} from './shouldFetchMore';
 import {Variables} from './Variables';
@@ -29,6 +25,8 @@ import {notificationsStore} from 'modules/stores/notifications';
 import {storeStateLocally} from 'modules/utils/localStorage';
 import {useTaskFilters} from 'modules/hooks/useTaskFilters';
 import {DetailsSkeleton} from './Details/DetailsSkeleton';
+import {useTask} from 'modules/queries/useTask';
+import {isRequestError} from 'modules/request';
 
 const CAMUNDA_FORMS_PREFIX = 'camunda-forms:bpmn:';
 
@@ -49,19 +47,17 @@ const Task: React.FC<Props> = ({hasRemainingTasks, onCompleted}) => {
   const {id} = useTaskDetailsParams();
   const navigate = useNavigate();
   const location = useLocation();
-  const {fetchMore, data} = useTask(id);
+  const {data: task, refetch} = useTask(id, {
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
+  });
   const {data: userData} = useQuery<GetCurrentUser>(GET_CURRENT_USER);
-  const [completeTask] = useMutation<GetTask, CompleteTaskVariables>(
-    COMPLETE_TASK,
-    {
-      onCompleted,
-    },
-  );
+  const {mutateAsync: completeTask} = useCompleteTask();
   const {filter} = useTaskFilters();
-  const {formKey, processDefinitionId, id: taskId} = data?.task ?? {};
+  const {formKey, processDefinitionKey, id: taskId} = task ?? {id};
   const isFormAvailable =
     typeof formKey === 'string' &&
-    typeof processDefinitionId === 'string' &&
+    typeof processDefinitionKey === 'string' &&
     isCamundaForms(formKey);
 
   useEffect(() => {
@@ -74,11 +70,11 @@ const Task: React.FC<Props> = ({hasRemainingTasks, onCompleted}) => {
     variables: Pick<Variable, 'name' | 'value'>[],
   ) {
     await completeTask({
-      variables: {
-        id,
-        variables,
-      },
+      taskId,
+      variables,
     });
+
+    onCompleted?.();
 
     tracking.track({
       eventName: 'task-completed',
@@ -103,7 +99,10 @@ const Task: React.FC<Props> = ({hasRemainingTasks, onCompleted}) => {
   }
 
   function handleSubmissionFailure(error: Error) {
-    const errorMessage = error.message;
+    const errorMessage = isRequestError(error)
+      ? error?.networkError?.message ?? error.message
+      : error.message;
+
     notificationsStore.displayNotification({
       kind: 'error',
       title: 'Task could not be completed',
@@ -113,41 +112,35 @@ const Task: React.FC<Props> = ({hasRemainingTasks, onCompleted}) => {
 
     // TODO: this does not have to be a separate function, once we are able to use error codes we can move this inside getCompleteTaskErrorMessage
     if (shouldFetchMore(errorMessage)) {
-      fetchMore({variables: {id}});
+      refetch();
     }
   }
 
-  if (data === undefined || userData === undefined) {
+  if (task === undefined || userData === undefined) {
     return <DetailsSkeleton data-testid="details-skeleton" />;
   }
 
   return (
     <Details
-      task={data.task}
+      task={task}
       user={userData.currentUser}
-      onAssignmentError={() => {
-        fetchMore({
-          variables: {
-            id,
-          },
-        });
-      }}
+      onAssignmentError={refetch}
     >
       {isFormAvailable ? (
         <FormJS
-          key={data.task.id}
-          task={data.task}
+          key={task.id}
+          task={task}
           id={getFormId(formKey)}
           user={userData.currentUser}
           onSubmit={handleSubmission}
           onSubmitSuccess={handleSubmissionSuccess}
           onSubmitFailure={handleSubmissionFailure}
-          processDefinitionId={processDefinitionId}
+          processDefinitionKey={processDefinitionKey}
         />
       ) : (
         <Variables
-          key={data.task.id}
-          task={data.task}
+          key={task.id}
+          task={task}
           user={userData.currentUser}
           onSubmit={handleSubmission}
           onSubmitSuccess={handleSubmissionSuccess}

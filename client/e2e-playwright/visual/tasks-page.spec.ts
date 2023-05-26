@@ -11,63 +11,107 @@ import schema from '../bigForm.json';
 const NON_FORM_TASK = {
   id: '2251799813687061',
   formKey: null,
-  processDefinitionId: '2251799813685281',
+  processDefinitionKey: '2251799813685259',
+  taskDefinitionId: 'Activity_1ygafd4',
+  processInstanceKey: '4503599627371080',
   assignee: null,
   name: 'Activity_1ygafd4',
   taskState: 'CREATED',
   processName: 'TwoUserTasks',
-  creationTime: '2023-04-13T16:57:41.482+0000',
-  completionTime: null,
+  creationDate: '2023-04-13T16:57:41.482+0000',
+  completionDate: null,
   candidateGroups: ['demo group'],
   candidateUsers: ['demo'],
-  followUpDate: '2023-04-19T16:57:41.000Z',
-  dueDate: '2023-04-18T16:57:41.000Z',
-  __typename: 'Task',
-} as const;
+  followUpDate: null,
+  dueDate: null,
+  sortValues: ['1684881752515', '4503599627371089'],
+  isFirst: true,
+};
 
-const NON_FORM_TASK_EMPTY_VARIABLES = {
-  id: NON_FORM_TASK.id,
-  variables: [],
-  __typename: 'Task',
-} as const;
+const NON_FORM_TASK_EMPTY_VARIABLES = [];
 
-const NON_FORM_TASK_VARIABLES = {
-  id: NON_FORM_TASK.id,
-  variables: [
-    {
-      id: '2251799813686711-small',
-      name: 'small',
-      previewValue: '"Hello World"',
-      isValueTruncated: false,
-      __typename: 'Variable',
-    },
-  ],
-  __typename: 'Task',
-} as const;
+const NON_FORM_TASK_VARIABLES = [
+  {
+    id: '2251799813686711-small',
+    name: 'small',
+    previewValue: '"Hello World"',
+    value: '"Hello World"',
+    isValueTruncated: false,
+  },
+];
 
 const FORM_TASK = {
   id: '2251799813687045',
-  formKey: 'camunda-forms:bpmn:userTaskForm_3j0n396',
-  processDefinitionId: '2251799813685277',
-  assignee: null,
+  formKey: 'camunda-forms:bpmn:userTaskForm_1',
+  processDefinitionKey: '2251799813685255',
+  assignee: 'demo',
   name: 'Big form task',
   taskState: 'CREATED',
   processName: 'Big form process',
-  creationTime: '2023-04-13T16:57:41.475+0000',
-  completionTime: null,
-  candidateGroups: null,
-  candidateUsers: null,
+  creationDate: '2023-03-03T14:16:18.441+0100',
+  completionDate: null,
+  taskDefinitionId: 'Activity_0aecztp',
+  processInstanceKey: '4503599627371425',
   dueDate: null,
   followUpDate: null,
-  __typename: 'Task',
-} as const;
+  candidateGroups: null,
+  candidateUsers: null,
+};
 
 function mockResponses(
   tasks: Array<unknown> = [],
-  task: unknown = NON_FORM_TASK,
-  variables: unknown = NON_FORM_TASK_EMPTY_VARIABLES,
+  task: any = NON_FORM_TASK,
+  variables: any[] = NON_FORM_TASK_EMPTY_VARIABLES,
 ): (router: Route, request: Request) => Promise<unknown> | unknown {
   return (route) => {
+    if (
+      route.request().url().includes(`v1/tasks/${task.id}/variables/search`)
+    ) {
+      return route.fulfill({
+        status: 200,
+        body: JSON.stringify(variables),
+        headers: {
+          'content-type': 'application/json',
+        },
+      });
+    }
+
+    if (route.request().url().includes('v1/tasks/search')) {
+      return route.fulfill({
+        status: 200,
+        body: JSON.stringify(tasks),
+        headers: {
+          'content-type': 'application/json',
+        },
+      });
+    }
+
+    if (route.request().url().includes(`v1/tasks/${task.id}`)) {
+      return route.fulfill({
+        status: 200,
+        body: JSON.stringify(task),
+        headers: {
+          'content-type': 'application/json',
+        },
+      });
+    }
+
+    const formId = (task.formKey ?? '').replace('camunda-forms:bpmn:', '');
+
+    if (route.request().url().includes(`v1/forms/${formId}`)) {
+      return route.fulfill({
+        status: 200,
+        body: JSON.stringify({
+          id: formId,
+          processDefinitionKey: '2251799813685255',
+          schema: JSON.stringify(schema),
+        }),
+        headers: {
+          'content-type': 'application/json',
+        },
+      });
+    }
+
     const {operationName} = route.request().postDataJSON();
 
     switch (operationName) {
@@ -88,53 +132,6 @@ function mockResponses(
             },
           }),
         });
-      case 'GetTasks':
-        return route.fulfill({
-          status: 200,
-          body: JSON.stringify({
-            data: {
-              tasks,
-            },
-          }),
-        });
-      case 'GetTask':
-        return route.fulfill({
-          status: 200,
-          body: JSON.stringify({
-            data: {
-              task,
-            },
-          }),
-        });
-      case 'GetTaskVariables':
-        return route.fulfill({
-          status: 200,
-          body: JSON.stringify({
-            data: {
-              task: variables,
-            },
-          }),
-        });
-      case 'GetSelectedVariables':
-        return route.fulfill({
-          status: 200,
-          body: JSON.stringify({
-            data: {
-              variables: [],
-            },
-          }),
-        });
-      case 'GetForm':
-        return route.fulfill({
-          status: 200,
-          body: JSON.stringify({
-            data: {
-              form: {
-                schema: JSON.stringify(schema),
-              },
-            },
-          }),
-        });
       default:
         return route.fulfill({
           status: 500,
@@ -148,7 +145,7 @@ function mockResponses(
 
 test.describe('tasks page', () => {
   test('empty state', async ({page}) => {
-    await page.route('**/graphql', mockResponses());
+    await page.route(/^.*\/(graphql|v1).*$/i, mockResponses());
 
     await page.goto('/', {
       waitUntil: 'networkidle',
@@ -161,7 +158,7 @@ test.describe('tasks page', () => {
     await page.addInitScript(() => {
       window.localStorage.setItem('theme', '"dark"');
     });
-    await page.route('**/graphql', mockResponses());
+    await page.route(/^.*\/(graphql|v1).*$/i, mockResponses());
 
     await page.goto('/', {
       waitUntil: 'networkidle',
@@ -174,7 +171,7 @@ test.describe('tasks page', () => {
     await page.addInitScript(() => {
       window.localStorage.setItem('hasCompletedTask', 'true');
     });
-    await page.route('**/graphql', mockResponses());
+    await page.route(/^.*\/(graphql|v1).*$/i, mockResponses());
 
     await page.goto('/', {
       waitUntil: 'networkidle',
@@ -186,7 +183,7 @@ test.describe('tasks page', () => {
   });
 
   test('empty list', async ({page}) => {
-    await page.route('**/graphql', mockResponses());
+    await page.route(/^.*\/(graphql|v1).*$/i, mockResponses());
 
     await page.goto('/?filter=completed&sortBy=creation', {
       waitUntil: 'networkidle',
@@ -197,33 +194,45 @@ test.describe('tasks page', () => {
 
   test('all open tasks', async ({page}) => {
     await page.route(
-      '**/graphql',
+      /^.*\/(graphql|v1).*$/i,
       mockResponses([
         {
           id: '2251799813686198',
           name: 'Register the passenger',
           processName: 'Flight registration',
           assignee: 'jane',
-          creationTime: '2023-04-13T16:57:41.025+0000',
+          creationDate: '2023-04-13T16:57:41.025+0000',
           followUpDate: '2023-04-19T16:57:41.000Z',
           dueDate: '2023-04-18T16:57:41.000Z',
           taskState: 'CREATED',
           sortValues: ['1681923461000', '2251799813686198'],
           isFirst: true,
-          __typename: 'Task',
+          taskDefinitionId: 'registerPassenger',
+          completionDate: null,
+          formKey: null,
+          processDefinitionKey: '2251799813685251',
+          processInstanceKey: '4503599627371064',
+          candidateGroups: null,
+          candidateUsers: null,
         },
         {
           id: '2251799813686256',
           name: 'Register the passenger',
           processName: 'Flight registration',
           assignee: null,
-          creationTime: '2023-04-13T16:57:41.067+0000',
+          creationDate: '2023-04-13T16:57:41.067+0000',
           followUpDate: '2023-04-19T16:57:41.000Z',
           dueDate: '2023-04-18T16:57:41.000Z',
           taskState: 'CREATED',
           sortValues: ['1681923461000', '2251799813686256'],
           isFirst: false,
-          __typename: 'Task',
+          taskDefinitionId: 'registerPassenger',
+          completionDate: null,
+          formKey: null,
+          processDefinitionKey: '2251799813685251',
+          processInstanceKey: '4503599627371064',
+          candidateGroups: null,
+          candidateUsers: null,
         },
       ]),
     );
@@ -239,33 +248,45 @@ test.describe('tasks page', () => {
 
   test('tasks assigned to me', async ({page}) => {
     await page.route(
-      '**/graphql',
+      /^.*\/(graphql|v1).*$/i,
       mockResponses([
         {
           id: '2251799813686198',
           name: 'Register the passenger',
           processName: 'Flight registration',
           assignee: 'demo',
-          creationTime: '2023-04-13T16:57:41.025+0000',
+          creationDate: '2023-04-13T16:57:41.025+0000',
           followUpDate: '2023-04-19T16:57:41.000Z',
           dueDate: '2023-04-18T16:57:41.000Z',
           taskState: 'CREATED',
           sortValues: ['1681923461000', '2251799813686198'],
           isFirst: true,
-          __typename: 'Task',
+          taskDefinitionId: 'registerPassenger',
+          completionDate: null,
+          formKey: null,
+          processDefinitionKey: '2251799813685251',
+          processInstanceKey: '4503599627371064',
+          candidateGroups: null,
+          candidateUsers: null,
         },
         {
           id: '2251799813686256',
           name: 'Register the passenger',
           processName: 'Flight registration',
           assignee: 'demo',
-          creationTime: '2023-04-13T16:57:41.067+0000',
+          creationDate: '2023-04-13T16:57:41.067+0000',
           followUpDate: '2023-04-19T16:57:41.000Z',
           dueDate: '2023-04-18T16:57:41.000Z',
           taskState: 'CREATED',
           sortValues: ['1681923461000', '2251799813686256'],
           isFirst: false,
-          __typename: 'Task',
+          taskDefinitionId: 'registerPassenger',
+          completionDate: null,
+          formKey: null,
+          processDefinitionKey: '2251799813685251',
+          processInstanceKey: '4503599627371064',
+          candidateGroups: null,
+          candidateUsers: null,
         },
       ]),
     );
@@ -281,33 +302,45 @@ test.describe('tasks page', () => {
 
   test('unassigned tasks', async ({page}) => {
     await page.route(
-      '**/graphql',
+      /^.*\/(graphql|v1).*$/i,
       mockResponses([
         {
           id: '2251799813686198',
           name: 'Register the passenger',
           processName: 'Flight registration',
           assignee: null,
-          creationTime: '2023-04-13T16:57:41.025+0000',
+          creationDate: '2023-04-13T16:57:41.025+0000',
           followUpDate: '2023-04-19T16:57:41.000Z',
           dueDate: '2023-04-18T16:57:41.000Z',
           taskState: 'CREATED',
           sortValues: ['1681923461000', '2251799813686198'],
           isFirst: true,
-          __typename: 'Task',
+          taskDefinitionId: 'registerPassenger',
+          completionDate: null,
+          formKey: null,
+          processDefinitionKey: '2251799813685251',
+          processInstanceKey: '4503599627371064',
+          candidateGroups: null,
+          candidateUsers: null,
         },
         {
           id: '2251799813686256',
           name: 'Register the passenger',
           processName: 'Flight registration',
           assignee: null,
-          creationTime: '2023-04-13T16:57:41.067+0000',
+          creationDate: '2023-04-13T16:57:41.067+0000',
           followUpDate: '2023-04-19T16:57:41.000Z',
           dueDate: '2023-04-18T16:57:41.000Z',
           taskState: 'CREATED',
           sortValues: ['1681923461000', '2251799813686256'],
           isFirst: false,
-          __typename: 'Task',
+          taskDefinitionId: 'registerPassenger',
+          completionDate: null,
+          formKey: null,
+          processDefinitionKey: '2251799813685251',
+          processInstanceKey: '4503599627371064',
+          candidateGroups: null,
+          candidateUsers: null,
         },
       ]),
     );
@@ -321,33 +354,45 @@ test.describe('tasks page', () => {
 
   test('completed tasks', async ({page}) => {
     await page.route(
-      '**/graphql',
+      /^.*\/(graphql|v1).*$/i,
       mockResponses([
         {
           id: '2251799813686198',
           name: 'Register the passenger',
           processName: 'Flight registration',
           assignee: 'demo',
-          creationTime: '2023-04-13T16:57:41.025+0000',
+          creationDate: '2023-04-13T16:57:41.025+0000',
           followUpDate: '2023-04-19T16:57:41.000Z',
           dueDate: '2023-04-18T16:57:41.000Z',
           taskState: 'COMPLETED',
           sortValues: ['1681923461000', '2251799813686198'],
           isFirst: true,
-          __typename: 'Task',
+          taskDefinitionId: 'registerPassenger',
+          completionDate: null,
+          formKey: null,
+          processDefinitionKey: '2251799813685251',
+          processInstanceKey: '4503599627371064',
+          candidateGroups: null,
+          candidateUsers: null,
         },
         {
           id: '2251799813686256',
           name: 'Register the passenger',
           processName: 'Flight registration',
           assignee: 'jane',
-          creationTime: '2023-04-13T16:57:41.067+0000',
+          creationDate: '2023-04-13T16:57:41.067+0000',
           followUpDate: '2023-04-19T16:57:41.000Z',
           dueDate: '2023-04-18T16:57:41.000Z',
           taskState: 'COMPLETED',
           sortValues: ['1681923461000', '2251799813686256'],
           isFirst: false,
-          __typename: 'Task',
+          taskDefinitionId: 'registerPassenger',
+          completionDate: null,
+          formKey: null,
+          processDefinitionKey: '2251799813685251',
+          processInstanceKey: '4503599627371064',
+          candidateGroups: null,
+          candidateUsers: null,
         },
       ]),
     );
@@ -361,33 +406,45 @@ test.describe('tasks page', () => {
 
   test('tasks ordered by due date', async ({page}) => {
     await page.route(
-      '**/graphql',
+      /^.*\/(graphql|v1).*$/i,
       mockResponses([
         {
           id: '2251799813686198',
           name: 'Register the passenger',
           processName: 'Flight registration',
           assignee: 'jane',
-          creationTime: '2023-04-13T16:57:41.025+0000',
+          creationDate: '2023-04-13T16:57:41.025+0000',
           followUpDate: '2023-04-19T16:57:41.000Z',
           dueDate: '2023-04-18T16:57:41.000Z',
           taskState: 'CREATED',
           sortValues: ['1681923461000', '2251799813686198'],
           isFirst: true,
-          __typename: 'Task',
+          taskDefinitionId: 'registerPassenger',
+          completionDate: null,
+          formKey: null,
+          processDefinitionKey: '2251799813685251',
+          processInstanceKey: '4503599627371064',
+          candidateGroups: null,
+          candidateUsers: null,
         },
         {
           id: '2251799813686256',
           name: 'Register the passenger',
           processName: 'Flight registration',
           assignee: null,
-          creationTime: '2023-04-13T16:57:41.067+0000',
+          creationDate: '2023-04-13T16:57:41.067+0000',
           followUpDate: '2023-04-19T16:57:41.000Z',
           dueDate: '2023-04-18T16:57:41.000Z',
           taskState: 'CREATED',
           sortValues: ['1681923461000', '2251799813686256'],
           isFirst: false,
-          __typename: 'Task',
+          taskDefinitionId: 'registerPassenger',
+          completionDate: null,
+          formKey: null,
+          processDefinitionKey: '2251799813685251',
+          processInstanceKey: '4503599627371064',
+          candidateGroups: null,
+          candidateUsers: null,
         },
       ]),
     );
@@ -403,33 +460,45 @@ test.describe('tasks page', () => {
 
   test('tasks ordered by follow up date', async ({page}) => {
     await page.route(
-      '**/graphql',
+      /^.*\/(graphql|v1).*$/i,
       mockResponses([
         {
           id: '2251799813686198',
           name: 'Register the passenger',
           processName: 'Flight registration',
           assignee: 'jane',
-          creationTime: '2023-04-13T16:57:41.025+0000',
+          creationDate: '2023-04-13T16:57:41.025+0000',
           followUpDate: '2023-04-19T16:57:41.000Z',
           dueDate: '2023-04-18T16:57:41.000Z',
           taskState: 'CREATED',
           sortValues: ['1681923461000', '2251799813686198'],
           isFirst: true,
-          __typename: 'Task',
+          taskDefinitionId: 'registerPassenger',
+          completionDate: null,
+          formKey: null,
+          processDefinitionKey: '2251799813685251',
+          processInstanceKey: '4503599627371064',
+          candidateGroups: null,
+          candidateUsers: null,
         },
         {
           id: '2251799813686256',
           name: 'Register the passenger',
           processName: 'Flight registration',
           assignee: null,
-          creationTime: '2023-04-13T16:57:41.067+0000',
+          creationDate: '2023-04-13T16:57:41.067+0000',
           followUpDate: '2023-04-19T16:57:41.000Z',
           dueDate: '2023-04-18T16:57:41.000Z',
           taskState: 'CREATED',
           sortValues: ['1681923461000', '2251799813686256'],
           isFirst: false,
-          __typename: 'Task',
+          taskDefinitionId: 'registerPassenger',
+          completionDate: null,
+          formKey: null,
+          processDefinitionKey: '2251799813685251',
+          processInstanceKey: '4503599627371064',
+          candidateGroups: null,
+          candidateUsers: null,
         },
       ]),
     );
@@ -443,7 +512,7 @@ test.describe('tasks page', () => {
 
   test('selected task without a form and without variables', async ({page}) => {
     await page.route(
-      '**/graphql',
+      /^.*\/(graphql|v1).*$/i,
       mockResponses(
         [
           {
@@ -451,13 +520,19 @@ test.describe('tasks page', () => {
             name: 'Activity_1ygafd4',
             processName: 'TwoUserTasks',
             assignee: null,
-            creationTime: '2023-04-13T16:57:41.482+0000',
+            creationDate: '2023-04-13T16:57:41.482+0000',
             followUpDate: null,
             dueDate: null,
             taskState: 'CREATED',
             sortValues: ['1681405061482', '2251799813687061'],
             isFirst: false,
-            __typename: 'Task',
+            formKey: null,
+            processDefinitionKey: '2251799813685259',
+            taskDefinitionId: 'Activity_1ygafd4',
+            processInstanceKey: '4503599627371080',
+            completionDate: null,
+            candidateGroups: ['demo group'],
+            candidateUsers: ['demo'],
           },
         ],
         NON_FORM_TASK,
@@ -473,7 +548,7 @@ test.describe('tasks page', () => {
 
   test('selected task without a form and with variables', async ({page}) => {
     await page.route(
-      '**/graphql',
+      /^.*\/(graphql|v1).*$/i,
       mockResponses(
         [
           {
@@ -481,13 +556,19 @@ test.describe('tasks page', () => {
             name: 'Activity_1ygafd4',
             processName: 'TwoUserTasks',
             assignee: 'demo',
-            creationTime: '2023-04-13T16:57:41.482+0000',
+            creationDate: '2023-04-13T16:57:41.482+0000',
             followUpDate: null,
             dueDate: null,
             taskState: 'CREATED',
             sortValues: ['1681405061482', '2251799813687061'],
             isFirst: false,
-            __typename: 'Task',
+            formKey: null,
+            processDefinitionKey: '2251799813685259',
+            taskDefinitionId: 'Activity_1ygafd4',
+            processInstanceKey: '4503599627371080',
+            completionDate: null,
+            candidateGroups: ['demo group'],
+            candidateUsers: ['demo'],
           },
         ],
         {
@@ -507,7 +588,7 @@ test.describe('tasks page', () => {
 
   test('selected assigned task', async ({page}) => {
     await page.route(
-      '**/graphql',
+      /^.*\/(graphql|v1).*$/i,
       mockResponses(
         [
           {
@@ -515,16 +596,25 @@ test.describe('tasks page', () => {
             name: 'Activity_1ygafd4',
             processName: 'TwoUserTasks',
             assignee: 'demo',
-            creationTime: '2023-04-13T16:57:41.482+0000',
+            creationDate: '2023-04-13T16:57:41.482+0000',
             followUpDate: null,
             dueDate: null,
             taskState: 'CREATED',
             sortValues: ['1681405061482', '2251799813687061'],
             isFirst: false,
-            __typename: 'Task',
+            formKey: null,
+            processDefinitionKey: '2251799813685259',
+            taskDefinitionId: 'Activity_1ygafd4',
+            processInstanceKey: '4503599627371080',
+            completionDate: null,
+            candidateGroups: ['demo group'],
+            candidateUsers: ['demo'],
           },
         ],
-        NON_FORM_TASK,
+        {
+          ...NON_FORM_TASK,
+          assignee: 'demo',
+        },
       ),
     );
 
@@ -537,7 +627,7 @@ test.describe('tasks page', () => {
 
   test('selected completed task', async ({page}) => {
     await page.route(
-      '**/graphql',
+      /^.*\/(graphql|v1).*$/i,
       mockResponses(
         [
           {
@@ -545,20 +635,26 @@ test.describe('tasks page', () => {
             name: 'Activity_1ygafd4',
             processName: 'TwoUserTasks',
             assignee: 'demo',
-            creationTime: '2023-04-13T16:57:41.482+0000',
+            creationDate: '2023-04-13T16:57:41.482+0000',
             followUpDate: null,
             dueDate: null,
             taskState: 'COMPLETED',
             sortValues: ['1681405061482', '2251799813687061'],
             isFirst: false,
-            __typename: 'Task',
+            formKey: null,
+            processDefinitionKey: '2251799813685259',
+            taskDefinitionId: 'Activity_1ygafd4',
+            processInstanceKey: '4503599627371080',
+            completionDate: null,
+            candidateGroups: ['demo group'],
+            candidateUsers: ['demo'],
           },
         ],
         {
           ...NON_FORM_TASK,
           assignee: 'demo',
           taskState: 'COMPLETED',
-          completionTime: '2023-04-18T16:57:41.000Z',
+          completionDate: '2023-04-18T16:57:41.000Z',
         },
       ),
     );
@@ -572,7 +668,7 @@ test.describe('tasks page', () => {
 
   test('selected completed task with variables', async ({page}) => {
     await page.route(
-      '**/graphql',
+      /^.*\/(graphql|v1).*$/i,
       mockResponses(
         [
           {
@@ -580,20 +676,26 @@ test.describe('tasks page', () => {
             name: 'Activity_1ygafd4',
             processName: 'TwoUserTasks',
             assignee: 'demo',
-            creationTime: '2023-04-13T16:57:41.482+0000',
+            creationDate: '2023-04-13T16:57:41.482+0000',
             followUpDate: null,
             dueDate: null,
             taskState: 'COMPLETED',
             sortValues: ['1681405061482', '2251799813687061'],
             isFirst: false,
-            __typename: 'Task',
+            formKey: null,
+            processDefinitionKey: '2251799813685259',
+            taskDefinitionId: 'Activity_1ygafd4',
+            processInstanceKey: '4503599627371080',
+            completionDate: null,
+            candidateGroups: ['demo group'],
+            candidateUsers: ['demo'],
           },
         ],
         {
           ...NON_FORM_TASK,
           assignee: 'demo',
           taskState: 'COMPLETED',
-          completionTime: '2023-04-18T16:57:41.000Z',
+          completionDate: '2023-04-18T16:57:41.000Z',
         },
         NON_FORM_TASK_VARIABLES,
       ),
@@ -608,7 +710,7 @@ test.describe('tasks page', () => {
 
   test('selected unassigned task with form', async ({page}) => {
     await page.route(
-      '**/graphql',
+      /^.*\/(graphql|v1).*$/i,
       mockResponses(
         [
           {
@@ -616,16 +718,25 @@ test.describe('tasks page', () => {
             name: 'Big form task',
             processName: 'Big form process',
             assignee: null,
-            creationTime: '2023-04-13T16:57:41.475+0000',
+            creationDate: '2023-04-13T16:57:41.475+0000',
             followUpDate: null,
             dueDate: null,
             taskState: 'CREATED',
             sortValues: ['1681405061475', '2251799813687045'],
             isFirst: false,
-            __typename: 'Task',
+            formKey: 'camunda-forms:bpmn:userTaskForm_1',
+            processDefinitionKey: '2251799813685255',
+            completionDate: null,
+            taskDefinitionId: 'Activity_0aecztp',
+            processInstanceKey: '4503599627371425',
+            candidateGroups: null,
+            candidateUsers: null,
           },
         ],
-        FORM_TASK,
+        {
+          ...FORM_TASK,
+          assignee: null,
+        },
       ),
     );
 
@@ -640,7 +751,7 @@ test.describe('tasks page', () => {
 
   test('selected assigned task with form', async ({page}) => {
     await page.route(
-      '**/graphql',
+      /^.*\/(graphql|v1).*$/i,
       mockResponses(
         [
           {
@@ -648,13 +759,19 @@ test.describe('tasks page', () => {
             name: 'Big form task',
             processName: 'Big form process',
             assignee: 'demo',
-            creationTime: '2023-04-13T16:57:41.475+0000',
+            creationDate: '2023-04-13T16:57:41.475+0000',
             followUpDate: null,
             dueDate: null,
             taskState: 'CREATED',
             sortValues: ['1681405061475', '2251799813687045'],
             isFirst: false,
-            __typename: 'Task',
+            formKey: 'camunda-forms:bpmn:userTaskForm_1',
+            processDefinitionKey: '2251799813685255',
+            completionDate: null,
+            taskDefinitionId: 'Activity_0aecztp',
+            processInstanceKey: '4503599627371425',
+            candidateGroups: null,
+            candidateUsers: null,
           },
         ],
         {

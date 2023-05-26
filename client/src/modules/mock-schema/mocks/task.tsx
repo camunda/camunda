@@ -6,17 +6,26 @@
  */
 
 import {Task} from 'modules/types';
-import {TaskStates} from 'modules/constants/taskStates';
 import {currentUser} from 'modules/mock-schema/mocks/current-user';
 
-const unassignedTask = (id = '0'): Task => ({
+function* getUniqueId(): Generator<number> {
+  let id = 0;
+
+  while (true) {
+    yield id++;
+  }
+}
+
+const unassignedTask = (
+  id: string = getUniqueId().next().value.toString(),
+): Task => ({
   id,
   name: 'My Task',
   processName: 'Nice Process',
   assignee: null,
-  creationTime: '2019-01-01T00:00:00.000Z',
-  completionTime: null,
-  taskState: TaskStates.Created,
+  creationDate: '2019-01-01T00:00:00.000Z',
+  completionDate: null,
+  taskState: 'CREATED',
   isFirst: false,
   sortValues: ['1', '2'],
   formKey: null,
@@ -29,14 +38,16 @@ const unassignedTask = (id = '0'): Task => ({
   candidateUsers: ['jane candidate'],
 });
 
-const unassignedTaskWithForm = (id = '0'): Task => ({
+const unassignedTaskWithForm = (
+  id: string = getUniqueId().next().value.toString(),
+): Task => ({
   id,
   name: 'My Task',
   processName: 'Nice Process',
   assignee: null,
-  creationTime: '2019-01-01T00:00:00.000Z',
-  completionTime: null,
-  taskState: TaskStates.Created,
+  creationDate: '2019-01-01T00:00:00.000Z',
+  completionDate: null,
+  taskState: 'CREATED',
   isFirst: false,
   sortValues: ['1', '2'],
   formKey: 'camunda-forms:bpmn:form-0',
@@ -49,14 +60,16 @@ const unassignedTaskWithForm = (id = '0'): Task => ({
   candidateUsers: [],
 });
 
-const completedTask = (id = '0'): Task => ({
+const completedTask = (
+  id: string = getUniqueId().next().value.toString(),
+): Task => ({
   id,
   name: 'My Task',
   processName: 'Nice Process',
   assignee: currentUser.userId,
-  creationTime: '2019-01-01T00:00:00.000Z',
-  completionTime: '2020-01-01T00:00:00.000Z',
-  taskState: TaskStates.Completed,
+  creationDate: '2019-01-01T00:00:00.000Z',
+  completionDate: '2020-01-01T00:00:00.000Z',
+  taskState: 'COMPLETED',
   isFirst: false,
   sortValues: ['1', '2'],
   formKey: null,
@@ -69,14 +82,16 @@ const completedTask = (id = '0'): Task => ({
   candidateUsers: [],
 });
 
-const completedTaskWithForm = (id = '0'): Task => ({
+const completedTaskWithForm = (
+  id: string = getUniqueId().next().value.toString(),
+): Task => ({
   id,
   name: 'My Task',
   processName: 'Nice Process',
   assignee: currentUser.userId,
-  creationTime: '2019-01-01T00:00:00.000Z',
-  completionTime: null,
-  taskState: TaskStates.Completed,
+  creationDate: '2019-01-01T00:00:00.000Z',
+  completionDate: null,
+  taskState: 'COMPLETED',
   isFirst: false,
   sortValues: ['1', '2'],
   formKey: 'camunda-forms:bpmn:form-0',
@@ -89,14 +104,16 @@ const completedTaskWithForm = (id = '0'): Task => ({
   candidateUsers: [],
 });
 
-const assignedTask = (id = '0'): Task => ({
+const assignedTask = (
+  id: string = getUniqueId().next().value.toString(),
+): Task => ({
   id,
   name: 'My Task',
   processName: 'Nice Process',
   assignee: currentUser.userId,
-  creationTime: '2019-01-01T00:00:00.000Z',
-  completionTime: null,
-  taskState: TaskStates.Created,
+  creationDate: '2019-01-01T00:00:00.000Z',
+  completionDate: null,
+  taskState: 'CREATED',
   isFirst: false,
   sortValues: ['1', '2'],
   formKey: null,
@@ -109,14 +126,16 @@ const assignedTask = (id = '0'): Task => ({
   candidateUsers: [],
 });
 
-const assignedTaskWithForm = (id = '0'): Task => ({
+const assignedTaskWithForm = (
+  id: string = getUniqueId().next().value.toString(),
+): Task => ({
   id,
   name: 'My Task',
   processName: 'Nice Process',
   assignee: currentUser.userId,
-  creationTime: '2019-01-01T00:00:00.000Z',
-  completionTime: null,
-  taskState: TaskStates.Created,
+  creationDate: '2019-01-01T00:00:00.000Z',
+  completionDate: null,
+  taskState: 'CREATED',
   isFirst: false,
   sortValues: ['1', '2'],
   formKey: 'camunda-forms:bpmn:form-0',

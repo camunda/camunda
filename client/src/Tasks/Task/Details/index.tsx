@@ -5,15 +5,7 @@
  * except in compliance with the proprietary license.
  */
 
-import {useMutation} from '@apollo/client';
-import {GetTask} from 'modules/queries/get-task';
-import {ASSIGN_TASK, AssignTaskVariables} from 'modules/mutations/assign-task';
-import {
-  UNASSIGN_TASK,
-  UnassignTaskVariables,
-} from 'modules/mutations/unassign-task';
 import {formatDate} from 'modules/utils/formatDate';
-import {TaskStates} from 'modules/constants/taskStates';
 import {
   Aside,
   AssignButtonContainer,
@@ -33,7 +25,9 @@ import {notificationsStore} from 'modules/stores/notifications';
 import {AsyncActionButton} from 'modules/components/AsyncActionButton';
 import {BodyCompact, Label} from 'modules/components/FontTokens';
 import {ContainedList, ContainedListItem, Tag} from '@carbon/react';
-import {User} from 'modules/types';
+import {Task, User} from 'modules/types';
+import {useUnassignTask} from 'modules/mutations/useUnassignTask';
+import {useAssignTask} from 'modules/mutations/useAssignTask';
 
 type AssignmentStatus =
   | 'off'
@@ -51,7 +45,7 @@ const ASSIGNMENT_TOGGLE_LABEL = {
 
 type Props = {
   children?: React.ReactNode;
-  task: GetTask['task'];
+  task: Task;
   onAssignmentError: () => void;
   user: User;
 };
@@ -66,8 +60,8 @@ const Details: React.FC<Props> = ({
     id,
     name,
     processName,
-    creationTime,
-    completionTime,
+    creationDate,
+    completionDate,
     dueDate,
     followUpDate,
     assignee,
@@ -80,30 +74,21 @@ const Details: React.FC<Props> = ({
   const isAssignedToMe = assignee === user.userId;
   const [assignmentStatus, setAssignmentStatus] =
     useState<AssignmentStatus>('off');
-  const [assignTask, {loading: assignLoading}] = useMutation<
-    GetTask,
-    AssignTaskVariables
-  >(ASSIGN_TASK, {
-    variables: {id},
-  });
-  const [unassignTask, {loading: unassignLoading}] = useMutation<
-    GetTask,
-    UnassignTaskVariables
-  >(UNASSIGN_TASK, {
-    variables: {id},
-  });
-  const isLoading = (assignLoading || unassignLoading) ?? false;
+  const {mutateAsync: assignTask, isLoading: assignIsLoading} = useAssignTask();
+  const {mutateAsync: unassignTask, isLoading: unassignIsLoading} =
+    useUnassignTask();
+  const isLoading = (assignIsLoading || unassignIsLoading) ?? false;
 
   const handleClick = async () => {
     try {
       if (isAssigned) {
         setAssignmentStatus('unassigning');
-        await unassignTask();
+        await unassignTask(id);
         setAssignmentStatus('unassignmentSuccessful');
         tracking.track({eventName: 'task-unassigned'});
       } else {
         setAssignmentStatus('assigning');
-        await assignTask();
+        await assignTask(id);
         setAssignmentStatus('assignmentSuccessful');
         tracking.track({eventName: 'task-assigned'});
       }
@@ -169,7 +154,7 @@ const Details: React.FC<Props> = ({
                 'Unassigned'
               )}
             </Label>
-            {taskState === TaskStates.Created && (
+            {taskState === 'CREATED' && (
               <Restricted scopes={['write']}>
                 <AssignButtonContainer>
                   <AsyncActionButton
@@ -213,7 +198,7 @@ const Details: React.FC<Props> = ({
           <ContainedListItem>
             <BodyCompact $color="secondary">Creation date</BodyCompact>
             <br />
-            <BodyCompact>{formatDate(creationTime)}</BodyCompact>
+            <BodyCompact>{formatDate(creationDate)}</BodyCompact>
           </ContainedListItem>
           <ContainedListItem>
             <BodyCompact $color="secondary">Candidates</BodyCompact>
@@ -231,7 +216,7 @@ const Details: React.FC<Props> = ({
             <BodyCompact $color="secondary">Completion date</BodyCompact>
             <br />
             <BodyCompact>
-              {completionTime ? formatDate(completionTime) : 'Pending task'}
+              {completionDate ? formatDate(completionDate) : 'Pending task'}
             </BodyCompact>
           </ContainedListItem>
           <ContainedListItem>
