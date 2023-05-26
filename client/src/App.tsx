@@ -8,7 +8,6 @@
 /* istanbul ignore file */
 
 import {BrowserRouter, Route, Routes} from 'react-router-dom';
-import {ApolloProvider} from '@apollo/client';
 import {Notifications} from 'modules/notifications';
 import {NetworkStatusWatcher} from './NetworkStatusWatcher';
 import {AuthenticationCheck} from './AuthenticationCheck';
@@ -16,7 +15,6 @@ import {Layout} from './Layout';
 import {Login} from './Login';
 import {pages} from 'modules/routing';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
-import {client} from './modules/apollo-client';
 import {SessionWatcher} from './SessionWatcher';
 import {Tasks} from './Tasks';
 import {TrackPagination} from 'modules/tracking/TrackPagination';
@@ -36,36 +34,34 @@ const App: React.FC = () => {
   return (
     <ThemeProvider>
       <ReactQueryProvider>
-        <ApolloProvider client={client}>
-          <Notifications />
-          <NetworkStatusWatcher />
-          <BrowserRouter basename={window.clientConfig?.contextPath ?? '/'}>
-            <SessionWatcher />
-            <TrackPagination />
-            <Routes>
-              <Route path={pages.login} element={<Login />} />
-              <Route
-                path={pages.startProcessFromForm}
-                element={
-                  <Suspense fallback={<Loading withOverlay />}>
-                    <StartProcessFromForm />
-                  </Suspense>
-                }
-              />
-              <Route
-                path="*"
-                element={
-                  <AuthenticationCheck redirectPath={pages.login}>
-                    <Layout />
-                  </AuthenticationCheck>
-                }
-              >
-                <Route path="*" element={<Tasks />} />
-                <Route path={pages.processes} element={<Processes />} />
-              </Route>
-            </Routes>
-          </BrowserRouter>
-        </ApolloProvider>
+        <Notifications />
+        <NetworkStatusWatcher />
+        <BrowserRouter basename={window.clientConfig?.contextPath ?? '/'}>
+          <SessionWatcher />
+          <TrackPagination />
+          <Routes>
+            <Route path={pages.login} element={<Login />} />
+            <Route
+              path={pages.startProcessFromForm}
+              element={
+                <Suspense fallback={<Loading withOverlay />}>
+                  <StartProcessFromForm />
+                </Suspense>
+              }
+            />
+            <Route
+              path="*"
+              element={
+                <AuthenticationCheck redirectPath={pages.login}>
+                  <Layout />
+                </AuthenticationCheck>
+              }
+            >
+              <Route path="*" element={<Tasks />} />
+              <Route path={pages.processes} element={<Processes />} />
+            </Route>
+          </Routes>
+        </BrowserRouter>
       </ReactQueryProvider>
     </ThemeProvider>
   );

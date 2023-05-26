@@ -26,15 +26,18 @@ describe('license note', () => {
     window.clientConfig = DEFAULT_MOCK_CLIENT_CONFIG;
   });
 
+  beforeEach(() => {
+    nodeMockServer.use(
+      rest.get('/v1/internal/users/current', (_, res, ctx) => {
+        return res(ctx.json(userMocks.currentUser));
+      }),
+    );
+  });
+
   it('should show and hide license information', async () => {
     const {user} = render(<Header />, {
       wrapper: Wrapper,
     });
-    nodeMockServer.use(
-      rest.get('/v1/internal/users/current', (_, res, ctx) => {
-        return res.once(ctx.json(userMocks.currentUser));
-      }),
-    );
 
     expect(await screen.findByText('Demo User')).toBeInTheDocument();
 
@@ -67,11 +70,6 @@ describe('license note', () => {
       isEnterprise: false,
       organizationId: null,
     };
-    nodeMockServer.use(
-      rest.get('/v1/internal/users/current', (_, res, ctx) => {
-        return res.once(ctx.json(userMocks.currentUser));
-      }),
-    );
 
     render(<Header />, {
       wrapper: Wrapper,
@@ -87,11 +85,6 @@ describe('license note', () => {
       isEnterprise: false,
       organizationId: '000000000-0000-0000-0000-000000000000',
     };
-    nodeMockServer.use(
-      rest.get('/v1/internal/users/current', (_, res, ctx) => {
-        return res.once(ctx.json(userMocks.currentUser));
-      }),
-    );
 
     render(<Header />, {
       wrapper: Wrapper,
@@ -108,12 +101,6 @@ describe('license note', () => {
       isEnterprise: true,
       organizationId: null,
     };
-
-    nodeMockServer.use(
-      rest.get('/v1/internal/users/current', (_, res, ctx) => {
-        return res.once(ctx.json(userMocks.currentUser));
-      }),
-    );
 
     render(<Header />, {
       wrapper: Wrapper,

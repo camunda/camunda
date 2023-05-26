@@ -10,7 +10,6 @@
 // expect(element).toHaveTextContent(/react/i)
 // learn more: https://github.com/testing-library/jest-dom
 import '@testing-library/jest-dom/extend-expect';
-import {clearClientCache} from 'modules/apollo-client';
 import {nodeMockServer} from 'modules/mockServer/nodeMockServer';
 import {configure} from 'modules/testing-library';
 import {DEFAULT_MOCK_CLIENT_CONFIG} from 'modules/mocks/window';
@@ -80,8 +79,7 @@ beforeAll(() => {
   });
 });
 
-afterEach(async () => {
-  await clearClientCache();
+afterEach(() => {
   reactQueryClient.clear();
 });
 

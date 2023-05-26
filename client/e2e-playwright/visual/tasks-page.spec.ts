@@ -135,7 +135,7 @@ function mockResponses(
 
 test.describe('tasks page', () => {
   test('empty state', async ({page}) => {
-    await page.route(/^.*\/(graphql|v1).*$/i, mockResponses());
+    await page.route(/^.*\/v1.*$/i, mockResponses());
 
     await page.goto('/', {
       waitUntil: 'networkidle',
@@ -148,7 +148,7 @@ test.describe('tasks page', () => {
     await page.addInitScript(() => {
       window.localStorage.setItem('theme', '"dark"');
     });
-    await page.route(/^.*\/(graphql|v1).*$/i, mockResponses());
+    await page.route(/^.*\/v1.*$/i, mockResponses());
 
     await page.goto('/', {
       waitUntil: 'networkidle',
@@ -161,7 +161,7 @@ test.describe('tasks page', () => {
     await page.addInitScript(() => {
       window.localStorage.setItem('hasCompletedTask', 'true');
     });
-    await page.route(/^.*\/(graphql|v1).*$/i, mockResponses());
+    await page.route(/^.*\/v1.*$/i, mockResponses());
 
     await page.goto('/', {
       waitUntil: 'networkidle',
@@ -173,7 +173,7 @@ test.describe('tasks page', () => {
   });
 
   test('empty list', async ({page}) => {
-    await page.route(/^.*\/(graphql|v1).*$/i, mockResponses());
+    await page.route(/^.*\/v1.*$/i, mockResponses());
 
     await page.goto('/?filter=completed&sortBy=creation', {
       waitUntil: 'networkidle',
@@ -184,7 +184,7 @@ test.describe('tasks page', () => {
 
   test('all open tasks', async ({page}) => {
     await page.route(
-      /^.*\/(graphql|v1).*$/i,
+      /^.*\/v1.*$/i,
       mockResponses([
         {
           id: '2251799813686198',
@@ -238,7 +238,7 @@ test.describe('tasks page', () => {
 
   test('tasks assigned to me', async ({page}) => {
     await page.route(
-      /^.*\/(graphql|v1).*$/i,
+      /^.*\/v1.*$/i,
       mockResponses([
         {
           id: '2251799813686198',
@@ -292,7 +292,7 @@ test.describe('tasks page', () => {
 
   test('unassigned tasks', async ({page}) => {
     await page.route(
-      /^.*\/(graphql|v1).*$/i,
+      /^.*\/v1.*$/i,
       mockResponses([
         {
           id: '2251799813686198',
@@ -344,7 +344,7 @@ test.describe('tasks page', () => {
 
   test('completed tasks', async ({page}) => {
     await page.route(
-      /^.*\/(graphql|v1).*$/i,
+      /^.*\/v1.*$/i,
       mockResponses([
         {
           id: '2251799813686198',
@@ -396,7 +396,7 @@ test.describe('tasks page', () => {
 
   test('tasks ordered by due date', async ({page}) => {
     await page.route(
-      /^.*\/(graphql|v1).*$/i,
+      /^.*\/v1.*$/i,
       mockResponses([
         {
           id: '2251799813686198',
@@ -450,7 +450,7 @@ test.describe('tasks page', () => {
 
   test('tasks ordered by follow up date', async ({page}) => {
     await page.route(
-      /^.*\/(graphql|v1).*$/i,
+      /^.*\/v1.*$/i,
       mockResponses([
         {
           id: '2251799813686198',
@@ -502,7 +502,7 @@ test.describe('tasks page', () => {
 
   test('selected task without a form and without variables', async ({page}) => {
     await page.route(
-      /^.*\/(graphql|v1).*$/i,
+      /^.*\/v1.*$/i,
       mockResponses(
         [
           {
@@ -538,7 +538,7 @@ test.describe('tasks page', () => {
 
   test('selected task without a form and with variables', async ({page}) => {
     await page.route(
-      /^.*\/(graphql|v1).*$/i,
+      /^.*\/v1.*$/i,
       mockResponses(
         [
           {
@@ -578,7 +578,7 @@ test.describe('tasks page', () => {
 
   test('selected assigned task', async ({page}) => {
     await page.route(
-      /^.*\/(graphql|v1).*$/i,
+      /^.*\/v1.*$/i,
       mockResponses(
         [
           {
@@ -617,7 +617,7 @@ test.describe('tasks page', () => {
 
   test('selected completed task', async ({page}) => {
     await page.route(
-      /^.*\/(graphql|v1).*$/i,
+      /^.*\/v1.*$/i,
       mockResponses(
         [
           {
@@ -658,7 +658,7 @@ test.describe('tasks page', () => {
 
   test('selected completed task with variables', async ({page}) => {
     await page.route(
-      /^.*\/(graphql|v1).*$/i,
+      /^.*\/v1.*$/i,
       mockResponses(
         [
           {
@@ -700,7 +700,7 @@ test.describe('tasks page', () => {
 
   test('selected unassigned task with form', async ({page}) => {
     await page.route(
-      /^.*\/(graphql|v1).*$/i,
+      /^.*\/v1.*$/i,
       mockResponses(
         [
           {
@@ -741,7 +741,7 @@ test.describe('tasks page', () => {
 
   test('selected assigned task with form', async ({page}) => {
     await page.route(
-      /^.*\/(graphql|v1).*$/i,
+      /^.*\/v1.*$/i,
       mockResponses(
         [
           {

@@ -6,7 +6,6 @@
  */
 
 import {makeObservable, observable, action} from 'mobx';
-import {resetApolloStore} from 'modules/apollo-client';
 import {api} from 'modules/api';
 import {request} from 'modules/request';
 import {getStateLocally, storeStateLocally} from 'modules/utils/localStorage';
@@ -64,7 +63,7 @@ class Authentication {
   };
 
   handleLogout = async () => {
-    const {error} = await request(api.logout, {
+    const {error} = await request(api.logout(), {
       skipSessionCheck: true,
     });
 
@@ -72,7 +71,6 @@ class Authentication {
       return error;
     }
 
-    resetApolloStore();
     reactQueryClient.clear();
 
     if (

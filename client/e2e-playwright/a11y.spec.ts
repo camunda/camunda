@@ -29,7 +29,7 @@ const MOCK_TASK = {
 
 test.describe('a11y', () => {
   test('have no violations', async ({page, makeAxeBuilder}) => {
-    await page.route(/^.*\/(graphql|v1).*$/i, (route) => {
+    await page.route(/^.*\/v1.*$/i, (route) => {
       if (route.request().url().includes('v1/tasks/task123/variables/search')) {
         return route.fulfill({
           status: 200,

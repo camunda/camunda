@@ -31,15 +31,19 @@ async function request(
     const response = await fetch(input);
 
     if (response.ok) {
-      return {
-        response,
-        error: null,
-      };
+      authenticationStore.activateSession();
     }
 
     if (!skipSessionCheck && [401, 403].includes(response.status)) {
       authenticationStore.disableSession();
       reactQueryClient.clear();
+    }
+
+    if (response.ok) {
+      return {
+        response,
+        error: null,
+      };
     }
 
     return {

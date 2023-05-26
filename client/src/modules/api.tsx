@@ -25,13 +25,14 @@ const api = {
       },
     });
   },
-  logout: new Request(mergePathname(BASENAME, '/api/logout'), {
-    ...BASE_REQUEST_OPTIONS,
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-  }),
+  logout: () =>
+    new Request(mergePathname(BASENAME, '/api/logout'), {
+      ...BASE_REQUEST_OPTIONS,
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    }),
   startProcess: (processDefinitionKey: string) => {
     return new Request(
       mergePathname(
@@ -64,16 +65,14 @@ const api = {
       },
     });
   },
-  getCurrentUser: new Request(
-    mergePathname(BASENAME, '/v1/internal/users/current'),
-    {
+  getCurrentUser: () =>
+    new Request(mergePathname(BASENAME, '/v1/internal/users/current'), {
       ...BASE_REQUEST_OPTIONS,
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
       },
-    },
-  ),
+    }),
   getForm: ({
     id,
     processDefinitionKey,

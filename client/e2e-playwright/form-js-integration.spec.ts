@@ -33,7 +33,7 @@ test.describe('form-js integration', () => {
       width: 1920,
       height: 10000,
     });
-    await page.route(/^.*\/(graphql|v1).*$/i, (route) => {
+    await page.route(/^.*\/v1.*$/i, (route) => {
       if (route.request().url().includes('v1/tasks/task123/variables/search')) {
         return route.fulfill({
           status: 200,
