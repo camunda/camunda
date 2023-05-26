@@ -12,6 +12,9 @@ updates:
       prefix: "chore"
       include: "scope"
     ignore:
+      - dependency-name: io.camunda:zeebe-protocol
+      - dependency-name: io.camunda:zeebe-client-java
+      - dependency-name: io.camunda:identity-sdk
       - dependency-name: "org.camunda.bpm:camunda-engine"
       - dependency-name: "org.elasticsearch.client:elasticsearch-rest-high-level-client"
         update-types: [ "version-update:semver-major", "version-update:semver-minor" ]
@@ -55,6 +58,9 @@ updates:
       prefix: "chore"
       include: "scope"
     ignore:
+      - dependency-name: io.camunda:zeebe-protocol
+      - dependency-name: io.camunda:zeebe-client-java
+      - dependency-name: io.camunda:identity-sdk
       - dependency-name: "org.camunda.bpm:camunda-engine"
       - dependency-name: "org.elasticsearch.client:elasticsearch-rest-high-level-client"
         update-types: [ "version-update:semver-major", "version-update:semver-minor" ]
@@ -98,6 +104,9 @@ updates:
       prefix: "chore"
       include: "scope"
     ignore:
+      - dependency-name: io.camunda:zeebe-protocol
+      - dependency-name: io.camunda:zeebe-client-java
+      - dependency-name: io.camunda:identity-sdk
       - dependency-name: "org.camunda.bpm:camunda-engine"
       - dependency-name: "org.elasticsearch.client:elasticsearch-rest-high-level-client"
         update-types: [ "version-update:semver-major", "version-update:semver-minor" ]
@@ -114,6 +123,10 @@ updates:
     commit-message:
       prefix: "chore"
       include: "scope"
+    ignore:
+      - dependency-name: "glob"
+      - dependency-name: "react-scripts"
+      - dependency-name: "eslint-plugin-prettier"
     labels:
       - "dependencies"
       - "frontend"
@@ -141,6 +154,9 @@ updates:
       prefix: "chore"
       include: "scope"
     ignore:
+      - dependency-name: io.camunda:zeebe-protocol
+      - dependency-name: io.camunda:zeebe-client-java
+      - dependency-name: io.camunda:identity-sdk
       - dependency-name: "org.camunda.bpm:camunda-engine"
       - dependency-name: "org.elasticsearch.client:elasticsearch-rest-high-level-client"
         update-types: [ "version-update:semver-major", "version-update:semver-minor" ]
@@ -157,6 +173,13 @@ updates:
     commit-message:
       prefix: "chore"
       include: "scope"
+    ignore:
+      - dependency-name: "prettier"
+      - dependency-name: "glob"
+      - dependency-name: "lint-staged"
+      - dependency-name: "react-scripts"
+      - dependency-name: "prettier"
+      - dependency-name: "eslint-plugin-prettier"
     labels:
       - "dependencies"
       - "frontend"
@@ -184,6 +207,9 @@ updates:
       prefix: "chore"
       include: "scope"
     ignore:
+      - dependency-name: io.camunda:zeebe-protocol
+      - dependency-name: io.camunda:zeebe-client-java
+      - dependency-name: io.camunda:identity-sdk
       - dependency-name: "org.camunda.bpm:camunda-engine"
       - dependency-name: "org.elasticsearch.client:elasticsearch-rest-high-level-client"
         update-types: [ "version-update:semver-major", "version-update:semver-minor" ]
@@ -200,6 +226,13 @@ updates:
     commit-message:
       prefix: "chore"
       include: "scope"
+    ignore:
+      - dependency-name: "prettier"
+      - dependency-name: "glob"
+      - dependency-name: "lint-staged"
+      - dependency-name: "react-scripts"
+      - dependency-name: "prettier"
+      - dependency-name: "eslint-plugin-prettier"
     labels:
       - "dependencies"
       - "frontend"
