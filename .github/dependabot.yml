@@ -178,7 +178,6 @@ updates:
       - dependency-name: "glob"
       - dependency-name: "lint-staged"
       - dependency-name: "react-scripts"
-      - dependency-name: "prettier"
       - dependency-name: "eslint-plugin-prettier"
     labels:
       - "dependencies"
@@ -231,7 +230,6 @@ updates:
       - dependency-name: "glob"
       - dependency-name: "lint-staged"
       - dependency-name: "react-scripts"
-      - dependency-name: "prettier"
       - dependency-name: "eslint-plugin-prettier"
     labels:
       - "dependencies"
