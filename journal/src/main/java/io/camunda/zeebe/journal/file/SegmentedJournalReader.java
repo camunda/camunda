@@ -27,9 +27,11 @@ class SegmentedJournalReader implements JournalReader {
   private final SegmentedJournal journal;
   private Segment currentSegment;
   private SegmentReader currentReader;
+  private final JournalMetrics metrics;
 
-  SegmentedJournalReader(final SegmentedJournal journal) {
+  SegmentedJournalReader(final SegmentedJournal journal, final JournalMetrics journalMetrics) {
     this.journal = journal;
+    metrics = journalMetrics;
     initialize();
   }
 
@@ -73,32 +75,38 @@ class SegmentedJournalReader implements JournalReader {
 
   @Override
   public long seek(final long index) {
-    final var stamp = journal.acquireReadlock();
-    try {
-      // If the current segment is not open, it has been replaced. Reset the segments.
-      return unsafeSeek(index);
-    } finally {
-      journal.releaseReadlock(stamp);
+    try (final var ignored = metrics.observeSeekLatency()) {
+      final var stamp = journal.acquireReadlock();
+      try {
+        // If the current segment is not open, it has been replaced. Reset the segments.
+        return unsafeSeek(index);
+      } finally {
+        journal.releaseReadlock(stamp);
+      }
     }
   }
 
   @Override
   public long seekToFirst() {
-    final var stamp = journal.acquireReadlock();
-    try {
-      return unsafeSeekToFirst();
-    } finally {
-      journal.releaseReadlock(stamp);
+    try (final var ignored = metrics.observeSeekLatency()) {
+      final var stamp = journal.acquireReadlock();
+      try {
+        return unsafeSeekToFirst();
+      } finally {
+        journal.releaseReadlock(stamp);
+      }
     }
   }
 
   @Override
   public long seekToLast() {
-    final var stamp = journal.acquireReadlock();
-    try {
-      return unsafeSeekToLast();
-    } finally {
-      journal.releaseReadlock(stamp);
+    try (final var ignored = metrics.observeSeekLatency()) {
+      final var stamp = journal.acquireReadlock();
+      try {
+        return unsafeSeekToLast();
+      } finally {
+        journal.releaseReadlock(stamp);
+      }
     }
   }
 
@@ -109,46 +117,49 @@ class SegmentedJournalReader implements JournalReader {
 
   @Override
   public long seekToAsqn(final long asqn, final long indexUpperBound) {
-    final var stamp = journal.acquireReadlock();
-    try {
-      final var journalIndex = journal.getJournalIndex();
-      final var index = journalIndex.lookupAsqn(asqn, indexUpperBound);
+    try (final var ignored = metrics.observeSeekLatency()) {
+      final var stamp = journal.acquireReadlock();
+      try {
+        final var journalIndex = journal.getJournalIndex();
+        final var index = journalIndex.lookupAsqn(asqn, indexUpperBound);
 
-      // depending on the type of index, it's possible there is no ASQN indexed, in which case start
-      // from the beginning
-      if (index == null) {
-        unsafeSeekToFirst();
-      } else {
-        unsafeSeek(index);
-      }
-
-      // potential beneficiary of a peek() call, which would avoid the duplicate seek or
-      // being at the second position if the first entry has a greater ASQN
-      JournalRecord record = null;
-      while (unsafeHasNext()) {
-        final var currentRecord = next();
-        if (currentRecord.index() > indexUpperBound) {
-          break;
+        // depending on the type of index, it's possible there is no ASQN indexed, in which case
+        // start
+        // from the beginning
+        if (index == null) {
+          unsafeSeekToFirst();
+        } else {
+          unsafeSeek(index);
         }
-        if (currentRecord.asqn() <= asqn && currentRecord.asqn() != ASQN_IGNORE) {
-          record = currentRecord;
-        } else if (currentRecord.asqn() >= asqn) {
-          break;
+
+        // potential beneficiary of a peek() call, which would avoid the duplicate seek or
+        // being at the second position if the first entry has a greater ASQN
+        JournalRecord record = null;
+        while (unsafeHasNext()) {
+          final var currentRecord = next();
+          if (currentRecord.index() > indexUpperBound) {
+            break;
+          }
+          if (currentRecord.asqn() <= asqn && currentRecord.asqn() != ASQN_IGNORE) {
+            record = currentRecord;
+          } else if (currentRecord.asqn() >= asqn) {
+            break;
+          }
         }
-      }
 
-      // if the journal was empty, the reader will be at the beginning of the log
-      // if the journal only contained entries with ASQN greater than the one requested, then seek
-      // back to the beginning
-      if (record == null) {
-        return unsafeSeekToFirst();
-      }
+        // if the journal was empty, the reader will be at the beginning of the log
+        // if the journal only contained entries with ASQN greater than the one requested, then seek
+        // back to the beginning
+        if (record == null) {
+          return unsafeSeekToFirst();
+        }
 
-      // This is needed so that the next() returns the correct record
-      // TODO: Remove the duplicate seek. https://github.com/zeebe-io/zeebe/issues/6223
-      return unsafeSeek(record.index());
-    } finally {
-      journal.releaseReadlock(stamp);
+        // This is needed so that the next() returns the correct record
+        // TODO: Remove the duplicate seek. https://github.com/zeebe-io/zeebe/issues/6223
+        return unsafeSeek(record.index());
+      } finally {
+        journal.releaseReadlock(stamp);
+      }
     }
   }
 

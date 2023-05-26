@@ -174,7 +174,7 @@ public final class SegmentedJournal implements Journal {
   public JournalReader openReader() {
     final var stamped = acquireReadlock();
     try {
-      final var reader = new SegmentedJournalReader(this);
+      final var reader = new SegmentedJournalReader(this, journalMetrics);
       readers.add(reader);
       return reader;
     } finally {

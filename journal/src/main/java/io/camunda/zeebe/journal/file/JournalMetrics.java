@@ -19,6 +19,7 @@ import io.prometheus.client.Counter;
 import io.prometheus.client.Gauge;
 import io.prometheus.client.Gauge.Timer;
 import io.prometheus.client.Histogram;
+import io.prometheus.client.Histogram.Child;
 
 final class JournalMetrics {
   private static final String NAMESPACE = "atomix";
@@ -102,6 +103,15 @@ final class JournalMetrics {
           .labelNames(PARTITION_LABEL)
           .register();
 
+  private static final Histogram SEEK_LATENCY =
+      Histogram.build()
+          .namespace(NAMESPACE)
+          .name("journal_seek_latency")
+          .help("Distribution of time spent seeking to a specific index")
+          .labelNames(PARTITION_LABEL)
+          .buckets(0.0001, 0.001, .005, .01, .025, .05, .075, .1, .25, .5, .75, 1, 2.5, 5)
+          .register();
+
   private final Histogram.Child segmentCreationTime;
   private final Histogram.Child segmentTruncateTime;
   private final Histogram.Child segmentFlushTime;
@@ -112,6 +122,7 @@ final class JournalMetrics {
   private final Histogram.Child appendLatency;
   private final Counter.Child appendRate;
   private final Counter.Child appendDataRate;
+  private final Child seekLatency;
 
   JournalMetrics(final String partitionId) {
     segmentCreationTime = SEGMENT_CREATION_TIME.labels(partitionId);
@@ -124,6 +135,7 @@ final class JournalMetrics {
     appendLatency = APPEND_LATENCY.labels(partitionId);
     appendRate = APPEND_RATE.labels(partitionId);
     appendDataRate = APPEND_DATA_RATE.labels(partitionId);
+    seekLatency = SEEK_LATENCY.labels(partitionId);
   }
 
   void observeSegmentCreation(final Runnable segmentCreation) {
@@ -165,5 +177,9 @@ final class JournalMetrics {
 
   Histogram.Timer observeAppendLatency() {
     return appendLatency.startTimer();
+  }
+
+  Histogram.Timer observeSeekLatency() {
+    return seekLatency.startTimer();
   }
 }
