@@ -324,6 +324,39 @@ public class ErrorEventTest {
   }
 
   @Test
+  public void shouldCatchErrorEventsOnErrorStartEventWithEmptyErrorCode() {
+    // given
+    final var process =
+        Bpmn.createExecutableProcess(PROCESS_ID)
+            .eventSubProcess("sub", e -> e.startEvent("error", s -> s.error(null)).endEvent())
+            .startEvent("start")
+            .serviceTask("task", t -> t.zeebeJobType(JOB_TYPE))
+            .endEvent()
+            .done();
+
+    ENGINE.deployment().withXmlResource(process).deploy();
+
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    // when
+    ENGINE
+        .job()
+        .ofInstance(processInstanceKey)
+        .withType(JOB_TYPE)
+        .withErrorCode("errorCode")
+        .throwError();
+
+    // then
+    assertThat(
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_COMPLETED)
+                .withProcessInstanceKey(processInstanceKey)
+                .limitToProcessInstanceCompleted()
+                .withElementType(BpmnElementType.START_EVENT))
+        .extracting(r -> r.getValue().getElementId())
+        .containsSubsequence("start", "error");
+  }
+
+  @Test
   public void shouldCatchErrorEventsOnErrorStartEventWithoutErrorCode() {
     // given
     final var process =
