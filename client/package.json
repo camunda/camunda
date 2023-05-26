@@ -27,7 +27,7 @@
     "react-router-dom": "6.11.2",
     "react-transition-group": "4.4.5",
     "sass": "1.62.1",
-    "styled-components": "5.3.10",
+    "styled-components": "5.3.11",
     "zod": "3.21.4"
   },
   "scripts": {
