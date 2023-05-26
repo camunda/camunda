@@ -178,6 +178,18 @@ const api = {
       },
     });
   },
+  getExternalForm: (bpmnProcessId: string) => {
+    return new Request(
+      mergePathname(BASENAME, `/v1/external/process/${bpmnProcessId}/form`),
+      {
+        ...BASE_REQUEST_OPTIONS,
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      },
+    );
+  },
 } as const;
 
 export {api};

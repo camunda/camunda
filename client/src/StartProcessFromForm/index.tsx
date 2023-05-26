@@ -5,57 +5,40 @@
  * except in compliance with the proprietary license.
  */
 
-import {C3Navigation} from '@camunda/camunda-composite-components';
 import {useStartProcessParams} from 'modules/routing';
-import {tracking} from 'modules/tracking';
-import {Link} from 'react-router-dom';
-import {Main, LogoIcon} from './styled';
-import {themeStore} from 'modules/stores/theme';
-import {observer} from 'mobx-react-lite';
+import {Main, LogoIcon, FormContainer} from './styled';
+import {useExternalForm} from 'modules/queries/useExternalForm';
+import {Header} from './Header';
+import {useEffect} from 'react';
+import {notificationsStore} from 'modules/stores/notifications';
+import {FormJS} from './FormJS';
+import {Skeleton} from './Skeleton';
 
-const StartProcessFromForm: React.FC = observer(() => {
+const StartProcessFromForm: React.FC = () => {
   const {bpmnProcessId} = useStartProcessParams();
-  const {selectedTheme, changeTheme} = themeStore;
+  const {data, error} = useExternalForm(bpmnProcessId);
+
+  useEffect(() => {
+    if (error !== null) {
+      notificationsStore.displayNotification({
+        kind: 'error',
+        title: 'Could not fetch form',
+        isDismissable: false,
+      });
+    }
+  }, [error]);
+
   return (
     <>
-      <C3Navigation
-        app={{
-          ariaLabel: 'Camunda Tasklist',
-          name: 'Tasklist',
-          prefix: 'Camunda',
-          routeProps: {
-            to: 'https://camunda.io',
-            onClick: () => {
-              tracking.track({
-                eventName: 'navigation',
-                link: 'header-logo',
-              });
-            },
-          },
-        }}
-        forwardRef={Link}
-        appBar={{}}
-        navbar={{
-          elements: [],
-        }}
-        userSideBar={{
-          ariaLabel: 'Settings',
-          customElements: {
-            themeSelector: {
-              currentTheme: selectedTheme,
-              onChange: (theme: string) => {
-                changeTheme(theme as 'system' | 'dark' | 'light');
-              },
-            },
-          },
-        }}
-      />
-      <Main id="main-content" className="cds--content">
-        <p>bpmnProcessId: {bpmnProcessId}</p>
+      <Header />
+      <Main id="main-content" className="cds--content" tabIndex={-1}>
+        <FormContainer>
+          {data === undefined ? <Skeleton /> : <FormJS schema={data.schema} />}
+        </FormContainer>
         <LogoIcon />
       </Main>
     </>
   );
-});
+};
 
 export {StartProcessFromForm};

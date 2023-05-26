@@ -11,6 +11,9 @@ import {ReactComponent as Logo} from './logo.svg';
 const Main = styled.main`
   width: 100vw;
   height: calc(100vh - 48px);
+  overflow-y: auto;
+  display: flex;
+  justify-content: center;
 `;
 
 const LogoIcon = styled(Logo)`
@@ -21,4 +24,8 @@ const LogoIcon = styled(Logo)`
   color: var(--cds-text-primary);
 `;
 
-export {Main, LogoIcon};
+const FormContainer = styled.div`
+  width: min(100%, 900px);
+`;
+
+export {Main, LogoIcon, FormContainer};

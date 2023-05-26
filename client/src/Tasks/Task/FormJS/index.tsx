@@ -17,7 +17,7 @@ import {usePermissions} from 'modules/hooks/usePermissions';
 import {notificationsStore} from 'modules/stores/notifications';
 import {AsyncActionButton} from 'modules/components/AsyncActionButton';
 import {getCompletionButtonDescription} from 'modules/utils/getCompletionButtonDescription';
-import {formManager} from './formManager';
+import {formManager} from 'modules/formManager';
 import {
   ScrollableContent,
   TaskDetailsContainer,
