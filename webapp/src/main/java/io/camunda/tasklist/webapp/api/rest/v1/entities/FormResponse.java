@@ -6,13 +6,16 @@
  */
 package io.camunda.tasklist.webapp.api.rest.v1.entities;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import io.camunda.tasklist.webapp.graphql.entity.FormDTO;
+import io.camunda.tasklist.webapp.graphql.entity.ProcessDTO;
 import java.util.Objects;
 import java.util.StringJoiner;
 
 public class FormResponse {
   private String id;
   private String processDefinitionKey;
+  private String title;
   private String schema;
 
   public String getId() {
@@ -33,6 +36,16 @@ public class FormResponse {
     return this;
   }
 
+  @JsonInclude(JsonInclude.Include.NON_NULL)
+  public String getTitle() {
+    return title;
+  }
+
+  public FormResponse setTitle(String processName) {
+    this.title = processName;
+    return this;
+  }
+
   public String getSchema() {
     return schema;
   }
@@ -40,6 +53,16 @@ public class FormResponse {
   public FormResponse setSchema(String schema) {
     this.schema = schema;
     return this;
+  }
+
+  @Override
+  public String toString() {
+    return new StringJoiner(", ", FormResponse.class.getSimpleName() + "[", "]")
+        .add("id='" + id + "'")
+        .add("processDefinitionKey='" + processDefinitionKey + "'")
+        .add("title='" + title + "'")
+        .add("schema='" + schema + "'")
+        .toString();
   }
 
   @Override
@@ -53,27 +76,30 @@ public class FormResponse {
     final FormResponse that = (FormResponse) o;
     return Objects.equals(id, that.id)
         && Objects.equals(processDefinitionKey, that.processDefinitionKey)
+        && Objects.equals(title, that.title)
         && Objects.equals(schema, that.schema);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(id, processDefinitionKey, schema);
-  }
-
-  @Override
-  public String toString() {
-    return new StringJoiner(", ", FormResponse.class.getSimpleName() + "[", "]")
-        .add("id='" + id + "'")
-        .add("processDefinitionKey='" + processDefinitionKey + "'")
-        .add("schema='" + schema + "'")
-        .toString();
+    return Objects.hash(id, processDefinitionKey, title, schema);
   }
 
   public static FormResponse fromFormDTO(FormDTO form) {
     return new FormResponse()
         .setId(form.getId())
         .setProcessDefinitionKey(form.getProcessDefinitionId())
+        .setSchema(form.getSchema());
+  }
+
+  public static FormResponse fromFormDTO(FormDTO form, ProcessDTO processDTO) {
+    return new FormResponse()
+        .setId(form.getId())
+        .setProcessDefinitionKey(form.getProcessDefinitionId())
+        .setTitle(
+            processDTO.getName() != null
+                ? processDTO.getName()
+                : processDTO.getProcessDefinitionId())
         .setSchema(form.getSchema());
   }
 }

@@ -69,40 +69,37 @@ public class ProcessExternalController extends ApiErrorController {
                     mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
                     schema = @Schema(implementation = Error.class)))
       })
-  @GetMapping("{processDefinitionKey}/form")
-  public ResponseEntity<FormResponse> getFormFromProcess(
-      @PathVariable String processDefinitionKey) {
+  @GetMapping("{bpmnProcessId}/form")
+  public ResponseEntity<FormResponse> getFormFromProcess(@PathVariable String bpmnProcessId) {
     try {
-      final ProcessDTO process = processReader.getProcessByBpmnProcessId(processDefinitionKey);
+      final ProcessDTO process = processReader.getProcessByBpmnProcessId(bpmnProcessId);
       if (!process.isStartedByForm()) {
         throw new NotFoundException(
-            String.format(
-                "The process with bpmnProcessId: '%s' is not found", processDefinitionKey));
+            String.format("The process with bpmnProcessId: '%s' is not found", bpmnProcessId));
       } else {
         final String formId = StringUtils.substringAfterLast(process.getFormKey(), ":");
         final var form = formReader.getFormDTO(formId, process.getId());
-        return ResponseEntity.ok(FormResponse.fromFormDTO(form));
+        return ResponseEntity.ok(FormResponse.fromFormDTO(form, process));
       }
     } catch (TasklistRuntimeException e) {
       throw new NotFoundException("Not found");
     }
   }
 
-  @PatchMapping("{processDefinitionKey}/start")
+  @PatchMapping("{bpmnProcessId}/start")
   public ResponseEntity<ProcessInstanceDTO> startProcess(
-      @PathVariable String processDefinitionKey,
+      @PathVariable String bpmnProcessId,
       @RequestBody(required = false) StartProcessRequest startProcessRequest) {
 
-    final ProcessDTO process = processReader.getProcessByBpmnProcessId(processDefinitionKey);
+    final ProcessDTO process = processReader.getProcessByBpmnProcessId(bpmnProcessId);
     if (!process.isStartedByForm()) {
       throw new NotFoundException(
-          String.format(
-              "The process with processDefinitionKey: '%s' is not found", processDefinitionKey));
+          String.format("The process with processDefinitionKey: '%s' is not found", bpmnProcessId));
     } else {
       final var variables =
           requireNonNullElse(startProcessRequest, new StartProcessRequest()).getVariables();
       final ProcessInstanceDTO processInstanceDTO =
-          processService.startProcessInstance(processDefinitionKey, variables);
+          processService.startProcessInstance(bpmnProcessId, variables);
       return ResponseEntity.ok(processInstanceDTO);
     }
   }

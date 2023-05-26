@@ -12,16 +12,16 @@ import java.util.Objects;
 
 public class ProcessPublicEndpointsResponse {
 
-  private String processId;
+  private String bpmnProcessId;
   private String processDefinitionKey;
   private String endpoint;
 
-  public String getProcessId() {
-    return processId;
+  public String getBpmnProcessId() {
+    return bpmnProcessId;
   }
 
-  public ProcessPublicEndpointsResponse setProcessId(String processId) {
-    this.processId = processId;
+  public ProcessPublicEndpointsResponse setBpmnProcessId(String bpmnProcessId) {
+    this.bpmnProcessId = bpmnProcessId;
     return this;
   }
 
@@ -45,8 +45,8 @@ public class ProcessPublicEndpointsResponse {
 
   public static ProcessPublicEndpointsResponse fromProcessDTO(ProcessDTO process) {
     return new ProcessPublicEndpointsResponse()
-        .setProcessId(process.getId())
-        .setProcessDefinitionKey(process.getProcessDefinitionId())
+        .setBpmnProcessId(process.getProcessDefinitionId())
+        .setProcessDefinitionKey(process.getId())
         .setEndpoint(
             String.format(
                 TasklistURIs.START_PUBLIC_PROCESS.concat("%s"), process.getProcessDefinitionId()));
@@ -61,13 +61,13 @@ public class ProcessPublicEndpointsResponse {
       return false;
     }
     final ProcessPublicEndpointsResponse that = (ProcessPublicEndpointsResponse) o;
-    return Objects.equals(processId, that.processId)
+    return Objects.equals(bpmnProcessId, that.bpmnProcessId)
         && Objects.equals(processDefinitionKey, that.processDefinitionKey)
         && Objects.equals(endpoint, that.endpoint);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(processId, processDefinitionKey, endpoint);
+    return Objects.hash(bpmnProcessId, processDefinitionKey, endpoint);
   }
 }

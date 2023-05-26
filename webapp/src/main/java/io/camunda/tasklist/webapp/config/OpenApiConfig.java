@@ -138,8 +138,8 @@ public class OpenApiConfig {
                       .addList(BEARER_SECURITY_SCHEMA_NAME));
             })
         .pathsToMatch(String.format("/%s/**", version))
-        .pathsToExclude(String.format("/%s/internal/**", version))
-        .pathsToExclude(String.format("/%s/external/**", version))
+        .pathsToExclude(
+            String.format("/%s/internal/**", version), String.format("/%s/external/**", version))
         .build();
   }
 

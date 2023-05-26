@@ -205,8 +205,8 @@ class ProcessInternalControllerTest {
     final var expectedEndpointsResponse =
         new ProcessPublicEndpointsResponse()
             .setEndpoint(TasklistURIs.START_PUBLIC_PROCESS.concat("publicProcess"))
-            .setProcessId("1")
-            .setProcessDefinitionKey("publicProcess");
+            .setBpmnProcessId("publicProcess")
+            .setProcessDefinitionKey("1");
 
     final var expectedFeatureFlag = new FeatureFlagProperties().setProcessPublicEndpoints(true);
 
@@ -231,5 +231,50 @@ class ProcessInternalControllerTest {
 
     // then
     assertThat(result).containsExactly(expectedEndpointsResponse);
+  }
+
+  @Test
+  void getPublicEndpointsByProcessDefinitionKey() throws Exception {
+    // given
+    final String processDefinitionKey = "publicProcess";
+
+    final var processDto =
+        new ProcessDTO()
+            .setId("1")
+            .setFormKey("camunda:bpmn:publicForm")
+            .setProcessDefinitionId("publicProcess")
+            .setVersion(1)
+            .setName("publicProcess")
+            .setStartedByForm(true);
+
+    final var expectedEndpointsResponse =
+        new ProcessPublicEndpointsResponse()
+            .setEndpoint(TasklistURIs.START_PUBLIC_PROCESS.concat("publicProcess"))
+            .setBpmnProcessId("publicProcess")
+            .setProcessDefinitionKey("1");
+
+    when(processReader.getProcessByProcessDefinitionKey(processDefinitionKey))
+        .thenReturn(processDto);
+
+    // when
+    final var responseAsString =
+        mockMvc
+            .perform(
+                get(
+                    TasklistURIs.PROCESSES_URL_V1.concat("/{processDefinitionKey}/publicEndpoint"),
+                    processDefinitionKey))
+            .andDo(print())
+            .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+            .andExpect(status().isOk())
+            .andReturn()
+            .getResponse()
+            .getContentAsString();
+
+    final var result =
+        CommonUtils.OBJECT_MAPPER.readValue(
+            responseAsString, new TypeReference<ProcessPublicEndpointsResponse>() {});
+
+    // then
+    assertThat(result).isEqualTo(expectedEndpointsResponse);
   }
 }

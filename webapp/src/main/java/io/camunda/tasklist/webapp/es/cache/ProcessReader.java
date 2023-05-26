@@ -55,6 +55,32 @@ public class ProcessReader {
 
   @Autowired private TasklistProperties tasklistProperties;
 
+  public ProcessDTO getProcessByProcessDefinitionKey(String processDefinitionKey) {
+    final QueryBuilder qb = QueryBuilders.termQuery(ProcessIndex.KEY, processDefinitionKey);
+
+    final SearchRequest searchRequest =
+        new SearchRequest(processIndex.getAlias())
+            .source(
+                new SearchSourceBuilder()
+                    .query(qb)
+                    .collapse(new CollapseBuilder(ProcessIndex.KEY))
+                    .sort(SortBuilders.fieldSort(ProcessIndex.VERSION).order(SortOrder.DESC))
+                    .size(1));
+    try {
+      final SearchResponse response = esClient.search(searchRequest, RequestOptions.DEFAULT);
+      if (response.getHits().getTotalHits().value > 0) {
+        final ProcessEntity processEntity =
+            fromSearchHit(response.getHits().getHits()[0].getSourceAsString());
+        return ProcessDTO.createFrom(processEntity, objectMapper);
+      } else {
+        throw new NotFoundException(
+            String.format("Process with key %s not found", processDefinitionKey));
+      }
+    } catch (IOException e) {
+      throw new TasklistRuntimeException(e);
+    }
+  }
+
   /** Gets the process by id. */
   public ProcessDTO getProcessByBpmnProcessId(String bpmnProcessId) {
     final QueryBuilder qb =

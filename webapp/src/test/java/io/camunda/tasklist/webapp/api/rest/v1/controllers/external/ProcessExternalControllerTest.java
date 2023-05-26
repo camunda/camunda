@@ -71,7 +71,7 @@ public class ProcessExternalControllerTest {
         new ProcessDTO()
             .setId("2251799813686367")
             .setProcessDefinitionId("hello")
-            .setName("")
+            .setName("Process Name")
             .setVersion(1)
             .setFormKey("camunda-forms:bpmn:testForm")
             .setStartedByForm(true);
@@ -80,7 +80,8 @@ public class ProcessExternalControllerTest {
             .setId("testForm")
             .setProcessDefinitionKey("hello")
             .setSchema("formSchema")
-            .setProcessDefinitionKey("2251799813686367");
+            .setProcessDefinitionKey("2251799813686367")
+            .setTitle("Process Name");
 
     final var formDTO =
         new FormDTO()

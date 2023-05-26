@@ -270,7 +270,7 @@ public class ProcessInternalControllerIT extends TasklistZeebeIntegrationTest {
         .singleElement()
         .satisfies(
             process -> {
-              assertThat(process.getProcessDefinitionKey()).isEqualTo("subscribeFormProcess");
+              assertThat(process.getProcessDefinitionKey()).isEqualTo(processId1);
               assertThat(process.getEndpoint())
                   .isEqualTo(TasklistURIs.START_PUBLIC_PROCESS.concat("subscribeFormProcess"));
             });
@@ -317,5 +317,61 @@ public class ProcessInternalControllerIT extends TasklistZeebeIntegrationTest {
         .hasApplicationJsonContentType()
         .extractingListContent(objectMapper, ProcessPublicEndpointsResponse.class)
         .isEmpty();
+  }
+
+  @Test
+  public void shouldReturnPublicEndpointByProcessDefinitionKey() {
+    tasklistProperties.getFeatureFlag().setProcessPublicEndpoints(true);
+
+    // given
+    final String processId1 = ZeebeTestUtil.deployProcess(zeebeClient, "subscribeFormProcess.bpmn");
+    elasticsearchTestRule.processAllRecordsAndWait(processIsDeployedCheck, processId1);
+
+    // when
+    final var result =
+        mockMvcHelper.doRequest(
+            get(
+                TasklistURIs.PROCESSES_URL_V1.concat("/{processDefinitionKey}/publicEndpoint"),
+                processId1));
+
+    // then
+    assertThat(result)
+        .hasOkHttpStatus()
+        .hasApplicationJsonContentType()
+        .extractingContent(objectMapper, ProcessPublicEndpointsResponse.class)
+        .satisfies(
+            process -> {
+              assertThat(process.getProcessDefinitionKey()).isEqualTo(processId1);
+              assertThat(process.getEndpoint())
+                  .isEqualTo(TasklistURIs.START_PUBLIC_PROCESS.concat("subscribeFormProcess"));
+            });
+  }
+
+  @Test
+  public void shouldNotReturnPublicEndpointByProcessDefinitionKey() {
+    tasklistProperties.getFeatureFlag().setProcessPublicEndpoints(true);
+
+    // given
+    final String processId1 = ZeebeTestUtil.deployProcess(zeebeClient, "travelSearchProcess.bpmn");
+    final String processId2 =
+        ZeebeTestUtil.deployProcess(zeebeClient, "travelSearchProcess_v2.bpmn");
+    elasticsearchTestRule.processAllRecordsAndWait(processIsDeployedCheck, processId1);
+    elasticsearchTestRule.processAllRecordsAndWait(processIsDeployedCheck, processId2);
+
+    // when
+    final var result =
+        mockMvcHelper.doRequest(
+            get(
+                TasklistURIs.PROCESSES_URL_V1.concat("/{processDefinitionKey}/publicEndpoint"),
+                processId2));
+
+    // then
+    assertThat(result)
+        .hasHttpStatus(HttpStatus.NOT_FOUND)
+        .hasApplicationProblemJsonContentType()
+        .extractingErrorContent(objectMapper)
+        .hasStatus(HttpStatus.NOT_FOUND)
+        .hasInstanceId()
+        .hasMessage("The public endpoint for processDefinitionKey: '%s' is not found", processId2);
   }
 }

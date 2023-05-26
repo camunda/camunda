@@ -80,10 +80,10 @@ public class ProcessInternalController extends ApiErrorController {
                     schema = @Schema(implementation = Error.class)))
       })
   @PreAuthorize("hasPermission('write')")
-  @PatchMapping("{processDefinitionKey}/start")
+  @PatchMapping("{bpmnProcessId}/start")
   public ResponseEntity<ProcessInstanceDTO> startProcessInstance(
-      @PathVariable String processDefinitionKey) {
-    final var processInstance = processService.startProcessInstance(processDefinitionKey);
+      @PathVariable String bpmnProcessId) {
+    final var processInstance = processService.startProcessInstance(bpmnProcessId);
     return ResponseEntity.ok(processInstance);
   }
 
@@ -154,5 +154,35 @@ public class ProcessInternalController extends ApiErrorController {
     }
 
     return ResponseEntity.ok(publicEndpoints);
+  }
+
+  @Operation(
+      summary = "Return the public endpoint to start the process by a form.",
+      description = "Return the public endpoint to start the process by a form.",
+      responses = {
+        @ApiResponse(
+            description = "On success returned",
+            responseCode = "200",
+            useReturnTypeSchema = true),
+        @ApiResponse(
+            description =
+                "An error is returned when the public endpoint is not found by `processDefinitionKey`.",
+            responseCode = "404",
+            content =
+                @Content(
+                    mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
+                    schema = @Schema(implementation = Error.class)))
+      })
+  @GetMapping("{processDefinitionKey}/publicEndpoint")
+  public ResponseEntity<ProcessPublicEndpointsResponse> getPublicEndpoint(
+      @PathVariable String processDefinitionKey) {
+    final var process = processReader.getProcessByProcessDefinitionKey(processDefinitionKey);
+    if (!process.isStartedByForm()) {
+      throw new NotFoundException(
+          String.format(
+              "The public endpoint for processDefinitionKey: '%s' is not found",
+              processDefinitionKey));
+    }
+    return ResponseEntity.ok(ProcessPublicEndpointsResponse.fromProcessDTO(process));
   }
 }
