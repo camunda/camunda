@@ -5,10 +5,13 @@
  * except in compliance with the proprietary license.
  */
 
+import {useState} from 'react';
 import {observer} from 'mobx-react';
 import {Stack} from '@carbon/react';
-import {Form} from 'react-final-form';
 import {Error} from '@carbon/react/icons';
+import {Form} from 'react-final-form';
+import {useNavigate} from 'react-router-dom';
+import isEqual from 'lodash/isEqual';
 import {ProcessInstanceFilters} from 'modules/utils/filter';
 import {AutoSubmit} from 'modules/components/AutoSubmit';
 import {useFilters} from 'modules/hooks/useFilters';
@@ -27,9 +30,22 @@ import {
   WarningFilled,
 } from 'modules/components/Carbon/StateIcon/styled';
 import {CheckboxGroup} from './CheckboxGroup';
+import {
+  OptionalFilter,
+  OptionalFiltersFormGroup,
+} from './OptionalFiltersFormGroup';
+
+import {CarbonLocations} from 'modules/carbonRoutes';
+
+const initialValues: ProcessInstanceFilters = {
+  active: true,
+  incidents: true,
+};
 
 const Filters: React.FC = observer(() => {
   const filters = useFilters();
+  const [visibleFilters, setVisibleFilters] = useState<OptionalFilter[]>([]);
+  const navigate = useNavigate();
 
   return (
     <Form<ProcessInstanceFilters>
@@ -38,11 +54,18 @@ const Filters: React.FC = observer(() => {
       }}
       initialValues={filters.getFiltersFromUrl()}
     >
-      {({handleSubmit}) => (
+      {({handleSubmit, form, values}) => (
         <StyledForm onSubmit={handleSubmit}>
           <FiltersPanel
             localStorageKey="isFiltersCollapsed"
-            isResetButtonDisabled={true}
+            isResetButtonDisabled={
+              isEqual(initialValues, values) && visibleFilters.length === 0
+            }
+            onResetClick={() => {
+              form.reset();
+              navigate(CarbonLocations.processes(initialValues));
+              setVisibleFilters([]);
+            }}
           >
             <Container>
               <AutoSubmit
@@ -102,6 +125,10 @@ const Filters: React.FC = observer(() => {
                     />
                   </Stack>
                 </div>
+                <OptionalFiltersFormGroup
+                  visibleFilters={visibleFilters}
+                  onVisibleFilterChange={setVisibleFilters}
+                />
               </Stack>
             </Container>
           </FiltersPanel>
