@@ -151,10 +151,10 @@ class SegmentDescriptorTest {
     assertThat(descriptorRead.id()).isEqualTo(2);
     assertThat(descriptorRead.index()).isEqualTo(100);
     assertThat(descriptorRead.maxSegmentSize()).isEqualTo(1024);
-    assertThat(descriptorRead.lastIndex()).isZero();
-    assertThat(descriptorRead.lastPosition()).isZero();
     assertThat(descriptorRead.length())
         .isEqualTo(SegmentDescriptor.getEncodingLengthForVersion((byte) (2)));
+    assertThat(descriptorRead.lastIndex()).isZero();
+    assertThat(descriptorRead.lastPosition()).isZero();
   }
 
   private void writeDescriptorV2(

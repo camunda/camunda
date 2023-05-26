@@ -165,8 +165,8 @@ final class SegmentDescriptor {
     id = segmentDescriptorDecoder.id();
     index = segmentDescriptorDecoder.index();
     maxSegmentSize = segmentDescriptorDecoder.maxSegmentSize();
-    lastIndex = version >= 3 ? segmentDescriptorDecoder.lastIndex() : 0;
-    lastPosition = version >= 3 ? segmentDescriptorDecoder.lastPosition() : 0;
+    lastIndex = Math.max(0, segmentDescriptorDecoder.lastIndex());
+    lastPosition = Math.max(0, (int) segmentDescriptorDecoder.lastPosition());
     encodedLength =
         offset + headerDecoder.encodedLength() + segmentDescriptorDecoder.encodedLength();
 
