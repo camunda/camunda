@@ -11,8 +11,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 
 import io.camunda.zeebe.engine.util.EngineRule;
+import io.camunda.zeebe.engine.util.client.PublishMessageClient;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
+import io.camunda.zeebe.model.bpmn.builder.EventSubProcessBuilder;
 import io.camunda.zeebe.model.bpmn.builder.StartEventBuilder;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
@@ -26,8 +28,10 @@ import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
@@ -299,5 +303,67 @@ public final class MultiInstanceSubProcessTest {
                 .limitToProcessInstanceCompleted())
         .extracting(Record::getIntent)
         .containsExactly(ProcessInstanceIntent.ELEMENT_COMPLETED);
+  }
+
+  /** Regression test for bug: https://github.com/camunda/zeebe/issues/11578 */
+  @Test
+  public void shouldCorrelateMessagesToEventSubProcessForEachSubProcess() {
+    // given
+    final Consumer<EventSubProcessBuilder> eventSubprocess =
+        s ->
+            s.startEvent()
+                .message(m -> m.name("msg").zeebeCorrelationKeyExpression(INPUT_ELEMENT + ".id"))
+                .endEvent();
+
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(PROCESS_ID)
+                .startEvent()
+                .subProcess(
+                    "subprocess",
+                    s ->
+                        s.multiInstance(
+                                m ->
+                                    m.parallel()
+                                        .zeebeInputCollectionExpression(INPUT_COLLECTION)
+                                        .zeebeInputElement(INPUT_ELEMENT))
+                            .embeddedSubProcess()
+                            .eventSubProcess("msg-subprocess", eventSubprocess)
+                            .startEvent()
+                            .userTask("task")
+                            .endEvent())
+                .endEvent()
+                .done())
+        .deploy();
+
+    final long processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(PROCESS_ID)
+            .withVariable(
+                INPUT_COLLECTION, Arrays.asList(Map.of("id", 1), Map.of("id", 2), Map.of("id", 3)))
+            .create();
+
+    // when
+    Stream.of("1", "2", "3")
+        .map(correlationKey -> ENGINE.message().withName("msg").withCorrelationKey(correlationKey))
+        .forEach(PublishMessageClient::publish);
+
+    // then
+    assertThat(
+            RecordingExporter.messageSubscriptionRecords(MessageSubscriptionIntent.CORRELATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .limit(3))
+        .describedAs("Expect that each message is correlated")
+        .hasSize(3);
+
+    assertThat(
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_COMPLETED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withElementType(BpmnElementType.PROCESS)
+                .limitToProcessInstanceCompleted())
+        .describedAs("Expect that each sub process is interrupted so process could complete")
+        .hasSize(1);
   }
 }
