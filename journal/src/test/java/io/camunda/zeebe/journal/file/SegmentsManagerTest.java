@@ -13,14 +13,20 @@ import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.zeebe.journal.CorruptedJournalException;
+import io.camunda.zeebe.test.util.junit.RegressionTest;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import org.agrona.CloseHelper;
+import org.agrona.collections.ArrayUtil;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.mockito.Mockito;
 
 class SegmentsManagerTest {
   private static final String JOURNAL_NAME = "journal";
@@ -251,6 +257,56 @@ class SegmentsManagerTest {
     assertThat(invalidSegmentWasCreated).hasRootCause(expectedRootCause);
     segments = journalFactory.segmentsManager(directory);
     assertThatNoException().isThrownBy(() -> segments.open());
+  }
+
+  @RegressionTest("https://github.com/camunda/zeebe/issues/12754")
+  void shouldDeleteSegmentsInReverseOrderOnReset() {
+    // given
+    final var loader = Mockito.spy(journalFactory.segmentLoader());
+    final var metaStore = Mockito.spy(journalFactory.metaStore());
+    try (final var journal = openJournal()) {
+      journal.append(1, journalFactory.entry()).index();
+      journal.append(2, journalFactory.entry()).index();
+      journal.append(3, journalFactory.entry()).index();
+    }
+
+    // spy on all created segments, so we can assert the order in which they're deleted
+    //noinspection resource
+    Mockito.doAnswer(call -> Mockito.spy(call.callRealMethod()))
+        .when(loader)
+        .loadExistingSegment(Mockito.any(), Mockito.anyLong(), Mockito.any());
+
+    // when
+    segments = journalFactory.segmentsManager(directory, loader, metaStore);
+    try (final var journal = journalFactory.journal(segments)) {
+      // grab all segments and copy them to avoid the map getting cleared
+      final var loadedSegments = getJournalSegments(segments);
+      journal.reset(10);
+
+      // then - assert we reset first, then delete the segments in reversed order
+      final var mocks = ArrayUtil.add(loadedSegments.toArray(), metaStore);
+      final var inOrder = Mockito.inOrder(mocks);
+
+      inOrder.verify(metaStore).resetLastFlushedIndex();
+      loadedSegments.forEach(s -> inOrder.verify(s).delete());
+      inOrder.verifyNoMoreInteractions();
+    }
+  }
+
+  private List<Segment> getJournalSegments(final SegmentsManager segmentsManager) {
+    final var segments = new ArrayList<Segment>();
+    final long firstIndex =
+        Optional.ofNullable(segmentsManager.getFirstSegment()).map(Segment::index).orElse(0L);
+    var segment = segmentsManager.getLastSegment();
+    long nextSegmentIndex = (segment == null ? -1 : segment.index() - 1);
+
+    while (segment != null && nextSegmentIndex > firstIndex) {
+      segments.add(segment);
+      nextSegmentIndex = segment.index() - 1;
+      segment = segmentsManager.getSegment(nextSegmentIndex);
+    }
+
+    return segments;
   }
 
   private SegmentedJournal openJournal() {
