@@ -24,6 +24,8 @@ import java.nio.ByteBuffer;
 import java.util.Objects;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * The segment descriptor stores the metadata of a single segment {@link Segment} of a {@link
@@ -44,7 +46,7 @@ import org.agrona.concurrent.UnsafeBuffer;
  * segment.
  */
 final class SegmentDescriptor {
-
+  private static final Logger LOG = LoggerFactory.getLogger(SegmentDescriptor.class);
   private static final int VERSION_LENGTH = Byte.BYTES;
   // current descriptor version containing: header, metadata, header and descriptor. descriptor
   // contains lastIndex and lastPosition. Version 2 does not contain lastIndex and lastPosition.
@@ -360,9 +362,15 @@ final class SegmentDescriptor {
   void updateIfCurrentVersion(final ByteBuffer buffer) {
     if (version >= CUR_VERSION) {
       copyTo(buffer);
+    } else {
+      // Do not overwrite the descriptor for older versions. The new version has a higher length and
+      // will overwrite the first entry.
+      LOG.trace(
+          "Segment descriptor version is {}, which is lower than current version {}."
+              + "Skipping update to the descriptor.",
+          version,
+          CUR_VERSION);
     }
-    // Do not overwrite the descriptor for older versions. The new version has a higher length and
-    // will overwrite the first entry.
   }
 
   long lastIndex() {

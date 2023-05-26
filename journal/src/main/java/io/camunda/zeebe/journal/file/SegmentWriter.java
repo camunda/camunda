@@ -78,9 +78,15 @@ final class SegmentWriter {
     lastEntryPosition = segment.descriptor().lastPosition();
     this.metrics = metrics;
     if (lastEntryPosition > 0) {
+      LOG.trace(
+          "Found lastEntryPosition {} and lastIndex {} in descriptor.",
+          lastEntryPosition,
+          segment.descriptor().lastIndex());
       // jump to last entry
       jumpToLastEntry(lastEntryPosition, segment.descriptor().lastIndex());
     } else {
+      LOG.trace(
+          "Found not info about last entry in descriptor. Scanning the segment to reset the writer.");
       // iterate over all entries
       reset(0, false);
     }
@@ -284,6 +290,11 @@ final class SegmentWriter {
       - the last entry read does not have the expected index
        To simplify handling of such cases, reset the writer by scanning the whole segment.
        */
+      LOG.trace(
+          "Failed to read last entry from the given lastEntryPosition {}."
+              + "Scanning the segment to reset the writer.",
+          lastPosition,
+          e);
       reset(0, false);
     }
   }
