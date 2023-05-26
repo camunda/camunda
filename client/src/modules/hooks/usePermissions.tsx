@@ -5,17 +5,13 @@
  * except in compliance with the proprietary license.
  */
 
-import {useQuery} from '@apollo/client';
-import {
-  GET_CURRENT_USER,
-  GetCurrentUser,
-} from 'modules/queries/get-current-user';
+import {useCurrentUser} from 'modules/queries/useCurrentUser';
 import {Permissions} from 'modules/types';
 
 const usePermissions = (scopes: Permissions) => {
-  const {data: userData} = useQuery<GetCurrentUser>(GET_CURRENT_USER);
+  const {data: currentUser} = useCurrentUser();
 
-  const permissions = userData?.currentUser?.permissions;
+  const permissions = currentUser?.permissions;
 
   const hasPermission =
     permissions !== undefined &&

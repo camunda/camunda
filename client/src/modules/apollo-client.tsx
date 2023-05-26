@@ -8,7 +8,7 @@
 /* istanbul ignore file */
 
 import {ApolloClient, InMemoryCache, HttpLink} from '@apollo/client';
-import {User} from 'modules/types';
+import {CurrentUser} from 'modules/types';
 import {authenticationStore} from 'modules/stores/authentication';
 import {mergePathname} from 'modules/utils/mergePathname';
 import uniqBy from 'lodash/uniqBy';
@@ -20,7 +20,7 @@ function createApolloClient() {
         Query: {
           fields: {
             currentUser: {
-              read(user: User | undefined) {
+              read(user: CurrentUser | undefined) {
                 if (user?.permissions === undefined) {
                   return user;
                 }

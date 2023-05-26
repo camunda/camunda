@@ -6,7 +6,7 @@
  */
 
 import {useEffect, useMemo, useRef, useState} from 'react';
-import {Form, Variable, User, Task} from 'modules/types';
+import {Form, Variable, CurrentUser, Task} from 'modules/types';
 import {useRemoveFormReference} from 'modules/queries/useTask';
 import {getSchemaVariables} from '@bpmn-io/form-js-viewer';
 import '@bpmn-io/form-js-viewer/dist/assets/form-js-base.css';
@@ -58,7 +58,7 @@ type Props = {
   onSubmit: (variables: Variable[]) => Promise<void>;
   onSubmitSuccess: () => void;
   onSubmitFailure: (error: Error) => void;
-  user: User;
+  user: CurrentUser;
 };
 
 const FormJS: React.FC<Props> = ({

@@ -5,6 +5,9 @@
  * except in compliance with the proprietary license.
  */
 
+import {reactQueryClient} from './ReactQueryProvider';
+import {authenticationStore} from './stores/authentication';
+
 type RequestError = {
   variant: 'network-error' | 'failed-response';
   response: Response | null;
@@ -12,8 +15,8 @@ type RequestError = {
 };
 
 async function request(
-  input: RequestInfo | URL,
-  init?: RequestInit | undefined,
+  input: RequestInfo,
+  {skipSessionCheck} = {skipSessionCheck: false},
 ): Promise<
   | {
       response: Response;
@@ -25,13 +28,18 @@ async function request(
     }
 > {
   try {
-    const response = await fetch(input, init);
+    const response = await fetch(input);
 
     if (response.ok) {
       return {
         response,
         error: null,
       };
+    }
+
+    if (!skipSessionCheck && [401, 403].includes(response.status)) {
+      authenticationStore.disableSession();
+      reactQueryClient.clear();
     }
 
     return {

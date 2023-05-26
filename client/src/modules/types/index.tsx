@@ -9,26 +9,25 @@ type NonEmptyArray<T> = [T, ...T[]];
 
 type Permissions = NonEmptyArray<'read' | 'write'>;
 
-type User = Readonly<{
+type CurrentUser = {
   userId: string;
   displayName: string | null;
   permissions: Permissions;
-  roles: ReadonlyArray<string> | null;
+  roles: string[] | null;
   salesPlanType: string | null;
-  c8Links: ReadonlyArray<{
+  c8Links: {
     name: 'console' | 'modeler' | 'tasklist' | 'operate' | 'optimize';
     link: string;
-  }>;
-  __typename: string;
-}>;
+  }[];
+};
 
-type Variable = Readonly<{
+type Variable = {
   id: string;
   name: string;
   value: string;
   previewValue: string;
   isValueTruncated: boolean;
-}>;
+};
 
 type TaskState = 'CREATED' | 'COMPLETED' | 'CANCELED';
 
@@ -67,7 +66,6 @@ type Process = {
 };
 
 type ProcessInstance = {
-  __typename: string;
   id: string;
 };
 
@@ -101,7 +99,7 @@ type TasksSearchBody = {
 };
 
 export type {
-  User,
+  CurrentUser,
   Variable,
   Task,
   TaskState,

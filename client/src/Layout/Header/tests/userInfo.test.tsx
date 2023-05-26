@@ -8,11 +8,11 @@
 import {render, screen} from 'modules/testing-library';
 import {DEFAULT_MOCK_CLIENT_CONFIG} from 'modules/mocks/window';
 import {nodeMockServer} from 'modules/mockServer/nodeMockServer';
-import {mockGetCurrentUser} from 'modules/queries/get-current-user';
 import {authenticationStore} from 'modules/stores/authentication';
-import {graphql, rest} from 'msw';
+import {rest} from 'msw';
 import {Header} from '..';
 import {Wrapper} from './mocks';
+import * as userMocks from 'modules/mock-schema/mocks/current-user';
 
 describe('User info', () => {
   beforeAll(() => {
@@ -29,8 +29,8 @@ describe('User info', () => {
 
   it('should render user display name', async () => {
     nodeMockServer.use(
-      graphql.query('GetCurrentUser', (_, res, ctx) => {
-        return res(ctx.data(mockGetCurrentUser));
+      rest.get('/v1/internal/users/current', (_, res, ctx) => {
+        return res.once(ctx.json(userMocks.currentUser));
       }),
     );
 
@@ -51,8 +51,8 @@ describe('User info', () => {
     window.clientConfig = {...window.clientConfig, canLogout: false};
 
     nodeMockServer.use(
-      graphql.query('GetCurrentUser', (_, res, ctx) => {
-        return res(ctx.data(mockGetCurrentUser));
+      rest.get('/v1/internal/users/current', (_, res, ctx) => {
+        return res.once(ctx.json(userMocks.currentUser));
       }),
     );
 
@@ -80,8 +80,8 @@ describe('User info', () => {
       .mockImplementation();
 
     nodeMockServer.use(
-      graphql.query('GetCurrentUser', (_, res, ctx) => {
-        return res(ctx.data(mockGetCurrentUser));
+      rest.get('/v1/internal/users/current', (_, res, ctx) => {
+        return res.once(ctx.json(userMocks.currentUser));
       }),
       rest.post('/api/logout', (_, res, ctx) =>
         res.once(ctx.status(204), ctx.json('')),
@@ -112,8 +112,8 @@ describe('User info', () => {
     window.open = mockOpenFn;
 
     nodeMockServer.use(
-      graphql.query('GetCurrentUser', (_, res, ctx) => {
-        return res(ctx.data(mockGetCurrentUser));
+      rest.get('/v1/internal/users/current', (_, res, ctx) => {
+        return res.once(ctx.json(userMocks.currentUser));
       }),
     );
 
@@ -169,8 +169,8 @@ describe('User info', () => {
     };
 
     nodeMockServer.use(
-      graphql.query('GetCurrentUser', (_, res, ctx) => {
-        return res(ctx.data(mockGetCurrentUser));
+      rest.get('/v1/internal/users/current', (_, res, ctx) => {
+        return res.once(ctx.json(userMocks.currentUser));
       }),
     );
 

@@ -7,7 +7,7 @@
 
 import {Mixpanel} from 'mixpanel-browser';
 import {getStage} from './getStage';
-import {User} from 'modules/types';
+import {CurrentUser} from 'modules/types';
 import {TaskFilters} from 'modules/hooks/useTaskFilters';
 
 const EVENT_PREFIX = 'tasklist:';
@@ -152,7 +152,7 @@ class Tracking {
     }
   }
 
-  identifyUser = (user: User) => {
+  identifyUser = (user: CurrentUser) => {
     this.#mixpanel?.identify(user.userId);
     this.#appCues?.identify(user.userId, {
       orgId: this.#baseProperties.organizationId,

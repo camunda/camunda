@@ -6,21 +6,18 @@
  */
 
 import {nodeMockServer} from 'modules/mockServer/nodeMockServer';
-import {
-  mockGetCurrentUser,
-  mockGetCurrentRestrictedUser,
-} from 'modules/queries/get-current-user';
 import {render, screen, within} from 'modules/testing-library';
-import {graphql} from 'msw';
+import {rest} from 'msw';
 import {Header} from '..';
 import {Wrapper} from './mocks';
 import {DEFAULT_MOCK_CLIENT_CONFIG} from 'modules/mocks/window';
+import * as userMocks from 'modules/mock-schema/mocks/current-user';
 
 describe('processes tab', () => {
   beforeEach(() => {
     nodeMockServer.use(
-      graphql.query('GetCurrentUser', (_, res, ctx) => {
-        return res.once(ctx.data(mockGetCurrentUser));
+      rest.get('/v1/internal/users/current', (_, res, ctx) => {
+        return res.once(ctx.json(userMocks.currentUser));
       }),
     );
   });
@@ -61,8 +58,8 @@ describe('processes tab', () => {
     process.env.REACT_APP_VERSION = '0.0.0-alpha0';
 
     nodeMockServer.use(
-      graphql.query('GetCurrentUser', (_, res, ctx) => {
-        return res.once(ctx.data(mockGetCurrentUser));
+      rest.get('/v1/internal/users/current', (_, res, ctx) => {
+        return res.once(ctx.json(userMocks.currentUser));
       }),
     );
 
@@ -89,8 +86,8 @@ describe('processes tab', () => {
       isResourcePermissionsEnabled: true,
     };
     nodeMockServer.use(
-      graphql.query('GetCurrentUser', (_, res, ctx) => {
-        return res.once(ctx.data(mockGetCurrentRestrictedUser));
+      rest.get('/v1/internal/users/current', (_, res, ctx) => {
+        return res.once(ctx.json(userMocks.currentRestrictedUser));
       }),
     );
 
@@ -175,8 +172,8 @@ describe('processes tab', () => {
     process.env.REACT_APP_VERSION = '0.0.0-alpha0';
 
     nodeMockServer.use(
-      graphql.query('GetCurrentUser', (_, res, ctx) => {
-        return res.once(ctx.data(mockGetCurrentRestrictedUser));
+      rest.get('/v1/internal/users/current', (_, res, ctx) => {
+        return res.once(ctx.json(userMocks.currentRestrictedUser));
       }),
     );
 

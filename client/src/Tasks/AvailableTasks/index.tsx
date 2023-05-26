@@ -20,6 +20,7 @@ import {Stack} from '@carbon/react';
 import {Skeleton} from './Skeleton';
 import {useTaskFilters} from 'modules/hooks/useTaskFilters';
 import {Task as TaskType} from 'modules/types';
+import {useCurrentUser} from 'modules/queries/useCurrentUser';
 
 type Props = {
   onScrollUp: () => Promise<TaskType[]>;
@@ -37,6 +38,8 @@ const AvailableTasks: React.FC<Props> = ({
   const taskRef = useRef<HTMLDivElement | null>(null);
   const scrollableListRef = useRef<HTMLDivElement | null>(null);
   const {filter} = useTaskFilters();
+  const {data, isInitialLoading} = useCurrentUser();
+  const isLoading = isInitialLoading || loading;
 
   useEffect(() => {
     scrollableListRef?.current?.scrollTo?.(0, 0);
@@ -44,58 +47,67 @@ const AvailableTasks: React.FC<Props> = ({
 
   return (
     <Container
-      $enablePadding={tasks.length === 0 && !loading}
+      $enablePadding={tasks.length === 0 && !isLoading}
       title="Available tasks"
     >
-      {loading && <Skeleton />}
-      {tasks.length > 0 && (
-        <ListContainer
-          data-testid="scrollable-list"
-          ref={scrollableListRef}
-          onScroll={async (event) => {
-            const target = event.target as HTMLDivElement;
+      {isLoading ? (
+        <Skeleton />
+      ) : (
+        <>
+          {tasks.length > 0 && (
+            <ListContainer
+              data-testid="scrollable-list"
+              ref={scrollableListRef}
+              onScroll={async (event) => {
+                const target = event.target as HTMLDivElement;
 
-            if (
-              target.scrollHeight - target.clientHeight - target.scrollTop <=
-              0
-            ) {
-              await onScrollDown();
-            } else if (target.scrollTop === 0) {
-              const previousTasks = await onScrollUp();
+                if (
+                  target.scrollHeight -
+                    target.clientHeight -
+                    target.scrollTop <=
+                  0
+                ) {
+                  await onScrollDown();
+                } else if (target.scrollTop === 0) {
+                  const previousTasks = await onScrollUp();
 
-              target.scrollTop =
-                (taskRef?.current?.clientHeight ?? 0) * previousTasks.length;
-            }
-          }}
-          tabIndex={-1}
-        >
-          {tasks.map((task) => {
-            return (
-              <Task
-                ref={taskRef}
-                key={task.id}
-                taskId={task.id}
-                name={task.name}
-                processName={task.processName}
-                assignee={task.assignee}
-                creationDate={task.creationDate}
-                followUpDate={task.followUpDate}
-                dueDate={task.dueDate}
-              />
-            );
-          })}
-        </ListContainer>
-      )}
-      {tasks.length === 0 && !loading && (
-        <Stack as={EmptyMessage} gap={5} orientation="horizontal">
-          <EmptyListIcon size={24} alt="" />
-          <Stack gap={1} as={EmptyMessageText}>
-            <EmptyMessageFirstLine>No tasks found</EmptyMessageFirstLine>
-            <EmptyMessageSecondLine>
-              There are no tasks matching your filter criteria.
-            </EmptyMessageSecondLine>
-          </Stack>
-        </Stack>
+                  target.scrollTop =
+                    (taskRef?.current?.clientHeight ?? 0) *
+                    previousTasks.length;
+                }
+              }}
+              tabIndex={-1}
+            >
+              {tasks.map((task) => {
+                return (
+                  <Task
+                    ref={taskRef}
+                    key={task.id}
+                    taskId={task.id}
+                    name={task.name}
+                    processName={task.processName}
+                    assignee={task.assignee}
+                    creationDate={task.creationDate}
+                    followUpDate={task.followUpDate}
+                    dueDate={task.dueDate}
+                    currentUser={data!}
+                  />
+                );
+              })}
+            </ListContainer>
+          )}
+          {tasks.length === 0 && (
+            <Stack as={EmptyMessage} gap={5} orientation="horizontal">
+              <EmptyListIcon size={24} alt="" />
+              <Stack gap={1} as={EmptyMessageText}>
+                <EmptyMessageFirstLine>No tasks found</EmptyMessageFirstLine>
+                <EmptyMessageSecondLine>
+                  There are no tasks matching your filter criteria.
+                </EmptyMessageSecondLine>
+              </Stack>
+            </Stack>
+          )}
+        </>
       )}
     </Container>
   );

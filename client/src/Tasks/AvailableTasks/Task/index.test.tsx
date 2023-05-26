@@ -11,13 +11,7 @@ import {MockThemeProvider} from 'modules/theme/MockProvider';
 import {MemoryRouter} from 'react-router-dom';
 import {currentUser} from 'modules/mock-schema/mocks/current-user';
 import {LocationLog} from 'modules/utils/LocationLog';
-import {nodeMockServer} from 'modules/mockServer/nodeMockServer';
-import {graphql} from 'msw';
-import {mockGetCurrentUser} from 'modules/queries/get-current-user';
-import {client} from 'modules/apollo-client';
-import {ApolloProvider} from '@apollo/client';
-
-jest.mock('modules/featureFlags');
+import * as userMocks from 'modules/mock-schema/mocks/current-user';
 
 const createWrapper = (
   initialEntries: React.ComponentProps<
@@ -27,29 +21,19 @@ const createWrapper = (
   const Wrapper: React.FC<{
     children?: React.ReactNode;
   }> = ({children}) => (
-    <ApolloProvider client={client}>
-      <MockThemeProvider>
-        <MemoryRouter initialEntries={initialEntries}>
-          {children}
-          <LocationLog />
-        </MemoryRouter>
-      </MockThemeProvider>
-    </ApolloProvider>
+    <MockThemeProvider>
+      <MemoryRouter initialEntries={initialEntries}>
+        {children}
+        <LocationLog />
+      </MemoryRouter>
+    </MockThemeProvider>
   );
 
   return Wrapper;
 };
 
 describe('<Task />', () => {
-  beforeEach(() => {
-    nodeMockServer.use(
-      graphql.query('GetCurrentUser', (_, res, ctx) => {
-        return res(ctx.data(mockGetCurrentUser));
-      }),
-    );
-  });
-
-  it('should render task', async () => {
+  it('should render task', () => {
     render(
       <Task
         taskId="1"
@@ -59,6 +43,7 @@ describe('<Task />', () => {
         assignee={currentUser.userId}
         followUpDate={null}
         dueDate={null}
+        currentUser={userMocks.currentUser}
       />,
       {
         wrapper: createWrapper(),
@@ -70,7 +55,7 @@ describe('<Task />', () => {
     expect(
       screen.getByTitle('Created at 29 May 2020 - 02:00 PM'),
     ).toBeInTheDocument();
-    expect(await screen.findByText('Assigned to me')).toBeInTheDocument();
+    expect(screen.getByText('Assigned to me')).toBeInTheDocument();
   });
 
   it('should handle unassigned tasks', () => {
@@ -83,6 +68,7 @@ describe('<Task />', () => {
         assignee={null}
         followUpDate={null}
         dueDate={null}
+        currentUser={userMocks.currentUser}
       />,
       {
         wrapper: createWrapper(),
@@ -102,6 +88,7 @@ describe('<Task />', () => {
         assignee={currentUser.userId}
         followUpDate={null}
         dueDate={null}
+        currentUser={userMocks.currentUser}
       />,
       {
         wrapper: createWrapper(),
@@ -121,6 +108,7 @@ describe('<Task />', () => {
         assignee={currentUser.userId}
         followUpDate={null}
         dueDate={null}
+        currentUser={userMocks.currentUser}
       />,
       {
         wrapper: createWrapper(),
@@ -141,6 +129,7 @@ describe('<Task />', () => {
         assignee={currentUser.userId}
         followUpDate={null}
         dueDate={null}
+        currentUser={userMocks.currentUser}
       />,
       {
         wrapper: createWrapper(['/?filter=all-open']),
@@ -163,6 +152,7 @@ describe('<Task />', () => {
         assignee={currentUser.userId}
         followUpDate={null}
         dueDate="2021-05-29T14:00:00.000Z"
+        currentUser={userMocks.currentUser}
       />,
       {
         wrapper: createWrapper(),
@@ -182,6 +172,7 @@ describe('<Task />', () => {
         assignee={currentUser.userId}
         followUpDate="2021-05-29T14:00:00.000Z"
         dueDate="2021-05-29T14:00:00.000Z"
+        currentUser={userMocks.currentUser}
       />,
       {
         wrapper: createWrapper(['/?sortBy=due']),
@@ -202,6 +193,7 @@ describe('<Task />', () => {
         assignee={currentUser.userId}
         followUpDate="2021-05-29T14:00:00.000Z"
         dueDate="2021-05-29T14:00:00.000Z"
+        currentUser={userMocks.currentUser}
       />,
       {
         wrapper: createWrapper(['/?sortBy=follow-up']),

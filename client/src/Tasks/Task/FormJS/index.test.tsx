@@ -10,17 +10,15 @@ import {
   assignedTaskWithForm,
   unassignedTaskWithForm,
 } from 'modules/mock-schema/mocks/task';
-import {mockGetCurrentUser} from 'modules/queries/get-current-user';
 import {MockThemeProvider} from 'modules/theme/MockProvider';
 import {FormJS} from './index';
 import {nodeMockServer} from 'modules/mockServer/nodeMockServer';
-import {rest, graphql} from 'msw';
+import {rest} from 'msw';
 import noop from 'lodash/noop';
 import * as formMocks from 'modules/mock-schema/mocks/form';
 import * as variableMocks from 'modules/mock-schema/mocks/variables';
+import * as userMocks from 'modules/mock-schema/mocks/current-user';
 import {ReactQueryProvider} from 'modules/ReactQueryProvider';
-import {ApolloProvider} from '@apollo/client';
-import {client} from 'modules/apollo-client';
 
 const MOCK_FORM_ID = 'form-0';
 const MOCK_PROCESS_DEFINITION_KEY = 'process';
@@ -33,11 +31,9 @@ type Props = {
 };
 
 const Wrapper: React.FC<Props> = ({children}) => (
-  <ApolloProvider client={client}>
-    <ReactQueryProvider>
-      <MockThemeProvider>{children}</MockThemeProvider>
-    </ReactQueryProvider>
-  </ApolloProvider>
+  <ReactQueryProvider>
+    <MockThemeProvider>{children}</MockThemeProvider>
+  </ReactQueryProvider>
 );
 
 function areArraysEqual(firstArray: unknown[], secondArray: unknown[]) {
@@ -63,8 +59,8 @@ describe('<FormJS />', () => {
       rest.get('/v1/forms/:formId', (_, res, ctx) => {
         return res.once(ctx.json(formMocks.form));
       }),
-      graphql.query('GetCurrentUser', (_, res, ctx) => {
-        return res.once(ctx.data(mockGetCurrentUser));
+      rest.get('/v1/internal/users/current', (_, res, ctx) => {
+        return res.once(ctx.json(userMocks.currentUser));
       }),
     );
     jest.useFakeTimers();
@@ -99,7 +95,7 @@ describe('<FormJS />', () => {
         id={MOCK_FORM_ID}
         processDefinitionKey={MOCK_PROCESS_DEFINITION_KEY}
         task={unassignedTaskWithForm(MOCK_TASK_ID)}
-        user={mockGetCurrentUser.currentUser}
+        user={userMocks.currentUser}
         onSubmit={() => Promise.resolve()}
         onSubmitFailure={noop}
         onSubmitSuccess={noop}
@@ -148,7 +144,7 @@ describe('<FormJS />', () => {
         id={MOCK_FORM_ID}
         processDefinitionKey={MOCK_PROCESS_DEFINITION_KEY}
         task={assignedTaskWithForm(MOCK_TASK_ID)}
-        user={mockGetCurrentUser.currentUser}
+        user={userMocks.currentUser}
         onSubmit={() => Promise.resolve()}
         onSubmitFailure={noop}
         onSubmitSuccess={noop}
@@ -196,7 +192,7 @@ describe('<FormJS />', () => {
         id={MOCK_FORM_ID}
         processDefinitionKey={MOCK_PROCESS_DEFINITION_KEY}
         task={assignedTaskWithForm(MOCK_TASK_ID)}
-        user={mockGetCurrentUser.currentUser}
+        user={userMocks.currentUser}
         onSubmit={() => Promise.resolve()}
         onSubmitFailure={noop}
         onSubmitSuccess={noop}
@@ -242,7 +238,7 @@ describe('<FormJS />', () => {
         id={MOCK_FORM_ID}
         processDefinitionKey={MOCK_PROCESS_DEFINITION_KEY}
         task={assignedTaskWithForm(MOCK_TASK_ID)}
-        user={mockGetCurrentUser.currentUser}
+        user={userMocks.currentUser}
         onSubmit={mockOnSubmit}
         onSubmitFailure={noop}
         onSubmitSuccess={noop}
@@ -303,7 +299,7 @@ describe('<FormJS />', () => {
         id={MOCK_FORM_ID}
         processDefinitionKey={MOCK_PROCESS_DEFINITION_KEY}
         task={assignedTaskWithForm(MOCK_TASK_ID)}
-        user={mockGetCurrentUser.currentUser}
+        user={userMocks.currentUser}
         onSubmit={mockOnSubmit}
         onSubmitFailure={noop}
         onSubmitSuccess={noop}
@@ -374,7 +370,7 @@ describe('<FormJS />', () => {
         id={MOCK_FORM_ID}
         processDefinitionKey={MOCK_PROCESS_DEFINITION_KEY}
         task={assignedTaskWithForm(MOCK_TASK_ID)}
-        user={mockGetCurrentUser.currentUser}
+        user={userMocks.currentUser}
         onSubmit={() => Promise.resolve()}
         onSubmitFailure={noop}
         onSubmitSuccess={noop}

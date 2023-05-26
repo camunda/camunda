@@ -18,34 +18,24 @@ function mockResponses(
       });
     }
 
-    const {operationName} = route.request().postDataJSON();
-
-    switch (operationName) {
-      case 'GetCurrentUser':
-        return route.fulfill({
-          status: 200,
-          body: JSON.stringify({
-            data: {
-              currentUser: {
-                userId: 'demo',
-                displayName: 'demo',
-                permissions: ['READ', 'WRITE'],
-                salesPlanType: null,
-                roles: null,
-                c8Links: [],
-                __typename: 'User',
-              },
-            },
-          }),
-        });
-      default:
-        return route.fulfill({
-          status: 500,
-          body: JSON.stringify({
-            message: '',
-          }),
-        });
+    if (route.request().url().includes('v1/internal/users/current')) {
+      return route.fulfill({
+        status: 200,
+        body: JSON.stringify({
+          userId: 'demo',
+          displayName: 'demo',
+          permissions: ['READ', 'WRITE'],
+          salesPlanType: null,
+          roles: null,
+          c8Links: [],
+        }),
+        headers: {
+          'content-type': 'application/json',
+        },
+      });
     }
+
+    route.continue();
   };
 }
 
@@ -91,7 +81,7 @@ test.describe('processes page', () => {
     await page.addInitScript(() => {
       window.localStorage.setItem('hasConsentedToStartProcess', 'true');
     });
-    await page.route('**/{graphql,v1/internal/processes}**', mockResponses());
+    await page.route(/^.*\/(graphql|v1).*$/i, mockResponses());
 
     await page.goto('/processes?search=foo', {
       waitUntil: 'networkidle',

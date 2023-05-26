@@ -10,6 +10,7 @@ import {resetApolloStore} from 'modules/apollo-client';
 import {api} from 'modules/api';
 import {request} from 'modules/request';
 import {getStateLocally, storeStateLocally} from 'modules/utils/localStorage';
+import {reactQueryClient} from 'modules/ReactQueryProvider';
 
 type Status =
   | 'initial'
@@ -33,7 +34,9 @@ class Authentication {
   }
 
   handleLogin = async (username: string, password: string) => {
-    const {response, error} = await request(api.login({username, password}));
+    const {response, error} = await request(api.login({username, password}), {
+      skipSessionCheck: true,
+    });
 
     if (error === null) {
       this.activateSession();
@@ -61,13 +64,16 @@ class Authentication {
   };
 
   handleLogout = async () => {
-    const {error} = await request(api.logout);
+    const {error} = await request(api.logout, {
+      skipSessionCheck: true,
+    });
 
     if (error !== null) {
       return error;
     }
 
     resetApolloStore();
+    reactQueryClient.clear();
 
     if (
       !window.clientConfig?.canLogout ||

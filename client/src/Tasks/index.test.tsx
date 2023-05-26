@@ -9,13 +9,11 @@ import {render, screen, fireEvent, waitFor} from 'modules/testing-library';
 import {MemoryRouter} from 'react-router-dom';
 import {MockThemeProvider} from 'modules/theme/MockProvider';
 import {generateTask} from 'modules/mock-schema/mocks/tasks';
-import {mockGetCurrentUser} from 'modules/queries/get-current-user';
 import {Tasks} from './index';
-import {ApolloProvider} from '@apollo/client';
-import {client} from 'modules/apollo-client';
-import {graphql, rest} from 'msw';
+import {rest} from 'msw';
 import {nodeMockServer} from 'modules/mockServer/nodeMockServer';
 import {ReactQueryProvider} from 'modules/ReactQueryProvider';
+import * as userMocks from 'modules/mock-schema/mocks/current-user';
 
 const FIRST_PAGE = Array.from({length: 50}).map((_, index) =>
   generateTask(`${index}`),
@@ -31,11 +29,9 @@ type Props = {
 const Wrapper: React.FC<Props> = ({children}) => {
   return (
     <ReactQueryProvider>
-      <ApolloProvider client={client}>
-        <MemoryRouter initialEntries={['/']}>
-          <MockThemeProvider>{children}</MockThemeProvider>
-        </MemoryRouter>
-      </ApolloProvider>
+      <MemoryRouter initialEntries={['/']}>
+        <MockThemeProvider>{children}</MockThemeProvider>
+      </MemoryRouter>
     </ReactQueryProvider>
   );
 };
@@ -43,8 +39,8 @@ const Wrapper: React.FC<Props> = ({children}) => {
 describe('<Layout />', () => {
   it('should load more tasks', async () => {
     nodeMockServer.use(
-      graphql.query('GetCurrentUser', (_, res, ctx) => {
-        return res.once(ctx.data(mockGetCurrentUser));
+      rest.get('/v1/internal/users/current', (_, res, ctx) => {
+        return res.once(ctx.json(userMocks.currentUser));
       }),
       rest.post('/v1/tasks/search', async (req, res, ctx) => {
         const {searchAfter} = await req.json();

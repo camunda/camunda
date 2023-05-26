@@ -7,16 +7,16 @@
 
 import {render, screen} from 'modules/testing-library';
 import {nodeMockServer} from 'modules/mockServer/nodeMockServer';
-import {mockGetCurrentUser} from 'modules/queries/get-current-user';
-import {graphql} from 'msw';
+import {rest} from 'msw';
 import {Header} from '..';
 import {Wrapper} from './mocks';
+import * as userMocks from 'modules/mock-schema/mocks/current-user';
 
 describe('<Header />', () => {
   it('should render a header', async () => {
     nodeMockServer.use(
-      graphql.query('GetCurrentUser', (_, res, ctx) => {
-        return res(ctx.data(mockGetCurrentUser));
+      rest.get('/v1/internal/users/current', (_, res, ctx) => {
+        return res.once(ctx.json(userMocks.currentUser));
       }),
     );
 

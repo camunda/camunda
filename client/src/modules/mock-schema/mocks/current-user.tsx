@@ -5,19 +5,18 @@
  * except in compliance with the proprietary license.
  */
 
-import {User} from 'modules/types';
+import {CurrentUser} from 'modules/types';
 
-const currentUser: User = {
+const currentUser: CurrentUser = {
   userId: 'demo',
   displayName: 'Demo User',
   permissions: ['read', 'write'],
   salesPlanType: null,
   roles: [],
   c8Links: [],
-  __typename: 'User',
 };
 
-const currentUserWithC8Links: User = {
+const currentUserWithC8Links: CurrentUser = {
   userId: 'demo',
   displayName: 'Demo User',
   permissions: ['read', 'write'],
@@ -45,20 +44,18 @@ const currentUserWithC8Links: User = {
       link: 'https://link-to-console',
     },
   ],
-  __typename: 'User',
 };
 
-const currentRestrictedUser: User = {
+const currentRestrictedUser: CurrentUser = {
   userId: 'demo',
   displayName: 'Demo User',
   permissions: ['read'],
   salesPlanType: null,
   roles: [],
   c8Links: [],
-  __typename: 'User',
 };
 
-const currentUserWithUnknownRole: User = {
+const currentUserWithUnknownRole: CurrentUser = {
   userId: 'demo',
   displayName: 'Demo User',
   // @ts-ignore
@@ -66,10 +63,9 @@ const currentUserWithUnknownRole: User = {
   salesPlanType: null,
   roles: [],
   c8Links: [],
-  __typename: 'User',
 };
 
-const currentUserWithOutRole: User = {
+const currentUserWithoutRole: CurrentUser = {
   userId: 'demo',
   displayName: 'Demo User',
   // @ts-ignore
@@ -77,13 +73,12 @@ const currentUserWithOutRole: User = {
   salesPlanType: null,
   roles: [],
   c8Links: [],
-  __typename: 'User',
 };
 
 export {
   currentUser,
   currentRestrictedUser,
-  currentUserWithOutRole,
+  currentUserWithoutRole,
   currentUserWithUnknownRole,
   currentUserWithC8Links,
 };

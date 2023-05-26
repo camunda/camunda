@@ -8,26 +8,22 @@
 import {EmptyPage} from './index';
 import {render, screen} from 'modules/testing-library';
 import {MockThemeProvider} from 'modules/theme/MockProvider';
-import {ApolloProvider} from '@apollo/client';
-import {client} from 'modules/apollo-client';
 import {MemoryRouter} from 'react-router-dom';
 import {storeStateLocally, clearStateLocally} from 'modules/utils/localStorage';
 import {nodeMockServer} from 'modules/mockServer/nodeMockServer';
-import {graphql} from 'msw';
-import {
-  mockGetCurrentRestrictedUser,
-  mockGetCurrentUser,
-} from 'modules/queries/get-current-user';
+import {rest} from 'msw';
+import {ReactQueryProvider} from 'modules/ReactQueryProvider';
+import * as userMocks from 'modules/mock-schema/mocks/current-user';
 
 const getWrapper = () => {
   const Wrapper: React.FC<{
     children?: React.ReactNode;
   }> = ({children}) => (
-    <MockThemeProvider>
-      <ApolloProvider client={client}>
+    <ReactQueryProvider>
+      <MockThemeProvider>
         <MemoryRouter>{children}</MemoryRouter>
-      </ApolloProvider>
-    </MockThemeProvider>
+      </MockThemeProvider>
+    </ReactQueryProvider>
   );
 
   return Wrapper;
@@ -40,8 +36,8 @@ describe('<EmptyPage isLoadingTasks={false} hasNoTasks={false} />', () => {
 
   it('should hide part of the empty message for new users', async () => {
     nodeMockServer.use(
-      graphql.query('GetCurrentUser', (_, res, ctx) => {
-        return res.once(ctx.data(mockGetCurrentUser));
+      rest.get('/v1/internal/users/current', (_, res, ctx) => {
+        return res.once(ctx.json(userMocks.currentUser));
       }),
     );
 
@@ -62,8 +58,8 @@ describe('<EmptyPage isLoadingTasks={false} hasNoTasks={false} />', () => {
 
   it('should show an empty page message for new users', async () => {
     nodeMockServer.use(
-      graphql.query('GetCurrentUser', (_, res, ctx) => {
-        return res.once(ctx.data(mockGetCurrentUser));
+      rest.get('/v1/internal/users/current', (_, res, ctx) => {
+        return res.once(ctx.json(userMocks.currentUser));
       }),
     );
 
@@ -96,8 +92,8 @@ describe('<EmptyPage isLoadingTasks={false} hasNoTasks={false} />', () => {
 
   it('should show an empty page message for old users', async () => {
     nodeMockServer.use(
-      graphql.query('GetCurrentUser', (_, res, ctx) => {
-        return res.once(ctx.data(mockGetCurrentUser));
+      rest.get('/v1/internal/users/current', (_, res, ctx) => {
+        return res.once(ctx.json(userMocks.currentUser));
       }),
     );
 
@@ -116,8 +112,8 @@ describe('<EmptyPage isLoadingTasks={false} hasNoTasks={false} />', () => {
 
   it('should not show an empty page message for old users', async () => {
     nodeMockServer.use(
-      graphql.query('GetCurrentUser', (_, res, ctx) => {
-        return res.once(ctx.data(mockGetCurrentUser));
+      rest.get('/v1/internal/users/current', (_, res, ctx) => {
+        return res.once(ctx.json(userMocks.currentUser));
       }),
     );
 
@@ -140,8 +136,8 @@ describe('<EmptyPage isLoadingTasks={false} hasNoTasks={false} />', () => {
 
   it('should show an empty page message for old readonly users', async () => {
     nodeMockServer.use(
-      graphql.query('GetCurrentUser', (_, res, ctx) => {
-        return res.once(ctx.data(mockGetCurrentRestrictedUser));
+      rest.get('/v1/internal/users/current', (_, res, ctx) => {
+        return res.once(ctx.json(userMocks.currentRestrictedUser));
       }),
     );
 

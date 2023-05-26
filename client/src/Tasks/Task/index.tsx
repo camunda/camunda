@@ -7,16 +7,11 @@
 
 import {useEffect} from 'react';
 import {useLocation, useNavigate} from 'react-router-dom';
-import {useQuery} from '@apollo/client';
 import {useCompleteTask} from 'modules/mutations/useCompleteTask';
 import {getCompleteTaskErrorMessage} from './getCompleteTaskErrorMessage';
 import {shouldFetchMore} from './shouldFetchMore';
 import {Variables} from './Variables';
 import {Details} from './Details';
-import {
-  GetCurrentUser,
-  GET_CURRENT_USER,
-} from 'modules/queries/get-current-user';
 import {pages, useTaskDetailsParams} from 'modules/routing';
 import {Task as TaskType, Variable} from 'modules/types';
 import {FormJS} from './FormJS';
@@ -27,6 +22,7 @@ import {useTaskFilters} from 'modules/hooks/useTaskFilters';
 import {DetailsSkeleton} from './Details/DetailsSkeleton';
 import {useTask} from 'modules/queries/useTask';
 import {isRequestError} from 'modules/request';
+import {useCurrentUser} from 'modules/queries/useCurrentUser';
 
 const CAMUNDA_FORMS_PREFIX = 'camunda-forms:bpmn:';
 
@@ -51,7 +47,7 @@ const Task: React.FC<Props> = ({hasRemainingTasks, onCompleted}) => {
     refetchOnWindowFocus: false,
     refetchOnReconnect: false,
   });
-  const {data: userData} = useQuery<GetCurrentUser>(GET_CURRENT_USER);
+  const {data: currentUser} = useCurrentUser();
   const {mutateAsync: completeTask} = useCompleteTask();
   const {filter} = useTaskFilters();
   const {formKey, processDefinitionKey, id: taskId} = task ?? {id};
@@ -116,22 +112,18 @@ const Task: React.FC<Props> = ({hasRemainingTasks, onCompleted}) => {
     }
   }
 
-  if (task === undefined || userData === undefined) {
+  if (task === undefined || currentUser === undefined) {
     return <DetailsSkeleton data-testid="details-skeleton" />;
   }
 
   return (
-    <Details
-      task={task}
-      user={userData.currentUser}
-      onAssignmentError={refetch}
-    >
+    <Details task={task} user={currentUser} onAssignmentError={refetch}>
       {isFormAvailable ? (
         <FormJS
           key={task.id}
           task={task}
           id={getFormId(formKey)}
-          user={userData.currentUser}
+          user={currentUser}
           onSubmit={handleSubmission}
           onSubmitSuccess={handleSubmissionSuccess}
           onSubmitFailure={handleSubmissionFailure}
@@ -141,7 +133,7 @@ const Task: React.FC<Props> = ({hasRemainingTasks, onCompleted}) => {
         <Variables
           key={task.id}
           task={task}
-          user={userData.currentUser}
+          user={currentUser}
           onSubmit={handleSubmission}
           onSubmitSuccess={handleSubmissionSuccess}
           onSubmitFailure={handleSubmissionFailure}

@@ -5,16 +5,20 @@
  * except in compliance with the proprietary license.
  */
 
-import {render, screen, within} from 'modules/testing-library';
+import {
+  render,
+  screen,
+  waitForElementToBeRemoved,
+  within,
+} from 'modules/testing-library';
 import {AvailableTasks} from './index';
 import {MockThemeProvider} from 'modules/theme/MockProvider';
 import {Link, MemoryRouter} from 'react-router-dom';
 import {nodeMockServer} from 'modules/mockServer/nodeMockServer';
-import {graphql} from 'msw';
-import {mockGetCurrentUser} from 'modules/queries/get-current-user';
-import {ApolloProvider} from '@apollo/client';
-import {client} from 'modules/apollo-client';
+import {rest} from 'msw';
 import * as tasksMocks from 'modules/mock-schema/mocks/tasks';
+import {ReactQueryProvider} from 'modules/ReactQueryProvider';
+import * as userMocks from 'modules/mock-schema/mocks/current-user';
 
 function noop() {
   return Promise.resolve([]);
@@ -28,14 +32,14 @@ const getWrapper = (
   const Wrapper: React.FC<{
     children?: React.ReactNode;
   }> = ({children}) => (
-    <ApolloProvider client={client}>
+    <ReactQueryProvider>
       <MockThemeProvider>
         <MemoryRouter initialEntries={initialEntries}>
           {children}
           <Link to="/">go home</Link>
         </MemoryRouter>
       </MockThemeProvider>
-    </ApolloProvider>
+    </ReactQueryProvider>
   );
 
   return Wrapper;
@@ -44,8 +48,8 @@ const getWrapper = (
 describe('<Tasks />', () => {
   beforeEach(() => {
     nodeMockServer.use(
-      graphql.query('GetCurrentUser', (_, res, ctx) => {
-        return res.once(ctx.data(mockGetCurrentUser));
+      rest.get('/v1/internal/users/current', (_, res, ctx) => {
+        return res.once(ctx.json(userMocks.currentUser));
       }),
     );
   });
@@ -75,6 +79,8 @@ describe('<Tasks />', () => {
       />,
     );
 
+    await waitForElementToBeRemoved(screen.getByTestId('tasks-skeleton'));
+
     expect(screen.queryByTestId('tasks-skeleton')).not.toBeInTheDocument();
     expect(screen.getByTestId('task-0')).toBeInTheDocument();
   });
@@ -89,6 +95,8 @@ describe('<Tasks />', () => {
       />,
       {wrapper: getWrapper()},
     );
+
+    await waitForElementToBeRemoved(screen.getByTestId('tasks-skeleton'));
 
     const [firstTask, secondTask] = tasksMocks.tasks;
 
@@ -126,6 +134,8 @@ describe('<Tasks />', () => {
       />,
       {wrapper: getWrapper()},
     );
+
+    await waitForElementToBeRemoved(screen.getByTestId('tasks-skeleton'));
 
     expect(screen.getByText('No tasks found')).toBeInTheDocument();
     expect(

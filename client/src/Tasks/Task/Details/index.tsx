@@ -25,7 +25,7 @@ import {notificationsStore} from 'modules/stores/notifications';
 import {AsyncActionButton} from 'modules/components/AsyncActionButton';
 import {BodyCompact, Label} from 'modules/components/FontTokens';
 import {ContainedList, ContainedListItem, Tag} from '@carbon/react';
-import {Task, User} from 'modules/types';
+import {Task, CurrentUser} from 'modules/types';
 import {useUnassignTask} from 'modules/mutations/useUnassignTask';
 import {useAssignTask} from 'modules/mutations/useAssignTask';
 
@@ -47,7 +47,7 @@ type Props = {
   children?: React.ReactNode;
   task: Task;
   onAssignmentError: () => void;
-  user: User;
+  user: CurrentUser;
 };
 
 const Details: React.FC<Props> = ({

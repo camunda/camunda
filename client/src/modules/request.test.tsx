@@ -19,10 +19,12 @@ describe('request', () => {
       ),
     );
 
-    const response = await request(MOCK_URL, {
-      method: 'POST',
-      body: JSON.stringify({username: 'demo', password: 'demo'}),
-    });
+    const response = await request(
+      new Request(MOCK_URL, {
+        method: 'POST',
+        body: JSON.stringify({username: 'demo', password: 'demo'}),
+      }),
+    );
 
     expect(response).toStrictEqual({
       response: expect.objectContaining({
@@ -39,10 +41,12 @@ describe('request', () => {
       ),
     );
 
-    const response = await request(MOCK_URL, {
-      method: 'POST',
-      body: JSON.stringify({username: 'demo', password: 'demo'}),
-    });
+    const response = await request(
+      new Request(MOCK_URL, {
+        method: 'POST',
+        body: JSON.stringify({username: 'demo', password: 'demo'}),
+      }),
+    );
 
     expect(response).toStrictEqual({
       response: null,
@@ -61,10 +65,12 @@ describe('request', () => {
       rest.post(MOCK_URL, (_, res) => res.networkError('Failed to connect')),
     );
 
-    const response = await request(MOCK_URL, {
-      method: 'POST',
-      body: JSON.stringify({username: 'demo', password: 'demo'}),
-    });
+    const response = await request(
+      new Request(MOCK_URL, {
+        method: 'POST',
+        body: JSON.stringify({username: 'demo', password: 'demo'}),
+      }),
+    );
 
     expect(response).toStrictEqual({
       response: null,

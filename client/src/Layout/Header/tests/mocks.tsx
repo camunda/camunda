@@ -5,9 +5,8 @@
  * except in compliance with the proprietary license.
  */
 
-import {ApolloProvider} from '@apollo/client';
+import {ReactQueryProvider} from 'modules/ReactQueryProvider';
 import {MockThemeProvider} from 'modules/theme/MockProvider';
-import {client} from 'modules/apollo-client';
 import {MemoryRouter} from 'react-router-dom';
 
 type Props = {
@@ -15,11 +14,11 @@ type Props = {
 };
 
 const Wrapper: React.FC<Props> = ({children}) => (
-  <ApolloProvider client={client}>
+  <ReactQueryProvider>
     <MockThemeProvider>
       <MemoryRouter initialEntries={['/']}>{children}</MemoryRouter>
     </MockThemeProvider>
-  </ApolloProvider>
+  </ReactQueryProvider>
 );
 
 export {Wrapper};

@@ -11,24 +11,18 @@ import {
   waitFor,
   waitForElementToBeRemoved,
 } from 'modules/testing-library';
-import {
-  mockGetCurrentUser,
-  mockGetCurrentRestrictedUser,
-  GetCurrentUser,
-  GET_CURRENT_USER,
-} from 'modules/queries/get-current-user';
 import {MockThemeProvider} from 'modules/theme/MockProvider';
 import {Variables} from './index';
 import * as taskMocks from 'modules/mock-schema/mocks/task';
 import * as variableMocks from 'modules/mock-schema/mocks/variables';
-import {ApolloProvider, useQuery} from '@apollo/client';
-import {client} from 'modules/apollo-client';
+import * as userMocks from 'modules/mock-schema/mocks/current-user';
 import {nodeMockServer} from 'modules/mockServer/nodeMockServer';
-import {graphql, rest} from 'msw';
+import {rest} from 'msw';
 import noop from 'lodash/noop';
 import {currentUser} from 'modules/mock-schema/mocks/current-user';
 import {Variable} from 'modules/types';
 import {ReactQueryProvider} from 'modules/ReactQueryProvider';
+import {useCurrentUser} from 'modules/queries/useCurrentUser';
 
 type Props = {
   children?: React.ReactNode;
@@ -36,9 +30,7 @@ type Props = {
 
 const Wrapper: React.FC<Props> = ({children}) => (
   <ReactQueryProvider>
-    <ApolloProvider client={client}>
-      <MockThemeProvider>{children}</MockThemeProvider>
-    </ApolloProvider>
+    <MockThemeProvider>{children}</MockThemeProvider>
   </ReactQueryProvider>
 );
 
@@ -53,8 +45,8 @@ describe('<Variables />', () => {
 
   beforeEach(() => {
     nodeMockServer.use(
-      graphql.query('GetCurrentUser', (_, res, ctx) => {
-        return res.once(ctx.data(mockGetCurrentUser));
+      rest.get('/v1/internal/users/current', (_, res, ctx) => {
+        return res.once(ctx.json(userMocks.currentUser));
       }),
     );
 
@@ -551,14 +543,14 @@ describe('<Variables />', () => {
 
   it('should not be able to change variable, add variable and complete task if user has no permission', async () => {
     const UserName: React.FC = () => {
-      const {data} = useQuery<GetCurrentUser>(GET_CURRENT_USER);
+      const {data: currentUser} = useCurrentUser();
 
-      return <div>{data?.currentUser.displayName}</div>;
+      return <div>{currentUser?.displayName}</div>;
     };
 
     nodeMockServer.use(
-      graphql.query('GetCurrentUser', (_, res, ctx) => {
-        return res.once(ctx.data(mockGetCurrentRestrictedUser));
+      rest.get('/v1/internal/users/current', (_, res, ctx) => {
+        return res.once(ctx.json(userMocks.currentRestrictedUser));
       }),
       rest.post('/v1/tasks/:taskId/variables/search', (_, res, ctx) => {
         return res.once(ctx.json(variableMocks.variables));
@@ -781,8 +773,8 @@ describe('<Variables />', () => {
 
   it('should complete a task with a truncated variable', async () => {
     nodeMockServer.use(
-      graphql.query('GetCurrentUser', (_, res, ctx) => {
-        return res.once(ctx.data(mockGetCurrentUser));
+      rest.get('/v1/internal/users/current', (_, res, ctx) => {
+        return res.once(ctx.json(userMocks.currentUser));
       }),
       rest.post('/v1/tasks/:taskId/variables/search', (_, res, ctx) => {
         return res.once(ctx.json(variableMocks.truncatedVariables));
@@ -844,8 +836,8 @@ describe('<Variables />', () => {
     };
     const mockNewValue = '"new-value"';
     nodeMockServer.use(
-      graphql.query('GetCurrentUser', (_, res, ctx) => {
-        return res.once(ctx.data(mockGetCurrentUser));
+      rest.get('/v1/internal/users/current', (_, res, ctx) => {
+        return res.once(ctx.json(userMocks.currentUser));
       }),
       rest.post('/v1/tasks/:taskId/variables/search', (_, res, ctx) => {
         return res.once(ctx.json(variableMocks.truncatedVariables));

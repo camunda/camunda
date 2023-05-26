@@ -9,13 +9,8 @@ import React from 'react';
 import {Row, Label, TaskLink, Stack, Container, Tag} from './styled';
 import {pages} from 'modules/routing';
 import {formatDate} from 'modules/utils/formatDate';
-import {Task as TaskType} from 'modules/types';
+import {CurrentUser, Task as TaskType} from 'modules/types';
 import {useLocation, useMatch} from 'react-router-dom';
-import {useQuery} from '@apollo/client';
-import {
-  GetCurrentUser,
-  GET_CURRENT_USER,
-} from 'modules/queries/get-current-user';
 import {useTaskFilters} from 'modules/hooks/useTaskFilters';
 import {BodyCompact} from 'modules/components/FontTokens';
 
@@ -27,22 +22,24 @@ type Props = {
   creationDate: TaskType['creationDate'];
   followUpDate: TaskType['followUpDate'];
   dueDate: TaskType['dueDate'];
+  currentUser: CurrentUser;
 };
 
 const Task = React.forwardRef<HTMLElement, Props>(
   (
-    {taskId, name, processName, assignee, creationDate, followUpDate, dueDate},
+    {
+      taskId,
+      name,
+      processName,
+      assignee,
+      creationDate,
+      followUpDate,
+      dueDate,
+      currentUser,
+    },
     ref,
   ) => {
-    const {data} = useQuery<GetCurrentUser>(GET_CURRENT_USER);
-    const {
-      currentUser: {userId, displayName},
-    } = data ?? {
-      currentUser: {
-        userId: null,
-        displayName: null,
-      },
-    };
+    const {userId, displayName} = currentUser;
     const isUnassigned = assignee === null || userId === null;
     const isAssignedToMe = assignee === userId;
     const match = useMatch('/:id');

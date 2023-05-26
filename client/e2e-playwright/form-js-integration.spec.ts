@@ -34,8 +34,6 @@ test.describe('form-js integration', () => {
       height: 10000,
     });
     await page.route(/^.*\/(graphql|v1).*$/i, (route) => {
-      const {operationName} = route.request().postDataJSON();
-
       if (route.request().url().includes('v1/tasks/task123/variables/search')) {
         return route.fulfill({
           status: 200,
@@ -80,32 +78,24 @@ test.describe('form-js integration', () => {
         });
       }
 
-      switch (operationName) {
-        case 'GetCurrentUser':
-          return route.fulfill({
-            status: 200,
-            body: JSON.stringify({
-              data: {
-                currentUser: {
-                  userId: 'demo',
-                  displayName: 'demo',
-                  permissions: ['READ', 'WRITE'],
-                  salesPlanType: null,
-                  roles: null,
-                  c8Links: [],
-                  __typename: 'User',
-                },
-              },
-            }),
-          });
-        default:
-          return route.fulfill({
-            status: 500,
-            body: JSON.stringify({
-              message: '',
-            }),
-          });
+      if (route.request().url().includes('v1/internal/users/current')) {
+        return route.fulfill({
+          status: 200,
+          body: JSON.stringify({
+            userId: 'demo',
+            displayName: 'demo',
+            permissions: ['READ', 'WRITE'],
+            salesPlanType: null,
+            roles: null,
+            c8Links: [],
+          }),
+          headers: {
+            'content-type': 'application/json',
+          },
+        });
       }
+
+      route.continue();
     });
 
     await page.goto('/1');

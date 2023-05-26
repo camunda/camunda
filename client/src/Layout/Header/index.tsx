@@ -12,16 +12,12 @@ import {authenticationStore} from 'modules/stores/authentication';
 import {C3Navigation} from '@camunda/camunda-composite-components';
 import {Link, matchPath, useLocation} from 'react-router-dom';
 import {useEffect} from 'react';
-import {useQuery} from '@apollo/client';
-import {
-  GetCurrentUser,
-  GET_CURRENT_USER,
-} from 'modules/queries/get-current-user';
 import capitalize from 'lodash/capitalize';
 import {ArrowRight} from '@carbon/react/icons';
 import {themeStore} from 'modules/stores/theme';
 import {observer} from 'mobx-react-lite';
 import {usePermissions} from 'modules/hooks/usePermissions';
+import {useCurrentUser} from 'modules/queries/useCurrentUser';
 
 const orderedApps = [
   'console',
@@ -44,9 +40,9 @@ const Header: React.FC = observer(() => {
   const location = useLocation();
   const isProcessesPage =
     matchPath(pages.processes, location.pathname) !== null;
-  const {data} = useQuery<GetCurrentUser>(GET_CURRENT_USER);
+  const {data: currentUser} = useCurrentUser();
   const {selectedTheme, changeTheme} = themeStore;
-  const {displayName, salesPlanType, c8Links} = data?.currentUser ?? {
+  const {displayName, salesPlanType, c8Links} = currentUser ?? {
     displayName: null,
     salesPlanType: null,
     c8Links: [],
@@ -79,10 +75,10 @@ const Header: React.FC = observer(() => {
       IS_RESOURCE_PERMISSIONS_ENABLED ||
       APP_VERSION.includes('SNAPSHOT'));
   useEffect(() => {
-    if (data?.currentUser) {
-      tracking.identifyUser(data?.currentUser);
+    if (currentUser) {
+      tracking.identifyUser(currentUser);
     }
-  }, [data]);
+  }, [currentUser]);
 
   return (
     <C3Navigation

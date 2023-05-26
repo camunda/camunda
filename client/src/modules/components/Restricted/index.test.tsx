@@ -7,25 +7,18 @@
 
 import {Restricted} from './index';
 import {render, screen} from 'modules/testing-library';
-import {graphql} from 'msw';
+import {rest} from 'msw';
 import {nodeMockServer} from 'modules/mockServer/nodeMockServer';
-import {
-  GET_CURRENT_USER,
-  GetCurrentUser,
-  mockGetCurrentUser,
-  mockGetCurrentRestrictedUser,
-  mockGetCurrentUserWithUnknownRole,
-  mockGetCurrentUserWithoutRole,
-} from 'modules/queries/get-current-user';
 import {MemoryRouter} from 'react-router-dom';
 import {MockThemeProvider} from 'modules/theme/MockProvider';
-import {ApolloProvider, useQuery} from '@apollo/client';
-import {client} from 'modules/apollo-client';
+import {useCurrentUser} from 'modules/queries/useCurrentUser';
+import * as userMocks from 'modules/mock-schema/mocks/current-user';
+import {ReactQueryProvider} from 'modules/ReactQueryProvider';
 
 const UserName = () => {
-  const {data} = useQuery<GetCurrentUser>(GET_CURRENT_USER);
+  const {data: currentUser} = useCurrentUser();
 
-  return <div>{data?.currentUser.displayName}</div>;
+  return <div>{currentUser?.displayName}</div>;
 };
 type Props = {
   children?: React.ReactNode;
@@ -33,7 +26,7 @@ type Props = {
 
 const Wrapper: React.FC<Props> = ({children}) => {
   return (
-    <ApolloProvider client={client}>
+    <ReactQueryProvider>
       <MemoryRouter initialEntries={['/']}>
         <MockThemeProvider>
           <>
@@ -42,15 +35,15 @@ const Wrapper: React.FC<Props> = ({children}) => {
           </>
         </MockThemeProvider>
       </MemoryRouter>
-    </ApolloProvider>
+    </ReactQueryProvider>
   );
 };
 
 describe('Restricted', () => {
   it('should not render content that user has no permission for', async () => {
     nodeMockServer.use(
-      graphql.query('GetCurrentUser', (_, res, ctx) => {
-        return res.once(ctx.data(mockGetCurrentRestrictedUser));
+      rest.get('/v1/internal/users/current', (_, res, ctx) => {
+        return res.once(ctx.json(userMocks.currentRestrictedUser));
       }),
     );
 
@@ -67,8 +60,8 @@ describe('Restricted', () => {
 
   it('should render content that user has permission for at least one scope', async () => {
     nodeMockServer.use(
-      graphql.query('GetCurrentUser', (_, res, ctx) => {
-        return res.once(ctx.data(mockGetCurrentRestrictedUser));
+      rest.get('/v1/internal/users/current', (_, res, ctx) => {
+        return res.once(ctx.json(userMocks.currentRestrictedUser));
       }),
     );
 
@@ -85,8 +78,8 @@ describe('Restricted', () => {
 
   it('should render content that user has permission for', async () => {
     nodeMockServer.use(
-      graphql.query('GetCurrentUser', (_, res, ctx) => {
-        return res.once(ctx.data(mockGetCurrentUser));
+      rest.get('/v1/internal/users/current', (_, res, ctx) => {
+        return res.once(ctx.json(userMocks.currentUser));
       }),
     );
 
@@ -103,8 +96,8 @@ describe('Restricted', () => {
 
   it('should not render content when API returns an unknown permission', async () => {
     nodeMockServer.use(
-      graphql.query('GetCurrentUser', (_, res, ctx) => {
-        return res.once(ctx.data(mockGetCurrentUserWithUnknownRole));
+      rest.get('/v1/internal/users/current', (_, res, ctx) => {
+        return res.once(ctx.json(userMocks.currentUserWithUnknownRole));
       }),
     );
 
@@ -121,8 +114,8 @@ describe('Restricted', () => {
 
   it('should not render content when API returns no permissions', async () => {
     nodeMockServer.use(
-      graphql.query('GetCurrentUser', (_, res, ctx) => {
-        return res.once(ctx.data(mockGetCurrentUserWithoutRole));
+      rest.get('/v1/internal/users/current', (_, res, ctx) => {
+        return res.once(ctx.json(userMocks.currentUserWithoutRole));
       }),
     );
 
@@ -139,8 +132,8 @@ describe('Restricted', () => {
 
   it('should render a fallback', async () => {
     nodeMockServer.use(
-      graphql.query('GetCurrentUser', (_, res, ctx) => {
-        return res.once(ctx.data(mockGetCurrentRestrictedUser));
+      rest.get('/v1/internal/users/current', (_, res, ctx) => {
+        return res.once(ctx.json(userMocks.currentRestrictedUser));
       }),
     );
 

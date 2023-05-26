@@ -7,14 +7,11 @@
 
 import {render, screen} from 'modules/testing-library';
 import {nodeMockServer} from 'modules/mockServer/nodeMockServer';
-import {
-  mockGetCurrentUser,
-  mockGetCurrentUserWithCustomSalesPlanType,
-} from 'modules/queries/get-current-user';
-import {User} from 'modules/types';
-import {graphql} from 'msw';
+import {CurrentUser} from 'modules/types';
+import {rest} from 'msw';
 import {Header} from '..';
 import {Wrapper} from './mocks';
+import * as userMocks from 'modules/mock-schema/mocks/current-user';
 
 describe('Info bar', () => {
   beforeAll(() => {
@@ -31,8 +28,8 @@ describe('Info bar', () => {
     window.open = mockOpenFn;
 
     nodeMockServer.use(
-      graphql.query('GetCurrentUser', (_, res, ctx) => {
-        return res(ctx.data(mockGetCurrentUser));
+      rest.get('/v1/internal/users/current', (_, res, ctx) => {
+        return res.once(ctx.json(userMocks.currentUser));
       }),
     );
 
@@ -71,7 +68,7 @@ describe('Info bar', () => {
     window.open = originalWindowOpen;
   });
 
-  it.each<[User['salesPlanType'], string]>([
+  it.each<[CurrentUser['salesPlanType'], string]>([
     ['free', 'https://forum.camunda.io/'],
     ['enterprise', 'https://jira.camunda.com/projects/SUPPORT/queues'],
     ['paid-cc', 'https://jira.camunda.com/projects/SUPPORT/queues'],
@@ -79,9 +76,12 @@ describe('Info bar', () => {
     'should render correct links for feedback and support - %p',
     async (salesPlanType, link) => {
       nodeMockServer.use(
-        graphql.query('GetCurrentUser', (_, res, ctx) => {
-          return res(
-            ctx.data(mockGetCurrentUserWithCustomSalesPlanType(salesPlanType)),
+        rest.get('/v1/internal/users/current', (_, res, ctx) => {
+          return res.once(
+            ctx.json({
+              ...userMocks.currentUser,
+              salesPlanType,
+            }),
           );
         }),
       );

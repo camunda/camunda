@@ -7,11 +7,11 @@
 
 import {render, screen} from 'modules/testing-library';
 import {nodeMockServer} from 'modules/mockServer/nodeMockServer';
-import {mockGetCurrentUserWithC8Links} from 'modules/queries/get-current-user';
-import {graphql} from 'msw';
+import {rest} from 'msw';
 import {Header} from '..';
 import {Wrapper} from './mocks';
 import {DEFAULT_MOCK_CLIENT_CONFIG} from 'modules/mocks/window';
+import * as userMocks from 'modules/mock-schema/mocks/current-user';
 
 describe('App switcher', () => {
   beforeAll(() => {
@@ -34,8 +34,8 @@ describe('App switcher', () => {
     };
 
     nodeMockServer.use(
-      graphql.query('GetCurrentUser', (_, res, ctx) => {
-        return res(ctx.data(mockGetCurrentUserWithC8Links));
+      rest.get('/v1/internal/users/current', (_, res, ctx) => {
+        return res.once(ctx.json(userMocks.currentUserWithC8Links));
       }),
     );
 
@@ -79,8 +79,8 @@ describe('App switcher', () => {
     };
 
     nodeMockServer.use(
-      graphql.query('GetCurrentUser', (_, res, ctx) => {
-        return res(ctx.data(mockGetCurrentUserWithC8Links));
+      rest.get('/v1/internal/users/current', (_, res, ctx) => {
+        return res.once(ctx.json(userMocks.currentUserWithC8Links));
       }),
     );
 

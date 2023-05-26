@@ -37,7 +37,7 @@ import {
   createNewVariableFieldName,
 } from './createVariableFieldName';
 import {getVariableFieldName} from './getVariableFieldName';
-import {Variable, User, Task} from 'modules/types';
+import {Variable, CurrentUser, Task} from 'modules/types';
 import {DetailsFooter} from 'modules/components/DetailsFooter';
 import {ResetForm} from './ResetForm';
 import {FormValues} from './types';
@@ -94,7 +94,7 @@ type Props = {
   onSubmitSuccess: () => void;
   onSubmitFailure: (error: Error) => void;
   task: Task;
-  user: User;
+  user: CurrentUser;
 };
 
 const Variables: React.FC<Props> = ({

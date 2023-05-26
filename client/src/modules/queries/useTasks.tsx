@@ -5,7 +5,6 @@
  * except in compliance with the proprietary license.
  */
 
-import {useQuery as useApolloQuery} from '@apollo/client';
 import {
   InfiniteData,
   useInfiniteQuery,
@@ -14,10 +13,10 @@ import {
 import {api} from 'modules/api';
 import {RequestError, request} from 'modules/request';
 import {Task} from 'modules/types';
-import {GET_CURRENT_USER, GetCurrentUser} from './get-current-user';
 import {getQueryVariables} from 'modules/utils/getQueryVariables';
 import {useTaskFilters} from 'modules/hooks/useTaskFilters';
 import chunk from 'lodash/chunk';
+import {useCurrentUser} from './useCurrentUser';
 
 const POLLING_INTERVAL = 5000;
 const MAX_TASKS_DISPLAYED = 200;
@@ -39,10 +38,10 @@ function getQueryKey(keys: unknown[]) {
 }
 
 function useTasks() {
-  const currentUserResult = useApolloQuery<GetCurrentUser>(GET_CURRENT_USER);
+  const {data: currentUser} = useCurrentUser();
   const filters = useTaskFilters();
   const payload = getQueryVariables(filters, {
-    assignee: currentUserResult.data?.currentUser.userId,
+    assignee: currentUser?.userId,
     pageSize: MAX_TASKS_PER_REQUEST,
   });
   const client = useQueryClient();

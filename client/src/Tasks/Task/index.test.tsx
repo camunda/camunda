@@ -14,16 +14,14 @@ import {
   waitForElementToBeRemoved,
 } from 'modules/testing-library';
 import {MockThemeProvider} from 'modules/theme/MockProvider';
-import {mockGetCurrentUser} from 'modules/queries/get-current-user';
-import {ApolloProvider} from '@apollo/client';
-import {client} from 'modules/apollo-client';
-import {graphql, rest} from 'msw';
+import {rest} from 'msw';
 import {nodeMockServer} from 'modules/mockServer/nodeMockServer';
 import {LocationLog} from 'modules/utils/LocationLog';
 import {notificationsStore} from 'modules/stores/notifications';
 import * as formMocks from 'modules/mock-schema/mocks/form';
 import * as variableMocks from 'modules/mock-schema/mocks/variables';
 import * as taskMocks from 'modules/mock-schema/mocks/task';
+import * as userMocks from 'modules/mock-schema/mocks/current-user';
 import {ReactQueryProvider} from 'modules/ReactQueryProvider';
 
 jest.mock('modules/stores/notifications', () => ({
@@ -42,16 +40,14 @@ const getWrapper = (
   const Wrapper: React.FC<Props> = ({children}) => {
     return (
       <ReactQueryProvider>
-        <ApolloProvider client={client}>
-          <MockThemeProvider>
-            <MemoryRouter initialEntries={initialEntries}>
-              <Routes>
-                <Route path="/:id" element={children} />
-                <Route path="*" element={<LocationLog />} />
-              </Routes>
-            </MemoryRouter>
-          </MockThemeProvider>
-        </ApolloProvider>
+        <MockThemeProvider>
+          <MemoryRouter initialEntries={initialEntries}>
+            <Routes>
+              <Route path="/:id" element={children} />
+              <Route path="*" element={<LocationLog />} />
+            </Routes>
+          </MemoryRouter>
+        </MockThemeProvider>
       </ReactQueryProvider>
     );
   };
@@ -82,8 +78,8 @@ describe('<Task />', () => {
       rest.get('/v1/tasks/:taskId', (_, res, ctx) => {
         return res.once(ctx.json(taskMocks.assignedTask()));
       }),
-      graphql.query('GetCurrentUser', (_, res, ctx) => {
-        return res.once(ctx.data(mockGetCurrentUser));
+      rest.get('/v1/internal/users/current', (_, res, ctx) => {
+        return res.once(ctx.json(userMocks.currentUser));
       }),
       rest.post('/v1/tasks/:taskId/variables/search', (_, res, ctx) => {
         return res.once(ctx.json(variableMocks.variables));
@@ -104,8 +100,8 @@ describe('<Task />', () => {
       rest.get('/v1/tasks/:taskId', (_, res, ctx) => {
         return res.once(ctx.json(taskMocks.assignedTaskWithForm()));
       }),
-      graphql.query('GetCurrentUser', (_, res, ctx) => {
-        return res.once(ctx.data(mockGetCurrentUser));
+      rest.get('/v1/internal/users/current', (_, res, ctx) => {
+        return res.once(ctx.json(userMocks.currentUser));
       }),
       rest.get('/v1/forms/:formId', (_, res, ctx) => {
         return res.once(ctx.json(formMocks.form));
@@ -138,8 +134,8 @@ describe('<Task />', () => {
       rest.get('/v1/tasks/:taskId', (_, res, ctx) => {
         return res.once(ctx.json(taskMocks.completedTask()));
       }),
-      graphql.query('GetCurrentUser', (_, res, ctx) => {
-        return res.once(ctx.data(mockGetCurrentUser));
+      rest.get('/v1/internal/users/current', (_, res, ctx) => {
+        return res.once(ctx.json(userMocks.currentUser));
       }),
       rest.post('/v1/tasks/:taskId/variables/search', (_, res, ctx) => {
         return res.once(ctx.json(variableMocks.variables));
@@ -162,8 +158,8 @@ describe('<Task />', () => {
       rest.get('/v1/tasks/:taskId', (_, res, ctx) => {
         return res.once(ctx.json(taskMocks.completedTaskWithForm()));
       }),
-      graphql.query('GetCurrentUser', (_, res, ctx) => {
-        return res.once(ctx.data(mockGetCurrentUser));
+      rest.get('/v1/internal/users/current', (_, res, ctx) => {
+        return res.once(ctx.json(userMocks.currentUser));
       }),
       rest.get('/v1/forms/:formId', (_, res, ctx) => {
         return res.once(ctx.json(formMocks.form));
@@ -187,8 +183,8 @@ describe('<Task />', () => {
       rest.get('/v1/tasks/:taskId', (_, res, ctx) => {
         return res.once(ctx.json(taskMocks.assignedTask()));
       }),
-      graphql.query('GetCurrentUser', (_, res, ctx) => {
-        return res.once(ctx.data(mockGetCurrentUser));
+      rest.get('/v1/internal/users/current', (_, res, ctx) => {
+        return res.once(ctx.json(userMocks.currentUser));
       }),
       rest.patch('/v1/tasks/:taskId/complete', (_, res, ctx) => {
         return res.once(ctx.json(taskMocks.completedTask()));
@@ -222,8 +218,8 @@ describe('<Task />', () => {
       rest.get('/v1/tasks/:taskId', (_, res, ctx) => {
         return res.once(ctx.json(taskMocks.assignedTask()));
       }),
-      graphql.query('GetCurrentUser', (_, res, ctx) => {
-        return res.once(ctx.data(mockGetCurrentUser));
+      rest.get('/v1/internal/users/current', (_, res, ctx) => {
+        return res.once(ctx.json(userMocks.currentUser));
       }),
       rest.patch('/v1/tasks/:taskId/complete', (_, res) => {
         return res.networkError('Network error');
@@ -263,8 +259,8 @@ describe('<Task />', () => {
       rest.get('/v1/tasks/:taskId', (_, res, ctx) => {
         return res.once(ctx.json(taskMocks.assignedTask()));
       }),
-      graphql.query('GetCurrentUser', (_, res, ctx) => {
-        return res.once(ctx.data(mockGetCurrentUser));
+      rest.get('/v1/internal/users/current', (_, res, ctx) => {
+        return res.once(ctx.json(userMocks.currentUser));
       }),
       rest.post('/v1/tasks/:taskId/variables/search', (_, res, ctx) => {
         return res.once(ctx.json(variableMocks.variables));
@@ -290,8 +286,8 @@ describe('<Task />', () => {
       rest.get('/v1/tasks/:taskId', (_, res, ctx) => {
         return res.once(ctx.json(taskMocks.assignedTask()));
       }),
-      graphql.query('GetCurrentUser', (_, res, ctx) => {
-        return res.once(ctx.data(mockGetCurrentUser));
+      rest.get('/v1/internal/users/current', (_, res, ctx) => {
+        return res.once(ctx.json(userMocks.currentUser));
       }),
       rest.post('/v1/tasks/:taskId/variables/search', (_, res, ctx) => {
         return res.once(ctx.json([]));
@@ -335,9 +331,9 @@ describe('<Task />', () => {
 
   it('should render created task with variables form', async () => {
     nodeMockServer.use(
-      graphql.query('GetCurrentUser', (_, res, ctx) =>
-        res.once(ctx.data(mockGetCurrentUser)),
-      ),
+      rest.get('/v1/internal/users/current', (_, res, ctx) => {
+        return res.once(ctx.json(userMocks.currentUser));
+      }),
       rest.get('/v1/tasks/:taskId', (_, res, ctx) => {
         return res.once(ctx.json(taskMocks.assignedTaskWithForm()));
       }),
