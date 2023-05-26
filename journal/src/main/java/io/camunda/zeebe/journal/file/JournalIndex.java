@@ -78,4 +78,15 @@ interface JournalIndex {
 
   /** Delete all index mappings */
   void clear();
+
+  /**
+   * Checks if the entry at this index might have been already indexed. Note that the result is
+   * probabilistic. If it returns true, it does not mean the lookup return exact index. If it
+   * returns false, it is likely that calling {@link JournalIndex#index(JournalRecord, int)} with
+   * the entry at this index is useful.
+   *
+   * @param index
+   * @return true if this index likely have been already indexed. false if otherwise.
+   */
+  boolean hasIndexed(long index);
 }

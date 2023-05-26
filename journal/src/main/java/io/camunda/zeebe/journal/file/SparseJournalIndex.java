@@ -102,4 +102,14 @@ final class SparseJournalIndex implements JournalIndex {
     indexToAsqn.clear();
     asqnToIndex.clear();
   }
+
+  @Override
+  public boolean hasIndexed(final long index) {
+    final var indexInfo = lookup(index);
+    if (indexInfo == null) {
+      return false;
+    } else {
+      return indexInfo.index() > index - density;
+    }
+  }
 }

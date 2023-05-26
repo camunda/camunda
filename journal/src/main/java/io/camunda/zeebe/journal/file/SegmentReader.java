@@ -88,8 +88,16 @@ final class SegmentReader implements Iterator<JournalRecord> {
       currentIndex = position.index() - 1;
     }
 
+    // If the returned index is far away from the seekIndex, it is likely that this segment was not
+    // indexed before. So we try to index them during the seek.
+    final boolean shouldIndex = this.index.hasIndexed(index);
+
     while (getNextIndex() < index && hasNext()) {
-      next();
+      final var nextPosition = buffer.position();
+      final var nextEntry = next();
+      if (shouldIndex) {
+        this.index.index(nextEntry, nextPosition);
+      }
     }
   }
 
