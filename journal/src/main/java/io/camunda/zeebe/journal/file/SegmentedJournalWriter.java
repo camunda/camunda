@@ -93,7 +93,8 @@ class SegmentedJournalWriter {
       currentWriter = currentSegment.writer();
     }
 
-    // Truncate the current index.
+    // Truncate down to the current index, such that the last index is `index`, and the next index
+    // `index + 1`
     currentWriter.truncate(index);
   }
 
