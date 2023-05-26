@@ -65,14 +65,11 @@ final class SegmentDescriptor {
   private int lastPosition;
   private int encodedLength;
   private long checksum;
-
   private final DescriptorMetadataEncoder metadataEncoder = new DescriptorMetadataEncoder();
   private final DescriptorMetadataDecoder metadataDecoder = new DescriptorMetadataDecoder();
-
   private final SegmentDescriptorDecoder segmentDescriptorDecoder = new SegmentDescriptorDecoder();
   private final MessageHeaderDecoder headerDecoder = new MessageHeaderDecoder();
   private final MutableDirectBuffer directBuffer = new UnsafeBuffer();
-
   private final SegmentDescriptorEncoder segmentDescriptorEncoder = new SegmentDescriptorEncoder();
   private final MessageHeaderEncoder headerEncoder = new MessageHeaderEncoder();
   private final ChecksumGenerator checksumGen = new ChecksumGenerator();
@@ -81,7 +78,7 @@ final class SegmentDescriptor {
     directBuffer.wrap(buffer);
 
     version = directBuffer.getByte(0);
-    if (version >= 2) {
+    if (version > NO_META_VERSION) {
       readV2Descriptor(directBuffer);
     } else if (version == NO_META_VERSION) {
       readV1Descriptor(directBuffer);
@@ -361,7 +358,7 @@ final class SegmentDescriptor {
   }
 
   void updateIfCurrentVersion(final ByteBuffer buffer) {
-    if (version >= 3) {
+    if (version >= CUR_VERSION) {
       copyTo(buffer);
     }
     // Do not overwrite the descriptor for older versions. The new version has a higher length and
