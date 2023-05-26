@@ -4,7 +4,7 @@
 name: Repo dispatch Benchmark
 
 on:
-  repository_dispatch: 
+  repository_dispatch:
     types: [qa_run_benchmark]
 
 jobs:
@@ -17,3 +17,5 @@ jobs:
       cluster: ${{ github.event.client_payload.cluster }}
       cluster-region: europe-west1-b
       ref: ${{ github.event.client_payload.branch }}
+      stable-vms: ${{ github.event.client_payload.stable-vms }}
+      measure: ${{ github.event.client_payload.measure }}
