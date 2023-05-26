@@ -16,6 +16,7 @@
  */
 package io.camunda.zeebe.journal.file;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
@@ -238,5 +239,30 @@ class SparseJournalIndexTest {
     assertEquals(4, index.lookupAsqn(5, 5));
     assertEquals(4, index.lookupAsqn(Long.MAX_VALUE, 5));
     assertEquals(6, index.lookupAsqn(Long.MAX_VALUE, 6));
+  }
+
+  @Test
+  void shouldReturnAsIndexedWhenWithInDensity() {
+    // given - every 5 index is added
+    final JournalIndex index = new SparseJournalIndex(5);
+    index.index(asJournalRecord(5, 1), 2);
+
+    // when - then
+    assertThat(index.hasIndexed(6)).isTrue();
+    assertThat(index.hasIndexed(7)).isTrue();
+    assertThat(index.hasIndexed(8)).isTrue();
+    assertThat(index.hasIndexed(9)).isTrue();
+  }
+
+  @Test
+  void shouldReturnAsNotIndexedWhenOutsideDensity() {
+    // given - every 5 index is added
+    final JournalIndex index = new SparseJournalIndex(5);
+    index.index(asJournalRecord(5, 1), 2);
+
+    // when - then
+    assertThat(index.hasIndexed(10)).isFalse();
+    assertThat(index.hasIndexed(11)).isFalse();
+    assertThat(index.hasIndexed(100)).isFalse();
   }
 }
