@@ -105,6 +105,18 @@ public class OutputMappingIncidentTest {
                         .done()),
             "businessRuleTaskId",
             false
+          },
+          {
+            "None end event",
+            ENGINE
+                .deployment()
+                .withXmlResource(
+                    Bpmn.createExecutableProcess(PROCESS_ID)
+                        .startEvent()
+                        .endEvent("endEventId", b -> b.zeebeOutputExpression("foo", "bar"))
+                        .done()),
+            "endEventId",
+            false
           }
         });
   }
