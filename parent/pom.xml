@@ -54,7 +54,7 @@
     <version.error-prone>2.19.1</version.error-prone>
     <version.grpc>1.55.1</version.grpc>
     <version.gson>2.10.1</version.gson>
-    <version.guava>31.1-jre</version.guava>
+    <version.guava>32.0.0-jre</version.guava>
     <version.hamcrest>2.2</version.hamcrest>
     <version.httpasyncclient>4.1.5</version.httpasyncclient>
     <version.httpclient>4.5.14</version.httpclient>
