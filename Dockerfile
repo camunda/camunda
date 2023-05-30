@@ -18,10 +18,10 @@ COPY docker/utils/startup.sh ${TMP_DIR}/bin/startup.sh
 RUN chmod +x -R ${TMP_DIR}/bin/
 
 # Building prod image
-FROM eclipse-temurin:17.0.7_7-jre-focal as prod
+FROM eclipse-temurin:17-jre-focal@sha256:22f133769ce2b956d150ab749cd4630b3e7fbac2b37049911aa0973a1283047c as prod
 
 # Building dev image
-FROM eclipse-temurin:17.0.7_7-jdk-focal as dev
+FROM eclipse-temurin:17-jdk-focal@sha256:f743a901097fe04eaccfe526d44e16273905fba8271dec15c743acdb81ebcbda as dev
 RUN echo "running DEV pre-install commands"
 RUN apt-get update
 RUN curl -sSL https://github.com/jvm-profiling-tools/async-profiler/releases/download/v1.7.1/async-profiler-1.7.1-linux-x64.tar.gz | tar xzv
