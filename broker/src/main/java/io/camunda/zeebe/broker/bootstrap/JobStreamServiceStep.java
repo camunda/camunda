@@ -11,6 +11,7 @@ import io.camunda.zeebe.broker.jobstream.JobStreamMetrics;
 import io.camunda.zeebe.broker.jobstream.JobStreamService;
 import io.camunda.zeebe.broker.jobstream.RemoteJobStreamErrorHandlerService;
 import io.camunda.zeebe.broker.jobstream.RemoteJobStreamer;
+import io.camunda.zeebe.broker.jobstream.YieldingJobStreamErrorHandler;
 import io.camunda.zeebe.engine.processing.streamprocessor.JobActivationProperties;
 import io.camunda.zeebe.protocol.impl.stream.job.ActivatedJob;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
@@ -34,10 +35,10 @@ public final class JobStreamServiceStep extends AbstractBrokerStartupStep {
       final ConcurrencyControl concurrencyControl,
       final ActorFuture<BrokerStartupContext> startupFuture) {
     final var clusterServices = brokerStartupContext.getClusterServices();
-    // TODO: replace the JobStreamErrorHandler implementation here
     final var errorHandlerService =
         new RemoteJobStreamErrorHandlerService(
-            (job, error, builder) -> {}, brokerStartupContext.getBrokerInfo().getNodeId());
+            new YieldingJobStreamErrorHandler(), brokerStartupContext.getBrokerInfo().getNodeId());
+
     final var scheduler = brokerStartupContext.getActorSchedulingService();
     final RemoteStreamService<JobActivationProperties, ActivatedJob> remoteStreamService =
         new TransportFactory(scheduler)
