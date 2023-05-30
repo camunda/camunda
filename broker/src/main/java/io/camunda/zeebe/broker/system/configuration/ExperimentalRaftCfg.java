@@ -11,13 +11,15 @@ import java.time.Duration;
 
 public final class ExperimentalRaftCfg implements ConfigurationEntry {
 
+  // Requests should time out faster than the election timeout to ensure that a single missed
+  // heartbeat does not cause immediate re-election.
   private static final Duration DEFAULT_REQUEST_TIMEOUT = Duration.ofSeconds(5);
   private static final Duration DEFAULT_MAX_QUORUM_RESPONSE_TIMEOUT = Duration.ofSeconds(0);
   private static final int DEFAULT_MIN_STEP_DOWN_FAILURE_COUNT = 3;
   private static final int DEFAULT_PREFER_SNAPSHOT_REPLICATION_THRESHOLD = 100;
   private static final boolean DEFAULT_PREALLOCATE_SEGMENT_FILES = true;
-
   private Duration requestTimeout = DEFAULT_REQUEST_TIMEOUT;
+  private Duration snapshotRequestTimeout = DEFAULT_REQUEST_TIMEOUT;
   private Duration maxQuorumResponseTimeout = DEFAULT_MAX_QUORUM_RESPONSE_TIMEOUT;
   private int minStepDownFailureCount = DEFAULT_MIN_STEP_DOWN_FAILURE_COUNT;
   private int preferSnapshotReplicationThreshold = DEFAULT_PREFER_SNAPSHOT_REPLICATION_THRESHOLD;
@@ -30,6 +32,14 @@ public final class ExperimentalRaftCfg implements ConfigurationEntry {
 
   public void setRequestTimeout(final Duration requestTimeout) {
     this.requestTimeout = requestTimeout;
+  }
+
+  public Duration getSnapshotRequestTimeout() {
+    return snapshotRequestTimeout;
+  }
+
+  public void setSnapshotRequestTimeout(final Duration snapshotRequestTimeout) {
+    this.snapshotRequestTimeout = snapshotRequestTimeout;
   }
 
   public Duration getMaxQuorumResponseTimeout() {
