@@ -80,7 +80,7 @@ a:visited {
   color: var(--blue-darken-55);
 }
 
-.focus-visible {
+.focus-visible:not(.cds--search-input) {
   outline: none;
   border-radius: 3px;
   box-shadow: var(--blue-darken-55) 0px 0px 0px 1px, var(--blue-lighten-75) 0px 0px 0px 4px;

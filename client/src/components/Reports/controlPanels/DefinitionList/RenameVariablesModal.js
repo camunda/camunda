@@ -6,9 +6,9 @@
  */
 
 import React, {useEffect, useState} from 'react';
-import {Button} from '@carbon/react';
+import {Button, TableToolbar, TableToolbarContent, TableToolbarSearch} from '@carbon/react';
 
-import {Icon, Input, Modal, Table} from 'components';
+import {Input, Modal, Table} from 'components';
 import {loadVariables} from 'services';
 import {t} from 'translation';
 import {withErrorHandling} from 'HOC';
@@ -90,23 +90,24 @@ export function RenameVariablesModal({
               <li>{t('report.definition.variables.useSameVariable')}</li>
             </ul>
           </div>
-          <div className="searchInputContainer">
-            <Input
-              value={query}
-              className="searchInput"
-              placeholder={t('report.groupBy.searchForVariable')}
-              type="text"
-              onChange={(evt) => {
-                setQuery(evt.target.value);
-              }}
-              onClear={() => {
-                setQuery('');
-              }}
-            />
-            <Icon className="searchIcon" type="search" size="20" />
-          </div>
         </div>
         <Table
+          toolbar={
+            <TableToolbar>
+              <TableToolbarContent>
+                <TableToolbarSearch
+                  value={query}
+                  placeholder={t('report.groupBy.searchForVariable')}
+                  onChange={(evt) => {
+                    setQuery(evt.target.value);
+                  }}
+                  onClear={() => {
+                    setQuery('');
+                  }}
+                />
+              </TableToolbarContent>
+            </TableToolbar>
+          }
           head={[
             {label: t('report.definition.variables.variableName'), id: 'name'},
             {label: t('report.definition.variables.type'), id: 'type'},

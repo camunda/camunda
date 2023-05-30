@@ -7,9 +7,16 @@
 
 import {useState, useEffect} from 'react';
 import classnames from 'classnames';
-import {Button, TableSelectRow, TableSelectAll} from '@carbon/react';
+import {
+  Button,
+  TableSelectAll,
+  TableSelectRow,
+  TableToolbar,
+  TableToolbarContent,
+  TableToolbarSearch,
+} from '@carbon/react';
 
-import {Modal, Table, TenantPopover, Typeahead, Labeled, Tag, SearchInput} from 'components';
+import {Modal, Table, TenantPopover, Typeahead} from 'components';
 import {formatters} from 'services';
 import {t} from 'translation';
 import {withErrorHandling} from 'HOC';
@@ -127,50 +134,45 @@ export function SourcesModal({onClose, onConfirm, mightFail, confirmText, preSel
     <Modal open onClose={onClose} size="lg" className="SourcesModal">
       <Modal.Header>{t('home.sources.add')}</Modal.Header>
       <Modal.Content>
-        <div className="header">
-          {tenants.length !== 0 && (
-            <Labeled label={t('common.tenant.label')}>
-              <Typeahead
-                placeholder={t('common.select')}
-                onChange={(tenant) => {
-                  setSelected([]);
-                  setSelectedTenant(tenant);
-                }}
-                noValuesMessage={t('common.notFound')}
-              >
-                <Typeahead.Option value={undefined}>
-                  {t('common.collection.modal.allTenants')}
-                </Typeahead.Option>
-                {tenants.map((tenant) => (
-                  <Typeahead.Option key={tenant.id} value={tenant.id}>
-                    {formatTenantName(tenant)}
-                  </Typeahead.Option>
-                ))}
-              </Typeahead>
-            </Labeled>
-          )}
-          <div className="rightHeader">
-            <SearchInput
-              value={query}
-              className="searchInput"
-              placeholder={t('home.search.name')}
-              type="text"
-              onChange={(evt) => {
-                setQuery(evt.target.value);
-              }}
-              onClear={() => {
-                setQuery('');
-              }}
-              data-modal-primary-focus
-            />
-            {selected.length > 0 && (
-              <Tag onRemove={() => setSelected([])}>
-                {selected.length} {t('common.selected')}
-              </Tag>
-            )}
-          </div>
-        </div>
         <Table
+          toolbar={
+            <TableToolbar>
+              <TableToolbarContent>
+                {tenants.length !== 0 && (
+                  <Typeahead
+                    className="tenantsSelector"
+                    placeholder={t('common.select')}
+                    onChange={(tenant) => {
+                      setSelected([]);
+                      setSelectedTenant(tenant);
+                    }}
+                    noValuesMessage={t('common.notFound')}
+                  >
+                    <Typeahead.Option value={undefined}>
+                      {t('common.collection.modal.allTenants')}
+                    </Typeahead.Option>
+                    {tenants.map((tenant) => (
+                      <Typeahead.Option key={tenant.id} value={tenant.id}>
+                        {formatTenantName(tenant)}
+                      </Typeahead.Option>
+                    ))}
+                  </Typeahead>
+                )}
+                <TableToolbarSearch
+                  value={query}
+                  placeholder={t('home.search.name')}
+                  onChange={(evt) => {
+                    setQuery(evt.target.value);
+                  }}
+                  onClear={() => {
+                    setQuery('');
+                  }}
+                  expanded
+                  data-modal-primary-focus
+                />
+              </TableToolbarContent>
+            </TableToolbar>
+          }
           head={tableHead}
           body={filteredDefinitions.map((def) => {
             const selectedDefinition = selected.find(

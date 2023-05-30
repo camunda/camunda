@@ -37,9 +37,14 @@
   height: 100%;
   overflow: hidden;
 
+  .cds--toolbar-content {
+    z-index: 1;
+  }
+
   .cds--data-table-container {
     display: flex;
     overflow: hidden;
+    flex-direction: column;
   }
 
   .cds--data-table-content {

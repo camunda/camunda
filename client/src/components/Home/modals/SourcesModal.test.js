@@ -142,7 +142,10 @@ it('should filter definitions by tenant', async () => {
 
   await runAllEffects();
 
-  node.find('Typeahead').simulate('change', 'engineering');
+  const toolbar = shallow(node.find('Table').prop('toolbar'));
+  toolbar.find('TableToolbarSearch').prop('onChange')({
+    target: {value: 'engineering'},
+  });
 
   expect(
     node
@@ -158,7 +161,10 @@ it('should only select the tenant used in filtering', async () => {
 
   await runAllEffects();
 
-  node.find('Typeahead').simulate('change', 'engineering');
+  const dataTable = node.find('Table').dive().find('DataTable').dive();
+
+  dataTable.find('Typeahead').simulate('change', 'engineering');
+
   node
     .find('Table')
     .prop('head')[0]

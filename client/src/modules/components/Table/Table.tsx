@@ -5,7 +5,7 @@
  * except in compliance with the proprietary license.
  */
 
-import {MouseEvent, UIEventHandler, useEffect, useMemo, useRef} from 'react';
+import {MouseEvent, ReactNode, UIEventHandler, useEffect, useMemo, useRef} from 'react';
 import classnames from 'classnames';
 import {
   useTable,
@@ -40,11 +40,12 @@ import {
   DataTableSortState,
   TableSelectAll,
   TableSelectRow,
+  TableToolbar,
 } from '@carbon/react';
 
 import {t, getLanguage} from 'translation';
-import {Select, LoadingIndicator, Tooltip, NoDataNotice} from 'components';
 import {isReactElement} from 'services';
+import {Select, LoadingIndicator, Tooltip, NoDataNotice} from 'components';
 
 import {flatten, rewriteHeaderStyles} from './service';
 
@@ -105,6 +106,8 @@ interface TableProps {
   loading?: boolean;
   allowLocalSorting?: boolean;
   size?: DataTableSize;
+  title?: string | JSX.Element[];
+  toolbar?: ReactNode;
 }
 
 export default function Table<T extends object>({
@@ -127,6 +130,8 @@ export default function Table<T extends object>({
   loading,
   allowLocalSorting = false,
   size = 'lg',
+  title,
+  toolbar,
 }: TableProps) {
   const columnWidths = useRef<Record<string, string | number | undefined>>({});
   const columns = useMemo(() => Table.formatColumns(head, '', columnWidths.current), [head]);
@@ -245,8 +250,19 @@ export default function Table<T extends object>({
 
   const isSortable = headerGroups.some(({headers}) => headers.some((header) => header.canSort));
 
+  if (isReactElement(toolbar) && toolbar.type !== TableToolbar) {
+    throw new Error('Table `toolbar` should be a `TableToolbar` component');
+  }
+
   return (
-    <div className={classnames('Table', className, {highlight: !noHighlight, loading})}>
+    <div
+      className={classnames('Table', className, {
+        highlight: !noHighlight,
+        loading,
+        noData: empty,
+        error,
+      })}
+    >
       <DataTable
         isSortable={isSortable}
         locale={getLanguage()}
@@ -255,7 +271,8 @@ export default function Table<T extends object>({
         size={size}
         useZebraStyles
         render={({getTableContainerProps, getTableProps}) => (
-          <TableContainer {...getTableContainerProps()}>
+          <TableContainer title={title} {...getTableContainerProps()}>
+            {toolbar}
             <CarbonTable {...getReactTableProps()} {...getTableProps()}>
               <TableHead>
                 {headerGroups.map((headerGroup, i) => (

@@ -4,46 +4,6 @@ exports[`should match snapshot 1`] = `
 <div
   className="EventTable"
 >
-  <div
-    className="header"
-  >
-    <b>
-      Events List
-    </b>
-    <Switch
-      checked={true}
-      label="Show suggested Events"
-      onChange={[Function]}
-    />
-    <EventSources
-      sources={
-        Array [
-          Object {
-            "configuration": Object {
-              "includeAllGroups": true,
-            },
-            "type": "external",
-          },
-        ]
-      }
-    />
-    <SearchInput
-      className="searchInput"
-      onChange={[Function]}
-      onClear={[Function]}
-      placeholder="Search for name..."
-      required={true}
-      value=""
-    />
-    <ForwardRef(Button)
-      className="collapseButton"
-      onClick={[Function]}
-    >
-      <Icon
-        type="collapse"
-      />
-    </ForwardRef(Button)>
-  </div>
   <Table
     body={
       Array [
@@ -150,11 +110,58 @@ exports[`should match snapshot 1`] = `
       </React.Fragment>
     }
     noHighlight={true}
+    size="md"
     sorting={
       Object {
         "by": "group",
         "order": "asc",
       }
+    }
+    toolbar={
+      <TableToolbar
+        aria-label="data table toolbar"
+      >
+        <TableToolbarContent>
+          <b>
+            Events List
+          </b>
+          <Switch
+            checked={true}
+            label="Show suggested Events"
+            onChange={[Function]}
+          />
+          <EventSources
+            sources={
+              Array [
+                Object {
+                  "configuration": Object {
+                    "includeAllGroups": true,
+                  },
+                  "type": "external",
+                },
+              ]
+            }
+          />
+          <TableToolbarSearch
+            expanded={true}
+            onChange={[Function]}
+            onClear={[Function]}
+            persistent={false}
+            placeholder="Search for name..."
+            tabIndex="0"
+            translateWithId={[Function]}
+            value=""
+          />
+        </TableToolbarContent>
+        <Button
+          className="collapseButton"
+          hasIconOnly={true}
+          kind="ghost"
+          onClick={[Function]}
+        >
+          <ForwardRef(ChevronDown) />
+        </Button>
+      </TableToolbar>
     }
     updateSorting={[Function]}
   />

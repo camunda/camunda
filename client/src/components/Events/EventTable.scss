@@ -1,68 +1,54 @@
 .EventTable {
-  border: solid 1px var(--silver-darken-87);
-  border-bottom: none;
   position: relative;
 
-  > .header {
-    border-bottom: solid 1px var(--silver-darken-87);
-    background-color: var(--silver-base-97);
-    display: flex;
+  .cds--toolbar-content {
+    height: auto;
     align-items: flex-start;
-    min-height: 43px;
+  }
 
-    .Switch {
-      font-size: 14px;
-      color: var(--grey-lighten-50);
-      margin-top: 12px;
-      margin-left: 20px;
-      .label {
-        white-space: nowrap;
-      }
-    }
-
-    b {
-      font-size: 14px;
-      color: var(--grey-darken-23);
-      margin: 12px 0px 12px 20px;
+  .Switch {
+    font-size: 14px;
+    color: var(--grey-lighten-50);
+    margin-top: 12px;
+    margin-left: 20px;
+    .label {
       white-space: nowrap;
-    }
-
-    .SearchInput {
-      .Input {
-        border-radius: 3px;
-        margin-top: 5px;
-      }
-
-      .searchIcon {
-        top: 50%;
-      }
-    }
-
-    .collapseButton {
-      margin-top: 5px;
-      border: none;
-      border-left: 1px solid var(--silver-darken-87);
-      margin-left: 10px;
-      border-radius: 0;
-
-      &:hover,
-      &:active {
-        background-color: unset;
-      }
-
-      .Icon {
-        margin-right: 0;
-      }
     }
   }
 
-  .Table {
-    height: 300px;
-    transition: height 0.25s;
+  b {
+    font-size: 14px;
+    color: var(--grey-darken-23);
+    margin-left: 20px;
+    margin-top: 16px;
+    white-space: nowrap;
+  }
 
-    &.collapsed {
+  .collapseButton {
+    margin-left: 10px;
+  }
+
+  .Table {
+    .cds--data-table-content {
+      transition: height 0.25s;
+      height: 300px;
+    }
+
+    &.collapsed .cds--data-table-content {
       height: 0;
       overflow: hidden;
+    }
+
+    .cds--search {
+      max-width: 250px;
+    }
+
+    .cds--data-table-header {
+      padding-bottom: 0;
+    }
+
+    .cds--data-table-header__description {
+      display: none;
     }
 
     table {
@@ -101,6 +87,14 @@
         tr {
           &.mapped:hover {
             cursor: pointer;
+          }
+
+          &:not(.disabled).mapped {
+            color: var(--white);
+
+            .Button {
+              color: var(--white);
+            }
           }
 
           &.suggested {

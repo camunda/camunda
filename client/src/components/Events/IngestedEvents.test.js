@@ -73,7 +73,10 @@ it('should add sorting and search params to the load event request', () => {
   loadIngestedEvents.mockClear();
   const node = shallow(<IngestedEvents {...props} />);
 
-  node.find('SearchInput').simulate('change', {target: {value: 'invoice'}});
+  const toolbar = shallow(node.find('Table').prop('toolbar'));
+  toolbar.find('TableToolbarSearch').prop('onChange')({
+    target: {value: 'invoice'},
+  });
   runAllEffects();
   node.find('Table').prop('updateSorting')('group', 'asc');
   node.find('Table').prop('fetchData')({pageSize: 50, pageIndex: 2});
@@ -99,7 +102,7 @@ it('should be possible to delete multiple events from the table', () => {
     .prop('body')[1][0]
     .props.onSelect({target: {checked: true}});
 
-  node.find(Dropdown.Option).simulate('click');
+  node.find('Table').dive().find('DataTable').dive().find(Dropdown.Option).simulate('click');
 
   expect(node.find(Deleter).prop('entity')).toBe(true);
   node.find(Deleter).prop('deleteEntity')();
@@ -120,5 +123,7 @@ it('should select all events in view', () => {
     .prop('head')[0]
     .label.props.onSelect({target: {checked: true}});
 
-  expect(node.find('.selectionActions').prop('label')).toBe('2 Selected');
+  expect(
+    node.find('Table').dive().find('DataTable').dive().find('.selectionActions').prop('label')
+  ).toBe('2 Selected');
 });

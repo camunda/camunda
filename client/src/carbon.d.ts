@@ -23,6 +23,12 @@ import {
   TdHTMLAttributes,
   ChangeEvent,
   MouseEvent,
+  KeyboardEvent,
+  FocusEvent,
+  ReactElement,
+  ChangeEventHandler,
+  AnchorHTMLAttributes,
+  InputHTMLAttributes,
 } from 'react';
 
 declare module '@carbon/react' {
@@ -157,11 +163,29 @@ declare module '@carbon/react' {
   export interface ReactAttr<T = HTMLElement> extends HTMLAttributes<T> {}
   export interface ReactButtonAttr<T = HTMLButtonElement> extends ButtonHTMLAttributes<T> {}
   export interface ReactDivAttr extends ReactAttr<HTMLDivElement> {}
+  export interface ReactAnchorAttr<T = HTMLAnchorElement> extends AnchorHTMLAttributes<T> {}
   export interface ReactInputAttr<T = HTMLInputElement> extends InputHTMLAttributes<T> {}
   export type ForwardRefProps<T, P = {}> = PropsWithoutRef<PropsWithChildren<P>> & RefAttributes<T>;
   export type ForwardRefReturn<T, P = {}> = ForwardRefExoticComponent<ForwardRefProps<T, P>>;
   export interface RequiresIdProps<T = ReactAttr['id']> {
     id: NonNullable<T>;
+  }
+
+  export type VerticalDirection = 'bottom' | 'top';
+
+  export interface InternationalProps<MID = string, ARGS = Record<string, unknown>> {
+    translateWithId?(messageId: MID, args?: ARGS): string;
+  }
+
+  export type FCReturn = ReturnType<FC>;
+
+  export interface MenuOffsetData {
+    left?: number | undefined;
+    top?: number | undefined;
+  }
+
+  export interface RequiresChildrenProps<T = ReactNode> {
+    children: NonNullable<T>;
   }
 
   export interface DataTableCell<V = any, H extends DataTableHeader = DataTableHeader> {
@@ -213,7 +237,7 @@ declare module '@carbon/react' {
   }
 
   export interface DataTableCustomRowData<R extends DataTableRow = DataTableRow> {
-    onClick?(event: React.MouseEvent<HTMLElement>): void;
+    onClick?(event: MouseEvent<HTMLElement>): void;
     row: R;
   }
 
@@ -227,7 +251,8 @@ declare module '@carbon/react' {
   }
 
   export interface DataTableCustomSelectionData<R extends DataTableRow = DataTableRow> {
-    onClick?(event: React.MouseEvent<HTMLElement>): void;
+    onClick?(event: MouseEvent<HTMLElement>): void;
+    onExpand(event: MouseEvent<HTMLElement>): void;
     row?: R | undefined;
   }
 
@@ -422,4 +447,168 @@ declare module '@carbon/react' {
   }
 
   declare const TableSelectRow: FC<TableSelectRowProps>;
+
+  type GetMenuOffsetFn = (
+    menuBody: HTMLElement,
+    direction: Direction,
+    trigger?: HTMLElement,
+    flip?: boolean
+  ) => MenuOffsetData | undefined;
+  export declare const getMenuOffset: GetMenuOffsetFn;
+
+  export type MenuOffsetValue = MenuOffsetData | GetMenuOffsetFn;
+
+  export interface MenuProps {
+    children?: ReactNode | undefined;
+    className?: string | undefined;
+    id?: string | undefined;
+    level?: number | undefined;
+    onClose?(): void;
+    onKeyDown?(evt: KeyboardEvent<HTMLUListElement>): void;
+    open?: boolean | undefined;
+    size?: 'sm' | 'md' | 'lg' | undefined;
+    target?: Element | undefined;
+    x?: number | readonly number[] | undefined;
+    y?: number | readonly number[] | undefined;
+  }
+
+  export interface OverflowMenuProps
+    extends Omit<
+      ReactButtonAttr,
+      'aria-expanded' | 'aria-haspopup' | 'aria-label' | 'onClick' | 'onKeyDown' | 'type'
+    > {
+    ariaLabel?: string | undefined;
+    direction?: VerticalDirection | undefined;
+    iconClass?: ReactAttr['className'] | undefined;
+    iconDescription?: string | undefined;
+    flipped?: boolean | undefined;
+    focusTrap?: boolean | undefined;
+    menuOffset?: MenuOffsetValue | undefined;
+    menuOffsetFlip?: MenuOffsetValue | undefined;
+    menuOptionsClass?: ReactAttr['className'] | undefined;
+    onClick?(event: MouseEvent<HTMLElement> | KeyboardEvent<HTMLElement>): void;
+    onClose?(): void;
+    onOpen?(): void;
+    open?: boolean | undefined;
+    renderIcon?: any;
+    selectorPrimaryFocus?: string | undefined;
+    size?: MenuProps['size'];
+  }
+
+  declare class OverflowMenuComponent extends Component<OverflowMenuProps> {}
+
+  declare const OverflowMenu: ForwardRefReturn<HTMLButtonElement, OverflowMenuProps>;
+
+  interface OverFlowMenuItemSharedProps {
+    // closeMenu is supplied by Overflow parent component
+    disabled?: boolean | undefined;
+    hasDivider?: boolean | undefined;
+    isDelete?: boolean | undefined;
+    itemText: NonNullable<ReactNode>;
+    requireTitle?: boolean | undefined;
+    wrapperClassName?: string | undefined;
+  }
+
+  export interface OverflowMenuItemButtonProps
+    extends Omit<ReactButtonAttr, 'disabled' | 'href' | 'ref' | 'tabIndex'>,
+      OverFlowMenuItemSharedProps {
+    href?: null | undefined;
+  }
+
+  export interface OverflowMenuItemAnchorProps
+    extends Omit<ReactAnchorAttr, 'disabled' | 'href' | 'ref' | 'tabIndex'>,
+      OverFlowMenuItemSharedProps {
+    href: string;
+  }
+
+  export type AllOverflowMenuItemProps = OverflowMenuItemAnchorProps | OverflowMenuItemButtonProps;
+
+  declare class OverflowMenuItem extends Component<AllOverflowMenuItemProps> {}
+
+  export interface TableToolbarProps extends ReactAttr {
+    size?: 'lg' | 'normal' | 'sm' | 'small' | undefined;
+  }
+
+  declare const TableToolbar: FC<TableToolbarProps>;
+
+  export interface TableToolbarActionAnchorProps
+    extends Omit<OverflowMenuItemAnchorProps, 'children' | 'itemText'>,
+      RequiresChildrenProps {
+    itemText?: ReactNode | undefined;
+  }
+
+  export interface TableToolbarActionButtonProps
+    extends Omit<OverflowMenuItemButtonProps, 'children' | 'itemText'>,
+      RequiresChildrenProps {
+    itemText?: ReactNode | undefined;
+  }
+
+  export type AllTableToolbarActionProps =
+    | TableToolbarActionAnchorProps
+    | TableToolbarActionButtonProps;
+
+  declare function TableToolbarAction(
+    props: ForwardRefProps<HTMLAnchorElement, TableToolbarActionAnchorProps>
+  ): FCReturn;
+
+  declare function TableToolbarAction(
+    props: ForwardRefProps<HTMLButtonElement, TableToolbarActionButtonProps>
+  ): FCReturn;
+
+  export interface TableToolbarContentProps extends ReactDivAttr {}
+
+  declare const TableToolbarContent: FC<TableToolbarContentProps>;
+
+  export interface TableToolbarMenuProps
+    extends Omit<OverflowMenuProps, 'children'>,
+      RequiresChildrenProps {}
+
+  declare const TableToolbarMenu: FC<TableToolbarMenuProps>;
+
+  export interface SearchElementProps
+    extends Omit<ReactInputAttr, 'defaultValue' | 'ref' | 'size' | 'value' | 'onChange'> {
+    closeButtonLabelText?: string | undefined;
+    defaultValue?: string | number | undefined;
+    labelText: NonNullable<ReactNode>;
+    onClear?: () => void;
+    renderIcon?: ReactElement | undefined; // code calls React.cloneElement so it can only be an element.
+    size?: 'sm' | 'md' | 'lg' | 'xl' | undefined;
+    value?: string | number | undefined;
+    light?: boolean | undefined;
+    onChange?: ChangeEventHandler<HTMLInputElement>;
+  }
+
+  declare class Search extends Component<SearchElementProps> {}
+
+  export type TableToolbarTranslationKey =
+    | 'carbon.table.toolbar.search.label'
+    | 'carbon.table.toolbar.search.placeholder';
+
+  export type TableToolbarSearchHandleExpand = (
+    event: FocusEvent<HTMLInputElement>,
+    newValue?: boolean
+  ) => void;
+
+  export interface TableToolbarSearchProps
+    extends Omit<SearchElementProps, 'labelText' | 'onBlur' | 'onFocus'>,
+      InternationalProps<TableToolbarTranslationKey> {
+    defaultExpanded?: boolean | undefined;
+    expanded?: boolean | undefined;
+    labelText?: ReactNode | undefined;
+    onBlur?(
+      event: FocusEvent<HTMLInputElement>,
+      handleExpand: TableToolbarSearchHandleExpand
+    ): void;
+    onExpand?(event: FocusEvent<HTMLInputElement>, newExpand: boolean): void;
+    onFocus?(
+      event: FocusEvent<HTMLInputElement>,
+      handleExpand: TableToolbarSearchHandleExpand
+    ): void;
+    persistent?: boolean | undefined;
+    searchContainerClass?: string | undefined;
+  }
+
+  declare const TableToolbarSearch: FC<TableToolbarSearchProps>;
 }
+
+// export {};

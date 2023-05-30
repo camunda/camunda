@@ -12,21 +12,6 @@ exports[`should match snapshot 1`] = `
   >
     External Events
   </h1>
-  <div
-    className="header"
-  >
-    <h4
-      className="tableTitle"
-    >
-      Ingested External Events
-    </h4>
-    <SearchInput
-      onChange={[Function]}
-      onClear={[Function]}
-      placeholder="Search for values"
-      value=""
-    />
-  </div>
   <Table
     body={
       Array [
@@ -128,6 +113,24 @@ exports[`should match snapshot 1`] = `
         "by": "timestamp",
         "order": "desc",
       }
+    }
+    title="Ingested External Events"
+    toolbar={
+      <TableToolbar
+        aria-label="data table toolbar"
+      >
+        <TableToolbarContent>
+          <TableToolbarSearch
+            onChange={[Function]}
+            onClear={[Function]}
+            persistent={false}
+            placeholder="Search for values"
+            tabIndex="0"
+            translateWithId={[Function]}
+            value=""
+          />
+        </TableToolbarContent>
+      </TableToolbar>
     }
     totalEntries={2}
     updateSorting={[Function]}

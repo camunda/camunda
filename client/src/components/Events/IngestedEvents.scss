@@ -12,33 +12,12 @@
     margin-bottom: 20px;
   }
 
-  .header {
-    display: flex;
-    border-bottom: solid 1px var(--silver-darken-87);
-    background-color: var(--silver-base-97);
-    display: flex;
-    align-items: flex-start;
-    height: 43px;
-    border: solid 1px var(--silver-darken-87);
-    border-bottom: none;
-    align-items: center;
-
-    .tableTitle {
-      flex-grow: 1;
-      margin-left: 20px;
-      font-weight: bold;
-      font-size: 0.875em;
-    }
-
-    .SearchInput {
-      margin-right: 10px;
-    }
-
-    .selectionActions {
-      margin-right: 10px;
-      .Button {
-        border-radius: 32px;
-      }
+  .selectionActions {
+    flex-shrink: 0;
+    align-self: center;
+    margin-inline: 10px;
+    .Button {
+      border-radius: 32px;
     }
   }
 

@@ -8,9 +8,16 @@
 import React from 'react';
 import classnames from 'classnames';
 import deepEqual from 'fast-deep-equal';
-import {TableSelectRow} from '@carbon/react';
+import {
+  Button,
+  TableSelectRow,
+  TableToolbar,
+  TableToolbarContent,
+  TableToolbarSearch,
+} from '@carbon/react';
+import {ChevronDown, ChevronUp} from '@carbon/icons-react';
 
-import {Table, LoadingIndicator, Select, Switch, Icon, Button, SearchInput} from 'components';
+import {Table, LoadingIndicator, Select, Switch} from 'components';
 import {withErrorHandling} from 'HOC';
 import {showError} from 'notifications';
 import {t} from 'translation';
@@ -184,37 +191,43 @@ export default withErrorHandling(
       const externalEvents = eventSources.some((src) => src.type === 'external');
 
       return (
-        <div className="EventTable" ref={this.container}>
-          <div className="header">
-            <b>{t('events.list')}</b>
-            {eventSources.length === 1 && eventSources[0].configuration.includeAllGroups && (
-              <Switch
-                checked={showSuggested}
-                label={t('events.table.showSuggestions')}
-                onChange={({target: {checked}}) =>
-                  this.setState({showSuggested: checked}, async () =>
-                    this.setState({events: await this.loadEvents(searchQuery)})
-                  )
-                }
-              />
-            )}
-            <EventsSources sources={eventSources} onChange={this.props.onSourcesChange} />
-            <SearchInput
-              required
-              className="searchInput"
-              placeholder={t('home.search.name')}
-              value={searchQuery}
-              onChange={({target: {value}}) => this.searchFor(value)}
-              onClear={() => this.searchFor('')}
-            />
-            <Button
-              onClick={() => this.setState({collapsed: !collapsed})}
-              className="collapseButton"
-            >
-              <Icon type={collapsed ? 'expand' : 'collapse'} />
-            </Button>
-          </div>
+        <div className={classnames('EventTable', {collapsed})} ref={this.container}>
           <Table
+            size="md"
+            toolbar={
+              <TableToolbar>
+                <TableToolbarContent>
+                  <b>{t('events.list')}</b>
+                  {eventSources.length === 1 && eventSources[0].configuration.includeAllGroups && (
+                    <Switch
+                      checked={showSuggested}
+                      label={t('events.table.showSuggestions')}
+                      onChange={({target: {checked}}) =>
+                        this.setState({showSuggested: checked}, async () =>
+                          this.setState({events: await this.loadEvents(searchQuery)})
+                        )
+                      }
+                    />
+                  )}
+                  <EventsSources sources={eventSources} onChange={this.props.onSourcesChange} />
+                  <TableToolbarSearch
+                    expanded
+                    value={searchQuery}
+                    placeholder={t('home.search.name')}
+                    onChange={({target: {value}}) => this.searchFor(value)}
+                    onClear={() => this.searchFor('')}
+                  />
+                </TableToolbarContent>
+                <Button
+                  hasIconOnly
+                  kind="ghost"
+                  onClick={() => this.setState({collapsed: !collapsed})}
+                  className="collapseButton"
+                >
+                  {collapsed ? <ChevronUp /> : <ChevronDown />}
+                </Button>
+              </TableToolbar>
+            }
             className={classnames({collapsed})}
             head={[
               {label: 'checked', id: 'checked', sortable: false},

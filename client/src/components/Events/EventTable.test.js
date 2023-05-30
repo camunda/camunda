@@ -95,7 +95,10 @@ it('should allow searching for events', async () => {
 
   loadEvents.mockClear();
 
-  node.find('.searchInput').prop('onChange')({target: {value: 'some String'}});
+  const toolbar = shallow(node.find(Table).prop('toolbar'));
+  toolbar.find('TableToolbarSearch').prop('onChange')({
+    target: {value: 'some String'},
+  });
 
   await flushPromises();
 
@@ -158,7 +161,11 @@ it('should load updated suggestions when the selection changes', () => {
 
 it('should not reload events if suggestions are not activated', () => {
   const node = shallow(<EventTable {...props} />);
-  node.find(Switch).prop('onChange')({target: {checked: false}});
+
+  const toolbar = shallow(node.find(Table).prop('toolbar'));
+  toolbar.find(Switch).prop('onChange')({
+    target: {checked: false},
+  });
 
   loadEvents.mockClear();
 
@@ -282,7 +289,9 @@ it('should reset the selected event when clicking on the checkbox', async () => 
 
 it('Should collapse the table on collapse button click', () => {
   const node = shallow(<EventTable {...props} />);
-  node.find('.collapseButton').simulate('click');
+
+  const toolbar = shallow(node.find(Table).prop('toolbar'));
+  toolbar.find('.collapseButton').simulate('click');
 
   expect(node.find(Table).hasClass('collapsed')).toBe(true);
 });

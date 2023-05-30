@@ -90,7 +90,10 @@ it('should filter items based on search', () => {
 
   runLastEffect();
 
-  node.find('.searchInput').simulate('change', {target: {value: 'variable1'}});
+  const toolbar = shallow(node.find(Table).prop('toolbar'));
+  toolbar.find('TableToolbarSearch').prop('onChange')({
+    target: {value: 'variable1'},
+  });
 
   const variables = node.find(Table).prop('body');
   expect(variables.length).toBe(1);

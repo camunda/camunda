@@ -9,16 +9,7 @@ import React, {useCallback, useEffect, useState, useMemo} from 'react';
 import debounce from 'debounce';
 import {TableSelectRow, TableSelectAll} from '@carbon/react';
 
-import {
-  Deleter,
-  DocsLink,
-  Dropdown,
-  Icon,
-  PageTitle,
-  SearchInput,
-  Table,
-  Tooltip,
-} from 'components';
+import {Deleter, DocsLink, Dropdown, Icon, PageTitle, Table, Tooltip} from 'components';
 import {withErrorHandling} from 'HOC';
 import {showError} from 'notifications';
 import {t} from 'translation';
@@ -27,6 +18,7 @@ import debouncePromise from 'debouncePromise';
 import {deleteEvents, loadIngestedEvents} from './service';
 
 import './IngestedEvents.scss';
+import {TableToolbar, TableToolbarContent, TableToolbarSearch} from '@carbon/react';
 
 const debounceRequest = debouncePromise();
 
@@ -122,32 +114,41 @@ export function IngestedEvents({mightFail}) {
     <div className="IngestedEvents">
       <PageTitle pageName={t('events.ingested.label')} />
       <h1 className="title">{t('events.ingested.eventSources')}</h1>
-      <div className="header">
-        <h4 className="tableTitle">{t('events.ingested.label')}</h4>
-        <SearchInput
-          value={query}
-          placeholder={t('events.ingested.search')}
-          onChange={(evt) => setQuery(evt.target.value)}
-          onClear={() => setQuery('')}
-        />
-        {selected.length > 0 && (
-          <Dropdown
-            className="selectionActions"
-            primary
-            label={selected.length + ' ' + t('common.selected')}
-          >
-            <Tooltip
-              content={maxDeletionReached ? t('events.ingested.deleteLimitReached') : undefined}
-            >
-              <Dropdown.Option onClick={() => setDeleting(true)} disabled={maxDeletionReached}>
-                <Icon type="delete" />
-                {t('common.delete')}
-              </Dropdown.Option>
-            </Tooltip>
-          </Dropdown>
-        )}
-      </div>
       <Table
+        title={t('events.ingested.label')}
+        toolbar={
+          <TableToolbar>
+            <TableToolbarContent>
+              <TableToolbarSearch
+                value={query}
+                placeholder={t('events.ingested.search')}
+                onChange={(evt) => setQuery(evt.target.value)}
+                onClear={() => setQuery('')}
+              />
+              {selected.length > 0 && (
+                <Dropdown
+                  className="selectionActions"
+                  primary
+                  label={selected.length + ' ' + t('common.selected')}
+                >
+                  <Tooltip
+                    content={
+                      maxDeletionReached ? t('events.ingested.deleteLimitReached') : undefined
+                    }
+                  >
+                    <Dropdown.Option
+                      onClick={() => setDeleting(true)}
+                      disabled={maxDeletionReached}
+                    >
+                      <Icon type="delete" />
+                      {t('common.delete')}
+                    </Dropdown.Option>
+                  </Tooltip>
+                </Dropdown>
+              )}
+            </TableToolbarContent>
+          </TableToolbar>
+        }
         head={head}
         body={eventsResponse.results.map((event) => [
           <TableSelectRow
