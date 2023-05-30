@@ -22,6 +22,7 @@ import java.time.Duration;
 public class RaftPartitionConfig {
 
   private static final Duration DEFAULT_ELECTION_TIMEOUT = Duration.ofMillis(2500);
+  private static final Duration DEFAULT_SNAPSHOT_REQUEST_TIMEOUT = Duration.ofMillis(2500);
   private static final Duration DEFAULT_HEARTBEAT_INTERVAL = Duration.ofMillis(250);
   private static final boolean DEFAULT_PRIORITY_ELECTION = true;
   private static final Duration DEFAULT_REQUEST_TIMEOUT = Duration.ofSeconds(5);
@@ -37,6 +38,7 @@ public class RaftPartitionConfig {
   private int maxAppendBatchSize = 32 * 1024;
   private boolean priorityElectionEnabled = DEFAULT_PRIORITY_ELECTION;
   private Duration requestTimeout = DEFAULT_REQUEST_TIMEOUT;
+  private Duration snapshotRequestTimeout = DEFAULT_SNAPSHOT_REQUEST_TIMEOUT;
   private int minStepDownFailureCount = DEFAULT_MIN_STEP_DOWN_FAILURE_COUNT;
   private Duration maxQuorumResponseTimeout = DEFAULT_MAX_QUORUM_RESPONSE_TIMEOUT;
   private PartitionDistributor partitionDistributor = DEFAULT_PARTITION_DISTRIBUTOR;
@@ -119,6 +121,19 @@ public class RaftPartitionConfig {
     this.requestTimeout = requestTimeout;
   }
 
+  public Duration getSnapshotRequestTimeout() {
+    return snapshotRequestTimeout;
+  }
+
+  /**
+   * Sets the timeout for every snapshot request sent by raft leaders to the followers.
+   *
+   * @param snapshotRequestTimeout the request timeout
+   */
+  public void setSnapshotRequestTimeout(final Duration snapshotRequestTimeout) {
+    this.snapshotRequestTimeout = snapshotRequestTimeout;
+  }
+
   public int getMinStepDownFailureCount() {
     return minStepDownFailureCount;
   }
@@ -183,6 +198,8 @@ public class RaftPartitionConfig {
         + priorityElectionEnabled
         + ", requestTimeout="
         + requestTimeout
+        + ", snapshotRequestTimeout="
+        + snapshotRequestTimeout
         + ", minStepDownFailureCount="
         + minStepDownFailureCount
         + ", maxQuorumResponseTimeout="
