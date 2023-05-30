@@ -234,7 +234,7 @@ class ProcessInternalControllerTest {
   }
 
   @Test
-  void getPublicEndpointsByProcessDefinitionKey() throws Exception {
+  void getPublicEndpointsByBpmnProcessId() throws Exception {
     // given
     final String processDefinitionKey = "publicProcess";
 
@@ -253,8 +253,7 @@ class ProcessInternalControllerTest {
             .setBpmnProcessId("publicProcess")
             .setProcessDefinitionKey("1");
 
-    when(processReader.getProcessByProcessDefinitionKey(processDefinitionKey))
-        .thenReturn(processDto);
+    when(processReader.getProcessByBpmnProcessId(processDefinitionKey)).thenReturn(processDto);
 
     // when
     final var responseAsString =

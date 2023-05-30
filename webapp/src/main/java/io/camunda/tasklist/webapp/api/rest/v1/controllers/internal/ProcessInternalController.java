@@ -173,15 +173,13 @@ public class ProcessInternalController extends ApiErrorController {
                     mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
                     schema = @Schema(implementation = Error.class)))
       })
-  @GetMapping("{processDefinitionKey}/publicEndpoint")
+  @GetMapping("{bpmnProcessId}/publicEndpoint")
   public ResponseEntity<ProcessPublicEndpointsResponse> getPublicEndpoint(
-      @PathVariable String processDefinitionKey) {
-    final var process = processReader.getProcessByProcessDefinitionKey(processDefinitionKey);
+      @PathVariable String bpmnProcessId) {
+    final var process = processReader.getProcessByBpmnProcessId(bpmnProcessId);
     if (!process.isStartedByForm()) {
       throw new NotFoundException(
-          String.format(
-              "The public endpoint for processDefinitionKey: '%s' is not found",
-              processDefinitionKey));
+          String.format("The public endpoint for bpmnProcessId: '%s' is not found", bpmnProcessId));
     }
     return ResponseEntity.ok(ProcessPublicEndpointsResponse.fromProcessDTO(process));
   }
