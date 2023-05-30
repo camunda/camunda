@@ -452,6 +452,17 @@ public class RaftPartitionGroup implements ManagedPartitionGroup {
     }
 
     /**
+     * Sets the snapshot request timeout for all messages sent between raft replicas.
+     *
+     * @param snapshotRequestTimeout the timeout
+     * @return the Raft Partition group builder
+     */
+    public Builder withSnapshotRequestTimeout(final Duration snapshotRequestTimeout) {
+      config.getPartitionConfig().setSnapshotRequestTimeout(snapshotRequestTimeout);
+      return this;
+    }
+
+    /**
      * If the leader is not able to reach the quorum, the leader may step down. This is triggered
      * after minStepDownFailureCount number of requests fails to get a response from the quorum of
      * followers as well as if the last response was received before maxQuorumResponseTime.
