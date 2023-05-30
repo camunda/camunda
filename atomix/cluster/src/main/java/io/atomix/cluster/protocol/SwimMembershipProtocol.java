@@ -116,6 +116,9 @@ public class SwimMembershipProtocol
   private ScheduledFuture<?> probeFuture;
   private ScheduledFuture<?> syncFuture;
 
+  private final SwimMembershipProtocolMetrics swimMembershipProtocolMetrics =
+      new SwimMembershipProtocolMetrics();
+
   SwimMembershipProtocol(final SwimMembershipProtocolConfig config) {
     this.config = config;
   }
@@ -274,7 +277,7 @@ public class SwimMembershipProtocol
         // If the state has been changed to SUSPECT, update metadata and then trigger a
         // REACHABILITY_CHANGED event.
         else if (member.state() == State.SUSPECT && swimMember.getState() != State.SUSPECT) {
-          triggerReachibilityEventOnSuspect(member, swimMember);
+          triggerReachabilityEventOnSuspect(member, swimMember);
         }
         // If the state has been changed to DEAD, trigger a REACHABILITY_CHANGED event if necessary
         // and then remove
@@ -334,7 +337,7 @@ public class SwimMembershipProtocol
     tryRemoveMember(swimMember);
   }
 
-  private void triggerReachibilityEventOnSuspect(
+  private void triggerReachabilityEventOnSuspect(
       final ImmutableMember member, final SwimMember swimMember) {
     if (!Objects.equals(member.properties(), swimMember.properties())) {
       swimMember.properties().putAll(member.properties());
@@ -372,6 +375,8 @@ public class SwimMembershipProtocol
    */
   private void recordUpdate(final ImmutableMember member) {
     updates.put(member.id(), member);
+    SwimMembershipProtocolMetrics.updateMemberIncarnationNumber(
+        member.id().id(), member.incarnationNumber);
   }
 
   /** Checks suspect nodes for failures. */
