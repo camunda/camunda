@@ -42,7 +42,6 @@ var skipList = []string{
 	"../pkg/pb/gateway.pb.go",
 	"../internal/mock_pb/",
 	"../vendor/",
-	"../internal/embedded/embedded.go",
 }
 
 func TestLicense(t *testing.T) {

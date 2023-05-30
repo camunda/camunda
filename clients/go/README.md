@@ -47,17 +47,3 @@ go mod vendor
 
 This command will also remove or download dependencies as needed. To do that without vendoring them, you can run `go mod tidy`.
 
-## Static Content
-
-We use `go-bindata` to embed static content into Go files. Currently, this is only used to allow us to access the version regardless of how the Go client is used (e.g., binary, library, etc). To extend this for other types of content, you can simply them to the 'internal/embedded/data' directory and run `go-bindata` to regenerate the embedded asset. The version and the corresponding asset are automatically updated before and after the release. However, if you change some file in the 'data' directory manually, then the embedded assets must be generated manually. You can do this by running (in the 'internal/embedded' dir):
-
-```
-go-bindata -pkg embedded -o embedded.go -prefix data data/
-```
-
-If you don't have `go-bindata` installed, you can install it by running:
-
-```
-go get -u github.com/go-bindata/go-bindata/...
-```
-
