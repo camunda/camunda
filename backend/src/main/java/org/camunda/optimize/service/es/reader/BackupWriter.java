@@ -10,8 +10,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.schema.MappingMetadataUtil;
 import org.camunda.optimize.service.es.schema.OptimizeIndexNameService;
-import org.camunda.optimize.service.exceptions.OptimizeElasticsearchConnectionException;
-import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.elasticsearch.action.ActionListener;
 import org.elasticsearch.action.admin.cluster.snapshots.create.CreateSnapshotRequest;
@@ -83,7 +81,7 @@ public class BackupWriter {
               snapshotInfo.reason()
             );
             log.error(reason);
-            throw new OptimizeRuntimeException(reason);
+            break;
           case PARTIAL:
           default:
             reason = String.format(
@@ -92,7 +90,6 @@ public class BackupWriter {
               snapshotInfo.snapshotId()
             );
             log.warn(reason);
-            throw new OptimizeRuntimeException(reason);
         }
       }
 
@@ -104,11 +101,9 @@ public class BackupWriter {
             snapshotName
           );
           log.error(reason, e);
-          throw new OptimizeElasticsearchConnectionException(reason, e);
         } else {
           final String reason = String.format("Failed to take snapshot [%s]", snapshotName);
           log.error(reason, e);
-          throw new OptimizeRuntimeException(reason, e);
         }
       }
     };
@@ -130,7 +125,6 @@ public class BackupWriter {
             backupId
           );
           log.error(reason);
-          throw new OptimizeRuntimeException(reason);
         }
       }
 
@@ -142,11 +136,9 @@ public class BackupWriter {
             backupId
           );
           log.error(reason, e);
-          throw new OptimizeElasticsearchConnectionException(reason, e);
         } else {
           String reason = String.format("Failed to delete snapshots for backupID [%s]", backupId);
           log.error(reason, e);
-          throw new OptimizeRuntimeException(reason, e);
         }
       }
     };
