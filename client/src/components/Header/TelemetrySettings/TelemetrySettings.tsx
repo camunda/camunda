@@ -46,8 +46,8 @@ export function TelemetrySettings({onClose, mightFail}: TelemetrySettingsProps):
       },
       (err) => {
         showError(err);
-        setIsLoading(false);
-      }
+      },
+      () => setIsLoading(false)
     );
   }
 

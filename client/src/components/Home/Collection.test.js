@@ -5,7 +5,7 @@
  * except in compliance with the proprietary license.
  */
 
-import React from 'react';
+import React, {runAllEffects} from 'react';
 import {shallow} from 'enzyme';
 
 import {Dropdown, EntityList, Deleter, ReportTemplateModal, Badge} from 'components';
@@ -95,7 +95,10 @@ jest.mock('./service', () => ({
 }));
 
 const props = {
-  mightFail: jest.fn().mockImplementation((data, cb) => cb(data)),
+  mightFail: jest.fn().mockImplementation((data, cb, err, final) => {
+    cb(data);
+    final?.();
+  }),
   match: {params: {id: 'aCollectionId'}},
 };
 
@@ -194,7 +197,17 @@ it('should load collection entities with sort parameters', () => {
 });
 
 it('should set the loading state of the entity list', async () => {
-  const node = shallow(<Collection {...props} mightFail={async (data, cb) => cb(await data)} />);
+  const node = shallow(
+    <Collection
+      {...props}
+      mightFail={async (data, cb, err, final) => {
+        cb(await data);
+        final?.();
+      }}
+    />
+  );
+
+  runAllEffects();
 
   expect(node.find('EntityList').prop('isLoading')).toBe(true);
   await flushPromises();

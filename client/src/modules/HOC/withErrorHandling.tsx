@@ -12,36 +12,40 @@ import {useEffect} from 'react';
 export interface WithErrorHandlingProps<T = any> {
   mightFail: (
     retriever: Promise<T>,
-    cb: ((response: any) => T) | undefined,
-    errorHandler?: ((error: any) => void) | undefined
-  ) => Promise<T>;
+    successHandler: ((response: any) => T) | undefined,
+    errorHandler?: ((error: any) => void) | undefined,
+    finallyHandler?: () => void
+  ) => Promise<T | undefined>;
   error?: any;
   resetError?: () => void;
 }
 
-export default function withErrorHandling<P extends object>(
+export default function withErrorHandling<P extends object, T = any>(
   Component: ComponentType<P>
-): ComponentType<Omit<P, keyof WithErrorHandlingProps>> {
-  const Wrapper = (props: Omit<P, keyof WithErrorHandlingProps>) => {
+): ComponentType<Omit<P, keyof WithErrorHandlingProps<T>>> {
+  const Wrapper = (props: Omit<P, keyof WithErrorHandlingProps<T>>) => {
     const [error, setError] = useState<any>(undefined);
     const mounted = useRef<boolean>();
 
     const mightFail = useCallback(
       async (
-        retriever: Promise<any>,
-        cb?: (response: any) => void,
-        errorHandler?: (error: any) => void
+        retriever: Promise<T>,
+        successHandler: ((response: any) => T) | undefined,
+        errorHandler?: ((error: any) => void) | undefined,
+        finallyHandler?: () => void
       ) => {
         try {
           const response = await retriever;
           if (mounted.current) {
-            return cb?.(response);
+            return successHandler?.(response);
           }
         } catch (error) {
           if (mounted.current) {
             errorHandler?.(error);
             setError(error);
           }
+        } finally {
+          finallyHandler?.();
         }
       },
       []

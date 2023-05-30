@@ -53,20 +53,18 @@ export function CollectionModal({
           mightFail(
             addSources(id, sources),
             () => {
-              setLoading(false);
               setRedirect(id);
             },
-            showError
+            showError,
+            () => setLoading(false)
           );
         }
       },
       (error) => {
         showError(error);
-        setLoading(false);
-      }
+      },
+      () => setLoading(false)
     );
-
-    setLoading(true);
   };
 
   if (redirect) {

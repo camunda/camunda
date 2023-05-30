@@ -55,9 +55,9 @@ export function DefinitionEditor({mightFail, collection, type, definition, tenan
       loadProcessDefinitionXml(key, firstVersion, firstTenant),
       (xml) => {
         setXml(xml);
-        setLoadingXml(false);
       },
-      showError
+      showError,
+      () => setLoadingXml(false)
     );
   }, [mightFail, key, firstVersion, firstTenant]);
 
@@ -103,9 +103,9 @@ export function DefinitionEditor({mightFail, collection, type, definition, tenan
 
                       setAvailableTenants(newAvailableTenants);
                       await onChange({...definition, versions: newVersions, tenantIds});
-                      setLoadingVersions(false);
                     },
-                    showError
+                    showError,
+                    () => setLoadingVersions(false)
                   );
                 }
               }}

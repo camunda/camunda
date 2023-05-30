@@ -52,15 +52,14 @@ export function PublishModal({
     mightFail(
       publish(id),
       () => {
-        setLoading(false);
         addNotification({type: 'hint', text: t('events.publishStart')});
         onPublish();
         onClose();
       },
       (error) => {
-        setLoading(false);
         showError(error);
-      }
+      },
+      () => setLoading(false)
     );
   };
 

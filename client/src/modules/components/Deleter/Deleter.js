@@ -54,12 +54,12 @@ export default withErrorHandling(
                   }, {}),
                 });
               }
-              this.setState({loading: false});
             },
             (error) => {
               showError(error);
-              this.setState({conflicts: {}, loading: false});
-            }
+              this.setState({conflicts: {}});
+            },
+            () => this.setState({loading: false})
           );
         } else {
           this.setState({conflicts: {}, loading: false});
@@ -84,8 +84,8 @@ export default withErrorHandling(
         },
         (error) => {
           showError(error);
-          this.setState({loading: false});
-        }
+        },
+        () => this.setState({loading: false})
       );
     };
 

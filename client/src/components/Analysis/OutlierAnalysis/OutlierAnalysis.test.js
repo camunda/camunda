@@ -33,7 +33,10 @@ jest.mock('services', () => {
 });
 
 const props = {
-  mightFail: jest.fn().mockImplementation((data, cb) => cb(data)),
+  mightFail: jest.fn().mockImplementation((data, cb, err, final) => {
+    cb(data);
+    final?.();
+  }),
 };
 
 it('should contain a control panel', () => {

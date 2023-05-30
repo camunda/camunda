@@ -201,3 +201,67 @@ it('should call a custom error handler', async () => {
 
   expect(spy).toHaveBeenCalledWith(error);
 });
+
+it('should call finally after success', async () => {
+  const spy = jest.fn();
+  const Component = withErrorHandling(
+    class extends React.Component<WithErrorHandlingProps> {
+      render() {
+        return (
+          <button
+            onClick={() =>
+              this.props.mightFail(
+                (async () => {
+                  return true;
+                })(),
+                jest.fn(),
+                jest.fn(),
+                spy
+              )
+            }
+          />
+        );
+      }
+    }
+  );
+
+  const node = shallow(<Component />);
+
+  runLastEffect();
+  node.dive().find('button').simulate('click');
+  await node.update();
+
+  expect(spy).toHaveBeenCalled();
+});
+
+it('should call finally after error', async () => {
+  const spy = jest.fn();
+  const Component = withErrorHandling(
+    class extends React.Component<WithErrorHandlingProps> {
+      render() {
+        return (
+          <button
+            onClick={() =>
+              this.props.mightFail(
+                (async () => {
+                  throw new Error();
+                })(),
+                jest.fn(),
+                jest.fn(),
+                spy
+              )
+            }
+          />
+        );
+      }
+    }
+  );
+
+  const node = shallow(<Component />);
+
+  runLastEffect();
+  node.dive().find('button').simulate('click');
+  await node.update();
+
+  expect(spy).toHaveBeenCalled();
+});

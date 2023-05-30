@@ -41,13 +41,12 @@ export function UsersModal({id, mightFail, onClose}: UsersModalProps): JSX.Eleme
     mightFail(
       updateUsers(id, users ?? []),
       () => {
-        setLoading(false);
         onClose(users);
       },
       (error) => {
         showError(error);
-        setLoading(false);
-      }
+      },
+      () => setLoading(false)
     );
   }
 

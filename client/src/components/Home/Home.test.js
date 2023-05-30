@@ -34,7 +34,10 @@ jest.mock('./service', () => ({
 }));
 
 const props = {
-  mightFail: jest.fn().mockImplementation((data, cb) => cb(data)),
+  mightFail: jest.fn().mockImplementation((data, cb, err, final) => {
+    cb(data);
+    final?.();
+  }),
   user: {name: 'John Doe', authorizations: ['entity_editor']},
 };
 
@@ -81,7 +84,10 @@ it('should show the loading indicator', async () => {
     <Home
       {...props}
       user={{name: 'John Doe', authorizations: []}}
-      mightFail={async (data, cb) => cb(await data)}
+      mightFail={async (data, cb, err, final) => {
+        cb(await data);
+        final();
+      }}
     />
   );
 
@@ -96,7 +102,7 @@ it('should show the loading indicator', async () => {
 
 it('should show empty state component', async () => {
   loadEntities.mockReturnValueOnce([]);
-  const node = shallow(<Home {...props} mightFail={async (data, cb) => cb(await data)} />);
+  const node = shallow(<Home {...props} />);
 
   runAllEffects();
 
@@ -115,13 +121,7 @@ it('should show empty state component', async () => {
 
 it('should show entity list component when user is not editor and there no entities', async () => {
   loadEntities.mockReturnValueOnce([]);
-  const node = shallow(
-    <Home
-      {...props}
-      user={{name: 'John Doe', authorizations: []}}
-      mightFail={async (data, cb) => cb(await data)}
-    />
-  );
+  const node = shallow(<Home {...props} user={{name: 'John Doe', authorizations: []}} />);
 
   runAllEffects();
 

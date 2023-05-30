@@ -88,11 +88,12 @@ export class Collection extends React.Component {
     this.setState({isLoading: true, sorting: {key: sortBy, order: sortOrder}});
     this.props.mightFail(
       loadCollectionEntities(this.props.match.params.id, sortBy, sortOrder),
-      (entities) => this.setState({entities, isLoading: false}),
+      (entities) => this.setState({entities}),
       (error) => {
         showError(error);
-        this.setState({entities: null, isLoading: false});
-      }
+        this.setState({entities: null});
+      },
+      () => this.setState({isLoading: false})
     );
   };
 

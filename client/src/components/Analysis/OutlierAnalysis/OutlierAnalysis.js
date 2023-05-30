@@ -97,10 +97,10 @@ export class OutlierAnalysis extends React.Component {
         this.setState({
           data,
           heatData,
-          loading: false,
         });
       },
-      showError
+      showError,
+      () => this.setState({loading: false})
     );
   };
 
@@ -149,7 +149,6 @@ export class OutlierAnalysis extends React.Component {
       }),
       (data) => {
         this.setState({
-          loading: false,
           selectedNode: {
             name: this.state.flowNodeNames[id] || id,
             id,
@@ -157,7 +156,9 @@ export class OutlierAnalysis extends React.Component {
             ...nodeData,
           },
         });
-      }
+      },
+      undefined,
+      () => this.setState({loading: false})
     );
   };
 

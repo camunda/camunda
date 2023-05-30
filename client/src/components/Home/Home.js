@@ -56,13 +56,12 @@ export function Home({mightFail, user}) {
         loadEntities(sortBy, sortOrder),
         (entities) => {
           setEntities(entities);
-          setIsLoading(false);
         },
         (error) => {
           showError(error);
           setEntities([]);
-          setIsLoading(false);
-        }
+        },
+        () => setIsLoading(false)
       );
     },
     [mightFail]
