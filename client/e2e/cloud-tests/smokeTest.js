@@ -20,10 +20,10 @@ test('create a report from a template', async (t) => {
   await t.maximizeWindow();
 
   await t
-    .typeText('input[name="username"]', process.env.AUTH0_USEREMAIL)
-    .click('button[type="submit"]')
-    .typeText('input[name="password"]', process.env.AUTH0_USERPASSWORD)
-    .click('button[type="submit"]');
+    .typeText(e.usernameInput, process.env.AUTH0_USEREMAIL)
+    .click(e.submitButton)
+    .typeText(e.passwordInput, process.env.AUTH0_USERPASSWORD)
+    .click(e.submitButton);
 
   await t.click(e.whatsNewCloseBtn);
   await t.click(Common.createNewMenu);
