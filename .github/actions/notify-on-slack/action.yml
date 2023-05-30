@@ -1,0 +1,33 @@
+name: Notify on Slack
+description: Allows to post a message on slack channel with workflow run results
+inputs:
+  slack_webhook_url:
+    description: Slack webhook url
+    required: true
+  text:
+    description: Message to be sent
+    required: false
+  status:
+    description: Status of the message
+    required: false
+    default: failure
+  fields:
+    description: Fields to be used in the message
+    required: false
+    default: workflow,eventName,repo,action,ref
+  channel:
+    description: Slack channel
+    required: false
+    default: "#optimize-daily-medic-update"
+runs:
+  using: composite
+  steps:
+    - name: Send notification
+      uses: 8398a7/action-slack@v3
+      with:
+        text: ${{ inputs.text }}
+        status: ${{ inputs.status }}
+        channel: ${{ inputs.channel }}
+        fields: ${{ inputs.fields }}
+      env:
+        SLACK_WEBHOOK_URL: ${{ inputs.slack_webhook_url }}

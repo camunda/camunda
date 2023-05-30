@@ -23,6 +23,7 @@ jobs:
           secretId: ${{ secrets.VAULT_SECRET_ID }}
           secrets: |
             secret/data/products/optimize/ci/jenkins SONARCLOUD_TOKEN;
+            secret/data/products/optimize/ci/camunda-optimize SLACK_BOT_URL;
 
       - name: Setup Maven
         uses: ./.github/actions/setup-maven
@@ -33,3 +34,10 @@ jobs:
         uses: ./.github/actions/run-maven
         with:
           parameters: verify sonar:sonar -DskipTests -Dskip.docker -Pit,coverage -pl backend,upgrade,util/optimize-reimport-preparation,test-coverage -am -Dsonar.projectKey=camunda_camunda-optimize -Dsonar.login=${{ steps.secrets.outputs.SONARCLOUD_TOKEN }}
+
+      - name: Post results on slack
+        if: failure()
+        uses: ./.github/actions/notify-on-slack
+        with:
+          slack_webhook_url: ${{ steps.secrets.outputs.SLACK_BOT_URL}}
+          status: ${{ job.status }}
