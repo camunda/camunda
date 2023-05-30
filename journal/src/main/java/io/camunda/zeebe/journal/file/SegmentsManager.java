@@ -22,6 +22,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
@@ -211,16 +212,26 @@ final class SegmentsManager implements AutoCloseable {
    * @return the first segment
    */
   Segment resetSegments(final long index) {
-    for (final Segment segment : segments.values()) {
-      segment.delete();
-      journalMetrics.decSegmentCount();
-    }
-    segments.clear();
-
+    // reset the last flushed index before deleting data to avoid data corruption on start up in
+    // case of node crash
     // setting the last flushed index to a semantic-null value will let us know on start up that
     // there is "nothing" written, even if we cannot read the descriptor (e.g. if we crash after
     // creating the segment but before writing its descriptor)
     metaStore.resetLastFlushedIndex();
+
+    // delete the segments in reverse order, such that if the operation is interrupted (e.g. crash)
+    // in the middle, there are no gaps in the log (or between the log and snapshot)
+    final Iterator<Segment> it = segments.descendingMap().values().iterator();
+    while (it.hasNext()) {
+      // we explicitly do not want to close the segment, as we may be only soft deleting it here to
+      // allow readers to finish what they're doing and avoid a race condition with unmapping the
+      // underlying buffer
+      //noinspection resource
+      final var segment = it.next();
+      segment.delete();
+      it.remove();
+      journalMetrics.decSegmentCount();
+    }
 
     final SegmentDescriptor descriptor =
         SegmentDescriptor.builder()
