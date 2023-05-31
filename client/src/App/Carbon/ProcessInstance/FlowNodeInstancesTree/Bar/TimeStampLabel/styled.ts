@@ -6,12 +6,13 @@
  */
 
 import styled from 'styled-components';
-import {TreeNode as BaseTreeNode} from '@carbon/react';
+import {styles} from '@carbon/elements';
 
-const TreeNode = styled(BaseTreeNode)`
-  .cds--tree-node__label {
-    height: 2rem;
-  }
+const TimeStamp = styled.span`
+  padding: 0 var(--cds-spacing-03);
+  background: var(--cds-layer);
+  ${styles.label01};
+  border-radius: 2px;
 `;
 
-export {TreeNode};
+export {TimeStamp};

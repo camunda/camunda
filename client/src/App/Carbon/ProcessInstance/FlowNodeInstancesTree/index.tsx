@@ -19,9 +19,10 @@ import {InfiniteScroller} from 'modules/components/InfiniteScroller';
 import {tracking} from 'modules/tracking';
 import {modificationsStore} from 'modules/stores/modifications';
 import {instanceHistoryModificationStore} from 'modules/stores/instanceHistoryModification';
-import {TreeNode, NodeName} from './styled';
+import {TreeNode} from './styled';
 import {FlowNodeIcon} from 'modules/components/Carbon/FlowNodeIcon';
 import {isSubProcess} from 'modules/bpmn-js/utils/isSubProcess';
+import {Bar} from './Bar';
 
 type Props = {
   flowNodeInstance: FlowNodeInstance;
@@ -231,7 +232,7 @@ const FlowNodeInstancesTree: React.FC<Props> = observer(
             ? hasVisibleChildPlaceholders
             : hasVisibleChildNodes
         }
-        label={<NodeName>{nodeName}</NodeName>}
+        label={<Bar nodeName={nodeName} flowNodeInstance={flowNodeInstance} />}
       >
         {hasChildren ? (
           <ScrollableNodes

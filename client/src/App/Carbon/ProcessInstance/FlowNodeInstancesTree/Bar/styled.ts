@@ -6,12 +6,9 @@
  */
 
 import styled from 'styled-components';
-import {TreeNode as BaseTreeNode} from '@carbon/react';
 
-const TreeNode = styled(BaseTreeNode)`
-  .cds--tree-node__label {
-    height: 2rem;
-  }
+const NodeName = styled.span`
+  margin-left: var(--cds-spacing-02);
 `;
 
-export {TreeNode};
+export {NodeName};
