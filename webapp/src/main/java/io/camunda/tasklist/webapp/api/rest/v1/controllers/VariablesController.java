@@ -6,7 +6,7 @@
  */
 package io.camunda.tasklist.webapp.api.rest.v1.controllers;
 
-import io.camunda.tasklist.webapp.graphql.entity.VariableDTO;
+import io.camunda.tasklist.webapp.api.rest.v1.entities.VariableResponse;
 import io.camunda.tasklist.webapp.rest.exception.Error;
 import io.camunda.tasklist.webapp.security.TasklistURIs;
 import io.camunda.tasklist.webapp.service.VariableService;
@@ -48,8 +48,12 @@ public class VariablesController extends ApiErrorController {
                     schema = @Schema(implementation = Error.class)))
       })
   @GetMapping("{variableId}")
-  public ResponseEntity<VariableDTO> getVariableById(@PathVariable String variableId) {
+  public ResponseEntity<VariableResponse> getVariableById(@PathVariable String variableId) {
     final var variable = variableService.getVariable(variableId, Collections.emptySet());
-    return ResponseEntity.ok(variable);
+    return ResponseEntity.ok(
+        new VariableResponse()
+            .setId(variable.getId())
+            .setName(variable.getName())
+            .setValue(variable.getValue()));
   }
 }

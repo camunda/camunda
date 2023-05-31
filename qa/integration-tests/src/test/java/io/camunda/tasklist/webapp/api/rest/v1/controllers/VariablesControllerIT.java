@@ -13,7 +13,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.tasklist.util.MockMvcHelper;
 import io.camunda.tasklist.util.TasklistZeebeIntegrationTest;
-import io.camunda.tasklist.webapp.graphql.entity.VariableDTO;
+import io.camunda.tasklist.webapp.api.rest.v1.entities.VariableResponse;
 import io.camunda.tasklist.webapp.security.TasklistURIs;
 import java.util.UUID;
 import org.junit.Before;
@@ -68,19 +68,17 @@ public class VariablesControllerIT extends TasklistZeebeIntegrationTest {
     assertThat(result)
         .hasOkHttpStatus()
         .hasApplicationJsonContentType()
-        .extractingContent(objectMapper, VariableDTO.class)
+        .extractingContent(objectMapper, VariableResponse.class)
         .satisfies(
             var -> {
               assertThat(var.getId()).isEqualTo(variableId);
               assertThat(var.getName()).isEqualTo("freezingPointF");
               assertThat(var.getValue()).isEqualTo("32");
-              assertThat(var.getPreviewValue()).isEqualTo("32");
-              assertThat(var.getIsValueTruncated()).isFalse();
             });
   }
 
   @Test
-  public void getVariableByIdWhenVariableNotExistThen404ErrorExpected() throws Exception {
+  public void getVariableByIdWhenVariableNotExistThen404ErrorExpected() {
     // given
     final var variableId = "not-found-445";
 

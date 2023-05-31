@@ -12,6 +12,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import io.camunda.tasklist.webapp.CommonUtils;
+import io.camunda.tasklist.webapp.api.rest.v1.entities.VariableResponse;
 import io.camunda.tasklist.webapp.graphql.entity.VariableDTO;
 import io.camunda.tasklist.webapp.security.TasklistURIs;
 import io.camunda.tasklist.webapp.service.VariableService;
@@ -45,7 +46,10 @@ class VariablesControllerTest {
   void getVariableById() throws Exception {
     // Given
     final var variableId = "var-2222";
-    final var providedVariable = new VariableDTO().setId(variableId).setName("a").setValue("24.12");
+    final var providedVariable =
+        new VariableDTO().setId(variableId).setName("a").setValue("24.12").setPreviewValue("24.12");
+    final var expectedVariable =
+        new VariableResponse().setId(variableId).setName("a").setValue("24.12");
     when(variableService.getVariable(variableId, Collections.emptySet()))
         .thenReturn(providedVariable);
 
@@ -61,9 +65,10 @@ class VariablesControllerTest {
             .andReturn()
             .getResponse()
             .getContentAsString();
-    final var result = CommonUtils.OBJECT_MAPPER.readValue(responseAsString, VariableDTO.class);
+    final var result =
+        CommonUtils.OBJECT_MAPPER.readValue(responseAsString, VariableResponse.class);
 
     // Then
-    assertThat(result).isEqualTo(providedVariable);
+    assertThat(result).isEqualTo(expectedVariable);
   }
 }

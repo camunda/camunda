@@ -7,6 +7,7 @@
 package io.camunda.tasklist.webapp.api.rest.v1.controllers;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.AssertionsForClassTypes.tuple;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -316,10 +317,18 @@ class TaskControllerTest {
   void searchTaskVariables() throws Exception {
     // Given
     final var taskId = "778899";
-    final var variableA = new VariableDTO().setId("123").setName("varA").setValue("925.5");
+    final var variableA =
+        new VariableDTO().setId("111").setName("varA").setValue("925.5").setPreviewValue("925.5");
+    final var variableB =
+        new VariableDTO()
+            .setId("112")
+            .setName("varB")
+            .setValue("\"veryVeryLongValueThatExceedsVariableSizeLimit\"")
+            .setIsValueTruncated(true)
+            .setPreviewValue("\"veryVeryLongValue");
     final var variableNames = List.of("varA", "varB", "varC");
     when(variableService.getVariables(taskId, variableNames, Collections.emptySet()))
-        .thenReturn(List.of(variableA));
+        .thenReturn(List.of(variableA, variableB));
 
     // When
     final var responseAsString =
@@ -343,7 +352,11 @@ class TaskControllerTest {
             responseAsString, new TypeReference<List<VariableDTO>>() {});
 
     // Then
-    assertThat(result).singleElement().isEqualTo(variableA);
+    assertThat(result)
+        .extracting("name", "value", "isValueTruncated", "previewValue")
+        .containsExactly(
+            tuple("varA", "925.5", false, "925.5"),
+            tuple("varB", null, true, "\"veryVeryLongValue"));
   }
 
   @Test

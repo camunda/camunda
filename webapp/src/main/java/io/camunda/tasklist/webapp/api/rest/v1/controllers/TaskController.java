@@ -252,6 +252,12 @@ public class TaskController extends ApiErrorController {
 
     final List<VariableDTO> variables =
         variableService.getVariables(taskId, variableNames, Collections.emptySet());
+    variables.forEach(
+        variable -> {
+          if (variable.getIsValueTruncated()) {
+            variable.setValue(null);
+          }
+        });
     return ResponseEntity.ok(variables);
   }
 }
