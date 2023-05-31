@@ -84,7 +84,7 @@ jobs:
         \"branch\": \"${{ inputs.branch || 'main' }}\",
         \"build\":  \"${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}\",
         \"clusterPlan\":\"${{ inputs.clusterPlan }}\",
-        \"region\":\"New Chaos - Belgium, Europe (europe-west1-d)\",
+        \"region\":\"Chaos, Belgium, Europe (europe-west1)\",
         \"properties\":[\"allInstancesAreCompleted\"],
         \"testProcessId\": \"e2e-test\",
         \"testParams\":
