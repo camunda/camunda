@@ -129,19 +129,17 @@ public final class MultiInstanceSubProcessTest {
 
     assertThat(
             RecordingExporter.processInstanceRecords()
+                .onlyEvents()
                 .withProcessInstanceKey(processInstanceKey)
                 .limitToProcessInstanceCompleted()
                 .withFlowScopeKey(subProcessInstanceKey))
         .extracting(r -> tuple(r.getValue().getElementId(), r.getIntent()))
         .containsExactly(
-            tuple("sub-process-start", ProcessInstanceIntent.ACTIVATE_ELEMENT),
             tuple("sub-process-start", ProcessInstanceIntent.ELEMENT_ACTIVATING),
             tuple("sub-process-start", ProcessInstanceIntent.ELEMENT_ACTIVATED),
-            tuple("sub-process-start", ProcessInstanceIntent.COMPLETE_ELEMENT),
             tuple("sub-process-start", ProcessInstanceIntent.ELEMENT_COMPLETING),
             tuple("sub-process-start", ProcessInstanceIntent.ELEMENT_COMPLETED),
             tuple("sub-process-to-end", ProcessInstanceIntent.SEQUENCE_FLOW_TAKEN),
-            tuple("sub-process-end", ProcessInstanceIntent.ACTIVATE_ELEMENT),
             tuple("sub-process-end", ProcessInstanceIntent.ELEMENT_ACTIVATING),
             tuple("sub-process-end", ProcessInstanceIntent.ELEMENT_ACTIVATED),
             tuple("sub-process-end", ProcessInstanceIntent.ELEMENT_COMPLETING),
