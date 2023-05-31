@@ -231,6 +231,7 @@ public final class ExclusiveGatewayTest {
     // then
     final List<Record<ProcessInstanceRecordValue>> processEvents =
         RecordingExporter.processInstanceRecords()
+            .onlyEvents()
             .withProcessInstanceKey(processInstanceKey)
             .skipUntil(r -> r.getValue().getElementId().equals("xor"))
             .limitToProcessInstanceCompleted()
@@ -239,18 +240,15 @@ public final class ExclusiveGatewayTest {
     assertThat(processEvents)
         .extracting(Record::getIntent)
         .containsExactly(
-            ProcessInstanceIntent.ACTIVATE_ELEMENT,
             ProcessInstanceIntent.ELEMENT_ACTIVATING,
             ProcessInstanceIntent.ELEMENT_ACTIVATED,
             ProcessInstanceIntent.ELEMENT_COMPLETING,
             ProcessInstanceIntent.ELEMENT_COMPLETED,
             ProcessInstanceIntent.SEQUENCE_FLOW_TAKEN,
-            ProcessInstanceIntent.ACTIVATE_ELEMENT,
             ProcessInstanceIntent.ELEMENT_ACTIVATING,
             ProcessInstanceIntent.ELEMENT_ACTIVATED,
             ProcessInstanceIntent.ELEMENT_COMPLETING,
             ProcessInstanceIntent.ELEMENT_COMPLETED,
-            ProcessInstanceIntent.COMPLETE_ELEMENT,
             ProcessInstanceIntent.ELEMENT_COMPLETING,
             ProcessInstanceIntent.ELEMENT_COMPLETED);
   }
