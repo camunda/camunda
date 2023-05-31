@@ -54,7 +54,7 @@
     <version.error-prone>2.19.1</version.error-prone>
     <version.grpc>1.55.1</version.grpc>
     <version.gson>2.10.1</version.gson>
-    <version.guava>31.1-jre</version.guava>
+    <version.guava>32.0.0-jre</version.guava>
     <version.hamcrest>2.2</version.hamcrest>
     <version.httpasyncclient>4.1.5</version.httpasyncclient>
     <version.httpclient>4.5.14</version.httpclient>
@@ -1007,6 +1007,48 @@
         <scope>import</scope>
       </dependency>
 
+      <dependency>
+        <groupId>com.cronutils</groupId>
+        <artifactId>cron-utils</artifactId>
+        <version>${version.cron-utils}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>jakarta.validation</groupId>
+        <artifactId>jakarta.validation-api</artifactId>
+        <version>${version.validation-api}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.openapitools</groupId>
+        <artifactId>jackson-databind-nullable</artifactId>
+        <version>${version.jackson-databind-nullable}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>com.fasterxml.jackson.core</groupId>
+        <artifactId>jackson-annotations</artifactId>
+        <version>${version.jackson-annotations}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>io.swagger.core.v3</groupId>
+        <artifactId>swagger-annotations</artifactId>
+        <version>${version.swagger-annotations}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.apache.commons</groupId>
+        <artifactId>commons-compress</artifactId>
+        <version>${version.commons-compress}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>com.github.luben</groupId>
+        <artifactId>zstd-jni</artifactId>
+        <version>${version.zstd-jni}</version>
+      </dependency>
+
       <!-- Dependencies present for convergence only -->
       <!-- between duct-tape (from testcontainers) and kotlin-stdlib (from identity-sdk) -->
       <dependency>
@@ -1051,18 +1093,6 @@
         <version>${version.commons-codec}</version>
       </dependency>
 
-      <dependency>
-        <groupId>org.apache.commons</groupId>
-        <artifactId>commons-compress</artifactId>
-        <version>${version.commons-compress}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>com.github.luben</groupId>
-        <artifactId>zstd-jni</artifactId>
-        <version>${version.zstd-jni}</version>
-      </dependency>
-
       <!-- both hamcrest-core (deprecated in favor of hamcrest) and hamcrest are required for
            dependency convergence, mostly due to junit4's dependency on hamcrest-core -->
       <dependency>
@@ -1086,39 +1116,16 @@
       </dependency>
 
       <dependency>
-        <groupId>com.cronutils</groupId>
-        <artifactId>cron-utils</artifactId>
-        <version>${version.cron-utils}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>jakarta.validation</groupId>
-        <artifactId>jakarta.validation-api</artifactId>
-        <version>${version.validation-api}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>org.openapitools</groupId>
-        <artifactId>jackson-databind-nullable</artifactId>
-        <version>${version.jackson-databind-nullable}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>com.fasterxml.jackson.core</groupId>
-        <artifactId>jackson-annotations</artifactId>
-        <version>${version.jackson-annotations}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>io.swagger.core.v3</groupId>
-        <artifactId>swagger-annotations</artifactId>
-        <version>${version.swagger-annotations}</version>
-      </dependency>
-
-      <dependency>
         <groupId>org.checkerframework</groupId>
         <artifactId>checker-qual</artifactId>
         <version>${version.checker-qual}</version>
+      </dependency>
+
+      <!-- between Guava 32 and multiple Google dependencies, e.g. gRPC -->
+      <dependency>
+        <groupId>com.google.j2objc</groupId>
+        <artifactId>j2objc-annotations</artifactId>
+        <version>2.8</version>
       </dependency>
     </dependencies>
   </dependencyManagement>
