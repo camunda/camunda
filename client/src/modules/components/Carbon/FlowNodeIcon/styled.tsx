@@ -6,11 +6,13 @@
  */
 
 import styled, {css} from 'styled-components';
+import {INSTANCE_HISTORY_LEFT_PADDING} from 'modules/constants';
 
 type Props = {
   SVGComponent: React.FunctionComponent<React.SVGProps<SVGSVGElement>>;
   $isGateway: boolean;
   className?: string;
+  $hasLeftMargin?: boolean;
 };
 
 const BaseSVGIcon: React.FC<Props> = ({SVGComponent, className}) => {
@@ -18,13 +20,18 @@ const BaseSVGIcon: React.FC<Props> = ({SVGComponent, className}) => {
 };
 
 const SVGIcon = styled(BaseSVGIcon)`
-  ${({$isGateway}) => {
+  ${({$isGateway, $hasLeftMargin}) => {
     return css`
       ${$isGateway
         ? css`
             position: relative;
             top: 3px;
             right: 2px;
+          `
+        : ''}
+      ${$hasLeftMargin
+        ? css`
+            margin-left: ${INSTANCE_HISTORY_LEFT_PADDING};
           `
         : ''}
     `;

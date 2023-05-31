@@ -6,6 +6,8 @@
  */
 
 import styled from 'styled-components';
+import {StateIcon as BaseStateIcon} from 'modules/components/Carbon/StateIcon';
+import {INSTANCE_HISTORY_LEFT_PADDING} from 'modules/constants';
 
 const NodeName = styled.span`
   margin-left: var(--cds-spacing-02);
@@ -17,4 +19,10 @@ const Container = styled.div`
   flex: 1;
 `;
 
-export {NodeName, Container};
+const StateIcon = styled(BaseStateIcon)`
+  position: absolute;
+  left: ${INSTANCE_HISTORY_LEFT_PADDING};
+  align-self: center;
+`;
+
+export {NodeName, Container, StateIcon};

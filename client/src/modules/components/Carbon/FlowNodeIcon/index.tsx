@@ -226,12 +226,14 @@ type Props = {
   flowNodeInstanceType: FlowNodeInstance['type'];
   diagramBusinessObject: BusinessObject;
   className?: string;
+  hasLeftMargin?: boolean;
 };
 
 const FlowNodeIcon: React.FC<Props> = ({
   flowNodeInstanceType,
   diagramBusinessObject,
   className,
+  hasLeftMargin = false,
 }) => {
   const SVGComponent = getSVGComponent(
     diagramBusinessObject,
@@ -245,6 +247,7 @@ const FlowNodeIcon: React.FC<Props> = ({
         diagramBusinessObject.$type
       )}
       className={className}
+      $hasLeftMargin={hasLeftMargin}
     />
   );
 };

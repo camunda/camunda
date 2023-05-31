@@ -195,6 +195,7 @@ const FlowNodeInstancesTree: React.FC<Props> = observer(
           <FlowNodeIcon
             flowNodeInstanceType={flowNodeInstance.type}
             diagramBusinessObject={businessObject!}
+            hasLeftMargin={!hasChildren}
           />
         )}
         onSelect={() => {

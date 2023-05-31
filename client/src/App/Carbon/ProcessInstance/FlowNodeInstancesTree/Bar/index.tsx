@@ -8,7 +8,7 @@
 import React from 'react';
 
 import {TimeStampLabel} from './TimeStampLabel';
-import {NodeName, Container} from './styled';
+import {NodeName, Container, StateIcon} from './styled';
 import {Layer, Stack} from '@carbon/react';
 
 import {modificationsStore} from 'modules/stores/modifications';
@@ -25,6 +25,9 @@ const Bar: React.FC<Props> = observer(({nodeName, flowNodeInstance}) => {
   return (
     <Container>
       <Stack orientation="horizontal" gap={5}>
+        {flowNodeInstance.state !== undefined && (
+          <StateIcon state={flowNodeInstance.state} size={16} />
+        )}
         <NodeName>{nodeName}</NodeName>
         {!modificationsStore.isModificationModeEnabled && (
           <Layer>
