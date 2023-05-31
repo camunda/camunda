@@ -1,0 +1,53 @@
+---
+name: sync-issues
+# This workflow syncs comments and issues from this private repository to https://github.com/camunda/issues for the possibility
+# of sharing selected issues with the public (e.g. for the support context)
+
+# An issue labeled with 'public' will be synced to camunda/issues
+
+on:
+  issues:
+    types: [closed, deleted, edited, labeled, reopened, unlabeled]
+  issue_comment:
+    types: [created, edited, deleted]
+
+jobs:
+  sync-issues:
+    runs-on: ubuntu-22.04
+    if: contains( github.event.issue.labels.*.name, 'public')  # limits this workflow to only run on issues and comments with the label. Cost saving
+    steps:
+    - name: Import secrets
+      id: secrets
+      uses: hashicorp/vault-action@v2.5.0
+      with:
+        url: ${{ secrets.VAULT_ADDR }}
+        method: approle
+        roleId: ${{ secrets.VAULT_ROLE_ID }}
+        secretId: ${{ secrets.VAULT_SECRET_ID }}
+        secrets: |
+          secret/data/github.com/apps/engineering-issue-sync GITHUB_APP_ID;
+          secret/data/github.com/apps/engineering-issue-sync GITHUB_APP_PEM_FILE_CONTENT;
+    - name: Generate token
+      id: generate_token
+      uses: tibdex/github-app-token@v1
+      with:
+        app_id: ${{ steps.secrets.outputs.GITHUB_APP_ID }}
+        private_key: ${{ steps.secrets.outputs.GITHUB_APP_PEM_FILE_CONTENT }}
+    - name: Issue Sync Action
+      uses: camunda/issue-sync-action@main
+      id: issue_sync
+      env:
+        GITHUB_TOKEN: ${{ steps.generate_token.outputs.token }}
+      with:
+        repo_target: 'camunda/issues'
+        only_sync_on_label: 'public'
+        only_sync_main_issue: 'false'
+        create_issues_on_edit: 'false'
+        additional_issue_labels: 'component:operate'
+        sync_repo_labels: 'false'
+        use_comment_for_issue_matching: 'true'
+        skip_comment_sync_keywords: '[private]'
+        issue_created_comment_template: |
+          A public copy of the issue has been created: {{<link>}}
+          **Notice:** The issue comments **will be** synchronized.
+          Please don't share the sensitive information in the comments, or add `[private]` to the comments that should not be made public.
