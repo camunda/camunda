@@ -5,23 +5,46 @@
  * except in compliance with the proprietary license.
  */
 
-import styled from 'styled-components';
-import {TextInput as BaseTextInput} from '@carbon/react';
+import styled, {css} from 'styled-components';
+import {
+  TextInput as BaseTextInput,
+  IconButton as BaseIconButton,
+} from '@carbon/react';
 
-const Container = styled.div`
-  position: relative;
+const IconButton = styled(BaseIconButton)`
+  min-height: calc(2rem - 4px);
+  margin: 2px 0;
+`;
 
-  svg {
-    position: absolute;
-    bottom: var(--cds-spacing-03);
-    right: var(--cds-spacing-03);
-  }
+const IconContainer = styled.div`
+  position: absolute;
+  bottom: 0;
+  right: 0;
 `;
 
 const TextInput = styled(BaseTextInput)`
   input {
     padding-right: var(--cds-spacing-07);
+
+    ${({invalid}) =>
+      invalid &&
+      css`
+        padding-right: var(--cds-spacing-11);
+      `}
   }
 `;
 
-export {Container, TextInput};
+const Container = styled.div<{$isInvalid?: boolean}>`
+  position: relative;
+
+  ${IconContainer} {
+    ${({$isInvalid}) =>
+      $isInvalid &&
+      css`
+        bottom: 20px;
+        right: var(--cds-spacing-08);
+      `}}
+  }
+`;
+
+export {Container, TextInput, IconContainer, IconButton};

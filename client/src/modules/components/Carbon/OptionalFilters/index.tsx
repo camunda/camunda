@@ -28,6 +28,7 @@ const OptionalFiltersMenu = <T extends string>({
   return unselectedOptionalFilters.length > 0 ? (
     <Container>
       <OverflowMenu
+        direction="top"
         aria-label="optional-filters-menu"
         iconDescription="More Filters"
         flipped

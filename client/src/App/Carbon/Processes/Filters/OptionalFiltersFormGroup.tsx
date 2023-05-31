@@ -37,6 +37,7 @@ import {
   ButtonContainer,
   FieldContainer,
 } from 'modules/components/Carbon/FiltersPanel/styled';
+import {Variable} from './VariableField';
 
 type OptionalFilter =
   | 'variable'
@@ -191,7 +192,7 @@ const OptionalFiltersFormGroup: React.FC<Props> = observer(
               {(() => {
                 switch (filter) {
                   case 'variable':
-                    return null;
+                    return <Variable />;
                   case 'startDateRange':
                     return (
                       <DateRangeField

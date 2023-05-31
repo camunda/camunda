@@ -235,4 +235,5 @@ declare module '@carbon/react/icons' {
   export const Calendar: Icon;
   export const Add: Icon;
   export const Close: Icon;
+  export const Popup: Icon;
 }

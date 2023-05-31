@@ -60,6 +60,16 @@ const DateRangeField: React.FC<Props> = observer(
       return '';
     };
 
+    const handleClick = () => {
+      if (!isModalOpen) {
+        onClick();
+        tracking.track({
+          eventName: 'date-range-popover-opened',
+          filterName,
+        });
+      }
+    };
+
     return (
       <>
         <div ref={textFieldRef}>
@@ -71,15 +81,9 @@ const DateRangeField: React.FC<Props> = observer(
             title={getInputValue()}
             placeholder="Enter date range"
             size="sm"
-            onClick={() => {
-              if (!isModalOpen) {
-                onClick();
-                tracking.track({
-                  eventName: 'date-range-popover-opened',
-                  filterName,
-                });
-              }
-            }}
+            buttonLabel="Open date range modal"
+            onIconClick={handleClick}
+            onClick={handleClick}
           />
           {[fromDateTimeKey, toDateTimeKey].map((filterKey) => (
             <Field
