@@ -55,7 +55,6 @@ public final class MultiInstanceActivityTransformer implements ModelElementTrans
 
       // attach boundary events to the multi-instance body
       innerActivity.getBoundaryEvents().forEach(multiInstanceBody::attach);
-      innerActivity.getEventSubprocesses().forEach(multiInstanceBody::attach);
 
       innerActivity.getEvents().removeAll(innerActivity.getBoundaryEvents());
       innerActivity.getEventSubprocesses().stream()
