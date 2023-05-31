@@ -455,7 +455,7 @@
         # The default behavior is optimized for safety, and flushing occurs on every leader commit
         # and follower append in a synchronous fashion. You can introduce a delay to reduce the
         # performance penalty of flushing via `delayTime`.
-        flush:
+        # flush:
           # If false, explicit flushing of the Raft log is disabled, and flushing only occurs right
           # before a snapshot is taken. You should only disable explicit flushing if you are willing
           # to accept potential data loss at the expense of performance. Before disabling it, try
@@ -898,7 +898,13 @@
       # raft:
         # Sets the timeout for all requests send by raft leaders and followers.
         # This setting can also be overridden using the environment variable ZEEBE_BROKER_EXPERIMENTAL_RAFT_REQUESTTIMEOUT
+        # When modifying the values for requestTimeout, it might also be useful to update snapshotTimeout.
         # requestTimeout: 5s
+
+        # Sets the timeout for all snapshot requests sent by raft leaders to the followers.
+        # If the network latency between brokers is high, it would help to set a higher timeout here.
+        # This setting can also be overridden using the environment variable ZEEBE_BROKER_EXPERIMENTAL_RAFT_SNAPSHOTREQUESTTIMEOUT.
+        # snapshotRequestTimeout: 5s
 
         # If the leader is not able to reach the quorum, the leader may step down.
         # This is triggered after a number of requests, to a quorum of followers, has failed, and the number of failures
