@@ -90,6 +90,10 @@ final class SegmentedJournalWriter {
   }
 
   void deleteAfter(final long index) {
+    // reset the last flushed index first to avoid corruption on restart in case of partial
+    // truncation (e.g. the node crashed while deleting segments)
+    flusher.setLastFlushedIndex(index);
+
     // Delete all segments with first indexes greater than the given index.
     while (index < currentSegment.index() && currentSegment != segments.getFirstSegment()) {
       segments.removeSegment(currentSegment);
@@ -99,7 +103,6 @@ final class SegmentedJournalWriter {
 
     // Truncate down to the current index, such that the last index is `index`, and the next index
     // `index + 1`
-    flusher.setLastFlushedIndex(index);
     currentWriter.truncate(index);
   }
 
