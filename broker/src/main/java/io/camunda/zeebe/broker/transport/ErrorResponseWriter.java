@@ -133,13 +133,12 @@ public final class ErrorResponseWriter implements BufferWriter {
                       + " but the writer is closed. Most likely, this node is not the"
                       + " leader for this partition.")
                   .formatted(partitionId));
-      case FULL -> logInternalError("because the writer is full.", partitionId);
-      case INVALID_ENTRY -> logInternalError("due to invalid entry.", partitionId);
-      case UNKNOWN -> logInternalError("due to unknown reason.", partitionId);
+      case FULL -> raiseInternalError("because the writer is full.", partitionId);
+      case INVALID_ENTRY -> raiseInternalError("due to invalid entry.", partitionId);
     };
   }
 
-  private ErrorResponseWriter logInternalError(final String reason, final int partitionId) {
+  private ErrorResponseWriter raiseInternalError(final String reason, final int partitionId) {
     final String message =
         "Failed to write client request to partition '%d', %s".formatted(partitionId, reason);
     LOG.debug(message);

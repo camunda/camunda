@@ -379,7 +379,7 @@ class ProcessingScheduleServiceTest {
     public Either<WriteFailure, Long> tryWrite(
         final List<LogAppendEntry> appendEntries, final long sourcePosition) {
       if (!acceptWrites.get().getAsBoolean()) {
-        return Either.left(WriteFailure.UNKNOWN);
+        return Either.left(WriteFailure.FULL);
       }
 
       entries.addAll(appendEntries);
