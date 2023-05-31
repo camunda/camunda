@@ -20,6 +20,7 @@ import io.camunda.zeebe.broker.transport.backpressure.RequestLimiter;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerPublishMessageRequest;
 import io.camunda.zeebe.logstreams.log.LogAppendEntry;
 import io.camunda.zeebe.logstreams.log.LogStreamWriter;
+import io.camunda.zeebe.logstreams.log.LogStreamWriter.WriteFailure;
 import io.camunda.zeebe.protocol.impl.encoding.ErrorResponse;
 import io.camunda.zeebe.protocol.impl.encoding.ExecuteCommandRequest;
 import io.camunda.zeebe.protocol.impl.encoding.ExecuteCommandResponse;
@@ -170,6 +171,32 @@ public class CommandApiRequestHandlerTest {
 
     // then
     verify(logWriter).tryWrite(Mockito.<LogAppendEntry>any());
+  }
+
+  @Test
+  public void shouldReturnPartitionLeaderMismatchWhenWriterClosed() {
+    // given
+    final var logWriter = mock(LogStreamWriter.class);
+    when(logWriter.canWriteEvents(anyInt(), anyInt())).thenReturn(true);
+    when(logWriter.tryWrite(any(LogAppendEntry.class)))
+        .thenReturn(Either.left(WriteFailure.CLOSED));
+    handler.addPartition(0, logWriter, new NoopRequestLimiter<>());
+    scheduler.workUntilDone();
+
+    final var request =
+        new BrokerPublishMessageRequest("test", "1").setMessageId("1").setTimeToLive(0);
+    request.serializeValue();
+
+    // when
+    final var responseFuture = handleRequest(request);
+
+    // then
+    assertThat(responseFuture)
+        .succeedsWithin(Duration.ofMinutes(1))
+        .matches(Either::isLeft)
+        .extracting(Either::getLeft)
+        .extracting(ErrorResponse::getErrorCode)
+        .isEqualTo(ErrorCode.PARTITION_LEADER_MISMATCH);
   }
 
   @Test

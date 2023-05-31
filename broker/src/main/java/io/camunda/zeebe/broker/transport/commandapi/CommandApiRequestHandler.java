@@ -16,6 +16,7 @@ import io.camunda.zeebe.logstreams.log.LogAppendEntry;
 import io.camunda.zeebe.logstreams.log.LogStreamWriter;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.camunda.zeebe.protocol.record.ErrorCode;
 import io.camunda.zeebe.protocol.record.ExecuteCommandRequestDecoder;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
@@ -111,37 +112,30 @@ final class CommandApiRequestHandler
     }
 
     try {
-      return writeCommand(command.key(), metadata, value, logStreamWriter)
+      return writeCommand(command.key(), metadata, value, logStreamWriter, errorWriter, partitionId)
           .map(b -> responseWriter)
           .mapLeft(
-              failure ->
-                  handleErrorOnWrite(
-                      partitionId, requestId, errorWriter, limiter, intent, failure));
+              failure -> {
+                limiter.onIgnore(partitionId, requestId);
+                return errorWriter;
+              });
 
-    } catch (final Exception ex) {
-      return Either.left(
-          handleErrorOnWrite(partitionId, requestId, errorWriter, limiter, intent, ex.toString()));
+    } catch (final Exception error) {
+      limiter.onIgnore(partitionId, requestId);
+      final String errorMessage =
+          "Failed to write client request to partition '%d', %s".formatted(partitionId, error);
+      LOG.error(errorMessage);
+      return Either.left(errorWriter.internalError(errorMessage));
     }
   }
 
-  private static ErrorResponseWriter handleErrorOnWrite(
-      final int partitionId,
-      final long requestId,
-      final ErrorResponseWriter errorWriter,
-      final RequestLimiter<Intent> limiter,
-      final Intent intent,
-      final String failure) {
-    limiter.onIgnore(partitionId, requestId);
-    LOG.error("Unexpected error on writing {} command {}", intent, failure);
-    errorWriter.internalError("Failed writing request: %s", failure);
-    return errorWriter;
-  }
-
-  private Either<String, Boolean> writeCommand(
+  private Either<ErrorResponseWriter, Boolean> writeCommand(
       final long key,
       final RecordMetadata metadata,
       final UnifiedRecordValue value,
-      final LogStreamWriter logStreamWriter) {
+      final LogStreamWriter logStreamWriter,
+      final ErrorResponseWriter errorWriter,
+      final int partitionId) {
     final LogAppendEntry appendEntry;
     if (key != ExecuteCommandRequestDecoder.keyNullValue()) {
       appendEntry = LogAppendEntry.of(key, metadata, value);
@@ -153,9 +147,12 @@ final class CommandApiRequestHandler
       return logStreamWriter
           .tryWrite(appendEntry)
           .map(ignore -> true)
-          .mapLeft(error -> "Failed to write request to logstream");
+          .mapLeft(error -> errorWriter.mapWriteError(partitionId, error));
     } else {
-      return Either.left("Request size is above configured maxMessageSize.");
+      return Either.left(
+          errorWriter
+              .errorCode(ErrorCode.MALFORMED_REQUEST)
+              .errorMessage("Request size is above configured maxMessageSize."));
     }
   }
 
