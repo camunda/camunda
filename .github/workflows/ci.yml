@@ -412,10 +412,24 @@ jobs:
           version: SNAPSHOT
           push: true
           distball: ${{ steps.build-zeebe.outputs.distball }}
+  deploy-snyk-projects:
+    name: Deploy Snyk development projects
+    needs: [ test-summary ]
+    if: |
+      github.repository == 'camunda/zeebe' &&
+      (startsWith(github.ref, 'stable/') || github.ref == 'main')
+    concurrency:
+      group: deploy-snyk-projects
+      cancel-in-progress: false
+    uses: ./.github/workflows/snyk.yml
+    with:
+      monitor: true
+      build: true
+    secrets: inherit
   notify-if-failed:
     name: Send slack notification on build failure
     runs-on: ubuntu-latest
-    needs: [ test-summary, deploy-snapshots, deploy-docker-snapshot ]
+    needs: [ test-summary, deploy-snapshots, deploy-docker-snapshot, deploy-snyk-projects ]
     if: failure() && github.repository == 'camunda/zeebe' && github.ref == 'refs/heads/main'
     steps:
       - id: slack-notify
