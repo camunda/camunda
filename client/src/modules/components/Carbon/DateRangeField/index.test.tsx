@@ -18,18 +18,14 @@ describe('Date Range Field', () => {
   it('should close modal on cancel click', async () => {
     const {user} = render(<MockDateRangeField />, {wrapper: getWrapper()});
 
-    expect(screen.getByTestId('date-range-modal')).not.toHaveClass(
-      'is-visible'
-    );
+    expect(screen.queryByTestId('date-range-modal')).not.toBeInTheDocument();
 
     await user.click(screen.getByLabelText('Start Date Range'));
     expect(screen.getByTestId('date-range-modal')).toHaveClass('is-visible');
 
     // getByRole does not work here because the date range modal portal is rendered to document.body
     await user.click(screen.getByText('Cancel'));
-    expect(screen.getByTestId('date-range-modal')).not.toHaveClass(
-      'is-visible'
-    );
+    expect(screen.queryByTestId('date-range-modal')).not.toBeInTheDocument();
   });
 
   it('should pick from and to dates and times', async () => {

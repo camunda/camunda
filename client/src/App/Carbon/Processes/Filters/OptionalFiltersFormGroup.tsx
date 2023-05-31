@@ -179,10 +179,11 @@ const OptionalFiltersFormGroup: React.FC<Props> = observer(
               eventName: 'optional-filter-selected',
               filterName: filter,
             });
-            if (['startDateRange', 'endDateRange'].includes(filter)) {
-              setTimeout(() => {
-                setIsStartDateRangeModalOpen(true);
-              });
+            if (filter === 'startDateRange') {
+              setIsStartDateRangeModalOpen(true);
+            }
+            if (filter === 'endDateRange') {
+              setIsEndDateRangeModalOpen(true);
             }
           }}
         />

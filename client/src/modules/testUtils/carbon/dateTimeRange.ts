@@ -70,7 +70,7 @@ const applyDateRange = async (user: UserEvent, screen: Screen) => {
   await user.click(applyButton);
 
   await waitFor(() =>
-    expect(screen.getByTestId('date-range-modal')).not.toHaveClass('is-visible')
+    expect(screen.queryByTestId('date-range-modal')).not.toBeInTheDocument()
   );
 };
 

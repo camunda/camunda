@@ -10,7 +10,6 @@ import {observer} from 'mobx-react';
 import {Stack} from '@carbon/react';
 import {Error} from '@carbon/react/icons';
 import {Form} from 'react-final-form';
-import {useNavigate} from 'react-router-dom';
 import isEqual from 'lodash/isEqual';
 import {ProcessInstanceFilters} from 'modules/utils/filter';
 import {AutoSubmit} from 'modules/components/AutoSubmit';
@@ -35,8 +34,6 @@ import {
   OptionalFiltersFormGroup,
 } from './OptionalFiltersFormGroup';
 
-import {CarbonLocations} from 'modules/carbonRoutes';
-
 const initialValues: ProcessInstanceFilters = {
   active: true,
   incidents: true,
@@ -45,7 +42,6 @@ const initialValues: ProcessInstanceFilters = {
 const Filters: React.FC = observer(() => {
   const filters = useFilters();
   const [visibleFilters, setVisibleFilters] = useState<OptionalFilter[]>([]);
-  const navigate = useNavigate();
 
   return (
     <Form<ProcessInstanceFilters>
@@ -63,7 +59,7 @@ const Filters: React.FC = observer(() => {
             }
             onResetClick={() => {
               form.reset();
-              navigate(CarbonLocations.processes(initialValues));
+              filters.setFiltersToURL(initialValues);
               setVisibleFilters([]);
             }}
           >

@@ -95,26 +95,28 @@ const DateRangeField: React.FC<Props> = observer(
           ))}
         </div>
 
-        <DateRangeModal
-          isModalOpen={isModalOpen}
-          title={popoverTitle}
-          filterName={filterName}
-          onCancel={onModalClose}
-          onApply={({fromDateTime, toDateTime}) => {
-            onModalClose();
-            form.change(fromDateTimeKey, formatISODate(fromDateTime));
-            form.change(toDateTimeKey, formatISODate(toDateTime));
-          }}
-          defaultValues={{
-            fromDate:
-              fromDateTime === '' ? '' : formatDate(new Date(fromDateTime)),
-            fromTime:
-              fromDateTime === '' ? '' : formatTime(new Date(fromDateTime)),
-            toDate: toDateTime === '' ? '' : formatDate(new Date(toDateTime)),
-            toTime: toDateTime === '' ? '' : formatTime(new Date(toDateTime)),
-          }}
-          key={`date-range-modal-${isModalOpen ? 'open' : 'closed'}`}
-        />
+        {isModalOpen ? (
+          <DateRangeModal
+            isModalOpen={isModalOpen}
+            title={popoverTitle}
+            filterName={filterName}
+            onCancel={onModalClose}
+            onApply={({fromDateTime, toDateTime}) => {
+              onModalClose();
+              form.change(fromDateTimeKey, formatISODate(fromDateTime));
+              form.change(toDateTimeKey, formatISODate(toDateTime));
+            }}
+            defaultValues={{
+              fromDate:
+                fromDateTime === '' ? '' : formatDate(new Date(fromDateTime)),
+              fromTime:
+                fromDateTime === '' ? '' : formatTime(new Date(fromDateTime)),
+              toDate: toDateTime === '' ? '' : formatDate(new Date(toDateTime)),
+              toTime: toDateTime === '' ? '' : formatTime(new Date(toDateTime)),
+            }}
+            key={`date-range-modal-${isModalOpen ? 'open' : 'closed'}`}
+          />
+        ) : null}
       </>
     );
   }

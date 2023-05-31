@@ -44,6 +44,7 @@ const OptionalFiltersMenu = <T extends string>({
             key={filter.id}
             itemText={filter.label}
             onClick={() => onFilterSelect(filter.id)}
+            data-testid={`optional-filter-menuitem-${filter.id}`}
           />
         ))}
       </OverflowMenu>
