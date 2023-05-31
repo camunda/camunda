@@ -187,6 +187,37 @@ declare module '@carbon/react' {
     >
   >;
 
+  export const TreeView: React.FunctionComponent<{
+    active?: string | number;
+    children?: React.ReactNode;
+    className?: string;
+    hideLabel?: boolean;
+    label: string;
+    multiselect?: boolean;
+    onSelect?: PropTypes.func;
+    selected?: string[] | number[];
+    size?: 'xs' | 'sm';
+  }>;
+
+  export const TreeNode: React.FunctionComponent<{
+    id?: string;
+    active?: string | number;
+    children?: React.ReactNode;
+    className?: string;
+    depth?: number;
+    disabled?: boolean;
+    isExpanded?: boolean;
+    label?: React.ReactNode;
+    onSelect?: () => void;
+    onToggle?: (
+      event: React.MouseEvent<HTMLElement> | React.KeyboardEvent<HTMLElement>
+    ) => void;
+    renderIcon?: () => React.ReactNode;
+    selected?: string[] | number[];
+    value?: string;
+    tabIndex?: number;
+  }>;
+
   export * from 'carbon-components-react';
 }
 

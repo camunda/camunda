@@ -10,10 +10,24 @@ import {PanelHeader as BasePanelHeader} from 'modules/components/Carbon/PanelHea
 
 const Container = styled.div`
   border-right: solid 1px var(--cds-border-subtle-01);
+  background-color: var(--cds-layer-01);
+  display: flex;
+  flex-direction: column;
 `;
 
 const PanelHeader = styled(BasePanelHeader)`
   justify-content: flex-start;
 `;
 
-export {Container, PanelHeader};
+const InstanceHistory = styled.div`
+  position: relative;
+  height: 100%;
+  overflow: auto;
+`;
+
+const NodeContainer = styled.div`
+  position: absolute;
+  width: 100%;
+`;
+
+export {NodeContainer, InstanceHistory, PanelHeader, Container};

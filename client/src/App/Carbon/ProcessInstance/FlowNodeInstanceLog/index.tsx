@@ -5,19 +5,51 @@
  * except in compliance with the proprietary license.
  */
 
-import React from 'react';
+import React, {useRef} from 'react';
+import {FlowNodeInstancesTree} from '../FlowNodeInstancesTree';
 import {observer} from 'mobx-react';
-import {Container, PanelHeader} from './styled';
+import {flowNodeInstanceStore} from 'modules/stores/flowNodeInstance';
+import {Container, NodeContainer, InstanceHistory, PanelHeader} from './styled';
+import {processInstanceDetailsDiagramStore} from 'modules/stores/processInstanceDetailsDiagram';
 import {TimeStampPill} from './TimeStampPill';
 import {modificationsStore} from 'modules/stores/modifications';
+import {TreeView} from '@carbon/react';
 
 const FlowNodeInstanceLog: React.FC = observer(() => {
+  const {instanceExecutionHistory, isInstanceExecutionHistoryAvailable} =
+    flowNodeInstanceStore;
+  const {areDiagramDefinitionsAvailable} = processInstanceDetailsDiagramStore;
+
+  const flowNodeInstanceRowRef = useRef<HTMLDivElement>(null);
+  const instanceHistoryRef = useRef<HTMLDivElement>(null);
+
   return (
     <Container>
       <PanelHeader title="Instance History" size="sm">
         {!modificationsStore.isModificationModeEnabled && <TimeStampPill />}
       </PanelHeader>
-      <section>instance history</section>
+      {areDiagramDefinitionsAvailable && isInstanceExecutionHistoryAvailable ? (
+        <InstanceHistory
+          data-testid="instance-history"
+          ref={instanceHistoryRef}
+        >
+          <NodeContainer>
+            <TreeView
+              label={`${instanceExecutionHistory!.flowNodeId} instance history`}
+              hideLabel
+            >
+              <FlowNodeInstancesTree
+                rowRef={flowNodeInstanceRowRef}
+                scrollableContainerRef={instanceHistoryRef}
+                flowNodeInstance={instanceExecutionHistory!}
+                isRoot
+              />
+            </TreeView>
+          </NodeContainer>
+        </InstanceHistory>
+      ) : (
+        <div>skeleton</div>
+      )}
     </Container>
   );
 });
