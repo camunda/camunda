@@ -618,7 +618,7 @@
         # Sets the timeout for all snapshot requests sent by raft leaders to the followers.
         # If the network latency between brokers is high, it would help to set a higher timeout here.
         # This setting can also be overridden using the environment variable ZEEBE_BROKER_EXPERIMENTAL_RAFT_SNAPSHOTREQUESTTIMEOUT.
-        # snapshotRequestTimeout: 2500ms
+        # snapshotRequestTimeout: 5s
 
         # If the leader is not able to reach the quorum, the leader may step down.
         # This is triggered after a number of requests, to a quorum of followers, has failed, and the number of failures
