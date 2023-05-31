@@ -68,7 +68,7 @@
     "@testing-library/user-event": "14.4.3",
     "@types/carbon-components-react": "7.55.2",
     "@types/carbon__elements": "11.10.0",
-    "@types/jest": "29.5.1",
+    "@types/jest": "29.5.2",
     "@types/mixpanel-browser": "2.38.1",
     "@types/node": "18.16.16",
     "@types/react": "18.2.7",
@@ -91,7 +91,7 @@
     "testcafe": "2.6.1",
     "ts-toolbelt": "9.6.0",
     "typescript": "5.0.4",
-    "zeebe-node": "8.2.2"
+    "zeebe-node": "8.2.3"
   },
   "lint-staged": {
     "*": [

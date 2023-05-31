@@ -2546,10 +2546,18 @@
   dependencies:
     "@types/istanbul-lib-report" "*"
 
-"@types/jest@*", "@types/jest@29.5.1":
+"@types/jest@*":
   version "29.5.1"
   resolved "https://registry.yarnpkg.com/@types/jest/-/jest-29.5.1.tgz#83c818aa9a87da27d6da85d3378e5a34d2f31a47"
   integrity sha512-tEuVcHrpaixS36w7hpsfLBLpjtMRJUE09/MHXn923LOVojDwyC14cWcfc0rDs0VEfUyYmt/+iX1kxxp+gZMcaQ==
+  dependencies:
+    expect "^29.0.0"
+    pretty-format "^29.0.0"
+
+"@types/jest@29.5.2":
+  version "29.5.2"
+  resolved "https://registry.yarnpkg.com/@types/jest/-/jest-29.5.2.tgz#86b4afc86e3a8f3005b297ed8a72494f89e6395b"
+  integrity sha512-mSoZVJF5YzGVCk+FsDxzDuH7s+SCkzrgKZzf0Z0T2WudhBUPoF6ktoTPC4R0ZoCPCV5xUvuU6ias5NvxcBcMMg==
   dependencies:
     expect "^29.0.0"
     pretty-format "^29.0.0"
@@ -12596,10 +12604,10 @@ yocto-queue@^0.1.0:
   resolved "https://registry.yarnpkg.com/yocto-queue/-/yocto-queue-0.1.0.tgz#0294eb3dee05028d31ee1a5fa2c556a6aaf10a1b"
   integrity sha512-rVksvsnNCdJ/ohGc6xgPwyN8eheCxsiLM8mxuE/t/mOVqJewPuO1miLpTHQiRgTKCLexL4MeAFVagts7HmNZ2Q==
 
-zeebe-node@8.2.2:
-  version "8.2.2"
-  resolved "https://registry.yarnpkg.com/zeebe-node/-/zeebe-node-8.2.2.tgz#278c8051b4bfc8a1692ea4d5b3f685714d58fba1"
-  integrity sha512-AOfxBntHa0ZXj8MSHWhY++Lc5OQWofmXlhp8wJ2IIpkd82+jII1t7ODQv5QOqSUxiZNYxR1uqYmQ7RBqsiiohg==
+zeebe-node@8.2.3:
+  version "8.2.3"
+  resolved "https://registry.yarnpkg.com/zeebe-node/-/zeebe-node-8.2.3.tgz#fff91ce1ec4e88a71d881f5fd49de6f1f85ea7f3"
+  integrity sha512-/soeAB1CYO1xQZ2eB7REgbRqgcPMwGANUmf8QdVkw1KEcmNOkNOoLGsCTFkroJH7r+pNRYk4b9sqZkx8A3M/EA==
   dependencies:
     "@grpc/grpc-js" "1.8.7"
     "@grpc/proto-loader" "0.7.4"
