@@ -115,7 +115,7 @@ public final class BackupApiRequestHandler
     final var checkpointRecord = new CheckpointRecord().setCheckpointId(requestReader.backupId());
     final var written = logStreamWriter.tryWrite(LogAppendEntry.of(metadata, checkpointRecord));
 
-    if (written > 0) {
+    if (written.isRight()) {
       // Response will be sent by the processor
       return Either.right(responseWriter.noResponse());
     } else {

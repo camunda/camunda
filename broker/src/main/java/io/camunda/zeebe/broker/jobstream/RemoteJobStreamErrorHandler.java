@@ -82,15 +82,17 @@ final class RemoteJobStreamErrorHandler implements RemoteStreamErrorHandler<Acti
       final ActivatedJob job,
       final LogStreamWriter writer,
       final TaskResult result) {
-    final var position = writer.tryWrite(result.getRecordBatch().entries());
-    if (position == 0) {
-      NO_ACTION_LOGGER.warn(
-          """
+    final var writeResult = writer.tryWrite(result.getRecordBatch().entries());
+    if (writeResult.isRight()) {
+      if (writeResult.get() == 0) {
+        NO_ACTION_LOGGER.warn(
+            """
            Failed to push job {} on partition {}, but the error handler did not return anything;
            the job will be activated again when it times out""",
-          job.jobKey(),
-          partitionId);
-    } else if (position < 0) {
+            job.jobKey(),
+            partitionId);
+      }
+    } else {
       FAILED_WRITER_LOGGER.warn(
           """
           Failed to handle failed job push {} on partition {};

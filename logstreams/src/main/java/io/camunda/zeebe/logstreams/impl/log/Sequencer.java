@@ -14,6 +14,7 @@ import io.camunda.zeebe.logstreams.log.LogAppendEntry;
 import io.camunda.zeebe.logstreams.log.LogStreamWriter;
 import io.camunda.zeebe.scheduler.ActorCondition;
 import io.camunda.zeebe.scheduler.clock.ActorClock;
+import io.camunda.zeebe.util.Either;
 import java.io.Closeable;
 import java.util.List;
 import java.util.Objects;
@@ -63,21 +64,22 @@ final class Sequencer implements LogStreamWriter, Closeable {
 
   /** {@inheritDoc} */
   @Override
-  public long tryWrite(final List<LogAppendEntry> appendEntries, final long sourcePosition) {
+  public Either<WriteFailure, Long> tryWrite(
+      final List<LogAppendEntry> appendEntries, final long sourcePosition) {
     if (isClosed) {
       LOG.warn("Rejecting write of {}, sequencer is closed", appendEntries);
-      return -1;
+      return Either.left(WriteFailure.CLOSED);
     }
 
     for (final var entry : appendEntries) {
       if (!isEntryValid(entry)) {
         LOG.warn("Reject write of invalid entry {}", entry);
-        return 0;
+        return Either.left(WriteFailure.INVALID_ENTRY);
       }
     }
     final var batchSize = appendEntries.size();
     if (batchSize == 0) {
-      return 0;
+      return Either.right(0L);
     }
 
     final long currentPosition;
@@ -103,10 +105,10 @@ final class Sequencer implements LogStreamWriter, Closeable {
     metrics.setQueueSize(queue.size());
     if (isEnqueued) {
       metrics.observeBatchSize(batchSize);
-      return currentPosition + batchSize - 1;
+      return Either.right(currentPosition + batchSize - 1);
     } else {
       LOG.trace("Rejecting write of {}, sequencer queue is full", appendEntries);
-      return -1;
+      return Either.left(WriteFailure.FULL);
     }
   }
 

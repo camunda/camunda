@@ -455,11 +455,12 @@ public final class ProcessingStateMachine {
     final ActorFuture<Boolean> retryFuture =
         writeRetryStrategy.runWithRetry(
             () -> {
-              final long position = logStreamWriter.tryWrite(pendingWrites, sourceRecordPosition);
-              if (position > 0) {
-                writtenPosition = position;
+              final var writeResult = logStreamWriter.tryWrite(pendingWrites, sourceRecordPosition);
+              if (writeResult.isRight()) {
+                writtenPosition = writeResult.get();
+                return writtenPosition >= 0;
               }
-              return position >= 0;
+              return false;
             },
             abortCondition);
 

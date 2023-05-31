@@ -45,6 +45,7 @@ import io.camunda.zeebe.stream.impl.StreamProcessorListener;
 import io.camunda.zeebe.stream.impl.StreamProcessorMode;
 import io.camunda.zeebe.stream.impl.TypedEventRegistry;
 import io.camunda.zeebe.test.util.AutoCloseableRule;
+import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.FileUtil;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -391,7 +392,8 @@ public final class TestStreams {
           .pollInSameThread()
           .pollDelay(Duration.ZERO)
           .pollInterval(Duration.ofMillis(50))
-          .until(() -> writer.tryWrite(entry, sourceRecordPosition), p -> p >= 0);
+          .until(() -> writer.tryWrite(entry, sourceRecordPosition), Either::isRight)
+          .get();
     }
   }
 

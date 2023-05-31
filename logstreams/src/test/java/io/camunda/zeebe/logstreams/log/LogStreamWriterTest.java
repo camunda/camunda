@@ -16,6 +16,8 @@ import io.camunda.zeebe.logstreams.util.LogStreamReaderRule;
 import io.camunda.zeebe.logstreams.util.LogStreamRule;
 import io.camunda.zeebe.logstreams.util.SynchronousLogStream;
 import io.camunda.zeebe.logstreams.util.TestEntry;
+import io.camunda.zeebe.test.util.asserts.EitherAssert;
+import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.ArrayList;
 import java.util.List;
@@ -49,7 +51,7 @@ public final class LogStreamWriterTest {
   @Test
   public void shouldNotFailToWriteBatchWithoutEvents() {
     // when
-    final long pos = writer.tryWrite(List.of());
+    final long pos = writer.tryWrite(List.of()).get();
 
     // then
     assertThat(pos).isEqualTo(0);
@@ -70,7 +72,7 @@ public final class LogStreamWriterTest {
   @Test
   public void shouldReturnPositionOfLastEvent() {
     // when
-    final long position = writer.tryWrite(List.of(TestEntry.ofKey(1), TestEntry.ofKey(2)));
+    final long position = writer.tryWrite(List.of(TestEntry.ofKey(1), TestEntry.ofKey(2))).get();
 
     // then
     assertThat(position).isGreaterThan(0);
@@ -198,10 +200,10 @@ public final class LogStreamWriterTest {
   @Test
   public void shouldFailToWriteEventWithoutValue() {
     // when
-    final long pos = tryWrite(TestEntry.builder().withRecordValue(null).build());
+    final var res = writer.tryWrite(TestEntry.builder().withRecordValue(null).build());
 
     // then
-    assertThat(pos).isEqualTo(0);
+    EitherAssert.assertThat(res).isLeft();
   }
 
   private LoggedEvent getWrittenEvent(final long position) {
@@ -248,12 +250,14 @@ public final class LogStreamWriterTest {
   private long tryWrite(final LogAppendEntry entry) {
     return Awaitility.await("until dispatcher accepts entry")
         .pollInSameThread()
-        .until(() -> writer.tryWrite(entry), p -> p >= 0);
+        .until(() -> writer.tryWrite(entry), Either::isRight)
+        .get();
   }
 
   private long tryWrite(final LogAppendEntry entry, final long sourcePosition) {
     return Awaitility.await("until dispatcher accepts entry")
         .pollInSameThread()
-        .until(() -> writer.tryWrite(entry, sourcePosition), p -> p >= 0);
+        .until(() -> writer.tryWrite(entry, sourcePosition), Either::isRight)
+        .get();
   }
 }

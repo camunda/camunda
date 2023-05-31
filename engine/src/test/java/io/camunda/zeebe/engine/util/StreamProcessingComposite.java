@@ -133,7 +133,7 @@ public class StreamProcessingComposite {
 
   public long writeBatch(final RecordToWrite... recordsToWrite) {
     final var writer = streams.newLogStreamWriter(getLogName(partitionId));
-    return writeActor.submit(() -> writer.tryWrite(Arrays.asList(recordsToWrite))).join();
+    return writeActor.submit(() -> writer.tryWrite(Arrays.asList(recordsToWrite)).get()).join();
   }
 
   public long writeCommandOnPartition(
