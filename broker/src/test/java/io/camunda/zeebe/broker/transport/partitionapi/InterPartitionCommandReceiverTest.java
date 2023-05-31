@@ -14,6 +14,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.withSettings;
 
 import io.atomix.cluster.MemberId;
@@ -28,6 +29,7 @@ import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
+import io.camunda.zeebe.util.Either;
 import org.agrona.ExpandableArrayBuffer;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.parallel.Execution;
@@ -53,8 +55,7 @@ final class InterPartitionCommandReceiverTest {
             MessageSubscriptionIntent.CORRELATE,
             new MessageSubscriptionRecord().setProcessInstanceKey(1).setElementInstanceKey(1));
 
-    final var logStreamWriter =
-        mock(LogStreamWriter.class, withSettings().defaultAnswer(Answers.RETURNS_SELF));
+    final LogStreamWriter logStreamWriter = getLogStreamWriter();
     final var receiver = new InterPartitionCommandReceiverImpl(logStreamWriter);
 
     // when
@@ -62,6 +63,13 @@ final class InterPartitionCommandReceiverTest {
 
     // then - sent message can be written to log stream
     verify(logStreamWriter).tryWrite(Mockito.<LogAppendEntry>any());
+  }
+
+  private static LogStreamWriter getLogStreamWriter() {
+    final var logStreamWriter =
+        mock(LogStreamWriter.class, withSettings().defaultAnswer(Answers.RETURNS_SELF));
+    when(logStreamWriter.tryWrite(any(LogAppendEntry.class))).thenReturn(Either.right(1L));
+    return logStreamWriter;
   }
 
   @Test
@@ -78,8 +86,7 @@ final class InterPartitionCommandReceiverTest {
             MessageSubscriptionIntent.CORRELATE,
             new MessageSubscriptionRecord().setProcessInstanceKey(1).setElementInstanceKey(1));
 
-    final var logStreamWriter =
-        mock(LogStreamWriter.class, withSettings().defaultAnswer(Answers.RETURNS_SELF));
+    final LogStreamWriter logStreamWriter = getLogStreamWriter();
     final var receiver = new InterPartitionCommandReceiverImpl(logStreamWriter);
 
     // when
@@ -107,8 +114,7 @@ final class InterPartitionCommandReceiverTest {
             intent,
             new MessageSubscriptionRecord().setProcessInstanceKey(1).setElementInstanceKey(1));
 
-    final var logStreamWriter =
-        mock(LogStreamWriter.class, withSettings().defaultAnswer(Answers.RETURNS_SELF));
+    final LogStreamWriter logStreamWriter = getLogStreamWriter();
     final var receiver = new InterPartitionCommandReceiverImpl(logStreamWriter);
 
     // when
@@ -145,8 +151,7 @@ final class InterPartitionCommandReceiverTest {
             MessageSubscriptionIntent.CORRELATE,
             recordValue);
 
-    final var logStreamWriter =
-        mock(LogStreamWriter.class, withSettings().defaultAnswer(Answers.RETURNS_SELF));
+    final LogStreamWriter logStreamWriter = getLogStreamWriter();
     final var receiver = new InterPartitionCommandReceiverImpl(logStreamWriter);
 
     // when
@@ -176,8 +181,7 @@ final class InterPartitionCommandReceiverTest {
             recordKey,
             new MessageSubscriptionRecord().setProcessInstanceKey(1).setElementInstanceKey(1));
 
-    final var logStreamWriter =
-        mock(LogStreamWriter.class, withSettings().defaultAnswer(Answers.RETURNS_SELF));
+    final LogStreamWriter logStreamWriter = getLogStreamWriter();
     final var receiver = new InterPartitionCommandReceiverImpl(logStreamWriter);
     final var entryCaptor = ArgumentCaptor.forClass(LogAppendEntry.class);
 
@@ -203,8 +207,7 @@ final class InterPartitionCommandReceiverTest {
             MessageSubscriptionIntent.CORRELATE,
             new MessageSubscriptionRecord().setProcessInstanceKey(1).setElementInstanceKey(1));
 
-    final var logStreamWriter =
-        mock(LogStreamWriter.class, withSettings().defaultAnswer(Answers.RETURNS_SELF));
+    final LogStreamWriter logStreamWriter = getLogStreamWriter();
     final var receiver = new InterPartitionCommandReceiverImpl(logStreamWriter);
     final var entryCaptor = ArgumentCaptor.forClass(LogAppendEntry.class);
 

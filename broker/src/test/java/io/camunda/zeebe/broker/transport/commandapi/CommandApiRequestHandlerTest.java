@@ -217,8 +217,7 @@ public class CommandApiRequestHandlerTest {
         .extracting(Either::getLeft)
         .extracting(ErrorResponse::getErrorCode, e -> BufferUtil.bufferAsString(e.getErrorData()))
         .containsExactly(
-            ErrorCode.INTERNAL_ERROR,
-            "Failed writing request: Request size is above configured maxMessageSize.");
+            ErrorCode.MALFORMED_REQUEST, "Request size is above configured maxMessageSize.");
   }
 
   private CompletableFuture<Either<ErrorResponse, ExecuteCommandResponse>> handleRequest(
