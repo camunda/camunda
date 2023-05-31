@@ -129,20 +129,19 @@ public final class GrpcErrorMapper {
     String message = error.getMessage();
 
     switch (error.getCode()) {
-      case PROCESS_NOT_FOUND:
-        builder.setCode(Code.NOT_FOUND_VALUE);
-        break;
-      case RESOURCE_EXHAUSTED:
+      case PROCESS_NOT_FOUND -> builder.setCode(Code.NOT_FOUND_VALUE);
+      case RESOURCE_EXHAUSTED -> {
         builder.setCode(Code.RESOURCE_EXHAUSTED_VALUE);
         logger.trace("Target broker is currently overloaded: {}", error, rootError);
-        break;
-      case PARTITION_LEADER_MISMATCH:
+      }
+      case PARTITION_LEADER_MISMATCH -> {
         // return UNAVAILABLE to indicate to the user that retrying might solve the issue, as this
         // is usually a transient issue
         logger.trace("Target broker was not the leader of the partition: {}", error, rootError);
         builder.setCode(Code.UNAVAILABLE_VALUE);
-        break;
-      default:
+      }
+      case MALFORMED_REQUEST -> builder.setCode(Code.INVALID_ARGUMENT_VALUE);
+      default -> {
         // all the following are for cases where retrying (with the same gateway) is not expected
         // to solve anything
         logger.error(
@@ -154,7 +153,7 @@ public final class GrpcErrorMapper {
             String.format(
                 "Unexpected error occurred between gateway and broker (code: %s) (message: %s)",
                 error.getCode(), error.getMessage());
-        break;
+      }
     }
 
     return builder.setMessage(message).build();
