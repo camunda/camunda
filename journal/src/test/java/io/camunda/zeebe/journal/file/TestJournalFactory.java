@@ -104,12 +104,16 @@ final class TestJournalFactory {
   }
 
   SegmentedJournal journal(final Path directory) {
+    return journal(directory, segmentsManager(directory));
+  }
+
+  SegmentedJournal journal(final Path directory, final SegmentsManager segmentsManager) {
     return new SegmentedJournal(
         directory.toFile(),
         maxSegmentSize(),
         1024 * 1024 * 1024L,
         index,
-        segmentsManager(directory),
+        segmentsManager,
         metrics,
         metaStore);
   }

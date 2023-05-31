@@ -13,7 +13,6 @@ import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.zeebe.journal.CorruptedJournalException;
-import io.camunda.zeebe.test.util.junit.RegressionTest;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
@@ -251,26 +250,26 @@ class SegmentsManagerTest {
     assertThatNoException().isThrownBy(() -> segments.open());
   }
 
-  @RegressionTest("https://github.com/camunda/zeebe/issues/12754")
+  @Test
   void shouldDeleteSegmentsInReverseOrderOnReset() {
     // given
     final var loader = Mockito.spy(journalFactory.segmentLoader());
     final var metaStore = Mockito.spy(journalFactory.metaStore());
     try (final var journal = openJournal()) {
-      journal.append(1, journalFactory.entry()).index();
-      journal.append(2, journalFactory.entry()).index();
-      journal.append(3, journalFactory.entry()).index();
+      journal.append(1, journalFactory.entryData()).index();
+      journal.append(2, journalFactory.entryData()).index();
+      journal.append(3, journalFactory.entryData()).index();
     }
 
     // spy on all created segments, so we can assert the order in which they're deleted
     //noinspection resource
     Mockito.doAnswer(call -> Mockito.spy(call.callRealMethod()))
         .when(loader)
-        .loadExistingSegment(Mockito.any(), Mockito.anyLong(), Mockito.any());
+        .loadExistingSegment(Mockito.any(), Mockito.any());
 
     // when
     segments = journalFactory.segmentsManager(directory, loader, metaStore);
-    try (final var journal = journalFactory.journal(segments)) {
+    try (final var journal = journalFactory.journal(directory, segments)) {
       // grab all segments and copy them to avoid the map getting cleared
       final var loadedSegments = getJournalSegments(segments);
       journal.reset(10);
