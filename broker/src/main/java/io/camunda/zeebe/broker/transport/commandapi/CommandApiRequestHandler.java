@@ -150,9 +150,10 @@ final class CommandApiRequestHandler
     }
 
     if (logStreamWriter.canWriteEvents(1, appendEntry.getLength())) {
-      return logStreamWriter.tryWrite(appendEntry) >= 0
-          ? Either.right(true)
-          : Either.left("Failed to write request to logstream");
+      return logStreamWriter
+          .tryWrite(appendEntry)
+          .map(ignore -> true)
+          .mapLeft(error -> "Failed to write request to logstream");
     } else {
       return Either.left("Request size is above configured maxMessageSize.");
     }

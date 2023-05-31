@@ -143,7 +143,7 @@ public class ProcessingScheduleServiceImpl
           writeRetryStrategy.runWithRetry(
               () -> {
                 LOG.trace("Write scheduled TaskResult to dispatcher!");
-                return logStreamWriter.tryWrite(recordBatch.entries()) >= 0;
+                return logStreamWriter.tryWrite(recordBatch.entries()).isRight();
               },
               abortCondition);
 

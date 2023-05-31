@@ -312,7 +312,7 @@ public final class StreamPlatform {
   }
 
   public long writeBatch(final RecordToWrite... recordsToWrite) {
-    return logContext.setupWriter().tryWrite(Arrays.asList(recordsToWrite));
+    return logContext.setupWriter().tryWrite(Arrays.asList(recordsToWrite)).get();
   }
 
   public void closeStreamProcessor() throws Exception {

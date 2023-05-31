@@ -89,7 +89,7 @@ final class InterPartitionCommandReceiverImpl {
             .intent(CheckpointIntent.CREATE)
             .valueType(ValueType.CHECKPOINT);
     final var checkpointRecord = new CheckpointRecord().setCheckpointId(decoded.checkpointId);
-    return logStreamWriter.tryWrite(LogAppendEntry.of(metadata, checkpointRecord)) >= 0;
+    return logStreamWriter.tryWrite(LogAppendEntry.of(metadata, checkpointRecord)).isRight();
   }
 
   private boolean writeCommand(final DecodedMessage decoded) {
@@ -99,7 +99,7 @@ final class InterPartitionCommandReceiverImpl {
             .map(key -> LogAppendEntry.of(key, decoded.metadata(), decoded.command()))
             .orElseGet(() -> LogAppendEntry.of(decoded.metadata(), decoded.command()));
 
-    return logStreamWriter.tryWrite(appendEntry) >= 0;
+    return logStreamWriter.tryWrite(appendEntry).isRight();
   }
 
   void setDiskSpaceAvailable(final boolean available) {

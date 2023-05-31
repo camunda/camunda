@@ -8,8 +8,10 @@
 package io.camunda.zeebe.logstreams.impl.log;
 
 import io.camunda.zeebe.logstreams.log.LogAppendEntry;
+import io.camunda.zeebe.logstreams.log.LogStreamWriter.WriteFailure;
 import io.camunda.zeebe.logstreams.util.TestEntry;
 import io.camunda.zeebe.scheduler.ActorCondition;
+import io.camunda.zeebe.test.util.asserts.EitherAssert;
 import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.locks.LockSupport;
@@ -101,7 +103,9 @@ final class SequencerTest {
     Awaitility.await("sequencer rejects writes")
         .pollInSameThread()
         .pollInterval(Duration.ZERO)
-        .until(() -> sequencer.tryWrite(TestEntry.ofDefaults()), (result) -> result <= 0);
+        .until(
+            () -> sequencer.tryWrite(TestEntry.ofDefaults()),
+            result -> result.isLeft() && result.getLeft() == WriteFailure.FULL);
   }
 
   @Test
@@ -115,26 +119,26 @@ final class SequencerTest {
         .pollInterval(Duration.ZERO)
         .until(
             () -> sequencer.tryWrite(List.of(TestEntry.ofKey(1), TestEntry.ofKey(2))),
-            (result) -> result <= 0);
+            result -> result.isLeft() && result.getLeft() == WriteFailure.FULL);
   }
 
   @Test
   void writingSingleEntryIncreasesPositions() {
     // given
-    final var initialPosition = 1;
+    final long initialPosition = 1L;
     final var sequencer = new Sequencer(initialPosition, 16 * 1024 * 1024, new SequencerMetrics(1));
 
     // when
     final var result = sequencer.tryWrite(TestEntry.ofDefaults());
 
     // then
-    Assertions.assertThat(result).isPositive().isEqualTo(initialPosition);
+    EitherAssert.assertThat(result).isRight().right().isEqualTo(initialPosition);
   }
 
   @Test
   void writingMultipleEntriesIncreasesPositions() {
     // given
-    final var initialPosition = 1;
+    final long initialPosition = 1L;
     final var sequencer = new Sequencer(initialPosition, 16 * 1024 * 1024, new SequencerMetrics(1));
     final var entries =
         List.of(TestEntry.ofDefaults(), TestEntry.ofDefaults(), TestEntry.ofDefaults());
@@ -142,7 +146,10 @@ final class SequencerTest {
     final var result = sequencer.tryWrite(entries);
 
     // then
-    Assertions.assertThat(result).isPositive().isEqualTo(initialPosition + entries.size() - 1);
+    EitherAssert.assertThat(result)
+        .isRight()
+        .right()
+        .isEqualTo(initialPosition + entries.size() - 1);
   }
 
   @Test
@@ -152,7 +159,9 @@ final class SequencerTest {
     Awaitility.await("sequencer rejects writes")
         .pollInSameThread()
         .pollInterval(Duration.ZERO)
-        .until(() -> sequencer.tryWrite(TestEntry.ofDefaults()), (result) -> result <= 0);
+        .until(
+            () -> sequencer.tryWrite(TestEntry.ofDefaults()),
+            (result) -> result.isLeft() && result.getLeft() == WriteFailure.FULL);
     final var consumer = Mockito.mock(ActorCondition.class);
 
     // when
@@ -160,7 +169,7 @@ final class SequencerTest {
     final var result = sequencer.tryWrite(TestEntry.ofDefaults());
 
     // then
-    Assertions.assertThat(result).isNegative();
+    EitherAssert.assertThat(result).isLeft();
     Mockito.verify(consumer).signal();
   }
 
@@ -171,7 +180,9 @@ final class SequencerTest {
     Awaitility.await("sequencer rejects writes")
         .pollInSameThread()
         .pollInterval(Duration.ZERO)
-        .until(() -> sequencer.tryWrite(TestEntry.ofDefaults()), (result) -> result <= 0);
+        .until(
+            () -> sequencer.tryWrite(TestEntry.ofDefaults()),
+            (result) -> result.isLeft() && result.getLeft() == WriteFailure.FULL);
     final var consumer = Mockito.mock(ActorCondition.class);
 
     // when
@@ -179,7 +190,7 @@ final class SequencerTest {
     final var result = sequencer.tryWrite(List.of(TestEntry.ofKey(1), TestEntry.ofKey(2)));
 
     // then
-    Assertions.assertThat(result).isNegative();
+    EitherAssert.assertThat(result).isLeft();
     Mockito.verify(consumer).signal();
   }
 
@@ -298,13 +309,14 @@ final class SequencerTest {
           var lastWrittenPosition = initialPosition - 1;
           while (batchesWritten < batchesToWrite) {
             final var result = sequencer.tryWrite(batchToWrite);
-            if (result > 0) {
+            if (result.isRight()) {
               if (isOnlyWriter) {
-                Assertions.assertThat(result).isEqualTo(lastWrittenPosition + batchToWrite.size());
+                Assertions.assertThat(result.get())
+                    .isEqualTo(lastWrittenPosition + batchToWrite.size());
               } else {
-                Assertions.assertThat(result).isGreaterThan(lastWrittenPosition);
+                Assertions.assertThat(result.get()).isGreaterThan(lastWrittenPosition);
               }
-              lastWrittenPosition = result;
+              lastWrittenPosition = result.get();
               batchesWritten += 1;
             } else {
               LockSupport.parkNanos(1_000_000);
