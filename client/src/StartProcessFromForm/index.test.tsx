@@ -47,14 +47,27 @@ const getWrapper = ({
 };
 
 describe('<StartProcessFromForm />', () => {
-  it('should render a form', async () => {
+  it('should submit form', async () => {
     nodeMockServer.use(
       rest.get('/v1/external/process/:bpmnProcessId/form', (_, res, ctx) =>
         res(ctx.json(formMocks.form)),
       ),
+      rest.patch(
+        '/v1/external/process/:bpmnProcessId/start',
+        async (req, res, ctx) => {
+          const {bpmnProcessId} = req.params;
+          const {variables} = await req.json();
+
+          if (bpmnProcessId !== 'foo' || !Array.isArray(variables)) {
+            return res.once(ctx.status(500));
+          }
+
+          return res.once(ctx.json({id: 'foo-instance'}));
+        },
+      ),
     );
 
-    render(<StartProcessFromForm />, {
+    const {user} = render(<StartProcessFromForm />, {
       wrapper: getWrapper({
         initialEntries: ['/new/foo'],
       }),
@@ -62,7 +75,66 @@ describe('<StartProcessFromForm />', () => {
 
     await waitForElementToBeRemoved(screen.getByTestId('public-form-skeleton'));
 
-    expect(screen.getByText('A sample text')).toBeInTheDocument();
+    await user.type(
+      screen.getByRole('textbox', {name: /my variable \*/i}),
+      'var1',
+    );
+    await user.type(
+      screen.getByRole('textbox', {
+        name: /is cool\?/i,
+      }),
+      'Yes',
+    );
+    await user.click(
+      screen.getByRole('button', {
+        name: 'Save',
+      }),
+    );
+
+    expect(await screen.findByText('Success')).toBeInTheDocument();
+  });
+
+  it('should handle a submit error', async () => {
+    nodeMockServer.use(
+      rest.get('/v1/external/process/:bpmnProcessId/form', (_, res, ctx) =>
+        res(ctx.json(formMocks.form)),
+      ),
+      rest.patch('/v1/external/process/:bpmnProcessId/start', (_, res, ctx) =>
+        res.once(ctx.status(500)),
+      ),
+    );
+
+    const {user} = render(<StartProcessFromForm />, {
+      wrapper: getWrapper({
+        initialEntries: ['/new/foo'],
+      }),
+    });
+
+    await waitForElementToBeRemoved(screen.getByTestId('public-form-skeleton'));
+
+    await user.type(
+      screen.getByRole('textbox', {name: /my variable \*/i}),
+      'var1',
+    );
+    await user.type(
+      screen.getByRole('textbox', {
+        name: /is cool\?/i,
+      }),
+      'Yes',
+    );
+    await user.click(
+      screen.getByRole('button', {
+        name: 'Save',
+      }),
+    );
+
+    await waitFor(() =>
+      expect(notificationsStore.displayNotification).toHaveBeenCalledWith({
+        kind: 'error',
+        title: 'Could not submit form',
+        isDismissable: false,
+      }),
+    );
   });
 
   it('should a request error message', async () => {

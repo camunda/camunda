@@ -78,9 +78,7 @@ jobs:
         run: mvn -q -B spring-boot:start -f webapp/pom.xml -Dspring-boot.run.fork=true
       - name: Run tests
         working-directory: ./client
-        run: yarn run test:e2e:playwright
-        env:
-          ZEEBE_GATEWAY_ADDRESS: localhost:26500
+        run: yarn run test:e2e:playwright:ci
       - uses: actions/upload-artifact@v3
         if: always()
         with:

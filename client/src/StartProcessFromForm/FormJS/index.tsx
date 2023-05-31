@@ -9,16 +9,19 @@ import {useEffect, useRef} from 'react';
 import {Container, FormCustomStyling} from './styled';
 import {formManager} from 'modules/formManager';
 import {notificationsStore} from 'modules/stores/notifications';
+import {Variable} from 'modules/types';
 
 type Props = {
   schema: string;
+  onSubmit: (variables: Variable[]) => void;
 };
 
-const FormJS: React.FC<Props> = ({schema}) => {
+const FormJS: React.FC<Props> = ({schema, onSubmit}) => {
   const formContainerRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     const container = formContainerRef.current;
+
     if (container !== null) {
       formManager.render({
         container,
@@ -31,14 +34,26 @@ const FormJS: React.FC<Props> = ({schema}) => {
             isDismissable: false,
           });
         },
-        onSubmit: async () => {},
+        onSubmit: async ({data, errors}) => {
+          if (Object.keys(errors).length === 0) {
+            const variables = Object.entries(data).map(
+              ([name, value]) =>
+                ({
+                  name,
+                  value: JSON.stringify(value),
+                } as Variable),
+            );
+
+            onSubmit(variables);
+          }
+        },
       });
     }
 
     return () => {
       formManager.detach();
     };
-  }, [schema]);
+  }, [schema, onSubmit]);
 
   return (
     <>

@@ -7,18 +7,18 @@
 
 import {useMutation} from '@tanstack/react-query';
 import {api} from 'modules/api';
-import {request, RequestError} from 'modules/request';
-import {Process, ProcessInstance} from 'modules/types';
+import {RequestError, request} from 'modules/request';
+import {ProcessInstance} from 'modules/types';
 
-function useStartProcess() {
+function useStartExternalProcess() {
   return useMutation<
     ProcessInstance,
     RequestError | Error,
-    Pick<Process, 'processDefinitionKey'>
+    Parameters<typeof api.startExternalProcess>[0]
   >({
-    mutationFn: async ({processDefinitionKey}) => {
+    mutationFn: async (payload) => {
       const {response, error} = await request(
-        api.startProcess(processDefinitionKey),
+        api.startExternalProcess(payload),
       );
 
       if (response !== null) {
@@ -30,4 +30,4 @@ function useStartProcess() {
   });
 }
 
-export {useStartProcess};
+export {useStartExternalProcess};

@@ -190,6 +190,25 @@ const api = {
       },
     );
   },
+  startExternalProcess: ({
+    bpmnProcessId,
+    variables,
+  }: {
+    bpmnProcessId: string;
+    variables: Variable[];
+  }) => {
+    return new Request(
+      mergePathname(BASENAME, `/v1/external/process/${bpmnProcessId}/start`),
+      {
+        ...BASE_REQUEST_OPTIONS,
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({variables}),
+      },
+    );
+  },
 } as const;
 
 export {api};

@@ -38,6 +38,7 @@
     "eject": "react-scripts eject",
     "test:e2e": "ZEEBE_GATEWAY_ADDRESS=localhost:26503 PORT=3001 testcafe chrome e2e/tests/*.ts --compiler-options typescript.configPath='e2e/tsconfig.json'",
     "test:e2e:playwright": "IS_E2E=true ZEEBE_GATEWAY_ADDRESS=localhost:26503 yarn playwright e2e-playwright/tests",
+    "test:e2e:playwright:ci": "IS_E2E=true yarn playwright e2e-playwright/tests",
     "test:e2e:ci": "PORT=8080 testcafe chrome:headless e2e/tests/*.ts --compiler-options typescript.configPath='e2e/tsconfig.json'",
     "ts-check": "tsc && tsc --noEmit --project e2e/tsconfig.json",
     "eslint": "eslint .",
