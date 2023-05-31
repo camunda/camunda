@@ -11,4 +11,10 @@ const NodeName = styled.span`
   margin-left: var(--cds-spacing-02);
 `;
 
-export {NodeName};
+const Container = styled.div`
+  display: flex;
+  justify-content: space-between;
+  flex: 1;
+`;
+
+export {NodeName, Container};

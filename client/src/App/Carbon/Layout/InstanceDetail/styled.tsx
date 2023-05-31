@@ -9,18 +9,25 @@ import styled, {css} from 'styled-components';
 
 type Props = {
   $hasFrameHeader?: boolean;
+  $hasFrameFooter?: boolean;
   $hasBreadcrumb?: boolean;
 };
 
 const Container = styled.div<Props>`
-  ${({$hasFrameHeader = false, $hasBreadcrumb = false}) => {
+  ${({
+    $hasFrameHeader = false,
+    $hasBreadcrumb = false,
+    $hasFrameFooter = false,
+  }) => {
     return css`
       display: grid;
       height: 100%;
       grid-template-rows: ${`${$hasFrameHeader ? 'var(--cds-spacing-07)' : ''}
         ${
           $hasBreadcrumb ? 'var(--cds-spacing-07)' : ''
-        } var(--cds-spacing-09) 1fr
+        } var(--cds-spacing-09) 1fr ${
+        $hasFrameFooter ? 'var(--cds-spacing-09)' : ''
+      }
       `};
 
       ${$hasFrameHeader &&

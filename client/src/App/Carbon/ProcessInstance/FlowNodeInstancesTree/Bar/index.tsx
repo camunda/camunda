@@ -8,11 +8,12 @@
 import React from 'react';
 
 import {TimeStampLabel} from './TimeStampLabel';
-import {NodeName} from './styled';
-import {Stack, Layer} from '@carbon/react';
+import {NodeName, Container} from './styled';
+import {Layer, Stack} from '@carbon/react';
 
 import {modificationsStore} from 'modules/stores/modifications';
 import {observer} from 'mobx-react';
+import {ModificationIcons} from './ModificationIcons';
 import {FlowNodeInstance} from 'modules/stores/flowNodeInstance';
 
 type Props = {
@@ -22,14 +23,18 @@ type Props = {
 
 const Bar: React.FC<Props> = observer(({nodeName, flowNodeInstance}) => {
   return (
-    <Stack orientation="horizontal" gap={5}>
-      <NodeName>{nodeName}</NodeName>
-      {!modificationsStore.isModificationModeEnabled && (
-        <Layer>
-          <TimeStampLabel timeStamp={flowNodeInstance.endDate} />
-        </Layer>
-      )}
-    </Stack>
+    <Container>
+      <Stack orientation="horizontal" gap={5}>
+        <NodeName>{nodeName}</NodeName>
+        {!modificationsStore.isModificationModeEnabled && (
+          <Layer>
+            <TimeStampLabel timeStamp={flowNodeInstance.endDate} />
+          </Layer>
+        )}
+      </Stack>
+
+      <ModificationIcons flowNodeInstance={flowNodeInstance} />
+    </Container>
   );
 });
 

@@ -45,6 +45,7 @@ const InstanceDetail: React.FC<Props> = observer(
       <Container
         $hasBreadcrumb={breadcrumb !== undefined}
         $hasFrameHeader={frameHeader !== undefined}
+        $hasFrameFooter={frameFooter !== undefined}
       >
         {frameHeader}
         {breadcrumb}

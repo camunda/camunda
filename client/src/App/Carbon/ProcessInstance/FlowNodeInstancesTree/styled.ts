@@ -12,6 +12,10 @@ const TreeNode = styled(BaseTreeNode)`
   .cds--tree-node__label {
     height: 2rem;
   }
+
+  .cds--tree-node__label__details {
+    width: 100%;
+  }
 `;
 
 export {TreeNode};
