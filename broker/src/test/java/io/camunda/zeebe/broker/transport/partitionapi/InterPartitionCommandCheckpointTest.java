@@ -141,7 +141,7 @@ final class InterPartitionCommandCheckpointTest {
   void shouldNotWriteCommandIfCheckpointCreateFailed() {
     // given
     when(logStreamWriter.tryWrite(Mockito.<LogAppendEntry>any()))
-        .thenReturn(Either.left(WriteFailure.UNKNOWN), Either.right(1L));
+        .thenReturn(Either.left(WriteFailure.FULL), Either.right(1L));
     receiver.setCheckpointId(5);
     sender.setCheckpointId(17);
 

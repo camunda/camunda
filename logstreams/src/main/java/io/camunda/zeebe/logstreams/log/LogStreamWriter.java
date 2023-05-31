@@ -71,7 +71,6 @@ public interface LogStreamWriter {
   enum WriteFailure {
     CLOSED,
     FULL,
-    INVALID_ENTRY,
-    UNKNOWN
+    INVALID_ENTRY
   }
 }
