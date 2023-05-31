@@ -134,7 +134,7 @@ public final class ErrorResponseWriter implements BufferWriter {
                       + " leader for this partition.")
                   .formatted(partitionId));
       case FULL -> raiseInternalError("because the writer is full.", partitionId);
-      case INVALID_ENTRY -> raiseInternalError("due to invalid entry.", partitionId);
+      case INVALID_ARGUMENT -> raiseInternalError("due to invalid entry.", partitionId);
     };
   }
 

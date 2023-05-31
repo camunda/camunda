@@ -74,12 +74,12 @@ final class Sequencer implements LogStreamWriter, Closeable {
     for (final var entry : appendEntries) {
       if (!isEntryValid(entry)) {
         LOG.warn("Reject write of invalid entry {}", entry);
-        return Either.left(WriteFailure.INVALID_ENTRY);
+        return Either.left(WriteFailure.INVALID_ARGUMENT);
       }
     }
     final var batchSize = appendEntries.size();
     if (batchSize == 0) {
-      return Either.right(0L);
+      return Either.left(WriteFailure.INVALID_ARGUMENT);
     }
 
     final long currentPosition;
