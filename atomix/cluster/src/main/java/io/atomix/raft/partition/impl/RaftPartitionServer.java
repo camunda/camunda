@@ -70,7 +70,7 @@ public class RaftPartitionServer implements Managed<RaftPartitionServer>, Health
   private final Set<FailureListener> deferredFailureListeners = new CopyOnWriteArraySet<>();
   private final PartitionMetadata partitionMetadata;
   private final Duration requestTimeout;
-
+  private final Duration snapshotRequestTimeout;
   private RaftServer server;
   private ReceivableSnapshotStore persistedSnapshotStore;
 
@@ -92,6 +92,7 @@ public class RaftPartitionServer implements Managed<RaftPartitionServer>, Health
             LoggerContext.builder(RaftPartitionServer.class).addValue(partition.name()).build());
     this.partitionMetadata = partitionMetadata;
     requestTimeout = config.getPartitionConfig().getRequestTimeout();
+    snapshotRequestTimeout = config.getPartitionConfig().getSnapshotRequestTimeout();
   }
 
   @Override
@@ -339,7 +340,8 @@ public class RaftPartitionServer implements Managed<RaftPartitionServer>, Health
         partition.name(),
         Serializer.using(RaftNamespaces.RAFT_PROTOCOL),
         clusterCommunicator,
-        requestTimeout);
+        requestTimeout,
+        snapshotRequestTimeout);
   }
 
   public CompletableFuture<Void> stepDown() {

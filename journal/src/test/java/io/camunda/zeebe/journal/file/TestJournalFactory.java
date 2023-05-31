@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.journal.file;
 
+import io.camunda.zeebe.journal.JournalMetaStore;
 import io.camunda.zeebe.journal.JournalMetaStore.InMemory;
 import io.camunda.zeebe.journal.record.RecordData;
 import io.camunda.zeebe.journal.record.SBESerializer;
@@ -93,6 +94,11 @@ final class TestJournalFactory {
   }
 
   SegmentsManager segmentsManager(final Path directory, final SegmentLoader loader) {
+    return segmentsManager(directory, loader, metaStore);
+  }
+
+  SegmentsManager segmentsManager(
+      final Path directory, final SegmentLoader loader, final JournalMetaStore metaStore) {
     return new SegmentsManager(
         index, maxSegmentSize(), directory.resolve("data").toFile(), "journal", loader, metaStore);
   }
