@@ -315,7 +315,7 @@ export class DefinitionSelection extends React.Component {
       : t('common.name');
 
     return (
-      <Wrapper className="DefinitionSelection" title={this.createTitle()} align="bottom-left">
+      <Wrapper className="DefinitionSelection" title={this.createTitle()}>
         <div
           className={classnames('container', {
             large: this.canRenderDiagram(),
