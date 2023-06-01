@@ -9,7 +9,7 @@ import React, {useState, useEffect} from 'react';
 import classnames from 'classnames';
 
 import {t} from 'translation';
-import {Popover, Form, Switch, Button, Icon, UserTypeahead} from 'components';
+import {CarbonPopover, Form, Switch, Button, Icon, UserTypeahead} from 'components';
 import {withErrorHandling} from 'HOC';
 import {AssigneeFilterPreview} from 'filter';
 
@@ -117,7 +117,7 @@ export function AssigneeFilter({
         {t('common.filter.types.' + type)}
         {children}
       </div>
-      <Popover
+      <CarbonPopover
         title={
           <>
             <Icon type="filter" className={classnames('indicator', {active: filter})} />{' '}
@@ -218,7 +218,7 @@ export function AssigneeFilter({
             {t('common.off')}
           </Button>
         </Form>
-      </Popover>
+      </CarbonPopover>
     </div>
   );
 }

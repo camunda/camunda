@@ -12,7 +12,7 @@ import {
   Button,
   ShareEntity,
   ReportRenderer,
-  Popover,
+  CarbonPopover,
   Icon,
   Deleter,
   EntityName,
@@ -100,13 +100,14 @@ export class ReportView extends React.Component {
                 </>
               )}
               {!isInstantPreviewReport && (
-                <Popover
+                <CarbonPopover
                   main
                   className="tool-button share-button"
                   icon="share"
                   title={t('common.sharing.buttonTitle')}
                   tooltip={!sharingEnabled ? t('common.sharing.disabled') : ''}
                   disabled={!sharingEnabled}
+                  align="bottom-right"
                 >
                   <ShareEntity
                     type="report"
@@ -115,7 +116,7 @@ export class ReportView extends React.Component {
                     revokeEntitySharing={revokeReportSharing}
                     getSharedEntity={getSharedReport}
                   />
-                </Popover>
+                </CarbonPopover>
               )}
               {(optimizeProfile === 'cloud' || optimizeProfile === 'platform') &&
                 data?.visualization === 'number' && <AlertsDropdown numberReport={report} />}

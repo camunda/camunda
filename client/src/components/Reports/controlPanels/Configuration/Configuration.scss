@@ -1,12 +1,13 @@
 .Configuration {
-  .dialog {
+  .configurationPopover .popoverContent {
     min-width: 320px;
+    width: auto;
 
     .Form:after {
       content: '';
       display: block;
-      width: calc(100% + 40px);
-      margin-left: -20px;
+      width: calc(100% + 2rem);
+      margin-left: -1rem;
       border-bottom: 1px solid var(--silver-darken-80);
     }
 

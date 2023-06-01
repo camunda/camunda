@@ -286,7 +286,7 @@ it('should construct a popover title', async () => {
   const node = await shallow(<DefinitionSelection {...props} />);
   await flushPromises();
 
-  expect(node.find('Popover')).toHaveProp('title', 'Select Process');
+  expect(node.find('.DefinitionSelection')).toHaveProp('title', 'Select Process');
 
   loadTenants.mockReturnValueOnce([
     {
@@ -309,7 +309,7 @@ it('should construct a popover title', async () => {
   );
   await flushPromises();
 
-  expect(nodeWithData.find('Popover')).toHaveProp('title', 'Bar : 1');
+  expect(nodeWithData.find('.DefinitionSelection')).toHaveProp('title', 'Bar : 1');
 });
 
 it('should construct a popover title even without xml', async () => {
@@ -318,7 +318,7 @@ it('should construct a popover title even without xml', async () => {
   );
   await flushPromises();
 
-  expect(node.find('Popover')).toHaveProp('title', 'Foo : 1 : -');
+  expect(node.find('.DefinitionSelection')).toHaveProp('title', 'Foo : 1 : -');
 });
 
 it('should hide the tenant selection by default', async () => {
@@ -352,23 +352,23 @@ describe('tenants', () => {
     let node = await shallow(<DefinitionSelection {...props} />);
     await flushPromises();
 
-    expect(node.find('Popover')).toHaveProp('title', 'Select Process');
+    expect(node.find('.DefinitionSelection')).toHaveProp('title', 'Select Process');
 
     node = await shallow(
       <DefinitionSelection {...props} definitionKey="foo" versions={['3']} tenants={[]} />
     );
     await flushPromises();
 
-    expect(node.find('Popover')).toHaveProp('title', 'Foo : 3 : -');
+    expect(node.find('.DefinitionSelection')).toHaveProp('title', 'Foo : 3 : -');
 
     node.find('TenantPopover').simulate('change', ['a']);
-    expect(node.find('Popover')).toHaveProp('title', 'Foo : 3 : Tenant A');
+    expect(node.find('.DefinitionSelection')).toHaveProp('title', 'Foo : 3 : Tenant A');
 
     node.find('TenantPopover').simulate('change', ['a', 'b']);
-    expect(node.find('Popover')).toHaveProp('title', 'Foo : 3 : Multiple');
+    expect(node.find('.DefinitionSelection')).toHaveProp('title', 'Foo : 3 : Multiple');
 
     node.find('TenantPopover').simulate('change', ['a', 'b', 'c']);
-    expect(node.find('Popover')).toHaveProp('title', 'Foo : 3 : All');
+    expect(node.find('.DefinitionSelection')).toHaveProp('title', 'Foo : 3 : All');
   });
 
   it('should show a tenant selection component', async () => {

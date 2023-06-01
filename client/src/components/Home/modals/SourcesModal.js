@@ -218,7 +218,7 @@ export function SourcesModal({onClose, onConfirm, mightFail, confirmText, preSel
                       })
                     );
                   }}
-                  renderInPortal="sourcesModalTenantPopover"
+                  floating
                 />
               );
             }

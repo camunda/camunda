@@ -1,12 +1,8 @@
 .DefinitionSelection {
   width: 100%;
 
-  > div > .dialogContainer > .dialog {
-    padding: 20px 40px;
-  }
-
-  .Popover .buttonWrapper .Button {
-    padding-left: 20px;
+  .popoverContent {
+    max-width: max-content;
   }
 
   .container {
@@ -101,7 +97,7 @@
     }
   }
 
-  &:not(.Popover) .container .selectionPanel .dropdowns {
+  &:not(.CarbonPopover) .container .selectionPanel .dropdowns {
     width: 100%;
 
     .entry:first-child {

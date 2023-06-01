@@ -14,7 +14,7 @@ export const reportName = Selector('.ReportView .name');
 export const reportRenderer = Selector('.ReportRenderer');
 export const report = Selector('.ListItem.report');
 export const definitionCopyButton = (definition) => definition.find('.Button').nth(0);
-export const definitionEditButton = (definition) => definition.find('.Popover .Button');
+export const definitionEditButton = (definition) => definition.find('.CarbonPopover .Button');
 export const checkbox = (name) => Selector('.label').withText(name);
 export const groupbyDropdown = checkbox('Group By').nextSibling();
 export const groupbyDropdownButton = groupbyDropdown.find('button');
@@ -28,12 +28,12 @@ export const reportDiagram = reportRenderer.find('.djs-container > svg');
 export const reportNumber = reportRenderer.find('.Number .data');
 export const instanceCount = reportRenderer.find('.additionalInfo');
 export const reportProgressBar = reportRenderer.find('.ProgressBar');
-export const configurationButton = Selector('.Configuration .Popover .buttonWrapper button');
+export const configurationButton = Selector('.configurationPopover .buttonWrapper button');
 export const resetButton = Selector('.resetButton');
-export const goalSwitch = Selector('.Configuration .Popover fieldset')
+export const goalSwitch = Selector('.configurationPopover fieldset')
   .withText('Set Target')
   .find('.Switch');
-export const goalTargetInput = Selector('.Configuration .Popover fieldset')
+export const goalTargetInput = Selector('.configurationPopover fieldset')
   .withText('Set Target')
   .find('.LabeledInput')
   .nth(1)
@@ -84,7 +84,7 @@ export const warningMessage = Selector('.Report .MessageBox--warning');
 export const controlPanelFilter = Selector('.ActionItem');
 export const filterRemoveButton = controlPanelFilter.find('.Button:last-child');
 export const definitionElement = (name) => Selector('.DefinitionList li').withText(name);
-export const definitionEditor = Selector('.DefinitionList .Popover .Button');
+export const definitionEditor = Selector('.DefinitionList .CarbonPopover .Button');
 export const definitionSelectionDialog = Selector('.DefinitionList .dialog');
 export const versionPopover = Selector('.VersionPopover');
 export const versionAll = Selector('input[type="radio"]').nth(0);

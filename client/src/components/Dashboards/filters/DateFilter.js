@@ -10,7 +10,7 @@ import classnames from 'classnames';
 import {parseISO, startOfDay, endOfDay} from 'date-fns';
 
 import {format, BACKEND_DATE_FORMAT} from 'dates';
-import {Dropdown, Icon, Popover, DatePicker, Button} from 'components';
+import {Dropdown, Icon, CarbonPopover, DatePicker, Button} from 'components';
 import {t} from 'translation';
 
 import RollingFilter from './RollingFilter';
@@ -153,7 +153,7 @@ export default function DateFilter({
         {children}
       </div>
       {showFixedPopover && filter?.type !== 'relative' ? (
-        <Popover
+        <CarbonPopover
           title={
             <>
               <Icon type={icon} className={classnames('indicator', {active: filter})} />{' '}
@@ -192,7 +192,7 @@ export default function DateFilter({
           >
             {t('common.off')}
           </Button>
-        </Popover>
+        </CarbonPopover>
       ) : (
         <Dropdown
           label={

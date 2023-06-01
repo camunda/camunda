@@ -8,7 +8,7 @@
 import React from 'react';
 import classnames from 'classnames';
 
-import {Popover, Form, Switch, Button} from 'components';
+import {CarbonPopover, Form, Switch, Button} from 'components';
 import {incompatibleFilters} from 'services';
 import {t} from 'translation';
 
@@ -50,7 +50,7 @@ export default function InstanceStateFilter({filter = [], setFilter, children}) 
         {t('dashboard.filter.types.state')}
         {children}
       </div>
-      <Popover
+      <CarbonPopover
         title={
           <>
             <span className={classnames('indicator', {active})} />
@@ -86,7 +86,7 @@ export default function InstanceStateFilter({filter = [], setFilter, children}) 
             {t('common.off')}
           </Button>
         </Form>
-      </Popover>
+      </CarbonPopover>
     </div>
   );
 }

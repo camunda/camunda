@@ -8,7 +8,7 @@
 import React, {useEffect, useState} from 'react';
 import classnames from 'classnames';
 
-import {Popover, Form, Switch, Button, Icon, Typeahead} from 'components';
+import {CarbonPopover, Form, Switch, Button, Icon, Typeahead} from 'components';
 import {VariablePreview} from 'filter';
 import {t} from 'translation';
 import {numberParser} from 'services';
@@ -108,7 +108,7 @@ export default function SelectionFilter({filter, type, config, setFilter, report
 
   return (
     <div className="SelectionFilter">
-      <Popover
+      <CarbonPopover
         title={
           <>
             <Icon type="filter" className={classnames('indicator', {active: filter})} />{' '}
@@ -219,7 +219,7 @@ export default function SelectionFilter({filter, type, config, setFilter, report
             {t('common.off')}
           </Button>
         </Form>
-      </Popover>
+      </CarbonPopover>
     </div>
   );
 }

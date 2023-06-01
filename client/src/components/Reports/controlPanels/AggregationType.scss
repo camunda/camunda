@@ -2,7 +2,7 @@
   display: inline-block;
   flex: 0 0 51px;
 
-  &.Popover .buttonWrapper .Button {
+  &.CarbonPopover .buttonWrapper .Button {
     border-left: none;
     padding: 6px 0;
     width: 51px;
@@ -12,6 +12,10 @@
     color: var(--grey-base-40);
     border-top-left-radius: 0;
     border-bottom-left-radius: 0;
+
+    &:not(.icon) {
+      padding-right: 0px;
+    }
 
     &:hover,
     &.active {
@@ -42,6 +46,7 @@
       margin: 0;
     }
   }
+
   h4 {
     font-size: 12px;
     color: var(--grey-lighten-50);

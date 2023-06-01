@@ -8,7 +8,7 @@
 import React from 'react';
 import classnames from 'classnames';
 
-import {Popover, Form, Button, ButtonGroup, Icon} from 'components';
+import {CarbonPopover, Form, Button, ButtonGroup, Icon} from 'components';
 import {t} from 'translation';
 
 export default function BooleanFilter({filter, setFilter}) {
@@ -22,7 +22,7 @@ export default function BooleanFilter({filter, setFilter}) {
   }
 
   return (
-    <Popover
+    <CarbonPopover
       className="BooleanFilter"
       title={
         <>
@@ -46,6 +46,6 @@ export default function BooleanFilter({filter, setFilter}) {
           {t('common.off')}
         </Button>
       </Form>
-    </Popover>
+    </CarbonPopover>
   );
 }

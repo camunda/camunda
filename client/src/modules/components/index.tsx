@@ -44,6 +44,7 @@ export {Checklist} from './Checklist';
 export {DurationChart} from './DurationChart';
 export {ColorPicker} from './ColorPicker';
 export {Badge} from './Badge';
+export {CarbonPopover} from './CarbonPopover';
 
 export type {InputProps} from './Input';
 export type {LabeledProps} from './Labeled';

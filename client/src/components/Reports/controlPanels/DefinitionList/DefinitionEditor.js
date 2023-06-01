@@ -123,6 +123,7 @@ export function DefinitionEditor({mightFail, collection, type, definition, tenan
                   await onChange({...definition, tenantIds: newTenants});
                   setLoadingTenants(false);
                 }}
+                align="bottom-right"
               />
             </div>
           )}

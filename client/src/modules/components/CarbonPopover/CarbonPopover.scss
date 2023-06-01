@@ -1,0 +1,43 @@
+@use '@carbon/styles/scss/theme';
+@use '@carbon/styles/scss/spacing';
+@import 'shared-styles/shared-styles.scss';
+
+.CarbonPopover {
+  display: block;
+
+  > .cds--popover {
+    > .popoverContent {
+      background-color: theme.$layer-02;
+      padding: spacing.$spacing-05;
+
+      &.scrollable {
+        @include scrollable;
+      }
+    }
+
+    > .cds--popover-caret {
+      background-color: theme.$layer-02;
+    }
+  }
+
+  .buttonWrapper {
+    .Button {
+      width: 100%;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      overflow: hidden;
+      text-align: left;
+
+      .downIcon {
+        position: absolute;
+        right: 0;
+        display: inline-block;
+        margin-right: 7px;
+      }
+
+      &:not(.icon) {
+        padding-right: 30px;
+      }
+    }
+  }
+}

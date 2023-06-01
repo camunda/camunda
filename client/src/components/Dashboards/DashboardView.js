@@ -16,7 +16,7 @@ import {
   DashboardRenderer,
   LastModifiedInfo,
   Icon,
-  Popover,
+  CarbonPopover,
   Deleter,
   EntityName,
   DiagramScrollLock,
@@ -148,7 +148,7 @@ export function DashboardView(props) {
                     </>
                   )}
                   {!sharingHidden && (
-                    <Popover
+                    <CarbonPopover
                       main
                       className="tool-button share-button"
                       icon="share"
@@ -165,7 +165,7 @@ export function DashboardView(props) {
                         filter={filter}
                         defaultFilter={getDefaultFilter(availableFilters)}
                       />
-                    </Popover>
+                    </CarbonPopover>
                   )}
                 </React.Fragment>
               )}

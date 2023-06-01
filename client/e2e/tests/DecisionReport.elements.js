@@ -13,8 +13,10 @@ export const decisionTableCell = (row, column) =>
 export const filterButton = Selector('.Filter__dropdown .activateButton');
 export const filterOption = (text) => Selector('.Filter .DropdownOption').withText(text);
 export const visualizationDropdown = Selector('.label').withText('Visualization').nextSibling();
-export const configurationButton = Selector('.Configuration .Popover');
-export const gradientBarsSwitch = Selector('.Popover label').withText('Show Gradient Bars');
+export const configurationButton = Selector('.configurationPopover .Button');
+export const gradientBarsSwitch = Selector('.configurationPopover label').withText(
+  'Show Gradient Bars'
+);
 export const report = Selector('.Report');
 export const modalDecisionTable = Selector('.DiagramModal .DMNDiagram');
 export const sectionToggle = (sectionName) =>

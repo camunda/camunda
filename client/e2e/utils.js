@@ -68,7 +68,7 @@ export async function createNewCombinedReport(t) {
 }
 
 export async function selectVersion(t, selector, version) {
-  await t.click(selector.find('.Popover .Button'));
+  await t.click(selector.find('.CarbonPopover .Button'));
   await t.click('.VersionPopover');
 
   if (typeof version === 'string') {
@@ -80,7 +80,7 @@ export async function selectVersion(t, selector, version) {
     }
   }
 
-  await t.click(selector.find('.Popover .Button'));
+  await t.click(selector.find('.CarbonPopover .Button'));
 }
 
 export async function selectReportDefinition(t, name, version) {
@@ -96,7 +96,7 @@ export async function selectReportDefinition(t, name, version) {
 
 export async function selectDefinition(t, name, version = 'Specific version') {
   await t
-    .click('.Popover.DefinitionSelection')
+    .click('.DefinitionSelection')
     .typeText('.Typeahead input', name, {replace: true})
     .click(Common.typeaheadOption(name));
 
@@ -114,7 +114,7 @@ export async function selectDefinition(t, name, version = 'Specific version') {
     }
   }
 
-  await t.click('.Popover.DefinitionSelection');
+  await t.click('.DefinitionSelection');
 }
 
 const selectControlPanelOption = (type) => async (t, name, subname) => {
