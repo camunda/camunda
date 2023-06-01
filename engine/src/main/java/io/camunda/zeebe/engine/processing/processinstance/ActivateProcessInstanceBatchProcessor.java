@@ -7,18 +7,18 @@
  */
 package io.camunda.zeebe.engine.processing.processinstance;
 
+import io.camunda.zeebe.engine.api.TypedRecord;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableMultiInstanceBody;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
+import io.camunda.zeebe.engine.state.KeyGenerator;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.immutable.ProcessState;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceBatchRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceBatchIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
-import io.camunda.zeebe.stream.api.records.TypedRecord;
-import io.camunda.zeebe.stream.api.state.KeyGenerator;
 
 public final class ActivateProcessInstanceBatchProcessor
     implements TypedRecordProcessor<ProcessInstanceBatchRecord> {
@@ -75,8 +75,7 @@ public final class ActivateProcessInstanceBatchProcessor
     childInstanceRecord
         .setFlowScopeKey(parentElementInstance.getKey())
         .setElementId(childElement.getId())
-        .setBpmnElementType(childElement.getElementType())
-        .setBpmnEventType(childElement.getEventType());
+        .setBpmnElementType(childElement.getElementType());
     return childInstanceRecord;
   }
 
