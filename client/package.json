@@ -118,7 +118,7 @@
     "testcafe": "^2.6.0",
     "testcafe-browser-provider-browserstack": "^1.14.2",
     "tree-kill": "^1.2.2",
-    "typescript": "^5.0.4",
+    "typescript": "^5.1.3",
     "ws": "^8.13.0",
     "xml2js": "^0.6.0"
   },
