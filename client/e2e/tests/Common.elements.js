@@ -43,7 +43,7 @@ export const listItemCheckbox = (item) => item.find('input[type="checkbox"]');
 export const newReportOption = createNewMenu.find('.Submenu');
 export const templateModalProcessField = Selector('.Modal .MultiSelect');
 export const firstTypeaheadOption = Selector('.TemplateModal .DropdownOption');
-export const modalContainer = Selector('.cds--modal-container');
+export const modalContainer = Selector(':not([aria-hidden="true"]) > .cds--modal-container');
 export const controlPanel = Selector('.ReportControlPanel');
 export const nameEditField = Selector('.EntityNameForm .name-input');
 export const typeahead = Selector('.Typeahead');

@@ -178,13 +178,17 @@ export async function toggleReportAutoPreviewUpdate(t) {
   await t.click('.updatePreview .Switch');
 }
 
-export async function addEditEntityDescription(t, description) {
+export async function addEditEntityDescription(t, description, screenshotPath) {
   await t.click(Common.addDescriptionButton);
 
   if (!description) {
     await t.selectText(Common.descriptionModalInput).pressKey('delete');
   } else {
     await t.typeText(Common.descriptionModalInput, description, {replace: true});
+  }
+
+  if (screenshotPath) {
+    await t.takeElementScreenshot(Common.descriptionModal, screenshotPath);
   }
 
   await t.click(Common.confirmButton);

@@ -41,6 +41,8 @@ test('create and name a report', async (t) => {
 
   await t.typeText(Common.nameEditField, 'Invoice Pipeline', {replace: true});
 
+  await u.addEditEntityDescription(t, 'This is a description of the dashboard.');
+
   await u.selectReportDefinition(t, 'Invoice Receipt with alternative correlation variable');
   await u.selectView(t, 'Flow Node', 'Count');
 
@@ -1269,7 +1271,7 @@ test('add, edit and remove reports description', async (t) => {
 
   // Add description
   const description = 'This is a description of the report.';
-  await u.addEditEntityDescription(t, description);
+  await u.addEditEntityDescription(t, description, 'img/report-descriptionModal.png');
 
   await t.expect(Common.descriptionField.textContent).contains(description);
 
@@ -1299,6 +1301,14 @@ test('add, edit and remove reports description', async (t) => {
 
   await t.expect(Common.descriptionField.find('p').hasClass('overflowHidden')).notOk();
   await t.expect(Common.showLessMoreDescriptionButton.textContent).contains('Less');
+
+  await t.takeElementScreenshot(
+    e.reportContainer,
+    'process-analysis/report-analysis/img/report-showMoreDescription.png',
+    {
+      crop: {bottom: 200},
+    }
+  );
 
   await t.click(Common.showLessMoreDescriptionButton);
   await t.expect(Common.descriptionField.find('p').hasClass('overflowHidden')).ok();

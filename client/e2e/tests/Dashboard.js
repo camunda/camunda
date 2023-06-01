@@ -36,6 +36,8 @@ test('create a dashboard and reports from a template', async (t) => {
 
   await t.click(Common.modalConfirmButton);
 
+  await u.addEditEntityDescription(t, 'This is a description of the dashboard.');
+
   await t.takeScreenshot('img/dashboard-dashboardEditActions.png', {fullPage: true});
 
   await addAnnotation(
@@ -469,9 +471,11 @@ test('add a report from the dashboard', async (t) => {
 test('add, edit and remove dashboards description', async (t) => {
   await u.createNewDashboard(t);
 
+  await t.resizeWindow(1200, 600);
+
   // Add description
   const description = 'This is a description of the dashboard.';
-  await u.addEditEntityDescription(t, description);
+  await u.addEditEntityDescription(t, description, 'img/dashboad-descriptionModal.png');
 
   await t.expect(Common.descriptionField.textContent).contains(description);
 
@@ -483,7 +487,6 @@ test('add, edit and remove dashboards description', async (t) => {
   await t.expect(Common.descriptionField.textContent).contains(description);
 
   // Edit description
-  await t.resizeWindow(1200, 600);
   await t.click(Common.editButton);
   const newDescription =
     'This is a new description of the dashboard. This time the description is very long and will not fit in one line. It will display ellipsis and More button.';
@@ -501,6 +504,10 @@ test('add, edit and remove dashboards description', async (t) => {
 
   await t.expect(Common.descriptionField.find('p').hasClass('overflowHidden')).notOk();
   await t.expect(Common.showLessMoreDescriptionButton.textContent).contains('Less');
+
+  await t.takeElementScreenshot(e.dashboardContainer, 'img/dashboard-showMoreDescription.png', {
+    crop: {bottom: 200},
+  });
 
   await t.click(Common.showLessMoreDescriptionButton);
   await t.expect(Common.descriptionField.find('p').hasClass('overflowHidden')).ok();
