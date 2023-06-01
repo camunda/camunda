@@ -103,6 +103,7 @@ public class ZeebeProcessInstanceImportIT extends AbstractZeebeIT {
   public void importCompletedZeebeProcessInstanceDataInMultipleBatches_allDataSavedToOptimizeProcessInstance() {
     // given
     embeddedOptimizeExtension.getConfigurationService().getConfiguredZeebe().setMaxImportPageSize(1);
+    embeddedOptimizeExtension.reloadConfiguration();
     deployAndStartInstanceForProcess(createStartEndProcess("someProcess"));
 
     // when
@@ -134,6 +135,7 @@ public class ZeebeProcessInstanceImportIT extends AbstractZeebeIT {
 
     // when we increase the page size
     embeddedOptimizeExtension.getConfigurationService().getConfiguredZeebe().setMaxImportPageSize(15);
+    embeddedOptimizeExtension.reloadConfiguration();
     importAllZeebeEntitiesFromScratch();
 
     // then we get the rest of the process data

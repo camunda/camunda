@@ -165,6 +165,7 @@ public class ZeebeProcessDefinitionImportIT extends AbstractZeebeIT {
   public void importZeebeProcess_multipleProcessOverMultipleBatches() {
     // given
     embeddedOptimizeExtension.getConfigurationService().getConfiguredZeebe().setMaxImportPageSize(1);
+    embeddedOptimizeExtension.reloadConfiguration();
 
     final String firstProcessName = "firstProcess";
     deployProcessAndStartInstance(createSimpleServiceTaskProcess(firstProcessName));

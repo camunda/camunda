@@ -383,6 +383,7 @@ public class ZeebeVariableCreationImportIT extends AbstractZeebeIT {
   public void zeebeVariableImport_importVariablesInBatches() {
     // given
     embeddedOptimizeExtension.getConfigurationService().getConfiguredZeebe().setMaxImportPageSize(1);
+    embeddedOptimizeExtension.reloadConfiguration();
     Map<String, Object> processVariables = Map.of("var1", "someValue1", "var2", "someValue2");
     final Process deployedProcess = zeebeExtension.deployProcess(createSimpleServiceTaskProcess(PROCESS_ID));
     final long startedInstanceKey = zeebeExtension.startProcessInstanceWithVariables(
