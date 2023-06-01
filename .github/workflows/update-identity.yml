@@ -1,0 +1,90 @@
+name: Update Identity Version
+on:
+  workflow_dispatch:
+    inputs:
+      identityVersion:
+        description: 'The identity version to update to, for example 8.3.11'
+        type: string
+        required: true
+      targetBranch:
+        description: 'The branch to update the identity version on, typically a release branch like release-8.3.15'
+        type: string
+        required: true
+      dryRun:
+        description: 'Whether to perform a dry run where no changes pushed, defaults to true'
+        type: boolean
+        default: true
+
+jobs:
+  update-identity:
+    name: "Update the identity version to ${{ inputs.identityVersion }}"
+    timeout-minutes: 20
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        id: checkout
+        with:
+          ref: ${{ inputs.targetBranch }}
+      - name: Git User Setup
+        id: git-setup
+        run: |
+          git config --global user.email "github-actions[update-identity]"
+          git config --global user.name "github-actions[update-identity]@users.noreply.github.com"
+      - name: Get current identity version from `./parent/pom.xml`
+        id: get-current-identity-version
+        uses: mavrosxristoforos/get-xml-info@1.1.1
+        with:
+          xml-file: './parent/pom.xml'
+          xpath: '//*[local-name()="version.identity"]'
+      - name: Setup Zeebe Build Tooling
+        id: build-setup
+        uses: ./.github/actions/setup-zeebe
+        if: ${{ steps.get-current-identity-version.outputs.info != inputs.identityVersion }}
+        with:
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          go: false
+          maven-cache-key-modifier: identity-update
+      - name: Update identity version in ./parent/pom.xml
+        id: update-identity-version
+        if: ${{ steps.get-current-identity-version.outputs.info != inputs.identityVersion }}
+        run: |
+          ./mvnw versions:set-property -DgenerateBackupPoms=false -Dproperty=version.identity -DnewVersion=${{ inputs.identityVersion }} -pl parent
+          git commit -am "deps(identity): update identity to ${{ inputs.identityVersion }}"
+      - name: Push Changes to the target branch
+        if: ${{ steps.update-identity-version.outcome == 'success' && inputs.dryRun == false }}
+        run: git push origin "${{ inputs.targetBranch }}"
+  notify:
+    name: Send slack notification on failure
+    runs-on: ubuntu-latest
+    needs: [ update-identity ]
+    if: ${{ failure() && inputs.dryRun == false }}
+    env:
+      SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+      SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
+    steps:
+      - id: slack-notify-failure
+        name: Send failure slack notification
+        uses: slackapi/slack-github-action@v1.24.0
+        with:
+          # For posting a rich message using Block Kit
+          payload: |
+            {
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": ":alarm: *Updating the identity version* on `${{ inputs.targetBranch }}` failed! :alarm:\n"
+                  }
+                },
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "Please check the related workflow execution: https://github.com/camunda/zeebe/actions/runs/${{ github.run_id }}"
+                  }
+                }
+              ]
+            }
