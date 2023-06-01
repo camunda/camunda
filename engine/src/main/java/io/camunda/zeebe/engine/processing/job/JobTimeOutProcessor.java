@@ -55,21 +55,16 @@ public final class JobTimeOutProcessor implements TypedRecordProcessor<JobRecord
 
       jobActivationBehavior.publishWork(jobKey, timedOutJob);
     } else {
-      final String textState;
+      final var reason = switch (state) {
+        case ACTIVATED -> throw new IllegalStateException(
+            "This should never happen, if a job is activated it should be timed out not rejected");
+        case ACTIVATABLE -> "it must be activated first";
+        case FAILED -> "it is marked as failed and is not activated";
+        case ERROR_THROWN -> "it has thrown an error and is not activated";
+        case NOT_FOUND -> "no such job was found";
+      };
 
-      switch (state) {
-        case ACTIVATABLE:
-          textState = "it must be activated first";
-          break;
-        case FAILED:
-          textState = "it is marked as failed";
-          break;
-        default:
-          textState = "no such job was found";
-          break;
-      }
-
-      final String errorMessage = String.format(NOT_ACTIVATED_JOB_MESSAGE, jobKey, textState);
+      final String errorMessage = String.format(NOT_ACTIVATED_JOB_MESSAGE, jobKey, reason);
       rejectionWriter.appendRejection(record, RejectionType.NOT_FOUND, errorMessage);
     }
   }
