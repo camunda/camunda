@@ -165,7 +165,8 @@ const Variables: React.FC<Props> = ({
       initialValues={variables.reduce(
         (values, variable) => ({
           ...values,
-          [createVariableFieldName(variable.name)]: variable.value,
+          [createVariableFieldName(variable.name)]:
+            variable.value ?? variable.previewValue,
         }),
         {},
       )}

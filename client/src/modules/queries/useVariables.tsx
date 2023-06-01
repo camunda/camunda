@@ -48,7 +48,7 @@ function useVariables(
   async function fetchFullVariable(id: Variable['id']) {
     setVariablesLoadingFullValue((variables) => [...variables, id]);
     const fullVariable = await client.fetchQuery<
-      Variable,
+      Pick<Variable, 'id' | 'name' | 'value'>,
       RequestError | Error
     >({
       queryKey: ['variable', id],
@@ -71,6 +71,7 @@ function useVariables(
       cachedVariables?.map((variable) => {
         if (variable.id === id) {
           return {
+            ...variable,
             ...fullVariable,
             isValueTruncated: false,
           };
