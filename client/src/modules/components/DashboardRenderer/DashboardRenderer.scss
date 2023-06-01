@@ -12,10 +12,6 @@
     flex-grow: 1;
     transition: none;
 
-    &:not(:focus-within) .EntityName .Popover .overlay {
-      display: none;
-    }
-
     &:focus-within {
       z-index: var(--z-above);
     }

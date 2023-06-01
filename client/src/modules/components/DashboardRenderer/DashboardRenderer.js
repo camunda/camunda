@@ -19,6 +19,8 @@ const columns = 18;
 const rowHeight = 94;
 const cellMargin = 10;
 
+export const gridEntryClassName = 'grid-entry';
+
 export default function DashboardRenderer({
   disableReportInteractions,
   disableNameLink,
@@ -69,7 +71,7 @@ export default function DashboardRenderer({
       {tiles.map((tile, idx) => {
         return (
           <div
-            className="grid-entry"
+            className={gridEntryClassName}
             key={getReportKey(tile, idx)}
             data-grid={{
               x: tile.position.x,

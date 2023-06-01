@@ -42,6 +42,7 @@ interface CarbonPopoverProps extends Omit<PopoverProps<'div'>, 'title' | 'open' 
   tooltip?: ReactNode;
   autoOpen?: boolean;
   align?: (typeof possibleAlignments)[number];
+  alignContainer?: string;
 }
 
 export default function CarbonPopover({
@@ -57,6 +58,7 @@ export default function CarbonPopover({
   tooltip,
   autoOpen = false,
   align,
+  alignContainer,
   ...props
 }: CarbonPopoverProps): JSX.Element {
   const [open, setOpen] = useState(autoOpen);
@@ -84,7 +86,7 @@ export default function CarbonPopover({
     const contentHeight = contentRef.current.clientHeight;
     const buttonRect = buttonRef.current.getBoundingClientRect();
     const buttonCenter = buttonRect.left + buttonRect.width / 2;
-    const bounds = getModalBounds(dialogRef.current) || getScreenBounds();
+    const bounds = getContainerBounds(dialogRef.current, alignContainer) || getScreenBounds();
 
     const bodyWidth = document.body.clientWidth;
     const margin = 10;
@@ -120,29 +122,28 @@ export default function CarbonPopover({
     }
 
     popoverClassList.add(getClassName(align || newAlignment));
-  }, [align]);
+  }, [align, alignContainer]);
 
   const fixPositioning = useCallback(() => {
     if (!floating) {
       return;
     }
 
-    const overlay = popoverRef.current?.querySelector('.cds--popover');
-    const modalBounds = getModalBounds(popoverRef.current);
-    const modalTop = modalBounds?.top || 0;
-    const modalLeft = modalBounds?.left || 0;
+    const containerBounds = getContainerBounds(popoverRef.current, alignContainer);
+    const topBound = containerBounds?.top || 0;
+    const leftBound = containerBounds?.left || 0;
 
     const box = buttonRef.current?.getBoundingClientRect();
-    if (open && overlay && box) {
+    if (open && box) {
       setPopoverStyles({
         position: 'fixed',
-        left: box.left - modalLeft + 'px',
-        top: box.top - modalTop + 'px',
+        left: box.left - leftBound + 'px',
+        top: box.top - topBound + 'px',
         width: box.width,
         height: box.height,
       });
     }
-  }, [floating, open]);
+  }, [alignContainer, floating, open]);
 
   useEffect(() => {
     if (open) {
@@ -245,8 +246,8 @@ export default function CarbonPopover({
   );
 }
 
-function getModalBounds(el: Element | null) {
-  return el?.closest('.cds--modal.is-visible .cds--modal-container')?.getBoundingClientRect();
+function getContainerBounds(popover: Element | null, elSelector = '.cds--modal-container') {
+  return popover?.closest(elSelector)?.getBoundingClientRect();
 }
 
 function getClassName(alignment: string) {

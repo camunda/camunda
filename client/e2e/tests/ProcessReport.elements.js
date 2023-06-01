@@ -95,7 +95,7 @@ export const versionCheckbox = (number) =>
 export const tenantPopover = Selector('.TenantPopover');
 export const aggregationTypeSelect = Selector('.AggregationType');
 export const aggregationOption = (text) => Selector('.AggregationType .Switch').withText(text);
-export const detailsPopoverButton = Selector('.EntityName .Popover .Button');
+export const detailsPopoverButton = Selector('.EntityName .CarbonPopover .buttonWrapper .Button');
 export const modalButton = (text) => Selector('.ReportDetails .modalButton').withText(text);
 export const rawDataTable = Selector('.RawDataModal .Table');
 export const modalDiagram = Selector('.DiagramModal .BPMNDiagram');

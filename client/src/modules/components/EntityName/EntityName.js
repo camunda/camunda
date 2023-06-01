@@ -8,7 +8,7 @@
 import React from 'react';
 import {Link} from 'react-router-dom';
 
-import {Popover, Tooltip} from 'components';
+import {CarbonPopover, Tooltip, gridEntryClassName} from 'components';
 
 import './EntityName.scss';
 
@@ -26,9 +26,9 @@ export default function EntityName({children, details, linkTo}) {
           )}
         </Tooltip>
         {details && (
-          <Popover icon="down" renderInPortal="detailsPopover">
+          <CarbonPopover icon="down" floating alignContainer={'.' + gridEntryClassName}>
             {details}
-          </Popover>
+          </CarbonPopover>
         )}
       </div>
     </div>

@@ -4,7 +4,7 @@
   .titleBar {
     display: flex;
 
-    .Popover .buttonWrapper .Button {
+    .CarbonPopover .buttonWrapper .Button {
       opacity: 0;
 
       &.active,
@@ -17,7 +17,7 @@
   .EntityName {
     padding-right: 0;
 
-    .Popover {
+    .CarbonPopover {
       margin-top: -2px;
       .buttonWrapper .Button {
         margin-left: 2px;
@@ -42,7 +42,7 @@
       vertical-align: top;
     }
 
-    .Popover {
+    .CarbonPopover {
       display: inline-block;
       margin-top: -2px;
 
