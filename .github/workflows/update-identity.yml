@@ -10,6 +10,10 @@ on:
         description: 'The branch to update the identity version on, typically a release branch like release-8.3.15'
         type: string
         required: true
+      userSlackId:
+        description: 'The slack id of the user to notify on failure, no mention within the alert message if omitted'
+        type: string
+        required: false
       dryRun:
         description: 'Whether to perform a dry run where no changes pushed, defaults to true'
         type: boolean
@@ -76,7 +80,7 @@ jobs:
                   "type": "section",
                   "text": {
                     "type": "mrkdwn",
-                    "text": ":alarm: *Updating the identity version* on `${{ inputs.targetBranch }}` failed! :alarm:\n"
+                    "text": ":alarm: *Updating the identity version* on `${{ inputs.targetBranch }}` failed! :alarm:\n ${{ inputs.userSlackId != '' && format('\\cc <@{0}>', inputs.userSlackId) || '' }}"
                   }
                 },
                 {
