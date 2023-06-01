@@ -6966,10 +6966,10 @@ firefox-profile@^4.2.2:
     minimist "^1.2.5"
     xml2js "^0.5.0"
 
-fitty@^2.3.6:
-  version "2.3.6"
-  resolved "https://registry.yarnpkg.com/fitty/-/fitty-2.3.6.tgz#1dc2f3fbf6ffd4766b4fdd8b3d55a0cb01334ed1"
-  integrity sha512-ENp/+MqqYmXBGHC0dlltCX75+5zL5m0uiIGCgYdoThao99BrJpNYzEh3xrvhiy4b7O5X82CQT7dPTiB53H6stw==
+fitty@^2.3.7:
+  version "2.3.7"
+  resolved "https://registry.yarnpkg.com/fitty/-/fitty-2.3.7.tgz#f80002f8291334ef1bac7e9256a5648a54608db8"
+  integrity sha512-yucQBzDD8sRa8EXfHu4/h9vNDFHUXpYtC+nydtBRfLSjzToCEvacy4qiBJyihgUVrqpXB+Kp5kWCbROSrePd2g==
 
 flat-cache@^3.0.4:
   version "3.0.4"
