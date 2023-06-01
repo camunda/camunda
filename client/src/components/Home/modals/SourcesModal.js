@@ -105,6 +105,7 @@ export function SourcesModal({onClose, onConfirm, mightFail, confirmText, preSel
       label: (
         <TableSelectAll
           id="checked"
+          key="checked"
           name="checked"
           ariaLabel="checked"
           className={classnames({hidden: !filteredDefinitions.length})}
