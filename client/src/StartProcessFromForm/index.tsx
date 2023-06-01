@@ -16,6 +16,7 @@ import {Skeleton} from './Skeleton';
 import {useStartExternalProcess} from 'modules/mutations/useStartExternalProcess';
 import {logger} from 'modules/utils/logger';
 import {Heading} from '@carbon/react';
+import {tracking} from 'modules/tracking';
 
 const StartProcessFromForm: React.FC = () => {
   const {bpmnProcessId} = useStartProcessParams();
@@ -30,8 +31,25 @@ const StartProcessFromForm: React.FC = () => {
         title: 'Could not fetch form',
         isDismissable: false,
       });
+      tracking.track({
+        eventName: 'public-start-form-load-failed',
+      });
     }
   }, [error]);
+
+  useEffect(() => {
+    tracking.track({
+      eventName: 'public-start-form-opened',
+    });
+  }, []);
+
+  useEffect(() => {
+    if (data !== undefined) {
+      tracking.track({
+        eventName: 'public-start-form-loaded',
+      });
+    }
+  }, [data]);
 
   return (
     <>
@@ -51,12 +69,18 @@ const StartProcessFromForm: React.FC = () => {
                   onSubmit={async (variables) => {
                     try {
                       await startExternalProcess({variables, bpmnProcessId});
+                      tracking.track({
+                        eventName: 'public-start-form-submitted',
+                      });
                     } catch (error) {
                       logger.error(error);
                       notificationsStore.displayNotification({
                         kind: 'error',
                         title: 'Could not submit form',
                         isDismissable: false,
+                      });
+                      tracking.track({
+                        eventName: 'public-start-form-submission-failed',
                       });
                     }
                   }}

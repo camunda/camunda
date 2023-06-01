@@ -13,7 +13,23 @@ import {TaskFilters} from 'modules/hooks/useTaskFilters';
 const EVENT_PREFIX = 'tasklist:';
 type Events =
   | {
-      eventName: 'task-opened' | 'task-unassigned' | 'task-assigned';
+      eventName:
+        | 'task-opened'
+        | 'task-unassigned'
+        | 'task-assigned'
+        | 'processes-consent-refused'
+        | 'processes-consent-accepted'
+        | 'processes-fetch-failed'
+        | 'processes-empty-message-link-clicked'
+        | 'process-start-clicked'
+        | 'process-started'
+        | 'process-start-failed'
+        | 'process-task-toast-clicked'
+        | 'public-start-form-opened'
+        | 'public-start-form-loaded'
+        | 'public-start-form-load-failed'
+        | 'public-start-form-submitted'
+        | 'public-start-form-submission-failed';
     }
   | {
       eventName: 'task-completed';
@@ -43,37 +59,9 @@ type Events =
       link: 'cookies' | 'terms-conditions' | 'privacy-policy' | 'imprint';
     }
   | {
-      eventName: 'processes-consent-refused';
-    }
-  | {
-      eventName: 'processes-consent-accepted';
-    }
-  | {
-      eventName: 'processes-alpha-consent-link-clicked';
-    }
-  | {
       eventName: 'processes-loaded';
       count: number;
       filter: string;
-    }
-  | {
-      eventName: 'processes-fetch-failed';
-    }
-  | {
-      eventName: 'processes-empty-message-link-clicked';
-    }
-  | {
-      eventName: 'early-access-feedback-link-clicked';
-      feature: 'start-process';
-    }
-  | {
-      eventName: 'process-start-clicked';
-    }
-  | {
-      eventName: 'process-started';
-    }
-  | {
-      eventName: 'process-start-failed';
     }
   | {
       eventName: 'process-tasks-polling-ended';
@@ -82,9 +70,6 @@ type Events =
         | 'multiple-tasks-found'
         | 'no-tasks-found'
         | 'navigated-away';
-    }
-  | {
-      eventName: 'process-task-toast-clicked';
     };
 
 const STAGE_ENV = getStage(window.location.host);
