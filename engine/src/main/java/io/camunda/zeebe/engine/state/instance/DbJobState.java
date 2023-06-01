@@ -116,8 +116,7 @@ public final class DbJobState implements JobState, MutableJobState {
 
     makeJobNotActivatable(type);
 
-    deadlineKey.wrapLong(deadline);
-    deadlinesColumnFamily.insert(deadlineJobKey, DbNil.INSTANCE);
+    addJobDeadline(key, deadline);
   }
 
   @Override
@@ -137,7 +136,6 @@ public final class DbJobState implements JobState, MutableJobState {
     EnsureUtil.ensureGreaterThan("deadline", deadline, 0);
 
     updateJob(key, record, State.ACTIVATABLE);
-    removeJobDeadline(deadline);
   }
 
   @Override
@@ -165,7 +163,6 @@ public final class DbJobState implements JobState, MutableJobState {
   @Override
   public void delete(final long key, final JobRecord record) {
     final DirectBuffer type = record.getTypeBuffer();
-    final long deadline = record.getDeadline();
 
     jobKey.wrapLong(key);
     jobsColumnFamily.deleteExisting(jobKey);
@@ -174,7 +171,7 @@ public final class DbJobState implements JobState, MutableJobState {
 
     makeJobNotActivatable(type);
 
-    removeJobDeadline(deadline);
+    removeJobDeadline(key, record.getDeadline());
   }
 
   @Override
@@ -222,7 +219,6 @@ public final class DbJobState implements JobState, MutableJobState {
 
   private void updateJob(final long key, final JobRecord updatedValue, final State newState) {
     final DirectBuffer type = updatedValue.getTypeBuffer();
-    final long deadline = updatedValue.getDeadline();
 
     validateParameters(type);
 
@@ -234,8 +230,12 @@ public final class DbJobState implements JobState, MutableJobState {
       makeJobActivatable(type, key);
     }
 
-    if (deadline > 0) {
-      removeJobDeadline(deadline);
+    if (newState != State.ACTIVATED) {
+      // This only works because none of the events actually remove the deadline from the job
+      // record.
+      // If, say on job failure, the deadline is removed or reset to 0, then we would need to look
+      // at the current state of the job to determine what deadline to remove.
+      removeJobDeadline(key, updatedValue.getDeadline());
     }
   }
 
@@ -378,8 +378,19 @@ public final class DbJobState implements JobState, MutableJobState {
     activatableColumnFamily.deleteIfExists(typeJobKey);
   }
 
-  private void removeJobDeadline(final long deadline) {
-    deadlineKey.wrapLong(deadline);
-    deadlinesColumnFamily.deleteIfExists(deadlineJobKey);
+  private void addJobDeadline(final long job, final long deadline) {
+    if (deadline > 0) {
+      jobKey.wrapLong(job);
+      deadlineKey.wrapLong(deadline);
+      deadlinesColumnFamily.insert(deadlineJobKey, DbNil.INSTANCE);
+    }
+  }
+
+  private void removeJobDeadline(final long job, final long deadline) {
+    if (deadline > 0) {
+      jobKey.wrapLong(job);
+      deadlineKey.wrapLong(deadline);
+      deadlinesColumnFamily.deleteIfExists(deadlineJobKey);
+    }
   }
 }
