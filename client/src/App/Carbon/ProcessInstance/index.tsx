@@ -35,8 +35,9 @@ import {
   Buttons,
 } from './styled';
 import {FlowNodeInstanceLog} from './FlowNodeInstanceLog';
-import {Button} from '@carbon/react';
+import {Button, Modal} from '@carbon/react';
 import {tracking} from 'modules/tracking';
+import {ModalStateManager} from 'modules/components/Carbon/ModalStateManager';
 
 const ProcessInstance: React.FC = observer(() => {
   const {processInstanceId = ''} = useProcessInstancePageParams();
@@ -177,20 +178,53 @@ const ProcessInstance: React.FC = observer(() => {
             <ModificationFooter>
               <div>last modification</div>
               <Buttons orientation="horizontal" gap={4}>
-                <Button
-                  kind="secondary"
-                  size="sm"
-                  onClick={() => {
-                    tracking.track({
-                      eventName: 'discard-all-summary',
-                      hasPendingModifications:
-                        modificationsStore.state.modifications.length > 0,
-                    });
-                  }}
-                  data-testid="discard-all-button"
+                <ModalStateManager
+                  renderLauncher={({setOpen}) => (
+                    <Button
+                      kind="secondary"
+                      size="sm"
+                      onClick={() => {
+                        tracking.track({
+                          eventName: 'discard-all-summary',
+                          hasPendingModifications:
+                            modificationsStore.state.modifications.length > 0,
+                        });
+                        setOpen(true);
+                      }}
+                      data-testid="discard-all-button"
+                    >
+                      Discard All
+                    </Button>
+                  )}
                 >
-                  Discard All
-                </Button>
+                  {({open, setOpen}) => (
+                    <Modal
+                      modalHeading="Discard Modifications"
+                      preventCloseOnClickOutside
+                      danger
+                      primaryButtonText="Discard"
+                      secondaryButtonText="Cancel"
+                      open={open}
+                      onRequestClose={() => setOpen(false)}
+                      onRequestSubmit={() => {
+                        tracking.track({
+                          eventName: 'discard-modifications',
+                          hasPendingModifications:
+                            modificationsStore.state.modifications.length > 0,
+                        });
+                        modificationsStore.reset();
+                        setOpen(false);
+                      }}
+                    >
+                      <p>
+                        About to discard all added modifications for instance{' '}
+                        {processInstanceId}.
+                      </p>
+                      <p>Click "Discard" to proceed.</p>
+                    </Modal>
+                  )}
+                </ModalStateManager>
+
                 <Button
                   kind="primary"
                   size="sm"
