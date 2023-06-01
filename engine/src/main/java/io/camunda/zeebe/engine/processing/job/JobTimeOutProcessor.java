@@ -18,6 +18,7 @@ import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
+import io.camunda.zeebe.scheduler.clock.ActorClock;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 
 public final class JobTimeOutProcessor implements TypedRecordProcessor<JobRecord> {
@@ -38,22 +39,26 @@ public final class JobTimeOutProcessor implements TypedRecordProcessor<JobRecord
 
   @Override
   public void processRecord(final TypedRecord<JobRecord> record) {
-    final long jobKey = record.getKey();
-    final JobState.State state = jobState.getState(jobKey);
+    final var jobKey = record.getKey();
+    final var job = jobState.getJob(jobKey);
+    final var state = jobState.getState(jobKey);
 
-    if (state == State.ACTIVATED) {
-      final JobRecord timedOutJob = record.getValue();
-      stateWriter.appendFollowUpEvent(jobKey, JobIntent.TIMED_OUT, timedOutJob);
-      jobMetrics.jobTimedOut(timedOutJob.getType());
+    final var now = ActorClock.currentTimeMillis();
+    final var deadline = job.getDeadline();
+    final var hasTimedOut = now > deadline;
+
+    if (state == State.ACTIVATED && hasTimedOut) {
+      stateWriter.appendFollowUpEvent(jobKey, JobIntent.TIMED_OUT, job);
+      jobMetrics.jobTimedOut(job.getType());
     } else {
-      final var reason = switch (state) {
-        case ACTIVATED -> throw new IllegalStateException(
-            "This should never happen, if a job is activated it should be timed out not rejected");
-        case ACTIVATABLE -> "it must be activated first";
-        case FAILED -> "it is marked as failed and is not activated";
-        case ERROR_THROWN -> "it has thrown an error and is not activated";
-        case NOT_FOUND -> "no such job was found";
-      };
+      final var reason =
+          switch (state) {
+            case ACTIVATED -> "it has not timed out";
+            case ACTIVATABLE -> "it must be activated first";
+            case FAILED -> "it is marked as failed and is not activated";
+            case ERROR_THROWN -> "it has thrown an error and is not activated";
+            case NOT_FOUND -> "no such job was found";
+          };
 
       final String errorMessage = String.format(NOT_ACTIVATED_JOB_MESSAGE, jobKey, reason);
       rejectionWriter.appendRejection(record, RejectionType.NOT_FOUND, errorMessage);
