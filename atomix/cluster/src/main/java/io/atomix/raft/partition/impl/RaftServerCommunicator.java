@@ -50,18 +50,21 @@ public class RaftServerCommunicator implements RaftServerProtocol {
   private final String partitionName;
   private final RaftRequestMetrics metrics;
   private final Duration requestTimeout;
+  private final Duration snapshotRequestTimeout;
 
   public RaftServerCommunicator(
       final String prefix,
       final Serializer serializer,
       final ClusterCommunicationService clusterCommunicator,
-      final Duration requestTimeout) {
+      final Duration requestTimeout,
+      final Duration snapshotRequestTimeout) {
     context = new RaftMessageContext(prefix);
     partitionName = prefix;
     this.serializer = Preconditions.checkNotNull(serializer, "serializer cannot be null");
     this.clusterCommunicator =
         Preconditions.checkNotNull(clusterCommunicator, "clusterCommunicator cannot be null");
     this.requestTimeout = requestTimeout;
+    this.snapshotRequestTimeout = snapshotRequestTimeout;
     metrics = new RaftRequestMetrics(partitionName);
   }
 
@@ -80,7 +83,7 @@ public class RaftServerCommunicator implements RaftServerProtocol {
   @Override
   public CompletableFuture<InstallResponse> install(
       final MemberId memberId, final InstallRequest request) {
-    return sendAndReceive(context.installSubject, request, memberId);
+    return sendAndReceive(context.installSubject, request, memberId, snapshotRequestTimeout);
   }
 
   @Override
@@ -212,6 +215,11 @@ public class RaftServerCommunicator implements RaftServerProtocol {
 
   private <T, U> CompletableFuture<U> sendAndReceive(
       final String subject, final T request, final MemberId memberId) {
+    return sendAndReceive(subject, request, memberId, requestTimeout);
+  }
+
+  private <T, U> CompletableFuture<U> sendAndReceive(
+      final String subject, final T request, final MemberId memberId, final Duration timeout) {
     metrics.sendMessage(memberId.id(), request.getClass().getSimpleName());
     return clusterCommunicator.send(
         subject,
@@ -219,7 +227,7 @@ public class RaftServerCommunicator implements RaftServerProtocol {
         serializer::encode,
         serializer::decode,
         MemberId.from(memberId.id()),
-        requestTimeout);
+        timeout);
   }
 
   private <T extends RaftMessage> T recordReceivedMetrics(final T m) {
