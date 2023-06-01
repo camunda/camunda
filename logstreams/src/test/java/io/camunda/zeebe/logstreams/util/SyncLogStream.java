@@ -12,9 +12,11 @@ import io.camunda.zeebe.logstreams.log.LogStream;
 import io.camunda.zeebe.logstreams.log.LogStreamBuilder;
 import io.camunda.zeebe.logstreams.log.LogStreamReader;
 import io.camunda.zeebe.logstreams.log.LogStreamWriter;
+import io.camunda.zeebe.logstreams.log.LogStreamWriter.WriteFailure;
+import io.camunda.zeebe.util.Either;
 import java.time.Duration;
 import java.util.List;
-import java.util.function.LongSupplier;
+import java.util.function.Supplier;
 import org.awaitility.Awaitility;
 
 public class SyncLogStream implements SynchronousLogStream {
@@ -89,20 +91,22 @@ public class SyncLogStream implements SynchronousLogStream {
         .until(this::getLastWrittenPosition, p -> p >= position);
   }
 
-  private long syncTryWrite(final LongSupplier writeOperation) {
-    final long position =
+  private Either<WriteFailure, Long> syncTryWrite(
+      final Supplier<Either<WriteFailure, Long>> writeOperation) {
+    final var written =
         Awaitility.await("until dispatcher accepts writer")
             .pollDelay(Duration.ZERO)
             .pollInterval(Duration.ofMillis(50))
             .pollInSameThread()
-            .until(writeOperation::getAsLong, p -> p >= 0);
+            .until(writeOperation::get, Either::isRight);
 
+    final var position = written.get();
     // 0 is a special position which is returned when a 'write' is "skipped"
     if (position > 0) {
       awaitPositionWritten(position);
     }
 
-    return position;
+    return written;
   }
 
   private final class Writer implements SynchronousLogStreamWriter {
@@ -113,7 +117,8 @@ public class SyncLogStream implements SynchronousLogStream {
     }
 
     @Override
-    public long tryWrite(final List<LogAppendEntry> appendEntries, final long sourcePosition) {
+    public Either<WriteFailure, Long> tryWrite(
+        final List<LogAppendEntry> appendEntries, final long sourcePosition) {
       return syncTryWrite(() -> delegate.tryWrite(appendEntries, sourcePosition));
     }
   }

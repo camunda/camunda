@@ -67,7 +67,7 @@ public final class LogStreamTest {
     writer.tryWrite(TestEntry.ofDefaults());
     writer.tryWrite(TestEntry.ofDefaults());
     writer.tryWrite(TestEntry.ofDefaults());
-    final long positionBeforeClose = writer.tryWrite(TestEntry.ofDefaults());
+    final long positionBeforeClose = writer.tryWrite(TestEntry.ofDefaults()).get();
     Awaitility.await("until everything is written")
         .until(logStream::getLastWrittenPosition, position -> position >= positionBeforeClose);
 
@@ -75,7 +75,7 @@ public final class LogStreamTest {
     logStream.close();
     logStreamRule.createLogStream();
     final var newWriter = logStreamRule.getLogStream().newLogStreamWriter();
-    final long positionAfterReOpen = newWriter.tryWrite(TestEntry.ofDefaults());
+    final long positionAfterReOpen = newWriter.tryWrite(TestEntry.ofDefaults()).get();
 
     // then
     assertThat(positionAfterReOpen).isGreaterThan(positionBeforeClose);

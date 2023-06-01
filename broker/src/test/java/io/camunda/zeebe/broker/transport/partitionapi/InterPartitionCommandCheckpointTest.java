@@ -21,6 +21,7 @@ import io.atomix.cluster.MemberId;
 import io.atomix.cluster.messaging.ClusterCommunicationService;
 import io.camunda.zeebe.logstreams.log.LogAppendEntry;
 import io.camunda.zeebe.logstreams.log.LogStreamWriter;
+import io.camunda.zeebe.logstreams.log.LogStreamWriter.WriteFailure;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.impl.record.value.management.CheckpointRecord;
@@ -28,6 +29,7 @@ import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.intent.management.CheckpointIntent;
+import io.camunda.zeebe.util.Either;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Answers;
@@ -58,7 +60,7 @@ final class InterPartitionCommandCheckpointTest {
   @Test
   void shouldHandleMissingCheckpoints() {
     // given
-    when(logStreamWriter.tryWrite(Mockito.<LogAppendEntry>any())).thenReturn(1L);
+    when(logStreamWriter.tryWrite(Mockito.<LogAppendEntry>any())).thenReturn(Either.right(1L));
 
     // when
     sendAndReceive(ValueType.DEPLOYMENT, DeploymentIntent.CREATE);
@@ -72,7 +74,7 @@ final class InterPartitionCommandCheckpointTest {
   @Test
   void shouldCreateFirstCheckpoint() {
     // given
-    when(logStreamWriter.tryWrite(Mockito.<LogAppendEntry>any())).thenReturn(1L);
+    when(logStreamWriter.tryWrite(Mockito.<LogAppendEntry>any())).thenReturn(Either.right(1L));
     sender.setCheckpointId(1);
 
     // when
@@ -89,7 +91,7 @@ final class InterPartitionCommandCheckpointTest {
   @Test
   void shouldUpdateExistingCheckpoint() {
     // given
-    when(logStreamWriter.tryWrite(Mockito.<LogAppendEntry>any())).thenReturn(1L);
+    when(logStreamWriter.tryWrite(Mockito.<LogAppendEntry>any())).thenReturn(Either.right(1L));
     receiver.setCheckpointId(5);
     sender.setCheckpointId(17);
 
@@ -106,7 +108,7 @@ final class InterPartitionCommandCheckpointTest {
   @Test
   void shouldNotRecreateExistingCheckpoint() {
     // given
-    when(logStreamWriter.tryWrite(Mockito.<LogAppendEntry>any())).thenReturn(1L);
+    when(logStreamWriter.tryWrite(Mockito.<LogAppendEntry>any())).thenReturn(Either.right(1L));
     receiver.setCheckpointId(5);
     sender.setCheckpointId(5);
 
@@ -122,7 +124,7 @@ final class InterPartitionCommandCheckpointTest {
   @Test
   void shouldNotOverwriteNewerCheckpoint() {
     // given
-    when(logStreamWriter.tryWrite(Mockito.<LogAppendEntry>any())).thenReturn(1L);
+    when(logStreamWriter.tryWrite(Mockito.<LogAppendEntry>any())).thenReturn(Either.right(1L));
     receiver.setCheckpointId(6);
     sender.setCheckpointId(5);
 
@@ -138,7 +140,8 @@ final class InterPartitionCommandCheckpointTest {
   @Test
   void shouldNotWriteCommandIfCheckpointCreateFailed() {
     // given
-    when(logStreamWriter.tryWrite(Mockito.<LogAppendEntry>any())).thenReturn(-1L, 1L);
+    when(logStreamWriter.tryWrite(Mockito.<LogAppendEntry>any()))
+        .thenReturn(Either.left(WriteFailure.FULL), Either.right(1L));
     receiver.setCheckpointId(5);
     sender.setCheckpointId(17);
 

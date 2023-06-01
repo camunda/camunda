@@ -11,6 +11,7 @@ import static io.camunda.zeebe.util.StringUtil.getBytes;
 import static java.lang.String.format;
 
 import io.camunda.zeebe.broker.Loggers;
+import io.camunda.zeebe.logstreams.log.LogStreamWriter.WriteFailure;
 import io.camunda.zeebe.protocol.record.ErrorCode;
 import io.camunda.zeebe.protocol.record.ErrorResponseEncoder;
 import io.camunda.zeebe.protocol.record.MessageHeaderEncoder;
@@ -122,6 +123,26 @@ public final class ErrorResponseWriter implements BufferWriter {
   public ErrorResponseWriter processNotFound(final String processIdentifier) {
     return errorCode(ErrorCode.PROCESS_NOT_FOUND)
         .errorMessage(String.format(PROCESS_NOT_FOUND_FORMAT, processIdentifier));
+  }
+
+  public ErrorResponseWriter mapWriteError(final int partitionId, final WriteFailure error) {
+    return switch (error) {
+      case CLOSED -> errorCode(ErrorCode.PARTITION_LEADER_MISMATCH)
+          .errorMessage(
+              ("Expected to handle client message on the leader of partition '%d',"
+                      + " but the writer is closed. Most likely, this node is not the"
+                      + " leader for this partition.")
+                  .formatted(partitionId));
+      case FULL -> raiseInternalError("because the writer is full.", partitionId);
+      case INVALID_ARGUMENT -> raiseInternalError("due to invalid entry.", partitionId);
+    };
+  }
+
+  private ErrorResponseWriter raiseInternalError(final String reason, final int partitionId) {
+    final String message =
+        "Failed to write client request to partition '%d', %s".formatted(partitionId, reason);
+    LOG.debug(message);
+    return internalError(message);
   }
 
   public ErrorResponseWriter errorCode(final ErrorCode errorCode) {

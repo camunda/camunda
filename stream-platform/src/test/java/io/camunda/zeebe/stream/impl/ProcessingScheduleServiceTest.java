@@ -33,6 +33,7 @@ import io.camunda.zeebe.stream.impl.StreamProcessor.Phase;
 import io.camunda.zeebe.stream.impl.records.RecordBatch;
 import io.camunda.zeebe.stream.util.Records;
 import io.camunda.zeebe.test.util.junit.RegressionTest;
+import io.camunda.zeebe.util.Either;
 import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -375,13 +376,14 @@ class ProcessingScheduleServiceTest {
     }
 
     @Override
-    public long tryWrite(final List<LogAppendEntry> appendEntries, final long sourcePosition) {
+    public Either<WriteFailure, Long> tryWrite(
+        final List<LogAppendEntry> appendEntries, final long sourcePosition) {
       if (!acceptWrites.get().getAsBoolean()) {
-        return -1;
+        return Either.left(WriteFailure.FULL);
       }
 
       entries.addAll(appendEntries);
-      return entries.size();
+      return Either.right((long) entries.size());
     }
   }
 }
