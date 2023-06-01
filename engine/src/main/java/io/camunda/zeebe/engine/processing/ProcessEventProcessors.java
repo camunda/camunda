@@ -15,6 +15,7 @@ import io.camunda.zeebe.engine.processing.message.ProcessMessageSubscriptionCorr
 import io.camunda.zeebe.engine.processing.message.ProcessMessageSubscriptionCreateProcessor;
 import io.camunda.zeebe.engine.processing.message.ProcessMessageSubscriptionDeleteProcessor;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
+import io.camunda.zeebe.engine.processing.processinstance.ActivateProcessInstanceBatchProcessor;
 import io.camunda.zeebe.engine.processing.processinstance.CreateProcessInstanceProcessor;
 import io.camunda.zeebe.engine.processing.processinstance.CreateProcessInstanceWithResultProcessor;
 import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceCommandProcessor;
@@ -225,12 +226,21 @@ public final class ProcessEventProcessors {
       final TypedRecordProcessors typedRecordProcessors,
       final MutableProcessingState processingState,
       final Writers writers) {
-    final TerminateProcessInstanceBatchProcessor terminateBatchProcessor =
-        new TerminateProcessInstanceBatchProcessor(
-            writers, processingState.getKeyGenerator(), processingState.getElementInstanceState());
-    typedRecordProcessors.onCommand(
-        ValueType.PROCESS_INSTANCE_BATCH,
-        ProcessInstanceBatchIntent.TERMINATE,
-        terminateBatchProcessor);
+    typedRecordProcessors
+        .onCommand(
+            ValueType.PROCESS_INSTANCE_BATCH,
+            ProcessInstanceBatchIntent.TERMINATE,
+            new TerminateProcessInstanceBatchProcessor(
+                writers,
+                processingState.getKeyGenerator(),
+                processingState.getElementInstanceState()))
+        .onCommand(
+            ValueType.PROCESS_INSTANCE_BATCH,
+            ProcessInstanceBatchIntent.ACTIVATE,
+            new ActivateProcessInstanceBatchProcessor(
+                writers,
+                processingState.getKeyGenerator(),
+                processingState.getElementInstanceState(),
+                processingState.getProcessState()));
   }
 }
