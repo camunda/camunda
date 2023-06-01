@@ -14,7 +14,8 @@ import {groupedDecisionsStore} from 'modules/stores/groupedDecisions';
 import {useRef} from 'react';
 import {useLocation} from 'react-router-dom';
 import {DecisionOperations} from './DecisionOperations';
-import {PanelHeader} from './styled';
+import {PanelHeader, Section} from './styled';
+import {DiagramShell} from 'modules/components/Carbon/DiagramShell';
 
 const Decision: React.FC = observer(() => {
   const location = useLocation();
@@ -27,7 +28,7 @@ const Decision: React.FC = observer(() => {
 
   const isDecisionSelected = decisionId !== null;
   const isVersionSelected = version !== null && version !== 'all';
-  const decisionName = getDecisionName(decisionId);
+  const decisionName = getDecisionName(decisionId) ?? 'Decision';
 
   const decisionDefinitionId =
     isDecisionSelected && isVersionSelected
@@ -46,7 +47,7 @@ const Decision: React.FC = observer(() => {
   });
 
   return (
-    <section>
+    <Section>
       <PanelHeader title="Decision" ref={panelHeaderRef}>
         {IS_DECISION_DEFINITION_DELETION_ENABLED &&
           isVersionSelected &&
@@ -62,14 +63,35 @@ const Decision: React.FC = observer(() => {
             >
               <DecisionOperations
                 decisionDefinitionId={decisionDefinitionId}
-                decisionName={decisionName || 'Decision'}
+                decisionName={decisionName}
                 decisionVersion={version}
               />
             </Restricted>
           )}
       </PanelHeader>
-      <div>decisions - diagram</div>
-    </section>
+      <DiagramShell
+        status={isVersionSelected ? 'content' : 'empty'}
+        emptyMessage={
+          version === 'all'
+            ? {
+                message: `There is more than one Version selected for Decision "${decisionName}"`,
+                additionalInfo:
+                  'To see a Decision Table or a Literal Expression, select a single Version',
+              }
+            : {
+                message: 'There is no Decision selected',
+                additionalInfo:
+                  'To see a Decision Table or a Literal Expression, select a Decision in the Filters panel',
+              }
+        }
+        errorMessage={{
+          message: 'Data could not be fetched',
+          additionalInfo: 'Refresh the page to try again',
+        }}
+      >
+        decisions - diagram
+      </DiagramShell>
+    </Section>
   );
 });
 

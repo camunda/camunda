@@ -14,7 +14,8 @@ import {IS_PROCESS_DEFINITION_DELETION_ENABLED} from 'modules/feature-flags';
 import {Restricted} from 'modules/components/Restricted';
 import {processesStore} from 'modules/stores/processes';
 import {ProcessOperations} from '../ProcessOperations';
-import {PanelHeader} from './styled';
+import {PanelHeader, Section} from './styled';
+import {DiagramShell} from 'modules/components/Carbon/DiagramShell';
 
 const DiagramPanel: React.FC = () => {
   const location = useLocation();
@@ -27,7 +28,7 @@ const DiagramPanel: React.FC = () => {
   );
 
   const bpmnProcessId = selectedProcess?.bpmnProcessId;
-  const processName = selectedProcess?.name || bpmnProcessId;
+  const processName = selectedProcess?.name ?? bpmnProcessId ?? 'Process';
 
   const panelHeaderRef = useRef<HTMLDivElement>(null);
 
@@ -40,8 +41,8 @@ const DiagramPanel: React.FC = () => {
   });
 
   return (
-    <section>
-      <PanelHeader title={processName ?? 'Process'} ref={panelHeaderRef}>
+    <Section>
+      <PanelHeader title={processName} ref={panelHeaderRef}>
         {IS_PROCESS_DEFINITION_DELETION_ENABLED &&
           isVersionSelected &&
           processId !== undefined && (
@@ -54,14 +55,34 @@ const DiagramPanel: React.FC = () => {
             >
               <ProcessOperations
                 processDefinitionId={processId}
-                processName={processName ?? 'Process'}
+                processName={processName}
                 processVersion={version}
               />
             </Restricted>
           )}
       </PanelHeader>
-      <div>processes - diagram</div>
-    </section>
+      <DiagramShell
+        status={isVersionSelected ? 'content' : 'empty'}
+        emptyMessage={
+          version === 'all'
+            ? {
+                message: `There is more than one Version selected for Process "${processName}"`,
+                additionalInfo: 'To see a Diagram, select a single Version',
+              }
+            : {
+                message: 'There is no Process selected',
+                additionalInfo:
+                  'To see a Diagram, select a Process in the Filters panel',
+              }
+        }
+        errorMessage={{
+          message: 'Data could not be fetched',
+          additionalInfo: 'Refresh the page to try again',
+        }}
+      >
+        processes - diagram
+      </DiagramShell>
+    </Section>
   );
 };
 

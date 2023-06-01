@@ -7,6 +7,11 @@
 
 import styled from 'styled-components';
 import {styles} from '@carbon/elements';
+import {Stack as BaseStack} from '@carbon/react';
+
+const Stack = styled(BaseStack)`
+  max-width: 360px;
+`;
 
 const Message = styled.p`
   ${styles.heading02};
@@ -18,4 +23,4 @@ const AdditionalInfo = styled.p`
   margin: 0;
 `;
 
-export {Message, AdditionalInfo};
+export {Message, AdditionalInfo, Stack};

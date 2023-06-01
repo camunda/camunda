@@ -12,4 +12,10 @@ const PanelHeader = styled(BasePanelHeader)`
   padding-right: 0;
 `;
 
-export {PanelHeader};
+const Section = styled.section`
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+`;
+
+export {PanelHeader, Section};

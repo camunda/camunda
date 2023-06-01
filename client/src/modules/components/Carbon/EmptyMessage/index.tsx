@@ -6,8 +6,7 @@
  */
 
 import React from 'react';
-import {Message, AdditionalInfo} from './styled';
-import {Stack} from '@carbon/react';
+import {Message, AdditionalInfo, Stack} from './styled';
 
 type Props = {
   message: string;
