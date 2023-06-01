@@ -109,8 +109,8 @@ export default function EntityDescription({description, onEdit}: EntityDescripti
         )}
         {onEdit && (
           <LegacyButton className="edit" link onClick={openModal}>
-            <Icon size={12} type={editedDescription ? 'edit' : 'plus'} />
-            {t(`common.${editedDescription ? 'edit' : 'add'}`)}
+            <Icon size={12} type={description ? 'edit' : 'plus'} />
+            {t(`common.${description ? 'edit' : 'add'}`)}
           </LegacyButton>
         )}
       </div>
