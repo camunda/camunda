@@ -245,15 +245,14 @@ public final class DbJobState implements JobState, MutableJobState {
 
   @Override
   public void forEachTimedOutEntry(
-      final long upperBound, final BiFunction<Long, JobRecord, Boolean> callback) {
+      final long upperBound, final BiPredicate<Long, JobRecord> callback) {
     deadlinesColumnFamily.whileTrue(
         (key, value) -> {
           final long deadline = key.first().getValue();
           final boolean isDue = deadline < upperBound;
           if (isDue) {
             final long jobKey1 = key.second().inner().getValue();
-            return visitJob(
-                jobKey1, callback::apply, () -> deadlinesColumnFamily.deleteExisting(key));
+            return visitJob(jobKey1, callback, () -> deadlinesColumnFamily.deleteExisting(key));
           }
           return false;
         });

@@ -14,7 +14,7 @@ import org.agrona.DirectBuffer;
 
 public interface JobState {
 
-  void forEachTimedOutEntry(long upperBound, BiFunction<Long, JobRecord, Boolean> callback);
+  void forEachTimedOutEntry(long upperBound, BiPredicate<Long, JobRecord> callback);
 
   boolean exists(long jobKey);
 
