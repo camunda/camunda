@@ -8,6 +8,7 @@
 package io.camunda.zeebe.logstreams.log;
 
 import io.camunda.zeebe.logstreams.impl.log.LogEntryDescriptor;
+import io.camunda.zeebe.util.Either;
 import java.util.Collections;
 import java.util.List;
 
@@ -33,12 +34,13 @@ public interface LogStreamWriter {
    * @return the event position, a negative value if fails to write the event, or 0 if the value is
    *     empty
    */
-  default long tryWrite(final LogAppendEntry appendEntry) {
+  default Either<WriteFailure, Long> tryWrite(final LogAppendEntry appendEntry) {
     return tryWrite(appendEntry, LogEntryDescriptor.KEY_NULL_VALUE);
   }
 
   /** {@inheritDoc} */
-  default long tryWrite(final LogAppendEntry appendEntry, final long sourcePosition) {
+  default Either<WriteFailure, Long> tryWrite(
+      final LogAppendEntry appendEntry, final long sourcePosition) {
     return tryWrite(Collections.singletonList(appendEntry), sourcePosition);
   }
 
@@ -50,7 +52,7 @@ public interface LogStreamWriter {
    * @return the last (i.e. highest) event position, a negative value if fails to write the events,
    *     or 0 if the batch is empty
    */
-  default long tryWrite(final List<LogAppendEntry> appendEntries) {
+  default Either<WriteFailure, Long> tryWrite(final List<LogAppendEntry> appendEntries) {
     return tryWrite(appendEntries, LogEntryDescriptor.KEY_NULL_VALUE);
   }
 
@@ -63,5 +65,12 @@ public interface LogStreamWriter {
    * @return the last (i.e. highest) event position, a negative value if fails to write the events,
    *     or 0 if the batch is empty
    */
-  long tryWrite(final List<LogAppendEntry> appendEntries, final long sourcePosition);
+  Either<WriteFailure, Long> tryWrite(
+      final List<LogAppendEntry> appendEntries, final long sourcePosition);
+
+  enum WriteFailure {
+    CLOSED,
+    FULL,
+    INVALID_ARGUMENT
+  }
 }

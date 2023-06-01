@@ -71,7 +71,7 @@ final class LogStorageAppenderTest {
     final var latch = new CountDownLatch(1);
     final var entry = TestEntry.ofDefaults();
     // when
-    final var position = sequencer.tryWrite(entry);
+    final var position = sequencer.tryWrite(entry).get();
     logStorage.setPositionListener(i -> latch.countDown());
     scheduler.submitActor(appender).join();
 
@@ -90,7 +90,7 @@ final class LogStorageAppenderTest {
     final var latch = new CountDownLatch(1);
 
     // when
-    final var highestPosition = sequencer.tryWrite(entries);
+    final var highestPosition = sequencer.tryWrite(entries).get();
     final var lowestPosition = highestPosition - 1;
     logStorage.setPositionListener(i -> latch.countDown());
     scheduler.submitActor(appender).join();
