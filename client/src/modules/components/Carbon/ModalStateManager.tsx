@@ -38,3 +38,4 @@ const ModalStateManager: React.FC<Props> = ({
 };
 
 export {ModalStateManager};
+export type {StateProps};

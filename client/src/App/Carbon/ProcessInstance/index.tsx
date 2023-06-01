@@ -38,6 +38,7 @@ import {FlowNodeInstanceLog} from './FlowNodeInstanceLog';
 import {Button, Modal} from '@carbon/react';
 import {tracking} from 'modules/tracking';
 import {ModalStateManager} from 'modules/components/Carbon/ModalStateManager';
+import {ModificationSummaryModal} from './ModificationSummaryModal';
 
 const ProcessInstance: React.FC = observer(() => {
   const {processInstanceId = ''} = useProcessInstancePageParams();
@@ -141,6 +142,8 @@ const ProcessInstance: React.FC = observer(() => {
     processInstanceDetailsStore.state.processInstance?.callHierarchy?.length >
       0;
 
+  const hasPendingModifications = modifications.length > 0;
+
   return (
     <>
       <VisuallyHiddenH1>
@@ -186,8 +189,7 @@ const ProcessInstance: React.FC = observer(() => {
                       onClick={() => {
                         tracking.track({
                           eventName: 'discard-all-summary',
-                          hasPendingModifications:
-                            modificationsStore.state.modifications.length > 0,
+                          hasPendingModifications,
                         });
                         setOpen(true);
                       }}
@@ -209,8 +211,7 @@ const ProcessInstance: React.FC = observer(() => {
                       onRequestSubmit={() => {
                         tracking.track({
                           eventName: 'discard-modifications',
-                          hasPendingModifications:
-                            modificationsStore.state.modifications.length > 0,
+                          hasPendingModifications,
                         });
                         modificationsStore.reset();
                         setOpen(false);
@@ -224,20 +225,29 @@ const ProcessInstance: React.FC = observer(() => {
                     </Modal>
                   )}
                 </ModalStateManager>
-
-                <Button
-                  kind="primary"
-                  size="sm"
-                  onClick={() => {
-                    tracking.track({
-                      eventName: 'apply-modifications-summary',
-                      hasPendingModifications: modifications.length > 0,
-                    });
-                  }}
-                  data-testid="apply-modifications-button"
+                <ModalStateManager
+                  renderLauncher={({setOpen}) => (
+                    <Button
+                      kind="primary"
+                      size="sm"
+                      onClick={() => {
+                        tracking.track({
+                          eventName: 'apply-modifications-summary',
+                          hasPendingModifications,
+                        });
+                        setOpen(true);
+                      }}
+                      data-testid="apply-modifications-button"
+                      disabled={!hasPendingModifications}
+                    >
+                      Apply Modifications
+                    </Button>
+                  )}
                 >
-                  Apply Modifications
-                </Button>
+                  {({open, setOpen}) => (
+                    <ModificationSummaryModal open={open} setOpen={setOpen} />
+                  )}
+                </ModalStateManager>
               </Buttons>
             </ModificationFooter>
           ) : undefined
