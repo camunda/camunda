@@ -38,22 +38,16 @@ public final class JobTimeOutProcessor implements CommandProcessor<JobRecord> {
       commandControl.accept(JobIntent.TIMED_OUT, command.getValue());
       jobMetrics.jobTimedOut(command.getValue().getType());
     } else {
-      final String textState;
-
-      switch (state) {
-        case ACTIVATABLE:
-          textState = "it must be activated first";
-          break;
-        case FAILED:
-          textState = "it is marked as failed";
-          break;
-        default:
-          textState = "no such job was found";
-          break;
-      }
-
+      final var reason = switch (state) {
+        case ACTIVATED -> throw new IllegalStateException(
+            "This should never happen, if a job is activated it should be timed out not rejected");
+        case ACTIVATABLE -> "it must be activated first";
+        case FAILED -> "it is marked as failed and is not activated";
+        case ERROR_THROWN -> "it has thrown an error and is not activated";
+        case NOT_FOUND -> "no such job was found";
+      };
       commandControl.reject(
-          RejectionType.NOT_FOUND, String.format(NOT_ACTIVATED_JOB_MESSAGE, jobKey, textState));
+          RejectionType.NOT_FOUND, String.format(NOT_ACTIVATED_JOB_MESSAGE, jobKey, reason));
     }
     return true;
   }
