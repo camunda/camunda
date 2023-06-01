@@ -11359,7 +11359,37 @@ testcafe-browser-tools@2.0.25:
     read-file-relative "^1.2.0"
     which-promise "^1.0.0"
 
-testcafe-hammerhead@>=19.4.0, testcafe-hammerhead@^31.4.2:
+testcafe-hammerhead@31.4.3:
+  version "31.4.3"
+  resolved "https://registry.yarnpkg.com/testcafe-hammerhead/-/testcafe-hammerhead-31.4.3.tgz#b683d96368808bd366f6b30c382f9c3ddc3256ef"
+  integrity sha512-Z8wubj/8t3T5udVyqf2Kqy9oZFE8zDIWnuItVIEscYQ8PB6eWCkjq3oSx9J0XzSdakFnsUYP1T/KVlNe5z306w==
+  dependencies:
+    "@electron/asar" "^3.2.3"
+    acorn-hammerhead "0.6.2"
+    bowser "1.6.0"
+    crypto-md5 "^1.0.0"
+    css "2.2.3"
+    debug "4.3.1"
+    esotope-hammerhead "0.6.4"
+    http-cache-semantics "^4.1.0"
+    httpntlm "^1.8.10"
+    iconv-lite "0.5.1"
+    lodash "^4.17.20"
+    lru-cache "2.6.3"
+    match-url-wildcard "0.0.4"
+    merge-stream "^1.0.1"
+    mime "~1.4.1"
+    mustache "^2.1.1"
+    nanoid "^3.1.12"
+    os-family "^1.0.0"
+    parse5 "2.2.3"
+    pinkie "2.0.4"
+    read-file-relative "^1.2.0"
+    semver "5.5.0"
+    tough-cookie "4.0.0"
+    tunnel-agent "0.6.0"
+
+testcafe-hammerhead@>=19.4.0:
   version "31.4.2"
   resolved "https://registry.yarnpkg.com/testcafe-hammerhead/-/testcafe-hammerhead-31.4.2.tgz#0569a503895d2e0a8b6ffbb90e3eddc2a7d33f5c"
   integrity sha512-hh2nvF6jnz+fNgsXdcR9KPxQzUN68balrJ/51KmYwisnHX5gntWYNOzOiHBQ9rtmMQVxse14VD93aMm4ML7cZw==
@@ -11444,10 +11474,10 @@ testcafe-selector-generator@^0.1.0:
   resolved "https://registry.yarnpkg.com/testcafe-selector-generator/-/testcafe-selector-generator-0.1.0.tgz#852c86f71565e5d9320da625c2260d040cbed786"
   integrity sha512-MTw+RigHsEYmFgzUFNErDxui1nTYUk6nm2bmfacQiKPdhJ9AHW/wue4J/l44mhN8x3E8NgOUkHHOI+1TDFXiLQ==
 
-testcafe@2.6.1:
-  version "2.6.1"
-  resolved "https://registry.yarnpkg.com/testcafe/-/testcafe-2.6.1.tgz#324704ecd86b6a0de4081ffdde657c0ad38e80f4"
-  integrity sha512-0yqAsbxeWsCkISRtwHuGQxWAoi+APIDJL1Er7gsXF312p/txEO0eXyxP6H7KkELxWllz9Km/t8x2MxhMc0flfg==
+testcafe@2.6.2:
+  version "2.6.2"
+  resolved "https://registry.yarnpkg.com/testcafe/-/testcafe-2.6.2.tgz#7bc15208fba994d29f5d0253a8a63f1cfdd40605"
+  integrity sha512-BVlrx6bjVMMIG4JBle0AO9t6dER51+t7ncWGptbnJYzUE/FkigZTHLCPDj4uNid6WYg4yz4AzfkA408WvTiCQg==
   dependencies:
     "@babel/core" "^7.12.1"
     "@babel/plugin-proposal-async-generator-functions" "^7.12.1"
@@ -11531,7 +11561,7 @@ testcafe@2.6.1:
     source-map-support "^0.5.16"
     strip-bom "^2.0.0"
     testcafe-browser-tools "2.0.25"
-    testcafe-hammerhead "^31.4.2"
+    testcafe-hammerhead "31.4.3"
     testcafe-legacy-api "5.1.6"
     testcafe-reporter-json "^2.1.0"
     testcafe-reporter-list "^2.2.0"
