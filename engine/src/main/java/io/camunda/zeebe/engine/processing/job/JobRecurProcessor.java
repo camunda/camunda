@@ -33,7 +33,9 @@ public class JobRecurProcessor implements CommandProcessor<JobRecord> {
     final JobState.State state = jobState.getState(jobKey);
 
     if (state == State.FAILED) {
-      commandControl.accept(JobIntent.RECURRED_AFTER_BACKOFF, command.getValue());
+      final JobRecord recurredJob = jobState.getJob(jobKey);
+
+      commandControl.accept(JobIntent.RECURRED_AFTER_BACKOFF, recurredJob);
     } else {
       final String textState;
 
