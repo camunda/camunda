@@ -9,7 +9,6 @@
     "@camunda/camunda-composite-components": "^0.0.40",
     "@carbon/icons-react": "^11.18.0",
     "@carbon/react": "^1.30.0",
-    "@ibm/plex": "^6.3.0",
     "@lexical/react": "^0.7.6",
     "@ungap/structured-clone": "^1.2.0",
     "bpmn-js": "13.1.0",

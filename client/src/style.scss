@@ -1,18 +1,23 @@
 @use '@carbon/react' with (
   $css--reset: false,
-  $css--default-type: false
+  $css--default-type: false,
+  $font-path: 'https://fonts.camunda.io'
 ); // the 'with' part is temporary solution and has to be deleted when whole Optimize will be carbonized
 
+@use '@carbon/react/scss/fonts/sans';
+@use '@carbon/react/scss/themes';
+@use '@carbon/react/scss/theme';
+@include sans.medium();
+@include sans.bold();
+
 @import 'shared-styles/shared-styles.scss';
-@import '~@ibm/plex/css/ibm-plex.css';
 @import '~react-grid-layout/css/styles.css';
 @import '~react-resizable/css/styles.css';
 
 @import 'colors.scss';
 
 :root {
-  --cds-icon-primary: #161616;
-  --cds-text-inverse: #fff;
+  @include theme.theme(themes.$white);
 
   --z-notification: 1000;
   --z-login: 900;
@@ -42,6 +47,7 @@ html {
 
   .dark {
     color: var(--silver-darken-87);
+    @include theme.theme(themes.$g100);
   }
 }
 
@@ -67,17 +73,12 @@ main {
 }
 
 a {
-  color: var(--blue-darken-55);
   text-decoration: none;
   cursor: pointer;
 }
 
 a:hover {
   text-decoration: underline;
-}
-
-a:visited {
-  color: var(--blue-darken-55);
 }
 
 .focus-visible:not(.cds--search-input) {
@@ -150,9 +151,4 @@ section h1 {
 a[disabled] {
   // support to disable links: https://github.com/ReactTraining/react-router/issues/1082
   pointer-events: none;
-}
-
-// TODO: Remove this style once optimize is carbonised
-a.cds--btn:visited {
-  color: var(--cds-text-on-color, #ffffff);
 }
