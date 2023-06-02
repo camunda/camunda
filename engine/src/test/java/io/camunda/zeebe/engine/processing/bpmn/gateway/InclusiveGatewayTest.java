@@ -231,6 +231,7 @@ public final class InclusiveGatewayTest {
     // then
     List<Record<ProcessInstanceRecordValue>> processEvents =
         RecordingExporter.processInstanceRecords()
+            .onlyEvents()
             .withProcessInstanceKey(processInstanceKey)
             .skipUntil(r -> r.getValue().getElementId().equals("inclusive"))
             .limitToProcessInstanceCompleted()
@@ -239,18 +240,15 @@ public final class InclusiveGatewayTest {
     assertThat(processEvents)
         .extracting(Record::getIntent)
         .containsExactly(
-            ProcessInstanceIntent.ACTIVATE_ELEMENT,
             ProcessInstanceIntent.ELEMENT_ACTIVATING,
             ProcessInstanceIntent.ELEMENT_ACTIVATED,
             ProcessInstanceIntent.ELEMENT_COMPLETING,
             ProcessInstanceIntent.ELEMENT_COMPLETED,
             ProcessInstanceIntent.SEQUENCE_FLOW_TAKEN,
-            ProcessInstanceIntent.ACTIVATE_ELEMENT,
             ProcessInstanceIntent.ELEMENT_ACTIVATING,
             ProcessInstanceIntent.ELEMENT_ACTIVATED,
             ProcessInstanceIntent.ELEMENT_COMPLETING,
             ProcessInstanceIntent.ELEMENT_COMPLETED,
-            ProcessInstanceIntent.COMPLETE_ELEMENT,
             ProcessInstanceIntent.ELEMENT_COMPLETING,
             ProcessInstanceIntent.ELEMENT_COMPLETED);
 
@@ -261,6 +259,7 @@ public final class InclusiveGatewayTest {
     // then
     processEvents =
         RecordingExporter.processInstanceRecords()
+            .onlyEvents()
             .withProcessInstanceKey(processInstanceKey2)
             .skipUntil(r -> r.getValue().getElementId().equals("inclusive"))
             .limitToProcessInstanceCompleted()
@@ -269,18 +268,15 @@ public final class InclusiveGatewayTest {
     assertThat(processEvents)
         .extracting(Record::getIntent)
         .containsExactly(
-            ProcessInstanceIntent.ACTIVATE_ELEMENT,
             ProcessInstanceIntent.ELEMENT_ACTIVATING,
             ProcessInstanceIntent.ELEMENT_ACTIVATED,
             ProcessInstanceIntent.ELEMENT_COMPLETING,
             ProcessInstanceIntent.ELEMENT_COMPLETED,
             ProcessInstanceIntent.SEQUENCE_FLOW_TAKEN,
-            ProcessInstanceIntent.ACTIVATE_ELEMENT,
             ProcessInstanceIntent.ELEMENT_ACTIVATING,
             ProcessInstanceIntent.ELEMENT_ACTIVATED,
             ProcessInstanceIntent.ELEMENT_COMPLETING,
             ProcessInstanceIntent.ELEMENT_COMPLETED,
-            ProcessInstanceIntent.COMPLETE_ELEMENT,
             ProcessInstanceIntent.ELEMENT_COMPLETING,
             ProcessInstanceIntent.ELEMENT_COMPLETED);
 
@@ -291,6 +287,7 @@ public final class InclusiveGatewayTest {
     // then
     processEvents =
         RecordingExporter.processInstanceRecords()
+            .onlyEvents()
             .withProcessInstanceKey(processInstanceKey3)
             .skipUntil(r -> r.getValue().getElementId().equals("inclusive"))
             .limitToProcessInstanceCompleted()
@@ -299,18 +296,15 @@ public final class InclusiveGatewayTest {
     assertThat(processEvents)
         .extracting(Record::getIntent)
         .containsExactly(
-            ProcessInstanceIntent.ACTIVATE_ELEMENT,
             ProcessInstanceIntent.ELEMENT_ACTIVATING,
             ProcessInstanceIntent.ELEMENT_ACTIVATED,
             ProcessInstanceIntent.ELEMENT_COMPLETING,
             ProcessInstanceIntent.ELEMENT_COMPLETED,
             ProcessInstanceIntent.SEQUENCE_FLOW_TAKEN,
-            ProcessInstanceIntent.ACTIVATE_ELEMENT,
             ProcessInstanceIntent.ELEMENT_ACTIVATING,
             ProcessInstanceIntent.ELEMENT_ACTIVATED,
             ProcessInstanceIntent.ELEMENT_COMPLETING,
             ProcessInstanceIntent.ELEMENT_COMPLETED,
-            ProcessInstanceIntent.COMPLETE_ELEMENT,
             ProcessInstanceIntent.ELEMENT_COMPLETING,
             ProcessInstanceIntent.ELEMENT_COMPLETED);
 
@@ -321,6 +315,7 @@ public final class InclusiveGatewayTest {
     // then
     processEvents =
         RecordingExporter.processInstanceRecords()
+            .onlyEvents()
             .withProcessInstanceKey(processInstanceKey4)
             .skipUntil(r -> r.getValue().getElementId().equals("inclusive"))
             .limitToProcessInstanceCompleted()
@@ -329,18 +324,15 @@ public final class InclusiveGatewayTest {
     assertThat(processEvents)
         .extracting(Record::getIntent)
         .containsExactly(
-            ProcessInstanceIntent.ACTIVATE_ELEMENT,
             ProcessInstanceIntent.ELEMENT_ACTIVATING,
             ProcessInstanceIntent.ELEMENT_ACTIVATED,
             ProcessInstanceIntent.ELEMENT_COMPLETING,
             ProcessInstanceIntent.ELEMENT_COMPLETED,
             ProcessInstanceIntent.SEQUENCE_FLOW_TAKEN,
-            ProcessInstanceIntent.ACTIVATE_ELEMENT,
             ProcessInstanceIntent.ELEMENT_ACTIVATING,
             ProcessInstanceIntent.ELEMENT_ACTIVATED,
             ProcessInstanceIntent.ELEMENT_COMPLETING,
             ProcessInstanceIntent.ELEMENT_COMPLETED,
-            ProcessInstanceIntent.COMPLETE_ELEMENT,
             ProcessInstanceIntent.ELEMENT_COMPLETING,
             ProcessInstanceIntent.ELEMENT_COMPLETED);
   }
@@ -485,6 +477,7 @@ public final class InclusiveGatewayTest {
     // then
     final List<Record<ProcessInstanceRecordValue>> processInstanceEvents =
         RecordingExporter.processInstanceRecords()
+            .onlyEvents()
             .withProcessInstanceKey(processInstanceKey)
             .limitToProcessInstanceCompleted()
             .collect(Collectors.toList());
@@ -497,12 +490,10 @@ public final class InclusiveGatewayTest {
             tuple("inclusive", ProcessInstanceIntent.ELEMENT_COMPLETING),
             tuple("inclusive", ProcessInstanceIntent.ELEMENT_COMPLETED),
             tuple("flow2", ProcessInstanceIntent.SEQUENCE_FLOW_TAKEN),
-            tuple("end", ProcessInstanceIntent.ACTIVATE_ELEMENT),
             tuple("end", ProcessInstanceIntent.ELEMENT_ACTIVATING),
             tuple("end", ProcessInstanceIntent.ELEMENT_ACTIVATED),
             tuple("end", ProcessInstanceIntent.ELEMENT_COMPLETING),
             tuple("end", ProcessInstanceIntent.ELEMENT_COMPLETED),
-            tuple(PROCESS_ID, ProcessInstanceIntent.COMPLETE_ELEMENT),
             tuple(PROCESS_ID, ProcessInstanceIntent.ELEMENT_COMPLETING),
             tuple(PROCESS_ID, ProcessInstanceIntent.ELEMENT_COMPLETED));
   }

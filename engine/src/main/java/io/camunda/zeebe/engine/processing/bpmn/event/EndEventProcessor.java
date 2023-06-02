@@ -117,7 +117,11 @@ public final class EndEventProcessor implements BpmnElementProcessor<ExecutableE
     public void onActivate(final ExecutableEndEvent element, final BpmnElementContext activating) {
       final var activated = stateTransitionBehavior.transitionToActivated(activating);
       final var completing = stateTransitionBehavior.transitionToCompleting(activated);
+      onComplete(element, completing);
+    }
 
+    @Override
+    public void onComplete(final ExecutableEndEvent element, final BpmnElementContext completing) {
       variableMappingBehavior
           .applyOutputMappings(completing, element)
           .flatMap(ok -> stateTransitionBehavior.transitionToCompleted(element, completing))

@@ -105,6 +105,18 @@ public class OutputMappingIncidentTest {
                         .done()),
             "businessRuleTaskId",
             false
+          },
+          {
+            "None end event",
+            ENGINE
+                .deployment()
+                .withXmlResource(
+                    Bpmn.createExecutableProcess(PROCESS_ID)
+                        .startEvent()
+                        .endEvent("endEventId", b -> b.zeebeOutputExpression("foo", "bar"))
+                        .done()),
+            "endEventId",
+            false
           }
         });
   }
@@ -125,7 +137,7 @@ public class OutputMappingIncidentTest {
     final var failureCommand =
         RecordingExporter.processInstanceRecords()
             .withElementId(elementId)
-            .withIntent(ProcessInstanceIntent.COMPLETE_ELEMENT)
+            .withIntent(ProcessInstanceIntent.ELEMENT_COMPLETING)
             .withProcessInstanceKey(processInstanceKey)
             .getFirst();
 
