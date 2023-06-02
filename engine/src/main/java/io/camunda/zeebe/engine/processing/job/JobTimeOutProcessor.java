@@ -9,7 +9,11 @@ package io.camunda.zeebe.engine.processing.job;
 
 import io.camunda.zeebe.engine.metrics.JobMetrics;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnJobActivationBehavior;
-import io.camunda.zeebe.engine.processing.streamprocessor.CommandProcessor;
+import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.immutable.JobState;
 import io.camunda.zeebe.engine.state.immutable.JobState.State;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
@@ -18,33 +22,41 @@ import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 
-public final class JobTimeOutProcessor implements CommandProcessor<JobRecord> {
+public final class JobTimeOutProcessor implements TypedRecordProcessor<JobRecord> {
   public static final String NOT_ACTIVATED_JOB_MESSAGE =
       "Expected to time out activated job with key '%d', but %s";
   private final JobState jobState;
+  private final StateWriter stateWriter;
+  private final TypedRejectionWriter rejectionWriter;
+  private final TypedResponseWriter responseWriter;
   private final JobMetrics jobMetrics;
   private final BpmnJobActivationBehavior jobActivationBehavior;
 
   public JobTimeOutProcessor(
       final ProcessingState state,
+      final Writers writers,
       final JobMetrics jobMetrics,
       final BpmnJobActivationBehavior jobActivationBehavior) {
     jobState = state.getJobState();
+    stateWriter = writers.state();
+    rejectionWriter = writers.rejection();
+    responseWriter = writers.response();
     this.jobMetrics = jobMetrics;
     this.jobActivationBehavior = jobActivationBehavior;
   }
 
   @Override
-  public boolean onCommand(
-      final TypedRecord<JobRecord> command, final CommandControl<JobRecord> commandControl) {
-    final long jobKey = command.getKey();
+  public void processRecord(final TypedRecord<JobRecord> record) {
+    final long jobKey = record.getKey();
     final JobState.State state = jobState.getState(jobKey);
 
     if (state == State.ACTIVATED) {
-      final JobRecord timedOutJob = command.getValue();
+      final JobRecord timedOutJob = record.getValue();
 
-      commandControl.accept(JobIntent.TIMED_OUT, timedOutJob);
+      stateWriter.appendFollowUpEvent(jobKey, JobIntent.TIMED_OUT, timedOutJob);
       jobMetrics.jobTimedOut(timedOutJob.getType());
+      responseWriter.writeEventOnCommand(jobKey, JobIntent.TIMED_OUT, timedOutJob, record);
+
       jobActivationBehavior.publishWork(jobKey, timedOutJob);
     } else {
       final String textState;
@@ -61,9 +73,9 @@ public final class JobTimeOutProcessor implements CommandProcessor<JobRecord> {
           break;
       }
 
-      commandControl.reject(
-          RejectionType.NOT_FOUND, String.format(NOT_ACTIVATED_JOB_MESSAGE, jobKey, textState));
+      final String errorMessage = String.format(NOT_ACTIVATED_JOB_MESSAGE, jobKey, textState);
+      rejectionWriter.appendRejection(record, RejectionType.NOT_FOUND, errorMessage);
+      responseWriter.writeRejectionOnCommand(record, RejectionType.NOT_FOUND, errorMessage);
     }
-    return true;
   }
 }

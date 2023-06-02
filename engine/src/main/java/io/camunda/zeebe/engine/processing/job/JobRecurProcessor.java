@@ -8,7 +8,11 @@
 package io.camunda.zeebe.engine.processing.job;
 
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnJobActivationBehavior;
-import io.camunda.zeebe.engine.processing.streamprocessor.CommandProcessor;
+import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.immutable.JobState;
 import io.camunda.zeebe.engine.state.immutable.JobState.State;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
@@ -17,30 +21,39 @@ import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 
-public class JobRecurProcessor implements CommandProcessor<JobRecord> {
+public class JobRecurProcessor implements TypedRecordProcessor<JobRecord> {
 
   private static final String NOT_FAILED_JOB_MESSAGE =
       "Expected to back off failed job with key '%d', but %s";
   private final JobState jobState;
+  private final StateWriter stateWriter;
+  private final TypedRejectionWriter rejectionWriter;
+  private final TypedResponseWriter responseWriter;
   private final BpmnJobActivationBehavior jobActivationBehavior;
 
   public JobRecurProcessor(
       final ProcessingState processingState,
+      final Writers writers,
       final BpmnJobActivationBehavior jobActivationBehavior) {
     jobState = processingState.getJobState();
+    stateWriter = writers.state();
+    rejectionWriter = writers.rejection();
+    responseWriter = writers.response();
     this.jobActivationBehavior = jobActivationBehavior;
   }
 
   @Override
-  public boolean onCommand(
-      final TypedRecord<JobRecord> command, final CommandControl<JobRecord> commandControl) {
-    final long jobKey = command.getKey();
+  public void processRecord(final TypedRecord<JobRecord> record) {
+    final long jobKey = record.getKey();
     final JobState.State state = jobState.getState(jobKey);
 
     if (state == State.FAILED) {
-      final JobRecord recurredJob = command.getValue();
+      final JobRecord recurredJob = record.getValue();
 
-      commandControl.accept(JobIntent.RECURRED_AFTER_BACKOFF, recurredJob);
+      stateWriter.appendFollowUpEvent(jobKey, JobIntent.RECURRED_AFTER_BACKOFF, recurredJob);
+      responseWriter.writeEventOnCommand(
+          jobKey, JobIntent.RECURRED_AFTER_BACKOFF, recurredJob, record);
+
       jobActivationBehavior.publishWork(jobKey, recurredJob);
     } else {
       final String textState;
@@ -60,9 +73,9 @@ public class JobRecurProcessor implements CommandProcessor<JobRecord> {
           break;
       }
 
-      commandControl.reject(
-          RejectionType.NOT_FOUND, String.format(NOT_FAILED_JOB_MESSAGE, jobKey, textState));
+      final String errorMesage = String.format(NOT_FAILED_JOB_MESSAGE, jobKey, textState);
+      rejectionWriter.appendRejection(record, RejectionType.NOT_FOUND, errorMesage);
+      responseWriter.writeRejectionOnCommand(record, RejectionType.NOT_FOUND, errorMesage);
     }
-    return true;
   }
 }

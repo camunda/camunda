@@ -70,7 +70,7 @@ public final class JobEventProcessors {
             ValueType.JOB,
             JobIntent.TIME_OUT,
             new JobTimeOutProcessor(
-                processingState, jobMetrics, bpmnBehaviors.jobActivationBehavior()))
+                processingState, writers, jobMetrics, bpmnBehaviors.jobActivationBehavior()))
         .onCommand(
             ValueType.JOB, JobIntent.UPDATE_RETRIES, new JobUpdateRetriesProcessor(processingState))
         .onCommand(
@@ -78,7 +78,7 @@ public final class JobEventProcessors {
         .onCommand(
             ValueType.JOB,
             JobIntent.RECUR_AFTER_BACKOFF,
-            new JobRecurProcessor(processingState, bpmnBehaviors.jobActivationBehavior()))
+            new JobRecurProcessor(processingState, writers, bpmnBehaviors.jobActivationBehavior()))
         .onCommand(
             ValueType.JOB_BATCH,
             JobBatchIntent.ACTIVATE,
