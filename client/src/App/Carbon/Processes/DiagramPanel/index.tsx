@@ -75,10 +75,6 @@ const DiagramPanel: React.FC = () => {
                   'To see a Diagram, select a Process in the Filters panel',
               }
         }
-        errorMessage={{
-          message: 'Data could not be fetched',
-          additionalInfo: 'Refresh the page to try again',
-        }}
       >
         processes - diagram
       </DiagramShell>

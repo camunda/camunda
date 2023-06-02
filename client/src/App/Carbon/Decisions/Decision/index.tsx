@@ -84,10 +84,6 @@ const Decision: React.FC = observer(() => {
                   'To see a Decision Table or a Literal Expression, select a Decision in the Filters panel',
               }
         }
-        errorMessage={{
-          message: 'Data could not be fetched',
-          additionalInfo: 'Refresh the page to try again',
-        }}
       >
         decisions - diagram
       </DiagramShell>

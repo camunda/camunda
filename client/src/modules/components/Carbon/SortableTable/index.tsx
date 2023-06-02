@@ -28,6 +28,7 @@ import {
 import {ColumnHeader} from './ColumnHeader';
 import {InfiniteScroller} from 'modules/components/InfiniteScroller';
 import {EmptyMessage} from '../EmptyMessage';
+import {ErrorMessage} from '../ErrorMessage';
 
 const NUMBER_OF_SKELETON_ROWS = 10;
 
@@ -81,12 +82,7 @@ const SortableTable: React.FC<Props> = ({
           {state === 'empty' && emptyMessage !== undefined && (
             <EmptyMessage {...emptyMessage} />
           )}
-          {state === 'error' && (
-            <EmptyMessage
-              message="Data could not be fetched"
-              additionalInfo="Refresh the page to try again"
-            />
-          )}
+          {state === 'error' && <ErrorMessage />}
         </>
       </EmptyMessageContainer>
     );

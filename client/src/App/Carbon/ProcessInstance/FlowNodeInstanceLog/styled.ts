@@ -7,6 +7,7 @@
 
 import styled from 'styled-components';
 import {PanelHeader as BasePanelHeader} from 'modules/components/Carbon/PanelHeader';
+import {ErrorMessage as BaseErrorMessage} from 'modules/components/Carbon/ErrorMessage';
 
 const Container = styled.div`
   border-right: solid 1px var(--cds-border-subtle-01);
@@ -30,4 +31,9 @@ const NodeContainer = styled.div`
   width: 100%;
 `;
 
-export {NodeContainer, InstanceHistory, PanelHeader, Container};
+const ErrorMessage = styled(BaseErrorMessage)`
+  margin: auto;
+  margin-top: var(--cds-spacing-08);
+`;
+
+export {NodeContainer, InstanceHistory, PanelHeader, Container, ErrorMessage};

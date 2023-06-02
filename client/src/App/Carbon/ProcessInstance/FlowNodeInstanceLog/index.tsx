@@ -9,16 +9,31 @@ import React, {useRef} from 'react';
 import {FlowNodeInstancesTree} from '../FlowNodeInstancesTree';
 import {observer} from 'mobx-react';
 import {flowNodeInstanceStore} from 'modules/stores/flowNodeInstance';
-import {Container, NodeContainer, InstanceHistory, PanelHeader} from './styled';
+import {
+  Container,
+  NodeContainer,
+  InstanceHistory,
+  PanelHeader,
+  ErrorMessage,
+} from './styled';
 import {processInstanceDetailsDiagramStore} from 'modules/stores/processInstanceDetailsDiagram';
 import {TimeStampPill} from './TimeStampPill';
 import {modificationsStore} from 'modules/stores/modifications';
 import {TreeView} from '@carbon/react';
+import {Skeleton} from './Skeleton';
 
 const FlowNodeInstanceLog: React.FC = observer(() => {
-  const {instanceExecutionHistory, isInstanceExecutionHistoryAvailable} =
-    flowNodeInstanceStore;
-  const {areDiagramDefinitionsAvailable} = processInstanceDetailsDiagramStore;
+  const {
+    instanceExecutionHistory,
+    isInstanceExecutionHistoryAvailable,
+    state: {status: flowNodeInstanceStatus},
+  } = flowNodeInstanceStore;
+  const {
+    areDiagramDefinitionsAvailable,
+    state: {status: diagramStatus},
+  } = processInstanceDetailsDiagramStore;
+
+  const LOADING_STATES = ['initial', 'first-fetch'];
 
   const flowNodeInstanceRowRef = useRef<HTMLDivElement>(null);
   const instanceHistoryRef = useRef<HTMLDivElement>(null);
@@ -48,7 +63,14 @@ const FlowNodeInstanceLog: React.FC = observer(() => {
           </NodeContainer>
         </InstanceHistory>
       ) : (
-        <div>skeleton</div>
+        <>
+          {(flowNodeInstanceStatus === 'error' ||
+            diagramStatus === 'error') && (
+            <ErrorMessage message="Instance History could not be fetched" />
+          )}
+          {(LOADING_STATES.includes(flowNodeInstanceStatus) ||
+            LOADING_STATES.includes(diagramStatus)) && <Skeleton />}
+        </>
       )}
     </Container>
   );

@@ -5,8 +5,9 @@
  * except in compliance with the proprietary license.
  */
 
-import styled from 'styled-components';
+import styled, {css} from 'styled-components';
 import {EmptyMessage as BaseEmptyMessage} from 'modules/components/Carbon/EmptyMessage';
+import {ErrorMessage as BaseErrorMessage} from 'modules/components/Carbon/ErrorMessage';
 
 const Container = styled.div`
   flex-grow: 1;
@@ -21,8 +22,16 @@ const Container = styled.div`
     position: absolute;
   }
 `;
-const EmptyMessage = styled(BaseEmptyMessage)`
+
+const messageStyles = css`
   margin-top: var(--cds-spacing-08);
 `;
+const EmptyMessage = styled(BaseEmptyMessage)`
+  ${messageStyles}
+`;
 
-export {Container, EmptyMessage};
+const ErrorMessage = styled(BaseErrorMessage)`
+  ${messageStyles}
+`;
+
+export {Container, EmptyMessage, ErrorMessage};
