@@ -22,6 +22,8 @@ import {tracking} from 'modules/tracking';
 import {Button, Modal} from '@carbon/react';
 import {StateProps} from 'modules/components/Carbon/ModalStateManager';
 import {useNotifications} from 'modules/notifications';
+import {Warning} from './Messages/Warning';
+import {Error} from './Messages/Error';
 
 const OPERATION_DISPLAY_NAME = {
   ADD_TOKEN: 'Add',
@@ -139,6 +141,11 @@ const ModificationSummaryModal: React.FC<StateProps> = observer(
             processInstance
           )} - ${processInstanceId}". Click "Apply" to proceed.`}
         </p>
+
+        {processInstanceDetailsStatisticsStore.willAllFlowNodesBeCanceled &&
+          !hasParentProcess && <Warning />}
+        {areModificationsInvalid && <Error />}
+
         <Title>Flow Node Modifications</Title>
         {modificationsStore.flowNodeModifications.length === 0 ? (
           <EmptyMessage>No planned flow node modifications</EmptyMessage>
