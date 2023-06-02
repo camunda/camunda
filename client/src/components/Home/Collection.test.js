@@ -61,6 +61,7 @@ jest.mock('./service', () => ({
     {
       id: 'aDashboardId',
       name: 'aDashboard',
+      description: 'a description',
       lastModified: '2017-11-11T11:11:11.1111+0200',
       created: '2017-11-11T11:11:11.1111+0200',
       owner: 'user_id',
@@ -273,4 +274,13 @@ it('should display badge with user role Manager', () => {
   const node = shallow(<Collection {...props} />);
 
   expect(node.find(Badge).children().text()).toBe('Manager');
+});
+
+it('should show entity name and description', () => {
+  const node = shallow(<Collection {...props} />);
+
+  runAllEffects();
+
+  expect(node.find('EntityList').prop('data')[0].name).toBe('aDashboard');
+  expect(node.find('EntityList').prop('data')[0].meta[0]).toBe('a description');
 });

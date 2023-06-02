@@ -7,7 +7,7 @@
 
 import {cleanEntities} from '../setup';
 import config from '../config';
-import {login, save, getUser, createNewDashboard} from '../utils';
+import {login, save, getUser, createNewDashboard, addEditEntityDescription} from '../utils';
 
 import * as Common from './Common.elements.js';
 import * as e from './Collection.elements.js';
@@ -39,11 +39,15 @@ test('create a collection and entities inside it', async (t) => {
   await t.click(Common.createNewMenu);
 
   await createNewDashboard(t);
+  const description = 'This is a description of the dashboard.';
+  await addEditEntityDescription(t, description);
+
   await save(t);
   await t.click(e.collectionBreadcrumb);
 
   await t.expect(Common.dashboardItem.visible).ok();
   await t.expect(Common.dashboardItem.textContent).contains('Blank Dashboard');
+  await t.expect(Common.dashboardItem.textContent).contains(description);
 });
 
 test('renaming a collection', async (t) => {

@@ -237,6 +237,7 @@ export class Collection extends React.Component {
               columns={[
                 {name: 'Type', key: 'entityType', defaultOrder: 'asc', hidden: true},
                 {name: t('common.name'), key: 'name', defaultOrder: 'asc'},
+                {name: t('common.description'), key: 'description', defaultOrder: 'asc'},
                 t('home.contents'),
                 {name: 'Modified by', key: 'lastModifier', defaultOrder: 'asc'},
                 {name: t('common.entity.modified'), key: 'lastModified', defaultOrder: 'desc'},
@@ -251,6 +252,7 @@ export class Collection extends React.Component {
                     lastModified,
                     lastModifier,
                     name,
+                    description,
                     data,
                     reportType,
                     combined,
@@ -298,6 +300,7 @@ export class Collection extends React.Component {
                     type: formatType(entityType, reportType, combined),
                     name,
                     meta: [
+                      description,
                       formatSubEntities(data.subEntityCounts),
                       lastModifier,
                       format(parseISO(lastModified), 'PP'),
