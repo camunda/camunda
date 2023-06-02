@@ -15,6 +15,8 @@
  */
 package io.camunda.zeebe.protocol.record;
 
+import edu.umd.cs.findbugs.annotations.Nullable;
+import edu.umd.cs.findbugs.annotations.ReturnValuesAreNonnullByDefault;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import io.camunda.zeebe.protocol.record.ImmutableProtocol.Builder;
 import io.camunda.zeebe.protocol.record.ImmutableProtocol.Type;
@@ -22,10 +24,8 @@ import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
-import javax.annotation.Nullable;
-import javax.annotation.ParametersAreNonnullByDefault;
-import javax.annotation.concurrent.Immutable;
-import javax.annotation.concurrent.NotThreadSafe;
+import net.jcip.annotations.Immutable;
+import net.jcip.annotations.NotThreadSafe;
 import org.immutables.annotate.InjectAnnotation;
 import org.immutables.annotate.InjectAnnotation.Where;
 import org.immutables.value.Generated;
@@ -58,7 +58,7 @@ import org.immutables.value.Value.Style.ValidationMethod;
     // transitive dependency changes
     allowedClasspathAnnotations = {
       Generated.class,
-      ParametersAreNonnullByDefault.class,
+      ReturnValuesAreNonnullByDefault.class,
       Immutable.class,
       SuppressFBWarnings.class,
       NotThreadSafe.class,

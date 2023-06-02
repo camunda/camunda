@@ -15,7 +15,7 @@ import io.grpc.health.v1.HealthCheckResponse.ServingStatus;
 import io.grpc.protobuf.services.HealthStatusManager;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
-import javax.annotation.concurrent.ThreadSafe;
+import net.jcip.annotations.ThreadSafe;
 
 @ThreadSafe
 public final class GatewayHealthManagerImpl implements GatewayHealthManager {
@@ -48,16 +48,17 @@ public final class GatewayHealthManagerImpl implements GatewayHealthManager {
     }
   }
 
+  @Override
+  public BindableService getHealthService() {
+    return statusManager.getHealthService();
+  }
+
   private Status computeStatus(final Status currentStatus, final Status newStatus) {
     if (currentStatus == Status.SHUTDOWN) {
       return Status.SHUTDOWN;
     }
 
     return newStatus;
-  }
-
-  public BindableService getHealthService() {
-    return statusManager.getHealthService();
   }
 
   private void updateGrpcHealthStatus(final Status status) {
