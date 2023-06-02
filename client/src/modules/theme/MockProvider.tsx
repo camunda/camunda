@@ -5,7 +5,6 @@
  * except in compliance with the proprietary license.
  */
 
-import * as React from 'react';
 import {ThemeProvider} from 'styled-components';
 
 import {themes} from './themes';

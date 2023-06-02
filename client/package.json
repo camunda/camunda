@@ -90,7 +90,7 @@
     "source-map-explorer": "2.5.3",
     "testcafe": "2.6.2",
     "ts-toolbelt": "9.6.0",
-    "typescript": "5.0.4",
+    "typescript": "5.1.3",
     "zeebe-node": "8.2.3"
   },
   "lint-staged": {
