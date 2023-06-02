@@ -425,6 +425,8 @@ public class DevelopDataGenerator extends UserTestDataGenerator {
     ZeebeTestUtil.deployProcess(client, "develop/escalationEvents_v_1.bpmn");
 
     ZeebeTestUtil.deployProcess(client, "develop/signalEvent.bpmn");
+
+    ZeebeTestUtil.deployProcess(client, "develop/inclusiveGateway.bpmn");
   }
 
   @Override
@@ -459,6 +461,8 @@ public class DevelopDataGenerator extends UserTestDataGenerator {
         processInstanceKeys.add(ZeebeTestUtil.startProcessInstance(client, "dataStoreProcess", null));
         processInstanceKeys.add(ZeebeTestUtil.startProcessInstance(client, "linkEventProcess", null));
         processInstanceKeys.add(ZeebeTestUtil.startProcessInstance(client, "escalationEvents", null));
+        processInstanceKeys.add(ZeebeTestUtil.startProcessInstance(client, "inclusiveGatewayProcess",
+            "{\"saladOrdered\": "+ random.nextBoolean()+ ", \"pastaOrdered\": "+ random.nextBoolean()+ "}"));
       }
 
       if (version == 2) {

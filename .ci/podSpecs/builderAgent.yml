@@ -86,8 +86,8 @@ spec:
           cpu: 6
           memory: 12Gi
     - name: zeebe
-      image: camunda/zeebe:8.3.0-alpha1
-      #imagePullPolicy: Always   #this must be uncommented when snapshot is used
+      image: camunda/zeebe:SNAPSHOT
+      imagePullPolicy: Always   #this must be uncommented when snapshot is used
       env:
         - name: ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_CLASSNAME
           value: io.camunda.zeebe.exporter.ElasticsearchExporter
