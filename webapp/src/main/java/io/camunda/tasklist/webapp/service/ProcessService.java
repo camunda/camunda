@@ -21,9 +21,9 @@ import io.camunda.zeebe.client.api.response.ProcessInstanceEvent;
 import io.grpc.Status;
 import java.io.IOException;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -51,9 +51,15 @@ public class ProcessService {
                 .latestVersion();
 
     if (variables != null && variables.size() > 0) {
-      final Map<String, Object> variablesMap =
-          requireNonNullElse(variables, Collections.<VariableInputDTO>emptyList()).stream()
-              .collect(Collectors.toMap(VariableInputDTO::getName, this::extractTypedValue));
+
+      final Map<String, Object> variablesMap = new HashMap<>();
+
+      requireNonNullElse(variables, Collections.<VariableInputDTO>emptyList())
+          .forEach(
+              variable -> {
+                variablesMap.put(variable.getName(), this.extractTypedValue(variable));
+              });
+
       createProcessInstanceCommandStep3.variables(variablesMap);
     }
 
