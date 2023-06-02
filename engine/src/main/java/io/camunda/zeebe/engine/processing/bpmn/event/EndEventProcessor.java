@@ -112,7 +112,8 @@ public final class EndEventProcessor implements BpmnElementProcessor<ExecutableE
     @Override
     public void onActivate(final ExecutableEndEvent element, final BpmnElementContext activating) {
       final var activated = stateTransitionBehavior.transitionToActivated(activating);
-      stateTransitionBehavior.completeElement(activated);
+      final var completing = stateTransitionBehavior.transitionToCompleting(activated);
+      onComplete(element, completing);
     }
 
     @Override
