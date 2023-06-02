@@ -7,7 +7,7 @@
     "@bpmn-io/dmn-migrate": "^0.4.3",
     "@bpmn-io/element-templates-icons-renderer": "^0.3.0",
     "@camunda/camunda-composite-components": "^0.0.40",
-    "@carbon/icons-react": "^11.18.0",
+    "@carbon/icons-react": "^11.20.0",
     "@carbon/react": "^1.30.0",
     "@lexical/react": "^0.7.6",
     "@ungap/structured-clone": "^1.2.0",
@@ -80,7 +80,7 @@
     "ancestorSeparator": " @ "
   },
   "devDependencies": {
-    "@types/carbon__icons-react": "^11.16.0",
+    "@types/carbon__icons-react": "^11.20.0",
     "@types/enzyme": "^3.10.13",
     "@types/enzyme-adapter-react-16": "^1.0.6",
     "@types/jest": "29.5.1",
