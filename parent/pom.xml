@@ -126,7 +126,7 @@
     <version.jackson-databind-nullable>0.2.6</version.jackson-databind-nullable>
     <version.jackson-annotations>2.15.2</version.jackson-annotations>
     <version.swagger-annotations>2.2.11</version.swagger-annotations>
-    <version.checker-qual>3.34.0</version.checker-qual>
+    <version.checker-qual>3.35.0</version.checker-qual>
 
     <!-- maven plugins -->
     <plugin.version.antrun>3.1.0</plugin.version.antrun>
