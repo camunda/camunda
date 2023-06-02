@@ -137,7 +137,7 @@ public class OutputMappingIncidentTest {
     final var failureCommand =
         RecordingExporter.processInstanceRecords()
             .withElementId(elementId)
-            .withIntent(ProcessInstanceIntent.COMPLETE_ELEMENT)
+            .withIntent(ProcessInstanceIntent.ELEMENT_COMPLETING)
             .withProcessInstanceKey(processInstanceKey)
             .getFirst();
 
