@@ -45,7 +45,7 @@ public class JobRecurProcessor implements TypedRecordProcessor<JobRecord> {
     final JobState.State state = jobState.getState(jobKey);
 
     if (state == State.FAILED) {
-      final JobRecord recurredJob = record.getValue();
+      final JobRecord recurredJob = jobState.getJob(jobKey);
 
       stateWriter.appendFollowUpEvent(jobKey, JobIntent.RECURRED_AFTER_BACKOFF, recurredJob);
 
