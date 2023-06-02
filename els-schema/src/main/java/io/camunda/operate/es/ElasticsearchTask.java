@@ -8,9 +8,13 @@ package io.camunda.operate.es;
 
 import io.camunda.operate.exceptions.OperateRuntimeException;
 import org.elasticsearch.action.get.GetRequest;
+import org.elasticsearch.action.search.SearchRequest;
+import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
+import org.elasticsearch.client.indices.GetIndexRequest;
 import org.elasticsearch.client.tasks.GetTaskResponse;
+import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.elasticsearch.tasks.RawTaskStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -18,13 +22,17 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+import static org.elasticsearch.index.query.QueryBuilders.*;
+
 @Component
 public class ElasticsearchTask {
 
+  public static final String ID = "id";
   private static final Logger logger = LoggerFactory.getLogger(ElasticsearchTask.class);
 
   public static final String ERROR = "error";
@@ -37,6 +45,14 @@ public class ElasticsearchTask {
   public static final String CREATED = "created";
   public static final String UPDATED = "updated";
   public static final String DELETED = "deleted";
+  public static final String TASK_ACTION = "task.action";
+  public static final String TASK_ACTION_INDICES_REINDEX = "indices:data/write/reindex";
+  public static final String TASK = "task";
+  public static final String DESCRIPTION = "description";
+  public static final String DESCRIPTION_PREFIX_FROM_INDEX = "reindex from [";
+  public static final String DESCRIPTION_PREFIX_TO_INDEX = "to [";
+  public static final String NODE = "node";
+  public static final int MAX_TASKS_ENTRIES = 2_000;
   @Autowired
   private RestHighLevelClient esClient;
 
@@ -46,6 +62,46 @@ public class ElasticsearchTask {
         .getSourceAsMap();
     checkForErrors(taskStatus);
     checkForFailures(taskStatus);
+  }
+
+  public List<String> getRunningReindexTasksIdsFor(final String fromIndex,final String toIndex) throws IOException {
+    if (!systemTaskIndexExists() || fromIndex == null || toIndex == null) {
+      return List.of();
+    }
+
+    return getReindexTasks().stream()
+           .filter( taskState -> descriptionContainsReindexFromTo(taskState, fromIndex, toIndex))
+           .map(this::toTaskId)
+           .toList();
+  }
+
+  private String toTaskId(Map<String,Object> taskState) {
+      return String.format("%s:%s", taskState.get(NODE), taskState.get(ID));
+  }
+
+  private boolean descriptionContainsReindexFromTo(final Map<String,Object> taskState,final String fromIndex, final String toIndex) {
+    final String desc = (String) taskState.get(DESCRIPTION);
+    return desc != null &&
+        desc.contains(DESCRIPTION_PREFIX_FROM_INDEX + fromIndex) &&
+        desc.contains(DESCRIPTION_PREFIX_TO_INDEX + toIndex);
+  }
+
+  private List<Map<String,Object>> getReindexTasks() throws IOException {
+    final SearchResponse searchResponse = esClient.search(new SearchRequest()
+        .indices(SYSTEM_TASKS_INDEX)
+        .source(SearchSourceBuilder.searchSource()
+            .query(
+              termQuery(TASK_ACTION, TASK_ACTION_INDICES_REINDEX))
+            .size(MAX_TASKS_ENTRIES)),
+        RequestOptions.DEFAULT);
+
+    return Arrays.stream(searchResponse.getHits().getHits())
+        .map(h -> (Map<String,Object>) h.getSourceAsMap().get(TASK))
+        .toList();
+  }
+
+  private boolean systemTaskIndexExists() throws IOException {
+    return esClient.indices().exists(new GetIndexRequest(SYSTEM_TASKS_INDEX), RequestOptions.DEFAULT);
   }
 
   private void checkForErrors(final Map<String, Object> taskStatus) {
@@ -89,4 +145,5 @@ public class ElasticsearchTask {
   public int getTotal(final GetTaskResponse taskResponse){
     return (Integer) getTaskStatusMap(taskResponse).get(TOTAL);
   }
+
 }

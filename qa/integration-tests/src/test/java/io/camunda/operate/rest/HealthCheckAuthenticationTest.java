@@ -25,6 +25,7 @@ import io.camunda.operate.webapp.security.oauth2.Jwt2AuthenticationTokenConverte
 import io.camunda.operate.webapp.security.oauth2.OAuth2WebConfigurer;
 import io.camunda.operate.webapp.security.OperateProfileService;
 import io.camunda.operate.webapp.security.WebSecurityConfig;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -37,6 +38,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringRunner;
+
+import java.io.IOException;
 
 /**
  * Tests the health check with enabled authentication.
@@ -70,6 +73,9 @@ public class HealthCheckAuthenticationTest {
   @MockBean
   private ElsIndicesHealthIndicator probes;
 
+  @Autowired
+  private ElasticsearchTask elasticsearchTask;
+
   @Test
   public void testHealthStateEndpointIsNotSecured() {
     given(probes.getHealth(anyBoolean())).willReturn(Health.up().build());
@@ -77,6 +83,14 @@ public class HealthCheckAuthenticationTest {
     final ResponseEntity<String> response = testRestTemplate.getForEntity("/actuator/health/liveness", String.class);
 
     assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+  }
+
+
+  @Ignore // unless you have a reindex task in ELS for mentioned indices
+  @Test
+  public void testAccessElasticsearchTaskStatusFields() throws IOException {
+    assertThat(elasticsearchTask.getRunningReindexTasksIdsFor("operate-flownode-instances-1.3.0_*", "operate-flownode-instance-8.2.0_")).isEmpty();
+    assertThat(elasticsearchTask.getRunningReindexTasksIdsFor("operate-flownode-instance-1.3.0_*", "operate-flownode-instance-8.2.0_")).hasSize(1);
   }
 
 }

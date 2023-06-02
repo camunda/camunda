@@ -324,16 +324,23 @@ public class RetryElasticsearchClient {
     executeWithRetries("Reindex " + Arrays.asList(reindexRequest.getSearchRequest().indices()) + " -> " + reindexRequest.getDestination().index(),
         () -> {
           String srcIndices = reindexRequest.getSearchRequest().indices()[0];
+          String dstIndex = reindexRequest.getDestination().indices()[0];
           long srcCount = getNumberOfDocumentsFor(srcIndices);
           if (checkDocumentCount) {
-            String dstIndex = reindexRequest.getDestination().indices()[0];
             long dstCount = getNumberOfDocumentsFor(dstIndex + "*");
             if (srcCount == dstCount) {
               logger.info("Reindex of {} -> {} is already done.", srcIndices, dstIndex);
               return true;
             }
           }
-          String taskId = esClient.submitReindexTask(reindexRequest, requestOptions).getTask();
+          final List<String> taskIds = elasticsearchTask.getRunningReindexTasksIdsFor(srcIndices,dstIndex);
+          String taskId;
+          if(taskIds.isEmpty()) {
+             taskId = esClient.submitReindexTask(reindexRequest, requestOptions).getTask();
+          }else {
+            logger.info("There is an already running reindex task for [{}] -> [{}]. Will not submit another reindex task but wait for completion of this task", srcIndices, dstIndex);
+            taskId = taskIds.get(0);
+          }
           TimeUnit.of(ChronoUnit.MILLIS).sleep(2_000);
           if (checkDocumentCount) {
             return waitUntilTaskIsCompleted(taskId, srcCount);

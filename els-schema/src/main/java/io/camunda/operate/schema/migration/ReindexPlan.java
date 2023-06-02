@@ -17,6 +17,8 @@ import io.camunda.operate.es.RetryElasticsearchClient;
 import org.elasticsearch.index.reindex.ReindexRequest;
 import org.elasticsearch.script.Script;
 import org.elasticsearch.script.ScriptType;
+import org.elasticsearch.tasks.Task;
+import org.elasticsearch.tasks.TaskInfo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 /**
