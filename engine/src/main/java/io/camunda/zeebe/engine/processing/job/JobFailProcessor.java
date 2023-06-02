@@ -11,33 +11,38 @@ import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 
 import io.camunda.zeebe.engine.api.TypedRecord;
 import io.camunda.zeebe.engine.metrics.JobMetrics;
-import io.camunda.zeebe.engine.processing.streamprocessor.CommandProcessor;
+import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.SideEffectWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.KeyGenerator;
 import io.camunda.zeebe.engine.state.immutable.JobState;
+import io.camunda.zeebe.engine.state.immutable.JobState.State;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.protocol.impl.record.value.incident.IncidentRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
-import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
+import java.util.List;
 import org.agrona.DirectBuffer;
 
-public final class JobFailProcessor implements CommandProcessor<JobRecord> {
+public final class JobFailProcessor implements TypedRecordProcessor<JobRecord> {
 
   private static final DirectBuffer DEFAULT_ERROR_MESSAGE = wrapString("No more retries left.");
   private final IncidentRecord incidentEvent = new IncidentRecord();
 
   private final JobState jobState;
-  private final DefaultJobCommandPreconditionGuard defaultProcessor;
+  private final StateWriter stateWriter;
+  private final TypedRejectionWriter rejectionWriter;
+  private final TypedResponseWriter responseWriter;
   private final KeyGenerator keyGenerator;
   private final JobMetrics jobMetrics;
   private final JobBackoffChecker jobBackoffChecker;
   private final SideEffectWriter sideEffectWriter;
+  private final JobCommandPreconditionChecker preconditionChecker;
 
   public JobFailProcessor(
       final ProcessingState state,
@@ -46,62 +51,47 @@ public final class JobFailProcessor implements CommandProcessor<JobRecord> {
       final JobMetrics jobMetrics,
       final JobBackoffChecker jobBackoffChecker) {
     jobState = state.getJobState();
+    stateWriter = writers.state();
+    rejectionWriter = writers.rejection();
+    responseWriter = writers.response();
+    sideEffectWriter = writers.sideEffect();
+    preconditionChecker =
+        new JobCommandPreconditionChecker("fail", List.of(State.ACTIVATABLE, State.ACTIVATED));
     this.keyGenerator = keyGenerator;
     this.jobBackoffChecker = jobBackoffChecker;
-    defaultProcessor =
-        new DefaultJobCommandPreconditionGuard("fail", jobState, this::acceptCommand);
     this.jobMetrics = jobMetrics;
-    sideEffectWriter = writers.sideEffect();
   }
 
   @Override
-  public boolean onCommand(
-      final TypedRecord<JobRecord> command, final CommandControl<JobRecord> commandControl) {
-    return defaultProcessor.onCommand(command, commandControl);
+  public void processRecord(final TypedRecord<JobRecord> record) {
+    final long jobKey = record.getKey();
+    final JobState.State state = jobState.getState(jobKey);
+
+    preconditionChecker
+        .check(state, jobKey)
+        .ifRightOrLeft(
+            ok -> failJob(record),
+            violation -> {
+              rejectionWriter.appendRejection(record, violation.getLeft(), violation.getRight());
+              responseWriter.writeRejectionOnCommand(
+                  record, violation.getLeft(), violation.getRight());
+            });
   }
 
-  @Override
-  public void afterAccept(
-      final TypedCommandWriter commandWriter,
-      final StateWriter stateWriter,
-      final long key,
-      final Intent intent,
-      final JobRecord value) {
-    if (value.getRetries() <= 0) {
-      final DirectBuffer jobErrorMessage = value.getErrorMessageBuffer();
-      DirectBuffer incidentErrorMessage = DEFAULT_ERROR_MESSAGE;
-      if (jobErrorMessage.capacity() > 0) {
-        incidentErrorMessage = jobErrorMessage;
-      }
+  private void failJob(final TypedRecord<JobRecord> record) {
+    final long jobKey = record.getKey();
+    final JobRecord failJobCommandRecord = record.getValue();
+    final var retries = failJobCommandRecord.getRetries();
+    final var retryBackOff = failJobCommandRecord.getRetryBackoff();
 
-      incidentEvent.reset();
-      incidentEvent
-          .setErrorType(ErrorType.JOB_NO_RETRIES)
-          .setErrorMessage(incidentErrorMessage)
-          .setBpmnProcessId(value.getBpmnProcessIdBuffer())
-          .setProcessDefinitionKey(value.getProcessDefinitionKey())
-          .setProcessInstanceKey(value.getProcessInstanceKey())
-          .setElementId(value.getElementIdBuffer())
-          .setElementInstanceKey(value.getElementInstanceKey())
-          .setJobKey(key)
-          .setVariableScopeKey(value.getElementInstanceKey());
-
-      stateWriter.appendFollowUpEvent(
-          keyGenerator.nextKey(), IncidentIntent.CREATED, incidentEvent);
-    }
-  }
-
-  private void acceptCommand(
-      final TypedRecord<JobRecord> command, final CommandControl<JobRecord> commandControl) {
-    final long key = command.getKey();
-    final JobRecord failedJob = jobState.getJob(key);
-    final var retries = command.getValue().getRetries();
-    final var retryBackOff = command.getValue().getRetryBackoff();
+    final JobRecord failedJob = jobState.getJob(jobKey);
     failedJob.setRetries(retries);
-    failedJob.setErrorMessage(command.getValue().getErrorMessageBuffer());
+    failedJob.setErrorMessage(failJobCommandRecord.getErrorMessageBuffer());
     failedJob.setRetryBackoff(retryBackOff);
+    failedJob.setVariables(failJobCommandRecord.getVariablesBuffer());
+
     if (retries > 0 && retryBackOff > 0) {
-      final long receivedTime = command.getTimestamp();
+      final long receivedTime = record.getTimestamp();
       failedJob.setRecurringTime(receivedTime + retryBackOff);
       sideEffectWriter.appendSideEffect(
           () -> {
@@ -109,7 +99,34 @@ public final class JobFailProcessor implements CommandProcessor<JobRecord> {
             return true;
           });
     }
-    commandControl.accept(JobIntent.FAILED, failedJob);
+    stateWriter.appendFollowUpEvent(jobKey, JobIntent.FAILED, failedJob);
+    responseWriter.writeEventOnCommand(jobKey, JobIntent.FAILED, failedJob, record);
     jobMetrics.jobFailed(failedJob.getType());
+
+    if (retries <= 0) {
+      raiseIncident(jobKey, failedJob);
+    }
+  }
+
+  private void raiseIncident(final long key, final JobRecord value) {
+    final DirectBuffer jobErrorMessage = value.getErrorMessageBuffer();
+    DirectBuffer incidentErrorMessage = DEFAULT_ERROR_MESSAGE;
+    if (jobErrorMessage.capacity() > 0) {
+      incidentErrorMessage = jobErrorMessage;
+    }
+
+    incidentEvent.reset();
+    incidentEvent
+        .setErrorType(ErrorType.JOB_NO_RETRIES)
+        .setErrorMessage(incidentErrorMessage)
+        .setBpmnProcessId(value.getBpmnProcessIdBuffer())
+        .setProcessDefinitionKey(value.getProcessDefinitionKey())
+        .setProcessInstanceKey(value.getProcessInstanceKey())
+        .setElementId(value.getElementIdBuffer())
+        .setElementInstanceKey(value.getElementInstanceKey())
+        .setJobKey(key)
+        .setVariableScopeKey(value.getElementInstanceKey());
+
+    stateWriter.appendFollowUpEvent(keyGenerator.nextKey(), IncidentIntent.CREATED, incidentEvent);
   }
 }
