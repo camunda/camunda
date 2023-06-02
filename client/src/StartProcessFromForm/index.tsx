@@ -10,27 +10,39 @@ import {Main, LogoIcon, FormContainer} from './styled';
 import {useExternalForm} from 'modules/queries/useExternalForm';
 import {Header} from './Header';
 import {useEffect} from 'react';
-import {notificationsStore} from 'modules/stores/notifications';
 import {FormJS} from './FormJS';
 import {Skeleton} from './Skeleton';
 import {useStartExternalProcess} from 'modules/mutations/useStartExternalProcess';
 import {logger} from 'modules/utils/logger';
-import {Heading} from '@carbon/react';
 import {tracking} from 'modules/tracking';
+import {C3EmptyState} from '@camunda/camunda-composite-components';
+import CheckImage from 'modules/images/orange-check-mark.svg';
+import ErrorRobotImage from 'modules/images/error-robot.svg';
 
 const StartProcessFromForm: React.FC = () => {
   const {bpmnProcessId} = useStartProcessParams();
-  const {data, error} = useExternalForm(bpmnProcessId);
-  const {mutateAsync: startExternalProcess, isSuccess} =
-    useStartExternalProcess();
+  const {data, error, isInitialLoading} = useExternalForm(bpmnProcessId);
+  const {
+    mutate: startExternalProcess,
+    isSuccess,
+    isError,
+    reset,
+  } = useStartExternalProcess({
+    onError: (error) => {
+      logger.error(error);
+      tracking.track({
+        eventName: 'public-start-form-submission-failed',
+      });
+    },
+    onMutate: () => {
+      tracking.track({
+        eventName: 'public-start-form-submitted',
+      });
+    },
+  });
 
   useEffect(() => {
     if (error !== null) {
-      notificationsStore.displayNotification({
-        kind: 'error',
-        title: 'Could not fetch form',
-        isDismissable: false,
-      });
       tracking.track({
         eventName: 'public-start-form-load-failed',
       });
@@ -55,36 +67,62 @@ const StartProcessFromForm: React.FC = () => {
     <>
       <Header />
       <Main id="main-content" className="cds--content" tabIndex={-1}>
-        <Heading className="cds--visually-hidden">Form</Heading>
         <FormContainer>
           {isSuccess ? (
-            <Heading>Success</Heading>
+            <C3EmptyState
+              icon={{
+                altText: 'Success checkmark',
+                path: CheckImage,
+              }}
+              heading="Success!"
+              description={
+                <>
+                  Your form has been successfully submitted.
+                  <br />
+                  You can close this window now.
+                </>
+              }
+            />
           ) : (
             <>
-              {data === undefined ? (
-                <Skeleton />
-              ) : (
-                <FormJS
-                  schema={data.schema}
-                  onSubmit={async (variables) => {
-                    try {
-                      await startExternalProcess({variables, bpmnProcessId});
-                      tracking.track({
-                        eventName: 'public-start-form-submitted',
-                      });
-                    } catch (error) {
-                      logger.error(error);
-                      notificationsStore.displayNotification({
-                        kind: 'error',
-                        title: 'Could not submit form',
-                        isDismissable: false,
-                      });
-                      tracking.track({
-                        eventName: 'public-start-form-submission-failed',
-                      });
-                    }
+              {isError ? (
+                <C3EmptyState
+                  icon={{
+                    altText: 'Error robot',
+                    path: ErrorRobotImage,
+                  }}
+                  heading="Something went wrong"
+                  description="Please try again later and reload the page."
+                  button={{
+                    label: 'Reload',
+                    onClick: () => {
+                      reset();
+                    },
                   }}
                 />
+              ) : (
+                <>
+                  {isInitialLoading && data === undefined ? <Skeleton /> : null}
+                  {data === undefined || error !== null ? null : (
+                    <FormJS
+                      title={data.title}
+                      schema={data.schema}
+                      onSubmit={(variables) => {
+                        startExternalProcess({variables, bpmnProcessId});
+                      }}
+                    />
+                  )}
+                  {error === null ? null : (
+                    <C3EmptyState
+                      icon={{
+                        altText: 'Error robot',
+                        path: ErrorRobotImage,
+                      }}
+                      heading="404 - Page not found"
+                      description="We're sorry! The requested URL you're looking for could not be found."
+                    />
+                  )}
+                </>
               )}
             </>
           )}

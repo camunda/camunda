@@ -6,7 +6,7 @@
  */
 
 import {test, expect} from '@playwright/test';
-import schema from './bigForm.json';
+import schema from './resources/bigForm.json';
 
 const MOCK_TASK = {
   id: 'task123',

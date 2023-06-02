@@ -7,7 +7,7 @@
 
 import {expect} from '@playwright/test';
 import {test} from './axe-test';
-import schema from './bigForm.json';
+import schema from './resources/bigForm.json';
 
 const MOCK_TASK = {
   id: 'task123',

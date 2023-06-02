@@ -6,7 +6,7 @@
  */
 
 import {test, expect, Route, Request} from '@playwright/test';
-import schema from '../bigForm.json';
+import schema from '../resources/bigForm.json';
 
 const NON_FORM_TASK = {
   id: '2251799813687061',

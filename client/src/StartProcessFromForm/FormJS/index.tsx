@@ -5,33 +5,38 @@
  * except in compliance with the proprietary license.
  */
 
-import {useEffect, useRef} from 'react';
+import {useEffect, useRef, useState} from 'react';
 import {Container, FormCustomStyling} from './styled';
 import {formManager} from 'modules/formManager';
-import {notificationsStore} from 'modules/stores/notifications';
 import {Variable} from 'modules/types';
+import {C3EmptyState} from '@camunda/camunda-composite-components';
+import ErrorRobotImage from 'modules/images/error-robot.svg';
+import {Heading} from '@carbon/react';
+import {tracking} from 'modules/tracking';
 
 type Props = {
+  title: string;
   schema: string;
   onSubmit: (variables: Variable[]) => void;
 };
 
-const FormJS: React.FC<Props> = ({schema, onSubmit}) => {
+const FormJS: React.FC<Props> = ({schema, onSubmit, title}) => {
   const formContainerRef = useRef<HTMLDivElement | null>(null);
+  const [isSchemaValid, setIsSchemaValid] = useState(true);
 
   useEffect(() => {
     const container = formContainerRef.current;
 
     if (container !== null) {
+      setIsSchemaValid(true);
       formManager.render({
         container,
         schema,
         data: {},
         onImportError: () => {
-          notificationsStore.displayNotification({
-            kind: 'error',
-            title: 'Could not render form',
-            isDismissable: false,
+          setIsSchemaValid(false);
+          tracking.track({
+            eventName: 'public-start-form-invalid-form-schema',
           });
         },
         onSubmit: async ({data, errors}) => {
@@ -55,11 +60,25 @@ const FormJS: React.FC<Props> = ({schema, onSubmit}) => {
     };
   }, [schema, onSubmit]);
 
+  if (isSchemaValid) {
+    return (
+      <>
+        <FormCustomStyling />
+        <Heading>{title}</Heading>
+        <Container ref={formContainerRef} />
+      </>
+    );
+  }
+
   return (
-    <>
-      <FormCustomStyling />
-      <Container ref={formContainerRef} />
-    </>
+    <C3EmptyState
+      icon={{
+        altText: 'Error robot',
+        path: ErrorRobotImage,
+      }}
+      heading="Invalid form"
+      description="Something went wrong and the form could not be displayed. Please contact your provider."
+    />
   );
 };
 

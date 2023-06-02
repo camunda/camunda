@@ -13,7 +13,7 @@ import {
   NewUserTextContainer,
   OldUserTextContainer,
 } from './styled';
-import CheckImage from './orange-check-mark.svg';
+import CheckImage from 'modules/images/orange-check-mark.svg';
 import {getStateLocally} from 'modules/utils/localStorage';
 import {Restricted} from 'modules/components/Restricted';
 

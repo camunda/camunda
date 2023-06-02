@@ -55,6 +55,7 @@ type Form = {
   id: string;
   processDefinitionKey: string;
   schema: string;
+  title: string;
 };
 
 type Process = {

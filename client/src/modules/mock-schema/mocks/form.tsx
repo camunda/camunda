@@ -10,6 +10,7 @@ import {Form} from 'modules/types';
 const form: Form = {
   id: 'camunda-forms:bpmn:form-0',
   processDefinitionKey: 'process',
+  title: 'A form',
   schema: JSON.stringify({
     components: [
       {
@@ -42,6 +43,7 @@ const form: Form = {
 const invalidForm: Form = {
   id: 'camunda-forms:bpmn:form-0',
   processDefinitionKey: 'process',
+  title: 'A form',
   schema: `
     {
       components: [
@@ -67,6 +69,7 @@ const invalidForm: Form = {
 const dynamicForm: Form = {
   id: 'camunda-forms:bpmn:form-0',
   processDefinitionKey: 'process',
+  title: 'A form',
   schema: JSON.stringify({
     components: [
       {

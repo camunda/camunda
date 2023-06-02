@@ -27,6 +27,10 @@ test.describe('public start process', () => {
     await page.getByLabel('Email').fill('joe@doe.com');
     await page.getByRole('button', {name: 'Save'}).click();
 
-    await expect(page.getByText('Success')).toBeVisible();
+    await expect(
+      page.getByRole('heading', {
+        name: 'Success!',
+      }),
+    ).toBeVisible();
   });
 });

@@ -29,7 +29,8 @@ type Events =
         | 'public-start-form-loaded'
         | 'public-start-form-load-failed'
         | 'public-start-form-submitted'
-        | 'public-start-form-submission-failed';
+        | 'public-start-form-submission-failed'
+        | 'public-start-form-invalid-form-schema';
     }
   | {
       eventName: 'task-completed';

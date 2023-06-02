@@ -8,7 +8,6 @@
 import {
   render,
   screen,
-  waitFor,
   waitForElementToBeRemoved,
 } from 'modules/testing-library';
 import {StartProcessFromForm} from './index';
@@ -18,13 +17,6 @@ import {ReactQueryProvider} from 'modules/ReactQueryProvider';
 import {nodeMockServer} from 'modules/mockServer/nodeMockServer';
 import {rest} from 'msw';
 import * as formMocks from 'modules/mock-schema/mocks/form';
-import {notificationsStore} from 'modules/stores/notifications';
-
-jest.mock('modules/stores/notifications', () => ({
-  notificationsStore: {
-    displayNotification: jest.fn(() => () => {}),
-  },
-}));
 
 const getWrapper = ({
   initialEntries,
@@ -91,7 +83,16 @@ describe('<StartProcessFromForm />', () => {
       }),
     );
 
-    expect(await screen.findByText('Success')).toBeInTheDocument();
+    expect(
+      await screen.findByRole('heading', {
+        name: 'Success!',
+      }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        'Your form has been successfully submitted.You can close this window now.',
+      ),
+    ).toBeInTheDocument();
   });
 
   it('should handle a submit error', async () => {
@@ -128,16 +129,18 @@ describe('<StartProcessFromForm />', () => {
       }),
     );
 
-    await waitFor(() =>
-      expect(notificationsStore.displayNotification).toHaveBeenCalledWith({
-        kind: 'error',
-        title: 'Could not submit form',
-        isDismissable: false,
+    expect(
+      await screen.findByRole('heading', {
+        name: 'Something went wrong',
       }),
-    );
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText('Please try again later and reload the page.'),
+    ).toBeInTheDocument();
+    expect(screen.getByRole('button', {name: 'Reload'})).toBeInTheDocument();
   });
 
-  it('should a request error message', async () => {
+  it('should show a request error message', async () => {
     nodeMockServer.use(
       rest.get('/v1/external/process/:bpmnProcessId/form', (_, res, ctx) =>
         res(ctx.status(500)),
@@ -150,16 +153,19 @@ describe('<StartProcessFromForm />', () => {
       }),
     });
 
-    await waitFor(() =>
-      expect(notificationsStore.displayNotification).toHaveBeenCalledWith({
-        kind: 'error',
-        title: 'Could not fetch form',
-        isDismissable: false,
+    expect(
+      await screen.findByRole('heading', {
+        name: '404 - Page not found',
       }),
-    );
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        "We're sorry! The requested URL you're looking for could not be found.",
+      ),
+    ).toBeInTheDocument();
   });
 
-  it('should a bad form schema error message', async () => {
+  it('should show a bad form schema error message', async () => {
     nodeMockServer.use(
       rest.get('/v1/external/process/:bpmnProcessId/form', (_, res, ctx) =>
         res(ctx.json(formMocks.invalidForm)),
@@ -172,12 +178,15 @@ describe('<StartProcessFromForm />', () => {
       }),
     });
 
-    await waitFor(() =>
-      expect(notificationsStore.displayNotification).toHaveBeenCalledWith({
-        kind: 'error',
-        title: 'Could not render form',
-        isDismissable: false,
+    expect(
+      await screen.findByRole('heading', {
+        name: 'Invalid form',
       }),
-    );
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        'Something went wrong and the form could not be displayed. Please contact your provider.',
+      ),
+    ).toBeInTheDocument();
   });
 });

@@ -5,17 +5,27 @@
  * except in compliance with the proprietary license.
  */
 
-import {useMutation} from '@tanstack/react-query';
+import {useMutation, UseMutationOptions} from '@tanstack/react-query';
 import {api} from 'modules/api';
 import {RequestError, request} from 'modules/request';
 import {ProcessInstance} from 'modules/types';
 
-function useStartExternalProcess() {
+function useStartExternalProcess(
+  options: Pick<
+    UseMutationOptions<
+      ProcessInstance,
+      RequestError | Error,
+      Parameters<typeof api.startExternalProcess>[0]
+    >,
+    'onError' | 'onSuccess' | 'onMutate'
+  > = {},
+) {
   return useMutation<
     ProcessInstance,
     RequestError | Error,
     Parameters<typeof api.startExternalProcess>[0]
   >({
+    ...options,
     mutationFn: async (payload) => {
       const {response, error} = await request(
         api.startExternalProcess(payload),
