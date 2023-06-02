@@ -252,7 +252,7 @@ public final class DbJobState implements JobState, MutableJobState {
           final boolean isDue = deadline < upperBound;
           if (isDue) {
             final long jobKey1 = key.second().inner().getValue();
-            return visitJob(jobKey1, callback, () -> deadlinesColumnFamily.deleteExisting(key));
+            return visitJob(jobKey1, callback, () -> {});
           }
           return false;
         });
