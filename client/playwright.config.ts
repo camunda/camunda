@@ -19,10 +19,10 @@ const config: PlaywrightTestConfig = {
   expect: {
     timeout: 5000,
   },
-  fullyParallel: true,
+  fullyParallel: !IS_E2E,
   forbidOnly: IS_CI,
   retries: IS_CI ? 2 : 0,
-  workers: IS_CI ? 1 : undefined,
+  workers: IS_CI || IS_E2E ? 1 : undefined,
   reporter: 'html',
   projects: [
     {

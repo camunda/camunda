@@ -8,10 +8,12 @@
 import {test, expect} from '@playwright/test';
 import {test as axeTest} from '../axe-test';
 
-test.describe('login page', () => {
-  test('redirect to the main page on login', async ({page}) => {
-    await page.goto('/login');
+test.beforeEach(async ({page}) => {
+  await page.goto('/login');
+});
 
+test.describe.parallel('login page', () => {
+  test('redirect to the main page on login', async ({page}) => {
     expect(await page.getByLabel('Password').getAttribute('type')).toEqual(
       'password',
     );
@@ -24,8 +26,6 @@ test.describe('login page', () => {
   });
 
   axeTest('have no a11y violations', async ({page, makeAxeBuilder}) => {
-    await page.goto('/login');
-
     const results = await makeAxeBuilder().analyze();
 
     expect(results.violations).toHaveLength(0);
@@ -35,7 +35,6 @@ test.describe('login page', () => {
   axeTest(
     'show error message on login failure',
     async ({page, makeAxeBuilder}) => {
-      await page.goto('/login');
       await page.getByPlaceholder('Username').fill('demo');
       await page.getByPlaceholder('Password').fill('wrong');
       await page.getByRole('button', {name: 'Login'}).click();
@@ -57,7 +56,6 @@ test.describe('login page', () => {
   );
 
   test('block form submission with empty fields', async ({page}) => {
-    await page.goto('/login');
     await page.getByRole('button', {name: 'Login'}).click();
     await expect(page).toHaveURL('/login');
     await page.getByPlaceholder('Username').fill('demo');
@@ -70,7 +68,6 @@ test.describe('login page', () => {
   });
 
   test('log out redirect', async ({page}) => {
-    await page.goto('/login');
     await page.getByPlaceholder('Username').fill('demo');
     await page.getByPlaceholder('Password').fill('demo');
     await page.getByRole('button', {name: 'Login'}).click();
@@ -81,7 +78,6 @@ test.describe('login page', () => {
   });
 
   test('persistency of a session', async ({page}) => {
-    await page.goto('/login');
     await page.getByPlaceholder('Username').fill('demo');
     await page.getByPlaceholder('Password').fill('demo');
     await page.getByRole('button', {name: 'Login'}).click();
