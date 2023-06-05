@@ -168,6 +168,21 @@
           "code": "java.class.removed",
           "old": "class io.camunda.zeebe.protocol.management.GroupSizeEncodingEncoder",
           "justification": "This is no longer used for listing backups"
+        },
+        {
+          "ignore": true,
+          "code": "java.annotation.attributeValueChanged",
+          "old": "@interface io.camunda.zeebe.protocol.record.ImmutableProtocol",
+          "justification": "This is ignored due to javax.annotation removal"
+        },
+        {
+          "ignore": true,
+          "code": "java.annotation.removed",
+          "old": {
+            "matcher": "java",
+            "match": "@org.immutables.value.Generated(**) type ^* {}"
+          },
+          "justification": "This is ignored due to javax.annotation removal"
         }
       ]
     }

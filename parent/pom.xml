@@ -965,13 +965,6 @@
       </dependency>
 
       <dependency>
-        <groupId>com.google.code.findbugs</groupId>
-        <artifactId>jsr305</artifactId>
-        <version>${version.jsr305}</version>
-        <scope>provided</scope>
-      </dependency>
-
-      <dependency>
         <groupId>org.bouncycastle</groupId>
         <artifactId>bcpkix-jdk15on</artifactId>
         <version>${version.bouncycastle}</version>

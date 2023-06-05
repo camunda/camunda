@@ -188,10 +188,6 @@
       <scope>test</scope>
       <exclusions>
         <exclusion>
-          <groupId>com.google.code.findbugs</groupId>
-          <artifactId>annotations</artifactId>
-        </exclusion>
-        <exclusion>
           <groupId>net.bytebuddy</groupId>
           <artifactId>byte-buddy</artifactId>
         </exclusion>
