@@ -127,6 +127,8 @@ updates:
       - dependency-name: "glob"
       - dependency-name: "react-scripts"
       - dependency-name: "eslint-plugin-prettier"
+      - dependency-name: "testcafe"
+      - dependency-name: "lint-staged"
     labels:
       - "dependencies"
       - "frontend"
@@ -179,6 +181,8 @@ updates:
       - dependency-name: "lint-staged"
       - dependency-name: "react-scripts"
       - dependency-name: "eslint-plugin-prettier"
+      - dependency-name: "testcafe"
+      - dependency-name: "bpmn-js"
     labels:
       - "dependencies"
       - "frontend"
@@ -231,6 +235,8 @@ updates:
       - dependency-name: "lint-staged"
       - dependency-name: "react-scripts"
       - dependency-name: "eslint-plugin-prettier"
+      - dependency-name: "testcafe"
+      - dependency-name: "bpmn-js"
     labels:
       - "dependencies"
       - "frontend"
