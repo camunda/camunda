@@ -87,7 +87,8 @@ public final class RecordMetadata implements BufferWriter, BufferReader {
             .orElse(VersionInfo.UNKNOWN);
 
     final int decodedRecordVersion = decoder.recordVersion();
-    if (decodedRecordVersion == RecordMetadataDecoder.recordVersionNullValue()) {
+    if (decodedRecordVersion == 0
+        || decodedRecordVersion == RecordMetadataDecoder.recordVersionNullValue()) {
       recordVersion = DEFAULT_RECORD_VERSION;
     } else {
       recordVersion = decodedRecordVersion;
