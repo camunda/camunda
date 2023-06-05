@@ -175,6 +175,12 @@ export class ReportEdit extends React.Component {
       this.dirtyCheck
     );
 
+    if (isRearrangementChanged(change)) {
+      this.setState(({frozenReport}) => ({
+        frozenReport: update(frozenReport, {data: change}),
+      }));
+    }
+
     if (needsReevaluation && this.state.shouldAutoReloadPreview) {
       this.reEvaluateReport(newReport);
     }
@@ -398,3 +404,7 @@ export class ReportEdit extends React.Component {
 }
 
 export default withRouter(withErrorHandling(withDocs(ReportEdit)));
+
+function isRearrangementChanged(change) {
+  return !!change?.configuration?.tableColumns?.columnOrder;
+}

@@ -47,7 +47,11 @@ const report = {
         tenantIds: [],
       },
     ],
-    configuration: {},
+    configuration: {
+      tableColumns: {
+        columnOrder: ['a', 'b', 'c'],
+      },
+    },
     view: {proeprty: 'rawData', entity: null},
     groupBy: {type: 'none', value: null},
     visualization: 'table',
@@ -398,7 +402,9 @@ it('should update description', async () => {
     '1',
     {
       data: {
-        configuration: {},
+        configuration: {
+          tableColumns: {columnOrder: ['a', 'b', 'c']},
+        },
         definitions: [{key: 'aKey', tenantIds: [], versions: ['aVersion']}],
         groupBy: {type: 'none', value: null},
         processDefinitionKey: 'key',
@@ -410,4 +416,16 @@ it('should update description', async () => {
     },
     {query: {force: false}}
   );
+});
+
+it('should update local report copy when column rearangement is updated', () => {
+  const node = shallow(<ReportEdit {...props} />);
+
+  node
+    .instance()
+    .updateReport({configuration: {tableColumns: {columnOrder: {$set: ['c', 'a', 'b']}}}});
+
+  expect(node.state().frozenReport.data.configuration).toEqual({
+    tableColumns: {columnOrder: ['c', 'a', 'b']},
+  });
 });
