@@ -50,3 +50,4 @@ export type {InputProps} from './Input';
 export type {LabeledProps} from './Labeled';
 export type {User} from './UserTypeahead';
 export type {Canvas, ModdleElement, RegistryElement} from './BPMNDiagram';
+export type {TooltipProps} from './Tooltip';

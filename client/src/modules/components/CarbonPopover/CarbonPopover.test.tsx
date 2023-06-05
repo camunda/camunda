@@ -7,7 +7,7 @@
 
 import {shallow} from 'enzyme';
 
-import {Button} from 'components';
+import {Button, Tooltip} from 'components';
 
 import CarbonPopover from './CarbonPopover';
 
@@ -63,4 +63,15 @@ it('should automatically open the popover on mount with the autoOpen prop', () =
   );
 
   expect(node).toIncludeText('Child content');
+});
+
+it('should pass tooltip props to the tooltip component', () => {
+  const node = shallow(
+    <CarbonPopover title="a" tooltip="test" tooltipPosition="bottom">
+      Child content
+    </CarbonPopover>
+  );
+
+  expect(node.find(Tooltip).prop('content')).toBe('test');
+  expect(node.find(Tooltip).prop('position')).toBe('bottom');
 });

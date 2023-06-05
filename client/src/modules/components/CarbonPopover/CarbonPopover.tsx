@@ -6,7 +6,7 @@
  */
 
 import {ReactNode, useCallback, useEffect, useLayoutEffect, useRef, useState} from 'react';
-import {Button, Icon, Tooltip} from 'components';
+import {Button, Icon, Tooltip, TooltipProps} from 'components';
 import {getScreenBounds} from 'services';
 import {Popover, PopoverAlignment, PopoverContent, PopoverProps} from '@carbon/react';
 
@@ -39,10 +39,11 @@ interface CarbonPopoverProps extends Omit<PopoverProps<'div'>, 'title' | 'open' 
   floating?: boolean;
   onOpen?: () => void;
   onClose?: () => void;
-  tooltip?: ReactNode;
+  tooltip?: TooltipProps['content'];
   autoOpen?: boolean;
   align?: (typeof possibleAlignments)[number];
   alignContainer?: string;
+  tooltipPosition?: TooltipProps['position'];
 }
 
 export default function CarbonPopover({
@@ -59,6 +60,7 @@ export default function CarbonPopover({
   autoOpen = false,
   align,
   alignContainer,
+  tooltipPosition,
   ...props
 }: CarbonPopoverProps): JSX.Element {
   const [open, setOpen] = useState(autoOpen);
@@ -213,7 +215,7 @@ export default function CarbonPopover({
       open={open}
       ref={popoverRef}
     >
-      <Tooltip content={tooltip}>
+      <Tooltip content={tooltip} position={tooltipPosition}>
         <div className="buttonWrapper">
           <Button
             onClick={() => setOpen(!open)}
