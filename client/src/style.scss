@@ -19,10 +19,10 @@
 :root {
   @include theme.theme(themes.$white);
 
-  --z-notification: 1000;
-  --z-login: 900;
-  --z-tooltip: 800;
-  --z-modal: 600;
+  --z-notification: 9300;
+  --z-login: 9200;
+  --z-tooltip: 9100;
+  --z-modal: 9000;
   --z-popup: 500; //popovers, dropdowns, ...
   --z-header: 400;
   --z-above: 1;
