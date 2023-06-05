@@ -8,7 +8,7 @@
 import React, {useState} from 'react';
 import equals from 'fast-deep-equal';
 
-import {Popover} from 'components';
+import {CarbonPopover} from 'components';
 import {FilterList} from 'filter';
 import {loadVariables, loadInputVariables, loadOutputVariables} from 'services';
 import {t} from 'translation';
@@ -96,11 +96,12 @@ export function InstanceCount({report, noInfo, useIcon, mightFail, additionalFil
             }
           }}
         >
-          <Popover
+          <CarbonPopover
             icon={useIcon}
             title={!useIcon && t('report.instanceCount.appliedFilters')}
             disabled={noInfo}
-            renderInPortal="instanceCountPopover"
+            className="instanceCountPopover"
+            floating
           >
             {showHeader && (
               <div className="countString">
@@ -142,7 +143,7 @@ export function InstanceCount({report, noInfo, useIcon, mightFail, additionalFil
                 />
               </>
             )}
-          </Popover>
+          </CarbonPopover>
         </span>
       )}{' '}
       <span className="countString">

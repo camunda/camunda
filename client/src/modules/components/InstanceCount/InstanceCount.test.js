@@ -89,7 +89,7 @@ it('should display an astrick near the total instance count if the report includ
 it('should contain a popover with information about the filters', () => {
   const node = shallow(<InstanceCount {...props} />);
 
-  expect(node.find('Popover')).toExist();
+  expect(node.find('.instanceCountPopover')).toExist();
   expect(node.find('FilterList').prop('data')).toEqual(props.report.data.filter);
 });
 
@@ -123,13 +123,13 @@ it('should not contain a popover if the report has no filters', () => {
   const noFilterReport = update(props.report, {data: {filter: {$set: []}}});
   const node = shallow(<InstanceCount {...props} report={noFilterReport} />);
 
-  expect(node.find('Popover')).not.toExist();
+  expect(node.find('.instanceCountPopover')).not.toExist();
 });
 
 it('should disable the popover if the noInfo prop is set', () => {
   const node = shallow(<InstanceCount {...props} noInfo />);
 
-  expect(node.find('Popover').prop('disabled')).toBe(true);
+  expect(node.find('.instanceCountPopover').prop('disabled')).toBe(true);
 });
 
 it('should load variable names for process reports', async () => {
@@ -195,13 +195,13 @@ it('should load variable names for decision reports', async () => {
 it('should substitute the popover title with an icon if requested', () => {
   const node = shallow(<InstanceCount {...props} useIcon="someIcon" />);
 
-  expect(node.find('Popover').prop('title')).toBe(false);
-  expect(node.find('Popover').prop('icon')).toBe('someIcon');
+  expect(node.find('.instanceCountPopover').prop('title')).toBe(false);
+  expect(node.find('.instanceCountPopover').prop('icon')).toBe('someIcon');
 });
 
 it('should show instance count and filter list headings if showHeader prop is added', () => {
   const node = shallow(<InstanceCount {...props} showHeader />);
 
-  expect(node.find('Popover .countString')).toExist();
+  expect(node.find('.instanceCountPopover .countString')).toExist();
   expect(node.find('.filterListHeading')).toExist();
 });

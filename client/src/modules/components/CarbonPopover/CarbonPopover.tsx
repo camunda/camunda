@@ -41,8 +41,7 @@ interface CarbonPopoverProps extends Omit<PopoverProps<'div'>, 'title' | 'open' 
   onClose?: () => void;
   tooltip?: TooltipProps['content'];
   autoOpen?: boolean;
-  align?: (typeof possibleAlignments)[number];
-  alignContainer?: string;
+  align?: PopoverAlignment;
   tooltipPosition?: TooltipProps['position'];
 }
 
@@ -59,7 +58,6 @@ export default function CarbonPopover({
   tooltip,
   autoOpen = false,
   align,
-  alignContainer,
   tooltipPosition,
   ...props
 }: CarbonPopoverProps): JSX.Element {
@@ -70,6 +68,7 @@ export default function CarbonPopover({
   const buttonRef = useRef<HTMLButtonElement | null>(null);
   const dialogRef = useRef<HTMLDivElement | null>(null);
   const contentRef = useRef<HTMLDivElement | null>(null);
+  const transformParent = useRef<HTMLElement | null>(null);
   const isInsideClick = useRef<boolean>(false);
 
   const calculateDialogStyle = useCallback(() => {
@@ -88,13 +87,14 @@ export default function CarbonPopover({
     const contentHeight = contentRef.current.clientHeight;
     const buttonRect = buttonRef.current.getBoundingClientRect();
     const buttonCenter = buttonRect.left + buttonRect.width / 2;
-    const bounds = getContainerBounds(dialogRef.current, alignContainer) || getScreenBounds();
+
+    const bounds = getScrollBounds(transformParent.current);
 
     const bodyWidth = document.body.clientWidth;
     const margin = 10;
     const padding = 10 + 15;
 
-    let newAlignment = 'bottom';
+    let newAlignment: PopoverAlignment = 'bottom';
 
     if (buttonCenter + overlayWidth / 2 > bodyWidth) {
       newAlignment = 'bottom-right';
@@ -120,32 +120,33 @@ export default function CarbonPopover({
       const scrollable = contentHeightWithPadding > topSpace;
       setScrollable(scrollable);
       dialogStyles.height = (scrollable ? topSpace : contentHeightWithPadding) + 'px';
-      newAlignment = newAlignment.replace('bottom', 'top');
+      newAlignment = newAlignment.replace('bottom', 'top') as PopoverAlignment;
     }
 
     popoverClassList.add(getClassName(align || newAlignment));
-  }, [align, alignContainer]);
+  }, [align]);
 
   const fixPositioning = useCallback(() => {
     if (!floating) {
       return;
     }
 
-    const containerBounds = getContainerBounds(popoverRef.current, alignContainer);
-    const topBound = containerBounds?.top || 0;
-    const leftBound = containerBounds?.left || 0;
-
+    const {top, left} = transformParent.current?.getBoundingClientRect() || {
+      top: 0,
+      left: 0,
+    };
     const box = buttonRef.current?.getBoundingClientRect();
+
     if (open && box) {
       setPopoverStyles({
         position: 'fixed',
-        left: box.left - leftBound + 'px',
-        top: box.top - topBound + 'px',
+        left: box.left - left + 'px',
+        top: box.top - top + 'px',
         width: box.width,
         height: box.height,
       });
     }
-  }, [alignContainer, floating, open]);
+  }, [floating, open]);
 
   useEffect(() => {
     if (open) {
@@ -164,6 +165,12 @@ export default function CarbonPopover({
     const observer = new MutationObserver(handleResize);
 
     if (open) {
+      if (floating) {
+        transformParent.current = getClosestElementByStyle(
+          popoverRef.current,
+          (style) => style.transform !== 'none'
+        );
+      }
       handleResize();
       window.addEventListener('resize', handleResize);
       if (dialogRef.current) {
@@ -181,7 +188,7 @@ export default function CarbonPopover({
       window.removeEventListener('resize', handleResize);
       observer.disconnect();
     };
-  }, [handleResize, open]);
+  }, [handleResize, open, floating]);
 
   const handleOutsideClick = (evt: Event) => {
     if (
@@ -248,10 +255,32 @@ export default function CarbonPopover({
   );
 }
 
-function getContainerBounds(popover: Element | null, elSelector = '.cds--modal-container') {
-  return popover?.closest(elSelector)?.getBoundingClientRect();
+function getClassName(alignment: PopoverAlignment) {
+  return 'cds--popover--' + alignment;
 }
 
-function getClassName(alignment: string) {
-  return 'cds--popover--' + alignment;
+function getScrollBounds(element: HTMLElement | null) {
+  if (!element) {
+    return getScreenBounds();
+  }
+
+  const scrollParent = getClosestElementByStyle(element, (style) => style.overflow !== 'visible');
+
+  return scrollParent?.getBoundingClientRect() || getScreenBounds();
+}
+
+function getClosestElementByStyle(
+  element: HTMLElement | null,
+  check: (style: CSSStyleDeclaration) => boolean
+) {
+  let currentNode = element;
+  while (currentNode) {
+    const computedStyle = window.getComputedStyle(currentNode);
+    if (check(computedStyle)) {
+      return currentNode;
+    }
+    currentNode = currentNode.parentElement;
+  }
+
+  return null;
 }

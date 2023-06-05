@@ -24,7 +24,7 @@ export {ActionItem} from './ActionItem';
 export {ShareEntity} from './ShareEntity';
 export {Switch} from './Switch';
 export {Popover} from './Popover';
-export {DashboardRenderer, DiagramScrollLock, gridEntryClassName} from './DashboardRenderer';
+export {DashboardRenderer, DiagramScrollLock} from './DashboardRenderer';
 export {DefinitionSelection, VersionPopover, TenantPopover} from './DefinitionSelection';
 export {TargetValueBadge} from './TargetValueBadge';
 export {ErrorPage} from './ErrorPage';

@@ -5,5 +5,5 @@
  * except in compliance with the proprietary license.
  */
 
-export {default as DashboardRenderer, gridEntryClassName} from './DashboardRenderer';
+export {default as DashboardRenderer} from './DashboardRenderer';
 export {default as DiagramScrollLock} from './DiagramScrollLock';
