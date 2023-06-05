@@ -81,7 +81,7 @@
     <version.micrometer>1.11.0</version.micrometer>
     <version.rocksdbjni>8.1.1.1</version.rocksdbjni>
     <version.sbe>1.28.2</version.sbe>
-    <version.scala>2.13.10</version.scala>
+    <version.scala>2.13.11</version.scala>
     <version.slf4j>2.0.7</version.slf4j>
     <version.snakeyaml>2.0</version.snakeyaml>
     <version.javax>1.3.2</version.javax>
