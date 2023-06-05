@@ -18,3 +18,4 @@ jobs:
       with:
         configuration-path: .github/issue-labeler.yml
         enable-versioned-regex: 0
+        repo-token: "${{ github.token }}"
