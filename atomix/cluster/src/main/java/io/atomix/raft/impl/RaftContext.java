@@ -208,7 +208,12 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
         .getLatestSnapshot()
         .ifPresent(persistedSnapshot -> currentSnapshot = persistedSnapshot);
     StateUtil.verifySnapshotLogConsistent(
-        getCurrentSnapshotIndex(), raftLog.getFirstIndex(), raftLog.isEmpty(), raftLog::reset, log);
+        partitionId,
+        getCurrentSnapshotIndex(),
+        raftLog.getFirstIndex(),
+        raftLog.isEmpty(),
+        raftLog::reset,
+        log);
 
     logCompactor =
         new LogCompactor(

@@ -32,7 +32,12 @@ class StateUtilTest {
         .isThrownBy(
             () ->
                 StateUtil.verifySnapshotLogConsistent(
-                    state.snapshotIndex(), state.firstIndex(), state.isLogEmpty(), i -> {}, LOG));
+                    1L,
+                    state.snapshotIndex(),
+                    state.firstIndex(),
+                    state.isLogEmpty(),
+                    i -> {},
+                    LOG));
   }
 
   @ParameterizedTest
@@ -42,6 +47,7 @@ class StateUtilTest {
         .isThrownBy(
             () ->
                 StateUtil.verifySnapshotLogConsistent(
+                    1L,
                     state.snapshotIndex(),
                     state.firstIndex(),
                     state.isLogEmpty(),
@@ -59,6 +65,7 @@ class StateUtilTest {
         .isThrownBy(
             () ->
                 StateUtil.verifySnapshotLogConsistent(
+                    1L,
                     state.snapshotIndex(),
                     state.firstIndex(),
                     state.isLogEmpty(),
