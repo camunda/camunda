@@ -283,7 +283,6 @@
     <dependency>
       <groupId>net.jcip</groupId>
       <artifactId>jcip-annotations</artifactId>
-      <scope>provided</scope>
     </dependency>
 
     <dependency>
