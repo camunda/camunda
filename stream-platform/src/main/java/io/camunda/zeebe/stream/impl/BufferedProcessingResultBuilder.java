@@ -8,6 +8,7 @@
 package io.camunda.zeebe.stream.impl;
 
 import io.camunda.zeebe.msgpack.UnpackedObject;
+import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RecordValue;
@@ -44,12 +45,7 @@ final class BufferedProcessingResultBuilder implements ProcessingResultBuilder {
 
   @Override
   public Either<RuntimeException, ProcessingResultBuilder> appendRecordReturnEither(
-      final long key,
-      final RecordType type,
-      final Intent intent,
-      final RejectionType rejectionType,
-      final String rejectionReason,
-      final RecordValue value) {
+      final long key, final RecordValue value, final RecordMetadata metadata) {
 
     final ValueType valueType = TypedEventRegistry.TYPE_REGISTRY.get(value.getClass());
     if (valueType == null) {
@@ -58,9 +54,9 @@ final class BufferedProcessingResultBuilder implements ProcessingResultBuilder {
     }
 
     if (value instanceof UnifiedRecordValue unifiedRecordValue) {
+      final var metadataWithValueType = metadata.valueType(valueType);
       final var either =
-          mutableRecordBatch.appendRecord(
-              key, -1, type, intent, rejectionType, rejectionReason, valueType, unifiedRecordValue);
+          mutableRecordBatch.appendRecord(key, metadataWithValueType, -1, unifiedRecordValue);
       if (either.isLeft()) {
         return Either.left(either.getLeft());
       }
@@ -85,9 +81,14 @@ final class BufferedProcessingResultBuilder implements ProcessingResultBuilder {
       final String rejectionReason,
       final long requestId,
       final int requestStreamId) {
-    final var entry =
-        RecordBatchEntry.createEntry(
-            key, -1, recordType, intent, rejectionType, rejectionReason, valueType, value);
+    final var metadata =
+        new RecordMetadata()
+            .recordType(recordType)
+            .intent(intent)
+            .rejectionType(rejectionType)
+            .rejectionReason(rejectionReason)
+            .valueType(valueType);
+    final var entry = RecordBatchEntry.createEntry(key, metadata, -1, value);
     processingResponse = new ProcessingResponseImpl(entry, requestId, requestStreamId);
     return this;
   }

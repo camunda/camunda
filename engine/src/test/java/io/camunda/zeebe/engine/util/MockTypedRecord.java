@@ -114,6 +114,11 @@ public final class MockTypedRecord<T extends UnifiedRecordValue> implements Type
   }
 
   @Override
+  public int getRecordVersion() {
+    return metadata.getRecordVersion();
+  }
+
+  @Override
   public ValueType getValueType() {
     return metadata.getValueType();
   }

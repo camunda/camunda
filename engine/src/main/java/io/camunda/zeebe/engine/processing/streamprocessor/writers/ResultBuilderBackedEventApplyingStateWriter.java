@@ -8,6 +8,7 @@
 package io.camunda.zeebe.engine.processing.streamprocessor.writers;
 
 import io.camunda.zeebe.engine.state.EventApplier;
+import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.RejectionType;
@@ -37,7 +38,13 @@ final class ResultBuilderBackedEventApplyingStateWriter extends AbstractResultBu
 
   @Override
   public void appendFollowUpEvent(final long key, final Intent intent, final RecordValue value) {
-    resultBuilder().appendRecord(key, RecordType.EVENT, intent, RejectionType.NULL_VAL, "", value);
+    final var metadata =
+        new RecordMetadata()
+            .recordType(RecordType.EVENT)
+            .intent(intent)
+            .rejectionType(RejectionType.NULL_VAL)
+            .rejectionReason("");
+    resultBuilder().appendRecord(key, value, metadata);
     eventApplier.applyState(key, intent, value);
   }
 

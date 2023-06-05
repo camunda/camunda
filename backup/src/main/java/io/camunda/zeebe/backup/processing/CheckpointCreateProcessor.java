@@ -11,6 +11,7 @@ import io.camunda.zeebe.backup.api.BackupManager;
 import io.camunda.zeebe.backup.api.CheckpointListener;
 import io.camunda.zeebe.backup.metrics.CheckpointMetrics;
 import io.camunda.zeebe.backup.processing.state.CheckpointState;
+import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.impl.record.value.management.CheckpointRecord;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RejectionType;
@@ -84,11 +85,12 @@ public final class CheckpointCreateProcessor {
       final ProcessingResultBuilder resultBuilder) {
     resultBuilder.appendRecord(
         command.getKey(),
-        RecordType.EVENT,
-        resultIntent,
-        RejectionType.NULL_VAL,
-        "",
-        checkpointRecord);
+        checkpointRecord,
+        new RecordMetadata()
+            .recordType(RecordType.EVENT)
+            .intent(resultIntent)
+            .rejectionType(RejectionType.NULL_VAL)
+            .rejectionReason(""));
 
     if (command.hasRequestMetadata()) {
       resultBuilder.withResponse(

@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.stream.impl;
 
+import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RejectionType;
@@ -41,9 +42,14 @@ public final class BufferedTaskResultBuilder implements TaskResultBuilder {
       throw new IllegalStateException("Missing value type mapping for record: " + value.getClass());
     }
 
-    final var either =
-        mutableRecordBatch.appendRecord(
-            key, -1, RecordType.COMMAND, intent, RejectionType.NULL_VAL, "", valueType, value);
+    final var metadata =
+        new RecordMetadata()
+            .recordType(RecordType.COMMAND)
+            .intent(intent)
+            .rejectionType(RejectionType.NULL_VAL)
+            .rejectionReason("")
+            .valueType(valueType);
+    final var either = mutableRecordBatch.appendRecord(key, metadata, -1, value);
 
     return either.isRight();
   }

@@ -130,6 +130,7 @@ final class JsonSerializableToJsonTest {
                   .intent(intent)
                   .protocolVersion(protocolVersion)
                   .brokerVersion(brokerVersion)
+                  .recordVersion(10)
                   .valueType(valueType)
                   .recordType(recordType)
                   .rejectionReason(rejectionReason)
@@ -167,7 +168,47 @@ final class JsonSerializableToJsonTest {
               return new CopiedRecord<>(
                   record, recordMetadata, key, 0, position, sourcePosition, timestamp);
             },
-        "{'valueType':'DEPLOYMENT','key':1234,'position':4321,'timestamp':2191,'recordType':'COMMAND','intent':'CREATE','partitionId':0,'rejectionType':'INVALID_ARGUMENT','rejectionReason':'fails','brokerVersion':'1.2.3','sourceRecordPosition':231,'value':{'processesMetadata':[{'version':12,'bpmnProcessId':'testProcess','resourceName':'resource','checksum':'Y2hlY2tzdW0=','processDefinitionKey':123, 'duplicate':false}],'resources':[{'resourceName':'resource','resource':'Y29udGVudHM='}],'decisionsMetadata':[],'decisionRequirementsMetadata':[]}}"
+        "{'valueType':'DEPLOYMENT','key':1234,'position':4321,'timestamp':2191,'recordType':'COMMAND','intent':'CREATE','partitionId':0,'rejectionType':'INVALID_ARGUMENT','rejectionReason':'fails','brokerVersion':'1.2.3','recordVersion':10,'sourceRecordPosition':231,'value':{'processesMetadata':[{'version':12,'bpmnProcessId':'testProcess','resourceName':'resource','checksum':'Y2hlY2tzdW0=','processDefinitionKey':123, 'duplicate':false}],'resources':[{'resourceName':'resource','resource':'Y29udGVudHM='}],'decisionsMetadata':[],'decisionRequirementsMetadata':[]}}"
+      },
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      /////////////////////////////////////// Empty Record ////////////////////////////////////////
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      new Object[] {
+        "Empty Record",
+        (Supplier<JsonSerializable>)
+            () -> {
+              final var record = new DeploymentRecord();
+              final var metadata = new RecordMetadata().brokerVersion(new VersionInfo(0, 0, 0));
+              final int key = -1;
+              final int partitionId = -1;
+              final int position = -1;
+              final int sourcePosition = -1;
+              final int timestamp = -1;
+              return new CopiedRecord<>(
+                  record, metadata, key, partitionId, position, sourcePosition, timestamp);
+            },
+        """
+      {
+          "key": -1,
+          "position": -1,
+          "sourceRecordPosition": -1,
+          "partitionId": -1,
+          "timestamp": -1,
+          "recordType": "NULL_VAL",
+          "valueType": "NULL_VAL",
+          "intent": null,
+          "rejectionType": "NULL_VAL",
+          "rejectionReason": "",
+          "brokerVersion": "0.0.0",
+          "recordVersion": 1,
+          "value": {
+              "resources": [],
+              "decisionRequirementsMetadata": [],
+              "processesMetadata": [],
+              "decisionsMetadata": []
+          }
+      }
+      """
       },
       /////////////////////////////////////////////////////////////////////////////////////////////
       //////////////////////////////////// DeploymentRecord ///////////////////////////////////////

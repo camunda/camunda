@@ -42,6 +42,9 @@
         "brokerVersion": {
           "type": "keyword"
         },
+        "recordVersion": {
+          "type": "integer"
+        },
         "sequence": {
           "type": "long"
         }

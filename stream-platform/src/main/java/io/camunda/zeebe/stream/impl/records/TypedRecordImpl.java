@@ -83,6 +83,11 @@ public final class TypedRecordImpl implements TypedRecord {
   }
 
   @Override
+  public int getRecordVersion() {
+    return metadata.getRecordVersion();
+  }
+
+  @Override
   public ValueType getValueType() {
     return metadata.getValueType();
   }

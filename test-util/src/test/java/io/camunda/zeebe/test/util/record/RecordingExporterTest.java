@@ -105,6 +105,11 @@ public final class RecordingExporterTest {
     }
 
     @Override
+    public int getRecordVersion() {
+      return 1;
+    }
+
+    @Override
     public ValueType getValueType() {
       return VALUE_TYPE;
     }

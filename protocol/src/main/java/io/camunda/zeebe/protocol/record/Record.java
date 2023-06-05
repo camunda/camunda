@@ -88,6 +88,18 @@ public interface Record<T extends RecordValue> extends JsonSerializable {
   String getBrokerVersion();
 
   /**
+   * A record version is an integer starting from 1. The version of a record is defined when it is
+   * written. It allows different versions of the same record to be processed or applied
+   * differently.
+   *
+   * <p>For example, it allows us to apply an older event in the same way as when it was originally
+   * written, while allowing newer events to be applied differently.
+   *
+   * @return the version of the record when written
+   */
+  int getRecordVersion();
+
+  /**
    * @return the type of the record (e.g. job, process, process instance, etc.)
    */
   ValueType getValueType();

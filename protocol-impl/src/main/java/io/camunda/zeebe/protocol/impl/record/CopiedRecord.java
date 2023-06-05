@@ -30,6 +30,7 @@ public final class CopiedRecord<T extends UnifiedRecordValue> implements Record<
   private final RejectionType rejectionType;
   private final String rejectionReason;
   private final String brokerVersion;
+  private final int recordVersion;
 
   public CopiedRecord(
       final T recordValue,
@@ -52,6 +53,7 @@ public final class CopiedRecord<T extends UnifiedRecordValue> implements Record<
     rejectionReason = metadata.getRejectionReason();
     valueType = metadata.getValueType();
     brokerVersion = metadata.getBrokerVersion().toString();
+    recordVersion = metadata.getRecordVersion();
   }
 
   private CopiedRecord(final CopiedRecord<T> copiedRecord) {
@@ -84,6 +86,7 @@ public final class CopiedRecord<T extends UnifiedRecordValue> implements Record<
     rejectionReason = copiedRecord.rejectionReason;
     valueType = copiedRecord.valueType;
     brokerVersion = copiedRecord.brokerVersion;
+    recordVersion = copiedRecord.recordVersion;
   }
 
   @Override
@@ -134,6 +137,11 @@ public final class CopiedRecord<T extends UnifiedRecordValue> implements Record<
   @Override
   public String getBrokerVersion() {
     return brokerVersion;
+  }
+
+  @Override
+  public int getRecordVersion() {
+    return recordVersion;
   }
 
   @Override
