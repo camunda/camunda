@@ -1,6 +1,7 @@
+Operate is a tool in Camunda 8 stack to provide visibility into all your processes and resolve any incident from a centralized platform. More information can be found on https://camunda.com/platform/operate/
 
-This Operate Trial Version is for testing and non-production use only.
-The General Terms and Conditions for the Operate Trial Version are available here: https://zeebe.io/legal/operate-evaluation-license/
+License
+The licensing information for Operate available at: https://docs.camunda.io/docs/reference/licenses/
 
 Login with the credentials:
   User:     demo
