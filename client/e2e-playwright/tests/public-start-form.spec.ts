@@ -16,7 +16,7 @@ test.describe('public start process', () => {
     ]);
     await page.goto('/new/subscribeFormProcess');
 
-    expect(page.getByLabel('Name').isVisible()).toBeTruthy();
+    await expect(page.getByLabel('Name')).toBeVisible();
 
     const results = await makeAxeBuilder().analyze();
 

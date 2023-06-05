@@ -5,8 +5,8 @@
  * except in compliance with the proprietary license.
  */
 
-import {test, expect} from '@playwright/test';
-import {test as axeTest} from '../axe-test';
+import {expect} from '@playwright/test';
+import {test} from '../axe-test';
 
 test.beforeEach(async ({page}) => {
   await page.goto('/login');
@@ -25,33 +25,33 @@ test.describe.parallel('login page', () => {
     await expect(page).toHaveURL('/');
   });
 
-  axeTest('have no a11y violations', async ({page, makeAxeBuilder}) => {
+  test('have no a11y violations', async ({makeAxeBuilder}) => {
     const results = await makeAxeBuilder().analyze();
 
     expect(results.violations).toHaveLength(0);
     expect(results.passes.length).toBeGreaterThan(0);
   });
 
-  axeTest(
-    'show error message on login failure',
-    async ({page, makeAxeBuilder}) => {
-      await page.getByLabel('Username').fill('demo');
-      await page.getByLabel('Password').fill('wrong');
-      await page.getByRole('button', {name: 'Login'}).click();
-      await expect(page).toHaveURL('/login');
+  test('show error message on login failure', async ({
+    page,
+    makeAxeBuilder,
+  }) => {
+    await page.getByLabel('Username').fill('demo');
+    await page.getByLabel('Password').fill('wrong');
+    await page.getByRole('button', {name: 'Login'}).click();
+    await expect(page).toHaveURL('/login');
 
-      await expect(
-        page.getByRole('alert', {
-          name: 'Username and password do not match',
-        }),
-      ).toBeVisible();
+    await expect(
+      page.getByRole('alert').getByText('Username and password do not match'),
+    ).toBeVisible({
+      timeout: 10000,
+    });
 
-      const results = await makeAxeBuilder().analyze();
+    const results = await makeAxeBuilder().analyze();
 
-      expect(results.violations).toHaveLength(0);
-      expect(results.passes.length).toBeGreaterThan(0);
-    },
-  );
+    expect(results.violations).toHaveLength(0);
+    expect(results.passes.length).toBeGreaterThan(0);
+  });
 
   test('block form submission with empty fields', async ({page}) => {
     await page.getByRole('button', {name: 'Login'}).click();

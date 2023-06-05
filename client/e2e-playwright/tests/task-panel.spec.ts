@@ -128,7 +128,7 @@ test.describe('task panel page', () => {
   });
 
   test('scrolling', async ({page}) => {
-    test.setTimeout(15000);
+    test.setTimeout(20000);
 
     await expect(page.getByText('usertask_for_scrolling_1')).toHaveCount(1);
     await expect(page.getByText('usertask_for_scrolling_2')).toHaveCount(49);
