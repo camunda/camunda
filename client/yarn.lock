@@ -1114,15 +1114,15 @@
     "@codemirror/language" "^6.2.1"
     lezer-feel "^0.15.0"
 
-"@bpmn-io/form-js-carbon-styles@1.0.0-alpha.1":
-  version "1.0.0-alpha.1"
-  resolved "https://registry.yarnpkg.com/@bpmn-io/form-js-carbon-styles/-/form-js-carbon-styles-1.0.0-alpha.1.tgz#9e1e6129a78c0f4275539a12bf29395c5d2edbbc"
-  integrity sha512-BUjCl5rL2LGE05JX2qZ/aSQFEA07yXH4drbiT8ErhPB7SzpjnYvWkMt1161PC04q8X8seJochqs83JIIKlBo+A==
+"@bpmn-io/form-js-carbon-styles@1.0.0-alpha.5":
+  version "1.0.0-alpha.5"
+  resolved "https://registry.yarnpkg.com/@bpmn-io/form-js-carbon-styles/-/form-js-carbon-styles-1.0.0-alpha.5.tgz#559b3c28b45affc3eacd6d8f1b66b799fa1fd916"
+  integrity sha512-PnIO+QEFcJiX/xzzLEtb/a+eiuJyzmZpa9231TxUc5cS7ET4uPPlpI7DNAVnBwGHXd4xHDeWdVkrG8FAg9iiuA==
 
-"@bpmn-io/form-js-viewer@1.0.0-alpha.1":
-  version "1.0.0-alpha.1"
-  resolved "https://registry.yarnpkg.com/@bpmn-io/form-js-viewer/-/form-js-viewer-1.0.0-alpha.1.tgz#3636a847ead17a8fb897ec71bce5284b73945b19"
-  integrity sha512-E+tcLQ1YFX6x42dMiEBDtP69DhHYejEzNsJppV2fnbOMwlNQ/Lk98cQMk9bL55zdPBSlWp69odH+8kQEstjUYQ==
+"@bpmn-io/form-js-viewer@1.0.0-alpha.5":
+  version "1.0.0-alpha.5"
+  resolved "https://registry.yarnpkg.com/@bpmn-io/form-js-viewer/-/form-js-viewer-1.0.0-alpha.5.tgz#001791013cfbf61b7703c2caeca8abe29a307813"
+  integrity sha512-RE5IAxQZEPdCwrT67LnfCvXt/4ZWI+5Fw2Ufu2ZY0rFU9WVOVTnqyLYjObSutkIHgZAoo36KyWd4ls7puHuf6g==
   dependencies:
     "@carbon/grid" "^11.11.0"
     big.js "^6.2.1"
