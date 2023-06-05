@@ -34,14 +34,12 @@ test.describe('start process from form page', () => {
       waitUntil: 'networkidle',
     });
 
-    expect(
-      await page
-        .getByRole('heading', {
-          name: 'A big form',
-        })
-        .isVisible(),
-    ).toBeTruthy();
-    expect(page.getByText('Title 1').isVisible()).toBeTruthy();
+    await expect(
+      page.getByRole('heading', {
+        name: 'A big form',
+      }),
+    ).toBeVisible();
+    await expect(page.getByText('Title 1')).toBeVisible();
 
     await expect(page).toHaveScreenshot();
   });
@@ -101,13 +99,11 @@ test.describe('start process from form page', () => {
       waitUntil: 'networkidle',
     });
 
-    expect(
-      await page
-        .getByRole('heading', {
-          name: 'Invalid form',
-        })
-        .isVisible(),
-    ).toBeTruthy();
+    await expect(
+      page.getByRole('heading', {
+        name: 'Invalid form',
+      }),
+    ).toBeVisible();
 
     await expect(page).toHaveScreenshot();
   });
@@ -152,13 +148,11 @@ test.describe('start process from form page', () => {
     await page.getByLabel('Email').fill('joe@doe.com');
     await page.getByRole('button', {name: 'Save'}).click();
 
-    expect(
-      await page
-        .getByRole('heading', {
-          name: 'Success!',
-        })
-        .isVisible(),
-    ).toBeTruthy();
+    await expect(
+      page.getByRole('heading', {
+        name: 'Success!',
+      }),
+    ).toBeVisible();
 
     await expect(page).toHaveScreenshot();
   });
@@ -201,13 +195,11 @@ test.describe('start process from form page', () => {
     await page.getByLabel('Email').fill('joe@doe.com');
     await page.getByRole('button', {name: 'Save'}).click();
 
-    expect(
-      await page
-        .getByRole('heading', {
-          name: 'Something went wrong',
-        })
-        .isVisible(),
-    ).toBeTruthy();
+    await expect(
+      page.getByRole('heading', {
+        name: 'Something went wrong',
+      }),
+    ).toBeVisible();
 
     await expect(page).toHaveScreenshot();
   });

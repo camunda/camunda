@@ -18,8 +18,8 @@ test.describe.parallel('login page', () => {
       'password',
     );
 
-    await page.getByPlaceholder('Username').fill('demo');
-    await page.getByPlaceholder('Password').fill('demo');
+    await page.getByLabel('Username').fill('demo');
+    await page.getByLabel('Password').fill('demo');
     await page.getByRole('button', {name: 'Login'}).click();
 
     await expect(page).toHaveURL('/');
@@ -35,18 +35,16 @@ test.describe.parallel('login page', () => {
   axeTest(
     'show error message on login failure',
     async ({page, makeAxeBuilder}) => {
-      await page.getByPlaceholder('Username').fill('demo');
-      await page.getByPlaceholder('Password').fill('wrong');
+      await page.getByLabel('Username').fill('demo');
+      await page.getByLabel('Password').fill('wrong');
       await page.getByRole('button', {name: 'Login'}).click();
       await expect(page).toHaveURL('/login');
 
-      expect(
-        page
-          .getByRole('alert', {
-            name: 'Username and password do not match',
-          })
-          .isVisible(),
-      ).toBeTruthy();
+      await expect(
+        page.getByRole('alert', {
+          name: 'Username and password do not match',
+        }),
+      ).toBeVisible();
 
       const results = await makeAxeBuilder().analyze();
 
@@ -58,18 +56,18 @@ test.describe.parallel('login page', () => {
   test('block form submission with empty fields', async ({page}) => {
     await page.getByRole('button', {name: 'Login'}).click();
     await expect(page).toHaveURL('/login');
-    await page.getByPlaceholder('Username').fill('demo');
+    await page.getByLabel('Username').fill('demo');
     await page.getByRole('button', {name: 'Login'}).click();
     await expect(page).toHaveURL('/login');
-    await page.getByPlaceholder('Username').fill(' ');
-    await page.getByPlaceholder('Password').fill('demo');
+    await page.getByLabel('Username').fill(' ');
+    await page.getByLabel('Password').fill('demo');
     await page.getByRole('button', {name: 'Login'}).click();
     await expect(page).toHaveURL('/login');
   });
 
   test('log out redirect', async ({page}) => {
-    await page.getByPlaceholder('Username').fill('demo');
-    await page.getByPlaceholder('Password').fill('demo');
+    await page.getByLabel('Username').fill('demo');
+    await page.getByLabel('Password').fill('demo');
     await page.getByRole('button', {name: 'Login'}).click();
     await expect(page).toHaveURL('/');
     await page.getByRole('button', {name: 'Open Settings'}).click();
@@ -78,8 +76,8 @@ test.describe.parallel('login page', () => {
   });
 
   test('persistency of a session', async ({page}) => {
-    await page.getByPlaceholder('Username').fill('demo');
-    await page.getByPlaceholder('Password').fill('demo');
+    await page.getByLabel('Username').fill('demo');
+    await page.getByLabel('Password').fill('demo');
     await page.getByRole('button', {name: 'Login'}).click();
     await expect(page).toHaveURL('/');
     await page.reload();
@@ -88,24 +86,24 @@ test.describe.parallel('login page', () => {
 
   test('redirect to the correct URL after login', async ({page}) => {
     await page.goto('/123');
-    await page.getByPlaceholder('Username').fill('demo');
-    await page.getByPlaceholder('Password').fill('demo');
+    await page.getByLabel('Username').fill('demo');
+    await page.getByLabel('Password').fill('demo');
     await page.getByRole('button', {name: 'Login'}).click();
     await expect(page).toHaveURL('/123');
     await page.getByRole('button', {name: 'Open Settings'}).click();
     await page.getByRole('button', {name: 'Log out'}).click();
 
     await page.goto('/?filter=unassigned');
-    await page.getByPlaceholder('Username').fill('demo');
-    await page.getByPlaceholder('Password').fill('demo');
+    await page.getByLabel('Username').fill('demo');
+    await page.getByLabel('Password').fill('demo');
     await page.getByRole('button', {name: 'Login'}).click();
     await expect(page).toHaveURL('/?filter=unassigned');
     await page.getByRole('button', {name: 'Open Settings'}).click();
     await page.getByRole('button', {name: 'Log out'}).click();
 
     await page.goto('/123?filter=unassigned');
-    await page.getByPlaceholder('Username').fill('demo');
-    await page.getByPlaceholder('Password').fill('demo');
+    await page.getByLabel('Username').fill('demo');
+    await page.getByLabel('Password').fill('demo');
     await page.getByRole('button', {name: 'Login'}).click();
     await expect(page).toHaveURL('/123?filter=unassigned');
     await page.getByRole('button', {name: 'Open Settings'}).click();
