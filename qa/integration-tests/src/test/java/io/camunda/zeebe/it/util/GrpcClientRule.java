@@ -22,7 +22,7 @@ import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.builder.ServiceTaskBuilder;
 import io.camunda.zeebe.protocol.record.Record;
-import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
+import io.camunda.zeebe.protocol.record.intent.CommandDistributionIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.netty.util.NetUtil;
@@ -106,7 +106,8 @@ public final class GrpcClientRule extends ExternalResource {
   public void waitUntilDeploymentIsDone(final long key) {
     waitUntil(
         () ->
-            RecordingExporter.deploymentRecords(DeploymentIntent.FULLY_DISTRIBUTED)
+            RecordingExporter.commandDistributionRecords()
+                .withIntent(CommandDistributionIntent.FINISHED)
                 .withRecordKey(key)
                 .exists());
   }

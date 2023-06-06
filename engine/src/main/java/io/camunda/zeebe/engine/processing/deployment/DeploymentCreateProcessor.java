@@ -142,7 +142,7 @@ public final class DeploymentCreateProcessor implements TypedRecordProcessor<Dep
     responseWriter.writeEventOnCommand(key, DeploymentIntent.CREATED, deploymentEvent, command);
     stateWriter.appendFollowUpEvent(key, DeploymentIntent.CREATED, deploymentEvent, 2);
 
-    distributionBehavior.distributeCommand(command);
+    distributionBehavior.distributeCommand(key, command);
   }
 
   private void processDistributedRecord(final TypedRecord<DeploymentRecord> command) {

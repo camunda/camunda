@@ -48,7 +48,15 @@ public final class CommandDistributionBehavior {
     currentPartitionId = currentPartition;
   }
 
-  public <T extends UnifiedRecordValue> void distributeCommand(final TypedRecord<T> command) {
+  /**
+   * Distributes a command to the other partitions
+   *
+   * @param distributionKey the key which is used for the distribution. This could either be a new
+   *     key, but it could also be the key of the entity that's getting distributed.
+   * @param command the command that needs to be distributed
+   */
+  public <T extends UnifiedRecordValue> void distributeCommand(
+      final long distributionKey, final TypedRecord<T> command) {
     if (otherPartitions.isEmpty()) {
       return;
     }
@@ -60,7 +68,6 @@ public final class CommandDistributionBehavior {
             .setIntent(command.getIntent())
             .setRecordValue(command.getValue());
 
-    final long distributionKey = keyGenerator.nextKey();
     stateWriter.appendFollowUpEvent(
         distributionKey, CommandDistributionIntent.STARTED, distributionRecord);
 
