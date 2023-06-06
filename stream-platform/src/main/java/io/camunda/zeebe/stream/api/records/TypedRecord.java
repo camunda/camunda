@@ -12,6 +12,7 @@ import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordMetadataEncoder;
+import io.camunda.zeebe.protocol.record.RecordType;
 
 public interface TypedRecord<T extends UnifiedRecordValue> extends Record<T> {
 
@@ -43,7 +44,8 @@ public interface TypedRecord<T extends UnifiedRecordValue> extends Record<T> {
    */
   @JsonIgnore
   default boolean isCommandDistributed() {
+    final boolean isCommand = getRecordType().equals(RecordType.COMMAND);
     final long key = getKey();
-    return key != -1 && Protocol.decodePartitionId(key) != getPartitionId();
+    return isCommand && key != -1 && Protocol.decodePartitionId(key) != getPartitionId();
   }
 }
