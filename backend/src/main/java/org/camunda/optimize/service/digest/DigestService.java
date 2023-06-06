@@ -167,8 +167,10 @@ public class DigestService implements ConfigurationReloadable {
   }
 
   private void sendDigestAndUpdateLatestKpiResults(final ProcessOverviewDto overviewDto) {
-    final List<KpiResultDto> currentKpiReportResults = kpiService.extractKpiResultsForProcessDefinition(overviewDto,
-                                                                                                        DEFAULT_LOCALE);
+    final List<KpiResultDto> currentKpiReportResults = kpiService.extractKpiResultsForProcessDefinition(
+      overviewDto,
+      DEFAULT_LOCALE
+    );
 
     try {
       composeAndSendDigestEmail(overviewDto, currentKpiReportResults);
@@ -293,12 +295,14 @@ public class DigestService implements ConfigurationReloadable {
     return currentKpiReportResults.stream()
       .map(kpiResult -> {
         final Optional<ReportDefinitionDto> reportDefinition = reportReader.getReport(kpiResult.getReportId());
-        log.error(
-          "Report [{}] could not be retrieved for creation of digest email for process [{}] because report no longer exists. " +
-            "This report will be excluded from the digest",
-          kpiResult.getReportId(),
-          processDefinitionName
-        );
+        if (reportDefinition.isEmpty()) {
+          log.error(
+            "Report [{}] could not be retrieved for creation of digest email for process [{}] because report no longer exists. " +
+              "This report will be excluded from the digest.",
+            kpiResult.getReportId(),
+            processDefinitionName
+          );
+        }
         return Tuple.tuple(reportDefinition, kpiResult);
       })
       .filter(kpiReportResultTuple -> kpiReportResultTuple.v1().isPresent())
@@ -361,6 +365,9 @@ public class DigestService implements ConfigurationReloadable {
     }
 
     private String getKpiValueString(final String value, final ViewProperty kpiMeasure) {
+      if (Optional.ofNullable(value).isEmpty()) {
+        return "NA";
+      }
       if (ViewProperty.DURATION.equals(kpiMeasure)) {
         return DurationFormatterUtil.formatMilliSecondsToReadableDurationString((long) Double.parseDouble(value));
       } else if (ViewProperty.PERCENTAGE.equals(kpiMeasure)) {
