@@ -13,6 +13,7 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.impl.record.value.distribution.CommandDistributionRecord;
+import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.CommandDistributionIntent;
 import io.camunda.zeebe.stream.api.InterPartitionCommandSender;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
@@ -27,6 +28,7 @@ public final class CommandDistributionBehavior {
   private final List<Integer> otherPartitions;
   private final InterPartitionCommandSender interPartitionCommandSender;
   private final KeyGenerator keyGenerator;
+  private final int currentPartitionId;
 
   public CommandDistributionBehavior(
       final Writers writers,
@@ -43,40 +45,69 @@ public final class CommandDistributionBehavior {
             .filter(partition -> partition != currentPartition)
             .boxed()
             .toList();
+    currentPartitionId = currentPartition;
   }
 
   public <T extends UnifiedRecordValue> void distributeCommand(final TypedRecord<T> command) {
+    if (otherPartitions.isEmpty()) {
+      return;
+    }
+
     final var distributionRecord =
         new CommandDistributionRecord()
+            .setPartitionId(currentPartitionId)
             .setValueType(command.getValueType())
             .setRecordValue(command.getValue());
 
+    final long distributionKey = keyGenerator.nextKey();
     stateWriter.appendFollowUpEvent(
-        command.getKey(), CommandDistributionIntent.STARTED, distributionRecord);
+        distributionKey, CommandDistributionIntent.STARTED, distributionRecord);
 
-    final long key = keyGenerator.nextKey();
+    final var valueType = distributionRecord.getValueType();
+    final var commandValue = distributionRecord.getCommandValue();
     otherPartitions.forEach(
-        (partition) -> distributeToPartition(command, partition, distributionRecord, key));
+        (partition) ->
+            distributeToPartition(command, partition, valueType, commandValue, distributionKey));
   }
 
   private <T extends UnifiedRecordValue> void distributeToPartition(
       final TypedRecord<T> command,
       final int partition,
-      final CommandDistributionRecord distributionRecord,
-      final long key) {
+      final ValueType valueType,
+      final UnifiedRecordValue commandValue,
+      final long distributionKey) {
     // We don't need the actual record in the DISTRIBUTING event applier. In order to prevent
     // reaching the max message size we don't set the record value here.
     stateWriter.appendFollowUpEvent(
-        command.getKey(),
+        distributionKey,
         CommandDistributionIntent.DISTRIBUTING,
-        new CommandDistributionRecord()
-            .setPartitionId(partition)
-            .setValueType(distributionRecord.getValueType()));
+        new CommandDistributionRecord().setPartitionId(partition).setValueType(valueType));
 
     sideEffectWriter.appendSideEffect(
         () -> {
           interPartitionCommandSender.sendCommand(
-              partition, command.getValueType(), command.getIntent(), key, command.getValue());
+              partition,
+              command.getValueType(),
+              command.getIntent(),
+              distributionKey,
+              commandValue);
+          return true;
+        });
+  }
+
+  public <T extends UnifiedRecordValue> void acknowledgeCommand(final long distributionKey) {
+    final var distributionRecord =
+        new CommandDistributionRecord().setPartitionId(currentPartitionId);
+
+    final int receiverPartitionId = Protocol.decodePartitionId(distributionKey);
+    sideEffectWriter.appendSideEffect(
+        () -> {
+          interPartitionCommandSender.sendCommand(
+              receiverPartitionId,
+              ValueType.COMMAND_DISTRIBUTION,
+              CommandDistributionIntent.ACKNOWLEDGE,
+              distributionKey,
+              distributionRecord);
           return true;
         });
   }

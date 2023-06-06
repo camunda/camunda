@@ -35,7 +35,7 @@ public class CommandValueAndValueTypeWrapper extends UnpackedObject implements D
       final CommandDistributionRecord commandDistributionRecord) {
     valueTypeProperty.setValue(commandDistributionRecord.getValueType());
 
-    final var commandValue = (UnifiedRecordValue) commandDistributionRecord.getCommandValue();
+    final var commandValue = commandDistributionRecord.getCommandValue();
     final var valueBuffer = new UnsafeBuffer(0, 0);
     final int encodedLength = commandValue.getLength();
     valueBuffer.wrap(new byte[encodedLength]);
