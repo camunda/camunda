@@ -27,19 +27,14 @@ public class ErrorTransformer implements ModelElementTransformer<Error> {
 
     final var error = new ExecutableError(element.getId());
     final var expressionLanguage = context.getExpressionLanguage();
+    final var errorCode = Optional.ofNullable(element.getErrorCode()).orElse("");
+    final Expression errorCodeExpression = expressionLanguage.parseExpression(errorCode);
 
-    // ignore error events that are not references by the process
-    Optional.ofNullable(element.getErrorCode())
-        .ifPresent(
-            errorCode -> {
-              final Expression errorCodeExpression = expressionLanguage.parseExpression(errorCode);
+    error.setErrorCodeExpression(errorCodeExpression);
+    if (errorCodeExpression.isStatic()) {
+      error.setErrorCode(BufferUtil.wrapString(errorCode));
+    }
 
-              error.setErrorCodeExpression(errorCodeExpression);
-              if (errorCodeExpression.isStatic()) {
-                error.setErrorCode(BufferUtil.wrapString(element.getErrorCode()));
-              }
-
-              context.addError(error);
-            });
+    context.addError(error);
   }
 }
