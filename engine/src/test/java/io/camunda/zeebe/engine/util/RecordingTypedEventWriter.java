@@ -8,6 +8,7 @@
 package io.camunda.zeebe.engine.util;
 
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedEventWriter;
+import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import java.util.List;
@@ -28,7 +29,13 @@ public final class RecordingTypedEventWriter implements TypedEventWriter {
 
   @Override
   public void appendFollowUpEvent(final long key, final Intent intent, final RecordValue value) {
-    events.add(new RecordedEvent<>(key, intent, value));
+    appendFollowUpEvent(key, intent, value, RecordMetadata.DEFAULT_RECORD_VERSION);
+  }
+
+  @Override
+  public void appendFollowUpEvent(
+      final long key, final Intent intent, final RecordValue value, final int recordVersion) {
+    events.add(new RecordedEvent<>(key, intent, value, recordVersion));
   }
 
   @Override
@@ -41,16 +48,28 @@ public final class RecordingTypedEventWriter implements TypedEventWriter {
     public final long key;
     public final Intent intent;
     public final T value;
+    private final int recordVersion;
 
-    public RecordedEvent(final long key, final Intent intent, final T value) {
+    public RecordedEvent(
+        final long key, final Intent intent, final T value, final int recordVersion) {
       this.key = key;
       this.intent = intent;
       this.value = (T) Records.cloneValue(value);
+      this.recordVersion = recordVersion;
     }
 
     @Override
     public String toString() {
-      return "RecordedEvent{" + "key=" + key + ", intent=" + intent + ", value=" + value + '}';
+      return "RecordedEvent{"
+          + "key="
+          + key
+          + ", intent="
+          + intent
+          + ", value="
+          + value
+          + ", recordVersion="
+          + recordVersion
+          + '}';
     }
   }
 }

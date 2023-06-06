@@ -56,7 +56,8 @@ public final class MessageStreamProcessorTest {
     mockInterpartitionCommandSender = mock(InterPartitionCommandSender.class);
     final var mockProcessingResultBuilder = mock(ProcessingResultBuilder.class);
     final var writers =
-        new Writers(() -> mockProcessingResultBuilder, (key, intent, recordValue) -> {});
+        new Writers(
+            () -> mockProcessingResultBuilder, (key, intent, recordValue, recordVersion) -> {});
     spySubscriptionCommandSender =
         spy(new SubscriptionCommandSender(1, mockInterpartitionCommandSender));
     spySubscriptionCommandSender.setWriters(writers);

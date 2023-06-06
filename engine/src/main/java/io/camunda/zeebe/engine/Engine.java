@@ -79,7 +79,7 @@ public class Engine implements RecordProcessor {
             recordProcessorContext.getKeyGenerator());
     final var scheduledTaskDbState = new ScheduledTaskDbState(zeebeDb, zeebeDb.createContext());
 
-    eventApplier = new EventAppliers(processingState);
+    eventApplier = new EventAppliers().registerEventAppliers(processingState);
 
     writers = new Writers(resultBuilderMutex, eventApplier);
 
@@ -107,7 +107,8 @@ public class Engine implements RecordProcessor {
 
   @Override
   public void replay(final TypedRecord event) {
-    eventApplier.applyState(event.getKey(), event.getIntent(), event.getValue());
+    eventApplier.applyState(
+        event.getKey(), event.getIntent(), event.getValue(), event.getRecordVersion());
   }
 
   @Override

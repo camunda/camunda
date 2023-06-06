@@ -11,6 +11,7 @@ import io.camunda.zeebe.engine.state.EventApplier;
 import io.camunda.zeebe.engine.state.TypedEventApplier;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessMessageSubscriptionState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
+import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.intent.CommandDistributionIntent;
 import io.camunda.zeebe.protocol.record.intent.DecisionIntent;
@@ -48,9 +49,9 @@ public final class EventAppliers implements EventApplier {
   private static final Function<Intent, TypedEventApplier<?, ?>> UNIMPLEMENTED_EVENT_APPLIER =
       intent -> (key, value) -> {};
 
-  private final Map<Intent, TypedEventApplier> mapping = new HashMap<>();
+  private final Map<IntentAndVersion, TypedEventApplier> mapping = new HashMap<>();
 
-  public EventAppliers(final MutableProcessingState state) {
+  public EventAppliers registerEventAppliers(final MutableProcessingState state) {
     registerProcessInstanceEventAppliers(state);
     registerProcessInstanceCreationAppliers(state);
     registerProcessInstanceModificationAppliers(state);
@@ -77,6 +78,7 @@ public final class EventAppliers implements EventApplier {
     registerSignalSubscriptionAppliers(state);
 
     registerCommandDistributionAppliers(state);
+    return this;
   }
 
   private void registerTimeEventAppliers(final MutableProcessingState state) {
@@ -293,13 +295,22 @@ public final class EventAppliers implements EventApplier {
   }
 
   private <I extends Intent> void register(final I intent, final TypedEventApplier<I, ?> applier) {
-    mapping.put(intent, applier);
+    register(intent, RecordMetadata.DEFAULT_RECORD_VERSION, applier);
+  }
+
+  <I extends Intent> void register(
+      final I intent, final int version, final TypedEventApplier<I, ?> applier) {
+    mapping.put(new IntentAndVersion(intent, version), applier);
   }
 
   @Override
-  public void applyState(final long key, final Intent intent, final RecordValue value) {
+  public void applyState(
+      final long key, final Intent intent, final RecordValue value, final int recordVersion) {
     final var eventApplier =
-        mapping.getOrDefault(intent, UNIMPLEMENTED_EVENT_APPLIER.apply(intent));
+        mapping.getOrDefault(
+            new IntentAndVersion(intent, recordVersion), UNIMPLEMENTED_EVENT_APPLIER.apply(intent));
     eventApplier.applyState(key, value);
   }
+
+  record IntentAndVersion(Intent intent, int version) {}
 }

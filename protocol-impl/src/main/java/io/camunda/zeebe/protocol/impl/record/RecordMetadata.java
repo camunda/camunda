@@ -30,10 +30,10 @@ import org.agrona.concurrent.UnsafeBuffer;
 public final class RecordMetadata implements BufferWriter, BufferReader {
   public static final int BLOCK_LENGTH =
       MessageHeaderEncoder.ENCODED_LENGTH + RecordMetadataEncoder.BLOCK_LENGTH;
+  public static final int DEFAULT_RECORD_VERSION = 1;
 
   private static final VersionInfo CURRENT_BROKER_VERSION =
       VersionInfo.parse(VersionUtil.getVersion());
-  private static final int DEFAULT_RECORD_VERSION = 1;
 
   private final MessageHeaderEncoder headerEncoder = new MessageHeaderEncoder();
   private final MessageHeaderDecoder headerDecoder = new MessageHeaderDecoder();
@@ -87,7 +87,8 @@ public final class RecordMetadata implements BufferWriter, BufferReader {
             .orElse(VersionInfo.UNKNOWN);
 
     final int decodedRecordVersion = decoder.recordVersion();
-    if (decodedRecordVersion == RecordMetadataDecoder.recordVersionNullValue()) {
+    if (decodedRecordVersion == 0
+        || decodedRecordVersion == RecordMetadataDecoder.recordVersionNullValue()) {
       recordVersion = DEFAULT_RECORD_VERSION;
     } else {
       recordVersion = decodedRecordVersion;

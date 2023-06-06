@@ -53,7 +53,8 @@ public class SubscriptionCommandSenderTest {
         new SubscriptionCommandSender(SAME_PARTITION, mockInterPartitionCommandSender);
     mockProcessingResultBuilder = mock(ProcessingResultBuilder.class);
     final var writers =
-        new Writers(() -> mockProcessingResultBuilder, (key, intent, recordValue) -> {});
+        new Writers(
+            () -> mockProcessingResultBuilder, (key, intent, recordValue, recordVersion) -> {});
     subscriptionCommandSender.setWriters(writers);
   }
 
