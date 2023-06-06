@@ -56,7 +56,7 @@ public class DataGenerator {
   private static final int ALL_DRAFT_TASK_VARIABLES_COUNT = PROCESS_INSTANCE_COUNT * 2;
   private static final int COMPLETED_TASKS_COUNT = 11;
   private static final int DRAFT_TASK_VARIABLES_COUNT_AFTER_TASKS_COMPLETION =
-      ALL_DRAFT_TASK_VARIABLES_COUNT - PROCESS_INSTANCE_COUNT * 2;
+      ALL_DRAFT_TASK_VARIABLES_COUNT - COMPLETED_TASKS_COUNT * 2;
   private static final Logger LOGGER = LoggerFactory.getLogger(DataGenerator.class);
   //  private static final DateTimeFormatter ARCHIVER_DATE_TIME_FORMATTER =
   // DateTimeFormatter.ofPattern("yyyy-MM-dd").withZone(ZoneId.systemDefault());
