@@ -1329,3 +1329,22 @@ test('add, edit and remove reports description', async (t) => {
 
   await t.expect(Common.descriptionField.exists).notOk();
 });
+
+test('change popover alignment and height to stay visible', async (t) => {
+  await u.createNewReport(t);
+  await u.selectReportDefinition(t, 'Invoice Receipt with alternative correlation variable');
+
+  await t.click(e.definitionEditor);
+
+  // alignment
+  await t.expect(e.definitionEditorPopover.hasClass('cds--popover--bottom-right')).ok();
+
+  // height adjustment
+  await t.resizeWindow(1200, 600);
+  const dialogHeight = await e.definitionEditorDialog.getStyleProperty('height');
+  await t.expect(Number(dialogHeight.replace('px', ''))).lt(300);
+
+  // vertical flip
+  await t.resizeWindow(1200, 300);
+  await t.expect(e.definitionEditorPopover.hasClass('cds--popover--top-right')).ok();
+});
