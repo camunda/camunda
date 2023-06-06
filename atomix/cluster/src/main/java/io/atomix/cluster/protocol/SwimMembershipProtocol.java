@@ -36,6 +36,7 @@ import io.atomix.utils.net.Address;
 import io.atomix.utils.serializer.Namespace;
 import io.atomix.utils.serializer.Namespaces;
 import io.atomix.utils.serializer.Serializer;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -68,7 +69,13 @@ public class SwimMembershipProtocol
     implements GroupMembershipProtocol {
 
   public static final Type TYPE = new Type();
-  private static final Logger LOGGER = LoggerFactory.getLogger(SwimMembershipProtocol.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger("io.atomix.cluster.protocol.swim");
+  private static final Logger GOSSIP_LOGGER =
+      LoggerFactory.getLogger("io.atomix.cluster.protocol.swim.gossip");
+  private static final Logger PROBE_LOGGER =
+      LoggerFactory.getLogger("io.atomix.cluster.protocol.swim.probe");
+  private static final Logger SYNC_LOGGER =
+      LoggerFactory.getLogger("io.atomix.cluster.protocol.swim.sync");
   private static final String MEMBERSHIP_SYNC = "atomix-membership-sync";
   private static final String MEMBERSHIP_GOSSIP = "atomix-membership-gossip";
   private static final String MEMBERSHIP_PROBE = "atomix-membership-probe";
@@ -233,17 +240,21 @@ public class SwimMembershipProtocol
 
     // If the local member is not present, add the member in the ALIVE state.
     if (swimMember == null) {
-      LOGGER.trace("Member not exist yet {}", member);
       if (member.state() == State.ALIVE) {
         swimMember = new SwimMember(member);
         members.put(swimMember.id(), swimMember);
         randomMembers.add(swimMember);
         Collections.shuffle(randomMembers);
-        LOGGER.debug("{} - Member added {}", localMember.id(), swimMember);
+        LOGGER.info("{} - Member added {}", localMember.id(), swimMember);
         swimMember.setState(State.ALIVE);
         post(new GroupMembershipEvent(GroupMembershipEvent.Type.MEMBER_ADDED, swimMember.copy()));
         recordUpdate(swimMember.copy());
         return true;
+      } else {
+        LOGGER.info(
+            "{} - Ignoring update about not alive member {}. Member is already removed.",
+            localMember.id(),
+            member);
       }
       return false;
     }
@@ -259,7 +270,7 @@ public class SwimMembershipProtocol
         members.put(member.id(), swimMember);
         randomMembers.add(swimMember);
         Collections.shuffle(randomMembers);
-        LOGGER.debug("{} - Evicted member for new version {}", localMember.id(), swimMember);
+        LOGGER.info("{} - Evicted member for new version {}", localMember.id(), swimMember);
         post(new GroupMembershipEvent(GroupMembershipEvent.Type.MEMBER_ADDED, swimMember.copy()));
         recordUpdate(swimMember.copy());
       } else {
@@ -302,7 +313,7 @@ public class SwimMembershipProtocol
 
       // If the updated state is SUSPECT, post a REACHABILITY_CHANGED event and record an update.
       if (member.state() == State.SUSPECT) {
-        LOGGER.debug("{} - Member unreachable {}", localMember.id(), swimMember);
+        LOGGER.info("{} - Member unreachable {}", localMember.id(), swimMember);
         post(
             new GroupMembershipEvent(
                 GroupMembershipEvent.Type.REACHABILITY_CHANGED, swimMember.copy()));
@@ -325,7 +336,7 @@ public class SwimMembershipProtocol
   private void triggerReachabilityEventOnDeath(final SwimMember swimMember) {
     if (swimMember.getState() == State.ALIVE) {
       swimMember.setState(State.SUSPECT);
-      LOGGER.debug("{} - Member unreachable {}", localMember.id(), swimMember);
+      LOGGER.info("{} - Member unreachable {}", localMember.id(), swimMember);
       post(
           new GroupMembershipEvent(
               GroupMembershipEvent.Type.REACHABILITY_CHANGED, swimMember.copy()));
@@ -342,7 +353,7 @@ public class SwimMembershipProtocol
       post(new GroupMembershipEvent(GroupMembershipEvent.Type.METADATA_CHANGED, swimMember.copy()));
     }
     swimMember.setState(State.SUSPECT);
-    LOGGER.debug("{} - Member unreachable {}", localMember.id(), swimMember);
+    LOGGER.info("{} - Member unreachable {}", localMember.id(), swimMember);
     post(
         new GroupMembershipEvent(
             GroupMembershipEvent.Type.REACHABILITY_CHANGED, swimMember.copy()));
@@ -354,7 +365,7 @@ public class SwimMembershipProtocol
   private void triggerReachabilityChangedEventOnAlive(
       final ImmutableMember member, final SwimMember swimMember) {
     swimMember.setState(State.ALIVE);
-    LOGGER.debug("{} - Member reachable {}", localMember.id(), swimMember);
+    LOGGER.info("{} - Member reachable {}", localMember.id(), swimMember);
     post(
         new GroupMembershipEvent(
             GroupMembershipEvent.Type.REACHABILITY_CHANGED, swimMember.copy()));
@@ -377,9 +388,14 @@ public class SwimMembershipProtocol
   /** Checks suspect nodes for failures. */
   private void checkFailures() {
     for (final SwimMember member : members.values()) {
+      final long suspectedDuration = System.currentTimeMillis() - member.getUpdated();
       if (member.getState() == State.SUSPECT
-          && System.currentTimeMillis() - member.getUpdated()
-              > config.getFailureTimeout().toMillis()) {
+          && suspectedDuration > config.getFailureTimeout().toMillis()) {
+        LOGGER.info(
+            "{} - Member {} not reachable for {}",
+            localMember.id(),
+            member.id(),
+            Duration.ofMillis(suspectedDuration));
         member.setState(State.DEAD);
 
         tryRemoveMember(member);
@@ -392,8 +408,9 @@ public class SwimMembershipProtocol
     final var deadMember = members.remove(member.id());
     if (deadMember != null) {
       randomMembers.remove(member);
+      syncMembers.remove(member);
       Collections.shuffle(randomMembers);
-      LOGGER.debug("{} - Member removed {}", localMember.id(), member);
+      LOGGER.info("{} - Member removed {}", localMember.id(), member.id());
       post(new GroupMembershipEvent(GroupMembershipEvent.Type.MEMBER_REMOVED, member.copy()));
     }
   }
@@ -404,7 +421,7 @@ public class SwimMembershipProtocol
    * @param member the peer with which to synchronize the node state
    */
   private void sync(final ImmutableMember member) {
-    LOGGER.debug("{} - Start synchronizing membership with {}", localMember.id(), member);
+    SYNC_LOGGER.debug("{} - Start synchronizing membership with {}", localMember.id(), member);
     bootstrapService
         .getMessagingService()
         .sendAndReceive(
@@ -417,14 +434,14 @@ public class SwimMembershipProtocol
             (response, error) -> {
               if (error == null) {
                 final Collection<ImmutableMember> members = SERIALIZER.decode(response);
-                LOGGER.debug(
+                SYNC_LOGGER.debug(
                     "{} - Finished synchronizing membership with {}, received: '{}'",
                     localMember.id(),
                     member,
                     members);
                 members.forEach(this::updateState);
               } else {
-                LOGGER.debug(
+                SYNC_LOGGER.warn(
                     "{} - Failed to synchronize membership with {}",
                     localMember.id(),
                     member,
@@ -459,6 +476,7 @@ public class SwimMembershipProtocol
    * @param member the peer from which to handle the request
    */
   private Collection<ImmutableMember> handleSync(final ImmutableMember member) {
+    SYNC_LOGGER.trace("{} - Received sync request from {}", localMember.id(), member);
     updateState(member);
     return members.values().stream().map(SwimMember::copy).collect(Collectors.toList());
   }
@@ -483,7 +501,7 @@ public class SwimMembershipProtocol
     // If there are members to probe, select the next member to probe using a counter for round
     // robin probes.
     if (!probeMembers.isEmpty()) {
-      LOGGER.trace("Possible members to probe '{}'", probeMembers);
+      PROBE_LOGGER.trace("Possible members to probe '{}'", probeMembers);
       final SwimMember probeMember =
           probeMembers.get(Math.abs(probeCounter.incrementAndGet() % probeMembers.size()));
       probe(probeMember.copy());
@@ -498,7 +516,7 @@ public class SwimMembershipProtocol
    * @param member the member to probe
    */
   private void probe(final ImmutableMember member) {
-    LOGGER.trace("{} - Probing {}", localMember.id(), member);
+    PROBE_LOGGER.trace("{} - Probing {}", localMember.id(), member);
     bootstrapService
         .getMessagingService()
         .sendAndReceive(
@@ -512,11 +530,13 @@ public class SwimMembershipProtocol
               if (error == null) {
                 updateState(SERIALIZER.decode(response));
               } else {
-                LOGGER.debug("{} - Failed to probe {}", localMember.id(), member, error);
+                PROBE_LOGGER.trace("{} - Failed to probe {}", localMember.id(), member, error);
                 // Verify that the local member term has not changed and request probes from peers.
                 final SwimMember swimMember = members.get(member.id());
                 if (swimMember != null
                     && swimMember.getIncarnationNumber() == member.incarnationNumber()) {
+                  PROBE_LOGGER.warn(
+                      "{} - Failed to probe {}", localMember.id(), member.id(), error);
                   requestProbes(swimMember.copy());
                 }
               }
@@ -536,7 +556,7 @@ public class SwimMembershipProtocol
     final ImmutableMember remoteMember = members.getLeft();
     final ImmutableMember localMember = members.getRight();
 
-    LOGGER.trace(
+    PROBE_LOGGER.trace(
         "{} - Received probe {} from {}", this.localMember.id(), localMember, remoteMember);
 
     // If the probe indicates a term greater than the local term, update the local term, increment
@@ -567,6 +587,8 @@ public class SwimMembershipProtocol
     if (!members.isEmpty()) {
       final AtomicInteger counter = new AtomicInteger();
       final AtomicBoolean succeeded = new AtomicBoolean();
+      PROBE_LOGGER.debug(
+          "{} - Requesting probe of {} from [{}]", localMember.id(), suspect, members);
       for (final SwimMember member : members) {
         requestProbe(member, suspect)
             .whenCompleteAsync(
@@ -591,7 +613,8 @@ public class SwimMembershipProtocol
   /** Marks the given member suspect after all probes failing. */
   private void failProbes(final ImmutableMember suspect) {
     final SwimMember swimMember = new SwimMember(suspect);
-    LOGGER.debug("{} - Failed all probes of {}", localMember.id(), swimMember);
+    PROBE_LOGGER.info(
+        "{} - Failed all probes of {}. Marking as suspect.", localMember.id(), swimMember);
     swimMember.setState(State.SUSPECT);
     if (updateState(swimMember.copy()) && config.isBroadcastUpdates()) {
       broadcast(swimMember.copy());
@@ -606,7 +629,6 @@ public class SwimMembershipProtocol
    */
   private CompletableFuture<Boolean> requestProbe(
       final SwimMember member, final ImmutableMember suspect) {
-    LOGGER.debug("{} - Requesting probe of {} from {}", localMember.id(), suspect, member);
     return bootstrapService
         .getMessagingService()
         .sendAndReceive(
@@ -619,7 +641,7 @@ public class SwimMembershipProtocol
         .exceptionally(e -> false)
         .thenApply(
             succeeded -> {
-              LOGGER.debug(
+              PROBE_LOGGER.debug(
                   "{} - Probe request of {} from {} {}",
                   localMember.id(),
                   suspect,
@@ -657,7 +679,7 @@ public class SwimMembershipProtocol
     final CompletableFuture<Boolean> future = new CompletableFuture<>();
     swimScheduler.execute(
         () -> {
-          LOGGER.trace("{} - Probing {}", localMember.id(), member);
+          PROBE_LOGGER.trace("{} - Probing {}", localMember.id(), member);
           bootstrapService
               .getMessagingService()
               .sendAndReceive(
@@ -669,7 +691,7 @@ public class SwimMembershipProtocol
               .whenCompleteAsync(
                   (response, error) -> {
                     if (error != null) {
-                      LOGGER.debug("{} - Failed to probe {}", localMember.id(), member);
+                      PROBE_LOGGER.info("{} - Failed to probe {}", localMember.id(), member.id());
                       future.complete(false);
                     } else {
                       future.complete(true);
@@ -751,7 +773,7 @@ public class SwimMembershipProtocol
    * @param updates the updated members to gossip
    */
   private void gossip(final SwimMember member, final Collection<ImmutableMember> updates) {
-    LOGGER.trace("{} - Gossipping updates {} to {}", localMember.id(), updates, member);
+    GOSSIP_LOGGER.trace("{} - Gossipping updates {} to {}", localMember.id(), updates, member);
     bootstrapService
         .getUnicastService()
         .unicast(member.address(), MEMBERSHIP_GOSSIP, SERIALIZER.encode(updates));
@@ -760,6 +782,7 @@ public class SwimMembershipProtocol
   /** Handles a gossip message from a peer. */
   private void handleGossipUpdates(final Collection<ImmutableMember> updates) {
     for (final ImmutableMember update : updates) {
+      GOSSIP_LOGGER.trace("{} - Received gossip {}", localMember.id(), update);
       updateState(update);
     }
   }
