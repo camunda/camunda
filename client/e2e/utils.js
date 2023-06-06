@@ -96,7 +96,7 @@ export async function selectReportDefinition(t, name, version) {
 
 export async function selectDefinition(t, name, version = 'Specific version') {
   await t
-    .click('.DefinitionSelection')
+    .click('.CarbonPopover.DefinitionSelection')
     .typeText('.Typeahead input', name, {replace: true})
     .click(Common.typeaheadOption(name));
 
@@ -114,7 +114,7 @@ export async function selectDefinition(t, name, version = 'Specific version') {
     }
   }
 
-  await t.click('.DefinitionSelection');
+  await t.click('.CarbonPopover.DefinitionSelection');
 }
 
 const selectControlPanelOption = (type) => async (t, name, subname) => {
