@@ -23,6 +23,7 @@ import com.jayway.jsonpath.PathNotFoundException;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
 import io.camunda.tasklist.qa.util.TestContext;
 import io.camunda.tasklist.qa.util.rest.StatefulRestTemplate;
+import io.camunda.tasklist.webapp.api.rest.v1.entities.SaveVariablesRequest;
 import io.camunda.tasklist.webapp.graphql.entity.TaskDTO;
 import io.camunda.tasklist.webapp.management.dto.GetBackupStateResponseDto;
 import io.camunda.tasklist.webapp.management.dto.TakeBackupRequestDto;
@@ -43,6 +44,7 @@ import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.io.ResourceLoader;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.converter.json.Jackson2ObjectMapperBuilder;
 import org.springframework.retry.annotation.Backoff;
 import org.springframework.retry.annotation.EnableRetry;
@@ -128,6 +130,16 @@ public class TasklistAPICaller {
                 testContext.getExternalTasklistHost(), testContext.getExternalTasklistPort()),
             objectMapper);
     return graphQLTestTemplate;
+  }
+
+  public void saveDraftTaskVariables(String taskId, SaveVariablesRequest saveVariablesRequest) {
+    final var response =
+        statefulRestTemplate.postForEntity(
+            statefulRestTemplate.getURL(String.format("v1/tasks/%s/variables", taskId)),
+            saveVariablesRequest,
+            Void.class);
+
+    assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
   }
 
   public TakeBackupResponseDto backup(Integer backupId) {

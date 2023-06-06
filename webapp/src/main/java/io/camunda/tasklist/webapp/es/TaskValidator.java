@@ -19,8 +19,33 @@ public class TaskValidator {
 
   @Autowired private UserReader userReader;
 
+  public void validateCanPersistDraftTaskVariables(final TaskEntity task) {
+    validateTaskStateAndAssignment(task);
+  }
+
   public void validateCanComplete(final TaskEntity taskBefore) {
-    validateTaskIsActive(taskBefore);
+    validateTaskStateAndAssignment(taskBefore);
+  }
+
+  /**
+   * Validates whether a task is in {@code ACTIVE} state and if the task assignment is valid. This
+   * method performs the following checks:
+   *
+   * <ul>
+   *   <li>Checks if the task is active. If not, it throws an {@link InvalidRequestException}.
+   *   <li>Checks if the current user is an API user. If so, no further checks are performed and the
+   *       method returns immediately.
+   *   <li>Checks if the task is assigned. If not, it throws an {@link InvalidRequestException}.
+   *   <li>Checks if the task is assigned to the current user. If not, it throws an {@link
+   *       InvalidRequestException}.
+   * </ul>
+   *
+   * @param task The task entity to be validated.
+   * @throws InvalidRequestException If the task is not active, not assigned, or not assigned to the
+   *     current user.
+   */
+  private void validateTaskStateAndAssignment(TaskEntity task) {
+    validateTaskIsActive(task);
 
     final UserDTO currentUser = getCurrentUser();
     if (currentUser.isApiUser()) {
@@ -28,14 +53,13 @@ public class TaskValidator {
       return;
     }
 
-    validateTaskIsNotAssigned(taskBefore);
-    if (!taskBefore.getAssignee().equals(currentUser.getUserId())) {
+    validateTaskIsAssigned(task);
+    if (!task.getAssignee().equals(currentUser.getUserId())) {
       throw new InvalidRequestException("Task is not assigned to " + currentUser.getUserId());
     }
   }
 
   public void validateCanAssign(final TaskEntity taskBefore, boolean allowOverrideAssignment) {
-
     validateTaskIsActive(taskBefore);
 
     if (getCurrentUser().isApiUser() && allowOverrideAssignment) {
@@ -50,8 +74,7 @@ public class TaskValidator {
 
   public void validateCanUnassign(final TaskEntity taskBefore) {
     validateTaskIsActive(taskBefore);
-
-    validateTaskIsNotAssigned(taskBefore);
+    validateTaskIsAssigned(taskBefore);
   }
 
   private static void validateTaskIsActive(final TaskEntity taskBefore) {
@@ -60,7 +83,7 @@ public class TaskValidator {
     }
   }
 
-  private static void validateTaskIsNotAssigned(final TaskEntity taskBefore) {
+  private static void validateTaskIsAssigned(final TaskEntity taskBefore) {
     if (taskBefore.getAssignee() == null) {
       throw new InvalidRequestException("Task is not assigned");
     }

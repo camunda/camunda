@@ -37,7 +37,76 @@ public class TaskValidatorTest {
   @EnumSource(
       value = TaskState.class,
       names = {"COMPLETED", "CANCELED"})
-  public void userShouldNotBeAbleToCompleteIfTaskIsNotAcitve(TaskState taskState) {
+  public void userShouldNotBeAbleToPersistDraftTaskVariablesIfTaskIsNotActive(TaskState taskState) {
+    // given
+    final TaskEntity task = new TaskEntity().setAssignee(TEST_USER).setState(taskState);
+
+    // when - then
+    verifyNoInteractions(userReader);
+    assertThatThrownBy(() -> instance.validateCanPersistDraftTaskVariables(task))
+        .isInstanceOf(InvalidRequestException.class)
+        .hasMessage("Task is not active");
+  }
+
+  @Test
+  public void userCanNotPersistDraftTaskVariablesIfAssignedToAnotherPerson() {
+    // given
+    final UserDTO user =
+        new UserDTO().setUserId(TEST_USER).setDisplayName(TEST_USER).setApiUser(false);
+    when(userReader.getCurrentUser()).thenReturn(user);
+    final TaskEntity task =
+        new TaskEntity().setAssignee("AnotherTestUser").setState(TaskState.CREATED);
+
+    // when - then
+    assertThatThrownBy(() -> instance.validateCanPersistDraftTaskVariables(task))
+        .isInstanceOf(InvalidRequestException.class)
+        .hasMessage("Task is not assigned to TestUser");
+  }
+
+  @Test
+  public void userCanNotPersistDraftTaskVariablesIfAssigneeIsNull() {
+    // given
+    final UserDTO user =
+        new UserDTO().setUserId(TEST_USER).setDisplayName(TEST_USER).setApiUser(false);
+    when(userReader.getCurrentUser()).thenReturn(user);
+    final TaskEntity task = new TaskEntity().setAssignee(null).setState(TaskState.CREATED);
+
+    // when - then
+    assertThatThrownBy(() -> instance.validateCanPersistDraftTaskVariables(task))
+        .isInstanceOf(InvalidRequestException.class)
+        .hasMessage("Task is not assigned");
+  }
+
+  @Test
+  public void userCanPersistDraftTaskVariablesWhenTaskIsAssignedToItself() {
+    // given
+    final UserDTO user =
+        new UserDTO().setUserId(TEST_USER).setDisplayName(TEST_USER).setApiUser(false);
+    when(userReader.getCurrentUser()).thenReturn(user);
+    final TaskEntity task = new TaskEntity().setAssignee(TEST_USER).setState(TaskState.CREATED);
+
+    // when - then
+    assertDoesNotThrow(() -> instance.validateCanPersistDraftTaskVariables(task));
+  }
+
+  @Test
+  public void apiUserShouldBeAbleToPersistDraftTaskVariablesEvenIfTaskIsAssignedToAnotherPerson() {
+    // given
+    final UserDTO user =
+        new UserDTO().setUserId(TEST_USER).setDisplayName(TEST_USER).setApiUser(true);
+    when(userReader.getCurrentUser()).thenReturn(user);
+    final TaskEntity task =
+        new TaskEntity().setAssignee("AnotherTestUser").setState(TaskState.CREATED);
+
+    // when - then
+    assertDoesNotThrow(() -> instance.validateCanPersistDraftTaskVariables(task));
+  }
+
+  @ParameterizedTest
+  @EnumSource(
+      value = TaskState.class,
+      names = {"COMPLETED", "CANCELED"})
+  public void userShouldNotBeAbleToCompleteIfTaskIsNotActive(TaskState taskState) {
     // given
     final TaskEntity task = new TaskEntity().setAssignee(TEST_USER).setState(taskState);
 

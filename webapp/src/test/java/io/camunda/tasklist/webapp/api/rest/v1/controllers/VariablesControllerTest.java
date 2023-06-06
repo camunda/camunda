@@ -13,10 +13,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import io.camunda.tasklist.webapp.CommonUtils;
 import io.camunda.tasklist.webapp.api.rest.v1.entities.VariableResponse;
-import io.camunda.tasklist.webapp.graphql.entity.VariableDTO;
 import io.camunda.tasklist.webapp.security.TasklistURIs;
 import io.camunda.tasklist.webapp.service.VariableService;
-import java.util.Collections;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -43,15 +41,12 @@ class VariablesControllerTest {
   }
 
   @Test
-  void getVariableById() throws Exception {
+  void getVariableResponseById() throws Exception {
     // Given
     final var variableId = "var-2222";
     final var providedVariable =
-        new VariableDTO().setId(variableId).setName("a").setValue("24.12").setPreviewValue("24.12");
-    final var expectedVariable =
         new VariableResponse().setId(variableId).setName("a").setValue("24.12");
-    when(variableService.getVariable(variableId, Collections.emptySet()))
-        .thenReturn(providedVariable);
+    when(variableService.getVariableResponse(variableId)).thenReturn(providedVariable);
 
     // When
     final var responseAsString =
@@ -69,6 +64,6 @@ class VariablesControllerTest {
         CommonUtils.OBJECT_MAPPER.readValue(responseAsString, VariableResponse.class);
 
     // Then
-    assertThat(result).isEqualTo(expectedVariable);
+    assertThat(result).isEqualTo(providedVariable);
   }
 }

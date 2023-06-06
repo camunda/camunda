@@ -9,6 +9,8 @@ package io.camunda.tasklist.webapp.service;
 import static java.util.stream.Collectors.groupingBy;
 import static java.util.stream.Collectors.toList;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.tasklist.entities.DraftTaskVariableEntity;
 import io.camunda.tasklist.entities.FlowNodeInstanceEntity;
 import io.camunda.tasklist.entities.TaskEntity;
 import io.camunda.tasklist.entities.TaskState;
@@ -16,13 +18,20 @@ import io.camunda.tasklist.entities.TaskVariableEntity;
 import io.camunda.tasklist.entities.VariableEntity;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.util.CollectionUtil;
+import io.camunda.tasklist.webapp.api.rest.v1.entities.VariableResponse;
+import io.camunda.tasklist.webapp.api.rest.v1.entities.VariableSearchResponse;
+import io.camunda.tasklist.webapp.es.DraftVariablesReaderWriter;
 import io.camunda.tasklist.webapp.es.TaskReaderWriter;
+import io.camunda.tasklist.webapp.es.TaskValidator;
 import io.camunda.tasklist.webapp.es.VariableReaderWriter;
 import io.camunda.tasklist.webapp.graphql.entity.TaskDTO;
 import io.camunda.tasklist.webapp.graphql.entity.VariableDTO;
 import io.camunda.tasklist.webapp.graphql.entity.VariableInputDTO;
+import io.camunda.tasklist.webapp.rest.exception.InvalidRequestException;
 import io.camunda.tasklist.webapp.rest.exception.NotFoundException;
+import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -33,6 +42,7 @@ import java.util.Map.Entry;
 import java.util.Set;
 import java.util.stream.Collector;
 import java.util.stream.Collectors;
+import org.apache.commons.collections4.CollectionUtils;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -47,18 +57,104 @@ public class VariableService {
 
   @Autowired private TaskReaderWriter taskReaderWriter;
   @Autowired private VariableReaderWriter variableReaderWriter;
+  @Autowired private DraftVariablesReaderWriter draftVariablesReaderWriter;
   @Autowired private TasklistProperties tasklistProperties;
+  @Autowired private TaskValidator taskValidator;
+  @Autowired private ObjectMapper objectMapper;
 
-  public void persistTaskVariables(String taskId, List<VariableInputDTO> changedVariables) {
+  public void persistDraftTaskVariables(String taskId, List<VariableInputDTO> draftTaskVariables) {
+    final TaskEntity task = taskReaderWriter.getTask(taskId);
+    taskValidator.validateCanPersistDraftTaskVariables(task);
+    validateVariableInputs(draftTaskVariables);
+
+    // drop all current draft variables
+    final long deletedDraftVariablesCount = draftVariablesReaderWriter.deleteAllByTaskId(taskId);
+    LOGGER.debug(
+        "'{}' draft task variables associated with task id '{}' were deleted",
+        deletedDraftVariablesCount,
+        task);
+
+    if (CollectionUtils.isEmpty(draftTaskVariables)) {
+      return;
+    }
+
+    final Map<String, VariableEntity> currentOriginalVariables = new HashMap<>();
+    getRuntimeVariablesByRequest(GetVariablesRequest.createFrom(task))
+        .forEach(originalVar -> currentOriginalVariables.put(originalVar.getName(), originalVar));
+
+    final int variableSizeThreshold = tasklistProperties.getImporter().getVariableSizeThreshold();
+
+    final Map<String, DraftTaskVariableEntity> toPersist = new HashMap<>();
+    draftTaskVariables.forEach(
+        draftVariable -> {
+          if (currentOriginalVariables.containsKey(draftVariable.getName())) {
+            final VariableEntity variableEntity =
+                currentOriginalVariables.get(draftVariable.getName());
+            // Persist new draft variables based on the input if value `name` is the same as
+            // original and `value` property is different
+            if (!variableEntity.getFullValue().equals(draftVariable.getValue())) {
+              toPersist.put(
+                  draftVariable.getName(),
+                  DraftTaskVariableEntity.createFrom(
+                      // draft variable will have the same Id as original variable
+                      variableEntity.getId(),
+                      task.getId(),
+                      draftVariable.getName(),
+                      draftVariable.getValue(),
+                      variableSizeThreshold));
+            }
+          } else {
+            toPersist.put(
+                draftVariable.getName(),
+                DraftTaskVariableEntity.createFrom(
+                    task.getId(),
+                    draftVariable.getName(),
+                    draftVariable.getValue(),
+                    variableSizeThreshold));
+          }
+        });
+
+    draftVariablesReaderWriter.createOrUpdate(toPersist.values());
+  }
+
+  private void validateVariableInputs(Collection<VariableInputDTO> variable) {
+    variable.stream()
+        .map(VariableInputDTO::getValue)
+        .forEach(
+            value -> {
+              try {
+                objectMapper.readValue(value, Object.class);
+              } catch (IOException e) {
+                throw new InvalidRequestException(e.getMessage(), e);
+              }
+            });
+  }
+
+  public void persistTaskVariables(
+      String taskId, List<VariableInputDTO> changedVariables, boolean withDraftVariableValues) {
     // take current runtime variables values and
-    final List<VariableEntity> variablesByTaskId = getRuntimeVariablesByTaskId(taskId);
+    final TaskEntity task = taskReaderWriter.getTask(taskId);
+    final List<VariableEntity> taskVariables =
+        getRuntimeVariablesByRequest(GetVariablesRequest.createFrom(task));
+
+    final Map<String, TaskVariableEntity> finalVariablesMap = new HashMap<>();
+    taskVariables.forEach(
+        variable ->
+            finalVariablesMap.put(
+                variable.getName(), TaskVariableEntity.createFrom(taskId, variable)));
+
+    if (withDraftVariableValues) {
+      // update/append with draft variables
+      draftVariablesReaderWriter
+          .getVariablesByTaskIdAndVariableNames(taskId, Collections.emptyList())
+          .forEach(
+              draftTaskVariable ->
+                  finalVariablesMap.put(
+                      draftTaskVariable.getName(),
+                      TaskVariableEntity.createFrom(taskId, draftTaskVariable)));
+    }
 
     // update/append with variables passed for task completion
-    final Map<String, TaskVariableEntity> finalVariablesMap =
-        variablesByTaskId.stream()
-            .collect(
-                Collectors.toMap(
-                    VariableEntity::getName, v -> TaskVariableEntity.createFrom(taskId, v)));
     for (VariableInputDTO var : changedVariables) {
       finalVariablesMap.put(
           var.getName(),
@@ -71,10 +167,14 @@ public class VariableService {
     variableReaderWriter.persistTaskVariables(finalVariablesMap.values());
   }
 
-  private List<VariableEntity> getRuntimeVariablesByTaskId(String taskId) {
-    final TaskEntity task = taskReaderWriter.getTask(taskId);
-    final List<GetVariablesRequest> requests =
-        Collections.singletonList(GetVariablesRequest.createFrom(task));
+  /** Deletes all draft variables associated with the task by {@code taskId}. */
+  public void deleteDraftTaskVariables(String taskId) {
+    draftVariablesReaderWriter.deleteAllByTaskId(taskId);
+  }
+
+  private List<VariableEntity> getRuntimeVariablesByRequest(
+      GetVariablesRequest getVariablesRequest) {
+    final List<GetVariablesRequest> requests = Collections.singletonList(getVariablesRequest);
     final Map<String, List<VariableEntity>> runtimeVariablesPerTaskId =
         getRuntimeVariablesPerTaskId(requests);
     if (runtimeVariablesPerTaskId.size() > 0) {
@@ -84,12 +184,12 @@ public class VariableService {
     }
   }
 
-  private List<VariableDTO> getRuntimeVariablesDTOPerTaskId(
+  private List<VariableEntity> getRuntimeVariablesDTOPerTaskId(
       final List<GetVariablesRequest> requests) {
     final Map<String, List<VariableEntity>> variablesByTaskIds =
         getRuntimeVariablesPerTaskId(requests);
     if (variablesByTaskIds.size() > 0) {
-      return VariableDTO.createFrom(variablesByTaskIds.values().iterator().next());
+      return variablesByTaskIds.values().iterator().next();
     } else {
       return new ArrayList<>();
     }
@@ -243,6 +343,61 @@ public class VariableService {
     return flowNodeTrees.get(processInstanceId);
   }
 
+  public List<VariableSearchResponse> getVariableSearchResponses(
+      String taskId, List<String> variableNames) {
+    final TaskEntity task = taskReaderWriter.getTask(taskId);
+    final List<GetVariablesRequest> requests =
+        Collections.singletonList(
+            GetVariablesRequest.createFrom(task)
+                .setVarNames(variableNames)
+                .setFieldNames(Collections.emptySet()));
+
+    final List<VariableSearchResponse> vars = new ArrayList<>();
+    switch (task.getState()) {
+      case CREATED -> {
+        final Map<String, VariableEntity> nameToOriginalVariables = new HashMap<>();
+        getRuntimeVariablesDTOPerTaskId(requests)
+            .forEach(
+                originalVar -> nameToOriginalVariables.put(originalVar.getName(), originalVar));
+        final Map<String, DraftTaskVariableEntity> nameToDraftVariable = new HashMap<>();
+        draftVariablesReaderWriter
+            .getVariablesByTaskIdAndVariableNames(taskId, variableNames)
+            .forEach(draftVar -> nameToDraftVariable.put(draftVar.getName(), draftVar));
+
+        nameToOriginalVariables.forEach(
+            (name, originalVar) -> {
+              if (nameToDraftVariable.containsKey(name)) {
+                vars.add(
+                    VariableSearchResponse.createFrom(originalVar, nameToDraftVariable.get(name)));
+              } else {
+                vars.add(VariableSearchResponse.createFrom(originalVar));
+              }
+            });
+
+        // creating variable responses for draft variables without original values
+        CollectionUtils.removeAll(nameToDraftVariable.keySet(), nameToOriginalVariables.keySet())
+            .forEach(
+                draftVariableName ->
+                    vars.add(
+                        VariableSearchResponse.createFrom(
+                            nameToDraftVariable.get(draftVariableName))));
+      }
+      case COMPLETED -> {
+        final Map<String, List<TaskVariableEntity>> variablesByTaskIds =
+            variableReaderWriter.getTaskVariablesPerTaskId(requests);
+        if (variablesByTaskIds.size() > 0) {
+          vars.addAll(
+              variablesByTaskIds.values().iterator().next().stream()
+                  .map(VariableSearchResponse::createFrom)
+                  .toList());
+        }
+      }
+      default -> {}
+    }
+
+    return vars.stream().sorted(Comparator.comparing(VariableSearchResponse::getName)).toList();
+  }
+
   public List<VariableDTO> getVariables(
       String taskId, List<String> variableNames, final Set<String> fieldNames) {
     final TaskEntity task = taskReaderWriter.getTask(taskId);
@@ -252,20 +407,21 @@ public class VariableService {
                 .setVarNames(variableNames)
                 .setFieldNames(fieldNames));
 
-    List<VariableDTO> vars = new ArrayList<>();
+    final List<VariableDTO> vars = new ArrayList<>();
     switch (task.getState()) {
-      case CREATED:
-        vars = getRuntimeVariablesDTOPerTaskId(requests);
-        break;
-      case COMPLETED:
-        final Map<String, List<VariableDTO>> variablesByTaskIds =
+      case CREATED -> vars.addAll(
+          VariableDTO.createFrom(getRuntimeVariablesDTOPerTaskId(requests)));
+      case COMPLETED -> {
+        final Map<String, List<TaskVariableEntity>> variablesByTaskIds =
             variableReaderWriter.getTaskVariablesPerTaskId(requests);
         if (variablesByTaskIds.size() > 0) {
-          vars = variablesByTaskIds.values().iterator().next();
+          vars.addAll(
+              variablesByTaskIds.values().iterator().next().stream()
+                  .map(VariableDTO::createFrom)
+                  .toList());
         }
-        break;
-      default:
-        break;
+      }
+      default -> {}
     }
 
     vars.sort(Comparator.comparing(VariableDTO::getName));
@@ -275,22 +431,26 @@ public class VariableService {
   public List<List<VariableDTO>> getVariables(List<GetVariablesRequest> requests) {
     final Map<TaskState, List<GetVariablesRequest>> groupByStates =
         requests.stream().collect(groupingBy(GetVariablesRequest::getState));
-    final Map<String, List<VariableEntity>> varsForActive =
-        getRuntimeVariablesPerTaskId(groupByStates.get(TaskState.CREATED));
-    final Map<String, List<VariableDTO>> varsForCompleted =
-        variableReaderWriter.getTaskVariablesPerTaskId(groupByStates.get(TaskState.COMPLETED));
 
     final List<List<VariableDTO>> response = new ArrayList<>();
     for (GetVariablesRequest req : requests) {
-      List<VariableDTO> vars = new ArrayList<>();
+      final List<VariableDTO> vars = new ArrayList<>();
       switch (req.getState()) {
         case CREATED:
-          vars =
+          final Map<String, List<VariableEntity>> varsForActive =
+              getRuntimeVariablesPerTaskId(groupByStates.get(TaskState.CREATED));
+          vars.addAll(
               VariableDTO.createFrom(
-                  varsForActive.getOrDefault(req.getTaskId(), new ArrayList<>()));
+                  varsForActive.getOrDefault(req.getTaskId(), new ArrayList<>())));
           break;
         case COMPLETED:
-          vars = varsForCompleted.getOrDefault(req.getTaskId(), new ArrayList<>());
+          final Map<String, List<TaskVariableEntity>> varsForCompleted =
+              variableReaderWriter.getTaskVariablesPerTaskId(
+                  groupByStates.get(TaskState.COMPLETED));
+          vars.addAll(
+              varsForCompleted.getOrDefault(req.getTaskId(), new ArrayList<>()).stream()
+                  .map(VariableDTO::createFrom)
+                  .toList());
           break;
         default:
           break;
@@ -310,13 +470,41 @@ public class VariableService {
     } catch (NotFoundException ex) {
       // then in task variables (for completed tasks)
       try {
-        // 1st search in runtime variables
+        // 2nd search in runtime variables
         final TaskVariableEntity taskVariable =
             variableReaderWriter.getTaskVariable(variableId, fieldNames);
         return VariableDTO.createFrom(taskVariable);
       } catch (NotFoundException ex2) {
         throw new NotFoundException(String.format("Variable with id %s not found.", variableId));
       }
+    }
+  }
+
+  public VariableResponse getVariableResponse(final String variableId) {
+    try {
+      // 1st search in runtime variables
+      final VariableEntity runtimeVariable =
+          variableReaderWriter.getRuntimeVariable(variableId, Collections.emptySet());
+      final VariableResponse variableResponse = VariableResponse.createFrom(runtimeVariable);
+      draftVariablesReaderWriter.getById(variableId).ifPresent(variableResponse::addDraft);
+      return variableResponse;
+    } catch (NotFoundException ex) {
+      // 2nd then search in draft task variables
+      return draftVariablesReaderWriter
+          .getById(variableId)
+          .map(VariableResponse::createFrom)
+          .orElseGet(
+              () -> {
+                try {
+                  // 3rd search in task variables (for completed tasks)
+                  final TaskVariableEntity taskVariable =
+                      variableReaderWriter.getTaskVariable(variableId, Collections.emptySet());
+                  return VariableResponse.createFrom(taskVariable);
+                } catch (NotFoundException ex2) {
+                  throw new NotFoundException(
+                      String.format("Variable with id %s not found.", variableId));
+                }
+              });
     }
   }
 

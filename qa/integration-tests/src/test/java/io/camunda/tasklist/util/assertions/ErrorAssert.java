@@ -41,4 +41,16 @@ public class ErrorAssert extends AbstractAssert<ErrorAssert, Error> {
     assertThat(actual.getMessage()).isEqualTo(expectedStringTemplate, args);
     return this;
   }
+
+  public ErrorAssert hasMessageStartingWith(String expected) {
+    assertThat(actual).isNotNull();
+    assertThat(actual.getMessage()).startsWith(expected);
+    return this;
+  }
+
+  public ErrorAssert hasMessageStartingWith(String expectedStringTemplate, Object... args) {
+    assertThat(actual).isNotNull();
+    assertThat(actual.getMessage()).startsWith(String.format(expectedStringTemplate, args));
+    return this;
+  }
 }

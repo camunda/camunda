@@ -33,7 +33,6 @@ import io.camunda.tasklist.schema.indices.FlowNodeInstanceIndex;
 import io.camunda.tasklist.schema.indices.VariableIndex;
 import io.camunda.tasklist.schema.templates.TaskVariableTemplate;
 import io.camunda.tasklist.util.ElasticsearchUtil;
-import io.camunda.tasklist.webapp.graphql.entity.VariableDTO;
 import io.camunda.tasklist.webapp.rest.exception.NotFoundException;
 import io.camunda.tasklist.webapp.service.VariableService.GetVariablesRequest;
 import java.io.IOException;
@@ -42,6 +41,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Function;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
@@ -94,7 +94,7 @@ public class VariableReaderWriter {
     }
   }
 
-  public Map<String, List<VariableDTO>> getTaskVariablesPerTaskId(
+  public Map<String, List<TaskVariableEntity>> getTaskVariablesPerTaskId(
       final List<GetVariablesRequest> requests) {
 
     if (requests == null || requests.size() == 0) {
@@ -129,9 +129,7 @@ public class VariableReaderWriter {
           scroll(searchRequest, TaskVariableEntity.class, objectMapper, esClient);
       return entities.stream()
           .collect(
-              groupingBy(
-                  TaskVariableEntity::getTaskId,
-                  mapping(tv -> VariableDTO.createFrom(tv), toList())));
+              groupingBy(TaskVariableEntity::getTaskId, mapping(Function.identity(), toList())));
     } catch (IOException e) {
       final String message =
           String.format("Exception occurred, while obtaining all variables: %s", e.getMessage());

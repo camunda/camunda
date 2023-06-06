@@ -33,27 +33,24 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import org.apache.commons.lang3.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 @Component
 public class TaskService {
 
-  @Autowired private UserReader userReader;
+  private static final Logger LOGGER = LoggerFactory.getLogger(TaskService.class);
 
+  @Autowired private UserReader userReader;
   @Autowired private ZeebeClient zeebeClient;
   @Autowired private TaskReaderWriter taskReaderWriter;
-
   @Autowired private VariableService variableService;
-
   @Autowired private ObjectMapper objectMapper;
-
   @Autowired private Metrics metrics;
-
   @Autowired private UsageMetricsContract metricsContract;
-
   @Autowired private AssigneeMigrator assigneeMigrator;
-
   @Autowired private TaskValidator taskValidator;
 
   public List<TaskDTO> getTasks(TaskQueryDTO query, List<String> fieldNames) {
@@ -105,14 +102,12 @@ public class TaskService {
         : assignee;
   }
 
-  public TaskDTO completeTask(String taskId, List<VariableInputDTO> variables) {
+  public TaskDTO completeTask(
+      String taskId, List<VariableInputDTO> variables, boolean withDraftVariableValues) {
     final Map<String, Object> variablesMap = new HashMap<>();
-
     requireNonNullElse(variables, Collections.<VariableInputDTO>emptyList())
         .forEach(
-            variable -> {
-              variablesMap.put(variable.getName(), this.extractTypedValue(variable));
-            });
+            variable -> variablesMap.put(variable.getName(), this.extractTypedValue(variable)));
 
     final TaskEntity task = taskReaderWriter.getTask(taskId);
     taskValidator.validateCanComplete(task);
@@ -125,9 +120,22 @@ public class TaskService {
 
     // persist completion and variables
     final TaskEntity completedTaskEntity = taskReaderWriter.persistTaskCompletion(task);
-    variableService.persistTaskVariables(taskId, variables);
+    variableService.persistTaskVariables(taskId, variables, withDraftVariableValues);
+    deleteDraftTaskVariablesSafely(taskId);
     updateCompletedMetric(completedTaskEntity);
     return TaskDTO.createFrom(completedTaskEntity, objectMapper);
+  }
+
+  void deleteDraftTaskVariablesSafely(String taskId) {
+    try {
+      variableService.deleteDraftTaskVariables(taskId);
+    } catch (Exception ex) {
+      final String errorMessage =
+          String.format(
+              "Error during deletion of draft task variables associated with task with id='%s'",
+              taskId);
+      LOGGER.error(errorMessage, ex);
+    }
   }
 
   private Object extractTypedValue(VariableInputDTO variable) {

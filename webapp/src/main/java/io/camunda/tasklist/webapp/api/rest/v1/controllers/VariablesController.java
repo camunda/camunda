@@ -15,7 +15,6 @@ import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import java.util.Collections;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -49,11 +48,7 @@ public class VariablesController extends ApiErrorController {
       })
   @GetMapping("{variableId}")
   public ResponseEntity<VariableResponse> getVariableById(@PathVariable String variableId) {
-    final var variable = variableService.getVariable(variableId, Collections.emptySet());
-    return ResponseEntity.ok(
-        new VariableResponse()
-            .setId(variable.getId())
-            .setName(variable.getName())
-            .setValue(variable.getValue()));
+    final var variable = variableService.getVariableResponse(variableId);
+    return ResponseEntity.ok(variable);
   }
 }

@@ -237,11 +237,12 @@ class TaskServiceTest {
     when(mockedJobCommandStep2.send()).thenReturn(mockedZeebeFuture);
 
     // When
-    final var result = instance.completeTask(taskId, variables);
+    final var result = instance.completeTask(taskId, variables, true);
 
     // Then
     verify(taskValidator).validateCanComplete(taskBefore);
-    verify(variableService).persistTaskVariables(taskId, variables);
+    verify(variableService).persistTaskVariables(taskId, variables, true);
+    verify(variableService).deleteDraftTaskVariables(taskId);
     assertThat(result).isEqualTo(TaskDTO.createFrom(completedTask, objectMapper));
   }
 }

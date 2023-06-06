@@ -22,7 +22,7 @@ public class TaskMutationResolver implements GraphQLMutationResolver {
 
   @PreAuthorize("hasPermission('write')")
   public TaskDTO completeTask(String taskId, List<VariableInputDTO> variables) {
-    return taskService.completeTask(taskId, variables);
+    return taskService.completeTask(taskId, variables, false);
   }
 
   @PreAuthorize("hasPermission('write')")

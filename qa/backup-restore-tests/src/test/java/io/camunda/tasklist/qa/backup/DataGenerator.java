@@ -13,9 +13,12 @@ import static org.junit.Assert.assertTrue;
 import com.graphql.spring.boot.test.GraphQLResponse;
 import io.camunda.tasklist.entities.TaskState;
 import io.camunda.tasklist.qa.util.ZeebeTestUtil;
+import io.camunda.tasklist.schema.templates.DraftTaskVariableTemplate;
 import io.camunda.tasklist.schema.templates.TaskTemplate;
 import io.camunda.tasklist.util.ThreadUtil;
+import io.camunda.tasklist.webapp.api.rest.v1.entities.SaveVariablesRequest;
 import io.camunda.tasklist.webapp.graphql.entity.TaskDTO;
+import io.camunda.tasklist.webapp.graphql.entity.VariableInputDTO;
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
@@ -26,6 +29,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Random;
+import org.apache.commons.lang3.RandomStringUtils;
 import org.elasticsearch.ElasticsearchException;
 import org.elasticsearch.action.admin.indices.refresh.RefreshRequest;
 import org.elasticsearch.action.search.SearchRequest;
@@ -49,7 +53,10 @@ public class DataGenerator {
   public static final String PROCESS_BPMN_PROCESS_ID = "basicProcess";
   public static final String PROCESS_BPMN_PROCESS_ID_2 = "basicProcess2";
   public static final int PROCESS_INSTANCE_COUNT = 49;
+  private static final int ALL_DRAFT_TASK_VARIABLES_COUNT = PROCESS_INSTANCE_COUNT * 2;
   private static final int COMPLETED_TASKS_COUNT = 11;
+  private static final int DRAFT_TASK_VARIABLES_COUNT_AFTER_TASKS_COMPLETION =
+      ALL_DRAFT_TASK_VARIABLES_COUNT - PROCESS_INSTANCE_COUNT * 2;
   private static final Logger LOGGER = LoggerFactory.getLogger(DataGenerator.class);
   //  private static final DateTimeFormatter ARCHIVER_DATE_TIME_FORMATTER =
   // DateTimeFormatter.ofPattern("yyyy-MM-dd").withZone(ZoneId.systemDefault());
@@ -93,6 +100,8 @@ public class DataGenerator {
 
       claimAllTasks();
 
+      addDraftVariablesForAllTasks();
+
       try {
         esClient.indices().refresh(new RefreshRequest("tasklist-*"), RequestOptions.DEFAULT);
       } catch (IOException e) {
@@ -104,6 +113,27 @@ public class DataGenerator {
     } finally {
       closeClients();
     }
+  }
+
+  private void addDraftVariablesForAllTasks() throws IOException {
+    final var tasks = tasklistAPICaller.getAllTasks().getList("$.data.tasks", TaskDTO.class);
+    LOGGER.info("Found '{}' tasks, adding 2 draft variables to each task.", tasks.size());
+    tasks.stream()
+        .parallel()
+        .forEach(
+            task ->
+                tasklistAPICaller.saveDraftTaskVariables(
+                    task.getId(),
+                    new SaveVariablesRequest()
+                        .setVariables(
+                            List.of(
+                                new VariableInputDTO()
+                                    .setName("var1")
+                                    .setValue("\"updatedDraftVarValue\""),
+                                new VariableInputDTO()
+                                    .setName("draftVar")
+                                    .setValue(
+                                        "\"" + RandomStringUtils.randomAlphanumeric(10) + "\"")))));
   }
 
   private void claimAllTasks() {
@@ -206,6 +236,11 @@ public class DataGenerator {
       assertEquals(String.valueOf(PROCESS_INSTANCE_COUNT), response.get("$.data.tasks.length()"));
       assertEquals("task1", response.get("$.data.tasks[0].name"));
       assertEquals("CREATED", response.get("$.data.tasks[0].taskState"));
+
+      final var draftVariablesSearchRequest =
+          new SearchRequest(getAliasFor(DraftTaskVariableTemplate.INDEX_NAME));
+      assertThat(countEntitiesFor(draftVariablesSearchRequest))
+          .isEqualTo(ALL_DRAFT_TASK_VARIABLES_COUNT);
     } catch (AssertionError er) {
       LOGGER.warn("Error when asserting data: " + er.getMessage());
       throw er;
@@ -228,6 +263,11 @@ public class DataGenerator {
       assertThat(tasks).hasSize(PROCESS_INSTANCE_COUNT);
       assertThat(tasks).extracting("taskState").containsOnly(TaskState.CREATED);
 
+      final var draftVariablesSearchRequest =
+          new SearchRequest(getAliasFor(DraftTaskVariableTemplate.INDEX_NAME));
+      // after task completion all draft variables associated with a task will be deleted
+      assertThat(countEntitiesFor(draftVariablesSearchRequest))
+          .isEqualTo(DRAFT_TASK_VARIABLES_COUNT_AFTER_TASKS_COMPLETION);
     } catch (AssertionError er) {
       LOGGER.warn("Error when asserting data: " + er.getMessage());
       throw er;

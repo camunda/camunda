@@ -8,13 +8,14 @@ package io.camunda.tasklist.webapp.api.rest.v1.controllers;
 
 import static java.util.Objects.requireNonNullElse;
 
+import io.camunda.tasklist.webapp.api.rest.v1.entities.SaveVariablesRequest;
 import io.camunda.tasklist.webapp.api.rest.v1.entities.TaskAssignRequest;
 import io.camunda.tasklist.webapp.api.rest.v1.entities.TaskCompleteRequest;
 import io.camunda.tasklist.webapp.api.rest.v1.entities.TaskResponse;
 import io.camunda.tasklist.webapp.api.rest.v1.entities.TaskSearchRequest;
 import io.camunda.tasklist.webapp.api.rest.v1.entities.TaskSearchResponse;
+import io.camunda.tasklist.webapp.api.rest.v1.entities.VariableSearchResponse;
 import io.camunda.tasklist.webapp.api.rest.v1.entities.VariablesSearchRequest;
-import io.camunda.tasklist.webapp.graphql.entity.VariableDTO;
 import io.camunda.tasklist.webapp.mapper.TaskMapper;
 import io.camunda.tasklist.webapp.rest.exception.Error;
 import io.camunda.tasklist.webapp.security.TasklistURIs;
@@ -218,8 +219,53 @@ public class TaskController extends ApiErrorController {
       @RequestBody(required = false) TaskCompleteRequest taskCompleteRequest) {
     final var variables =
         requireNonNullElse(taskCompleteRequest, new TaskCompleteRequest()).getVariables();
-    final var completedTask = taskService.completeTask(taskId, variables);
+    final var completedTask = taskService.completeTask(taskId, variables, true);
     return ResponseEntity.ok(taskMapper.toTaskResponse(completedTask));
+  }
+
+  @Operation(
+      summary = "Saves draft variables for a task.",
+      description =
+          "This operation validates the task and draft variables, deletes existing draft variables for the task, "
+              + "and then checks for new draft variables. If a new variable's `name` matches an existing one but the "
+              + "`value` differs, it is saved. In case of duplicate draft variable names, the last variable's value is kept.",
+      responses = {
+        @ApiResponse(
+            description = "On success returned",
+            responseCode = "204",
+            useReturnTypeSchema = true),
+        @ApiResponse(
+            description =
+                "An error is returned when the task is not active (not in the `CREATED` state).</br>"
+                    + "An error is returned if the task was not claimed (assigned) before, except the case when JWT authentication token used.</br>"
+                    + "An error is returned if the task is not assigned to the current user, except the case when JWT authentication token used.",
+            responseCode = "400",
+            content =
+                @Content(
+                    mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
+                    schema = @Schema(implementation = Error.class))),
+        @ApiResponse(
+            description = "An error is returned when the task with the `taskId` is not found.",
+            responseCode = "404",
+            content =
+                @Content(
+                    mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
+                    schema = @Schema(implementation = Error.class))),
+        @ApiResponse(
+            description =
+                "An error is returned if an unexpected error occurs while persisting draft task variables.",
+            responseCode = "500",
+            content =
+                @Content(
+                    mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
+                    schema = @Schema(implementation = Error.class)))
+      })
+  @PreAuthorize("hasPermission('write')")
+  @PostMapping("{taskId}/variables")
+  public ResponseEntity<Void> saveDraftTaskVariables(
+      @PathVariable String taskId, @RequestBody SaveVariablesRequest saveVariablesRequest) {
+    variableService.persistDraftTaskVariables(taskId, saveVariablesRequest.getVariables());
+    return ResponseEntity.noContent().build();
   }
 
   @Operation(
@@ -242,7 +288,7 @@ public class TaskController extends ApiErrorController {
                     schema = @Schema(implementation = Error.class)))
       })
   @PostMapping("{taskId}/variables/search")
-  public ResponseEntity<List<VariableDTO>> searchTaskVariables(
+  public ResponseEntity<List<VariableSearchResponse>> searchTaskVariables(
       @PathVariable String taskId,
       @RequestBody(required = false) VariablesSearchRequest variablesSearchRequest) {
     final List<String> variableNames =
@@ -250,14 +296,21 @@ public class TaskController extends ApiErrorController {
             .map(VariablesSearchRequest::getVariableNames)
             .orElse(Collections.emptyList());
 
-    final List<VariableDTO> variables =
-        variableService.getVariables(taskId, variableNames, Collections.emptySet());
+    final List<VariableSearchResponse> variables =
+        variableService.getVariableSearchResponses(taskId, variableNames);
+
     variables.forEach(
-        variable -> {
-          if (variable.getIsValueTruncated()) {
-            variable.setValue(null);
+        resp -> {
+          if (resp.getIsValueTruncated()) {
+            resp.resetValue();
+          }
+
+          final var draft = resp.getDraft();
+          if (draft != null && draft.getIsValueTruncated()) {
+            draft.resetValue();
           }
         });
+
     return ResponseEntity.ok(variables);
   }
 }
