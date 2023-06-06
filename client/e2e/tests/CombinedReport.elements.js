@@ -13,7 +13,7 @@ export const report = (title) => Selector('.ListItem.report').withText(title);
 export const editButton = (report) => report.find('.DropdownOption').withText('Edit');
 export const chartRenderer = Selector('.ChartRenderer');
 export const reportColorPopover = (text) =>
-  Selector('.TypeaheadMultipleSelection__valueListItem').withText(text).find('.Popover');
+  Selector('.TypeaheadMultipleSelection__valueListItem').withText(text).find('.CarbonPopover');
 export const redColor = Selector('.color[color="#DB3E00"]');
 export const configurationButton = Selector('.configurationPopover');
 export const goalSwitch = Selector('.configurationPopover fieldset')

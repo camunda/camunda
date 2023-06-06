@@ -72,7 +72,7 @@
               display: block;
             }
 
-            .Popover {
+            .CarbonPopover {
               .buttonWrapper .Button {
                 width: 20px;
                 height: 20px;
@@ -89,11 +89,8 @@
                 }
               }
 
-              .dialog {
+              .popoverContent {
                 padding: 5px;
-              }
-              .dialogContainer {
-                min-width: auto;
               }
             }
           }
