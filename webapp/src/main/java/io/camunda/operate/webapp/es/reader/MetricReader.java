@@ -18,6 +18,8 @@ import org.springframework.stereotype.Component;
 
 import java.time.OffsetDateTime;
 
+import static io.camunda.operate.es.contract.MetricContract.EVENT_PROCESS_INSTANCE_STARTED;
+import static io.camunda.operate.es.dao.Query.whereEquals;
 import static io.camunda.operate.schema.indices.MetricIndex.EVENT;
 import static io.camunda.operate.schema.indices.MetricIndex.EVENT_TIME;
 import static io.camunda.operate.schema.indices.MetricIndex.VALUE;
@@ -36,6 +38,7 @@ public class MetricReader implements MetricContract.Reader {
     int limit = 1; // limiting to one, as we just care about the total documents number
     final Query query =
         Query.whereEquals(EVENT, MetricContract.EVENT_PROCESS_INSTANCE_FINISHED)
+            .or(whereEquals(EVENT, EVENT_PROCESS_INSTANCE_STARTED))
             .and(range(EVENT_TIME, startTime, endTime))
             .aggregate(PROCESS_INSTANCES_AGG_NAME, VALUE, limit);
 

@@ -215,15 +215,13 @@ public class ListViewZeebeRecordProcessor {
         piEntity.setState(ProcessInstanceState.CANCELED);
       } else {
         piEntity.setState(ProcessInstanceState.COMPLETED);
-        String processInstanceKey = String.valueOf(piEntity.getProcessInstanceKey());
-        if(isRootProcessInstance){
-          bulkRequest.add(metricWriter
-              .registerProcessInstanceCompleteEvent(processInstanceKey, timestamp));
-        }
       }
     } else if (intentStr.equals(ELEMENT_ACTIVATING.name())) {
       piEntity.setStartDate(timestamp);
       piEntity.setState(ProcessInstanceState.ACTIVE);
+      if(isRootProcessInstance){
+        registerStartedRootProcessInstance(piEntity, bulkRequest, timestamp);
+      }
     } else {
       piEntity.setState(ProcessInstanceState.ACTIVE);
     }
@@ -247,6 +245,12 @@ public class ListViewZeebeRecordProcessor {
           .put(ConversionUtils.toStringOrNull(recordValue.getProcessInstanceKey()), treePath);
     }
     return piEntity;
+  }
+
+  private void registerStartedRootProcessInstance(ProcessInstanceForListViewEntity piEntity, BulkRequest bulkRequest, OffsetDateTime timestamp) {
+    String processInstanceKey = String.valueOf(piEntity.getProcessInstanceKey());
+    bulkRequest.add(metricWriter
+        .registerProcessInstanceStartEvent(processInstanceKey, timestamp));
   }
 
   private String getTreePathForCalledProcess(final ProcessInstanceRecordValue recordValue) {

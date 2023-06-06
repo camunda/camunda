@@ -24,6 +24,7 @@ import java.time.OffsetDateTime;
 import java.util.List;
 
 import static io.camunda.operate.es.dao.Query.range;
+import static io.camunda.operate.es.dao.Query.whereEquals;
 import static io.camunda.operate.schema.indices.MetricIndex.EVENT;
 import static io.camunda.operate.schema.indices.MetricIndex.EVENT_TIME;
 import static io.camunda.operate.schema.indices.MetricIndex.VALUE;
@@ -69,6 +70,7 @@ public class MetricReaderTest {
     verify(dao).searchWithAggregation(entityCaptor.capture());
 
     Query expected = Query.whereEquals(EVENT, MetricContract.EVENT_PROCESS_INSTANCE_FINISHED)
+        .or(whereEquals(EVENT, MetricContract.EVENT_PROCESS_INSTANCE_STARTED))
         .and(range(EVENT_TIME, oneHourBefore, now))
         .aggregate(MetricReader.PROCESS_INSTANCES_AGG_NAME, VALUE, 1);
     Query calledValue = entityCaptor.getValue();

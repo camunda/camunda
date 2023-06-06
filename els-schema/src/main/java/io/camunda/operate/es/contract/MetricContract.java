@@ -13,6 +13,7 @@ import java.time.OffsetDateTime;
 public interface MetricContract {
 
   String EVENT_PROCESS_INSTANCE_FINISHED = "EVENT_PROCESS_INSTANCE_FINISHED";
+  String EVENT_PROCESS_INSTANCE_STARTED = "EVENT_PROCESS_INSTANCE_STARTED";
   String EVENT_DECISION_INSTANCE_EVALUATED = "EVENT_DECISION_INSTANCE_EVALUATED";
 
   interface Reader {
@@ -21,7 +22,7 @@ public interface MetricContract {
   }
 
   interface Writer {
-    IndexRequest registerProcessInstanceCompleteEvent(String processInstanceKey, OffsetDateTime timestamp);
+    IndexRequest registerProcessInstanceStartEvent(String processInstanceKey, OffsetDateTime timestamp);
     IndexRequest registerDecisionInstanceCompleteEvent(String processInstanceKey, OffsetDateTime timestamp);
   }
 }

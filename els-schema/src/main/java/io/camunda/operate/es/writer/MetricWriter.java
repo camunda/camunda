@@ -16,9 +16,7 @@ import org.springframework.stereotype.Component;
 
 import java.time.OffsetDateTime;
 
-import static io.camunda.operate.es.contract.MetricContract.EVENT_DECISION_INSTANCE_EVALUATED;
-import static io.camunda.operate.es.contract.MetricContract.EVENT_PROCESS_INSTANCE_FINISHED;
-import static io.camunda.operate.es.contract.MetricContract.Writer;
+import static io.camunda.operate.es.contract.MetricContract.*;
 
 @Component
 public class MetricWriter implements Writer {
@@ -27,8 +25,8 @@ public class MetricWriter implements Writer {
   @Autowired private UsageMetricDAO dao;
 
   @Override
-  public IndexRequest registerProcessInstanceCompleteEvent(String processInstanceKey, OffsetDateTime timestamp) {
-    final MetricEntity metric = createProcessInstanceFinishedKey(processInstanceKey, timestamp);
+  public IndexRequest registerProcessInstanceStartEvent(String processInstanceKey, OffsetDateTime timestamp) {
+    final MetricEntity metric = createProcessInstanceStartedKey(processInstanceKey, timestamp);
     return dao.buildESIndexRequest(metric);
   }
 
@@ -39,9 +37,9 @@ public class MetricWriter implements Writer {
     return dao.buildESIndexRequest(metric);
   }
 
-  private MetricEntity createProcessInstanceFinishedKey(String processInstanceKey, OffsetDateTime timestamp) {
+  private MetricEntity createProcessInstanceStartedKey(String processInstanceKey, OffsetDateTime timestamp) {
     return (MetricEntity) new MetricEntity()
-        .setEvent(EVENT_PROCESS_INSTANCE_FINISHED)
+        .setEvent(EVENT_PROCESS_INSTANCE_STARTED)
         .setValue(processInstanceKey)
         .setEventTime(timestamp);
   }

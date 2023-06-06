@@ -65,6 +65,11 @@ public class Query {
     return this;
   }
 
+  public Query or(Query orQuery) {
+    this.queryBuilder = ElasticsearchUtil.joinWithOr(this.queryBuilder, orQuery.queryBuilder);
+    return this;
+  }
+
   QueryBuilder getQueryBuilder() {
     return this.queryBuilder;
   }

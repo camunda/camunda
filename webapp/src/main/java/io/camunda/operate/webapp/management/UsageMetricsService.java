@@ -22,7 +22,7 @@ public class UsageMetricsService {
   @Autowired private MetricContract.Reader reader;
 
   /**
-   * Retrieve total of processed instances given a period of time
+   * Retrieve total of started instances given a period of time
    *
    * <p>Sample Usage:
    * <HOST>:<PORT>/actuator/usage-metrics/process-instances?startTime=2012-12-19T06:01:17.171Z&endTime=2012-12-29T06:01:17.171Z

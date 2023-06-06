@@ -7,11 +7,8 @@
 package io.camunda.operate.es.writer;
 
 import io.camunda.operate.entities.MetricEntity;
-import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.es.dao.UsageMetricDAO;
-import io.camunda.operate.es.dao.response.InsertResponse;
 import org.elasticsearch.action.index.IndexRequest;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -21,8 +18,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.OffsetDateTime;
 
-import static io.camunda.operate.es.contract.MetricContract.EVENT_DECISION_INSTANCE_EVALUATED;
-import static io.camunda.operate.es.contract.MetricContract.EVENT_PROCESS_INSTANCE_FINISHED;
+import static io.camunda.operate.es.contract.MetricContract.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
@@ -43,14 +39,14 @@ public class MetricWriterTest {
 
     // When
     when(dao.buildESIndexRequest(any())).thenReturn(new IndexRequest("index"));
-    subject.registerProcessInstanceCompleteEvent(key, OffsetDateTime.now());
+    subject.registerProcessInstanceStartEvent(key, OffsetDateTime.now());
 
     // Then
     ArgumentCaptor<MetricEntity> entityCaptor = ArgumentCaptor.forClass(MetricEntity.class);
     verify(dao).buildESIndexRequest(entityCaptor.capture());
 
     MetricEntity calledValue = entityCaptor.getValue();
-    assertEquals(EVENT_PROCESS_INSTANCE_FINISHED, calledValue.getEvent());
+    assertEquals(EVENT_PROCESS_INSTANCE_STARTED, calledValue.getEvent());
     assertEquals(key, calledValue.getValue());
   }
 
