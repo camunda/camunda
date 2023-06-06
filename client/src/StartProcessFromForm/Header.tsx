@@ -6,20 +6,19 @@
  */
 
 import {C3Navigation} from '@camunda/camunda-composite-components';
-import {observer} from 'mobx-react-lite';
 import {tracking} from 'modules/tracking';
-import {themeStore} from 'modules/stores/theme';
 import {Link} from 'react-router-dom';
 
-const Header: React.FC = observer(() => {
-  const {selectedTheme, changeTheme} = themeStore;
+type Props = {
+  name: string;
+};
 
+const Header: React.FC<Props> = ({name}) => {
   return (
     <C3Navigation
       app={{
-        ariaLabel: 'Camunda Tasklist',
-        name: 'Tasklist',
-        prefix: 'Camunda',
+        ariaLabel: name,
+        name,
         routeProps: {
           to: 'https://camunda.io',
           onClick: () => {
@@ -35,19 +34,8 @@ const Header: React.FC = observer(() => {
       navbar={{
         elements: [],
       }}
-      userSideBar={{
-        ariaLabel: 'Settings',
-        customElements: {
-          themeSelector: {
-            currentTheme: selectedTheme,
-            onChange: (theme: string) => {
-              changeTheme(theme as 'system' | 'dark' | 'light');
-            },
-          },
-        },
-      }}
     />
   );
-});
+};
 
 export {Header};

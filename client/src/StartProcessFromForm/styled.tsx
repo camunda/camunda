@@ -7,10 +7,10 @@
 
 import styled from 'styled-components';
 import {ReactComponent as Logo} from './logo.svg';
+import {Content as BaseContent} from '@carbon/react';
 
-const Main = styled.main`
+const Content = styled(BaseContent)`
   width: 100vw;
-  height: calc(100vh - 48px);
   overflow-y: auto;
   display: flex;
   justify-content: center;
@@ -28,4 +28,4 @@ const FormContainer = styled.div`
   width: min(100%, 900px);
 `;
 
-export {Main, LogoIcon, FormContainer};
+export {Content, LogoIcon, FormContainer};

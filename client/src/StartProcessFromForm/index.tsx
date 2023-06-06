@@ -6,7 +6,7 @@
  */
 
 import {useStartProcessParams} from 'modules/routing';
-import {Main, LogoIcon, FormContainer} from './styled';
+import {Content, LogoIcon, FormContainer} from './styled';
 import {useExternalForm} from 'modules/queries/useExternalForm';
 import {Header} from './Header';
 import {useEffect} from 'react';
@@ -65,8 +65,8 @@ const StartProcessFromForm: React.FC = () => {
 
   return (
     <>
-      <Header />
-      <Main id="main-content" className="cds--content" tabIndex={-1}>
+      <Header name={data?.title ?? ''} />
+      <Content id="main-content" tabIndex={-1} tagName="main">
         <FormContainer>
           {isSuccess ? (
             <C3EmptyState
@@ -128,7 +128,7 @@ const StartProcessFromForm: React.FC = () => {
           )}
         </FormContainer>
         <LogoIcon />
-      </Main>
+      </Content>
     </>
   );
 };
