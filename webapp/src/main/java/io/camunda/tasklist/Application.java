@@ -92,7 +92,8 @@ public class Application {
     return Map.of(
         "graphql.playground.enabled", "false",
         "graphql.servlet.exception-handlers-enabled", "true",
-        "graphql.extended-scalars", "DateTime");
+        "graphql.extended-scalars", "DateTime",
+        "graphql.tools.introspection-enabled", "false");
   }
 
   private static Map<String, Object> getWebProperties() {

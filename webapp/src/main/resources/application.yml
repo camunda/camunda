@@ -8,3 +8,11 @@ spring:
       resourceserver:
         jwt:
           issuer-uri: ${camunda.tasklist.identity.issuerUrl}
+---
+spring:
+  config:
+    activate:
+      on-profile: "dev"
+graphql:
+  tools:
+    introspection-enabled: true
