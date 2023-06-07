@@ -908,7 +908,6 @@
   "common": {
     "name": "Name",
     "description": "Description",
-    "noDescription": "No description yet",
     "edit": "Edit",
     "editName": "Edit {name}",
     "addName": "Add {name}",

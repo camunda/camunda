@@ -1270,6 +1270,8 @@ test('add, edit and remove reports description', async (t) => {
   await u.createNewReport(t);
 
   // Add description
+  await t.expect(Common.descriptionParagraph.exists).notOk();
+  await t.expect(Common.addDescriptionButton.textContent).contains('Add Description');
   const description = 'This is a description of the report.';
   await u.addEditEntityDescription(t, description, 'img/report-descriptionModal.png');
 
@@ -1285,6 +1287,9 @@ test('add, edit and remove reports description', async (t) => {
   // Edit description
   await t.resizeWindow(1200, 600);
   await t.click(Common.editButton);
+
+  await t.expect(Common.addDescriptionButton.textContent).contains('Edit');
+
   const newDescription =
     'This is a new description of the report. This time the description is very long and it will not fit in one line. It will display ellipsis and More button.';
   await u.addEditEntityDescription(t, newDescription);
@@ -1317,7 +1322,8 @@ test('add, edit and remove reports description', async (t) => {
   // Remove description
   await t.click(Common.editButton);
   await u.addEditEntityDescription(t);
-  await t.expect(Common.descriptionField.textContent).contains('No description yet');
+  await t.expect(Common.descriptionParagraph.exists).notOk();
+  await t.expect(Common.addDescriptionButton.textContent).contains('Add Description');
 
   await u.save(t);
 

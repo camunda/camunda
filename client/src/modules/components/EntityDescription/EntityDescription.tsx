@@ -90,27 +90,30 @@ export default function EntityDescription({description, onEdit}: EntityDescripti
     return () => window.removeEventListener('resize', calculateShowLessButton);
   }, []);
 
+  const {className, icon, text} = getButtonProperties(description);
+
   return (
     <>
       <div className="EntityDescription">
-        <p
-          ref={descriptionRef}
-          className={classnames('description', {
-            overflowHidden: !isDescriptionOpen,
-            empty: !editedDescription,
-          })}
-        >
-          {description || t('common.noDescription')}
-        </p>
+        {description && (
+          <p
+            ref={descriptionRef}
+            className={classnames('description', {
+              overflowHidden: !isDescriptionOpen,
+            })}
+          >
+            {description}
+          </p>
+        )}
         {!onEdit && showToggleButton && (
           <span className="toggle" onClick={toggleDescription}>
             {isDescriptionOpen ? t('common.less') : t('common.more')}
           </span>
         )}
         {onEdit && (
-          <LegacyButton className="edit" link onClick={openModal}>
-            <Icon size={12} type={description ? 'edit' : 'plus'} />
-            {t(`common.${description ? 'edit' : 'add'}`)}
+          <LegacyButton className={className} link onClick={openModal}>
+            <Icon size={12} type={icon} />
+            {text}
           </LegacyButton>
         )}
       </div>
@@ -143,4 +146,20 @@ export default function EntityDescription({description, onEdit}: EntityDescripti
       </Modal>
     </>
   );
+}
+
+function getButtonProperties(description: string | null) {
+  if (description) {
+    return {
+      className: 'edit',
+      icon: 'edit',
+      text: t('common.edit'),
+    };
+  }
+
+  return {
+    className: 'add',
+    icon: 'plus',
+    text: `${t('common.add')} ${t('common.description')}`,
+  };
 }

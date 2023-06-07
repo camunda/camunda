@@ -41,21 +41,24 @@ it('should render EntityDescription', () => {
   expect(node.find('.toggle')).toBeDefined();
 });
 
-it('should render placeholder when there is no description', () => {
+it('shouldnt render description container when there is no description', () => {
   const node = shallow(<EntityDescription description={null} />);
 
-  expect(node.find('.EntityDescription .description').text()).toBe('No description yet');
+  expect(node.find('.EntityDescription .description')).not.toExist();
 });
 
 it('should handle change in edit mode', () => {
   const spy = jest.fn();
   const node = shallow(<EntityDescription description={null} onEdit={spy} />);
 
-  node.find('.EntityDescription .edit').simulate('click');
+  const addEditButton = node.find('.EntityDescription .add').dive();
 
-  node.find('.EntityDescriptionEditModal TextEditor').prop<(text: string) => void>('onChange')(
-    'new text'
-  );
+  expect(node.find('.EntityDescription .description')).not.toExist();
+  expect(addEditButton.text()).toContain('Add Description');
+
+  addEditButton.simulate('click');
+
+  node.find('.EntityDescriptionEditModal TextEditor').simulate('change', 'new text');
 
   node.find('.EntityDescriptionEditModal .confirm').simulate('click');
 
@@ -68,9 +71,7 @@ it('should reset description on cancel', () => {
 
   node.find('.EntityDescription .edit').simulate('click');
 
-  node.find('.EntityDescriptionEditModal TextEditor').prop<(text: string) => void>('onChange')(
-    'new text'
-  );
+  node.find('.EntityDescriptionEditModal TextEditor').simulate('change', 'new text');
 
   node.find('.EntityDescriptionEditModal .cancel').simulate('click');
 

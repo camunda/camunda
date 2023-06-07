@@ -13,10 +13,6 @@
       overflow: hidden;
       white-space: nowrap;
     }
-
-    &.empty {
-      color: var(--grey-darken-33);
-    }
   }
 
   .toggle {
@@ -25,7 +21,8 @@
     cursor: pointer;
   }
 
-  .edit {
+  .edit,
+  .add {
     .Icon {
       margin-right: 0;
     }
@@ -33,7 +30,8 @@
 
   .description,
   .toggle,
-  .edit {
+  .edit,
+  .add {
     font-size: inherit;
   }
 

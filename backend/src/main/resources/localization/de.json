@@ -908,7 +908,6 @@
   "common": {
     "name": "Name",
     "description": "Beschreibung",
-    "noDescription": "Noch keine Beschreibung",
     "edit": "Bearbeiten",
     "editName": "{name} bearbeiten",
     "addName": "{name} hinzufügen",

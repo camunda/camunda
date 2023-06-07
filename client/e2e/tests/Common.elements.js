@@ -14,6 +14,7 @@ export const modalConfirmButton = Selector('.Modal.is-visible')
   .nth(-1)
   .find('.cds--modal-footer .cds--btn:last-child');
 export const descriptionField = Selector('.EntityDescription');
+export const descriptionParagraph = descriptionField.find('p');
 export const addDescriptionButton = descriptionField.find('button');
 export const showLessMoreDescriptionButton = descriptionField.find('span.toggle');
 export const descriptionModal = Selector('.EntityDescriptionEditModal');
