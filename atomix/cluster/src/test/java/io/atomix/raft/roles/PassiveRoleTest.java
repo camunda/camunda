@@ -28,6 +28,7 @@ import io.atomix.raft.metrics.RaftReplicationMetrics;
 import io.atomix.raft.protocol.AppendRequest;
 import io.atomix.raft.protocol.AppendResponse;
 import io.atomix.raft.protocol.PersistedRaftRecord;
+import io.atomix.raft.protocol.ProtocolVersionHandler;
 import io.atomix.raft.storage.RaftStorage;
 import io.atomix.raft.storage.log.IndexedRaftLogEntry;
 import io.atomix.raft.storage.log.RaftLog;
@@ -87,7 +88,8 @@ public class PassiveRoleTest {
         .thenThrow(new JournalException.InvalidChecksum("expected"));
 
     // when
-    final AppendResponse response = role.handleAppend(request).join();
+    final AppendResponse response =
+        role.handleAppend(ProtocolVersionHandler.transform(request)).join();
 
     // then
     assertThat(response.succeeded()).isFalse();
@@ -107,7 +109,8 @@ public class PassiveRoleTest {
         .thenReturn(mock(IndexedRaftLogEntry.class));
 
     // when
-    final AppendResponse response = role.handleAppend(request).join();
+    final AppendResponse response =
+        role.handleAppend(ProtocolVersionHandler.transform(request)).join();
 
     // then
     verify(log, times(1)).flush();
@@ -128,7 +131,8 @@ public class PassiveRoleTest {
         .thenThrow(new InvalidChecksum.InvalidChecksum("expected"));
 
     // when
-    final AppendResponse response = role.handleAppend(request).join();
+    final AppendResponse response =
+        role.handleAppend(ProtocolVersionHandler.transform(request)).join();
 
     // then
     verify(log, times(1)).flush();
@@ -146,7 +150,8 @@ public class PassiveRoleTest {
         .thenThrow(new InvalidChecksum.InvalidChecksum("expected"));
 
     // when
-    final AppendResponse response = role.handleAppend(request).join();
+    final AppendResponse response =
+        role.handleAppend(ProtocolVersionHandler.transform(request)).join();
 
     // then
     verify(log, never()).flush();
@@ -170,7 +175,7 @@ public class PassiveRoleTest {
     when(ctx.getLog()).thenReturn(log);
 
     // when
-    role.handleAppend(request).join();
+    role.handleAppend(ProtocolVersionHandler.transform(request)).join();
 
     // then
     verify(log, times(1)).flush();

@@ -237,6 +237,12 @@ public class ControllableRaftServerProtocol implements RaftServerProtocol {
   }
 
   @Override
+  public CompletableFuture<AppendResponse> append(
+      final MemberId memberId, final VersionedAppendRequest request) {
+    return null;
+  }
+
+  @Override
   public void registerTransferHandler(
       final Function<TransferRequest, CompletableFuture<TransferResponse>> handler) {
     transferHandler = handler;
@@ -303,10 +309,14 @@ public class ControllableRaftServerProtocol implements RaftServerProtocol {
   }
 
   @Override
-  public void registerAppendHandler(
+  public void registerAppendV1Handler(
       final Function<AppendRequest, CompletableFuture<AppendResponse>> handler) {
     appendHandler = handler;
   }
+
+  @Override
+  public void registerAppendV2Handler(
+      final Function<VersionedAppendRequest, CompletableFuture<AppendResponse>> handler) {}
 
   @Override
   public void unregisterAppendHandler() {
