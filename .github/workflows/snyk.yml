@@ -64,10 +64,8 @@ jobs:
       - name: Install Snyk CLI
         uses: snyk/actions/setup@master
       - uses: actions/checkout@v3
-        if: inputs.build
       - name: Setup Zeebe
         uses: ./.github/actions/setup-zeebe
-        if: inputs.build
         with:
           maven-cache-key-modifier: snyk
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
