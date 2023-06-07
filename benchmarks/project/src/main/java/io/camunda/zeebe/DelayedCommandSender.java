@@ -55,7 +55,6 @@ public class DelayedCommandSender extends Thread {
     while (!shuttingDown) {
       try {
         final var delayedCommand = commands.take();
-        Loggers.JOB_WORKER_LOGGER.error("Sending command {}", delayedCommand.sequence);
         final ZeebeFuture<?> requestFuture = delayedCommand.getCommand().send();
         final var timer = JOB_COMPLETE_LATENCY.startTimer();
         requestFuture.whenComplete(

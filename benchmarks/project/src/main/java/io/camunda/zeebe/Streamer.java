@@ -72,7 +72,6 @@ public class Streamer extends App {
                   final var timer = JOB_PROCESS_LATENCY.startTimer();
                   final var command =
                       jobClient.newCompleteCommand(job.getKey()).variables(variables);
-                  Loggers.JOB_WORKER_LOGGER.error("Adding a delayed command");
                   delayedCommands.offer(
                       new DelayedCommand(
                           Instant.now().plusMillis(completionDelay), command, timer));
@@ -90,7 +89,6 @@ public class Streamer extends App {
         .addShutdownHook(
             new Thread(
                 () -> {
-                  LoggerFactory.getLogger(getClass()).warn("Shutting down");
                   streamer.cancel(true);
                   client.close();
                   asyncJobCompleter.close();

@@ -12,17 +12,25 @@ import io.camunda.zeebe.gateway.ResponseMapper;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivatedJob;
 import io.camunda.zeebe.protocol.impl.stream.job.ActivatedJobImpl;
 import io.camunda.zeebe.transport.stream.api.ClientStreamConsumer;
+import io.grpc.stub.ServerCallStreamObserver;
 import io.grpc.stub.StreamObserver;
 import java.util.concurrent.CompletableFuture;
 import org.agrona.DirectBuffer;
+import org.agrona.ErrorHandler;
 import org.slf4j.Logger;
 
 public final class JobClientStreamConsumer implements ClientStreamConsumer {
   private static final Logger LOGGER = Loggers.JOB_STREAM_LOGGER;
   private final StreamObserver<ActivatedJob> observer;
 
+  private ErrorHandler errorHandler;
+
   public JobClientStreamConsumer(final StreamObserver<ActivatedJob> observer) {
     this.observer = observer;
+  }
+
+  public void setErrorHandler(final ErrorHandler errorHandler) {
+    this.errorHandler = errorHandler;
   }
 
   @Override
@@ -48,6 +56,13 @@ public final class JobClientStreamConsumer implements ClientStreamConsumer {
       LOGGER.trace("Pushed out job {}", job);
     } catch (final Exception e) {
       observer.onError(e);
+
+      // TODO: pre-emptively find a way to figure this out without waiting for an error, e.g. check
+      // if the stream is closed
+      if (errorHandler != null) {
+        errorHandler.onError(e);
+      }
+
       LOGGER.debug("Closing stream due to failure to stream job {}", job, e);
       throw e;
     }

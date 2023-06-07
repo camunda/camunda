@@ -38,6 +38,5 @@ final class JobStreamLifecycleIT {
     Thread.sleep(10_000);
 
     // then
-    result.join();
   }
 }

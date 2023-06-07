@@ -412,8 +412,19 @@ public final class EndpointManager {
                           activationProperties,
                           error);
                       responseObserver.onError(error);
+                      jobStreamer.remove(id);
                       return;
                     }
+
+                    consumer.setErrorHandler(
+                        t -> {
+                          Loggers.JOB_STREAM_LOGGER.debug(
+                              "Removing client stream [{}] (type={}, props={}) due to error",
+                              id,
+                              jobType,
+                              activationProperties);
+                          jobStreamer.remove(id);
+                        });
 
                     responseObserver.setOnCancelHandler(
                         () -> {
