@@ -31,10 +31,10 @@ public class DbDistributionState implements MutableDistributionState {
   private final ColumnFamily<DbCompositeKey<DbForeignKey<DbLong>, DbInt>, DbNil>
       pendingDistributionColumnFamily;
 
-  private final CommandValueAndValueTypeWrapper commandValueAndValueTypeWrapper;
+  private final PersistedCommandDistribution persistedCommandDistribution;
 
-  /** [distribution key] => [ValueType and RecordValue of distributed command] */
-  private final ColumnFamily<DbLong, CommandValueAndValueTypeWrapper>
+  /** [distribution key] => [persisted command distribution] */
+  private final ColumnFamily<DbLong, PersistedCommandDistribution>
       commandDistributionRecordColumnFamily;
 
   public DbDistributionState(
@@ -42,13 +42,13 @@ public class DbDistributionState implements MutableDistributionState {
     distributionKey = new DbLong();
     fkDistribution =
         new DbForeignKey<>(distributionKey, ZbColumnFamilies.COMMAND_DISTRIBUTION_RECORD);
-    commandValueAndValueTypeWrapper = new CommandValueAndValueTypeWrapper();
+    persistedCommandDistribution = new PersistedCommandDistribution();
     commandDistributionRecordColumnFamily =
         zeebeDb.createColumnFamily(
             ZbColumnFamilies.COMMAND_DISTRIBUTION_RECORD,
             transactionContext,
             distributionKey,
-            commandValueAndValueTypeWrapper);
+            persistedCommandDistribution);
 
     partitionKey = new DbInt();
     distributionPartitionKey = new DbCompositeKey<>(fkDistribution, partitionKey);
@@ -65,8 +65,7 @@ public class DbDistributionState implements MutableDistributionState {
       final long distributionKey, final CommandDistributionRecord commandDistributionRecord) {
     this.distributionKey.wrapLong(distributionKey);
     commandDistributionRecordColumnFamily.insert(
-        this.distributionKey,
-        new CommandValueAndValueTypeWrapper().wrap(commandDistributionRecord));
+        this.distributionKey, new PersistedCommandDistribution().wrap(commandDistributionRecord));
   }
 
   @Override
@@ -116,15 +115,16 @@ public class DbDistributionState implements MutableDistributionState {
       final long distributionKey, final int partition) {
     this.distributionKey.wrapLong(distributionKey);
 
-    final var storedDistribution = commandDistributionRecordColumnFamily.get(this.distributionKey);
+    final var persistedDistribution =
+        commandDistributionRecordColumnFamily.get(this.distributionKey);
 
-    if (storedDistribution == null) {
+    if (persistedDistribution == null) {
       return null;
     }
 
     return new CommandDistributionRecord()
         .setPartitionId(partition)
-        .setValueType(storedDistribution.getValueType())
-        .setRecordValue(storedDistribution.getCommandValue());
+        .setValueType(persistedDistribution.getValueType())
+        .setRecordValue(persistedDistribution.getCommandValue());
   }
 }

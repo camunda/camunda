@@ -16,22 +16,18 @@ import io.camunda.zeebe.protocol.impl.record.value.distribution.CommandDistribut
 import io.camunda.zeebe.protocol.record.ValueType;
 import org.agrona.concurrent.UnsafeBuffer;
 
-/**
- * The CommandValueAndValueTypeWrapper is used to store a command value with it's corresponding
- * ValueType in the state.
- */
-public class CommandValueAndValueTypeWrapper extends UnpackedObject implements DbValue {
+public class PersistedCommandDistribution extends UnpackedObject implements DbValue {
 
   private final EnumProperty<ValueType> valueTypeProperty =
       new EnumProperty<>("valueType", ValueType.class);
   private final ObjectProperty<UnifiedRecordValue> commandValueProperty =
       new ObjectProperty<>("commandValue", new UnifiedRecordValue());
 
-  public CommandValueAndValueTypeWrapper() {
+  public PersistedCommandDistribution() {
     declareProperty(valueTypeProperty).declareProperty(commandValueProperty);
   }
 
-  public CommandValueAndValueTypeWrapper wrap(
+  public PersistedCommandDistribution wrap(
       final CommandDistributionRecord commandDistributionRecord) {
     valueTypeProperty.setValue(commandDistributionRecord.getValueType());
 
