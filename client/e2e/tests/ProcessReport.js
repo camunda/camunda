@@ -143,7 +143,7 @@ test('version selection', async (t) => {
   await t.click(e.versionCheckbox(2));
 
   await t.takeElementScreenshot(
-    e.definitionSelectionDialog,
+    e.definitionEditorDialog,
     'process-analysis/report-analysis/img/report-versionSelection.png'
   );
 
@@ -155,7 +155,7 @@ test('version selection', async (t) => {
   await t.click(e.tenantPopover);
 
   await t.takeElementScreenshot(
-    e.definitionSelectionDialog,
+    e.definitionEditorDialog,
     'process-analysis/report-analysis/img/tenantSelection.png'
   );
 });

@@ -14,7 +14,8 @@
 
   .CarbonPopover .popoverContent {
     padding: 0;
-    max-width: max-content;
+    width: auto;
+    max-width: unset;
   }
 
   .DateFields {
