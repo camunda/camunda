@@ -34,7 +34,7 @@ public class TestRaftServerProtocol extends TestRaftProtocol implements RaftServ
   private Function<TransferRequest, CompletableFuture<TransferResponse>> transferHandler;
   private Function<PollRequest, CompletableFuture<PollResponse>> pollHandler;
   private Function<VoteRequest, CompletableFuture<VoteResponse>> voteHandler;
-  private Function<AppendRequest, CompletableFuture<AppendResponse>> appendHandler;
+  private Function<AppendRequestV2, CompletableFuture<AppendResponse>> appendHandler;
   private final Set<MemberId> partitions = Sets.newCopyOnWriteArraySet();
 
   public TestRaftServerProtocol(
@@ -100,13 +100,13 @@ public class TestRaftServerProtocol extends TestRaftProtocol implements RaftServ
   @Override
   public CompletableFuture<AppendResponse> append(
       final MemberId memberId, final AppendRequest request) {
-    return scheduleTimeout(getServer(memberId).thenCompose(listener -> listener.append(request)));
+    throw new IllegalArgumentException("Using old version not supported in tests");
   }
 
   @Override
   public CompletableFuture<AppendResponse> append(
       final MemberId memberId, final AppendRequestV2 request) {
-    return null;
+    return scheduleTimeout(getServer(memberId).thenCompose(listener -> listener.append(request)));
   }
 
   @Override
@@ -178,12 +178,14 @@ public class TestRaftServerProtocol extends TestRaftProtocol implements RaftServ
   @Override
   public void registerAppendV1Handler(
       final Function<AppendRequest, CompletableFuture<AppendResponse>> handler) {
-    appendHandler = handler;
+    // Ignore as old version is not supported in tests
   }
 
   @Override
   public void registerAppendV2Handler(
-      final Function<AppendRequestV2, CompletableFuture<AppendResponse>> handler) {}
+      final Function<AppendRequestV2, CompletableFuture<AppendResponse>> handler) {
+    appendHandler = handler;
+  }
 
   @Override
   public void unregisterAppendHandler() {
@@ -199,7 +201,7 @@ public class TestRaftServerProtocol extends TestRaftProtocol implements RaftServ
     }
   }
 
-  CompletableFuture<AppendResponse> append(final AppendRequest request) {
+  CompletableFuture<AppendResponse> append(final AppendRequestV2 request) {
     if (appendHandler != null) {
       return appendHandler.apply(request);
     } else {
