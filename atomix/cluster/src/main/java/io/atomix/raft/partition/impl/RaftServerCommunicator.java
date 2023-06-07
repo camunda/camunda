@@ -224,6 +224,12 @@ public class RaftServerCommunicator implements RaftServerProtocol {
     clusterCommunicator.unsubscribe(context.appendV1subject);
   }
 
+  @Override
+  public CompletableFuture<AppendResponse> append(
+      final MemberId memberId, final AppendRequestV2 request) {
+    return sendAndReceive(context.appendV2subject, request, memberId);
+  }
+
   private <T, U> CompletableFuture<U> sendAndReceive(
       final String subject, final T request, final MemberId memberId) {
     return sendAndReceive(subject, request, memberId, requestTimeout);

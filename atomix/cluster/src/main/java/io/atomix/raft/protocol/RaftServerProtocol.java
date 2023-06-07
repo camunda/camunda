@@ -86,6 +86,8 @@ public interface RaftServerProtocol {
    */
   CompletableFuture<AppendResponse> append(MemberId memberId, AppendRequest request);
 
+  CompletableFuture<AppendResponse> append(MemberId memberId, AppendRequestV2 request);
+
   /**
    * Registers a transfer request callback.
    *
