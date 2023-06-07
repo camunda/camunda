@@ -15,11 +15,68 @@
  */
 package io.camunda.zeebe.client.api.command;
 
+import io.camunda.zeebe.client.api.command.ActivateJobsCommandStep1.ActivateJobsCommandStep2;
+import io.camunda.zeebe.client.api.command.ActivateJobsCommandStep1.ActivateJobsCommandStep3;
 import io.camunda.zeebe.client.api.response.StreamJobsResponse;
 import io.camunda.zeebe.client.api.worker.JobHandler;
+import java.time.Duration;
+import java.util.List;
 
-public interface StreamJobsCommandStep1 extends FinalCommandStep<StreamJobsResponse> {
-  StreamJobsCommandStep2 handler(final JobHandler jobHandler);
+public interface StreamJobsCommandStep1 {
+  /**
+   * Set the type of jobs to work on.
+   *
+   * @param jobType the type of jobs (e.g. "payment")
+   * @return the builder for this command
+   */
+  StreamJobsCommandStep2 jobType(String jobType);
 
-  interface StreamJobsCommandStep2 extends FinalCommandStep<StreamJobsResponse> {}
+  interface StreamJobsCommandStep2 {
+    StreamJobsCommandStep3 handler(final JobHandler jobHandler);
+  }
+
+  interface StreamJobsCommandStep3 extends FinalCommandStep<StreamJobsResponse> {
+    /**
+     * Set the time for how long a job is exclusively assigned for this subscription.
+     *
+     * <p>In this time, the job can not be assigned by other subscriptions to ensure that only one
+     * subscription work on the job. When the time is over then the job can be assigned again by
+     * this or other subscription if it's not completed yet.
+     *
+     * <p>If no time is set then the default is used from the configuration.
+     *
+     * @param timeout the time as duration (e.g. "Duration.ofMinutes(5)")
+     * @return the builder for this command. Call {@link #send()} to complete the command and send
+     *     it to the broker.
+     */
+    StreamJobsCommandStep3 timeout(Duration timeout);
+
+    /**
+     * Set the name of the job worker.
+     *
+     * <p>This name is used to identify the worker which activated the jobs. Its main purpose is for
+     * monitoring and auditing. Commands on activated jobs do not check the worker name, i.e.
+     * complete or fail job.
+     *
+     * <p>If no name is set then the default is used from the configuration.
+     *
+     * @param workerName the name of the worker (e.g. "payment-service")
+     * @return the builder for this command. Call {@link #send()} to complete the command and send
+     *     it to the broker.
+     */
+    StreamJobsCommandStep3 workerName(String workerName);
+
+    /**
+     * Set a list of variable names which should be fetch on job activation.
+     *
+     * <p>The jobs which are activated by this command will only contain variables from this list.
+     *
+     * <p>This can be used to limit the number of variables of the activated jobs.
+     *
+     * @param fetchVariables list of variables names to fetch on activation
+     * @return the builder for this command. Call {@link #send()} to complete the command and send
+     *     it to the broker.
+     */
+    StreamJobsCommandStep3 fetchVariables(List<String> fetchVariables);
+  }
 }

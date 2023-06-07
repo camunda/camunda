@@ -20,6 +20,7 @@ import io.camunda.zeebe.client.api.JsonMapper;
 import io.camunda.zeebe.client.api.ZeebeFuture;
 import io.camunda.zeebe.client.api.command.StreamJobsCommandStep1;
 import io.camunda.zeebe.client.api.command.StreamJobsCommandStep1.StreamJobsCommandStep2;
+import io.camunda.zeebe.client.api.command.StreamJobsCommandStep1.StreamJobsCommandStep3;
 import io.camunda.zeebe.client.api.response.StreamJobsResponse;
 import io.camunda.zeebe.client.api.worker.JobClient;
 import io.camunda.zeebe.client.api.worker.JobHandler;
@@ -34,15 +35,17 @@ import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivatedJob;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.StreamJobsRequest;
 import io.grpc.stub.StreamObserver;
 import java.time.Duration;
+import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
 
-public final class StreamJobsCommandImpl implements StreamJobsCommandStep1, StreamJobsCommandStep2 {
+public final class StreamJobsCommandImpl
+    implements StreamJobsCommandStep1, StreamJobsCommandStep2, StreamJobsCommandStep3 {
   private final GatewayStub asyncStub;
   private final JsonMapper jsonMapper;
   private final Predicate<Throwable> retryPredicate;
-  private final StreamJobsRequest request;
+  private final StreamJobsRequest.Builder requestBuilder;
   private final JobClient jobClient;
   private final ExecutorService executorService;
 
@@ -58,18 +61,19 @@ public final class StreamJobsCommandImpl implements StreamJobsCommandStep1, Stre
     this.jsonMapper = jsonMapper;
     this.executorService = executorService;
     this.retryPredicate = retryPredicate;
-    request = StreamJobsRequest.newBuilder().build();
+    requestBuilder = StreamJobsRequest.newBuilder();
     jobClient = new JobClientImpl(asyncStub, config, jsonMapper, retryPredicate);
   }
 
   @Override
-  public StreamJobsCommandStep2 requestTimeout(final Duration requestTimeout) {
+  public StreamJobsCommandStep3 requestTimeout(final Duration requestTimeout) {
     // NOOP
     return this;
   }
 
   @Override
   public ZeebeFuture<StreamJobsResponse> send() {
+    final StreamJobsRequest request = requestBuilder.build();
     final RetriableStreamingFutureImpl<StreamJobsResponse, GatewayOuterClass.ActivatedJob> future =
         new RetriableStreamingFutureImpl<>(
             new StreamJobsResponseImpl(),
@@ -81,9 +85,32 @@ public final class StreamJobsCommandImpl implements StreamJobsCommandStep1, Stre
     return future;
   }
 
+  @Override
+  public StreamJobsCommandStep2 jobType(final String jobType) {
+    requestBuilder.setType(jobType);
+    return this;
+  }
+
+  @Override
+  public StreamJobsCommandStep3 timeout(final Duration timeout) {
+    requestBuilder.setTimeout(timeout.toMillis());
+    return this;
+  }
+
+  @Override
+  public StreamJobsCommandStep3 workerName(final String workerName) {
+    requestBuilder.setWorker(workerName);
+    return this;
+  }
+
+  @Override
+  public StreamJobsCommandStep3 fetchVariables(final List<String> fetchVariables) {
+    requestBuilder.addAllFetchVariable(fetchVariables);
+    return this;
+  }
+
   private void forwardJob(final ActivatedJob job) {
     try {
-      Loggers.JOB_WORKER_LOGGER.error("Received job {}", job.getKey());
       jobHandler.handle(jobClient, new ActivatedJobImpl(jsonMapper, job));
     } catch (final Exception e) {
       jobClient.newFailCommand(job.getKey()).retries(job.getRetries() - 1).send().join();
@@ -91,7 +118,7 @@ public final class StreamJobsCommandImpl implements StreamJobsCommandStep1, Stre
   }
 
   @Override
-  public StreamJobsCommandStep2 handler(final JobHandler jobHandler) {
+  public StreamJobsCommandStep3 handler(final JobHandler jobHandler) {
     this.jobHandler = jobHandler;
     return this;
   }
