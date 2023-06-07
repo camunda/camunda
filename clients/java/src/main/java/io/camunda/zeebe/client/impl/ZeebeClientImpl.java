@@ -187,7 +187,8 @@ public final class ZeebeClientImpl implements ZeebeClient {
   public static GatewayStub buildGatewayStub(
       final ManagedChannel channel, final ZeebeClientConfiguration config) {
     final CallCredentials credentials = buildCallCredentials(config);
-    final GatewayStub gatewayStub = GatewayGrpc.newStub(channel).withCompression("gzip").withCallCredentials(credentials);
+    final GatewayStub gatewayStub =
+        GatewayGrpc.newStub(channel).withCompression("gzip").withCallCredentials(credentials);
     if (!config.getInterceptors().isEmpty()) {
       return gatewayStub.withInterceptors(
           config.getInterceptors().toArray(new ClientInterceptor[] {}));

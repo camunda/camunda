@@ -11,7 +11,6 @@ import io.atomix.cluster.MemberId;
 import io.atomix.cluster.messaging.ClusterCommunicationService;
 import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
-import io.camunda.zeebe.scheduler.FutureUtil;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.transport.stream.api.ClientStream;
@@ -95,16 +94,30 @@ public final class ClientStreamServiceImpl<M extends BufferWriter> extends Actor
       final M metadata,
       final ClientStreamConsumer clientStreamConsumer) {
     final var added = new CompletableFuture<ClientStreamId>();
-    actor
-        .call(() -> clientStreamManager.add(streamType, metadata, clientStreamConsumer))
-        .onComplete(FutureUtil.forward(added));
+    actor.run(
+        () -> {
+          try {
+            added.complete(clientStreamManager.add(streamType, metadata, clientStreamConsumer));
+          } catch (final Exception e) {
+            added.completeExceptionally(e);
+          }
+        });
+
     return added;
   }
 
   @Override
   public CompletableFuture<Void> remove(final ClientStreamId streamId) {
     final var removed = new CompletableFuture<Void>();
-    actor.call(() -> clientStreamManager.remove(streamId)).onComplete(FutureUtil.forward(removed));
+    actor.run(
+        () -> {
+          try {
+            clientStreamManager.remove(streamId);
+            removed.complete(null);
+          } catch (final Exception e) {
+            removed.completeExceptionally(e);
+          }
+        });
     return removed;
   }
 

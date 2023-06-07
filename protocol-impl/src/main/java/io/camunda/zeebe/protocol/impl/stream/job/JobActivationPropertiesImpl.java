@@ -52,7 +52,8 @@ public final class JobActivationPropertiesImpl extends UnpackedObject
     return this;
   }
 
-  public JobActivationPropertiesImpl setFetchVariables(final Collection<DirectBuffer> fetchVariables) {
+  public JobActivationPropertiesImpl setFetchVariables(
+      final Collection<DirectBuffer> fetchVariables) {
     fetchVariablesProp.reset();
     for (final DirectBuffer variable : fetchVariables) {
       fetchVariablesProp.add().wrap(variable);

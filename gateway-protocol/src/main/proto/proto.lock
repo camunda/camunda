@@ -1056,6 +1056,32 @@
                 "type": "int64"
               }
             ]
+          },
+          {
+            "name": "StreamJobsRequest",
+            "fields": [
+              {
+                "id": 1,
+                "name": "type",
+                "type": "string"
+              },
+              {
+                "id": 2,
+                "name": "worker",
+                "type": "string"
+              },
+              {
+                "id": 3,
+                "name": "timeout",
+                "type": "int64"
+              },
+              {
+                "id": 4,
+                "name": "fetchVariable",
+                "type": "string",
+                "is_repeated": true
+              }
+            ]
           }
         ],
         "services": [
@@ -1158,6 +1184,12 @@
                 "name": "BroadcastSignal",
                 "in_type": "BroadcastSignalRequest",
                 "out_type": "BroadcastSignalResponse"
+              },
+              {
+                "name": "StreamJobs",
+                "in_type": "StreamJobsRequest",
+                "out_type": "ActivatedJob",
+                "out_streamed": true
               }
             ]
           }
