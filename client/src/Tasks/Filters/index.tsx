@@ -7,7 +7,14 @@
 
 import {Form, Field} from 'react-final-form';
 import {useSearchParams} from 'react-router-dom';
-import {Container, FormElement, SortItemContainer} from './styled';
+import {
+  Container,
+  FormElement,
+  MenuItemWrapper,
+  MenuOptionsStyles,
+  SortItemContainer,
+  MENU_OPTIONS_STYLES_CLASSNAME,
+} from './styled';
 import {taskFilters} from 'modules/constants/taskFilters';
 import {tracking} from 'modules/tracking';
 import {Dropdown, OverflowMenu, OverflowMenuItem} from '@carbon/react';
@@ -21,11 +28,18 @@ const SORTING_OPTIONS: Record<TaskFilters['sortBy'], string> = {
   creation: 'Creation date',
   'follow-up': 'Follow-up date',
   due: 'Due date',
+  completion: 'Completion date',
 };
 const SORTING_OPTIONS_ORDER: TaskFilters['sortBy'][] = [
   'creation',
   'due',
   'follow-up',
+];
+const COMPLETED_SORTING_OPTIONS_ORDER: TaskFilters['sortBy'][] = [
+  'creation',
+  'due',
+  'follow-up',
+  'completion',
 ];
 
 type Props = {
@@ -37,9 +51,14 @@ const Filters: React.FC<Props> = ({disabled}) => {
   const {filter, sortBy} = useTaskFilters();
   const dropdownRef = useRef<null | HTMLButtonElement>(null);
   const initialValues = {filter, sortBy};
+  const sortOptionsOrder =
+    filter === 'completed'
+      ? COMPLETED_SORTING_OPTIONS_ORDER
+      : SORTING_OPTIONS_ORDER;
 
   return (
     <Container aria-label="Filters">
+      <MenuOptionsStyles />
       <Form<FormValues>
         onSubmit={(values) => {
           const updatedParams = new URLSearchParams(
@@ -72,11 +91,23 @@ const Filters: React.FC<Props> = ({disabled}) => {
                   itemToString={(item) => (item ? item.text : '')}
                   disabled={disabled}
                   onChange={(event) => {
-                    if (typeof event.selectedItem?.id === 'string') {
-                      input.onChange(event.selectedItem.id);
-                      form.submit();
-                      dropdownRef.current?.focus();
+                    const newFilter = event.selectedItem?.id;
+
+                    if (typeof newFilter !== 'string') {
+                      return;
                     }
+
+                    if (newFilter === 'completed') {
+                      form.change('sortBy', 'completion');
+                    }
+
+                    if (newFilter !== 'completed' && sortBy === 'completion') {
+                      form.change('sortBy', 'creation');
+                    }
+
+                    input.onChange(newFilter);
+                    form.submit();
+                    dropdownRef.current?.focus();
                   }}
                   selectedItem={taskFilters[input.value]}
                   onBlur={input.onBlur}
@@ -95,8 +126,9 @@ const Filters: React.FC<Props> = ({disabled}) => {
                   onFocus={input.onFocus}
                   onBlur={input.onBlur}
                   disabled={disabled}
+                  menuOptionsClass={MENU_OPTIONS_STYLES_CLASSNAME}
                 >
-                  {SORTING_OPTIONS_ORDER.map((id) => (
+                  {sortOptionsOrder.map((id) => (
                     <OverflowMenuItem
                       key={id}
                       itemText={
@@ -109,7 +141,9 @@ const Filters: React.FC<Props> = ({disabled}) => {
                                 input.value === id ? undefined : 'hidden',
                             }}
                           />
-                          {SORTING_OPTIONS[id]}
+                          <MenuItemWrapper>
+                            {SORTING_OPTIONS[id]}
+                          </MenuItemWrapper>
                         </SortItemContainer>
                       }
                       onClick={() => {

@@ -10,11 +10,12 @@ import {TasksSearchBody} from 'modules/types';
 
 const SORT_BY_FIELD: Record<
   TaskFilters['sortBy'],
-  'creationTime' | 'dueDate' | 'followUpDate'
+  'creationTime' | 'dueDate' | 'followUpDate' | 'completionTime'
 > = {
   creation: 'creationTime',
   due: 'dueDate',
   'follow-up': 'followUpDate',
+  completion: 'completionTime',
 };
 
 const getQueryVariables = (

@@ -5,7 +5,18 @@
  * except in compliance with the proprietary license.
  */
 
-import styled from 'styled-components';
+import styled, {createGlobalStyle, css} from 'styled-components';
+
+const MENU_OPTIONS_STYLES_CLASSNAME =
+  'cds--custom-sorting-menu-options-wrapper';
+
+const MenuOptionsStyles = createGlobalStyle`
+  ${() => css`
+    .${MENU_OPTIONS_STYLES_CLASSNAME} {
+      width: 180px;
+    }
+  `}
+`;
 
 const Container = styled.section`
   width: 100%;
@@ -24,8 +35,20 @@ const FormElement = styled.form`
 const SortItemContainer = styled.div`
   width: 100%;
   display: flex;
-
   gap: var(--cds-spacing-03);
 `;
 
-export {Container, FormElement, SortItemContainer};
+const MenuItemWrapper = styled.span`
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+`;
+
+export {
+  Container,
+  FormElement,
+  SortItemContainer,
+  MenuItemWrapper,
+  MenuOptionsStyles,
+  MENU_OPTIONS_STYLES_CLASSNAME,
+};

@@ -12,8 +12,6 @@ import {LocationLog} from 'modules/utils/LocationLog';
 import {MemoryRouter} from 'react-router-dom';
 import {Filters} from './index';
 
-jest.mock('modules/featureFlags');
-
 const createWrapper = (
   initialEntries: React.ComponentProps<
     typeof MemoryRouter
@@ -112,6 +110,32 @@ describe('<Filters />', () => {
 
     expect(screen.getByTestId('search')).toHaveTextContent(
       '?filter=unassigned',
+    );
+  });
+
+  it('should sort by completion date', () => {
+    render(<Filters disabled={false} />, {
+      wrapper: createWrapper(),
+    });
+
+    fireEvent.click(screen.getByRole('combobox', {name: 'Filter options'}));
+    fireEvent.click(screen.getByRole('option', {name: 'Completed'}));
+
+    expect(screen.getByTestId('search')).toHaveTextContent(
+      '?filter=completed&sortBy=completion',
+    );
+  });
+
+  it('should remove sorting by completion date', () => {
+    render(<Filters disabled={false} />, {
+      wrapper: createWrapper(['/?filter=completed&sortBy=completion']),
+    });
+
+    fireEvent.click(screen.getByRole('combobox', {name: 'Filter options'}));
+    fireEvent.click(screen.getByRole('option', {name: 'All open'}));
+
+    expect(screen.getByTestId('search')).toHaveTextContent(
+      '?filter=all-open&sortBy=creation',
     );
   });
 });

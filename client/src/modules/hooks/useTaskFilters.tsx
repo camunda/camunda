@@ -16,7 +16,9 @@ const filtersSchema = ZodObject({
     'assigned-to-me',
     'completed',
   ]).default('all-open'),
-  sortBy: ZodEnum(['creation', 'follow-up', 'due']).default('creation'),
+  sortBy: ZodEnum(['creation', 'follow-up', 'due', 'completion']).default(
+    'creation',
+  ),
   sortOrder: ZodEnum(['asc', 'desc']).default('desc'),
 });
 
