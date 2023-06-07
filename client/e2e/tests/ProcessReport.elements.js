@@ -14,7 +14,7 @@ export const reportName = Selector('.ReportView .name');
 export const reportRenderer = Selector('.ReportRenderer');
 export const report = Selector('.ListItem.report');
 export const definitionCopyButton = (definition) => definition.find('.Button').nth(0);
-export const definitionEditButton = (definition) => definition.find('.CarbonPopover .Button');
+export const definitionEditButton = (definition) => definition.find('.Popover .Button');
 export const checkbox = (name) => Selector('.label').withText(name);
 export const groupbyDropdown = checkbox('Group By').nextSibling();
 export const groupbyDropdownButton = groupbyDropdown.find('button');
@@ -96,7 +96,7 @@ export const versionCheckbox = (number) =>
 export const tenantPopover = Selector('.TenantPopover');
 export const aggregationTypeSelect = Selector('.AggregationType');
 export const aggregationOption = (text) => Selector('.AggregationType .Switch').withText(text);
-export const detailsPopoverButton = Selector('.EntityName .CarbonPopover .buttonWrapper .Button');
+export const detailsPopoverButton = Selector('.EntityName .Popover .buttonWrapper .Button');
 export const modalButton = (text) => Selector('.ReportDetails .modalButton').withText(text);
 export const rawDataTable = Selector('.RawDataModal .Table');
 export const modalDiagram = Selector('.DiagramModal .BPMNDiagram');

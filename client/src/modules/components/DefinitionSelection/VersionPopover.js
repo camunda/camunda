@@ -9,7 +9,7 @@ import React from 'react';
 import classnames from 'classnames';
 
 import {t} from 'translation';
-import {CarbonPopover, LabeledInput, Form, Badge, LoadingIndicator} from 'components';
+import {Popover, LabeledInput, Form, Badge, LoadingIndicator} from 'components';
 
 import './VersionPopover.scss';
 
@@ -34,7 +34,7 @@ export default function VersionPopover({
   }
 
   return (
-    <CarbonPopover
+    <Popover
       className="VersionPopover"
       tooltip={tooltip}
       title={title}
@@ -101,7 +101,7 @@ export default function VersionPopover({
           </Form.Group>
         </Form.Group>
       </Form>
-    </CarbonPopover>
+    </Popover>
   );
 }
 

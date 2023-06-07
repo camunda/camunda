@@ -7,7 +7,7 @@
 
 import React from 'react';
 
-import {CarbonPopover, Form, Icon, Button, ColorPicker} from 'components';
+import {Popover, Form, Icon, Button, ColorPicker} from 'components';
 import {t} from 'translation';
 import {isCategoricalBar} from 'services';
 
@@ -128,7 +128,7 @@ export default class Configuration extends React.Component {
 
     return (
       <div className="Configuration">
-        <CarbonPopover
+        <Popover
           tooltip={t('report.config.buttonTooltip')}
           title={<Icon type="settings" />}
           disabled={!enablePopover}
@@ -161,7 +161,7 @@ export default class Configuration extends React.Component {
           <Button className="resetButton" onClick={this.resetToDefaults}>
             {t('report.config.reset')}
           </Button>
-        </CarbonPopover>
+        </Popover>
       </div>
     );
   }

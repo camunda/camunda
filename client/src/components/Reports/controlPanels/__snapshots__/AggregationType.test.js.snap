@@ -1,7 +1,7 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
 exports[`should render a user task duration selection for user task duration reports 1`] = `
-<CarbonPopover
+<Popover
   className="AggregationType"
   floating={true}
   title={
@@ -193,11 +193,11 @@ exports[`should render a user task duration selection for user task duration rep
       </div>
     </fieldset>
   </Form>
-</CarbonPopover>
+</Popover>
 `;
 
 exports[`should render an aggregation selection for duration reports 1`] = `
-<CarbonPopover
+<Popover
   className="AggregationType"
   floating={true}
   title={
@@ -348,7 +348,7 @@ exports[`should render an aggregation selection for duration reports 1`] = `
       </div>
     </fieldset>
   </Form>
-</CarbonPopover>
+</Popover>
 `;
 
 exports[`should render nothing if the current result is no duration and the view is not variable 1`] = `""`;

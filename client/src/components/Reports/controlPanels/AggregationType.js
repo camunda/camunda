@@ -7,7 +7,7 @@
 
 import React, {useState, useEffect} from 'react';
 
-import {CarbonPopover, Icon, Form, Switch} from 'components';
+import {Popover, Icon, Form, Switch} from 'components';
 import {t} from 'translation';
 import {getOptimizeProfile} from 'config';
 
@@ -112,7 +112,7 @@ export default function AggregationType({report, onChange}) {
     }
 
     return (
-      <CarbonPopover
+      <Popover
         className="AggregationType"
         title={
           <>
@@ -200,7 +200,7 @@ export default function AggregationType({report, onChange}) {
             </>
           )}
         </Form>
-      </CarbonPopover>
+      </Popover>
     );
   }
   return null;

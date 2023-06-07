@@ -5,4 +5,4 @@
  * except in compliance with the proprietary license.
  */
 
-export {default as CarbonPopover} from './CarbonPopover';
+export {default as Popover} from './Popover';

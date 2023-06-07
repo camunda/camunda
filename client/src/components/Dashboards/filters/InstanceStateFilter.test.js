@@ -8,7 +8,7 @@
 import React from 'react';
 import {shallow} from 'enzyme';
 
-import {Switch, Button, CarbonPopover} from 'components';
+import {Switch, Button, Popover} from 'components';
 
 import InstanceStateFilter from './InstanceStateFilter';
 
@@ -31,7 +31,7 @@ beforeEach(() => {
 it('should contain a popover to set instance state filters', () => {
   const node = shallow(<InstanceStateFilter {...props} />);
 
-  expect(node.find(CarbonPopover)).toExist();
+  expect(node.find(Popover)).toExist();
 
   node
     .find(Switch)
@@ -48,7 +48,7 @@ it('should show the filter state', () => {
   );
 
   expect(node.find(Switch).at(0)).toHaveProp('checked', true);
-  expect(node.find(CarbonPopover).prop('title')).toMatchSnapshot();
+  expect(node.find(Popover).prop('title')).toMatchSnapshot();
 });
 
 it('should reset the filter state', () => {

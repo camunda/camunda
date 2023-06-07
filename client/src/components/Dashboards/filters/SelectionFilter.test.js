@@ -9,7 +9,7 @@ import React, {runAllEffects} from 'react';
 import {shallow} from 'enzyme';
 import update from 'immutability-helper';
 
-import {CarbonPopover} from 'components';
+import {Popover} from 'components';
 
 import SelectionFilter from './SelectionFilter';
 import {getVariableValues} from './service';
@@ -41,7 +41,7 @@ beforeEach(() => {
 it('should show the operator when no value is selected', () => {
   const node = shallow(<SelectionFilter {...props} />);
 
-  expect(node.find(CarbonPopover).prop('title')).toMatchSnapshot();
+  expect(node.find(Popover).prop('title')).toMatchSnapshot();
 });
 
 it('should allow selecting values', () => {
@@ -62,7 +62,7 @@ it('should abbreviate multiple string selections', () => {
     <SelectionFilter {...props} filter={{operator: 'not in', values: ['aStringValue', null]}} />
   );
 
-  expect(node.find(CarbonPopover).prop('title')).toMatchSnapshot();
+  expect(node.find(Popover).prop('title')).toMatchSnapshot();
 });
 
 it('should show a hint depending on the operator', () => {

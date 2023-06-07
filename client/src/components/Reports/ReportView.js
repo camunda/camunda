@@ -12,7 +12,7 @@ import {
   Button,
   ShareEntity,
   ReportRenderer,
-  CarbonPopover,
+  Popover,
   Icon,
   Deleter,
   EntityName,
@@ -100,7 +100,7 @@ export class ReportView extends React.Component {
                 </>
               )}
               {!isInstantPreviewReport && (
-                <CarbonPopover
+                <Popover
                   main
                   className="tool-button share-button"
                   icon="share"
@@ -116,7 +116,7 @@ export class ReportView extends React.Component {
                     revokeEntitySharing={revokeReportSharing}
                     getSharedEntity={getSharedReport}
                   />
-                </CarbonPopover>
+                </Popover>
               )}
               {(optimizeProfile === 'cloud' || optimizeProfile === 'platform') &&
                 data?.visualization === 'number' && <AlertsDropdown numberReport={report} />}

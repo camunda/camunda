@@ -12,7 +12,7 @@
     flex-grow: 1;
     transition: none;
 
-    &:not(:focus-within) .CarbonPopover .cds--popover {
+    &:not(:focus-within) .Popover .cds--popover {
       display: none;
     }
 
