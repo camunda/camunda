@@ -241,6 +241,7 @@ public final class ProtocolFactory {
           return ImmutableCommandDistributionRecordValue.builder()
               .withPartitionId(random.nextInt())
               .withValueType(valueType)
+              .withIntent(random.nextObject(typeInfo.getIntentClass()))
               .withCommandValue(generateObject(typeInfo.getValueClass()))
               .build();
         });
