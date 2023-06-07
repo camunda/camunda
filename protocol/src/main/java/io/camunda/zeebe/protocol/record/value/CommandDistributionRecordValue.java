@@ -18,6 +18,7 @@ package io.camunda.zeebe.protocol.record.value;
 import io.camunda.zeebe.protocol.record.ImmutableProtocol;
 import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.intent.Intent;
 import org.immutables.value.Value;
 
 @Value.Immutable
@@ -33,6 +34,11 @@ public interface CommandDistributionRecordValue extends RecordValue {
    * @return the wrapped record value type
    */
   ValueType getValueType();
+
+  /**
+   * @return the wrapped intent
+   */
+  Intent getIntent();
 
   /**
    * @return the wrapped record value
