@@ -6,10 +6,8 @@ This file will present the different ways of deploying the K8s resources used in
 
 ## Using deploy scripts 
 
-For some pipelines (e.g [cluster_test.groovy](cluster_test.groovy) and 
-[import_static_data_performance.groovy](import_static_data_performance.groovy)), Optimize uses the 
-`K8s resources` and `deploy` scripts defined in [podSpecs/clusterTests](../podSpecs/clusterTests) and 
-[podSpecs/performanceTests](../podSpecs/performanceTests) to deploy the K8s resources needed for the CI. 
+For some pipelines (e.g [import_static_data_performance.groovy](import_static_data_performance.groovy)), Optimize uses the 
+`K8s resources` and `deploy` scripts defined in [podSpecs/performanceTests](../podSpecs/performanceTests) to deploy the K8s resources needed for the CI. 
 
 ## Using Jenkins K8s plugin
 

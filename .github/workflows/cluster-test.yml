@@ -1,6 +1,7 @@
 name: Optimize Cluster Test
 
 on:
+  workflow_dispatch:
   schedule:
     - cron: "0 5 * * 1-5"
 
@@ -23,7 +24,9 @@ jobs:
         method: approle
         roleId: ${{ secrets.VAULT_ROLE_ID }}
         secretId: ${{ secrets.VAULT_SECRET_ID }}
-        secrets: secret/data/products/optimize/ci/camunda-optimize CI_SERVICE_ACCOUNT | GCP_CREDENTIALS;
+        secrets: | 
+          secret/data/products/optimize/ci/camunda-optimize CI_SERVICE_ACCOUNT | GCP_CREDENTIALS;
+          secret/data/products/optimize/ci/camunda-optimize SLACK_BOT_URL;
 
     - name: Setup Maven
       uses: ./.github/actions/setup-maven
@@ -51,11 +54,11 @@ jobs:
     - name: Extract elasticsearch & cambpmn version
       id: versions
       run: |
-        echo "ES_VERSION=$(mvn -q -Dexec.executable=echo -Dexec.args='${elasticsearch.test.version}' --non-recursive exec:exec)" >> $GITHUB_OUTPUT
-        echo "CAMPBM_VERSION=$(mvn -q -Dexec.executable=echo -Dexec.args='${camunda.engine.version}' --non-recursive exec:exec)" >> $GITHUB_OUTPUT
+        echo "ES_VERSION=$(mvn help:evaluate -Dexpression=elasticsearch.test.version -q -DforceStdout)" >> $GITHUB_OUTPUT
+        echo "CAMBPM_VERSION=$(mvn help:evaluate -Dexpression=camunda.engine.version -q -DforceStdout)" >> $GITHUB_OUTPUT
 
     - name: Deploy cluster
-      run: .ci/podSpecs/clusterTests/deploy.sh $NAMESPACE ${{ steps.versions.outputs.ES_VERSION }} ${{ steps.versions.outputs.CAMPBM_VERSION }}
+      run: .github/podSpecs/clusterTests/deploy.sh $NAMESPACE ${{ steps.versions.outputs.ES_VERSION }} ${{ steps.versions.outputs.CAMBPM_VERSION }}
 
     - name: Run Tests
       uses: ./.github/actions/run-maven
@@ -72,7 +75,7 @@ jobs:
 
     - name: Cluster cleanup
       if: always() 
-      run: .ci/podSpecs/clusterTests/kill.sh $NAMESPACE
+      run: .github/podSpecs/clusterTests/kill.sh $NAMESPACE
     
     - uses: actions/upload-artifact@v3
       if: always()
@@ -80,3 +83,9 @@ jobs:
         name: elasticsearch-logs
         path: ./elasticsearch.log
 
+    - name: Post results on slack
+      if: failure()
+      uses: ./.github/actions/notify-on-slack
+      with:
+        slack_webhook_url: ${{ steps.secrets.outputs.SLACK_BOT_URL}}
+        status: ${{ job.status }}
