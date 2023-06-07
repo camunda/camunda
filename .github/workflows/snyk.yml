@@ -90,7 +90,7 @@ jobs:
           set -x
 
           export TARGET=$([[ ! -z '${{ inputs.target }}' ]] && echo '${{ inputs.target }}' || echo "${GITHUB_HEAD_REF:-${GITHUB_REF#refs/heads/}}")
-          export VERSION=$([[ ! -z '${{ inputs.version }}' ]] && echo '${{ inputs.version }}' || ./mvnw -q -Dexec.executable=echo -Dexec.args='${project.version}' --non-recursive exec:exec 2>/dev/null)
+          export VERSION=$([[ ! -z '${{ inputs.version }}' ]] && echo '${{ inputs.version }}' || mvn -q -Dexec.executable=echo -Dexec.args='${project.version}' --non-recursive exec:exec 2>/dev/null)
           export VERSION_TAG=$([[ "${VERSION}" == *-SNAPSHOT ]] && echo 'development' || echo "${VERSION}")
           export LIFECYCLE=$([[ "${VERSION}" == *-SNAPSHOT ]] && echo 'development' || echo 'production')
 
