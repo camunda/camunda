@@ -57,6 +57,7 @@ public final class CommandDistributionBehavior {
         new CommandDistributionRecord()
             .setPartitionId(currentPartitionId)
             .setValueType(command.getValueType())
+            .setIntent(command.getIntent())
             .setRecordValue(command.getValue());
 
     final long distributionKey = keyGenerator.nextKey();
