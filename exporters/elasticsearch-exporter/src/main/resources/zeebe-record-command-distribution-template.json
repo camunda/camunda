@@ -25,6 +25,9 @@
             "valueType": {
               "type": "keyword"
             },
+            "intent": {
+              "type": "keyword"
+            },
             "commandValue": {
               "enabled": false
             }
