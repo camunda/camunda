@@ -384,7 +384,7 @@ es:
       # NOTE: Changing this after Optimize was already run before, will create new empty indexes
       prefix: 'optimize'
       # How often should the data replicated in case of node failure.
-      number_of_replicas: 1
+      number_of_replicas: ${CAMUNDA_OPTIMIZE_ELASTICSEARCH_SETTINGS_INDEX_NUMBER_OF_REPLICAS:1}
       # How many shards should be used in the cluster for process instance and decision instance indices.
       # All other indices will be made up of a single shard
       # NOTE: this property only applies the first time Optimize is started and
@@ -392,7 +392,7 @@ es:
       # this property to take effect again, you need to delete all indexes (with it all data)
       # and restart Optimize. This configuration will also only be applied to the current write instance indices. Archive
       # indices will have a single shard regardless
-      number_of_shards: 1
+      number_of_shards: ${CAMUNDA_OPTIMIZE_ELASTICSEARCH_SETTINGS_INDEX_NUMBER_OF_SHARDS:1}
       # How long Elasticsearch waits until the documents are available
       # for search. A positive value defines the duration in seconds.
       # A value of -1 means that a refresh needs to be done manually.
