@@ -23,12 +23,12 @@ import io.camunda.zeebe.config.AppCfg;
 import io.camunda.zeebe.config.WorkerCfg;
 import io.prometheus.client.Counter;
 import io.prometheus.client.Histogram;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.DelayQueue;
 import java.util.concurrent.Future;
-import org.slf4j.LoggerFactory;
 
 public class Streamer extends App {
   private static final Counter RECEIVED_JOBS =
@@ -77,6 +77,7 @@ public class Streamer extends App {
                           Instant.now().plusMillis(completionDelay), command, timer));
                 })
             .workerName(workerCfg.getWorkerName())
+            .timeout(Duration.ofSeconds(10))
             .send();
 
     final ResponseChecker responseChecker = new ResponseChecker(requestFutures);
