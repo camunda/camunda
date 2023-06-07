@@ -20,10 +20,10 @@ import io.atomix.raft.RaftError;
 import io.atomix.raft.RaftServer;
 import io.atomix.raft.impl.RaftContext;
 import io.atomix.raft.metrics.SnapshotReplicationMetrics;
-import io.atomix.raft.protocol.AppendRequest;
 import io.atomix.raft.protocol.AppendResponse;
 import io.atomix.raft.protocol.InstallRequest;
 import io.atomix.raft.protocol.InstallResponse;
+import io.atomix.raft.protocol.InternalAppendRequest;
 import io.atomix.raft.protocol.PersistedRaftRecord;
 import io.atomix.raft.protocol.PollRequest;
 import io.atomix.raft.protocol.PollResponse;
@@ -283,7 +283,7 @@ public class PassiveRole extends InactiveRole {
   }
 
   @Override
-  public CompletableFuture<AppendResponse> onAppend(final AppendRequest request) {
+  public CompletableFuture<AppendResponse> onAppend(final InternalAppendRequest request) {
     raft.checkThread();
     logRequest(request);
     updateTermAndLeader(request.term(), request.leader());
@@ -350,7 +350,7 @@ public class PassiveRole extends InactiveRole {
   }
 
   /** Handles an AppendRequest. */
-  protected CompletableFuture<AppendResponse> handleAppend(final AppendRequest request) {
+  protected CompletableFuture<AppendResponse> handleAppend(final InternalAppendRequest request) {
     final CompletableFuture<AppendResponse> future = new CompletableFuture<>();
 
     // Check that the term of the given request matches the local term or update the term.
@@ -377,7 +377,7 @@ public class PassiveRole extends InactiveRole {
    * continue handling the request.
    */
   protected boolean checkTerm(
-      final AppendRequest request, final CompletableFuture<AppendResponse> future) {
+      final InternalAppendRequest request, final CompletableFuture<AppendResponse> future) {
     if (request.term() < raft.getTerm()) {
       log.debug(
           "Rejected {}: request term is less than the current term ({})", request, raft.getTerm());
@@ -391,7 +391,7 @@ public class PassiveRole extends InactiveRole {
    * continue handling the request.
    */
   protected boolean checkPreviousEntry(
-      final AppendRequest request, final CompletableFuture<AppendResponse> future) {
+      final InternalAppendRequest request, final CompletableFuture<AppendResponse> future) {
     // If the previous term is set, validate that it matches the local log.
     // We check the previous log term since that indicates whether any entry is present in the
     // leader's
@@ -426,7 +426,7 @@ public class PassiveRole extends InactiveRole {
   }
 
   private boolean checkPreviousEntry(
-      final AppendRequest request,
+      final InternalAppendRequest request,
       final long lastEntryIndex,
       final long lastEntryTerm,
       final CompletableFuture<AppendResponse> future) {
@@ -480,7 +480,7 @@ public class PassiveRole extends InactiveRole {
 
   /** Appends entries from the given AppendRequest. */
   protected void appendEntries(
-      final AppendRequest request, final CompletableFuture<AppendResponse> future) {
+      final InternalAppendRequest request, final CompletableFuture<AppendResponse> future) {
     // Compute the last entry index from the previous log index and request entry count.
     final long lastEntryIndex = request.prevLogIndex() + request.entries().size();
 

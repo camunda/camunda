@@ -26,13 +26,13 @@ import java.util.List;
 import java.util.Objects;
 
 /**
- * Append entries request that represent old version (version = 1)
+ * Append entries request that represent new versions (version > 1)
  *
  * <p>Append entries requests are at the core of the replication protocol. Leaders send append
  * requests to followers to replicate and commit log entries, and followers sent append requests to
  * passive members to replicate committed log entries.
  */
-public class AppendRequest extends AbstractRaftRequest {
+public class VersionedAppendRequest extends AbstractRaftRequest {
 
   private final long term;
   private final String leader;
@@ -41,7 +41,7 @@ public class AppendRequest extends AbstractRaftRequest {
   private final List<PersistedRaftRecord> entries;
   private final long commitIndex;
 
-  public AppendRequest(
+  public VersionedAppendRequest(
       final long term,
       final String leader,
       final long prevLogIndex,
@@ -127,7 +127,7 @@ public class AppendRequest extends AbstractRaftRequest {
   @Override
   public boolean equals(final Object object) {
     if (object != null && object.getClass() == getClass()) {
-      final AppendRequest request = (AppendRequest) object;
+      final VersionedAppendRequest request = (VersionedAppendRequest) object;
       return request.term == term
           && request.leader.equals(leader)
           && request.prevLogIndex == prevLogIndex
@@ -151,7 +151,7 @@ public class AppendRequest extends AbstractRaftRequest {
   }
 
   /** Append request builder. */
-  public static class Builder extends AbstractRaftRequest.Builder<Builder, AppendRequest> {
+  public static class Builder extends AbstractRaftRequest.Builder<Builder, VersionedAppendRequest> {
 
     private static final String NULL_ENTRIES_ERR = "entries cannot be null";
     private long term;
@@ -253,9 +253,9 @@ public class AppendRequest extends AbstractRaftRequest {
      *     are not positive, or if entries is null
      */
     @Override
-    public AppendRequest build() {
+    public VersionedAppendRequest build() {
       validate();
-      return new AppendRequest(term, leader, logIndex, logTerm, entries, commitIndex);
+      return new VersionedAppendRequest(term, leader, logIndex, logTerm, entries, commitIndex);
     }
 
     @Override

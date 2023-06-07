@@ -58,9 +58,8 @@ public abstract class AbstractRole implements RaftRole {
   public abstract RaftServer.Role role();
 
   /** Logs a request. */
-  protected final <R extends RaftRequest> R logRequest(final R request) {
+  protected final void logRequest(final Object request) {
     log.trace("Received {}", request);
-    return request;
   }
 
   /** Logs a response. */

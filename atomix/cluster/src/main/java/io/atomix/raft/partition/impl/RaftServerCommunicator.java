@@ -34,6 +34,7 @@ import io.atomix.raft.protocol.ReconfigureRequest;
 import io.atomix.raft.protocol.ReconfigureResponse;
 import io.atomix.raft.protocol.TransferRequest;
 import io.atomix.raft.protocol.TransferResponse;
+import io.atomix.raft.protocol.VersionedAppendRequest;
 import io.atomix.raft.protocol.VoteRequest;
 import io.atomix.raft.protocol.VoteResponse;
 import io.atomix.utils.serializer.Serializer;
@@ -105,7 +106,7 @@ public class RaftServerCommunicator implements RaftServerProtocol {
   @Override
   public CompletableFuture<AppendResponse> append(
       final MemberId memberId, final AppendRequest request) {
-    return sendAndReceive(context.appendSubject, request, memberId);
+    return sendAndReceive(context.appendV1subject, request, memberId);
   }
 
   @Override
@@ -199,18 +200,29 @@ public class RaftServerCommunicator implements RaftServerProtocol {
   }
 
   @Override
-  public void registerAppendHandler(
+  public void registerAppendV1Handler(
       final Function<AppendRequest, CompletableFuture<AppendResponse>> handler) {
     clusterCommunicator.replyTo(
-        context.appendSubject,
+        context.appendV1subject,
         serializer::decode,
         handler.<AppendRequest>compose(this::recordReceivedMetrics),
         serializer::encode);
   }
 
   @Override
+  public void registerAppendV2Handler(
+      final Function<VersionedAppendRequest, CompletableFuture<AppendResponse>> handler) {
+    clusterCommunicator.replyTo(
+        context.appendV2subject,
+        serializer::decode,
+        handler.<VersionedAppendRequest>compose(this::recordReceivedMetrics),
+        serializer::encode);
+  }
+
+  @Override
   public void unregisterAppendHandler() {
-    clusterCommunicator.unsubscribe(context.appendSubject);
+    clusterCommunicator.unsubscribe(context.appendV1subject);
+    clusterCommunicator.unsubscribe(context.appendV2subject);
   }
 
   private <T, U> CompletableFuture<U> sendAndReceive(
