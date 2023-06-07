@@ -168,5 +168,25 @@
         </plugins>
       </build>
     </profile>
+    <profile>
+      <id>streamer</id>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>com.google.cloud.tools</groupId>
+            <artifactId>jib-maven-plugin</artifactId>
+            <version>${plugin.version.jib}</version>
+            <configuration>
+              <to>
+                <image>gcr.io/zeebe-io/streamer:SNAPSHOT</image>
+              </to>
+              <container>
+                <mainClass>io.camunda.zeebe.Streamer</mainClass>
+              </container>
+            </configuration>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
   </profiles>
 </project>

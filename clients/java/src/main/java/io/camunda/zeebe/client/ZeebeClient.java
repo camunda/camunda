@@ -26,6 +26,7 @@ import io.camunda.zeebe.client.api.command.ModifyProcessInstanceCommandStep1;
 import io.camunda.zeebe.client.api.command.PublishMessageCommandStep1;
 import io.camunda.zeebe.client.api.command.ResolveIncidentCommandStep1;
 import io.camunda.zeebe.client.api.command.SetVariablesCommandStep1;
+import io.camunda.zeebe.client.api.command.StreamJobsCommandStep1;
 import io.camunda.zeebe.client.api.command.TopologyRequestStep1;
 import io.camunda.zeebe.client.api.command.UpdateRetriesJobCommandStep1;
 import io.camunda.zeebe.client.api.response.ActivatedJob;
@@ -354,4 +355,6 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
    * @return the builder for the command
    */
   DeleteResourceCommandStep1 newDeleteResourceCommand(long resourceKey);
+
+  StreamJobsCommandStep1 newStreamJobsCommand();
 }

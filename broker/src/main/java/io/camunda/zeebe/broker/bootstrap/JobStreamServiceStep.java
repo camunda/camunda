@@ -12,7 +12,7 @@ import io.camunda.zeebe.broker.jobstream.JobStreamService;
 import io.camunda.zeebe.broker.jobstream.RemoteJobStreamErrorHandlerService;
 import io.camunda.zeebe.broker.jobstream.RemoteJobStreamer;
 import io.camunda.zeebe.broker.jobstream.YieldingJobStreamErrorHandler;
-import io.camunda.zeebe.engine.processing.streamprocessor.JobActivationProperties;
+import io.camunda.zeebe.protocol.impl.stream.job.JobActivationProperties;
 import io.camunda.zeebe.protocol.impl.stream.job.ActivatedJob;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;

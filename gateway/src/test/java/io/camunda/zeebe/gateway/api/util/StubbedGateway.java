@@ -14,13 +14,12 @@ import io.camunda.zeebe.gateway.impl.configuration.GatewayCfg;
 import io.camunda.zeebe.gateway.impl.job.ActivateJobsHandler;
 import io.camunda.zeebe.gateway.impl.job.LongPollingActivateJobsHandler;
 import io.camunda.zeebe.gateway.impl.job.RoundRobinActivateJobsHandler;
-import io.camunda.zeebe.gateway.impl.stream.JobActivationProperties;
 import io.camunda.zeebe.gateway.protocol.GatewayGrpc;
 import io.camunda.zeebe.gateway.protocol.GatewayGrpc.GatewayBlockingStub;
+import io.camunda.zeebe.protocol.impl.stream.job.JobActivationProperties;
 import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.ActorControl;
 import io.camunda.zeebe.scheduler.ActorScheduler;
-import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.transport.stream.api.ClientStreamConsumer;
 import io.camunda.zeebe.transport.stream.api.ClientStreamId;
 import io.camunda.zeebe.transport.stream.api.ClientStreamer;
@@ -109,7 +108,7 @@ public final class StubbedGateway {
   private static final class NoopJobStreamer implements ClientStreamer<JobActivationProperties> {
 
     @Override
-    public ActorFuture<ClientStreamId> add(
+    public CompletableFuture<ClientStreamId> add(
         final DirectBuffer streamType,
         final JobActivationProperties metadata,
         final ClientStreamConsumer clientStreamConsumer) {
@@ -117,7 +116,7 @@ public final class StubbedGateway {
     }
 
     @Override
-    public ActorFuture<Void> remove(final ClientStreamId streamId) {
+    public CompletableFuture<Void> remove(final ClientStreamId streamId) {
       throw new UnsupportedOperationException("Not yet implemented; implement when needed");
     }
 

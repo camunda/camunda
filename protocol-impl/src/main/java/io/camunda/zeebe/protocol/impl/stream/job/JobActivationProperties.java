@@ -5,7 +5,7 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.camunda.zeebe.gateway.impl.stream;
+package io.camunda.zeebe.protocol.impl.stream.job;
 
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
 import io.camunda.zeebe.util.buffer.BufferReader;
@@ -15,9 +15,7 @@ import org.agrona.DirectBuffer;
 
 /**
  * {@link JobActivationProperties} represents the minimum set of properties required to activate a
- * {@link JobRecordValue} in the engine.
- *
- * <p>TODO: centralize this and the one found in the engine module
+ * {@link io.camunda.zeebe.protocol.record.value.JobRecordValue} in the engine.
  */
 public interface JobActivationProperties extends BufferReader, BufferWriter {
 

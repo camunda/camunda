@@ -17,4 +17,5 @@ public final class Loggers {
       LoggerFactory.getLogger("io.camunda.zeebe.gateway.longPolling");
   public static final Logger GATEWAY_CFG_LOGGER =
       LoggerFactory.getLogger("io.camunda.zeebe.gateway.impl.configuration");
+  public static final Logger JOB_STREAM_LOGGER = LoggerFactory.getLogger("io.camunda.zeebe.gateway.jobStream");
 }

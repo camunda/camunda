@@ -573,6 +573,20 @@ message BroadcastSignalResponse {
   int64 key = 1;
 }
 
+message StreamJobsRequest {
+  // the job type, as defined in the BPMN process (e.g. <zeebe:taskDefinition
+  // type="payment-service" />)
+  string type = 1;
+  // the name of the worker activating the jobs, mostly used for logging purposes
+  string worker = 2;
+  // a job returned after this call will not be activated by another call until the
+  // timeout (in ms) has been reached
+  int64 timeout = 3;
+  // a list of variables to fetch as the job variables; if empty, all visible variables at
+  // the time of activation for the scope of the job will be returned
+  repeated string fetchVariable = 4;
+}
+
 service Gateway {
   /*
     Iterates through all known partitions round-robin and activates up to the requested
@@ -824,6 +838,10 @@ service Gateway {
     Broadcasts a signal.
    */
   rpc BroadcastSignal (BroadcastSignalRequest) returns (BroadcastSignalResponse) {
+
+  }
+
+  rpc StreamJobs(StreamJobsRequest) returns (stream ActivatedJob) {
 
   }
 }

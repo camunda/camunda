@@ -7,8 +7,10 @@
  */
 package io.camunda.zeebe.scheduler;
 
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.function.BiConsumer;
 import org.agrona.LangUtil;
 
 public final class FutureUtil {
@@ -44,6 +46,16 @@ public final class FutureUtil {
         future.get();
       } catch (final Exception e) {
         LangUtil.rethrowUnchecked(e);
+      }
+    };
+  }
+
+  public static <T> BiConsumer<T, Throwable> forward(final CompletableFuture<T> result) {
+    return (value, error) -> {
+      if (error != null) {
+        result.completeExceptionally(error);
+      } else {
+        result.complete(value);
       }
     };
   }

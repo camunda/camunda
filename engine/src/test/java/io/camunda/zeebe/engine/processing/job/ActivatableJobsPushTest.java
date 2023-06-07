@@ -15,7 +15,7 @@ import static io.camunda.zeebe.test.util.record.RecordingExporter.jobRecords;
 import static io.camunda.zeebe.test.util.record.RecordingExporter.records;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.zeebe.engine.processing.streamprocessor.JobActivationProperties;
+import io.camunda.zeebe.protocol.impl.stream.job.JobActivationProperties;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.engine.util.RecordingJobStreamer;
 import io.camunda.zeebe.engine.util.RecordingJobStreamer.RecordingJobStream;

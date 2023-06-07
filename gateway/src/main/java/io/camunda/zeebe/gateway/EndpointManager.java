@@ -16,9 +16,10 @@ import io.camunda.zeebe.gateway.impl.broker.cluster.BrokerClusterState;
 import io.camunda.zeebe.gateway.impl.broker.cluster.BrokerTopologyManager;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerRequest;
 import io.camunda.zeebe.gateway.impl.job.ActivateJobsHandler;
-import io.camunda.zeebe.gateway.impl.stream.JobActivationProperties;
+import io.camunda.zeebe.gateway.impl.job.JobClientStreamConsumer;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsResponse;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivatedJob;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.BroadcastSignalRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.BroadcastSignalResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.BrokerInfo;
@@ -52,17 +53,23 @@ import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ResolveIncidentReques
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ResolveIncidentResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.SetVariablesRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.SetVariablesResponse;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.StreamJobsRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ThrowErrorRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ThrowErrorResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.TopologyResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.UpdateJobRetriesRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.UpdateJobRetriesResponse;
+import io.camunda.zeebe.protocol.impl.stream.job.JobActivationProperties;
+import io.camunda.zeebe.protocol.impl.stream.job.JobActivationPropertiesImpl;
 import io.camunda.zeebe.transport.stream.api.ClientStreamer;
 import io.camunda.zeebe.util.VersionUtil;
+import io.camunda.zeebe.util.buffer.BufferUtil;
+import io.grpc.stub.ServerCallStreamObserver;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Set;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 public final class EndpointManager {
 
@@ -73,7 +80,8 @@ public final class EndpointManager {
 
   // TODO: actually make use of it
   @SuppressWarnings({"FieldCanBeLocal", "unused"})
-  private final ClientStreamer<JobActivationProperties> jobStreamer;
+  private final ClientStreamer<io.camunda.zeebe.protocol.impl.stream.job.JobActivationProperties>
+      jobStreamer;
 
   public EndpointManager(
       final BrokerClient brokerClient,
@@ -371,6 +379,62 @@ public final class EndpointManager {
         RequestMapper::toBroadcastSignalRequest,
         ResponseMapper::toBroadcastSignalResponse,
         responseObserver);
+  }
+
+  public void streamJobs(
+      final StreamJobsRequest request,
+      final ServerCallStreamObserver<ActivatedJob> responseObserver) {
+    final var jobType = request.getType();
+    final var streamType = BufferUtil.wrapString(jobType);
+    final var fetchVariables =
+        request.getFetchVariableList().stream()
+            .map(BufferUtil::wrapString)
+            .collect(Collectors.toSet());
+    final var activationProperties =
+        new JobActivationPropertiesImpl()
+            .setWorker(request.getWorker())
+            .setFetchVariables(fetchVariables)
+            .setTimeout(request.getTimeout());
+    final var consumer = new JobClientStreamConsumer(responseObserver);
+
+    responseObserver.setOnReadyHandler(
+        () -> {
+          Loggers.JOB_STREAM_LOGGER.trace(
+              "Adding new job stream for {} with {} properties", jobType, activationProperties);
+          jobStreamer
+              .add(streamType, activationProperties, consumer)
+              .whenComplete(
+                  (id, error) -> {
+                    if (error != null) {
+                      Loggers.JOB_STREAM_LOGGER.warn(
+                          "Closing client stream: failed to register new job stream for {} with properties {}",
+                          jobType,
+                          activationProperties,
+                          error);
+                      responseObserver.onError(error);
+                      return;
+                    }
+
+                    responseObserver.setOnCancelHandler(
+                        () -> {
+                          Loggers.JOB_STREAM_LOGGER.debug(
+                              "Removing client stream [{}] (type={}, props={}) due to cancellation",
+                              id,
+                              jobType,
+                              activationProperties);
+                          jobStreamer.remove(id);
+                        });
+                    responseObserver.setOnCloseHandler(
+                        () -> {
+                          Loggers.JOB_STREAM_LOGGER.debug(
+                              "Removing client stream [{}] (type={}, props={}) due to closing",
+                              id,
+                              jobType,
+                              activationProperties);
+                          jobStreamer.remove(id);
+                        });
+                  });
+        });
   }
 
   private <GrpcRequestT, BrokerResponseT, GrpcResponseT> void sendRequest(

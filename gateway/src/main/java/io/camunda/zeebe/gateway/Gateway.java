@@ -18,12 +18,12 @@ import io.camunda.zeebe.gateway.impl.configuration.SecurityCfg;
 import io.camunda.zeebe.gateway.impl.job.ActivateJobsHandler;
 import io.camunda.zeebe.gateway.impl.job.LongPollingActivateJobsHandler;
 import io.camunda.zeebe.gateway.impl.job.RoundRobinActivateJobsHandler;
-import io.camunda.zeebe.gateway.impl.stream.JobActivationProperties;
 import io.camunda.zeebe.gateway.interceptors.impl.ContextInjectingInterceptor;
 import io.camunda.zeebe.gateway.interceptors.impl.DecoratedInterceptor;
 import io.camunda.zeebe.gateway.interceptors.impl.IdentityInterceptor;
 import io.camunda.zeebe.gateway.interceptors.impl.InterceptorRepository;
 import io.camunda.zeebe.gateway.query.impl.QueryApiImpl;
+import io.camunda.zeebe.protocol.impl.stream.job.JobActivationProperties;
 import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
@@ -60,7 +60,7 @@ public final class Gateway implements CloseableSilently {
   private final GatewayCfg gatewayCfg;
   private final ActorSchedulingService actorSchedulingService;
   private final GatewayHealthManager healthManager;
-  private final ClientStreamer<JobActivationProperties> jobStreamer;
+  private final ClientStreamer<io.camunda.zeebe.protocol.impl.stream.job.JobActivationProperties> jobStreamer;
 
   private Server server;
   private final BrokerClient brokerClient;
