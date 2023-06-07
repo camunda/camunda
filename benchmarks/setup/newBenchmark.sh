@@ -23,7 +23,7 @@ cp -rv default/ $namespace
 cd $namespace
 
 # calls OS specific sed inplace function
-sed_inplace "s/default/$namespace/g" Makefile *.yaml
+sed_inplace "s/default/$namespace/g" Makefile
 
 # get latest updates from zeebe repo
 helm repo add zeebe-benchmark https://zeebe-io.github.io/benchmark-helm # skips if already exists
