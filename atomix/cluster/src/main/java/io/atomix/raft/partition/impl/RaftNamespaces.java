@@ -18,6 +18,7 @@ package io.atomix.raft.partition.impl;
 
 import io.atomix.cluster.MemberId;
 import io.atomix.raft.RaftError;
+import io.atomix.raft.RaftError.Type;
 import io.atomix.raft.cluster.RaftMember;
 import io.atomix.raft.cluster.impl.DefaultRaftMember;
 import io.atomix.raft.protocol.AppendRequest;
@@ -29,11 +30,12 @@ import io.atomix.raft.protocol.InstallResponse;
 import io.atomix.raft.protocol.PersistedRaftRecord;
 import io.atomix.raft.protocol.PollRequest;
 import io.atomix.raft.protocol.PollResponse;
-import io.atomix.raft.protocol.RaftResponse;
+import io.atomix.raft.protocol.RaftResponse.Status;
 import io.atomix.raft.protocol.ReconfigureRequest;
 import io.atomix.raft.protocol.ReconfigureResponse;
 import io.atomix.raft.protocol.TransferRequest;
 import io.atomix.raft.protocol.TransferResponse;
+import io.atomix.raft.protocol.VersionedAppendRequest;
 import io.atomix.raft.protocol.VoteRequest;
 import io.atomix.raft.protocol.VoteResponse;
 import io.atomix.utils.serializer.Namespace;
@@ -65,9 +67,9 @@ public final class RaftNamespaces {
           .register(VoteResponse.class)
           .register(AppendRequest.class)
           .register(AppendResponse.class)
-          .register(RaftResponse.Status.class)
+          .register(Status.class)
           .register(RaftError.class)
-          .register(RaftError.Type.class)
+          .register(Type.class)
           .nextId(517) // for backwards compatibility
           .register(ArrayList.class)
           .register(LinkedList.class)
@@ -81,6 +83,7 @@ public final class RaftNamespaces {
           .register(PersistedRaftRecord.class)
           .register(TransferRequest.class)
           .register(TransferResponse.class)
+          .register(VersionedAppendRequest.class)
           .name("RaftProtocol")
           .build();
 
