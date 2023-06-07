@@ -9,6 +9,7 @@
 
 import {rem} from '@carbon/elements';
 import {Stack as BaseStack, Tag as BaseTag} from '@carbon/react';
+import {BodyCompact} from 'modules/components/FontTokens';
 import {NavLink} from 'react-router-dom';
 import styled, {css} from 'styled-components';
 
@@ -56,6 +57,13 @@ const Row = styled.div<RowProps>`
     display: flex;
     flex-direction: ${$direction};
     justify-content: ${$direction === 'row' ? 'space-between' : 'center'};
+    overflow: hidden;
+
+    & ${Label}, & ${BodyCompact} {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
   `}
 `;
 
