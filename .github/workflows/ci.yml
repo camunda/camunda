@@ -554,7 +554,8 @@ jobs:
     needs: [ test-summary ]
     if: |
       github.repository == 'camunda/zeebe' &&
-      (startsWith(github.ref, 'stable/') || github.ref == 'main')
+      github.event_name == 'push' &&
+      (startsWith(github.ref_name, 'stable/') || github.ref_name == 'main')
     concurrency:
       group: deploy-snyk-projects
       cancel-in-progress: false
