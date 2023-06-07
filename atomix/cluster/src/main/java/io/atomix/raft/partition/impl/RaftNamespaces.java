@@ -21,6 +21,7 @@ import io.atomix.raft.RaftError;
 import io.atomix.raft.cluster.RaftMember;
 import io.atomix.raft.cluster.impl.DefaultRaftMember;
 import io.atomix.raft.protocol.AppendRequest;
+import io.atomix.raft.protocol.AppendRequestV2;
 import io.atomix.raft.protocol.AppendResponse;
 import io.atomix.raft.protocol.ConfigureRequest;
 import io.atomix.raft.protocol.ConfigureResponse;
@@ -81,6 +82,7 @@ public final class RaftNamespaces {
           .register(PersistedRaftRecord.class)
           .register(TransferRequest.class)
           .register(TransferResponse.class)
+          .register(AppendRequestV2.class)
           .name("RaftProtocol")
           .build();
 

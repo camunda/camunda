@@ -7,7 +7,7 @@
  */
 package io.atomix.raft.protocol;
 
-public class ProtocolVersionHandler {
+public final class ProtocolVersionHandler {
 
   private static final int VERSION_APPENDREQUEST = 1;
   private static final int VERSION_APPENDREQUEST_V2 = 2;
