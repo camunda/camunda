@@ -110,6 +110,12 @@ public class RaftServerCommunicator implements RaftServerProtocol {
   }
 
   @Override
+  public CompletableFuture<AppendResponse> append(
+      final MemberId memberId, final VersionedAppendRequest request) {
+    return sendAndReceive(context.appendV2subject, request, memberId);
+  }
+
+  @Override
   public void registerTransferHandler(
       final Function<TransferRequest, CompletableFuture<TransferResponse>> handler) {
     clusterCommunicator.replyTo(

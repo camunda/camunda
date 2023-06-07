@@ -184,6 +184,7 @@ public class VersionedAppendRequest extends AbstractRaftRequest {
       this.version = version;
       return this;
     }
+
     /**
      * Sets the request term.
      *
