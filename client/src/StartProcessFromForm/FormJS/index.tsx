@@ -6,13 +6,21 @@
  */
 
 import {useEffect, useRef, useState} from 'react';
-import {Container, FormCustomStyling} from './styled';
+import {
+  Container,
+  FormContainer,
+  FormCustomStyling,
+  FormRoot,
+  Heading,
+  SubmitButtonRow,
+} from './styled';
 import {formManager} from 'modules/formManager';
 import {Variable} from 'modules/types';
 import {C3EmptyState} from '@camunda/camunda-composite-components';
 import ErrorRobotImage from 'modules/images/error-robot.svg';
-import {Heading} from '@carbon/react';
+import {Button, Layer, Link} from '@carbon/react';
 import {tracking} from 'modules/tracking';
+import {BodyCompact} from 'modules/components/FontTokens';
 
 type Props = {
   title: string;
@@ -62,11 +70,26 @@ const FormJS: React.FC<Props> = ({schema, onSubmit, title}) => {
 
   if (isSchemaValid) {
     return (
-      <>
+      <Container>
         <FormCustomStyling />
-        <Heading>{title}</Heading>
-        <Container ref={formContainerRef} />
-      </>
+        <FormContainer>
+          <Heading>{title}</Heading>
+          <Layer>
+            <FormRoot ref={formContainerRef} />
+          </Layer>
+        </FormContainer>
+        <SubmitButtonRow>
+          <Button kind="primary" onClick={() => formManager.submit()} size="lg">
+            Submit
+          </Button>
+          <BodyCompact as="p">
+            Powered by{' '}
+            <Link href="https://camunda.com/" target="_blank" inline>
+              Camunda
+            </Link>
+          </BodyCompact>
+        </SubmitButtonRow>
+      </Container>
     );
   }
 

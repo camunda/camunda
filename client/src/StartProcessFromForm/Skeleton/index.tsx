@@ -10,7 +10,7 @@ import {Container} from './styled';
 
 const Skeleton: React.FC = () => {
   return (
-    <Container data-testid="public-form-skeleton">
+    <Container data-testid="public-form-skeleton" aria-busy="true">
       <SkeletonText heading />
       <TextAreaSkeleton />
       <TextAreaSkeleton />

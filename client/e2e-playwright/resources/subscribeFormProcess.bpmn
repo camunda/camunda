@@ -24,17 +24,6 @@
       },
       "id": "Field_0msuoi3",
       "key": "field_1prtdvl"
-    },
-    {
-      "action": "submit",
-      "label": "Save",
-      "type": "button",
-      "layout": {
-        "row": "Row_1tzy89q",
-        "columns": null
-      },
-      "id": "Field_0yiglro",
-      "key": "field_1c5fmw7"
     }
   ],
   "type": "default",

@@ -25,7 +25,7 @@ test.describe('public start process', () => {
 
     await page.getByLabel('Name').fill('Joe Doe');
     await page.getByLabel('Email').fill('joe@doe.com');
-    await page.getByRole('button', {name: 'Save'}).click();
+    await page.getByRole('button', {name: 'Submit'}).click();
 
     await expect(
       page.getByRole('heading', {

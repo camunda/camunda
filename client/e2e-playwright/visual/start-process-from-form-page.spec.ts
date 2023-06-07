@@ -6,7 +6,6 @@
  */
 
 import {test, expect} from '@playwright/test';
-import bigFormSchema from '../resources/bigForm.json';
 import subscribeFormSchema from '../resources/subscribeForm.json';
 
 test.describe('start process from form page', () => {
@@ -18,8 +17,8 @@ test.describe('start process from form page', () => {
           body: JSON.stringify({
             id: 'foo',
             processDefinitionKey: '2251799813685255',
-            schema: JSON.stringify(bigFormSchema),
-            title: 'A big form',
+            schema: JSON.stringify(subscribeFormSchema),
+            title: 'Subscribe',
           }),
           headers: {
             'content-type': 'application/json',
@@ -36,10 +35,10 @@ test.describe('start process from form page', () => {
 
     await expect(
       page.getByRole('heading', {
-        name: 'A big form',
+        name: 'Subscribe',
       }),
     ).toBeVisible();
-    await expect(page.getByText('Title 1')).toBeVisible();
+    await expect(page.getByLabel('Name')).toBeVisible();
 
     await expect(page).toHaveScreenshot();
   });
@@ -146,7 +145,7 @@ test.describe('start process from form page', () => {
 
     await page.getByLabel('Name').fill('Joe Doe');
     await page.getByLabel('Email').fill('joe@doe.com');
-    await page.getByRole('button', {name: 'Save'}).click();
+    await page.getByRole('button', {name: 'Submit'}).click();
 
     await expect(
       page.getByRole('heading', {
@@ -193,7 +192,7 @@ test.describe('start process from form page', () => {
 
     await page.getByLabel('Name').fill('Joe Doe');
     await page.getByLabel('Email').fill('joe@doe.com');
-    await page.getByRole('button', {name: 'Save'}).click();
+    await page.getByRole('button', {name: 'Submit'}).click();
 
     await expect(
       page.getByRole('heading', {
