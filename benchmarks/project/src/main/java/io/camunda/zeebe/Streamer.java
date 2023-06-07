@@ -63,6 +63,7 @@ public class Streamer extends App {
     final var streamer =
         client
             .newStreamJobsCommand()
+            .jobType(workerCfg.getJobType())
             .handler(
                 (jobClient, job) -> {
                   RECEIVED_JOBS.inc();
@@ -76,6 +77,7 @@ public class Streamer extends App {
                       new DelayedCommand(
                           Instant.now().plusMillis(completionDelay), command, timer));
                 })
+            .workerName(workerCfg.getWorkerName())
             .send();
 
     final ResponseChecker responseChecker = new ResponseChecker(requestFutures);
