@@ -24,6 +24,7 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
+import javax.ws.rs.container.ContainerRequestContext;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
@@ -80,6 +81,11 @@ public class PlatformIdentityService extends AbstractIdentityService implements 
           }
         }
       );
+  }
+
+  @Override
+  public Optional<UserDto> getUserById(final String userId, final ContainerRequestContext requestContext) {
+    return getUserById(userId);
   }
 
   @Override

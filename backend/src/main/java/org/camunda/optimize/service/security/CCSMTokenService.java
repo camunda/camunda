@@ -10,10 +10,12 @@ import io.camunda.identity.sdk.IdentityConfiguration;
 import io.camunda.identity.sdk.authentication.AccessToken;
 import io.camunda.identity.sdk.authentication.Authentication;
 import io.camunda.identity.sdk.authentication.Tokens;
+import io.camunda.identity.sdk.authentication.UserDetails;
 import io.camunda.identity.sdk.authentication.dto.AuthCodeDto;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.camunda.optimize.dto.optimize.UserDto;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.condition.CCSMCondition;
 import org.camunda.optimize.service.util.configuration.security.CCSMAuthConfiguration;
@@ -25,6 +27,7 @@ import javax.servlet.http.Cookie;
 import javax.ws.rs.NotAuthorizedException;
 import javax.ws.rs.core.NewCookie;
 import java.net.URI;
+import java.util.Collections;
 import java.util.List;
 
 import static org.camunda.optimize.rest.constants.RestConstants.AUTH_COOKIE_TOKEN_VALUE_PREFIX;
@@ -124,6 +127,16 @@ public class CCSMTokenService {
 
   public String getSubjectFromToken(final String accessToken) {
     return authentication().decodeJWT(extractTokenFromAuthorizationValue(accessToken)).getSubject();
+  }
+
+  public UserDto getUserInfoFromToken(final String userId, final String accessToken) {
+    final UserDetails userDetails = verifyToken(extractTokenFromAuthorizationValue(accessToken)).getUserDetails();
+    return new UserDto(
+      userId,
+      userDetails.getName().orElse(userId),
+      userDetails.getEmail().orElse(userId),
+      Collections.emptyList()
+    );
   }
 
   private String extractTokenFromAuthorizationValue(final String cookieValue) {

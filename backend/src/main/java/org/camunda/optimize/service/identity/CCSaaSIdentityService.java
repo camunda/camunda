@@ -17,6 +17,8 @@ import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.condition.CCSaaSCondition;
 import javax.validation.constraints.NotNull;
+import javax.ws.rs.container.ContainerRequestContext;
+
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
@@ -41,6 +43,11 @@ public class CCSaaSIdentityService extends AbstractIdentityService {
   @Override
   public Optional<UserDto> getUserById(final String userId) {
     return usersService.getUserById(userId).map(this::mapToUserDto);
+  }
+
+  @Override
+  public Optional<UserDto> getUserById(final String userId, final ContainerRequestContext requestContext) {
+    return getUserById(userId);
   }
 
   @Override
