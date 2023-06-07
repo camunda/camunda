@@ -25,13 +25,13 @@ import java.util.List;
 import java.util.Optional;
 
 import static java.util.stream.Collectors.toList;
+import static org.camunda.optimize.service.entities.EntityImportService.API_IMPORT_OWNER_NAME;
 import static org.camunda.optimize.service.util.configuration.users.AuthorizedUserType.ALL;
 import static org.camunda.optimize.service.util.configuration.users.AuthorizedUserType.SUPERUSER;
 
 @Component
 @Slf4j
 public abstract class AbstractIdentityService implements ConfigurationReloadable {
-
   private static List<AuthorizationType> superUserAuthorizations;
   private static List<AuthorizationType> defaultUserAuthorizations;
 
@@ -106,6 +106,11 @@ public abstract class AbstractIdentityService implements ConfigurationReloadable
   }
 
   public Optional<String> getIdentityNameById(final String identityId) {
+    // For entities that have been created by the system, the identityId will be "System User". In that case, don't
+    // do any look-up and just return "System User" as a String.
+    if (API_IMPORT_OWNER_NAME.equals(identityId)) {
+      return Optional.of(API_IMPORT_OWNER_NAME);
+    }
     Optional<? extends IdentityWithMetadataResponseDto> identityDto = getIdentityWithMetadataForId(identityId);
     return identityDto.map(IdentityWithMetadataResponseDto::getName);
   }
