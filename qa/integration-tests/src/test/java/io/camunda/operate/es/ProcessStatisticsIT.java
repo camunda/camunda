@@ -372,7 +372,7 @@ public class ProcessStatisticsIT extends OperateIntegrationTest {
     entities.add(TestUtil
         .createFlowNodeInstance(inst.getProcessInstanceKey(), FlowNodeState.COMPLETED, "taskB", null));
     String error = "error";
-    FlowNodeInstanceForListViewEntity task = createFlowNodeInstanceWithIncident(inst.getProcessInstanceKey(), FlowNodeState.ACTIVE, error, null);
+    FlowNodeInstanceForListViewEntity task = createFlowNodeInstanceWithIncident(inst.getProcessInstanceKey(), FlowNodeState.ACTIVE, error);
     task.setActivityId("taskC");
     entities.add(task);
     entities.add(inst);
@@ -384,7 +384,7 @@ public class ProcessStatisticsIT extends OperateIntegrationTest {
         .createFlowNodeInstance(inst.getProcessInstanceKey(), FlowNodeState.COMPLETED, "taskA", null));
     entities.add(TestUtil
         .createFlowNodeInstance(inst.getProcessInstanceKey(), FlowNodeState.COMPLETED, "taskB", null));
-    task = createFlowNodeInstanceWithIncident(inst.getProcessInstanceKey(), FlowNodeState.ACTIVE, error, null);
+    task = createFlowNodeInstanceWithIncident(inst.getProcessInstanceKey(), FlowNodeState.ACTIVE, error);
     task.setActivityId("taskC");
     entities.add(task);
     entities.add(inst);
@@ -428,7 +428,7 @@ public class ProcessStatisticsIT extends OperateIntegrationTest {
         .createFlowNodeInstance(inst.getProcessInstanceKey(), FlowNodeState.COMPLETED, "taskC", null));
     entities.add(TestUtil
         .createFlowNodeInstance(inst.getProcessInstanceKey(), FlowNodeState.COMPLETED, "taskD", null));
-    task = createFlowNodeInstanceWithIncident(inst.getProcessInstanceKey(), FlowNodeState.ACTIVE, error, null);
+    task = createFlowNodeInstanceWithIncident(inst.getProcessInstanceKey(), FlowNodeState.ACTIVE, error);
     task.setActivityId("taskE");
     entities.add(task);
     entities.add(inst);

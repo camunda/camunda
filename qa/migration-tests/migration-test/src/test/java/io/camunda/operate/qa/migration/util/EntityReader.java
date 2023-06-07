@@ -37,6 +37,15 @@ public class EntityReader {
     return searchEntitiesFor(new SearchRequest(index), entityClass);
   }
 
+  public long countEntitiesFor(String index) {
+    try {
+      SearchResponse searchResponse = esClient.search(new SearchRequest(index), RequestOptions.DEFAULT);
+      return searchResponse.getHits().getTotalHits().value;
+    } catch (IOException e) {
+      throw new UncheckedIOException(e);
+    }
+  }
+
   public <T> List<T> searchEntitiesFor(SearchRequest searchRequest, Class<T> entityClass) {
     searchRequest.source().size(1000);
     try {

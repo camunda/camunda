@@ -6,6 +6,7 @@
  */
 package io.camunda.operate.entities.listview;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.camunda.operate.entities.FlowNodeState;
 import io.camunda.operate.entities.FlowNodeType;
 import io.camunda.operate.entities.OperateZeebeEntity;
@@ -21,10 +22,14 @@ public class FlowNodeInstanceForListViewEntity extends OperateZeebeEntity<FlowNo
   private String activityId;
   private FlowNodeState activityState;
   private FlowNodeType activityType;
+  @Deprecated
+  @JsonIgnore
   private List<Long> incidentKeys = new ArrayList<>();
   private String errorMessage;
   private boolean incident;
 
+  @Deprecated
+  @JsonIgnore
   private boolean pendingIncident;
 
   private ListViewJoinRelation joinRelation = new ListViewJoinRelation(ListViewTemplate.ACTIVITIES_JOIN_RELATION);
@@ -117,14 +122,15 @@ public class FlowNodeInstanceForListViewEntity extends OperateZeebeEntity<FlowNo
     if (!super.equals(o))
       return false;
     FlowNodeInstanceForListViewEntity that = (FlowNodeInstanceForListViewEntity) o;
-    return incident == that.incident && pendingIncident == that.pendingIncident && Objects.equals(processInstanceKey,
-        that.processInstanceKey) && Objects.equals(activityId, that.activityId) && activityState == that.activityState
-        && activityType == that.activityType && Objects.equals(incidentKeys, that.incidentKeys) && Objects.equals(
+    return incident == that.incident && Objects.equals(processInstanceKey, that.processInstanceKey) && Objects.equals(
+        activityId,
+        that.activityId) && activityState == that.activityState && activityType == that.activityType && Objects.equals(
         errorMessage, that.errorMessage) && Objects.equals(joinRelation, that.joinRelation);
   }
 
-  @Override public int hashCode() {
-    return Objects.hash(super.hashCode(), processInstanceKey, activityId, activityState, activityType, incidentKeys,
-        errorMessage, incident, pendingIncident, joinRelation);
+  @Override
+  public int hashCode() {
+    return Objects.hash(super.hashCode(), processInstanceKey, activityId, activityState, activityType, errorMessage,
+        incident, joinRelation);
   }
 }

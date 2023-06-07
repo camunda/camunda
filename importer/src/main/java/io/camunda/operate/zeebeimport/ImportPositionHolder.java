@@ -57,7 +57,9 @@ public class ImportPositionHolder {
   private Map<String, ImportPositionEntity> lastScheduledPositions = new HashMap<>();
 
   private Map<String, ImportPositionEntity> pendingImportPositionUpdates = new HashMap<>();
+  private Map<String, ImportPositionEntity> pendingPostImportPositionUpdates = new HashMap<>();
   private Map<String, ImportPositionEntity> inflightImportPositions = new HashMap<>();
+  private Map<String, ImportPositionEntity> inflightPostImportPositions = new HashMap<>();
 
   private ScheduledFuture<?> scheduledImportPositionUpdateTask;
   private ReentrantLock inflightImportPositionLock = new ReentrantLock();
@@ -149,7 +151,33 @@ public class ImportPositionHolder {
     withInflightImportPositionLock(() -> {
       final var aliasName = lastProcessedPosition.getAliasName();
       final var partition = lastProcessedPosition.getPartitionId();
-      inflightImportPositions.put(getKey(aliasName, partition), lastProcessedPosition);
+      //update only import fields (not post import)
+      String key = getKey(aliasName, partition);
+      ImportPositionEntity importPosition = inflightImportPositions.get(key);
+      if (importPosition == null) {
+        importPosition = lastProcessedPosition;
+      } else {
+        importPosition.setPosition(lastProcessedPosition.getPosition())
+            .setSequence(lastProcessedPosition.getSequence())
+            .setIndexName(lastProcessedPosition.getIndexName());
+      }
+      inflightImportPositions.put(key, importPosition);
+    });
+  }
+
+  public void recordLatestPostImportedPosition(ImportPositionEntity lastPostImportedPosition) {
+    withInflightImportPositionLock(() -> {
+      final var aliasName = lastPostImportedPosition.getAliasName();
+      final var partition = lastPostImportedPosition.getPartitionId();
+      //update only post import fields (not import)
+      String key = getKey(aliasName, partition);
+      ImportPositionEntity importPosition = inflightPostImportPositions.get(key);
+      if (importPosition == null) {
+        importPosition = lastPostImportedPosition;
+      } else {
+        importPosition.setPostImporterPosition(lastPostImportedPosition.getPostImporterPosition());
+      }
+      inflightPostImportPositions.put(key, importPosition);
     });
   }
 
@@ -157,22 +185,32 @@ public class ImportPositionHolder {
     withInflightImportPositionLock(() -> {
       pendingImportPositionUpdates.putAll(inflightImportPositions);
       inflightImportPositions.clear();
+      pendingPostImportPositionUpdates.putAll(inflightPostImportPositions);
+      inflightPostImportPositions.clear();
     });
 
-    final var result = updateImportPositions(pendingImportPositionUpdates);
+    final var result = updateImportPositions(pendingImportPositionUpdates, pendingPostImportPositionUpdates);
 
     if (result.getOrElse(false)) {
       // clear only map when updating the import positions
       // succeeded, otherwise, it may result in lost updates
       pendingImportPositionUpdates.clear();
+      pendingPostImportPositionUpdates.clear();
     }
 
     // self scheduling just for the case the interval is set too short
     scheduleImportPositionUpdateTask();
   }
 
-  private Either<Throwable, Boolean> updateImportPositions(final Map<String, ImportPositionEntity> positions) {
-    final var preparedBulkRequest = prepareBulkRequest(positions);
+  private Either<Throwable, Boolean> updateImportPositions(final Map<String, ImportPositionEntity> positions, final Map<String, ImportPositionEntity> postImportPositions) {
+    var preparedBulkRequest = prepareBulkRequest(positions);
+
+    if (preparedBulkRequest.isLeft()) {
+      final var e = preparedBulkRequest.getLeft();
+      return Either.left(e);
+    }
+
+    preparedBulkRequest = addPostImportRequests(preparedBulkRequest.get(), postImportPositions);
 
     if (preparedBulkRequest.isLeft()) {
       final var e = preparedBulkRequest.getLeft();
@@ -214,6 +252,26 @@ public class ImportPositionHolder {
     return Either.right(bulkRequest);
   }
 
+  private Either<Exception, BulkRequest> addPostImportRequests(final BulkRequest bulkRequest,
+      final Map<String, ImportPositionEntity> positions) {
+
+    if (positions.size() > 0) {
+      final var preparedUpdateRequests = positions.values()
+          .stream()
+          .map(this::preparePostImportUpdateRequest)
+          .collect(Either.collectorFoldingLeft());
+
+      if (preparedUpdateRequests.isLeft()) {
+        final var e = preparedUpdateRequests.getLeft();
+        return Either.left(e);
+      }
+
+      preparedUpdateRequests.get().forEach(bulkRequest::add);
+    }
+
+    return Either.right(bulkRequest);
+  }
+
   private Either<Exception, UpdateRequest> prepareUpdateRequest(final ImportPositionEntity position) {
     try {
       final var index = importPositionType.getFullQualifiedName();
@@ -237,12 +295,35 @@ public class ImportPositionHolder {
       return Either.left(e);
     }
   }
+  private Either<Exception, UpdateRequest> preparePostImportUpdateRequest(final ImportPositionEntity position) {
+    try {
+      final var index = importPositionType.getFullQualifiedName();
+      final var updateFields = new HashMap<String, Object>();
+
+      updateFields.put(ImportPositionIndex.POST_IMPORTER_POSITION, position.getPostImporterPosition());
+
+      final UpdateRequest updateRequest = new UpdateRequest()
+          .index(index)
+          .id(position.getId())
+          .doc(updateFields);
+
+      return Either.right(updateRequest);
+
+    } catch (final Exception e) {
+      logger.error(String.format("Error occurred while preparing request to update processed position for %s", position.getAliasName()), e);
+      return Either.left(e);
+    }
+  }
 
   public void clearCache() {
     lastScheduledPositions.clear();
     pendingImportPositionUpdates.clear();
+    pendingPostImportPositionUpdates.clear();
 
-    withInflightImportPositionLock(() -> inflightImportPositions.clear());
+    withInflightImportPositionLock(() -> {
+      inflightImportPositions.clear();
+      inflightPostImportPositions.clear();
+    });
   }
 
   private String getKey(String aliasTemplate, int partitionId) {

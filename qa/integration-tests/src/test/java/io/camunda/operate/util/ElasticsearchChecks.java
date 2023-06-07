@@ -578,7 +578,7 @@ public class ElasticsearchChecks {
         boolean found = allActivityInstances.stream().anyMatch(ai -> ai.isIncident());
         if (found) {
           List<IncidentEntity> allIncidents = incidentReader.getAllIncidentsByProcessInstanceKey(processInstanceKey);
-          found = allIncidents.stream().filter(ie -> !ie.isPending()).count() > 0;
+          found = allIncidents.size() > 0;
         }
         return found;
       } catch (NotFoundException ex) {
@@ -605,7 +605,7 @@ public class ElasticsearchChecks {
         if (found) {
           List<IncidentEntity> allIncidents = incidentReader.getAllIncidentsByProcessInstanceKey(processInstanceKey);
           found = allIncidents.stream()
-              .filter(ie -> !ie.isPending() && ie.getErrorMessage().equals(errorMessage)).count()
+              .filter(ie -> ie.getErrorMessage().equals(errorMessage)).count()
               > 0;
         }
         return found;
@@ -626,7 +626,7 @@ public class ElasticsearchChecks {
       assertThat(objects[0]).isInstanceOf(Long.class);
       Long count = (Long)objects[0];
       try {
-        return getActiveIncidentsCount() == count;
+        return getActiveIncidentsCount() == count && getPendingIncidentsCount() == 0;
       } catch (NotFoundException ex) {
         return false;
       }
@@ -637,6 +637,17 @@ public class ElasticsearchChecks {
     final SearchRequest searchRequest = ElasticsearchUtil.createSearchRequest(incidentTemplate)
         .source(new SearchSourceBuilder()
             .query(ACTIVE_INCIDENT_QUERY));
+    try {
+      final SearchResponse response = esClient.search(searchRequest, RequestOptions.DEFAULT);
+      return response.getHits().getTotalHits().value;
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
+  }
+
+  public long getPendingIncidentsCount() {
+    final SearchRequest searchRequest = ElasticsearchUtil.createSearchRequest(incidentTemplate)
+        .source(new SearchSourceBuilder().query(termQuery(IncidentTemplate.STATE, IncidentState.PENDING)));
     try {
       final SearchResponse response = esClient.search(searchRequest, RequestOptions.DEFAULT);
       return response.getHits().getTotalHits().value;
@@ -667,6 +678,22 @@ public class ElasticsearchChecks {
     final SearchRequest searchRequest = ElasticsearchUtil.createSearchRequest(incidentTemplate)
         .source(new SearchSourceBuilder()
             .query(termQuery(PROCESS_INSTANCE_KEY, processInstanceKey)));
+    try {
+      final SearchResponse response = esClient.search(searchRequest, RequestOptions.DEFAULT);
+      return response.getHits().getTotalHits().value;
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
+  }
+
+  /**
+   * Including pending
+   * @return
+   */
+  public long getIncidentsCount() {
+    final SearchRequest searchRequest = ElasticsearchUtil.createSearchRequest(incidentTemplate)
+        .source(new SearchSourceBuilder()
+            .query(matchAllQuery()));
     try {
       final SearchResponse response = esClient.search(searchRequest, RequestOptions.DEFAULT);
       return response.getHits().getTotalHits().value;
@@ -710,6 +737,25 @@ public class ElasticsearchChecks {
       int incidentsCount = (int)objects[1];
       try {
         return getIncidentsCount(processInstanceKey) == incidentsCount;
+      } catch (NotFoundException ex) {
+        return false;
+      }
+    };
+  }
+
+  /**
+   * Checks whether the incidents are present, no matter pending or not.
+   * Ammount of incidents: args[1] incidentsCount (Integer).
+   * @return
+   */
+  @Bean(name = "incidentsInAnyInstanceArePresentCheck")
+  public Predicate<Object[]> getIncidentsInAnyInstanceArePresentCheck() {
+    return objects -> {
+      assertThat(objects).hasSize(1);
+      assertThat(objects[0]).isInstanceOf(Integer.class);
+      int incidentsCount = (int)objects[0];
+      try {
+        return getIncidentsCount() == incidentsCount;
       } catch (NotFoundException ex) {
         return false;
       }

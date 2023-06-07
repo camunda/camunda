@@ -18,7 +18,8 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
  * It also provides comparators for SemanticVersion and order comparing.
  */
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME)
-@JsonSubTypes({ @JsonSubTypes.Type(value = ProcessorStep.class), @JsonSubTypes.Type(value = SetBpmnProcessIdStep.class) })
+@JsonSubTypes({ @JsonSubTypes.Type(value = ProcessorStep.class), @JsonSubTypes.Type(value = SetBpmnProcessIdStep.class),
+    @JsonSubTypes.Type(value = FillPostImporterQueueStep.class) })
 public interface Step {
 
   public static final String INDEX_NAME = "indexName", CREATED_DATE="createdDate", APPLIED = "applied", APPLIED_DATE="appliedDate", VERSION = "version", ORDER="order", CONTENT = "content";

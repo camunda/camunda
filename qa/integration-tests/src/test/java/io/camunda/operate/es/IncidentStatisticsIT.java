@@ -490,7 +490,7 @@ public class IncidentStatisticsIT extends OperateIntegrationTest {
     for (int i = 0; i < activeIncidentsCount; i++) {
       final FlowNodeInstanceForListViewEntity activityInstance = TestUtil
           .createFlowNodeInstance(processInstance.getProcessInstanceKey(), FlowNodeState.ACTIVE);
-      createIncident(activityInstance, withOtherMsg ? ERRMSG_OTHER : null, null);
+      createIncident(activityInstance, withOtherMsg ? ERRMSG_OTHER : null);
       entities.add(activityInstance);
       IncidentEntity incidentEntity = TestUtil.createIncident(IncidentState.ACTIVE,activityInstance.getActivityId(), Long.valueOf(activityInstance.getId()),activityInstance.getErrorMessage());
       incidentEntity.setProcessDefinitionKey(processInstance.getProcessDefinitionKey());
@@ -507,13 +507,13 @@ public class IncidentStatisticsIT extends OperateIntegrationTest {
     for (int i = 0; i < pendingIncidentsCount; i++) {
       final FlowNodeInstanceForListViewEntity activityInstance = TestUtil
           .createFlowNodeInstance(processInstance.getProcessInstanceKey(), FlowNodeState.ACTIVE);
-      createIncident(activityInstance, withOtherMsg ? ERRMSG_OTHER : null, null);
+      createIncident(activityInstance, withOtherMsg ? ERRMSG_OTHER : null);
       entities.add(activityInstance);
       IncidentEntity incidentEntity = TestUtil.createIncident(IncidentState.ACTIVE,activityInstance.getActivityId(), Long.valueOf(activityInstance.getId()),activityInstance.getErrorMessage());
       incidentEntity.setProcessDefinitionKey(processInstance.getProcessDefinitionKey());
       incidentEntity.setProcessInstanceKey(processInstance.getProcessInstanceKey());
       incidentEntity.setBpmnProcessId(processInstance.getBpmnProcessId());
-      incidentEntity.setPending(true);
+      incidentEntity.setState(IncidentState.PENDING);
       entities.add(incidentEntity);
     }
     return entities;

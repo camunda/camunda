@@ -357,13 +357,10 @@ public class ListViewZeebeRecordProcessor {
     entity.setPartitionId(record.getPartitionId());
     entity.setActivityId(recordValue.getElementId());
     entity.setProcessInstanceKey(recordValue.getProcessInstanceKey());
-    entity.setPendingIncident(true);
     if (intentStr.equals(IncidentIntent.CREATED.name())) {
       entity.setErrorMessage(StringUtils.trimWhitespace(recordValue.getErrorMessage()));
-      entity.addIncidentKey(record.getKey());
     } else if (intentStr.equals(IncidentIntent.RESOLVED.name())) {
       entity.setErrorMessage(null);
-      entity.addIncidentKey(record.getKey());
     }
 
     //set parent
@@ -434,38 +431,18 @@ public class ListViewZeebeRecordProcessor {
       FlowNodeInstanceForListViewEntity entity, Long processInstanceKey) throws PersistenceException {
     try {
       logger.debug("Activity instance for list view: id {}", entity.getId());
+      Map<String, Object> updateFields = new HashMap<>();
+      updateFields.put(ListViewTemplate.ERROR_MSG, entity.getErrorMessage());
       return new UpdateRequest().index(listViewTemplate.getFullQualifiedName()).id(entity.getId())
-        .upsert(objectMapper.writeValueAsString(entity), XContentType.JSON)
-        .script(getUpdateFlowNodeInstanceScript(entity))
-        .routing(processInstanceKey.toString())
-        .retryOnConflict(UPDATE_RETRY_COUNT);
+          .upsert(objectMapper.writeValueAsString(entity), XContentType.JSON)
+          .doc(updateFields)
+          .routing(processInstanceKey.toString())
+          .retryOnConflict(UPDATE_RETRY_COUNT);
 
     } catch (IOException e) {
       logger.error("Error preparing the query to upsert activity instance for list view", e);
       throw new PersistenceException(String.format("Error preparing the query to upsert activity instance [%s]  for list view", entity.getId()), e);
     }
-  }
-
-  private Script getUpdateFlowNodeInstanceScript(final FlowNodeInstanceForListViewEntity entity) {
-    final Map<String, Object> paramsMap = new HashMap<>();
-    paramsMap.put("errorMessage", entity.getErrorMessage());
-    paramsMap.put("pendingIncident", entity.isPendingIncident());
-    if (entity.getIncidentKeys().size() > 0) {
-      paramsMap.put("incidentKey", entity.getIncidentKeys().get(0));
-    }
-    final String script =
-          "ctx._source." + ListViewTemplate.ERROR_MSG + " = params.errorMessage;"
-        + "ctx._source." + ListViewTemplate.PENDING_INCIDENT + " = params.pendingIncident;"
-        + "if (params.incidentKey != null){"
-        + "  if (ctx._source." + ListViewTemplate.INCIDENT_KEYS + " == null) {"
-        + "    ctx._source." + ListViewTemplate.INCIDENT_KEYS + " = new Long[]{params.incidentKey};"
-        + "  } else {"
-        + "    if (!ctx._source." + ListViewTemplate.INCIDENT_KEYS + ".contains(params.incidentKey)) { "
-        + "      ctx._source." + ListViewTemplate.INCIDENT_KEYS + ".add(params.incidentKey);"
-        + "    }"
-        + "  }"
-        + "}";
-    return new Script(ScriptType.INLINE, Script.DEFAULT_SCRIPT_LANG, script, paramsMap);
   }
 
   private UpdateRequest getProcessInstanceQuery(ProcessInstanceForListViewEntity piEntity) throws PersistenceException {

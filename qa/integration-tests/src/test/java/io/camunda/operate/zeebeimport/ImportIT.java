@@ -62,6 +62,7 @@ import org.elasticsearch.index.reindex.UpdateByQueryRequest;
 import org.elasticsearch.script.Script;
 import org.elasticsearch.script.ScriptType;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.web.servlet.MvcResult;
@@ -330,65 +331,6 @@ public class ImportIT extends OperateZeebeIntegrationTest {
     assertThat(activity.getState()).isEqualTo(FlowNodeState.ACTIVE);
     assertThat(activity.getIncidentKey()).isNotNull();
     assertThat(activity.getFlowNodeId()).isEqualTo(activityId);
-  }
-
-  @Test
-  public void testIncidentCreatedForFlowNodeInstanceBefore8_1_0() {
-    // having
-    String activityId = "taskA";
-    final String errorMessage = "Error occurred when working on the job";
-
-    String processId = "demoProcess";
-    Long processDefinitionKey = tester.deployProcess("demoProcess_v_1.bpmn").getProcessDefinitionKey();
-    Long processInstanceKey = tester
-        .startProcessInstance(processId, "{\"a\": \"b\"}").waitUntil().flowNodeIsActive(activityId)
-        .getProcessInstanceKey();
-
-    updateIncidentKeyToNull();
-
-    //when
-    //create an incident
-    failTaskWithNoRetriesLeft(activityId, processInstanceKey, errorMessage);
-
-    //then
-    final List<IncidentEntity> allIncidents = incidentReader.getAllIncidentsByProcessInstanceKey(processInstanceKey);
-    assertThat(allIncidents).hasSize(1);
-    IncidentEntity incidentEntity = allIncidents.get(0);
-    assertThat(incidentEntity.getProcessDefinitionKey()).isEqualTo(processDefinitionKey);
-    assertThat(incidentEntity.getBpmnProcessId()).isEqualTo(processId);
-    assertThat(incidentEntity.getFlowNodeId()).isEqualTo(activityId);
-    assertThat(incidentEntity.getFlowNodeInstanceKey()).isNotNull();
-    assertThat(incidentEntity.getErrorMessage()).isEqualTo(errorMessage);
-    assertThat(incidentEntity.getErrorType()).isNotNull();
-    assertThat(incidentEntity.getState()).isEqualTo(IncidentState.ACTIVE);
-
-    //assert list view data
-    final ListViewProcessInstanceDto pi = getSingleProcessInstanceForListView();
-    assertThat(pi.getState()).isEqualTo(ProcessInstanceStateDto.INCIDENT);
-
-    //assert flow node instances
-    final List<FlowNodeInstanceEntity> allFlowNodeInstances = tester
-        .getAllFlowNodeInstances(processInstanceKey);
-    assertThat(allFlowNodeInstances).hasSize(2);
-    final FlowNodeInstanceEntity activity = allFlowNodeInstances.get(1);
-    assertThat(activity.getState()).isEqualTo(FlowNodeState.ACTIVE);
-    assertThat(activity.getIncidentKey()).isNotNull();
-    assertThat(activity.getFlowNodeId()).isEqualTo(activityId);
-  }
-
-  private void updateIncidentKeyToNull() {
-    UpdateByQueryRequest request = new UpdateByQueryRequest(listViewTemplate.getFullQualifiedName())
-        .setQuery(termQuery(JOIN_RELATION, ACTIVITIES_JOIN_RELATION))
-        .setScript(new Script(
-            ScriptType.INLINE, "painless",
-            "ctx._source.incidentKeys = null",
-            Collections.emptyMap()));
-    try {
-      BulkByScrollResponse response = esClient.updateByQuery(request, RequestOptions.DEFAULT);
-      assertThat(response.getUpdated()).isGreaterThan(0);
-    } catch (IOException e) {
-      throw new RuntimeException(e);
-    }
   }
 
   @Test

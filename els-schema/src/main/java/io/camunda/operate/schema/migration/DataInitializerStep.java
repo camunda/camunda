@@ -4,14 +4,10 @@
  * See the License.txt file for more information. You may not use this file
  * except in compliance with the proprietary license.
  */
-package io.camunda.operate.zeebeimport.post;
+package io.camunda.operate.schema.migration;
 
-import java.io.IOException;
-
-public interface PostImportAction extends Runnable {
-
-  boolean performOneRound() throws IOException;
-
-  void clearCache();
-
+/**
+ * This migration step fills the new index with data. Does not require index of older version.
+ */
+public interface DataInitializerStep {
 }

@@ -28,6 +28,10 @@ public interface Plan {
     return new ReindexWithQueryAndScriptPlan();
   }
 
+  static FillPostImporterQueuePlan forFillPostImporterQueuePlan() {
+    return new FillPostImporterQueuePlan();
+  }
+
   default List<Step> getSteps() {
     return Collections.emptyList();
   }

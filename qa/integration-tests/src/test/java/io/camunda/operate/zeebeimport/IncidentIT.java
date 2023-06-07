@@ -183,63 +183,6 @@ public class IncidentIT extends OperateZeebeIntegrationTest {
     verify(incidentNotifier, atLeastOnce()).notifyOnIncidents(any());
   }
 
-  @Ignore("Due to flaky CI tests")
-  @Test
-  public void testIncidentsArePostProcessedAfterMigrationTo8_1() throws Exception {
-    // having
-    String processId = "complexProcess";
-    deployProcess("complexProcess_v_3.bpmn");
-    final long processInstanceKey = ZeebeTestUtil.startProcessInstance(zeebeClient, processId, "{\"count\":3}");
-    final String errorMsg = "some error";
-    final String activityId = "alwaysFailingTask";
-    ZeebeTestUtil.failTask(zeebeClient, activityId, getWorkerName(), 3, errorMsg);
-    elasticsearchTestRule.processAllRecordsAndWait(incidentsInAnyInstanceAreActiveCheck, 4L);
-
-    MvcResult mvcResult = getRequest(getIncidentsURL(processInstanceKey));
-    IncidentResponseDto incidentResponse = mockMvcTestRule.fromResponse(mvcResult, new TypeReference<>() { });
-
-    //imitate fields after migration 8.0.x -> 8.1.4
-    incidentResponse.getIncidents().forEach(incident -> {
-      //update list view similar to migration
-      UpdateRequest updateRequest = new UpdateRequest();
-      updateRequest.id(incident.getFlowNodeInstanceId());
-      updateRequest.index(listViewTemplate.getFullQualifiedName());
-      updateRequest.script(new Script(ScriptType.INLINE, "painless",
-          "ctx._source.pendingIncident = true; ctx._source.incidentKeys = new Long []{" + incident.getId() + "L}",
-          Collections.emptyMap()));
-      try {
-        esClient.update(updateRequest, RequestOptions.DEFAULT);
-      } catch (IOException e) {
-        throw new RuntimeException(e);
-      }
-    });
-    elasticsearchTestRule.refreshOperateESIndices();
-
-    //when
-    elasticsearchTestRule.runPostImportActions();
-
-    elasticsearchTestRule.refreshOperateESIndices();
-
-    //then
-    //flow node instances pendingIncident = false
-    final SearchRequest listViewRequest = ElasticsearchUtil.createSearchRequest(listViewTemplate).source(
-        new SearchSourceBuilder().query(
-            joinWithAnd(termQuery(PENDING_INCIDENT, true),
-                termQuery(JOIN_RELATION, ACTIVITIES_JOIN_RELATION))
-            )
-    );
-    final SearchResponse response = esClient.search(listViewRequest, RequestOptions.DEFAULT);
-    assertThat(response.getHits().getTotalHits().value).isEqualTo(0);
-
-    //incidents are still the same
-    mvcResult = getRequest(getIncidentsURL(processInstanceKey));
-    incidentResponse = mockMvcTestRule.fromResponse(mvcResult, new TypeReference<>() {
-    });
-    assertThat(incidentResponse).isNotNull();
-    assertThat(incidentResponse.getCount()).isEqualTo(4);
-    assertThat(incidentResponse.getIncidents()).hasSize(4);
-  }
-
   /**
    * parentProcess -> calledProcess (has incident) -> process (has incident)
    * Getting the incidents from parentProcess should return two incidents with corresponding rootCause.

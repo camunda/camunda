@@ -64,9 +64,6 @@
 				"type": "text",
 				"analyzer": "ca_path_tree",
 				"fielddata": true
-			},
-			"pending": {
-				"type": "boolean"
 			}
 		}
 	}

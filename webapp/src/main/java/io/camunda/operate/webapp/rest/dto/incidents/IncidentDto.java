@@ -264,4 +264,9 @@ public class IncidentDto {
         .hash(id, errorType, errorMessage, flowNodeId, flowNodeInstanceId, jobId, creationTime,
             hasActiveOperation, lastOperation, rootCauseInstance, rootCauseDecision);
   }
+
+  @Override
+  public String toString() {
+    return "IncidentDto{" + "id='" + id + '\'' + ", errorType=" + errorType + ", errorMessage='" + errorMessage + '\'' + ", flowNodeId='" + flowNodeId + '\'' + ", flowNodeInstanceId='" + flowNodeInstanceId + '\'' + ", jobId='" + jobId + '\'' + ", creationTime=" + creationTime + ", hasActiveOperation=" + hasActiveOperation + ", lastOperation=" + lastOperation + ", rootCauseInstance=" + rootCauseInstance + ", rootCauseDecision=" + rootCauseDecision + '}';
+  }
 }

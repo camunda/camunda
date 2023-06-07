@@ -88,15 +88,13 @@ public abstract class AbstractStep implements Step {
     if (o == null || getClass() != o.getClass())
       return false;
     AbstractStep that = (AbstractStep) o;
-    return isApplied == that.isApplied && Objects.equals(content, that.content) && Objects.equals(description,
-        that.description) && Objects.equals(createdDate, that.createdDate) && Objects.equals(appliedDate,
-        that.appliedDate) && Objects.equals(indexName, that.indexName) && Objects.equals(version,
-        that.version) && Objects.equals(order, that.order);
+    return Objects.equals(indexName, that.indexName) && Objects.equals(version, that.version) && Objects.equals(order,
+        that.order);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(content, description, createdDate, appliedDate, indexName, isApplied, version, order);
+    return Objects.hash(indexName, version, order);
   }
 
   @Override

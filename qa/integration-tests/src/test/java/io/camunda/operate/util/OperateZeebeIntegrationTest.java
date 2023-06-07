@@ -15,6 +15,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.operate.zeebeimport.post.IncidentPostImportAction;
 import io.micrometer.core.instrument.Meter;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.camunda.zeebe.client.ZeebeClient;
@@ -129,6 +130,10 @@ public abstract class OperateZeebeIntegrationTest extends OperateIntegrationTest
   @Autowired
   @Qualifier("processInstanceIsCreatedCheck")
   protected Predicate<Object[]> processInstanceIsCreatedCheck;
+
+  @Autowired
+  @Qualifier("incidentsInAnyInstanceArePresentCheck")
+  protected Predicate<Object[]> incidentsInAnyInstanceArePresentCheck;
 
   @Autowired
   @Qualifier("processInstancesAreStartedCheck")

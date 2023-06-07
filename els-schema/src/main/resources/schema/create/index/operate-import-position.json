@@ -19,6 +19,9 @@
 			},
 			"sequence": {
 				"type": "long"
+			},
+			"postImporterPosition": {
+				"type": "long"
 			}
 		}
 	}

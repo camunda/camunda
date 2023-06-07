@@ -32,8 +32,6 @@ public class ListViewTemplate extends AbstractTemplateDescriptor implements Prio
   public static final String ACTIVITY_STATE = "activityState";
   public static final String ACTIVITY_TYPE = "activityType";
 
-  public static final String PENDING_INCIDENT = "pendingIncident";
-  public static final String INCIDENT_KEYS = "incidentKeys";
   public static final String ERROR_MSG = "errorMessage";
 
   //used both for process instance and flow node instance

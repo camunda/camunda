@@ -22,6 +22,8 @@ import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.update.UpdateRequest;
 import org.junit.Before;
 import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
@@ -33,7 +35,6 @@ import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static io.camunda.operate.entities.ErrorType.JOB_NO_RETRIES;
-import static io.camunda.operate.util.ElasticsearchUtil.UPDATE_RETRY_COUNT;
 import static io.camunda.operate.webapp.rest.ProcessInstanceRestService.PROCESS_INSTANCE_URL;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -47,6 +48,8 @@ import static org.mockito.Mockito.*;
         OperateProperties.PREFIX + ".alert.webhook = http://somepath",
         "spring.mvc.pathmatch.matching-strategy=ANT_PATH_MATCHER"})
 public class IncidentWithFailingOperationIT extends OperateZeebeIntegrationTest {
+
+  private static final Logger logger = LoggerFactory.getLogger(IncidentWithFailingOperationIT.class);
 
   @Autowired
   private ResolveIncidentHandler updateRetriesHandler;
@@ -94,6 +97,10 @@ public class IncidentWithFailingOperationIT extends OperateZeebeIntegrationTest 
     postOperationWithOKResponse(processInstanceKey, new CreateOperationRequestDto(OperationType.RESOLVE_INCIDENT));
     executeOneBatch();
 
+    //this test will fail import for incidents
+    //we need to wait at least 3 X 2sec time to cover 3 backoff of importer
+    Thread.sleep(8000L);
+
     elasticsearchTestRule.processAllRecordsAndWait(incidentsAreActiveCheck, processInstanceKey, 3);
 
     //when
@@ -106,6 +113,8 @@ public class IncidentWithFailingOperationIT extends OperateZeebeIntegrationTest 
     assertThat(incidentResponse).isNotNull();
     assertThat(incidentResponse.getCount()).isEqualTo(3);
     assertThat(incidentResponse.getIncidents()).hasSize(3);
+    logger.info("Incidents found: " + incidentResponse.getIncidents().toString());
+
     assertIncident(incidentResponse, "failed to evaluate expression '{taskOrderId:orderId}': no variable found for name 'orderId'", "upperTask", ErrorType.IO_MAPPING_ERROR);
     assertIncident(incidentResponse, "failed to evaluate expression 'clientId': no variable found for name 'clientId'", "messageCatchEvent", ErrorType.EXTRACT_VALUE_ERROR);
     assertIncident(incidentResponse, "Expected at least one condition to evaluate to true, or to have a default flow", "exclusiveGateway", ErrorType.CONDITION_ERROR);

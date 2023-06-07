@@ -130,20 +130,15 @@ public abstract class TestUtil {
     return processInstance;
   }
 
-  public static FlowNodeInstanceForListViewEntity createFlowNodeInstanceWithIncident(Long processInstanceKey, FlowNodeState state, String errorMsg, Long incidentKey) {
+  public static FlowNodeInstanceForListViewEntity createFlowNodeInstanceWithIncident(Long processInstanceKey, FlowNodeState state, String errorMsg) {
     FlowNodeInstanceForListViewEntity activityInstanceForListViewEntity = createFlowNodeInstance(processInstanceKey, state);
-    createIncident(activityInstanceForListViewEntity, errorMsg, incidentKey);
+    createIncident(activityInstanceForListViewEntity, errorMsg);
     return activityInstanceForListViewEntity;
   }
 
   public static void createIncident(
-      FlowNodeInstanceForListViewEntity activityInstanceForListViewEntity, String errorMsg, Long incidentKey) {
+      FlowNodeInstanceForListViewEntity activityInstanceForListViewEntity, String errorMsg) {
     activityInstanceForListViewEntity.setIncident(true);
-    if (incidentKey != null) {
-      activityInstanceForListViewEntity.addIncidentKey(incidentKey);
-    } else {
-      activityInstanceForListViewEntity.addIncidentKey((long)random.nextInt());
-    }
     if (errorMsg != null) {
       activityInstanceForListViewEntity.setErrorMessage(errorMsg);
     } else {
@@ -275,7 +270,6 @@ public abstract class TestUtil {
     incidentEntity.setTreePath(
         new TreePath().startTreePath(String.valueOf(processInstanceKey)).appendFlowNode(activityId)
             .appendFlowNodeInstance(String.valueOf(activityInstanceId)).toString());
-    incidentEntity.setPending(false);
     if (processDefinitionKey != null) {
       incidentEntity.setProcessDefinitionKey(processDefinitionKey);
     }

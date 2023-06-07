@@ -133,23 +133,24 @@ public class ZeebeImportIT extends OperateZeebeIntegrationTest {
   }
 
   @Test
-  @Ignore("https://github.com/camunda/operate/issues/1529")
   public void testIncidentCreatesProcessInstance() {
     // having
     String activityId = "taskA";
     String processId = "demoProcess";
-    final Long processDefinitionKey = deployProcess("demoProcess_v_1.bpmn");
-    final Long processInstanceKey = ZeebeTestUtil.startProcessInstance(zeebeClient, processId, "{\"a\": \"b\"}");
-
+    Long processDefinitionKey = tester.deployProcess("demoProcess_v_1.bpmn")
+        .waitUntil().processIsDeployed().getProcessDefinitionKey();
+    Long processInstanceKey = tester.startProcessInstance(processId, "{\"a\": \"b\"}").getProcessInstanceKey();
     //create an incident
-    ZeebeTestUtil.failTask(getClient(), activityId, getWorkerName(), 3, "Some error");
+    tester.failTask(activityId, "Some error");
 
     //when
     //1st load incident
-    processImportTypeAndWait(ImportValueType.INCIDENT,incidentIsActiveCheck, processInstanceKey);
+    processImportTypeAndWait(ImportValueType.INCIDENT, incidentsArePresentCheck, processInstanceKey, 1);
 
     //and then process instance events
     processImportTypeAndWait(ImportValueType.PROCESS_INSTANCE, processInstanceIsCreatedCheck, processInstanceKey);
+
+    tester.waitUntil().incidentIsActive();
 
     //then
     final ProcessInstanceForListViewEntity processInstanceEntity = processInstanceReader.getProcessInstanceByKey(processInstanceKey);
@@ -218,25 +219,29 @@ public class ZeebeImportIT extends OperateZeebeIntegrationTest {
   }
 
   @Test
-  @Ignore("https://github.com/camunda/operate/issues/1529")
   public void testEarlierEventsAreIgnored() throws Exception {
     // having
     String activityId = "taskA";
     String processId = "demoProcess";
-    final Long processDefinitionKey = deployProcess("demoProcess_v_1.bpmn");
-    final Long processInstanceKey = ZeebeTestUtil.startProcessInstance(zeebeClient, processId, "{\"a\": \"b\"}");
+
+    Long processDefinitionKey = tester.deployProcess("demoProcess_v_1.bpmn")
+        .waitUntil().processIsDeployed().getProcessDefinitionKey();
+    Long processInstanceKey = tester.startProcessInstance(processId, "{\"a\": \"b\"}").getProcessInstanceKey();
 
     //create an incident
     final String incidentError = "Some error";
-    ZeebeTestUtil.failTask(getClient(), activityId, getWorkerName(), 3, incidentError);
+    //create an incident
+    tester.failTask(activityId, incidentError);
 
     //when
     //1st load incident
-    processImportTypeAndWait(ImportValueType.INCIDENT, incidentIsActiveCheck, processInstanceKey);
+    processImportTypeAndWait(ImportValueType.INCIDENT, incidentsArePresentCheck, processInstanceKey, 1);
 
     //and then process instance events
     processImportTypeAndWait(ImportValueType.PROCESS_INSTANCE, processInstanceIsCreatedCheck, processInstanceKey);
     processImportTypeAndWait(ImportValueType.JOB, processInstanceIsCreatedCheck, processInstanceKey);
+
+    tester.waitUntil().incidentIsActive();
 
     //when
     //get flow node instance tree
@@ -424,7 +429,7 @@ public class ZeebeImportIT extends OperateZeebeIntegrationTest {
     ZeebeTestUtil.cancelProcessInstance(getClient(), processInstanceKey);
 
     processImportTypeAndWait(ImportValueType.PROCESS_INSTANCE, processInstanceIsCanceledCheck, processInstanceKey);
-    processImportTypeAndWait(ImportValueType.INCIDENT, incidentIsResolvedCheck,processInstanceKey);
+    processImportTypeAndWait(ImportValueType.INCIDENT, incidentIsResolvedCheck, processInstanceKey);
     //then
     final List<IncidentEntity> allIncidents = incidentReader.getAllIncidentsByProcessInstanceKey(processInstanceKey);
     assertThat(allIncidents).hasSize(0);
@@ -447,7 +452,6 @@ public class ZeebeImportIT extends OperateZeebeIntegrationTest {
   }
 
   @Test
-  @Ignore("https://github.com/camunda/operate/issues/1529")
   public void testIncidentMetadataForCallActivity() throws Exception {
     //having process with call activity
     final String parentProcessId = "parentProcess";
@@ -482,10 +486,12 @@ public class ZeebeImportIT extends OperateZeebeIntegrationTest {
 
     //when
     //1st load incident
-    processImportTypeAndWait(ImportValueType.INCIDENT, incidentsInAnyInstanceAreActiveCheck, 1L);
+    processImportTypeAndWait(ImportValueType.INCIDENT, incidentsInAnyInstanceArePresentCheck, 1);
 
     //and then process instance events
     processImportTypeAndWait(ImportValueType.PROCESS_INSTANCE, processInstanceIsCreatedCheck, parentProcessInstanceKey);
+
+    tester.waitUntil().incidentIsActive();
 
     //when
     //get metadata by flowNodeId from parent process instance

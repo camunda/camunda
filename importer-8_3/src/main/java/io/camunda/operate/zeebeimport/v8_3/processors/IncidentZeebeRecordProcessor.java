@@ -7,17 +7,19 @@
 package io.camunda.operate.zeebeimport.v8_3.processors;
 
 
-import static io.camunda.operate.util.ElasticsearchUtil.UPDATE_RETRY_COUNT;
-
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.entities.ErrorType;
 import io.camunda.operate.entities.IncidentEntity;
 import io.camunda.operate.entities.IncidentState;
 import io.camunda.operate.entities.OperationType;
+import io.camunda.operate.entities.post.PostImporterActionType;
+import io.camunda.operate.entities.post.PostImporterQueueEntity;
 import io.camunda.operate.exceptions.PersistenceException;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.schema.templates.IncidentTemplate;
 import io.camunda.operate.schema.templates.ListViewTemplate;
+import io.camunda.operate.schema.templates.PostImporterQueueTemplate;
 import io.camunda.operate.util.ConversionUtils;
 import io.camunda.operate.util.DateUtil;
 import io.camunda.operate.util.OperationsManager;
@@ -28,10 +30,10 @@ import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
 import java.io.IOException;
 import java.time.Instant;
+import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.function.Consumer;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.index.IndexRequest;
@@ -57,6 +59,9 @@ public class IncidentZeebeRecordProcessor {
 
   @Autowired
   private IncidentTemplate incidentTemplate;
+
+  @Autowired
+  private PostImporterQueueTemplate postImporterQueueTemplate;
 
   @Autowired
   private OperationsManager operationsManager;
@@ -89,6 +94,31 @@ public class IncidentZeebeRecordProcessor {
 
     persistIncident(record, recordValue, bulkRequest, newIncidentHandler);
 
+    persistPostImportQueueEntry(record, recordValue, bulkRequest);
+
+  }
+
+  private void persistPostImportQueueEntry(Record record, IncidentRecordValue recordValue, BulkRequest bulkRequest)
+      throws PersistenceException {
+    String intent = record.getIntent().name();
+    PostImporterQueueEntity postImporterQueueEntity = new PostImporterQueueEntity()
+        //id = incident key + intent
+        .setId(String.format("%d-%s", record.getKey(), intent))
+        .setActionType(PostImporterActionType.INCIDENT)
+        .setIntent(intent)
+        .setKey(record.getKey())
+        .setPosition(record.getPosition())
+        .setCreationTime(OffsetDateTime.now())
+        .setPartitionId(record.getPartitionId())
+        .setProcessInstanceKey(recordValue.getProcessInstanceKey());
+    try {
+      bulkRequest.add(
+          new IndexRequest(postImporterQueueTemplate.getFullQualifiedName()).id(postImporterQueueEntity.getId())
+              .source(objectMapper.writeValueAsString(postImporterQueueEntity), XContentType.JSON));
+    } catch (JsonProcessingException e) {
+      throw new PersistenceException(
+          String.format("Error preparing the query to index post import queue entry [%s]", postImporterQueueEntity), e);
+    }
   }
 
   private void persistIncident(Record record, IncidentRecordValue recordValue,
@@ -99,9 +129,9 @@ public class IncidentZeebeRecordProcessor {
     if (intentStr.equals(IncidentIntent.RESOLVED.toString())) {
 
       //resolve corresponding operation
-      operationsManager.completeOperation(null, recordValue.getProcessInstanceKey(), incidentKey, OperationType.RESOLVE_INCIDENT, bulkRequest);
-
-      bulkRequest.add(getIncidentUpdateQuery(incidentKey, IncidentState.RESOLVED));
+      operationsManager.completeOperation(null, recordValue.getProcessInstanceKey(), incidentKey,
+          OperationType.RESOLVE_INCIDENT, bulkRequest);
+      //resolved incident is not updated directly, only in post importer
     } else if (intentStr.equals(IncidentIntent.CREATED.toString())) {
       IncidentEntity incident = new IncidentEntity();
       incident.setId( ConversionUtils.toStringOrNull(incidentKey));
@@ -124,7 +154,7 @@ public class IncidentZeebeRecordProcessor {
       if (recordValue.getElementInstanceKey() > 0) {
         incident.setFlowNodeInstanceKey(recordValue.getElementInstanceKey());
       }
-      incident.setState(IncidentState.ACTIVE);
+      incident.setState(IncidentState.PENDING);
       incident.setCreationTime(DateUtil.toOffsetDateTime(Instant.ofEpochMilli(record.getTimestamp())));
 
       bulkRequest.add(getIncidentInsertQuery(incident));
@@ -133,25 +163,17 @@ public class IncidentZeebeRecordProcessor {
   }
 
 
-  private IndexRequest getIncidentInsertQuery(IncidentEntity incident) throws PersistenceException {
+  private UpdateRequest getIncidentInsertQuery(IncidentEntity incident) throws PersistenceException {
     try {
       logger.debug("Index incident: id {}", incident.getId());
-      return new IndexRequest(incidentTemplate.getFullQualifiedName()).id(String.valueOf(incident.getKey()))
-        .source(objectMapper.writeValueAsString(incident), XContentType.JSON);
+      //we only insert incidents but never update -> update will be performed in post importer
+      return new UpdateRequest().index(incidentTemplate.getFullQualifiedName()).id(String.valueOf(incident.getKey()))
+          .doc(new HashMap<>())   //empty
+          .upsert(objectMapper.writeValueAsString(incident), XContentType.JSON);
     } catch (IOException e) {
       logger.error("Error preparing the query to index incident", e);
       throw new PersistenceException(String.format("Error preparing the query to index incident [%s]", incident), e);
     }
-  }
-
-  private UpdateRequest getIncidentUpdateQuery(Long incidentKey, IncidentState state) throws PersistenceException {
-    logger.debug("Resolve incident: key {}", incidentKey);
-    Map<String, Object> updateFields = new HashMap<>();
-    updateFields.put(IncidentTemplate.PENDING, true);
-    updateFields.put(IncidentTemplate.STATE, state);
-    return new UpdateRequest(incidentTemplate.getFullQualifiedName(), String.valueOf(incidentKey))
-        .doc(updateFields)
-        .retryOnConflict(UPDATE_RETRY_COUNT);
   }
 
 }

@@ -113,6 +113,7 @@ public class CallActivityIncidentIT extends OperateZeebeIntegrationTest {
         .flowNodesInAnyInstanceAreActive(TASK_ID_2, 3);
   }
 
+
   /**
    * Core statistics will count 2 as incidents and 4 as running.
    */

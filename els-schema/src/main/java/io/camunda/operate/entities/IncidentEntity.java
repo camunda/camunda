@@ -6,6 +6,8 @@
  */
 package io.camunda.operate.entities;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import java.time.OffsetDateTime;
 import java.util.Objects;
 
@@ -14,7 +16,7 @@ public class IncidentEntity extends OperateZeebeEntity<IncidentEntity> {
   private ErrorType errorType;
 
   private String errorMessage;
-  
+
   // Is only used by binding to ES results
   private Integer errorMessageHash;
 
@@ -36,6 +38,8 @@ public class IncidentEntity extends OperateZeebeEntity<IncidentEntity> {
 
   private String treePath;
 
+  @Deprecated
+  @JsonIgnore
   private boolean pending = true;
 
   public ErrorType getErrorType() {
@@ -56,7 +60,7 @@ public class IncidentEntity extends OperateZeebeEntity<IncidentEntity> {
     setErrorMessageHash(errorMessage.hashCode());
     return this;
   }
-  
+
   public void setErrorMessageHash(Integer errorMessageHash) {
     this.errorMessageHash = errorMessageHash;
   }

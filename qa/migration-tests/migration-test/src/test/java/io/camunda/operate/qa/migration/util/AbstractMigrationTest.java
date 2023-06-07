@@ -65,6 +65,9 @@ public abstract class AbstractMigrationTest {
   protected OperationTemplate operationTemplate;
 
   @Autowired
+  protected PostImporterQueueTemplate postImporterQueueTemplate;
+
+  @Autowired
   protected UserIndex userIndex;
 
   @Autowired

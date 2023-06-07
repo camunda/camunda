@@ -48,7 +48,12 @@ public class SchemaStartup {
     }
     if (migrationProperties.isMigrationEnabled()) {
       LOGGER.info("SchemaStartup: migrate schema.");
-      migrator.migrate();
+      try {
+        migrator.migrate();
+      } catch (Exception ex) {
+        LOGGER.error("Exception occured during migration: " + ex.getMessage(), ex);
+        throw ex;
+      }
     }
     LOGGER.info("SchemaStartup finished.");
   }

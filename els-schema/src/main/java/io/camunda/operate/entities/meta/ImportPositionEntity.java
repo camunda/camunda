@@ -20,6 +20,8 @@ public class ImportPositionEntity extends OperateEntity<ImportPositionEntity> {
 
   private long sequence;
 
+  private Long postImporterPosition;
+
   private String indexName;
 
   public String getAliasName() {
@@ -58,6 +60,15 @@ public class ImportPositionEntity extends OperateEntity<ImportPositionEntity> {
     return this;
   }
 
+  public Long getPostImporterPosition() {
+    return postImporterPosition;
+  }
+
+  public ImportPositionEntity setPostImporterPosition(Long postImporterPosition) {
+    this.postImporterPosition = postImporterPosition;
+    return this;
+  }
+
   public String getIndexName() {
     return indexName;
   }
@@ -90,17 +101,17 @@ public class ImportPositionEntity extends OperateEntity<ImportPositionEntity> {
       return false;
     ImportPositionEntity that = (ImportPositionEntity) o;
     return partitionId == that.partitionId && position == that.position && sequence == that.sequence && Objects.equals(
-        aliasName, that.aliasName) && Objects.equals(indexName, that.indexName);
+        aliasName, that.aliasName) && Objects.equals(postImporterPosition, that.postImporterPosition) && Objects.equals(
+        indexName, that.indexName);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(super.hashCode(), aliasName, partitionId, position, sequence, indexName);
+    return Objects.hash(super.hashCode(), aliasName, partitionId, position, sequence, postImporterPosition, indexName);
   }
 
   @Override
   public String toString() {
-    return "ImportPositionEntity{" + "aliasName='" + aliasName + '\''+ ", sequence=" + sequence + ", partitionId=" + partitionId + ", position=" + position + ", indexName='" + indexName
-        + '\'' + '}';
+    return "ImportPositionEntity{" + "aliasName='" + aliasName + '\'' + ", partitionId=" + partitionId + ", position=" + position + ", sequence=" + sequence + ", postImporterSequence=" + postImporterPosition + ", indexName='" + indexName + '\'' + '}';
   }
 }

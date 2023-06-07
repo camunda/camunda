@@ -24,6 +24,8 @@ import io.camunda.operate.entities.listview.FlowNodeInstanceForListViewEntity;
 import io.camunda.operate.entities.listview.ProcessInstanceForListViewEntity;
 import io.camunda.operate.entities.listview.VariableForListViewEntity;
 import io.camunda.operate.entities.meta.ImportPositionEntity;
+import io.camunda.operate.entities.post.PostImporterActionType;
+import io.camunda.operate.entities.post.PostImporterQueueEntity;
 import io.camunda.operate.qa.migration.util.AbstractMigrationTest;
 import io.camunda.operate.qa.migration.v100.BasicProcessDataGenerator;
 import io.camunda.operate.schema.indices.UserIndex;
@@ -39,6 +41,7 @@ import java.io.UncheckedIOException;
 import java.util.List;
 import java.util.Set;
 
+import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import org.elasticsearch.action.search.SearchRequest;
 import org.junit.Before;
 import org.junit.Test;
@@ -142,12 +145,7 @@ public class BasicProcessTest extends AbstractMigrationTest {
         termsQuery(ListViewTemplate.PROCESS_INSTANCE_KEY, processInstanceIds)));
     List<FlowNodeInstanceForListViewEntity> activitiesList = entityReader.searchEntitiesFor(searchRequest, FlowNodeInstanceForListViewEntity.class);
     assertThat(activitiesList.size()).isEqualTo(processInstancesCount * 3);
-    assertThat(activitiesList).filteredOn(al -> al.getIncidentKeys()!=null && !al.getIncidentKeys().isEmpty()).extracting(PENDING_INCIDENT).containsOnly(true);
-    assertThat(activitiesList).filteredOn(al -> al.getIncidentKeys()!=null && !al.getIncidentKeys().isEmpty()).size().isBetween(
-        BasicProcessDataGenerator.INCIDENT_COUNT - (BasicProcessDataGenerator.COUNT_OF_CANCEL_OPERATION + BasicProcessDataGenerator.COUNT_OF_RESOLVE_OPERATION),
-        BasicProcessDataGenerator.INCIDENT_COUNT
-    );
-    assertThat(activitiesList).filteredOn(al -> al.getIncidentKeys()==null || al.getIncidentKeys().isEmpty()).extracting(PENDING_INCIDENT).containsOnly(false);
+
   }
 
   @Test
@@ -172,6 +170,18 @@ public class BasicProcessTest extends AbstractMigrationTest {
       assertThat(inc.getBpmnProcessId()).isNotNull();
       assertThat(inc.getProcessDefinitionKey()).isNotNull();
     });
+  }
+
+  @Test
+  public void testPostImporterEntities() {
+    List<PostImporterQueueEntity> postImporterQueueEntities = entityReader.getEntitiesFor(postImporterQueueTemplate.getAlias(),
+        PostImporterQueueEntity.class);
+    long incidentsCount = entityReader.countEntitiesFor(incidentTemplate.getAlias());
+    assertThat(postImporterQueueEntities.size()).isEqualTo(incidentsCount);
+    assertThat(postImporterQueueEntities).extracting(PostImporterQueueEntity::getIntent)
+        .containsOnly(IncidentIntent.CREATED.name());
+    assertThat(postImporterQueueEntities).extracting(PostImporterQueueEntity::getActionType)
+        .containsOnly(PostImporterActionType.INCIDENT);
   }
 
   @Test

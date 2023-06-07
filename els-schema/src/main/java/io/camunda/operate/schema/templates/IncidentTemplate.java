@@ -17,8 +17,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class IncidentTemplate extends AbstractTemplateDescriptor implements ProcessInstanceDependant, Prio3Backup {
 
-  public static QueryBuilder ACTIVE_INCIDENT_QUERY = joinWithAnd(termQuery(IncidentTemplate.STATE,
-      IncidentState.ACTIVE), termQuery(IncidentTemplate.PENDING, false));
+  public static QueryBuilder ACTIVE_INCIDENT_QUERY = termQuery(IncidentTemplate.STATE, IncidentState.ACTIVE);
 
   public static final String INDEX_NAME = "incident";
 
@@ -36,7 +35,6 @@ public class IncidentTemplate extends AbstractTemplateDescriptor implements Proc
   public static final String STATE = "state";
   public static final String CREATION_TIME = "creationTime";
   public static final String TREE_PATH = "treePath";
-  public static final String PENDING = "pending";
 
   @Override
   public String getIndexName() {
@@ -45,6 +43,6 @@ public class IncidentTemplate extends AbstractTemplateDescriptor implements Proc
 
   @Override
   public String getVersion() {
-    return "8.2.0";
+    return "8.3.0";
   }
 }

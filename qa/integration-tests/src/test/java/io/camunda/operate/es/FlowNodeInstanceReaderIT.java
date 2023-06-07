@@ -181,7 +181,6 @@ public class FlowNodeInstanceReaderIT extends OperateZeebeIntegrationTest {
     assertStatistic(flowNodeStatistics, "taskB", 0, 0, 0, 1);
   }
 
-  @Ignore("Flaky in CI")
   @Test // due to https://github.com/camunda/operate/issues/3362
   public void testMultiInstanceActiveCount() throws Exception {
       var processInstanceKey = tester.deployProcess("develop/multi-instance-service-task.bpmn")

@@ -14,7 +14,9 @@ import io.camunda.operate.property.OperateElasticsearchProperties;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.schema.IndexSchemaValidator;
 import io.camunda.operate.schema.indices.IndexDescriptor;
+import io.camunda.operate.schema.templates.IncidentTemplate;
 import io.camunda.operate.schema.templates.ListViewTemplate;
+import io.camunda.operate.schema.templates.PostImporterQueueTemplate;
 import io.camunda.operate.schema.templates.TemplateDescriptor;
 import java.util.HashMap;
 import org.elasticsearch.common.settings.Settings;
@@ -58,6 +60,10 @@ public class Migrator{
 
   @Autowired
   private ListViewTemplate listViewTemplate;
+  @Autowired
+  private IncidentTemplate incidentTemplate;
+  @Autowired
+  private PostImporterQueueTemplate postImporterQueueTemplate;
 
   @Autowired
   private OperateProperties operateProperties;
@@ -128,16 +134,25 @@ public class Migrator{
     if (olderVersions.size() > 1) {
       throw new MigrationException(String.format("For index %s are existing more than one older versions: %s ", indexDescriptor.getIndexName(), olderVersions));
     }
+    String currentVersion = indexDescriptor.getVersion();
     if (olderVersions.isEmpty()) {
-      logger.info("No migration needed for {}, no previous indices found.", indexDescriptor.getIndexName());
+      //find data initializer steps
+      final List<Step> stepsForIndex = stepsRepository.findNotAppliedFor(indexDescriptor.getIndexName())
+          .stream().filter(s -> s instanceof DataInitializerStep).collect(Collectors.toList());
+      if (stepsForIndex.size() > 0) {
+        Plan plan = createPlanFor(indexDescriptor.getIndexName(), "1.0.0", currentVersion, stepsForIndex);
+        migrateIndex(indexDescriptor, plan);
+      } else {
+        logger.info("No migration needed for {}, no previous indices found and no data initializer.", indexDescriptor.getIndexName());
+      }
     } else {
       String olderVersion = olderVersions.iterator().next();
-      String currentVersion = indexDescriptor.getVersion();
       final List<Step> stepsForIndex = stepsRepository.findNotAppliedFor(indexDescriptor.getIndexName());
-      final Plan plan = createPlanFor(indexDescriptor.getIndexName(), olderVersion, currentVersion, stepsForIndex);
+      Plan plan = createPlanFor(indexDescriptor.getIndexName(), olderVersion, currentVersion, stepsForIndex);
       migrateIndex(indexDescriptor, plan);
       if (migrationProperties.isDeleteSrcSchema()) {
-        String olderBaseIndexName = String.format("%s-%s-%s_", operateProperties.getElasticsearch().getIndexPrefix(), indexDescriptor.getIndexName(), olderVersion);
+        String olderBaseIndexName = String.format("%s-%s-%s_", operateProperties.getElasticsearch().getIndexPrefix(),
+            indexDescriptor.getIndexName(), olderVersion);
         final String deleteIndexPattern = String.format("%s*", olderBaseIndexName);
         logger.info("Deleted previous indices for pattern {}", deleteIndexPattern);
         retryElasticsearchClient.deleteIndicesFor(deleteIndexPattern);
@@ -235,8 +250,17 @@ public class Migrator{
           .setSteps(onlyAffectedVersions)
           .setMigrationProperties(migrationProperties)
           .setObjectMapper(objectMapper);
-    } else if (onlyAffectedVersions.get(0) instanceof SetBpmnProcessIdStep && onlyAffectedVersions.size() > 1) {
-      throw new MigrationException("Unexpected migration plan: only one SetBpmnProcessIdStep must be present.");
+    } else if (onlyAffectedVersions.get(0) instanceof FillPostImporterQueueStep && onlyAffectedVersions.size() == 1) {
+      return Plan.forFillPostImporterQueuePlan()
+          .setListViewIndexName(String.format("%s-%s", indexPrefix, listViewTemplate.getIndexName()))
+          .setIncidentsIndexName(String.format("%s-%s", indexPrefix, incidentTemplate.getIndexName()))
+          .setPostImporterQueueIndexName(postImporterQueueTemplate.getFullQualifiedName())
+          .setMigrationProperties(migrationProperties)
+          .setOperateProperties(operateProperties)
+          .setObjectMapper(objectMapper)
+          .setSteps(onlyAffectedVersions);
+    } else if ((onlyAffectedVersions.get(0) instanceof SetBpmnProcessIdStep || onlyAffectedVersions.get(0) instanceof FillPostImporterQueueStep) && onlyAffectedVersions.size() > 1) {
+      throw new MigrationException("Unexpected migration plan: only one step of this type must be present: " + onlyAffectedVersions.get(0).getClass().getSimpleName());
     } else {
       throw new MigrationException("Unexpected migration plan.");
     }

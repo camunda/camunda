@@ -34,10 +34,9 @@ import static io.camunda.operate.util.LambdaExceptionUtil.rethrowConsumer;
 import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
 
 /**
- * A plan implemented as reindex request in elasticsearch.<br>
- * Supports script setting.<br>
- * Steps that will be added are elasticsearch ingest processors.<br>
- * The steps will be applied in the order they were added.<br>
+ * This migration plan scrolls the srcIndex, get additional
+ * data from list-view index and reindex the batch of source data combining data from
+ * source index and list-view.
  */
 public class ReindexWithQueryAndScriptPlan implements Plan {
 

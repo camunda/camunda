@@ -199,11 +199,11 @@ public class ListViewQueryIT extends OperateIntegrationTest {
     //given we have 2 process instances: one with active activity with given error msg, another with active activity with another error message
     final ProcessInstanceForListViewEntity processInstance1 = createProcessInstance(ProcessInstanceState.ACTIVE, true);
     final FlowNodeInstanceForListViewEntity activityInstance1 = createFlowNodeInstanceWithIncident(processInstance1.getProcessInstanceKey(), FlowNodeState.ACTIVE,
-      errorMessage, null);
+      errorMessage);
 
     final ProcessInstanceForListViewEntity processInstance2 = createProcessInstance(ProcessInstanceState.ACTIVE, true);
     final FlowNodeInstanceForListViewEntity activityInstance2 = createFlowNodeInstanceWithIncident(processInstance2.getProcessInstanceKey(), FlowNodeState.ACTIVE,
-      "other error message", null);
+      "other error message");
 
     elasticsearchTestRule.persistNew(processInstance1, activityInstance1, processInstance2, activityInstance2);
 
@@ -303,7 +303,7 @@ public class ListViewQueryIT extends OperateIntegrationTest {
 
     final FlowNodeInstanceForListViewEntity activeWithoutIdActivityInstance = createFlowNodeInstance(processInstance2.getProcessInstanceKey(), FlowNodeState.ACTIVE, "otherActivityId");
 
-    final FlowNodeInstanceForListViewEntity incidentWithIdActivityInstance = createFlowNodeInstanceWithIncident(processInstance2.getProcessInstanceKey(), FlowNodeState.ACTIVE, "error", null);
+    final FlowNodeInstanceForListViewEntity incidentWithIdActivityInstance = createFlowNodeInstanceWithIncident(processInstance2.getProcessInstanceKey(), FlowNodeState.ACTIVE, "error");
     incidentWithIdActivityInstance.setActivityId(activityId);
 
     entities.add(processInstance2);
@@ -350,7 +350,7 @@ public class ListViewQueryIT extends OperateIntegrationTest {
     //wi1: active with activity in INCIDENT state with given id
     final ProcessInstanceForListViewEntity processInstance1 = createProcessInstance(ProcessInstanceState.ACTIVE, true);
 
-    final FlowNodeInstanceForListViewEntity incidentWithIdActivityInstance = createFlowNodeInstanceWithIncident(processInstance1.getProcessInstanceKey(), FlowNodeState.ACTIVE, "error", null);
+    final FlowNodeInstanceForListViewEntity incidentWithIdActivityInstance = createFlowNodeInstanceWithIncident(processInstance1.getProcessInstanceKey(), FlowNodeState.ACTIVE, "error");
     incidentWithIdActivityInstance.setActivityId(activityId);
 
     final FlowNodeInstanceForListViewEntity completedWithoutIdActivityInstance = createFlowNodeInstance(processInstance1.getProcessInstanceKey(), FlowNodeState.COMPLETED, "otherActivityId");
@@ -361,7 +361,7 @@ public class ListViewQueryIT extends OperateIntegrationTest {
     //wi2: active with activity in INCIDENT state with another id
     final ProcessInstanceForListViewEntity processInstance2 = createProcessInstance(ProcessInstanceState.ACTIVE, true);
 
-    final FlowNodeInstanceForListViewEntity incidentWithoutIdActivityInstance = createFlowNodeInstanceWithIncident(processInstance2.getProcessInstanceKey(), FlowNodeState.ACTIVE, "error", null);
+    final FlowNodeInstanceForListViewEntity incidentWithoutIdActivityInstance = createFlowNodeInstanceWithIncident(processInstance2.getProcessInstanceKey(), FlowNodeState.ACTIVE, "error");
     incidentWithoutIdActivityInstance.setActivityId("otherActivityId");
 
     final FlowNodeInstanceForListViewEntity completedWithIdActivityInstance = createFlowNodeInstance(processInstance2.getProcessInstanceKey(), FlowNodeState.COMPLETED, activityId);
@@ -1311,7 +1311,7 @@ public class ListViewQueryIT extends OperateIntegrationTest {
     final FlowNodeInstanceForListViewEntity activityInstance5 = TestUtil
         .createFlowNodeInstance(instanceWithIncident.getProcessInstanceKey(), FlowNodeState.ACTIVE);
     vars.add(createVariableForListView(instanceWithIncident.getProcessInstanceKey(), instanceWithIncident.getProcessInstanceKey(), "var1", "Y"));
-    createIncident(activityInstance5, null, null);
+    createIncident(activityInstance5, null);
 
     //instance with one resolved incident and one completed activity
     instanceWithoutIncident = createProcessInstance(ProcessInstanceState.ACTIVE);

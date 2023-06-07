@@ -178,6 +178,7 @@ public class ElasticsearchTestRule extends TestWatcher {
       TestUtil.removeAllIndices(esClient, indexPrefix);
     }
     operateProperties.getElasticsearch().setIndexPrefix(OperateElasticsearchProperties.DEFAULT_INDEX_PREFIX);
+    zeebePostImporter.getPostImportActions().stream().forEach(PostImportAction::clearCache);
     assertMaxOpenScrollContexts(15);
   }
 
@@ -291,7 +292,11 @@ public class ElasticsearchTestRule extends TestWatcher {
       zeebePostImporter.initPostImporters();
     }
     for (PostImportAction action: zeebePostImporter.getPostImportActions()) {
-      action.performOneRound();
+      try {
+        action.performOneRound();
+      } catch (IOException e) {
+        throw new RuntimeException(e);
+      }
     }
   }
 

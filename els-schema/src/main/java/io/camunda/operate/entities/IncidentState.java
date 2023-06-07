@@ -6,9 +6,31 @@
  */
 package io.camunda.operate.entities;
 
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
+
 public enum IncidentState {
 
-  ACTIVE,
-  RESOLVED
+  ACTIVE("CREATED"), RESOLVED("RESOLVED"), PENDING(null);
 
+  private static Map<String, IncidentState> intentMap = new HashMap<>();
+
+  static {
+    Arrays.stream(IncidentState.values()).forEach(is -> intentMap.put(is.getZeebeIntent(), is));
+  }
+
+  private String zeebeIntent;
+
+  IncidentState(String zeebeIntent) {
+    this.zeebeIntent = zeebeIntent;
+  }
+
+  public String getZeebeIntent() {
+    return zeebeIntent;
+  }
+
+  public static IncidentState createFrom(String zeebeIntent) {
+    return intentMap.get(zeebeIntent);
+  }
 }
