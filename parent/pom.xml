@@ -152,7 +152,7 @@
     <plugin.version.sonar>3.9.1.2184</plugin.version.sonar>
     <plugin.version.spotbugs>4.7.3.4</plugin.version.spotbugs>
     <plugin.version.surefire>3.1.2</plugin.version.surefire>
-    <plugin.version.versions>2.15.0</plugin.version.versions>
+    <plugin.version.versions>2.16.0</plugin.version.versions>
 
     <!-- when updating this version, also change it in .idea/externalDependencies.xml -->
     <plugin.version.google-java-format>1.17.0</plugin.version.google-java-format>
