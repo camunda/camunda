@@ -476,7 +476,7 @@
     },
     "updateReportPreview": {
       "switchLabel": "Vorschau Automatisch Aktualisieren",
-      "buttonLabel": "Lauf",
+      "buttonLabel": "Ausführen",
       "cannotUpdate": "Diese Funktion funktioniert nur, wenn die automatische Vorschauaktualisierung aktiviert ist"
     },
     "invalidCombinationError": "Es können keine Daten für die angegebenen Einstellungen angezeigt werden. Bitte wählen Sie eine andere Kombination!",
