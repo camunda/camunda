@@ -53,22 +53,20 @@ public interface Intent {
           CommandDistributionIntent.class,
           ProcessInstanceBatchIntent.class);
   short NULL_VAL = 255;
-  Intent UNKNOWN =
-      new Intent() {
-        @Override
-        public short value() {
-          return NULL_VAL;
-        }
-
-        @Override
-        public String name() {
-          return "UNKNOWN";
-        }
-      };
+  Intent UNKNOWN = UnknownIntent.UNKNOWN;
 
   short value();
 
   String name();
+
+  enum UnknownIntent implements Intent {
+    UNKNOWN;
+
+    @Override
+    public short value() {
+      return NULL_VAL;
+    }
+  }
 
   @SuppressWarnings("checkstyle:MissingSwitchDefault")
   static Intent fromProtocolValue(final ValueType valueType, final short intent) {
