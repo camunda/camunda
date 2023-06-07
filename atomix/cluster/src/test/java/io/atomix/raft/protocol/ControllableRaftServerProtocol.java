@@ -237,6 +237,12 @@ public class ControllableRaftServerProtocol implements RaftServerProtocol {
   }
 
   @Override
+  public CompletableFuture<AppendResponse> append(
+      final MemberId memberId, final AppendRequestV2 request) {
+    return null;
+  }
+
+  @Override
   public void registerTransferHandler(
       final Function<TransferRequest, CompletableFuture<TransferResponse>> handler) {
     transferHandler = handler;

@@ -104,6 +104,12 @@ public class TestRaftServerProtocol extends TestRaftProtocol implements RaftServ
   }
 
   @Override
+  public CompletableFuture<AppendResponse> append(
+      final MemberId memberId, final AppendRequestV2 request) {
+    return null;
+  }
+
+  @Override
   public void registerTransferHandler(
       final Function<TransferRequest, CompletableFuture<TransferResponse>> handler) {
     transferHandler = handler;
