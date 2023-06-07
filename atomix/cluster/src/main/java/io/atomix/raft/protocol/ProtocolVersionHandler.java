@@ -12,13 +12,17 @@ public class ProtocolVersionHandler {
   private static final int VERSION_APPENDREQUEST = 1;
   private static final int VERSION_APPENDREQUEST_V2 = 2;
 
+  private ProtocolVersionHandler() {
+    // override public one
+  }
+
   public static VersionedAppendRequest transform(final AppendRequest request) {
     return new VersionedAppendRequest(
         VERSION_APPENDREQUEST,
         request.term(),
         request.leader(),
         request.prevLogIndex(),
-        request.prevLogIndex(),
+        request.prevLogTerm(),
         request.commitIndex(),
         request.entries());
   }
@@ -29,7 +33,7 @@ public class ProtocolVersionHandler {
         request.term(),
         request.leader(),
         request.prevLogIndex(),
-        request.prevLogIndex(),
+        request.prevLogTerm(),
         request.commitIndex(),
         request.entries());
   }
