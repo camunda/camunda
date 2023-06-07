@@ -31,7 +31,7 @@
     {
       "collapsed": true,
       "datasource": {
-        "uid": "PBFA97CFB590B2093"
+        "uid": "${DS_PROMETHEUS}"
       },
       "gridPos": {
         "h": 1,
@@ -1375,7 +1375,7 @@
       "targets": [
         {
           "datasource": {
-            "uid": "PBFA97CFB590B2093"
+            "uid": "${DS_PROMETHEUS}"
           },
           "refId": "A"
         }
@@ -1386,7 +1386,7 @@
     {
       "collapsed": true,
       "datasource": {
-        "uid": "PBFA97CFB590B2093"
+        "uid": "${DS_PROMETHEUS}"
       },
       "gridPos": {
         "h": 1,
@@ -2529,7 +2529,7 @@
       "targets": [
         {
           "datasource": {
-            "uid": "PBFA97CFB590B2093"
+            "uid": "${DS_PROMETHEUS}"
           },
           "refId": "A"
         }
@@ -2540,7 +2540,7 @@
     {
       "collapsed": true,
       "datasource": {
-        "uid": "PBFA97CFB590B2093"
+        "uid": "${DS_PROMETHEUS}"
       },
       "gridPos": {
         "h": 1,
@@ -3512,7 +3512,7 @@
       "targets": [
         {
           "datasource": {
-            "uid": "PBFA97CFB590B2093"
+            "uid": "${DS_PROMETHEUS}"
           },
           "refId": "A"
         }
@@ -3523,7 +3523,7 @@
     {
       "collapsed": true,
       "datasource": {
-        "uid": "PBFA97CFB590B2093"
+        "uid": "${DS_PROMETHEUS}"
       },
       "gridPos": {
         "h": 1,
@@ -4028,7 +4028,7 @@
       "targets": [
         {
           "datasource": {
-            "uid": "PBFA97CFB590B2093"
+            "uid": "${DS_PROMETHEUS}"
           },
           "refId": "A"
         }
@@ -4039,7 +4039,7 @@
     {
       "collapsed": true,
       "datasource": {
-        "uid": "PBFA97CFB590B2093"
+        "uid": "${DS_PROMETHEUS}"
       },
       "gridPos": {
         "h": 1,
@@ -4560,7 +4560,7 @@
       "targets": [
         {
           "datasource": {
-            "uid": "PBFA97CFB590B2093"
+            "uid": "${DS_PROMETHEUS}"
           },
           "refId": "A"
         }
@@ -4571,7 +4571,7 @@
     {
       "collapsed": true,
       "datasource": {
-        "uid": "PBFA97CFB590B2093"
+        "uid": "${DS_PROMETHEUS}"
       },
       "gridPos": {
         "h": 1,
@@ -4786,7 +4786,7 @@
       "targets": [
         {
           "datasource": {
-            "uid": "PBFA97CFB590B2093"
+            "uid": "${DS_PROMETHEUS}"
           },
           "refId": "A"
         }
@@ -4797,7 +4797,7 @@
     {
       "collapsed": true,
       "datasource": {
-        "uid": "PBFA97CFB590B2093"
+        "uid": "${DS_PROMETHEUS}"
       },
       "gridPos": {
         "h": 1,
@@ -5654,7 +5654,7 @@
       "targets": [
         {
           "datasource": {
-            "uid": "PBFA97CFB590B2093"
+            "uid": "${DS_PROMETHEUS}"
           },
           "refId": "A"
         }
@@ -6538,7 +6538,7 @@
     {
       "collapsed": true,
       "datasource": {
-        "uid": "PBFA97CFB590B2093"
+        "uid": "${DS_PROMETHEUS}"
       },
       "gridPos": {
         "h": 1,
@@ -7950,7 +7950,7 @@
       "targets": [
         {
           "datasource": {
-            "uid": "PBFA97CFB590B2093"
+            "uid": "${DS_PROMETHEUS}"
           },
           "refId": "A"
         }
@@ -7961,7 +7961,7 @@
     {
       "collapsed": true,
       "datasource": {
-        "uid": "PBFA97CFB590B2093"
+        "uid": "${DS_PROMETHEUS}"
       },
       "gridPos": {
         "h": 1,
@@ -8361,7 +8361,7 @@
       "targets": [
         {
           "datasource": {
-            "uid": "PBFA97CFB590B2093"
+            "uid": "${DS_PROMETHEUS}"
           },
           "refId": "A"
         }
@@ -8372,7 +8372,7 @@
     {
       "collapsed": true,
       "datasource": {
-        "uid": "PBFA97CFB590B2093"
+        "uid": "${DS_PROMETHEUS}"
       },
       "gridPos": {
         "h": 1,
@@ -8632,7 +8632,7 @@
       "targets": [
         {
           "datasource": {
-            "uid": "PBFA97CFB590B2093"
+            "uid": "${DS_PROMETHEUS}"
           },
           "refId": "A"
         }
@@ -8643,7 +8643,7 @@
     {
       "collapsed": true,
       "datasource": {
-        "uid": "PBFA97CFB590B2093"
+        "uid": "${DS_PROMETHEUS}"
       },
       "gridPos": {
         "h": 1,
@@ -11597,7 +11597,7 @@
       "targets": [
         {
           "datasource": {
-            "uid": "PBFA97CFB590B2093"
+            "uid": "${DS_PROMETHEUS}"
           },
           "refId": "A"
         }
@@ -11945,7 +11945,7 @@
     {
       "collapsed": true,
       "datasource": {
-        "uid": "PBFA97CFB590B2093"
+        "uid": "${DS_PROMETHEUS}"
       },
       "gridPos": {
         "h": 1,
@@ -13535,7 +13535,7 @@
       "targets": [
         {
           "datasource": {
-            "uid": "PBFA97CFB590B2093"
+            "uid": "${DS_PROMETHEUS}"
           },
           "refId": "A"
         }
@@ -13546,7 +13546,7 @@
     {
       "collapsed": true,
       "datasource": {
-        "uid": "PBFA97CFB590B2093"
+        "uid": "${DS_PROMETHEUS}"
       },
       "gridPos": {
         "h": 1,
@@ -13988,7 +13988,7 @@
       "targets": [
         {
           "datasource": {
-            "uid": "PBFA97CFB590B2093"
+            "uid": "${DS_PROMETHEUS}"
           },
           "refId": "A"
         }
@@ -13999,7 +13999,7 @@
     {
       "collapsed": true,
       "datasource": {
-        "uid": "PBFA97CFB590B2093"
+        "uid": "${DS_PROMETHEUS}"
       },
       "gridPos": {
         "h": 1,
@@ -14227,7 +14227,7 @@
       "targets": [
         {
           "datasource": {
-            "uid": "PBFA97CFB590B2093"
+            "uid": "${DS_PROMETHEUS}"
           },
           "refId": "A"
         }
@@ -14238,7 +14238,7 @@
     {
       "collapsed": true,
       "datasource": {
-        "uid": "PBFA97CFB590B2093"
+        "uid": "${DS_PROMETHEUS}"
       },
       "gridPos": {
         "h": 1,
@@ -14906,7 +14906,7 @@
       "targets": [
         {
           "datasource": {
-            "uid": "PBFA97CFB590B2093"
+            "uid": "${DS_PROMETHEUS}"
           },
           "refId": "A"
         }
@@ -15684,7 +15684,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "PBFA97CFB590B2093"
+            "uid": "${DS_PROMETHEUS}"
           },
           "description": "Members Incarnation number. This metric shows the incarnation number of each member in the several nodes. This is useful for observing the time taken for each member's information propagation.",
           "fieldConfig": {
@@ -15762,7 +15762,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "PBFA97CFB590B2093"
+                "uid": "${DS_PROMETHEUS}"
               },
               "editorMode": "code",
               "exemplar": false,
