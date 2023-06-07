@@ -41,6 +41,7 @@ import io.atomix.raft.metrics.RaftRoleMetrics;
 import io.atomix.raft.metrics.RaftServiceMetrics;
 import io.atomix.raft.partition.RaftElectionConfig;
 import io.atomix.raft.partition.RaftPartitionConfig;
+import io.atomix.raft.protocol.ProtocolVersionHandler;
 import io.atomix.raft.protocol.RaftResponse;
 import io.atomix.raft.protocol.RaftResponse.Status;
 import io.atomix.raft.protocol.RaftServerProtocol;
@@ -281,7 +282,10 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
     protocol.registerInstallHandler(request -> runOnContext(() -> role.onInstall(request)));
     protocol.registerReconfigureHandler(request -> runOnContext(() -> role.onReconfigure(request)));
     protocol.registerTransferHandler(request -> runOnContext(() -> role.onTransfer(request)));
-    protocol.registerAppendHandler(request -> runOnContext(() -> role.onAppend(request)));
+    protocol.registerAppendV1Handler(
+        request -> runOnContext(() -> role.onAppend(ProtocolVersionHandler.transform(request))));
+    protocol.registerAppendV2Handler(
+        request -> runOnContext(() -> role.onAppend(ProtocolVersionHandler.transform(request))));
     protocol.registerPollHandler(request -> runOnContext(() -> role.onPoll(request)));
     protocol.registerVoteHandler(request -> runOnContext(() -> role.onVote(request)));
   }

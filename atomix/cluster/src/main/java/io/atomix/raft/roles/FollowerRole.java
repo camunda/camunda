@@ -26,7 +26,6 @@ import io.atomix.raft.cluster.RaftMember;
 import io.atomix.raft.cluster.impl.DefaultRaftMember;
 import io.atomix.raft.cluster.impl.RaftMemberContext;
 import io.atomix.raft.impl.RaftContext;
-import io.atomix.raft.protocol.AppendRequest;
 import io.atomix.raft.protocol.AppendResponse;
 import io.atomix.raft.protocol.ConfigureRequest;
 import io.atomix.raft.protocol.ConfigureResponse;
@@ -34,6 +33,7 @@ import io.atomix.raft.protocol.InstallRequest;
 import io.atomix.raft.protocol.InstallResponse;
 import io.atomix.raft.protocol.PollRequest;
 import io.atomix.raft.protocol.PollResponse;
+import io.atomix.raft.protocol.VersionedAppendRequest;
 import io.atomix.raft.protocol.VoteRequest;
 import io.atomix.raft.protocol.VoteResponse;
 import io.atomix.raft.storage.log.IndexedRaftLogEntry;
@@ -183,7 +183,7 @@ public final class FollowerRole extends ActiveRole {
   }
 
   @Override
-  public CompletableFuture<AppendResponse> onAppend(final AppendRequest request) {
+  public CompletableFuture<AppendResponse> onAppend(final VersionedAppendRequest request) {
     final CompletableFuture<AppendResponse> future = super.onAppend(request);
     if (isRequestFromCurrentLeader(request.term(), request.leader())) {
       onHeartbeatFromLeader();

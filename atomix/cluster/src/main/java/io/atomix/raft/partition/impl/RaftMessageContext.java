@@ -32,7 +32,8 @@ class RaftMessageContext {
   final String transferSubject;
   final String pollSubject;
   final String voteSubject;
-  final String appendSubject;
+  final String appendV1subject;
+  final String appendV2subject;
   final String leaderHeartbeatSubject;
   private final String prefix;
 
@@ -51,7 +52,8 @@ class RaftMessageContext {
     transferSubject = getSubject(prefix, "transfer");
     pollSubject = getSubject(prefix, "poll");
     voteSubject = getSubject(prefix, "vote");
-    appendSubject = getSubject(prefix, "append");
+    appendV1subject = getSubject(prefix, "append");
+    appendV2subject = getSubject(prefix, "append-v2");
     leaderHeartbeatSubject = getSubject(prefix, "leaderHeartbeat");
   }
 

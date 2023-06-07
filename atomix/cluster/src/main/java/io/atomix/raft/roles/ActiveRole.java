@@ -18,12 +18,12 @@ package io.atomix.raft.roles;
 
 import io.atomix.raft.RaftServer;
 import io.atomix.raft.impl.RaftContext;
-import io.atomix.raft.protocol.AppendRequest;
 import io.atomix.raft.protocol.AppendResponse;
 import io.atomix.raft.protocol.PollRequest;
 import io.atomix.raft.protocol.PollResponse;
 import io.atomix.raft.protocol.RaftRequest;
 import io.atomix.raft.protocol.RaftResponse;
+import io.atomix.raft.protocol.VersionedAppendRequest;
 import io.atomix.raft.protocol.VoteRequest;
 import io.atomix.raft.protocol.VoteResponse;
 import io.atomix.raft.storage.log.IndexedRaftLogEntry;
@@ -38,7 +38,7 @@ public abstract class ActiveRole extends PassiveRole {
   }
 
   @Override
-  public CompletableFuture<AppendResponse> onAppend(final AppendRequest request) {
+  public CompletableFuture<AppendResponse> onAppend(final VersionedAppendRequest request) {
     raft.checkThread();
     logRequest(request);
 

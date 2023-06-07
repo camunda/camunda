@@ -19,7 +19,6 @@ package io.atomix.raft.roles;
 import io.atomix.raft.RaftError;
 import io.atomix.raft.RaftServer;
 import io.atomix.raft.impl.RaftContext;
-import io.atomix.raft.protocol.AppendRequest;
 import io.atomix.raft.protocol.AppendResponse;
 import io.atomix.raft.protocol.ConfigureRequest;
 import io.atomix.raft.protocol.ConfigureResponse;
@@ -33,6 +32,7 @@ import io.atomix.raft.protocol.ReconfigureRequest;
 import io.atomix.raft.protocol.ReconfigureResponse;
 import io.atomix.raft.protocol.TransferRequest;
 import io.atomix.raft.protocol.TransferResponse;
+import io.atomix.raft.protocol.VersionedAppendRequest;
 import io.atomix.raft.protocol.VoteRequest;
 import io.atomix.raft.protocol.VoteResponse;
 import io.atomix.raft.storage.system.Configuration;
@@ -111,7 +111,7 @@ public class InactiveRole extends AbstractRole {
   }
 
   @Override
-  public CompletableFuture<AppendResponse> onAppend(final AppendRequest request) {
+  public CompletableFuture<AppendResponse> onAppend(final VersionedAppendRequest request) {
     logRequest(request);
     final var result =
         logResponse(

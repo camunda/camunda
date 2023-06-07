@@ -154,7 +154,10 @@ public interface RaftServerProtocol {
    *
    * @param handler the open session request handler to register
    */
-  void registerAppendHandler(Function<AppendRequest, CompletableFuture<AppendResponse>> handler);
+  void registerAppendV1Handler(Function<AppendRequest, CompletableFuture<AppendResponse>> handler);
+
+  void registerAppendV2Handler(
+      Function<AppendRequestV2, CompletableFuture<AppendResponse>> handler);
 
   /** Unregisters the append request handler. */
   void unregisterAppendHandler();
