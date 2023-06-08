@@ -51,14 +51,12 @@ jobs:
       with:
         install_components: gke-gcloud-auth-plugin, kubectl
 
-    - name: Extract elasticsearch & cambpmn version
-      id: versions
-      run: |
-        echo "ES_VERSION=$(mvn help:evaluate -Dexpression=elasticsearch.test.version -q -DforceStdout)" >> $GITHUB_OUTPUT
-        echo "CAMBPM_VERSION=$(mvn help:evaluate -Dexpression=camunda.engine.version -q -DforceStdout)" >> $GITHUB_OUTPUT
+    - name: Read pom.xml file
+      id: pom-info
+      uses: YunaBraska/java-info-action@main
 
     - name: Deploy cluster
-      run: .github/podSpecs/clusterTests/deploy.sh $NAMESPACE ${{ steps.versions.outputs.ES_VERSION }} ${{ steps.versions.outputs.CAMBPM_VERSION }}
+      run: .github/podSpecs/clusterTests/deploy.sh $NAMESPACE ${{ steps.pom-info.outputs.x_elasticsearch_test_version }} ${{ steps.pom-info.outputs.x_camunda_engine_version }}
 
     - name: Run Tests
       uses: ./.github/actions/run-maven
