@@ -355,7 +355,7 @@ public class ElasticsearchWriterUtil {
       // exception potentially related to nested object limit
       return "If you are experiencing failures due to too many nested documents, try carefully increasing the " +
         "configured nested object limit (es.settings.index.nested_documents_limit) or enabling the skipping of " +
-        "documents that have reached this limit during import (import.data.skipDataAfterNestedDocLimitReached). " +
+        "documents that have reached this limit during import (import.skipDataAfterNestedDocLimitReached). " +
         "See Optimize documentation for details.";
     }
     return "";
