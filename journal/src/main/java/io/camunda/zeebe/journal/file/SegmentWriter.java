@@ -221,7 +221,7 @@ final class SegmentWriter {
             metadata,
             data,
             new UnsafeBuffer(
-                writeBuffer, startPosition + frameLength, metadataLength + recordLength));
+                writeBuffer, startPosition + frameLength + metadataLength, recordLength));
     updateLastAsqn(lastEntry.asqn());
     index.index(lastEntry, startPosition);
   }
