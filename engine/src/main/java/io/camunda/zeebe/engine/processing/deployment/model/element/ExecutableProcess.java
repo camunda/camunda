@@ -11,6 +11,7 @@ import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
 import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import org.agrona.DirectBuffer;
@@ -86,5 +87,9 @@ public class ExecutableProcess extends ExecutableFlowElementContainer {
               expectedClass.getSimpleName(),
               element.getClass().getSimpleName()));
     }
+  }
+
+  public Collection<AbstractFlowElement> getFlowElements() {
+    return flowElements.values();
   }
 }
