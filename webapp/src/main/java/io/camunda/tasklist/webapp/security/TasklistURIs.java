@@ -16,6 +16,7 @@ public final class TasklistURIs {
   public static final String GRAPHQL_URL = "/graphql";
   public static final String REST_V1_API = "/v1/";
   public static final String REST_V1_EXTERNAL_API = "/v1/external/**";
+  public static final String NEW_FORM = "/new/**";
   public static final String ALL_REST_V1_API = "/v1/**";
   public static final String TASKS_URL_V1 = "/v1/tasks";
   public static final String VARIABLES_URL_V1 = "/v1/variables";
@@ -41,7 +42,8 @@ public final class TasklistURIs {
     NO_PERMISSION,
     LOGIN_RESOURCE,
     LOGOUT_RESOURCE,
-    REST_V1_EXTERNAL_API
+    REST_V1_EXTERNAL_API,
+    NEW_FORM
   };
 
   // Used as constants class
