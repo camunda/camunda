@@ -1,0 +1,167 @@
+# This workflow either scans all distribute-able projects with snyk, or updates the relevant
+# projects on the Snyk servers
+name: Snyk
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: The project version; defaults to the version as defined by the root POM
+        required: false
+        type: string
+      target:
+        description: Allows overriding the project target reference directly; defaults to the current branch
+        required: false
+        type: string
+      monitor:
+        description: Upload Snyk snapshot instead of test
+        required: false
+        type: boolean
+        default: false
+      build:
+        description: Enable to also build Zeebe
+        required: false
+        type: boolean
+        default: true
+  workflow_call:
+    secrets:
+      SNYK_TOKEN:
+        required: true
+    inputs:
+      version:
+        description: The project version; defaults to the version as defined by the root POM
+        required: false
+        type: string
+      target:
+        description: Allows overriding the project target reference directly; defaults to the current branch
+        required: false
+        type: string
+      monitor:
+        description: Upload Snyk snapshot instead of test
+        required: false
+        type: boolean
+        default: false
+      build:
+        description: Enable to also build Zeebe
+        required: false
+        type: boolean
+        default: true
+
+defaults:
+  run:
+    # use bash shell by default to ensure pipefail behavior is the default
+    # see https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#exit-codes-and-error-action-preference
+    shell: bash
+
+jobs:
+  scan:
+    name: Snyk Scan
+    # Run on self-hosted to make building Zeebe much faster
+    runs-on: [ self-hosted, linux, amd64, "16" ]
+    permissions:
+      security-events: write # required to upload SARIF files
+    steps:
+      - name: Install Snyk CLI
+        uses: snyk/actions/setup@master
+      - uses: actions/checkout@v3
+      - name: Setup Zeebe
+        uses: ./.github/actions/setup-zeebe
+        with:
+          maven-cache-key-modifier: snyk
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+      # We need to build the Docker image (and thus the distribution) to scan it
+      - name: Build Zeebe Distribution
+        uses: ./.github/actions/build-zeebe
+        id: build-zeebe
+        if: inputs.build
+      - name: Build Docker Image
+        uses: ./.github/actions/build-docker
+        id: build-docker
+        if: inputs.build
+        with:
+          distball: ${{ steps.build-zeebe.outputs.distball }}
+      # Prepares the bash environment for the step which will actually run Snyk, to avoid mixing too
+      # much the GitHub Action contexts/syntax and bash itself.
+      - name: Build Snyk Environment
+        id: info
+        run: |
+          set -x
+
+          export TARGET=$([[ ! -z '${{ inputs.target }}' ]] && echo '${{ inputs.target }}' || echo "${GITHUB_HEAD_REF:-${GITHUB_REF#refs/heads/}}")
+          export VERSION=$([[ ! -z '${{ inputs.version }}' ]] && echo '${{ inputs.version }}' || mvn -q -Dexec.executable=echo -Dexec.args='${project.version}' --non-recursive exec:exec 2>/dev/null)
+          export VERSION_TAG=$([[ "${VERSION}" == *-SNAPSHOT ]] && echo 'development' || echo "${VERSION}")
+          export LIFECYCLE=$([[ "${VERSION}" == *-SNAPSHOT ]] && echo 'development' || echo 'production')
+
+          echo "SNYK_ARGS=" \
+            "--show-vulnerable-paths=all" \
+            "--severity-threshold=high" \
+            "--org=team-zeebe" \
+            "--project-lifecycle=${LIFECYCLE}" \
+            "--project-tags=version=${VERSION_TAG}" \
+            "--target-reference=${TARGET}" >> $GITHUB_ENV
+          echo "TARGET=${TARGET}" >> $GITHUB_ENV
+          echo "SNYK_COMMAND=${{ (inputs.monitor && 'monitor') || 'test' }}" >> $GITHUB_ENV
+          echo "SARIF=${{ (inputs.monitor && 'false') || 'true' }}" >> $GITHUB_ENV
+          echo "DOCKER_IMAGE=${{ steps.build-docker.outputs.image }}" >> $GITHUB_ENV
+          echo "VERSION=${VERSION}" >> $GITHUB_ENV
+      - name: Run Snyk
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        # The script is set up to scan all distributable artifacts: the projects listed in the bom,
+        # the Go client, and the official Docker image.
+        # If we add things to the BOM, for example, we should also add them here to the
+        # JAVA_PROJECTS variable.
+        run: |
+          # To avoid exiting on the first failure, we instead flip this to 1 as soon as one of the
+          # command fails, and return this at the end; anything non 0 will cause the step to fail
+          exitCode=0
+          JAVA_PROJECTS=(bom bpmn-model clients/java exporter-api gateway-protocol-impl protocol)
+
+          # Remember that when called from a sub-shell, the environment/globals are different
+          function output() {
+            local sarif="$1"
+            local name="$2"
+            [ "${sarif}" == 'true' ] && echo "--sarif-file-output=sarif-results/${name}.sarif"
+          }
+
+          # Print out command if debug logging is enabled
+          set -x
+
+          # Project names contain the target branch, setting the target reference is not yet supported
+          # for containers. So projects are named using this pattern: `zeebe(BRANCH):path/to/buildFile`
+          #
+          # Since the snyk CLI here pass the command as a string, any parenthesis will break the eval
+          # call. As such, we need to double escape the `--project-name` in single quotes
+          PROJECT_NAME="zeebe(${TARGET}):clients/go/go.mod"
+          snyk "${SNYK_COMMAND}" --file=clients/go/go.mod "'--project-name=${PROJECT_NAME}'" ${SNYK_ARGS} "$(output "${SARIF}" 'go')" || exitCode=1
+
+          for project in "${JAVA_PROJECTS[@]}"; do
+            PROJECT_NAME="zeebe(${TARGET}):${project}/pom.xml"
+            snyk "${SNYK_COMMAND}" --file=${project}/pom.xml "'--project-name=${PROJECT_NAME}'" ${SNYK_ARGS} "$(output "${SARIF}" "${project/\//-}")" || exitCode=1
+          done
+
+          # The `container` command does not yet support setting a target reference, as this is a beta
+          # feature at the moment. It's added here anyway for now, and hopefully support will come soon.
+          PROJECT_NAME="zeebe(${TARGET}):Dockerfile"
+          snyk container "${SNYK_COMMAND}" "${DOCKER_IMAGE}" --file=Dockerfile "'--project-name=${PROJECT_NAME}'" ${SNYK_ARGS} "$(output "${SARIF}" 'docker')" || exitCode=1
+          exit "${exitCode}"
+      # This makes the result of our test available in GitHub Code Scanning (look for the Snyk tools)
+      # You can filter by your PR ID, by branch, etc.
+      # This step is only executed if we're testing, as otherwise no SARIF files are emitted
+      - name: Upload Snyk results to GitHub Code Scanning
+        if: ${{ ! inputs.monitor }}
+        uses: github/codeql-action/upload-sarif@v2
+        with:
+          sarif_file: sarif-results/
+      - name: Code Scanning summary
+        if: ${{ ! inputs.monitor }}
+        run: |
+          export PR_NUMBER=$(echo $GITHUB_REF | awk 'BEGIN { FS = "/" } ; { print $3 }')
+          cat >> $GITHUB_STEP_SUMMARY <<EOF
+            ## Result Links
+            - [Code scanning (PR)](https://github.com/camunda/zeebe/security/code-scanning?query=pr:${PR_NUMBER}+tool:"Snyk+Container","Snyk+Open+Source"+is:open)
+            - [Code scanning (branch)](https://github.com/camunda/zeebe/security/code-scanning?query=branch:${{ github.ref_name }}+tool:"Snyk+Container","Snyk+Open+Source"+is:open)
+            - [Snyk projects](https://app.snyk.io/org/team-zeebe/projects)
+          EOF
