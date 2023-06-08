@@ -338,8 +338,7 @@ jobs:
       # Fetching a shallow copy of the ${GITHUB_BASE_REF} branch to check the compatibility against
       - name: Fetching Base Branch
         run: |
-          git config --add remote.origin.fetch +refs/heads/${{ env.GO_CLIENT_BASE_REF }}:refs/remotes/origin/${{ env.GO_CLIENT_BASE_REF }}
-          git fetch --depth=1
+          git fetch --depth=1 origin ${{ env.GO_CLIENT_BASE_REF }}
       - uses: joelanford/go-apidiff@main
         with:
           base-ref:  origin/${{ env.GO_CLIENT_BASE_REF }}
