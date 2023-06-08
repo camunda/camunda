@@ -5,11 +5,11 @@
   <parent>
     <groupId>org.camunda.optimize</groupId>
     <artifactId>util</artifactId>
-    <version>3.11.0-alpha2-RC2</version>
+    <version>3.11.0-alpha2-SNAPSHOT</version>
   </parent>
 
   <artifactId>dependency-doc-creation</artifactId>
-  <version>3.11.0-alpha2-RC2</version>
+  <version>3.11.0-alpha2-SNAPSHOT</version>
 
   <properties>
     <sonar.skip>true</sonar.skip>
