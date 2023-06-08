@@ -15,65 +15,27 @@
  */
 package io.atomix.raft.protocol;
 
-import io.camunda.zeebe.journal.JournalRecord;
-import org.agrona.DirectBuffer;
-import org.agrona.concurrent.UnsafeBuffer;
-
-public class PersistedRaftRecord implements JournalRecord, ReplicatedRecord {
+public class ReplicatedJournalRecord implements ReplicatedRecord {
 
   private final long index;
-  private final long asqn;
   private final long checksum;
-  private final byte[] serializedRaftLogEntry;
+  private final byte[] serializedJournalRecord;
   private final long term;
 
-  public PersistedRaftRecord(
+  public ReplicatedJournalRecord(
       final long term,
       final long index,
-      final long asqn,
       final long checksum,
-      final byte[] serializedRaftLogEntry) {
+      final byte[] serializedJournalRecord) {
     this.index = index;
-    this.asqn = asqn;
     this.checksum = checksum;
-    this.serializedRaftLogEntry = serializedRaftLogEntry;
+    this.serializedJournalRecord = serializedJournalRecord;
     this.term = term;
   }
 
   @Override
   public long index() {
     return index;
-  }
-
-  @Override
-  public long asqn() {
-    return asqn;
-  }
-
-  @Override
-  public long checksum() {
-    return checksum;
-  }
-
-  @Override
-  public DirectBuffer data() {
-    return new UnsafeBuffer(serializedRaftLogEntry);
-  }
-
-  @Override
-  public DirectBuffer serializedRecord() {
-    // TODO
-    return null;
-  }
-
-  /**
-   * Returns the approximate size needed when serializing this class. The exact size depends on the
-   * serializer.
-   *
-   * @return approximate size
-   */
-  public int approximateSize() {
-    return serializedRaftLogEntry.length + Long.BYTES + Long.BYTES + Long.BYTES;
   }
 
   /**
@@ -84,5 +46,23 @@ public class PersistedRaftRecord implements JournalRecord, ReplicatedRecord {
   @Override
   public long term() {
     return term;
+  }
+
+  public long checksum() {
+    return checksum;
+  }
+
+  public byte[] serializedJournalRecord() {
+    return serializedJournalRecord;
+  }
+
+  /**
+   * Returns the approximate size needed when serializing this class. The exact size depends on the
+   * serializer.
+   *
+   * @return approximate size
+   */
+  public int approximateSize() {
+    return serializedJournalRecord.length + Long.BYTES + Long.BYTES;
   }
 }

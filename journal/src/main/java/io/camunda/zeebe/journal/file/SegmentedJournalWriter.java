@@ -83,10 +83,10 @@ final class SegmentedJournalWriter {
     }
   }
 
-  void append(final long index, final long checksum, final byte[] serializedRecord) {
+  JournalRecord append(final long index, final long checksum, final byte[] serializedRecord) {
     final var appendResult = currentWriter.append(index, checksum, serializedRecord);
     if (appendResult.isRight()) {
-      return;
+      return appendResult.get();
     }
 
     if (currentSegment.index() == currentWriter.getNextIndex()) {
@@ -98,6 +98,7 @@ final class SegmentedJournalWriter {
     if (resultInNewSegment.isLeft()) {
       throw resultInNewSegment.getLeft();
     }
+    return resultInNewSegment.get();
   }
 
   void reset(final long index) {

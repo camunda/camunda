@@ -19,6 +19,7 @@ package io.atomix.raft.storage.log;
 import static io.camunda.zeebe.journal.file.SegmentedJournal.ASQN_IGNORE;
 
 import io.atomix.raft.protocol.PersistedRaftRecord;
+import io.atomix.raft.protocol.ReplicatedJournalRecord;
 import io.atomix.raft.storage.log.RaftLogFlusher.Factory;
 import io.atomix.raft.storage.log.entry.RaftLogEntry;
 import io.atomix.raft.storage.serializer.RaftEntrySBESerializer;
@@ -154,6 +155,15 @@ public final class RaftLog implements Closeable {
 
     final RaftLogEntry raftEntry = serializer.readRaftLogEntry(entry.data());
     lastAppendedEntry = new IndexedRaftLogEntryImpl(entry.term(), raftEntry.entry(), entry);
+    return lastAppendedEntry;
+  }
+
+  public IndexedRaftLogEntry append(final ReplicatedJournalRecord entry) {
+    final var writtenRecord =
+        journal.append(entry.index(), entry.checksum(), entry.serializedJournalRecord());
+
+    final RaftLogEntry raftEntry = serializer.readRaftLogEntry(writtenRecord.data());
+    lastAppendedEntry = new IndexedRaftLogEntryImpl(entry.term(), raftEntry.entry(), writtenRecord);
     return lastAppendedEntry;
   }
 

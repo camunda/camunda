@@ -29,6 +29,8 @@ import io.atomix.raft.protocol.PollResponse;
 import io.atomix.raft.protocol.RaftResponse;
 import io.atomix.raft.protocol.ReconfigureRequest;
 import io.atomix.raft.protocol.ReconfigureResponse;
+import io.atomix.raft.protocol.ReplicatedJournalRecord;
+import io.atomix.raft.protocol.ReplicatedRecord;
 import io.atomix.raft.protocol.VersionedAppendRequest;
 import io.atomix.raft.protocol.VoteRequest;
 import io.atomix.raft.protocol.VoteResponse;
@@ -482,7 +484,7 @@ public class PassiveRole extends InactiveRole {
   protected void appendEntries(
       final VersionedAppendRequest request, final CompletableFuture<AppendResponse> future) {
     // Compute the last entry index from the previous log index and request entry count.
-    final long lastEntryIndex = request.prevLogIndex() + request.entries().size();
+    final long lastEntryIndex = request.prevLogIndex() + request.entriesSize();
 
     // Ensure the commitIndex is not increased beyond the index of the last entry in the request.
     final long commitIndex =
@@ -491,7 +493,7 @@ public class PassiveRole extends InactiveRole {
     // Track the last log index while entries are appended.
     long lastLogIndex = request.prevLogIndex();
 
-    if (!request.entries().isEmpty()) {
+    if (request.entriesSize() > 0) {
 
       // If the previous term is zero, that indicates the previous index represents the beginning of
       // the log.
@@ -502,7 +504,7 @@ public class PassiveRole extends InactiveRole {
       }
 
       // Iterate through entries and append them.
-      for (final PersistedRaftRecord entry : request.entries()) {
+      for (final ReplicatedRecord entry : request.entries()) {
         final long index = ++lastLogIndex;
 
         // Get the last entry written to the log by the writer.
@@ -546,7 +548,7 @@ public class PassiveRole extends InactiveRole {
 
   private boolean tryToAppend(
       final CompletableFuture<AppendResponse> future,
-      final PersistedRaftRecord entry,
+      final ReplicatedRecord entry,
       final long index,
       final IndexedRaftLogEntry lastEntry) {
     boolean failedToAppend = false;
@@ -577,7 +579,7 @@ public class PassiveRole extends InactiveRole {
 
   private boolean appendEntry(
       final CompletableFuture<AppendResponse> future,
-      final PersistedRaftRecord entry,
+      final ReplicatedRecord entry,
       final long index,
       final IndexedRaftLogEntry lastEntry) {
     // If the last entry index isn't the previous index, throw an exception because
@@ -593,7 +595,7 @@ public class PassiveRole extends InactiveRole {
 
   private boolean replaceExistingEntry(
       final CompletableFuture<AppendResponse> future,
-      final PersistedRaftRecord entry,
+      final ReplicatedRecord entry,
       final long index) {
 
     try (final RaftLogReader reader = raft.getLog().openUncommittedReader()) {
@@ -627,11 +629,19 @@ public class PassiveRole extends InactiveRole {
    */
   private boolean appendEntry(
       final long index,
-      final PersistedRaftRecord entry,
+      final ReplicatedRecord entry,
       final CompletableFuture<AppendResponse> future) {
     try {
       final IndexedRaftLogEntry indexed;
-      indexed = raft.getLog().append(entry);
+      if (entry instanceof PersistedRaftRecord p) {
+        indexed = raft.getLog().append(p);
+      } else if (entry instanceof ReplicatedJournalRecord j) {
+        indexed = raft.getLog().append(j);
+      } else {
+        throw new IllegalStateException(
+            "Expected to append PersistedRaftRecord or ReplicatedJournalRecord, but found record of type %s"
+                .formatted(entry.getClass()));
+      }
 
       log.trace("Appended {}", indexed);
       raft.getReplicationMetrics().setAppendIndex(indexed.index());

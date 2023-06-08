@@ -21,7 +21,6 @@ import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 import io.atomix.cluster.MemberId;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 
@@ -38,7 +37,7 @@ public class AppendRequestV2 extends AbstractRaftRequest {
   private final String leader;
   private final long prevLogIndex;
   private final long prevLogTerm;
-  private final List<PersistedRaftRecord> entries;
+  private final List<ReplicatedJournalRecord> entries;
   private final long commitIndex;
 
   public AppendRequestV2(
@@ -46,7 +45,7 @@ public class AppendRequestV2 extends AbstractRaftRequest {
       final String leader,
       final long prevLogIndex,
       final long prevLogTerm,
-      final List<PersistedRaftRecord> entries,
+      final List<ReplicatedJournalRecord> entries,
       final long commitIndex) {
     this.term = term;
     this.leader = leader;
@@ -106,7 +105,7 @@ public class AppendRequestV2 extends AbstractRaftRequest {
    *
    * @return A list of log entries.
    */
-  public List<PersistedRaftRecord> entries() {
+  public List<ReplicatedJournalRecord> entries() {
     return entries;
   }
 
@@ -158,7 +157,7 @@ public class AppendRequestV2 extends AbstractRaftRequest {
     private String leader;
     private long logIndex;
     private long logTerm;
-    private List<PersistedRaftRecord> entries;
+    private List<ReplicatedJournalRecord> entries;
     private long commitIndex = -1;
 
     /**
@@ -219,18 +218,7 @@ public class AppendRequestV2 extends AbstractRaftRequest {
      * @return The append request builder.
      * @throws NullPointerException if {@code entries} is null
      */
-    public Builder withEntries(final PersistedRaftRecord... entries) {
-      return withEntries(Arrays.asList(checkNotNull(entries, NULL_ENTRIES_ERR)));
-    }
-
-    /**
-     * Sets the request entries.
-     *
-     * @param entries The request entries.
-     * @return The append request builder.
-     * @throws NullPointerException if {@code entries} is null
-     */
-    public Builder withEntries(final List<PersistedRaftRecord> entries) {
+    public Builder withEntries(final List<ReplicatedJournalRecord> entries) {
       this.entries = checkNotNull(entries, NULL_ENTRIES_ERR);
       return this;
     }

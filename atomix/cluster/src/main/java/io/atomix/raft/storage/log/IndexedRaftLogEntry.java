@@ -17,6 +17,7 @@
 package io.atomix.raft.storage.log;
 
 import io.atomix.raft.protocol.PersistedRaftRecord;
+import io.atomix.raft.protocol.ReplicatedJournalRecord;
 import io.atomix.raft.storage.log.entry.ApplicationEntry;
 import io.atomix.raft.storage.log.entry.RaftEntry;
 
@@ -59,4 +60,6 @@ public interface IndexedRaftLogEntry {
    * @return a record to replicate
    */
   PersistedRaftRecord getPersistedRaftRecord();
+
+  ReplicatedJournalRecord getReplicatedJournalRecord();
 }

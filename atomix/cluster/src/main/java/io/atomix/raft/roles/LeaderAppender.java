@@ -32,9 +32,9 @@ import io.atomix.raft.protocol.ConfigureRequest;
 import io.atomix.raft.protocol.ConfigureResponse;
 import io.atomix.raft.protocol.InstallRequest;
 import io.atomix.raft.protocol.InstallResponse;
-import io.atomix.raft.protocol.PersistedRaftRecord;
 import io.atomix.raft.protocol.RaftRequest;
 import io.atomix.raft.protocol.RaftResponse;
+import io.atomix.raft.protocol.ReplicatedJournalRecord;
 import io.atomix.raft.snapshot.impl.SnapshotChunkImpl;
 import io.atomix.raft.storage.log.IndexedRaftLogEntry;
 import io.atomix.utils.logging.ContextualLoggerFactory;
@@ -166,7 +166,7 @@ final class LeaderAppender {
             .withCommitIndex(raft.getCommitIndex());
 
     // Build a list of entries to send to the member.
-    final List<PersistedRaftRecord> entries = new ArrayList<>();
+    final List<ReplicatedJournalRecord> entries = new ArrayList<>();
 
     // Build a list of entries up to the MAX_BATCH_SIZE. Note that entries in the log may
     // be null if they've been compacted and the member to which we're sending entries is just
@@ -180,7 +180,7 @@ final class LeaderAppender {
     while (member.hasNextEntry()) {
       // Otherwise, read the next entry and add it to the batch.
       final IndexedRaftLogEntry entry = member.nextEntry();
-      final var replicatableRecord = entry.getPersistedRaftRecord();
+      final var replicatableRecord = entry.getReplicatedJournalRecord();
       entries.add(replicatableRecord);
       size += replicatableRecord.approximateSize();
       if (entry.index() == lastIndex || size >= maxBatchSizePerAppend) {
@@ -642,7 +642,7 @@ final class LeaderAppender {
       metrics.observeAppend(
           member.getMember().memberId().id(),
           request.entries().size(),
-          request.entries().stream().mapToInt(PersistedRaftRecord::approximateSize).sum());
+          request.entries().stream().mapToInt(ReplicatedJournalRecord::approximateSize).sum());
 
       commitEntries();
 

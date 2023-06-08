@@ -7,10 +7,10 @@
  */
 package io.atomix.raft.protocol;
 
-public final class ProtocolVersionHandler {
+import static io.atomix.raft.protocol.VersionedAppendRequest.VERSION_APPENDREQUEST;
+import static io.atomix.raft.protocol.VersionedAppendRequest.VERSION_APPENDREQUEST_V2;
 
-  private static final int VERSION_APPENDREQUEST = 1;
-  private static final int VERSION_APPENDREQUEST_V2 = 2;
+public final class ProtocolVersionHandler {
 
   private ProtocolVersionHandler() {
     // override public one
@@ -24,7 +24,8 @@ public final class ProtocolVersionHandler {
         request.prevLogIndex(),
         request.prevLogTerm(),
         request.commitIndex(),
-        request.entries());
+        request.entries(),
+        null);
   }
 
   public static VersionedAppendRequest transform(final AppendRequestV2 request) {
@@ -35,6 +36,7 @@ public final class ProtocolVersionHandler {
         request.prevLogIndex(),
         request.prevLogTerm(),
         request.commitIndex(),
+        null,
         request.entries());
   }
 }

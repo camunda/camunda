@@ -17,6 +17,7 @@
 package io.atomix.raft.storage.log;
 
 import io.atomix.raft.protocol.PersistedRaftRecord;
+import io.atomix.raft.protocol.ReplicatedJournalRecord;
 import io.atomix.raft.storage.log.entry.ApplicationEntry;
 import io.atomix.raft.storage.log.entry.RaftEntry;
 import io.camunda.zeebe.journal.JournalRecord;
@@ -45,5 +46,12 @@ record IndexedRaftLogEntryImpl(long index, long term, RaftEntry entry, JournalRe
     record.data().getBytes(0, serializedRaftLogEntry);
     return new PersistedRaftRecord(
         term, index, record.asqn(), record.checksum(), serializedRaftLogEntry);
+  }
+
+  @Override
+  public ReplicatedJournalRecord getReplicatedJournalRecord() {
+    final byte[] serializedRecord = new byte[record.serializedRecord().capacity()];
+    record.serializedRecord().getBytes(0, serializedRecord);
+    return new ReplicatedJournalRecord(term, index, record.checksum(), serializedRecord);
   }
 }
