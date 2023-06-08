@@ -16,7 +16,8 @@ import org.agrona.DirectBuffer;
  * <p>A {@link PersistedJournalRecord} consists of two parts. The first part is {@link
  * RecordMetadata}. The second part is {@link RecordData}.
  */
-public record PersistedJournalRecord(RecordMetadata metadata, RecordData record)
+public record PersistedJournalRecord(
+    RecordMetadata metadata, RecordData record, DirectBuffer serializedRecord)
     implements JournalRecord {
 
   @Override

@@ -39,7 +39,7 @@ class SparseJournalIndexTest {
   }
 
   public static JournalRecord asJournalRecord(final long index, final long asqn) {
-    return new TestJournalRecord(index, asqn, 0, null);
+    return new TestJournalRecord(index, asqn, 0, null, null);
   }
 
   @Test

@@ -77,6 +77,7 @@ public final class JournalRecordReaderUtil {
               expectedIndex, record.index()));
     }
     buffer.position(startPosition + metadataLength + recordLength);
-    return new PersistedJournalRecord(metadata, record);
+    return new PersistedJournalRecord(
+        metadata, record, new UnsafeBuffer(buffer, startPosition, metadataLength + recordLength));
   }
 }

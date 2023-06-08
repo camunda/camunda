@@ -60,6 +60,12 @@ public class PersistedRaftRecord implements JournalRecord {
     return new UnsafeBuffer(serializedRaftLogEntry);
   }
 
+  @Override
+  public DirectBuffer serializedRecord() {
+    // TODO
+    return null;
+  }
+
   /**
    * Returns the approximate size needed when serializing this class. The exact size depends on the
    * serializer.

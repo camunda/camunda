@@ -459,7 +459,8 @@ final class JournalTest {
 
     // when
     final var invalidChecksumRecord =
-        new TestJournalRecord(record.index(), record.asqn(), -1, record.data());
+        new TestJournalRecord(
+            record.index(), record.asqn(), -1, record.data(), record.serializedRecord());
 
     // then
     assertThatThrownBy(() -> receiverJournal.append(invalidChecksumRecord))
@@ -681,11 +682,11 @@ final class JournalTest {
         new RecordData(record.index(), record.asqn(), BufferUtil.cloneBuffer(record.data()));
 
     if (record instanceof PersistedJournalRecord p) {
-      return new PersistedJournalRecord(p.metadata(), data);
+      return new PersistedJournalRecord(p.metadata(), data, p.serializedRecord());
     }
 
     return new PersistedJournalRecord(
-        new RecordMetadata(record.checksum(), data.data().capacity()), data);
+        new RecordMetadata(record.checksum(), data.data().capacity()), data, null);
   }
 
   private SegmentedJournal openJournal() {
