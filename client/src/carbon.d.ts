@@ -247,7 +247,7 @@ declare module '@carbon/react' {
     isExpanded: Exclude<R['isExpanded'], undefined>;
     isSelected: Exclude<R['isSelected'], undefined>;
     key: R['id'];
-    onExpand(event: React.MouseEvent<HTMLElement>): void;
+    onExpand(event: MouseEvent<HTMLElement>): void;
   }
 
   export interface DataTableCustomSelectionData<R extends DataTableRow = DataTableRow> {
@@ -320,6 +320,22 @@ declare module '@carbon/react' {
     useStaticWidth?: boolean | undefined;
     useZebraStyles?: boolean | undefined;
   }
+
+  export interface DataTableSkeletonHeader {
+    header?: string | undefined;
+  }
+
+  export interface DataTableSkeletonProps extends TableHTMLAttributes<HTMLTableElement> {
+    compact?: boolean | undefined;
+    columnCount?: number | undefined;
+    headers?: readonly DataTableSkeletonHeader[] | undefined;
+    rowCount?: number | undefined;
+    showHeader?: boolean | undefined;
+    showToolbar?: boolean | undefined;
+    zebra?: boolean | undefined;
+  }
+
+  declare const DataTableSkeleton: FC<DataTableSkeletonProps>;
 
   export interface TableProps extends InheritedProps, TableCarbonProps {}
 

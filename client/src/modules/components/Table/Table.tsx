@@ -5,7 +5,7 @@
  * except in compliance with the proprietary license.
  */
 
-import {MouseEvent, ReactNode, UIEventHandler, useEffect, useMemo, useRef} from 'react';
+import {ReactNode, UIEventHandler, useEffect, useMemo, useRef} from 'react';
 import classnames from 'classnames';
 import {
   useTable,
@@ -28,26 +28,24 @@ import {
 } from 'react-table';
 import {
   DataTable,
+  DataTableSkeleton,
   TableContainer,
   Table as CarbonTable,
   Pagination,
   TableHead,
   TableBody,
   TableRow,
-  TableHeader,
-  TableCell,
   DataTableSize,
-  DataTableSortState,
-  TableSelectAll,
-  TableSelectRow,
   TableToolbar,
 } from '@carbon/react';
 
 import {t, getLanguage} from 'translation';
 import {isReactElement} from 'services';
-import {Select, LoadingIndicator, Tooltip, NoDataNotice} from 'components';
+import {NoDataNotice} from 'components';
 
-import {flatten, rewriteHeaderStyles} from './service';
+import {convertHeaderNameToAccessor, flatten, formatSorting} from './service';
+import TableHeader from './TableHeader';
+import TableCell from './TableCell';
 
 import './Table.scss';
 
@@ -120,7 +118,7 @@ export default function Table<T extends object>({
   sorting,
   disablePagination,
   noHighlight,
-  noData = <NoDataNotice type="info" />,
+  noData = <NoDataNotice />,
   error,
   onScroll,
   fetchData = () => {},
@@ -177,60 +175,17 @@ export default function Table<T extends object>({
 
   const firstRowIndex = pageIndex * pageSize;
   const totalRows = totalEntries || body.length;
-  const empty = !loading && (totalRows === 0 || head.length === 0);
-
-  function getHeaderSortingDirection(header: Header): DataTableSortState {
-    if (sorting?.order) {
-      return sorting.order === 'desc' ? 'DESC' : 'ASC';
-    }
-    if (!header.isSorted) {
-      return 'NONE';
-    }
-    if (header.isSortedDesc) {
-      return 'DESC';
-    }
-    return 'ASC';
-  }
-
-  function getHeaderSortingProps(header: Header) {
-    if (!updateSorting && !allowLocalSorting) {
-      return {};
-    }
-    const props = header.getSortByToggleProps();
-    return {
-      ...props,
-      isSortable: isSortable && header.canSort,
-      isSortHeader: header.isSorted,
-      sortDirection: getHeaderSortingDirection(header),
-      onClick: (evt: MouseEvent) => {
-        // dont do anything when clicker on column rearrangement or resizing
-        if (
-          evt?.target instanceof HTMLElement &&
-          (evt.target.classList.contains('::after') || evt.target.classList.contains('resizer'))
-        ) {
-          return;
-        }
-
-        if (props.onClick) {
-          props.onClick(evt);
-          let sortColumn = header.id;
-          if (resultType === 'map') {
-            if (sortColumn === columns[0]?.id) {
-              sortColumn = sortByLabel ? 'label' : 'key';
-            } else {
-              sortColumn = 'value';
-            }
-          }
-          updateSorting?.(sortColumn, sorting?.order === 'asc' ? 'desc' : 'asc');
-        }
-      },
-    };
-  }
 
   useEffect(() => {
     if (firstRowIndex >= totalRows) {
       gotoPage(pageCount - 1);
     }
+  });
+
+  useEffect(() => {
+    headerGroups.forEach((group) =>
+      group.headers.forEach(({id, width}) => (columnWidths.current[id] = width))
+    );
   });
 
   const isInitialMount = useRef(true);
@@ -242,171 +197,119 @@ export default function Table<T extends object>({
     }
   }, [fetchData, pageIndex, pageSize]);
 
-  useEffect(() => {
-    headerGroups.forEach((group) =>
-      group.headers.forEach(({id, width}) => (columnWidths.current[id] = width))
-    );
-  });
-
+  const isEmpty = !loading && (totalRows === 0 || head.length === 0);
   const isSortable = headerGroups.some(({headers}) => headers.some((header) => header.canSort));
 
   if (isReactElement(toolbar) && toolbar.type !== TableToolbar) {
     throw new Error('Table `toolbar` should be a `TableToolbar` component');
   }
 
+  const MAX_LOADING_COLUMN_COUNT = Math.min(headers.length, 6);
+  const LOADING_ROWS_COUNT = 15;
+
   return (
     <div
       className={classnames('Table', className, {
-        highlight: !noHighlight,
+        noHighlight,
         loading,
-        noData: empty,
+        noData: isEmpty,
         error,
       })}
     >
-      <DataTable
-        isSortable={isSortable}
-        locale={getLanguage()}
-        headers={headers.map((header) => ({key: header.id, header: header.render('Header')!}))}
-        rows={page}
-        size={size}
-        useZebraStyles
-        render={({getTableContainerProps, getTableProps}) => (
-          <TableContainer title={title} {...getTableContainerProps()}>
-            {toolbar}
-            <CarbonTable {...getReactTableProps()} {...getTableProps()}>
-              <TableHead>
-                {headerGroups.map((headerGroup, i) => (
-                  <TableRow
-                    {...headerGroup.getHeaderGroupProps()}
-                    className={classnames({groupRow: i === 0 && headerGroups.length > 1})}
-                  >
-                    {headerGroup.headers.map((header: Header) => {
-                      if (
-                        typeof header.Header === 'object' &&
-                        isReactElement(header.Header) &&
-                        header.Header?.type === TableSelectAll
-                      ) {
-                        return header.render('Header');
-                      }
-
-                      const headerProps = {
-                        ...getHeaderSortingProps(header),
-                        ...header.getHeaderProps(),
-                      };
-
-                      return (
+      {loading ? (
+        <DataTableSkeleton
+          zebra
+          showToolbar={!!toolbar}
+          showHeader={!!title}
+          columnCount={MAX_LOADING_COLUMN_COUNT}
+          rowCount={LOADING_ROWS_COUNT}
+        />
+      ) : (
+        <DataTable
+          isSortable={isSortable}
+          locale={getLanguage()}
+          headers={headers.map((header) => ({key: header.id, header: header.render('Header')!}))}
+          rows={page}
+          size={size}
+          useZebraStyles
+          render={({getTableContainerProps, getTableProps}) => (
+            <TableContainer title={title} {...getTableContainerProps()}>
+              {toolbar}
+              <CarbonTable {...getReactTableProps()} {...getTableProps()}>
+                <TableHead>
+                  {headerGroups.map((headerGroup, i) => (
+                    <TableRow
+                      {...headerGroup.getHeaderGroupProps()}
+                      className={classnames({groupRow: i === 0 && headerGroups.length > 1})}
+                    >
+                      {headerGroup.headers.map((header: Header) => (
                         <TableHeader
-                          className={classnames('tableHeader', {placeholder: header.placeholderOf})}
-                          {...headerProps}
-                          data-group={header.group}
-                          scope="col"
-                          title={undefined}
-                          ref={rewriteHeaderStyles(headerProps.style)}
-                        >
-                          <Tooltip content={header.title} overflowOnly>
-                            <span className="text">{header.render('Header')}</span>
-                          </Tooltip>
-                          <div {...header.getResizerProps()} className="resizer" />
-                        </TableHeader>
+                          key={header.id}
+                          header={header}
+                          isSortable={isSortable}
+                          allowLocalSorting={allowLocalSorting}
+                          resultType={resultType}
+                          sortByLabel={sortByLabel}
+                          sorting={sorting}
+                          updateSorting={updateSorting}
+                          firstColumnId={columns[0]?.id}
+                        />
+                      ))}
+                    </TableRow>
+                  ))}
+                </TableHead>
+                <TableBody {...getTableBodyProps()} onScroll={onScroll}>
+                  {!error &&
+                    page.map((row) => {
+                      prepareRow(row);
+                      return (
+                        <TableRow {...row.getRowProps((row.original as any).__props)}>
+                          {row.cells.map((cell) => (
+                            <TableCell key={cell.column.id} cell={cell} />
+                          ))}
+                        </TableRow>
                       );
                     })}
-                  </TableRow>
-                ))}
-              </TableHead>
-              <TableBody {...getTableBodyProps()} onScroll={onScroll}>
-                {!error &&
-                  page.map((row) => {
-                    prepareRow(row);
-                    return (
-                      <TableRow {...row.getRowProps((row.original as any).__props)}>
-                        {row.cells.map((cell) => {
-                          if (cell.value?.type === TableSelectRow) {
-                            return cell.render('Cell', {key: cell.value.props.id});
-                          }
-
-                          const props = cell.getCellProps();
-                          return (
-                            <TableCell
-                              {...props}
-                              className={classnames(props.className, {
-                                noOverflow: cell.value?.type === Select,
-                              })}
-                            >
-                              {cell.render('Cell')}
-                            </TableCell>
-                          );
-                        })}
-                      </TableRow>
-                    );
-                  })}
-              </TableBody>
-            </CarbonTable>
-          </TableContainer>
-        )}
-      />
-      {loading && <LoadingIndicator />}
-      {error && <div>{error}</div>}
-      {empty && <div className="noData">{noData}</div>}
-      {!disablePagination && !empty && (totalRows > defaultPageSize || totalEntries) && (
-        <Pagination
-          onChange={({page, pageSize}) => {
-            // react-table is counting index from 0, and the `page` here is counted form 1
-            // for the `page` prop below, the situation is oposite
-            gotoPage(page - 1);
-            setPageSize(pageSize);
-          }}
-          totalItems={totalRows}
-          page={pageIndex + 1}
-          pageSize={pageSize}
-          pageSizes={[20, 100, 500, 1000]}
-          pageNumberText={t('report.table.page').toString()}
-          itemsPerPageText={t('report.table.rows').toString()}
-          itemRangeText={(min, max, total) =>
-            t('report.table.info', {
-              firstRowIndex: min,
-              lastRowIndex: max,
-              totalRows: total,
-            }).toString()
-          }
-          itemText={(min, max) => `${min} to ${max}`}
-          pageRangeText={(current, total) =>
-            `${t('report.table.page')} ${current} ${t('report.table.of')} ${total}`
-          }
-          forwardText={t('report.table.nextPage').toString()}
-          backwardText={t('report.table.previousPage').toString()}
+                  {isEmpty && <div className="noData">{noData}</div>}
+                  {error && <div className="error">{error}</div>}
+                </TableBody>
+              </CarbonTable>
+              {!disablePagination && !isEmpty && (totalRows > defaultPageSize || totalEntries) && (
+                <Pagination
+                  aria-disabled={loading}
+                  onChange={({page, pageSize}) => {
+                    // react-table is counting index from 0, and the `page` here is counted form 1
+                    // for the `page` prop below, the situation is oposite
+                    gotoPage(page - 1);
+                    setPageSize(pageSize);
+                  }}
+                  totalItems={totalRows}
+                  page={pageIndex + 1}
+                  pageSize={pageSize}
+                  pageSizes={[20, 100, 500, 1000]}
+                  pageNumberText={t('report.table.page').toString()}
+                  itemsPerPageText={t('report.table.rows').toString()}
+                  itemRangeText={(min, max, total) =>
+                    t('report.table.info', {
+                      firstRowIndex: min,
+                      lastRowIndex: max,
+                      totalRows: total,
+                    }).toString()
+                  }
+                  itemText={(min, max) => `${min} to ${max}`}
+                  pageRangeText={(current, total) =>
+                    `${t('report.table.page')} ${current} ${t('report.table.of')} ${total}`
+                  }
+                  forwardText={t('report.table.nextPage').toString()}
+                  backwardText={t('report.table.previousPage').toString()}
+                />
+              )}
+            </TableContainer>
+          )}
         />
       )}
     </div>
   );
-}
-
-function formatSorting<T extends object>(
-  sorting: {by: string; order: string} | undefined,
-  resultType: string | undefined,
-  columns: (Column & Partial<UseSortByOptions<T> & UseSortByColumnProps<T>>)[],
-  allowLocalSorting: boolean
-): {id?: string; desc?: boolean; order?: string}[] {
-  if (allowLocalSorting) {
-    const firstSortableColumn = columns.find((column) => !column.disableSortBy);
-    if (firstSortableColumn) {
-      return [{id: firstSortableColumn.id, desc: false}];
-    }
-    return [];
-  }
-
-  if (!sorting) {
-    return [];
-  }
-  const {by, order} = sorting;
-  let id = by;
-  if (resultType === 'map') {
-    if (by === 'label' || by === 'key') {
-      id = columns[0]?.id!;
-    } else if (by === 'value') {
-      id = columns[1]?.id!;
-    }
-  }
-  return [{id, desc: order === 'desc'}];
 }
 
 Table.formatColumns = <T extends object = object>(
@@ -470,12 +373,3 @@ Table.formatData = (head: Head[], body: Body[]) => {
     return newRow;
   });
 };
-
-function convertHeaderNameToAccessor(name: string) {
-  const joined = name
-    .split(' ')
-    .join('')
-    .replace(t('report.variables.default').toString(), t('report.groupBy.variable') + ':');
-
-  return joined.charAt(0).toLowerCase() + joined.slice(1);
-}

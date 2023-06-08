@@ -1,34 +1,8 @@
+@use '@carbon/react/scss/themes';
+@use '@carbon/react/scss/theme';
+
 .dark .Table {
-  table {
-    border-color: var(--grey-darken-33);
-  }
-
-  thead tr {
-    &:not(.groupRow) {
-      border-color: var(--grey-darken-33);
-    }
-
-    .tableHeader:not(:first-child):not(.placeholder):before {
-      background: var(--grey-darken-33);
-    }
-  }
-
-  tbody tr {
-    color: var(--white);
-    background-color: rgba(33, 33, 33, 0.6);
-
-    &:not(:last-child) {
-      border-color: var(--grey-darken-33);
-    }
-
-    &:nth-child(odd) {
-      background-color: rgba(33, 33, 33, 0.2);
-    }
-  }
-
-  &.highlight tbody tr:hover {
-    background-color: var(--grey-darken-13);
-  }
+  @include theme.theme(themes.$g100);
 }
 
 .Table {
@@ -36,6 +10,7 @@
   flex-direction: column;
   height: 100%;
   overflow: hidden;
+  background-color: var(--cds-layer);
 
   .cds--toolbar-content {
     z-index: 1;
@@ -45,6 +20,7 @@
     display: flex;
     overflow: hidden;
     flex-direction: column;
+    flex: 1;
   }
 
   .cds--data-table-content {
@@ -53,8 +29,7 @@
 
   // only this size is missing default padding
   .cds--data-table--lg td {
-    padding-top: 10px;
-    padding-bottom: 10px;
+    padding-block: 10px;
   }
 
   table {
@@ -164,8 +139,16 @@
     }
   }
 
-  &.highlight tbody tr:hover {
-    background-color: var(--silver-darken-94);
+  &.noHighlight tbody {
+    tr:not(.cds--parent-row):nth-child(even) td {
+      background-color: var(--cds-layer-accent);
+      border-color: var(--cds-layer-accent);
+    }
+
+    tr:not(.cds--parent-row):nth-child(odd) td {
+      background-color: var(--cds-layer);
+      border-color: var(--cds-layer);
+    }
   }
 
   .noData,
@@ -176,19 +159,45 @@
     transform: translate(-50%, -50%);
     padding: 25px;
     color: var(--grey-lighten-56);
+
+    .NoDataNotice {
+      h1,
+      p {
+        line-height: 1.5;
+        color: var(--grey-darken-36);
+      }
+      h1 {
+        font-weight: 600;
+        font-size: 16px;
+      }
+
+      p {
+        font-weight: 400;
+        font-size: 14px;
+      }
+    }
   }
 
   &.loading {
-    table {
-      opacity: 0.5;
-    }
+    .cds--skeleton {
+      table {
+        overflow: hidden;
 
-    .LoadingIndicator {
-      position: absolute;
-      top: 0;
-      bottom: 0;
-      left: 0;
-      right: 0;
+        tbody {
+          overflow: hidden;
+        }
+
+        tr {
+          display: flex;
+
+          th,
+          td {
+            display: flex;
+            flex: 1;
+            align-items: center;
+          }
+        }
+      }
     }
   }
 }

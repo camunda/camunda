@@ -98,15 +98,15 @@ exports[`should match snapshot 1`] = `
     }
     loading={true}
     noData={
-      <React.Fragment>
-        No ingested events.
-         
+      <NoDataNotice
+        title="No ingested events."
+      >
         <Unknown
           location="apis-clients/optimize-api/event-ingestion/"
         >
           Learn more
         </Unknown>
-      </React.Fragment>
+      </NoDataNotice>
     }
     sorting={
       Object {

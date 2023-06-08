@@ -8,6 +8,7 @@
 import {runAllEffects} from '__mocks__/react';
 import {shallow, mount} from 'enzyme';
 import {act} from 'react-dom/test-utils';
+import {TableHeader} from '@carbon/react';
 
 import {Select} from 'components';
 
@@ -79,30 +80,26 @@ it('should format structured body data', () => {
 });
 
 it('should show pagination if data contains more than 20 rows', () => {
-  const node = mount(<Table {...{head: ['a'], body: generateData(21), foot: []}} />);
+  const node = mount(<Table {...{head: ['a'], body: generateData(21)}} />);
 
   expect(node.find('.cds--pagination')).toExist();
 });
 
 it('should not show pagination if data contains more than 20 rows, but disablePagination flag is set', () => {
-  const node = mount(
-    <Table {...{head: ['a'], body: generateData(21), foot: []}} disablePagination />
-  );
+  const node = mount(<Table {...{head: ['a'], body: generateData(21)}} disablePagination />);
 
   expect(node.find('.cds--pagination')).not.toExist();
 });
 
 it('should not show pagination if data contains less than or equal to 20 rows', () => {
-  const node = shallow(<Table {...{head: ['a'], body: generateData(20), foot: []}} />);
+  const node = shallow(<Table {...{head: ['a'], body: generateData(20)}} />);
 
   expect(node.find('.cds--pagination')).not.toExist();
 });
 
 it('should call the updateSorting method on click on header', () => {
   const spy = jest.fn();
-  const node = mount(
-    <Table {...{head: ['a'], body: generateData(20), foot: []}} updateSorting={spy} />
-  );
+  const node = mount(<Table {...{head: ['a'], body: generateData(20)}} updateSorting={spy} />);
 
   node.find('thead th button').at(0).simulate('click', {persist: jest.fn()});
 
@@ -112,10 +109,7 @@ it('should call the updateSorting method on click on header', () => {
 it('should call the updateSorting method to sort by key/value if result is map', () => {
   const spy = jest.fn();
   const node = mount(
-    <Table
-      {...{head: ['a'], body: generateData(20), foot: [], resultType: 'map'}}
-      updateSorting={spy}
-    />
+    <Table {...{head: ['a'], body: generateData(20), resultType: 'map'}} updateSorting={spy} />
   );
 
   node.find('thead th button').at(0).simulate('click', {persist: jest.fn()});
@@ -127,7 +121,7 @@ it('should call the updateSorting method to sort by Label if sortByLabel is true
   const spy = jest.fn();
   const node = mount(
     <Table
-      {...{head: ['a'], body: generateData(20), foot: [], sortByLabel: true, resultType: 'map'}}
+      {...{head: ['a'], body: generateData(20), sortByLabel: true, resultType: 'map'}}
       updateSorting={spy}
     />
   );
@@ -156,10 +150,10 @@ it('should add a noOverflow classname to tds with Selects', () => {
 });
 
 it('should show a loading state when specified', () => {
-  const node = mount(<Table head={['a']} body={[]} loading={true} />);
+  const node = mount(<Table head={['a']} body={[]} loading />);
 
   expect(node.find('.loading')).toExist();
-  expect(node.find('LoadingIndicator')).toExist();
+  expect(node.find('DataTableSkeleton')).toExist();
 });
 
 it('should use manual pagination values if specified', () => {
@@ -204,20 +198,16 @@ it('should go to the last page if data changes in a way that current page is emp
 });
 
 it('should be sorted asc by default when allowed to sort locally', () => {
-  const node = mount(
-    <Table {...{head: ['a'], body: generateData(21), foot: []}} allowLocalSorting />
-  );
+  const node = mount(<Table {...{head: ['a'], body: generateData(21)}} allowLocalSorting />);
 
-  expect(node.find('TableHeader').prop('sortDirection')).toBe('ASC');
+  expect(node.find(TableHeader).prop('sortDirection')).toBe('ASC');
   expect(node.find('td').at(0).childAt(0).prop('value')).toBe('0');
 });
 
 it('should change sorting to desc when clicked on header', () => {
-  const node = mount(
-    <Table {...{head: ['a'], body: generateData(21), foot: []}} allowLocalSorting />
-  );
+  const node = mount(<Table {...{head: ['a'], body: generateData(21)}} allowLocalSorting />);
 
   node.find('thead th button').simulate('click', {persist: jest.fn()});
-  expect(node.find('TableHeader').prop('sortDirection')).toBe('DESC');
+  expect(node.find(TableHeader).prop('sortDirection')).toBe('DESC');
   expect(node.find('td').at(0).childAt(0).prop('value')).toBe('20');
 });

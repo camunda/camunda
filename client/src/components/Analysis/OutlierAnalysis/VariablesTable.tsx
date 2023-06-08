@@ -7,7 +7,7 @@
 
 import {useEffect, useState} from 'react';
 
-import {Table, Icon, NoDataNotice, LoadingIndicator, DownloadButton} from 'components';
+import {Table, Icon, LoadingIndicator, DownloadButton, NoDataNotice} from 'components';
 import {withUser, WithUserProps} from 'HOC';
 import {t} from 'translation';
 
@@ -86,9 +86,7 @@ export function VariablesTable({selectedNode, config, totalCount, user}: Variabl
       head: [],
       body: [],
       noData: data ? (
-        <NoDataNotice type="info">
-          {t('analysis.outlier.detailsModal.table.emptyTableMessage')}
-        </NoDataNotice>
+        <NoDataNotice>{t('analysis.outlier.detailsModal.table.emptyTableMessage')}</NoDataNotice>
       ) : (
         <LoadingIndicator />
       ),
