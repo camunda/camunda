@@ -11,7 +11,6 @@ import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnJobActivationBehavio
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.immutable.JobState;
 import io.camunda.zeebe.engine.state.immutable.JobState.State;
@@ -28,7 +27,6 @@ public class JobRecurProcessor implements TypedRecordProcessor<JobRecord> {
   private final JobState jobState;
   private final StateWriter stateWriter;
   private final TypedRejectionWriter rejectionWriter;
-  private final TypedResponseWriter responseWriter;
   private final BpmnJobActivationBehavior jobActivationBehavior;
 
   public JobRecurProcessor(
@@ -38,7 +36,6 @@ public class JobRecurProcessor implements TypedRecordProcessor<JobRecord> {
     jobState = processingState.getJobState();
     stateWriter = writers.state();
     rejectionWriter = writers.rejection();
-    responseWriter = writers.response();
     this.jobActivationBehavior = jobActivationBehavior;
   }
 
@@ -51,8 +48,6 @@ public class JobRecurProcessor implements TypedRecordProcessor<JobRecord> {
       final JobRecord recurredJob = record.getValue();
 
       stateWriter.appendFollowUpEvent(jobKey, JobIntent.RECURRED_AFTER_BACKOFF, recurredJob);
-      responseWriter.writeEventOnCommand(
-          jobKey, JobIntent.RECURRED_AFTER_BACKOFF, recurredJob, record);
 
       jobActivationBehavior.publishWork(jobKey, recurredJob);
     } else {
@@ -75,7 +70,6 @@ public class JobRecurProcessor implements TypedRecordProcessor<JobRecord> {
 
       final String errorMesage = String.format(NOT_FAILED_JOB_MESSAGE, jobKey, textState);
       rejectionWriter.appendRejection(record, RejectionType.NOT_FOUND, errorMesage);
-      responseWriter.writeRejectionOnCommand(record, RejectionType.NOT_FOUND, errorMesage);
     }
   }
 }
