@@ -276,7 +276,7 @@ it('should invoke isAuthorizedToShareDashboard on mount', async () => {
   expect(isAuthorizedToShareDashboard).toHaveBeenCalled();
 });
 
-it('should not invoke isAuthorizedToShareDashboard for instant dashboard', async () => {
+it('should not invoke isAuthorizedToShareDashboard for instant preview dashboard', async () => {
   loadEntity.mockReturnValueOnce({instantPreviewDashboard: true});
   await shallow(<Dashboard {...props} entity="dashboard/instant" />);
 
