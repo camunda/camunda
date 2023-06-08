@@ -32,6 +32,7 @@ import io.atomix.raft.impl.LogCompactor;
 import io.atomix.raft.impl.RaftContext;
 import io.atomix.raft.metrics.RaftReplicationMetrics;
 import io.atomix.raft.protocol.PersistedRaftRecord;
+import io.atomix.raft.protocol.ReplicatedJournalRecord;
 import io.atomix.raft.storage.RaftStorage;
 import io.atomix.raft.storage.log.IndexedRaftLogEntry;
 import io.atomix.raft.storage.log.RaftLog;
@@ -401,6 +402,11 @@ public class LeaderRoleTest {
 
     @Override
     public PersistedRaftRecord getPersistedRaftRecord() {
+      return null;
+    }
+
+    @Override
+    public ReplicatedJournalRecord getReplicatedJournalRecord() {
       return null;
     }
   }

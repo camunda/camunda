@@ -27,6 +27,7 @@ import io.atomix.raft.impl.RaftContext;
 import io.atomix.raft.partition.RaftPartitionConfig;
 import io.atomix.raft.primitive.TestMember;
 import io.atomix.raft.protocol.PersistedRaftRecord;
+import io.atomix.raft.protocol.ReplicatedJournalRecord;
 import io.atomix.raft.protocol.TestRaftProtocolFactory;
 import io.atomix.raft.protocol.TestRaftServerProtocol;
 import io.atomix.raft.roles.LeaderRole;
@@ -703,6 +704,11 @@ public final class RaftRule extends ExternalResource {
 
     @Override
     public PersistedRaftRecord getPersistedRaftRecord() {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public ReplicatedJournalRecord getReplicatedJournalRecord() {
       throw new UnsupportedOperationException();
     }
   }

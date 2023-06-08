@@ -8,6 +8,7 @@
 package io.camunda.zeebe.broker.system.partitions;
 
 import io.atomix.raft.protocol.PersistedRaftRecord;
+import io.atomix.raft.protocol.ReplicatedJournalRecord;
 import io.atomix.raft.storage.log.IndexedRaftLogEntry;
 import io.atomix.raft.storage.log.entry.ApplicationEntry;
 import io.atomix.raft.storage.log.entry.RaftEntry;
@@ -52,6 +53,11 @@ public class TestIndexedRaftLogEntry implements IndexedRaftLogEntry {
 
   @Override
   public PersistedRaftRecord getPersistedRaftRecord() {
+    return null;
+  }
+
+  @Override
+  public ReplicatedJournalRecord getReplicatedJournalRecord() {
     return null;
   }
 }
