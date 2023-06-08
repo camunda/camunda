@@ -68,7 +68,7 @@ jobs:
           distball: ${{ steps.build-zeebe.outputs.distball }}
       - name: Import Secrets
         id: secrets
-        uses: hashicorp/vault-action@v2.5.0
+        uses: hashicorp/vault-action@v2.6.0
         with:
           url: ${{ secrets.VAULT_ADDR }}
           method: approle
