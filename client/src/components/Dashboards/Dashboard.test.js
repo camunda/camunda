@@ -13,8 +13,8 @@ import {showError} from 'notifications';
 
 import DashboardView from './DashboardView';
 import DashboardEdit from './DashboardEdit';
-
 import {Dashboard} from './Dashboard';
+import {isAuthorizedToShareDashboard} from './service';
 
 jest.mock('notifications', () => ({showError: jest.fn()}));
 
@@ -64,8 +64,7 @@ const templateState = {
 
 beforeEach(() => {
   props.match.params.viewMode = 'view';
-  createEntity.mockClear();
-  loadEntity.mockClear();
+  jest.clearAllMocks();
 });
 
 afterEach(async () => {
@@ -263,4 +262,23 @@ it('should hide sharing for instant preview dashboard', async () => {
   await flushPromises();
 
   expect(node.find(DashboardView).prop('sharingHidden')).toBe(true);
+});
+
+it('should invoke isAuthorizedToShareDashboard on mount', async () => {
+  await shallow(
+    <Dashboard
+      {...props}
+      entity="dashboard/instant"
+      match={{params: {id: '1', viewMode: 'edit'}}}
+    />
+  );
+
+  expect(isAuthorizedToShareDashboard).toHaveBeenCalled();
+});
+
+it('should not invoke isAuthorizedToShareDashboard for instant dashboard', async () => {
+  loadEntity.mockReturnValueOnce({instantPreviewDashboard: true});
+  await shallow(<Dashboard {...props} entity="dashboard/instant" />);
+
+  expect(isAuthorizedToShareDashboard).not.toHaveBeenCalled();
 });
