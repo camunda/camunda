@@ -18,8 +18,10 @@ import io.camunda.zeebe.broker.system.management.PartitionStatus;
 import io.camunda.zeebe.broker.test.EmbeddedBrokerRule;
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.client.ZeebeClientBuilder;
+import io.camunda.zeebe.protocol.record.intent.MessageIntent;
 import io.camunda.zeebe.snapshots.SnapshotId;
 import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotId;
+import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.netty.util.NetUtil;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.IntStream;
@@ -80,11 +82,29 @@ public class BrokerSnapshotTest {
   }
 
   private void createSomeEvents() {
-    IntStream.range(0, 10).forEach(this::publishMaxMessageSizeMessage);
+    final var lastMessageKey =
+        IntStream.range(0, 10).mapToLong(this::publishMaxMessageSizeMessage).max().getAsLong();
+
+    // wait until all records are exported, to ensure the snapshot position is always the same.
+    Awaitility.await()
+        .untilAsserted(
+            () ->
+                assertThat(
+                        RecordingExporter.messageRecords(MessageIntent.PUBLISHED)
+                            .withRecordKey(lastMessageKey)
+                            .exists())
+                    .describedAs("All records are exported")
+                    .isTrue());
   }
 
-  private void publishMaxMessageSizeMessage(final int key) {
-    client.newPublishMessageCommand().messageName("msg").correlationKey("msg-" + key).send().join();
+  private long publishMaxMessageSizeMessage(final int key) {
+    return client
+        .newPublishMessageCommand()
+        .messageName("msg")
+        .correlationKey("msg-" + key)
+        .send()
+        .join()
+        .getMessageKey();
   }
 
   private SnapshotId waitForSnapshotAtBroker(
