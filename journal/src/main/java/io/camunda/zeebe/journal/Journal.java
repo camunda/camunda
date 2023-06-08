@@ -54,6 +54,15 @@ public interface Journal extends AutoCloseable {
   void append(JournalRecord record);
 
   /**
+   * Appends already serialized journal record.
+   *
+   * @param index
+   * @param checksum
+   * @param serializedRecord
+   */
+  void append(long index, long checksum, byte[] serializedRecord);
+
+  /**
    * Delete all records after indexExclusive. After a call to this method, {@link
    * Journal#getLastIndex()} should return indexExclusive.
    *
