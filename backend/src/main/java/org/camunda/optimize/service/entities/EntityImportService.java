@@ -53,7 +53,6 @@ import static org.camunda.optimize.dto.optimize.rest.export.ExportEntityType.SIN
 @Slf4j
 public class EntityImportService {
 
-  public static final String API_IMPORT_OWNER_NAME = "System User";
   private final ReportImportService reportImportService;
   private final DashboardImportService dashboardImportService;
   private final AuthorizedCollectionService authorizedCollectionService;

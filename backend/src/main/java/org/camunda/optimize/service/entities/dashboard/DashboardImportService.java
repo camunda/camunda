@@ -30,7 +30,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
-import static org.camunda.optimize.service.entities.EntityImportService.API_IMPORT_OWNER_NAME;
+import static org.camunda.optimize.dto.optimize.ReportConstants.API_IMPORT_OWNER_NAME;
 
 @AllArgsConstructor
 @Component

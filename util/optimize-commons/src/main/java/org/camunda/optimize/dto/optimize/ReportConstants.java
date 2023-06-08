@@ -16,9 +16,6 @@ import java.util.List;
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class ReportConstants {
 
-  // report data structure constants
-  public static final String VIEW_RAW_DATA_OPERATION = "rawData";
-
   public static final String VIEW_FLOW_NODE_ENTITY = "flowNode";
   public static final String VIEW_USER_TASK_ENTITY = "userTask";
   public static final String VIEW_PROCESS_INSTANCE_ENTITY = "processInstance";
@@ -175,4 +172,6 @@ public class ReportConstants {
   public static final int PAGINATION_DEFAULT_LIMIT = 20;
   public static final int PAGINATION_DEFAULT_OFFSET = 0;
   public static final int PAGINATION_DEFAULT_SCROLL_TIMEOUT = 60;
+
+  public static final String API_IMPORT_OWNER_NAME = "System User";
 }
