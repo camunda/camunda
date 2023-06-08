@@ -164,6 +164,51 @@ final class SegmentWriter {
     return Either.right(lastEntry);
   }
 
+  Either<SegmentFull, JournalRecord> append(
+      final long entryIndex, final long expectedChecksum, final byte[] serializedRecord) {
+    final long nextIndex = getNextIndex();
+
+    // If the entry's index is not the expected next index in the segment, fail the append.
+    if (entryIndex != nextIndex) {
+      throw new InvalidIndex(
+          String.format(
+              "The record index is not sequential. Expected the next index to be %d, but the record to append has index %d",
+              nextIndex, entryIndex));
+    }
+
+    final int startPosition = buffer.position();
+    final int frameLength = FrameUtil.getLength();
+    final int recordLength = serializedRecord.length;
+    final int metadataLength = serializer.getMetadataLength();
+
+    if (startPosition + frameLength + metadataLength + recordLength > buffer.capacity()) {
+      return Either.left(new SegmentFull("Not enough space to write record"));
+    }
+
+    writeBuffer.putBytes(startPosition + frameLength + metadataLength, serializedRecord);
+
+    final long checksum =
+        checksumGenerator.compute(
+            buffer, startPosition + frameLength + metadataLength, recordLength);
+
+    if (expectedChecksum != checksum) {
+      buffer.position(startPosition);
+      throw new InvalidChecksum(
+          String.format(
+              "Failed to append record. Checksum %d does not match the expected %d.",
+              checksum, expectedChecksum));
+    }
+
+    writeMetadata(startPosition, frameLength, recordLength, checksum);
+    updateLastWrittenEntry(startPosition, frameLength, metadataLength, recordLength);
+    FrameUtil.writeVersion(buffer, startPosition);
+
+    final int appendedBytes = frameLength + metadataLength + recordLength;
+    buffer.position(startPosition + appendedBytes);
+    metrics.observeAppend(appendedBytes);
+    return Either.right(lastEntry);
+  }
+
   private void updateLastWrittenEntry(
       final int startPosition,
       final int frameLength,
