@@ -1,31 +1,7 @@
-## Instant preview dashboard
-Für jeden Prozess bietet Optimize ein vorgefertigtes Dashboard. Das Dashboard bietet neuen Nutzern einen Überblick 
-über die Status- und Ausführungsmetriken des Prozesses.
+## Beschreibung für Reports und Dashboards
+Eine Beschreibung, wie Daten verstanden werden sollen, sowie eine Beschreibung des Kontexts der Daten verbessert deren Verständlichkeit beträchtlich. Mit dem Release 3.10 wurden Text Reports eingeführt. Diese können auf Dashboards als Kacheln neben Daten Reports positioniert werden. Mit diesem Release ist es jetzt möglich Beschreibungen direkt für einen Report oder Dashboard zu definieren.
 
-## Textberichte
+## Carbon Design System Migration
+Aktuell befinden wir uns in einer Migration der aktuellen Optimize Oberflächen auf das Carbon Design System. Ziel ist es die Optimize Oberflächen mit anderen Camunda Produkten zu vereinheitlichen. Mit dem Carbon Design System gehen wir einen großen Schritt in Richtung der Umsetzung eines Barrierefreien Zugangs, um unsere Anwendungen einem breiten Spektrum von Nutzern zugänglich zu machen.
 
-Mit Textberichten können Benutzer formatierte Beschreibungen und Bilder zu einem Dashboard hinzufügen. Hiermit kann der Inhalt des Dashboards für andere Benutzer leichter verständlich gemacht werden. 
-
-## Verbesserte Camunda 8 Plattform Navigation
-
-Camunda Saas ermöglicht eine einfache und intuitive Navigation zwischen den Anwendungen (Console, Modeler, Operate, Optimize).
-
-## Dashboard fokussierte Navigation
-
-Von Camunda vorkonfigurierte Dashboards sind einfach zu finden.
-
-## ML Ready Dataset als CSV export
-
-Exportiere ein ML optimiertes Datenset für die Analyse und Manipulation mit Werkzeugen wie z.B. Panda.
-
-## Hot backup API Erweiterung
-
-Die Hot backup API wurde um folgende Funktionen erweitert:
-
-- "Get backup state" API stellt mehr Informationen zum Backup zur Verfügung
-- "Get backup state" API erlaubt die Abfrage der Info zu allen existierenden Backups
-- "Delete" API zum Löschen von existierenden backups via ID
-
-## Empty State with call to action
-
-Neuer "Leere Status" für die Homepage, um dem Nutzer einen einfacheren Einstieg zu ermöglichen.
+Die Migration erfolgt schrittweise mit kommenden Releases von Optimize. Aktuell wurden Modal-Dialoge, Tabellen und Pop-Overs erfolgreich migriert. Die bekannten Funktionen sind weiter in gewohnter Weise verfügbar, ab sofort jedoch im frischen Carbon Design.
