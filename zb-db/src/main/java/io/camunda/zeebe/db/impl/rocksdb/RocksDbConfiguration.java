@@ -33,12 +33,13 @@ public final class RocksDbConfiguration {
   public static final boolean DEFAULT_WAL_DISABLED = true;
 
   /**
-   * This is an experimental feature, it is not 100% clear yet what the implications are besides
-   * having much better performance (shown in several benchmarks) and generating more SST files.
+   * Enabling this feature gives a hint to the RocksDB compaction to compact based on virtual column
+   * family prefixes. In consequence this means we will have more SST files, but split up into
+   * related data sets.
    *
-   * <p>There will be files created for each virtual colum family.
+   * <p>Benchmarks have shown that this allows better performance even on large RocksDB state.
    */
-  public static final boolean DEFAULT_SST_PARTITIONING_ENABLED = false;
+  public static final boolean DEFAULT_SST_PARTITIONING_ENABLED = true;
 
   public static final int DEFAULT_IO_RATE_BYTES_PER_SECOND = 0;
 
