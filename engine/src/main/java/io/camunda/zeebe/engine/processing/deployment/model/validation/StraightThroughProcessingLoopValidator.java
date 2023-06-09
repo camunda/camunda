@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.processing.deployment.model.validation;
 
 import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.deployment.model.element.AbstractFlowElement;
+import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowElementContainer;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowNode;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableProcess;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableSequenceFlow;
@@ -18,6 +19,7 @@ import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.io.StringWriter;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.EnumSet;
 import java.util.LinkedList;
 import java.util.List;
@@ -30,12 +32,18 @@ public final class StraightThroughProcessingLoopValidator {
           BpmnElementType.TASK,
           BpmnElementType.EXCLUSIVE_GATEWAY,
           BpmnElementType.INCLUSIVE_GATEWAY,
-          BpmnElementType.PARALLEL_GATEWAY);
+          BpmnElementType.PARALLEL_GATEWAY,
+          BpmnElementType.START_EVENT,
+          BpmnElementType.END_EVENT,
+          BpmnElementType.SUB_PROCESS);
   private static final EnumSet<BpmnElementType> WHITELISTED_ELEMENT_TYPES =
       EnumSet.of(
           BpmnElementType.EXCLUSIVE_GATEWAY,
           BpmnElementType.INCLUSIVE_GATEWAY,
-          BpmnElementType.PARALLEL_GATEWAY);
+          BpmnElementType.PARALLEL_GATEWAY,
+          BpmnElementType.START_EVENT,
+          BpmnElementType.END_EVENT,
+          BpmnElementType.SUB_PROCESS);
 
   /**
    * Validates a list of processes for straight-through processing loops. These are loops of
@@ -148,8 +156,8 @@ public final class StraightThroughProcessingLoopValidator {
       // keep checking for loops by analysing the outgoing sequence flows of this element.
       potentialLoop.addLast(element);
       Either<List<ExecutableFlowNode>, ?> isPartOfLoop = Either.right(null);
-      for (final ExecutableSequenceFlow outgoing : element.getOutgoing()) {
-        isPartOfLoop = checkForStraightThroughProcessingLoop(potentialLoop, outgoing.getTarget());
+      for (final ExecutableFlowNode nextElement : getNextElements(element)) {
+        isPartOfLoop = checkForStraightThroughProcessingLoop(potentialLoop, nextElement);
         if (isPartOfLoop.isLeft()) {
           break;
         }
@@ -163,6 +171,38 @@ public final class StraightThroughProcessingLoopValidator {
     } else {
       // No loops have been found. We can return an Either.Right to indicate success.
       return Either.right(null);
+    }
+  }
+
+  /**
+   * Some element types require a different behavior when deciding which elements come next in the
+   * execution path.
+   *
+   * @param element the element for which we need to check the next element in the execution path
+   * @return a list of sequence flows
+   */
+  private static List<ExecutableFlowNode> getNextElements(final ExecutableFlowNode element) {
+    switch (element.getElementType()) {
+      case SUB_PROCESS -> {
+        final var subProcess = (ExecutableFlowElementContainer) element;
+        // A subprocess must have exactly 1 none start event
+        return List.of(subProcess.getNoneStartEvent());
+      }
+      default -> {
+        final var outgoingFlows = element.getOutgoing();
+        if (!outgoingFlows.isEmpty()) {
+          return outgoingFlows.stream().map(ExecutableSequenceFlow::getTarget).toList();
+        } else {
+          // This allows us to keep detecting when we reach an end event or an implicit end event
+          final var flowScope = element.getFlowScope();
+          if (flowScope instanceof ExecutableFlowNode) {
+            return ((ExecutableFlowNode) flowScope)
+                .getOutgoing().stream().map(ExecutableSequenceFlow::getTarget).toList();
+          } else {
+            return Collections.emptyList();
+          }
+        }
+      }
     }
   }
 
