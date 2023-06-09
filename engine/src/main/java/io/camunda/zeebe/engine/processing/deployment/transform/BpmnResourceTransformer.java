@@ -13,6 +13,7 @@ import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
 import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.deployment.model.BpmnFactory;
 import io.camunda.zeebe.engine.processing.deployment.model.transformation.BpmnTransformer;
+import io.camunda.zeebe.engine.processing.deployment.model.validation.StraightThroughProcessingLoopValidator;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.state.deployment.DeployedProcess;
 import io.camunda.zeebe.engine.state.immutable.ProcessState;
@@ -43,18 +44,21 @@ public final class BpmnResourceTransformer implements DeploymentResourceTransfor
 
   private final BpmnValidator validator;
   private final ProcessState processState;
+  private final boolean enableStraightThroughProcessingLoopDetector;
 
   public BpmnResourceTransformer(
       final KeyGenerator keyGenerator,
       final StateWriter stateWriter,
       final Function<DeploymentResource, DirectBuffer> checksumGenerator,
       final ProcessState processState,
-      final ExpressionProcessor expressionProcessor) {
+      final ExpressionProcessor expressionProcessor,
+      final boolean enableStraightThroughProcessingLoopDetector) {
     this.keyGenerator = keyGenerator;
     this.stateWriter = stateWriter;
     this.checksumGenerator = checksumGenerator;
     this.processState = processState;
     validator = BpmnFactory.createValidator(expressionProcessor);
+    this.enableStraightThroughProcessingLoopDetector = enableStraightThroughProcessingLoopDetector;
   }
 
   @Override
@@ -69,9 +73,17 @@ public final class BpmnResourceTransformer implements DeploymentResourceTransfor
               if (validationError == null) {
                 // transform the model to avoid unexpected failures that are not covered by the
                 // validator
-                bpmnTransformer.transformDefinitions(definition);
+                final var executableProcesses = bpmnTransformer.transformDefinitions(definition);
 
                 return checkForDuplicateBpmnId(definition, resource, deployment)
+                    .flatMap(
+                        unused -> {
+                          if (enableStraightThroughProcessingLoopDetector) {
+                            return StraightThroughProcessingLoopValidator.validate(
+                                resource, executableProcesses);
+                          }
+                          return Either.right(null);
+                        })
                     .map(
                         ok -> {
                           transformProcessResource(deployment, resource, definition);
