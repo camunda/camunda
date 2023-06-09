@@ -58,7 +58,15 @@ public final class StraightThroughProcessingLoopValidator {
 
     final List<Failure> failures = new ArrayList<>();
     for (final ExecutableProcess executableProcess : executableProcesses) {
-      hasStraightThroughProcessingLoop(resource, executableProcess).ifLeft(failures::add);
+      try {
+        hasStraightThroughProcessingLoop(resource, executableProcess).ifLeft(failures::add);
+      } catch (final StackOverflowError e) {
+        final var message =
+            String.format(
+                "Process contains a very long chain of tasks of type %s", REJECTED_ELEMENT_TYPES);
+        failures.add(
+            new Failure(createFormattedFailureMessage(resource, executableProcess, message)));
+      }
     }
 
     if (failures.isEmpty()) {
@@ -242,17 +250,25 @@ public final class StraightThroughProcessingLoopValidator {
             .map(AbstractFlowElement::getId)
             .map(BufferUtil::bufferAsString)
             .toList();
+    final var failureMessage =
+        String.format(
+            "Processes are not allowed to contain a straight-through processing loop: %s",
+            String.join(" > ", loopingElementIds));
+    return createFormattedFailureMessage(resource, executableProcess, failureMessage);
+  }
 
+  private static String createFormattedFailureMessage(
+      final DeploymentResource resource,
+      final ExecutableProcess executableProcess,
+      final String message) {
     final StringWriter writer = new StringWriter();
     writer.write(
         String.format(
             "`%s`: - Process: %s",
             resource.getResourceName(), BufferUtil.bufferAsString(executableProcess.getId())));
     writer.write("\n");
-    writer.write(
-        String.format(
-            "    - ERROR: Processes are not allowed to contain a straight-through processing loop: %s",
-            String.join(" > ", loopingElementIds)));
+    writer.write("    - ERROR: ");
+    writer.write(message);
     writer.write("\n");
     return writer.toString();
   }
