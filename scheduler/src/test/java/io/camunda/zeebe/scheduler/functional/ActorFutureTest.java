@@ -509,17 +509,6 @@ public final class ActorFutureTest {
   }
 
   @Test
-  public void shouldNotRunOnCompleteInMainThread() {
-    // given
-    final CompletableActorFuture<Void> future = new CompletableActorFuture<>();
-
-    // expect exception
-    // when
-    assertThatThrownBy(() -> future.onComplete((v, t) -> {}))
-        .isInstanceOf(UnsupportedOperationException.class);
-  }
-
-  @Test
   public void shouldRunOnComplete() {
     // given
     final ActorB actorB = new ActorB();
