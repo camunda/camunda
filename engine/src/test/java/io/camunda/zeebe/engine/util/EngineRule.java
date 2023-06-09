@@ -107,6 +107,8 @@ public final class EngineRule extends ExternalResource {
   private long lastProcessedPosition = -1L;
   private JobStreamer jobStreamer = JobStreamer.noop();
 
+  private FeatureFlags featureFlags = FeatureFlags.createDefaultForTests();
+
   private EngineRule(final int partitionCount) {
     this(partitionCount, null);
   }
@@ -160,6 +162,11 @@ public final class EngineRule extends ExternalResource {
     return this;
   }
 
+  public EngineRule withFeatureFlags(final FeatureFlags featureFlags) {
+    this.featureFlags = featureFlags;
+    return this;
+  }
+
   public EngineRule withOnProcessedCallback(final Consumer<TypedRecord> onProcessedCallback) {
     this.onProcessedCallback = this.onProcessedCallback.andThen(onProcessedCallback);
     return this;
@@ -185,7 +192,6 @@ public final class EngineRule extends ExternalResource {
         partitionId -> {
           final var reprocessingCompletedListener = new ReprocessingCompletedListener();
           partitionReprocessingCompleteListeners.put(partitionId, reprocessingCompletedListener);
-          final var featureFlags = FeatureFlags.createDefaultForTests();
 
           final var interPartitionCommandSender = new TestInterPartitionCommandSender();
           interPartitionCommandSenders.add(interPartitionCommandSender);
