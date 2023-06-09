@@ -87,10 +87,16 @@
         tr {
           &.mapped:hover {
             cursor: pointer;
+
+            td {
+              background-color: var(--cds-layer-hover);
+              border-color: var(--cds-layer-hover);
+            }
           }
 
-          &:not(.disabled).mapped {
+          &:not(.disabled).mapped td {
             color: var(--white);
+            background-color: var(--blue-darken-62);
 
             .Button {
               color: var(--white);
