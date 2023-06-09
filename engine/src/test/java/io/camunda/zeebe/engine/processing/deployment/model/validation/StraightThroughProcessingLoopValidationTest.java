@@ -226,4 +226,29 @@ public class StraightThroughProcessingLoopValidationTest {
         .describedAs("Allow deployments of loops that aren't straight-through processed")
         .isNotNegative();
   }
+
+  @Test
+  public void shouldDeployProcessWithRegularTaskBetweenStraightThroughTasks() {
+    // given
+    final var processId = Strings.newRandomValidBpmnId();
+
+    // when
+    final var deployment =
+        ENGINE
+            .deployment()
+            .withXmlResource(
+                Bpmn.createExecutableProcess(processId)
+                    .startEvent()
+                    .task("task1")
+                    .userTask("test")
+                    .task("task2")
+                    .connectTo("task1")
+                    .done())
+            .deploy();
+
+    // then
+    assertThat(deployment.getKey())
+        .describedAs("Allow deployments of loops that aren't straight-through processed")
+        .isNotNegative();
+  }
 }
