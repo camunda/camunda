@@ -56,7 +56,7 @@ public class ReachEndOfLogTest {
         .withXmlResource(
             Bpmn.createExecutableProcess("process")
                 .startEvent()
-                .manualTask("test")
+                .intermediateThrowEvent("test")
                 .connectTo("test")
                 .endEvent()
                 .done())
