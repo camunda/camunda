@@ -66,6 +66,7 @@ export function NodeDateFilter({
     startDate: null,
     endDate: null,
   });
+  const isInstanceFilter = filterLevel === 'instance';
 
   useEffect(() => {
     if (applyTo) {
@@ -104,7 +105,7 @@ export function NodeDateFilter({
     addFilter({
       type: filterType,
       data: {
-        flowNodeIds: filterLevel === 'instance' ? (selectedNodes as string[]) : null,
+        flowNodeIds: isInstanceFilter ? (selectedNodes as string[]) : null,
         ...convertStateToFilter(dateRange),
       },
       appliedTo: [applyTo?.identifier],
@@ -118,7 +119,8 @@ export function NodeDateFilter({
       open
       onClose={close}
       className={classnames('NodeDateFilter', className)}
-      size={filterLevel === 'instance' ? 'lg' : 'sm'}
+      size={isInstanceFilter ? 'lg' : 'sm'}
+      isOverflowVisible={!isInstanceFilter}
     >
       <Modal.Header>
         {t('common.filter.modalHeader', {
@@ -147,7 +149,7 @@ export function NodeDateFilter({
                 onChange={(change) => setDateRange({...dateRange, ...change} as FilterState)}
               />
             </Form>
-            {filterLevel === 'instance' && (
+            {isInstanceFilter && (
               <div className="diagramContainer">
                 <BPMNDiagram xml={xml}>
                   <ClickBehavior
@@ -168,9 +170,7 @@ export function NodeDateFilter({
         <Button
           className="confirm"
           onClick={confirm}
-          disabled={
-            (filterLevel === 'instance' && selectedNodes?.length === 0) || !isValid(dateRange)
-          }
+          disabled={(isInstanceFilter && selectedNodes?.length === 0) || !isValid(dateRange)}
         >
           {filterData ? t('common.filter.updateFilter') : t('common.filter.addFilter')}
         </Button>
