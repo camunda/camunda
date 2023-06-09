@@ -17,6 +17,7 @@ const Container = styled.div`
   align-items: start;
 
   position: relative;
+  overflow-y: auto;
 
   .cds--loading-overlay {
     position: absolute;
