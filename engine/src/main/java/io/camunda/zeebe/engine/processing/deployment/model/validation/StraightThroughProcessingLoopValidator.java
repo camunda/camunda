@@ -20,6 +20,7 @@ import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.EnumSet;
 import java.util.LinkedList;
 import java.util.List;
@@ -118,6 +119,7 @@ public final class StraightThroughProcessingLoopValidator {
     return executableProcess.getFlowElements().stream()
         .filter(flowElement -> REJECTED_ELEMENT_TYPES.contains(flowElement.getElementType()))
         .map(ExecutableFlowNode.class::cast)
+        .sorted(Comparator.comparing(ExecutableFlowNode::getId))
         .toList();
   }
 
