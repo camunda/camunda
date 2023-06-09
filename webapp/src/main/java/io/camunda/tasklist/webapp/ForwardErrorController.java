@@ -42,7 +42,7 @@ public class ForwardErrorController implements ErrorController {
     }
     if (profileService.isLoginDelegated()
         && !requestedURI.contains(LOGIN_RESOURCE)
-        && !requestedURI.startsWith(TasklistURIs.START_PUBLIC_PROCESS)
+        && !requestedURI.contains(TasklistURIs.START_PUBLIC_PROCESS)
         && isNotLoggedIn()) {
       return saveRequestAndRedirectToLogin(request, requestedURI);
     } else {
@@ -57,7 +57,7 @@ public class ForwardErrorController implements ErrorController {
         modelAndView.addObject("message", profileService.getMessageByProfileFor(exception));
         modelAndView.setStatus(HttpStatus.valueOf(statusCode));
         return modelAndView;
-      } else if (requestedURI.startsWith(START_PUBLIC_PROCESS)) {
+      } else if (requestedURI.contains(START_PUBLIC_PROCESS)) {
         return forwardToPublicProcessPage();
       }
       return forwardToRootPage();
