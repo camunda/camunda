@@ -11,6 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
+import io.camunda.zeebe.model.bpmn.builder.SubProcessBuilder;
 import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.ExecuteCommandResponseDecoder;
 import io.camunda.zeebe.protocol.record.Record;
@@ -204,6 +205,54 @@ public class StraightThroughProcessingLoopValidationTest {
   }
 
   @Test
+  public void shouldRejectDeploymentWithSubProcessAsPartOfLoop() {
+    // given
+    final var processId = Strings.newRandomValidBpmnId();
+
+    // when
+    final var rejectedDeployment =
+        ENGINE
+            .deployment()
+            .withXmlResource(
+                Bpmn.createExecutableProcess(processId)
+                    .startEvent()
+                    .task("task1")
+                    .subProcess(
+                        "subProcess",
+                        subProcessBuilder ->
+                            ((SubProcessBuilder) subProcessBuilder)
+                                .embeddedSubProcess()
+                                .startEvent("startEvent")
+                                .exclusiveGateway("forking")
+                                .defaultFlow()
+                                .task("task2")
+                                .exclusiveGateway("joining")
+                                .moveToLastExclusiveGateway()
+                                .sequenceFlowId("seq")
+                                .conditionExpression("true")
+                                .userTask("userTask1")
+                                .connectTo("joining")
+                                .endEvent("endEvent"))
+                    .task("task3")
+                    .connectTo("task1")
+                    .done())
+            .expectRejection()
+            .deploy();
+
+    // then
+    Assertions.assertThat(rejectedDeployment)
+        .hasKey(ExecuteCommandResponseDecoder.keyNullValue())
+        .hasRecordType(RecordType.COMMAND_REJECTION)
+        .hasIntent(DeploymentIntent.CREATE)
+        .hasRejectionType(RejectionType.INVALID_ARGUMENT);
+    assertThat(rejectedDeployment.getRejectionReason())
+        .contains(String.format("Process: %s", processId))
+        .contains(
+            GENERIC_REJECTION_MESSAGE
+                + "task1 > subProcess > startEvent > forking > task2 > joining > endEvent > task3 > task1");
+  }
+
+  @Test
   public void shouldDeployProcessWithRegularLoops() {
     // given
     final var processId = Strings.newRandomValidBpmnId();
@@ -242,6 +291,38 @@ public class StraightThroughProcessingLoopValidationTest {
                     .task("task1")
                     .userTask("test")
                     .task("task2")
+                    .connectTo("task1")
+                    .done())
+            .deploy();
+
+    // then
+    assertThat(deployment.getKey())
+        .describedAs("Allow deployments of loops that aren't straight-through processed")
+        .isNotNegative();
+  }
+
+  @Test
+  public void shouldDeployProcessWithRegularTaskInsideOfSubprocess() {
+    // given
+    final var processId = Strings.newRandomValidBpmnId();
+
+    // when
+    final var deployment =
+        ENGINE
+            .deployment()
+            .withXmlResource(
+                Bpmn.createExecutableProcess(processId)
+                    .startEvent()
+                    .task("task1")
+                    .subProcess(
+                        "subProcess",
+                        subProcessBuilder ->
+                            ((SubProcessBuilder) subProcessBuilder)
+                                .embeddedSubProcess()
+                                .startEvent("startEvent")
+                                .userTask("userTask")
+                                .endEvent("endEvent"))
+                    .task("task3")
                     .connectTo("task1")
                     .done())
             .deploy();
