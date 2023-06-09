@@ -32,7 +32,7 @@ class StateUtilTest {
         .isThrownBy(
             () ->
                 StateUtil.verifySnapshotLogConsistent(
-                    snapshotIndex, firstIndex, isLogEmpty, i -> {}, LOG));
+                    1L, snapshotIndex, firstIndex, isLogEmpty, i -> {}, LOG));
   }
 
   @ParameterizedTest
@@ -43,6 +43,7 @@ class StateUtilTest {
         .isThrownBy(
             () ->
                 StateUtil.verifySnapshotLogConsistent(
+                    1L,
                     snapshotIndex,
                     firstIndex,
                     isLogEmpty,
@@ -60,7 +61,7 @@ class StateUtilTest {
         .isThrownBy(
             () ->
                 StateUtil.verifySnapshotLogConsistent(
-                    snapshotIndex, firstIndex, isLogEmpty, logReset::complete, LOG));
+                    1L, snapshotIndex, firstIndex, isLogEmpty, logReset::complete, LOG));
     assertThat(logReset).succeedsWithin(Duration.ofMillis(100)).isEqualTo(snapshotIndex + 1);
   }
 

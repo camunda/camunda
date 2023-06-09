@@ -14,6 +14,7 @@ public class StateUtil {
 
   /** throws IllegalStateException if state is inconsistent */
   public static void verifySnapshotLogConsistent(
+      final long partitionId,
       final long snapshotIndex,
       final long firstIndex,
       final boolean isLogEmpty,
@@ -30,15 +31,15 @@ public class StateUtil {
       // There is a gap between snapshot and first log entry
       throw new IllegalStateException(
           String.format(
-              "Expected to find a snapshot at index >= log's first index %d, but found snapshot %d. A previous snapshot is most likely corrupted.",
-              firstIndex, snapshotIndex));
+              "In partition %d expected to find a snapshot at index >= log's first index %d,"
+                  + " but found snapshot %d. A previous snapshot is most likely corrupted.",
+              partitionId, firstIndex, snapshotIndex));
     } else {
       log.info(
-          "Current snapshot index ({}) is lower than log's first index {}. But the log is empty. Most likely the node crashed while committing a snapshot at index {}. Resetting log to {}",
-          snapshotIndex,
-          firstIndex,
-          firstIndex - 1,
-          snapshotIndex + 1);
+          "In partition %d current snapshot index ({}) is lower than log's first index {}. "
+              + "But the log is empty. Most likely the node crashed while committing a snapshot "
+              + "at index {}. Resetting log to {}",
+          partitionId, snapshotIndex, firstIndex, firstIndex - 1, snapshotIndex + 1);
       logResetter.accept(snapshotIndex + 1);
     }
   }
