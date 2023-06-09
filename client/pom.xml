@@ -70,6 +70,42 @@
               <arguments>build</arguments>
             </configuration>
           </execution>
+
+          <execution>
+            <id>mkdir ${project.build.outputDirectory}/META-INF/new</id>
+            <goals>
+              <goal>yarn</goal>
+            </goals>
+            <configuration>
+              <failOnError>false</failOnError>
+              <skip>${skip.fe.build}</skip>
+              <arguments>build</arguments>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+
+      <plugin>
+        <artifactId>maven-resources-plugin</artifactId>
+        <version>2.6</version>
+        <executions>
+          <execution>
+            <id>copy-resources</id>
+            <!-- here the phase you need -->
+            <phase>prepare-package</phase>
+            <goals>
+              <goal>copy-resources</goal>
+            </goals>
+            <configuration>
+              <outputDirectory>${project.build.outputDirectory}/META-INF/resources/new</outputDirectory>
+              <resources>
+                <resource>
+                  <directory>${project.build.outputDirectory}/META-INF/resources</directory>
+                  <filtering>true</filtering>
+                </resource>
+              </resources>
+            </configuration>
+          </execution>
         </executions>
       </plugin>
 
