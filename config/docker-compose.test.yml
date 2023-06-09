@@ -36,8 +36,6 @@ services:
       - 26500:26500
       - 8000:8000
     restart: always
-    volumes:
-      - ./data:/usr/local/zeebe/data
   operate:
     image: camunda/operate:8.2.3
     container_name: operate
