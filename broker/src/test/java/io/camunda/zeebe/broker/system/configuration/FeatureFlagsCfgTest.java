@@ -138,4 +138,28 @@ final class FeatureFlagsCfgTest {
     // then
     assertThat(featureFlagsCfg.isEnableTimerDueDateCheckerAsync()).isTrue();
   }
+
+  @Test
+  void shouldSetEnableStraightThroughProcessingLoopDetectorFromConfig() {
+    // when
+    final BrokerCfg cfg = TestConfigReader.readConfig("feature-flags-cfg", environment);
+    final var featureFlagsCfg = cfg.getExperimental().getFeatures();
+
+    // then
+    assertThat(featureFlagsCfg.isEnableStraightThroughProcessingLoopDetector()).isFalse();
+  }
+
+  @Test
+  void shouldSetEnableStraightThroughProcessingLoopDetectorFromEnv() {
+    // given
+    environment.put(
+        "zeebe.broker.experimental.features.enableStraightThroughProcessingLoopDetector", "false");
+
+    // when
+    final BrokerCfg cfg = TestConfigReader.readConfig("feature-flags-cfg", environment);
+    final var featureFlagsCfg = cfg.getExperimental().getFeatures();
+
+    // then
+    assertThat(featureFlagsCfg.isEnableStraightThroughProcessingLoopDetector()).isFalse();
+  }
 }
