@@ -47,7 +47,10 @@ test.describe('task panel page', () => {
       .click();
 
     await expect(page).toHaveURL(/\?filter=assigned-to-me/);
-    await expect(page.getByText('No tasks found')).toBeVisible();
+    await page.reload();
+    await expect(
+      page.getByTitle('Available tasks').getByText('No tasks found'),
+    ).toBeVisible();
 
     await page.getByRole('combobox', {name: /filter options/i}).click();
     await page.getByText('All open').click();
