@@ -120,11 +120,14 @@ it('should not load data when it is a new dashboard', () => {
 it('should create a new dashboard when saving a new one', async () => {
   const node = shallow(<Dashboard {...props} match={{params: {id: 'new'}}} />);
 
-  await node.instance().saveChanges('testname', [{id: 'reportID'}], [{type: 'state'}]);
+  await node
+    .instance()
+    .saveChanges('testname', 'description', [{id: 'reportID'}], [{type: 'state'}]);
 
   expect(createEntity).toHaveBeenCalledWith('dashboard', {
     collectionId: null,
     name: 'testname',
+    description: 'description',
     tiles: [{id: 'reportID'}],
     availableFilters: [{type: 'state'}],
   });
@@ -139,11 +142,12 @@ it('should create a new dashboard in a collection', async () => {
     />
   );
 
-  await node.instance().saveChanges('testname', [], []);
+  await node.instance().saveChanges('testname', 'description', [], []);
 
   expect(createEntity).toHaveBeenCalledWith('dashboard', {
     collectionId: '123',
     name: 'testname',
+    description: 'description',
     tiles: [],
     availableFilters: [],
   });
@@ -199,6 +203,7 @@ it('should save unsaved tiles when saving dashboard', async () => {
 
   node.find(DashboardEdit).prop('saveChanges')(
     'new Dashboard Name',
+    'description',
     node.find(DashboardEdit).prop('initialTiles'),
     []
   );

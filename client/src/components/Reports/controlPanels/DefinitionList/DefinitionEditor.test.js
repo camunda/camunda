@@ -5,13 +5,14 @@
  * except in compliance with the proprietary license.
  */
 
-import React, {runAllEffects} from 'react';
+import {runAllEffects} from 'react';
 import {shallow} from 'enzyme';
 
 import {Input, BPMNDiagram, Button} from 'components';
 import {loadProcessDefinitionXml} from 'services';
 
 import RenameVariablesModal from './RenameVariablesModal';
+import DiagramModal from './DiagramModal';
 import {DefinitionEditor} from './DefinitionEditor';
 import {loadVersions} from './service';
 
@@ -102,8 +103,8 @@ it('should allow opening the diagram in a bigger modal', () => {
 
   node.find('.diagram').find(Button).simulate('click');
 
-  expect(node.find('.diagramModal').prop('open')).toBe(true);
-  expect(node.find('.diagramModal').find(BPMNDiagram).prop('xml')).toBe(loadProcessDefinitionXml());
+  expect(node.find(DiagramModal).prop('open')).toBe(true);
+  expect(node.find(DiagramModal).prop('xml')).toBe(loadProcessDefinitionXml());
 });
 
 it('should pass all tenants ids to the renameVariableModal', () => {

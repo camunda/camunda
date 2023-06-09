@@ -46,8 +46,10 @@ export default function AddButton({addReport, existingReport}) {
   };
 
   return (
-    <Button main className="AddButton tool-button" onClick={() => setOpen(true)}>
-      <Icon type="plus" /> {t('dashboard.addButton.addTile')}
+    <>
+      <Button main className="AddButton tool-button" onClick={() => setOpen(true)}>
+        <Icon type="plus" /> {t('dashboard.addButton.addTile')}
+      </Button>
       {open && <ReportModal close={closeModal} confirm={onConfirm} />}
       {creatingNewReport && (
         <ReportCreationModal
@@ -56,6 +58,6 @@ export default function AddButton({addReport, existingReport}) {
           onConfirm={onConfirm}
         />
       )}
-    </Button>
+    </>
   );
 }

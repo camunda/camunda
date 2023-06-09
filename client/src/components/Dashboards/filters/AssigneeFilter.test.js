@@ -8,7 +8,7 @@
 import React, {runLastEffect} from 'react';
 import {shallow} from 'enzyme';
 
-import {UserTypeahead} from 'components';
+import {CarbonPopover, UserTypeahead} from 'components';
 
 import {AssigneeFilter} from './AssigneeFilter';
 
@@ -42,7 +42,7 @@ beforeEach(() => {
 it('should show the operator when no value is selected', () => {
   const node = shallow(<AssigneeFilter {...props} />);
 
-  expect(node.find('Popover').prop('title')).toMatchSnapshot();
+  expect(node.find(CarbonPopover).prop('title')).toMatchSnapshot();
 });
 
 it('should allow selecting values', () => {
@@ -65,7 +65,7 @@ it('should abbreviate multiple string selections', () => {
     <AssigneeFilter {...props} filter={{operator: 'not in', values: ['user1', null]}} />
   );
 
-  expect(node.find('Popover').prop('title')).toMatchSnapshot();
+  expect(node.find(CarbonPopover).prop('title')).toMatchSnapshot();
 });
 
 it('should show an input field for custom values', () => {

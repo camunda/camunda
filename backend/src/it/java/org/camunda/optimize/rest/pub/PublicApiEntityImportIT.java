@@ -48,8 +48,8 @@ import java.util.Set;
 
 import static java.util.stream.Collectors.toList;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.dto.optimize.ReportConstants.API_IMPORT_OWNER_NAME;
 import static org.camunda.optimize.dto.optimize.query.report.single.ViewProperty.RAW_DATA;
-import static org.camunda.optimize.service.entities.EntityImportService.API_IMPORT_OWNER_NAME;
 import static org.camunda.optimize.service.entities.dashboard.DashboardDefinitionImportIT.getExternalResourceUrls;
 import static org.camunda.optimize.test.util.DateCreationFreezer.dateFreezer;
 

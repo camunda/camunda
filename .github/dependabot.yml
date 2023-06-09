@@ -12,8 +12,10 @@ updates:
       prefix: "chore"
       include: "scope"
     ignore:
+      - dependency-name: io.camunda:zeebe-protocol
+      - dependency-name: io.camunda:zeebe-client-java
+      - dependency-name: io.camunda:identity-sdk
       - dependency-name: "org.camunda.bpm:camunda-engine"
-      - dependency-name: "org.jboss.resteasy:resteasy-jaxrs"
       - dependency-name: "org.elasticsearch.client:elasticsearch-rest-high-level-client"
         update-types: [ "version-update:semver-major", "version-update:semver-minor" ]
     labels:
@@ -56,9 +58,10 @@ updates:
       prefix: "chore"
       include: "scope"
     ignore:
+      - dependency-name: io.camunda:zeebe-protocol
+      - dependency-name: io.camunda:zeebe-client-java
+      - dependency-name: io.camunda:identity-sdk
       - dependency-name: "org.camunda.bpm:camunda-engine"
-      - dependency-name: "com.h2database:h2"
-      - dependency-name: "org.jboss.resteasy:resteasy-jaxrs"
       - dependency-name: "org.elasticsearch.client:elasticsearch-rest-high-level-client"
         update-types: [ "version-update:semver-major", "version-update:semver-minor" ]
     labels:
@@ -101,9 +104,10 @@ updates:
       prefix: "chore"
       include: "scope"
     ignore:
+      - dependency-name: io.camunda:zeebe-protocol
+      - dependency-name: io.camunda:zeebe-client-java
+      - dependency-name: io.camunda:identity-sdk
       - dependency-name: "org.camunda.bpm:camunda-engine"
-      - dependency-name: "com.h2database:h2"
-      - dependency-name: "org.jboss.resteasy:resteasy-jaxrs"
       - dependency-name: "org.elasticsearch.client:elasticsearch-rest-high-level-client"
         update-types: [ "version-update:semver-major", "version-update:semver-minor" ]
     labels:
@@ -119,6 +123,12 @@ updates:
     commit-message:
       prefix: "chore"
       include: "scope"
+    ignore:
+      - dependency-name: "glob"
+      - dependency-name: "react-scripts"
+      - dependency-name: "eslint-plugin-prettier"
+      - dependency-name: "testcafe"
+      - dependency-name: "lint-staged"
     labels:
       - "dependencies"
       - "frontend"
@@ -146,9 +156,10 @@ updates:
       prefix: "chore"
       include: "scope"
     ignore:
+      - dependency-name: io.camunda:zeebe-protocol
+      - dependency-name: io.camunda:zeebe-client-java
+      - dependency-name: io.camunda:identity-sdk
       - dependency-name: "org.camunda.bpm:camunda-engine"
-      - dependency-name: "com.h2database:h2"
-      - dependency-name: "org.jboss.resteasy:resteasy-jaxrs"
       - dependency-name: "org.elasticsearch.client:elasticsearch-rest-high-level-client"
         update-types: [ "version-update:semver-major", "version-update:semver-minor" ]
     labels:
@@ -164,6 +175,14 @@ updates:
     commit-message:
       prefix: "chore"
       include: "scope"
+    ignore:
+      - dependency-name: "prettier"
+      - dependency-name: "glob"
+      - dependency-name: "lint-staged"
+      - dependency-name: "react-scripts"
+      - dependency-name: "eslint-plugin-prettier"
+      - dependency-name: "testcafe"
+      - dependency-name: "bpmn-js"
     labels:
       - "dependencies"
       - "frontend"
@@ -191,9 +210,10 @@ updates:
       prefix: "chore"
       include: "scope"
     ignore:
+      - dependency-name: io.camunda:zeebe-protocol
+      - dependency-name: io.camunda:zeebe-client-java
+      - dependency-name: io.camunda:identity-sdk
       - dependency-name: "org.camunda.bpm:camunda-engine"
-      - dependency-name: "com.h2database:h2"
-      - dependency-name: "org.jboss.resteasy:resteasy-jaxrs"
       - dependency-name: "org.elasticsearch.client:elasticsearch-rest-high-level-client"
         update-types: [ "version-update:semver-major", "version-update:semver-minor" ]
     labels:
@@ -209,6 +229,14 @@ updates:
     commit-message:
       prefix: "chore"
       include: "scope"
+    ignore:
+      - dependency-name: "prettier"
+      - dependency-name: "glob"
+      - dependency-name: "lint-staged"
+      - dependency-name: "react-scripts"
+      - dependency-name: "eslint-plugin-prettier"
+      - dependency-name: "testcafe"
+      - dependency-name: "bpmn-js"
     labels:
       - "dependencies"
       - "frontend"

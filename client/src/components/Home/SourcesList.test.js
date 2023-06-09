@@ -152,10 +152,11 @@ it('should pass conflict to confirmation modal if update failed', async () => {
 
   await node.update();
   await flushPromises();
-  expect(node.find(Modal.Content)).toMatchSnapshot();
+
+  expect(node.find(Modal.Content)).toIncludeText(conflictedItems[0].name);
 
   node.setProps({mightFail: props.mightFail});
-  node.find(Modal).prop('onConfirm')();
+  node.find('.confirm').simulate('click');
 
   expect(editSource).toHaveBeenCalledWith('collectionId', 'sourceId', updatedTenants, true);
   expect(getSources).toHaveBeenCalled();

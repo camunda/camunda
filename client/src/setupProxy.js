@@ -10,7 +10,7 @@ const fetch = require('node-fetch');
 
 module.exports = function (app) {
   app.use(
-    ['/api', '/external/api'],
+    ['/api', '/external/api', '/external/static'],
     createProxyMiddleware({
       target: 'http://localhost:8090',
     })

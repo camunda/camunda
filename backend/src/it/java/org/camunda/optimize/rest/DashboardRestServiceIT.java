@@ -55,6 +55,23 @@ public class DashboardRestServiceIT extends AbstractDashboardRestServiceIT {
   }
 
   @Test
+  public void copyPrivateDashboardWithDescription() {
+    // given
+    DashboardDefinitionRestDto definitionDto = new DashboardDefinitionRestDto();
+    definitionDto.setDescription("dashboard description");
+    final String dashboardId = dashboardClient.createDashboard(definitionDto);
+
+    // when
+    IdResponseDto copyId = dashboardClient.copyDashboard(dashboardId);
+
+    // then
+    DashboardDefinitionRestDto oldDashboard = dashboardClient.getDashboard(dashboardId);
+    DashboardDefinitionRestDto dashboard = dashboardClient.getDashboard(copyId.getId());
+    assertThat(dashboard).hasToString(oldDashboard.toString());
+    assertThat(dashboard.getDescription()).isEqualTo(oldDashboard.getDescription());
+  }
+
+  @Test
   public void copyPrivateManagementDashboardNotSupported() {
     // given
     embeddedOptimizeExtension.getManagementDashboardService().init();

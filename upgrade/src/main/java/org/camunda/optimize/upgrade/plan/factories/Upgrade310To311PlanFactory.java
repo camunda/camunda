@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.upgrade.plan.factories;
 
+import org.camunda.optimize.service.es.schema.index.DashboardIndex;
 import org.camunda.optimize.service.es.schema.index.report.CombinedReportIndex;
 import org.camunda.optimize.service.es.schema.index.report.SingleDecisionReportIndex;
 import org.camunda.optimize.service.es.schema.index.report.SingleProcessReportIndex;
@@ -23,16 +24,25 @@ public class Upgrade310To311PlanFactory implements UpgradePlanFactory {
       .fromVersion("3.10")
       .toVersion("3.11.0")
       .addUpgradeSteps(addDescriptionFieldToReportIndices())
+      .addUpgradeStep(addDescriptionFieldToDashboardIndex())
       .build();
   }
 
+  private UpgradeStep addDescriptionFieldToDashboardIndex() {
+    return new UpdateIndexStep(new DashboardIndex(), addDescriptionScript());
+  }
+
   private List<UpgradeStep> addDescriptionFieldToReportIndices() {
-    final String script = "ctx._source.description = null;";
+    final String script = addDescriptionScript();
     return List.of(
       new UpdateIndexStep(new SingleProcessReportIndex(), script),
       new UpdateIndexStep(new SingleDecisionReportIndex(), script),
       new UpdateIndexStep(new CombinedReportIndex(), script)
     );
+  }
+
+  private static String addDescriptionScript() {
+    return "ctx._source.description = null;";
   }
 
 }

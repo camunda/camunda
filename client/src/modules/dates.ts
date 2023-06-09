@@ -11,7 +11,7 @@ export let globalLocale: Locale;
 
 // by providing a default string of 'PP' or any of its variants for `formatStr`
 // it will format dates in whichever way is appropriate to the locale
-export function format(date: Date, formatStr = 'PP'): string {
+export function format(date: Date | number, formatStr = 'PP'): string {
   return formatFns(date, formatStr, {
     locale: globalLocale,
   });

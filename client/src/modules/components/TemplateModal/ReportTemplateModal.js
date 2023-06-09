@@ -24,10 +24,12 @@ export default function ReportTemplateModal({onClose, onConfirm, initialDefiniti
   const templateGroups = [
     {
       name: 'blankGroup',
+      description: null,
       templates: [{name: 'blank'}],
     },
     {
       name: 'templatesGroup',
+      description: null,
       templates: [
         {
           name: 'p75Duration',
@@ -61,6 +63,7 @@ export default function ReportTemplateModal({onClose, onConfirm, initialDefiniti
         },
         {
           name: 'percentSLAMet',
+          description: null,
           img: percentageProgress,
           disabled: (definitions) => definitions.length === 0,
           config: {
@@ -94,6 +97,7 @@ export default function ReportTemplateModal({onClose, onConfirm, initialDefiniti
         },
         {
           name: 'chart',
+          description: null,
           img: chartImg,
           disabled: (definitions) => definitions.length === 0,
           config: {
@@ -108,6 +112,7 @@ export default function ReportTemplateModal({onClose, onConfirm, initialDefiniti
         },
         {
           name: 'heatmap',
+          description: null,
           img: heatmapImg,
           disabled: (definitions) => definitions.length !== 1,
           config: {
@@ -122,6 +127,7 @@ export default function ReportTemplateModal({onClose, onConfirm, initialDefiniti
         },
         {
           name: 'table',
+          description: null,
           img: tableImg,
           disabled: (definitions) => definitions.length === 0,
           config: {
@@ -136,6 +142,7 @@ export default function ReportTemplateModal({onClose, onConfirm, initialDefiniti
         },
         {
           name: 'number',
+          description: null,
           img: durationImg,
           disabled: (definitions) => definitions.length === 0,
           config: {
@@ -149,6 +156,7 @@ export default function ReportTemplateModal({onClose, onConfirm, initialDefiniti
         },
         {
           name: 'percentSuccess',
+          description: null,
           img: percentageProgress,
           disabled: (definitions) => definitions.length !== 1,
           config: {
@@ -180,6 +188,7 @@ export default function ReportTemplateModal({onClose, onConfirm, initialDefiniti
         },
         {
           name: 'percentAutomated',
+          description: null,
           img: percentageProgress,
           disabled: (definitions) => definitions.length !== 1,
           config: {
@@ -211,6 +220,7 @@ export default function ReportTemplateModal({onClose, onConfirm, initialDefiniti
         },
         {
           name: 'percentNoIncidents',
+          description: null,
           img: percentageProgress,
           disabled: (definitions) => definitions.length === 0,
           config: {
@@ -253,8 +263,9 @@ export default function ReportTemplateModal({onClose, onConfirm, initialDefiniti
           <li>{t('templates.blankSlate.selectTemplate')}</li>
         </ol>
       }
-      templateToState={({name, template, definitions, xml}) => ({
+      templateToState={({name, description, template, definitions, xml}) => ({
         name,
+        description,
         data: {
           ...(template || {}),
           configuration: {...(template?.configuration || {}), xml},

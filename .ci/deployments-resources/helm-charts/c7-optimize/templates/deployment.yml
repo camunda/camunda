@@ -46,21 +46,6 @@ spec:
           limits:
             cpu: 1
             memory: 300Mi
-      {{ else if eq .Values.env "persistent" }}
-      - name: migration
-        image: "{{ .Values.optimize.image.repository }}:{{ .Values.optimize.image.tag }}"
-        command: [ './upgrade/upgrade.sh', '--skip-warning' ]
-        volumeMounts:
-          - name: configuration
-            mountPath: /optimize/config/environment-config.yaml
-            subPath: environment-config.yaml
-        resources:
-          requests:
-            cpu: 100m
-            memory: 200Mi
-          limits:
-            cpu: 1
-            memory: 500Mi
       {{ end }}
       containers:
       - name: optimize
@@ -120,18 +105,6 @@ spec:
           value: {{ include "postgresUrl" $ | quote }}
         - name: SKIP_DB_CONFIG
           value: "true"
-        {{ if eq .Values.env "persistent" }}
-        - name: DB_USERNAME
-          valueFrom:
-            secretKeyRef:
-              name: cambpm-db-secrets
-              key: db-username
-        - name: DB_PASSWORD
-          valueFrom:
-            secretKeyRef:
-              name: cambpm-db-secrets
-              key: db-password
-        {{ end }}
         ports:
         - containerPort: 8080
           name: cambpm-http

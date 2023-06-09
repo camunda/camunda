@@ -1,7 +1,8 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
 exports[`should check the versions based on the selected specific versions 1`] = `
-<Popover
+<CarbonPopover
+  align="bottom-right"
   className="VersionPopover"
   disabled={false}
   title="Latest : 3"
@@ -77,5 +78,5 @@ exports[`should check the versions based on the selected specific versions 1`] =
       </FormGroup>
     </FormGroup>
   </Form>
-</Popover>
+</CarbonPopover>
 `;

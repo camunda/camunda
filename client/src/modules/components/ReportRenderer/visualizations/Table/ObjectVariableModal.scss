@@ -1,15 +1,11 @@
 @import 'shared-styles/shared-styles.scss';
 
 .ObjectVariableModal {
-  .Modal__content {
-    max-height: calc(100vh - 150px);
-
-    pre {
-      font-size: 14px;
-      border: 1px solid var(--silver-darken-87);
-      padding: 15px;
-      max-height: 600px;
-      overflow: auto;
-    }
+  pre {
+    font-size: 14px;
+    border: 1px solid var(--silver-darken-87);
+    padding: 15px;
+    max-height: 600px;
+    overflow: auto;
   }
 }

@@ -69,11 +69,10 @@ export function AlertsDropdown({mightFail, dashboardReports, numberReport, locat
         });
         loadEntityAlerts();
         setOpenAlert();
-        setLoading(false);
       },
-      showError
+      showError,
+      () => setLoading(false)
     );
-    setLoading(false);
   };
 
   const editExistingAlert = async (changedAlert) => {
@@ -87,11 +86,10 @@ export function AlertsDropdown({mightFail, dashboardReports, numberReport, locat
         });
         loadEntityAlerts();
         setOpenAlert();
-        setLoading(false);
       },
-      showError
+      showError,
+      () => setLoading(false)
     );
-    setLoading(false);
   };
 
   const reportsInScope = reports.filter((report) =>

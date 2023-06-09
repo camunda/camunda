@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       app_name:
-        description: 'Name of deployment, could be "persistent" or "stage/master"'
+        description: 'Name of deployment'
         required: false
         default: latest
       chart_ref:
@@ -26,16 +26,18 @@ on:
 jobs:
   deploy-stage:
     timeout-minutes: 10
-    concurrency: deploy-${{ github.events.inputs.ref }}
-    name: Deploy Optimize Stage Environment
+    concurrency: deploy-${{ inputs.chart_ref }}-${{ matrix.env }}
+    name: Deploy ${{ matrix.env }} Optimize Stage Environment
     runs-on: ubuntu-20.04
-    if: github.event.inputs.app_name != 'persistent'
+    strategy:
+      matrix:
+        env: [c7, c8]
     steps:
     #########################################################################
     # Setup: import secrets from vault
     - name: Import secrets
       id: secrets
-      uses: hashicorp/vault-action@1d767e395771e6ba668c266c24b01a662fca35a9
+      uses: hashicorp/vault-action@2d9c2b9f1b63f4f28f8c33dab5ab969962f1beeb
       with:
         url: ${{ secrets.VAULT_ADDR }}
         method: approle
@@ -53,7 +55,7 @@ jobs:
     - name: Determine Argocd arguments
       shell: bash
       run: |
-        echo "c7_arguments=--dest-namespace optimize-${app_name} \
+        echo "c7=--dest-namespace optimize-${app_name} \
             --file .ci/deployments-resources/argo/c7-optimize-application.yml \
             --helm-set optimize.image.tag=${docker_tag} \
             --helm-set cambpm.image.tag=${cambpm_version} \
@@ -63,9 +65,9 @@ jobs:
             --name optimize-${app_name} \
             --revision ${revision} \
             --project optimize-previews \
-            --upsert" >> $GITHUB_ENV
+            --upsert" >> "$GITHUB_ENV"
 
-        echo "c8_arguments=--dest-namespace optimize-${app_name}-c8 \
+        echo "c8=--dest-namespace optimize-${app_name}-c8 \
             --file .ci/deployments-resources/argo/c8-optimize-application.yml \
             --helm-set global.identity.auth.publicIssuerUrl=https://keycloak-${app_name}-c8.optimize.camunda.cloud/auth/realms/camunda-platform \
             --helm-set global.identity.auth.optimize.redirectUrl=https://${app_name}-c8.optimize.camunda.cloud \
@@ -78,7 +80,7 @@ jobs:
             --name c8-optimize-${app_name} \
             --revision ${revision} \
             --project optimize-previews \
-            --upsert" >> $GITHUB_ENV
+            --upsert" >> "$GITHUB_ENV"
       env:
         revision: ${{ github.event.inputs.chart_ref }}
         es_version: ${{ github.event.inputs.es_version }}
@@ -89,81 +91,11 @@ jobs:
         app_name: ${{ github.event.inputs.app_name == 'master' && 'stage' || github.event.inputs.app_name }}
     #########################################################################
     # Create Optimize environment
-    - name: Deploy c7 Optimize Environment
+    - name: Deploy ${{ matrix.env }} Optimize Environment
       uses: camunda/infra-global-github-actions/preview-env/create@main
       with:
         revision: ${{ github.event.inputs.chart_ref }}
         argocd_token: ${{ steps.secrets.outputs.ARGOCD_TOKEN }}
-        app_name: optimize-${{ github.event.inputs.app_name == 'master' && 'stage' || github.event.inputs.app_name }}
-        app_url: https://${{ github.event.inputs.app_name == 'master' && 'stage' || github.event.inputs.app_name }}.optimize.camunda.cloud
-        argocd_arguments: ${{ env.c7_arguments }}
-    #########################################################################
-    # Create a c8 Optimize environment
-    - name: Deploy c8 Optimize Environment
-      if: always() # To be deployed even if C7 Optimize deployment is failing
-      uses: camunda/infra-global-github-actions/preview-env/create@main
-      with:
-        revision: ${{ github.event.inputs.chart_ref }}
-        argocd_token: ${{ steps.secrets.outputs.ARGOCD_TOKEN }}
-        app_name: optimize-${{ github.event.inputs.app_name == 'master' && 'stage' || github.event.inputs.app_name }}
-        app_url: https://${{ github.event.inputs.app_name == 'master' && 'stage' || github.event.inputs.app_name }}.optimize.camunda.cloud
-        argocd_arguments: ${{ env.c8_arguments }}
-
-  # Deploy persistent env
-  deploy-persistent:
-    timeout-minutes: 10
-    concurrency: deploy-${{ github.events.inputs.ref }}-persistent
-    name: Deploy Optimize persistent Environment
-    runs-on: ubuntu-20.04
-    if: github.event.inputs.app_name == 'persistent'
-    steps:
-    #########################################################################
-    # Setup: import secrets from vault
-    - name: Import secrets
-      id: secrets
-      uses: hashicorp/vault-action@1d767e395771e6ba668c266c24b01a662fca35a9
-      with:
-        url: ${{ secrets.VAULT_ADDR }}
-        method: approle
-        roleId: ${{ secrets.VAULT_ROLE_ID }}
-        secretId: ${{ secrets.VAULT_SECRET_ID }}
-        secrets: |
-          secret/data/products/optimize/ci/camunda-optimize ARGOCD_TOKEN;
-    #########################################################################
-    # Setup: checkout code. This is required because we are using
-    # composite actions and deployment manifests.
-    - name: Checkout
-      uses: actions/checkout@v3
-    #########################################################################
-    # Determine the argocd arguments that need to be passed to the create app command
-    - name: Determine Argocd arguments
-      shell: bash
-      run: |
-        echo "persistent_arguments=--dest-namespace optimize-${app_name} \
-            --file .ci/deployments-resources/argo/c7-optimize-application.yml \
-            --helm-set optimize.image.tag=${docker_tag} \
-            --helm-set cambpm.image.tag=${cambpm_version} \
-            --helm-set elasticsearch.image.tag=${es_version} \
-            --helm-set global.labels.app=optimize-${app_name} \
-            --helm-set git.branch=master \
-            --helm-set env=persistent \
-            --name optimize-${app_name} \
-            --revision master \
-            --project optimize-previews \
-            --upsert" >> $GITHUB_ENV
-      env:
-        revision: 'master'
-        es_version: ${{ github.event.inputs.es_version }}
-        cambpm_version: ${{ github.event.inputs.cambpm_version }}
-        docker_tag: ${{ github.sha }}
-        app_name: ${{ github.event.inputs.app_name == 'master' && 'stage' || github.event.inputs.app_name }}
-    #########################################################################
-    # Create a Persistent environment
-    - name: Deploy Persistent Environment
-      uses: camunda/infra-global-github-actions/preview-env/create@main
-      with:
-        revision: 'master'
-        argocd_token: ${{ steps.secrets.outputs.ARGOCD_TOKEN }}
-        app_name: ${{ github.event.inputs.app_name == 'master' && 'stage' || github.event.inputs.app_name }}
-        app_url: https://${{ github.event.inputs.app_name == 'master' && 'stage' || github.event.inputs.app_name }}.optimize.camunda.cloud
-        argocd_arguments: ${{ env.persistent_arguments }}
+        app_name: ${{ matrix.env == 'c8' && 'c8-' || '' }}optimize-${{ github.event.inputs.app_name == 'master' && 'stage' || github.event.inputs.app_name }}
+        app_url: https://${{ github.event.inputs.app_name == 'master' && 'stage' || github.event.inputs.app_name }}${{ matrix.env == 'c8' && '-c8' || '' }}.optimize.camunda.cloud
+        argocd_arguments: ${{ env[matrix.env] }}

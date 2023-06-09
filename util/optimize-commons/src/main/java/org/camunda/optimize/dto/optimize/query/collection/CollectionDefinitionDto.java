@@ -41,6 +41,7 @@ public class CollectionDefinitionDto extends BaseCollectionDefinitionDto<Collect
     return new EntityResponseDto(
       getId(),
       getName(),
+      null,
       getLastModified(),
       getCreated(),
       getOwner(),

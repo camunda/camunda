@@ -24,6 +24,7 @@ import {updateEntity, createEntity, evaluateReport, getCollection} from 'service
 import {showError} from 'notifications';
 import {t} from 'translation';
 import {withDocs} from 'HOC';
+import {track} from 'tracking';
 
 import ReportControlPanel from './controlPanels/ReportControlPanel';
 import DecisionControlPanel from './controlPanels/DecisionControlPanel';
@@ -63,15 +64,23 @@ export class ReportEdit extends React.Component {
     showError(error);
   };
 
-  saveUpdatedReport = ({endpoint, id, name, data}) => {
+  saveUpdatedReport = ({endpoint, id, name, description, data}) => {
     return new Promise((resolve, reject) => {
       this.props.mightFail(
-        updateEntity(endpoint, id, {name, data}, {query: {force: this.state.conflict !== null}}),
+        updateEntity(
+          endpoint,
+          id,
+          {name, description, data},
+          {query: {force: this.state.conflict !== null}}
+        ),
         () => resolve(id),
         (error) => {
           if (error.status === 409 && error.conflictedItems) {
             this.setState({
-              report: update(this.state.report, {name: {$set: name}}),
+              report: update(this.state.report, {
+                name: {$set: name},
+                description: {$set: description},
+              }),
               conflict: error.conflictedItems.reduce(
                 (obj, conflict) => {
                   obj[conflict.type].push(conflict);
@@ -91,17 +100,19 @@ export class ReportEdit extends React.Component {
 
   save = () => {
     return new Promise(async (resolve, reject) => {
-      const {id, name, data, reportType, combined} = this.state.report;
+      const {id, name, description, data, reportType, combined} = this.state.report;
       const endpoint = `report/${reportType}/${combined ? 'combined' : 'single'}`;
 
       if (this.props.isNew) {
         const collectionId = getCollection(this.props.location.pathname);
 
-        this.props.mightFail(createEntity(endpoint, {collectionId, name, data}), resolve, (error) =>
-          reject(this.showSaveError(error))
+        this.props.mightFail(
+          createEntity(endpoint, {collectionId, name, description, data}),
+          resolve,
+          (error) => reject(this.showSaveError(error))
         );
       } else {
-        resolve(await this.saveUpdatedReport({endpoint, id, name, data}));
+        resolve(await this.saveUpdatedReport({endpoint, id, name, description, data}));
       }
     });
   };
@@ -164,6 +175,12 @@ export class ReportEdit extends React.Component {
       this.dirtyCheck
     );
 
+    if (isRearrangementChanged(change)) {
+      this.setState(({frozenReport}) => ({
+        frozenReport: update(frozenReport, {data: change}),
+      }));
+    }
+
     if (needsReevaluation && this.state.shouldAutoReloadPreview) {
       this.reEvaluateReport(newReport);
     }
@@ -182,6 +199,16 @@ export class ReportEdit extends React.Component {
     this.setState(
       ({report}) => ({
         report: update(report, {name: {$set: value}}),
+      }),
+      this.dirtyCheck
+    );
+  };
+
+  updateDescription = (description) => {
+    track('editDescription', {entity: 'report', entityId: this.state.report.id});
+    this.setState(
+      ({report}) => ({
+        report: update(report, {description: {$set: description}}),
       }),
       this.dirtyCheck
     );
@@ -263,7 +290,7 @@ export class ReportEdit extends React.Component {
       shouldAutoReloadPreview,
       frozenReport,
     } = this.state;
-    const {name, data, combined, reportType} = report;
+    const {name, description, data, combined, reportType} = report;
 
     if (redirect) {
       return <Redirect to={redirect} />;
@@ -271,7 +298,7 @@ export class ReportEdit extends React.Component {
 
     return (
       <div className="ReportEdit Report">
-        <div className="Report__header">
+        <div className="reportHeader">
           <div className="headerTopLine">
             <EntityNameForm
               name={name}
@@ -280,6 +307,8 @@ export class ReportEdit extends React.Component {
               onChange={this.updateName}
               onSave={this.saveAndGoBack}
               onCancel={this.cancel}
+              description={description}
+              onDescriptionChange={this.updateDescription}
             />
             {!shouldAutoReloadPreview && (
               <Button
@@ -375,3 +404,7 @@ export class ReportEdit extends React.Component {
 }
 
 export default withRouter(withErrorHandling(withDocs(ReportEdit)));
+
+function isRearrangementChanged(change) {
+  return !!change?.configuration?.tableColumns?.columnOrder;
+}

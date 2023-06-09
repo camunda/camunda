@@ -13,6 +13,8 @@ public class CCSMAuthConfiguration {
   private String issuerUrl;
   // the url to Identity (back channel for container to container communication)
   private String issuerBackendUrl;
+  // the redirect root url back to Optimize. If not provided, Optimize uses the container url
+  private String redirectRootUrl;
   // Identity client id to use by Optimize
   private String clientId;
   // Identity client secret to use by Optimize

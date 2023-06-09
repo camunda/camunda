@@ -1,0 +1,63 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`should match snapshot 1`] = `
+<Modal
+  className="ConflictModal"
+  onClose={[MockFunction]}
+  open={true}
+>
+  <ForwardRef(ModalHeader)
+    buttonOnClick={[Function]}
+    closeModal={[Function]}
+    iconDescription="Close"
+  >
+    Destructive Changes
+  </ForwardRef(ModalHeader)>
+  <ForwardRef>
+    <div
+      key="alert"
+    >
+      <p>
+        These changes are incompatible with the Alert(s):
+      </p>
+      <ul>
+        <li
+          key="1"
+        >
+          '
+          alert
+          '
+        </li>
+      </ul>
+      <p
+        className="conflictMessage"
+      >
+        <b>
+          Warning: Saving will delete the Alert(s).
+        </b>
+      </p>
+    </div>
+  </ForwardRef>
+  <ForwardRef(ModalFooter)
+    closeModal={[Function]}
+    onRequestClose={[Function]}
+    onRequestSubmit={[Function]}
+  >
+    <Button
+      className="close"
+      disabled={false}
+      kind="secondary"
+      onClick={[MockFunction]}
+    >
+      Don't Save
+    </Button>
+    <Button
+      className="confirm"
+      disabled={false}
+      onClick={[Function]}
+    >
+      Save Changes
+    </Button>
+  </ForwardRef(ModalFooter)>
+</Modal>
+`;

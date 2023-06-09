@@ -1,12 +1,5 @@
 .AlertModal {
-  .Modal__content .InputGroup button.reset {
+  .InputGroup button.reset {
     flex: initial;
-  }
-
-  .Modal__actions .deleteButton {
-    color: var(--red-darken-52);
-    position: absolute;
-    left: 20px;
-    bottom: 23px;
   }
 }

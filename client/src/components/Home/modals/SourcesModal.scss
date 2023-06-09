@@ -1,46 +1,23 @@
+@use '@carbon/styles/scss/utilities' as *;
+
 .SourcesModal {
   .Table {
     height: 500px;
-  }
 
-  .header {
-    display: flex;
-    align-items: flex-end;
-    margin-bottom: 10px;
+    .tenantsSelector {
+      align-self: center;
+      width: auto;
+      margin-right: auto;
+      margin-left: 10px;
+      flex-shrink: 0;
+    }
 
-    .rightHeader {
-      display: flex;
-      align-items: center;
-      justify-content: flex-end;
-      margin-left: auto;
-      font-size: 14px;
+    .cds--search {
+      max-width: 300px;
+    }
 
-      .Tag {
-        margin-left: 10px;
-        height: 30px;
-        border-radius: 15px;
-        color: var(--grey-darken-36);
-        padding-left: 15px;
-
-        .tagText {
-          position: relative;
-          top: 2px;
-          margin-right: 5px;
-        }
-
-        button {
-          position: relative;
-          top: 7px;
-        }
-      }
+    thead input[type='checkbox'].hidden {
+      visibility: hidden;
     }
   }
-
-  .Table thead input[type='checkbox'].hidden {
-    visibility: hidden;
-  }
-}
-
-.sourcesModalTenantPopover {
-  z-index: var(--z-modal-popup);
 }

@@ -5,17 +5,15 @@
 }
 
 .ColumnRearrangement .tableHeader {
-  cursor: move;
-
-  &:not([data-group]):hover:after,
+  &:not([data-group]):not(button):hover:after,
   &.childDragged:after {
-    background: var(--white);
+    cursor: move;
     height: 100%;
     width: 20px;
     content: '.';
     position: absolute;
     left: 5px;
-    top: -5px;
+    top: 0;
     font-size: 20px;
     font-weight: normal;
     color: var(--grey-base-40);

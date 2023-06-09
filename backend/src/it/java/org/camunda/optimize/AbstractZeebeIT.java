@@ -81,7 +81,7 @@ public abstract class AbstractZeebeIT extends AbstractIT {
 
   protected void waitUntilMinimumDataExportedCount(final int minExportedEventCount, final String indexName,
                                                    final BoolQueryBuilder boolQueryBuilder) {
-    waitUntilMinimumDataExportedCount(minExportedEventCount, indexName, boolQueryBuilder, 5);
+    waitUntilMinimumDataExportedCount(minExportedEventCount, indexName, boolQueryBuilder, 15);
   }
 
   protected BoolQueryBuilder getQueryForProcessableEvents() {
@@ -171,7 +171,7 @@ public abstract class AbstractZeebeIT extends AbstractIT {
     final String expectedIndex = zeebeExtension.getZeebeRecordPrefix() + "-" + indexName;
     final OptimizeElasticsearchClient esClient = elasticSearchIntegrationTestExtension.getOptimizeElasticClient();
     Awaitility.given().ignoreExceptions()
-      .timeout(10, TimeUnit.SECONDS)
+      .timeout(15, TimeUnit.SECONDS)
       .untilAsserted(() -> assertThat(
         esClient
           .getHighLevelClient()

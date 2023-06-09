@@ -59,16 +59,7 @@ it('should render a sharing popover', async () => {
 
   await runAllEffects();
 
-  expect(node.find('Popover.share-button')).toExist();
-});
-
-it('should show sharing popover in cloud environment', async () => {
-  getOptimizeProfile.mockReturnValueOnce('cloud');
-  const node = shallow(<DashboardView />);
-
-  await runAllEffects();
-
-  expect(node.find('Popover.share-button')).toExist();
+  expect(node.find('.share-button')).toExist();
 });
 
 it('should hide alert dropdown in ccsm environment', async () => {
@@ -224,5 +215,17 @@ it('should reset filters when closing the filters section', () => {
 it('should hide the share button', () => {
   const node = shallow(<DashboardView sharingHidden />);
 
-  expect(node.find('Popover.share-button')).not.toExist();
+  expect(node.find('.share-button')).not.toExist();
+});
+
+it('should show the description', () => {
+  const node = shallow(<DashboardView description="description" />);
+
+  expect(node.find('EntityDescription').prop('description')).toBe('description');
+});
+
+it('should hide the description', () => {
+  const node = shallow(<DashboardView description={null} />);
+
+  expect(node.find('EntityDescription')).not.toExist();
 });

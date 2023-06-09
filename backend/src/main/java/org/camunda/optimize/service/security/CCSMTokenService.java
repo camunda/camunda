@@ -13,6 +13,7 @@ import io.camunda.identity.sdk.authentication.Tokens;
 import io.camunda.identity.sdk.authentication.dto.AuthCodeDto;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.condition.CCSMCondition;
 import org.camunda.optimize.service.util.configuration.security.CCSMAuthConfiguration;
@@ -98,7 +99,11 @@ public class CCSMTokenService {
   }
 
   public URI buildAuthorizeUri(final String redirectUri) {
-    return authentication().authorizeUriBuilder(redirectUri).build();
+    // If a redirect root URL is explicitly set, we use that. Otherwise, we use the one provided
+    final String redirectRootUrl = configurationService.getAuthConfiguration().getCcsmAuthConfiguration().getRedirectRootUrl();
+    return authentication().authorizeUriBuilder(
+        StringUtils.isEmpty(redirectRootUrl) ? redirectUri : redirectRootUrl)
+      .build();
   }
 
   public AccessToken verifyToken(final String accessToken) {

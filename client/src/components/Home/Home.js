@@ -56,13 +56,12 @@ export function Home({mightFail, user}) {
         loadEntities(sortBy, sortOrder),
         (entities) => {
           setEntities(entities);
-          setIsLoading(false);
         },
         (error) => {
           showError(error);
           setEntities([]);
-          setIsLoading(false);
-        }
+        },
+        () => setIsLoading(false)
       );
     },
     [mightFail]
@@ -166,6 +165,7 @@ export function Home({mightFail, user}) {
             columns={[
               {name: 'Type', key: 'entityType', defaultOrder: 'asc', hidden: true},
               {name: t('common.name'), key: 'name', defaultOrder: 'asc'},
+              {name: t('common.description'), key: 'description', defaultOrder: 'asc'},
               t('home.contents'),
               {name: 'Modified by', key: 'lastModifier', defaultOrder: 'asc'},
               {name: t('common.entity.modified'), key: 'lastModified', defaultOrder: 'desc'},
@@ -180,6 +180,7 @@ export function Home({mightFail, user}) {
                   lastModified,
                   lastModifier,
                   name,
+                  description,
                   data,
                   reportType,
                   combined,
@@ -229,6 +230,7 @@ export function Home({mightFail, user}) {
                   type: formatType(entityType, reportType, combined),
                   name,
                   meta: [
+                    description,
                     formatSubEntities(data.subEntityCounts),
                     lastModifier,
                     format(parseISO(lastModified), 'PP'),

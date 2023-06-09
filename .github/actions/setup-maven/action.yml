@@ -9,7 +9,7 @@ inputs:
   distribution:
     description: Java distribution to be used
     required: false
-    default: 'adopt'
+    default: 'temurin'
   maven-version:
     description: Maven version to be used
     required: false
@@ -22,7 +22,7 @@ runs:
   steps:
   - name: Import secrets
     id: secrets
-    uses: hashicorp/vault-action@130d1f5f4fe645bb6c83e4225c04d64cfb62de6e
+    uses: hashicorp/vault-action@2d9c2b9f1b63f4f28f8c33dab5ab969962f1beeb
     with:
       url: ${{ fromJSON(inputs.secrets).VAULT_ADDR }}
       method: approle

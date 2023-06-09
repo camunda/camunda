@@ -7,70 +7,11 @@
     color: var(--grey-lighten-56);
   }
 
-  .Popover {
+  .instanceCountPopover {
     display: inline;
 
-    > .buttonWrapper {
-      display: inline-block;
-      .Button {
-        font-size: 12px;
-        font-weight: bold;
-        padding: 0;
-        width: auto;
-        background: transparent;
-        border: 0;
-
-        .downIcon {
-          display: none;
-        }
-
-        &.icon {
-          width: 20px;
-          height: 20px;
-
-          &:hover {
-            background-color: var(--silver-darken-94);
-          }
-
-          &:active,
-          &.active {
-            background-color: var(--silver-darken-80);
-          }
-
-          .Icon {
-            margin: 2px;
-          }
-        }
-
-        &:not(.icon) {
-          color: var(--grey-lighten-56);
-
-          &::after {
-            content: '.';
-          }
-
-          &:disabled {
-            cursor: text;
-          }
-
-          &:not(:disabled):hover {
-            text-decoration: underline;
-          }
-        }
-      }
-    }
-  }
-}
-
-.instanceCountPopover {
-  position: absolute;
-  left: 50%;
-
-  .dialogContainer {
-    margin-left: -40px;
-    min-width: 397px;
-    transform: translate(16px, 0);
-    .dialog {
+    .popoverContent {
+      min-width: 397px;
       padding-top: 20px;
 
       .countString {
@@ -121,6 +62,58 @@
 
         .listItemConnector {
           display: none;
+        }
+      }
+    }
+
+    > .buttonWrapper {
+      display: inline-block;
+
+      .Button {
+        font-size: 12px;
+        font-weight: bold;
+        padding: 0;
+        width: auto;
+        background: transparent;
+        border: 0;
+
+        .downIcon {
+          display: none;
+        }
+
+        &.icon {
+          width: 20px;
+          height: 20px;
+
+          &:hover {
+            background-color: var(--silver-darken-94);
+          }
+
+          &:active,
+          &.active {
+            background-color: var(--silver-darken-80);
+          }
+
+          .Icon {
+            margin: 2px;
+          }
+        }
+
+        &:not(.icon) {
+          color: var(--grey-lighten-56);
+          padding-right: 0;
+
+          &::after {
+            content: '.';
+          }
+
+          &:disabled {
+            cursor: text;
+          }
+
+          &:not(:disabled):hover {
+            text-decoration: underline;
+          }
         }
       }
     }

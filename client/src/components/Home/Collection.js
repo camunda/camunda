@@ -88,11 +88,12 @@ export class Collection extends React.Component {
     this.setState({isLoading: true, sorting: {key: sortBy, order: sortOrder}});
     this.props.mightFail(
       loadCollectionEntities(this.props.match.params.id, sortBy, sortOrder),
-      (entities) => this.setState({entities, isLoading: false}),
+      (entities) => this.setState({entities}),
       (error) => {
         showError(error);
-        this.setState({entities: null, isLoading: false});
-      }
+        this.setState({entities: null});
+      },
+      () => this.setState({isLoading: false})
     );
   };
 
@@ -236,6 +237,7 @@ export class Collection extends React.Component {
               columns={[
                 {name: 'Type', key: 'entityType', defaultOrder: 'asc', hidden: true},
                 {name: t('common.name'), key: 'name', defaultOrder: 'asc'},
+                {name: t('common.description'), key: 'description', defaultOrder: 'asc'},
                 t('home.contents'),
                 {name: 'Modified by', key: 'lastModifier', defaultOrder: 'asc'},
                 {name: t('common.entity.modified'), key: 'lastModified', defaultOrder: 'desc'},
@@ -250,6 +252,7 @@ export class Collection extends React.Component {
                     lastModified,
                     lastModifier,
                     name,
+                    description,
                     data,
                     reportType,
                     combined,
@@ -297,6 +300,7 @@ export class Collection extends React.Component {
                     type: formatType(entityType, reportType, combined),
                     name,
                     meta: [
+                      description,
                       formatSubEntities(data.subEntityCounts),
                       lastModifier,
                       format(parseISO(lastModified), 'PP'),

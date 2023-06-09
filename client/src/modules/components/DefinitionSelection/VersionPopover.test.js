@@ -44,23 +44,23 @@ it('should disable the specific selection when all or latest is selected', () =>
 it('should construct the label based on the selected versions', () => {
   const node = shallow(<VersionPopover versions={versions} selected={[]} />);
 
-  expect(node.find('Popover').prop('title')).toBe('None');
+  expect(node.find('.VersionPopover').prop('title')).toBe('None');
 
   node.setProps({selected: ['1']});
 
-  expect(node.find('Popover').prop('title')).toBe('1');
+  expect(node.find('.VersionPopover').prop('title')).toBe('1');
 
   node.setProps({selected: ['2', '1']});
 
-  expect(node.find('Popover').prop('title')).toBe('2, 1');
+  expect(node.find('.VersionPopover').prop('title')).toBe('2, 1');
 
   node.setProps({selected: ['all']});
 
-  expect(node.find('Popover').prop('title')).toBe('All');
+  expect(node.find('.VersionPopover').prop('title')).toBe('All');
 
   node.setProps({selected: ['latest']});
 
-  expect(node.find('Popover').prop('title')).toBe('Latest : 3');
+  expect(node.find('.VersionPopover').prop('title')).toBe('Latest : 3');
 });
 
 it('should check the versions based on the selected specific versions', () => {
@@ -77,7 +77,7 @@ it('should check the versions based on the selected specific versions', () => {
 
 it('should not crash, but be disabled if no versions are provided', () => {
   const node = shallow(<VersionPopover selected={[]} />);
-  expect(node.find('Popover').prop('disabled')).toBe(true);
+  expect(node.find('.VersionPopover').prop('disabled')).toBe(true);
 });
 
 it('should diplay a loading indicator and disable the inputs while loading', () => {

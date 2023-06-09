@@ -11,7 +11,7 @@ git:
 
 replicaCount: 1
 
-# this Chart serves 2 environments: stage and persistent, default: stage
+# this Chart serves stage environment
 env: stage
 
 ingress:

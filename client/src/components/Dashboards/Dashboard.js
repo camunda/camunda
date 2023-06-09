@@ -32,6 +32,7 @@ export class Dashboard extends React.Component {
     this.state = {
       id: this.props.match.params.id,
       name: null,
+      description: null,
       lastModified: null,
       lastModifier: null,
       owner: null,
@@ -125,6 +126,7 @@ export class Dashboard extends React.Component {
         const {
           id,
           name,
+          description,
           lastModifier,
           currentUserRole,
           lastModified,
@@ -143,6 +145,7 @@ export class Dashboard extends React.Component {
           currentUserRole,
           loaded: true,
           name,
+          description,
           tiles: tiles || [],
           availableFilters: availableFilters || [],
           isAuthorizedToShare: await isAuthorizedToShareDashboard(id),
@@ -166,11 +169,20 @@ export class Dashboard extends React.Component {
     });
   };
 
-  updateDashboard = (id, name, tiles, availableFilters, refreshRateSeconds, stayInEditMode) => {
+  updateDashboard = (
+    id,
+    name,
+    description,
+    tiles,
+    availableFilters,
+    refreshRateSeconds,
+    stayInEditMode
+  ) => {
     return new Promise((resolve, reject) => {
       this.props.mightFail(
         updateEntity('dashboard', id, {
           name,
+          description,
           tiles,
           availableFilters,
           refreshRateSeconds,
@@ -180,6 +192,7 @@ export class Dashboard extends React.Component {
             this.updateDashboardState(
               id,
               name,
+              description,
               tiles,
               availableFilters,
               refreshRateSeconds,
@@ -194,6 +207,7 @@ export class Dashboard extends React.Component {
   updateDashboardState = async (
     id,
     name,
+    description,
     tiles,
     availableFilters,
     refreshRateSeconds,
@@ -205,6 +219,7 @@ export class Dashboard extends React.Component {
     const update = {
       id,
       name,
+      description,
       tiles,
       availableFilters,
       isAuthorizedToShare: await isAuthorizedToShareDashboard(id),
@@ -222,7 +237,14 @@ export class Dashboard extends React.Component {
     this.setState(update);
   };
 
-  saveChanges = (name, tiles, availableFilters, refreshRateSeconds, stayInEditMode) => {
+  saveChanges = (
+    name,
+    description,
+    tiles,
+    availableFilters,
+    refreshRateSeconds,
+    stayInEditMode
+  ) => {
     return new Promise(async (resolve, reject) => {
       if (this.isNew()) {
         const collectionId = getCollection(this.props.location.pathname);
@@ -246,7 +268,7 @@ export class Dashboard extends React.Component {
           })
         );
 
-        const savedtiles = tiles.map(({configuration, dimensions, position, type}, idx) => {
+        const savedTiles = tiles.map(({configuration, dimensions, position, type}, idx) => {
           return {
             type,
             configuration,
@@ -260,7 +282,8 @@ export class Dashboard extends React.Component {
           createEntity('dashboard', {
             collectionId,
             name,
-            tiles: savedtiles,
+            description,
+            tiles: savedTiles,
             availableFilters,
             refreshRateSeconds,
           }),
@@ -269,7 +292,8 @@ export class Dashboard extends React.Component {
               this.updateDashboardState(
                 id,
                 name,
-                savedtiles,
+                description,
+                savedTiles,
                 availableFilters,
                 refreshRateSeconds,
                 stayInEditMode
@@ -282,6 +306,7 @@ export class Dashboard extends React.Component {
           this.updateDashboard(
             this.state.id,
             name,
+            description,
             tiles,
             availableFilters,
             refreshRateSeconds,
@@ -307,6 +332,7 @@ export class Dashboard extends React.Component {
       redirect,
       serverError,
       name,
+      description,
       lastModified,
       currentUserRole,
       lastModifier,
@@ -333,6 +359,7 @@ export class Dashboard extends React.Component {
 
     const commonProps = {
       name,
+      description,
       refreshRateSeconds,
       lastModified,
       lastModifier,

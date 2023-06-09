@@ -5,37 +5,33 @@
  */
 package org.camunda.optimize.dto.optimize.rest.definition;
 
-import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
-import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import lombok.Singular;
 
 import javax.validation.constraints.NotNull;
 import java.util.ArrayList;
 import java.util.List;
 
 @AllArgsConstructor
-@Builder
 @Data
-@NoArgsConstructor(access = AccessLevel.PROTECTED)
+@NoArgsConstructor
 public class MultiDefinitionTenantsRequestDto {
-  @NotNull
-  @Singular
-  private List<DefinitionDto> definitions = new ArrayList<>();
 
+  public MultiDefinitionTenantsRequestDto(final List<DefinitionDto> definitionDtos) {
+    this.definitions = definitionDtos;
+  }
+
+  private List<DefinitionDto> definitions = new ArrayList<>();
   private String filterByCollectionScope;
 
   @AllArgsConstructor
-  @Builder
   @Data
-  @NoArgsConstructor(access = AccessLevel.PROTECTED)
+  @NoArgsConstructor
   public static class DefinitionDto {
     @NotNull
     private String key;
     @NotNull
-    @Singular
     private List<String> versions = new ArrayList<>();
   }
 }

@@ -64,3 +64,5 @@ export {ReportTemplateModal, DashboardTemplateModal} from './TemplateModal';
 export {EmptyState} from './EmptyState';
 export {PageTitle} from './PageTitle';
 export {TextEditor} from './TextEditor';
+export {EntityDescription} from './EntityDescription';
+export {CarbonPopover} from './CarbonPopover';

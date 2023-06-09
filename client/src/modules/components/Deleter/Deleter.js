@@ -6,9 +6,10 @@
  */
 
 import React from 'react';
+import {Button} from '@carbon/react';
 
 import {withErrorHandling} from 'HOC';
-import {Button, Modal, LoadingIndicator} from 'components';
+import {Modal, LoadingIndicator} from 'components';
 import {showError} from 'notifications';
 import {deleteEntity} from 'services';
 import {t} from 'translation';
@@ -53,12 +54,12 @@ export default withErrorHandling(
                   }, {}),
                 });
               }
-              this.setState({loading: false});
             },
             (error) => {
               showError(error);
-              this.setState({conflicts: {}, loading: false});
-            }
+              this.setState({conflicts: {}});
+            },
+            () => this.setState({loading: false})
           );
         } else {
           this.setState({conflicts: {}, loading: false});
@@ -83,8 +84,8 @@ export default withErrorHandling(
         },
         (error) => {
           showError(error);
-          this.setState({loading: false});
-        }
+        },
+        () => this.setState({loading: false})
       );
     };
 
@@ -103,7 +104,7 @@ export default withErrorHandling(
       const translatedType = t(`common.deleter.types.${type}`);
 
       return (
-        <Modal open onClose={this.close} onConfirm={this.delete} className="Deleter">
+        <Modal open onClose={this.close} className="Deleter">
           <Modal.Header>
             {deleteText || t('common.deleteEntity', {entity: translatedType})}
           </Modal.Header>
@@ -135,20 +136,20 @@ export default withErrorHandling(
               </>
             )}
           </Modal.Content>
-          <Modal.Actions>
+          <Modal.Footer>
             <Button
-              main
               disabled={loading}
               className="close"
               onClick={this.close}
               ref={this.cancelButton}
+              kind="secondary"
             >
               {t('common.cancel')}
             </Button>
-            <Button main disabled={loading} warning className="confirm" onClick={this.delete}>
+            <Button kind="danger" disabled={loading} className="confirm" onClick={this.delete}>
               {deleteButtonText || deleteText || t('common.deleteEntity', {entity: translatedType})}
             </Button>
-          </Modal.Actions>
+          </Modal.Footer>
         </Modal>
       );
     }

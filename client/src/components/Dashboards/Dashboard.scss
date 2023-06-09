@@ -23,6 +23,14 @@
 
       .head {
         display: flex;
+        min-width: 0;
+
+        .info {
+          display: flex;
+          flex-direction: column;
+          min-width: 0;
+          flex-grow: 1;
+        }
       }
 
       .tools {

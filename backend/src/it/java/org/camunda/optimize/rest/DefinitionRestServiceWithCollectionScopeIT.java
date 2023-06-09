@@ -425,10 +425,7 @@ public class DefinitionRestServiceWithCollectionScopeIT extends AbstractIT {
       .getRequestExecutor()
       .buildResolveDefinitionTenantsByTypeMultipleKeysAndVersionsRequest(
         type.getId(),
-        MultiDefinitionTenantsRequestDto.builder()
-          .definition(DefinitionDto.builder().key(definitionKey1).version(ALL_VERSIONS).build())
-          .filterByCollectionScope("invalid")
-          .build()
+        new MultiDefinitionTenantsRequestDto(List.of(new DefinitionDto(definitionKey1, List.of(ALL_VERSIONS))), "invalid")
       )
       .execute();
 
@@ -467,10 +464,7 @@ public class DefinitionRestServiceWithCollectionScopeIT extends AbstractIT {
     final List<DefinitionWithTenantsResponseDto> definitionTenantsForAllVersions =
       definitionClient.resolveDefinitionTenantsByTypeMultipleKeyAndVersions(
         type,
-        MultiDefinitionTenantsRequestDto.builder()
-          .definition(DefinitionDto.builder().key(definitionKey).version("1").version("2").build())
-          .filterByCollectionScope(collectionId)
-          .build()
+        new MultiDefinitionTenantsRequestDto(List.of(new DefinitionDto(definitionKey, List.of("1", "2"))), collectionId)
       );
 
     // then all tenants are returned
@@ -482,10 +476,7 @@ public class DefinitionRestServiceWithCollectionScopeIT extends AbstractIT {
     final List<DefinitionWithTenantsResponseDto> definitionTenantsForVersion1 =
       definitionClient.resolveDefinitionTenantsByTypeMultipleKeyAndVersions(
         type,
-        MultiDefinitionTenantsRequestDto.builder()
-          .definition(DefinitionDto.builder().key(definitionKey).version("1").build())
-          .filterByCollectionScope(collectionId)
-          .build()
+        new MultiDefinitionTenantsRequestDto(List.of(new DefinitionDto(definitionKey, List.of("1"))), collectionId)
       );
 
     // then only the tenants belonging to those versions are included
@@ -518,10 +509,7 @@ public class DefinitionRestServiceWithCollectionScopeIT extends AbstractIT {
     final List<DefinitionWithTenantsResponseDto> tenantsForAllVersions =
       definitionClient.resolveDefinitionTenantsByTypeMultipleKeyAndVersions(
         type,
-        MultiDefinitionTenantsRequestDto.builder()
-          .definition(DefinitionDto.builder().key(definitionKey).version("1").version("2").build())
-          .filterByCollectionScope(collectionId)
-          .build()
+        new MultiDefinitionTenantsRequestDto(List.of(new DefinitionDto(definitionKey, List.of("1", "2"))), collectionId)
       );
 
     // then still only the tenant within the scope is returned
@@ -552,10 +540,7 @@ public class DefinitionRestServiceWithCollectionScopeIT extends AbstractIT {
     final List<DefinitionWithTenantsResponseDto> definitionTenantsForAllVersions =
       definitionClient.resolveDefinitionTenantsByTypeMultipleKeyAndVersions(
         type,
-        MultiDefinitionTenantsRequestDto.builder()
-          .definition(DefinitionDto.builder().key(definitionKey).version("1").version("2").build())
-          .filterByCollectionScope(collectionId)
-          .build()
+        new MultiDefinitionTenantsRequestDto(List.of(new DefinitionDto(definitionKey, List.of("1", "2"))), collectionId)
       );
 
     // then still only the tenant within the scope is returned
@@ -586,10 +571,7 @@ public class DefinitionRestServiceWithCollectionScopeIT extends AbstractIT {
     final List<DefinitionWithTenantsResponseDto> definitionTenantsForLatestVersion =
       definitionClient.resolveDefinitionTenantsByTypeMultipleKeyAndVersions(
         type,
-        MultiDefinitionTenantsRequestDto.builder()
-          .definition(DefinitionDto.builder().key(definitionKey).version(LATEST_VERSION).build())
-          .filterByCollectionScope(collectionId)
-          .build()
+        new MultiDefinitionTenantsRequestDto(List.of(new DefinitionDto(definitionKey, List.of(LATEST_VERSION))), collectionId)
       );
 
     // then still only the tenant within the scope is returned, latest version is now 1
@@ -625,10 +607,7 @@ public class DefinitionRestServiceWithCollectionScopeIT extends AbstractIT {
     final List<DefinitionWithTenantsResponseDto> definitionTenantsForAllVersions =
       definitionClient.resolveDefinitionTenantsByTypeMultipleKeyAndVersions(
         type,
-        MultiDefinitionTenantsRequestDto.builder()
-          .definition(DefinitionDto.builder().key(definitionKey).version("1").version("2").build())
-          .filterByCollectionScope(collectionId)
-          .build()
+        new MultiDefinitionTenantsRequestDto(List.of(new DefinitionDto(definitionKey, List.of("1", "2"))), collectionId)
       );
 
     // then all tenants are returned
@@ -661,10 +640,7 @@ public class DefinitionRestServiceWithCollectionScopeIT extends AbstractIT {
     final List<DefinitionWithTenantsResponseDto> definitionTenantsForAllVersions =
       definitionClient.resolveDefinitionTenantsByTypeMultipleKeyAndVersions(
         type,
-        MultiDefinitionTenantsRequestDto.builder()
-          .definition(DefinitionDto.builder().key(definitionKey).version("1").version("2").build())
-          .filterByCollectionScope(collectionId)
-          .build()
+        new MultiDefinitionTenantsRequestDto(List.of(new DefinitionDto(definitionKey, List.of("1", "2"))), collectionId)
       );
 
     // then only the scope tenants are returned
@@ -695,10 +671,7 @@ public class DefinitionRestServiceWithCollectionScopeIT extends AbstractIT {
     final List<DefinitionWithTenantsResponseDto> definitionTenantsForAllVersions =
       definitionClient.resolveDefinitionTenantsByTypeMultipleKeyAndVersions(
         type,
-        MultiDefinitionTenantsRequestDto.builder()
-          .definition(DefinitionDto.builder().key(definitionKey).version("1").version("2").build())
-          .filterByCollectionScope(collectionId)
-          .build()
+        new MultiDefinitionTenantsRequestDto(List.of(new DefinitionDto(definitionKey, List.of("1", "2"))), collectionId)
       );
 
     // then only the scope tenants are returned
@@ -733,10 +706,7 @@ public class DefinitionRestServiceWithCollectionScopeIT extends AbstractIT {
     final List<DefinitionWithTenantsResponseDto> definitionTenantsForAllVersions =
       definitionClient.resolveDefinitionTenantsByTypeMultipleKeyAndVersions(
         type,
-        MultiDefinitionTenantsRequestDto.builder()
-          .definition(DefinitionDto.builder().key(definitionKey).version("1").version("2").version("3").build())
-          .filterByCollectionScope(collectionId)
-          .build()
+        new MultiDefinitionTenantsRequestDto(List.of(new DefinitionDto(definitionKey, List.of("1", "2"))), collectionId)
       );
 
     // then only the scope tenants are returned
@@ -771,10 +741,7 @@ public class DefinitionRestServiceWithCollectionScopeIT extends AbstractIT {
       .getRequestExecutor()
       .buildResolveDefinitionTenantsByTypeMultipleKeysAndVersionsRequest(
         type.getId(),
-        MultiDefinitionTenantsRequestDto.builder()
-          .definition(DefinitionDto.builder().key(definitionKey1).version("1").build())
-          .filterByCollectionScope(collectionId)
-          .build()
+        new MultiDefinitionTenantsRequestDto(List.of(new DefinitionDto(definitionKey1, List.of("1"))), collectionId)
       )
       .execute();
 
@@ -786,10 +753,7 @@ public class DefinitionRestServiceWithCollectionScopeIT extends AbstractIT {
       .getRequestExecutor()
       .buildResolveDefinitionTenantsByTypeMultipleKeysAndVersionsRequest(
         otherDefinitionType.getId(),
-        MultiDefinitionTenantsRequestDto.builder()
-          .definition(DefinitionDto.builder().key(definitionKey1).version("1").build())
-          .filterByCollectionScope(collectionId)
-          .build()
+        new MultiDefinitionTenantsRequestDto(List.of(new DefinitionDto(definitionKey1, List.of("1"))), collectionId)
       )
       .execute();
 
@@ -801,10 +765,7 @@ public class DefinitionRestServiceWithCollectionScopeIT extends AbstractIT {
       .getRequestExecutor()
       .buildResolveDefinitionTenantsByTypeMultipleKeysAndVersionsRequest(
         otherDefinitionType.getId(),
-        MultiDefinitionTenantsRequestDto.builder()
-          .definition(DefinitionDto.builder().key(definitionKey1).version("99").build())
-          .filterByCollectionScope(collectionId)
-          .build()
+        new MultiDefinitionTenantsRequestDto(List.of(new DefinitionDto(definitionKey1, List.of("99"))), collectionId)
       )
       .execute();
 

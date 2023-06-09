@@ -10,77 +10,130 @@ import {shallow} from 'enzyme';
 import {SerializedEditorState} from 'lexical';
 
 import TextEditor from './TextEditor';
+import {ChangeEvent} from 'react';
 
 describe('TextEditor', () => {
-  it('should render editor', () => {
-    const node = shallow(<TextEditor />);
+  describe('Richtext editor', () => {
+    it('should render editor', () => {
+      const node = shallow(<TextEditor />);
 
-    expect(node.find('Editor')).toBeDefined();
+      expect(node.find('Editor')).toBeDefined();
+    });
+
+    it('should call onChange when text changes', () => {
+      const spy = jest.fn();
+      const node = shallow(<TextEditor onChange={spy} />);
+
+      const newValue = {
+        root: {
+          children: [
+            {
+              children: [
+                {
+                  text: 'new text',
+                  type: 'text',
+                },
+              ],
+              type: 'paragraph',
+            },
+          ],
+          type: 'root',
+        },
+      } as unknown as SerializedEditorState;
+
+      node.find('Editor').prop<(value: SerializedEditorState) => void>('onChange')?.(newValue);
+      const toolbar = node.find('.toolbar');
+
+      expect(spy).toHaveBeenCalledWith(newValue);
+      expect(toolbar).toBeDefined();
+    });
+
+    it('should handle read only mode', () => {
+      const node = shallow(<TextEditor />);
+
+      expect(node.find('LexicalComposer').prop<InitialConfigType>('initialConfig').editable).toBe(
+        false
+      );
+      expect(node.find('.toolbar')).not.toExist();
+    });
+
+    it('should indicate error', () => {
+      const editorState = {
+        root: {
+          children: [
+            {
+              children: [
+                {
+                  text: 'a'.repeat(3001),
+                  type: 'text',
+                },
+              ],
+              type: 'paragraph',
+            },
+          ],
+          type: 'root',
+        },
+      } as unknown as SerializedEditorState;
+
+      const node = shallow(<TextEditor initialValue={editorState} />);
+
+      expect(node.find('Editor').prop('error')).toBe(true);
+    });
   });
 
-  it('should call onChange when text changes', () => {
-    const spy = jest.fn();
-    const node = shallow(<TextEditor onChange={spy} />);
+  describe('Simple editor', () => {
+    it('should render editor', () => {
+      const node = shallow(<TextEditor simpleEditor onChange={jest.fn()} />);
 
-    const newValue = {
-      root: {
-        children: [
-          {
-            children: [
-              {
-                text: 'new text',
-                type: 'text',
-              },
-            ],
-            type: 'paragraph',
-          },
-        ],
-        type: 'root',
-      },
-    } as unknown as SerializedEditorState;
+      expect(node.find('textarea')).toBeDefined();
+    });
 
-    node.find('Editor').prop<(value: SerializedEditorState) => void>('onChange')?.(newValue);
-    const toolbar = node.find('.toolbar');
+    it('should call onChange when text changes', () => {
+      const spy = jest.fn();
+      const node = shallow(<TextEditor simpleEditor onChange={spy} />);
 
-    expect(spy).toHaveBeenCalledWith(newValue);
-    expect(toolbar).toBeDefined();
-  });
+      const newValue = 'this is some new text';
 
-  it('should handle read only mode', () => {
-    const node = shallow(<TextEditor />);
+      node.find('textarea').prop<(value: ChangeEvent<HTMLTextAreaElement>) => void>('onChange')?.({
+        target: {value: newValue},
+      } as jest.MockedObject<ChangeEvent<HTMLTextAreaElement>>);
+      const toolbar = node.find('.toolbar');
 
-    expect(node.find('LexicalComposer').prop<InitialConfigType>('initialConfig').editable).toBe(
-      false
-    );
-    expect(node.find('.toolbar')).not.toExist();
-  });
+      expect(spy).toHaveBeenCalledWith(newValue);
+      expect(toolbar).toBeDefined();
+    });
 
-  it('should indicate error', () => {
-    const editorState = {
-      root: {
-        children: [
-          {
-            children: [
-              {
-                text: 'a'.repeat(3001),
-                type: 'text',
-              },
-            ],
-            type: 'paragraph',
-          },
-        ],
-        type: 'root',
-      },
-    } as unknown as SerializedEditorState;
+    it('should indicate error', () => {
+      const editorState = 'a'.repeat(3001);
 
-    const node = shallow(<TextEditor initialValue={editorState} />);
+      const node = shallow(
+        <TextEditor simpleEditor initialValue={editorState} onChange={jest.fn()} />
+      );
 
-    expect(node.find('Editor').prop('error')).toBe(true);
+      expect(node.find('textarea').hasClass('error')).toBe(true);
+    });
   });
 });
 
+const editorState = {
+  root: {
+    children: [
+      {
+        children: [
+          {
+            text: 'some text',
+            type: 'text',
+          },
+        ],
+        type: 'paragraph',
+      },
+    ],
+    type: 'root',
+  },
+} as unknown as SerializedEditorState;
+
 describe('TextEditor.getEditorStateLength', () => {
-  it('should count editor text length', () => {
+  it('should count editor state length', () => {
     expect(
       TextEditor.getEditorStateLength({
         root: {
@@ -94,48 +147,27 @@ describe('TextEditor.getEditorStateLength', () => {
       })
     ).toBe(0);
 
-    const editorState = {
-      root: {
-        children: [
-          {
-            children: [
-              {
-                text: 'some text',
-                type: 'text',
-              },
-            ],
-            type: 'paragraph',
-          },
-        ],
-        type: 'root',
-      },
-    } as unknown as SerializedEditorState;
-
     expect(TextEditor.getEditorStateLength(editorState)).toBe(9);
+  });
+
+  it('should count editor text length', () => {
+    expect(TextEditor.getEditorStateLength(null)).toBe(0);
+
+    expect(TextEditor.getEditorStateLength('this is some text')).toBe(17);
   });
 });
 
 describe('TextEditor.CharCount', () => {
   it('should render counter properly', () => {
-    const editorState = {
-      root: {
-        children: [
-          {
-            children: [
-              {
-                text: 'some text',
-                type: 'text',
-              },
-            ],
-            type: 'paragraph',
-          },
-        ],
-        type: 'root',
-      },
-    } as unknown as SerializedEditorState;
     const node = shallow(<TextEditor.CharCount editorState={editorState} />);
 
     expect(node.text()).toBe('9/3000');
+  });
+
+  it('should use passed limit', () => {
+    const node = shallow(<TextEditor.CharCount editorState={editorState} limit={100} />);
+
+    expect(node.text()).toBe('9/100');
   });
 
   it('should indicate error when text is longer than the limit', () => {
@@ -155,9 +187,14 @@ describe('TextEditor.CharCount', () => {
         type: 'root',
       },
     } as unknown as SerializedEditorState;
-    const node = shallow(<TextEditor.CharCount editorState={editorState} />);
+    let node = shallow(<TextEditor.CharCount editorState={editorState} />);
 
     expect(node.text()).toBe('3001/3000');
+    expect(node.hasClass('error')).toBe(true);
+
+    node = shallow(<TextEditor.CharCount editorState={editorState} limit={100} />);
+
+    expect(node.text()).toBe('3001/100');
     expect(node.hasClass('error')).toBe(true);
   });
 });

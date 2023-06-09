@@ -66,7 +66,7 @@ it('should invoke updateVariable when confirming the modal with the list of upda
     .prop('body')[0][2]
     .props.onChange({target: {value: 'new name'}});
 
-  node.find({primary: true}).simulate('click');
+  node.find('.confirm').simulate('click');
 
   expect(node.find(Table).prop('body')[0][2].props.value).toBe('new name');
   expect(updateVariables).toHaveBeenCalledWith(definitionKey, [
@@ -80,7 +80,7 @@ it('should invoke onClose when closing the modal', () => {
   const spy = jest.fn();
   const node = shallow(<RenameVariablesModal {...props} onClose={spy} />);
 
-  node.find({main: true}).at(0).simulate('click');
+  node.find('.cancel').simulate('click');
 
   expect(spy).toHaveBeenCalled();
 });
@@ -90,7 +90,10 @@ it('should filter items based on search', () => {
 
   runLastEffect();
 
-  node.find('.searchInput').simulate('change', {target: {value: 'variable1'}});
+  const toolbar = shallow(node.find(Table).prop('toolbar'));
+  toolbar.find('TableToolbarSearch').prop('onChange')({
+    target: {value: 'variable1'},
+  });
 
   const variables = node.find(Table).prop('body');
   expect(variables.length).toBe(1);

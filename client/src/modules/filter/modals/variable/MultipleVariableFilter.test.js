@@ -66,7 +66,7 @@ it('should take filter given by properties', async () => {
 
   await runAllEffects();
 
-  node.find('[primary]').simulate('click', {preventDefault: jest.fn()});
+  node.find('.confirm').simulate('click', {preventDefault: jest.fn()});
 
   expect(spy).toHaveBeenCalledWith(filterData);
 });
@@ -122,7 +122,7 @@ it('should use custom filter adding logic from input components', async () => {
 
   DateInput.addFilter.mockClear();
 
-  node.find('[primary]').simulate('click', {preventDefault: jest.fn()});
+  node.find('.confirm').simulate('click', {preventDefault: jest.fn()});
 
   expect(DateInput.addFilter).toHaveBeenCalledWith(
     expect.any(Function),
@@ -153,8 +153,8 @@ it('should disable add filter button if one of the variable filters is invalid',
 
   await runAllEffects();
 
-  expect(node.find('[main]').at(0).prop('disabled')).toBeFalsy(); // abort
-  expect(node.find('[primary]').prop('disabled')).toBeTruthy(); // create filter
+  expect(node.find('.cancel').prop('disabled')).toBeFalsy(); // abort
+  expect(node.find('.confirm').prop('disabled')).toBeTruthy(); // create filter
 });
 
 it('should create a new string filter', async () => {
@@ -171,7 +171,7 @@ it('should create a new string filter', async () => {
     },
   });
 
-  node.find('[primary]').simulate('click', {preventDefault: jest.fn()});
+  node.find('.confirm').simulate('click', {preventDefault: jest.fn()});
 
   expect(spy).toHaveBeenCalledWith({
     type: 'multipleVariable',
@@ -202,7 +202,7 @@ it('should create a new  boolean filter', async () => {
     data: {},
   });
 
-  node.find('[primary]').simulate('click', {preventDefault: jest.fn()});
+  node.find('.confirm').simulate('click', {preventDefault: jest.fn()});
 
   expect(spy).toHaveBeenCalledWith({
     type: 'multipleVariable',

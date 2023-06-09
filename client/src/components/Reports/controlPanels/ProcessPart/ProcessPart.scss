@@ -19,16 +19,22 @@
   }
 }
 
-.ProcessPartModal .Modal__content {
-  display: flex;
-  flex-direction: column;
-
-  .diagram-container {
-    display: flex;
-    flex-grow: 1;
+.ProcessPartModal {
+  .cds--modal-container {
+    height: 100%;
   }
 
-  .MessageBox {
-    margin-top: 8px;
+  .cds--modal-content {
+    display: flex;
+    flex-direction: column;
+
+    .diagram-container {
+      display: flex;
+      flex-grow: 1;
+    }
+
+    .MessageBox {
+      margin-top: 8px;
+    }
   }
 }

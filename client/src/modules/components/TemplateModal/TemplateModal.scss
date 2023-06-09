@@ -1,7 +1,10 @@
 .TemplateModal {
-  .Modal__content {
-    display: flex;
-    padding: 0;
+  .cds--modal-container {
+    height: 100%;
+
+    .gridContainer {
+      height: 100%;
+    }
   }
 
   &.noProcess .definitionSelection {
@@ -20,11 +23,9 @@
   }
 
   .definitionSelection {
-    padding: 20px 40px;
-    flex: 1;
-    height: 100%;
     display: flex;
     flex-direction: column;
+    padding: 20px 0;
 
     .Form .FormGroup {
       padding: 0;
@@ -90,16 +91,11 @@
   }
 
   .configurationSelection {
-    width: 320px;
-    padding: 20px 20px;
+    padding: 20px 0px 20px 20px;
     border-left: 1px solid var(--silver-darken-87);
     overflow-y: auto;
 
     .templateContainer {
-      max-height: 0;
-      padding: 0;
-      margin-top: 0;
-
       .groupTitle {
         font-weight: 600;
         font-size: 14px;

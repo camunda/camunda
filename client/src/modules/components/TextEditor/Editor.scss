@@ -1,6 +1,14 @@
 @import 'shared-styles/shared-styles.scss';
 
+.dark {
+  .Editor {
+    background-color: var(--gray-darken-13);
+  }
+}
+
 .Editor {
+  background-color: var(--white);
+
   .toolbar {
     display: flex;
     flex-wrap: wrap;

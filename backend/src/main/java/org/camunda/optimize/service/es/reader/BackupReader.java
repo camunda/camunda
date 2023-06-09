@@ -124,14 +124,14 @@ public class BackupReader {
       }
       final String reason = String.format(
         "Could not retrieve snapshots with names [%s] due to an ElasticsearchStatusException.",
-        snapshots
+        String.join(", ", snapshots)
       );
       log.error(reason);
       throw new OptimizeRuntimeException(reason, e);
     } catch (IOException | TransportException e) {
       final String reason = String.format(
         "Encountered an error connecting to Elasticsearch while retrieving snapshots with names [%s].",
-        snapshots
+        String.join(", ", snapshots)
       );
       log.error(reason, e);
       throw new OptimizeElasticsearchConnectionException(reason, e);

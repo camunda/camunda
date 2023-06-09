@@ -42,7 +42,7 @@ public class DashboardDefinitionExportDto extends OptimizeEntityExportDto {
       dashboardDefinition.getId(),
       ExportEntityType.DASHBOARD,
       dashboardDefinition.getName(),
-      null, // TODO: Dashboard descriptions will be handled in https://jira.camunda.com/browse/OPT-6885
+      dashboardDefinition.getDescription(),
       DashboardIndex.VERSION
     );
     this.tiles = dashboardDefinition.getTiles();

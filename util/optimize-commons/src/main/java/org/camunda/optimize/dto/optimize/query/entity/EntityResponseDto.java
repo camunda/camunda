@@ -22,6 +22,7 @@ import java.time.OffsetDateTime;
 public class EntityResponseDto {
   private String id;
   private String name;
+  private String description;
   private OffsetDateTime lastModified;
   private OffsetDateTime created;
   private String owner;
@@ -32,19 +33,20 @@ public class EntityResponseDto {
   private ReportType reportType;
   private RoleType currentUserRole;
 
-  public EntityResponseDto(final String id, final String name, final OffsetDateTime lastModified,
+  public EntityResponseDto(final String id, final String name, final String description, final OffsetDateTime lastModified,
                            final OffsetDateTime created, final String owner, final String lastModifier,
                            final EntityType entityType, final EntityData data, final RoleType currentUserRole) {
-    this(id, name, lastModified, created, owner, lastModifier, entityType, data, null, null, currentUserRole);
+    this(id, name, description, lastModified, created, owner, lastModifier, entityType, data, null, null, currentUserRole);
   }
 
-  public EntityResponseDto(final String id, final String name, final OffsetDateTime lastModified,
+  public EntityResponseDto(final String id, final String name, final String description, final OffsetDateTime lastModified,
                            final OffsetDateTime created, final String owner, final String lastModifier,
                            final EntityType entityType, final Boolean combined,
                            final ReportType reportType, final RoleType currentUserRole) {
     this(
       id,
       name,
+      description,
       lastModified,
       created,
       owner,

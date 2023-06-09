@@ -18,6 +18,7 @@ Object {
         ],
       },
     ],
+    "description": undefined,
     "name": "Heatmap: Flownode count",
     "template": Object {
       "view": Object {

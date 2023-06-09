@@ -9,14 +9,15 @@ import React, {useState, useEffect, useRef} from 'react';
 import {Link} from 'react-router-dom';
 import classnames from 'classnames';
 import deepEqual from 'fast-deep-equal';
+import {Button, Column, Grid} from '@carbon/react';
 
 import {
-  Button,
   Modal,
   DefinitionSelection,
   BPMNDiagram,
   DiagramScrollLock,
   Tooltip,
+  Button as LegacyButton,
 } from 'components';
 import {loadProcessDefinitionXml} from 'services';
 import {t} from 'translation';
@@ -38,6 +39,7 @@ export function TemplateModal({
 }) {
   const firstTemplate = templateGroups[1].templates[0];
   const [name, setName] = useState(t(entity + '.templates.' + firstTemplate.name));
+  const [description, setDescription] = useState(firstTemplate.description);
   const [xmlData, setXmlData] = useState([]);
   const [template, setTemplate] = useState(firstTemplate.config);
   const [selectedDefinitions, setSelectedDefinitions] = useState(initialDefinitions);
@@ -92,6 +94,7 @@ export function TemplateModal({
 
       setTemplate(enabledTemplate.config);
       setName(t(entity + '.templates.' + enabledTemplate.name));
+      setDescription(enabledTemplate.description);
     }
   }, [templateGroups, selectedDefinitions, template, entity]);
 
@@ -128,6 +131,7 @@ export function TemplateModal({
 
   const newEntityState = templateToState({
     name,
+    description,
     template,
     definitions: selectedDefinitions.map((def) => ({...def, displayName: def.name})),
     xml: xmlData[0]?.xml,
@@ -136,103 +140,105 @@ export function TemplateModal({
   return (
     <Modal
       open
-      size="max"
+      size="lg"
       onClose={onClose}
       className={classnames('TemplateModal', className, {noProcess: !template})}
+      isFullWidth
     >
       <Modal.Header>{t(entity + '.createNew')}</Modal.Header>
       <Modal.Content>
-        <div className="definitionSelection">
-          <div className="formArea">
-            <DefinitionSelection
-              type="process"
-              expanded
-              selectedDefinitions={selectedDefinitions}
-              onChange={setSelectedDefinitions}
-              versionTooltip={
-                selectedDefinitions?.length > 1
-                  ? t('templates.disabledMessage.editReport')
-                  : undefined
-              }
-            />
-          </div>
-          <div className="diagramArea" ref={diagramArea}>
-            {xmlData.map(({xml, key, name}, idx) => (
-              <div key={idx} className="diagramContainer">
-                <div className="title">{name || key}</div>
-                <BPMNDiagram xml={xml} emptyText={t('templates.noXmlHint')} />
-                <DiagramScrollLock />
-              </div>
-            ))}
-            {selectedDefinitions.length === 0 && blankSlate}
-          </div>
-          {!template && <div className="noProcessHint">{t('templates.noProcessHint')}</div>}
-        </div>
-        <div className="configurationSelection">
-          <div className="templateContainer" ref={templateContainer}>
-            {templateGroups.map(({name, templates}, idx) => (
-              <div key={idx} className="group">
-                <div className="groupTitle">{t('templates.templateGroups.' + name)}</div>
-                {templates.map(({name, hasSubtitle, img, config, disabled}, idx) => (
-                  <Tooltip
-                    key={idx}
-                    content={
-                      disabled?.(selectedDefinitions)
-                        ? getDisableStateText(selectedDefinitions)
-                        : undefined
-                    }
-                    position="bottom"
-                    align="left"
-                  >
-                    <div>
-                      <Button
-                        className={classnames({
-                          active: !disabled?.(selectedDefinitions) && deepEqual(template, config),
-                          hasSubtitle,
-                        })}
-                        onClick={() => {
-                          setTemplate(config);
-                          setName(t(entity + '.templates.' + name));
-                        }}
-                        disabled={disabled?.(selectedDefinitions)}
-                      >
-                        {img ? (
-                          <img src={img} alt={t(entity + '.templates.' + name)} />
-                        ) : (
-                          <div className="imgPlaceholder" />
-                        )}
-                        <div className="name">{t(entity + '.templates.' + name)}</div>
-                        {hasSubtitle && (
-                          <div className="subTitle">
-                            {t(entity + '.templates.' + name + '_subTitle')}
-                          </div>
-                        )}
-                      </Button>
-                    </div>
-                  </Tooltip>
-                ))}
-              </div>
-            ))}
-          </div>
-        </div>
+        <Grid className="gridContainer">
+          <Column sm={3} md={6} lg={11} className="definitionSelection">
+            <div className="formArea">
+              <DefinitionSelection
+                type="process"
+                expanded
+                selectedDefinitions={selectedDefinitions}
+                onChange={setSelectedDefinitions}
+                versionTooltip={
+                  selectedDefinitions?.length > 1
+                    ? t('templates.disabledMessage.editReport')
+                    : undefined
+                }
+              />
+            </div>
+            <div className="diagramArea" ref={diagramArea}>
+              {xmlData.map(({xml, key, name}, idx) => (
+                <div key={idx} className="diagramContainer">
+                  <div className="title">{name || key}</div>
+                  <BPMNDiagram xml={xml} emptyText={t('templates.noXmlHint')} />
+                  <DiagramScrollLock />
+                </div>
+              ))}
+              {selectedDefinitions.length === 0 && blankSlate}
+            </div>
+            {!template && <div className="noProcessHint">{t('templates.noProcessHint')}</div>}
+          </Column>
+          <Column sm={1} md={2} lg={5} className="configurationSelection">
+            <div className="templateContainer" ref={templateContainer}>
+              {templateGroups.map(({name, templates}, idx) => (
+                <div key={idx} className="group">
+                  <div className="groupTitle">{t('templates.templateGroups.' + name)}</div>
+                  {templates.map(({name, description, hasSubtitle, img, config, disabled}, idx) => (
+                    <Tooltip
+                      key={idx}
+                      content={
+                        disabled?.(selectedDefinitions)
+                          ? getDisableStateText(selectedDefinitions)
+                          : undefined
+                      }
+                      position="bottom"
+                      align="left"
+                    >
+                      <div>
+                        <LegacyButton
+                          className={classnames({
+                            active: !disabled?.(selectedDefinitions) && deepEqual(template, config),
+                            hasSubtitle,
+                          })}
+                          onClick={() => {
+                            setTemplate(config);
+                            setName(t(entity + '.templates.' + name));
+                            setDescription(description);
+                          }}
+                          disabled={disabled?.(selectedDefinitions)}
+                        >
+                          {img ? (
+                            <img src={img} alt={t(entity + '.templates.' + name)} />
+                          ) : (
+                            <div className="imgPlaceholder" />
+                          )}
+                          <div className="name">{t(entity + '.templates.' + name)}</div>
+                          {hasSubtitle && (
+                            <div className="subTitle">
+                              {t(entity + '.templates.' + name + '_subTitle')}
+                            </div>
+                          )}
+                        </LegacyButton>
+                      </div>
+                    </Tooltip>
+                  ))}
+                </div>
+              ))}
+            </div>
+          </Column>
+        </Grid>
       </Modal.Content>
-      <Modal.Actions>
-        <Button main className="cancel" onClick={onClose}>
+      <Modal.Footer>
+        <Button kind="secondary" onClick={onClose}>
           {t('common.cancel')}
         </Button>
         {onConfirm ? (
           <Button
             disabled={!validSelection}
-            main
-            primary
             className="confirm"
             onClick={() => onConfirm(newEntityState)}
           >
             {t(entity + '.create')}
           </Button>
         ) : (
-          <Link
-            className="Button main primary confirm"
+          <Button
+            as={Link}
             disabled={!validSelection}
             to={{
               pathname: entity + '/new/edit',
@@ -240,9 +246,9 @@ export function TemplateModal({
             }}
           >
             {t(entity + '.create')}
-          </Link>
+          </Button>
         )}
-      </Modal.Actions>
+      </Modal.Footer>
     </Modal>
   );
 }

@@ -24,13 +24,15 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.TYPE_DATE;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.TYPE_KEYWORD;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.TYPE_NESTED;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.TYPE_OBJECT;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.TYPE_TEXT;
 
 public class DashboardIndex extends DefaultIndexMappingCreator {
 
-  public static final int VERSION = 7;
+  public static final int VERSION = 8;
 
   public static final String ID = BaseDashboardDefinitionDto.Fields.id;
   public static final String NAME = BaseDashboardDefinitionDto.Fields.name;
+  public static final String DESCRIPTION = BaseDashboardDefinitionDto.Fields.description;
   public static final String LAST_MODIFIED = BaseDashboardDefinitionDto.Fields.lastModified;
   public static final String CREATED = BaseDashboardDefinitionDto.Fields.created;
   public static final String OWNER = BaseDashboardDefinitionDto.Fields.owner;
@@ -76,6 +78,10 @@ public class DashboardIndex extends DefaultIndexMappingCreator {
       .endObject()
       .startObject(NAME)
         .field(MAPPING_PROPERTY_TYPE, TYPE_KEYWORD)
+      .endObject()
+      .startObject(DESCRIPTION)
+        .field(MAPPING_PROPERTY_TYPE, TYPE_TEXT)
+        .field("index", false)
       .endObject()
       .startObject(LAST_MODIFIED)
         .field(MAPPING_PROPERTY_TYPE, TYPE_DATE)

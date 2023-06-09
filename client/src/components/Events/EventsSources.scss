@@ -6,8 +6,7 @@
 
   .sourcesList {
     flex-grow: 1;
-    border-left: 1px solid var(--silver-darken-87);
-    margin: 7px 10px;
+    margin: 10px;
     display: flex;
     align-items: center;
     flex-wrap: wrap;
@@ -48,7 +47,7 @@
 
   .addProcess {
     align-self: flex-start;
-    margin-top: 5px;
+    margin-top: 9px;
     margin-right: 10px;
     height: 32px;
     min-width: 165px;

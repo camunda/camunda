@@ -12,7 +12,7 @@ import {
   Button,
   ShareEntity,
   ReportRenderer,
-  Popover,
+  CarbonPopover,
   Icon,
   Deleter,
   EntityName,
@@ -20,6 +20,7 @@ import {
   ReportDetails,
   DownloadButton,
   AlertsDropdown,
+  EntityDescription,
 } from 'components';
 import {isSharingEnabled, getOptimizeProfile} from 'config';
 import {formatters, checkDeleteConflict} from 'services';
@@ -64,7 +65,7 @@ export class ReportView extends React.Component {
     const {report, error, user, loadReport} = this.props;
     const {redirect, sharingEnabled, optimizeProfile, deleting} = this.state;
 
-    const {id, name, currentUserRole, data} = report;
+    const {id, name, description, currentUserRole, data} = report;
     const isInstantPreviewReport = data?.instantPreviewReport;
 
     if (redirect) {
@@ -73,9 +74,12 @@ export class ReportView extends React.Component {
 
     return (
       <div className="ReportView Report">
-        <div className="Report__header">
+        <div className="reportHeader">
           <div className="head">
-            <EntityName details={<ReportDetails report={report} />}>{name}</EntityName>
+            <div className="info">
+              <EntityName details={<ReportDetails report={report} />}>{name}</EntityName>
+              {description && <EntityDescription description={description} />}
+            </div>
             <div className="tools">
               {!isInstantPreviewReport && currentUserRole === 'editor' && (
                 <>
@@ -96,13 +100,14 @@ export class ReportView extends React.Component {
                 </>
               )}
               {!isInstantPreviewReport && (
-                <Popover
+                <CarbonPopover
                   main
                   className="tool-button share-button"
                   icon="share"
                   title={t('common.sharing.buttonTitle')}
                   tooltip={!sharingEnabled ? t('common.sharing.disabled') : ''}
                   disabled={!sharingEnabled}
+                  align="bottom-right"
                 >
                   <ShareEntity
                     type="report"
@@ -111,7 +116,7 @@ export class ReportView extends React.Component {
                     revokeEntitySharing={revokeReportSharing}
                     getSharedEntity={getSharedReport}
                   />
-                </Popover>
+                </CarbonPopover>
               )}
               {(optimizeProfile === 'cloud' || optimizeProfile === 'platform') &&
                 data?.visualization === 'number' && <AlertsDropdown numberReport={report} />}

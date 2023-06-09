@@ -51,6 +51,7 @@ export class Report extends React.Component {
     const report = {
       ...newReport[this.getId()],
       name: t('report.new'),
+      description: null,
       lastModified: now,
       created: now,
       lastModifier: user.name,
@@ -59,9 +60,10 @@ export class Report extends React.Component {
 
     if (this.getId() === 'new' && location.state) {
       // creating a new process report from template
-      const {name, data} = location.state;
+      const {name, description, data} = location.state;
 
       report.name = name;
+      report.description = description;
       report.data = {
         ...report.data,
         ...data,

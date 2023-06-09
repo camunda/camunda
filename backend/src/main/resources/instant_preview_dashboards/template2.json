@@ -616,7 +616,8 @@
   "id" : "AnalysisTestingProcess",
   "exportEntityType" : "dashboard",
   "name" : "IP_KpiDashboardName",
-  "sourceIndexVersion" : 7,
+  "description" : null,
+  "sourceIndexVersion" : 8,
   "tiles" : [ {
     "id" : "de508893-50e2-4647-a44c-e7b955f5a77c",
     "type": "optimize_report",

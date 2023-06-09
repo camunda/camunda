@@ -37,7 +37,7 @@ it('should be disabled if no type is set', () => {
     <Configuration report={{data: {configuration: {}, view: {properties: []}}}} />
   );
 
-  expect(node.find('Popover')).toBeDisabled();
+  expect(node.find('.configurationPopover')).toBeDisabled();
 });
 
 it('should be disabled if specified', () => {
@@ -49,7 +49,7 @@ it('should be disabled if specified', () => {
     />
   );
 
-  expect(node.find('Popover')).toBeDisabled();
+  expect(node.find('.configurationPopover')).toBeDisabled();
 });
 
 it('should be disabled if the report is combined with a duration view', () => {
@@ -65,7 +65,7 @@ it('should be disabled if the report is combined with a duration view', () => {
     />
   );
 
-  expect(node.find('Popover')).toBeDisabled();
+  expect(node.find('.configurationPopover')).toBeDisabled();
 });
 
 it('should contain the Component from the visualizations based on the type', () => {

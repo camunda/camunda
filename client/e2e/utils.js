@@ -9,6 +9,7 @@ import {Selector} from 'testcafe';
 
 import config from './config';
 import * as Homepage from './tests/Homepage.elements.js';
+import * as Common from './tests/Common.elements.js';
 
 let instanceCount = {
   Chrome: 0,
@@ -30,9 +31,6 @@ export async function login(t, userHandle = 'user1') {
     .typeText('input[name="username"]', user.username)
     .typeText('input[name="password"]', user.password)
     .click('.primary');
-
-  // wait for page to fully load
-  await t.expect(Selector('.LoadingIndicator').exists).notOk({timeout: 5000});
 }
 
 export function getUser(t, userHandle) {
@@ -47,30 +45,30 @@ export function getUser(t, userHandle) {
 }
 
 export async function createNewReport(t) {
-  await t.click('.CreateNewButton');
+  await t.click(Common.createNewMenu);
   await t.click(Selector('.Submenu').withText('Report'));
   await t.click(Selector('.Submenu .DropdownOption').withText('Process Report'));
   await t.click(Selector('.Button').withText('Blank report'));
-  await t.click(Selector('.Modal .primary.confirm.Button'));
+  await t.click(Selector(Common.modalConfirmButton));
   await toggleReportAutoPreviewUpdate(t);
 }
 
 export async function createNewDecisionReport(t) {
-  await t.click(Homepage.createNewMenu);
-  await t.click(Homepage.option('Report'));
-  await t.click(Homepage.submenuOption('Decision Report'));
+  await t.click(Common.createNewMenu);
+  await t.click(Common.option('Report'));
+  await t.click(Common.submenuOption('Decision Report'));
   await toggleReportAutoPreviewUpdate(t);
 }
 
 export async function createNewCombinedReport(t) {
-  await t.click(Homepage.createNewMenu);
-  await t.click(Homepage.option('Report'));
-  await t.click(Homepage.submenuOption('Combined Process Report'));
+  await t.click(Common.createNewMenu);
+  await t.click(Common.option('Report'));
+  await t.click(Common.submenuOption('Combined Process Report'));
   await toggleReportAutoPreviewUpdate(t);
 }
 
 export async function selectVersion(t, selector, version) {
-  await t.click(selector.find('.Popover .Button'));
+  await t.click(selector.find('.CarbonPopover .Button'));
   await t.click('.VersionPopover');
 
   if (typeof version === 'string') {
@@ -82,14 +80,14 @@ export async function selectVersion(t, selector, version) {
     }
   }
 
-  await t.click(selector.find('.Popover .Button'));
+  await t.click(selector.find('.CarbonPopover .Button'));
 }
 
 export async function selectReportDefinition(t, name, version) {
   await t
     .click('.AddDefinition')
     .click(Selector('.Checklist .label').withText(name))
-    .click('.Modal .primary.Button');
+    .click(Common.modalConfirmButton);
 
   if (version) {
     selectVersion(t, Selector('.DefinitionList li').withText(name), version);
@@ -98,9 +96,9 @@ export async function selectReportDefinition(t, name, version) {
 
 export async function selectDefinition(t, name, version = 'Specific version') {
   await t
-    .click('.Popover.DefinitionSelection')
+    .click('.CarbonPopover.DefinitionSelection')
     .typeText('.Typeahead input', name, {replace: true})
-    .click(Selector('.Typeahead .DropdownOption').withText(name));
+    .click(Common.typeaheadOption(name));
 
   await t.expect(Selector('.VersionPopover button').hasAttribute('disabled')).notOk();
 
@@ -116,7 +114,7 @@ export async function selectDefinition(t, name, version = 'Specific version') {
     }
   }
 
-  await t.click('.Popover.DefinitionSelection');
+  await t.click('.CarbonPopover.DefinitionSelection');
 }
 
 const selectControlPanelOption = (type) => async (t, name, subname) => {
@@ -140,12 +138,12 @@ export const selectVisualization = selectControlPanelOption('Visualization');
 
 export async function save(t) {
   await t.click('.save-button');
-  await t.expect(Selector('.edit-button').visible).ok();
+  await t.expect(Common.editButton.visible).ok();
 }
 
 export async function cancel(t) {
   await t.click('.cancel-button');
-  await t.expect(Selector('.edit-button').visible).ok();
+  await t.expect(Common.editButton.visible).ok();
 }
 
 export async function gotoOverview(t) {
@@ -153,10 +151,10 @@ export async function gotoOverview(t) {
 }
 
 export async function createNewDashboard(t) {
-  await t.click('.CreateNewButton');
-  await t.click(Selector('.DropdownOption').withText('Dashboard'));
+  await t.click(Common.createNewMenu);
+  await t.click(Common.option('Dashboard'));
   await t.click(Homepage.blankDashboardButton);
-  await t.click(Homepage.modalConfirmbutton);
+  await t.click(Common.modalConfirmButton);
 }
 
 export async function addReportToDashboard(t, name) {
@@ -170,12 +168,28 @@ export async function addReportToDashboard(t, name) {
 
 export async function bulkDeleteAllItems(t) {
   await t.click(Homepage.homepageLink);
-  await t.click(Homepage.selectAllCheckbox);
-  await t.click(Homepage.bulkMenu);
-  await t.click(Homepage.del(Homepage.bulkMenu));
-  await t.click(Homepage.modalConfirmbutton);
+  await t.click(Common.selectAllCheckbox);
+  await t.click(Common.bulkMenu);
+  await t.click(Common.del(Common.bulkMenu));
+  await t.click(Common.modalConfirmButton);
 }
 
 export async function toggleReportAutoPreviewUpdate(t) {
   await t.click('.updatePreview .Switch');
+}
+
+export async function addEditEntityDescription(t, description, screenshotPath) {
+  await t.click(Common.addDescriptionButton);
+
+  if (!description) {
+    await t.selectText(Common.descriptionModalInput).pressKey('delete');
+  } else {
+    await t.typeText(Common.descriptionModalInput, description, {replace: true});
+  }
+
+  if (screenshotPath) {
+    await t.takeElementScreenshot(Common.descriptionModal, screenshotPath);
+  }
+
+  await t.click(Common.confirmButton);
 }

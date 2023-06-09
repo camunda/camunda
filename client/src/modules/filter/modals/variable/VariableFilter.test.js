@@ -6,13 +6,13 @@
  */
 
 import React, {runAllEffects} from 'react';
+import {Button} from '@carbon/react';
 
 import VariableFilter from './VariableFilter';
 
 import {DateInput} from './date';
 
 import {shallow} from 'enzyme';
-import {Button} from 'components';
 
 jest.mock('./date', () => {
   const DateInput = () => 'DateInput';
@@ -70,7 +70,7 @@ it('should take filter given by properties', async () => {
 
   await runAllEffects();
 
-  node.find('[primary]').simulate('click', {preventDefault: jest.fn()});
+  node.find('.confirm').simulate('click', {preventDefault: jest.fn()});
 
   expect(spy).toHaveBeenCalledWith(filterData);
 });
@@ -91,7 +91,7 @@ it('should create a new string filter', async () => {
 
   await runAllEffects();
 
-  node.find('[primary]').simulate('click', {preventDefault: jest.fn()});
+  node.find('.confirm').simulate('click', {preventDefault: jest.fn()});
 
   expect(spy).toHaveBeenCalledWith({
     type: 'variable',
@@ -122,7 +122,7 @@ it('should create a new boolean filter', async () => {
 
   await runAllEffects();
 
-  node.find('[primary]').simulate('click', {preventDefault: jest.fn()});
+  node.find('.confirm').simulate('click', {preventDefault: jest.fn()});
 
   expect(spy).toHaveBeenCalledWith({
     type: 'variable',
@@ -185,7 +185,7 @@ it('should use custom filter adding logic from input components', async () => {
 
   DateInput.addFilter.mockClear();
 
-  node.find('[primary]').simulate('click', {preventDefault: jest.fn()});
+  node.find('.confirm').simulate('click', {preventDefault: jest.fn()});
 
   expect(DateInput.addFilter).toHaveBeenCalledWith(
     spy,

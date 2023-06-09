@@ -7,7 +7,7 @@
 
 import React, {useState, useEffect} from 'react';
 
-import {Popover, Icon, Form, Switch} from 'components';
+import {CarbonPopover, Icon, Form, Switch} from 'components';
 import {t} from 'translation';
 import {getOptimizeProfile} from 'config';
 
@@ -112,15 +112,15 @@ export default function AggregationType({report, onChange}) {
     }
 
     return (
-      <Popover
+      <CarbonPopover
         className="AggregationType"
-        renderInPortal="AggregationType"
         title={
           <>
             <span className="content">{popoverTitle}</span>
             <Icon className="editIcon" type="edit-small" />
           </>
         }
+        floating
       >
         <Form compact>
           {isUserTaskReport && optimizeProfile === 'platform' && (
@@ -200,7 +200,7 @@ export default function AggregationType({report, onChange}) {
             </>
           )}
         </Form>
-      </Popover>
+      </CarbonPopover>
     );
   }
   return null;

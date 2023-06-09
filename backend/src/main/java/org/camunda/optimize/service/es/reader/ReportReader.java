@@ -152,6 +152,10 @@ public class ReportReader {
   }
 
   public List<ReportDefinitionDto> getAllReportsForIdsOmitXml(final List<String> reportIds) {
+    if (reportIds.isEmpty()) {
+      log.debug("No report IDs supplied so no reports to fetch");
+      return Collections.emptyList();
+    }
     log.debug("Fetching all report definitions for Ids {}", reportIds);
     final String[] reportIdsAsArray = reportIds.toArray(new String[0]);
     QueryBuilder qb = QueryBuilders.idsQuery().addIds(reportIdsAsArray);

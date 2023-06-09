@@ -5,7 +5,7 @@
  * except in compliance with the proprietary license.
  */
 
-import {ComponentPropsWithoutRef, forwardRef} from 'react';
+import {ComponentPropsWithoutRef, ForwardedRef, forwardRef} from 'react';
 import {Link} from 'react-router-dom';
 import classnames from 'classnames';
 
@@ -13,27 +13,27 @@ import {Icon, Tooltip} from 'components';
 
 import './DropdownOption.scss';
 
-interface CommonProps {
-  value?: string;
+interface CommonProps<T> {
+  value?: T;
   active?: boolean;
   disabled?: boolean;
   checked?: boolean;
   label?: string | JSX.Element;
 }
 
-interface LinkProps extends CommonProps, Partial<ComponentPropsWithoutRef<Link>> {
+interface LinkProps<T> extends CommonProps<T>, Partial<ComponentPropsWithoutRef<Link>> {
   link: string;
 }
 
-interface DivProps extends CommonProps, Partial<ComponentPropsWithoutRef<'div'>> {
+interface DivProps<T> extends CommonProps<T>, Partial<ComponentPropsWithoutRef<'div'>> {
   link?: never;
 }
 
-export type DropdownOptionProps = LinkProps | DivProps;
+export type DropdownOptionProps<T> = LinkProps<T> | DivProps<T>;
 
-export default forwardRef(function DropdownOption(
-  {active, link, disabled, ...props}: DropdownOptionProps,
-  ref
+function DropdownOption<T>(
+  {active, link, disabled, ...props}: DropdownOptionProps<T>,
+  ref: ForwardedRef<HTMLElement>
 ) {
   const commonProps = {
     ...props,
@@ -52,7 +52,7 @@ export default forwardRef(function DropdownOption(
   if (link) {
     return (
       <Tooltip content={content} overflowOnly>
-        <Link {...(commonProps as Partial<LinkProps>)} to={link}>
+        <Link {...(commonProps as Partial<LinkProps<T>>)} to={link}>
           {content}
         </Link>
       </Tooltip>
@@ -62,11 +62,15 @@ export default forwardRef(function DropdownOption(
   return (
     <Tooltip content={content} overflowOnly>
       <div
-        {...(commonProps as Partial<DivProps>)}
-        onClick={(evt) => !disabled && (props as DivProps).onClick?.(evt)}
+        {...(commonProps as Partial<DivProps<T>>)}
+        onClick={(evt) => !disabled && (props as DivProps<T>).onClick?.(evt)}
       >
         {content}
       </div>
     </Tooltip>
   );
-});
+}
+
+export default forwardRef(DropdownOption) as <T extends object | string | number | null = string>(
+  props: DropdownOptionProps<T> & {ref?: ForwardedRef<HTMLElement>}
+) => ReturnType<typeof DropdownOption>;

@@ -340,6 +340,7 @@ public class ZeebeVariableUpdateImportIT extends AbstractZeebeIT {
   public void zeebeVariableImport_updateVariableSeveralTimesInSeveralBatches() {
     // given
     embeddedOptimizeExtension.getConfigurationService().getConfiguredZeebe().setMaxImportPageSize(1);
+    embeddedOptimizeExtension.reloadConfiguration();
     final long processInstanceKey = deployProcessAndStartProcessInstanceWithVariables(Map.of("var1", "someValue"));
     waitUntilMinimumVariableDocumentsWithCreatedIntentExportedCount(1);
     importAllZeebeEntitiesFromScratch();

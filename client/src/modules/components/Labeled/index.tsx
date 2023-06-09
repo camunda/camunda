@@ -6,3 +6,4 @@
  */
 
 export {default as Labeled} from './Labeled';
+export type {LabeledProps} from './Labeled';

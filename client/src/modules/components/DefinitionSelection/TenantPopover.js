@@ -9,7 +9,7 @@ import React from 'react';
 
 import {t} from 'translation';
 import {formatters} from 'services';
-import {Popover, ButtonGroup, Button, Switch, Form, LoadingIndicator} from 'components';
+import {CarbonPopover, ButtonGroup, Button, Switch, Form, LoadingIndicator} from 'components';
 
 import './TenantPopover.scss';
 
@@ -31,7 +31,7 @@ export default function TenantPopover({loading, tenants, selected, disabled, onC
   }
 
   return (
-    <Popover
+    <CarbonPopover
       className="TenantPopover"
       disabled={disabled || tenants?.length < 2 || !tenants}
       title={label || '-'}
@@ -66,6 +66,6 @@ export default function TenantPopover({loading, tenants, selected, disabled, onC
           })}
         </fieldset>
       </Form>
-    </Popover>
+    </CarbonPopover>
   );
 }

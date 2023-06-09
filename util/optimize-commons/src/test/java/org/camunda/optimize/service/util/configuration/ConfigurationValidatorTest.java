@@ -9,7 +9,6 @@ import org.apache.commons.lang3.ArrayUtils;
 import org.camunda.optimize.service.exceptions.OptimizeConfigurationException;
 import org.camunda.optimize.service.util.configuration.extension.EnvironmentVariablesExtension;
 import org.camunda.optimize.service.util.configuration.extension.SystemPropertiesExtension;
-import org.camunda.optimize.service.util.configuration.ui.UIConfiguration;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -21,7 +20,8 @@ import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.camunda.optimize.service.util.configuration.ConfigurationValidator.createValidatorWithoutDeprecations;
+import static org.camunda.optimize.service.util.configuration.ConfigurationValidator.DOC_URL;
+import static org.camunda.optimize.service.util.configuration.ConfigurationValidator.createValidatorWithoutDeletions;
 
 public class ConfigurationValidatorTest {
 
@@ -34,196 +34,175 @@ public class ConfigurationValidatorTest {
   public SystemPropertiesExtension systemPropertiesExtension = new SystemPropertiesExtension();
 
   @Test
-  public void testDeprecatedLeafKeyForConfigurationLeafKey() {
+  public void testDeletedLeafKeyForConfigurationLeafKey() {
     // given
     ConfigurationService configurationService = createConfiguration("config-samples/config-alerting-leaf-key.yaml");
-    String[] deprecatedLocations = {"deprecation-samples/deprecated-alerting-leaf-key.yaml"};
-    ConfigurationValidator underTest = new ConfigurationValidator(deprecatedLocations);
+    String[] deletedLocations = {"deletion-samples/deleted-alerting-leaf-key.yaml"};
+    ConfigurationValidator underTest = new ConfigurationValidator(deletedLocations);
 
     // when
-    Map<String, String> deprecations = validateForAndReturnDeprecationsFailIfNone(configurationService, underTest);
+    Map<String, String> deletions = validateForAndReturnDeletionsFailIfNone(configurationService, underTest);
 
     // then
-    assertThat(deprecations)
+    assertThat(deletions)
       .hasSize(1)
-      .containsEntry("alerting.email.username", generateExpectedDocUrl("/technical-guide/configuration/#email"));
+      .containsEntry("alerting.email.username", DOC_URL);
   }
 
   @Test
-  public void testDeprecatedParentKeyForConfigurationLeafKey() {
+  public void testDeletedParentKeyForConfigurationLeafKey() {
     // given
     ConfigurationService configurationService = createConfiguration("config-samples/config-alerting-leaf-key.yaml");
-    String[] deprecatedLocations = {"deprecation-samples/deprecated-alerting-parent-key.yaml"};
-    ConfigurationValidator underTest = new ConfigurationValidator(deprecatedLocations);
+    String[] deletedLocations = {"deletion-samples/deleted-alerting-parent-key.yaml"};
+    ConfigurationValidator underTest = new ConfigurationValidator(deletedLocations);
 
     // when
-    Map<String, String> deprecations = validateForAndReturnDeprecationsFailIfNone(configurationService, underTest);
+    Map<String, String> deletions = validateForAndReturnDeletionsFailIfNone(configurationService, underTest);
 
     // then
-    assertThat(deprecations)
+    assertThat(deletions)
       .hasSize(1)
-      .containsEntry("alerting.email", generateExpectedDocUrl("/technical-guide/configuration/#email"));
+      .containsEntry("alerting.email", DOC_URL);
   }
 
   @Test
-  public void testDeprecatedParentKeyForConfigurationParentKey_onlyOneDeprecationResult() {
+  public void testDeletedParentKeyForConfigurationParentKey_onlyOneDeletionResult() {
     // given
     ConfigurationService configurationService = createConfiguration(
       "config-samples/config-alerting-parent-with-leafs-key.yaml");
-    String[] deprecatedLocations = {"deprecation-samples/deprecated-alerting-parent-key.yaml"};
-    ConfigurationValidator underTest = new ConfigurationValidator(deprecatedLocations);
+    String[] deletedLocations = {"deletion-samples/deleted-alerting-parent-key.yaml"};
+    ConfigurationValidator underTest = new ConfigurationValidator(deletedLocations);
 
     // when
-    Map<String, String> deprecations = validateForAndReturnDeprecationsFailIfNone(configurationService, underTest);
+    Map<String, String> deletions = validateForAndReturnDeletionsFailIfNone(configurationService, underTest);
 
     // then
-    assertThat(deprecations)
+    assertThat(deletions)
       .hasSize(1)
-      .containsEntry("alerting.email", generateExpectedDocUrl("/technical-guide/configuration/#email"));
+      .containsEntry("alerting.email", ConfigurationValidator.DOC_URL);
   }
 
   @Test
-  public void testAllDeprecationsForDistinctPathsArePresent() {
+  public void testAllDeletionsForDistinctPathsArePresent() {
     // given
     ConfigurationService configurationService = createConfiguration(
       "config-samples/config-alerting-parent-with-leafs-key.yaml",
       "config-samples/config-somethingelse-parent-with-leafs-key.yaml"
     );
-    String[] deprecatedLocations = {
-      "deprecation-samples/deprecated-alerting-parent-key.yaml",
-      "deprecation-samples/deprecated-somethingelse-parent-key.yaml"
+    String[] deletedLocations = {
+      "deletion-samples/deleted-alerting-parent-key.yaml",
+      "deletion-samples/deleted-somethingelse-parent-key.yaml"
     };
-    ConfigurationValidator underTest = new ConfigurationValidator(deprecatedLocations);
+    ConfigurationValidator underTest = new ConfigurationValidator(deletedLocations);
 
     // when
-    Map<String, String> deprecations = validateForAndReturnDeprecationsFailIfNone(configurationService, underTest);
+    Map<String, String> deletions = validateForAndReturnDeletionsFailIfNone(configurationService, underTest);
 
     // then
-    assertThat(deprecations)
+    assertThat(deletions)
       .hasSize(2)
-      .containsEntry("alerting.email", generateExpectedDocUrl("/technical-guide/configuration/#email"))
-      .containsEntry("somethingelse.email", generateExpectedDocUrl("/technical-guide/configuration/#somethingelse"));
+      .containsEntry("alerting.email", DOC_URL)
+      .containsEntry("somethingelse.email", DOC_URL);
   }
 
   @Test
-  public void testDeprecatedArrayLeafKey() {
+  public void testDeletedArrayLeafKey() {
     // given
     ConfigurationService configurationService = createConfiguration("config-samples/config-tcpPort-leaf-key.yaml");
-    String[] deprecatedLocations = {"deprecation-samples/deprecated-tcpPort-wildcard-leaf-key.yaml"};
-    ConfigurationValidator underTest = new ConfigurationValidator(deprecatedLocations);
+    String[] deletedLocations = {"deletion-samples/deleted-tcpPort-wildcard-leaf-key.yaml"};
+    ConfigurationValidator underTest = new ConfigurationValidator(deletedLocations);
 
     // when
-    Map<String, String> deprecations = validateForAndReturnDeprecationsFailIfNone(configurationService, underTest);
+    Map<String, String> deletions = validateForAndReturnDeletionsFailIfNone(configurationService, underTest);
 
     // then
-    assertThat(deprecations)
+    assertThat(deletions)
       .hasSize(1)
-      .containsEntry(
-        "es.connection.nodes[*].tcpPort",
-        generateExpectedDocUrl("/technical-guide/setup/configuration/#connection-settings")
-      );
+      .containsEntry("es.connection.nodes[*].tcpPort", DOC_URL);
   }
 
   @Test
-  public void deprecatedAuthConfigs() {
+  public void deletedAuthConfigs() {
     // given
     ConfigurationService configurationService =
-      createConfiguration("config-samples/config-deprecated-auth-values.yaml");
-    String[] deprecatedLocations = {"deprecated-config.yaml"};
-    ConfigurationValidator underTest = new ConfigurationValidator(deprecatedLocations);
+      createConfiguration("config-samples/config-deleted-auth-values.yaml");
+    String[] deletedLocations = {"deleted-config.yaml"};
+    ConfigurationValidator underTest = new ConfigurationValidator(deletedLocations);
 
     // when
-    Map<String, String> deprecations = validateForAndReturnDeprecationsFailIfNone(configurationService, underTest);
+    Map<String, String> deletions = validateForAndReturnDeletionsFailIfNone(configurationService, underTest);
 
     // then
-    assertThat(deprecations)
+    assertThat(deletions)
       .hasSize(1)
-      .containsEntry(
-        "auth.cookie.same-site",
-        generateExpectedDocUrl("/technical-guide/setup/configuration/#security")
-      );
+      .containsEntry("auth.cookie.same-site", DOC_URL);
   }
 
   @Test
-  public void deprecatedAccessTokenConfigs() {
+  public void deletedAccessTokenConfigs() {
     // given
     ConfigurationService configurationService =
-      createConfiguration("config-samples/config-deprecated-access-tokens.yaml");
-    String[] deprecatedLocations = {"deprecated-config.yaml"};
-    ConfigurationValidator underTest = new ConfigurationValidator(deprecatedLocations);
+      createConfiguration("config-samples/config-deleted-access-tokens.yaml");
+    String[] deletedLocations = {"deleted-config.yaml"};
+    ConfigurationValidator underTest = new ConfigurationValidator(deletedLocations);
 
     // when
-    Map<String, String> deprecations = validateForAndReturnDeprecationsFailIfNone(configurationService, underTest);
+    Map<String, String> deletions = validateForAndReturnDeletionsFailIfNone(configurationService, underTest);
 
     // then
-    assertThat(deprecations)
+    assertThat(deletions)
       .hasSize(2)
-      .containsEntry(
-        "eventBasedProcess.eventIngestion.accessToken",
-        generateExpectedDocUrl("/technical-guide/setup/configuration/#public-api")
-      )
-      .containsEntry(
-        "externalVariable.variableIngestion.accessToken",
-        generateExpectedDocUrl("/technical-guide/setup/configuration/#public-api")
-      );
+      .containsEntry("eventBasedProcess.eventIngestion.accessToken", DOC_URL)
+      .containsEntry("externalVariable.variableIngestion.accessToken", DOC_URL);
   }
 
   @Test
-  public void deprecatedUiHeaderConfigs() {
+  public void deletedUiHeaderConfigs() {
     // given
     ConfigurationService configurationService =
-      createConfiguration("config-samples/config-deprecated-ui-header.yaml");
-    String[] deprecatedLocations = {"deprecated-config.yaml"};
-    ConfigurationValidator underTest = new ConfigurationValidator(deprecatedLocations);
+      createConfiguration("config-samples/config-deleted-ui-header.yaml");
+    String[] deletedLocations = {"deleted-config.yaml"};
+    ConfigurationValidator underTest = new ConfigurationValidator(deletedLocations);
 
     // when
-    Map<String, String> deprecations = validateForAndReturnDeprecationsFailIfNone(configurationService, underTest);
+    Map<String, String> deletions = validateForAndReturnDeletionsFailIfNone(configurationService, underTest);
 
     // then
-    assertThat(deprecations)
+    assertThat(deletions)
       .hasSize(3)
-      .containsEntry(
-        "ui.header.textColor",
-        generateExpectedDocUrl("/optimize/self-managed/optimize-deployment/configuration/system-configuration/#ui-configuration")
-      )
-      .containsEntry(
-        "ui.header.pathToLogoIcon",
-        generateExpectedDocUrl("/optimize/self-managed/optimize-deployment/configuration/system-configuration/#ui-configuration")
-      )
-      .containsEntry(
-        "ui.header.backgroundColor",
-        generateExpectedDocUrl("/optimize/self-managed/optimize-deployment/configuration/system-configuration/#ui-configuration")
-      );
+      .containsEntry("ui.header.textColor", DOC_URL)
+      .containsEntry("ui.header.pathToLogoIcon", DOC_URL)
+      .containsEntry("ui.header.backgroundColor", DOC_URL);
   }
 
   @Test
-  public void testNonDeprecatedArrayLeafKey_allFine() {
+  public void testNonDeletedArrayLeafKey_allFine() {
     // given
     String[] locations = {"config-samples/config-wo-tcpPort-leaf-key.yaml"};
     ConfigurationService configurationService = createConfiguration(locations);
-    String[] deprecatedLocations = {"deprecation-samples/deprecated-tcpPort-wildcard-leaf-key.yaml"};
-    ConfigurationValidator underTest = new ConfigurationValidator(deprecatedLocations);
+    String[] deletedLocations = {"deletion-samples/deleted-tcpPort-wildcard-leaf-key.yaml"};
+    ConfigurationValidator underTest = new ConfigurationValidator(deletedLocations);
 
     // when
-    Optional<Map<String, String>> deprecations =
-      validateForAndReturnDeprecations(configurationService, underTest);
+    Optional<Map<String, String>> deletions =
+      validateForAndReturnDeletions(configurationService, underTest);
 
     // then
-    assertThat(deprecations).isNotPresent();
+    assertThat(deletions).isNotPresent();
   }
 
   @Test
-  public void testAllFineOnEmptyDeprecationConfig() {
+  public void testAllFineOnEmptyDeletionConfig() {
     // given
     String[] locations = {"config-samples/config-alerting-leaf-key.yaml"};
     ConfigurationService configurationService = createConfiguration(locations);
     ConfigurationValidator underTest = new ConfigurationValidator(new String[]{});
 
     // when
-    Optional<Map<String, String>> deprecations = validateForAndReturnDeprecations(configurationService, underTest);
+    Optional<Map<String, String>> deletions = validateForAndReturnDeletions(configurationService, underTest);
 
     // then
-    assertThat(deprecations).isNotPresent();
+    assertThat(deletions).isNotPresent();
   }
 
   @Test
@@ -314,27 +293,24 @@ public class ConfigurationValidatorTest {
     String[] locations = ArrayUtils.addAll(new String[]{"service-config.yaml"}, overwriteConfigFiles);
     return ConfigurationServiceBuilder.createConfiguration()
       .loadConfigurationFrom(locations)
-      .useValidator(createValidatorWithoutDeprecations())
+      .useValidator(createValidatorWithoutDeletions())
       .build();
   }
 
-  private Map<String, String> validateForAndReturnDeprecationsFailIfNone(ConfigurationService configurationService,
-                                                                         ConfigurationValidator underTest) {
-    return validateForAndReturnDeprecations(configurationService, underTest)
+  private Map<String, String> validateForAndReturnDeletionsFailIfNone(ConfigurationService configurationService,
+                                                                      ConfigurationValidator underTest) {
+    return validateForAndReturnDeletions(configurationService, underTest)
       .orElseThrow(() -> new RuntimeException("Validation succeeded although it should have failed"));
   }
 
-  private Optional<Map<String, String>> validateForAndReturnDeprecations(ConfigurationService configurationService,
-                                                                         ConfigurationValidator validator) {
+  private Optional<Map<String, String>> validateForAndReturnDeletions(ConfigurationService configurationService,
+                                                                      ConfigurationValidator validator) {
     try {
       validator.validate(configurationService);
       return Optional.empty();
     } catch (OptimizeConfigurationException e) {
-      return Optional.of(e.getDeprecatedKeysAndDocumentationLink());
+      return Optional.of(e.getDeletedKeysAndDocumentationLink());
     }
   }
 
-  private String generateExpectedDocUrl(String path) {
-    return ConfigurationValidator.DOC_URL + path;
-  }
 }

@@ -58,16 +58,15 @@ export class Sharing extends React.Component {
       (evaluationResult) => {
         this.setState({
           evaluationResult,
-          loading: false,
         });
       },
       (error) => {
         this.setState({
           evaluationResult: error.reportDefinition,
           error,
-          loading: false,
         });
-      }
+      },
+      () => this.setState({loading: false})
     );
   };
 

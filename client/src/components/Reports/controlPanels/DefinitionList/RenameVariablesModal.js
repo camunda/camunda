@@ -6,8 +6,9 @@
  */
 
 import React, {useEffect, useState} from 'react';
+import {Button, TableToolbar, TableToolbarContent, TableToolbarSearch} from '@carbon/react';
 
-import {Button, Icon, Input, Modal, Table} from 'components';
+import {Input, Modal, Table} from 'components';
 import {loadVariables} from 'services';
 import {t} from 'translation';
 import {withErrorHandling} from 'HOC';
@@ -18,6 +19,7 @@ import {updateVariables} from './service';
 import './RenameVariablesModal.scss';
 
 export function RenameVariablesModal({
+  open,
   onClose,
   onChange,
   mightFail,
@@ -73,7 +75,7 @@ export function RenameVariablesModal({
     variables?.filter(({name}) => name.toLowerCase().includes(query.toLowerCase())) || [];
 
   return (
-    <Modal open size="max" onClose={onClose} className="RenameVariablesModal">
+    <Modal open={open} size="lg" onClose={onClose} className="RenameVariablesModal">
       <Modal.Header>{t('report.definition.variables.rename')}</Modal.Header>
       <Modal.Content>
         <div className="header">
@@ -88,23 +90,24 @@ export function RenameVariablesModal({
               <li>{t('report.definition.variables.useSameVariable')}</li>
             </ul>
           </div>
-          <div className="searchInputContainer">
-            <Input
-              value={query}
-              className="searchInput"
-              placeholder={t('report.groupBy.searchForVariable')}
-              type="text"
-              onChange={(evt) => {
-                setQuery(evt.target.value);
-              }}
-              onClear={() => {
-                setQuery('');
-              }}
-            />
-            <Icon className="searchIcon" type="search" size="20" />
-          </div>
         </div>
         <Table
+          toolbar={
+            <TableToolbar>
+              <TableToolbarContent>
+                <TableToolbarSearch
+                  value={query}
+                  placeholder={t('report.groupBy.searchForVariable')}
+                  onChange={(evt) => {
+                    setQuery(evt.target.value);
+                  }}
+                  onClear={() => {
+                    setQuery('');
+                  }}
+                />
+              </TableToolbarContent>
+            </TableToolbar>
+          }
           head={[
             {label: t('report.definition.variables.variableName'), id: 'name'},
             {label: t('report.definition.variables.type'), id: 'type'},
@@ -141,14 +144,14 @@ export function RenameVariablesModal({
           allowLocalSorting
         />
       </Modal.Content>
-      <Modal.Actions>
-        <Button main onClick={onClose}>
+      <Modal.Footer>
+        <Button kind="secondary" className="cancel" onClick={onClose}>
           {t('common.close')}
         </Button>
-        <Button main primary onClick={updateVariableNames}>
+        <Button className="confirm" onClick={updateVariableNames}>
           {t('common.update')}
         </Button>
-      </Modal.Actions>
+      </Modal.Footer>
     </Modal>
   );
 }

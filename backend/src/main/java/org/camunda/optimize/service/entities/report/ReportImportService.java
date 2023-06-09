@@ -54,7 +54,7 @@ import static java.util.stream.Collectors.toList;
 import static org.camunda.optimize.dto.optimize.rest.export.ExportEntityType.COMBINED_REPORT;
 import static org.camunda.optimize.dto.optimize.rest.export.ExportEntityType.SINGLE_DECISION_REPORT;
 import static org.camunda.optimize.dto.optimize.rest.export.ExportEntityType.SINGLE_PROCESS_REPORT;
-import static org.camunda.optimize.service.entities.EntityImportService.API_IMPORT_OWNER_NAME;
+import static org.camunda.optimize.dto.optimize.ReportConstants.API_IMPORT_OWNER_NAME;
 import static org.camunda.optimize.service.util.DefinitionVersionHandlingUtil.isDefinitionVersionSetToAllOrLatest;
 
 @AllArgsConstructor

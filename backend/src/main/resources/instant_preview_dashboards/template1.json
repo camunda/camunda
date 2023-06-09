@@ -1035,7 +1035,8 @@
   "id" : "438c08d8-06cb-41a7-9464-cc9fa8a8f09d",
   "exportEntityType" : "dashboard",
   "name" : "IP_DashboardName",
-  "sourceIndexVersion" : 7,
+  "description" : null,
+  "sourceIndexVersion" : 8,
   "tiles" : [ {
     "id" : "",
     "position" : {

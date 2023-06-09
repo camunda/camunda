@@ -8,6 +8,8 @@
 import {post} from 'request';
 import {t} from 'translation';
 
+export {loadRawData} from './reportService.ts';
+
 export function isDurationReport(report) {
   return report?.data?.view?.properties.includes('duration');
 }
@@ -38,12 +40,6 @@ export function getReportResult(report, idx = 0) {
   }
 
   return report.result;
-}
-
-export async function loadRawData(config) {
-  const response = await post('api/export/csv/process/rawData/data', config);
-
-  return await response.blob();
 }
 
 export function processResult(report) {
@@ -120,12 +116,8 @@ export function isCategorical({groupBy, distributedBy}) {
   );
 }
 
-export const TEXT_REPORT_MAX_CHARACTERS = 3000;
-
-export function isTextReportValid(textLength) {
-  return textLength > 0 && !isTextReportTooLong(textLength);
-}
-
-export function isTextReportTooLong(textLength) {
-  return textLength > TEXT_REPORT_MAX_CHARACTERS;
-}
+export {
+  TEXT_REPORT_MAX_CHARACTERS,
+  isTextReportTooLong,
+  isTextReportValid,
+} from './reportService.ts';

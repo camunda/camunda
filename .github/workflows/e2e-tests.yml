@@ -84,7 +84,7 @@ jobs:
         credentials_json: ${{ steps.secrets.outputs.GCP_CREDENTIALS }}
 
     - name: Configure Google SDK
-      uses: google-github-actions/setup-gcloud@v1.1.0
+      uses: google-github-actions/setup-gcloud@v1.1.1
       with:
         project_id: ci-30-162810
         install_components: gke-gcloud-auth-plugin, kubectl
@@ -93,7 +93,7 @@ jobs:
       run: gsutil -q -m cp gs://optimize-data/optimize_data-e2e.sqlc dump.sqlc
 
     - name: restore dump
-      run: cat dump.sqlc | docker exec -i postgres pg_restore --clean -U camunda -d engine        
+      run: docker exec -i postgres pg_restore --clean -U camunda -d engine < dump.sqlc
 
     - name: create backend logs file
       run: mkdir -p ./client/build && touch ./client/build/backendLogs.log

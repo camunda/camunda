@@ -12,7 +12,6 @@ import org.camunda.optimize.dto.optimize.IdentityDto;
 import org.camunda.optimize.dto.optimize.IdentityType;
 import org.camunda.optimize.dto.optimize.ReportType;
 import org.camunda.optimize.dto.optimize.RoleType;
-import org.camunda.optimize.dto.optimize.SettingsResponseDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleRequestDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionRestDto;
@@ -26,7 +25,6 @@ import org.camunda.optimize.dto.optimize.query.sorting.SortOrder;
 import org.camunda.optimize.dto.optimize.rest.sorting.EntitySorter;
 import org.camunda.optimize.service.dashboard.InstantPreviewDashboardService;
 import org.camunda.optimize.service.util.configuration.users.AuthorizedUserType;
-import org.camunda.optimize.util.SuperUserType;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -50,13 +48,11 @@ import static javax.ws.rs.HttpMethod.DELETE;
 import static javax.ws.rs.HttpMethod.POST;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.dto.optimize.query.entity.EntityResponseDto.Fields.name;
-import static org.camunda.optimize.rest.RestTestConstants.DEFAULT_PASSWORD;
 import static org.camunda.optimize.rest.RestTestConstants.DEFAULT_USERNAME;
 import static org.camunda.optimize.rest.RestTestUtil.getOffsetDiffInHours;
 import static org.camunda.optimize.rest.constants.RestConstants.X_OPTIMIZE_CLIENT_TIMEZONE;
 import static org.camunda.optimize.service.es.writer.CollectionWriter.DEFAULT_COLLECTION_NAME;
 import static org.camunda.optimize.service.util.ProcessReportDataBuilderHelper.createCombinedReportData;
-import static org.camunda.optimize.test.engine.AuthorizationClient.GROUP_ID;
 import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
 import static org.camunda.optimize.test.util.DateCreationFreezer.dateFreezer;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.COLLECTION_INDEX_NAME;
@@ -114,6 +110,30 @@ public class EntitiesRestServiceIT extends AbstractEntitiesRestServiceIT {
         Tuple.tuple(ReportType.PROCESS, true),
         Tuple.tuple(ReportType.PROCESS, false),
         Tuple.tuple(ReportType.DECISION, false)
+      );
+  }
+
+  @Test
+  public void getEntities_entitiesHaveDescriptions() {
+    // given
+    addSingleReportWithDescriptionToOptimize("B Report", ReportType.PROCESS, "a process report");
+    addSingleReportWithDescriptionToOptimize("A Report", ReportType.DECISION, "a decision report");
+    addCollection("some collection");
+    addDashboardWithDescriptionToOptimize("Empty dashboard", "a dashboard");
+    importAllEngineEntitiesFromScratch();
+
+    // when
+    final List<EntityResponseDto> privateEntities = entitiesClient.getAllEntities();
+
+    // then
+    assertThat(privateEntities)
+      .hasSize(4)
+      .extracting(EntityResponseDto::getName, EntityResponseDto::getDescription)
+      .containsExactlyInAnyOrder(
+        Tuple.tuple("B Report", "a process report"),
+        Tuple.tuple("A Report", "a decision report"),
+        Tuple.tuple("some collection", null),
+        Tuple.tuple("Empty dashboard", "a dashboard")
       );
   }
 
@@ -929,6 +949,15 @@ public class EntitiesRestServiceIT extends AbstractEntitiesRestServiceIT {
       new EntitiesDeleteRequestDto(Collections.emptyList(), Collections.emptyList(), null),
       null
     );
+  }
+
+  private void addSingleReportWithDescriptionToOptimize(final String name, final ReportType reportType,
+                                                        final String description) {
+    addSingleReportToOptimize(name, description, reportType, null, DEFAULT_USERNAME);
+  }
+
+  private void addDashboardWithDescriptionToOptimize(final String name, final String description) {
+    addDashboardToOptimize(name, description, null, DEFAULT_USERNAME);
   }
 
 }

@@ -11,11 +11,14 @@ import * as u from '../utils';
 import {addAnnotation, clearAllAnnotations} from '../browserMagic';
 
 import * as Analysis from './Analysis.elements.js';
+import * as Common from './Common.elements.js';
 
-fixture('Process Analysis').page(config.endpoint).beforeEach(u.login).afterEach(cleanEntities);
+fixture('Process Analysis')
+  .page(config.endpoint + '#/analysis')
+  .beforeEach(u.login)
+  .afterEach(cleanEntities);
 
 test('show the statistics diagram', async (t) => {
-  await t.click(Analysis.navItem);
   await t.click(Analysis.branchAnalysisLink);
 
   await t.resizeWindow(1600, 750);
@@ -31,7 +34,6 @@ test('show the statistics diagram', async (t) => {
 });
 
 test('show end event statistics on hover', async (t) => {
-  await t.click(Analysis.navItem);
   await t.click(Analysis.branchAnalysisLink);
 
   await t.resizeWindow(1600, 700);
@@ -57,7 +59,6 @@ test('show end event statistics on hover', async (t) => {
 });
 
 test('should deselect elements by clicking on the node or on the control panel', async (t) => {
-  await t.click(Analysis.navItem);
   await t.click(Analysis.branchAnalysisLink);
 
   await u.selectDefinition(t, 'Lead Qualification');
@@ -78,8 +79,6 @@ test('should deselect elements by clicking on the node or on the control panel',
 });
 
 test('should show outliers heatmap when selecting a process definition', async (t) => {
-  await t.click(Analysis.navItem);
-
   await t.resizeWindow(1050, 700);
 
   await u.selectDefinition(t, 'Analysis Testing Process', [6, 5, 4, 3]);
@@ -95,8 +94,6 @@ test('should show outliers heatmap when selecting a process definition', async (
 });
 
 test('should show outlier details modal when clicking view details on a flow node', async (t) => {
-  await t.click(Analysis.navItem);
-
   await u.selectDefinition(t, 'Analysis Testing Process', [6, 5, 4, 3]);
 
   await t.hover(Analysis.flowNode('AE0010P0030'));
@@ -105,15 +102,16 @@ test('should show outlier details modal when clicking view details on a flow nod
 
   await t
     .resizeWindow(1600, 800)
-    .takeElementScreenshot(Analysis.modal, 'process-analysis/img/outlierExample_2_distribution.png')
+    .takeElementScreenshot(
+      Common.modalContainer,
+      'process-analysis/img/outlierExample_2_distribution.png'
+    )
     .maximizeWindow();
 
   await t.expect(Analysis.chart.visible).ok();
 });
 
 test('should show common outliers variables as a table', async (t) => {
-  await t.click(Analysis.navItem);
-
   await u.selectDefinition(t, 'Analysis Testing Process', [6, 5, 4, 3]);
 
   await t.hover(Analysis.flowNode('AE0010P0030'));
@@ -124,7 +122,10 @@ test('should show common outliers variables as a table', async (t) => {
 
   await t
     .resizeWindow(1600, 800)
-    .takeElementScreenshot(Analysis.modal, 'process-analysis/img/outlierExample_3_Variables.png')
+    .takeElementScreenshot(
+      Common.modalContainer,
+      'process-analysis/img/outlierExample_3_Variables.png'
+    )
     .maximizeWindow();
 
   await t.expect(Analysis.variablesTable.visible).ok();

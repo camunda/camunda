@@ -7,18 +7,16 @@
 
 import {useState, useEffect} from 'react';
 import classnames from 'classnames';
-
 import {
   Button,
-  Modal,
-  Table,
-  Input,
-  TenantPopover,
-  Typeahead,
-  Labeled,
-  Tag,
-  SearchInput,
-} from 'components';
+  TableSelectAll,
+  TableSelectRow,
+  TableToolbar,
+  TableToolbarContent,
+  TableToolbarSearch,
+} from '@carbon/react';
+
+import {Modal, Table, TenantPopover, Typeahead} from 'components';
 import {formatters} from 'services';
 import {t} from 'translation';
 import {withErrorHandling} from 'HOC';
@@ -98,16 +96,22 @@ export function SourcesModal({onClose, onConfirm, mightFail, confirmText, preSel
     );
   }
 
+  const isInSelected = ({key}) => selected.some(({definitionKey}) => key === definitionKey);
+  const allChecked = filteredDefinitions.every(isInSelected);
+  const allIndeterminate = !allChecked && filteredDefinitions.some(isInSelected);
+
   const tableHead = [
     {
       label: (
-        <Input
-          type="checkbox"
+        <TableSelectAll
+          id="checked"
+          key="checked"
+          name="checked"
+          ariaLabel="checked"
           className={classnames({hidden: !filteredDefinitions.length})}
-          checked={filteredDefinitions.every(({key}) =>
-            selected.some(({definitionKey}) => key === definitionKey)
-          )}
-          onChange={({target: {checked}}) => (checked ? deselectAll() : selectAll())}
+          indeterminate={allIndeterminate}
+          checked={allChecked}
+          onSelect={({target: {checked}}) => (checked ? deselectAll() : selectAll())}
         />
       ),
       id: 'checked',
@@ -128,63 +132,62 @@ export function SourcesModal({onClose, onConfirm, mightFail, confirmText, preSel
   }
 
   return (
-    <Modal open onClose={onClose} size="large" className="SourcesModal">
+    <Modal open onClose={onClose} size="lg" className="SourcesModal">
       <Modal.Header>{t('home.sources.add')}</Modal.Header>
       <Modal.Content>
-        <div className="header">
-          {tenants.length !== 0 && (
-            <Labeled label={t('common.tenant.label')}>
-              <Typeahead
-                placeholder={t('common.select')}
-                onChange={(tenant) => {
-                  setSelected([]);
-                  setSelectedTenant(tenant);
-                }}
-                noValuesMessage={t('common.notFound')}
-              >
-                <Typeahead.Option value={undefined}>
-                  {t('common.collection.modal.allTenants')}
-                </Typeahead.Option>
-                {tenants.map((tenant) => (
-                  <Typeahead.Option key={tenant.id} value={tenant.id}>
-                    {formatTenantName(tenant)}
-                  </Typeahead.Option>
-                ))}
-              </Typeahead>
-            </Labeled>
-          )}
-          <div className="rightHeader">
-            <SearchInput
-              value={query}
-              className="searchInput"
-              placeholder={t('home.search.name')}
-              type="text"
-              onChange={(evt) => {
-                setQuery(evt.target.value);
-              }}
-              onClear={() => {
-                setQuery('');
-              }}
-            />
-            {selected.length > 0 && (
-              <Tag onRemove={() => setSelected([])}>
-                {selected.length} {t('common.selected')}
-              </Tag>
-            )}
-          </div>
-        </div>
         <Table
+          toolbar={
+            <TableToolbar>
+              <TableToolbarContent>
+                {tenants.length !== 0 && (
+                  <Typeahead
+                    className="tenantsSelector"
+                    placeholder={t('common.select')}
+                    onChange={(tenant) => {
+                      setSelected([]);
+                      setSelectedTenant(tenant);
+                    }}
+                    noValuesMessage={t('common.notFound')}
+                  >
+                    <Typeahead.Option value={undefined}>
+                      {t('common.collection.modal.allTenants')}
+                    </Typeahead.Option>
+                    {tenants.map((tenant) => (
+                      <Typeahead.Option key={tenant.id} value={tenant.id}>
+                        {formatTenantName(tenant)}
+                      </Typeahead.Option>
+                    ))}
+                  </Typeahead>
+                )}
+                <TableToolbarSearch
+                  value={query}
+                  placeholder={t('home.search.name')}
+                  onChange={(evt) => {
+                    setQuery(evt.target.value);
+                  }}
+                  onClear={() => {
+                    setQuery('');
+                  }}
+                  expanded
+                  data-modal-primary-focus
+                />
+              </TableToolbarContent>
+            </TableToolbar>
+          }
           head={tableHead}
           body={filteredDefinitions.map((def) => {
             const selectedDefinition = selected.find(
               ({definitionKey}) => def.key === definitionKey
             );
 
+            const key = def.name || def.key;
             const body = [
-              <Input
-                type="checkbox"
+              <TableSelectRow
                 checked={!!selectedDefinition}
-                onChange={({target: {checked}}) =>
+                id={key}
+                name={key}
+                ariaLabel={key}
+                onSelect={({target: {checked}}) =>
                   checked
                     ? setSelected([...selected, removeExtraTenants(format(def))])
                     : setSelected((selected) =>
@@ -192,12 +195,13 @@ export function SourcesModal({onClose, onConfirm, mightFail, confirmText, preSel
                       )
                 }
               />,
-              def.name || def.key,
+              key,
               def.type,
             ];
 
             if (tenants.length !== 0) {
               body.push(
+                // clicking inside the popover
                 <TenantPopover
                   tenants={def.tenants}
                   selected={selectedDefinition?.tenants || ['']}
@@ -215,7 +219,7 @@ export function SourcesModal({onClose, onConfirm, mightFail, confirmText, preSel
                       })
                     );
                   }}
-                  renderInPortal="sourcesModalTenantPopover"
+                  floating
                 />
               );
             }
@@ -228,14 +232,14 @@ export function SourcesModal({onClose, onConfirm, mightFail, confirmText, preSel
           allowLocalSorting
         />
       </Modal.Content>
-      <Modal.Actions>
-        <Button main className="cancel" onClick={onClose}>
+      <Modal.Footer>
+        <Button kind="secondary" className="cancel" onClick={onClose}>
           {t('common.cancel')}
         </Button>
-        <Button main primary className="confirm" onClick={createCollection}>
+        <Button className="confirm" onClick={createCollection}>
           {confirmText}
         </Button>
-      </Modal.Actions>
+      </Modal.Footer>
     </Modal>
   );
 }

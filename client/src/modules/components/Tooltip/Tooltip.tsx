@@ -22,7 +22,7 @@ import {Align, getNonOverflowingValues, Position} from './service';
 
 import './Tooltip.scss';
 
-type TooltipProps = {
+export type TooltipProps = {
   children?: ReactNode;
   content?: ReactNode;
   align?: keyof Align;

@@ -12,29 +12,16 @@ exports[`should match snapshot 1`] = `
   >
     External Events
   </h1>
-  <div
-    className="header"
-  >
-    <h4
-      className="tableTitle"
-    >
-      Ingested External Events
-    </h4>
-    <SearchInput
-      onChange={[Function]}
-      onClear={[Function]}
-      placeholder="Search for values"
-      value=""
-    />
-  </div>
   <Table
     body={
       Array [
         Array [
-          <ForwardRef(Input)
+          <TableSelectRow
+            ariaLabel="InvoiceProcessed"
             checked={false}
-            onChange={[Function]}
-            type="checkbox"
+            id="8edc4160-74e5-4ffc-af59-2d281cf5aca347"
+            name="InvoiceProcessed"
+            onSelect={[Function]}
           />,
           "8edc4160-74e5-4ffc-af59-2d281cf5aca347",
           "correlationValue_3",
@@ -44,10 +31,12 @@ exports[`should match snapshot 1`] = `
           "Invoice Processed",
         ],
         Array [
-          <ForwardRef(Input)
+          <TableSelectRow
+            ariaLabel="OrderProcessed"
             checked={false}
-            onChange={[Function]}
-            type="checkbox"
+            id="7edc4160-74e5-4ffc-af59-2d281cf5aca346"
+            name="OrderProcessed"
+            onSelect={[Function]}
           />,
           "7edc4160-74e5-4ffc-af59-2d281cf5aca346",
           "correlationValue_3",
@@ -64,10 +53,13 @@ exports[`should match snapshot 1`] = `
       Array [
         Object {
           "id": "selectedAll",
-          "label": <ForwardRef(Input)
+          "label": <TableSelectAll
+            ariaLabel="checked"
             checked={false}
-            onChange={[Function]}
-            type="checkbox"
+            id="checked"
+            indeterminate={false}
+            name="checked"
+            onSelect={[Function]}
           />,
           "sortable": false,
           "width": 50,
@@ -121,6 +113,24 @@ exports[`should match snapshot 1`] = `
         "by": "timestamp",
         "order": "desc",
       }
+    }
+    title="Ingested External Events"
+    toolbar={
+      <TableToolbar
+        aria-label="data table toolbar"
+      >
+        <TableToolbarContent>
+          <TableToolbarSearch
+            onChange={[Function]}
+            onClear={[Function]}
+            persistent={false}
+            placeholder="Search for values"
+            tabIndex="0"
+            translateWithId={[Function]}
+            value=""
+          />
+        </TableToolbarContent>
+      </TableToolbar>
     }
     totalEntries={2}
     updateSorting={[Function]}

@@ -37,6 +37,7 @@ const props = {
 const report = {
   id: 'reportID',
   name: 'name',
+  description: 'description',
   lastModifier: 'lastModifier',
   lastModified: '2017-11-11T11:11:11.1111+0200',
   reportType: 'process',
@@ -103,6 +104,7 @@ it('should apply templates from the location state', async () => {
       location={{
         state: {
           name: 'Template Report',
+          description: 'description',
           data: {
             configuration: {xml: 'processXML'},
             processDefinitionKey: 'key',
@@ -121,6 +123,7 @@ it('should apply templates from the location state', async () => {
   const report = node.find(ReportEdit).prop('report');
 
   expect(report.name).toBe('Template Report');
+  expect(report.description).toBe('description');
   expect(report.data).toMatchSnapshot();
 });
 

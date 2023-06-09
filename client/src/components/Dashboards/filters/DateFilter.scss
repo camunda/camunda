@@ -12,8 +12,9 @@
     color: var(--silver-darken-80);
   }
 
-  .dialog {
+  .CarbonPopover .popoverContent {
     padding: 0;
+    max-width: max-content;
   }
 
   .DateFields {

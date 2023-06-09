@@ -37,22 +37,30 @@ public abstract class AbstractEntitiesRestServiceIT extends AbstractIT {
     return collectionId;
   }
 
-  protected String addSingleReportToOptimize(String name, ReportType reportType) {
-    return addSingleReportToOptimize(name, reportType, null, DEFAULT_USERNAME);
+  protected String addSingleReportToOptimize(final String name, final ReportType reportType) {
+    return addSingleReportToOptimize(name, null, reportType, null, DEFAULT_USERNAME);
   }
 
-  protected String addSingleReportToOptimize(String name, ReportType reportType, String collectionId, String user) {
+  protected String addSingleReportToOptimize(final String name, final ReportType reportType, final String collectionId,
+                                             final String user) {
+    return addSingleReportToOptimize(name, null, reportType, collectionId, user);
+  }
+
+  protected String addSingleReportToOptimize(final String name, final String description, final ReportType reportType,
+                                             final String collectionId, final String user) {
     switch (reportType) {
       case PROCESS:
         SingleProcessReportDefinitionRequestDto singleProcessReportDefinitionDto =
           new SingleProcessReportDefinitionRequestDto();
         singleProcessReportDefinitionDto.setName(name);
+        singleProcessReportDefinitionDto.setDescription(description);
         singleProcessReportDefinitionDto.setCollectionId(collectionId);
         return reportClient.createSingleProcessReportAsUser(singleProcessReportDefinitionDto, user, user);
       case DECISION:
         SingleDecisionReportDefinitionRequestDto singleDecisionReportDefinitionDto =
           new SingleDecisionReportDefinitionRequestDto();
         singleDecisionReportDefinitionDto.setName(name);
+        singleDecisionReportDefinitionDto.setDescription(description);
         singleDecisionReportDefinitionDto.setCollectionId(collectionId);
         return reportClient.createNewDecisionReportAsUser(singleDecisionReportDefinitionDto, user, user);
       default:
@@ -65,8 +73,14 @@ public abstract class AbstractEntitiesRestServiceIT extends AbstractIT {
   }
 
   protected String addDashboardToOptimize(String name, String collectionId, String user) {
+    return addDashboardToOptimize(name, null, collectionId, user);
+  }
+
+  protected String addDashboardToOptimize(final String name, final String description,
+                                          final String collectionId, final String user) {
     DashboardDefinitionRestDto dashboardDefinitionDto = new DashboardDefinitionRestDto();
     dashboardDefinitionDto.setName(name);
+    dashboardDefinitionDto.setDescription(description);
     dashboardDefinitionDto.setCollectionId(collectionId);
     return dashboardClient.createDashboardAsUser(dashboardDefinitionDto, user, user);
   }

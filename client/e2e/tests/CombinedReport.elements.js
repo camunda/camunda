@@ -11,18 +11,15 @@ export const singleReport = (text) =>
   Selector('.TypeaheadMultipleSelection__valueListItem').withExactText(text).find('input');
 export const report = (title) => Selector('.ListItem.report').withText(title);
 export const editButton = (report) => report.find('.DropdownOption').withText('Edit');
-export const reportRenderer = Selector('.ReportRenderer');
 export const chartRenderer = Selector('.ChartRenderer');
-export const reportTable = reportRenderer.find('.Table');
-export const reportChart = reportRenderer.find('canvas');
 export const reportColorPopover = (text) =>
-  Selector('.TypeaheadMultipleSelection__valueListItem').withText(text).find('.Popover');
+  Selector('.TypeaheadMultipleSelection__valueListItem').withText(text).find('.CarbonPopover');
 export const redColor = Selector('.color[color="#DB3E00"]');
-export const configurationButton = Selector('.Configuration .Popover');
-export const goalSwitch = Selector('.Configuration .Popover fieldset')
+export const configurationButton = Selector('.configurationPopover');
+export const goalSwitch = Selector('.configurationPopover fieldset')
   .withText('Set Target')
   .find('.Switch');
-export const goalInput = Selector('.Configuration .Popover fieldset')
+export const goalInput = Selector('.configurationPopover fieldset')
   .withText('Set Target')
   .find('.Input[type="number"]');
 

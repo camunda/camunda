@@ -6,8 +6,9 @@
  */
 
 import React from 'react';
+import {Button} from '@carbon/react';
 
-import {Button, Modal, Form, Checklist} from 'components';
+import {Modal, Form, Checklist} from 'components';
 import {t} from 'translation';
 import {withErrorHandling} from 'HOC';
 
@@ -60,7 +61,7 @@ export default withErrorHandling(
       const {selectedTenants, definitionTenants} = this.state;
 
       return (
-        <Modal className="EditSourceModal" open onClose={onClose} onConfirm={this.onConfirm}>
+        <Modal className="EditSourceModal" open onClose={onClose}>
           <Modal.Header>
             {t('common.editName', {name: definitionName || definitionKey})}
           </Modal.Header>
@@ -77,20 +78,14 @@ export default withErrorHandling(
               </Form.Group>
             </Form>
           </Modal.Content>
-          <Modal.Actions>
-            <Button main className="cancel" onClick={onClose}>
+          <Modal.Footer>
+            <Button kind="secondary" className="cancel" onClick={onClose}>
               {t('common.cancel')}
             </Button>
-            <Button
-              main
-              primary
-              className="confirm"
-              disabled={!selectedTenants.length}
-              onClick={this.onConfirm}
-            >
+            <Button className="confirm" disabled={!selectedTenants.length} onClick={this.onConfirm}>
               {t('common.apply')}
             </Button>
-          </Modal.Actions>
+          </Modal.Footer>
         </Modal>
       );
     }

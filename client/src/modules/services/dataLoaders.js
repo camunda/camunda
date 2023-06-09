@@ -28,35 +28,6 @@ export async function getFlowNodeNames(processDefinitionKey, processDefinitionVe
   }
 }
 
-export async function loadProcessDefinitionXml(key, version, tenantId) {
-  const payload = {key, version};
-  if (tenantId) {
-    payload.tenantId = tenantId;
-  }
-
-  try {
-    const response = await get('api/definition/process/xml', payload);
-
-    return await response.text();
-  } catch (e) {
-    return null;
-  }
-}
-
-export async function loadDecisionDefinitionXml(key, version, tenantId) {
-  const payload = {key, version};
-  if (tenantId) {
-    payload.tenantId = tenantId;
-  }
-  try {
-    const response = await get('api/definition/decision/xml', payload);
-
-    return await response.text();
-  } catch (e) {
-    return null;
-  }
-}
-
 export async function checkDeleteConflict(id, entity) {
   const response = await get(`api/${entity}/${id}/delete-conflicts`);
   return await response.json();
@@ -71,3 +42,4 @@ const loadVariablesFrom = (endpoint) => async (payload) => {
 export const loadVariables = loadVariablesFrom('api/variables');
 export const loadInputVariables = loadVariablesFrom('api/decision-variables/inputs/names');
 export const loadOutputVariables = loadVariablesFrom('api/decision-variables/outputs/names');
+export {loadDecisionDefinitionXml, loadProcessDefinitionXml} from './dataLoaders.ts';

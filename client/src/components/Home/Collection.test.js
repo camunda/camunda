@@ -5,7 +5,7 @@
  * except in compliance with the proprietary license.
  */
 
-import React from 'react';
+import React, {runAllEffects} from 'react';
 import {shallow} from 'enzyme';
 
 import {Dropdown, EntityList, Deleter, ReportTemplateModal, Badge} from 'components';
@@ -61,6 +61,7 @@ jest.mock('./service', () => ({
     {
       id: 'aDashboardId',
       name: 'aDashboard',
+      description: 'a description',
       lastModified: '2017-11-11T11:11:11.1111+0200',
       created: '2017-11-11T11:11:11.1111+0200',
       owner: 'user_id',
@@ -95,7 +96,10 @@ jest.mock('./service', () => ({
 }));
 
 const props = {
-  mightFail: jest.fn().mockImplementation((data, cb) => cb(data)),
+  mightFail: jest.fn().mockImplementation((data, cb, err, final) => {
+    cb(data);
+    final?.();
+  }),
   match: {params: {id: 'aCollectionId'}},
 };
 
@@ -194,7 +198,17 @@ it('should load collection entities with sort parameters', () => {
 });
 
 it('should set the loading state of the entity list', async () => {
-  const node = shallow(<Collection {...props} mightFail={async (data, cb) => cb(await data)} />);
+  const node = shallow(
+    <Collection
+      {...props}
+      mightFail={async (data, cb, err, final) => {
+        cb(await data);
+        final?.();
+      }}
+    />
+  );
+
+  runAllEffects();
 
   expect(node.find('EntityList').prop('isLoading')).toBe(true);
   await flushPromises();
@@ -260,4 +274,13 @@ it('should display badge with user role Manager', () => {
   const node = shallow(<Collection {...props} />);
 
   expect(node.find(Badge).children().text()).toBe('Manager');
+});
+
+it('should show entity name and description', () => {
+  const node = shallow(<Collection {...props} />);
+
+  runAllEffects();
+
+  expect(node.find('EntityList').prop('data')[0].name).toBe('aDashboard');
+  expect(node.find('EntityList').prop('data')[0].meta[0]).toBe('a description');
 });

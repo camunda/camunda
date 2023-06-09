@@ -22,6 +22,7 @@ jest.mock('./service', () => ({
       currentUserRole: 'editor',
       lastModified: '2019-11-18T12:29:37+0000',
       name: 'Test Report',
+      description: 'This is a description',
       data: {
         roleCounts: {},
         subEntityCounts: {},
@@ -33,7 +34,10 @@ jest.mock('./service', () => ({
 }));
 
 const props = {
-  mightFail: jest.fn().mockImplementation((data, cb) => cb(data)),
+  mightFail: jest.fn().mockImplementation((data, cb, err, final) => {
+    cb(data);
+    final?.();
+  }),
   user: {name: 'John Doe', authorizations: ['entity_editor']},
 };
 
@@ -80,7 +84,10 @@ it('should show the loading indicator', async () => {
     <Home
       {...props}
       user={{name: 'John Doe', authorizations: []}}
-      mightFail={async (data, cb) => cb(await data)}
+      mightFail={async (data, cb, err, final) => {
+        cb(await data);
+        final();
+      }}
     />
   );
 
@@ -95,7 +102,7 @@ it('should show the loading indicator', async () => {
 
 it('should show empty state component', async () => {
   loadEntities.mockReturnValueOnce([]);
-  const node = shallow(<Home {...props} mightFail={async (data, cb) => cb(await data)} />);
+  const node = shallow(<Home {...props} />);
 
   runAllEffects();
 
@@ -114,13 +121,7 @@ it('should show empty state component', async () => {
 
 it('should show entity list component when user is not editor and there no entities', async () => {
   loadEntities.mockReturnValueOnce([]);
-  const node = shallow(
-    <Home
-      {...props}
-      user={{name: 'John Doe', authorizations: []}}
-      mightFail={async (data, cb) => cb(await data)}
-    />
-  );
+  const node = shallow(<Home {...props} user={{name: 'John Doe', authorizations: []}} />);
 
   runAllEffects();
 
@@ -131,7 +132,7 @@ it('should show entity list component when user is not editor and there no entit
 });
 
 it('should hide edit options for read only users', () => {
-  loadEntities.mockReturnValue([
+  loadEntities.mockReturnValueOnce([
     {
       id: '1',
       entityType: 'report',
@@ -149,7 +150,7 @@ it('should hide edit options for read only users', () => {
 });
 
 it('should hide edit options for collection editors', () => {
-  loadEntities.mockReturnValue([
+  loadEntities.mockReturnValueOnce([
     {
       id: '1',
       entityType: 'collection',
@@ -254,4 +255,13 @@ describe('export authorizations', () => {
         .actions.find(({text}) => text === 'Export')
     ).toBe(undefined);
   });
+});
+
+it('should show entity name and description', () => {
+  const node = shallow(<Home {...props} />);
+
+  runAllEffects();
+
+  expect(node.find('EntityList').prop('data')[0].name).toBe('Test Report');
+  expect(node.find('EntityList').prop('data')[0].meta[0]).toBe('This is a description');
 });

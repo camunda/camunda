@@ -52,15 +52,25 @@ const theme = {
   },
 };
 
-export default function TextEditor({
-  onChange,
-  initialValue = emptyState,
-}: {
-  onChange?: (value: SerializedEditorState) => void;
-  initialValue?: SerializedEditorState;
-}) {
+type SimpleEditorProps = {
+  simpleEditor: true;
+  onChange: (text: string) => void;
+  initialValue?: string | null;
+  limit?: number;
+};
+
+type TextEditorProps =
+  | SimpleEditorProps
+  | {
+      simpleEditor?: false;
+      onChange?: (value: SerializedEditorState) => void;
+      initialValue?: SerializedEditorState;
+      limit?: never;
+    };
+
+export default function TextEditor({onChange, simpleEditor, initialValue, limit}: TextEditorProps) {
   const initialConfig: InitialConfigType = {
-    editorState: JSON.stringify(initialValue),
+    editorState: JSON.stringify(initialValue || emptyState),
     editable: !!onChange,
     namespace: 'Editor',
     nodes: editorNodes,
@@ -75,12 +85,22 @@ export default function TextEditor({
       }}
       className="TextEditor"
     >
-      <LexicalComposer initialConfig={initialConfig}>
-        <Editor
-          onChange={onChange}
-          error={isTextReportTooLong(TextEditor.getEditorStateLength(initialValue))}
+      {simpleEditor ? (
+        <textarea
+          value={initialValue || undefined}
+          className={classnames('SimpleEditor', {
+            error: isTextReportTooLong(initialValue?.length || 0, limit),
+          })}
+          onChange={(evt) => onChange(evt.target.value)}
         />
-      </LexicalComposer>
+      ) : (
+        <LexicalComposer initialConfig={initialConfig}>
+          <Editor
+            onChange={onChange}
+            error={isTextReportTooLong(TextEditor.getEditorStateLength(initialValue || emptyState))}
+          />
+        </LexicalComposer>
+      )}
     </div>
   );
 }
@@ -103,7 +123,13 @@ function reduceChildren(children: SerializedNode[], initial = 0): number {
   }, initial);
 }
 
-TextEditor.getEditorStateLength = function (editorState: SerializedEditorState): number {
+TextEditor.getEditorStateLength = function (
+  editorState: SerializedEditorState | string | null
+): number {
+  if (typeof editorState === 'string' || editorState === null) {
+    return editorState?.length || 0;
+  }
+
   let length = 0;
 
   if (editorState?.root?.children) {
@@ -113,15 +139,22 @@ TextEditor.getEditorStateLength = function (editorState: SerializedEditorState):
   return length;
 };
 
-TextEditor.CharCount = function ({editorState}: {editorState: SerializedEditorState}) {
-  const textLenght = TextEditor.getEditorStateLength(editorState);
+TextEditor.CharCount = function ({
+  editorState,
+  limit = TEXT_REPORT_MAX_CHARACTERS,
+}: {
+  editorState: SerializedEditorState | string | null;
+  limit?: number;
+}) {
+  const textLength = TextEditor.getEditorStateLength(editorState);
+
   return (
     <div
       className={classnames('TextEditor', 'CharCount', {
-        error: isTextReportTooLong(textLenght),
+        error: isTextReportTooLong(textLength, limit),
       })}
     >
-      {textLenght}/{TEXT_REPORT_MAX_CHARACTERS}
+      {textLength}/{limit}
     </div>
   );
 };

@@ -10,7 +10,7 @@ import {withRouter} from 'react-router-dom';
 import equal from 'fast-deep-equal';
 
 import {loadReports, getCollection} from 'services';
-import {Popover, ColorPicker} from 'components';
+import {ColorPicker, CarbonPopover} from 'components';
 import {t} from 'translation';
 
 import {Configuration} from './Configuration';
@@ -263,7 +263,7 @@ export default withRouter(
                 return;
               }
               return (
-                <Popover
+                <CarbonPopover
                   title={
                     <span
                       className="colorBox"
@@ -274,7 +274,7 @@ export default withRouter(
                   }
                 >
                   <ColorPicker selectedColor={selectedColor} onChange={this.updateColor(idx)} />
-                </Popover>
+                </CarbonPopover>
               );
             }}
           />

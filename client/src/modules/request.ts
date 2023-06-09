@@ -41,7 +41,7 @@ export function put(
 
 export function post(
   url: string,
-  body: unknown,
+  body?: unknown,
   options: Record<string, unknown> = {}
 ): Promise<Response> {
   return request({

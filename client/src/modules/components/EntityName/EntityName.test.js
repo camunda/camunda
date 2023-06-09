@@ -8,15 +8,15 @@
 import React from 'react';
 import {shallow} from 'enzyme';
 
-import {Popover} from 'components';
+import {CarbonPopover} from 'components';
 
 import EntityName from './EntityName';
 
 it('should show details content in a popover', () => {
   const node = shallow(<EntityName details="some details">My Report</EntityName>);
 
-  expect(node.find(Popover)).toExist();
-  expect(node.find(Popover).prop('children')).toBe('some details');
+  expect(node.find(CarbonPopover)).toExist();
+  expect(node.find(CarbonPopover).prop('children')).toBe('some details');
 });
 
 it('should render a Link if linkTo is set', () => {

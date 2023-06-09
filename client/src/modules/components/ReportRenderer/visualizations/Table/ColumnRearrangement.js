@@ -27,7 +27,7 @@ export default class ColumnRearrangement extends React.Component {
       return;
     }
 
-    const columnHeader = evt.target.closest('.Table .tableHeader');
+    const columnHeader = evt.target.closest('.Table th.tableHeader');
 
     if (columnHeader) {
       const group = getGroup(columnHeader);
@@ -80,7 +80,7 @@ export default class ColumnRearrangement extends React.Component {
   };
 
   processDrag = (evt) => {
-    const cellOrHeader = evt.target.closest('.Table td, .Table .tableHeader');
+    const cellOrHeader = evt.target.closest('.Table td, .Table th.tableHeader');
     if (!cellOrHeader) {
       return;
     }
@@ -112,7 +112,7 @@ function getSubColumnIndexes(group) {
   return Array.from(
     group
       .closest('.Table')
-      .querySelectorAll(`thead tr:not(.groupRow) .tableHeader[data-group="${getIndex(group)}"]`)
+      .querySelectorAll(`thead tr:not(.groupRow) th.tableHeader[data-group="${getIndex(group)}"]`)
   ).map(getIndex);
 }
 
@@ -124,7 +124,7 @@ function getHeader(el, idx, groupHeader = false) {
   return el
     .closest('.Table')
     .querySelector(
-      `tr${groupHeader ? '.groupRow' : ':not(.groupRow)'} .tableHeader:nth-child(${idx + 1})`
+      `tr${groupHeader ? '.groupRow' : ':not(.groupRow)'} th.tableHeader:nth-child(${idx + 1})`
     );
 }
 
@@ -152,7 +152,7 @@ function forColumn(columnIdx) {
     do: (fct) => {
       if (columnIdx === 'all') {
         cellsForColumn(document, '1n').forEach(fct);
-        document.querySelectorAll('.groupRow .tableHeader').forEach(fct);
+        document.querySelectorAll('.groupRow th.tableHeader').forEach(fct);
       } else {
         return {
           usingEvent: (evt) => {
@@ -175,7 +175,7 @@ function forColumn(columnIdx) {
 
 function cellsForColumn(target, matcher) {
   return target.querySelectorAll(
-    `.Table tbody tr td:nth-child(${matcher}),.Table thead tr:not(.groupRow) .tableHeader:nth-child(${matcher})`
+    `.Table tbody tr td:nth-child(${matcher}),.Table thead tr:not(.groupRow) th.tableHeader:nth-child(${matcher})`
   );
 }
 
@@ -196,7 +196,7 @@ function createDragPreview(idx, evt) {
   preview.classList.add('ColumnRearrangement__dragPreview');
   preview
     .querySelectorAll(
-      `thead tr.groupRow .tableHeader:not(:nth-child(${getGroupIdx(evt, idx) + 1}))`
+      `thead tr.groupRow th.tableHeader:not(:nth-child(${getGroupIdx(evt, idx) + 1}))`
     )
     .forEach(({style}) => (style.display = 'none'));
   cellsForColumn(preview, `-n+${idx}`).forEach(({style}) => (style.display = 'none'));
