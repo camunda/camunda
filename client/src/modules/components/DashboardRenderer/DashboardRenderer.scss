@@ -1,7 +1,7 @@
 .DashboardRenderer {
   background-position: 6px 6px;
   background-size: calc(100% / 18 - 0.5px) 104px;
-  margin-left: -10px;
+  margin-inline: -10px;
   width: calc(100% + 20px);
 
   .grid-entry {
