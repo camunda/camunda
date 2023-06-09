@@ -17,7 +17,10 @@ const selectComboBoxOption = async ({
   option: string;
   listBoxLabel: string;
 }) => {
-  await t.click(screen.queryByLabelText(fieldName));
+  await t
+    .expect(screen.queryByLabelText(fieldName).hasAttribute('disabled'))
+    .notOk();
+  await t.click(screen.getByLabelText(fieldName));
   await t.click(
     within(screen.getByRole('listbox', {name: listBoxLabel})).getByRole(
       'option',

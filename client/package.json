@@ -46,7 +46,7 @@
     "eslint": "eslint src/ e2e/ --max-warnings=0",
     "lint": "yarn ts-check && yarn eslint",
     "fix:prettier": "prettier --write \"**/*.ts\"",
-    "test:e2e": "cross-env ZEEBE_GATEWAY_ADDRESS=localhost:26503 PORT=3001 testcafe chrome e2e/tests/*.ts --compiler-options typescript.configPath='e2e/tsconfig.json'",
+    "test:e2e": "cross-env ZEEBE_GATEWAY_ADDRESS=localhost:26503 PORT=3001 testcafe chrome e2e/tests/*.ts e2e/tests/Carbon/*.ts --compiler-options typescript.configPath='e2e/tsconfig.json'",
     "test:e2e:ci": "cross-env PORT=8080 testcafe chrome:headless e2e/tests/*.ts --compiler-options typescript.configPath='e2e/tsconfig.json'",
     "postinstall": "cd .. && husky install",
     "coverage": "yarn test --coverage --collectCoverageFrom=src/**/* --changedSince=origin/master --watchAll=false --passWithNoTests",

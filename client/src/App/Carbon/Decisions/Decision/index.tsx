@@ -125,7 +125,7 @@ const Decision: React.FC = observer(() => {
 
   return (
     <Section>
-      <PanelHeader title="Decision" ref={panelHeaderRef}>
+      <PanelHeader title={decisionName} ref={panelHeaderRef}>
         {IS_DECISION_DEFINITION_DELETION_ENABLED &&
           isVersionSelected &&
           decisionDefinitionId !== null && (

@@ -5,8 +5,11 @@
  * except in compliance with the proprietary license.
  */
 
+const endpoint = `http://localhost:${process.env.PORT}`;
+
 const config = {
-  endpoint: `http://localhost:${process.env.PORT}`,
+  endpoint,
+  carbonEndpoint: `${endpoint}/carbon`,
   agentUser: {
     username: 'demo',
     password: 'demo',
