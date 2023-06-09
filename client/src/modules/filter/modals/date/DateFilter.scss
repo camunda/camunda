@@ -1,7 +1,13 @@
 .DateFilter {
   .Form {
-    padding-left: 20%;
-    padding-right: 10%;
+    padding-inline: 10%;
+
+    .selectGroup {
+      .PickerDateInput input {
+        width: 100%;
+        min-width: 110px;
+      }
+    }
 
     .previewContainer {
       min-height: 50px;
