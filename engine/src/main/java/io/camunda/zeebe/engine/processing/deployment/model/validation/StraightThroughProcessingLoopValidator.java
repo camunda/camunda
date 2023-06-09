@@ -35,7 +35,8 @@ public final class StraightThroughProcessingLoopValidator {
           BpmnElementType.PARALLEL_GATEWAY,
           BpmnElementType.START_EVENT,
           BpmnElementType.END_EVENT,
-          BpmnElementType.SUB_PROCESS);
+          BpmnElementType.SUB_PROCESS,
+          BpmnElementType.MULTI_INSTANCE_BODY);
 
   /**
    * Loops must contain any of the rejected element types for it to be considered a loop. This makes
