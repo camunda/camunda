@@ -253,6 +253,44 @@ public class StraightThroughProcessingLoopValidationTest {
   }
 
   @Test
+  public void shouldRejectDeploymentWithImplicitEndEventAsPartOfLoop() {
+    // given
+    final var processId = Strings.newRandomValidBpmnId();
+
+    // when
+    final var rejectedDeployment =
+        ENGINE
+            .deployment()
+            .withXmlResource(
+                Bpmn.createExecutableProcess(processId)
+                    .startEvent()
+                    .task("task1")
+                    .subProcess(
+                        "subProcess",
+                        subProcessBuilder ->
+                            ((SubProcessBuilder) subProcessBuilder)
+                                .embeddedSubProcess()
+                                .startEvent("startEvent")
+                                .task("task2"))
+                    .task("task3")
+                    .connectTo("task1")
+                    .done())
+            .expectRejection()
+            .deploy();
+
+    // then
+    Assertions.assertThat(rejectedDeployment)
+        .hasKey(ExecuteCommandResponseDecoder.keyNullValue())
+        .hasRecordType(RecordType.COMMAND_REJECTION)
+        .hasIntent(DeploymentIntent.CREATE)
+        .hasRejectionType(RejectionType.INVALID_ARGUMENT);
+    assertThat(rejectedDeployment.getRejectionReason())
+        .contains(String.format("Process: %s", processId))
+        .contains(
+            GENERIC_REJECTION_MESSAGE + "task1 > subProcess > startEvent > task2 > task3 > task1");
+  }
+
+  @Test
   public void shouldDeployProcessWithRegularLoops() {
     // given
     final var processId = Strings.newRandomValidBpmnId();
