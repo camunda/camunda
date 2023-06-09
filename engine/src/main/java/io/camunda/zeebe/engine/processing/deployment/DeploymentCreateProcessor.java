@@ -36,6 +36,7 @@ import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.util.Either;
+import io.camunda.zeebe.util.FeatureFlags;
 import java.util.List;
 import org.agrona.DirectBuffer;
 
@@ -62,7 +63,8 @@ public final class DeploymentCreateProcessor implements TypedRecordProcessor<Dep
       final int partitionsCount,
       final Writers writers,
       final DeploymentDistributionCommandSender deploymentDistributionCommandSender,
-      final KeyGenerator keyGenerator) {
+      final KeyGenerator keyGenerator,
+      final FeatureFlags featureFlags) {
     processState = processingState.getProcessState();
     timerInstanceState = processingState.getTimerState();
     this.keyGenerator = keyGenerator;
@@ -72,7 +74,8 @@ public final class DeploymentCreateProcessor implements TypedRecordProcessor<Dep
     catchEventBehavior = bpmnBehaviors.catchEventBehavior();
     expressionProcessor = bpmnBehaviors.expressionBehavior();
     deploymentTransformer =
-        new DeploymentTransformer(stateWriter, processingState, expressionProcessor, keyGenerator);
+        new DeploymentTransformer(
+            stateWriter, processingState, expressionProcessor, keyGenerator, featureFlags);
     startEventSubscriptionManager =
         new StartEventSubscriptionManager(processingState, keyGenerator);
     deploymentDistributionBehavior =
