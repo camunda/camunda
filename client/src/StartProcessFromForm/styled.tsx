@@ -11,16 +11,20 @@ import {Content as BaseContent} from '@carbon/react';
 
 const Content = styled(BaseContent)`
   width: 100vw;
+  height: calc(100vh - var(--cds-spacing-09));
+  display: grid;
+  grid-template-rows: 1fr min-content;
+  grid-template-columns: 100%;
+  grid-row-gap: var(--cds-spacing-04);
   overflow-y: auto;
-  display: flex;
-  justify-content: center;
+  justify-items: center;
 `;
 
 const LogoIcon = styled(Logo)`
   width: 48px;
-  position: absolute;
-  left: 0;
-  bottom: var(--cds-spacing-04);
+  margin-left: -24px;
+  margin-bottom: -24px;
+  justify-self: start;
   color: var(--cds-text-primary);
 `;
 
