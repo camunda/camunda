@@ -167,6 +167,7 @@ public class ConfigurationService {
   // if only the getter is of type Optional the value won't get reset properly
   @SuppressWarnings(OPTIONAL_FIELD_OR_PARAM)
   private Optional<String> containerAccessUrl;
+  private Integer maxRequestHeaderSizeInBytes;
 
   // We use optional field here in order to allow restoring defaults with BeanUtils.copyProperties
   // if only the getter is of type Optional the value won't get reset properly.
@@ -762,9 +763,16 @@ public class ConfigurationService {
   }
 
   // Note: special setter for Optional field value, see note on field why the field is Optional
-
   public void setContainerAccessUrlValue(String containerAccessUrl) {
     this.containerAccessUrl = Optional.ofNullable(containerAccessUrl);
+  }
+
+  public Integer getMaxRequestHeaderSizeInBytes() {
+    if (maxRequestHeaderSizeInBytes == null) {
+      maxRequestHeaderSizeInBytes =
+        configJsonContext.read(ConfigurationServiceConstants.CONTAINER_MAX_REQUEST_HEADER_IN_BYTES, Integer.class);
+    }
+    return maxRequestHeaderSizeInBytes;
   }
 
   public List<String> getDecisionInputImportPluginBasePackages() {
