@@ -96,14 +96,14 @@ final class FeatureFlagsCfgTest {
   @Test
   void shouldSetEnableMessageTtlCheckerAsyncFromEnv() {
     // given
-    environment.put("zeebe.broker.experimental.features.enableMessageTTLCheckerAsync", "true");
+    environment.put("zeebe.broker.experimental.features.enableMessageTTLCheckerAsync", "false");
 
     // when
     final BrokerCfg cfg = TestConfigReader.readConfig("feature-flags-cfg", environment);
     final var featureFlagsCfg = cfg.getExperimental().getFeatures();
 
     // then
-    assertThat(featureFlagsCfg.isEnableMessageTtlCheckerAsync()).isTrue();
+    assertThat(featureFlagsCfg.isEnableMessageTtlCheckerAsync()).isFalse();
   }
 
   @Test
@@ -129,13 +129,37 @@ final class FeatureFlagsCfgTest {
   @Test
   void shouldSetEnableTimerDueDateCheckerAsyncFromEnv() {
     // given
-    environment.put("zeebe.broker.experimental.features.enableMessageDueDateAsync", "true");
+    environment.put("zeebe.broker.experimental.features.enableTimerDueDateCheckerAsync", "false");
 
     // when
     final BrokerCfg cfg = TestConfigReader.readConfig("feature-flags-cfg", environment);
     final var featureFlagsCfg = cfg.getExperimental().getFeatures();
 
     // then
-    assertThat(featureFlagsCfg.isEnableTimerDueDateCheckerAsync()).isTrue();
+    assertThat(featureFlagsCfg.isEnableTimerDueDateCheckerAsync()).isFalse();
+  }
+
+  @Test
+  void shouldSetEnableStraightThroughProcessingLoopDetectorFromConfig() {
+    // when
+    final BrokerCfg cfg = TestConfigReader.readConfig("feature-flags-cfg", environment);
+    final var featureFlagsCfg = cfg.getExperimental().getFeatures();
+
+    // then
+    assertThat(featureFlagsCfg.isEnableStraightThroughProcessingLoopDetector()).isFalse();
+  }
+
+  @Test
+  void shouldSetEnableStraightThroughProcessingLoopDetectorFromEnv() {
+    // given
+    environment.put(
+        "zeebe.broker.experimental.features.enableStraightThroughProcessingLoopDetector", "true");
+
+    // when
+    final BrokerCfg cfg = TestConfigReader.readConfig("feature-flags-cfg", environment);
+    final var featureFlagsCfg = cfg.getExperimental().getFeatures();
+
+    // then
+    assertThat(featureFlagsCfg.isEnableStraightThroughProcessingLoopDetector()).isTrue();
   }
 }
