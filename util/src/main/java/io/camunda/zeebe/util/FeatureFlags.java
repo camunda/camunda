@@ -14,7 +14,8 @@ public record FeatureFlags(
     boolean yieldingDueDateChecker,
     boolean enableActorMetrics,
     boolean enableMessageTTLCheckerAsync,
-    boolean enableTimerDueDateCheckerAsync
+    boolean enableTimerDueDateCheckerAsync,
+    boolean enableStraightThroughProcessingLoopDetector
     /*, boolean foo*/ ) {
 
   /* To add a new feature toggle, please follow these steps:
@@ -49,13 +50,15 @@ public record FeatureFlags(
 
   private static final boolean ENABLE_MSG_TTL_CHECKER_ASYNC = false;
   private static final boolean ENABLE_DUE_DATE_CHECKER_ASYNC = false;
+  private static final boolean ENABLE_STRAIGHT_THOUGH_PROCESSING_LOOP_DETECTOR = true;
 
   public static FeatureFlags createDefault() {
     return new FeatureFlags(
         YIELDING_DUE_DATE_CHECKER,
         ENABLE_ACTOR_METRICS,
         ENABLE_MSG_TTL_CHECKER_ASYNC,
-        ENABLE_DUE_DATE_CHECKER_ASYNC
+        ENABLE_DUE_DATE_CHECKER_ASYNC,
+        ENABLE_STRAIGHT_THOUGH_PROCESSING_LOOP_DETECTOR
         /*, FOO_DEFAULT*/ );
   }
 
@@ -69,7 +72,8 @@ public record FeatureFlags(
         true, /* YIELDING_DUE_DATE_CHECKER*/
         false, /* ENABLE_ACTOR_METRICS */
         true, /* ENABLE_MSG_TTL_CHECKER_ASYNC */
-        true /* ENABLE_DUE_DATE_CHECKER_ASYNC */
+        true, /* ENABLE_DUE_DATE_CHECKER_ASYNC */
+        true /* ENABLE_STRAIGHT_THOUGH_PROCESSING_LOOP_DETECTOR */
         /*, FOO_DEFAULT*/ );
   }
 

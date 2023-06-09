@@ -6,3 +6,4 @@ zeebe:
         enableActorMetrics: true
         enableMessageTTLCheckerAsync: true
         enableTimerDueDateCheckerAsync: true
+        enableStraightThroughProcessingLoopDetector: false
