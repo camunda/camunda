@@ -6,26 +6,18 @@
  */
 package io.camunda.tasklist.webapp.api.rest.v1.controllers;
 
-import io.camunda.tasklist.webapp.es.FormReader;
 import io.camunda.tasklist.webapp.security.TasklistURIs;
-import io.swagger.v3.oas.annotations.tags.Tag;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.MediaType;
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.ResponseBody;
-import org.springframework.web.bind.annotation.RestController;
 
-@Tag(name = "Form", description = "API to query forms")
-@RestController
-@RequestMapping(
-    value = TasklistURIs.START_PUBLIC_PROCESS,
-    produces = MediaType.APPLICATION_JSON_VALUE)
-public class NewController extends ApiErrorController {
-  @Autowired private FormReader formReader;
+@Controller
+@RequestMapping(value = TasklistURIs.START_PUBLIC_PROCESS)
+public class NewController {
 
-  @RequestMapping("/")
-  @ResponseBody
-  public String newError() {
-    return "No permission for Tasklist - Please check your configuration.";
+  @GetMapping("/{bpmnProcessId}")
+  public String index(@PathVariable String bpmnProcessId) {
+    return "index";
   }
 }

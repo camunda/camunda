@@ -6,11 +6,11 @@
  */
 package io.camunda.tasklist.webapp;
 
-import static io.camunda.tasklist.webapp.security.TasklistURIs.*;
+import static io.camunda.tasklist.webapp.security.TasklistURIs.LOGIN_RESOURCE;
+import static io.camunda.tasklist.webapp.security.TasklistURIs.REQUESTED_URL;
 
 import io.camunda.tasklist.util.ConversionUtils;
 import io.camunda.tasklist.webapp.security.TasklistProfileService;
-import io.camunda.tasklist.webapp.security.TasklistURIs;
 import jakarta.servlet.RequestDispatcher;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -42,7 +42,6 @@ public class ForwardErrorController implements ErrorController {
     }
     if (profileService.isLoginDelegated()
         && !requestedURI.contains(LOGIN_RESOURCE)
-        && !requestedURI.contains(TasklistURIs.START_PUBLIC_PROCESS)
         && isNotLoggedIn()) {
       return saveRequestAndRedirectToLogin(request, requestedURI);
     } else {
@@ -57,8 +56,6 @@ public class ForwardErrorController implements ErrorController {
         modelAndView.addObject("message", profileService.getMessageByProfileFor(exception));
         modelAndView.setStatus(HttpStatus.valueOf(statusCode));
         return modelAndView;
-      } else if (requestedURI.contains(START_PUBLIC_PROCESS)) {
-        return forwardToPublicProcessPage();
       }
       return forwardToRootPage();
     }
@@ -66,12 +63,6 @@ public class ForwardErrorController implements ErrorController {
 
   private ModelAndView forwardToRootPage() {
     final ModelAndView modelAndView = new ModelAndView("forward:/");
-    modelAndView.setStatus(HttpStatus.OK);
-    return modelAndView;
-  }
-
-  private ModelAndView forwardToPublicProcessPage() {
-    final ModelAndView modelAndView = new ModelAndView("forward:/new/index.html");
     modelAndView.setStatus(HttpStatus.OK);
     return modelAndView;
   }
