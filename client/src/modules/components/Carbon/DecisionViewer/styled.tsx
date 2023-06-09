@@ -12,9 +12,7 @@ type ContainerProps = {
 };
 
 const Container = styled.div<ContainerProps>`
-  ${({theme, highlightableRows}) => {
-    const colors = theme.colors.decisionViewer;
-
+  ${({highlightableRows}) => {
     return css`
       width: 100%;
       padding: var(--cds-spacing-07) var(--cds-spacing-06);
@@ -30,32 +28,35 @@ const Container = styled.div<ContainerProps>`
       }
 
       .dmn-decision-table-container {
-        --table-head-clause-color: ${theme.colors.text01};
-        --table-head-variable-color: ${colors.text};
-        --table-color: ${colors.text};
-        --table-cell-color: ${colors.text};
-        --decision-table-color: ${colors.text};
-        --decision-table-properties-color: ${colors.text};
-        --table-head-border-color: ${colors.border};
-        --table-cell-border-color: ${colors.border};
-        --decision-table-background-color: ${colors.background};
-        --table-row-alternative-background-color: ${colors.background};
+        --decision-table-font-family: inherit;
+        --table-head-clause-color: var(--cds-text-primary);
+        --table-head-variable-color: var(--cds-text-primary);
+        --table-head-separator-color: var(--cds-border-subtle);
+        --table-color: var(--cds-text-primary);
+        --table-cell-color: var(--cds-text-primary);
+        --decision-table-color: var(--cds-text-primary);
+        --decision-table-properties-color: var(--cds-text-primary);
+        --table-head-border-color: var(--cds-icon-secondary);
+        --table-cell-border-color: var(--cds-icon-secondary);
+        --decision-table-background-color: var(--cds-layer);
+        --table-row-alternative-background-color: var(--cds-layer);
 
         .decision-table-properties {
           border-width: 2px 2px 1px 2px;
         }
 
         .tjs-table-container {
+          background-color: var(--cds-layer);
           border-width: 2px 2px 1px 2px;
 
           tbody {
             ${highlightableRows.map((rowIndex) => {
               return css`
                 tr:nth-child(${rowIndex}) {
-                  background-color: ${colors.highlightedRow.background};
+                  background-color: var(--cds-highlight);
                   td {
-                    color: ${colors.highlightedRow.color};
-                    background-color: ${colors.highlightedRow.background};
+                    color: var(--cds-text-primary);
+                    background-color: var(--cds-highlight);
                   }
                 }
               `;
@@ -65,25 +66,31 @@ const Container = styled.div<ContainerProps>`
       }
 
       .dmn-literal-expression-container {
-        --decision-properties-background-color: ${colors.background};
-        --decision-properties-border-color: ${colors.border};
-        --decision-properties-color: ${colors.text};
-        --textarea-color: ${colors.text};
-        --literal-expression-properties-color: ${colors.text};
+        --literal-expression-font-family: inherit;
+        --literal-expression-font-family-monospace: var(
+          --cds-code-01-font-family
+        );
+        --decision-properties-border-color: var(--cds-icon-secondary);
+        --decision-properties-color: var(--cds-text-primary);
+        --textarea-color: var(--cds-text-primary);
+        --literal-expression-properties-color: var(--cds-text-primary);
 
         .decision-properties {
-          border-color: ${colors.border};
+          background-color: var(--cds-layer);
+          border-color: var(--cds-icon-secondary);
           border-width: 2px 2px 1px 2px;
         }
 
         .textarea {
-          border-color: ${colors.border};
+          background-color: var(--cds-layer);
+          border-color: var(--cds-icon-secondary);
           border-width: 1px 2px;
           height: auto;
         }
 
         .literal-expression-properties {
-          border-color: ${colors.border};
+          background-color: var(--cds-layer);
+          border-color: var(--cds-icon-secondary);
           border-width: 1px 2px 2px 2px;
         }
 
