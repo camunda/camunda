@@ -20,6 +20,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -535,6 +536,62 @@ public final class ActorFutureTest {
     assertThat(future.join()).isEqualTo(0xCAFF);
   }
 
+  @Test
+  public void shouldInvokeCallbackOnFutureCompletionIfCallerIsNotActor() {
+    // given
+    final CompletableActorFuture<Void> future = new CompletableActorFuture<>();
+    final AtomicInteger callbackInvocations = new AtomicInteger(0);
+
+    future.onComplete((r, t) -> callbackInvocations.incrementAndGet());
+
+    final Actor completingActor =
+        new Actor() {
+          @Override
+          protected void onActorStarted() {
+            future.complete(null);
+          }
+        };
+
+    // when
+    schedulerRule.submitActor(completingActor);
+    schedulerRule.workUntilDone();
+
+    // then
+    assertThat(callbackInvocations).hasValue(1);
+  }
+
+  @Test
+  public void shouldInvokeCallbackOnFutureCompletionOnProvidedExecutor() {
+    // given
+    final CompletableActorFuture<Void> future = new CompletableActorFuture<>();
+    final AtomicInteger callbackInvocations = new AtomicInteger(0);
+
+    final AtomicInteger executorCount = new AtomicInteger(0);
+    final Executor decoratedExecutor =
+        runnable -> {
+          executorCount.getAndIncrement();
+          runnable.run();
+        };
+
+    future.onComplete((r, t) -> callbackInvocations.incrementAndGet(), decoratedExecutor);
+
+    final Actor completingActor =
+        new Actor() {
+          @Override
+          protected void onActorStarted() {
+            future.complete(null);
+          }
+        };
+
+    // when
+    schedulerRule.submitActor(completingActor);
+    schedulerRule.workUntilDone();
+
+    // then
+    assertThat(callbackInvocations).hasValue(1);
+    assertThat(executorCount).hasValue(1);
+  }
+
   private static class ActorA extends Actor {
 
     private final ActorB actorB;
@@ -612,6 +669,7 @@ public final class ActorFutureTest {
       actor.call(() -> actor.runOnCompletionBlockingCurrentPhase(f, onCompletion));
     }
 
+    @Override
     public void close() {
       actor.close();
     }
