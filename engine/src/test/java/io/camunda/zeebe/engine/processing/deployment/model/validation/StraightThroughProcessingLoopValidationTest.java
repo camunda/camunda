@@ -315,6 +315,40 @@ public class StraightThroughProcessingLoopValidationTest {
   }
 
   @Test
+  public void shouldRejectDeploymentWithMultiInstanceAsPartOfLoop() {
+    // given
+    final var processId = Strings.newRandomValidBpmnId();
+
+    // when
+    final var rejectedDeployment =
+        ENGINE
+            .deployment()
+            .withXmlResource(
+                Bpmn.createExecutableProcess(processId)
+                    .startEvent()
+                    .task("task1")
+                    .task("task2")
+                    .multiInstance()
+                    .parallel()
+                    .zeebeInputCollectionExpression("[1,2,3]")
+                    .multiInstanceDone()
+                    .connectTo("task1")
+                    .done())
+            .expectRejection()
+            .deploy();
+
+    // then
+    Assertions.assertThat(rejectedDeployment)
+        .hasKey(ExecuteCommandResponseDecoder.keyNullValue())
+        .hasRecordType(RecordType.COMMAND_REJECTION)
+        .hasIntent(DeploymentIntent.CREATE)
+        .hasRejectionType(RejectionType.INVALID_ARGUMENT);
+    assertThat(rejectedDeployment.getRejectionReason())
+        .contains(String.format("Process: %s", processId))
+        .contains(GENERIC_REJECTION_MESSAGE + "task1 > task2 > task1");
+  }
+
+  @Test
   public void shouldDeployProcessWithRegularTaskBetweenStraightThroughTasks() {
     // given
     final var processId = Strings.newRandomValidBpmnId();
