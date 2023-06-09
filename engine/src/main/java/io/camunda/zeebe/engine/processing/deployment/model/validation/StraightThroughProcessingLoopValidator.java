@@ -36,14 +36,13 @@ public final class StraightThroughProcessingLoopValidator {
           BpmnElementType.START_EVENT,
           BpmnElementType.END_EVENT,
           BpmnElementType.SUB_PROCESS);
-  private static final EnumSet<BpmnElementType> WHITELISTED_ELEMENT_TYPES =
-      EnumSet.of(
-          BpmnElementType.EXCLUSIVE_GATEWAY,
-          BpmnElementType.INCLUSIVE_GATEWAY,
-          BpmnElementType.PARALLEL_GATEWAY,
-          BpmnElementType.START_EVENT,
-          BpmnElementType.END_EVENT,
-          BpmnElementType.SUB_PROCESS);
+
+  /**
+   * Loops must contain any of the rejected element types for it to be considered a loop. This makes
+   * sure we don't reject deployments containing a loop of just gateways.
+   */
+  private static final EnumSet<BpmnElementType> REJECTED_ELEMENT_TYPES =
+      EnumSet.of(BpmnElementType.MANUAL_TASK, BpmnElementType.TASK);
 
   /**
    * Validates a list of processes for straight-through processing loops. These are loops of
@@ -98,8 +97,8 @@ public final class StraightThroughProcessingLoopValidator {
 
   /**
    * When looking for straight-through processing loops it is not necessary to check in all places
-   * of the process. We only have to check the path of straight-through elements. This method
-   * returns a list of all the straight-through elements in a process.
+   * of the process. A loop that gets rejects must contain at least one of the rejected element
+   * types. As a result we can only check for loops starting at these specific elements.
    *
    * @param executableProcess the process
    * @return a list of all straight-through elements in the given process
@@ -108,10 +107,7 @@ public final class StraightThroughProcessingLoopValidator {
       final ExecutableProcess executableProcess) {
 
     return executableProcess.getFlowElements().stream()
-        .filter(
-            flowElement ->
-                STRAIGHT_THROUGH_PROCESSING_ELEMENT_TYPES.contains(flowElement.getElementType())
-                    && !WHITELISTED_ELEMENT_TYPES.contains(flowElement.getElementType()))
+        .filter(flowElement -> REJECTED_ELEMENT_TYPES.contains(flowElement.getElementType()))
         .map(ExecutableFlowNode.class::cast)
         .toList();
   }
@@ -218,11 +214,11 @@ public final class StraightThroughProcessingLoopValidator {
    */
   private static boolean foundLoop(
       final LinkedList<ExecutableFlowNode> potentialLoop, final ExecutableFlowNode element) {
-    final var isLoopOfOnlyWhitelistedElements =
+    final var loopContainsRejectedElements =
         potentialLoop.stream()
             .map(AbstractFlowElement::getElementType)
-            .allMatch(WHITELISTED_ELEMENT_TYPES::contains);
-    return potentialLoop.contains(element) && !isLoopOfOnlyWhitelistedElements;
+            .anyMatch(REJECTED_ELEMENT_TYPES::contains);
+    return potentialLoop.contains(element) && loopContainsRejectedElements;
   }
 
   /**
