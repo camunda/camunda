@@ -53,8 +53,10 @@ public class Worker extends App {
             .jobType(jobType)
             .handler(
                 (jobClient, job) -> {
+                  System.out.println(job.getElementId());
+                  Map variables = job.getVariablesAsMap();
                   final var command =
-                      jobClient.newCompleteCommand(job.getKey()).variables(variables);
+                      jobClient.newCompleteCommand(job.getKey()).variables((Map.of("newVariable","VariableFromClient"));
                   if (workerCfg.isCompleteJobsAsync()) {
                     delayedCommands.addLast(
                         new DelayedCommand(Instant.now().plusMillis(completionDelay), command));
