@@ -7,19 +7,22 @@
  */
 package io.camunda.zeebe.transport.stream.impl;
 
+import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
+import io.camunda.zeebe.transport.stream.api.ClientStream;
 import io.camunda.zeebe.transport.stream.api.ClientStreamConsumer;
 import io.camunda.zeebe.util.buffer.BufferWriter;
 import org.agrona.DirectBuffer;
 
 /** Represents a registered client stream. * */
-record ClientStream<M extends BufferWriter>(
+record ClientStreamImpl<M extends BufferWriter>(
     ClientStreamIdImpl streamId,
     AggregatedClientStream<M> serverStream,
     DirectBuffer streamType,
     M metadata,
-    ClientStreamConsumer clientStreamConsumer) {
+    ClientStreamConsumer clientStreamConsumer)
+    implements ClientStream<M> {
 
   ActorFuture<Void> push(final DirectBuffer payload, final ConcurrencyControl executor) {
     final ActorFuture<Void> result = executor.createFuture();
@@ -29,5 +32,10 @@ record ClientStream<M extends BufferWriter>(
       result.completeExceptionally(e);
     }
     return result;
+  }
+
+  @Override
+  public boolean isConnected(final MemberId memberId) {
+    return serverStream().isConnected(memberId);
   }
 }

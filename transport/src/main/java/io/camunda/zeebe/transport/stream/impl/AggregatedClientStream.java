@@ -15,6 +15,7 @@ import io.camunda.zeebe.transport.stream.api.NoSuchStreamException;
 import io.camunda.zeebe.transport.stream.api.StreamExhaustedException;
 import io.camunda.zeebe.util.buffer.BufferWriter;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
@@ -32,7 +33,7 @@ final class AggregatedClientStream<M extends BufferWriter> {
   private final LogicalId<M> logicalId;
   private final Set<MemberId> liveConnections = new HashSet<>();
   private final ClientStreamMetrics metrics;
-  private final Int2ObjectHashMap<ClientStream<M>> clientStreams = new Int2ObjectHashMap<>();
+  private final Int2ObjectHashMap<ClientStreamImpl<M>> clientStreams = new Int2ObjectHashMap<>();
 
   private State state;
   private int nextLocalId;
@@ -50,7 +51,7 @@ final class AggregatedClientStream<M extends BufferWriter> {
     state = State.INITIAL;
   }
 
-  void addClient(final ClientStream<M> clientStream) {
+  void addClient(final ClientStreamImpl<M> clientStream) {
     clientStreams.put(clientStream.streamId().localId(), clientStream);
     metrics.observeAggregatedClientCount(clientStreams.size());
   }
@@ -65,6 +66,10 @@ final class AggregatedClientStream<M extends BufferWriter> {
 
   M getMetadata() {
     return logicalId.metadata();
+  }
+
+  Collection<ClientStreamImpl<M>> list() {
+    return clientStreams.values();
   }
 
   int nextLocalId() {
@@ -131,7 +136,9 @@ final class AggregatedClientStream<M extends BufferWriter> {
       final ConcurrencyControl executor) {
     final var streams = clientStreams.values();
     if (streams.isEmpty()) {
-      throw new NoSuchStreamException();
+      throw new NoSuchStreamException(
+          "Cannot forward remote payload as there is no known client streams for aggregated stream %s"
+              .formatted(logicalId));
     }
 
     final var targets = new ArrayList<>(streams);
@@ -141,7 +148,7 @@ final class AggregatedClientStream<M extends BufferWriter> {
   }
 
   private void tryPush(
-      final ArrayList<ClientStream<M>> targets,
+      final ArrayList<ClientStreamImpl<M>> targets,
       final int index,
       final int currentCount,
       final DirectBuffer buffer,
@@ -186,6 +193,24 @@ final class AggregatedClientStream<M extends BufferWriter> {
       requestManager.openStream(this, servers);
       state = State.OPEN;
     }
+  }
+
+  @Override
+  public String toString() {
+    return "AggregatedClientStream{"
+        + "streamId="
+        + streamId
+        + ", logicalId="
+        + logicalId
+        + ", liveConnections="
+        + liveConnections
+        + ", clientStreams="
+        + clientStreams.size()
+        + ", state="
+        + state
+        + ", nextLocalId="
+        + nextLocalId
+        + '}';
   }
 
   private enum State {

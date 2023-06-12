@@ -13,6 +13,8 @@ import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.scheduler.AsyncClosable;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.util.buffer.BufferWriter;
+import java.util.Collection;
+import java.util.Optional;
 
 /**
  * Manages an instance of {@link ClientStreamer}. Intended to be the main entry point when setting
@@ -44,4 +46,10 @@ public interface ClientStreamService<M extends BufferWriter> extends AsyncClosab
 
   /** Returns the managed {@link ClientStreamer} associated with this service. */
   ClientStreamer<M> streamer();
+
+  /** Returns the {@link ClientStream} associated with this ID */
+  Optional<ClientStream<M>> streamFor(final ClientStreamId id);
+
+  /** Returns all registered client streams. */
+  Collection<ClientStream<M>> streams();
 }

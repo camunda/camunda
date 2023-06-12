@@ -13,6 +13,7 @@ import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
+import io.camunda.zeebe.transport.stream.api.ClientStream;
 import io.camunda.zeebe.transport.stream.api.ClientStreamConsumer;
 import io.camunda.zeebe.transport.stream.api.ClientStreamId;
 import io.camunda.zeebe.transport.stream.api.ClientStreamMetrics;
@@ -20,8 +21,9 @@ import io.camunda.zeebe.transport.stream.api.ClientStreamService;
 import io.camunda.zeebe.transport.stream.api.ClientStreamer;
 import io.camunda.zeebe.transport.stream.impl.messages.MessageUtil;
 import io.camunda.zeebe.transport.stream.impl.messages.StreamTopics;
-import io.camunda.zeebe.util.VisibleForTesting;
 import io.camunda.zeebe.util.buffer.BufferWriter;
+import java.util.Collection;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import org.agrona.DirectBuffer;
 
@@ -36,22 +38,25 @@ public final class ClientStreamServiceImpl<M extends BufferWriter> extends Actor
 
   private final ClientStreamManager<M> clientStreamManager;
   private final ClusterCommunicationService communicationService;
-
-  @VisibleForTesting
-  ClientStreamServiceImpl(final ClusterCommunicationService communicationService) {
-    this(communicationService, ClientStreamMetrics.noop());
-  }
+  private final ClientStreamRegistry<M> registry;
 
   public ClientStreamServiceImpl(
       final ClusterCommunicationService communicationService, final ClientStreamMetrics metrics) {
+    this(communicationService, metrics, new ClientStreamRegistry<>(metrics));
+  }
+
+  public ClientStreamServiceImpl(
+      final ClusterCommunicationService communicationService,
+      final ClientStreamMetrics metrics,
+      final ClientStreamRegistry<M> registry) {
+    this.communicationService = communicationService;
+    this.registry = registry;
+
     // ClientStreamRequestManager must use same actor as this because it is mutating shared
     // ClientStream objects.
     clientStreamManager =
         new ClientStreamManager<>(
-            new ClientStreamRegistry<>(metrics),
-            new ClientStreamRequestManager<>(communicationService, actor),
-            metrics);
-    this.communicationService = communicationService;
+            registry, new ClientStreamRequestManager<>(communicationService, actor), metrics);
   }
 
   @Override
@@ -121,5 +126,19 @@ public final class ClientStreamServiceImpl<M extends BufferWriter> extends Actor
   @Override
   public ClientStreamer<M> streamer() {
     return this;
+  }
+
+  @Override
+  public Optional<ClientStream<M>> streamFor(final ClientStreamId id) {
+    // mapping to itself is necessary to cast from impl to interface type
+    return registry.getClient(id).map(s -> s);
+  }
+
+  @Override
+  public Collection<ClientStream<M>> streams() {
+    return registry.list().stream()
+        .flatMap(agg -> agg.list().stream())
+        .map(s -> (ClientStream<M>) s)
+        .toList();
   }
 }
