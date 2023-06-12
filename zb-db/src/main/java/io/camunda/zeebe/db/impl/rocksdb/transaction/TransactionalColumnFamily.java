@@ -48,11 +48,9 @@ class TransactionalColumnFamily<
   private final ConsistencyChecksSettings consistencyChecksSettings;
   private final ColumnFamilyNames columnFamily;
   private final TransactionContext context;
-
   private final ValueType valueInstance;
   private final KeyType keyInstance;
   private final ColumnFamilyContext columnFamilyContext;
-
   private final ForeignKeyChecker foreignKeyChecker;
 
   TransactionalColumnFamily(

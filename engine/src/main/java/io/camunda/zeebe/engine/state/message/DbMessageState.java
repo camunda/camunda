@@ -18,13 +18,17 @@ import io.camunda.zeebe.db.impl.DbForeignKey;
 import io.camunda.zeebe.db.impl.DbLong;
 import io.camunda.zeebe.db.impl.DbNil;
 import io.camunda.zeebe.db.impl.DbString;
+import io.camunda.zeebe.db.impl.rocksdb.BufferedMessagesMetrics;
 import io.camunda.zeebe.engine.state.mutable.MutableMessageState;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageRecord;
+import io.camunda.zeebe.stream.api.ReadonlyStreamProcessorContext;
 import org.agrona.DirectBuffer;
 import org.agrona.collections.MutableBoolean;
 
 public final class DbMessageState implements MutableMessageState {
+
+  private static final String DEADLINE_MESSAGE_COUNT_KEY = "deadline_message_count";
 
   /**
    * <pre>message key -> message
@@ -62,6 +66,16 @@ public final class DbMessageState implements MutableMessageState {
       deadlineColumnFamily;
 
   /**
+   * <pre>count | key -> value
+   *
+   * gets the count of message deadlines
+   */
+  private final DbLong messagesDeadlineCount;
+
+  private final DbString messagesDeadlineCountKey;
+  private final ColumnFamily<DbString, DbLong> messagesDeadlineCountColumnFamily;
+
+  /**
    * <pre>name | correlation key | message id -> []
    *
    * exist a message for a given message name, correlation key and message id
@@ -92,7 +106,7 @@ public final class DbMessageState implements MutableMessageState {
   private final DbCompositeKey<DbString, DbString> bpmnProcessIdCorrelationKey;
 
   private final ColumnFamily<DbCompositeKey<DbString, DbString>, DbNil>
-      activeProcessInstancesByCorrelationKeyColumnFamiliy;
+      activeProcessInstancesByCorrelationKeyColumnFamily;
 
   /**
    * <pre> process instance key -> correlation key
@@ -101,10 +115,16 @@ public final class DbMessageState implements MutableMessageState {
    */
   private final DbLong processInstanceKey;
 
-  private final ColumnFamily<DbLong, DbString> processInstanceCorrelationKeyColumnFamiliy;
+  private final ColumnFamily<DbLong, DbString> processInstanceCorrelationKeyColumnFamily;
+
+  private final BufferedMessagesMetrics bufferedMessagesMetrics;
+
+  private Long localMessageDeadlineCount = 0L;
 
   public DbMessageState(
-      final ZeebeDb<ZbColumnFamilies> zeebeDb, final TransactionContext transactionContext) {
+      final ZeebeDb<ZbColumnFamilies> zeebeDb,
+      final TransactionContext transactionContext,
+      final BufferedMessagesMetrics bufferedMessagesMetrics) {
     messageKey = new DbLong();
     fkMessage = new DbForeignKey<>(messageKey, ZbColumnFamilies.MESSAGE_KEY);
     message = new StoredMessage();
@@ -132,6 +152,17 @@ public final class DbMessageState implements MutableMessageState {
             deadlineMessageKey,
             DbNil.INSTANCE);
 
+    messagesDeadlineCount = new DbLong();
+    messagesDeadlineCountKey = new DbString();
+    messagesDeadlineCountColumnFamily =
+        zeebeDb.createColumnFamily(
+            ZbColumnFamilies.MESSAGE_STATS,
+            transactionContext,
+            messagesDeadlineCountKey,
+            messagesDeadlineCount);
+
+    messagesDeadlineCountKey.wrapString(DEADLINE_MESSAGE_COUNT_KEY);
+
     messageId = new DbString();
     nameCorrelationMessageIdKey = new DbCompositeKey<>(nameAndCorrelationKey, messageId);
     messageIdColumnFamily =
@@ -151,7 +182,7 @@ public final class DbMessageState implements MutableMessageState {
             DbNil.INSTANCE);
 
     bpmnProcessIdCorrelationKey = new DbCompositeKey<>(bpmnProcessIdKey, correlationKey);
-    activeProcessInstancesByCorrelationKeyColumnFamiliy =
+    activeProcessInstancesByCorrelationKeyColumnFamily =
         zeebeDb.createColumnFamily(
             ZbColumnFamilies.MESSAGE_PROCESSES_ACTIVE_BY_CORRELATION_KEY,
             transactionContext,
@@ -159,12 +190,24 @@ public final class DbMessageState implements MutableMessageState {
             DbNil.INSTANCE);
 
     processInstanceKey = new DbLong();
-    processInstanceCorrelationKeyColumnFamiliy =
+    processInstanceCorrelationKeyColumnFamily =
         zeebeDb.createColumnFamily(
             ZbColumnFamilies.MESSAGE_PROCESS_INSTANCE_CORRELATION_KEYS,
             transactionContext,
             processInstanceKey,
             correlationKey);
+
+    this.bufferedMessagesMetrics = bufferedMessagesMetrics;
+  }
+
+  @Override
+  public void onRecovered(final ReadonlyStreamProcessorContext context) {
+    if (!messagesDeadlineCountColumnFamily.isEmpty()) {
+      localMessageDeadlineCount =
+          messagesDeadlineCountColumnFamily.get(messagesDeadlineCountKey).getValue();
+    }
+
+    bufferedMessagesMetrics.setBufferedMessagesCounter(localMessageDeadlineCount);
   }
 
   @Override
@@ -179,6 +222,11 @@ public final class DbMessageState implements MutableMessageState {
 
     deadline.wrapLong(record.getDeadline());
     deadlineColumnFamily.insert(deadlineMessageKey, DbNil.INSTANCE);
+
+    localMessageDeadlineCount += 1L;
+    messagesDeadlineCount.wrapLong(localMessageDeadlineCount);
+    messagesDeadlineCountColumnFamily.upsert(messagesDeadlineCountKey, messagesDeadlineCount);
+    bufferedMessagesMetrics.setBufferedMessagesCounter(localMessageDeadlineCount);
 
     final DirectBuffer messageId = record.getMessageIdBuffer();
     if (messageId.capacity() > 0) {
@@ -216,7 +264,7 @@ public final class DbMessageState implements MutableMessageState {
 
     bpmnProcessIdKey.wrapBuffer(bpmnProcessId);
     this.correlationKey.wrapBuffer(correlationKey);
-    activeProcessInstancesByCorrelationKeyColumnFamiliy.insert(
+    activeProcessInstancesByCorrelationKeyColumnFamily.insert(
         bpmnProcessIdCorrelationKey, DbNil.INSTANCE);
   }
 
@@ -228,7 +276,7 @@ public final class DbMessageState implements MutableMessageState {
 
     bpmnProcessIdKey.wrapBuffer(bpmnProcessId);
     this.correlationKey.wrapBuffer(correlationKey);
-    activeProcessInstancesByCorrelationKeyColumnFamiliy.deleteExisting(bpmnProcessIdCorrelationKey);
+    activeProcessInstancesByCorrelationKeyColumnFamily.deleteExisting(bpmnProcessIdCorrelationKey);
   }
 
   @Override
@@ -239,7 +287,7 @@ public final class DbMessageState implements MutableMessageState {
 
     this.processInstanceKey.wrapLong(processInstanceKey);
     this.correlationKey.wrapBuffer(correlationKey);
-    processInstanceCorrelationKeyColumnFamiliy.insert(this.processInstanceKey, this.correlationKey);
+    processInstanceCorrelationKeyColumnFamily.insert(this.processInstanceKey, this.correlationKey);
   }
 
   @Override
@@ -247,7 +295,7 @@ public final class DbMessageState implements MutableMessageState {
     ensureGreaterThan("process instance key", processInstanceKey, 0);
 
     this.processInstanceKey.wrapLong(processInstanceKey);
-    processInstanceCorrelationKeyColumnFamiliy.deleteExisting(this.processInstanceKey);
+    processInstanceCorrelationKeyColumnFamily.deleteExisting(this.processInstanceKey);
   }
 
   @Override
@@ -273,6 +321,11 @@ public final class DbMessageState implements MutableMessageState {
 
     deadline.wrapLong(storedMessage.getMessage().getDeadline());
     deadlineColumnFamily.deleteExisting(deadlineMessageKey);
+
+    localMessageDeadlineCount -= 1L;
+    messagesDeadlineCount.wrapLong(localMessageDeadlineCount);
+    messagesDeadlineCountColumnFamily.update(messagesDeadlineCountKey, messagesDeadlineCount);
+    bufferedMessagesMetrics.setBufferedMessagesCounter(localMessageDeadlineCount);
 
     correlatedMessageColumnFamily.whileEqualPrefix(
         messageKey,
@@ -300,7 +353,7 @@ public final class DbMessageState implements MutableMessageState {
 
     bpmnProcessIdKey.wrapBuffer(bpmnProcessId);
     this.correlationKey.wrapBuffer(correlationKey);
-    return activeProcessInstancesByCorrelationKeyColumnFamiliy.exists(bpmnProcessIdCorrelationKey);
+    return activeProcessInstancesByCorrelationKeyColumnFamily.exists(bpmnProcessIdCorrelationKey);
   }
 
   @Override
@@ -309,7 +362,7 @@ public final class DbMessageState implements MutableMessageState {
 
     this.processInstanceKey.wrapLong(processInstanceKey);
     final var correlationKey =
-        processInstanceCorrelationKeyColumnFamiliy.get(this.processInstanceKey);
+        processInstanceCorrelationKeyColumnFamily.get(this.processInstanceKey);
 
     return correlationKey != null ? correlationKey.getBuffer() : null;
   }
