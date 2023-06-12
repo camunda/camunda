@@ -14,15 +14,21 @@ import io.camunda.operate.entities.listview.VariableForListViewEntity;
 import io.camunda.operate.exceptions.PersistenceException;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.schema.templates.VariableTemplate;
+import io.camunda.operate.util.Tuple;
 import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.intent.VariableIntent;
 import io.camunda.zeebe.protocol.record.value.VariableRecordValue;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
+
+import org.elasticsearch.action.DocWriteRequest;
 import org.elasticsearch.action.bulk.BulkRequest;
+import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.xcontent.XContentType;
 import org.slf4j.Logger;
@@ -51,16 +57,44 @@ public class VariableZeebeRecordProcessor {
   @Autowired
   private OperateProperties operateProperties;
 
-  public void processVariableRecord(Record record, BulkRequest bulkRequest) throws PersistenceException {
-    VariableRecordValue recordValue = (VariableRecordValue)record.getValue();
+  public void processVariableRecords(final Map<Long, List<Record<VariableRecordValue>>> variablesGroupedByScopeKey,
+      final BulkRequest bulkRequest) throws PersistenceException {
+    for (final var variableRecords : variablesGroupedByScopeKey.entrySet()) {
+      final var temporaryVariableCache = new HashMap<String, Tuple<Intent, VariableEntity>>();
+      final var scopedVariables = variableRecords.getValue();
 
-    //update variable
-    bulkRequest.add(persistVariable(record, recordValue));
+      for (final var scopedVariable : scopedVariables) {
+        final var intent = scopedVariable.getIntent();
+        final var variableValue = scopedVariable.getValue();
+        final var variableName = variableValue.getName();
+        final var cachedVariable = temporaryVariableCache.computeIfAbsent(variableName, (k) -> {
+          return Tuple.of(intent, new VariableEntity());
+        });
+        final var variableEntity = cachedVariable.getRight();
+        processVariableRecord(scopedVariable, variableEntity);
+      }
 
+      for (final var cachedVariable : temporaryVariableCache.values()) {
+        final var initialIntent = cachedVariable.getLeft();
+        final var variableEntity = cachedVariable.getRight();
+        final DocWriteRequest<?> request;
+
+        logger.debug("Variable instance: id {}", variableEntity.getId());
+
+        if (initialIntent == VariableIntent.CREATED) {
+          request = prepareVariableIndexRequest(variableEntity);
+        } else {
+          request = prepareVariableUpdateRequest(variableEntity);
+        }
+
+        bulkRequest.add(request);
+      }
+    }
   }
 
-  private UpdateRequest persistVariable(Record record, VariableRecordValue recordValue) throws PersistenceException {
-    VariableEntity entity = new VariableEntity();
+  private void processVariableRecord(Record<VariableRecordValue> record, VariableEntity entity) {
+    final var recordValue = record.getValue();
+
     entity.setId(VariableForListViewEntity.getIdBy(recordValue.getScopeKey(), recordValue.getName()));
     entity.setKey(record.getKey());
     entity.setPartitionId(record.getPartitionId());
@@ -82,12 +116,22 @@ public class VariableZeebeRecordProcessor {
       entity.setFullValue(null);
       entity.setIsPreview(false);
     }
-    return getVariableQuery(entity);
   }
 
-  private UpdateRequest getVariableQuery(VariableEntity entity) throws PersistenceException {
+  private IndexRequest prepareVariableIndexRequest(VariableEntity entity) throws PersistenceException {
     try {
-      logger.debug("Variable instance for list view: id {}", entity.getId());
+      return new IndexRequest()
+          .index(variableTemplate.getFullQualifiedName())
+          .id(entity.getId())
+          .source(objectMapper.writeValueAsString(entity), XContentType.JSON);
+    } catch (IOException e) {
+      logger.error("Error preparing the query to index variable instance", e);
+      throw new PersistenceException(String.format("Error preparing the query to index variable instance [%s]", entity.getId()), e);
+    }
+  }
+
+  private UpdateRequest prepareVariableUpdateRequest(VariableEntity entity) throws PersistenceException {
+    try {
       Map<String, Object> updateFields = new HashMap<>();
       updateFields.put(VariableTemplate.VALUE, entity.getValue());
       updateFields.put(VariableTemplate.FULL_VALUE, entity.getFullValue());
@@ -99,8 +143,8 @@ public class VariableZeebeRecordProcessor {
         .retryOnConflict(UPDATE_RETRY_COUNT);
 
     } catch (IOException e) {
-      logger.error("Error preparing the query to upsert variable instance for list view", e);
-      throw new PersistenceException(String.format("Error preparing the query to upsert variable instance [%s]  for list view", entity.getId()), e);
+      logger.error("Error preparing the query to upsert variable instance", e);
+      throw new PersistenceException(String.format("Error preparing the query to upsert variable instance [%s]", entity.getId()), e);
     }
   }
 

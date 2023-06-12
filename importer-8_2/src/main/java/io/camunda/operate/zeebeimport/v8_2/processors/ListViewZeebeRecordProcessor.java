@@ -36,6 +36,7 @@ import io.camunda.operate.util.ElasticsearchUtil;
 import io.camunda.operate.util.ElasticsearchUtil.QueryType;
 import io.camunda.operate.util.OperationsManager;
 import io.camunda.operate.util.SoftHashMap;
+import io.camunda.operate.util.Tuple;
 import io.camunda.operate.zeebe.PartitionHolder;
 import io.camunda.operate.zeebeimport.ElasticsearchQueries;
 import io.camunda.operate.zeebeimport.ImportBatch;
@@ -44,11 +45,13 @@ import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.camunda.zeebe.protocol.record.intent.VariableIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.camunda.zeebe.protocol.record.value.VariableRecordValue;
 import java.io.IOException;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.util.HashMap;
@@ -56,7 +59,10 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+
+import org.elasticsearch.action.DocWriteRequest;
 import org.elasticsearch.action.bulk.BulkRequest;
+import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.update.UpdateRequest;
@@ -78,12 +84,14 @@ public class ListViewZeebeRecordProcessor {
 
   private static final Logger logger = LoggerFactory.getLogger(ListViewZeebeRecordProcessor.class);
 
-  private static final Set<String> AI_FINISH_STATES = new HashSet<>();
+  private static final Set<String> PI_AND_AI_START_STATES = new HashSet<>();
+  private static final Set<String> PI_AND_AI_FINISH_STATES = new HashSet<>();
   protected static final int EMPTY_PARENT_PROCESS_INSTANCE_ID = -1;
 
   static {
-    AI_FINISH_STATES.add(ELEMENT_COMPLETED.name());
-    AI_FINISH_STATES.add(ELEMENT_TERMINATED.name());
+    PI_AND_AI_START_STATES.add(ELEMENT_ACTIVATING.name());
+    PI_AND_AI_FINISH_STATES.add(ELEMENT_COMPLETED.name());
+    PI_AND_AI_FINISH_STATES.add(ELEMENT_TERMINATED.name());
   }
 
   @Autowired
@@ -145,11 +153,39 @@ public class ListViewZeebeRecordProcessor {
 
   }
 
-  public void processVariableRecord(Record record, BulkRequest bulkRequest) throws PersistenceException {
-    VariableRecordValue recordValue = (VariableRecordValue)record.getValue();
+  public void processVariableRecords(final Map<Long, List<Record<VariableRecordValue>>> variablesGroupedByScopeKey,
+      final BulkRequest bulkRequest) throws PersistenceException {
+    for (final var variableRecords : variablesGroupedByScopeKey.entrySet()) {
+      final var temporaryVariableCache = new HashMap<String, Tuple<Intent, VariableForListViewEntity>>();
+      final var scopedVariables = variableRecords.getValue();
 
-    bulkRequest.add(persistVariable(record, recordValue));
+      for (final var scopedVariable : scopedVariables) {
+        final var intent = scopedVariable.getIntent();
+        final var variableValue = scopedVariable.getValue();
+        final var variableName = variableValue.getName();
+        final var cachedVariable = temporaryVariableCache.computeIfAbsent(variableName, (k) -> {
+          return Tuple.of(intent, new VariableForListViewEntity());
+        });
+        final var variableEntity = cachedVariable.getRight();
+        processVariableRecord(scopedVariable, variableEntity);
+      }
 
+      for (final var cachedVariable: temporaryVariableCache.values()) {
+        final var initialIntent = cachedVariable.getLeft();
+        final var variableEntity = cachedVariable.getRight();
+        final DocWriteRequest<?> request;
+
+        logger.debug("Variable for list view: id {}", variableEntity.getId());
+
+        if (initialIntent == VariableIntent.CREATED) {
+          request = prepareVariableIndexRequest(variableEntity);
+        } else {
+          request = prepareVariableUpdateRequest(variableEntity);
+        }
+
+        bulkRequest.add(request);
+      }
+    }
   }
 
   public void processProcessInstanceRecord(
@@ -159,20 +195,21 @@ public class ListViewZeebeRecordProcessor {
     for (Map.Entry<Long, List<Record<ProcessInstanceRecordValue>>> wiRecordsEntry: records.entrySet()) {
       ProcessInstanceForListViewEntity piEntity = null;
       Map<Long, FlowNodeInstanceForListViewEntity> actEntities = new HashMap<Long, FlowNodeInstanceForListViewEntity>();
-      Long processInstanceKey = null;
-      for (Record record: wiRecordsEntry.getValue()) {
-        processInstanceKey = wiRecordsEntry.getKey();
-        final String intentStr = record.getIntent().name();
-        ProcessInstanceRecordValue recordValue = (ProcessInstanceRecordValue)record.getValue();
-        if (isProcessEvent(recordValue)) {
-          //complete operation
-          if (intentStr.equals(ELEMENT_TERMINATED.name())) {
-            //resolve corresponding operation
-            operationsManager.completeOperation(null, record.getKey(), null, OperationType.CANCEL_PROCESS_INSTANCE, bulkRequest);
+      Long processInstanceKey = wiRecordsEntry.getKey();
+
+      for (Record<ProcessInstanceRecordValue> record: wiRecordsEntry.getValue()) {
+        if (shouldProcessProcessInstanceRecord(record)) {
+          final var recordValue = record.getValue();
+          if (isProcessEvent(recordValue)) {
+            //complete operation
+            if (isProcessInstanceTerminated(record)) {
+              //resolve corresponding operation
+              operationsManager.completeOperation(null, record.getKey(), null, OperationType.CANCEL_PROCESS_INSTANCE, bulkRequest);
+            }
+            piEntity = updateProcessInstance(importBatch, record, piEntity, treePathMap, bulkRequest);
+          } else {
+            updateFlowNodeInstance(record, actEntities);
           }
-          piEntity = updateProcessInstance(importBatch, record, intentStr, recordValue, piEntity, treePathMap, bulkRequest);
-        } else if (!intentStr.equals(ProcessInstanceIntent.SEQUENCE_FLOW_TAKEN.name()) && !intentStr.equals(Intent.UNKNOWN.name())) {
-          updateFlowNodeInstance(record, intentStr, recordValue, actEntities);
         }
       }
       if (piEntity != null) {
@@ -184,17 +221,27 @@ public class ListViewZeebeRecordProcessor {
     }
   }
 
+  private boolean shouldProcessProcessInstanceRecord(final Record<ProcessInstanceRecordValue> record) {
+    final var intent = record.getIntent().name();
+    return PI_AND_AI_START_STATES.contains(intent) || PI_AND_AI_FINISH_STATES.contains(intent);
+  }
+
+  private boolean isProcessInstanceTerminated(final Record<ProcessInstanceRecordValue> record) {
+    return record.getIntent() == ELEMENT_TERMINATED;
+  }
 
   private ProcessInstanceForListViewEntity updateProcessInstance(ImportBatch importBatch,
-      Record record,
-      String intentStr,
-      ProcessInstanceRecordValue recordValue,
+      Record<ProcessInstanceRecordValue> record,
       ProcessInstanceForListViewEntity piEntity,
       Map<String, String> treePathMap,
       BulkRequest bulkRequest) {
     if (piEntity == null) {
       piEntity = new ProcessInstanceForListViewEntity();
     }
+
+    final var recordValue = record.getValue();
+    final var intentStr = record.getIntent().name();
+
     piEntity.setId(String.valueOf(recordValue.getProcessInstanceKey()));
     piEntity.setProcessInstanceKey(recordValue.getProcessInstanceKey());
     piEntity.setKey(recordValue.getProcessInstanceKey());
@@ -317,18 +364,23 @@ public class ListViewZeebeRecordProcessor {
   }
 
 
-  private void updateFlowNodeInstance(Record record, String intentStr, ProcessInstanceRecordValue recordValue, Map<Long, FlowNodeInstanceForListViewEntity> entities) {
+  private void updateFlowNodeInstance(Record<ProcessInstanceRecordValue> record, Map<Long, FlowNodeInstanceForListViewEntity> entities) {
     if (entities.get(record.getKey()) == null) {
       entities.put(record.getKey(), new FlowNodeInstanceForListViewEntity());
     }
     FlowNodeInstanceForListViewEntity entity = entities.get(record.getKey());
+
+    final var recordValue = record.getValue();
+    final var intentStr = record.getIntent().name();
+
     entity.setKey(record.getKey());
     entity.setId( ConversionUtils.toStringOrNull(record.getKey()));
     entity.setPartitionId(record.getPartitionId());
     entity.setActivityId(recordValue.getElementId());
     entity.setProcessInstanceKey(recordValue.getProcessInstanceKey());
 
-    if (AI_FINISH_STATES.contains(intentStr)) {
+    if (PI_AND_AI_FINISH_STATES.contains(intentStr)) {
+      entity.setEndTime(record.getTimestamp());
       if (intentStr.equals(ELEMENT_TERMINATED.name())) {
         entity.setActivityState(FlowNodeState.TERMINATED);
       } else {
@@ -336,6 +388,9 @@ public class ListViewZeebeRecordProcessor {
       }
     } else {
       entity.setActivityState(FlowNodeState.ACTIVE);
+      if (PI_AND_AI_START_STATES.contains(intentStr)) {
+        entity.setStartTime(record.getTimestamp());
+      }
     }
 
     entity.setActivityType(FlowNodeType.fromZeebeBpmnElementType(recordValue.getBpmnElementType() == null ? null : recordValue.getBpmnElementType().name()));
@@ -370,8 +425,8 @@ public class ListViewZeebeRecordProcessor {
     return getFlowNodeInstanceFromIncidentQuery(entity, processInstanceKey);
   }
 
-  private UpdateRequest persistVariable(Record record, VariableRecordValue recordValue) throws PersistenceException {
-    VariableForListViewEntity entity = new VariableForListViewEntity();
+  private void processVariableRecord(Record<VariableRecordValue> record, VariableForListViewEntity entity) {
+    final var recordValue = record.getValue();
     entity.setId(VariableForListViewEntity.getIdBy(recordValue.getScopeKey(), recordValue.getName()));
     entity.setKey(record.getKey());
     entity.setPartitionId(record.getPartitionId());
@@ -383,13 +438,57 @@ public class ListViewZeebeRecordProcessor {
     //set parent
     Long processInstanceKey = recordValue.getProcessInstanceKey();
     entity.getJoinRelation().setParent(processInstanceKey);
-
-    return getVariableQuery(entity, processInstanceKey);
   }
 
-  private UpdateRequest getFlowNodeInstanceQuery(FlowNodeInstanceForListViewEntity entity, Long processInstanceKey) throws PersistenceException {
+  private DocWriteRequest<?> getFlowNodeInstanceQuery(FlowNodeInstanceForListViewEntity entity, Long processInstanceKey) throws PersistenceException {
+    logger.debug("Flow node instance for list view: id {}", entity.getId());
+
+    final DocWriteRequest<?> request;
+    if (canOptimizeFlowNodeInstanceIndexing(entity)) {
+      request = prepareFlowNodeInstanceIndexQuery(entity, processInstanceKey);
+    } else {
+      request = prepareFlowNodeInstanceUpdateQuery(entity, processInstanceKey);
+    }
+
+    return request;
+  }
+
+  private boolean canOptimizeFlowNodeInstanceIndexing(final FlowNodeInstanceForListViewEntity entity) {
+    final var startTime = entity.getStartTime();
+    final var endTime = entity.getEndTime();
+
+    if (startTime != null && endTime != null) {
+      // When the activating and completed/terminated events
+      // for a flow node instance is part of the same batch
+      // to import, then we can try to optimize the request
+      // by submitting an IndexRequest instead of a UpdateRequest.
+      // In such case, the following is assumed:
+      // * When the duration between start and end time is lower than
+      //   (or equal to) 2 seconds, then it can "safely" be assumed
+      //   that there was no incident in between.
+      // * The 2s duration is chosen arbitrarily. However, it should
+      //   not be too short but not too long to avoid any negative
+      //   side effects with incidents.
+      return (endTime - startTime) <= 2000L;
+    }
+
+    return false;
+  }
+
+  private IndexRequest prepareFlowNodeInstanceIndexQuery(FlowNodeInstanceForListViewEntity entity, Long processInstanceKey) throws PersistenceException {
     try {
-      logger.debug("Flow node instance for list view: id {}", entity.getId());
+      return new IndexRequest()
+          .index(listViewTemplate.getFullQualifiedName()).id(entity.getId())
+          .source(objectMapper.writeValueAsString(entity), XContentType.JSON)
+          .routing(processInstanceKey.toString());
+    } catch (IOException e) {
+      logger.error("Error preparing the query to index activity instance for list view", e);
+      throw new PersistenceException(String.format("Error preparing the query to index activity instance [%s]  for list view", entity.getId()), e);
+    }
+  }
+
+  private UpdateRequest prepareFlowNodeInstanceUpdateQuery(FlowNodeInstanceForListViewEntity entity, Long processInstanceKey) throws PersistenceException {
+    try {
       Map<String, Object> updateFields = new HashMap<>();
       updateFields.put(ListViewTemplate.ID, entity.getId());
       updateFields.put(ListViewTemplate.PARTITION_ID, entity.getPartitionId());
@@ -408,9 +507,24 @@ public class ListViewZeebeRecordProcessor {
     }
   }
 
-  private UpdateRequest getVariableQuery(VariableForListViewEntity entity, Long processInstanceKey) throws PersistenceException {
+  private IndexRequest prepareVariableIndexRequest(final VariableForListViewEntity entity) throws PersistenceException {
     try {
-      logger.debug("Variable for list view: id {}", entity.getId());
+      final var processInstanceKey = entity.getProcessInstanceKey();
+      return new IndexRequest()
+          .index(listViewTemplate.getFullQualifiedName())
+          .id(entity.getId())
+          .source(objectMapper.writeValueAsString(entity), XContentType.JSON)
+          .routing(processInstanceKey.toString());
+
+    } catch (IOException e) {
+      logger.error("Error preparing the query to index variable for list view", e);
+      throw new PersistenceException(String.format("Error preparing the query to index variable [%s] for list view", entity.getId()), e);
+    }
+  }
+
+  private UpdateRequest prepareVariableUpdateRequest(final VariableForListViewEntity entity) throws PersistenceException {
+    try {
+      final var processInstanceKey = entity.getProcessInstanceKey();
       Map<String, Object> updateFields = new HashMap<>();
       updateFields.put(ListViewTemplate.VAR_NAME, entity.getVarName());
       updateFields.put(ListViewTemplate.VAR_VALUE, entity.getVarValue());
@@ -423,7 +537,7 @@ public class ListViewZeebeRecordProcessor {
 
     } catch (IOException e) {
       logger.error("Error preparing the query to upsert variable for list view", e);
-      throw new PersistenceException(String.format("Error preparing the query to upsert variable [%s]  for list view", entity.getId()), e);
+      throw new PersistenceException(String.format("Error preparing the query to upsert variable [%s] for list view", entity.getId()), e);
     }
   }
 
@@ -445,9 +559,56 @@ public class ListViewZeebeRecordProcessor {
     }
   }
 
-  private UpdateRequest getProcessInstanceQuery(ProcessInstanceForListViewEntity piEntity) throws PersistenceException {
+  private DocWriteRequest<?> getProcessInstanceQuery(ProcessInstanceForListViewEntity piEntity) throws PersistenceException {
+    logger.debug("Process instance for list view: id {}", piEntity.getId());
+
+    final DocWriteRequest<?> request;
+    if (canOptimizeProcessInstanceIndexing(piEntity)) {
+      request = prepareProcessInstanceIndexQuery(piEntity);
+    } else {
+      request = prepareProcessInstanceUpdateQuery(piEntity);
+    }
+
+    return request;
+  }
+
+  private boolean canOptimizeProcessInstanceIndexing(final ProcessInstanceForListViewEntity entity) {
+    final var startDate = entity.getStartDate();
+    final var endDate = entity.getEndDate();
+
+    if (startDate != null && endDate != null) {
+      // When the activating and completed/terminated events
+      // for a process instance is part of the same batch
+      // to import, then we can try to optimize the request
+      // by submitting an IndexRequest instead of a UpdateRequest.
+      // In such case, the following is assumed:
+      // * When the duration between start and end time is lower than
+      //   (or equal to) 2 seconds, then it can safely be assumed that
+      //   there was no incident in between.
+      // * The 2s duration is chosen arbitrarily. It should not be
+      //   too short but not too long to avoid any negative side.
+      final var duration = Duration.between(startDate, endDate);
+      return duration.getSeconds() <= 2L;
+    }
+
+    return false;
+  }
+
+  private IndexRequest prepareProcessInstanceIndexQuery(ProcessInstanceForListViewEntity piEntity) throws PersistenceException {
     try {
-      logger.debug("Process instance for list view: id {}", piEntity.getId());
+      return new IndexRequest()
+          .index(listViewTemplate.getFullQualifiedName())
+          .id(piEntity.getId())
+          .source(objectMapper.writeValueAsString(piEntity), XContentType.JSON);
+
+    } catch (IOException e) {
+      logger.error("Error preparing the query to index process instance for list view", e);
+      throw new PersistenceException(String.format("Error preparing the query to index process instance [%s]  for list view", piEntity.getId()), e);
+    }
+  }
+
+  private UpdateRequest prepareProcessInstanceUpdateQuery(ProcessInstanceForListViewEntity piEntity) throws PersistenceException {
+    try {
       Map<String, Object> updateFields = new HashMap<>();
       if (piEntity.getStartDate() != null) {
         updateFields.put(ListViewTemplate.START_DATE, piEntity.getStartDate());

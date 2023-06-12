@@ -28,19 +28,21 @@ import io.camunda.operate.util.SoftHashMap;
 import io.camunda.operate.util.ThreadUtil;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
-import io.camunda.zeebe.protocol.record.intent.Intent;
-import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import java.io.IOException;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+
+import org.elasticsearch.action.DocWriteRequest;
 import jakarta.annotation.PostConstruct;
 import org.elasticsearch.action.bulk.BulkRequest;
+import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.client.RequestOptions;
@@ -97,25 +99,33 @@ public class FlowNodeInstanceZeebeRecordProcessor {
     for (Long key: flowNodeInstanceKeysOrdered) {
       List<Record<ProcessInstanceRecordValue>> wiRecords = records.get(key);
       FlowNodeInstanceEntity fniEntity = null;
-      for (Record record: wiRecords) {
-        final String intentStr = record.getIntent().name();
-        ProcessInstanceRecordValue recordValue = (ProcessInstanceRecordValue)record.getValue();
-        if (!isProcessEvent(recordValue) && !intentStr.equals(ProcessInstanceIntent.SEQUENCE_FLOW_TAKEN.name()) && !intentStr.equals(
-            Intent.UNKNOWN.name())) {
-          fniEntity = updateFlowNodeInstance(record, intentStr, recordValue, fniEntity);
+      for (Record<ProcessInstanceRecordValue> record: wiRecords) {
+
+        if (shouldProcessProcessInstanceRecord(record)) {
+          fniEntity = updateFlowNodeInstance(record, fniEntity);
         }
       }
       if (fniEntity != null) {
-        bulkRequest.add(getFlowNodeInstanceQuery(fniEntity));
+        final var request = getFlowNodeInstanceQuery(fniEntity);
+        bulkRequest.add(request);
       }
     }
   }
 
-  private FlowNodeInstanceEntity updateFlowNodeInstance(Record record, String intentStr,
-      ProcessInstanceRecordValue recordValue, FlowNodeInstanceEntity entity) {
+  private boolean shouldProcessProcessInstanceRecord(final Record<ProcessInstanceRecordValue> processInstanceRecord) {
+    final var processInstanceRecordValue = processInstanceRecord.getValue();
+    final var intent = processInstanceRecord.getIntent().name();
+    return !isProcessEvent(processInstanceRecordValue) && (AI_START_STATES.contains(intent) || AI_FINISH_STATES.contains(intent));
+  }
+
+  private FlowNodeInstanceEntity updateFlowNodeInstance(Record<ProcessInstanceRecordValue> record, FlowNodeInstanceEntity entity) {
     if (entity == null) {
       entity = new FlowNodeInstanceEntity();
     }
+
+    final var recordValue = record.getValue();
+    final var intentStr = record.getIntent().name();
+
     entity.setKey(record.getKey());
     entity.setId(ConversionUtils.toStringOrNull(record.getKey()));
     entity.setPartitionId(record.getPartitionId());
@@ -233,9 +243,55 @@ public class FlowNodeInstanceZeebeRecordProcessor {
     return getFlowNodeInstanceFromIncidentQuery(entity);
   }
 
-  private UpdateRequest getFlowNodeInstanceQuery(FlowNodeInstanceEntity entity) throws PersistenceException {
+  private DocWriteRequest<?> getFlowNodeInstanceQuery(FlowNodeInstanceEntity entity) throws PersistenceException {
+    logger.debug("Flow node instance: id {}", entity.getId());
+
+    final DocWriteRequest<?> request;
+    if (canOptimizeFlowNodeInstanceIndexing(entity)) {
+      request = prepareFlowNodeInstanceIndexRequest(entity);
+    } else {
+      request = prepareFlowNodeInstanceUpdateRequest(entity);
+    }
+
+    return request;
+  }
+
+  private boolean canOptimizeFlowNodeInstanceIndexing(final FlowNodeInstanceEntity entity) {
+    final var startDate = entity.getStartDate();
+    final var endDate = entity.getEndDate();
+
+    if (startDate != null && endDate != null) {
+      // When the activating and completed/terminated events
+      // for a flow node instance is part of the same batch
+      // to import, then we can try to optimize the request
+      // by submitting an IndexRequest instead of a UpdateRequest.
+      // In such case, the following is assumed:
+      // * When the duration between start and end time is lower than
+      //   (or equal to) 2 seconds, then it can "safely" be assumed
+      //   that there was no incident in between.
+      // * The 2s duration is chosen arbitrarily. However, it should
+      //   not be too short but not too long to avoid any negative
+      //   side effects with incidents.
+      final var duration = Duration.between(startDate, endDate);
+      return duration.getSeconds() <= 2L;
+    }
+
+    return false;
+  }
+
+  private IndexRequest prepareFlowNodeInstanceIndexRequest(final FlowNodeInstanceEntity entity) throws PersistenceException {
     try {
-      logger.debug("Flow node instance: id {}", entity.getId());
+      return new IndexRequest()
+          .index(flowNodeInstanceTemplate.getFullQualifiedName())
+          .id(entity.getId())
+          .source(objectMapper.writeValueAsString(entity), XContentType.JSON);
+    } catch (IOException e) {
+      throw new PersistenceException(String.format("Error preparing the query to index flow node instance [%s]  for list view", entity.getId()), e);
+    }
+  }
+
+  private UpdateRequest prepareFlowNodeInstanceUpdateRequest(final FlowNodeInstanceEntity entity) throws PersistenceException {
+    try {
       Map<String, Object> updateFields = new HashMap<>();
       updateFields.put(FlowNodeInstanceTemplate.ID, entity.getId());
       updateFields.put(FlowNodeInstanceTemplate.PARTITION_ID, entity.getPartitionId());

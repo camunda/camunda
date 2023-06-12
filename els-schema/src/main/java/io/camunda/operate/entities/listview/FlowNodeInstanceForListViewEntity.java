@@ -16,6 +16,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 public class FlowNodeInstanceForListViewEntity extends OperateZeebeEntity<FlowNodeInstanceForListViewEntity> {
 
   private Long processInstanceKey;
@@ -33,6 +35,11 @@ public class FlowNodeInstanceForListViewEntity extends OperateZeebeEntity<FlowNo
   private boolean pendingIncident;
 
   private ListViewJoinRelation joinRelation = new ListViewJoinRelation(ListViewTemplate.ACTIVITIES_JOIN_RELATION);
+
+  @JsonIgnore
+  private Long startTime;
+  @JsonIgnore
+  private Long endTime;
 
   public Long getProcessInstanceKey() {
     return processInstanceKey;
@@ -112,6 +119,22 @@ public class FlowNodeInstanceForListViewEntity extends OperateZeebeEntity<FlowNo
 
   public void setJoinRelation(ListViewJoinRelation joinRelation) {
     this.joinRelation = joinRelation;
+  }
+
+  public Long getStartTime() {
+    return startTime;
+  }
+
+  public void setStartTime(Long startTime) {
+    this.startTime = startTime;
+  }
+
+  public Long getEndTime() {
+    return endTime;
+  }
+
+  public void setEndTime(Long endTime) {
+    this.endTime = endTime;
   }
 
   @Override public boolean equals(Object o) {

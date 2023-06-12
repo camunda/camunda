@@ -22,6 +22,7 @@ import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessMessageSubscriptionRecordValue;
+import io.camunda.zeebe.protocol.record.value.VariableRecordValue;
 
 import java.time.OffsetDateTime;
 import java.util.LinkedHashMap;
@@ -204,11 +205,14 @@ public class ElasticsearchBulkProcessor extends AbstractImportBatchProcessor {
 
   private void processVariableRecords(final BulkRequest bulkRequest,
       final List<Record> zeebeRecords) throws PersistenceException {
-    // old style
-    for (Record record : zeebeRecords) {
-      listViewZeebeRecordProcessor.processVariableRecord(record, bulkRequest);
-      variableZeebeRecordProcessor.processVariableRecord(record, bulkRequest);
-    }
+
+    final var variablesGroupedByScopeKey = zeebeRecords
+        .stream()
+        .map(obj -> (Record<VariableRecordValue>) obj)
+        .collect(Collectors.groupingBy(obj -> obj.getValue().getScopeKey()));
+
+    listViewZeebeRecordProcessor.processVariableRecords(variablesGroupedByScopeKey, bulkRequest);
+    variableZeebeRecordProcessor.processVariableRecords(variablesGroupedByScopeKey, bulkRequest);
   }
 
   private void processIncidentRecords(final BulkRequest bulkRequest,
