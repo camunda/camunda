@@ -20,15 +20,15 @@ public enum ProcessInstanceBatchIntent implements ProcessInstanceRelatedIntent {
   ACTIVATE(1);
 
   private final short value;
-  private final boolean shouldBlacklist;
+  private final boolean shouldBanInstance;
 
   ProcessInstanceBatchIntent(final int value) {
     this(value, true);
   }
 
-  ProcessInstanceBatchIntent(final int value, final boolean shouldBlacklist) {
+  ProcessInstanceBatchIntent(final int value, final boolean shouldBanInstance) {
     this.value = (short) value;
-    this.shouldBlacklist = shouldBlacklist;
+    this.shouldBanInstance = shouldBanInstance;
   }
 
   public static Intent from(final short value) {
@@ -48,7 +48,7 @@ public enum ProcessInstanceBatchIntent implements ProcessInstanceRelatedIntent {
   }
 
   @Override
-  public boolean shouldBlacklistInstanceOnError() {
-    return shouldBlacklist;
+  public boolean shouldBanInstanceOnError() {
+    return shouldBanInstance;
   }
 }

@@ -45,7 +45,7 @@ import org.junit.runners.Parameterized.Parameter;
 import org.junit.runners.Parameterized.Parameters;
 
 @RunWith(Parameterized.class)
-public final class BlacklistInstanceTest {
+public final class BanInstanceTest {
 
   @ClassRule public static final ProcessingStateRule ZEEBE_STATE_RULE = new ProcessingStateRule();
   private static final AtomicLong KEY_GENERATOR = new AtomicLong(0);
@@ -57,11 +57,11 @@ public final class BlacklistInstanceTest {
   public Intent recordIntent;
 
   @Parameter(2)
-  public boolean expectedToBlacklist;
+  public boolean expectedToBan;
 
   private long processInstanceKey;
 
-  @Parameters(name = "{0} {1} should blacklist instance {2}")
+  @Parameters(name = "{0} {1} should ban instance {2}")
   public static Object[][] parameters() {
     return new Object[][] {
       ////////////////////////////////////////
@@ -202,7 +202,7 @@ public final class BlacklistInstanceTest {
   }
 
   @Test
-  public void shouldBlacklist() {
+  public void shouldBanInstance() {
     // given
     final RecordMetadata metadata = new RecordMetadata();
     metadata.intent(recordIntent);
@@ -215,14 +215,16 @@ public final class BlacklistInstanceTest {
 
     // when
     final MutableProcessingState processingState = ZEEBE_STATE_RULE.getProcessingState();
-    processingState.getBlackListState().tryToBlacklist(typedEvent, (processInstanceKey) -> {});
+    processingState
+        .getBannedInstanceState()
+        .tryToBanInstance(typedEvent, (processInstanceKey) -> {});
 
     // then
     metadata.intent(ProcessInstanceIntent.ELEMENT_ACTIVATING);
     metadata.valueType(ValueType.PROCESS_INSTANCE);
     typedEvent.wrap(null, metadata, new Value());
-    assertThat(processingState.getBlackListState().isOnBlacklist(typedEvent))
-        .isEqualTo(expectedToBlacklist);
+    assertThat(processingState.getBannedInstanceState().isBanned(typedEvent))
+        .isEqualTo(expectedToBan);
   }
 
   private final class Value extends UnifiedRecordValue implements ProcessInstanceRelated {
