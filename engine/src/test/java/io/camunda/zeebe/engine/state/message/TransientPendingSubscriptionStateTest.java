@@ -10,23 +10,23 @@ package io.camunda.zeebe.engine.state.message;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatNoException;
 
-import io.camunda.zeebe.engine.state.message.TransientSubscriptionCommandState.CommandEntry;
+import io.camunda.zeebe.engine.state.message.TransientPendingSubscriptionState.PendingSubscription;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-public class TransientSubscriptionCommandStateTest {
+public class TransientPendingSubscriptionStateTest {
 
-  private TransientSubscriptionCommandState sut;
+  private TransientPendingSubscriptionState sut;
 
   @BeforeEach
   public void setUp() {
-    sut = new TransientSubscriptionCommandState();
+    sut = new TransientPendingSubscriptionState();
   }
 
   @Test
   public void shouldReturnNoEntriesByDefault() {
     // when
-    final var actual = sut.getEntriesBefore(Long.MAX_VALUE);
+    final var actual = sut.entriesBefore(Long.MAX_VALUE);
 
     // then
     assertThat(actual).isEmpty();
@@ -35,12 +35,12 @@ public class TransientSubscriptionCommandStateTest {
   @Test
   public void shouldReturnEntriesBeforeDeadline() {
     // when
-    final var expected = new CommandEntry(1, "message", 500);
-    sut.add(expected);
-    sut.add(new CommandEntry(2, "message", 2000));
+    final var expected = new PendingSubscription(1, "message");
+    sut.add(expected, 500);
+    sut.add(new PendingSubscription(2, "message"), 2000);
 
     // when
-    final var actual = sut.getEntriesBefore(1000);
+    final var actual = sut.entriesBefore(1000);
 
     // then
     assertThat(actual).containsExactly(expected);
@@ -49,16 +49,16 @@ public class TransientSubscriptionCommandStateTest {
   @Test
   public void shouldReturnEntriesOrderedBySentTime() {
     // when
-    final var first = new CommandEntry(1, "message", 500);
-    final var second = new CommandEntry(2, "message", 600);
-    final var third = new CommandEntry(3, "message", 700);
+    final var first = new PendingSubscription(1, "message");
+    final var second = new PendingSubscription(2, "message");
+    final var third = new PendingSubscription(3, "message");
 
-    sut.add(second);
-    sut.add(first);
-    sut.add(third);
+    sut.add(second, 600);
+    sut.add(first, 500);
+    sut.add(third, 700);
 
     // when
-    final var actual = sut.getEntriesBefore(1000);
+    final var actual = sut.entriesBefore(1000);
 
     // then
     assertThat(actual).containsExactly(first, second, third);
@@ -67,27 +67,26 @@ public class TransientSubscriptionCommandStateTest {
   @Test
   public void shouldOverwriteExistingEntries() {
     // when
-    final var first = new CommandEntry(1, "message", 500);
-    final var second = new CommandEntry(1, "message", 600);
+    final var subscription = new PendingSubscription(1, "message");
 
-    sut.add(first);
-    sut.add(second);
+    sut.add(subscription, 500);
+    sut.add(subscription, 600);
 
     // when
-    final var actual = sut.getEntriesBefore(1000);
+    final var actual = sut.entriesBefore(1000);
 
     // then
-    assertThat(actual).containsExactly(second);
+    assertThat(actual).containsExactly(subscription);
   }
 
   @Test
   public void shouldAcceptEntriesWithTheSameSentTime() {
     // when
-    sut.add(new CommandEntry(1, "message", 500));
-    sut.add(new CommandEntry(2, "message", 500));
+    sut.add(new PendingSubscription(1, "message"), 500);
+    sut.add(new PendingSubscription(2, "message"), 500);
 
     // when
-    final var actual = sut.getEntriesBefore(1000);
+    final var actual = sut.entriesBefore(1000);
 
     // then
     assertThat(actual).hasSize(2);
@@ -96,13 +95,13 @@ public class TransientSubscriptionCommandStateTest {
   @Test
   public void shouldReturnEntriesBasedOnUpdatedSentTime() {
     // when
-    sut.add(new CommandEntry(1, "message", 3000));
-    sut.add(new CommandEntry(2, "message", 2000));
+    sut.add(new PendingSubscription(1, "message"), 2000);
+    sut.add(new PendingSubscription(2, "message"), 3000);
 
     // when
-    final var expected = new CommandEntry(1, "message", 500);
-    sut.updateCommandSentTime(expected);
-    final var actual = sut.getEntriesBefore(1000);
+    final var expected = new PendingSubscription(1, "message");
+    sut.update(expected, 500);
+    final var actual = sut.entriesBefore(1000);
 
     // then
     assertThat(actual).containsExactly(expected);
@@ -111,12 +110,12 @@ public class TransientSubscriptionCommandStateTest {
   @Test
   public void shouldNotReturnEntriesThatHaveBeenRemoved() {
     // when
-    sut.add(new CommandEntry(1, "message", 500));
-    sut.add(new CommandEntry(2, "message", 2000));
+    sut.add(new PendingSubscription(1, "message"), 500);
+    sut.add(new PendingSubscription(2, "message"), 2000);
 
     // when
-    sut.remove(new CommandEntry(1, "message", 500));
-    final var actual = sut.getEntriesBefore(1000);
+    sut.remove(new PendingSubscription(1, "message"));
+    final var actual = sut.entriesBefore(1000);
 
     // then
     assertThat(actual).isEmpty();
@@ -125,13 +124,13 @@ public class TransientSubscriptionCommandStateTest {
   @Test
   public void shouldBeTolerantWhenRemovingEntriesThatDoNotExist() {
     // when + then
-    assertThatNoException().isThrownBy(() -> sut.remove(new CommandEntry(1, "message", 500)));
+    assertThatNoException().isThrownBy(() -> sut.remove(new PendingSubscription(1, "message")));
   }
 
   @Test
   public void shouldBeTolerantWhenUpdatingEntriesThatDoNotExist() {
     // when + then
     assertThatNoException()
-        .isThrownBy(() -> sut.updateCommandSentTime(new CommandEntry(1, "message", 500)));
+        .isThrownBy(() -> sut.update(new PendingSubscription(1, "message"), 500));
   }
 }

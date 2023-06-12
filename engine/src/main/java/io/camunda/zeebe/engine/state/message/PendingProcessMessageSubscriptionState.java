@@ -9,15 +9,15 @@ package io.camunda.zeebe.engine.state.message;
 
 import io.camunda.zeebe.engine.state.immutable.ProcessMessageSubscriptionState;
 import io.camunda.zeebe.engine.state.immutable.ProcessMessageSubscriptionState.ProcessMessageSubscriptionVisitor;
-import io.camunda.zeebe.engine.state.message.TransientSubscriptionCommandState.CommandEntry;
+import io.camunda.zeebe.engine.state.message.TransientPendingSubscriptionState.PendingSubscription;
 import io.camunda.zeebe.protocol.impl.record.value.message.ProcessMessageSubscriptionRecord;
 import io.camunda.zeebe.scheduler.clock.ActorClock;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 
 final class PendingProcessMessageSubscriptionState {
 
-  private final TransientSubscriptionCommandState transientState =
-      new TransientSubscriptionCommandState();
+  private final TransientPendingSubscriptionState transientState =
+      new TransientPendingSubscriptionState();
 
   private final ProcessMessageSubscriptionState persistentState;
 
@@ -25,42 +25,39 @@ final class PendingProcessMessageSubscriptionState {
     this.persistentState = persistentState;
   }
 
-  final void visitSubscriptionBefore(
+  void visitSubscriptionBefore(
       final long deadline, final ProcessMessageSubscriptionVisitor visitor) {
 
-    for (final CommandEntry commandEntry : transientState.getEntriesBefore(deadline)) {
+    for (final var pendingSubscription : transientState.getEntriesBefore(deadline)) {
       final var subscription =
           persistentState.getSubscription(
-              commandEntry.getElementInstanceKey(),
-              BufferUtil.wrapString(commandEntry.getMessageName()));
+              pendingSubscription.elementInstanceKey(),
+              BufferUtil.wrapString(pendingSubscription.messageName()));
 
       visitor.visit(subscription);
     }
   }
 
-  final void updateSentTime(
-      final ProcessMessageSubscriptionRecord record, final long commandSentTime) {
+  void updateSentTime(final ProcessMessageSubscriptionRecord record, final long commandSentTime) {
 
-    final var updatedEntry = buildCommandEntry(record, commandSentTime);
+    final var updatedEntry = buildCommandEntry(record);
 
-    transientState.updateCommandSentTime(updatedEntry);
+    transientState.updateLastSentTime(updatedEntry, commandSentTime);
   }
 
-  final void add(final ProcessMessageSubscriptionRecord record) {
+  void add(final ProcessMessageSubscriptionRecord record) {
     add(record, ActorClock.currentTimeMillis());
   }
 
-  final void add(final ProcessMessageSubscriptionRecord record, final long commandSentTime) {
-    transientState.add(buildCommandEntry(record, commandSentTime));
+  void add(final ProcessMessageSubscriptionRecord record, final long commandSentTime) {
+    transientState.add(buildCommandEntry(record), commandSentTime);
   }
 
-  final void remove(final ProcessMessageSubscriptionRecord record) {
-    transientState.remove(buildCommandEntry(record, 0));
+  void remove(final ProcessMessageSubscriptionRecord record) {
+    transientState.remove(buildCommandEntry(record));
   }
 
-  private CommandEntry buildCommandEntry(
-      final ProcessMessageSubscriptionRecord record, final long commandSentTime) {
-    return new CommandEntry(
-        record.getElementInstanceKey(), record.getMessageName(), commandSentTime);
+  private PendingSubscription buildCommandEntry(final ProcessMessageSubscriptionRecord record) {
+    return new PendingSubscription(record.getElementInstanceKey(), record.getMessageName());
   }
 }
