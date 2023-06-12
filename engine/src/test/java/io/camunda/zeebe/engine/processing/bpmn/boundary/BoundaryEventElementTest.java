@@ -41,6 +41,7 @@ public final class BoundaryEventElementTest {
   @ClassRule public static final EngineRule ENGINE = EngineRule.singlePartition();
 
   private static final String PROCESS_ID = "process";
+  private static final String CALL_ACTIVITY_PROCESS = "process2";
 
   @Rule
   public final RecordingExporterTestWatcher recordingExporterTestWatcher =
@@ -65,6 +66,17 @@ public final class BoundaryEventElementTest {
   public void shouldNotActivateBoundaryEventIfScopeIsTerminating() {
     // given
     ENGINE.deployment().withXmlResource(process(elementBuilder)).deploy();
+    if (elementBuilder.deployCalledProcess()) {
+      ENGINE
+          .deployment()
+          .withXmlResource(
+              Bpmn.createExecutableProcess(CALL_ACTIVITY_PROCESS)
+                  .startEvent()
+                  .userTask()
+                  .endEvent()
+                  .done())
+          .deploy();
+    }
 
     final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
 
@@ -111,29 +123,34 @@ public final class BoundaryEventElementTest {
         // -------------------------------
         new ElementWithBoundaryEventBuilder(
             BpmnElementType.SERVICE_TASK,
-            process -> process.serviceTask("task", t -> t.zeebeJobType("task"))),
+            process -> process.serviceTask("task", t -> t.zeebeJobType("task")),
+            false),
         // -------------------------------
         new ElementWithBoundaryEventBuilder(
             BpmnElementType.RECEIVE_TASK,
             process ->
                 process.receiveTask(
                     "task",
-                    r -> r.message(m -> m.name("wait").zeebeCorrelationKeyExpression("123")))),
+                    r -> r.message(m -> m.name("wait").zeebeCorrelationKeyExpression("123"))),
+            false),
         // -------------------------------
         new ElementWithBoundaryEventBuilder(
             BpmnElementType.BUSINESS_RULE_TASK,
-            process -> process.businessRuleTask("task", b -> b.zeebeJobType("task"))),
+            process -> process.businessRuleTask("task", b -> b.zeebeJobType("task")),
+            false),
         // -------------------------------
         new ElementWithBoundaryEventBuilder(
-            BpmnElementType.USER_TASK, process -> process.userTask("task")),
+            BpmnElementType.USER_TASK, process -> process.userTask("task"), false),
         // -------------------------------
         new ElementWithBoundaryEventBuilder(
             BpmnElementType.SCRIPT_TASK,
-            process -> process.scriptTask("task", s -> s.zeebeJobType("task"))),
+            process -> process.scriptTask("task", s -> s.zeebeJobType("task")),
+            false),
         // -------------------------------
         new ElementWithBoundaryEventBuilder(
             BpmnElementType.SEND_TASK,
-            process -> process.sendTask("task", s -> s.zeebeJobType("task"))),
+            process -> process.sendTask("task", s -> s.zeebeJobType("task")),
+            false),
         // -------------------------------
         new ElementWithBoundaryEventBuilder(
             BpmnElementType.SUB_PROCESS,
@@ -144,23 +161,27 @@ public final class BoundaryEventElementTest {
                         s.embeddedSubProcess()
                             .startEvent()
                             .serviceTask("task", t -> t.zeebeJobType("task"))
-                            .endEvent())),
+                            .endEvent()),
+            false),
         // -------------------------------
         new ElementWithBoundaryEventBuilder(
             BpmnElementType.MULTI_INSTANCE_BODY,
             process ->
                 process
                     .serviceTask("task", t -> t.zeebeJobType("task"))
-                    .multiInstance(m -> m.parallel().zeebeInputCollectionExpression("[1,2,3]"))),
+                    .multiInstance(m -> m.parallel().zeebeInputCollectionExpression("[1,2,3]")),
+            false),
         // -------------------------------
         new ElementWithBoundaryEventBuilder(
             BpmnElementType.CALL_ACTIVITY,
-            process -> process.callActivity("call", c -> c.zeebeProcessId(PROCESS_ID))));
+            process -> process.callActivity("call", c -> c.zeebeProcessId(CALL_ACTIVITY_PROCESS)),
+            true));
   }
 
   private record ElementWithBoundaryEventBuilder(
       BpmnElementType elementType,
-      Function<AbstractFlowNodeBuilder<?, ?>, AbstractActivityBuilder<?, ?>> builder) {
+      Function<AbstractFlowNodeBuilder<?, ?>, AbstractActivityBuilder<?, ?>> builder,
+      boolean deployCalledProcess) {
 
     public AbstractActivityBuilder<?, ?> build(final AbstractFlowNodeBuilder<?, ?> process) {
       return builder.apply(process);
