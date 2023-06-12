@@ -14,7 +14,7 @@ import java.util.stream.Collectors;
 
 /**
  * This class is used by {@link PendingProcessMessageSubscriptionState} and {@link
- * PendingMessageSubscriptionState} to keep track of pending (process) message subscriptions. {@link
+ * DbMessageSubscriptionState} to keep track of pending (process) message subscriptions. {@link
  * PendingSubscription PendingSubscriptions} are added with a last sent time. The time can be
  * updated with {@link #update(PendingSubscription, long)}. Pending subscriptions are retrieved with
  * {@link #entriesBefore(long)}, ordered by the last sent time. <br>

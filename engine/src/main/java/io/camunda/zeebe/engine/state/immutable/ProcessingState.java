@@ -44,6 +44,8 @@ public interface ProcessingState extends StreamProcessorLifecycleAware {
 
   DistributionState getDistributionState();
 
+  PendingMessageSubscriptionState getPendingMessageSubscriptionState();
+
   int getPartitionId();
 
   boolean isEmpty(final ZbColumnFamilies column);

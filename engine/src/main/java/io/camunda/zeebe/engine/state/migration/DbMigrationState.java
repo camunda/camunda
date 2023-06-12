@@ -18,11 +18,11 @@ import io.camunda.zeebe.db.impl.DbNil;
 import io.camunda.zeebe.db.impl.DbString;
 import io.camunda.zeebe.engine.state.deployment.PersistedDecision;
 import io.camunda.zeebe.engine.state.deployment.PersistedDecisionRequirements;
+import io.camunda.zeebe.engine.state.immutable.PendingMessageSubscriptionState;
 import io.camunda.zeebe.engine.state.mutable.MutableElementInstanceState;
 import io.camunda.zeebe.engine.state.mutable.MutableEventScopeInstanceState;
 import io.camunda.zeebe.engine.state.mutable.MutableMessageSubscriptionState;
 import io.camunda.zeebe.engine.state.mutable.MutableMigrationState;
-import io.camunda.zeebe.engine.state.mutable.MutablePendingMessageSubscriptionState;
 import io.camunda.zeebe.engine.state.mutable.MutablePendingProcessMessageSubscriptionState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessMessageSubscriptionState;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
@@ -167,7 +167,7 @@ public class DbMigrationState implements MutableMigrationState {
   @Override
   public void migrateMessageSubscriptionSentTime(
       final MutableMessageSubscriptionState messageSubscriptionState,
-      final MutablePendingMessageSubscriptionState transientState) {
+      final PendingMessageSubscriptionState transientState) {
 
     messageSubscriptionSentTimeColumnFamily.forEach(
         (key, value) -> {
@@ -180,7 +180,8 @@ public class DbMigrationState implements MutableMigrationState {
               messageSubscriptionState.get(elementInstanceKey, messageName);
           if (messageSubscription != null) {
             messageSubscriptionState.updateToCorrelatingState(messageSubscription.getRecord());
-            transientState.updateCommandSentTime(messageSubscription.getRecord(), sentTime);
+            transientState.onSent(
+                elementInstanceKey, BufferUtil.bufferAsString(messageName), sentTime);
           }
 
           messageSubscriptionSentTimeColumnFamily.deleteExisting(key);

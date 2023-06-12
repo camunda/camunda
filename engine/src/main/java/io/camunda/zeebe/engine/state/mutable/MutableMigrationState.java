@@ -7,11 +7,13 @@
  */
 package io.camunda.zeebe.engine.state.mutable;
 
+import io.camunda.zeebe.engine.state.immutable.PendingMessageSubscriptionState;
+
 public interface MutableMigrationState {
 
   void migrateMessageSubscriptionSentTime(
       final MutableMessageSubscriptionState messageSubscriptionState,
-      final MutablePendingMessageSubscriptionState transientState);
+      final PendingMessageSubscriptionState transientState);
 
   void migrateProcessMessageSubscriptionSentTime(
       final MutableProcessMessageSubscriptionState persistentSate,

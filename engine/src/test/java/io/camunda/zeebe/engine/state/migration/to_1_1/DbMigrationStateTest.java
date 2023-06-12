@@ -101,7 +101,7 @@ public class DbMigrationStateTest {
 
     final var correlatingSubscriptions = new ArrayList<MessageSubscriptionRecord>();
 
-    transientSubscriptionState.visitSubscriptionBefore(
+    transientSubscriptionState.visitPending(
         TEST_SENT_TIME + 1,
         subscription -> {
           correlatingSubscriptions.add(subscription.getRecord());
@@ -110,7 +110,7 @@ public class DbMigrationStateTest {
 
     assertThat(correlatingSubscriptions).hasSize(1).containsExactly(record);
 
-    transientSubscriptionState.visitSubscriptionBefore(
+    transientSubscriptionState.visitPending(
         TEST_SENT_TIME,
         subscription -> Assertions.fail("Found unexpected subscription " + subscription));
   }
