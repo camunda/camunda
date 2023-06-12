@@ -13,18 +13,21 @@ import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.db.impl.DbCompositeKey;
 import io.camunda.zeebe.db.impl.DbLong;
 import io.camunda.zeebe.db.impl.DbString;
-import io.camunda.zeebe.engine.state.mutable.MutablePendingProcessMessageSubscriptionState;
+import io.camunda.zeebe.engine.state.immutable.PendingProcessMessageSubscriptionState;
+import io.camunda.zeebe.engine.state.message.TransientPendingSubscriptionState.PendingSubscription;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessMessageSubscriptionState;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.impl.record.value.message.ProcessMessageSubscriptionRecord;
+import io.camunda.zeebe.scheduler.clock.ActorClock;
 import io.camunda.zeebe.stream.api.ReadonlyStreamProcessorContext;
 import io.camunda.zeebe.stream.api.StreamProcessorLifecycleAware;
+import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.function.Consumer;
 import org.agrona.DirectBuffer;
 
 public final class DbProcessMessageSubscriptionState
     implements MutableProcessMessageSubscriptionState,
-        MutablePendingProcessMessageSubscriptionState,
+        PendingProcessMessageSubscriptionState,
         StreamProcessorLifecycleAware {
 
   // (elementInstanceKey, messageName) => ProcessMessageSubscription
@@ -35,8 +38,8 @@ public final class DbProcessMessageSubscriptionState
   private final ColumnFamily<DbCompositeKey<DbLong, DbString>, ProcessMessageSubscription>
       subscriptionColumnFamily;
 
-  private final PendingProcessMessageSubscriptionState transientState =
-      new PendingProcessMessageSubscriptionState(this);
+  private final TransientPendingSubscriptionState transientState =
+      new TransientPendingSubscriptionState();
 
   public DbProcessMessageSubscriptionState(
       final ZeebeDb<ZbColumnFamilies> zeebeDb, final TransactionContext transactionContext) {
@@ -58,7 +61,11 @@ public final class DbProcessMessageSubscriptionState
     subscriptionColumnFamily.forEach(
         subscription -> {
           if (subscription.isOpening() || subscription.isClosing()) {
-            transientState.add(subscription.getRecord());
+            transientState.add(
+                new PendingSubscription(
+                    subscription.getRecord().getElementInstanceKey(),
+                    subscription.getRecord().getMessageName()),
+                ActorClock.currentTimeMillis());
           }
         });
   }
@@ -72,25 +79,32 @@ public final class DbProcessMessageSubscriptionState
 
     subscriptionColumnFamily.insert(elementKeyAndMessageName, processMessageSubscription);
 
-    transientState.add(record);
+    transientState.add(
+        new PendingSubscription(record.getElementInstanceKey(), record.getMessageName()),
+        ActorClock.currentTimeMillis());
   }
 
   @Override
   public void updateToOpeningState(final ProcessMessageSubscriptionRecord record) {
     update(record, s -> s.setRecord(record).setOpening());
-    transientState.add(record);
+    transientState.add(
+        new PendingSubscription(record.getElementInstanceKey(), record.getMessageName()),
+        ActorClock.currentTimeMillis());
   }
 
   @Override
   public void updateToOpenedState(final ProcessMessageSubscriptionRecord record) {
     update(record, s -> s.setRecord(record).setOpened());
-    transientState.remove(record);
+    transientState.remove(
+        new PendingSubscription(record.getElementInstanceKey(), record.getMessageName()));
   }
 
   @Override
   public void updateToClosingState(final ProcessMessageSubscriptionRecord record) {
     update(record, s -> s.setRecord(record).setClosing());
-    transientState.add(record);
+    transientState.add(
+        new PendingSubscription(record.getElementInstanceKey(), record.getMessageName()),
+        ActorClock.currentTimeMillis());
   }
 
   @Override
@@ -133,16 +147,23 @@ public final class DbProcessMessageSubscriptionState
   }
 
   @Override
-  public void visitSubscriptionBefore(
-      final long deadline, final ProcessMessageSubscriptionVisitor visitor) {
+  public void visitPending(final long deadline, final ProcessMessageSubscriptionVisitor visitor) {
 
-    transientState.visitSubscriptionBefore(deadline, visitor);
+    for (final var pendingSubscription : transientState.entriesBefore(deadline)) {
+      final var subscription =
+          getSubscription(
+              pendingSubscription.elementInstanceKey(),
+              BufferUtil.wrapString(pendingSubscription.messageName()));
+
+      visitor.visit(subscription);
+    }
   }
 
   @Override
-  public void updateSentTime(
-      final ProcessMessageSubscriptionRecord record, final long commandSentTime) {
-    transientState.updateSentTime(record, commandSentTime);
+  public void onSent(final ProcessMessageSubscriptionRecord record, final long timestampMs) {
+    transientState.update(
+        new PendingSubscription(record.getElementInstanceKey(), record.getMessageName()),
+        timestampMs);
   }
 
   private void update(
@@ -175,7 +196,10 @@ public final class DbProcessMessageSubscriptionState
 
     subscriptionColumnFamily.deleteExisting(elementKeyAndMessageName);
 
-    transientState.remove(subscription.getRecord());
+    transientState.remove(
+        new PendingSubscription(
+            subscription.getRecord().getElementInstanceKey(),
+            subscription.getRecord().getMessageName()));
   }
 
   private void wrapSubscriptionKeys(final long elementInstanceKey, final DirectBuffer messageName) {

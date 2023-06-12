@@ -13,7 +13,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 /**
- * This class is used by {@link PendingProcessMessageSubscriptionState} and {@link
+ * This class is used by {@link DbProcessMessageSubscriptionState} and {@link
  * DbMessageSubscriptionState} to keep track of pending (process) message subscriptions. {@link
  * PendingSubscription PendingSubscriptions} are added with a last sent time. The time can be
  * updated with {@link #update(PendingSubscription, long)}. Pending subscriptions are retrieved with

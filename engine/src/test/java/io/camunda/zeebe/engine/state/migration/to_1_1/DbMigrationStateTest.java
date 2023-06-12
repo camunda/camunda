@@ -201,7 +201,7 @@ public class DbMigrationStateTest {
 
     final var correlatingSubscriptions = new ArrayList<ProcessMessageSubscriptionRecord>();
 
-    transientSubscriptionState.visitSubscriptionBefore(
+    transientSubscriptionState.visitPending(
         TEST_SENT_TIME + 1,
         subscription -> {
           final var copyOfRecord = new ProcessMessageSubscriptionRecord();
@@ -214,7 +214,7 @@ public class DbMigrationStateTest {
         .hasSize(subscriptionRecords.length)
         .containsExactlyInAnyOrder(subscriptionRecords);
 
-    transientSubscriptionState.visitSubscriptionBefore(
+    transientSubscriptionState.visitPending(
         TEST_SENT_TIME,
         subscription -> Assertions.fail("Found unexpected subscription " + subscription));
   }

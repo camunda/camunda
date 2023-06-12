@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.engine.state.mutable;
 
-import io.camunda.zeebe.engine.state.immutable.PendingProcessMessageSubscriptionState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 
@@ -62,8 +61,6 @@ public interface MutableProcessingState extends ProcessingState {
   MutableDistributionState getDistributionState();
 
   MutableMigrationState getMigrationState();
-
-  PendingProcessMessageSubscriptionState getPendingProcessMessageSubscriptionState();
 
   KeyGenerator getKeyGenerator();
 }
