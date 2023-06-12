@@ -19,7 +19,7 @@ const TreeNode: React.FC = () => {
 
 const Skeleton: React.FC = () => {
   return (
-    <ul data-testid="skeleton">
+    <ul data-testid="instance-history-skeleton">
       {[...Array(10)].map((_, index) => (
         <TreeNode key={index} />
       ))}

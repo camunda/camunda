@@ -182,22 +182,29 @@ const FlowNodeInstancesTree: React.FC<Props> = observer(
       isMultiInstanceBody ? ` (Multi Instance)` : ''
     }`;
 
+    const isExpanded = flowNodeInstance.isPlaceholder
+      ? hasVisibleChildPlaceholders
+      : hasVisibleChildNodes;
     let {rowRef: _, ...carbonTreeNodeProps} = rest;
     return (
       <TreeNode
         {...carbonTreeNodeProps}
+        data-testid={`tree-node-${flowNodeInstance.id}`}
         selected={isSelected ? [flowNodeInstance.id] : []}
         active={isSelected ? flowNodeInstance.id : undefined}
         key={flowNodeInstance.id}
         id={flowNodeInstance.id}
         value={flowNodeInstance.id}
-        renderIcon={() => (
-          <FlowNodeIcon
-            flowNodeInstanceType={flowNodeInstance.type}
-            diagramBusinessObject={businessObject!}
-            hasLeftMargin={!hasChildren}
-          />
-        )}
+        aria-label={nodeName}
+        renderIcon={() => {
+          return businessObject !== undefined ? (
+            <FlowNodeIcon
+              flowNodeInstanceType={flowNodeInstance.type}
+              diagramBusinessObject={businessObject}
+              hasLeftMargin={!hasChildren}
+            />
+          ) : undefined;
+        }}
         onSelect={() => {
           if (modificationsStore.state.status === 'adding-token') {
             modificationsStore.finishAddingToken(
@@ -228,11 +235,7 @@ const FlowNodeInstancesTree: React.FC<Props> = observer(
               }
             : undefined
         }
-        isExpanded={
-          flowNodeInstance.isPlaceholder
-            ? hasVisibleChildPlaceholders
-            : hasVisibleChildNodes
-        }
+        isExpanded={isExpanded}
         label={<Bar nodeName={nodeName} flowNodeInstance={flowNodeInstance} />}
       >
         {hasChildren ? (

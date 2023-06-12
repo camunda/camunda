@@ -37,13 +37,13 @@ const ModificationIcons: React.FC<Props> = observer(({flowNodeInstance}) => {
       <>
         {flowNodeInstance.isPlaceholder && (
           <Stack orientation="horizontal" gap={3}>
-            <WarningIcon>
+            <WarningIcon data-testid="warning-icon">
               <title>
                 Ensure to add/edit variables if required, input/output mappings
                 are not executed during modification
               </title>
             </WarningIcon>
-            <AddIcon>
+            <AddIcon data-testid="add-icon">
               <title>This flow node instance is planned to be added</title>
             </AddIcon>
           </Stack>
@@ -52,7 +52,7 @@ const ModificationIcons: React.FC<Props> = observer(({flowNodeInstance}) => {
         {hasCancelModification &&
           !flowNodeInstance.isPlaceholder &&
           flowNodeInstance.endDate === null && (
-            <CancelIcon>
+            <CancelIcon data-testid="cancel-icon">
               <title>This flow node instance is planned to be canceled</title>
             </CancelIcon>
           )}
