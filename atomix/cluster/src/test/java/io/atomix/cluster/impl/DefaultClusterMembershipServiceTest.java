@@ -197,5 +197,4 @@ final class DefaultClusterMembershipServiceTest {
 
     membershipService.stop().join();
   }
-
 }
