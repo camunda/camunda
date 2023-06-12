@@ -7,10 +7,13 @@
  */
 package io.camunda.zeebe.engine.processing.deployment.model.validation;
 
+import io.camunda.zeebe.el.impl.StaticExpression;
 import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.deployment.model.element.AbstractFlowElement;
+import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCallActivity;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowElementContainer;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowNode;
+import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableMultiInstanceBody;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableProcess;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableSequenceFlow;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentResource;
@@ -24,6 +27,7 @@ import java.util.Comparator;
 import java.util.EnumSet;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Optional;
 
 public final class StraightThroughProcessingLoopValidator {
 
@@ -37,14 +41,15 @@ public final class StraightThroughProcessingLoopValidator {
           BpmnElementType.START_EVENT,
           BpmnElementType.END_EVENT,
           BpmnElementType.SUB_PROCESS,
-          BpmnElementType.MULTI_INSTANCE_BODY);
+          BpmnElementType.MULTI_INSTANCE_BODY,
+          BpmnElementType.CALL_ACTIVITY);
 
   /**
    * Loops must contain any of the rejected element types for it to be considered a loop. This makes
    * sure we don't reject deployments containing a loop of just gateways.
    */
   private static final EnumSet<BpmnElementType> REJECTED_ELEMENT_TYPES =
-      EnumSet.of(BpmnElementType.MANUAL_TASK, BpmnElementType.TASK);
+      EnumSet.of(BpmnElementType.MANUAL_TASK, BpmnElementType.TASK, BpmnElementType.CALL_ACTIVITY);
 
   /**
    * Validates a list of processes for straight-through processing loops. These are loops of
@@ -60,7 +65,8 @@ public final class StraightThroughProcessingLoopValidator {
     final List<Failure> failures = new ArrayList<>();
     for (final ExecutableProcess executableProcess : executableProcesses) {
       try {
-        hasStraightThroughProcessingLoop(resource, executableProcess).ifLeft(failures::add);
+        hasStraightThroughProcessingLoop(resource, executableProcess, executableProcesses)
+            .ifLeft(failures::add);
       } catch (final StackOverflowError e) {
         final var message =
             String.format(
@@ -89,12 +95,15 @@ public final class StraightThroughProcessingLoopValidator {
    * @return an Either of which the left contains the failure message if any loops have been found
    */
   private static Either<Failure, ?> hasStraightThroughProcessingLoop(
-      final DeploymentResource resource, final ExecutableProcess executableProcess) {
+      final DeploymentResource resource,
+      final ExecutableProcess executableProcess,
+      final List<ExecutableProcess> executableProcesses) {
     final var straightThroughElements = getStraightThroughElementsInProcess(executableProcess);
 
     for (final ExecutableFlowNode element : straightThroughElements) {
       final var potentialLoop = new LinkedList<ExecutableFlowNode>();
-      final var result = checkForStraightThroughProcessingLoop(potentialLoop, element);
+      final var result =
+          checkForStraightThroughProcessingLoop(potentialLoop, element, executableProcesses);
       if (result.isLeft()) {
         final String failureMessage =
             createFailureMessage(resource, executableProcess, result.getLeft());
@@ -117,6 +126,11 @@ public final class StraightThroughProcessingLoopValidator {
       final ExecutableProcess executableProcess) {
 
     return executableProcess.getFlowElements().stream()
+        .map(
+            flowElement ->
+                flowElement instanceof ExecutableMultiInstanceBody
+                    ? ((ExecutableMultiInstanceBody) flowElement).getInnerActivity()
+                    : flowElement)
         .filter(flowElement -> REJECTED_ELEMENT_TYPES.contains(flowElement.getElementType()))
         .map(ExecutableFlowNode.class::cast)
         .sorted(Comparator.comparing(ExecutableFlowNode::getId))
@@ -148,7 +162,9 @@ public final class StraightThroughProcessingLoopValidator {
    * @return an Either of which the left contains a list of the straight-through processing loop.
    */
   private static Either<List<ExecutableFlowNode>, ?> checkForStraightThroughProcessingLoop(
-      final LinkedList<ExecutableFlowNode> potentialLoop, final ExecutableFlowNode element) {
+      final LinkedList<ExecutableFlowNode> potentialLoop,
+      final ExecutableFlowNode element,
+      final List<ExecutableProcess> executableProcesses) {
 
     if (foundLoop(potentialLoop, element)) {
       // It could happen that we detect a loop which doesn't involve the first element we checked.
@@ -161,10 +177,15 @@ public final class StraightThroughProcessingLoopValidator {
     } else if (STRAIGHT_THROUGH_PROCESSING_ELEMENT_TYPES.contains(element.getElementType())) {
       // We are not in a loop yet, but the element is a straight-through processing element. We must
       // keep checking for loops by analysing the outgoing sequence flows of this element.
-      potentialLoop.addLast(element);
+      if (element.getElementType() != BpmnElementType.MULTI_INSTANCE_BODY) {
+        // MultiInstanceBody has the same element id as the inner element. We should not add this to
+        // the loop to prevent duplicate ids.
+        potentialLoop.addLast(element);
+      }
       Either<List<ExecutableFlowNode>, ?> isPartOfLoop = Either.right(null);
-      for (final ExecutableFlowNode nextElement : getNextElements(element)) {
-        isPartOfLoop = checkForStraightThroughProcessingLoop(potentialLoop, nextElement);
+      for (final ExecutableFlowNode nextElement : getNextElements(element, executableProcesses)) {
+        isPartOfLoop =
+            checkForStraightThroughProcessingLoop(potentialLoop, nextElement, executableProcesses);
         if (isPartOfLoop.isLeft()) {
           break;
         }
@@ -188,12 +209,36 @@ public final class StraightThroughProcessingLoopValidator {
    * @param element the element for which we need to check the next element in the execution path
    * @return a list of sequence flows
    */
-  private static List<ExecutableFlowNode> getNextElements(final ExecutableFlowNode element) {
+  private static List<? extends ExecutableFlowNode> getNextElements(
+      final ExecutableFlowNode element, final List<ExecutableProcess> executableProcesses) {
     switch (element.getElementType()) {
       case SUB_PROCESS -> {
         final var subProcess = (ExecutableFlowElementContainer) element;
         // A subprocess must have exactly 1 none start event
         return List.of(subProcess.getNoneStartEvent());
+      }
+      case CALL_ACTIVITY -> {
+        // For Call Activities we only check processes in the current resource. This is not a
+        // catch-all! However, this will catch the most basic example of a process calling itself.
+        final var callActivity = (ExecutableCallActivity) element;
+        final var expression = callActivity.getCalledElementProcessId();
+        if (expression.isStatic()) {
+          final var calledActivityId = ((StaticExpression) expression).getString();
+          final Optional<ExecutableProcess> calledProcess =
+              executableProcesses.stream()
+                  .filter(
+                      process ->
+                          BufferUtil.bufferAsString(process.getId()).equals(calledActivityId))
+                  .findFirst();
+          return calledProcess
+              .map(process -> List.of(process.getNoneStartEvent()))
+              .orElseGet(Collections::emptyList);
+        }
+        return Collections.emptyList();
+      }
+      case MULTI_INSTANCE_BODY -> {
+        final var multiInstance = (ExecutableMultiInstanceBody) element;
+        return List.of(multiInstance.getInnerActivity());
       }
       default -> {
         final var outgoingFlows = element.getOutgoing();
