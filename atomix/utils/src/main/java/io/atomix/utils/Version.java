@@ -20,6 +20,7 @@ import static com.google.common.base.Preconditions.checkArgument;
 import static java.lang.Integer.parseInt;
 
 import com.google.common.collect.ComparisonChain;
+import java.util.Arrays;
 import java.util.Objects;
 
 /** Atomix software version. */
@@ -123,11 +124,17 @@ public final class Version implements Comparable<Version> {
   private static final class Build implements Comparable<Build> {
 
     private final Type type;
-    private final int version;
+    private final String version;
+    private final int[] versionIdentifiers;
 
     private Build(final Type type, final int version) {
+      this(type, String.valueOf(version), new int[] {version});
+    }
+
+    private Build(final Type type, final String version, final int[] versionIdentifiers) {
       this.type = type;
       this.version = version;
+      this.versionIdentifiers = versionIdentifiers;
     }
 
     /**
@@ -149,8 +156,13 @@ public final class Version implements Comparable<Version> {
             && build.length() >= type.name.length()
             && build.substring(0, type.name.length()).equalsIgnoreCase(type.name)) {
           try {
-            final int version = parseInt(build.substring(type.name.length()));
-            return new Build(type, version);
+            final String preReleaseVersion = build.substring(type.name.length());
+            final String[] preReleaseSplitVersion = preReleaseVersion.split("[.]");
+            final int[] preReleaseVersionIdentifiers = new int[preReleaseSplitVersion.length];
+            for (int i = 0; i < preReleaseVersionIdentifiers.length; i++) {
+              preReleaseVersionIdentifiers[i] = parseInt(preReleaseSplitVersion[i]);
+            }
+            return new Build(type, preReleaseVersion, preReleaseVersionIdentifiers);
           } catch (final NumberFormatException e) {
             throw new IllegalArgumentException(build + " is not a valid build version string");
           }
@@ -161,10 +173,23 @@ public final class Version implements Comparable<Version> {
 
     @Override
     public int compareTo(final Build that) {
-      return ComparisonChain.start()
-          .compare(type.ordinal(), that.type.ordinal())
-          .compare(version, that.version)
-          .result();
+      ComparisonChain comparisonChain =
+          ComparisonChain.start().compare(type.ordinal(), that.type.ordinal());
+
+      int[] left = versionIdentifiers;
+      int[] right = that.versionIdentifiers;
+      // growing either of the arrays results in new elements defaulting to `0`,
+      // thus allowing a comparison
+      if (left.length < right.length) {
+        left = Arrays.copyOf(left, right.length);
+      } else if (left.length > right.length) {
+        right = Arrays.copyOf(right, left.length);
+      }
+
+      for (int i = 0; i < left.length; i++) {
+        comparisonChain = comparisonChain.compare(left[i], right[i]);
+      }
+      return comparisonChain.result();
     }
 
     @Override
@@ -178,7 +203,7 @@ public final class Version implements Comparable<Version> {
         return false;
       }
       final Build that = (Build) object;
-      return Objects.equals(type, that.type) && version == that.version;
+      return Objects.equals(type, that.type) && Objects.equals(version, that.version);
     }
 
     @Override
@@ -200,13 +225,13 @@ public final class Version implements Comparable<Version> {
         this.name = name;
       }
 
-      String format(final int version) {
+      String format(final String version) {
         if (name == null) {
           return null;
         } else if ("snapshot".equals(name)) {
           return "SNAPSHOT";
         } else {
-          return String.format("%s%d", name, version);
+          return String.format("%s%s", name, version);
         }
       }
 
