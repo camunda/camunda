@@ -30,15 +30,15 @@ public enum MessageSubscriptionIntent implements ProcessInstanceRelatedIntent {
   DELETED((short) 7);
 
   private final short value;
-  private final boolean shouldBlacklist;
+  private final boolean shouldBanInstance;
 
   MessageSubscriptionIntent(final short value) {
     this(value, true);
   }
 
-  MessageSubscriptionIntent(final short value, final boolean shouldBlacklist) {
+  MessageSubscriptionIntent(final short value, final boolean shouldBanInstance) {
     this.value = value;
-    this.shouldBlacklist = shouldBlacklist;
+    this.shouldBanInstance = shouldBanInstance;
   }
 
   @Override
@@ -72,7 +72,7 @@ public enum MessageSubscriptionIntent implements ProcessInstanceRelatedIntent {
   }
 
   @Override
-  public boolean shouldBlacklistInstanceOnError() {
-    return shouldBlacklist;
+  public boolean shouldBanInstanceOnError() {
+    return shouldBanInstance;
   }
 }

@@ -47,15 +47,15 @@ public enum JobIntent implements ProcessInstanceRelatedIntent {
   YIELDED((short) 16);
 
   private final short value;
-  private final boolean shouldBlacklist;
+  private final boolean shouldBanInstance;
 
   JobIntent(final short value) {
     this(value, true);
   }
 
-  JobIntent(final short value, final boolean shouldBlacklist) {
+  JobIntent(final short value, final boolean shouldBanInstance) {
     this.value = value;
-    this.shouldBlacklist = shouldBlacklist;
+    this.shouldBanInstance = shouldBanInstance;
   }
 
   public short getIntent() {
@@ -109,7 +109,7 @@ public enum JobIntent implements ProcessInstanceRelatedIntent {
   }
 
   @Override
-  public boolean shouldBlacklistInstanceOnError() {
-    return shouldBlacklist;
+  public boolean shouldBanInstanceOnError() {
+    return shouldBanInstance;
   }
 }

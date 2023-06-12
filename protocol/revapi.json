@@ -76,6 +76,18 @@
         {
           "ignore": true,
           "code": "java.method.removed",
+          "old": "io.camunda.zeebe.protocol.record.intent.IncidentIntent::shouldBlacklistInstanceOnError()",
+          "justification": "This method had a racial loaded term. It was replaced with a better name, this shouldn't been an issue as it was for internally use only."
+        },
+        {
+          "ignore": true,
+          "code": "java.method.removed",
+          "old": "io.camunda.zeebe.protocol.record.intent.JobIntent::shouldBlacklistInstanceOnError()",
+          "justification": "This method had a racial loaded term. It was replaced with a better name, this shouldn't been an issue as it was for internally use only."
+        },
+        {
+          "ignore": true,
+          "code": "java.method.removed",
           "old": "method io.camunda.zeebe.protocol.record.value.ImmutableProcessInstanceModificationRecordValue io.camunda.zeebe.protocol.record.value.ImmutableProcessInstanceModificationRecordValue::withActivatedElementInstanceKeys(java.lang.Long[])",
           "justification": "This method had a wrong name. It was only used internally as it provides no value for others."
         },
@@ -183,6 +195,81 @@
             "match": "@org.immutables.value.Generated(**) type ^* {}"
           },
           "justification": "This is ignored due to javax.annotation removal"
+        },
+        {
+          "ignore": true,
+          "code": "java.field.removed",
+          "old": "field io.camunda.zeebe.protocol.ZbColumnFamilies.BLACKLIST",
+          "justification": "This constant had a racial loaded term. It was replaced with a better name, this shouldn't been an issue as we use ordinals only."
+        },
+        {
+          "ignore": true,
+          "code": "java.method.removed",
+          "old": "method boolean io.camunda.zeebe.protocol.record.intent.IncidentIntent::shouldBlacklistInstanceOnError()",
+          "justification": "This method had a racial loaded term. It was replaced with a better name, this shouldn't been an issue as it was for internally use only."
+        },
+        {
+          "ignore": true,
+          "code": "java.method.removed",
+          "old": "method boolean io.camunda.zeebe.protocol.record.intent.JobIntent::shouldBlacklistInstanceOnError()",
+          "justification": "This method had a racial loaded term. It was replaced with a better name, this shouldn't been an issue as it was for internally use only."
+        },
+        {
+          "ignore": true,
+          "code": "java.method.removed",
+          "old": "method boolean io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent::shouldBlacklistInstanceOnError()",
+          "justification": "This method had a racial loaded term. It was replaced with a better name, this shouldn't been an issue as it was for internally use only."
+        },
+        {
+          "ignore": true,
+          "code": "java.method.removed",
+          "old": "method boolean io.camunda.zeebe.protocol.record.intent.ProcessEventIntent::shouldBlacklistInstanceOnError()",
+          "justification": "This method had a racial loaded term. It was replaced with a better name, this shouldn't been an issue as it was for internally use only."
+        },
+        {
+          "ignore": true,
+          "code": "java.method.removed",
+          "old": "method boolean io.camunda.zeebe.protocol.record.intent.ProcessInstanceCreationIntent::shouldBlacklistInstanceOnError()",
+          "justification": "This method had a racial loaded term. It was replaced with a better name, this shouldn't been an issue as it was for internally use only."
+        },
+        {
+          "ignore": true,
+          "code": "java.method.removed",
+          "old": "method boolean io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent::shouldBlacklistInstanceOnError()",
+          "justification": "This method had a racial loaded term. It was replaced with a better name, this shouldn't been an issue as it was for internally use only."
+
+        },
+        {
+          "ignore": true,
+          "code": "java.method.removed",
+          "old": "method boolean io.camunda.zeebe.protocol.record.intent.ProcessInstanceModificationIntent::shouldBlacklistInstanceOnError()",
+          "justification": "This method had a racial loaded term. It was replaced with a better name, this shouldn't been an issue as it was for internally use only."
+
+        },
+        {
+          "ignore": true,
+          "code": "java.method.removed",
+          "old": "method boolean io.camunda.zeebe.protocol.record.intent.ProcessInstanceRelatedIntent::shouldBlacklistInstanceOnError()",
+          "justification": "This method had a racial loaded term. It was replaced with a better name, this shouldn't been an issue as it was for internally use only."
+
+        },
+        {
+          "ignore": true,
+          "code": "java.method.removed",
+          "old": "method boolean io.camunda.zeebe.protocol.record.intent.ProcessInstanceResultIntent::shouldBlacklistInstanceOnError()",
+          "justification": "This method had a racial loaded term. It was replaced with a better name, this shouldn't been an issue as it was for internally use only."
+        },
+        {
+          "ignore": true,
+          "code": "java.method.removed",
+          "old": "method boolean io.camunda.zeebe.protocol.record.intent.ProcessMessageSubscriptionIntent::shouldBlacklistInstanceOnError()",
+          "justification": "This method had a racial loaded term. It was replaced with a better name, this shouldn't been an issue as it was for internally use only."
+        },
+        {
+          "ignore": true,
+          "code": "java.method.removed",
+          "old": "method boolean io.camunda.zeebe.protocol.record.intent.TimerIntent::shouldBlacklistInstanceOnError()",
+          "justification": "This method had a racial loaded term. It was replaced with a better name, this shouldn't been an issue as it was for internally use only."
         }
       ]
     }
