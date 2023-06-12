@@ -13,6 +13,10 @@ on:
         description: Allows overriding the project target reference directly; defaults to the current branch
         required: false
         type: string
+      dockerImage:
+        description: The full name of the Docker image; if absent and build is true, will use the built image name; if not building, infers from the version
+        required: false
+        type: string
       monitor:
         description: Upload Snyk snapshot instead of test
         required: false
@@ -34,6 +38,10 @@ on:
         type: string
       target:
         description: Allows overriding the project target reference directly; defaults to the current branch
+        required: false
+        type: string
+      dockerImage:
+        description: The full name of the Docker image; if absent and build is true, will use the built image name; if not building, infers from the version
         required: false
         type: string
       monitor:
@@ -94,6 +102,9 @@ jobs:
           export VERSION_TAG=$([[ "${VERSION}" == *-SNAPSHOT ]] && echo 'development' || echo "${VERSION}")
           export LIFECYCLE=$([[ "${VERSION}" == *-SNAPSHOT ]] && echo 'development' || echo 'production')
 
+          # use inputs.dockerImage if present; otherwise if building, use the output of the build step; otherwise infer from version and default repository camunda/zeebe
+          export DOCKER_IMAGE=$([[ ! -z '${{ inputs.dockerImage }}' ]] && echo '${{ inputs.dockerImage }}' || ([[ '${{ inputs.build }}' == 'true' ]] && echo '${{ steps.build-docker.outputs.image }}' || echo "camunda/zeebe:${VERSION}"))
+
           echo "SNYK_ARGS=" \
             "--show-vulnerable-paths=all" \
             "--severity-threshold=high" \
@@ -104,7 +115,7 @@ jobs:
           echo "TARGET=${TARGET}" >> $GITHUB_ENV
           echo "SNYK_COMMAND=${{ (inputs.monitor && 'monitor') || 'test' }}" >> $GITHUB_ENV
           echo "SARIF=${{ (inputs.monitor && 'false') || 'true' }}" >> $GITHUB_ENV
-          echo "DOCKER_IMAGE=${{ steps.build-docker.outputs.image }}" >> $GITHUB_ENV
+          echo "DOCKER_IMAGE=${DOCKER_IMAGE}" >> $GITHUB_ENV
           echo "VERSION=${VERSION}" >> $GITHUB_ENV
       - name: Run Snyk
         env:
