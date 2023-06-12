@@ -10,12 +10,16 @@ package io.camunda.zeebe.transport.stream.impl;
 import io.atomix.cluster.MemberId;
 import io.atomix.cluster.messaging.ClusterCommunicationService;
 import io.camunda.zeebe.scheduler.Actor;
+import io.camunda.zeebe.transport.stream.impl.messages.AddStreamRequest;
 import io.camunda.zeebe.transport.stream.impl.messages.MessageUtil;
+import io.camunda.zeebe.transport.stream.impl.messages.RemoveStreamRequest;
 import io.camunda.zeebe.transport.stream.impl.messages.StreamTopics;
 import io.camunda.zeebe.util.buffer.BufferReader;
 import java.util.function.Function;
 
 public final class RemoteStreamEndpoint<M extends BufferReader> extends Actor {
+  private static final byte[] EMPTY_RESPONSE = new byte[0];
+
   private final ClusterCommunicationService transport;
   private final RemoteStreamApiHandler<M> requestHandler;
 
@@ -32,14 +36,23 @@ public final class RemoteStreamEndpoint<M extends BufferReader> extends Actor {
   @Override
   protected void onActorStarting() {
     transport.subscribe(
-        StreamTopics.ADD.topic(), MessageUtil::parseAddRequest, requestHandler::add, actor::run);
+        StreamTopics.ADD.topic(),
+        MessageUtil::parseAddRequest,
+        this::onAdd,
+        Function.identity(),
+        actor::run);
     transport.subscribe(
         StreamTopics.REMOVE.topic(),
         MessageUtil::parseRemoveRequest,
-        requestHandler::remove,
+        this::onRemove,
+        Function.identity(),
         actor::run);
     transport.subscribe(
-        StreamTopics.REMOVE_ALL.topic(), Function.identity(), this::onRemoveAll, actor::run);
+        StreamTopics.REMOVE_ALL.topic(),
+        Function.identity(),
+        this::onRemoveAll,
+        Function.identity(),
+        actor::run);
   }
 
   @Override
@@ -50,7 +63,18 @@ public final class RemoteStreamEndpoint<M extends BufferReader> extends Actor {
     requestHandler.close();
   }
 
-  private void onRemoveAll(final MemberId sender, final byte[] ignored) {
+  private byte[] onAdd(final MemberId sender, final AddStreamRequest request) {
+    requestHandler.add(sender, request);
+    return EMPTY_RESPONSE;
+  }
+
+  private byte[] onRemove(final MemberId sender, final RemoveStreamRequest request) {
+    requestHandler.remove(sender, request);
+    return EMPTY_RESPONSE;
+  }
+
+  private byte[] onRemoveAll(final MemberId sender, final byte[] ignored) {
     requestHandler.removeAll(sender);
+    return EMPTY_RESPONSE;
   }
 }
