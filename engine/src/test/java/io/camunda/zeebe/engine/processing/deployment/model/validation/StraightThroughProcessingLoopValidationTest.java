@@ -201,7 +201,7 @@ public class StraightThroughProcessingLoopValidationTest {
         .contains("Process: process1")
         .contains(GENERIC_REJECTION_MESSAGE + "task1 > task2 > task1")
         .contains("Process: process2")
-        .contains(GENERIC_REJECTION_MESSAGE + "manualTask2 > manualTask1 > manualTask2");
+        .contains(GENERIC_REJECTION_MESSAGE + "manualTask1 > manualTask2 > manualTask1");
   }
 
   @Test
