@@ -22,6 +22,7 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.util.function.BiConsumer;
+import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
@@ -177,6 +178,22 @@ public interface ClusterCommunicationService {
       String subject,
       Function<byte[], M> decoder,
       BiConsumer<MemberId, M> handler,
+      Executor executor);
+
+  /**
+   * Adds a new subscriber for the specified message subject.
+   *
+   * @param subject message subject
+   * @param decoder decoder to resurrecting incoming message
+   * @param handler handler for handling message
+   * @param executor executor to run this handler on
+   * @param <M> incoming message type
+   */
+  <M, R> void subscribe(
+      String subject,
+      Function<byte[], M> decoder,
+      BiFunction<MemberId, M, R> handler,
+      Function<R, byte[]> encoder,
       Executor executor);
 
   /**
