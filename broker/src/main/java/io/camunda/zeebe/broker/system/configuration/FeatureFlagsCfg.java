@@ -35,6 +35,8 @@ public final class FeatureFlagsCfg {
   private boolean enableMessageTtlCheckerAsync = DEFAULT_SETTINGS.enableMessageTTLCheckerAsync();
   private boolean enableTimerDueDateCheckerAsync =
       DEFAULT_SETTINGS.enableTimerDueDateCheckerAsync();
+  private boolean enableStraightThroughProcessingLoopDetector =
+      DEFAULT_SETTINGS.enableStraightThroughProcessingLoopDetector();
 
   public boolean isEnableYieldingDueDateChecker() {
     return enableYieldingDueDateChecker;
@@ -68,12 +70,22 @@ public final class FeatureFlagsCfg {
     this.enableTimerDueDateCheckerAsync = enableTimerDueDateCheckerAsync;
   }
 
+  public boolean isEnableStraightThroughProcessingLoopDetector() {
+    return enableStraightThroughProcessingLoopDetector;
+  }
+
+  public void setEnableStraightThroughProcessingLoopDetector(
+      final boolean enableStraightThroughProcessingLoopDetector) {
+    this.enableStraightThroughProcessingLoopDetector = enableStraightThroughProcessingLoopDetector;
+  }
+
   public FeatureFlags toFeatureFlags() {
     return new FeatureFlags(
         enableYieldingDueDateChecker,
         enableActorMetrics,
         enableMessageTtlCheckerAsync,
-        enableTimerDueDateCheckerAsync
+        enableTimerDueDateCheckerAsync,
+        enableStraightThroughProcessingLoopDetector
         /*, enableFoo*/ );
   }
 
