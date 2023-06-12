@@ -15,7 +15,6 @@ import io.camunda.zeebe.transport.stream.api.ClientStreamId;
 import io.camunda.zeebe.transport.stream.api.ClientStreamMetrics;
 import io.camunda.zeebe.transport.stream.api.NoSuchStreamException;
 import io.camunda.zeebe.transport.stream.impl.messages.PushStreamRequest;
-import io.camunda.zeebe.util.VisibleForTesting;
 import io.camunda.zeebe.util.buffer.BufferWriter;
 import java.util.Collections;
 import java.util.HashSet;
@@ -30,12 +29,6 @@ final class ClientStreamManager<M extends BufferWriter> {
   private final ClientStreamRequestManager<M> requestManager;
   private final ClientStreamMetrics metrics;
   private final Set<MemberId> servers = new HashSet<>();
-
-  @VisibleForTesting("Useful for testing with a noop implementation")
-  ClientStreamManager(
-      final ClientStreamRegistry<M> registry, final ClientStreamRequestManager<M> requestManager) {
-    this(registry, requestManager, ClientStreamMetrics.noop());
-  }
 
   ClientStreamManager(
       final ClientStreamRegistry<M> registry,
@@ -71,8 +64,7 @@ final class ClientStreamManager<M extends BufferWriter> {
       final M metadata,
       final ClientStreamConsumer clientStreamConsumer) {
     // add first in memory to handle case of new broker while we're adding
-    final ClientStream<M> clientStream =
-        registry.addClient(streamType, metadata, clientStreamConsumer);
+    final var clientStream = registry.addClient(streamType, metadata, clientStreamConsumer);
     LOG.debug("Added new client stream [{}]", clientStream.streamId());
     clientStream.serverStream().open(requestManager, servers);
 
@@ -126,7 +118,10 @@ final class ClientStreamManager<M extends BufferWriter> {
           // we do not retry. Otherwise, it is possible that we send it multiple times unnecessary.
           requestManager.removeStreamUnreliable(streamId, servers);
           LOG.warn("Expected to push payload to stream {}, but no stream found.", streamId);
-          responseFuture.completeExceptionally(new NoSuchStreamException());
+          responseFuture.completeExceptionally(
+              new NoSuchStreamException(
+                  "Cannot forward pushed payload as chosen client stream %s was already closed"
+                      .formatted(streamId)));
         });
   }
 }

@@ -7,4 +7,13 @@
  */
 package io.camunda.zeebe.transport.stream.api;
 
-public class NoSuchStreamException extends RuntimeException {}
+public class NoSuchStreamException extends RuntimeException {
+
+  public NoSuchStreamException() {
+    super();
+  }
+
+  public NoSuchStreamException(final String message) {
+    super(message);
+  }
+}
