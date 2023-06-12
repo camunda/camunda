@@ -187,7 +187,7 @@ public final class SkipFailingEventsTest {
   }
 
   @Test
-  public void shouldBlacklistInstance() {
+  public void shouldBanInstance() {
     // given
     final AtomicReference<DumpProcessor> dumpProcessorRef = new AtomicReference<>();
     final ErrorProneProcessor processor = new ErrorProneProcessor();
@@ -244,8 +244,8 @@ public final class SkipFailingEventsTest {
     final RecordMetadata metadata = new RecordMetadata();
     metadata.valueType(ValueType.PROCESS_INSTANCE);
     final MockTypedRecord<ProcessInstanceRecord> mockTypedRecord =
-        new MockTypedRecord<>(0, metadata, PROCESS_INSTANCE_RECORD);
-    Assertions.assertThat(processingState.getBlackListState().isOnBlacklist(mockTypedRecord))
+        new MockTypedRecord<>(0, metadata, Records.processInstance(1));
+    Assertions.assertThat(processingState.getBannedInstanceState().isBanned(mockTypedRecord))
         .isTrue();
 
     verify(dumpProcessorRef.get(), times(1)).processRecord(any());
@@ -253,7 +253,7 @@ public final class SkipFailingEventsTest {
   }
 
   @Test
-  public void shouldBlacklistInstanceOnReplay() throws Exception {
+  public void shouldBanInstanceOnReplay() throws Exception {
     // given
     final long failedPos =
         streams
@@ -301,11 +301,11 @@ public final class SkipFailingEventsTest {
     metadata.valueType(ValueType.PROCESS_INSTANCE);
     final MockTypedRecord<ProcessInstanceRecord> mockTypedRecord =
         new MockTypedRecord<>(0, metadata, PROCESS_INSTANCE_RECORD);
-    waitUntil(() -> processingState.getBlackListState().isOnBlacklist(mockTypedRecord));
+    waitUntil(() -> processingState.getBannedInstanceState().isBanned(mockTypedRecord));
   }
 
   @Test
-  public void shouldNotBlacklistInstanceOnJobCommand() {
+  public void shouldNotBanInstanceOnJobCommand() {
     // given
     final List<Long> processedInstances = new ArrayList<>();
     final AtomicReference<TypedRecordProcessor<JobRecord>> dumpProcessorRef =
@@ -382,8 +382,8 @@ public final class SkipFailingEventsTest {
     final RecordMetadata metadata = new RecordMetadata();
     metadata.valueType(ValueType.PROCESS_INSTANCE);
     final MockTypedRecord<ProcessInstanceRecord> mockTypedRecord =
-        new MockTypedRecord<>(0, metadata, PROCESS_INSTANCE_RECORD);
-    Assertions.assertThat(processingState.getBlackListState().isOnBlacklist(mockTypedRecord))
+        new MockTypedRecord<>(0, metadata, Records.processInstance(1));
+    Assertions.assertThat(processingState.getBannedInstanceState().isBanned(mockTypedRecord))
         .isFalse();
 
     verify(dumpProcessorRef.get(), timeout(1000).times(2)).processRecord(any());
@@ -391,7 +391,7 @@ public final class SkipFailingEventsTest {
   }
 
   @Test
-  public void shouldNotBlacklistInstanceAndIgnoreTimerStartEvents() {
+  public void shouldNotBanInstanceAndIgnoreTimerStartEvents() {
     // given
     final List<Long> processedInstances = new ArrayList<>();
 
@@ -459,7 +459,7 @@ public final class SkipFailingEventsTest {
     metadata.valueType(ValueType.TIMER);
     final MockTypedRecord<TimerRecord> mockTypedRecord =
         new MockTypedRecord<>(0, metadata, Records.timer(TimerInstance.NO_ELEMENT_INSTANCE));
-    Assertions.assertThat(processingState.getBlackListState().isOnBlacklist(mockTypedRecord))
+    Assertions.assertThat(processingState.getBannedInstanceState().isBanned(mockTypedRecord))
         .isFalse();
     assertThat(processedInstances).containsExactly(TimerInstance.NO_ELEMENT_INSTANCE);
   }

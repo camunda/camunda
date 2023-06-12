@@ -21,15 +21,15 @@ public enum ProcessInstanceCreationIntent implements Intent, ProcessInstanceRela
   CREATE_WITH_AWAITING_RESULT(2, false);
 
   private final short value;
-  private final boolean shouldBlacklist;
+  private final boolean shouldBanInstance;
 
-  ProcessInstanceCreationIntent(final int value, final boolean shouldBlacklist) {
-    this((short) value, shouldBlacklist);
+  ProcessInstanceCreationIntent(final int value, final boolean shouldBanInstance) {
+    this((short) value, shouldBanInstance);
   }
 
-  ProcessInstanceCreationIntent(final short value, final boolean shouldBlacklist) {
+  ProcessInstanceCreationIntent(final short value, final boolean shouldBanInstance) {
     this.value = value;
-    this.shouldBlacklist = shouldBlacklist;
+    this.shouldBanInstance = shouldBanInstance;
   }
 
   @Override
@@ -51,7 +51,7 @@ public enum ProcessInstanceCreationIntent implements Intent, ProcessInstanceRela
   }
 
   @Override
-  public boolean shouldBlacklistInstanceOnError() {
-    return shouldBlacklist;
+  public boolean shouldBanInstanceOnError() {
+    return shouldBanInstance;
   }
 }

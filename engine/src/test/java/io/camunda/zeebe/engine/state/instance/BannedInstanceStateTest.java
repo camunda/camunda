@@ -15,7 +15,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import io.camunda.zeebe.engine.state.mutable.MutableBlackListState;
+import io.camunda.zeebe.engine.state.mutable.MutableBannedInstanceState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.util.ProcessingStateExtension;
 import io.camunda.zeebe.logstreams.log.LoggedEvent;
@@ -31,62 +31,62 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 @ExtendWith(ProcessingStateExtension.class)
-public final class BlackListStateTest {
+public final class BannedInstanceStateTest {
 
   private MutableProcessingState processingState;
-  private MutableBlackListState blackListState;
+  private MutableBannedInstanceState bannedInstanceState;
 
   @BeforeEach
   public void setup() {
-    blackListState = processingState.getBlackListState();
+    bannedInstanceState = processingState.getBannedInstanceState();
   }
 
   @Test
-  public void shouldAddBlackListInstanceWithKey() {
+  public void shouldBanInstanceWithKey() {
     // given
     final var processInstanceRecord = createRecord();
 
     // when
-    blackListState.blacklistProcessInstance(1000L);
+    bannedInstanceState.banProcessInstance(1000L);
 
     // then
-    assertThat(blackListState.isOnBlacklist(processInstanceRecord)).isTrue();
+    assertThat(bannedInstanceState.isBanned(processInstanceRecord)).isTrue();
   }
 
   @Test
-  public void shouldAddBlackListInstanceWithRecord() {
+  public void shouldBanInstanceWithRecord() {
     // given
     final var processInstanceRecord = createRecord();
 
     // when
-    blackListState.tryToBlacklist(processInstanceRecord, (pi) -> {});
+    bannedInstanceState.tryToBanInstance(processInstanceRecord, (pi) -> {});
 
     // then
-    assertThat(blackListState.isOnBlacklist(processInstanceRecord)).isTrue();
+    assertThat(bannedInstanceState.isBanned(processInstanceRecord)).isTrue();
   }
 
   @Test
-  public void shouldReturnFalseIfNotBlacklisted() {
+  public void shouldReturnFalseIfNotBanned() {
     // given
     final var processInstanceRecord = createRecord();
 
-    // when - no blacklisting
+    // when - no ban
 
     // then
-    assertThat(blackListState.isOnBlacklist(processInstanceRecord)).isFalse();
+    assertThat(bannedInstanceState.isBanned(processInstanceRecord)).isFalse();
   }
 
   @Test
-  public void shouldCallCallbackIfBlacklisted() {
+  public void shouldCallCallbackIfBanned() {
     // given
     final var processInstanceRecord = createRecord();
     final var consumer = mock(Consumer.class);
 
-    // when - no blacklisting
-    blackListState.tryToBlacklist(processInstanceRecord, consumer);
+    // when - no banning
+    bannedInstanceState.tryToBanInstance(processInstanceRecord, consumer);
 
     // then
-    assertThat(blackListState.isOnBlacklist(processInstanceRecord)).isTrue();
+    assertThat(bannedInstanceState.isBanned(processInstanceRecord)).isTrue();
     verify(consumer, times(1)).accept(1000L);
   }
 
@@ -113,47 +113,47 @@ public final class BlackListStateTest {
     final var consumer = mock(Consumer.class);
 
     // when - no blacklisting
-    blackListState.tryToBlacklist(typedEvent, consumer);
+    bannedInstanceState.tryToBanInstance(typedEvent, consumer);
 
     // then
-    assertThat(blackListState.isOnBlacklist(typedEvent)).isFalse();
+    assertThat(bannedInstanceState.isBanned(typedEvent)).isFalse();
     verify(consumer, never()).accept(1000L);
   }
 
   @Test
-  public void shouldReturnFalseIfDifferentInstanceIsBlacklisted() {
+  public void shouldReturnFalseIfDifferentInstanceIsBanned() {
     // given
     final var processInstanceRecord = createRecord();
     final var differentProcessInstanceRecord = createRecord(1001);
 
     // when
-    blackListState.tryToBlacklist(processInstanceRecord, (pi) -> {});
+    bannedInstanceState.tryToBanInstance(processInstanceRecord, (pi) -> {});
 
     // then
-    assertThat(blackListState.isOnBlacklist(processInstanceRecord)).isTrue();
-    assertThat(blackListState.isOnBlacklist(differentProcessInstanceRecord)).isFalse();
+    assertThat(bannedInstanceState.isBanned(processInstanceRecord)).isTrue();
+    assertThat(bannedInstanceState.isBanned(differentProcessInstanceRecord)).isFalse();
   }
 
   @Test
-  public void blacklistIsEmptyIsTrueIfNothingIsBlacklisted() {
+  public void bannedInstancesIsEmptyIsTrueIfNothingIsBanned() {
     // given
 
     // when
-    final boolean blackListIsEmpty = blackListState.isEmpty();
+    final boolean blackListIsEmpty = bannedInstanceState.isEmpty();
 
     // then
     assertThat(blackListIsEmpty).isTrue();
   }
 
   @Test
-  public void blacklistIsEmptyIsFalseIfSomethingGotBlacklisted() {
+  public void bannedInstanceIsEmptyIsFalseIfSomethingGotBanned() {
     // given
 
     // when
-    blackListState.blacklistProcessInstance(1001);
+    bannedInstanceState.banProcessInstance(1001);
 
     // then
-    assertThat(blackListState.isEmpty()).isFalse();
+    assertThat(bannedInstanceState.isEmpty()).isFalse();
   }
 
   private TypedRecordImpl createRecord() {
