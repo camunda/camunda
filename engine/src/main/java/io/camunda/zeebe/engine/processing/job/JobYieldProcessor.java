@@ -46,7 +46,7 @@ public final class JobYieldProcessor implements TypedRecordProcessor<JobRecord> 
         .check(state, jobKey)
         .ifRightOrLeft(
             ok -> {
-              final JobRecord yieldedJob = record.getValue();
+              final JobRecord yieldedJob = jobState.getJob(jobKey);
 
               stateWriter.appendFollowUpEvent(jobKey, JobIntent.YIELDED, yieldedJob);
               jobActivationBehavior.notifyJobAvailableAsSideEffect(yieldedJob);
