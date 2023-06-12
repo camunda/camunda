@@ -13,6 +13,7 @@ import io.camunda.zeebe.engine.processing.deployment.model.element.AbstractFlowE
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCallActivity;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowElementContainer;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowNode;
+import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableMultiInstanceBody;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableProcess;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableSequenceFlow;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentResource;
@@ -125,6 +126,11 @@ public final class StraightThroughProcessingLoopValidator {
       final ExecutableProcess executableProcess) {
 
     return executableProcess.getFlowElements().stream()
+        .map(
+            flowElement ->
+                flowElement instanceof ExecutableMultiInstanceBody
+                    ? ((ExecutableMultiInstanceBody) flowElement).getInnerActivity()
+                    : flowElement)
         .filter(flowElement -> REJECTED_ELEMENT_TYPES.contains(flowElement.getElementType()))
         .map(ExecutableFlowNode.class::cast)
         .sorted(Comparator.comparing(ExecutableFlowNode::getId))
@@ -171,7 +177,11 @@ public final class StraightThroughProcessingLoopValidator {
     } else if (STRAIGHT_THROUGH_PROCESSING_ELEMENT_TYPES.contains(element.getElementType())) {
       // We are not in a loop yet, but the element is a straight-through processing element. We must
       // keep checking for loops by analysing the outgoing sequence flows of this element.
-      potentialLoop.addLast(element);
+      if (element.getElementType() != BpmnElementType.MULTI_INSTANCE_BODY) {
+        // MultiInstanceBody has the same element id as the inner element. We should not add this to
+        // the loop to prevent duplicate ids.
+        potentialLoop.addLast(element);
+      }
       Either<List<ExecutableFlowNode>, ?> isPartOfLoop = Either.right(null);
       for (final ExecutableFlowNode nextElement : getNextElements(element, executableProcesses)) {
         isPartOfLoop =
@@ -225,6 +235,10 @@ public final class StraightThroughProcessingLoopValidator {
               .orElseGet(Collections::emptyList);
         }
         return Collections.emptyList();
+      }
+      case MULTI_INSTANCE_BODY -> {
+        final var multiInstance = (ExecutableMultiInstanceBody) element;
+        return List.of(multiInstance.getInnerActivity());
       }
       default -> {
         final var outgoingFlows = element.getOutgoing();
