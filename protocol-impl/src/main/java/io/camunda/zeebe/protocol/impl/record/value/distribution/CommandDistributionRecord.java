@@ -15,6 +15,7 @@ import io.camunda.zeebe.msgpack.spec.MsgPackWriter;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.value.CommandDistributionRecordValue;
 import java.util.EnumMap;
 import java.util.Map;
@@ -41,6 +42,7 @@ public final class CommandDistributionRecord extends UnifiedRecordValue
   private final IntegerProperty partitionIdProperty = new IntegerProperty("partitionId");
   private final EnumProperty<ValueType> valueTypeProperty =
       new EnumProperty<>("valueType", ValueType.class, ValueType.NULL_VAL);
+  private final IntegerProperty intentProperty = new IntegerProperty("intent", Intent.NULL_VAL);
   private final ObjectProperty<UnifiedRecordValue> commandValueProperty =
       new ObjectProperty<>("commandValue", new UnifiedRecordValue());
   private final MsgPackWriter recordValueWriter = new MsgPackWriter();
@@ -49,6 +51,7 @@ public final class CommandDistributionRecord extends UnifiedRecordValue
   public CommandDistributionRecord() {
     declareProperty(partitionIdProperty)
         .declareProperty(valueTypeProperty)
+        .declareProperty(intentProperty)
         .declareProperty(commandValueProperty);
   }
 
@@ -60,6 +63,18 @@ public final class CommandDistributionRecord extends UnifiedRecordValue
   @Override
   public ValueType getValueType() {
     return valueTypeProperty.getValue();
+  }
+
+  @Override
+  public Intent getIntent() {
+    final int intentValue = intentProperty.getValue();
+    if (intentValue < 0 || intentValue > Short.MAX_VALUE) {
+      throw new IllegalStateException(
+          String.format(
+              "Expected to read the intent, but it's persisted value '%d' is not a short integer",
+              intentValue));
+    }
+    return Intent.fromProtocolValue(getValueType(), (short) intentValue);
   }
 
   @Override
@@ -97,6 +112,11 @@ public final class CommandDistributionRecord extends UnifiedRecordValue
 
   public CommandDistributionRecord setPartitionId(final int partitionId) {
     partitionIdProperty.setValue(partitionId);
+    return this;
+  }
+
+  public CommandDistributionRecord setIntent(final Intent intent) {
+    intentProperty.setValue(intent.value());
     return this;
   }
 

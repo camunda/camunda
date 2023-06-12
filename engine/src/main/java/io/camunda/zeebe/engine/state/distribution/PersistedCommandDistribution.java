@@ -10,30 +10,32 @@ package io.camunda.zeebe.engine.state.distribution;
 import io.camunda.zeebe.db.DbValue;
 import io.camunda.zeebe.msgpack.UnpackedObject;
 import io.camunda.zeebe.msgpack.property.EnumProperty;
+import io.camunda.zeebe.msgpack.property.IntegerProperty;
 import io.camunda.zeebe.msgpack.property.ObjectProperty;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.impl.record.value.distribution.CommandDistributionRecord;
 import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.intent.Intent;
 import org.agrona.concurrent.UnsafeBuffer;
 
-/**
- * The CommandValueAndValueTypeWrapper is used to store a command value with it's corresponding
- * ValueType in the state.
- */
-public class CommandValueAndValueTypeWrapper extends UnpackedObject implements DbValue {
+public class PersistedCommandDistribution extends UnpackedObject implements DbValue {
 
   private final EnumProperty<ValueType> valueTypeProperty =
       new EnumProperty<>("valueType", ValueType.class);
+  private final IntegerProperty intentProperty = new IntegerProperty("intent", Intent.NULL_VAL);
   private final ObjectProperty<UnifiedRecordValue> commandValueProperty =
       new ObjectProperty<>("commandValue", new UnifiedRecordValue());
 
-  public CommandValueAndValueTypeWrapper() {
-    declareProperty(valueTypeProperty).declareProperty(commandValueProperty);
+  public PersistedCommandDistribution() {
+    declareProperty(valueTypeProperty)
+        .declareProperty(intentProperty)
+        .declareProperty(commandValueProperty);
   }
 
-  public CommandValueAndValueTypeWrapper wrap(
+  public PersistedCommandDistribution wrap(
       final CommandDistributionRecord commandDistributionRecord) {
     valueTypeProperty.setValue(commandDistributionRecord.getValueType());
+    intentProperty.setValue(commandDistributionRecord.getIntent().value());
 
     final var commandValue = commandDistributionRecord.getCommandValue();
     final var valueBuffer = new UnsafeBuffer(0, 0);
@@ -47,6 +49,17 @@ public class CommandValueAndValueTypeWrapper extends UnpackedObject implements D
 
   public ValueType getValueType() {
     return valueTypeProperty.getValue();
+  }
+
+  public Intent getIntent() {
+    final int intentValue = intentProperty.getValue();
+    if (intentValue < 0 || intentValue > Short.MAX_VALUE) {
+      throw new IllegalStateException(
+          String.format(
+              "Expected to read the intent, but it's persisted value '%d' is not a short integer",
+              intentValue));
+    }
+    return Intent.fromProtocolValue(getValueType(), (short) intentValue);
   }
 
   public UnifiedRecordValue getCommandValue() {

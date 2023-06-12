@@ -1258,12 +1258,14 @@ final class JsonSerializableToJsonTest {
               return new CommandDistributionRecord()
                   .setPartitionId(1)
                   .setValueType(ValueType.DEPLOYMENT)
+                  .setIntent(DeploymentIntent.CREATE)
                   .setRecordValue(deploymentRecord);
             },
         """
           {
             "partitionId": 1,
             "valueType": "DEPLOYMENT",
+            "intent": "CREATE",
             "commandValue": {
               "resources": [{
                 "resource": "VGhpcyBpcyB0aGUgY29udGVudHMgb2YgdGhlIEJQTU4=",
@@ -1294,6 +1296,7 @@ final class JsonSerializableToJsonTest {
           {
               "partitionId": 1,
               "valueType": "NULL_VAL",
+              "intent": "UNKNOWN",
               "commandValue": null
           }
           """
