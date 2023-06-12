@@ -128,7 +128,7 @@ jobs:
         id: maven-release
         env:
           SKIP_REPO_DEPLOY: ${{ inputs.dryRun }}
-        run : |
+        run: |
           # This var is used to include the previously built go artifacts into the final maven release build.
           # As the maven build of the tag happens in a sub-directory to which maven checks out the release tag to build it.
           # see https://maven.apache.org/maven-release/maven-release-plugin/perform-mojo.html#workingDirectory
@@ -302,3 +302,20 @@ jobs:
       - name: Push Docker Image Tag latest
         if: ${{ inputs.isLatest && inputs.dryRun == false }}
         run: docker push ${{ env.DOCKER_IMAGE }}:latest
+  snyk:
+    name: Snyk Monitor
+    needs: [ docker, release ]
+    # skip if the version contains a dash as a quick test for -alpha, -rc, -SNAPSHOT, etc.
+    if: ${{ !contains(inputs.releaseVersion, '-') }}
+    concurrency:
+      group: release-snyk-${{ inputs.releaseVersion }}
+      cancel-in-progress: false
+    uses: ./.github/workflows/snyk.yml
+    with:
+      # test instead of monitor during dry-runs
+      monitor: ${{ !inputs.dryRun }}
+      version: ${{ inputs.releaseVersion }}
+      useMinorVersion: true
+      # the docker image will not be pushed during a dry-run, so we need to build it locally
+      build: ${{ !inputs.dryRun }}
+    secrets: inherit
