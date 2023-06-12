@@ -25,15 +25,15 @@ public enum TimerIntent implements ProcessInstanceRelatedIntent {
   CANCELED((short) 4);
 
   private final short value;
-  private final boolean shouldBlacklist;
+  private final boolean shouldBanInstance;
 
   TimerIntent(final short value) {
     this(value, true);
   }
 
-  TimerIntent(final short value, final boolean shouldBlacklist) {
+  TimerIntent(final short value, final boolean shouldBanInstance) {
     this.value = value;
-    this.shouldBlacklist = shouldBlacklist;
+    this.shouldBanInstance = shouldBanInstance;
   }
 
   @Override
@@ -59,7 +59,7 @@ public enum TimerIntent implements ProcessInstanceRelatedIntent {
   }
 
   @Override
-  public boolean shouldBlacklistInstanceOnError() {
-    return shouldBlacklist;
+  public boolean shouldBanInstanceOnError() {
+    return shouldBanInstance;
   }
 }

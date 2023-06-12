@@ -5,14 +5,13 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.camunda.zeebe.engine.processing.streamprocessor;
+package io.camunda.zeebe.engine.state;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.mockito.MockitoAnnotations.initMocks;
 
-import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
 import io.camunda.zeebe.engine.util.ZeebeStateRule;
 import io.camunda.zeebe.logstreams.log.LoggedEvent;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
@@ -206,27 +205,14 @@ public final class BanInstanceTest {
     typedEvent.wrap(loggedEvent, metadata, new Value());
 
     // when
-<<<<<<<< HEAD:engine/src/test/java/io/camunda/zeebe/engine/processing/streamprocessor/BlacklistInstanceTest.java
-    final MutableZeebeState zeebeState = ZEEBE_STATE_RULE.getZeebeState();
-    zeebeState.getBlackListState().tryToBlacklist(typedEvent, (processInstanceKey) -> {});
-========
-    final MutableProcessingState processingState = ZEEBE_STATE_RULE.getProcessingState();
-    processingState
-        .getBannedInstanceState()
-        .tryToBanInstance(typedEvent, (processInstanceKey) -> {});
->>>>>>>> e99619b51d (refactor: replace blacklisting term):engine/src/test/java/io/camunda/zeebe/engine/state/BanInstanceTest.java
+    final var zeebeState = ZEEBE_STATE_RULE.getZeebeState();
+    zeebeState.getBannedInstanceState().tryToBanInstance(typedEvent, (processInstanceKey) -> {});
 
     // then
     metadata.intent(ProcessInstanceIntent.ELEMENT_ACTIVATING);
     metadata.valueType(ValueType.PROCESS_INSTANCE);
     typedEvent.wrap(null, metadata, new Value());
-<<<<<<<< HEAD:engine/src/test/java/io/camunda/zeebe/engine/processing/streamprocessor/BlacklistInstanceTest.java
-    assertThat(zeebeState.getBlackListState().isOnBlacklist(typedEvent))
-        .isEqualTo(expectedToBlacklist);
-========
-    assertThat(processingState.getBannedInstanceState().isBanned(typedEvent))
-        .isEqualTo(expectedToBan);
->>>>>>>> e99619b51d (refactor: replace blacklisting term):engine/src/test/java/io/camunda/zeebe/engine/state/BanInstanceTest.java
+    assertThat(zeebeState.getBannedInstanceState().isBanned(typedEvent)).isEqualTo(expectedToBan);
   }
 
   private final class Value extends UnifiedRecordValue implements ProcessInstanceRelated {

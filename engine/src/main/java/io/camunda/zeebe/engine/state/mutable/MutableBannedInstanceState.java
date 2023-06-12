@@ -5,12 +5,16 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.camunda.zeebe.engine.state.immutable;
+package io.camunda.zeebe.engine.state.mutable;
 
-import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessorLifecycleAware;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecord;
+import io.camunda.zeebe.engine.state.immutable.BannedInstanceState;
+import java.util.function.Consumer;
 
-public interface BlackListState extends StreamProcessorLifecycleAware {
+public interface MutableBannedInstanceState extends BannedInstanceState {
 
-  boolean isOnBlacklist(final TypedRecord record);
+  boolean tryToBanInstance(
+      final TypedRecord<?> typedRecord, final Consumer<Long> onBanningInstance);
+
+  void banProcessInstance(final long processInstanceKey);
 }

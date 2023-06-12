@@ -8,20 +8,20 @@
 package io.camunda.zeebe.engine.state.appliers;
 
 import io.camunda.zeebe.engine.state.TypedEventApplier;
-import io.camunda.zeebe.engine.state.mutable.MutableBlackListState;
+import io.camunda.zeebe.engine.state.mutable.MutableBannedInstanceState;
 import io.camunda.zeebe.protocol.impl.record.value.error.ErrorRecord;
 import io.camunda.zeebe.protocol.record.intent.ErrorIntent;
 
 public class ErrorCreatedApplier implements TypedEventApplier<ErrorIntent, ErrorRecord> {
 
-  private final MutableBlackListState mutableBlackListState;
+  private final MutableBannedInstanceState mutableBannedInstanceState;
 
-  public ErrorCreatedApplier(final MutableBlackListState mutableBlackListState) {
-    this.mutableBlackListState = mutableBlackListState;
+  public ErrorCreatedApplier(final MutableBannedInstanceState mutableBannedInstanceState) {
+    this.mutableBannedInstanceState = mutableBannedInstanceState;
   }
 
   @Override
   public void applyState(final long key, final ErrorRecord value) {
-    mutableBlackListState.blacklistProcessInstance(value.getProcessInstanceKey());
+    mutableBannedInstanceState.banProcessInstance(value.getProcessInstanceKey());
   }
 }
