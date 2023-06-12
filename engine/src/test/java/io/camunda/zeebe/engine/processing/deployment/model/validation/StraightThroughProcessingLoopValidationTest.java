@@ -349,6 +349,36 @@ public class StraightThroughProcessingLoopValidationTest {
   }
 
   @Test
+  public void shouldRejectDeploymentWithCallActivityCallingItselfWithoutOtherElements() {
+    // given
+    final var processId = Strings.newRandomValidBpmnId();
+
+    // when
+    final var rejectedDeployment =
+        ENGINE
+            .deployment()
+            .withXmlResource(
+                Bpmn.createExecutableProcess(processId)
+                    .startEvent("startEvent")
+                    .callActivity("callActivity", c -> c.zeebeProcessId(processId))
+                    .userTask("userTask")
+                    .endEvent()
+                    .done())
+            .expectRejection()
+            .deploy();
+
+    // then
+    Assertions.assertThat(rejectedDeployment)
+        .hasKey(ExecuteCommandResponseDecoder.keyNullValue())
+        .hasRecordType(RecordType.COMMAND_REJECTION)
+        .hasIntent(DeploymentIntent.CREATE)
+        .hasRejectionType(RejectionType.INVALID_ARGUMENT);
+    assertThat(rejectedDeployment.getRejectionReason())
+        .contains(String.format("Process: %s", processId))
+        .contains(GENERIC_REJECTION_MESSAGE + "callActivity > startEvent > callActivity");
+  }
+
+  @Test
   public void shouldDeployProcessWithRegularTaskBetweenStraightThroughTasks() {
     // given
     final var processId = Strings.newRandomValidBpmnId();
@@ -396,6 +426,30 @@ public class StraightThroughProcessingLoopValidationTest {
                                 .endEvent("endEvent"))
                     .task("task3")
                     .connectTo("task1")
+                    .done())
+            .deploy();
+
+    // then
+    assertThat(deployment.getKey())
+        .describedAs("Allow deployments of loops that aren't straight-through processed")
+        .isNotNegative();
+  }
+
+  @Test
+  public void shouldDeployProcessContainingCallActivityCallingItselfWithAWaitStateInBetween() {
+    // given
+    final var processId = Strings.newRandomValidBpmnId();
+
+    // when
+    final var deployment =
+        ENGINE
+            .deployment()
+            .withXmlResource(
+                Bpmn.createExecutableProcess(processId)
+                    .startEvent("startEvent")
+                    .userTask("userTask")
+                    .callActivity("callActivity", c -> c.zeebeProcessId(processId))
+                    .endEvent()
                     .done())
             .deploy();
 
