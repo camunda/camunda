@@ -41,7 +41,8 @@ public class CommandDistributionAcknowledgeProcessor
   @Override
   public void processRecord(final TypedRecord<CommandDistributionRecord> record) {
     final var distributionKey = record.getKey();
-    final var partitionId = record.getValue().getPartitionId();
+    final var recordValue = record.getValue();
+    final var partitionId = recordValue.getPartitionId();
 
     if (!distributionState.hasPendingDistribution(distributionKey, partitionId)) {
       rejectionWriter.appendRejection(
@@ -51,7 +52,7 @@ public class CommandDistributionAcknowledgeProcessor
     }
 
     stateWriter.appendFollowUpEvent(
-        distributionKey, CommandDistributionIntent.ACKNOWLEDGED, record.getValue());
+        distributionKey, CommandDistributionIntent.ACKNOWLEDGED, recordValue);
 
     if (!distributionState.hasPendingDistribution(distributionKey)) {
       // We write an empty command here as a distribution could contain a lot of data. Because of
@@ -60,7 +61,10 @@ public class CommandDistributionAcknowledgeProcessor
       stateWriter.appendFollowUpEvent(
           distributionKey,
           CommandDistributionIntent.FINISHED,
-          new CommandDistributionRecord().setPartitionId(record.getPartitionId()));
+          new CommandDistributionRecord()
+              .setPartitionId(record.getPartitionId())
+              .setValueType(recordValue.getValueType())
+              .setIntent(recordValue.getIntent()));
     }
   }
 }

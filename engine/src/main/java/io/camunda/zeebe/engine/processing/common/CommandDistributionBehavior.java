@@ -64,17 +64,14 @@ public final class CommandDistributionBehavior {
     stateWriter.appendFollowUpEvent(
         distributionKey, CommandDistributionIntent.STARTED, distributionRecord);
 
-    final var valueType = distributionRecord.getValueType();
     final var commandValue = distributionRecord.getCommandValue();
     otherPartitions.forEach(
-        (partition) ->
-            distributeToPartition(command, partition, valueType, commandValue, distributionKey));
+        (partition) -> distributeToPartition(command, partition, commandValue, distributionKey));
   }
 
   private <T extends UnifiedRecordValue> void distributeToPartition(
       final TypedRecord<T> command,
       final int partition,
-      final ValueType valueType,
       final UnifiedRecordValue commandValue,
       final long distributionKey) {
     // We don't need the actual record in the DISTRIBUTING event applier. In order to prevent
@@ -82,7 +79,10 @@ public final class CommandDistributionBehavior {
     stateWriter.appendFollowUpEvent(
         distributionKey,
         CommandDistributionIntent.DISTRIBUTING,
-        new CommandDistributionRecord().setPartitionId(partition).setValueType(valueType));
+        new CommandDistributionRecord()
+            .setPartitionId(partition)
+            .setValueType(command.getValueType())
+            .setIntent(command.getIntent()));
 
     sideEffectWriter.appendSideEffect(
         () -> {
@@ -96,11 +96,15 @@ public final class CommandDistributionBehavior {
         });
   }
 
-  public <T extends UnifiedRecordValue> void acknowledgeCommand(final long distributionKey) {
+  public <T extends UnifiedRecordValue> void acknowledgeCommand(
+      final long distributionKey, final TypedRecord<T> command) {
     final var distributionRecord =
-        new CommandDistributionRecord().setPartitionId(currentPartitionId);
+        new CommandDistributionRecord()
+            .setPartitionId(currentPartitionId)
+            .setValueType(command.getValueType())
+            .setIntent(command.getIntent());
 
-    final int receiverPartitionId = Protocol.decodePartitionId(distributionKey);
+    final int receiverPartitionId = Protocol.decodePartitionId(command.getKey());
     sideEffectWriter.appendSideEffect(
         () -> {
           interPartitionCommandSender.sendCommand(
