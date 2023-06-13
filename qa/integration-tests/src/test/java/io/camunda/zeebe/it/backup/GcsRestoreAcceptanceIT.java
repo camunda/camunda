@@ -16,7 +16,6 @@ import io.camunda.zeebe.backup.gcs.GcsBackupConfig;
 import io.camunda.zeebe.backup.gcs.GcsBackupStore;
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.qa.util.actuator.BackupActuator;
-import io.camunda.zeebe.qa.util.testcontainers.ContainerLogsDumper;
 import io.camunda.zeebe.qa.util.testcontainers.GcsContainer;
 import io.camunda.zeebe.qa.util.testcontainers.ZeebeTestContainerDefaults;
 import io.camunda.zeebe.shared.management.openapi.models.BackupInfo;
@@ -24,58 +23,27 @@ import io.camunda.zeebe.shared.management.openapi.models.StateCode;
 import io.camunda.zeebe.shared.management.openapi.models.TakeBackupResponse;
 import io.zeebe.containers.ZeebeContainer;
 import java.time.Duration;
-import java.util.Map;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.RegisterExtension;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.testcontainers.containers.ContainerLaunchException;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.Network;
+import org.testcontainers.containers.output.Slf4jLogConsumer;
 import org.testcontainers.containers.startupcheck.OneShotStartupCheckStrategy;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 @Testcontainers
 final class GcsRestoreAcceptanceIT {
-
+  private static final Logger LOG = LoggerFactory.getLogger(GcsRestoreAcceptanceIT.class);
   private static final Network NETWORK = Network.newNetwork();
   private static final String BUCKET_NAME = RandomStringUtils.randomAlphabetic(10).toLowerCase();
 
-  private static final long BACKUP_ID = 1;
-
   @Container private static final GcsContainer GCS = new GcsContainer(NETWORK, "gcs.local");
-
-  @Container
-  private final ZeebeContainer zeebe =
-      new ZeebeContainer(ZeebeTestContainerDefaults.defaultTestImage())
-          .withNetwork(NETWORK)
-          .dependsOn(GCS)
-          .withoutTopologyCheck()
-          .withEnv("ZEEBE_BROKER_DATA_BACKUP_STORE", "GCS")
-          .withEnv("ZEEBE_BROKER_DATA_BACKUP_GCS_BUCKETNAME", BUCKET_NAME)
-          .withEnv("ZEEBE_BROKER_DATA_BACKUP_GCS_AUTH", "none")
-          .withEnv("ZEEBE_BROKER_DATA_BACKUP_GCS_HOST", GCS.internalEndpoint());
-
-  // No `@Container` annotation because we want to start this on demand
-  @SuppressWarnings("resource")
-  private final GenericContainer<?> restore =
-      new GenericContainer<>(ZeebeTestContainerDefaults.defaultTestImage())
-          .withNetwork(NETWORK)
-          .dependsOn(GCS)
-          .withStartupCheckStrategy(
-              new OneShotStartupCheckStrategy().withTimeout(Duration.ofMinutes(1)))
-          .withEnv("ZEEBE_RESTORE", "true")
-          .withEnv("ZEEBE_RESTORE_FROM_BACKUP_ID", Long.toString(BACKUP_ID))
-          .withEnv("ZEEBE_BROKER_DATA_BACKUP_STORE", "GCS")
-          .withEnv("ZEEBE_BROKER_DATA_BACKUP_GCS_BUCKETNAME", BUCKET_NAME)
-          .withEnv("ZEEBE_BROKER_DATA_BACKUP_GCS_AUTH", "none")
-          .withEnv("ZEEBE_BROKER_DATA_BACKUP_GCS_HOST", GCS.internalEndpoint());
-
-  @RegisterExtension
-  @SuppressWarnings("unused")
-  final ContainerLogsDumper logsWatcher = new ContainerLogsDumper(() -> Map.of("restore", restore));
 
   @BeforeAll
   static void setupBucket() throws Exception {
@@ -94,66 +62,76 @@ final class GcsRestoreAcceptanceIT {
   @Test
   void shouldRunRestore() {
     // given
-    final var actuator = BackupActuator.of(zeebe);
-    try (final var client =
-        ZeebeClient.newClientBuilder()
-            .gatewayAddress(zeebe.getExternalGatewayAddress())
-            .usePlaintext()
-            .build()) {
-      client.newPublishMessageCommand().messageName("name").correlationKey("key").send().join();
-    }
-    final var response = actuator.take(BACKUP_ID);
-    assertThat(response).isInstanceOf(TakeBackupResponse.class);
-    Awaitility.await("until a backup exists with the given ID")
-        .atMost(Duration.ofSeconds(60))
-        .ignoreExceptions() // 404 NOT_FOUND throws exception
-        .untilAsserted(
-            () -> {
-              final var status = actuator.status(BACKUP_ID);
-              assertThat(status)
-                  .extracting(BackupInfo::getBackupId, BackupInfo::getState)
-                  .containsExactly(1L, StateCode.COMPLETED);
-            });
+    final var backupId = 17;
+
+    // when
+    takeBackup(backupId);
 
     // then
-    assertThatNoException().isThrownBy(restore::start);
+    assertThatNoException().isThrownBy(() -> restoreBackup(backupId));
   }
 
   @Test
   void shouldFailForNonExistingBackup() {
-    // given
-    final var actuator = BackupActuator.of(zeebe);
-    try (final var client =
-        ZeebeClient.newClientBuilder()
-            .gatewayAddress(zeebe.getExternalGatewayAddress())
-            .usePlaintext()
-            .build()) {
-      client.newPublishMessageCommand().messageName("name").correlationKey("key").send().join();
-    }
-    final var response = actuator.take(BACKUP_ID);
-    assertThat(response).isInstanceOf(TakeBackupResponse.class);
-    Awaitility.await("until a backup exists with the given ID")
-        .atMost(Duration.ofSeconds(60))
-        .ignoreExceptions() // 404 NOT_FOUND throws exception
-        .untilAsserted(
-            () -> {
-              final var status = actuator.status(BACKUP_ID);
-              assertThat(status)
-                  .extracting(BackupInfo::getBackupId, BackupInfo::getState)
-                  .containsExactly(1L, StateCode.COMPLETED);
-            });
-
     // then -- restore container exits with an error code
     // we can't check the exit code directly, but we can observe that testcontainers was unable
     // to start the container.
-    assertThatExceptionOfType(ContainerLaunchException.class)
-        .isThrownBy(
-            () ->
-                restore
-                    .withStartupAttempts(1)
-                    .withEnv("ZEEBE_RESTORE_FROM_BACKUP_ID", "1234")
-                    .withStartupCheckStrategy(
-                        new OneShotStartupCheckStrategy().withTimeout(Duration.ofSeconds(10)))
-                    .start());
+    assertThatExceptionOfType(ContainerLaunchException.class).isThrownBy(() -> restoreBackup(1234));
+  }
+
+  private void takeBackup(final long backupId) {
+    try (final var zeebe =
+        new ZeebeContainer(ZeebeTestContainerDefaults.defaultTestImage())
+            .withLogConsumer(new Slf4jLogConsumer(LOG))
+            .withNetwork(NETWORK)
+            .dependsOn(GCS)
+            .withoutTopologyCheck()
+            .withEnv("ZEEBE_BROKER_DATA_BACKUP_STORE", "GCS")
+            .withEnv("ZEEBE_BROKER_DATA_BACKUP_GCS_BUCKETNAME", BUCKET_NAME)
+            .withEnv("ZEEBE_BROKER_DATA_BACKUP_GCS_AUTH", "none")
+            .withEnv("ZEEBE_BROKER_DATA_BACKUP_GCS_HOST", GCS.internalEndpoint())) {
+      zeebe.start();
+
+      final var actuator = BackupActuator.of(zeebe);
+
+      try (final var client =
+          ZeebeClient.newClientBuilder()
+              .gatewayAddress(zeebe.getExternalGatewayAddress())
+              .usePlaintext()
+              .build()) {
+        client.newPublishMessageCommand().messageName("name").correlationKey("key").send().join();
+      }
+
+      assertThat(actuator.take(backupId)).isInstanceOf(TakeBackupResponse.class);
+      Awaitility.await("until a backup exists with the given ID")
+          .atMost(Duration.ofSeconds(60))
+          .ignoreExceptions() // 404 NOT_FOUND throws exception
+          .untilAsserted(
+              () -> {
+                final var status = actuator.status(backupId);
+                assertThat(status)
+                    .extracting(BackupInfo::getBackupId, BackupInfo::getState)
+                    .containsExactly(backupId, StateCode.COMPLETED);
+              });
+    }
+  }
+
+  private void restoreBackup(final long backupId) {
+    try (final var restore =
+        new GenericContainer<>(ZeebeTestContainerDefaults.defaultTestImage())
+            .withLogConsumer(new Slf4jLogConsumer(LOG))
+            .withNetwork(NETWORK)
+            .dependsOn(GCS)
+            .withStartupAttempts(1)
+            .withStartupCheckStrategy(
+                new OneShotStartupCheckStrategy().withTimeout(Duration.ofMinutes(1)))
+            .withEnv("ZEEBE_RESTORE", "true")
+            .withEnv("ZEEBE_BROKER_DATA_BACKUP_STORE", "GCS")
+            .withEnv("ZEEBE_BROKER_DATA_BACKUP_GCS_BUCKETNAME", BUCKET_NAME)
+            .withEnv("ZEEBE_BROKER_DATA_BACKUP_GCS_AUTH", "none")
+            .withEnv("ZEEBE_BROKER_DATA_BACKUP_GCS_HOST", GCS.internalEndpoint())
+            .withEnv("ZEEBE_RESTORE_FROM_BACKUP_ID", String.valueOf(backupId))) {
+      restore.start();
+    }
   }
 }
