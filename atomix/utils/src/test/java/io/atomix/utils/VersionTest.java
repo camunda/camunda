@@ -35,6 +35,9 @@ public class VersionTest {
     assertTrue(Version.from("1.1.1").compareTo(Version.from("1.0.3")) > 0);
     assertTrue(Version.from("1.0.0").compareTo(Version.from("1.0.0-beta1")) > 0);
     assertTrue(Version.from("1.0.0-rc2").compareTo(Version.from("1.0.0-rc1")) > 0);
+    assertTrue(Version.from("1.0.0-rc2.1").compareTo(Version.from("1.0.0-rc2")) > 0);
+    assertTrue(Version.from("1.0.0-rc2.1.1").compareTo(Version.from("1.0.0-rc2.1")) > 0);
+    assertTrue(Version.from("1.0.0-rc2").compareTo(Version.from("1.0.0-rc2.1")) < 0);
     assertTrue(Version.from("1.0.0-rc1").compareTo(Version.from("1.0.0-beta1")) > 0);
     assertTrue(Version.from("2.0.0-beta1").compareTo(Version.from("1.0.0")) > 0);
     assertTrue(Version.from("1.0.0-alpha1").compareTo(Version.from("1.0.0-SNAPSHOT")) > 0);
@@ -46,6 +49,7 @@ public class VersionTest {
     assertEquals("1.0.0-alpha1", Version.from("1.0.0-alpha1").toString());
     assertEquals("1.0.0-beta1", Version.from("1.0.0-beta1").toString());
     assertEquals("1.0.0-rc1", Version.from("1.0.0-rc1").toString());
+    assertEquals("1.0.0-rc1.2", Version.from("1.0.0-rc1.2").toString());
     assertEquals("1.0.0-SNAPSHOT", Version.from("1.0.0-SNAPSHOT").toString());
   }
 
@@ -54,6 +58,7 @@ public class VersionTest {
     assertIllegalArgument(() -> Version.from("1"));
     assertIllegalArgument(() -> Version.from("1.0"));
     assertIllegalArgument(() -> Version.from("1.0-beta1"));
+    assertIllegalArgument(() -> Version.from("1.0.0-beta1XYZ"));
     assertIllegalArgument(() -> Version.from("1.0.0.0"));
     assertIllegalArgument(() -> Version.from("1.0.0.0-beta1"));
     assertIllegalArgument(() -> Version.from("1.0.0-not1"));
