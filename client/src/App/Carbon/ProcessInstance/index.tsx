@@ -39,12 +39,17 @@ import {Button, Modal} from '@carbon/react';
 import {tracking} from 'modules/tracking';
 import {ModalStateManager} from 'modules/components/Carbon/ModalStateManager';
 import {ModificationSummaryModal} from './ModificationSummaryModal';
+import {useCallbackPrompt} from 'modules/hooks/useCallbackPrompt';
 
 const ProcessInstance: React.FC = observer(() => {
   const {processInstanceId = ''} = useProcessInstancePageParams();
   const navigate = useNavigate();
   const notifications = useNotifications();
   const location = useLocation();
+
+  const {showPrompt, confirmNavigation, cancelNavigation} = useCallbackPrompt(
+    modificationsStore.isModificationModeEnabled
+  );
 
   useEffect(() => {
     const disposer = reaction(
@@ -254,6 +259,24 @@ const ProcessInstance: React.FC = observer(() => {
         }
         id="process"
       />
+      {showPrompt && (
+        <Modal
+          open={showPrompt}
+          modalHeading="Leave Modification Mode"
+          preventCloseOnClickOutside
+          onRequestClose={cancelNavigation}
+          secondaryButtonText="Stay"
+          primaryButtonText="Leave"
+          onRequestSubmit={() => {
+            tracking.track({eventName: 'leave-modification-mode'});
+            confirmNavigation();
+          }}
+        >
+          <p>
+            By leaving this page, all planned modification/s will be discarded.
+          </p>
+        </Modal>
+      )}
     </>
   );
 });
