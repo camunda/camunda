@@ -323,20 +323,25 @@ jobs:
   go-apidiff:
     name: Go Backward Compatibility
     runs-on: ubuntu-latest
+    env:
+      # bors-ng fails to set ${GITHUB_BASE_REF} to the target PR branch which breaks go-apidiff
+      # so we use this fixed value as a workaround
+      GO_CLIENT_BASE_REF: stable/8.2
     steps:
       - uses: actions/checkout@v3
-        with:
-          fetch-depth: 0 #we need to fetch stable/* branches in order to be run compatibility checks
       - uses: ./.github/actions/setup-zeebe
         with:
           java: false
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+      # Fetching a shallow copy of the ${GITHUB_BASE_REF} branch to check the compatibility against
+      - name: Fetching Base Branch
+        run: |
+          git fetch --depth=1 origin ${{ env.GO_CLIENT_BASE_REF }}
       - uses: joelanford/go-apidiff@main
         with:
-          # bors-ng fails to set ${GITHUB_BASE_REF} to the target PR branch which breaks go-apidiff
-          base-ref: origin/stable/8.2
+          base-ref: origin/${{ env.GO_CLIENT_BASE_REF }}
   java-checks:
     name: Java checks
     runs-on: ubuntu-latest
