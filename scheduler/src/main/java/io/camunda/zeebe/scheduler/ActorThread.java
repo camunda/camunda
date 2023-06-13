@@ -160,6 +160,11 @@ public class ActorThread extends Thread implements Consumer<Runnable> {
     return thread;
   }
 
+  public static boolean isCalledFromActorThread() {
+    final ActorThread thread = ActorThread.current();
+    return thread != null;
+  }
+
   public ActorJob newJob() {
     ActorJob job = jobs.poll();
 

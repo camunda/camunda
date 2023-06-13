@@ -20,6 +20,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -508,17 +509,6 @@ public final class ActorFutureTest {
   }
 
   @Test
-  public void shouldNotRunOnCompleteInMainThread() {
-    // given
-    final CompletableActorFuture<Void> future = new CompletableActorFuture<>();
-
-    // expect exception
-    // when
-    assertThatThrownBy(() -> future.onComplete((v, t) -> {}))
-        .isInstanceOf(UnsupportedOperationException.class);
-  }
-
-  @Test
   public void shouldRunOnComplete() {
     // given
     final ActorB actorB = new ActorB();
@@ -533,6 +523,122 @@ public final class ActorFutureTest {
     // then
     assertThat(future.isDone()).isTrue();
     assertThat(future.join()).isEqualTo(0xCAFF);
+  }
+
+  @Test
+  public void shouldInvokeCallbackOnFutureCompletionIfCallerIsNotActor() {
+    // given
+    final CompletableActorFuture<Void> future = new CompletableActorFuture<>();
+    final AtomicInteger callbackInvocations = new AtomicInteger(0);
+
+    future.onComplete((r, t) -> callbackInvocations.incrementAndGet());
+
+    final Actor completingActor =
+        new Actor() {
+          @Override
+          protected void onActorStarted() {
+            future.complete(null);
+          }
+        };
+
+    // when
+    schedulerRule.submitActor(completingActor);
+    schedulerRule.workUntilDone();
+
+    // then
+    assertThat(callbackInvocations).hasValue(1);
+  }
+
+  @Test
+  public void shouldInvokeCallbackOnFutureCompletionOnProvidedExecutor() {
+    // given
+    final CompletableActorFuture<Void> future = new CompletableActorFuture<>();
+    final AtomicInteger callbackInvocations = new AtomicInteger(0);
+
+    final AtomicInteger executorCount = new AtomicInteger(0);
+    final Executor decoratedExecutor =
+        runnable -> {
+          executorCount.getAndIncrement();
+          runnable.run();
+        };
+
+    future.onComplete((r, t) -> callbackInvocations.incrementAndGet(), decoratedExecutor);
+
+    final Actor completingActor =
+        new Actor() {
+          @Override
+          protected void onActorStarted() {
+            future.complete(null);
+          }
+        };
+
+    // when
+    schedulerRule.submitActor(completingActor);
+    schedulerRule.workUntilDone();
+
+    // then
+    assertThat(callbackInvocations).hasValue(1);
+    assertThat(executorCount).hasValue(1);
+  }
+
+  @Test
+  public void shouldInvokeCallbackOnFutureCompletionExceptionIfCallerIsNotActor() {
+    // given
+    final CompletableActorFuture<Void> future = new CompletableActorFuture<>();
+    final AtomicReference<Throwable> callBackError = new AtomicReference<>();
+
+    future.onComplete((r, t) -> callBackError.set(t));
+
+    final Actor completingActor =
+        new Actor() {
+          @Override
+          protected void onActorStarted() {
+            future.completeExceptionally(new RuntimeException("Expected"));
+          }
+        };
+
+    // when
+    schedulerRule.submitActor(completingActor);
+    schedulerRule.workUntilDone();
+
+    // then
+    assertThat(callBackError.get())
+        .isInstanceOf(RuntimeException.class)
+        .hasMessageContaining("Expected");
+  }
+
+  @Test
+  public void shouldInvokeCallbackOnFutureCompletionErrorOnProvidedExecutor() {
+    // given
+    final CompletableActorFuture<Void> future = new CompletableActorFuture<>();
+    final AtomicReference<Throwable> callBackError = new AtomicReference<>();
+
+    final AtomicInteger executorCount = new AtomicInteger(0);
+    final Executor decoratedExecutor =
+        runnable -> {
+          executorCount.getAndIncrement();
+          runnable.run();
+        };
+
+    future.onComplete((r, t) -> callBackError.set(t), decoratedExecutor);
+
+    final Actor completingActor =
+        new Actor() {
+          @Override
+          protected void onActorStarted() {
+            future.completeExceptionally(new RuntimeException("Expected"));
+          }
+        };
+
+    // when
+    schedulerRule.submitActor(completingActor);
+    schedulerRule.workUntilDone();
+
+    // then
+    assertThat(callBackError.get())
+        .isInstanceOf(RuntimeException.class)
+        .hasMessageContaining("Expected");
+    assertThat(executorCount).hasValue(1);
   }
 
   private static class ActorA extends Actor {
@@ -612,6 +718,7 @@ public final class ActorFutureTest {
       actor.call(() -> actor.runOnCompletionBlockingCurrentPhase(f, onCompletion));
     }
 
+    @Override
     public void close() {
       actor.close();
     }
