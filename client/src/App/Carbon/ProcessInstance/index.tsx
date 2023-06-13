@@ -40,6 +40,7 @@ import {tracking} from 'modules/tracking';
 import {ModalStateManager} from 'modules/components/Carbon/ModalStateManager';
 import {ModificationSummaryModal} from './ModificationSummaryModal';
 import {useCallbackPrompt} from 'modules/hooks/useCallbackPrompt';
+import {LastModification} from './LastModification';
 
 const ProcessInstance: React.FC = observer(() => {
   const {processInstanceId = ''} = useProcessInstancePageParams();
@@ -184,7 +185,7 @@ const ProcessInstance: React.FC = observer(() => {
         frameFooter={
           isModificationModeEnabled ? (
             <ModificationFooter>
-              <div>last modification</div>
+              <LastModification />
               <Buttons orientation="horizontal" gap={4}>
                 <ModalStateManager
                   renderLauncher={({setOpen}) => (
