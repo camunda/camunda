@@ -11,17 +11,17 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.stream.Collectors;
+
+import io.camunda.operate.entities.HitEntity;
 import io.camunda.operate.entities.meta.ImportPositionEntity;
 import io.camunda.operate.exceptions.NoSuchIndexException;
 import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.property.OperateProperties;
-import io.camunda.operate.util.ElasticsearchUtil;
-import org.elasticsearch.client.RestHighLevelClient;
-import org.elasticsearch.search.SearchHit;
+
+import io.camunda.operate.store.ZeebeStore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -49,10 +49,6 @@ public class ImportJob implements Callable<Boolean> {
   private ImportBatchProcessorFactory importBatchProcessorFactory;
 
   @Autowired
-  @Qualifier("zeebeEsClient")
-  private RestHighLevelClient zeebeEsClient;
-
-  @Autowired
   private ImportPositionHolder importPositionHolder;
 
   @Autowired
@@ -60,6 +56,9 @@ public class ImportJob implements Callable<Boolean> {
 
   @Autowired(required = false)
   private List<ImportListener> importListeners;
+
+  @Autowired
+  private ZeebeStore zeebeStore;
 
   @Autowired
   private ObjectMapper objectMapper;
@@ -96,8 +95,8 @@ public class ImportJob implements Callable<Boolean> {
 
   private void processPossibleIndexChange() {
     //if there was index change, comparing with previous batch, or there are more than one index in current batch, refresh Zeebe indices
-    final List<SearchHit> hits = importBatch.getHits();
-    if (indexChange() || hits.stream().map(SearchHit::getIndex).collect(Collectors.toSet()).size() > 1) {
+    final List<HitEntity> hits = importBatch.getHits();
+    if (indexChange() || hits.stream().map(HitEntity::getIndex).collect(Collectors.toSet()).size() > 1) {
       refreshZeebeIndices();
       //reread batch
       RecordsReader recordsReader = recordsReaderHolder.getRecordsReader(importBatch.getPartitionId(), importBatch.getImportValueType());
@@ -154,8 +153,8 @@ public class ImportJob implements Callable<Boolean> {
       return subBatches;
     } else {
       String previousIndexName = null;
-      List<SearchHit> subBatchHits = new ArrayList<>();
-      for (SearchHit hit : importBatch.getHits()) {
+      List<HitEntity> subBatchHits = new ArrayList<>();
+      for (HitEntity hit : importBatch.getHits()) {
         String indexName = hit.getIndex();
         if (previousIndexName != null && !indexName.equals(previousIndexName)) {
           //start new sub-batch
@@ -184,7 +183,7 @@ public class ImportJob implements Callable<Boolean> {
 
   public void refreshZeebeIndices() {
     final String indexPattern = importBatch.getImportValueType().getIndicesPattern(operateProperties.getZeebeElasticsearch().getPrefix());
-    ElasticsearchUtil.refreshIndicesFor(zeebeEsClient, indexPattern);
+    zeebeStore.refreshIndex(indexPattern);
   }
 
   public void recordLatestScheduledPosition() {

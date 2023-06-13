@@ -6,23 +6,14 @@
  */
 package io.camunda.operate.cache;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.operate.store.ProcessStore;
 import io.camunda.operate.entities.ProcessFlowNodeEntity;
-import io.camunda.operate.schema.indices.ProcessIndex;
-import io.camunda.operate.util.ElasticsearchUtil;
-import java.io.IOException;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import io.camunda.operate.entities.ProcessEntity;
 import io.camunda.operate.exceptions.OperateRuntimeException;
-import org.elasticsearch.action.search.SearchRequest;
-import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.client.RequestOptions;
-import org.elasticsearch.client.RestHighLevelClient;
-import org.elasticsearch.index.query.QueryBuilders;
-import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -33,23 +24,17 @@ import static io.camunda.operate.util.ThreadUtil.sleepFor;
 
 @Component
 public class ProcessCache {
-  
+
   private static final Logger logger = LoggerFactory.getLogger(ProcessCache.class);
 
-  private Map<Long, ProcessEntity> cache = new ConcurrentHashMap<>();
+  private final Map<Long, ProcessEntity> cache = new ConcurrentHashMap<>();
 
   private static final int CACHE_MAX_SIZE = 100;
   private static final int MAX_ATTEMPTS = 5;
   private static final long WAIT_TIME = 200;
 
   @Autowired
-  private RestHighLevelClient esClient;
-
-  @Autowired
-  private ProcessIndex processIndex;
-
-  @Autowired
-  private ObjectMapper objectMapper;
+  private ProcessStore processStore;
 
   public String getProcessNameOrDefaultValue(Long processDefinitionKey, String defaultValue) {
     final ProcessEntity cachedProcessData = getCachedProcessEntity(processDefinitionKey).orElse(null);
@@ -57,7 +42,7 @@ public class ProcessCache {
     if (cachedProcessData != null) {
       processName = cachedProcessData.getName();
     }
-    if(StringUtils.isEmpty(processName)) {
+    if(!StringUtils.hasText(processName)) {
       logger.debug("ProcessName is empty, use default value: {} ",defaultValue);
       processName = defaultValue;
     }
@@ -73,7 +58,7 @@ public class ProcessCache {
         processName = cachedProcessData.getBpmnProcessId();
       }
     }
-    if(StringUtils.isEmpty(processName)) {
+    if(!StringUtils.hasText(processName)) {
       logger.debug("ProcessName is empty, use default value: {} ",defaultValue);
       processName = defaultValue;
     }
@@ -90,7 +75,7 @@ public class ProcessCache {
         flowNodeName = flowNodeEntity.getName();
       }
     }
-    if (StringUtils.isEmpty(flowNodeName)) {
+    if (!StringUtils.hasText(flowNodeName)) {
       logger.debug("FlowNodeName is empty, use default value: {} ", defaultValue);
       flowNodeName = defaultValue;
     }
@@ -108,11 +93,11 @@ public class ProcessCache {
     }
     return Optional.ofNullable(cachedProcessData);
   }
-  
+
   private Optional<ProcessEntity> readProcessByKey(Long processDefinitionKey) {
     try {
-      return Optional.of(getProcess(processDefinitionKey));
-    } catch (OperateRuntimeException ex) {
+      return Optional.of(processStore.getProcessByKey(processDefinitionKey));
+    } catch (Exception ex) {
       return Optional.empty();
     }
   }
@@ -120,10 +105,10 @@ public class ProcessCache {
   public Optional<ProcessEntity> findOrWaitProcess(Long processDefinitionKey, int attempts, long sleepInMilliseconds) {
     int attemptsCount = 0;
     Optional<ProcessEntity> foundProcess = Optional.empty();
-    while (!foundProcess.isPresent() && attemptsCount < attempts) {
+    while (foundProcess.isEmpty() && attemptsCount < attempts) {
       attemptsCount++;
       foundProcess = readProcessByKey(processDefinitionKey);
-      if (!foundProcess.isPresent()) {
+      if (foundProcess.isEmpty()) {
         logger.debug("Unable to find process {}. {} attempts left. Waiting {} ms.", processDefinitionKey, attempts - attemptsCount, sleepInMilliseconds);
         sleepFor(sleepInMilliseconds);
       } else {
@@ -147,36 +132,6 @@ public class ProcessCache {
 
   public void clearCache() {
     cache.clear();
-  }
-
-  /**
-   * Gets the process by id.
-   * @param processDefinitionKey
-   * @return
-   */
-  public ProcessEntity getProcess(Long processDefinitionKey) {
-    final SearchRequest searchRequest = new SearchRequest(processIndex.getAlias())
-        .source(new SearchSourceBuilder()
-            .query(QueryBuilders.termQuery(ProcessIndex.KEY, processDefinitionKey)));
-
-    try {
-      final SearchResponse response = esClient.search(searchRequest, RequestOptions.DEFAULT);
-      if (response.getHits().getTotalHits().value == 1) {
-        return fromSearchHit(response.getHits().getHits()[0].getSourceAsString());
-      } else if (response.getHits().getTotalHits().value > 1) {
-        throw new OperateRuntimeException(String.format("Could not find unique process with key '%s'.", processDefinitionKey));
-      } else {
-        throw new OperateRuntimeException(String.format("Could not find process with key '%s'.", processDefinitionKey));
-      }
-    } catch (IOException e) {
-      final String message = String.format("Exception occurred, while obtaining the process: %s", e.getMessage());
-      logger.error(message, e);
-      throw new OperateRuntimeException(message, e);
-    }
-  }
-
-  private ProcessEntity fromSearchHit(String processString) {
-    return ElasticsearchUtil.fromSearchHit(processString, objectMapper, ProcessEntity.class);
   }
 
 }

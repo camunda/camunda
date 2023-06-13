@@ -6,6 +6,7 @@
  */
 package io.camunda.operate.webapp;
 
+import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 
@@ -33,6 +34,9 @@ public class StartupBean {
 
   @Autowired
   private RestHighLevelClient zeebeEsClient;
+
+  @Autowired
+  private ElasticsearchClient elasticsearchClient;
 
   @Autowired(required = false)
   private ElasticSearchUserDetailsService elasticsearchUserDetailsService;

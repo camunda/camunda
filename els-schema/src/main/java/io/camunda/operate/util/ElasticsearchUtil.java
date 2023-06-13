@@ -14,6 +14,7 @@ import static org.elasticsearch.index.reindex.AbstractBulkByScrollRequest.AUTO_S
 
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.operate.entities.HitEntity;
 import io.camunda.operate.exceptions.ArchiverException;
 import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.exceptions.PersistenceException;
@@ -413,9 +414,12 @@ public abstract class ElasticsearchUtil {
   }
 
   /* MAP QUERY RESULTS */
+  public static <T> List<T> mapSearchHits(List<HitEntity> hits, ObjectMapper objectMapper, JavaType valueType) {
+    return map(hits, h -> fromSearchHit(h.getSourceAsString(), objectMapper, valueType));
+  }
 
-  public static <T> List<T> mapSearchHits(List<SearchHit> searchHits, ObjectMapper objectMapper, JavaType valueType) {
-    return mapSearchHits(searchHits.toArray(new SearchHit[searchHits.size()]), objectMapper, valueType);
+  public static <T> List<T> mapSearchHits(HitEntity[] searchHits, ObjectMapper objectMapper, Class<T> clazz) {
+    return map(searchHits, (searchHit) -> fromSearchHit(searchHit.getSourceAsString(), objectMapper, clazz));
   }
 
   public static <T> List<T> mapSearchHits(SearchHit[] searchHits, Function<SearchHit, T> searchHitMapper) {

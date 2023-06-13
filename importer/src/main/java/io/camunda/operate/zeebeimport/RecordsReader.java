@@ -15,6 +15,7 @@ import static org.elasticsearch.index.query.QueryBuilders.*;
 import static org.springframework.beans.factory.config.BeanDefinition.SCOPE_PROTOTYPE;
 
 import io.camunda.operate.Metrics;
+import io.camunda.operate.entities.HitEntity;
 import io.camunda.operate.entities.meta.ImportPositionEntity;
 import io.camunda.operate.exceptions.NoSuchIndexException;
 import io.camunda.operate.exceptions.OperateRuntimeException;
@@ -216,7 +217,7 @@ public class RecordsReader implements Runnable {
         .requestCache(false);
 
     try {
-      final SearchHit[] hits = withTimerSearchHits(() -> read(searchRequest, maxNumberOfHits >= QUERY_MAX_SIZE));
+      final HitEntity[] hits = withTimerSearchHits(() -> read(searchRequest, maxNumberOfHits >= QUERY_MAX_SIZE));
       return createImportBatch(hits);
     } catch (ElasticsearchStatusException ex) {
       if (ex.getMessage().contains("no such index")) {
@@ -231,10 +232,10 @@ public class RecordsReader implements Runnable {
     }
   }
 
-  private SearchHit[] read(SearchRequest searchRequest, boolean scrollNeeded) throws IOException {
+  private HitEntity[] read(SearchRequest searchRequest, boolean scrollNeeded) throws IOException {
     String scrollId = null;
     try {
-      List<SearchHit> searchHits = new ArrayList<>();
+      List<HitEntity> searchHits = new ArrayList<>();
 
       if (scrollNeeded) {
         searchRequest.scroll(TimeValue.timeValueMillis(SCROLL_KEEP_ALIVE_MS));
@@ -242,7 +243,7 @@ public class RecordsReader implements Runnable {
       SearchResponse response = zeebeEsClient.search(searchRequest, RequestOptions.DEFAULT);
       checkForFailedShards(response);
 
-      searchHits.addAll(List.of(response.getHits().getHits()));
+      searchHits.addAll(Arrays.stream(response.getHits().getHits()).map(this::searchHitToOperateHit).toList());
 
       if (scrollNeeded) {
         scrollId = response.getScrollId();
@@ -254,15 +255,19 @@ public class RecordsReader implements Runnable {
           checkForFailedShards(response);
 
           scrollId = response.getScrollId();
-          searchHits.addAll(List.of(response.getHits().getHits()));
+          searchHits.addAll(Arrays.stream(response.getHits().getHits()).map(this::searchHitToOperateHit).toList());
         } while (response.getHits().getHits().length != 0);
       }
-      return searchHits.toArray(new SearchHit[0]);
+      return searchHits.toArray(new HitEntity[0]);
     } finally {
       if (scrollId != null) {
         clearScroll(scrollId, zeebeEsClient);
       }
     }
+  }
+
+  private HitEntity searchHitToOperateHit(SearchHit searchHit){
+    return new HitEntity().setIndex(searchHit.getIndex()).setSourceAsString(searchHit.getSourceAsString());
   }
 
   private void rescheduleReader(Integer readerDelay) {
@@ -334,14 +339,15 @@ public class RecordsReader implements Runnable {
 
   private ImportBatch createImportBatch(SearchResponse searchResponse) {
     SearchHit[] hits = searchResponse.getHits().getHits();
+    final List<HitEntity> newHits = Arrays.stream(hits).map(h -> new HitEntity().setIndex(h.getIndex()).setSourceAsString(h.getSourceAsString())).toList();
     String indexName = null;
     if (hits.length > 0) {
       indexName = hits[hits.length - 1].getIndex();
     }
-    return new ImportBatch(partitionId, importValueType, Arrays.asList(hits), indexName);
+    return new ImportBatch(partitionId, importValueType, newHits, indexName);
   }
 
-  private ImportBatch createImportBatch(SearchHit[] hits) {
+  private ImportBatch createImportBatch(HitEntity[] hits) {
     String indexName = null;
     if (hits.length > 0) {
       indexName = hits[hits.length - 1].getIndex();
@@ -378,7 +384,7 @@ public class RecordsReader implements Runnable {
     .recordCallable(callable);
   }
 
-  private SearchHit[] withTimerSearchHits(Callable<SearchHit[]> callable) throws Exception {
+  private HitEntity[] withTimerSearchHits(Callable<HitEntity[]> callable) throws Exception {
     return metrics.getTimer(Metrics.TIMER_NAME_IMPORT_QUERY,
             Metrics.TAG_KEY_TYPE, importValueType.name(),
             Metrics.TAG_KEY_PARTITION, String.valueOf(partitionId))

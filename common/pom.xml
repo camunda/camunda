@@ -63,6 +63,29 @@
 		</dependency>
 
 		<dependency>
+			<groupId>co.elastic.clients</groupId>
+			<artifactId>elasticsearch-java</artifactId>
+		</dependency>
+
+		<!-- Opensearch -->
+		<dependency>
+			<groupId>org.apache.httpcomponents.core5</groupId>
+			<artifactId>httpcore5</artifactId>
+		</dependency>
+
+		<dependency>
+			<groupId>org.apache.httpcomponents.core5</groupId>
+			<artifactId>httpcore5-h2</artifactId>
+		</dependency>
+
+		<dependency>
+			<groupId>org.opensearch.client</groupId>
+			<artifactId>opensearch-java</artifactId>
+		</dependency>
+
+		<!-- End Opensearch -->
+
+		<dependency>
 			<groupId>org.yaml</groupId>
 			<artifactId>snakeyaml</artifactId>
 		</dependency>

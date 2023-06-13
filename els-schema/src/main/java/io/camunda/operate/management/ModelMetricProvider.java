@@ -10,13 +10,7 @@ import io.camunda.operate.Metrics;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.schema.indices.DecisionIndex;
 import io.camunda.operate.schema.indices.ProcessIndex;
-import org.elasticsearch.action.search.SearchRequest;
-import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.client.RequestOptions;
-import org.elasticsearch.client.RestHighLevelClient;
-import org.elasticsearch.index.query.QueryBuilders;
-import org.elasticsearch.search.aggregations.metrics.Cardinality;
-import org.elasticsearch.search.builder.SearchSourceBuilder;
+import io.camunda.operate.store.ProcessStore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,17 +20,13 @@ import org.springframework.util.StringUtils;
 import jakarta.annotation.PostConstruct;
 import java.util.Optional;
 
-import static org.elasticsearch.search.aggregations.AggregationBuilders.cardinality;
-
 @Component
 public class ModelMetricProvider {
-
-  private static final String DISTINCT_FIELD_COUNTS = "distinctFieldCounts";
 
   protected final Logger logger = LoggerFactory.getLogger(getClass());
 
   @Autowired
-  private RestHighLevelClient esClient;
+  private ProcessStore processStore;
 
   @Autowired
   private ProcessIndex processIndex;
@@ -81,21 +71,6 @@ public class ModelMetricProvider {
   }
 
   public Optional<Long> getDistinctCountFor(final String indexAlias,final String fieldName){
-    logger.debug("Called distinct count for field {} in index alias {}.", fieldName, indexAlias);
-    final SearchRequest searchRequest = new SearchRequest(indexAlias)
-        .source(new SearchSourceBuilder()
-            .query(QueryBuilders.matchAllQuery()).size(0)
-            .aggregation(
-                cardinality(DISTINCT_FIELD_COUNTS)
-                    .precisionThreshold(1_000)
-                    .field(fieldName)));
-    try {
-      final SearchResponse searchResponse = esClient.search(searchRequest, RequestOptions.DEFAULT);
-      final Cardinality distinctFieldCounts  = searchResponse.getAggregations().get(DISTINCT_FIELD_COUNTS);
-      return Optional.of(distinctFieldCounts.getValue());
-    } catch (Exception e) {
-      logger.error(String.format("Error in distinct count for field %s in index alias %s.", fieldName, indexAlias), e);
-      return Optional.empty();
-    }
+    return processStore.getDistinctCountFor(indexAlias, fieldName);
   }
 }

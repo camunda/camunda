@@ -9,10 +9,11 @@ package io.camunda.operate.zeebeimport;
 import java.io.IOException;
 import java.time.OffsetDateTime;
 import java.util.List;
+import java.util.Objects;
 
+import io.camunda.operate.entities.HitEntity;
 import io.camunda.operate.zeebe.ImportValueType;
 import io.camunda.operate.zeebe.ZeebeESConstants;
-import org.elasticsearch.search.SearchHit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -29,7 +30,7 @@ public class ImportBatch {
 
   private ImportValueType importValueType;
 
-  private List<SearchHit> hits;
+  private List<HitEntity> hits;
 
   private String lastRecordIndexName;
 
@@ -37,7 +38,7 @@ public class ImportBatch {
 
   private OffsetDateTime scheduledTime;
 
-  public ImportBatch(int partitionId, ImportValueType importValueType, List<SearchHit> hits, String lastRecordIndexName) {
+  public ImportBatch(int partitionId, ImportValueType importValueType, List<HitEntity> hits, String lastRecordIndexName) {
     this.partitionId = partitionId;
     this.importValueType = importValueType;
     this.hits = hits;
@@ -60,11 +61,11 @@ public class ImportBatch {
     this.importValueType = importValueType;
   }
 
-  public List<SearchHit> getHits() {
+  public List<HitEntity> getHits() {
     return hits;
   }
 
-  public void setHits(List<SearchHit> hits) {
+  public void setHits(List<HitEntity> hits) {
     this.hits = hits;
   }
 
@@ -138,9 +139,9 @@ public class ImportBatch {
       return false;
     if (importValueType != that.importValueType)
       return false;
-    if (hits != null ? !hits.equals(that.hits) : that.hits != null)
+    if (!Objects.equals(hits, that.hits))
       return false;
-    return lastRecordIndexName != null ? lastRecordIndexName.equals(that.lastRecordIndexName) : that.lastRecordIndexName == null;
+    return Objects.equals(lastRecordIndexName, that.lastRecordIndexName);
 
   }
 

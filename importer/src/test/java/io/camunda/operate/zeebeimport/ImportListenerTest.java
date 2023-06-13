@@ -7,9 +7,16 @@
 package io.camunda.operate.zeebeimport;
 
 import java.util.ArrayList;
+
+import io.camunda.operate.Metrics;
 import io.camunda.operate.entities.meta.ImportPositionEntity;
 import io.camunda.operate.exceptions.PersistenceException;
 import io.camunda.operate.property.OperateProperties;
+import io.camunda.operate.schema.indices.ImportPositionIndex;
+import io.camunda.operate.store.ImportStore;
+import io.camunda.operate.store.ZeebeStore;
+import io.camunda.operate.store.elasticsearch.ElasticsearchImportStore;
+import io.camunda.operate.store.elasticsearch.ElasticsearchZeebeStore;
 import io.camunda.operate.util.NoBeansTest;
 import io.camunda.operate.util.apps.nobeans.TestApplicationWithNoBeans;
 import io.camunda.operate.zeebe.ImportValueType;
@@ -32,7 +39,9 @@ import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.when;
 
 @SpringBootTest(
-    classes = { TestApplicationWithNoBeans.class, ImportJob.class, ImportListenerTest.TestImportListener.class })
+    classes = { TestApplicationWithNoBeans.class, ImportJob.class, ImportListenerTest.TestImportListener.class,
+        ImportStore.class, ElasticsearchImportStore.class, ImportJob.class, ImportPositionIndex.class, Metrics.class,
+        ZeebeStore.class, ElasticsearchZeebeStore.class })
 public class ImportListenerTest extends NoBeansTest {
 
   @MockBean

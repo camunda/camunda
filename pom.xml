@@ -33,6 +33,8 @@
     <version.identity>8.3.0-alpha2</version.identity>
     <version.log4j>2.17.2</version.log4j>
     <version.elasticsearch>7.17.9</version.elasticsearch>
+    <version.elasticsearch-client>8.7.1</version.elasticsearch-client>
+    <version.opensearch>2.4.0</version.opensearch>
     <version.spring.boot>3.0.7</version.spring.boot>
     <version.junit>4.13.2</version.junit>
     <version.springdoc>2.1.0</version.springdoc>
@@ -123,6 +125,32 @@
           </exclusions>
         </dependency>
 
+      <dependency>
+        <groupId>co.elastic.clients</groupId>
+        <artifactId>elasticsearch-java</artifactId>
+        <version>${version.elasticsearch-client}</version>
+      </dependency>
+
+      <!-- Opensearch  -->
+      <dependency>
+        <groupId>org.apache.httpcomponents.core5</groupId>
+        <artifactId>httpcore5</artifactId>
+        <version>${version.apache.http5}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.apache.httpcomponents.core5</groupId>
+        <artifactId>httpcore5-h2</artifactId>
+        <version>${version.apache.http5}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.opensearch.client</groupId>
+        <artifactId>opensearch-java</artifactId>
+        <version>${version.opensearch}</version>
+      </dependency>
+
+      <!-- End Opensearch  -->
         <dependency>
           <groupId>org.yaml</groupId>
           <artifactId>snakeyaml</artifactId>

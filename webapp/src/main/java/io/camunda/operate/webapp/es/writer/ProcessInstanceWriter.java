@@ -11,17 +11,12 @@ import io.camunda.operate.entities.listview.ProcessInstanceState;
 import io.camunda.operate.schema.templates.ListViewTemplate;
 import io.camunda.operate.schema.templates.OperationTemplate;
 import io.camunda.operate.schema.templates.ProcessInstanceDependant;
+import io.camunda.operate.store.ProcessStore;
 import io.camunda.operate.webapp.es.reader.ProcessInstanceReader;
 import java.io.IOException;
 import java.time.OffsetDateTime;
 import java.util.List;
-import java.util.stream.Collectors;
 
-import org.elasticsearch.client.RequestOptions;
-import org.elasticsearch.client.RestHighLevelClient;
-import org.elasticsearch.index.query.QueryBuilders;
-import org.elasticsearch.index.reindex.BulkByScrollResponse;
-import org.elasticsearch.index.reindex.DeleteByQueryRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -35,9 +30,6 @@ public class ProcessInstanceWriter {
   public static final List<ProcessInstanceState> STATES_FOR_DELETION = List.of(ProcessInstanceState.COMPLETED, ProcessInstanceState.CANCELED);
 
   @Autowired
-  private RestHighLevelClient esClient;
-
-  @Autowired
   private ListViewTemplate processInstanceTemplate;
 
   @Autowired
@@ -45,6 +37,9 @@ public class ProcessInstanceWriter {
 
   @Autowired
   private ProcessInstanceReader processInstanceReader;
+
+  @Autowired
+  private ProcessStore processStore;
 
   public void deleteInstanceById(Long id) throws IOException {
     ProcessInstanceForListViewEntity processInstanceEntity =
@@ -71,7 +66,7 @@ public class ProcessInstanceWriter {
     List<ProcessInstanceDependant> processInstanceDependantsWithoutOperation =
         processInstanceDependantTemplates.stream()
             .filter(t -> !(t instanceof OperationTemplate))
-            .collect(Collectors.toList());
+            .toList();
     for (ProcessInstanceDependant template : processInstanceDependantsWithoutOperation) {
       deleteDocument(template.getFullQualifiedName() + "*",
           ProcessInstanceDependant.PROCESS_INSTANCE_KEY,
@@ -83,10 +78,6 @@ public class ProcessInstanceWriter {
 
   private long deleteDocument(final String indexName, final String idField, String id)
       throws IOException {
-    final DeleteByQueryRequest query = new DeleteByQueryRequest(indexName)
-        .setQuery(QueryBuilders.termsQuery(idField, id));
-    BulkByScrollResponse response = esClient.deleteByQuery(query, RequestOptions.DEFAULT);
-    logger.debug("Delete document {} in {} response: {}", id, indexName, response.getStatus());
-    return response.getDeleted();
+    return processStore.deleteDocument(indexName, idField, id);
   }
 }

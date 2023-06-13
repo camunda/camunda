@@ -40,7 +40,7 @@ public class ProcessIT extends OperateIntegrationTest {
   public ElasticsearchTestRule elasticsearchTestRule = new ElasticsearchTestRule();
 
   @Test
-  public void testProcessesGroupedWithPermisssionWhenNotAllowed() throws Exception {
+  public void testProcessesGroupedWithPermissionWhenNotAllowed() throws Exception {
     // given
     String id1 = "111";
     String id2 = "222";

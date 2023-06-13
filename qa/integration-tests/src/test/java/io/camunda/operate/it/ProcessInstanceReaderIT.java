@@ -13,9 +13,9 @@ import java.util.Random;
 
 import io.camunda.operate.entities.FlowNodeInstanceEntity;
 import io.camunda.operate.entities.listview.ProcessInstanceForListViewEntity;
+import io.camunda.operate.store.NotFoundException;
 import io.camunda.operate.webapp.es.reader.ProcessInstanceReader;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewProcessInstanceDto;
-import io.camunda.operate.webapp.rest.exception.NotFoundException;
 import io.camunda.operate.util.OperateZeebeIntegrationTest;
 import org.junit.Before;
 import org.junit.Test;

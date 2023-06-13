@@ -9,7 +9,7 @@ package io.camunda.operate.zeebeimport;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.stream.Collectors;
+
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.util.CollectionUtil;
 import io.camunda.operate.zeebe.ImportValueType;

@@ -6,7 +6,45 @@
  */
 package io.camunda.operate.es;
 
+import co.elastic.clients.elasticsearch.ElasticsearchClient;
+import co.elastic.clients.elasticsearch.cluster.HealthResponse;
+import co.elastic.clients.json.jackson.JacksonJsonpMapper;
+import co.elastic.clients.transport.ElasticsearchTransport;
+import co.elastic.clients.transport.rest_client.RestClientTransport;
+import com.fasterxml.jackson.core.JsonGenerator;
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.databind.DeserializationContext;
+import com.fasterxml.jackson.databind.JsonDeserializer;
+import com.fasterxml.jackson.databind.JsonSerializer;
+import com.fasterxml.jackson.databind.SerializerProvider;
+import io.camunda.operate.exceptions.OperateRuntimeException;
+import io.camunda.operate.property.ElasticsearchProperties;
+import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.property.SslProperties;
+import io.camunda.operate.util.RetryOperation;
+import org.apache.http.HttpHost;
+import org.apache.http.auth.AuthScope;
+import org.apache.http.auth.UsernamePasswordCredentials;
+import org.apache.http.client.CredentialsProvider;
+import org.apache.http.client.config.RequestConfig.Builder;
+import org.apache.http.conn.ssl.NoopHostnameVerifier;
+import org.apache.http.conn.ssl.TrustSelfSignedStrategy;
+import org.apache.http.impl.client.BasicCredentialsProvider;
+import org.apache.http.impl.nio.client.HttpAsyncClientBuilder;
+import org.apache.http.ssl.SSLContexts;
+import org.apache.http.ssl.TrustStrategy;
+import org.elasticsearch.ElasticsearchException;
+import org.elasticsearch.action.admin.cluster.health.ClusterHealthRequest;
+import org.elasticsearch.action.admin.cluster.health.ClusterHealthResponse;
+import org.elasticsearch.client.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.stereotype.Component;
+
+import javax.net.ssl.SSLContext;
 import java.io.BufferedInputStream;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -27,42 +65,6 @@ import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.concurrent.TimeUnit;
 
-import org.apache.http.HttpHost;
-import org.apache.http.auth.AuthScope;
-import org.apache.http.auth.UsernamePasswordCredentials;
-import org.apache.http.client.CredentialsProvider;
-import org.apache.http.client.config.RequestConfig.Builder;
-import org.apache.http.conn.ssl.NoopHostnameVerifier;
-import org.apache.http.conn.ssl.TrustSelfSignedStrategy;
-import org.apache.http.impl.client.BasicCredentialsProvider;
-import org.apache.http.impl.nio.client.HttpAsyncClientBuilder;
-import org.apache.http.ssl.SSLContexts;
-import io.camunda.operate.exceptions.OperateRuntimeException;
-import io.camunda.operate.property.ElasticsearchProperties;
-import io.camunda.operate.property.OperateProperties;
-
-import io.camunda.operate.util.RetryOperation;
-import org.apache.http.ssl.TrustStrategy;
-import org.elasticsearch.ElasticsearchException;
-import org.elasticsearch.action.admin.cluster.health.ClusterHealthRequest;
-import org.elasticsearch.action.admin.cluster.health.ClusterHealthResponse;
-import org.elasticsearch.client.*;
-import org.elasticsearch.rest.RestHandler;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.stereotype.Component;
-import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.databind.DeserializationContext;
-import com.fasterxml.jackson.databind.JsonDeserializer;
-import com.fasterxml.jackson.databind.JsonSerializer;
-import com.fasterxml.jackson.databind.SerializerProvider;
-
-import javax.net.ssl.SSLContext;
-
 @Component
 @Configuration
 public class ElasticsearchConnector {
@@ -72,6 +74,52 @@ public class ElasticsearchConnector {
   @Autowired
   private OperateProperties operateProperties;
 
+  @Bean
+  public ElasticsearchClient elasticsearchClient(){
+    logger.debug("Creating ElasticsearchClient ...");
+    final ElasticsearchProperties elsConfig = operateProperties.getElasticsearch();
+    RestClientBuilder restClientBuilder = RestClient.builder(getHttpHost(elsConfig));
+    if (elsConfig.getConnectTimeout() != null || elsConfig.getSocketTimeout() != null) {
+      restClientBuilder
+          .setRequestConfigCallback(configCallback -> setTimeouts(configCallback, elsConfig));
+    }
+    final RestClient restClient = restClientBuilder.setHttpClientConfigCallback(httpClientBuilder -> configureHttpClient(httpClientBuilder, elsConfig))
+        .build();
+
+    // Create the transport with a Jackson mapper
+    ElasticsearchTransport transport = new RestClientTransport(restClient, new JacksonJsonpMapper());
+
+    // And create the API client
+    final ElasticsearchClient elasticsearchClient = new ElasticsearchClient(transport);
+    if (!checkHealth(elasticsearchClient)) {
+      logger.warn("Elasticsearch cluster is not accessible");
+    } else {
+      logger.debug("Elasticsearch connection was successfully created.");
+    }
+    return elasticsearchClient;
+  }
+
+  public boolean checkHealth(ElasticsearchClient elasticsearchClient) {
+    ElasticsearchProperties elsConfig = operateProperties.getElasticsearch();
+    try {
+      return RetryOperation.<Boolean>newBuilder()
+          .noOfRetry(50)
+          .retryOn(IOException.class, co.elastic.clients.elasticsearch._types.ElasticsearchException.class)
+          .delayInterval(3, TimeUnit.SECONDS)
+          .message(String.format("Connect to Elasticsearch cluster [%s] at %s",
+              elsConfig.getClusterName(),
+              elsConfig.getUrl()))
+          .retryConsumer(() -> {
+            final HealthResponse healthResponse = elasticsearchClient.cluster()
+                .health();
+            logger.info("Elasticsearch cluster health: {}", healthResponse.status());
+            return healthResponse.clusterName().equals(elsConfig.getClusterName());
+          })
+          .build().retry();
+    } catch (Exception e) {
+      throw new OperateRuntimeException("Couldn't connect to Elasticsearch. Abort.", e);
+    }
+  }
   @Bean
   public RestHighLevelClient esClient() {
     //some weird error when ELS sets available processors number for Netty - see https://discuss.elastic.co/t/elasticsearch-5-4-1-availableprocessors-is-already-set/88036/3

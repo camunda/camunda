@@ -1,7 +1,7 @@
 version: "2.4"
 services:
   elasticsearch:
-    image: docker.elastic.co/elasticsearch/elasticsearch:7.17.0
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.7.1
     container_name: elasticsearch
     environment:
       - discovery.type=single-node
@@ -27,6 +27,28 @@ services:
       - 5601:5601
     links:
       - elasticsearch
+
+  opensearch:
+    image: opensearchproject/opensearch:latest
+    container_name: opensearch
+    environment:
+      - cluster.name=opensearch-cluster
+      - node.name=opensearch
+      - discovery.seed_hosts=opensearch
+      - plugins.security.disabled=true
+      - cluster.initial_cluster_manager_nodes=opensearch
+      - bootstrap.memory_lock=true # along with the memlock settings below, disables swapping
+      - "OPENSEARCH_JAVA_OPTS=-Xms512m -Xmx512m" # minimum and maximum Java heap size, recommend setting both to 50% of system RAM
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+      nofile:
+        soft: 65536 # maximum number of open files for the OpenSearch user, set to at least 65536 on modern systems
+        hard: 65536
+    ports:
+      - 9205:9200
+      - 9600:9600 # required for Performance Analyzer
 
   zeebe:
     container_name: zeebe
