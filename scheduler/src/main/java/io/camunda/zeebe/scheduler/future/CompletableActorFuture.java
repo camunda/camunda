@@ -161,7 +161,7 @@ public final class CompletableActorFuture<V> implements ActorFuture<V> {
       this.value = value;
       state = COMPLETED;
       completedAt = System.nanoTime();
-      notifyBlockedTasks();
+      notifyAllBlocked();
     } else {
       final String err =
           "Cannot complete future, the future is already completed "
@@ -182,7 +182,7 @@ public final class CompletableActorFuture<V> implements ActorFuture<V> {
       this.failure = failure;
       failureCause = throwable;
       state = COMPLETED_EXCEPTIONALLY;
-      notifyBlockedTasks();
+      notifyAllBlocked();
     } else {
       final String err =
           "Cannot complete future, the future is already completed "
@@ -250,9 +250,9 @@ public final class CompletableActorFuture<V> implements ActorFuture<V> {
     return failureCause;
   }
 
-  private void notifyBlockedTasks() {
-    notifyAllInQueue(blockedTasks);
-    notifyAllCallbacks();
+  private void notifyAllBlocked() {
+    notifyBlockedTasks(blockedTasks);
+    notifyBlockedCallBacks();
 
     try {
       completionLock.lock();
@@ -262,7 +262,7 @@ public final class CompletableActorFuture<V> implements ActorFuture<V> {
     }
   }
 
-  private void notifyAllCallbacks() {
+  private void notifyBlockedCallBacks() {
     while (!blockedCallbacks.isEmpty()) {
       final var callBack = blockedCallbacks.poll();
       if (callBack != null) {
@@ -271,7 +271,7 @@ public final class CompletableActorFuture<V> implements ActorFuture<V> {
     }
   }
 
-  private void notifyAllInQueue(final Queue<ActorTask> tasks) {
+  private void notifyBlockedTasks(final Queue<ActorTask> tasks) {
     while (!tasks.isEmpty()) {
       final ActorTask task = tasks.poll();
 
@@ -289,7 +289,7 @@ public final class CompletableActorFuture<V> implements ActorFuture<V> {
       value = null;
       failure = null;
       failureCause = null;
-      notifyBlockedTasks();
+      notifyAllBlocked();
     }
 
     return prevState != CLOSED;
