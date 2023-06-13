@@ -9,12 +9,11 @@ package io.atomix.raft.protocol;
 
 public class ProtocolVersionHandler {
 
-  private static final int VERSION_APPENDREQUEST = 1;
-  private static final int VERSION_APPENDREQUEST_V2 = 2;
+  private static final int APPENDREQUEST_WITH_RAFTRECORDS = 1;
 
   public static InternalAppendRequest transform(final AppendRequest request) {
     return new InternalAppendRequest(
-        VERSION_APPENDREQUEST,
+        APPENDREQUEST_WITH_RAFTRECORDS,
         request.term(),
         request.leader(),
         request.prevLogIndex(),
@@ -25,7 +24,7 @@ public class ProtocolVersionHandler {
 
   public static InternalAppendRequest transform(final VersionedAppendRequest request) {
     return new InternalAppendRequest(
-        VERSION_APPENDREQUEST_V2,
+        request.version(),
         request.term(),
         request.leader(),
         request.prevLogIndex(),

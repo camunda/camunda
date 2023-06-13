@@ -34,6 +34,9 @@ import java.util.Objects;
  */
 public class VersionedAppendRequest extends AbstractRaftRequest {
 
+  private static final int CURRENT_VERSION = 2;
+
+  private final int version;
   private final long term;
   private final String leader;
   private final long prevLogIndex;
@@ -42,12 +45,14 @@ public class VersionedAppendRequest extends AbstractRaftRequest {
   private final long commitIndex;
 
   public VersionedAppendRequest(
+      final int version,
       final long term,
       final String leader,
       final long prevLogIndex,
       final long prevLogTerm,
       final List<PersistedRaftRecord> entries,
       final long commitIndex) {
+    this.version = version;
     this.term = term;
     this.leader = leader;
     this.prevLogIndex = prevLogIndex;
@@ -141,6 +146,7 @@ public class VersionedAppendRequest extends AbstractRaftRequest {
   @Override
   public String toString() {
     return toStringHelper(this)
+        .add("version", version)
         .add("term", term)
         .add("leader", leader)
         .add("prevLogIndex", prevLogIndex)
@@ -148,6 +154,10 @@ public class VersionedAppendRequest extends AbstractRaftRequest {
         .add("entries", entries.size())
         .add("commitIndex", commitIndex)
         .toString();
+  }
+
+  public int version() {
+    return version;
   }
 
   /** Append request builder. */
@@ -160,7 +170,20 @@ public class VersionedAppendRequest extends AbstractRaftRequest {
     private long logTerm;
     private List<PersistedRaftRecord> entries;
     private long commitIndex = -1;
+    private int version = CURRENT_VERSION;
 
+    /**
+     * Sets the request version. The default is the latest version.
+     *
+     * @param version The request version.
+     * @return The append request builder.
+     * @throws IllegalArgumentException if the {@code version} is not positive
+     */
+    public Builder withVersion(final int version) {
+      checkArgument(version > 0, "version must be positive");
+      this.version = version;
+      return this;
+    }
     /**
      * Sets the request term.
      *
@@ -255,7 +278,8 @@ public class VersionedAppendRequest extends AbstractRaftRequest {
     @Override
     public VersionedAppendRequest build() {
       validate();
-      return new VersionedAppendRequest(term, leader, logIndex, logTerm, entries, commitIndex);
+      return new VersionedAppendRequest(
+          version, term, leader, logIndex, logTerm, entries, commitIndex);
     }
 
     @Override
