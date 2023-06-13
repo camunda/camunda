@@ -14,7 +14,6 @@ import io.camunda.zeebe.scheduler.ActorTask;
 import io.camunda.zeebe.scheduler.ActorThread;
 import io.camunda.zeebe.scheduler.FutureUtil;
 import io.camunda.zeebe.util.Loggers;
-import java.util.Queue;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
@@ -48,9 +47,6 @@ public final class CompletableActorFuture<V> implements ActorFuture<V> {
   private V value;
   private String failure;
   private Throwable failureCause;
-  private final ManyToOneConcurrentLinkedQueue<ActorTask> blockedTasks =
-      new ManyToOneConcurrentLinkedQueue<>();
-
   private final ManyToOneConcurrentLinkedQueue<BiConsumer<V, Throwable>> blockedCallbacks =
       new ManyToOneConcurrentLinkedQueue<>();
 
@@ -211,7 +207,7 @@ public final class CompletableActorFuture<V> implements ActorFuture<V> {
 
   @Override
   public void block(final ActorTask onCompletion) {
-    blockedTasks.add(onCompletion);
+    blockedCallbacks.add((resIgnore, errorIgnore) -> onCompletion.tryWakeup());
   }
 
   @Override
@@ -251,7 +247,6 @@ public final class CompletableActorFuture<V> implements ActorFuture<V> {
   }
 
   private void notifyAllBlocked() {
-    notifyBlockedTasks(blockedTasks);
     notifyBlockedCallBacks();
 
     try {
@@ -267,16 +262,6 @@ public final class CompletableActorFuture<V> implements ActorFuture<V> {
       final var callBack = blockedCallbacks.poll();
       if (callBack != null) {
         callBack.accept(value, failureCause);
-      }
-    }
-  }
-
-  private void notifyBlockedTasks(final Queue<ActorTask> tasks) {
-    while (!tasks.isEmpty()) {
-      final ActorTask task = tasks.poll();
-
-      if (task != null) {
-        task.tryWakeup();
       }
     }
   }
