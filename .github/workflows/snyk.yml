@@ -173,7 +173,7 @@ jobs:
           snyk container "${SNYK_COMMAND}" "${DOCKER_IMAGE}" --file=Dockerfile "'--project-name=${PROJECT_NAME}'" ${SNYK_ARGS} "$(output "${SARIF}" 'docker')" || exitCode=1
 
           # Only fail if we entirely failed to parse the projects
-          if [[ $exitCode -ge 1 ]]; then
+          if [[ $exitCode -gt 1 ]]; then
             exit "${exitCode}"
           else
             exit 0
