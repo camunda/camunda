@@ -108,8 +108,7 @@ public final class EngineProcessors {
             writers,
             typedRecordProcessorContext.getPartitionId(),
             partitionsCount,
-            interPartitionCommandSender,
-            processingState.getKeyGenerator());
+            interPartitionCommandSender);
 
     final var deploymentDistributionCommandSender =
         new DeploymentDistributionCommandSender(
