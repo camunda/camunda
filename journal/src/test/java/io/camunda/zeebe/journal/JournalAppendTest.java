@@ -200,4 +200,115 @@ final class JournalAppendTest {
     assertThatThrownBy(() -> journal.append(0, recordDataWriter)).isInstanceOf(InvalidAsqn.class);
     assertThatThrownBy(() -> journal.append(1, recordDataWriter)).isInstanceOf(InvalidAsqn.class);
   }
+
+  @Test
+  void shouldAppendSerializedJournalRecord() {
+    // given
+    final var receiverJournal =
+        SegmentedJournal.builder()
+            .withDirectory(directory.resolve("data-2").toFile())
+            .withJournalIndexDensity(5)
+            .withMetaStore(new MockJournalMetastore())
+            .build();
+    final var expected = journal.append(10, recordDataWriter);
+
+    // when
+    final byte[] serializedRecord = getSerializedBytes(expected);
+    receiverJournal.append(expected.index(), expected.checksum(), serializedRecord);
+
+    // then
+    final var reader = receiverJournal.openReader();
+    assertThat(reader.hasNext()).isTrue();
+    final var actual = reader.next();
+    assertThat(expected).isEqualTo(actual);
+  }
+
+  @Test
+  void shouldAppendSerializedJournalRecordReturnedByReader() {
+    // given
+    final var receiverJournal =
+        SegmentedJournal.builder()
+            .withDirectory(directory.resolve("data-2").toFile())
+            .withJournalIndexDensity(5)
+            .withMetaStore(new MockJournalMetastore())
+            .build();
+    final var expected = journal.append(10, recordDataWriter);
+    final var recordToWrite = journal.openReader().next();
+
+    // when
+    final byte[] serializedRecord = getSerializedBytes(recordToWrite);
+    receiverJournal.append(recordToWrite.index(), recordToWrite.checksum(), serializedRecord);
+
+    // then
+    final var reader = receiverJournal.openReader();
+    assertThat(reader.hasNext()).isTrue();
+    final var actual = reader.next();
+    assertThat(expected).isEqualTo(actual);
+  }
+
+  @Test
+  void shouldNotAppendSerializedRecordWithAlreadyAppendedIndex() {
+    // given
+    final var record = journal.append(1, recordDataWriter);
+    journal.append(recordDataWriter);
+
+    // when
+    final byte[] serializedRecord = getSerializedBytes(record);
+
+    assertThatThrownBy(() -> journal.append(record.index(), record.checksum(), serializedRecord))
+        .isInstanceOf(InvalidIndex.class);
+  }
+
+  @Test
+  void shouldNotAppendSerializedRecordWithGapInIndex() {
+    // given
+    final var receiverJournal =
+        SegmentedJournal.builder()
+            .withDirectory(directory.resolve("data-2").toFile())
+            .withJournalIndexDensity(5)
+            .withMetaStore(new MockJournalMetastore())
+            .build();
+    journal.append(1, recordDataWriter);
+    final var record = journal.append(2, recordDataWriter);
+
+    // when/then
+    final byte[] serializedRecord = getSerializedBytes(record);
+    assertThatThrownBy(
+            () -> receiverJournal.append(record.index(), record.checksum(), serializedRecord))
+        .isInstanceOf(InvalidIndex.class);
+  }
+
+  @Test
+  void shouldNotAppendDuplicateSerializedRecord() {
+    // given
+    final var record = journal.append(1, recordDataWriter);
+
+    // when/then
+    final byte[] serializedRecord = getSerializedBytes(record);
+    assertThatThrownBy(() -> journal.append(record.index(), record.checksum(), serializedRecord))
+        .isInstanceOf(InvalidIndex.class);
+  }
+
+  @Test
+  void shouldNotAppendSerializedRecordWithInvalidChecksum() {
+    // given
+    final var receiverJournal =
+        SegmentedJournal.builder()
+            .withDirectory(directory.resolve("data-2").toFile())
+            .withJournalIndexDensity(5)
+            .withMetaStore(new MockJournalMetastore())
+            .build();
+    final var record = journal.append(1, recordDataWriter);
+
+    // when/then
+    final var serializedRecord = getSerializedBytes(record);
+    assertThatThrownBy(() -> receiverJournal.append(record.index(), -1, serializedRecord))
+        .isInstanceOf(InvalidChecksum.class);
+  }
+
+  private static byte[] getSerializedBytes(final JournalRecord record) {
+    final byte[] serializedRecord = new byte[record.serializedRecord().capacity()];
+    record.serializedRecord().getBytes(0, serializedRecord);
+    return serializedRecord;
+  }
 }
