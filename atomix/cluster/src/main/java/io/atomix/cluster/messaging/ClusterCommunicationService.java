@@ -45,11 +45,11 @@ import java.util.function.Function;
  *       directly to the given member and awaits a reply
  * </ul>
  *
- * To register to listen for messages, use one of the {@link #subscribe(String, Function, Consumer,
+ * To register to listen for messages, use one of the {@link #consume(String, Function, Consumer,
  * Executor)} methods:
  *
  * <pre>{@code
- * service.subscribe("test", String::new, message -> {
+ * service.consume("test", String::new, message -> {
  *   System.out.println("Received message " + message);
  * }, executor);
  *
@@ -120,76 +120,66 @@ public interface ClusterCommunicationService {
       Duration timeout);
 
   /**
-   * Adds a new subscriber for the specified message subject.
+   * Adds a new subscriber for the specified message subject, which must return a reply.
    *
    * @param subject message subject
-   * @param decoder decoder for resurrecting incoming message
-   * @param handler handler function that processes the incoming message and produces a reply
-   * @param encoder encoder for serializing reply
-   * @param executor executor to run this handler on
-   * @param <M> incoming message type
-   * @param <R> reply message type
-   */
-  <M, R> void subscribe(
-      String subject,
-      Function<byte[], M> decoder,
-      Function<M, R> handler,
-      Function<R, byte[]> encoder,
-      Executor executor);
-
-  /**
-   * Adds a new subscriber for the specified message subject.
-   *
-   * @param subject message subject
-   * @param decoder decoder for resurrecting incoming message
+   * @param decoder decoder for deserialize incoming message
    * @param handler handler function that processes the incoming message and produces a reply
    * @param encoder encoder for serializing reply
    * @param <M> incoming message type
    * @param <R> reply message type
    */
-  <M, R> void subscribe(
+  <M, R> void replyTo(
       String subject,
       Function<byte[], M> decoder,
       Function<M, CompletableFuture<R>> handler,
       Function<R, byte[]> encoder);
 
   /**
-   * Adds a new subscriber for the specified message subject.
+   * Adds a new subscriber for the specified message subject which does not return any reply.
    *
    * @param subject message subject
-   * @param decoder decoder to resurrecting incoming message
+   * @param decoder decoder to deserialize incoming message
    * @param handler handler for handling message
    * @param executor executor to run this handler on
    * @param <M> incoming message type
    */
-  <M> void subscribe(
+  <M> void consume(
       String subject, Function<byte[], M> decoder, Consumer<M> handler, Executor executor);
 
   /**
-   * Adds a new subscriber for the specified message subject.
+   * Adds a new subscriber for the specified message subject which does not return any reply. If the
+   * sender is not a known member, the handler is not called (but no error is returned to the
+   * sender).
    *
    * @param subject message subject
-   * @param decoder decoder to resurrecting incoming message
-   * @param handler handler for handling message
+   * @param decoder decoder to deserialize incoming message
+   * @param handler handler for handling message, receiving the sender's member ID and the decoded
+   *     message
    * @param executor executor to run this handler on
    * @param <M> incoming message type
    */
-  <M> void subscribe(
+  <M> void consume(
       String subject,
       Function<byte[], M> decoder,
       BiConsumer<MemberId, M> handler,
       Executor executor);
 
   /**
-   * Adds a new subscriber for the specified message subject.
+   * Adds a new subscriber for the specified message subject which must return a reply. If the
+   * sender is not a known member, the handler is not called, and a {@link
+   * io.atomix.cluster.messaging.MessagingException.NoSuchMemberException} is returned to the
+   * sender.
    *
    * @param subject message subject
-   * @param decoder decoder to resurrecting incoming message
-   * @param handler handler for handling message
+   * @param decoder decoder to deserializing incoming message
+   * @param handler handler for handling message, receiving the sender's member ID and the decoded
+   *     message
+   * @param encoder to serialize the outgoing reply
    * @param executor executor to run this handler on
    * @param <M> incoming message type
    */
-  <M, R> void subscribe(
+  <M, R> void replyTo(
       String subject,
       Function<byte[], M> decoder,
       BiFunction<MemberId, M, R> handler,

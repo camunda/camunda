@@ -119,33 +119,7 @@ public class DefaultClusterCommunicationService implements ManagedClusterCommuni
   }
 
   @Override
-  public <M, R> void subscribe(
-      final String subject,
-      final Function<byte[], M> decoder,
-      final Function<M, R> handler,
-      final Function<R, byte[]> encoder,
-      final Executor executor) {
-    messagingService.registerHandler(
-        subject,
-        new InternalMessageResponder<>(
-            decoder,
-            encoder,
-            m -> {
-              final CompletableFuture<R> responseFuture = new CompletableFuture<>();
-              executor.execute(
-                  () -> {
-                    try {
-                      responseFuture.complete(handler.apply(m));
-                    } catch (final Exception e) {
-                      responseFuture.completeExceptionally(e);
-                    }
-                  });
-              return responseFuture;
-            }));
-  }
-
-  @Override
-  public <M, R> void subscribe(
+  public <M, R> void replyTo(
       final String subject,
       final Function<byte[], M> decoder,
       final Function<M, CompletableFuture<R>> handler,
@@ -155,7 +129,7 @@ public class DefaultClusterCommunicationService implements ManagedClusterCommuni
   }
 
   @Override
-  public <M> void subscribe(
+  public <M> void consume(
       final String subject,
       final Function<byte[], M> decoder,
       final Consumer<M> handler,
@@ -169,7 +143,7 @@ public class DefaultClusterCommunicationService implements ManagedClusterCommuni
   }
 
   @Override
-  public <M> void subscribe(
+  public <M> void consume(
       final String subject,
       final Function<byte[], M> decoder,
       final BiConsumer<MemberId, M> handler,
@@ -183,7 +157,7 @@ public class DefaultClusterCommunicationService implements ManagedClusterCommuni
   }
 
   @Override
-  public <M, R> void subscribe(
+  public <M, R> void replyTo(
       final String subject,
       final Function<byte[], M> decoder,
       final BiFunction<MemberId, M, R> handler,

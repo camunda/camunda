@@ -56,7 +56,7 @@ public final class ClientStreamServiceImpl<M extends BufferWriter> extends Actor
   protected void onActorStarted() {
     // TODO: Define an PushResponse to inform server if push was successful or not. Currently, an
     // exception will be received by the server response handler.
-    communicationService.subscribe(
+    communicationService.replyTo(
         StreamTopics.PUSH.topic(),
         MessageUtil::parsePushRequest,
         request -> {

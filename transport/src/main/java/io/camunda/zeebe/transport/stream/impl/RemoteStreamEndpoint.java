@@ -35,19 +35,19 @@ public final class RemoteStreamEndpoint<M extends BufferReader> extends Actor {
 
   @Override
   protected void onActorStarting() {
-    transport.subscribe(
+    transport.replyTo(
         StreamTopics.ADD.topic(),
         MessageUtil::parseAddRequest,
         this::onAdd,
         Function.identity(),
         actor::run);
-    transport.subscribe(
+    transport.replyTo(
         StreamTopics.REMOVE.topic(),
         MessageUtil::parseRemoveRequest,
         this::onRemove,
         Function.identity(),
         actor::run);
-    transport.subscribe(
+    transport.replyTo(
         StreamTopics.REMOVE_ALL.topic(),
         Function.identity(),
         this::onRemoveAll,
