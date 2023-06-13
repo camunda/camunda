@@ -42,7 +42,7 @@ jobs:
           cache: "maven"
 
       - name: Setup Maven
-        uses: s4u/setup-maven-action@v1.7.0
+        uses: s4u/setup-maven-action@v1.8.0
         with:
           java-version: ${{ env.JAVA_VERSION }}
           java-distribution: "adopt"
