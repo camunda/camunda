@@ -20,6 +20,7 @@ import org.agrona.DirectBuffer;
  * @param <M> associated metadata with a single stream
  * @param <P> the payload type that can be pushed to the stream
  */
+@FunctionalInterface
 public interface RemoteStreamer<M extends BufferReader, P extends BufferWriter> {
   /**
    * Returns a valid stream for the given streamType, or {@link Optional#empty()} if there is none.
