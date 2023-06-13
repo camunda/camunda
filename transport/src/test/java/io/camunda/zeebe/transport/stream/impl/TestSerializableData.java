@@ -9,6 +9,7 @@ package io.camunda.zeebe.transport.stream.impl;
 
 import io.camunda.zeebe.util.buffer.BufferReader;
 import io.camunda.zeebe.util.buffer.BufferWriter;
+import java.util.Objects;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 
@@ -44,5 +45,20 @@ class TestSerializableData implements BufferReader, BufferWriter {
   @Override
   public void write(final MutableDirectBuffer buffer, final int offset) {
     buffer.putInt(offset, data);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(data);
+  }
+
+  @Override
+  public boolean equals(final Object o) {
+    if (this == o)
+      return true;
+    if (o == null || getClass() != o.getClass())
+      return false;
+    final TestSerializableData data1 = (TestSerializableData) o;
+    return data == data1.data;
   }
 }
