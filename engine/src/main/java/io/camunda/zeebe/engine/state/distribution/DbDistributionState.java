@@ -15,12 +15,17 @@ import io.camunda.zeebe.db.impl.DbForeignKey;
 import io.camunda.zeebe.db.impl.DbInt;
 import io.camunda.zeebe.db.impl.DbLong;
 import io.camunda.zeebe.db.impl.DbNil;
+import io.camunda.zeebe.engine.Loggers;
 import io.camunda.zeebe.engine.state.mutable.MutableDistributionState;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.impl.record.value.distribution.CommandDistributionRecord;
 import org.agrona.collections.MutableBoolean;
+import org.agrona.collections.MutableLong;
+import org.agrona.collections.MutableReference;
+import org.slf4j.Logger;
 
 public class DbDistributionState implements MutableDistributionState {
+  private static final Logger LOG = Loggers.STREAM_PROCESSING;
 
   private final DbLong distributionKey;
   private final DbForeignKey<DbLong> fkDistribution;
@@ -127,5 +132,36 @@ public class DbDistributionState implements MutableDistributionState {
         .setValueType(persistedDistribution.getValueType())
         .setIntent(persistedDistribution.getIntent())
         .setRecordValue(persistedDistribution.getCommandValue());
+  }
+
+  @Override
+  public void foreachPendingDistribution(final PendingDistributionVisitor visitor) {
+    final var lastDistributionKey = new MutableLong(0);
+    final var lastPendingDistribution = new MutableReference<CommandDistributionRecord>();
+
+    pendingDistributionColumnFamily.forEach(
+        (compositeKey, nil) -> {
+          final var distributionKey = compositeKey.first().inner().getValue();
+          final var partitionId = compositeKey.second().getValue();
+
+          if (lastDistributionKey.value != distributionKey) {
+            final var pendingDistribution =
+                getCommandDistributionRecord(distributionKey, partitionId);
+            if (pendingDistribution == null) {
+              LOG.warn(
+                  "Expected to find a pending distribution with key {} for a partition {}, but none found. The state is inconsistent",
+                  distributionKey,
+                  partitionId);
+              // we ignore this currently
+              return;
+            }
+            lastDistributionKey.set(distributionKey);
+            lastPendingDistribution.set(pendingDistribution);
+          }
+
+          final var commandDistributionRecord = new CommandDistributionRecord();
+          commandDistributionRecord.wrap(lastPendingDistribution.get()).setPartitionId(partitionId);
+          visitor.visit(distributionKey, commandDistributionRecord);
+        });
   }
 }
