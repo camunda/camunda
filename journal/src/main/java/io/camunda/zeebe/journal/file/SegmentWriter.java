@@ -111,9 +111,7 @@ final class SegmentWriter {
       final long asqn,
       final BufferWriter recordDataWriter,
       final Long expectedChecksum) {
-    final long nextIndex = getNextIndex();
 
-    verifyNoIndexGap(entryIndex, nextIndex);
     verifyAsqnIsIncreasing(asqn);
 
     final int startPosition = buffer.position();
@@ -122,7 +120,7 @@ final class SegmentWriter {
 
     final var writeResult =
         writeRecord(
-            getNextIndex(), asqn, startPosition + frameLength + metadataLength, recordDataWriter);
+            entryIndex, asqn, startPosition + frameLength + metadataLength, recordDataWriter);
     if (writeResult.isLeft()) {
       buffer.position(startPosition);
       return Either.left(writeResult.getLeft());
@@ -135,10 +133,7 @@ final class SegmentWriter {
   }
 
   Either<SegmentFull, JournalRecord> append(
-      final long entryIndex, final long expectedChecksum, final byte[] serializedRecord) {
-    final long nextIndex = getNextIndex();
-
-    verifyNoIndexGap(entryIndex, nextIndex);
+      final long expectedChecksum, final byte[] serializedRecord) {
 
     final int startPosition = buffer.position();
     final int frameLength = FrameUtil.getLength();
@@ -210,6 +205,8 @@ final class SegmentWriter {
       final int recordLength) {
     final var metadata = serializer.readMetadata(writeBuffer, startPosition + frameLength);
     final var data = serializer.readData(writeBuffer, startPosition + frameLength + metadataLength);
+    verifyNoIndexGap(data.index(), getNextIndex());
+
     lastEntry =
         new PersistedJournalRecord(
             metadata,

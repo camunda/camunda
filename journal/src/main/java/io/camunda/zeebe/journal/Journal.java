@@ -60,11 +60,10 @@ public interface Journal extends AutoCloseable {
   /**
    * Appends already serialized journal record. See {@link JournalRecord#serializedRecord()}
    *
-   * @param index the index of the record
    * @param checksum checksum of serializedRecord
    * @param serializedRecord serializedRecord
    */
-  void append(long index, long checksum, byte[] serializedRecord);
+  void append(long checksum, byte[] serializedRecord);
 
   /**
    * Delete all records after indexExclusive. After a call to this method, {@link

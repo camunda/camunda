@@ -83,8 +83,8 @@ final class SegmentedJournalWriter {
     }
   }
 
-  void append(final long index, final long checksum, final byte[] serializedRecord) {
-    final var appendResult = currentWriter.append(index, checksum, serializedRecord);
+  void append(final long checksum, final byte[] serializedRecord) {
+    final var appendResult = currentWriter.append(checksum, serializedRecord);
     if (appendResult.isRight()) {
       return;
     }
@@ -94,7 +94,7 @@ final class SegmentedJournalWriter {
     }
 
     journalMetrics.observeSegmentCreation(this::createNewSegment);
-    final var resultInNewSegment = currentWriter.append(index, checksum, serializedRecord);
+    final var resultInNewSegment = currentWriter.append(checksum, serializedRecord);
     if (resultInNewSegment.isLeft()) {
       throw resultInNewSegment.getLeft();
     }

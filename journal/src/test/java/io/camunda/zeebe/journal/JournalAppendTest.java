@@ -9,6 +9,7 @@ package io.camunda.zeebe.journal;
 
 import static io.camunda.zeebe.journal.file.SegmentedJournal.ASQN_IGNORE;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatException;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.zeebe.journal.JournalException.InvalidAsqn;
@@ -214,7 +215,7 @@ final class JournalAppendTest {
 
     // when
     final byte[] serializedRecord = getSerializedBytes(expected);
-    receiverJournal.append(expected.index(), expected.checksum(), serializedRecord);
+    receiverJournal.append(expected.checksum(), serializedRecord);
 
     // then
     final var reader = receiverJournal.openReader();
@@ -237,7 +238,7 @@ final class JournalAppendTest {
 
     // when
     final byte[] serializedRecord = getSerializedBytes(recordToWrite);
-    receiverJournal.append(recordToWrite.index(), recordToWrite.checksum(), serializedRecord);
+    receiverJournal.append(recordToWrite.checksum(), serializedRecord);
 
     // then
     final var reader = receiverJournal.openReader();
@@ -255,7 +256,9 @@ final class JournalAppendTest {
     // when
     final byte[] serializedRecord = getSerializedBytes(record);
 
-    assertThatThrownBy(() -> journal.append(record.index(), record.checksum(), serializedRecord))
+    assertThatException()
+        .isThrownBy(() -> journal.append(record.checksum(), serializedRecord))
+        .describedAs("Should fail to append index 1 after index 2")
         .isInstanceOf(InvalidIndex.class);
   }
 
@@ -273,8 +276,9 @@ final class JournalAppendTest {
 
     // when/then
     final byte[] serializedRecord = getSerializedBytes(record);
-    assertThatThrownBy(
-            () -> receiverJournal.append(record.index(), record.checksum(), serializedRecord))
+    assertThatException()
+        .isThrownBy(() -> receiverJournal.append(record.checksum(), serializedRecord))
+        .describedAs("Should fail to append index 2 without index 1")
         .isInstanceOf(InvalidIndex.class);
   }
 
@@ -285,7 +289,9 @@ final class JournalAppendTest {
 
     // when/then
     final byte[] serializedRecord = getSerializedBytes(record);
-    assertThatThrownBy(() -> journal.append(record.index(), record.checksum(), serializedRecord))
+    assertThatException()
+        .isThrownBy(() -> journal.append(record.checksum(), serializedRecord))
+        .describedAs("Should fail to append index 1 again")
         .isInstanceOf(InvalidIndex.class);
   }
 
@@ -302,7 +308,8 @@ final class JournalAppendTest {
 
     // when/then
     final var serializedRecord = getSerializedBytes(record);
-    assertThatThrownBy(() -> receiverJournal.append(record.index(), -1, serializedRecord))
+    assertThatException()
+        .isThrownBy(() -> journal.append(record.checksum(), serializedRecord))
         .isInstanceOf(InvalidChecksum.class);
   }
 
