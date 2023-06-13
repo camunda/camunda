@@ -48,8 +48,8 @@ public interface ClientStreamService<M extends BufferWriter> extends AsyncClosab
   ClientStreamer<M> streamer();
 
   /** Returns the {@link ClientStream} associated with this ID */
-  Optional<ClientStream<M>> streamFor(final ClientStreamId id);
+  ActorFuture<Optional<ClientStream<M>>> streamFor(final ClientStreamId id);
 
   /** Returns all registered client streams. */
-  Collection<ClientStream<M>> streams();
+  ActorFuture<Collection<ClientStream<M>>> streams();
 }

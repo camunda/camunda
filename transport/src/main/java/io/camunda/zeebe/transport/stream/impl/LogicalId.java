@@ -8,6 +8,7 @@
 package io.camunda.zeebe.transport.stream.impl;
 
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import org.agrona.BitUtil;
 import org.agrona.concurrent.UnsafeBuffer;
 
 /**

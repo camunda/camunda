@@ -37,6 +37,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
 import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
+import org.assertj.core.api.Assertions;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -118,7 +119,7 @@ final class StreamIntegrationTest {
     Awaitility.await("until stream is registered client side")
         .untilAsserted(
             () ->
-                assertThat(clientService.streamFor(streamId))
+                Assertions.assertThat(clientService.streamFor(streamId).join())
                     .hasValueSatisfying(s -> s.isConnected(serverMemberId)));
   }
 
@@ -135,10 +136,10 @@ final class StreamIntegrationTest {
 
     // must wait until the stream is connected everywhere before removal, as otherwise there is a
     // race condition
-    Awaitility.await("until stream is registered")
+    Awaitility.await("until stream is registered client side")
         .untilAsserted(
             () ->
-                assertThat(clientService.streamFor(streamId))
+                Assertions.assertThat(clientService.streamFor(streamId).join())
                     .hasValueSatisfying(s -> s.isConnected(serverMemberId)));
 
     // when
@@ -148,7 +149,8 @@ final class StreamIntegrationTest {
     Awaitility.await("until stream is removed from the server side")
         .untilAsserted(() -> assertThat(remoteStreamer.streamFor(streamType)).isEmpty());
     Awaitility.await("until stream is removed from the client side")
-        .untilAsserted(() -> assertThat(clientService.streamFor(streamId)).isEmpty());
+        .untilAsserted(
+            () -> Assertions.assertThat(clientService.streamFor(streamId).join()).isEmpty());
   }
 
   @Test

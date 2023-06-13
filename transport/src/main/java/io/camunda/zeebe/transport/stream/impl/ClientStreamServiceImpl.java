@@ -42,15 +42,8 @@ public final class ClientStreamServiceImpl<M extends BufferWriter> extends Actor
 
   public ClientStreamServiceImpl(
       final ClusterCommunicationService communicationService, final ClientStreamMetrics metrics) {
-    this(communicationService, metrics, new ClientStreamRegistry<>(metrics));
-  }
-
-  public ClientStreamServiceImpl(
-      final ClusterCommunicationService communicationService,
-      final ClientStreamMetrics metrics,
-      final ClientStreamRegistry<M> registry) {
     this.communicationService = communicationService;
-    this.registry = registry;
+    registry = new ClientStreamRegistry<>(metrics);
 
     // ClientStreamRequestManager must use same actor as this because it is mutating shared
     // ClientStream objects.
@@ -129,16 +122,18 @@ public final class ClientStreamServiceImpl<M extends BufferWriter> extends Actor
   }
 
   @Override
-  public Optional<ClientStream<M>> streamFor(final ClientStreamId id) {
+  public ActorFuture<Optional<ClientStream<M>>> streamFor(final ClientStreamId id) {
     // mapping to itself is necessary to cast from impl to interface type
-    return registry.getClient(id).map(s -> s);
+    return actor.call(() -> registry.getClient(id).map(s -> s));
   }
 
   @Override
-  public Collection<ClientStream<M>> streams() {
-    return registry.list().stream()
-        .flatMap(agg -> agg.list().stream())
-        .map(s -> (ClientStream<M>) s)
-        .toList();
+  public ActorFuture<Collection<ClientStream<M>>> streams() {
+    return actor.call(
+        () ->
+            registry.list().stream()
+                .flatMap(agg -> agg.list().stream())
+                .map(s -> (ClientStream<M>) s)
+                .toList());
   }
 }
