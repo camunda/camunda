@@ -34,7 +34,7 @@ public interface JournalRecord {
   long asqn();
 
   /**
-   * Checksum of the data
+   * Checksum of the serializedRecord
    *
    * @return checksum
    */
@@ -47,5 +47,10 @@ public interface JournalRecord {
    */
   DirectBuffer data();
 
+  /**
+   * Serialized journal record that includes index, asqn and data.
+   *
+   * @return serialized record
+   */
   DirectBuffer serializedRecord();
 }
