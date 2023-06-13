@@ -581,6 +581,66 @@ public final class ActorFutureTest {
     assertThat(executorCount).hasValue(1);
   }
 
+  @Test
+  public void shouldInvokeCallbackOnFutureCompletionExceptionIfCallerIsNotActor() {
+    // given
+    final CompletableActorFuture<Void> future = new CompletableActorFuture<>();
+    final AtomicReference<Throwable> callBackError = new AtomicReference<>();
+
+    future.onComplete((r, t) -> callBackError.set(t));
+
+    final Actor completingActor =
+        new Actor() {
+          @Override
+          protected void onActorStarted() {
+            future.completeExceptionally(new RuntimeException("Expected"));
+          }
+        };
+
+    // when
+    schedulerRule.submitActor(completingActor);
+    schedulerRule.workUntilDone();
+
+    // then
+    assertThat(callBackError.get())
+        .isInstanceOf(RuntimeException.class)
+        .hasMessageContaining("Expected");
+  }
+
+  @Test
+  public void shouldInvokeCallbackOnFutureCompletionErrorOnProvidedExecutor() {
+    // given
+    final CompletableActorFuture<Void> future = new CompletableActorFuture<>();
+    final AtomicReference<Throwable> callBackError = new AtomicReference<>();
+
+    final AtomicInteger executorCount = new AtomicInteger(0);
+    final Executor decoratedExecutor =
+        runnable -> {
+          executorCount.getAndIncrement();
+          runnable.run();
+        };
+
+    future.onComplete((r, t) -> callBackError.set(t), decoratedExecutor);
+
+    final Actor completingActor =
+        new Actor() {
+          @Override
+          protected void onActorStarted() {
+            future.completeExceptionally(new RuntimeException("Expected"));
+          }
+        };
+
+    // when
+    schedulerRule.submitActor(completingActor);
+    schedulerRule.workUntilDone();
+
+    // then
+    assertThat(callBackError.get())
+        .isInstanceOf(RuntimeException.class)
+        .hasMessageContaining("Expected");
+    assertThat(executorCount).hasValue(1);
+  }
+
   private static class ActorA extends Actor {
 
     private final ActorB actorB;
