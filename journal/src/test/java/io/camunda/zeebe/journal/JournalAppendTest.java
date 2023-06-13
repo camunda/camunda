@@ -32,14 +32,14 @@ import org.junit.jupiter.api.io.TempDir;
 final class JournalAppendTest {
   @TempDir Path directory;
   final JournalMetaStore metaStore = new MockJournalMetastore();
-  private byte[] entry;
+
   private final DirectBufferWriter recordDataWriter = new DirectBufferWriter();
   private final DirectBufferWriter otherRecordDataWriter = new DirectBufferWriter();
   private Journal journal;
 
   @BeforeEach
   void setup() {
-    entry = "TestData".getBytes();
+    final byte[] entry = "TestData".getBytes();
     recordDataWriter.wrap(new UnsafeBuffer(entry));
 
     final var entryOther = "TestData".getBytes();
@@ -82,22 +82,23 @@ final class JournalAppendTest {
   @Test
   void shouldAppendJournalRecord() {
     // given
-    final var receiverJournal =
+    try (final var receiverJournal =
         SegmentedJournal.builder()
             .withDirectory(directory.resolve("data-2").toFile())
             .withJournalIndexDensity(5)
             .withMetaStore(new MockJournalMetastore())
-            .build();
-    final var expected = journal.append(10, recordDataWriter);
+            .build()) {
+      final var expected = journal.append(10, recordDataWriter);
 
-    // when
-    receiverJournal.append(expected);
+      // when
+      receiverJournal.append(expected);
 
-    // then
-    final var reader = receiverJournal.openReader();
-    assertThat(reader.hasNext()).isTrue();
-    final var actual = reader.next();
-    assertThat(expected).isEqualTo(actual);
+      // then
+      final var reader = receiverJournal.openReader();
+      assertThat(reader.hasNext()).isTrue();
+      final var actual = reader.next();
+      assertThat(expected).isEqualTo(actual);
+    }
   }
 
   @Test
@@ -117,7 +118,7 @@ final class JournalAppendTest {
   @Test
   void shouldNotAppendRecordWithAlreadyAppendedIndex() {
     // given
-    final var record = journal.append(1, recordDataWriter);
+    final var record = journal.append(recordDataWriter);
     journal.append(recordDataWriter);
 
     // when/then
@@ -127,23 +128,24 @@ final class JournalAppendTest {
   @Test
   void shouldNotAppendRecordWithGapInIndex() {
     // given
-    final var receiverJournal =
+    try (final var receiverJournal =
         SegmentedJournal.builder()
             .withDirectory(directory.resolve("data-2").toFile())
             .withJournalIndexDensity(5)
             .withMetaStore(new MockJournalMetastore())
-            .build();
-    journal.append(1, recordDataWriter);
-    final var record = journal.append(2, recordDataWriter);
+            .build()) {
+      journal.append(1, recordDataWriter);
+      final var record = journal.append(2, recordDataWriter);
 
-    // when/then
-    assertThatThrownBy(() -> receiverJournal.append(record)).isInstanceOf(InvalidIndex.class);
+      // when/then
+      assertThatThrownBy(() -> receiverJournal.append(record)).isInstanceOf(InvalidIndex.class);
+    }
   }
 
   @Test
   void shouldNotAppendLastRecord() {
     // given
-    final var record = journal.append(1, recordDataWriter);
+    final var record = journal.append(recordDataWriter);
 
     // when/then
     assertThatThrownBy(() -> journal.append(record)).isInstanceOf(InvalidIndex.class);
@@ -161,22 +163,23 @@ final class JournalAppendTest {
   @Test
   void shouldNotAppendRecordWithInvalidChecksum() {
     // given
-    final var receiverJournal =
+    try (final var receiverJournal =
         SegmentedJournal.builder()
             .withDirectory(directory.resolve("data-2").toFile())
             .withJournalIndexDensity(5)
             .withMetaStore(new MockJournalMetastore())
-            .build();
-    final var record = journal.append(1, recordDataWriter);
+            .build()) {
+      final var record = journal.append(1, recordDataWriter);
 
-    // when
-    final var invalidChecksumRecord =
-        new TestJournalRecord(
-            record.index(), record.asqn(), -1, record.data(), record.serializedRecord());
+      // when
+      final var invalidChecksumRecord =
+          new TestJournalRecord(
+              record.index(), record.asqn(), -1, record.data(), record.serializedRecord());
 
-    // then
-    assertThatThrownBy(() -> receiverJournal.append(invalidChecksumRecord))
-        .isInstanceOf(InvalidChecksum.class);
+      // then
+      assertThatThrownBy(() -> receiverJournal.append(invalidChecksumRecord))
+          .isInstanceOf(InvalidChecksum.class);
+    }
   }
 
   @Test
@@ -205,46 +208,48 @@ final class JournalAppendTest {
   @Test
   void shouldAppendSerializedJournalRecord() {
     // given
-    final var receiverJournal =
+    try (final var receiverJournal =
         SegmentedJournal.builder()
             .withDirectory(directory.resolve("data-2").toFile())
             .withJournalIndexDensity(5)
             .withMetaStore(new MockJournalMetastore())
-            .build();
-    final var expected = journal.append(10, recordDataWriter);
+            .build()) {
+      final var expected = journal.append(10, recordDataWriter);
 
-    // when
-    final byte[] serializedRecord = getSerializedBytes(expected);
-    receiverJournal.append(expected.checksum(), serializedRecord);
+      // when
+      final byte[] serializedRecord = getSerializedBytes(expected);
+      receiverJournal.append(expected.checksum(), serializedRecord);
 
-    // then
-    final var reader = receiverJournal.openReader();
-    assertThat(reader.hasNext()).isTrue();
-    final var actual = reader.next();
-    assertThat(expected).isEqualTo(actual);
+      // then
+      final var reader = receiverJournal.openReader();
+      assertThat(reader.hasNext()).isTrue();
+      final var actual = reader.next();
+      assertThat(expected).isEqualTo(actual);
+    }
   }
 
   @Test
   void shouldAppendSerializedJournalRecordReturnedByReader() {
     // given
-    final var receiverJournal =
+    try (final var receiverJournal =
         SegmentedJournal.builder()
             .withDirectory(directory.resolve("data-2").toFile())
             .withJournalIndexDensity(5)
             .withMetaStore(new MockJournalMetastore())
-            .build();
-    final var expected = journal.append(10, recordDataWriter);
-    final var recordToWrite = journal.openReader().next();
+            .build()) {
+      final var expected = journal.append(10, recordDataWriter);
+      final var recordToWrite = journal.openReader().next();
 
-    // when
-    final byte[] serializedRecord = getSerializedBytes(recordToWrite);
-    receiverJournal.append(recordToWrite.checksum(), serializedRecord);
+      // when
+      final byte[] serializedRecord = getSerializedBytes(recordToWrite);
+      receiverJournal.append(recordToWrite.checksum(), serializedRecord);
 
-    // then
-    final var reader = receiverJournal.openReader();
-    assertThat(reader.hasNext()).isTrue();
-    final var actual = reader.next();
-    assertThat(expected).isEqualTo(actual);
+      // then
+      final var reader = receiverJournal.openReader();
+      assertThat(reader.hasNext()).isTrue();
+      final var actual = reader.next();
+      assertThat(expected).isEqualTo(actual);
+    }
   }
 
   @Test
@@ -265,21 +270,22 @@ final class JournalAppendTest {
   @Test
   void shouldNotAppendSerializedRecordWithGapInIndex() {
     // given
-    final var receiverJournal =
+    try (final var receiverJournal =
         SegmentedJournal.builder()
             .withDirectory(directory.resolve("data-2").toFile())
             .withJournalIndexDensity(5)
             .withMetaStore(new MockJournalMetastore())
-            .build();
-    journal.append(1, recordDataWriter);
-    final var record = journal.append(2, recordDataWriter);
+            .build()) {
+      journal.append(1, recordDataWriter);
+      final var record = journal.append(2, recordDataWriter);
 
-    // when/then
-    final byte[] serializedRecord = getSerializedBytes(record);
-    assertThatException()
-        .isThrownBy(() -> receiverJournal.append(record.checksum(), serializedRecord))
-        .describedAs("Should fail to append index 2 without index 1")
-        .isInstanceOf(InvalidIndex.class);
+      // when/then
+      final byte[] serializedRecord = getSerializedBytes(record);
+      assertThatException()
+          .isThrownBy(() -> receiverJournal.append(record.checksum(), serializedRecord))
+          .describedAs("Should fail to append index 2 without index 1")
+          .isInstanceOf(InvalidIndex.class);
+    }
   }
 
   @Test
@@ -298,19 +304,20 @@ final class JournalAppendTest {
   @Test
   void shouldNotAppendSerializedRecordWithInvalidChecksum() {
     // given
-    final var receiverJournal =
+    try (final var receiverJournal =
         SegmentedJournal.builder()
             .withDirectory(directory.resolve("data-2").toFile())
             .withJournalIndexDensity(5)
             .withMetaStore(new MockJournalMetastore())
-            .build();
-    final var record = journal.append(1, recordDataWriter);
+            .build()) {
+      final var record = journal.append(recordDataWriter);
 
-    // when/then
-    final var serializedRecord = getSerializedBytes(record);
-    assertThatException()
-        .isThrownBy(() -> journal.append(record.checksum(), serializedRecord))
-        .isInstanceOf(InvalidChecksum.class);
+      // when/then
+      final var serializedRecord = getSerializedBytes(record);
+      assertThatException()
+          .isThrownBy(() -> receiverJournal.append(record.checksum() - 1, serializedRecord))
+          .isInstanceOf(InvalidChecksum.class);
+    }
   }
 
   private static byte[] getSerializedBytes(final JournalRecord record) {
