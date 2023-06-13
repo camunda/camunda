@@ -67,16 +67,18 @@ public final class CommandDistributionBehavior {
     stateWriter.appendFollowUpEvent(
         distributionKey, CommandDistributionIntent.STARTED, distributionRecord);
 
-    final var commandValue = distributionRecord.getCommandValue();
     otherPartitions.forEach(
-        (partition) -> distributeToPartition(command, partition, commandValue, distributionKey));
+        (partition) ->
+            distributeToPartition(command, partition, distributionRecord, distributionKey));
   }
 
   private <T extends UnifiedRecordValue> void distributeToPartition(
       final TypedRecord<T> command,
       final int partition,
-      final UnifiedRecordValue commandValue,
+      final CommandDistributionRecord distributionRecord,
       final long distributionKey) {
+    final var valueType = distributionRecord.getValueType();
+    final var commandValue = distributionRecord.getCommandValue();
     // We don't need the actual record in the DISTRIBUTING event applier. In order to prevent
     // reaching the max message size we don't set the record value here.
     stateWriter.appendFollowUpEvent(
@@ -84,7 +86,7 @@ public final class CommandDistributionBehavior {
         CommandDistributionIntent.DISTRIBUTING,
         new CommandDistributionRecord()
             .setPartitionId(partition)
-            .setValueType(command.getValueType())
+            .setValueType(valueType)
             .setIntent(command.getIntent()));
 
     sideEffectWriter.appendSideEffect(

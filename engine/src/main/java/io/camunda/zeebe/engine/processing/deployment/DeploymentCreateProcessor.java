@@ -150,7 +150,7 @@ public final class DeploymentCreateProcessor implements TypedRecordProcessor<Dep
     createBpmnResources(deploymentEvent);
     createDmnResources(command, deploymentEvent);
     stateWriter.appendFollowUpEvent(command.getKey(), DeploymentIntent.CREATED, deploymentEvent, 2);
-    distributionBehavior.acknowledgeCommand(command.getKey());
+    distributionBehavior.acknowledgeCommand(command.getKey(), command);
   }
 
   private void createBpmnResources(final DeploymentRecord deploymentEvent) {
