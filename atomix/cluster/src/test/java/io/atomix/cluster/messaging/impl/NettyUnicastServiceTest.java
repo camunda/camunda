@@ -16,26 +16,21 @@
  */
 package io.atomix.cluster.messaging.impl;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-import static org.slf4j.LoggerFactory.getLogger;
 
 import io.atomix.cluster.messaging.ManagedUnicastService;
 import io.atomix.cluster.messaging.MessagingConfig;
 import io.atomix.utils.net.Address;
 import io.camunda.zeebe.test.util.socket.SocketUtil;
 import net.jodah.concurrentunit.ConcurrentTestCase;
+import org.agrona.CloseHelper;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import org.slf4j.Logger;
 
 /** Netty unicast service test. */
 public class NettyUnicastServiceTest extends ConcurrentTestCase {
-
-  private static final Logger LOGGER = getLogger(NettyUnicastServiceTest.class);
-
   ManagedUnicastService service1;
   ManagedUnicastService service2;
 
@@ -47,8 +42,8 @@ public class NettyUnicastServiceTest extends ConcurrentTestCase {
     service1.addListener(
         "test",
         (address, payload) -> {
-          assertEquals(address2, address);
-          assertArrayEquals("Hello world!".getBytes(), payload);
+          assertThat(address).isEqualTo(address2);
+          assertThat(payload).containsExactly("Hello world!".getBytes());
           resume();
         });
 
@@ -57,7 +52,7 @@ public class NettyUnicastServiceTest extends ConcurrentTestCase {
   }
 
   @Test
-  public void shouldNotThrowExceptionWhenServiceStopped() throws Exception {
+  public void shouldNotThrowExceptionWhenServiceStopped() {
     // given
     service2.stop();
 
@@ -81,20 +76,6 @@ public class NettyUnicastServiceTest extends ConcurrentTestCase {
 
   @After
   public void tearDown() throws Exception {
-    if (service1 != null) {
-      try {
-        service1.stop().join();
-      } catch (final Exception e) {
-        LOGGER.warn("Failed stopping netty1", e);
-      }
-    }
-
-    if (service2 != null) {
-      try {
-        service2.stop().join();
-      } catch (final Exception e) {
-        LOGGER.warn("Failed stopping netty2", e);
-      }
-    }
+    CloseHelper.quietCloseAll(() -> service1.stop().join(), () -> service2.stop().join());
   }
 }

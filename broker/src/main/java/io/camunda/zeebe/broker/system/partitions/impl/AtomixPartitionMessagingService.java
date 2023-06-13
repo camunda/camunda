@@ -40,7 +40,7 @@ public class AtomixPartitionMessagingService implements PartitionMessagingServic
   @Override
   public void subscribe(
       final String subject, final Consumer<ByteBuffer> consumer, final Executor executor) {
-    communicationService.subscribe(subject, DefaultSerializers.BASIC::decode, consumer, executor);
+    communicationService.consume(subject, DefaultSerializers.BASIC::decode, consumer, executor);
   }
 
   @Override

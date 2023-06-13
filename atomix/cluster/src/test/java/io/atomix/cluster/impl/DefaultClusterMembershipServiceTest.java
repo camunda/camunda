@@ -20,15 +20,18 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.atomix.cluster.BootstrapService;
 import io.atomix.cluster.ClusterMembershipEvent;
+import io.atomix.cluster.ClusterMembershipEvent.Type;
 import io.atomix.cluster.Member;
+import io.atomix.cluster.MemberId;
+import io.atomix.cluster.Node;
+import io.atomix.cluster.NodeId;
 import io.atomix.cluster.TestBootstrapService;
-import io.atomix.cluster.TestGroupMembershipProtocol;
-import io.atomix.cluster.discovery.BootstrapDiscoveryProvider;
+import io.atomix.cluster.TestDiscoveryProvider;
 import io.atomix.cluster.discovery.ManagedNodeDiscoveryService;
 import io.atomix.cluster.messaging.impl.TestMessagingServiceFactory;
 import io.atomix.cluster.messaging.impl.TestUnicastServiceFactory;
-import io.atomix.cluster.protocol.GroupMembershipEvent;
 import io.atomix.utils.Version;
+import io.atomix.utils.net.Address;
 import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.parallel.Execution;
@@ -46,12 +49,10 @@ final class DefaultClusterMembershipServiceTest {
       new TestBootstrapService(
           messagingServiceFactory.newMessagingService(localMember.address()),
           unicastServiceFactory.newUnicastService(localMember.address()));
+  private final TestDiscoveryProvider discoveryProvider = new TestDiscoveryProvider();
   private final ManagedNodeDiscoveryService discoveryService =
-      new DefaultNodeDiscoveryService(
-          bootstrapService, localMember, BootstrapDiscoveryProvider.builder().build());
-
-  // keep the type as a test type so we can use its test utilities
-  private final TestGroupMembershipProtocol protocol = new TestGroupMembershipProtocol();
+      new DefaultNodeDiscoveryService(bootstrapService, localMember, discoveryProvider);
+  private final DiscoveryMembershipProtocol protocol = new DiscoveryMembershipProtocol();
 
   @Test
   void shouldManageDiscoveryService() {
@@ -178,20 +179,21 @@ final class DefaultClusterMembershipServiceTest {
     membershipService.start().join();
 
     // when
-    final var event =
-        new GroupMembershipEvent(
-            GroupMembershipEvent.Type.MEMBER_REMOVED, Member.member("1", "localhost:5001"));
+    final var nodeAddress = Address.from("localhost", 5002);
     final var receivedEvent = new AtomicReference<ClusterMembershipEvent>();
     membershipService.addListener(receivedEvent::set);
-    protocol.sendEvent(event);
+    discoveryProvider.join(
+        bootstrapService, Node.builder().withId(NodeId.from("1")).withAddress(nodeAddress).build());
 
     // then
-    final var expectedEvent =
-        new ClusterMembershipEvent(
-            ClusterMembershipEvent.Type.MEMBER_REMOVED, event.member(), event.time());
     assertThat(receivedEvent)
         .as("the received event is the same as the one sent")
-        .hasValue(expectedEvent);
+        .hasValueSatisfying(
+            event ->
+                assertThat(event)
+                    .extracting(ClusterMembershipEvent::type, ClusterMembershipEvent::subject)
+                    .containsExactly(
+                        Type.MEMBER_ADDED, Member.member(MemberId.from("1"), nodeAddress)));
 
     membershipService.stop().join();
   }

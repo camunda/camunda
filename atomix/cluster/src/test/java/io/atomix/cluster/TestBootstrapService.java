@@ -20,16 +20,8 @@ import io.atomix.cluster.messaging.MessagingService;
 import io.atomix.cluster.messaging.UnicastService;
 
 /** Test bootstrap service. */
-public class TestBootstrapService implements BootstrapService {
-
-  private final MessagingService messagingService;
-  private final UnicastService unicastService;
-
-  public TestBootstrapService(
-      final MessagingService messagingService, final UnicastService unicastService) {
-    this.messagingService = messagingService;
-    this.unicastService = unicastService;
-  }
+public record TestBootstrapService(MessagingService messagingService, UnicastService unicastService)
+    implements BootstrapService {
 
   @Override
   public MessagingService getMessagingService() {

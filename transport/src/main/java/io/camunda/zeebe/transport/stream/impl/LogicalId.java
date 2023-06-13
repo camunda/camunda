@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.transport.stream.impl;
 
+import io.camunda.zeebe.util.buffer.BufferUtil;
 import org.agrona.concurrent.UnsafeBuffer;
 
 /**
@@ -17,4 +18,15 @@ import org.agrona.concurrent.UnsafeBuffer;
  * @param metadata metadata of the stream
  * @param <M> type of metadata
  */
-record LogicalId<M>(UnsafeBuffer streamType, M metadata) {}
+record LogicalId<M>(UnsafeBuffer streamType, M metadata) {
+
+  @Override
+  public String toString() {
+    return "LogicalId{"
+        + "streamType="
+        + BufferUtil.bufferAsString(streamType)
+        + ", metadata="
+        + metadata
+        + '}';
+  }
+}

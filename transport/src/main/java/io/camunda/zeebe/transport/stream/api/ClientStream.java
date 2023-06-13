@@ -7,13 +7,15 @@
  */
 package io.camunda.zeebe.transport.stream.api;
 
-public class NoSuchStreamException extends RuntimeException {
+import io.atomix.cluster.MemberId;
+import org.agrona.DirectBuffer;
 
-  public NoSuchStreamException() {
-    super();
-  }
+public interface ClientStream<M> {
+  ClientStreamId streamId();
 
-  public NoSuchStreamException(final String message) {
-    super(message);
-  }
+  DirectBuffer streamType();
+
+  M metadata();
+
+  boolean isConnected(final MemberId memberId);
 }

@@ -59,7 +59,7 @@ public final class InterPartitionCommandReceiverActor extends Actor
 
   @Override
   protected void onActorStarting() {
-    communicationService.subscribe(
+    communicationService.consume(
         TOPIC_PREFIX + partitionId,
         DefaultSerializers.BASIC::decode,
         this::tryHandleMessage,

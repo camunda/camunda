@@ -16,6 +16,7 @@
  */
 package io.atomix.cluster.messaging;
 
+import io.atomix.utils.net.Address;
 import java.io.IOException;
 
 /** Top level exception for MessagingService failures. */
@@ -51,6 +52,14 @@ public class MessagingException extends IOException {
   public static class ProtocolException extends MessagingException {
     public ProtocolException() {
       super("Failed to process message due to invalid message structure");
+    }
+  }
+
+  public static class NoSuchMemberException extends MessagingException {
+    public NoSuchMemberException(final Address sender) {
+      super(
+          "Failed to handle incoming message, sender %s is not a known cluster member"
+              .formatted(sender));
     }
   }
 }

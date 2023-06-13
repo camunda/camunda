@@ -25,6 +25,7 @@ import io.atomix.cluster.Member;
 import io.atomix.cluster.MemberId;
 import io.atomix.cluster.messaging.ClusterCommunicationService;
 import io.atomix.cluster.messaging.ManagedClusterCommunicationService;
+import io.atomix.cluster.messaging.MessagingException;
 import io.atomix.cluster.messaging.MessagingService;
 import io.atomix.cluster.messaging.UnicastService;
 import io.atomix.utils.net.Address;
@@ -118,33 +119,7 @@ public class DefaultClusterCommunicationService implements ManagedClusterCommuni
   }
 
   @Override
-  public <M, R> void subscribe(
-      final String subject,
-      final Function<byte[], M> decoder,
-      final Function<M, R> handler,
-      final Function<R, byte[]> encoder,
-      final Executor executor) {
-    messagingService.registerHandler(
-        subject,
-        new InternalMessageResponder<>(
-            decoder,
-            encoder,
-            m -> {
-              final CompletableFuture<R> responseFuture = new CompletableFuture<>();
-              executor.execute(
-                  () -> {
-                    try {
-                      responseFuture.complete(handler.apply(m));
-                    } catch (final Exception e) {
-                      responseFuture.completeExceptionally(e);
-                    }
-                  });
-              return responseFuture;
-            }));
-  }
-
-  @Override
-  public <M, R> void subscribe(
+  public <M, R> void replyTo(
       final String subject,
       final Function<byte[], M> decoder,
       final Function<M, CompletableFuture<R>> handler,
@@ -154,7 +129,7 @@ public class DefaultClusterCommunicationService implements ManagedClusterCommuni
   }
 
   @Override
-  public <M> void subscribe(
+  public <M> void consume(
       final String subject,
       final Function<byte[], M> decoder,
       final Consumer<M> handler,
@@ -168,7 +143,7 @@ public class DefaultClusterCommunicationService implements ManagedClusterCommuni
   }
 
   @Override
-  public <M> void subscribe(
+  public <M> void consume(
       final String subject,
       final Function<byte[], M> decoder,
       final BiConsumer<MemberId, M> handler,
@@ -182,6 +157,17 @@ public class DefaultClusterCommunicationService implements ManagedClusterCommuni
   }
 
   @Override
+  public <M, R> void replyTo(
+      final String subject,
+      final Function<byte[], M> decoder,
+      final BiFunction<MemberId, M, R> handler,
+      final Function<R, byte[]> encoder,
+      final Executor executor) {
+    messagingService.registerHandler(
+        subject, new InternalMessageBiResponder<>(decoder, encoder, handler, executor));
+  }
+
+  @Override
   public void unsubscribe(final String subject) {
     messagingService.unregisterHandler(subject);
     final BiConsumer<Address, byte[]> consumer = unicastConsumers.remove(subject);
@@ -190,21 +176,20 @@ public class DefaultClusterCommunicationService implements ManagedClusterCommuni
     }
   }
 
-  private CompletableFuture<Void> doUnicast(
+  private void doUnicast(
       final String subject,
       final byte[] payload,
       final MemberId toMemberId,
       final boolean reliable) {
     final Member member = membershipService.getMember(toMemberId);
     if (member == null) {
-      return failOnMemberNotKnown(subject, toMemberId);
+      return;
     }
 
     if (reliable) {
-      return messagingService.sendAsync(member.address(), subject, payload);
+      messagingService.sendAsync(member.address(), subject, payload);
     } else {
       unicastService.unicast(member.address(), subject, payload);
-      return CompletableFuture.completedFuture(null);
     }
   }
 
@@ -251,6 +236,22 @@ public class DefaultClusterCommunicationService implements ManagedClusterCommuni
     return CompletableFuture.completedFuture(null);
   }
 
+  private static class InternalMessageConsumer<M> implements BiConsumer<Address, byte[]> {
+
+    private final Function<byte[], M> decoder;
+    private final Consumer<M> consumer;
+
+    InternalMessageConsumer(final Function<byte[], M> decoder, final Consumer<M> consumer) {
+      this.decoder = decoder;
+      this.consumer = consumer;
+    }
+
+    @Override
+    public void accept(final Address sender, final byte[] bytes) {
+      consumer.accept(decoder.apply(bytes));
+    }
+  }
+
   private static class InternalMessageResponder<M, R>
       implements BiFunction<Address, byte[], CompletableFuture<byte[]>> {
     private final Function<byte[], M> decoder;
@@ -272,22 +273,8 @@ public class DefaultClusterCommunicationService implements ManagedClusterCommuni
     }
   }
 
-  private static class InternalMessageConsumer<M> implements BiConsumer<Address, byte[]> {
-    private final Function<byte[], M> decoder;
-    private final Consumer<M> consumer;
-
-    InternalMessageConsumer(final Function<byte[], M> decoder, final Consumer<M> consumer) {
-      this.decoder = decoder;
-      this.consumer = consumer;
-    }
-
-    @Override
-    public void accept(final Address sender, final byte[] bytes) {
-      consumer.accept(decoder.apply(bytes));
-    }
-  }
-
   private class InternalMessageBiConsumer<M> implements BiConsumer<Address, byte[]> {
+
     private final Function<byte[], M> decoder;
     private final BiConsumer<MemberId, M> consumer;
 
@@ -303,6 +290,53 @@ public class DefaultClusterCommunicationService implements ManagedClusterCommuni
       if (member != null) {
         consumer.accept(member.id(), decoder.apply(bytes));
       }
+    }
+  }
+
+  private final class InternalMessageBiResponder<M, R>
+      implements BiFunction<Address, byte[], CompletableFuture<byte[]>> {
+    private final Function<byte[], M> decoder;
+    private final Function<R, byte[]> encoder;
+    private final BiFunction<MemberId, M, R> handler;
+    private final Executor executor;
+
+    InternalMessageBiResponder(
+        final Function<byte[], M> decoder,
+        Function<R, byte[]> encoder,
+        final BiFunction<MemberId, M, R> handler,
+        final Executor executor) {
+      this.decoder = decoder;
+      this.encoder = encoder;
+      this.handler = handler;
+      this.executor = executor;
+    }
+
+    @Override
+    public CompletableFuture<byte[]> apply(final Address address, final byte[] bytes) {
+      final var response = new CompletableFuture<byte[]>();
+      executor.execute(
+          () -> {
+            try {
+              handleRequest(address, bytes, response);
+            } catch (final Exception e) {
+              response.completeExceptionally(e);
+            }
+          });
+
+      return response;
+    }
+
+    private void handleRequest(
+        final Address address, final byte[] bytes, final CompletableFuture<byte[]> response)
+        throws Exception {
+      final Member member = membershipService.getMember(address);
+      if (member == null) {
+        throw new MessagingException.NoSuchMemberException(address);
+      }
+
+      final var decodedResponse = handler.apply(member.id(), decoder.apply(bytes));
+      final var encodedResponse = encoder.apply(decodedResponse);
+      response.complete(encodedResponse);
     }
   }
 }
