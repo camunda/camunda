@@ -100,9 +100,6 @@ public final class EngineProcessors {
             jobMetrics,
             decisionBehavior);
 
-    final DeploymentDistributionCommandSender deploymentDistributionCommandSender =
-        new DeploymentDistributionCommandSender(
-            typedRecordProcessorContext.getPartitionId(), interPartitionCommandSender);
     // TODO unused for now, will be used with the implementation of
     // https://github.com/camunda/zeebe/issues/11661
     final var commandDistributionBehavior =
@@ -113,6 +110,9 @@ public final class EngineProcessors {
             interPartitionCommandSender,
             processingState.getKeyGenerator());
 
+    final var deploymentDistributionCommandSender =
+        new DeploymentDistributionCommandSender(
+            typedRecordProcessorContext.getPartitionId(), interPartitionCommandSender);
     addDeploymentRelatedProcessorAndServices(
         bpmnBehaviors,
         processingState,
