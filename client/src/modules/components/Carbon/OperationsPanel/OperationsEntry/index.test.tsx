@@ -238,10 +238,7 @@ describe('OperationsEntry', () => {
     expect(panelStatesStore.state.isFiltersCollapsed).toBe(false);
   });
 
-  // TODO: unskip when carbon processes filters are implemented
-  it.skip('should not remove optional operation id filter when operation filter is applied twice', async () => {
-    panelStatesStore.toggleFiltersPanel();
-
+  it('should not remove optional operation id filter when operation filter is applied twice', async () => {
     const {user} = render(
       <>
         <OperationsEntry
@@ -256,13 +253,14 @@ describe('OperationsEntry', () => {
       {wrapper: createWrapper()}
     );
 
-    expect(screen.queryByLabelText(/operation id/i)).not.toBeInTheDocument();
+    expect(screen.queryByLabelText(/^operation id$/i)).not.toBeInTheDocument();
 
     await user.click(screen.getByText('3 Instances'));
-    expect(await screen.findByLabelText(/operation id/i)).toBeInTheDocument();
+
+    expect(await screen.findByLabelText(/^operation id$/i)).toBeInTheDocument();
 
     await user.click(screen.getByText('3 Instances'));
-    expect(screen.getByLabelText(/operation id/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/^operation id$/i)).toBeInTheDocument();
   });
 
   it('should fake the first 10% progress', async () => {
