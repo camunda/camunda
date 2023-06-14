@@ -7,6 +7,7 @@
 
 import styled, {css} from 'styled-components';
 import {styles} from '@carbon/elements';
+import {Modal as BaseModal} from '@carbon/react';
 import {DataTable as BaseDataTable} from 'modules/components/Carbon/DataTable';
 
 const Title = styled.h4`
@@ -52,10 +53,21 @@ const DataTable = styled(BaseDataTable)`
   max-height: 185px;
 `;
 
+const Modal = styled(BaseModal)`
+  .monaco-editor-overlaymessage {
+    display: none !important;
+  }
+`;
+const EmptyCell = styled.div`
+  width: 8px;
+`;
+
 export {
   Title,
   TruncatedValue,
   TruncatedValueContainer,
   EmptyMessage,
   DataTable,
+  Modal,
+  EmptyCell,
 };

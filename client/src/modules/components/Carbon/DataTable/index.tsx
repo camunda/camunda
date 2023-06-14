@@ -14,6 +14,10 @@ import {
   TableRow,
   TableBody,
   TableContainer,
+  TableExpandRow,
+  TableExpandHeader,
+  TableExpandedRow,
+  DenormalizedRow,
 } from '@carbon/react';
 
 type Props = {
@@ -21,10 +25,44 @@ type Props = {
   rows: React.ComponentProps<typeof CarbonDataTable>['rows'];
   className?: string;
   columnsWithNoContentPadding?: string[];
+  isExpandable?: boolean;
+  expandableRowTitle?: string;
+  expandedContents?: {[key: string]: React.ReactNode};
+};
+
+const TableCells: React.FC<{
+  row: DenormalizedRow;
+  columnsWithNoContentPadding?: string[];
+}> = ({row, columnsWithNoContentPadding}) => {
+  return (
+    <>
+      {row.cells.map((cell) => (
+        <TableCell
+          key={cell.id}
+          $hideCellPadding={columnsWithNoContentPadding?.includes(
+            cell.info.header
+          )}
+        >
+          {cell.value}
+        </TableCell>
+      ))}
+    </>
+  );
 };
 
 const DataTable = React.forwardRef<HTMLDivElement, Props>(
-  ({headers, rows, className, columnsWithNoContentPadding}, ref) => {
+  (
+    {
+      headers,
+      rows,
+      className,
+      columnsWithNoContentPadding,
+      isExpandable,
+      expandableRowTitle,
+      expandedContents,
+    },
+    ref
+  ) => {
     return (
       <Container className={className} ref={ref}>
         <CarbonDataTable
@@ -42,6 +80,7 @@ const DataTable = React.forwardRef<HTMLDivElement, Props>(
               <Table {...getTableProps()}>
                 <TableHead>
                   <TableRow>
+                    {isExpandable && <TableExpandHeader />}
                     {headers.map((header) => (
                       <TableHeader
                         id={header.key}
@@ -56,18 +95,36 @@ const DataTable = React.forwardRef<HTMLDivElement, Props>(
 
                 <TableBody>
                   {rows.map((row) => {
+                    if (isExpandable) {
+                      const expandedContent = expandedContents?.[row.id];
+                      return (
+                        <React.Fragment key={row.id}>
+                          <TableExpandRow
+                            {...getRowProps({row})}
+                            title={expandableRowTitle}
+                          >
+                            <TableCells
+                              row={row}
+                              columnsWithNoContentPadding={
+                                columnsWithNoContentPadding
+                              }
+                            />
+                          </TableExpandRow>
+                          <TableExpandedRow colSpan={headers.length + 1}>
+                            {expandedContent}
+                          </TableExpandedRow>
+                        </React.Fragment>
+                      );
+                    }
+
                     return (
                       <TableRow {...getRowProps({row})}>
-                        {row.cells.map((cell) => (
-                          <TableCell
-                            key={cell.id}
-                            $hideCellPadding={columnsWithNoContentPadding?.includes(
-                              cell.info.header
-                            )}
-                          >
-                            {cell.value}
-                          </TableCell>
-                        ))}
+                        <TableCells
+                          row={row}
+                          columnsWithNoContentPadding={
+                            columnsWithNoContentPadding
+                          }
+                        />
                       </TableRow>
                     );
                   })}

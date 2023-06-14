@@ -21,6 +21,8 @@ type Props = {
     showMarkers: () => void;
     hideMarkers: () => void;
   }) => void;
+  height?: string;
+  width?: string;
 };
 
 const JSONEditor: React.FC<Props> = observer(
@@ -30,6 +32,8 @@ const JSONEditor: React.FC<Props> = observer(
     readOnly = false,
     onValidate = () => {},
     onMount = () => {},
+    height = '60vh',
+    width = '100%',
   }) => {
     const monaco = useMonaco();
 
@@ -47,7 +51,8 @@ const JSONEditor: React.FC<Props> = observer(
           options={{...options, readOnly}}
           language="json"
           value={value}
-          height="60vh"
+          height={height}
+          width={width}
           theme={currentTheme.theme === 'dark' ? 'vs-dark' : 'light'}
           onChange={(value) => {
             onChange?.(value ?? '');

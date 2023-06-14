@@ -13,17 +13,23 @@ import {
   Title,
   EmptyMessage,
   DataTable,
+  Modal,
+  EmptyCell,
 } from './styled';
 import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
 import {getProcessName} from 'modules/utils/instance';
 import {modificationsStore} from 'modules/stores/modifications';
 import {processInstanceDetailsStatisticsStore} from 'modules/stores/processInstanceDetailsStatistics';
 import {tracking} from 'modules/tracking';
-import {Button, Modal} from '@carbon/react';
+import {Button} from '@carbon/react';
 import {StateProps} from 'modules/components/Carbon/ModalStateManager';
 import {useNotifications} from 'modules/notifications';
 import {Warning} from './Messages/Warning';
 import {Error} from './Messages/Error';
+import {VariableModification} from './VariableModification';
+import {JSONEditor} from 'modules/components/Carbon/JSONEditor';
+import {DiffEditor} from 'modules/components/Carbon/DiffEditor';
+import {beautifyJSON} from 'modules/utils/editor/beautifyJSON';
 
 const OPERATION_DISPLAY_NAME = {
   ADD_TOKEN: 'Add',
@@ -92,6 +98,7 @@ const ModificationSummaryModal: React.FC<StateProps> = observer(
         secondaryButtonText="Cancel"
         open={open}
         onRequestClose={() => setOpen(false)}
+        preventCloseOnClickOutside
         onRequestSubmit={() => {
           tracking.track({
             eventName: 'apply-modifications',
@@ -154,6 +161,7 @@ const ModificationSummaryModal: React.FC<StateProps> = observer(
             ref={flowNodeModificationsTableRef}
             columnsWithNoContentPadding={['delete']}
             headers={[
+              {header: ' ', key: 'emptyCell'},
               {
                 header: 'Operation',
                 key: 'operation',
@@ -188,6 +196,7 @@ const ModificationSummaryModal: React.FC<StateProps> = observer(
                     : modification.flowNode.id;
                 return {
                   id: index.toString(),
+                  emptyCell: <EmptyCell />,
                   operation: OPERATION_DISPLAY_NAME[modification.operation],
                   flowNode: (
                     <TruncatedValueContainer>
@@ -252,6 +261,30 @@ const ModificationSummaryModal: React.FC<StateProps> = observer(
           <DataTable
             ref={variableModificationsTableRef}
             columnsWithNoContentPadding={['delete']}
+            isExpandable
+            expandableRowTitle="View variable changes by expanding rows; editing disabled in read-only editor."
+            expandedContents={modificationsStore.variableModifications.reduce(
+              (accumulator, {id, scopeId, operation, oldValue, newValue}) => ({
+                ...accumulator,
+                [`${scopeId}/${id}`]:
+                  operation === 'ADD_VARIABLE' ? (
+                    <JSONEditor
+                      value={beautifyJSON(newValue)}
+                      readOnly
+                      height="10vh"
+                      width="95%"
+                    />
+                  ) : (
+                    <DiffEditor
+                      modifiedValue={beautifyJSON(newValue)}
+                      originalValue={beautifyJSON(oldValue ?? '')}
+                      height="10vh"
+                      width="95%"
+                    />
+                  ),
+              }),
+              {}
+            )}
             headers={[
               {
                 header: 'Operation',
@@ -280,12 +313,14 @@ const ModificationSummaryModal: React.FC<StateProps> = observer(
               },
             ]}
             rows={modificationsStore.variableModifications.map(
-              ({operation, flowNodeName, scopeId, id}) => {
+              ({operation, flowNodeName, name, newValue, scopeId, id}) => {
                 return {
-                  id: `${scopeId}${id}`,
+                  id: `${scopeId}/${id}`,
                   operation: OPERATION_DISPLAY_NAME[operation],
                   scope: <TruncatedValue>{flowNodeName}</TruncatedValue>,
-                  nameValue: <div>name - value</div>,
+                  nameValue: (
+                    <VariableModification name={name} newValue={newValue} />
+                  ),
                   emptyCell: '',
                   delete: (
                     <Button
