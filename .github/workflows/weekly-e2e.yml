@@ -12,11 +12,51 @@ on:
     - cron: '0 7 * * 1'
 
 jobs:
+  # This job will figure out the last supported versions based on the latest tags.
+  #
+  # Versions around found by sorting the tags, removing any that doesn't match semantic version,
+  # and ignoring those with suffixes, and sort in natural order reversed. To get the second-highest
+  # minor branch, we do the same, but we also filter out any versions which match the minor version
+  # of the latest stable version.
+  get-versions:
+    name: Compute branch matrix
+    runs-on: ubuntu-latest
+    outputs:
+      latest-version: ${{ env.LATEST_VERSION }}
+      previous-latest-version: ${{ env.PREVIOUS_LATEST_VERSION }}
+      previous-previous-latest-version: ${{ env.PREVIOUS_PREVIOUS_LATEST_VERSION }}
+    steps:
+      - uses: actions/checkout@v3
+      - run: git fetch --tags
+      - run: |
+          latest=$(git tag | grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' | sed -E -e 's/\.[0-9]+$//' | sort -Vr | head -n1)
+          previous=$(git tag | grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' | sed -E -e 's/\.[0-9]+$//' | grep -v "${latest}" | sort -Vr | head -n1)
+          previous_previous=$(git tag | grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' | sed -E -e 's/\.[0-9]+$//' | grep -v "${latest}" | grep -v "${previous}" | sort -Vr | head -n1)
+          if [ ! -z $latest ] && [ ! -z $previous ] && [ ! -z $previous_previous ]; then
+            echo "Successfully computed latest versions: ${latest} and ${previous} and ${previous_previous}"
+          else
+            echo "Failed to compute latest versions"
+          fi
+          echo "LATEST_VERSION=${latest}" >> $GITHUB_ENV
+          echo "PREVIOUS_LATEST_VERSION=${previous}" >> $GITHUB_ENV
+          echo "PREVIOUS_PREVIOUS_LATEST_VERSION=${previous_previous}" >> $GITHUB_ENV
+
   e2e:
+    needs:
+      - get-versions
+    strategy:
+      # do not cancel other jobs if one fails
+      fail-fast: false
+      matrix:
+        branch:
+          - 'main'
+          - ${{ format('stable/{0}', needs.get-versions.outputs.latest-version) }}
+          - ${{ format('stable/{0}', needs.get-versions.outputs.previous-latest-version) }}
+          - ${{ format('stable/{0}', needs.get-versions.outputs.previous-previous-latest-version) }}
     name: Weekly E2E
     uses: ./.github/workflows/e2e-testbench.yaml
     with:
-      branch: main
+      branch: ${{ matrix.branch }}
       generation: Zeebe SNAPSHOT
       maxTestDuration: P5D
       clusterPlan: Production - M

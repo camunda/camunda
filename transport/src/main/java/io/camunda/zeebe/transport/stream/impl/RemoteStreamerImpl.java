@@ -20,8 +20,11 @@ import io.camunda.zeebe.util.buffer.BufferReader;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import io.camunda.zeebe.util.buffer.BufferWriter;
 import java.time.Duration;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 import org.agrona.DirectBuffer;
@@ -38,7 +41,6 @@ public final class RemoteStreamerImpl<M extends BufferReader, P extends BufferWr
     implements RemoteStreamer<M, P> {
   private static final Duration REQUEST_TIMEOUT = Duration.ofSeconds(5);
 
-  private final RemoteStreamPicker<M> streamPicker = new RandomStreamPicker<>();
   private final ClusterCommunicationService transport;
   private final ImmutableStreamRegistry<M> registry;
   private final RemoteStreamPusher<P> remoteStreamPusher;
@@ -64,11 +66,22 @@ public final class RemoteStreamerImpl<M extends BufferReader, P extends BufferWr
       return Optional.empty();
     }
 
-    final var target = streamPicker.pickStream(consumers);
+    return pickStream(consumers)
+        .map(target -> new RemoteStreamImpl<>(target, remoteStreamPusher, errorHandler));
+  }
 
-    final RemoteStreamImpl<M, P> gatewayStream =
-        new RemoteStreamImpl<>(target, remoteStreamPusher, errorHandler, actor::run);
-    return Optional.of(gatewayStream);
+  private Optional<AggregatedRemoteStream<M>> pickStream(
+      final Set<AggregatedRemoteStream<M>> consumers) {
+    final var targets = new ArrayList<>(consumers);
+    Collections.shuffle(targets);
+
+    for (final var target : targets) {
+      if (!target.streamConsumers().isEmpty()) {
+        return Optional.of(target);
+      }
+    }
+
+    return Optional.empty();
   }
 
   private CompletableFuture<Void> send(final PushStreamRequest request, final MemberId receiver) {

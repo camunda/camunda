@@ -11,7 +11,6 @@ import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.transport.stream.api.RemoteStreamMetrics;
 import io.camunda.zeebe.transport.stream.impl.AggregatedRemoteStream.StreamConsumer;
 import io.camunda.zeebe.transport.stream.impl.AggregatedRemoteStream.StreamId;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -19,6 +18,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CopyOnWriteArraySet;
 import org.agrona.concurrent.UnsafeBuffer;
 
@@ -76,7 +76,8 @@ public class RemoteStreamRegistry<M> implements ImmutableStreamRegistry<M> {
     logicalIdToConsumers.computeIfAbsent(
         logicalId,
         id -> {
-          final var aggregatedStream = new AggregatedRemoteStream<>(logicalId, new ArrayList<>());
+          final var aggregatedStream =
+              new AggregatedRemoteStream<>(logicalId, new CopyOnWriteArrayList<>());
           typeToConsumers.get(streamType).add(aggregatedStream);
           return aggregatedStream;
         });

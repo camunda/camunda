@@ -10,7 +10,9 @@ package io.camunda.zeebe.transport.stream.impl;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.atomix.cluster.MemberId;
+import io.camunda.zeebe.transport.stream.api.RemoteStreamErrorHandler;
 import io.camunda.zeebe.transport.stream.api.RemoteStreamMetrics;
+import io.camunda.zeebe.transport.stream.api.StreamExhaustedException;
 import io.camunda.zeebe.transport.stream.impl.AggregatedRemoteStream.StreamConsumer;
 import io.camunda.zeebe.transport.stream.impl.AggregatedRemoteStream.StreamId;
 import io.camunda.zeebe.transport.stream.impl.RemoteStreamPusher.Transport;
@@ -21,6 +23,7 @@ import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
+import org.agrona.collections.MutableReference;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -32,15 +35,13 @@ class RemoteStreamImplTest {
   private final TestSerializableData payload = new TestSerializableData(1234);
   private final AggregatedRemoteStream<TestSerializableData> aggregatedStream =
       new AggregatedRemoteStream<>(new LogicalId<>(streamType, properties), new ArrayList<>());
-
   private final FailingTransport transport = new FailingTransport();
-
   private final Executor executor = Runnable::run;
   private final RemoteStreamPusher<TestSerializableData> pusher =
       new RemoteStreamPusher<>(transport, executor, RemoteStreamMetrics.noop());
-
+  private RemoteStreamErrorHandler<TestSerializableData> errorHandler = (e, d) -> {};
   private final RemoteStreamImpl<TestSerializableData, TestSerializableData> remoteStream =
-      new RemoteStreamImpl<>(aggregatedStream, pusher, (e, d) -> {}, executor);
+      new RemoteStreamImpl<>(aggregatedStream, pusher, (e, d) -> errorHandler.handleError(e, d));
 
   @BeforeEach
   void setup() {
@@ -79,6 +80,21 @@ class RemoteStreamImplTest {
 
     // then
     assertThat(transport.attemptedStreams).hasSize(2);
+  }
+
+  @Test
+  void shouldFailIfNoConsumersOnPush() {
+    // given
+    final MutableReference<Throwable> errorRef = new MutableReference<>();
+    aggregatedStream.streamConsumers().clear();
+    errorHandler = (e, d) -> errorRef.set(e);
+
+    // when
+    remoteStream.push(payload);
+
+    // then
+    assertThat(errorRef.get()).isInstanceOf(StreamExhaustedException.class);
+    assertThat(transport.attemptedStreams).isEmpty();
   }
 
   private static class FailingTransport implements Transport {
