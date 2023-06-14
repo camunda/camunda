@@ -17,10 +17,13 @@ import io.camunda.zeebe.engine.util.TestInterPartitionCommandSender;
 import io.camunda.zeebe.engine.util.TestStreams;
 import io.camunda.zeebe.engine.util.client.DeploymentClient;
 import io.camunda.zeebe.engine.util.client.ProcessInstanceClient;
+import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.stream.impl.StreamProcessorMode;
+import io.camunda.zeebe.test.util.AutoCloseableRule;
 import io.camunda.zeebe.util.FeatureFlags;
 import java.util.ArrayList;
 import java.util.Optional;
+import org.junit.rules.TemporaryFolder;
 
 /** Helper class which should help to make it easy to create an engine for tests. */
 public final class TestEngine {
@@ -90,4 +93,17 @@ public final class TestEngine {
   public static TestEngine createSinglePartitionEngine(final TestContext testContext) {
     return new TestEngine(1, 1, testContext);
   }
+
+  /**
+   * Containing infrastructure related dependencies which might be shared between TestEngines.
+   *
+   * @param actorScheduler the scheduler which is used during tests
+   * @param temporaryFolder the temporary folder where the log and runtime is written to
+   * @param autoCloseableRule a collector of all to managed resources, which should be cleaned up
+   *     later
+   */
+  public record TestContext(
+      ActorScheduler actorScheduler,
+      TemporaryFolder temporaryFolder,
+      AutoCloseableRule autoCloseableRule) {}
 }

@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.perf;
 
+import io.camunda.zeebe.engine.perf.TestEngine.TestContext;
 import io.camunda.zeebe.engine.util.client.ProcessInstanceClient;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.record.Record;
@@ -44,7 +45,7 @@ public class EngineLargeStatePerformanceTest {
 
   private long count;
   private ProcessInstanceClient processInstanceClient;
-  private TestContext testContext;
+  private TestEngine.TestContext testContext;
 
   @Setup
   public void setup() throws Throwable {
@@ -78,7 +79,7 @@ public class EngineLargeStatePerformanceTest {
     LOG.info("Started {} process instances", count);
   }
 
-  private TestContext createTestContext() throws IOException {
+  private TestEngine.TestContext createTestContext() throws IOException {
     final var autoCloseableRule = new AutoCloseableRule();
     final var temporaryFolder = new TemporaryFolder();
     temporaryFolder.create();
