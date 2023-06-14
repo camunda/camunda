@@ -34,14 +34,11 @@ import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
-import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
 import io.camunda.zeebe.scheduler.clock.ControlledActorClock;
 import io.camunda.zeebe.stream.api.CommandResponseWriter;
-import io.camunda.zeebe.stream.api.ReadonlyStreamProcessorContext;
-import io.camunda.zeebe.stream.api.StreamProcessorLifecycleAware;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.impl.StreamProcessor;
 import io.camunda.zeebe.stream.impl.StreamProcessor.Phase;
@@ -157,9 +154,6 @@ public final class EngineRule extends ExternalResource {
   }
 
   private void startProcessors() {
-    final DeploymentRecord deploymentRecord = new DeploymentRecord();
-    final UnsafeBuffer deploymentBuffer = new UnsafeBuffer(new byte[deploymentRecord.getLength()]);
-    deploymentRecord.write(deploymentBuffer, 0);
     final var interPartitionCommandSenders = new ArrayList<TestInterPartitionCommandSender>();
 
     forEachPartition(
@@ -418,15 +412,5 @@ public final class EngineRule extends ExternalResource {
     public DirectBuffer getDirectBuffer() {
       return genericBuffer;
     }
-  }
-
-  /////////////////////////////////////////////////////////////////////////////////////////////////
-  //////////////////////////////// PROCESSOR EXPORTER CROSSOVER ///////////////////////////////////
-  /////////////////////////////////////////////////////////////////////////////////////////////////
-
-  private final class ReprocessingCompletedListener implements StreamProcessorLifecycleAware {
-
-    @Override
-    public void onRecovered(final ReadonlyStreamProcessorContext context) {}
   }
 }
