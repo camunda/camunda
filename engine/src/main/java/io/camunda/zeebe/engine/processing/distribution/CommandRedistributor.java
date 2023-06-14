@@ -9,8 +9,9 @@ package io.camunda.zeebe.engine.processing.distribution;
 
 import static io.camunda.zeebe.protocol.Protocol.DEPLOYMENT_PARTITION;
 
-import io.camunda.zeebe.engine.state.immutable.DeploymentState;
-import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
+import io.camunda.zeebe.engine.state.immutable.DistributionState;
+import io.camunda.zeebe.protocol.impl.record.value.distribution.CommandDistributionRecord;
+import io.camunda.zeebe.stream.api.InterPartitionCommandSender;
 import io.camunda.zeebe.stream.api.ReadonlyStreamProcessorContext;
 import io.camunda.zeebe.stream.api.StreamProcessorLifecycleAware;
 import java.time.Duration;
@@ -18,26 +19,56 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.function.Predicate;
-import org.agrona.DirectBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class CommandRedistributor implements StreamProcessorLifecycleAware {
+/**
+ * The Command Redistributor provides a mechanism to retry sending {@link
+ * CommandDistributionRecord}s to other partitions. This is needed because the communication between
+ * partitions is unreliable.
+ *
+ * <p>A simple exponential backoff is used for retrying these pending distributions. This
+ * exponential backoff is statically configured to start of at 10 seconds {@link
+ * #COMMAND_REDISTRIBUTION_INTERVAL} until it reaches a maximum of 5 minutes {@link
+ * #RETRY_MAX_BACKOFF_DURATION}, doubling every time. This backoff is tracked for each pending
+ * distribution individually.
+ */
+public final class CommandRedistributor implements StreamProcessorLifecycleAware {
 
-  public static final Duration DEPLOYMENT_REDISTRIBUTION_INTERVAL = Duration.ofSeconds(10);
+  /**
+   * Specifies how often this redistributor runs, i.e. the fixed delay between runs. It is also used
+   * to specify the initial interval for retrying a specific pending distribution.
+   */
+  public static final Duration COMMAND_REDISTRIBUTION_INTERVAL = Duration.ofSeconds(10);
+
+  /**
+   * Specifies the maximum backoff interval for retrying a specific pending distribution, i.e. the
+   * maximum delay between two retries of the same pending distribution.
+   */
   private static final Duration RETRY_MAX_BACKOFF_DURATION = Duration.ofMinutes(5);
+
+  /**
+   * This calculated value specifies the maximum number of retry cycles until the {@link
+   * #RETRY_MAX_BACKOFF_DURATION} is reached by the exponential backoff.
+   */
   private static final long MAX_RETRY_CYCLES =
-      RETRY_MAX_BACKOFF_DURATION.dividedBy(DEPLOYMENT_REDISTRIBUTION_INTERVAL);
-  private static final Logger LOG = LoggerFactory.getLogger(DeploymentRedistributor.class);
-  private final DeploymentDistributionCommandSender deploymentDistributionCommandSender;
-  private final DeploymentState deploymentState;
+      RETRY_MAX_BACKOFF_DURATION.dividedBy(COMMAND_REDISTRIBUTION_INTERVAL);
+
+  private static final Logger LOG = LoggerFactory.getLogger(CommandRedistributor.class);
+
+  private final DistributionState distributionState;
+  private final InterPartitionCommandSender commandSender;
+
+  /**
+   * Tracks the number of attempted retry cycles for each pending distribution. Note that this
+   * includes retry cycles where the pending distribution was not resend due to exponential backoff.
+   */
   private final Map<PendingDistribution, Long> retryCyclesPerDistribution = new HashMap<>();
 
-  public DeploymentRedistributor(
-      final DeploymentDistributionCommandSender deploymentDistributionCommandSender,
-      final DeploymentState deploymentState) {
-    this.deploymentDistributionCommandSender = deploymentDistributionCommandSender;
-    this.deploymentState = deploymentState;
+  public CommandRedistributor(
+      final DistributionState distributionState, final InterPartitionCommandSender commandSender) {
+    this.distributionState = distributionState;
+    this.commandSender = commandSender;
   }
 
   @Override
@@ -48,40 +79,52 @@ public class CommandRedistributor implements StreamProcessorLifecycleAware {
 
     context
         .getScheduleService()
-        .runAtFixedRate(DEPLOYMENT_REDISTRIBUTION_INTERVAL, this::runRetryCycle);
+        .runAtFixedRate(COMMAND_REDISTRIBUTION_INTERVAL, this::runRetryCycle);
   }
 
   private void runRetryCycle() {
     final var pendingDistributions = new HashSet<PendingDistribution>();
-    deploymentState.foreachPendingDeploymentDistribution(
-        (deploymentKey, partitionId, directBuffer) -> {
-          final var pending = new PendingDistribution(deploymentKey, partitionId);
+    distributionState.foreachPendingDistribution(
+        (distributionKey, record) -> {
+          final var pending = new PendingDistribution(distributionKey, record.getPartitionId());
           pendingDistributions.add(pending);
-          retryDistribution(pending, directBuffer);
+          retryDistribution(pending, record);
         });
-    // Remove retry cycle tracking for completed distributions
+
+    // Remove retry cycle tracking for completed distributions, i.e. those not visited in this cycle
     retryCyclesPerDistribution.keySet().removeIf(Predicate.not(pendingDistributions::contains));
   }
 
   private void retryDistribution(
-      final PendingDistribution pending, final DirectBuffer copiedDeploymentBuffer) {
+      final PendingDistribution pending,
+      final CommandDistributionRecord commandDistributionRecord) {
     if (!shouldRetryNow(pending)) {
       return;
     }
 
     LOG.info(
-        "Retrying to distribute deployment {} to partition {}",
-        pending.deploymentKey,
+        "Retrying to distribute pending command {} to partition {}",
+        pending.distributionKey,
         pending.partitionId);
-    final var deploymentRecord = new DeploymentRecord();
-    deploymentRecord.wrap(copiedDeploymentBuffer);
-    deploymentDistributionCommandSender.distributeToPartition(
-        pending.deploymentKey, pending.partitionId, deploymentRecord);
+
+    commandSender.sendCommand(
+        pending.partitionId,
+        commandDistributionRecord.getValueType(),
+        commandDistributionRecord.getIntent(),
+        pending.distributionKey,
+        commandDistributionRecord.getCommandValue());
   }
 
+  /**
+   * Returns whether a pending distribution should be retried now, or not in this cycle.
+   *
+   * <p>Calling this method increments the retry cycles tracking ({@link
+   * #retryCyclesPerDistribution}) of that pending distribution, or initiates it at 0. The number of
+   * cycles is used to implement a simple exponential backoff.
+   */
   private boolean shouldRetryNow(final PendingDistribution pendingDistribution) {
-    // retryCycles starts off at 0, ensuring that we wait between DEPLOYMENT_REDISTRIBUTION_INTERVAL
-    // and 2 * DEPLOYMENT_REDISTRIBUTION_INTERVAL before retrying distribution.
+    // retryCycles starts off at 0, ensuring that we wait between COMMAND_REDISTRIBUTION_INTERVAL
+    // and 2 * COMMAND_REDISTRIBUTION_INTERVAL before retrying distribution.
     final long retryCycle =
         retryCyclesPerDistribution.compute(
             pendingDistribution, (k, retryCycles) -> retryCycles != null ? retryCycles + 1 : 0L);
@@ -90,11 +133,11 @@ public class CommandRedistributor implements StreamProcessorLifecycleAware {
       // Retry in intervals of RETRY_MAX_BACKOFF_DURATION
       return retryCycle % MAX_RETRY_CYCLES == 0;
     } else {
-      // Retry in intervals of DEPLOYMENT_REDISTRIBUTION_INTERVAL
+      // Retry in intervals of COMMAND_REDISTRIBUTION_INTERVAL
       // The interval is doubling until we reached RETRY_MAX_BACKOFF_DURATION
       return Long.bitCount(retryCycle) == 1;
     }
   }
 
-  private record PendingDistribution(long deploymentKey, int partitionId) {}
+  private record PendingDistribution(long distributionKey, int partitionId) {}
 }
