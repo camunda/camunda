@@ -52,7 +52,7 @@
     <version.docker-java-api>3.3.1</version.docker-java-api>
     <version.elasticsearch>7.17.10</version.elasticsearch>
     <version.error-prone>2.19.1</version.error-prone>
-    <version.grpc>1.55.1</version.grpc>
+    <version.grpc>1.56.0</version.grpc>
     <version.gson>2.10.1</version.gson>
     <version.guava>32.0.1-jre</version.guava>
     <version.hamcrest>2.2</version.hamcrest>
@@ -125,7 +125,7 @@
     <version.validation-api>3.0.2</version.validation-api>
     <version.jackson-databind-nullable>0.2.6</version.jackson-databind-nullable>
     <version.jackson-annotations>2.15.2</version.jackson-annotations>
-    <version.swagger-annotations>2.2.11</version.swagger-annotations>
+    <version.swagger-annotations>2.2.12</version.swagger-annotations>
     <version.checker-qual>3.35.0</version.checker-qual>
 
     <!-- maven plugins -->
