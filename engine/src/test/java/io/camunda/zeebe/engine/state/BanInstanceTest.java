@@ -12,6 +12,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.mockito.MockitoAnnotations.initMocks;
 
+import io.camunda.zeebe.engine.processing.streamprocessor.TypedEventImpl;
 import io.camunda.zeebe.engine.util.ZeebeStateRule;
 import io.camunda.zeebe.logstreams.log.LoggedEvent;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
