@@ -14,6 +14,7 @@ import java.util.List;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.BiConsumer;
@@ -87,6 +88,11 @@ public final class TestActorFuture<V> implements ActorFuture<V> {
     if (isDone()) {
       triggerOnCompleteListener(consumer);
     }
+  }
+
+  @Override
+  public void onComplete(final BiConsumer<V, Throwable> consumer, final Executor executor) {
+    onComplete((res, error) -> executor.execute(() -> consumer.accept(res, error)));
   }
 
   @Override

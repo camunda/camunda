@@ -8,6 +8,7 @@
 package io.camunda.zeebe.util.sched.future;
 
 import io.camunda.zeebe.util.sched.ActorTask;
+import java.util.concurrent.Executor;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BiConsumer;
@@ -28,8 +29,11 @@ public interface ActorFuture<V> extends Future<V>, BiConsumer<V, Throwable> {
   void block(ActorTask onCompletion);
 
   /**
-   * Registers an consumer, which is executed after the future was completed. The consumer is
-   * executed in the current actor thread, which is used to register the consumer.
+   * Registers an consumer, which is executed after the future was completed. If the caller of this
+   * method is an actor, the consumer is executed in the caller's actor thread. If the caller is not
+   * an actor, the consumer is executed in the actor which completes this future. If the caller is
+   * not an actor, it is recommended to use {@link ActorFuture#onComplete(BiConsumer, Executor)}
+   * instead.
    *
    * <p>Example:
    *
@@ -47,9 +51,17 @@ public interface ActorFuture<V> extends Future<V>, BiConsumer<V, Throwable> {
    * </pre>
    *
    * @param consumer the consumer which should be called after the future was completed
-   * @throws UnsupportedOperationException when not called on actor thread
    */
   void onComplete(BiConsumer<V, Throwable> consumer);
+
+  /**
+   * Registers a consumer, which is executed after the future was completed. The consumer is
+   * executed in the provided executor.
+   *
+   * @param consumer the callback which should be called after the future was completed
+   * @param executor the executor on which the callback will be executed
+   */
+  void onComplete(BiConsumer<V, Throwable> consumer, Executor executor);
 
   boolean isCompletedExceptionally();
 

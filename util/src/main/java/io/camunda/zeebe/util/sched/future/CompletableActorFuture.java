@@ -9,12 +9,13 @@ package io.camunda.zeebe.util.sched.future;
 
 import static org.agrona.UnsafeAccess.UNSAFE;
 
+import io.camunda.zeebe.util.Loggers;
 import io.camunda.zeebe.util.sched.ActorControl;
 import io.camunda.zeebe.util.sched.ActorTask;
 import io.camunda.zeebe.util.sched.ActorThread;
 import io.camunda.zeebe.util.sched.FutureUtil;
-import java.util.Queue;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.locks.Condition;
@@ -45,8 +46,9 @@ public final class CompletableActorFuture<V> implements ActorFuture<V> {
   private V value;
   private String failure;
   private Throwable failureCause;
-  private final ManyToOneConcurrentLinkedQueue<ActorTask> blockedTasks =
+  private final ManyToOneConcurrentLinkedQueue<BiConsumer<V, Throwable>> blockedCallbacks =
       new ManyToOneConcurrentLinkedQueue<>();
+
   private final ReentrantLock completionLock = new ReentrantLock();
   private volatile int state = CLOSED;
   private Condition isDoneCondition;
@@ -153,7 +155,7 @@ public final class CompletableActorFuture<V> implements ActorFuture<V> {
     if (UNSAFE.compareAndSwapInt(this, STATE_OFFSET, AWAITING_RESULT, COMPLETING)) {
       this.value = value;
       state = COMPLETED;
-      notifyBlockedTasks();
+      notifyAllBlocked();
     } else {
       final String err =
           "Cannot complete future, the future is already completed "
@@ -174,7 +176,7 @@ public final class CompletableActorFuture<V> implements ActorFuture<V> {
       this.failure = failure;
       failureCause = throwable;
       state = COMPLETED_EXCEPTIONALLY;
-      notifyBlockedTasks();
+      notifyAllBlocked();
     } else {
       final String err =
           "Cannot complete future, the future is already completed "
@@ -203,13 +205,28 @@ public final class CompletableActorFuture<V> implements ActorFuture<V> {
 
   @Override
   public void block(final ActorTask onCompletion) {
-    blockedTasks.add(onCompletion);
+    blockedCallbacks.add((resIgnore, errorIgnore) -> onCompletion.tryWakeup());
   }
 
   @Override
   public void onComplete(final BiConsumer<V, Throwable> consumer) {
-    final ActorControl actorControl = ActorControl.current();
-    actorControl.runOnCompletion(this, consumer);
+    if (ActorThread.isCalledFromActorThread()) {
+      final ActorControl actorControl = ActorControl.current();
+      actorControl.runOnCompletion(this, consumer);
+    } else {
+      // We don't reject this because, this is useful for tests. But the warning is a reminder not
+      // to use this in production code.
+      Loggers.ACTOR_LOGGER.warn(
+          "No executor provided for ActorFuture#onComplete callback."
+              + " This could block the actor that completes the future."
+              + " Use onComplete(consumer, executor) instead.");
+      onComplete(consumer, Runnable::run);
+    }
+  }
+
+  @Override
+  public void onComplete(final BiConsumer<V, Throwable> consumer, final Executor executor) {
+    blockedCallbacks.add((res, error) -> executor.execute(() -> consumer.accept(res, error)));
   }
 
   @Override
@@ -227,8 +244,8 @@ public final class CompletableActorFuture<V> implements ActorFuture<V> {
     return failureCause;
   }
 
-  private void notifyBlockedTasks() {
-    notifyAllInQueue(blockedTasks);
+  private void notifyAllBlocked() {
+    notifyBlockedCallBacks();
 
     try {
       completionLock.lock();
@@ -238,12 +255,11 @@ public final class CompletableActorFuture<V> implements ActorFuture<V> {
     }
   }
 
-  private void notifyAllInQueue(final Queue<ActorTask> tasks) {
-    while (!tasks.isEmpty()) {
-      final ActorTask task = tasks.poll();
-
-      if (task != null) {
-        task.tryWakeup();
+  private void notifyBlockedCallBacks() {
+    while (!blockedCallbacks.isEmpty()) {
+      final var callBack = blockedCallbacks.poll();
+      if (callBack != null) {
+        callBack.accept(value, failureCause);
       }
     }
   }
@@ -256,7 +272,7 @@ public final class CompletableActorFuture<V> implements ActorFuture<V> {
       value = null;
       failure = null;
       failureCause = null;
-      notifyBlockedTasks();
+      notifyAllBlocked();
     }
 
     return prevState != CLOSED;
