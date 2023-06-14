@@ -13,8 +13,11 @@ import static io.camunda.zeebe.test.util.record.RecordingExporter.jobRecords;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.engine.util.EngineRule;
+import io.camunda.zeebe.engine.util.RecordToWrite;
 import io.camunda.zeebe.model.bpmn.Bpmn;
+import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.intent.JobBatchIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
@@ -22,6 +25,7 @@ import io.camunda.zeebe.test.util.Strings;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.List;
 import java.util.stream.Collectors;
+import org.awaitility.Awaitility;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Rule;
@@ -168,6 +172,32 @@ public final class JobTimeOutTest {
 
     // then
     assertThat(timedOutRecord.getSourceRecordPosition()).isLessThan(0);
+  }
+
+  @Test
+  public void shouldRejectIfJobDoesNotExist() {
+    // given
+    final var jobKey = ENGINE.createJob(jobType, PROCESS_ID).getKey();
+    final var job = ENGINE.getProcessingState().getJobState().getJob(jobKey);
+    final var partitionId = Protocol.decodePartitionId(jobKey);
+
+    // when
+    ENGINE.pauseProcessing(partitionId);
+    ENGINE.writeRecords(
+        RecordToWrite.command().key(jobKey).job(JobIntent.COMPLETE, job),
+        RecordToWrite.command().key(jobKey).job(JobIntent.TIME_OUT, job));
+    ENGINE.resumeProcessing(partitionId);
+    Awaitility.await("until everything processed").until(ENGINE::hasReachedEnd);
+
+    // then activated again
+    final List<Record<JobRecordValue>> jobEvents =
+        jobRecords()
+            .withRecordKey(jobKey)
+            .withIntent(JobIntent.TIME_OUT)
+            .withRecordType(RecordType.COMMAND_REJECTION)
+            .limit(1)
+            .toList();
+    assertThat(jobEvents).isNotEmpty();
   }
 
   private long createInstance() {
