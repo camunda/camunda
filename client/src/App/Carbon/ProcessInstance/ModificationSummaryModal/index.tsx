@@ -229,16 +229,21 @@ const ModificationSummaryModal: React.FC<StateProps> = observer(
                       )}
                     </TruncatedValueContainer>
                   ),
-                  affectedTokens:
-                    modification.operation === 'CANCEL_TOKEN'
-                      ? modification.visibleAffectedTokenCount +
-                        (modificationsStore.modificationsByFlowNode[flowNodeId]
-                          ?.cancelledChildTokens ?? 0)
-                      : modification.affectedTokenCount,
+                  affectedTokens: (
+                    <span data-testid="affected-token-count">
+                      {modification.operation === 'CANCEL_TOKEN'
+                        ? modification.visibleAffectedTokenCount +
+                          (modificationsStore.modificationsByFlowNode[
+                            flowNodeId
+                          ]?.cancelledChildTokens ?? 0)
+                        : modification.affectedTokenCount}
+                    </span>
+                  ),
                   delete: (
                     <Button
                       kind="danger--ghost"
                       title="Delete flow node modification"
+                      aria-label="Delete flow node modification"
                       size="sm"
                       onClick={() => {
                         modificationsStore.removeFlowNodeModification(
@@ -326,6 +331,7 @@ const ModificationSummaryModal: React.FC<StateProps> = observer(
                     <Button
                       kind="danger--ghost"
                       title="Delete variable modification"
+                      aria-label="Delete variable modification"
                       size="sm"
                       onClick={() => {
                         modificationsStore.removeVariableModification(
