@@ -23,12 +23,13 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import io.atomix.cluster.MemberId;
 import io.atomix.raft.impl.RaftContext;
 import io.atomix.raft.metrics.RaftReplicationMetrics;
-import io.atomix.raft.protocol.AppendRequest;
 import io.atomix.raft.protocol.AppendResponse;
 import io.atomix.raft.protocol.PersistedRaftRecord;
 import io.atomix.raft.protocol.ProtocolVersionHandler;
+import io.atomix.raft.protocol.VersionedAppendRequest;
 import io.atomix.raft.storage.RaftStorage;
 import io.atomix.raft.storage.log.IndexedRaftLogEntry;
 import io.atomix.raft.storage.log.RaftLog;
@@ -82,7 +83,15 @@ public class PassiveRoleTest {
     // given
     final List<PersistedRaftRecord> entries =
         List.of(new PersistedRaftRecord(1, 1, 1, 12345, new byte[1]));
-    final AppendRequest request = new AppendRequest(2, "", 0, 0, entries, 1);
+    final VersionedAppendRequest request =
+        VersionedAppendRequest.builder()
+            .withTerm(2)
+            .withLeader(MemberId.anonymous())
+            .withPrevLogTerm(0)
+            .withPrevLogIndex(0)
+            .withEntries(entries)
+            .withCommitIndex(1)
+            .build();
 
     when(log.append(any(PersistedRaftRecord.class)))
         .thenThrow(new JournalException.InvalidChecksum("expected"));
@@ -102,7 +111,15 @@ public class PassiveRoleTest {
         List.of(
             new PersistedRaftRecord(1, 1, 1, 1, new byte[1]),
             new PersistedRaftRecord(1, 2, 2, 1, new byte[1]));
-    final AppendRequest request = new AppendRequest(1, "", 0, 0, entries, 2);
+    final VersionedAppendRequest request =
+        VersionedAppendRequest.builder()
+            .withTerm(1)
+            .withLeader(MemberId.anonymous())
+            .withPrevLogTerm(0)
+            .withPrevLogIndex(0)
+            .withEntries(entries)
+            .withCommitIndex(2)
+            .build();
 
     when(log.append(any(PersistedRaftRecord.class)))
         .thenReturn(mock(IndexedRaftLogEntry.class))
@@ -124,7 +141,15 @@ public class PassiveRoleTest {
         List.of(
             new PersistedRaftRecord(1, 1, 1, 1, new byte[1]),
             new PersistedRaftRecord(1, 2, 2, 1, new byte[1]));
-    final AppendRequest request = new AppendRequest(1, "", 0, 0, entries, 2);
+    final VersionedAppendRequest request =
+        VersionedAppendRequest.builder()
+            .withTerm(1)
+            .withLeader(MemberId.anonymous())
+            .withPrevLogTerm(0)
+            .withPrevLogIndex(0)
+            .withEntries(entries)
+            .withCommitIndex(2)
+            .build();
 
     when(log.append(any(PersistedRaftRecord.class)))
         .thenReturn(mock(IndexedRaftLogEntry.class))
@@ -144,7 +169,15 @@ public class PassiveRoleTest {
     // given
     final List<PersistedRaftRecord> entries =
         List.of(new PersistedRaftRecord(1, 1, 1, 1, new byte[1]));
-    final AppendRequest request = new AppendRequest(1, "", 0, 0, entries, 2);
+    final VersionedAppendRequest request =
+        VersionedAppendRequest.builder()
+            .withTerm(1)
+            .withLeader(MemberId.anonymous())
+            .withPrevLogTerm(0)
+            .withPrevLogIndex(0)
+            .withEntries(entries)
+            .withCommitIndex(2)
+            .build();
 
     when(log.append(any(PersistedRaftRecord.class)))
         .thenThrow(new InvalidChecksum.InvalidChecksum("expected"));
@@ -166,7 +199,15 @@ public class PassiveRoleTest {
             new PersistedRaftRecord(1, 1, 1, 1, new byte[1]),
             new PersistedRaftRecord(1, 2, 2, 1, new byte[1]),
             new PersistedRaftRecord(1, 3, 3, 1, new byte[1]));
-    final AppendRequest request = new AppendRequest(1, "", 0, 0, entries, 3);
+    final VersionedAppendRequest request =
+        VersionedAppendRequest.builder()
+            .withTerm(1)
+            .withLeader(MemberId.anonymous())
+            .withPrevLogTerm(0)
+            .withPrevLogIndex(0)
+            .withEntries(entries)
+            .withCommitIndex(3)
+            .build();
 
     when(log.append(any(PersistedRaftRecord.class)))
         .thenReturn(mock(IndexedRaftLogEntry.class))
