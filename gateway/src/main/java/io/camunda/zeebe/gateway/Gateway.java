@@ -30,6 +30,7 @@ import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.transport.stream.api.ClientStreamer;
 import io.camunda.zeebe.util.CloseableSilently;
+import io.camunda.zeebe.util.error.FatalErrorHandler;
 import io.grpc.BindableService;
 import io.grpc.Server;
 import io.grpc.ServerBuilder;
@@ -44,6 +45,10 @@ import java.time.Duration;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.ForkJoinPool;
+import java.util.concurrent.ForkJoinPool.ForkJoinWorkerThreadFactory;
+import java.util.concurrent.ForkJoinWorkerThread;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import me.dinowernli.grpc.prometheus.Configuration;
@@ -61,6 +66,7 @@ public final class Gateway implements CloseableSilently {
   private final ClientStreamer<JobActivationProperties> jobStreamer;
 
   private Server server;
+  private ExecutorService grpcExecutor;
   private final BrokerClient brokerClient;
 
   public Gateway(
@@ -114,12 +120,37 @@ public final class Gateway implements CloseableSilently {
   }
 
   private Server createServer(final ActivateJobsHandler activateJobsHandler) {
-    final var endpointManager = new EndpointManager(brokerClient, activateJobsHandler, jobStreamer);
-    final var gatewayGrpcService = new GatewayGrpcService(endpointManager);
 
     final var serverBuilder = applyNetworkConfig(gatewayCfg.getNetwork());
+    applyExecutorConfiguration(serverBuilder);
     applySecurityConfiguration(serverBuilder);
+
+    final var endpointManager =
+        new EndpointManager(brokerClient, activateJobsHandler, jobStreamer, grpcExecutor);
+    final var gatewayGrpcService = new GatewayGrpcService(endpointManager);
     return buildServer(serverBuilder, gatewayGrpcService);
+  }
+
+  private void applyExecutorConfiguration(final NettyServerBuilder builder) {
+    // the default boss and worker event loop groups defined by the library are good enough; they
+    // will appropriately select epoll or nio based on availability, and the boss loop gets 1
+    // thread, while the worker gets the number of cores
+
+    // by default will start 1 thread per core; however, fork join pools may start more threads when
+    // blocked on tasks, and here up to 2 threads per core.
+    grpcExecutor =
+        new ForkJoinPool(
+            Runtime.getRuntime().availableProcessors(),
+            new NamedForkJoinPoolThreadFactory(),
+            FatalErrorHandler.uncaughtExceptionHandler(LOG),
+            true,
+            0,
+            2 * Runtime.getRuntime().availableProcessors(),
+            1,
+            null,
+            1,
+            TimeUnit.MINUTES);
+    builder.executor(grpcExecutor);
   }
 
   private void applySecurityConfiguration(final ServerBuilder<?> serverBuilder) {
@@ -199,10 +230,22 @@ public final class Gateway implements CloseableSilently {
       try {
         server.awaitTermination();
       } catch (final InterruptedException e) {
-        LOG.error("Failed to await termination of gRPC server", e);
+        LOG.warn("Failed to await termination of gRPC server", e);
         Thread.currentThread().interrupt();
       } finally {
         server = null;
+      }
+    }
+
+    if (grpcExecutor != null) {
+      grpcExecutor.shutdownNow();
+      try {
+        //noinspection ResultOfMethodCallIgnored
+        grpcExecutor.awaitTermination(10, TimeUnit.SECONDS);
+      } catch (InterruptedException e) {
+        Thread.currentThread().interrupt();
+      } finally {
+        grpcExecutor = null;
       }
     }
   }
@@ -255,5 +298,14 @@ public final class Gateway implements CloseableSilently {
     }
 
     return ServerInterceptors.intercept(service, interceptors);
+  }
+
+  private static final class NamedForkJoinPoolThreadFactory implements ForkJoinWorkerThreadFactory {
+    @Override
+    public ForkJoinWorkerThread newThread(ForkJoinPool pool) {
+      final var worker = ForkJoinPool.defaultForkJoinWorkerThreadFactory.newThread(pool);
+      worker.setName("grpc-executor-" + worker.getPoolIndex());
+      return worker;
+    }
   }
 }
