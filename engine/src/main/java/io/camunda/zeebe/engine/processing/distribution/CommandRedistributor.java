@@ -7,8 +7,6 @@
  */
 package io.camunda.zeebe.engine.processing.distribution;
 
-import static io.camunda.zeebe.protocol.Protocol.DEPLOYMENT_PARTITION;
-
 import io.camunda.zeebe.engine.state.immutable.DistributionState;
 import io.camunda.zeebe.protocol.impl.record.value.distribution.CommandDistributionRecord;
 import io.camunda.zeebe.stream.api.InterPartitionCommandSender;
@@ -73,10 +71,6 @@ public final class CommandRedistributor implements StreamProcessorLifecycleAware
 
   @Override
   public void onRecovered(final ReadonlyStreamProcessorContext context) {
-    if (context.getPartitionId() != DEPLOYMENT_PARTITION) {
-      return;
-    }
-
     context
         .getScheduleService()
         .runAtFixedRate(COMMAND_REDISTRIBUTION_INTERVAL, this::runRetryCycle);
