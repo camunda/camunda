@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.util.sched.future;
 
-import io.camunda.zeebe.util.scheduler.ActorTask;
+import io.camunda.zeebe.util.sched.ActorTask;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;

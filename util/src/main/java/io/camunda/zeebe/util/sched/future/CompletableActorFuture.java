@@ -9,11 +9,11 @@ package io.camunda.zeebe.util.sched.future;
 
 import static org.agrona.UnsafeAccess.UNSAFE;
 
+import io.camunda.zeebe.util.Loggers;
 import io.camunda.zeebe.util.sched.ActorControl;
 import io.camunda.zeebe.util.sched.ActorTask;
 import io.camunda.zeebe.util.sched.ActorThread;
 import io.camunda.zeebe.util.sched.FutureUtil;
-import java.util.Queue;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
