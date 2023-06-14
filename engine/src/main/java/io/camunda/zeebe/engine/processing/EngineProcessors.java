@@ -111,11 +111,6 @@ public final class EngineProcessors {
             interPartitionCommandSender,
             processingState.getKeyGenerator());
 
-    // periodically retries command distribution
-    typedRecordProcessors.withListener(
-        new CommandRedistributor(
-            processingState.getDistributionState(), interPartitionCommandSender));
-
     final var deploymentDistributionCommandSender =
         new DeploymentDistributionCommandSender(
             typedRecordProcessorContext.getPartitionId(), interPartitionCommandSender);
@@ -160,7 +155,8 @@ public final class EngineProcessors {
         bpmnBehaviors.jobActivationBehavior());
     addResourceDeletionProcessors(typedRecordProcessors, writers, processingState);
     addSignalBroadcastProcessors(typedRecordProcessors, bpmnBehaviors, writers, processingState);
-    addCommandDistributionProcessors(typedRecordProcessors, writers, processingState);
+    addCommandDistributionProcessors(
+        typedRecordProcessors, writers, processingState, interPartitionCommandSender);
 
     return typedRecordProcessors;
   }
@@ -326,7 +322,14 @@ public final class EngineProcessors {
   private static void addCommandDistributionProcessors(
       final TypedRecordProcessors typedRecordProcessors,
       final Writers writers,
-      final ProcessingState processingState) {
+      final ProcessingState processingState,
+      final InterPartitionCommandSender interPartitionCommandSender) {
+
+    // periodically retries command distribution
+    typedRecordProcessors.withListener(
+        new CommandRedistributor(
+            processingState.getDistributionState(), interPartitionCommandSender));
+
     final var commandDistributionAcknowledgeProcessor =
         new CommandDistributionAcknowledgeProcessor(
             processingState.getDistributionState(), writers);
