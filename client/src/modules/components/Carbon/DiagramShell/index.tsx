@@ -9,13 +9,22 @@ import {Loading} from '@carbon/react';
 import {Container, EmptyMessage, ErrorMessage} from './styled';
 import {EmptyMessage as BaseEmptyMessage} from '../EmptyMessage';
 
-type Props = {
+type DefaultProps = {
+  children: React.ReactNode;
+  status: 'error' | 'loading' | 'content';
+};
+
+type WithEmptyMessageProps = {
   children: React.ReactNode;
   status: 'error' | 'empty' | 'loading' | 'content';
   emptyMessage: React.ComponentProps<typeof BaseEmptyMessage>;
 };
 
-const DiagramShell: React.FC<Props> = ({children, status, emptyMessage}) => (
+const DiagramShell: React.FC<DefaultProps | WithEmptyMessageProps> = ({
+  children,
+  status,
+  ...props
+}) => (
   <Container>
     {(() => {
       if (status === 'content') {
@@ -31,8 +40,8 @@ const DiagramShell: React.FC<Props> = ({children, status, emptyMessage}) => (
         );
       }
 
-      if (status === 'empty') {
-        return <EmptyMessage {...emptyMessage} />;
+      if (status === 'empty' && 'emptyMessage' in props) {
+        return <EmptyMessage {...props.emptyMessage} />;
       }
 
       if (status === 'error') {
