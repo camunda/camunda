@@ -54,10 +54,14 @@ class TestSerializableData implements BufferReader, BufferWriter {
 
   @Override
   public boolean equals(final Object o) {
-    if (this == o)
+    if (this == o) {
       return true;
-    if (o == null || getClass() != o.getClass())
+    }
+
+    if (o == null || getClass() != o.getClass()) {
       return false;
+    }
+
     final TestSerializableData data1 = (TestSerializableData) o;
     return data == data1.data;
   }

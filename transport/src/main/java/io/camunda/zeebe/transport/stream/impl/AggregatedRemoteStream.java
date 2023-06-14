@@ -8,7 +8,6 @@
 package io.camunda.zeebe.transport.stream.impl;
 
 import io.atomix.cluster.MemberId;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
