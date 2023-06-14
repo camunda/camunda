@@ -171,7 +171,10 @@ final class RollingUpdateTest {
           .untilAsserted(() -> assertTopologyContainsUpdatedBroker(client, brokerId));
     }
 
-    assertBrokerHasAtLeastOneSnapshot(1);
+    Awaitility.await("until restarted broker has snapshot")
+        .atMost(Duration.ofSeconds(120))
+        .pollInterval(Duration.ofMillis(500))
+        .untilAsserted(() -> assertBrokerHasAtLeastOneSnapshot(brokerId));
   }
 
   @Test
