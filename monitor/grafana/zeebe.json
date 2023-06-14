@@ -441,7 +441,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "description": "Shows the count of blacklisted process instances of the namespace.",
+          "description": "Shows the count of banned process instances of the namespace.",
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -503,13 +503,13 @@
                 "uid": "${DS_PROMETHEUS}"
               },
               "editorMode": "code",
-              "expr": "max(zeebe_blacklisted_instances_total{namespace=~\"$namespace\", pod=~\"$pod\", partition=~\"$partition\"}) by (namespace)",
+              "expr": "max(zeebe_blacklisted_instances_total{namespace=~\"$namespace\", pod=~\"$pod\", partition=~\"$partition\"}) by (namespace)\nor max(zeebe_banned_instances_total{namespace=~\"$namespace\", pod=~\"$pod\", partition=~\"$partition\"}) by (namespace)",
               "legendFormat": "{{namespace}}",
               "range": true,
               "refId": "A"
             }
           ],
-          "title": "Blacklisted instances",
+          "title": "Banned instances",
           "type": "stat"
         },
         {
@@ -1483,7 +1483,7 @@
             "h": 7,
             "w": 24,
             "x": 0,
-            "y": 11
+            "y": 2
           },
           "hiddenSeries": false,
           "id": 272,
@@ -1503,7 +1503,7 @@
             "alertThreshold": true
           },
           "percentage": false,
-          "pluginVersion": "9.3.6",
+          "pluginVersion": "9.5.2",
           "pointradius": 2,
           "points": false,
           "renderer": "flot",
@@ -1596,7 +1596,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 18
+            "y": 9
           },
           "id": 418,
           "options": {
@@ -1632,7 +1632,7 @@
               "reverse": false
             }
           },
-          "pluginVersion": "9.3.6",
+          "pluginVersion": "9.5.2",
           "targets": [
             {
               "datasource": {
@@ -1696,7 +1696,8 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green"
+                    "color": "green",
+                    "value": null
                   },
                   {
                     "color": "red",
@@ -1711,7 +1712,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 18
+            "y": 9
           },
           "id": 421,
           "options": {
@@ -1793,7 +1794,8 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green"
+                    "color": "green",
+                    "value": null
                   },
                   {
                     "color": "red",
@@ -1808,7 +1810,7 @@
             "h": 4,
             "w": 12,
             "x": 0,
-            "y": 26
+            "y": 17
           },
           "id": 192,
           "options": {
@@ -1856,7 +1858,7 @@
             "h": 4,
             "w": 7,
             "x": 12,
-            "y": 26
+            "y": 17
           },
           "id": 196,
           "showHeader": true,
@@ -1933,7 +1935,7 @@
             "h": 4,
             "w": 5,
             "x": 19,
-            "y": 26
+            "y": 17
           },
           "id": 200,
           "showHeader": true,
@@ -2044,7 +2046,8 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green"
+                    "color": "green",
+                    "value": null
                   },
                   {
                     "color": "red",
@@ -2059,7 +2062,7 @@
             "h": 6,
             "w": 5,
             "x": 0,
-            "y": 30
+            "y": 21
           },
           "id": 194,
           "options": {
@@ -2105,7 +2108,7 @@
             "h": 6,
             "w": 7,
             "x": 5,
-            "y": 30
+            "y": 21
           },
           "id": 199,
           "showHeader": true,
@@ -2182,7 +2185,7 @@
             "h": 12,
             "w": 5,
             "x": 12,
-            "y": 30
+            "y": 21
           },
           "id": 198,
           "showHeader": true,
@@ -2259,7 +2262,7 @@
             "h": 12,
             "w": 7,
             "x": 17,
-            "y": 30
+            "y": 21
           },
           "id": 268,
           "showHeader": true,
@@ -2370,7 +2373,8 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green"
+                    "color": "green",
+                    "value": null
                   },
                   {
                     "color": "red",
@@ -2385,7 +2389,7 @@
             "h": 6,
             "w": 5,
             "x": 0,
-            "y": 36
+            "y": 27
           },
           "id": 189,
           "options": {
@@ -2433,7 +2437,7 @@
             "h": 6,
             "w": 7,
             "x": 5,
-            "y": 36
+            "y": 27
           },
           "id": 201,
           "showHeader": true,
@@ -2503,7 +2507,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "description": "Shows the count of blacklisted process instances per partition.",
+          "description": "Shows the count of banned process instances per partition.",
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -2544,7 +2548,8 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green"
+                    "color": "green",
+                    "value": null
                   },
                   {
                     "color": "red",
@@ -2559,7 +2564,7 @@
             "h": 6,
             "w": 24,
             "x": 0,
-            "y": 42
+            "y": 33
           },
           "id": 543,
           "options": {
@@ -2582,13 +2587,13 @@
                 "uid": "${DS_PROMETHEUS}"
               },
               "editorMode": "code",
-              "expr": "max(zeebe_blacklisted_instances_total{namespace=~\"$namespace\", pod=~\"$pod\", partition=~\"$partition\"}) by (namespace, partition)",
+              "expr": "max(zeebe_blacklisted_instances_total{namespace=~\"$namespace\", pod=~\"$pod\", partition=~\"$partition\"}) by (namespace, partition)\nor max(zeebe_banned_instances_total{namespace=~\"$namespace\", pod=~\"$pod\", partition=~\"$partition\"}) by (namespace, partition)",
               "legendFormat": "{{namespace}} {{partition}}",
               "range": true,
               "refId": "A"
             }
           ],
-          "title": "Blacklisted instances by partition",
+          "title": "Banned instances by partition",
           "type": "timeseries"
         }
       ],
@@ -16009,6 +16014,6 @@
   "timezone": "",
   "title": "Zeebe",
   "uid": "I4lo7_EZk",
-  "version": 7,
+  "version": 9,
   "weekStart": ""
 }
