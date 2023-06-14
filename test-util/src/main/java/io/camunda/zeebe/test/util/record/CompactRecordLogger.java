@@ -17,8 +17,10 @@ import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.intent.CommandDistributionIntent;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.Intent;
+import io.camunda.zeebe.protocol.record.value.CommandDistributionRecordValue;
 import io.camunda.zeebe.protocol.record.value.DecisionEvaluationRecordValue;
 import io.camunda.zeebe.protocol.record.value.DeploymentDistributionRecordValue;
 import io.camunda.zeebe.protocol.record.value.DeploymentRecordValue;
@@ -80,7 +82,7 @@ public class CompactRecordLogger {
           entry("MESSAGE", "MSG"),
           entry("SUBSCRIPTION", "SUB"),
           entry("SEQUENCE", "SEQ"),
-          entry("DEPLOYMENT_DISTRIBUTION", "DSTR"),
+          entry("DEPLOYMENT_DISTRIBUTION", "DPLY_DSTR"),
           entry("DEPLOYMENT", "DPLY"),
           entry("VARIABLE", "VAR"),
           entry("ELEMENT_", ""),
@@ -89,7 +91,8 @@ public class CompactRecordLogger {
           entry("DECISION_REQUIREMENTS", "DRG"),
           entry("EVALUATION", "EVAL"),
           entry("SIGNAL_SUBSCRIPTION", "SIG_SUBSCRIPTION"),
-          entry("SIGNAL", "SIG"));
+          entry("SIGNAL", "SIG"),
+          entry("COMMAND_DISTRIBUTION", "DSTR"));
 
   private static final Map<RecordType, Character> RECORD_TYPE_ABBREVIATIONS =
       ofEntries(
@@ -134,6 +137,7 @@ public class CompactRecordLogger {
     valueLoggers.put(ValueType.DECISION_EVALUATION, this::summarizeDecisionEvaluation);
     valueLoggers.put(ValueType.SIGNAL, this::summarizeSignal);
     valueLoggers.put(ValueType.SIGNAL_SUBSCRIPTION, this::summarizeSignalSubscription);
+    valueLoggers.put(ValueType.COMMAND_DISTRIBUTION, this::summarizeCommandDistribution);
   }
 
   public CompactRecordLogger(final Collection<Record<?>> records) {
@@ -741,6 +745,29 @@ public class CompactRecordLogger {
         .append("\"")
         .append(" <process ")
         .append(formatId(value.getBpmnProcessId()))
+        .toString();
+  }
+
+  private String summarizeCommandDistribution(final Record<?> record) {
+    final var value = (CommandDistributionRecordValue) record.getValue();
+
+    final StringBuilder stringBuilder =
+        new StringBuilder()
+            .append(value.getValueType())
+            .append(" ")
+            .append(value.getIntent())
+            .append(" ");
+
+    final var intent = (CommandDistributionIntent) record.getIntent();
+    final var targetPartitionWord =
+        switch (intent) {
+          case STARTED, FINISHED -> "on";
+          case DISTRIBUTING -> "to";
+          case ACKNOWLEDGE, ACKNOWLEDGED -> "for";
+        };
+
+    return stringBuilder
+        .append("%s partition %d".formatted(targetPartitionWord, value.getPartitionId()))
         .toString();
   }
 
