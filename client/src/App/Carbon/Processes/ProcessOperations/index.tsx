@@ -14,7 +14,7 @@ import {DeleteDefinitionModal} from 'modules/components/Carbon/DeleteDefinitionM
 import {operationsStore} from 'modules/stores/operations';
 import {panelStatesStore} from 'modules/stores/panelStates';
 import {useNotifications} from 'modules/notifications';
-import {DetailTable} from 'modules/components/Carbon/DeleteDefinitionModal/DetailTable';
+import {StructuredList} from 'modules/components/Carbon/StructuredList';
 import {UnorderedList} from 'modules/components/Carbon/DeleteDefinitionModal/Warning/styled';
 
 type Props = {
@@ -92,7 +92,7 @@ const ProcessOperations: React.FC<Props> = ({
           </Stack>
         }
         bodyContent={
-          <DetailTable
+          <StructuredList
             headerColumns={[
               {
                 cellContent: 'Process Definition',
@@ -105,6 +105,7 @@ const ProcessOperations: React.FC<Props> = ({
                 ],
               },
             ]}
+            label="Process Details"
           />
         }
         onClose={() => setIsDeleteModalVisible(false)}

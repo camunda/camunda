@@ -6,9 +6,9 @@
  */
 
 import {PanelHeader} from 'modules/components/Carbon/PanelHeader';
-import {Container, Tab, Content} from './styled';
+import {Container, Tab, Content, TabPanel, TabList} from './styled';
 import {tracking} from 'modules/tracking';
-import {Tabs, TabList, TabPanels, TabPanel} from '@carbon/react';
+import {Tabs, TabPanels} from '@carbon/react';
 
 type TabType = {
   id: string;

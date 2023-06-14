@@ -12,6 +12,7 @@ import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
 import {useEffect} from 'react';
 import {variablesStore} from 'modules/stores/variables';
 import {TabView} from 'modules/components/Carbon/TabView';
+import {InputOutputMappings} from './InputOutputMappings';
 
 const VariablePanel = observer(function VariablePanel() {
   useEffect(() => {
@@ -42,12 +43,12 @@ const VariablePanel = observer(function VariablePanel() {
               {
                 id: 'input-mappings',
                 label: 'Input Mappings',
-                content: <div>input mappings</div>,
+                content: <InputOutputMappings type="Input" />,
               },
               {
                 id: 'output-mappings',
                 label: 'Output Mappings',
-                content: <div>output mappings</div>,
+                content: <InputOutputMappings type="Output" />,
               },
             ]),
       ]}

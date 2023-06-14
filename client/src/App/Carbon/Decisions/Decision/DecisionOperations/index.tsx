@@ -14,7 +14,7 @@ import {DeleteDefinitionModal} from 'modules/components/Carbon/DeleteDefinitionM
 import {operationsStore} from 'modules/stores/operations';
 import {panelStatesStore} from 'modules/stores/panelStates';
 import {useNotifications} from 'modules/notifications';
-import {DetailTable} from 'modules/components/Carbon/DeleteDefinitionModal/DetailTable';
+import {StructuredList} from 'modules/components/Carbon/StructuredList';
 import {UnorderedList} from 'modules/components/Carbon/DeleteDefinitionModal/Warning/styled';
 import {decisionDefinitionStore} from 'modules/stores/decisionDefinition';
 
@@ -85,7 +85,7 @@ const DecisionOperations: React.FC<Props> = ({
           </Stack>
         }
         bodyContent={
-          <DetailTable
+          <StructuredList
             headerColumns={[
               {
                 cellContent: 'DRD name',
@@ -96,6 +96,7 @@ const DecisionOperations: React.FC<Props> = ({
                 columns: [{cellContent: decisionDefinitionStore.name}],
               },
             ]}
+            label="DRD Details"
           />
         }
         onClose={() => setIsDeleteModalVisible(false)}
