@@ -66,6 +66,7 @@ public final class EngineProcessors {
       final JobStreamer jobStreamer) {
 
     final var processingState = typedRecordProcessorContext.getProcessingState();
+    final var scheduledTaskDbState = typedRecordProcessorContext.getScheduledTaskDbState();
     final var writers = typedRecordProcessorContext.getWriters();
     final TypedRecordProcessors typedRecordProcessors =
         TypedRecordProcessors.processors(processingState.getKeyGenerator(), writers);
@@ -79,8 +80,7 @@ public final class EngineProcessors {
     final var config = typedRecordProcessorContext.getConfig();
 
     final DueDateTimerChecker timerChecker =
-        new DueDateTimerChecker(
-            typedRecordProcessorContext.getScheduledTaskDbState().getTimerState(), featureFlags);
+        new DueDateTimerChecker(scheduledTaskDbState.getTimerState(), featureFlags);
 
     final var jobMetrics = new JobMetrics(partitionId);
     final var processEngineMetrics = new ProcessEngineMetrics(processingState.getPartitionId());
@@ -127,7 +127,7 @@ public final class EngineProcessors {
         bpmnBehaviors,
         subscriptionCommandSender,
         processingState,
-        typedRecordProcessorContext.getScheduledTaskDbState(),
+        scheduledTaskDbState,
         typedRecordProcessors,
         writers,
         config,
