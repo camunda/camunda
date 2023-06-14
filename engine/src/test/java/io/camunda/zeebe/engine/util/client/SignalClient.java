@@ -8,7 +8,6 @@
 
 package io.camunda.zeebe.engine.util.client;
 
-import io.camunda.zeebe.engine.util.StreamProcessorRule;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.value.signal.SignalRecord;
 import io.camunda.zeebe.protocol.record.Record;
@@ -29,12 +28,12 @@ public class SignalClient {
               .withSourceRecordPosition(position)
               .getFirst();
 
-  private final StreamProcessorRule environmentRule;
+  private final CommandWriter writer;
   private final SignalRecord signalRecord = new SignalRecord();
   private final Function<Long, Record<SignalRecordValue>> expectation = SUCCESS_EXPECTATION;
 
-  public SignalClient(final StreamProcessorRule environmentRule) {
-    this.environmentRule = environmentRule;
+  public SignalClient(final CommandWriter writer) {
+    this.writer = writer;
   }
 
   public SignalClient withSignalName(final String signalName) {
@@ -63,7 +62,7 @@ public class SignalClient {
   }
 
   public Record<SignalRecordValue> broadcast() {
-    final long position = environmentRule.writeCommand(SignalIntent.BROADCAST, signalRecord);
+    final long position = writer.writeCommand(SignalIntent.BROADCAST, signalRecord);
     return expectation.apply(position);
   }
 }

@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.engine.util.client;
 
-import io.camunda.zeebe.engine.util.StreamProcessorRule;
 import io.camunda.zeebe.protocol.impl.record.value.decision.DecisionEvaluationRecord;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.DecisionEvaluationIntent;
@@ -41,12 +40,12 @@ public class DecisionEvaluationClient {
               .withSourceRecordPosition(position)
               .getFirst();
 
-  private final StreamProcessorRule environmentRule;
+  private final CommandWriter writer;
   private final DecisionEvaluationRecord decisionEvaluationRecord = new DecisionEvaluationRecord();
   private Function<Long, Record<DecisionEvaluationRecordValue>> expectation = SUCCESS_EXPECTATION;
 
-  public DecisionEvaluationClient(final StreamProcessorRule environmentRule) {
-    this.environmentRule = environmentRule;
+  public DecisionEvaluationClient(final CommandWriter writer) {
+    this.writer = writer;
   }
 
   public DecisionEvaluationClient ofDecisionId(final String decisionId) {
@@ -76,7 +75,7 @@ public class DecisionEvaluationClient {
 
   public Record<DecisionEvaluationRecordValue> evaluate() {
     final long position =
-        environmentRule.writeCommand(DecisionEvaluationIntent.EVALUATE, decisionEvaluationRecord);
+        writer.writeCommand(DecisionEvaluationIntent.EVALUATE, decisionEvaluationRecord);
 
     return expectation.apply(position);
   }

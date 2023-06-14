@@ -9,7 +9,6 @@ package io.camunda.zeebe.engine.util.client;
 
 import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 
-import io.camunda.zeebe.engine.util.StreamProcessorRule;
 import io.camunda.zeebe.msgpack.property.ArrayProperty;
 import io.camunda.zeebe.msgpack.value.StringValue;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationRecord;
@@ -37,18 +36,18 @@ import org.agrona.DirectBuffer;
 
 public final class ProcessInstanceClient {
 
-  private final StreamProcessorRule environmentRule;
+  private final CommandWriter writer;
 
-  public ProcessInstanceClient(final StreamProcessorRule environmentRule) {
-    this.environmentRule = environmentRule;
+  public ProcessInstanceClient(final CommandWriter writer) {
+    this.writer = writer;
   }
 
   public ProcessInstanceCreationClient ofBpmnProcessId(final String bpmnProcessId) {
-    return new ProcessInstanceCreationClient(environmentRule, bpmnProcessId);
+    return new ProcessInstanceCreationClient(writer, bpmnProcessId);
   }
 
   public ExistingInstanceClient withInstanceKey(final long processInstanceKey) {
-    return new ExistingInstanceClient(environmentRule, processInstanceKey);
+    return new ExistingInstanceClient(writer, processInstanceKey);
   }
 
   public static class ProcessInstanceCreationClient {
@@ -70,15 +69,14 @@ public final class ProcessInstanceClient {
                     .withSourceRecordPosition(position)
                     .getFirst();
 
-    private final StreamProcessorRule environmentRule;
+    private final CommandWriter writer;
     private final ProcessInstanceCreationRecord processInstanceCreationRecord;
 
     private Function<Long, Record<ProcessInstanceCreationRecordValue>> expectation =
         SUCCESS_EXPECTATION;
 
-    public ProcessInstanceCreationClient(
-        final StreamProcessorRule environmentRule, final String bpmnProcessId) {
-      this.environmentRule = environmentRule;
+    public ProcessInstanceCreationClient(final CommandWriter writer, final String bpmnProcessId) {
+      this.writer = writer;
       processInstanceCreationRecord = new ProcessInstanceCreationRecord();
       processInstanceCreationRecord.setBpmnProcessId(bpmnProcessId);
     }
@@ -105,14 +103,12 @@ public final class ProcessInstanceClient {
     }
 
     public ProcessInstanceCreationWithResultClient withResult() {
-      return new ProcessInstanceCreationWithResultClient(
-          environmentRule, processInstanceCreationRecord);
+      return new ProcessInstanceCreationWithResultClient(writer, processInstanceCreationRecord);
     }
 
     public long create() {
       final long position =
-          environmentRule.writeCommand(
-              ProcessInstanceCreationIntent.CREATE, processInstanceCreationRecord);
+          writer.writeCommand(ProcessInstanceCreationIntent.CREATE, processInstanceCreationRecord);
 
       final var resultingRecord = expectation.apply(position);
       return resultingRecord.getValue().getProcessInstanceKey();
@@ -125,14 +121,14 @@ public final class ProcessInstanceClient {
   }
 
   public static class ProcessInstanceCreationWithResultClient {
-    private final StreamProcessorRule environmentRule;
+    private final CommandWriter writer;
     private final ProcessInstanceCreationRecord record;
     private long requestId = 1L;
     private int requestStreamId = 1;
 
     public ProcessInstanceCreationWithResultClient(
-        final StreamProcessorRule environmentRule, final ProcessInstanceCreationRecord record) {
-      this.environmentRule = environmentRule;
+        final CommandWriter writer, final ProcessInstanceCreationRecord record) {
+      this.writer = writer;
       this.record = record;
     }
 
@@ -155,7 +151,7 @@ public final class ProcessInstanceClient {
 
     public long create() {
       final long position =
-          environmentRule.writeCommand(
+          writer.writeCommand(
               requestStreamId,
               requestId,
               ProcessInstanceCreationIntent.CREATE_WITH_AWAITING_RESULT,
@@ -170,7 +166,7 @@ public final class ProcessInstanceClient {
     }
 
     public void asyncCreate() {
-      environmentRule.writeCommand(
+      writer.writeCommand(
           requestStreamId,
           requestId,
           ProcessInstanceCreationIntent.CREATE_WITH_AWAITING_RESULT,
@@ -198,15 +194,14 @@ public final class ProcessInstanceClient {
                 .getFirst();
 
     private static final int DEFAULT_PARTITION = -1;
-    private final StreamProcessorRule environmentRule;
+    private final CommandWriter writer;
     private final long processInstanceKey;
 
     private int partition = DEFAULT_PARTITION;
     private Function<Long, Record<ProcessInstanceRecordValue>> expectation = SUCCESS_EXPECTATION;
 
-    public ExistingInstanceClient(
-        final StreamProcessorRule environmentRule, final long processInstanceKey) {
-      this.environmentRule = environmentRule;
+    public ExistingInstanceClient(final CommandWriter writer, final long processInstanceKey) {
+      this.writer = writer;
       this.processInstanceKey = processInstanceKey;
     }
 
@@ -229,7 +224,7 @@ public final class ProcessInstanceClient {
                 .getPartitionId();
       }
 
-      environmentRule.writeCommandOnPartition(
+      writer.writeCommandOnPartition(
           partition,
           processInstanceKey,
           ProcessInstanceIntent.CANCEL,
@@ -239,7 +234,7 @@ public final class ProcessInstanceClient {
     }
 
     public ProcessInstanceModificationClient modification() {
-      return new ProcessInstanceModificationClient(environmentRule, processInstanceKey);
+      return new ProcessInstanceModificationClient(writer, processInstanceKey);
     }
   }
 
@@ -266,25 +261,25 @@ public final class ProcessInstanceClient {
     private Function<Long, Record<ProcessInstanceModificationRecordValue>> expectation =
         SUCCESS_EXPECTATION;
 
-    private final StreamProcessorRule environmentRule;
+    private final CommandWriter writer;
     private final long processInstanceKey;
     private final ProcessInstanceModificationRecord record;
     private final List<ProcessInstanceModificationActivateInstruction> activateInstructions;
 
     public ProcessInstanceModificationClient(
-        final StreamProcessorRule environmentRule, final long processInstanceKey) {
-      this.environmentRule = environmentRule;
+        final CommandWriter writer, final long processInstanceKey) {
+      this.writer = writer;
       this.processInstanceKey = processInstanceKey;
       record = new ProcessInstanceModificationRecord();
       activateInstructions = new ArrayList<>();
     }
 
     private ProcessInstanceModificationClient(
-        final StreamProcessorRule environmentRule,
+        final CommandWriter writer,
         final long processInstanceKey,
         final ProcessInstanceModificationRecord record,
         final List<ProcessInstanceModificationActivateInstruction> activateInstructions) {
-      this.environmentRule = environmentRule;
+      this.writer = writer;
       this.processInstanceKey = processInstanceKey;
       this.record = record;
       this.activateInstructions = activateInstructions;
@@ -317,7 +312,7 @@ public final class ProcessInstanceClient {
               .setAncestorScopeKey(ancestorScopeKey);
       activateInstructions.add(activateInstruction);
       return new ActivationInstructionBuilder(
-          environmentRule, processInstanceKey, record, activateInstructions, activateInstruction);
+          writer, processInstanceKey, record, activateInstructions, activateInstruction);
     }
 
     public ProcessInstanceModificationClient terminateElement(final long elementInstanceKey) {
@@ -337,8 +332,7 @@ public final class ProcessInstanceClient {
       activateInstructions.forEach(record::addActivateInstruction);
 
       final var position =
-          environmentRule.writeCommand(
-              processInstanceKey, ProcessInstanceModificationIntent.MODIFY, record);
+          writer.writeCommand(processInstanceKey, ProcessInstanceModificationIntent.MODIFY, record);
 
       if (expectation == REJECTION_EXPECTATION) {
         return expectation.apply(processInstanceKey);
@@ -352,7 +346,7 @@ public final class ProcessInstanceClient {
       private final ProcessInstanceModificationActivateInstruction activateInstruction;
 
       public ActivationInstructionBuilder(
-          final StreamProcessorRule environmentRule,
+          final CommandWriter environmentRule,
           final long processInstanceKey,
           final ProcessInstanceModificationRecord record,
           final List<ProcessInstanceModificationActivateInstruction> activateInstructions,

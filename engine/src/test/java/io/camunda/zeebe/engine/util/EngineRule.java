@@ -28,39 +28,22 @@ import io.camunda.zeebe.engine.util.client.PublishMessageClient;
 import io.camunda.zeebe.engine.util.client.ResourceDeletionClient;
 import io.camunda.zeebe.engine.util.client.SignalClient;
 import io.camunda.zeebe.engine.util.client.VariableClient;
-import io.camunda.zeebe.logstreams.log.LogAppendEntry;
-import io.camunda.zeebe.logstreams.log.LogStreamReader;
-import io.camunda.zeebe.logstreams.log.LogStreamWriter;
 import io.camunda.zeebe.logstreams.log.LoggedEvent;
 import io.camunda.zeebe.logstreams.util.ListLogStorage;
-import io.camunda.zeebe.logstreams.util.SynchronousLogStream;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
-import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
-import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
-import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.camunda.zeebe.protocol.record.Record;
-import io.camunda.zeebe.protocol.record.RecordType;
-import io.camunda.zeebe.protocol.record.ValueType;
-import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
 import io.camunda.zeebe.scheduler.clock.ControlledActorClock;
-import io.camunda.zeebe.scheduler.future.ActorFuture;
-import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.stream.api.CommandResponseWriter;
-import io.camunda.zeebe.stream.api.InterPartitionCommandSender;
-import io.camunda.zeebe.stream.api.ReadonlyStreamProcessorContext;
-import io.camunda.zeebe.stream.api.StreamProcessorLifecycleAware;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.impl.StreamProcessor;
 import io.camunda.zeebe.stream.impl.StreamProcessor.Phase;
 import io.camunda.zeebe.stream.impl.StreamProcessorListener;
 import io.camunda.zeebe.stream.impl.StreamProcessorMode;
-import io.camunda.zeebe.stream.impl.records.RecordValues;
-import io.camunda.zeebe.stream.impl.records.TypedRecordImpl;
 import io.camunda.zeebe.test.util.TestUtil;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
@@ -74,15 +57,12 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
-import org.agrona.collections.Int2ObjectHashMap;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.awaitility.Awaitility;
 import org.junit.rules.ExternalResource;
@@ -92,7 +72,6 @@ import org.junit.runners.model.Statement;
 public final class EngineRule extends ExternalResource {
 
   private static final int PARTITION_ID = Protocol.DEPLOYMENT_PARTITION;
-  private static final RecordingExporter RECORDING_EXPORTER = new RecordingExporter();
   private final StreamProcessorRule environmentRule;
   private final RecordingExporterTestWatcher recordingExporterTestWatcher =
       new RecordingExporterTestWatcher();
@@ -100,9 +79,6 @@ public final class EngineRule extends ExternalResource {
 
   private Consumer<TypedRecord> onProcessedCallback = record -> {};
   private Consumer<LoggedEvent> onSkippedCallback = record -> {};
-
-  private final Map<Integer, ReprocessingCompletedListener> partitionReprocessingCompleteListeners =
-      new Int2ObjectHashMap<>();
 
   private long lastProcessedPosition = -1L;
   private JobStreamer jobStreamer = JobStreamer.noop();
@@ -144,11 +120,6 @@ public final class EngineRule extends ExternalResource {
     startProcessors();
   }
 
-  @Override
-  protected void after() {
-    partitionReprocessingCompleteListeners.clear();
-  }
-
   public void start() {
     startProcessors();
   }
@@ -183,17 +154,12 @@ public final class EngineRule extends ExternalResource {
   }
 
   private void startProcessors() {
-    final DeploymentRecord deploymentRecord = new DeploymentRecord();
-    final UnsafeBuffer deploymentBuffer = new UnsafeBuffer(new byte[deploymentRecord.getLength()]);
-    deploymentRecord.write(deploymentBuffer, 0);
     final var interPartitionCommandSenders = new ArrayList<TestInterPartitionCommandSender>();
 
     forEachPartition(
         partitionId -> {
-          final var reprocessingCompletedListener = new ReprocessingCompletedListener();
-          partitionReprocessingCompleteListeners.put(partitionId, reprocessingCompletedListener);
-
-          final var interPartitionCommandSender = new TestInterPartitionCommandSender();
+          final var interPartitionCommandSender =
+              new TestInterPartitionCommandSender(environmentRule::newLogStreamWriter);
           interPartitionCommandSenders.add(interPartitionCommandSender);
           environmentRule.startTypedStreamProcessor(
               partitionId,
@@ -207,8 +173,7 @@ public final class EngineRule extends ExternalResource {
                           jobStreamer)
                       .withListener(
                           new ProcessingExporterTransistor(
-                              environmentRule.getLogStream(partitionId)))
-                      .withListener(reprocessingCompletedListener),
+                              environmentRule.getLogStream(partitionId))),
               Optional.of(
                   new StreamProcessorListener() {
                     @Override
@@ -446,125 +411,6 @@ public final class EngineRule extends ExternalResource {
 
     public DirectBuffer getDirectBuffer() {
       return genericBuffer;
-    }
-  }
-
-  /////////////////////////////////////////////////////////////////////////////////////////////////
-  //////////////////////////////// PROCESSOR EXPORTER CROSSOVER ///////////////////////////////////
-  /////////////////////////////////////////////////////////////////////////////////////////////////
-
-  private static class ProcessingExporterTransistor implements StreamProcessorLifecycleAware {
-
-    private final RecordValues recordValues = new RecordValues();
-    private final RecordMetadata metadata = new RecordMetadata();
-
-    private LogStreamReader logStreamReader;
-    private TypedRecordImpl typedEvent;
-    private final SynchronousLogStream synchronousLogStream;
-    private final ExecutorService executorService;
-
-    public ProcessingExporterTransistor(final SynchronousLogStream synchronousLogStream) {
-      this.synchronousLogStream = synchronousLogStream;
-      executorService = Executors.newSingleThreadExecutor();
-    }
-
-    @Override
-    public void onRecovered(final ReadonlyStreamProcessorContext context) {
-      executorService.submit(
-          () -> {
-            final int partitionId = context.getPartitionId();
-            typedEvent = new TypedRecordImpl(partitionId);
-            final var asyncLogStream = synchronousLogStream.getAsyncLogStream();
-            asyncLogStream.registerRecordAvailableListener(this::onNewEventCommitted);
-            logStreamReader = asyncLogStream.newLogStreamReader().join();
-            exportEvents();
-          });
-    }
-
-    @Override
-    public void onClose() {
-      executorService.shutdownNow();
-    }
-
-    private void onNewEventCommitted() {
-      // this is called from outside (LogStream), so we need to enqueue the task
-      if (executorService.isShutdown()) {
-        return;
-      }
-
-      executorService.submit(this::exportEvents);
-    }
-
-    private void exportEvents() {
-      // we need to skip until onRecovered happened
-      if (logStreamReader == null) {
-        return;
-      }
-
-      while (logStreamReader.hasNext()) {
-        final LoggedEvent rawEvent = logStreamReader.next();
-        metadata.reset();
-        rawEvent.readMetadata(metadata);
-
-        final UnifiedRecordValue recordValue =
-            recordValues.readRecordValue(rawEvent, metadata.getValueType());
-        typedEvent.wrap(rawEvent, metadata, recordValue);
-
-        RECORDING_EXPORTER.export(typedEvent);
-      }
-    }
-  }
-
-  private final class ReprocessingCompletedListener implements StreamProcessorLifecycleAware {
-    private final ActorFuture<Void> reprocessingComplete = new CompletableActorFuture<>();
-
-    @Override
-    public void onRecovered(final ReadonlyStreamProcessorContext context) {
-      reprocessingComplete.complete(null);
-    }
-  }
-
-  private class TestInterPartitionCommandSender implements InterPartitionCommandSender {
-
-    private final Map<Integer, LogStreamWriter> writers = new HashMap<>();
-
-    @Override
-    public void sendCommand(
-        final int receiverPartitionId,
-        final ValueType valueType,
-        final Intent intent,
-        final UnifiedRecordValue command) {
-      sendCommand(receiverPartitionId, valueType, intent, null, command);
-    }
-
-    @Override
-    public void sendCommand(
-        final int receiverPartitionId,
-        final ValueType valueType,
-        final Intent intent,
-        final Long recordKey,
-        final UnifiedRecordValue command) {
-      final var metadata =
-          new RecordMetadata().recordType(RecordType.COMMAND).intent(intent).valueType(valueType);
-      final var writer = writers.get(receiverPartitionId);
-      final LogAppendEntry entry;
-      if (recordKey != null) {
-        entry = LogAppendEntry.of(recordKey, metadata, command);
-      } else {
-        entry = LogAppendEntry.of(metadata, command);
-      }
-
-      writer.tryWrite(entry);
-    }
-
-    // Pre-initialize dedicated writers.
-    // We must build new writers because reusing the writers from the environmentRule is unsafe.
-    // We can't build them on-demand during `sendCommand` because that might run within an actor
-    // context where we can't build new `SyncLogStream`s.
-    private void initializeWriters(final int partitionCount) {
-      for (int i = PARTITION_ID; i < PARTITION_ID + partitionCount; i++) {
-        writers.put(i, environmentRule.newLogStreamWriter(i));
-      }
     }
   }
 }
