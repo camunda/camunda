@@ -23,8 +23,7 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.EventApplier;
 import io.camunda.zeebe.engine.state.ProcessingDbState;
 import io.camunda.zeebe.engine.state.ScheduledTaskDbState;
-import io.camunda.zeebe.engine.state.processing.DbBlackListState;
-import io.camunda.zeebe.logstreams.impl.Loggers;
+import io.camunda.zeebe.engine.state.processing.DbBannedInstanceState;
 import io.camunda.zeebe.protocol.impl.record.value.error.ErrorRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;
@@ -39,7 +38,7 @@ import org.slf4j.Logger;
 
 public class Engine implements RecordProcessor {
 
-  private static final Logger LOG = Loggers.PROCESSOR_LOGGER;
+  private static final Logger LOG = Loggers.PROCESS_PROCESSOR_LOGGER;
   private static final String ERROR_MESSAGE_PROCESSOR_NOT_FOUND =
       "Expected to find processor for record '{}', but caught an exception. Skip this record.";
   private static final String ERROR_MESSAGE_PROCESSING_EXCEPTION_OCCURRED =
@@ -132,13 +131,12 @@ public class Engine implements RecordProcessor {
         return processingResultBuilder.build();
       }
 
-      // There is no blacklist check needed if the intent is not instance related
-      // nor if the intent is to create new instances, which can't be blacklisted yet
-      final boolean noBlacklistCheckNeeded =
+      // There is no ban check needed if the intent is not instance related
+      // nor if the intent is to create new instances, which can't be banned yet
+      final boolean noBanCheckNeeded =
           !(record.getIntent() instanceof ProcessInstanceRelatedIntent)
               || record.getIntent() instanceof ProcessInstanceCreationIntent;
-      if (noBlacklistCheckNeeded
-          || !processingState.getBlackListState().isOnBlacklist(typedCommand)) {
+      if (noBanCheckNeeded || !processingState.getBannedInstanceState().isBanned(typedCommand)) {
         currentProcessor.processRecord(record);
       }
     }
@@ -200,7 +198,7 @@ public class Engine implements RecordProcessor {
     }
     errorRecord.initErrorRecord(processingException, record.getPosition());
 
-    if (DbBlackListState.shouldBeBlacklisted(record.getIntent())) {
+    if (DbBannedInstanceState.shouldBeBanned(record.getIntent())) {
       if (record.getValue() instanceof ProcessInstanceRelated) {
         final long processInstanceKey =
             ((ProcessInstanceRelated) record.getValue()).getProcessInstanceKey();

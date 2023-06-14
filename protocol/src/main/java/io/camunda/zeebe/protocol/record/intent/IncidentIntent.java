@@ -22,15 +22,15 @@ public enum IncidentIntent implements ProcessInstanceRelatedIntent {
   RESOLVED((short) 2);
 
   private final short value;
-  private final boolean shouldBlacklist;
+  private final boolean shouldBanInstance;
 
   IncidentIntent(final short value) {
     this(value, true);
   }
 
-  IncidentIntent(final short value, final boolean shouldBlacklist) {
+  IncidentIntent(final short value, final boolean shouldBanInstance) {
     this.value = value;
-    this.shouldBlacklist = shouldBlacklist;
+    this.shouldBanInstance = shouldBanInstance;
   }
 
   public short getIntent() {
@@ -56,7 +56,7 @@ public enum IncidentIntent implements ProcessInstanceRelatedIntent {
   }
 
   @Override
-  public boolean shouldBlacklistInstanceOnError() {
-    return shouldBlacklist;
+  public boolean shouldBanInstanceOnError() {
+    return shouldBanInstance;
   }
 }
