@@ -74,7 +74,8 @@ final class ClientStreamRequestManager<M extends BufferWriter> {
                 "Failed to open stream {} to node {}. Will retry in {}",
                 clientStream,
                 brokerId,
-                RETRY_DELAY);
+                RETRY_DELAY,
+                error);
             // TODO: define some abort conditions. We may not have to retry indefinitely.
             // For now we retry always. Eventually the request will succeed. Duplicate add request
             // are fine.
