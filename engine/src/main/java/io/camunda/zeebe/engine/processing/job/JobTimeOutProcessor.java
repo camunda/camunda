@@ -49,11 +49,7 @@ public final class JobTimeOutProcessor implements TypedRecordProcessor<JobRecord
     final var job = jobState.getJob(jobKey);
     final var state = jobState.getState(jobKey);
 
-    final var now = ActorClock.currentTimeMillis();
-    final var deadline = job.getDeadline();
-    final var hasTimedOut = now > deadline;
-
-    if (state == State.ACTIVATED && hasTimedOut) {
+    if (state == State.ACTIVATED && hasTimedOut(job)) {
       stateWriter.appendFollowUpEvent(jobKey, JobIntent.TIMED_OUT, job);
       jobMetrics.jobTimedOut(job.getType());
       jobActivationBehavior.publishWork(jobKey, job);
@@ -70,5 +66,9 @@ public final class JobTimeOutProcessor implements TypedRecordProcessor<JobRecord
       final String errorMessage = String.format(NOT_ACTIVATED_JOB_MESSAGE, jobKey, reason);
       rejectionWriter.appendRejection(record, RejectionType.NOT_FOUND, errorMessage);
     }
+  }
+
+  private boolean hasTimedOut(final JobRecord job) {
+    return job.getDeadline() < ActorClock.currentTimeMillis();
   }
 }
