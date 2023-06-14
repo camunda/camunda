@@ -108,7 +108,7 @@ public final class BrokerAdminServiceImpl extends Actor implements BrokerAdminSe
                                         partitionStatuses.put(partition.getPartitionId(), ps);
                                       }
                                     }))
-                    .collect(Collectors.toList());
+                    .toList();
             CompletableFuture.allOf(statusFutures.toArray(CompletableFuture[]::new))
                 .thenAccept(r -> future.complete(partitionStatuses));
           }
