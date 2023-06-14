@@ -154,6 +154,7 @@ it('should show a loading state when specified', () => {
 
   expect(node.find('.loading')).toExist();
   expect(node.find('DataTableSkeleton')).toExist();
+  expect(node.find('TableBody')).not.toExist();
 });
 
 it('should use manual pagination values if specified', () => {

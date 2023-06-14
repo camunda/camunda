@@ -106,6 +106,7 @@ interface TableProps {
   size?: DataTableSize;
   title?: string | JSX.Element[];
   toolbar?: ReactNode;
+  useZebraStyles?: boolean;
 }
 
 export default function Table<T extends object>({
@@ -130,6 +131,7 @@ export default function Table<T extends object>({
   size = 'lg',
   title,
   toolbar,
+  useZebraStyles = true,
 }: TableProps) {
   const columnWidths = useRef<Record<string, string | number | undefined>>({});
   const columns = useMemo(() => Table.formatColumns(head, '', columnWidths.current), [head]);
@@ -205,7 +207,7 @@ export default function Table<T extends object>({
   }
 
   const MAX_LOADING_COLUMN_COUNT = Math.min(headers.length, 6);
-  const LOADING_ROWS_COUNT = 15;
+  const LOADING_ROWS_COUNT = Math.min(body.length, 15);
 
   return (
     <div
@@ -216,48 +218,48 @@ export default function Table<T extends object>({
         error,
       })}
     >
-      {loading ? (
-        <DataTableSkeleton
-          zebra
-          showToolbar={!!toolbar}
-          showHeader={!!title}
-          columnCount={MAX_LOADING_COLUMN_COUNT}
-          rowCount={LOADING_ROWS_COUNT}
-        />
-      ) : (
-        <DataTable
-          isSortable={isSortable}
-          locale={getLanguage()}
-          headers={headers.map((header) => ({key: header.id, header: header.render('Header')!}))}
-          rows={page}
-          size={size}
-          useZebraStyles
-          render={({getTableContainerProps, getTableProps}) => (
-            <TableContainer title={title} {...getTableContainerProps()}>
-              {toolbar}
-              <CarbonTable {...getReactTableProps()} {...getTableProps()}>
-                <TableHead>
-                  {headerGroups.map((headerGroup, i) => (
-                    <TableRow
-                      {...headerGroup.getHeaderGroupProps()}
-                      className={classnames({groupRow: i === 0 && headerGroups.length > 1})}
-                    >
-                      {headerGroup.headers.map((header: Header) => (
-                        <TableHeader
-                          key={header.id}
-                          header={header}
-                          isSortable={isSortable}
-                          allowLocalSorting={allowLocalSorting}
-                          resultType={resultType}
-                          sortByLabel={sortByLabel}
-                          sorting={sorting}
-                          updateSorting={updateSorting}
-                          firstColumnId={columns[0]?.id}
-                        />
-                      ))}
-                    </TableRow>
-                  ))}
-                </TableHead>
+      <DataTable
+        isSortable={isSortable}
+        locale={getLanguage()}
+        headers={headers.map((header) => ({key: header.id, header: header.render('Header')!}))}
+        rows={page}
+        size={size}
+        useZebraStyles={useZebraStyles}
+        render={({getTableContainerProps, getTableProps}) => (
+          <TableContainer title={title} {...getTableContainerProps()}>
+            {toolbar}
+            <CarbonTable {...getReactTableProps()} {...getTableProps()}>
+              <TableHead>
+                {headerGroups.map((headerGroup, i) => (
+                  <TableRow
+                    {...headerGroup.getHeaderGroupProps()}
+                    className={classnames({groupRow: i === 0 && headerGroups.length > 1})}
+                  >
+                    {headerGroup.headers.map((header: Header) => (
+                      <TableHeader
+                        key={header.id}
+                        header={header}
+                        isSortable={isSortable}
+                        allowLocalSorting={allowLocalSorting}
+                        resultType={resultType}
+                        sortByLabel={sortByLabel}
+                        sorting={sorting}
+                        updateSorting={updateSorting}
+                        firstColumnId={columns[0]?.id}
+                      />
+                    ))}
+                  </TableRow>
+                ))}
+              </TableHead>
+              {loading ? (
+                <DataTableSkeleton
+                  zebra={useZebraStyles}
+                  showToolbar={false}
+                  showHeader={false}
+                  columnCount={MAX_LOADING_COLUMN_COUNT}
+                  rowCount={LOADING_ROWS_COUNT}
+                />
+              ) : (
                 <TableBody {...getTableBodyProps()} onScroll={onScroll}>
                   {!error &&
                     page.map((row) => {
@@ -273,41 +275,41 @@ export default function Table<T extends object>({
                   {isEmpty && <div className="noData">{noData}</div>}
                   {error && <div className="error">{error}</div>}
                 </TableBody>
-              </CarbonTable>
-              {!disablePagination && !isEmpty && (totalRows > defaultPageSize || totalEntries) && (
-                <Pagination
-                  aria-disabled={loading}
-                  onChange={({page, pageSize}) => {
-                    // react-table is counting index from 0, and the `page` here is counted form 1
-                    // for the `page` prop below, the situation is oposite
-                    gotoPage(page - 1);
-                    setPageSize(pageSize);
-                  }}
-                  totalItems={totalRows}
-                  page={pageIndex + 1}
-                  pageSize={pageSize}
-                  pageSizes={[20, 100, 500, 1000]}
-                  pageNumberText={t('report.table.page').toString()}
-                  itemsPerPageText={t('report.table.rows').toString()}
-                  itemRangeText={(min, max, total) =>
-                    t('report.table.info', {
-                      firstRowIndex: min,
-                      lastRowIndex: max,
-                      totalRows: total,
-                    }).toString()
-                  }
-                  itemText={(min, max) => `${min} to ${max}`}
-                  pageRangeText={(current, total) =>
-                    `${t('report.table.page')} ${current} ${t('report.table.of')} ${total}`
-                  }
-                  forwardText={t('report.table.nextPage').toString()}
-                  backwardText={t('report.table.previousPage').toString()}
-                />
               )}
-            </TableContainer>
-          )}
-        />
-      )}
+            </CarbonTable>
+            {!disablePagination && !isEmpty && (totalRows > defaultPageSize || totalEntries) && (
+              <Pagination
+                aria-disabled={loading}
+                onChange={({page, pageSize}) => {
+                  // react-table is counting index from 0, and the `page` here is counted form 1
+                  // for the `page` prop below, the situation is oposite
+                  gotoPage(page - 1);
+                  setPageSize(pageSize);
+                }}
+                totalItems={totalRows}
+                page={pageIndex + 1}
+                pageSize={pageSize}
+                pageSizes={[20, 100, 500, 1000]}
+                pageNumberText={t('report.table.page').toString()}
+                itemsPerPageText={t('report.table.rows').toString()}
+                itemRangeText={(min, max, total) =>
+                  t('report.table.info', {
+                    firstRowIndex: min,
+                    lastRowIndex: max,
+                    totalRows: total,
+                  }).toString()
+                }
+                itemText={(min, max) => `${min} to ${max}`}
+                pageRangeText={(current, total) =>
+                  `${t('report.table.page')} ${current} ${t('report.table.of')} ${total}`
+                }
+                forwardText={t('report.table.nextPage').toString()}
+                backwardText={t('report.table.previousPage').toString()}
+              />
+            )}
+          </TableContainer>
+        )}
+      />
     </div>
   );
 }
