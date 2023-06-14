@@ -156,7 +156,11 @@ public final class EngineProcessors {
     addResourceDeletionProcessors(typedRecordProcessors, writers, processingState);
     addSignalBroadcastProcessors(typedRecordProcessors, bpmnBehaviors, writers, processingState);
     addCommandDistributionProcessors(
-        typedRecordProcessors, writers, processingState, interPartitionCommandSender);
+        typedRecordProcessors,
+        writers,
+        processingState,
+        scheduledTaskDbState,
+        interPartitionCommandSender);
 
     return typedRecordProcessors;
   }
@@ -323,12 +327,13 @@ public final class EngineProcessors {
       final TypedRecordProcessors typedRecordProcessors,
       final Writers writers,
       final ProcessingState processingState,
+      final ScheduledTaskDbState scheduledTaskDbState,
       final InterPartitionCommandSender interPartitionCommandSender) {
 
     // periodically retries command distribution
     typedRecordProcessors.withListener(
         new CommandRedistributor(
-            processingState.getDistributionState(), interPartitionCommandSender));
+            scheduledTaskDbState.getDistributionState(), interPartitionCommandSender));
 
     final var commandDistributionAcknowledgeProcessor =
         new CommandDistributionAcknowledgeProcessor(
