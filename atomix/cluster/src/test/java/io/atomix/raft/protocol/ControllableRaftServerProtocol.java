@@ -42,7 +42,7 @@ public class ControllableRaftServerProtocol implements RaftServerProtocol {
   private Function<TransferRequest, CompletableFuture<TransferResponse>> transferHandler;
   private Function<PollRequest, CompletableFuture<PollResponse>> pollHandler;
   private Function<VoteRequest, CompletableFuture<VoteResponse>> voteHandler;
-  private Function<AppendRequest, CompletableFuture<AppendResponse>> appendHandler;
+  private Function<VersionedAppendRequest, CompletableFuture<AppendResponse>> appendHandler;
   private final Map<MemberId, ControllableRaftServerProtocol> servers;
   // Incoming messages to each member
   private final Map<MemberId, Queue<Tuple<Runnable, CompletableFuture<?>>>> messageQueue;
@@ -224,6 +224,12 @@ public class ControllableRaftServerProtocol implements RaftServerProtocol {
   @Override
   public CompletableFuture<AppendResponse> append(
       final MemberId memberId, final AppendRequest request) {
+    throw new UnsupportedOperationException("Cannot use old version in tests");
+  }
+
+  @Override
+  public CompletableFuture<AppendResponse> append(
+      final MemberId memberId, final VersionedAppendRequest request) {
     final var responseFuture = new CompletableFuture<AppendResponse>();
     send(
         memberId,
@@ -234,12 +240,6 @@ public class ControllableRaftServerProtocol implements RaftServerProtocol {
                     response -> send(localMemberId, () -> responseFuture.complete(response), null)),
         responseFuture);
     return responseFuture;
-  }
-
-  @Override
-  public CompletableFuture<AppendResponse> append(
-      final MemberId memberId, final VersionedAppendRequest request) {
-    return null;
   }
 
   @Override
@@ -310,13 +310,13 @@ public class ControllableRaftServerProtocol implements RaftServerProtocol {
 
   @Override
   public void registerAppendV1Handler(
-      final Function<AppendRequest, CompletableFuture<AppendResponse>> handler) {
-    appendHandler = handler;
-  }
+      final Function<AppendRequest, CompletableFuture<AppendResponse>> handler) {}
 
   @Override
   public void registerAppendV2Handler(
-      final Function<VersionedAppendRequest, CompletableFuture<AppendResponse>> handler) {}
+      final Function<VersionedAppendRequest, CompletableFuture<AppendResponse>> handler) {
+    appendHandler = handler;
+  }
 
   @Override
   public void unregisterAppendHandler() {
@@ -332,7 +332,7 @@ public class ControllableRaftServerProtocol implements RaftServerProtocol {
     }
   }
 
-  CompletableFuture<AppendResponse> append(final AppendRequest request) {
+  CompletableFuture<AppendResponse> append(final VersionedAppendRequest request) {
     if (appendHandler != null) {
       return appendHandler.apply(request);
     } else {
