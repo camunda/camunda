@@ -108,10 +108,10 @@ spec:
     resources:
       limits:
         cpu: ${mavenCpuLimit}
-        memory: ${mavenMemoryLimit}Gi
+        memory: 20Gi
       requests:
         cpu: ${mavenCpuLimit}
-        memory: ${mavenMemoryLimit}Gi
+        memory: 20Gi
     """
 }
 
@@ -150,7 +150,6 @@ String dockerInDockerSpec(Integer dockerCpuLimit = 4) {
 
 String camBpmContainerSpec(String camBpmVersion, boolean usePostgres = false, Integer cpuLimit = 2, Integer memoryLimitInGb = 2, boolean deployDefaultInvoiceProcess = true) {
   String camBpmDockerImage = getCamBpmDockerImage(camBpmVersion)
-  Integer jvmMemory = memoryLimitInGb - 1
   String additionalEnv = usePostgres ? """
       - name: DB_DRIVER
         value: "org.postgresql.Driver"
@@ -174,7 +173,7 @@ String camBpmContainerSpec(String camBpmVersion, boolean usePostgres = false, In
     tty: true
     env:
       - name: JAVA_OPTS
-        value: "-Xms${jvmMemory}g -Xmx${jvmMemory}g -XX:MaxMetaspaceSize=256m"
+        value: "-Xms1g -Xmx1g -XX:MaxMetaspaceSize=256m"
       - name: TZ
         value: Europe/Berlin
 ${additionalEnv}
@@ -401,6 +400,8 @@ spec:
         value: 9200
       - name: cluster.name
         value: elasticsearch
+      - name: xpack.security.enabled
+        value: false
   - name: gcloud
     image: gcr.io/google.com/cloudsdktool/cloud-sdk:slim
     imagePullPolicy: Always
@@ -424,15 +425,9 @@ String upgradeTestPodSpec(String camBpmVersion, String esVersion, String prevEsV
 }
 
 String itLatestPodSpec(String camBpmVersion, String esVersion) {
-  return basePodSpec(4, 4) +
+  return basePodSpec(6, 6) +
       camBpmContainerSpec(camBpmVersion, false, 4, 4) +
-      elasticSearchContainerSpec(esVersion, 4, 8)
-}
-
-String itLatestPodSpecES8(String camBpmVersion, String esVersion) {
-  return basePodSpec(4, 4) +
-      camBpmContainerSpec(camBpmVersion, false, 6, 6) +
-      elasticSearchContainerSpec(esVersion, 8, 16)
+      elasticSearchContainerSpec(esVersion, 4, 4)
 }
 
 String itZeebePodSpec(String camBpmVersion, String esVersion) {
@@ -605,19 +600,18 @@ pipeline {
             }
           }
         }
-        stage('C7 IT Latest') {
+        stage('C7 IT') {
           agent {
             kubernetes {
               cloud 'optimize-ci'
               label "optimize-ci-build-it-latest_${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(10)}-${env.BUILD_ID}"
               defaultContainer 'jnlp'
-              yaml itLatestPodSpec(env.CAMBPM_VERSION, env.ES_VERSION)
+              yaml itLatestPodSpec(env.CAMBPM_VERSION, env.ES8_VERSION)
             }
           }
           steps {
             unstash name: "optimize-stash-client"
-            // Exclude all Zeebe tests
-            integrationTestSteps('latest', 'Zeebe-test', '')
+            integrationTestSteps('latest', 'Zeebe-test,import,c7EventProcess,reportEvaluation', '')
           }
           post {
             always {
@@ -625,19 +619,18 @@ pipeline {
             }
           }
         }
-        stage('C7 IT Latest using ES8') {
+        stage("C7 EBP & Import IT") {
           agent {
             kubernetes {
               cloud 'optimize-ci'
-              label "optimize-ci-build-it-latest_${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(10)}-${env.BUILD_ID}"
+              label "optimize-ci-build-ebpimp-latest_${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(10)}-${env.BUILD_ID}"
               defaultContainer 'jnlp'
-              yaml itLatestPodSpecES8(env.CAMBPM_VERSION, env.ES8_VERSION)
+              yaml itLatestPodSpec(env.CAMBPM_VERSION, env.ES8_VERSION)
             }
           }
           steps {
             unstash name: "optimize-stash-client"
-            // Exclude all Zeebe tests
-            integrationTestSteps('latest', 'Zeebe-test', '')
+            integrationTestSteps('latest', '', 'import,eventBasedProcess')
           }
           post {
             always {
@@ -645,18 +638,18 @@ pipeline {
             }
           }
         }
-        stage('C7 IT Zeebe Latest') {
+        stage("C7 Report Evaluation IT") {
           agent {
             kubernetes {
               cloud 'optimize-ci'
-              label "optimize-ci-build-it-zeebe_${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(10)}-${env.BUILD_ID}"
+              label "optimize-ci-build-repeval-latest_${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(10)}-${env.BUILD_ID}"
               defaultContainer 'jnlp'
-              yaml itZeebePodSpec(env.CAMBPM_VERSION, env.ES_VERSION)
+              yaml itLatestPodSpec(env.CAMBPM_VERSION, env.ES8_VERSION)
             }
           }
           steps {
             unstash name: "optimize-stash-client"
-            integrationTestSteps('latest', '', 'Zeebe-test')
+            integrationTestSteps('latest', '', 'reportEvaluation')
           }
           post {
             always {
@@ -664,11 +657,11 @@ pipeline {
             }
           }
         }
-        stage('C7 IT Zeebe Latest ES8') {
+        stage("C7 Zeebe IT") {
           agent {
             kubernetes {
               cloud 'optimize-ci'
-              label "optimize-ci-build-it-zeebe-es8_${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(10)}-${env.BUILD_ID}"
+              label "optimize-ci-build-zeebe_${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(10)}-${env.BUILD_ID}"
               defaultContainer 'jnlp'
               yaml itZeebePodSpec(env.CAMBPM_VERSION, env.ES8_VERSION)
             }
