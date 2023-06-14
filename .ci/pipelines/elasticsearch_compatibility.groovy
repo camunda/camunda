@@ -151,6 +151,8 @@ static String elasticSearchContainerSpec(esVersion) {
       value: 9200
     - name: bootstrap.memory_lock
       value: true
+    - name: xpack.security.enabled
+      value: false
     # We usually run our integration tests concurrently, as some cleanup methods like #deleteAllOptimizeData
     # internally make usage of scroll contexts this lead to hits on the scroll limit.
     # Thus this increased scroll context limit.
@@ -176,10 +178,10 @@ void runMaven(String cmd) {
   }
 }
 
-void integrationTestSteps() {
+void integrationTestSteps(String excludedGroups = '', String includedGroups = '') {
   optimizeCloneGitRepo(params.BRANCH)
   container('maven') {
-    runMaven("verify -Dskip.docker -Pit,engine-latest -pl backend,upgrade -am -T\$LIMITS_CPU")
+    runMaven("verify -Dit.test.excludedGroups=${excludedGroups} -Dit.test.includedGroups=${includedGroups} -Dskip.docker -Dskip.fe.build -Pit,engine-latest -pl backend -am -T\$LIMITS_CPU")
   }
 }
 
@@ -213,55 +215,211 @@ pipeline {
     stage('Elasticsearch Integration Tests') {
       failFast false
       parallel {
-        stage("Elasticsearch 7.16.2 Integration") {
+        stage("ES 8.7.0 EBP & Import IT") {
           agent {
             kubernetes {
               cloud 'optimize-ci'
-              label "optimize-ci-build_es-7.16.2_${env.JOB_BASE_NAME}-${env.BUILD_ID}"
+              label "optimize-ci-build_870ebpimp_${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(10)}-${env.BUILD_ID}"
               defaultContainer 'jnlp'
-              yaml mavenElasticsearchIntegrationTestAgent("7.16.2", "${env.CAMBPM_VERSION}")
+              yaml mavenElasticsearchIntegrationTestAgent("8.7.0", "${env.CAMBPM_VERSION}")
             }
           }
           environment {
-            LABEL = "optimize-ci-build_es-7.16.0_${env.JOB_BASE_NAME}-${env.BUILD_ID}"
+            LABEL = "optimize-ci-build_870ebpimp_${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(10)}-${env.BUILD_ID}"
           }
           steps {
-            integrationTestSteps()
+            integrationTestSteps('', 'import,eventBasedProcess')
           }
           post {
             always {
               junit testResults: 'backend/target/failsafe-reports/**/*.xml', allowEmptyResults: true, keepLongStdio: false
               container('gcloud') {
                 sh 'apt-get install kubectl'
-                sh 'kubectl logs -l jenkins/label=$LABEL -c elasticsearch > elasticsearch_716.log'
+                sh 'kubectl logs -l jenkins/label=$LABEL -c elasticsearch > elasticsearch_870_ebpimport.log'
               }
-              archiveArtifacts artifacts: 'elasticsearch_716.log', onlyIfSuccessful: false
+              archiveArtifacts artifacts: 'elasticsearch_870_ebpimport.log', onlyIfSuccessful: false
             }
           }
         }
-        stage("Elasticsearch 7.17.0 Integration") {
+        stage("ES 8.7.0 Report Evaluation IT") {
           agent {
             kubernetes {
               cloud 'optimize-ci'
-              label "optimize-ci-build_es-7.17.0_${env.JOB_BASE_NAME}-${env.BUILD_ID}"
+              label "optimize-ci-build_870repev_${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(10)}-${env.BUILD_ID}"
               defaultContainer 'jnlp'
-              yaml mavenElasticsearchIntegrationTestAgent("7.17.0", "${env.CAMBPM_VERSION}")
+              yaml mavenElasticsearchIntegrationTestAgent("8.7.0", "${env.CAMBPM_VERSION}")
             }
           }
           environment {
-            LABEL = "optimize-ci-build_es-7.17.0_${env.JOB_BASE_NAME}-${env.BUILD_ID}"
+            LABEL = "optimize-ci-build_870repev_${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(10)}-${env.BUILD_ID}"
           }
           steps {
-            integrationTestSteps()
+            integrationTestSteps('', 'reportEvaluation')
           }
           post {
             always {
               junit testResults: 'backend/target/failsafe-reports/**/*.xml', allowEmptyResults: true, keepLongStdio: false
               container('gcloud') {
                 sh 'apt-get install kubectl'
-                sh 'kubectl logs -l jenkins/label=$LABEL -c elasticsearch > elasticsearch_717.log'
+                sh 'kubectl logs -l jenkins/label=$LABEL -c elasticsearch > elasticsearch_870_reportevaluation.log'
               }
-              archiveArtifacts artifacts: 'elasticsearch_717.log', onlyIfSuccessful: false
+              archiveArtifacts artifacts: 'elasticsearch_870_reportevaluation.log', onlyIfSuccessful: false
+            }
+          }
+        }
+        stage("ES 8.7.0 Zeebe IT") {
+          agent {
+            kubernetes {
+              cloud 'optimize-ci'
+              label "optimize-ci-build_870zeebe_${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(10)}-${env.BUILD_ID}"
+              defaultContainer 'jnlp'
+              yaml mavenElasticsearchIntegrationTestAgent("8.7.0", "${env.CAMBPM_VERSION}")
+            }
+          }
+          environment {
+            LABEL = "optimize-ci-build_870zeebe_${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(10)}-${env.BUILD_ID}"
+          }
+          steps {
+            integrationTestSteps('', 'Zeebe-test')
+          }
+          post {
+            always {
+              junit testResults: 'backend/target/failsafe-reports/**/*.xml', allowEmptyResults: true, keepLongStdio: false
+              container('gcloud') {
+                sh 'apt-get install kubectl'
+                sh 'kubectl logs -l jenkins/label=$LABEL -c elasticsearch > elasticsearch_870_zeebe.log'
+              }
+              archiveArtifacts artifacts: 'elasticsearch_870_zeebe.log', onlyIfSuccessful: false
+            }
+          }
+        }
+        stage("ES 8.7.0 IT") {
+          agent {
+            kubernetes {
+              cloud 'optimize-ci'
+              label "optimize-ci-build_870it_${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(10)}-${env.BUILD_ID}"
+              defaultContainer 'jnlp'
+              yaml mavenElasticsearchIntegrationTestAgent("8.7.0", "${env.CAMBPM_VERSION}")
+            }
+          }
+          environment {
+            LABEL = "optimize-ci-build_870it_${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(10)}-${env.BUILD_ID}"
+          }
+          steps {
+            integrationTestSteps('Zeebe-test,import,c7EventProcess,reportEvaluation', '')
+          }
+          post {
+            always {
+              junit testResults: 'backend/target/failsafe-reports/**/*.xml', allowEmptyResults: true, keepLongStdio: false
+              container('gcloud') {
+                sh 'apt-get install kubectl'
+                sh 'kubectl logs -l jenkins/label=$LABEL -c elasticsearch > elasticsearch_870_it.log'
+              }
+              archiveArtifacts artifacts: 'elasticsearch_870_it.log', onlyIfSuccessful: false
+            }
+          }
+        }
+        stage("ES 8.8.0 EBP & Import IT") {
+          agent {
+            kubernetes {
+              cloud 'optimize-ci'
+              label "optimize-ci-build_880ebpimp_${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(10)}-${env.BUILD_ID}"
+              defaultContainer 'jnlp'
+              yaml mavenElasticsearchIntegrationTestAgent("8.8.0", "${env.CAMBPM_VERSION}")
+            }
+          }
+          environment {
+            LABEL = "optimize-ci-build_880ebpimp_${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(10)}-${env.BUILD_ID}"
+          }
+          steps {
+            integrationTestSteps('', 'import,eventBasedProcess')
+          }
+          post {
+            always {
+              junit testResults: 'backend/target/failsafe-reports/**/*.xml', allowEmptyResults: true, keepLongStdio: false
+              container('gcloud') {
+                sh 'apt-get install kubectl'
+                sh 'kubectl logs -l jenkins/label=$LABEL -c elasticsearch > elasticsearch_880_ebpimport.log'
+              }
+              archiveArtifacts artifacts: 'elasticsearch_880_ebpimport.log', onlyIfSuccessful: false
+            }
+          }
+        }
+        stage("ES 8.8.0 Report Evaluation IT") {
+          agent {
+            kubernetes {
+              cloud 'optimize-ci'
+              label "optimize-ci-build_880repev_${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(10)}-${env.BUILD_ID}"
+              defaultContainer 'jnlp'
+              yaml mavenElasticsearchIntegrationTestAgent("8.8.0", "${env.CAMBPM_VERSION}")
+            }
+          }
+          environment {
+            LABEL = "optimize-ci-build_880repev_${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(10)}-${env.BUILD_ID}"
+          }
+          steps {
+            integrationTestSteps('', 'reportEvaluation')
+          }
+          post {
+            always {
+              junit testResults: 'backend/target/failsafe-reports/**/*.xml', allowEmptyResults: true, keepLongStdio: false
+              container('gcloud') {
+                sh 'apt-get install kubectl'
+                sh 'kubectl logs -l jenkins/label=$LABEL -c elasticsearch > elasticsearchpd_880_reportevaluation.log'
+              }
+              archiveArtifacts artifacts: 'elasticsearchpd_880_reportevaluation.log', onlyIfSuccessful: false
+            }
+          }
+        }
+        stage("ES 8.8.0 Zeebe IT") {
+          agent {
+            kubernetes {
+              cloud 'optimize-ci'
+              label "optimize-ci-build_880zeebe_${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(10)}-${env.BUILD_ID}"
+              defaultContainer 'jnlp'
+              yaml mavenElasticsearchIntegrationTestAgent("8.8.0", "${env.CAMBPM_VERSION}")
+            }
+          }
+          environment {
+            LABEL = "optimize-ci-build_880zeebe_${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(10)}-${env.BUILD_ID}"
+          }
+          steps {
+            integrationTestSteps('', 'Zeebe-test')
+          }
+          post {
+            always {
+              junit testResults: 'backend/target/failsafe-reports/**/*.xml', allowEmptyResults: true, keepLongStdio: false
+              container('gcloud') {
+                sh 'apt-get install kubectl'
+                sh 'kubectl logs -l jenkins/label=$LABEL -c elasticsearch > elasticsearch_880_zeebe.log'
+              }
+              archiveArtifacts artifacts: 'elasticsearch_880_zeebe.log', onlyIfSuccessful: false
+            }
+          }
+        }
+        stage("ES 8.8.0 IT") {
+          agent {
+            kubernetes {
+              cloud 'optimize-ci'
+              label "optimize-ci-build_880it_${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(10)}-${env.BUILD_ID}"
+              defaultContainer 'jnlp'
+              yaml mavenElasticsearchIntegrationTestAgent("8.8.0", "${env.CAMBPM_VERSION}")
+            }
+          }
+          environment {
+            LABEL = "optimize-ci-build_880it_${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(10)}-${env.BUILD_ID}"
+          }
+          steps {
+            integrationTestSteps('Zeebe-test,import,c7EventProcess,reportEvaluation', '')
+          }
+          post {
+            always {
+              junit testResults: 'backend/target/failsafe-reports/**/*.xml', allowEmptyResults: true, keepLongStdio: false
+              container('gcloud') {
+                sh 'apt-get install kubectl'
+                sh 'kubectl logs -l jenkins/label=$LABEL -c elasticsearch > elasticsearch_880_it.log'
+              }
+              archiveArtifacts artifacts: 'elasticsearch_880_it.log', onlyIfSuccessful: false
             }
           }
         }

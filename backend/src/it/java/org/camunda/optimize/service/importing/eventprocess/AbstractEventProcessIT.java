@@ -53,6 +53,7 @@ import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.elasticsearch.search.sort.SortBuilders;
 import org.elasticsearch.search.sort.SortOrder;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.params.provider.Arguments;
 
 import java.io.ByteArrayOutputStream;
@@ -86,6 +87,7 @@ import static org.camunda.optimize.util.SuppressionConstants.UNUSED;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
+@Tag("eventBasedProcess")
 public abstract class AbstractEventProcessIT extends AbstractIT {
   protected static final String MY_TRACE_ID_1 = "myTraceId1";
 
