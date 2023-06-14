@@ -23,7 +23,6 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import io.atomix.cluster.MemberId;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Objects;
 
 /**
  * Append entries request that represent new versions (version > 1)
@@ -126,21 +125,46 @@ public class VersionedAppendRequest extends AbstractRaftRequest {
 
   @Override
   public int hashCode() {
-    return Objects.hash(getClass(), term, leader, prevLogIndex, prevLogTerm, entries, commitIndex);
+    int result = version;
+    result = 31 * result + (int) (term ^ (term >>> 32));
+    result = 31 * result + leader.hashCode();
+    result = 31 * result + (int) (prevLogIndex ^ (prevLogIndex >>> 32));
+    result = 31 * result + (int) (prevLogTerm ^ (prevLogTerm >>> 32));
+    result = 31 * result + entries.hashCode();
+    result = 31 * result + (int) (commitIndex ^ (commitIndex >>> 32));
+    return result;
   }
 
   @Override
-  public boolean equals(final Object object) {
-    if (object != null && object.getClass() == getClass()) {
-      final VersionedAppendRequest request = (VersionedAppendRequest) object;
-      return request.term == term
-          && request.leader.equals(leader)
-          && request.prevLogIndex == prevLogIndex
-          && request.prevLogTerm == prevLogTerm
-          && request.entries.equals(entries)
-          && request.commitIndex == commitIndex;
+  public boolean equals(final Object o) {
+    if (this == o) {
+      return true;
     }
-    return false;
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+
+    final VersionedAppendRequest that = (VersionedAppendRequest) o;
+
+    if (version != that.version) {
+      return false;
+    }
+    if (term != that.term) {
+      return false;
+    }
+    if (prevLogIndex != that.prevLogIndex) {
+      return false;
+    }
+    if (prevLogTerm != that.prevLogTerm) {
+      return false;
+    }
+    if (commitIndex != that.commitIndex) {
+      return false;
+    }
+    if (!leader.equals(that.leader)) {
+      return false;
+    }
+    return entries.equals(that.entries);
   }
 
   @Override
