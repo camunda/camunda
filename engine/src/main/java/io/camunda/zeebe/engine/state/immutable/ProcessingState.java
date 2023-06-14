@@ -28,7 +28,7 @@ public interface ProcessingState extends StreamProcessorLifecycleAware {
 
   IncidentState getIncidentState();
 
-  BlackListState getBlackListState();
+  BannedInstanceState getBannedInstanceState();
 
   VariableState getVariableState();
 

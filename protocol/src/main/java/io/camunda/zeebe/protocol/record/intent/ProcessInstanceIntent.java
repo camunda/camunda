@@ -39,15 +39,15 @@ public enum ProcessInstanceIntent implements ProcessInstanceRelatedIntent {
       EnumSet.of(ACTIVATE_ELEMENT, COMPLETE_ELEMENT, TERMINATE_ELEMENT);
 
   private final short value;
-  private final boolean shouldBlacklist;
+  private final boolean shouldBanInstance;
 
   ProcessInstanceIntent(final short value) {
     this(value, true);
   }
 
-  ProcessInstanceIntent(final short value, final boolean shouldBlacklist) {
+  ProcessInstanceIntent(final short value, final boolean shouldBanInstance) {
     this.value = value;
-    this.shouldBlacklist = shouldBlacklist;
+    this.shouldBanInstance = shouldBanInstance;
   }
 
   public short getIntent() {
@@ -89,8 +89,8 @@ public enum ProcessInstanceIntent implements ProcessInstanceRelatedIntent {
   }
 
   @Override
-  public boolean shouldBlacklistInstanceOnError() {
-    return shouldBlacklist;
+  public boolean shouldBanInstanceOnError() {
+    return shouldBanInstance;
   }
 
   public static boolean isProcessInstanceCommand(final ProcessInstanceIntent intent) {

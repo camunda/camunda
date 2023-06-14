@@ -7,14 +7,14 @@
  */
 package io.camunda.zeebe.engine.state.mutable;
 
-import io.camunda.zeebe.engine.state.immutable.BlackListState;
+import io.camunda.zeebe.engine.state.immutable.BannedInstanceState;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import java.util.function.Consumer;
 
-public interface MutableBlackListState extends BlackListState {
+public interface MutableBannedInstanceState extends BannedInstanceState {
 
-  boolean tryToBlacklist(
-      final TypedRecord<?> typedRecord, final Consumer<Long> onBlacklistingInstance);
+  boolean tryToBanInstance(
+      final TypedRecord<?> typedRecord, final Consumer<Long> onBanningInstance);
 
-  void blacklistProcessInstance(final long processInstanceKey);
+  void banProcessInstance(final long processInstanceKey);
 }
