@@ -19,15 +19,15 @@ public enum ProcessInstanceResultIntent implements Intent, ProcessInstanceRelate
   COMPLETED(0, false);
 
   private final short value;
-  private final boolean shouldBlacklist;
+  private final boolean shouldBanInstance;
 
-  ProcessInstanceResultIntent(final int value, final boolean shouldBlacklist) {
-    this((short) value, shouldBlacklist);
+  ProcessInstanceResultIntent(final int value, final boolean shouldBanInstance) {
+    this((short) value, shouldBanInstance);
   }
 
-  ProcessInstanceResultIntent(final short value, final boolean shouldBlacklist) {
+  ProcessInstanceResultIntent(final short value, final boolean shouldBanInstance) {
     this.value = value;
-    this.shouldBlacklist = shouldBlacklist;
+    this.shouldBanInstance = shouldBanInstance;
   }
 
   @Override
@@ -45,7 +45,7 @@ public enum ProcessInstanceResultIntent implements Intent, ProcessInstanceRelate
   }
 
   @Override
-  public boolean shouldBlacklistInstanceOnError() {
-    return shouldBlacklist;
+  public boolean shouldBanInstanceOnError() {
+    return shouldBanInstance;
   }
 }

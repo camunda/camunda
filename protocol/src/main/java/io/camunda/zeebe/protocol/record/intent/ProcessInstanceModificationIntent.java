@@ -31,7 +31,7 @@ public enum ProcessInstanceModificationIntent implements Intent, ProcessInstance
   }
 
   @Override
-  public boolean shouldBlacklistInstanceOnError() {
+  public boolean shouldBanInstanceOnError() {
     return true;
   }
 

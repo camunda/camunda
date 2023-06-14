@@ -42,7 +42,7 @@ public enum ProcessEventIntent implements ProcessInstanceRelatedIntent {
   }
 
   @Override
-  public boolean shouldBlacklistInstanceOnError() {
+  public boolean shouldBanInstanceOnError() {
     return true;
   }
 }
