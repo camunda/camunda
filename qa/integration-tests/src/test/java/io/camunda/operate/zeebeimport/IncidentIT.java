@@ -140,6 +140,21 @@ public class IncidentIT extends OperateZeebeIntegrationTest {
     assertIncident(incidents.get(0), ErrorType.UNHANDLED_ERROR_EVENT);
   }
 
+  @Ignore @Test
+  public void testCatchAllErrorEvent() {
+    // Given
+    tester
+        .deployProcess("errorProcessCatchAll.bpmn").waitUntil().processIsDeployed()
+        .startProcessInstance("errorProcess")
+        // when
+        .throwError("errorTask", "unknown", "Process error")
+        .then().waitUntil()
+        .processInstanceIsFinished();
+
+    // then
+    assertThat(tester.getIncidents()).isEmpty();
+  }
+
   @Test
   public void testIncidentsAreReturned() throws Exception {
     // having
