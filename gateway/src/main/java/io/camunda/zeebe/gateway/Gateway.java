@@ -147,7 +147,7 @@ public final class Gateway implements CloseableSilently {
             0,
             2 * Runtime.getRuntime().availableProcessors(),
             1,
-            null,
+            pool -> false,
             1,
             TimeUnit.MINUTES);
     builder.executor(grpcExecutor);
