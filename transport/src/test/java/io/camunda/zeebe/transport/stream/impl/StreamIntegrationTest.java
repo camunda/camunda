@@ -279,6 +279,7 @@ final class StreamIntegrationTest {
           stream -> {
             assertThat(stream).isPresent();
             //noinspection OptionalGetWithoutIsPresent
+            assertThat(stream.get().isConnected(server1.memberId())).isFalse();
             assertThat(stream.get().isConnected(server2.memberId())).isTrue();
           });
 
