@@ -23,6 +23,7 @@ import io.camunda.zeebe.engine.processing.deployment.distribute.DeploymentDistri
 import io.camunda.zeebe.engine.processing.deployment.distribute.DeploymentDistributionCommandSender;
 import io.camunda.zeebe.engine.processing.deployment.distribute.DeploymentRedistributor;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionAcknowledgeProcessor;
+import io.camunda.zeebe.engine.processing.distribution.CommandRedistributor;
 import io.camunda.zeebe.engine.processing.dmn.EvaluateDecisionProcessor;
 import io.camunda.zeebe.engine.processing.incident.IncidentEventProcessors;
 import io.camunda.zeebe.engine.processing.job.JobEventProcessors;
@@ -109,6 +110,11 @@ public final class EngineProcessors {
             partitionsCount,
             interPartitionCommandSender,
             processingState.getKeyGenerator());
+
+    // periodically retries command distribution
+    typedRecordProcessors.withListener(
+        new CommandRedistributor(
+            processingState.getDistributionState(), interPartitionCommandSender));
 
     final var deploymentDistributionCommandSender =
         new DeploymentDistributionCommandSender(
