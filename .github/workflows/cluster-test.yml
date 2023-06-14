@@ -47,7 +47,7 @@ jobs:
         location: 'europe-west1'
 
     - name: Configure Google SDK
-      uses: google-github-actions/setup-gcloud@v1.1.0
+      uses: google-github-actions/setup-gcloud@v1.1.1
       with:
         install_components: gke-gcloud-auth-plugin, kubectl
 
