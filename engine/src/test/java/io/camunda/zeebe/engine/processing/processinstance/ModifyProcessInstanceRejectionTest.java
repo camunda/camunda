@@ -665,9 +665,9 @@ public class ModifyProcessInstanceRejectionTest {
             """
             Expected to modify instance of process '%s' \
             but it contains one or more activate instructions with an ancestor scope key \
-            that is not an ancestor of the element to activate:
-            - instance '%s' of element 'subProcess2' is not an ancestor of element 'A'
-            - instance '%s' of element 'B' is not an ancestor of element 'A'"""
+            that is not an ancestor of the element to activate:\
+            %n- instance '%s' of element 'subProcess2' is not an ancestor of element 'A'\
+            %n- instance '%s' of element 'B' is not an ancestor of element 'A'"""
                 .formatted(PROCESS_ID, subProcess2.getKey(), taskB.getKey()));
   }
 
