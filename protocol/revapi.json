@@ -258,6 +258,12 @@
           "code": "java.method.removed",
           "old": "method boolean io.camunda.zeebe.protocol.record.intent.TimerIntent::shouldBlacklistInstanceOnError()",
           "justification": "This method had a racial loaded term. It was replaced with a better name, this shouldn't been an issue as it was for internally use only."
+        },
+        {
+          "ignore": true,
+          "code": "java.method.removed",
+          "old": "method boolean io.camunda.zeebe.protocol.record.intent.ProcessInstanceBatchIntent::shouldBlacklistInstanceOnError()",
+          "justification": "This method had a racial loaded term. It was replaced with a better name, this shouldn't been an issue as it was for internally use only."
         }
       ]
     }
