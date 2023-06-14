@@ -76,18 +76,6 @@
         {
           "ignore": true,
           "code": "java.method.removed",
-          "old": "io.camunda.zeebe.protocol.record.intent.IncidentIntent::shouldBlacklistInstanceOnError()",
-          "justification": "This method had a racial loaded term. It was replaced with a better name, this shouldn't been an issue as it was for internally use only."
-        },
-        {
-          "ignore": true,
-          "code": "java.method.removed",
-          "old": "io.camunda.zeebe.protocol.record.intent.JobIntent::shouldBlacklistInstanceOnError()",
-          "justification": "This method had a racial loaded term. It was replaced with a better name, this shouldn't been an issue as it was for internally use only."
-        },
-        {
-          "ignore": true,
-          "code": "java.method.removed",
           "old": "method io.camunda.zeebe.protocol.record.value.ImmutableProcessInstanceModificationRecordValue io.camunda.zeebe.protocol.record.value.ImmutableProcessInstanceModificationRecordValue::withActivatedElementInstanceKeys(java.lang.Long[])",
           "justification": "This method had a wrong name. It was only used internally as it provides no value for others."
         },
