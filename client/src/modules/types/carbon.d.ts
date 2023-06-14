@@ -218,6 +218,28 @@ declare module '@carbon/react' {
     tabIndex?: number;
   }>;
 
+  export const TabList: React.FunctionComponent<{
+    activation?: 'automatic' | 'manual';
+    'aria-label': string;
+    children?: React.ReactNode;
+    className?: string;
+    contained?: boolean;
+    iconSize?: 'default' | 'lg';
+    leftOverflowButtonProps?: object;
+    rightOverflowButtonProps?: object;
+    scrollDebounceWait?: number;
+    scrollIntoView?: boolean;
+  }>;
+
+  export const TabPanels: React.FunctionComponent<{
+    children?: React.ReactNode;
+  }>;
+
+  export const TabPanel: React.FunctionComponent<{
+    children?: React.ReactNode;
+    className?: string;
+  }>;
+
   export * from 'carbon-components-react';
 }
 

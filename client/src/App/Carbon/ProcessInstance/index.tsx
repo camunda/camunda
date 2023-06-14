@@ -41,6 +41,7 @@ import {ModalStateManager} from 'modules/components/Carbon/ModalStateManager';
 import {ModificationSummaryModal} from './ModificationSummaryModal';
 import {useCallbackPrompt} from 'modules/hooks/useCallbackPrompt';
 import {LastModification} from './LastModification';
+import {VariablePanel} from './BottomPanel/VariablePanel';
 
 const ProcessInstance: React.FC = observer(() => {
   const {processInstanceId = ''} = useProcessInstancePageParams();
@@ -172,7 +173,7 @@ const ProcessInstance: React.FC = observer(() => {
         bottomPanel={
           <BottomPanel>
             <FlowNodeInstanceLog />
-            <div>variables panel</div>
+            <VariablePanel />
           </BottomPanel>
         }
         frameHeader={
