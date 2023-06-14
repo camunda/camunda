@@ -129,7 +129,7 @@ public class StandaloneGateway
   public void close() {
     if (gateway != null) {
       try {
-        gateway.stop();
+        gateway.close();
       } catch (final Exception e) {
         LOG.warn("Failed to gracefully shutdown gRPC gateway", e);
       }

@@ -30,7 +30,6 @@ import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.transport.stream.api.ClientStreamer;
 import io.camunda.zeebe.util.CloseableSilently;
-import io.camunda.zeebe.util.Either;
 import io.grpc.BindableService;
 import io.grpc.Server;
 import io.grpc.ServerBuilder;
@@ -38,13 +37,14 @@ import io.grpc.ServerInterceptor;
 import io.grpc.ServerInterceptors;
 import io.grpc.ServerServiceDefinition;
 import io.grpc.netty.NettyServerBuilder;
+import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.net.InetSocketAddress;
 import java.time.Duration;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 import me.dinowernli.grpc.prometheus.Configuration;
 import me.dinowernli.grpc.prometheus.MonitoringServerInterceptor;
@@ -55,8 +55,6 @@ public final class Gateway implements CloseableSilently {
   private static final MonitoringServerInterceptor MONITORING_SERVER_INTERCEPTOR =
       MonitoringServerInterceptor.create(Configuration.allMetrics());
 
-  private final Function<GatewayCfg, ServerBuilder> serverBuilderFactory =
-      cfg -> setNetworkConfig(cfg.getNetwork());
   private final GatewayCfg gatewayCfg;
   private final ActorSchedulingService actorSchedulingService;
   private final GatewayHealthManager healthManager;
@@ -92,49 +90,39 @@ public final class Gateway implements CloseableSilently {
 
   public ActorFuture<Gateway> start() {
     final var resultFuture = new CompletableActorFuture<Gateway>();
-
     healthManager.setStatus(Status.STARTING);
 
     createAndStartActivateJobsHandler(brokerClient)
-        .whenComplete(
-            (activateJobsHandler, error) -> {
-              if (error != null) {
-                resultFuture.completeExceptionally(error);
-                return;
-              }
-
-              final var serverResult = createAndStartServer(activateJobsHandler);
-              if (serverResult.isLeft()) {
-                final var exception = serverResult.getLeft();
-                resultFuture.completeExceptionally(exception);
-              } else {
-                server = serverResult.get();
-                healthManager.setStatus(Status.RUNNING);
-                resultFuture.complete(this);
-              }
-            });
+        .thenApply(this::createServer)
+        .thenAccept(this::startServer)
+        .thenApply(ok -> this)
+        .whenComplete(resultFuture);
 
     return resultFuture;
   }
 
-  private Either<Exception, Server> createAndStartServer(
-      final ActivateJobsHandler activateJobsHandler) {
-    final EndpointManager endpointManager =
-        new EndpointManager(brokerClient, activateJobsHandler, jobStreamer);
-    final GatewayGrpcService gatewayGrpcService = new GatewayGrpcService(endpointManager);
+  private void startServer(final Server server) {
+    this.server = server;
 
     try {
-      final var serverBuilder = serverBuilderFactory.apply(gatewayCfg);
-      applySecurityConfigurationIfEnabled(serverBuilder);
-      final var server = buildServer(serverBuilder, gatewayGrpcService);
-      server.start();
-      return Either.right(server);
-    } catch (final Exception e) {
-      return Either.left(e);
+      this.server.start();
+    } catch (final IOException e) {
+      throw new UncheckedIOException(e);
     }
+
+    healthManager.setStatus(Status.RUNNING);
   }
 
-  private void applySecurityConfigurationIfEnabled(final ServerBuilder<?> serverBuilder) {
+  private Server createServer(final ActivateJobsHandler activateJobsHandler) {
+    final var endpointManager = new EndpointManager(brokerClient, activateJobsHandler, jobStreamer);
+    final var gatewayGrpcService = new GatewayGrpcService(endpointManager);
+
+    final var serverBuilder = applyNetworkConfig(gatewayCfg.getNetwork());
+    applySecurityConfiguration(serverBuilder);
+    return buildServer(serverBuilder, gatewayGrpcService);
+  }
+
+  private void applySecurityConfiguration(final ServerBuilder<?> serverBuilder) {
     final SecurityCfg securityCfg = gatewayCfg.getSecurity();
     if (securityCfg.isEnabled()) {
       setSecurityConfig(serverBuilder, securityCfg);
@@ -151,7 +139,7 @@ public final class Gateway implements CloseableSilently {
         .build();
   }
 
-  private static NettyServerBuilder setNetworkConfig(final NetworkCfg cfg) {
+  private NettyServerBuilder applyNetworkConfig(final NetworkCfg cfg) {
     final Duration minKeepAliveInterval = cfg.getMinKeepAliveInterval();
 
     if (minKeepAliveInterval.isNegative() || minKeepAliveInterval.isZero()) {
@@ -204,7 +192,19 @@ public final class Gateway implements CloseableSilently {
 
   @Override
   public void close() {
-    stop();
+    healthManager.setStatus(Status.SHUTDOWN);
+
+    if (server != null && !server.isShutdown()) {
+      server.shutdownNow();
+      try {
+        server.awaitTermination();
+      } catch (final InterruptedException e) {
+        LOG.error("Failed to await termination of gRPC server", e);
+        Thread.currentThread().interrupt();
+      } finally {
+        server = null;
+      }
+    }
   }
 
   private CompletableFuture<ActivateJobsHandler> createAndStartActivateJobsHandler(
@@ -255,21 +255,5 @@ public final class Gateway implements CloseableSilently {
     }
 
     return ServerInterceptors.intercept(service, interceptors);
-  }
-
-  public void stop() {
-    healthManager.setStatus(Status.SHUTDOWN);
-
-    if (server != null && !server.isShutdown()) {
-      server.shutdownNow();
-      try {
-        server.awaitTermination();
-      } catch (final InterruptedException e) {
-        LOG.error("Failed to await termination of gateway", e);
-        Thread.currentThread().interrupt();
-      } finally {
-        server = null;
-      }
-    }
   }
 }
