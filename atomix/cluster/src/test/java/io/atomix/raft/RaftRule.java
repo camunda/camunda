@@ -708,7 +708,7 @@ public final class RaftRule extends ExternalResource {
     }
 
     @Override
-    public ReplicatableJournalRecord getReplicatedJournalRecord() {
+    public ReplicatableJournalRecord getReplicatableJournalRecord() {
       throw new UnsupportedOperationException();
     }
   }

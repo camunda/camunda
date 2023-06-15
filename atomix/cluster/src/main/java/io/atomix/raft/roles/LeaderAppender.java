@@ -182,7 +182,7 @@ final class LeaderAppender {
     while (member.hasNextEntry()) {
       // Otherwise, read the next entry and add it to the batch.
       final IndexedRaftLogEntry entry = member.nextEntry();
-      final var replicatableRecord = entry.getReplicatedJournalRecord();
+      final var replicatableRecord = entry.getReplicatableJournalRecord();
       entries.add(replicatableRecord);
       size += replicatableRecord.approximateSize();
       if (entry.index() == lastIndex || size >= maxBatchSizePerAppend) {

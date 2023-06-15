@@ -64,5 +64,5 @@ public interface IndexedRaftLogEntry {
   /**
    * @return a record to replicate
    */
-  ReplicatableJournalRecord getReplicatedJournalRecord();
+  ReplicatableJournalRecord getReplicatableJournalRecord();
 }

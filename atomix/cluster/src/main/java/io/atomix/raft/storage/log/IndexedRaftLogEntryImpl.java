@@ -49,7 +49,7 @@ record IndexedRaftLogEntryImpl(long index, long term, RaftEntry entry, JournalRe
   }
 
   @Override
-  public ReplicatableJournalRecord getReplicatedJournalRecord() {
+  public ReplicatableJournalRecord getReplicatableJournalRecord() {
     final byte[] serializedRecord = new byte[record.serializedRecord().capacity()];
     record.serializedRecord().getBytes(0, serializedRecord);
     return new ReplicatableJournalRecord(term, index, record.checksum(), serializedRecord);

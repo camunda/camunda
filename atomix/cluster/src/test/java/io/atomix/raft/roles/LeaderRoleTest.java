@@ -406,7 +406,7 @@ public class LeaderRoleTest {
     }
 
     @Override
-    public ReplicatableJournalRecord getReplicatedJournalRecord() {
+    public ReplicatableJournalRecord getReplicatableJournalRecord() {
       return null;
     }
   }
