@@ -155,7 +155,7 @@ public final class DbMessageSubscriptionState
 
     updateCorrelatingFlag(subscription, true);
 
-    transientState.add(
+    transientState.update(
         new PendingSubscription(
             subscription.getRecord().getElementInstanceKey(),
             subscription.getRecord().getMessageName()),

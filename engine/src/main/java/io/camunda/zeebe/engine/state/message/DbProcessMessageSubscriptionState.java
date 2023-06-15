@@ -87,7 +87,7 @@ public final class DbProcessMessageSubscriptionState
   @Override
   public void updateToOpeningState(final ProcessMessageSubscriptionRecord record) {
     update(record, s -> s.setRecord(record).setOpening());
-    transientState.add(
+    transientState.update(
         new PendingSubscription(record.getElementInstanceKey(), record.getMessageName()),
         ActorClock.currentTimeMillis());
   }
@@ -102,7 +102,7 @@ public final class DbProcessMessageSubscriptionState
   @Override
   public void updateToClosingState(final ProcessMessageSubscriptionRecord record) {
     update(record, s -> s.setRecord(record).setClosing());
-    transientState.add(
+    transientState.update(
         new PendingSubscription(record.getElementInstanceKey(), record.getMessageName()),
         ActorClock.currentTimeMillis());
   }
