@@ -6,9 +6,12 @@
  */
 
 import {useOperationsPanelResize} from 'modules/hooks/useOperationsPanelResize';
-import {useRef} from 'react';
-import {useLocation} from 'react-router-dom';
-import {getProcessInstanceFilters} from 'modules/utils/filter';
+import {useEffect, useRef} from 'react';
+import {useLocation, useNavigate, Location} from 'react-router-dom';
+import {
+  deleteSearchParams,
+  getProcessInstanceFilters,
+} from 'modules/utils/filter';
 import {COLLAPSABLE_PANEL_MIN_WIDTH} from 'modules/constants';
 import {IS_PROCESS_DEFINITION_DELETION_ENABLED} from 'modules/feature-flags';
 import {Restricted} from 'modules/components/Restricted';
@@ -16,10 +19,32 @@ import {processesStore} from 'modules/stores/processes';
 import {ProcessOperations} from '../ProcessOperations';
 import {PanelHeader, Section} from './styled';
 import {DiagramShell} from 'modules/components/Carbon/DiagramShell';
+import {Diagram} from 'modules/components/Diagram';
+import {diagramOverlaysStore} from 'modules/stores/diagramOverlays';
+import {observer} from 'mobx-react';
+import {StatisticsOverlay} from 'modules/components/Carbon/StatisticsOverlay';
+import {processDiagramStore} from 'modules/stores/processDiagram';
 
-const DiagramPanel: React.FC = () => {
+function setSearchParam(
+  location: Location,
+  [key, value]: [key: string, value: string]
+) {
+  const params = new URLSearchParams(location.search);
+
+  params.set(key, value);
+
+  return {
+    ...location,
+    search: params.toString(),
+  };
+}
+
+const DiagramPanel: React.FC = observer(() => {
+  const navigate = useNavigate();
   const location = useLocation();
-  const {process, version} = getProcessInstanceFilters(location.search);
+  const {process, version, flowNodeId} = getProcessInstanceFilters(
+    location.search
+  );
 
   const isVersionSelected = version !== undefined && version !== 'all';
 
@@ -29,16 +54,55 @@ const DiagramPanel: React.FC = () => {
 
   const bpmnProcessId = selectedProcess?.bpmnProcessId;
   const processName = selectedProcess?.name ?? bpmnProcessId ?? 'Process';
+  const isDiagramLoading =
+    processDiagramStore.state.status === 'fetching' ||
+    processesStore.state.status === 'initial' ||
+    processesStore.state.status === 'fetching';
 
-  const panelHeaderRef = useRef<HTMLDivElement>(null);
+  const statisticsOverlays = diagramOverlaysStore.state.overlays.filter(
+    ({type}) => type.match(/^statistics/) !== null
+  );
 
   const processId = processesStore.getProcessId(process, version);
+
+  useEffect(() => {
+    processDiagramStore.init();
+    return () => {
+      processDiagramStore.reset();
+    };
+  }, []);
+
+  useEffect(() => {
+    if (processId === undefined) {
+      processDiagramStore.reset();
+      return;
+    }
+
+    processDiagramStore.fetchProcessDiagram(processId);
+  }, [processId, location.search]);
+
+  const {xml} = processDiagramStore.state;
+
+  const panelHeaderRef = useRef<HTMLDivElement>(null);
 
   useOperationsPanelResize(panelHeaderRef, (target, width) => {
     target.style[
       'marginRight'
     ] = `calc(${width}px - ${COLLAPSABLE_PANEL_MIN_WIDTH})`;
   });
+
+  const getStatus = () => {
+    if (isDiagramLoading) {
+      return 'loading';
+    }
+    if (processDiagramStore.state.status === 'error') {
+      return 'error';
+    }
+    if (!isVersionSelected) {
+      return 'empty';
+    }
+    return 'content';
+  };
 
   return (
     <Section>
@@ -62,7 +126,7 @@ const DiagramPanel: React.FC = () => {
           )}
       </PanelHeader>
       <DiagramShell
-        status={isVersionSelected ? 'content' : 'empty'}
+        status={getStatus()}
         emptyMessage={
           version === 'all'
             ? {
@@ -76,10 +140,40 @@ const DiagramPanel: React.FC = () => {
               }
         }
       >
-        processes - diagram
+        {xml !== null && (
+          <Diagram
+            xml={xml}
+            selectableFlowNodes={processDiagramStore.selectableIds}
+            selectedFlowNodeId={flowNodeId}
+            onFlowNodeSelection={(flowNodeId) => {
+              if (flowNodeId === null || flowNodeId === undefined) {
+                navigate(deleteSearchParams(location, ['flowNodeId']));
+              } else {
+                navigate(setSearchParam(location, ['flowNodeId', flowNodeId]));
+              }
+            }}
+            overlaysData={processDiagramStore.overlaysData}
+          >
+            {statisticsOverlays?.map((overlay) => {
+              const payload = overlay.payload as {
+                flowNodeState: FlowNodeState;
+                count: number;
+              };
+
+              return (
+                <StatisticsOverlay
+                  key={`${overlay.flowNodeId}-${payload.flowNodeState}`}
+                  flowNodeState={payload.flowNodeState}
+                  count={payload.count}
+                  container={overlay.container}
+                />
+              );
+            })}
+          </Diagram>
+        )}
       </DiagramShell>
     </Section>
   );
-};
+});
 
 export {DiagramPanel};
