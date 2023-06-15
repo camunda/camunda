@@ -21,7 +21,6 @@ import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 import io.atomix.cluster.MemberId;
-import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -40,7 +39,7 @@ public class VersionedAppendRequest extends AbstractRaftRequest {
   private final String leader;
   private final long prevLogIndex;
   private final long prevLogTerm;
-  private final List<PersistedRaftRecord> entries;
+  private final List<ReplicatableJournalRecord> entries;
   private final long commitIndex;
 
   public VersionedAppendRequest(
@@ -49,7 +48,7 @@ public class VersionedAppendRequest extends AbstractRaftRequest {
       final String leader,
       final long prevLogIndex,
       final long prevLogTerm,
-      final List<PersistedRaftRecord> entries,
+      final List<ReplicatableJournalRecord> entries,
       final long commitIndex) {
     this.version = version;
     this.term = term;
@@ -110,7 +109,7 @@ public class VersionedAppendRequest extends AbstractRaftRequest {
    *
    * @return A list of log entries.
    */
-  public List<PersistedRaftRecord> entries() {
+  public List<ReplicatableJournalRecord> entries() {
     return entries;
   }
 
@@ -192,7 +191,7 @@ public class VersionedAppendRequest extends AbstractRaftRequest {
     private String leader;
     private long logIndex;
     private long logTerm;
-    private List<PersistedRaftRecord> entries;
+    private List<ReplicatableJournalRecord> entries;
     private long commitIndex = -1;
     private int version = CURRENT_VERSION;
 
@@ -267,18 +266,7 @@ public class VersionedAppendRequest extends AbstractRaftRequest {
      * @return The append request builder.
      * @throws NullPointerException if {@code entries} is null
      */
-    public Builder withEntries(final PersistedRaftRecord... entries) {
-      return withEntries(Arrays.asList(checkNotNull(entries, NULL_ENTRIES_ERR)));
-    }
-
-    /**
-     * Sets the request entries.
-     *
-     * @param entries The request entries.
-     * @return The append request builder.
-     * @throws NullPointerException if {@code entries} is null
-     */
-    public Builder withEntries(final List<PersistedRaftRecord> entries) {
+    public Builder withEntries(final List<ReplicatableJournalRecord> entries) {
       this.entries = checkNotNull(entries, NULL_ENTRIES_ERR);
       return this;
     }

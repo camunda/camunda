@@ -18,4 +18,11 @@ public record InternalAppendRequest(
     long prevLogIndex,
     long prevLogTerm,
     long commitIndex,
-    List<PersistedRaftRecord> entries) {}
+    List<PersistedRaftRecord> raftRecords,
+    List<ReplicatableJournalRecord> serializedJournalRecords) {
+  static final int APPEND_REQUEST_WITH_RAFT_RECORDS = 1;
+
+  public List<? extends ReplicatableRecord> entries() {
+    return version == APPEND_REQUEST_WITH_RAFT_RECORDS ? raftRecords : serializedJournalRecords;
+  }
+}

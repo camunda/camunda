@@ -29,6 +29,7 @@ import io.atomix.raft.metrics.RaftReplicationMetrics;
 import io.atomix.raft.protocol.AppendResponse;
 import io.atomix.raft.protocol.PersistedRaftRecord;
 import io.atomix.raft.protocol.ProtocolVersionHandler;
+import io.atomix.raft.protocol.ReplicatableJournalRecord;
 import io.atomix.raft.protocol.VersionedAppendRequest;
 import io.atomix.raft.storage.RaftStorage;
 import io.atomix.raft.storage.log.IndexedRaftLogEntry;
@@ -81,8 +82,7 @@ public class PassiveRoleTest {
   @Test
   public void shouldFailAppendWithIncorrectChecksum() {
     // given
-    final List<PersistedRaftRecord> entries =
-        List.of(new PersistedRaftRecord(1, 1, 1, 12345, new byte[1]));
+    final var entries = List.of(new ReplicatableJournalRecord(1, 1, 12345, new byte[1]));
     final VersionedAppendRequest request =
         VersionedAppendRequest.builder()
             .withTerm(2)
@@ -107,10 +107,10 @@ public class PassiveRoleTest {
   @Test
   public void shouldFlushAfterAppendRequest() {
     // given
-    final List<PersistedRaftRecord> entries =
+    final var entries =
         List.of(
-            new PersistedRaftRecord(1, 1, 1, 1, new byte[1]),
-            new PersistedRaftRecord(1, 2, 2, 1, new byte[1]));
+            new ReplicatableJournalRecord(1, 1, 1, new byte[1]),
+            new ReplicatableJournalRecord(1, 2, 1, new byte[1]));
     final VersionedAppendRequest request =
         VersionedAppendRequest.builder()
             .withTerm(1)
@@ -137,10 +137,10 @@ public class PassiveRoleTest {
   @Test
   public void shouldFlushAfterPartiallyAppendedRequest() {
     // given
-    final List<PersistedRaftRecord> entries =
+    final var entries =
         List.of(
-            new PersistedRaftRecord(1, 1, 1, 1, new byte[1]),
-            new PersistedRaftRecord(1, 2, 2, 1, new byte[1]));
+            new ReplicatableJournalRecord(1, 1, 1, new byte[1]),
+            new ReplicatableJournalRecord(1, 2, 1, new byte[1]));
     final VersionedAppendRequest request =
         VersionedAppendRequest.builder()
             .withTerm(1)
@@ -167,8 +167,7 @@ public class PassiveRoleTest {
   @Test
   public void shouldNotFlushIfNoEntryIsAppended() {
     // given
-    final List<PersistedRaftRecord> entries =
-        List.of(new PersistedRaftRecord(1, 1, 1, 1, new byte[1]));
+    final var entries = List.of(new ReplicatableJournalRecord(1, 1, 1, new byte[1]));
     final VersionedAppendRequest request =
         VersionedAppendRequest.builder()
             .withTerm(1)
@@ -194,11 +193,11 @@ public class PassiveRoleTest {
   @Test
   public void shouldFlushEventWithFailure() {
     // given
-    final List<PersistedRaftRecord> entries =
+    final var entries =
         List.of(
-            new PersistedRaftRecord(1, 1, 1, 1, new byte[1]),
-            new PersistedRaftRecord(1, 2, 2, 1, new byte[1]),
-            new PersistedRaftRecord(1, 3, 3, 1, new byte[1]));
+            new ReplicatableJournalRecord(1, 1, 1, new byte[1]),
+            new ReplicatableJournalRecord(1, 2, 1, new byte[1]),
+            new ReplicatableJournalRecord(1, 3, 1, new byte[1]));
     final VersionedAppendRequest request =
         VersionedAppendRequest.builder()
             .withTerm(1)
