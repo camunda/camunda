@@ -17,5 +17,5 @@ package io.camunda.zeebe.protocol.record.intent;
 
 public interface ProcessInstanceRelatedIntent extends Intent {
 
-  boolean shouldBlacklistInstanceOnError();
+  boolean shouldBanInstanceOnError();
 }

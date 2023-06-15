@@ -37,7 +37,7 @@ public interface MutableZeebeState extends ZeebeState {
   MutableIncidentState getIncidentState();
 
   @Override
-  MutableBlackListState getBlackListState();
+  MutableBannedInstanceState getBannedInstanceState();
 
   @Override
   MutableVariableState getVariableState();

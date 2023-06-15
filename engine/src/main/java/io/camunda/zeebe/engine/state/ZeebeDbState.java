@@ -25,7 +25,7 @@ import io.camunda.zeebe.engine.state.message.DbMessageState;
 import io.camunda.zeebe.engine.state.message.DbMessageSubscriptionState;
 import io.camunda.zeebe.engine.state.message.DbProcessMessageSubscriptionState;
 import io.camunda.zeebe.engine.state.migration.DbMigrationState;
-import io.camunda.zeebe.engine.state.mutable.MutableBlackListState;
+import io.camunda.zeebe.engine.state.mutable.MutableBannedInstanceState;
 import io.camunda.zeebe.engine.state.mutable.MutableDecisionState;
 import io.camunda.zeebe.engine.state.mutable.MutableDeploymentState;
 import io.camunda.zeebe.engine.state.mutable.MutableElementInstanceState;
@@ -44,7 +44,7 @@ import io.camunda.zeebe.engine.state.mutable.MutableProcessState;
 import io.camunda.zeebe.engine.state.mutable.MutableTimerInstanceState;
 import io.camunda.zeebe.engine.state.mutable.MutableVariableState;
 import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
-import io.camunda.zeebe.engine.state.processing.DbBlackListState;
+import io.camunda.zeebe.engine.state.processing.DbBannedInstanceState;
 import io.camunda.zeebe.engine.state.processing.DbKeyGenerator;
 import io.camunda.zeebe.engine.state.processing.DbLastProcessedPositionState;
 import io.camunda.zeebe.engine.state.variable.DbVariableState;
@@ -69,11 +69,10 @@ public class ZeebeDbState implements MutableZeebeState {
   private final MutableMessageStartEventSubscriptionState messageStartEventSubscriptionState;
   private final DbProcessMessageSubscriptionState processMessageSubscriptionState;
   private final MutableIncidentState incidentState;
-  private final MutableBlackListState blackListState;
   private final MutableLastProcessedPositionState lastProcessedPositionState;
+  private final MutableBannedInstanceState bannedInstanceState;
   private final MutableMigrationState mutableMigrationState;
   private final MutableDecisionState decisionState;
-
   private final int partitionId;
 
   public ZeebeDbState(
@@ -104,8 +103,8 @@ public class ZeebeDbState implements MutableZeebeState {
     processMessageSubscriptionState =
         new DbProcessMessageSubscriptionState(zeebeDb, transactionContext);
     incidentState = new DbIncidentState(zeebeDb, transactionContext, partitionId);
-    blackListState = new DbBlackListState(zeebeDb, transactionContext, partitionId);
     lastProcessedPositionState = new DbLastProcessedPositionState(zeebeDb, transactionContext);
+    bannedInstanceState = new DbBannedInstanceState(zeebeDb, transactionContext, partitionId);
     decisionState = new DbDecisionState(zeebeDb, transactionContext);
 
     mutableMigrationState = new DbMigrationState(zeebeDb, transactionContext);
@@ -115,7 +114,7 @@ public class ZeebeDbState implements MutableZeebeState {
   public void onRecovered(final ReadonlyProcessingContext context) {
     messageSubscriptionState.onRecovered(context);
     processMessageSubscriptionState.onRecovered(context);
-    blackListState.onRecovered(context);
+    bannedInstanceState.onRecovered(context);
   }
 
   @Override
@@ -159,8 +158,8 @@ public class ZeebeDbState implements MutableZeebeState {
   }
 
   @Override
-  public MutableBlackListState getBlackListState() {
-    return blackListState;
+  public MutableBannedInstanceState getBannedInstanceState() {
+    return bannedInstanceState;
   }
 
   @Override

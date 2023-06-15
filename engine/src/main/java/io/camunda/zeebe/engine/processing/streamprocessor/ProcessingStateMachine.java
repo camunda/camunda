@@ -295,7 +295,7 @@ public final class ProcessingStateMachine {
           // default side effect is responses; can be changed by processor
           sideEffectProducer = responseWriter;
           final boolean isNotOnBlacklist =
-              !zeebeState.getBlackListState().isOnBlacklist(typedRecord);
+              !zeebeState.getBannedInstanceState().isBanned(typedRecord);
           if (isNotOnBlacklist) {
             currentProcessor.processRecord(
                 position,
@@ -359,8 +359,8 @@ public final class ProcessingStateMachine {
           errorRecord.initErrorRecord(processingException, position);
 
           zeebeState
-              .getBlackListState()
-              .tryToBlacklist(typedCommand, errorRecord::setProcessInstanceKey);
+              .getBannedInstanceState()
+              .tryToBanInstance(typedCommand, errorRecord::setProcessInstanceKey);
 
           logStreamWriter.appendFollowUpEvent(
               typedCommand.getKey(), ErrorIntent.CREATED, errorRecord);

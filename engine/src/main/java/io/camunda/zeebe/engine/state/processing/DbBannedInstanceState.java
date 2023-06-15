@@ -13,11 +13,11 @@ import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.db.impl.DbLong;
 import io.camunda.zeebe.db.impl.DbNil;
 import io.camunda.zeebe.engine.Loggers;
-import io.camunda.zeebe.engine.metrics.BlacklistMetrics;
+import io.camunda.zeebe.engine.metrics.BannedInstanceMetrics;
 import io.camunda.zeebe.engine.processing.streamprocessor.ReadonlyProcessingContext;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecord;
 import io.camunda.zeebe.engine.state.ZbColumnFamilies;
-import io.camunda.zeebe.engine.state.mutable.MutableBlackListState;
+import io.camunda.zeebe.engine.state.mutable.MutableBannedInstanceState;
 import io.camunda.zeebe.msgpack.UnpackedObject;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceRelatedIntent;
@@ -26,89 +26,103 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import org.slf4j.Logger;
 
-public final class DbBlackListState implements MutableBlackListState {
+public final class DbBannedInstanceState implements MutableBannedInstanceState {
 
   private static final Logger LOG = Loggers.STREAM_PROCESSING;
 
-  private static final String BLACKLIST_INSTANCE_MESSAGE =
-      "Blacklist process instance {}, due to previous errors.";
+  private static final String BAN_INSTANCE_MESSAGE =
+      "Ban process instance {}, due to previous errors.";
 
-  private final ColumnFamily<DbLong, DbNil> blackListColumnFamily;
+  private final ColumnFamily<DbLong, DbNil> bannedInstanceColumnFamily;
   private final DbLong processInstanceKey;
-  private final BlacklistMetrics blacklistMetrics;
+  private final BannedInstanceMetrics bannedInstanceMetrics;
+  private boolean empty = true;
 
-  public DbBlackListState(
+  public DbBannedInstanceState(
       final ZeebeDb<ZbColumnFamilies> zeebeDb,
       final TransactionContext transactionContext,
       final int partitionId) {
     processInstanceKey = new DbLong();
-    blackListColumnFamily =
+    bannedInstanceColumnFamily =
         zeebeDb.createColumnFamily(
-            ZbColumnFamilies.BLACKLIST, transactionContext, processInstanceKey, DbNil.INSTANCE);
-    blacklistMetrics = new BlacklistMetrics(partitionId);
+            ZbColumnFamilies.BANNED_INSTANCE,
+            transactionContext,
+            processInstanceKey,
+            DbNil.INSTANCE);
+    bannedInstanceMetrics = new BannedInstanceMetrics(partitionId);
   }
 
   @Override
   public void onRecovered(final ReadonlyProcessingContext context) {
     final var counter = new AtomicInteger(0);
-    blackListColumnFamily.forEach(ignore -> counter.getAndIncrement());
-    blacklistMetrics.setBlacklistInstanceCounter(counter.get());
+    bannedInstanceColumnFamily.forEach(ignore -> counter.getAndIncrement());
+    empty = counter.get() == 0;
+    bannedInstanceMetrics.setBannedInstanceCounter(counter.get());
   }
 
-  private void blacklist(final long key) {
+  private void banInstance(final long key) {
     if (key >= 0) {
-      LOG.warn(BLACKLIST_INSTANCE_MESSAGE, key);
+      LOG.warn(BAN_INSTANCE_MESSAGE, key);
 
       processInstanceKey.wrapLong(key);
-      blackListColumnFamily.insert(processInstanceKey, DbNil.INSTANCE);
-      blacklistMetrics.countBlacklistedInstance();
+      bannedInstanceColumnFamily.insert(processInstanceKey, DbNil.INSTANCE);
+      bannedInstanceMetrics.countBannedInstance();
+      empty = false;
     }
   }
 
-  private boolean isOnBlacklist(final long key) {
+  private boolean isBanned(final long key) {
+    if (empty) {
+      return false;
+    }
+
     processInstanceKey.wrapLong(key);
-    return blackListColumnFamily.exists(processInstanceKey);
+    return bannedInstanceColumnFamily.exists(processInstanceKey);
   }
 
   @Override
-  public boolean isOnBlacklist(final TypedRecord record) {
+  public boolean isBanned(final TypedRecord record) {
     final UnpackedObject value = record.getValue();
     if (value instanceof ProcessInstanceRelated) {
       final long processInstanceKey = ((ProcessInstanceRelated) value).getProcessInstanceKey();
       if (processInstanceKey >= 0) {
-        return isOnBlacklist(processInstanceKey);
+        return isBanned(processInstanceKey);
       }
     }
     return false;
   }
 
   @Override
-  public boolean tryToBlacklist(
-      final TypedRecord<?> typedRecord, final Consumer<Long> onBlacklistingInstance) {
+  public boolean isEmpty() {
+    return empty;
+  }
+
+  @Override
+  public boolean tryToBanInstance(
+      final TypedRecord<?> typedRecord, final Consumer<Long> onBanningInstance) {
     final Intent intent = typedRecord.getIntent();
-    if (shouldBeBlacklisted(intent)) {
+    if (shouldBeBanned(intent)) {
       final UnpackedObject value = typedRecord.getValue();
       if (value instanceof ProcessInstanceRelated) {
         final long processInstanceKey = ((ProcessInstanceRelated) value).getProcessInstanceKey();
-        blacklist(processInstanceKey);
-        onBlacklistingInstance.accept(processInstanceKey);
+        banInstance(processInstanceKey);
+        onBanningInstance.accept(processInstanceKey);
       }
     }
     return false;
   }
 
   @Override
-  public void blacklistProcessInstance(final long processInstanceKey) {
-    blacklist(processInstanceKey);
+  public void banProcessInstance(final long processInstanceKey) {
+    banInstance(processInstanceKey);
   }
 
-  private boolean shouldBeBlacklisted(final Intent intent) {
-
+  public static boolean shouldBeBanned(final Intent intent) {
     if (intent instanceof ProcessInstanceRelatedIntent) {
       final ProcessInstanceRelatedIntent processInstanceRelatedIntent =
           (ProcessInstanceRelatedIntent) intent;
 
-      return processInstanceRelatedIntent.shouldBlacklistInstanceOnError();
+      return processInstanceRelatedIntent.shouldBanInstanceOnError();
     }
 
     return false;

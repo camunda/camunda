@@ -189,7 +189,7 @@ public final class SkipFailingEventsTest {
   }
 
   @Test
-  public void shouldBlacklistInstance() {
+  public void shouldBanInstance() {
     // given
     final DumpProcessor dumpProcessor = spy(new DumpProcessor());
     final ErrorProneProcessor processor = new ErrorProneProcessor();
@@ -245,15 +245,15 @@ public final class SkipFailingEventsTest {
     final RecordMetadata metadata = new RecordMetadata();
     metadata.valueType(ValueType.PROCESS_INSTANCE);
     final MockTypedRecord<ProcessInstanceRecord> mockTypedRecord =
-        new MockTypedRecord<>(0, metadata, PROCESS_INSTANCE_RECORD);
-    Assertions.assertThat(zeebeState.getBlackListState().isOnBlacklist(mockTypedRecord)).isTrue();
+        new MockTypedRecord<>(0, metadata, Records.processInstance(1));
+    Assertions.assertThat(zeebeState.getBannedInstanceState().isBanned(mockTypedRecord)).isTrue();
 
     verify(dumpProcessor, times(1)).processRecord(any(), any(), any(), any());
     assertThat(dumpProcessor.processedInstances).containsExactly(2L);
   }
 
   @Test
-  public void shouldBlacklistInstanceOnReplay() throws Exception {
+  public void shouldBanInstanceOnReplay() throws Exception {
     // given
     when(commandResponseWriter.tryWriteResponse(anyInt(), anyLong())).thenReturn(true);
 
@@ -302,12 +302,12 @@ public final class SkipFailingEventsTest {
     final RecordMetadata metadata = new RecordMetadata();
     metadata.valueType(ValueType.PROCESS_INSTANCE);
     final MockTypedRecord<ProcessInstanceRecord> mockTypedRecord =
-        new MockTypedRecord<>(0, metadata, PROCESS_INSTANCE_RECORD);
-    waitUntil(() -> zeebeState.getBlackListState().isOnBlacklist(mockTypedRecord));
+        new MockTypedRecord<>(0, metadata, Records.processInstance(1));
+    waitUntil(() -> zeebeState.getBannedInstanceState().isBanned(mockTypedRecord));
   }
 
   @Test
-  public void shouldNotBlacklistInstanceOnJobCommand() {
+  public void shouldNotBanInstanceOnJobCommand() {
     // given
     when(commandResponseWriter.tryWriteResponse(anyInt(), anyLong())).thenReturn(true);
     final List<Long> processedInstances = new ArrayList<>();
@@ -383,15 +383,15 @@ public final class SkipFailingEventsTest {
     final RecordMetadata metadata = new RecordMetadata();
     metadata.valueType(ValueType.PROCESS_INSTANCE);
     final MockTypedRecord<ProcessInstanceRecord> mockTypedRecord =
-        new MockTypedRecord<>(0, metadata, PROCESS_INSTANCE_RECORD);
-    Assertions.assertThat(zeebeState.getBlackListState().isOnBlacklist(mockTypedRecord)).isFalse();
+        new MockTypedRecord<>(0, metadata, Records.processInstance(1));
+    Assertions.assertThat(zeebeState.getBannedInstanceState().isBanned(mockTypedRecord)).isFalse();
 
     verify(dumpProcessor, timeout(1000).times(2)).processRecord(any(), any(), any(), any());
     assertThat(processedInstances).containsExactly(1L, 2L);
   }
 
   @Test
-  public void shouldNotBlacklistInstanceAndIgnoreTimerStartEvents() {
+  public void shouldNotBanInstanceAndIgnoreTimerStartEvents() {
     // given
     when(commandResponseWriter.tryWriteResponse(anyInt(), anyLong())).thenReturn(true);
     final List<Long> processedInstances = new ArrayList<>();
@@ -458,7 +458,7 @@ public final class SkipFailingEventsTest {
     metadata.valueType(ValueType.TIMER);
     final MockTypedRecord<TimerRecord> mockTypedRecord =
         new MockTypedRecord<>(0, metadata, Records.timer(TimerInstance.NO_ELEMENT_INSTANCE));
-    Assertions.assertThat(zeebeState.getBlackListState().isOnBlacklist(mockTypedRecord)).isFalse();
+    Assertions.assertThat(zeebeState.getBannedInstanceState().isBanned(mockTypedRecord)).isFalse();
     assertThat(processedInstances).containsExactly(TimerInstance.NO_ELEMENT_INSTANCE);
   }
 

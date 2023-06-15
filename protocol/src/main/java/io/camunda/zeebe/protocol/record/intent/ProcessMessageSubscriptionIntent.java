@@ -28,15 +28,15 @@ public enum ProcessMessageSubscriptionIntent implements ProcessInstanceRelatedIn
   DELETED((short) 7);
 
   private final short value;
-  private final boolean shouldBlacklist;
+  private final boolean shouldBanInstance;
 
   ProcessMessageSubscriptionIntent(final short value) {
     this(value, true);
   }
 
-  ProcessMessageSubscriptionIntent(final short value, final boolean shouldBlacklist) {
+  ProcessMessageSubscriptionIntent(final short value, final boolean shouldBanInstance) {
     this.value = value;
-    this.shouldBlacklist = shouldBlacklist;
+    this.shouldBanInstance = shouldBanInstance;
   }
 
   @Override
@@ -68,7 +68,7 @@ public enum ProcessMessageSubscriptionIntent implements ProcessInstanceRelatedIn
   }
 
   @Override
-  public boolean shouldBlacklistInstanceOnError() {
-    return shouldBlacklist;
+  public boolean shouldBanInstanceOnError() {
+    return shouldBanInstance;
   }
 }

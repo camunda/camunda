@@ -50,7 +50,7 @@ public final class EventAppliers implements EventApplier {
     registerProcessInstanceEventAppliers(state);
 
     register(ProcessIntent.CREATED, new ProcessCreatedApplier(state));
-    register(ErrorIntent.CREATED, new ErrorCreatedApplier(state.getBlackListState()));
+    register(ErrorIntent.CREATED, new ErrorCreatedApplier(state.getBannedInstanceState()));
     registerDeploymentAppliers(state);
 
     registerMessageAppliers(state);

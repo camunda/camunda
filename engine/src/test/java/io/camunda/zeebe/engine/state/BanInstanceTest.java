@@ -5,14 +5,14 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.camunda.zeebe.engine.processing.streamprocessor;
+package io.camunda.zeebe.engine.state;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.mockito.MockitoAnnotations.initMocks;
 
-import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
+import io.camunda.zeebe.engine.processing.streamprocessor.TypedEventImpl;
 import io.camunda.zeebe.engine.util.ZeebeStateRule;
 import io.camunda.zeebe.logstreams.log.LoggedEvent;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
@@ -43,7 +43,7 @@ import org.junit.runners.Parameterized.Parameter;
 import org.junit.runners.Parameterized.Parameters;
 
 @RunWith(Parameterized.class)
-public final class BlacklistInstanceTest {
+public final class BanInstanceTest {
 
   @ClassRule public static final ZeebeStateRule ZEEBE_STATE_RULE = new ZeebeStateRule();
   private static final AtomicLong KEY_GENERATOR = new AtomicLong(0);
@@ -55,11 +55,11 @@ public final class BlacklistInstanceTest {
   public Intent recordIntent;
 
   @Parameter(2)
-  public boolean expectedToBlacklist;
+  public boolean expectedToBan;
 
   private long processInstanceKey;
 
-  @Parameters(name = "{0} {1} should blacklist instance {2}")
+  @Parameters(name = "{0} {1} should ban instance {2}")
   public static Object[][] parameters() {
     return new Object[][] {
       ////////////////////////////////////////
@@ -194,7 +194,7 @@ public final class BlacklistInstanceTest {
   }
 
   @Test
-  public void shouldBlacklist() {
+  public void shouldBanInstance() {
     // given
     final RecordMetadata metadata = new RecordMetadata();
     metadata.intent(recordIntent);
@@ -206,15 +206,14 @@ public final class BlacklistInstanceTest {
     typedEvent.wrap(loggedEvent, metadata, new Value());
 
     // when
-    final MutableZeebeState zeebeState = ZEEBE_STATE_RULE.getZeebeState();
-    zeebeState.getBlackListState().tryToBlacklist(typedEvent, (processInstanceKey) -> {});
+    final var zeebeState = ZEEBE_STATE_RULE.getZeebeState();
+    zeebeState.getBannedInstanceState().tryToBanInstance(typedEvent, (processInstanceKey) -> {});
 
     // then
     metadata.intent(ProcessInstanceIntent.ELEMENT_ACTIVATING);
     metadata.valueType(ValueType.PROCESS_INSTANCE);
     typedEvent.wrap(null, metadata, new Value());
-    assertThat(zeebeState.getBlackListState().isOnBlacklist(typedEvent))
-        .isEqualTo(expectedToBlacklist);
+    assertThat(zeebeState.getBannedInstanceState().isBanned(typedEvent)).isEqualTo(expectedToBan);
   }
 
   private final class Value extends UnifiedRecordValue implements ProcessInstanceRelated {

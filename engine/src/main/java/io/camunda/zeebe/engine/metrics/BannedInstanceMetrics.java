@@ -9,27 +9,27 @@ package io.camunda.zeebe.engine.metrics;
 
 import io.prometheus.client.Gauge;
 
-public final class BlacklistMetrics {
+public final class BannedInstanceMetrics {
 
-  private static final Gauge BLACKLISTED_INSTANCES_COUNTER =
+  private static final Gauge BANNED_INSTANCES_COUNTER =
       Gauge.build()
           .namespace("zeebe")
-          .name("blacklisted_instances_total")
-          .help("Number of blacklisted instances")
+          .name("banned_instances_total")
+          .help("Number of banned instances")
           .labelNames("partition")
           .register();
 
   private final String partitionIdLabel;
 
-  public BlacklistMetrics(final int partitionId) {
+  public BannedInstanceMetrics(final int partitionId) {
     partitionIdLabel = String.valueOf(partitionId);
   }
 
-  public void countBlacklistedInstance() {
-    BLACKLISTED_INSTANCES_COUNTER.labels(partitionIdLabel).inc();
+  public void countBannedInstance() {
+    BANNED_INSTANCES_COUNTER.labels(partitionIdLabel).inc();
   }
 
-  public void setBlacklistInstanceCounter(final int counter) {
-    BLACKLISTED_INSTANCES_COUNTER.labels(partitionIdLabel).set(counter);
+  public void setBannedInstanceCounter(final int counter) {
+    BANNED_INSTANCES_COUNTER.labels(partitionIdLabel).set(counter);
   }
 }
