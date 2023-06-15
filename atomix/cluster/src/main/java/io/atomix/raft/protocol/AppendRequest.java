@@ -17,16 +17,14 @@
 package io.atomix.raft.protocol;
 
 import static com.google.common.base.MoreObjects.toStringHelper;
-import static com.google.common.base.Preconditions.checkArgument;
-import static com.google.common.base.Preconditions.checkNotNull;
 
 import io.atomix.cluster.MemberId;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 
 /**
- * Append entries request.
+ * Append entries request that represent old version (version = 1) which only replicated the raft
+ * entry and not the complete serialized journal record.
  *
  * <p>Append entries requests are at the core of the replication protocol. Leaders send append
  * requests to followers to replicate and commit log entries, and followers sent append requests to
@@ -54,15 +52,6 @@ public class AppendRequest extends AbstractRaftRequest {
     this.prevLogTerm = prevLogTerm;
     this.entries = entries;
     this.commitIndex = commitIndex;
-  }
-
-  /**
-   * Returns a new append request builder.
-   *
-   * @return A new append request builder.
-   */
-  public static Builder builder() {
-    return new Builder();
   }
 
   /**
@@ -148,125 +137,5 @@ public class AppendRequest extends AbstractRaftRequest {
         .add("entries", entries.size())
         .add("commitIndex", commitIndex)
         .toString();
-  }
-
-  /** Append request builder. */
-  public static class Builder extends AbstractRaftRequest.Builder<Builder, AppendRequest> {
-
-    private static final String NULL_ENTRIES_ERR = "entries cannot be null";
-    private long term;
-    private String leader;
-    private long logIndex;
-    private long logTerm;
-    private List<PersistedRaftRecord> entries;
-    private long commitIndex = -1;
-
-    /**
-     * Sets the request term.
-     *
-     * @param term The request term.
-     * @return The append request builder.
-     * @throws IllegalArgumentException if the {@code term} is not positive
-     */
-    public Builder withTerm(final long term) {
-      checkArgument(term > 0, "term must be positive");
-      this.term = term;
-      return this;
-    }
-
-    /**
-     * Sets the request leader.
-     *
-     * @param leader The request leader.
-     * @return The append request builder.
-     * @throws IllegalArgumentException if the {@code leader} is not positive
-     */
-    public Builder withLeader(final MemberId leader) {
-      this.leader = checkNotNull(leader, "leader cannot be null").id();
-      return this;
-    }
-
-    /**
-     * Sets the request last log index.
-     *
-     * @param prevLogIndex The request last log index.
-     * @return The append request builder.
-     * @throws IllegalArgumentException if the {@code index} is not positive
-     */
-    public Builder withPrevLogIndex(final long prevLogIndex) {
-      checkArgument(prevLogIndex >= 0, "prevLogIndex must be positive");
-      logIndex = prevLogIndex;
-      return this;
-    }
-
-    /**
-     * Sets the request last log term.
-     *
-     * @param prevLogTerm The request last log term.
-     * @return The append request builder.
-     * @throws IllegalArgumentException if the {@code term} is not positive
-     */
-    public Builder withPrevLogTerm(final long prevLogTerm) {
-      checkArgument(prevLogTerm >= 0, "prevLogTerm must be positive");
-      logTerm = prevLogTerm;
-      return this;
-    }
-
-    /**
-     * Sets the request entries.
-     *
-     * @param entries The request entries.
-     * @return The append request builder.
-     * @throws NullPointerException if {@code entries} is null
-     */
-    public Builder withEntries(final PersistedRaftRecord... entries) {
-      return withEntries(Arrays.asList(checkNotNull(entries, NULL_ENTRIES_ERR)));
-    }
-
-    /**
-     * Sets the request entries.
-     *
-     * @param entries The request entries.
-     * @return The append request builder.
-     * @throws NullPointerException if {@code entries} is null
-     */
-    public Builder withEntries(final List<PersistedRaftRecord> entries) {
-      this.entries = checkNotNull(entries, NULL_ENTRIES_ERR);
-      return this;
-    }
-
-    /**
-     * Sets the request commit index.
-     *
-     * @param commitIndex The request commit index.
-     * @return The append request builder.
-     * @throws IllegalArgumentException if index is not positive
-     */
-    public Builder withCommitIndex(final long commitIndex) {
-      checkArgument(commitIndex >= 0, "commitIndex must be positive");
-      this.commitIndex = commitIndex;
-      return this;
-    }
-
-    /**
-     * @throws IllegalStateException if the term, log term, log index, commit index, or global index
-     *     are not positive, or if entries is null
-     */
-    @Override
-    public AppendRequest build() {
-      validate();
-      return new AppendRequest(term, leader, logIndex, logTerm, entries, commitIndex);
-    }
-
-    @Override
-    protected void validate() {
-      super.validate();
-      checkArgument(term > 0, "term must be positive");
-      checkNotNull(leader, "leader cannot be null");
-      checkArgument(logIndex >= 0, "prevLogIndex must be positive");
-      checkArgument(logTerm >= 0, "prevLogTerm must be positive");
-      checkNotNull(entries, NULL_ENTRIES_ERR);
-      checkArgument(commitIndex >= 0, "commitIndex must be positive");
-    }
   }
 }

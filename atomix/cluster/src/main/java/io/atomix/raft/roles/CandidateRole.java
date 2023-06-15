@@ -22,8 +22,8 @@ import io.atomix.raft.RaftServer.Role;
 import io.atomix.raft.cluster.impl.DefaultRaftMember;
 import io.atomix.raft.cluster.impl.RaftMemberContext;
 import io.atomix.raft.impl.RaftContext;
-import io.atomix.raft.protocol.AppendRequest;
 import io.atomix.raft.protocol.AppendResponse;
+import io.atomix.raft.protocol.InternalAppendRequest;
 import io.atomix.raft.protocol.RaftResponse;
 import io.atomix.raft.protocol.VoteRequest;
 import io.atomix.raft.protocol.VoteResponse;
@@ -264,7 +264,7 @@ public final class CandidateRole extends ActiveRole {
   }
 
   @Override
-  public CompletableFuture<AppendResponse> onAppend(final AppendRequest request) {
+  public CompletableFuture<AppendResponse> onAppend(final InternalAppendRequest request) {
     raft.checkThread();
 
     // If the request indicates a term that is greater than the current term then

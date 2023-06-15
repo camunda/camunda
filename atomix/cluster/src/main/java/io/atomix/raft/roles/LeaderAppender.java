@@ -34,6 +34,7 @@ import io.atomix.raft.protocol.InstallResponse;
 import io.atomix.raft.protocol.PersistedRaftRecord;
 import io.atomix.raft.protocol.RaftRequest;
 import io.atomix.raft.protocol.RaftResponse;
+import io.atomix.raft.protocol.VersionedAppendRequest;
 import io.atomix.raft.snapshot.impl.SnapshotChunkImpl;
 import io.atomix.raft.storage.log.IndexedRaftLogEntry;
 import io.atomix.utils.logging.ContextualLoggerFactory;
@@ -101,7 +102,8 @@ final class LeaderAppender {
    * @param member The member to which to send the request.
    * @return The append request.
    */
-  private AppendRequest buildAppendRequest(final RaftMemberContext member, final long lastIndex) {
+  private VersionedAppendRequest buildAppendRequest(
+      final RaftMemberContext member, final long lastIndex) {
     // If the log is empty then send an empty commit.
     // If the next index hasn't yet been set then we send an empty commit first.
     // If the next index is greater than the last index then send an empty commit.
@@ -121,7 +123,7 @@ final class LeaderAppender {
    *
    * <p>Empty append requests are used as heartbeats to followers.
    */
-  private AppendRequest buildAppendEmptyRequest(final RaftMemberContext member) {
+  private VersionedAppendRequest buildAppendEmptyRequest(final RaftMemberContext member) {
     // Read the previous entry from the reader.
     // The reader can be null for RESERVE members.
     final IndexedRaftLogEntry prevEntry = member.getCurrentEntry();
@@ -135,7 +137,8 @@ final class LeaderAppender {
         .build();
   }
 
-  private AppendRequest.Builder builderWithPreviousEntry(final IndexedRaftLogEntry prevEntry) {
+  private VersionedAppendRequest.Builder builderWithPreviousEntry(
+      final IndexedRaftLogEntry prevEntry) {
     long prevIndex = 0;
     long prevTerm = 0;
 
@@ -149,16 +152,16 @@ final class LeaderAppender {
         prevTerm = currentSnapshot.getTerm();
       }
     }
-    return AppendRequest.builder().withPrevLogTerm(prevTerm).withPrevLogIndex(prevIndex);
+    return VersionedAppendRequest.builder().withPrevLogTerm(prevTerm).withPrevLogIndex(prevIndex);
   }
 
   /** Builds a populated AppendEntries request. */
-  private AppendRequest buildAppendEntriesRequest(
+  private VersionedAppendRequest buildAppendEntriesRequest(
       final RaftMemberContext member, final long lastIndex) {
     final IndexedRaftLogEntry prevEntry = member.getCurrentEntry();
 
     final DefaultRaftMember leader = raft.getLeader();
-    final AppendRequest.Builder builder =
+    final VersionedAppendRequest.Builder builder =
         builderWithPreviousEntry(prevEntry)
             .withTerm(raft.getTerm())
             .withLeader(leader.memberId())
@@ -192,7 +195,8 @@ final class LeaderAppender {
   }
 
   /** Connects to the member and sends a commit message. */
-  private void sendAppendRequest(final RaftMemberContext member, final AppendRequest request) {
+  private void sendAppendRequest(
+      final RaftMemberContext member, final VersionedAppendRequest request) {
     // If this is a heartbeat message and a heartbeat is already in progress, skip the request.
     if (request.entries().isEmpty() && !member.canHeartbeat()) {
       return;
@@ -572,7 +576,7 @@ final class LeaderAppender {
   }
 
   private void handleAppendResponseFailure(
-      final RaftMemberContext member, final AppendRequest request, final Throwable error) {
+      final RaftMemberContext member, final VersionedAppendRequest request, final Throwable error) {
     failHeartbeat();
 
     // Log the failed attempt to contact the member.
@@ -616,7 +620,7 @@ final class LeaderAppender {
 
   private void handleAppendResponse(
       final RaftMemberContext member,
-      final AppendRequest request,
+      final VersionedAppendRequest request,
       final AppendResponse response,
       final long timestamp) {
     if (response.status() == RaftResponse.Status.OK) {
@@ -628,7 +632,9 @@ final class LeaderAppender {
   }
 
   private void handleAppendResponseOk(
-      final RaftMemberContext member, final AppendRequest request, final AppendResponse response) {
+      final RaftMemberContext member,
+      final VersionedAppendRequest request,
+      final AppendResponse response) {
     // Reset the member failure count and update the member's availability status if necessary.
     succeedAttempt(member);
 
@@ -728,7 +734,9 @@ final class LeaderAppender {
   }
 
   private void handleAppendResponseError(
-      final RaftMemberContext member, final AppendRequest request, final AppendResponse response) {
+      final RaftMemberContext member,
+      final VersionedAppendRequest request,
+      final AppendResponse response) {
     // If we've received a greater term, update the term and transition back to follower.
     if (response.term() > raft.getTerm()) {
       log.info(
