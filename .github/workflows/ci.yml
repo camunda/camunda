@@ -243,7 +243,7 @@ jobs:
           name: Property Tests
   performance-tests:
     name: Performance Tests
-    runs-on: [ self-hosted, linux, amd64, "4" ]
+    runs-on: [ self-hosted, linux, amd64, "16" ]
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v3
