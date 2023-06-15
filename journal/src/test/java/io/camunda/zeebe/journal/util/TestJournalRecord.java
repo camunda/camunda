@@ -10,5 +10,6 @@ package io.camunda.zeebe.journal.util;
 import io.camunda.zeebe.journal.JournalRecord;
 import org.agrona.DirectBuffer;
 
-public record TestJournalRecord(long index, long asqn, long checksum, DirectBuffer data)
+public record TestJournalRecord(
+    long index, long asqn, long checksum, DirectBuffer data, DirectBuffer serializedRecord)
     implements JournalRecord {}

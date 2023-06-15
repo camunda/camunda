@@ -111,22 +111,8 @@ final class SegmentWriter {
       final long asqn,
       final BufferWriter recordDataWriter,
       final Long expectedChecksum) {
-    final long nextIndex = getNextIndex();
 
-    // If the entry's index is not the expected next index in the segment, fail the append.
-    if (entryIndex != nextIndex) {
-      throw new InvalidIndex(
-          String.format(
-              "The record index is not sequential. Expected the next index to be %d, but the record to append has index %d",
-              nextIndex, entryIndex));
-    }
-
-    if (asqn != SegmentedJournal.ASQN_IGNORE && asqn <= lastAsqn) {
-      throw new InvalidAsqn(
-          String.format(
-              "The records asqn is not big enough. Expected it to be bigger than %d but was %d",
-              lastAsqn, asqn));
-    }
+    verifyAsqnIsIncreasing(asqn);
 
     final int startPosition = buffer.position();
     final int frameLength = FrameUtil.getLength();
@@ -134,7 +120,7 @@ final class SegmentWriter {
 
     final var writeResult =
         writeRecord(
-            getNextIndex(), asqn, startPosition + frameLength + metadataLength, recordDataWriter);
+            entryIndex, asqn, startPosition + frameLength + metadataLength, recordDataWriter);
     if (writeResult.isLeft()) {
       buffer.position(startPosition);
       return Either.left(writeResult.getLeft());
@@ -142,6 +128,55 @@ final class SegmentWriter {
 
     final int recordLength = writeResult.get();
 
+    finalizeAppend(expectedChecksum, startPosition, frameLength, metadataLength, recordLength);
+    return Either.right(lastEntry);
+  }
+
+  Either<SegmentFull, JournalRecord> append(
+      final long expectedChecksum, final byte[] serializedRecord) {
+
+    final int startPosition = buffer.position();
+    final int frameLength = FrameUtil.getLength();
+    final int recordLength = serializedRecord.length;
+    final int metadataLength = serializer.getMetadataLength();
+
+    if (startPosition + frameLength + metadataLength + recordLength > buffer.capacity()) {
+      return Either.left(new SegmentFull("Not enough space to write record"));
+    }
+
+    // write serialized RecordData
+    writeBuffer.putBytes(startPosition + frameLength + metadataLength, serializedRecord);
+
+    finalizeAppend(expectedChecksum, startPosition, frameLength, metadataLength, recordLength);
+    return Either.right(lastEntry);
+  }
+
+  private void verifyAsqnIsIncreasing(final long asqn) {
+    if (asqn != SegmentedJournal.ASQN_IGNORE && asqn <= lastAsqn) {
+      throw new InvalidAsqn(
+          String.format(
+              "The records asqn is not big enough. Expected it to be bigger than %d but was %d",
+              lastAsqn, asqn));
+    }
+  }
+
+  private static void verifyNoIndexGap(final Long entryIndex, final long nextIndex) {
+    // If the entry's index is not the expected next index in the segment, fail the append.
+    if (entryIndex != nextIndex) {
+      throw new InvalidIndex(
+          String.format(
+              "The record index is not sequential. Expected the next index to be %d, but the record to append has index %d",
+              nextIndex, entryIndex));
+    }
+  }
+
+  /** Writes record metadata and header. Update lastWrittenEntry. Update JournalIndex */
+  private void finalizeAppend(
+      final Long expectedChecksum,
+      final int startPosition,
+      final int frameLength,
+      final int metadataLength,
+      final int recordLength) {
     final long checksum =
         checksumGenerator.compute(
             buffer, startPosition + frameLength + metadataLength, recordLength);
@@ -155,20 +190,29 @@ final class SegmentWriter {
     }
 
     writeMetadata(startPosition, frameLength, recordLength, checksum);
-    updateLastWrittenEntry(startPosition, frameLength, metadataLength);
+    updateLastWrittenEntry(startPosition, frameLength, metadataLength, recordLength);
     FrameUtil.writeVersion(buffer, startPosition);
 
     final int appendedBytes = frameLength + metadataLength + recordLength;
     buffer.position(startPosition + appendedBytes);
     metrics.observeAppend(appendedBytes);
-    return Either.right(lastEntry);
   }
 
   private void updateLastWrittenEntry(
-      final int startPosition, final int frameLength, final int metadataLength) {
+      final int startPosition,
+      final int frameLength,
+      final int metadataLength,
+      final int recordLength) {
     final var metadata = serializer.readMetadata(writeBuffer, startPosition + frameLength);
     final var data = serializer.readData(writeBuffer, startPosition + frameLength + metadataLength);
-    lastEntry = new PersistedJournalRecord(metadata, data);
+    verifyNoIndexGap(data.index(), getNextIndex());
+
+    lastEntry =
+        new PersistedJournalRecord(
+            metadata,
+            data,
+            new UnsafeBuffer(
+                writeBuffer, startPosition + frameLength + metadataLength, recordLength));
     updateLastAsqn(lastEntry.asqn());
     index.index(lastEntry, startPosition);
   }

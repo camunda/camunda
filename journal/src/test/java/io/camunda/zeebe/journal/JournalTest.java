@@ -7,13 +7,9 @@
  */
 package io.camunda.zeebe.journal;
 
-import static io.camunda.zeebe.journal.file.SegmentedJournal.ASQN_IGNORE;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import io.camunda.zeebe.journal.JournalException.InvalidAsqn;
-import io.camunda.zeebe.journal.JournalException.InvalidChecksum;
-import io.camunda.zeebe.journal.JournalException.InvalidIndex;
 import io.camunda.zeebe.journal.file.LogCorrupter;
 import io.camunda.zeebe.journal.file.SegmentedJournal;
 import io.camunda.zeebe.journal.file.SegmentedJournalBuilder;
@@ -21,7 +17,6 @@ import io.camunda.zeebe.journal.record.PersistedJournalRecord;
 import io.camunda.zeebe.journal.record.RecordData;
 import io.camunda.zeebe.journal.record.RecordMetadata;
 import io.camunda.zeebe.journal.util.MockJournalMetastore;
-import io.camunda.zeebe.journal.util.TestJournalRecord;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import io.camunda.zeebe.util.buffer.DirectBufferWriter;
 import java.io.File;
@@ -76,16 +71,6 @@ final class JournalTest {
 
     // when-then
     assertThat(journal.isEmpty()).isFalse();
-  }
-
-  @Test
-  void shouldAppendData() {
-    // when
-    final var recordAppended = journal.append(1, recordDataWriter);
-
-    // then
-    assertThat(recordAppended.index()).isEqualTo(1);
-    assertThat(recordAppended.asqn()).isEqualTo(1);
   }
 
   @Test
@@ -382,114 +367,6 @@ final class JournalTest {
   }
 
   @Test
-  void shouldAppendJournalRecord() {
-    // given
-    final var receiverJournal =
-        SegmentedJournal.builder()
-            .withDirectory(directory.resolve("data-2").toFile())
-            .withJournalIndexDensity(5)
-            .withMetaStore(new MockJournalMetastore())
-            .build();
-    final var expected = journal.append(10, recordDataWriter);
-
-    // when
-    receiverJournal.append(expected);
-
-    // then
-    final var reader = receiverJournal.openReader();
-    assertThat(reader.hasNext()).isTrue();
-    final var actual = reader.next();
-    assertThat(expected).isEqualTo(actual);
-  }
-
-  @Test
-  void shouldNotAppendRecordWithAlreadyAppendedIndex() {
-    // given
-    final var record = journal.append(1, recordDataWriter);
-    journal.append(recordDataWriter);
-
-    // when/then
-    assertThatThrownBy(() -> journal.append(record)).isInstanceOf(InvalidIndex.class);
-  }
-
-  @Test
-  void shouldNotAppendRecordWithGapInIndex() {
-    // given
-    final var receiverJournal =
-        SegmentedJournal.builder()
-            .withDirectory(directory.resolve("data-2").toFile())
-            .withJournalIndexDensity(5)
-            .withMetaStore(new MockJournalMetastore())
-            .build();
-    journal.append(1, recordDataWriter);
-    final var record = journal.append(2, recordDataWriter);
-
-    // when/then
-    assertThatThrownBy(() -> receiverJournal.append(record)).isInstanceOf(InvalidIndex.class);
-  }
-
-  @Test
-  void shouldNotAppendLastRecord() {
-    // given
-    final var record = journal.append(1, recordDataWriter);
-
-    // when/then
-    assertThatThrownBy(() -> journal.append(record)).isInstanceOf(InvalidIndex.class);
-  }
-
-  @Test
-  void shouldAppendRecordWithASqnToIgnore() {
-    // given
-    journal.append(1, recordDataWriter);
-
-    // when/then
-    journal.append(ASQN_IGNORE, recordDataWriter);
-  }
-
-  @Test
-  void shouldNotAppendRecordWithInvalidChecksum() {
-    // given
-    final var receiverJournal =
-        SegmentedJournal.builder()
-            .withDirectory(directory.resolve("data-2").toFile())
-            .withJournalIndexDensity(5)
-            .withMetaStore(new MockJournalMetastore())
-            .build();
-    final var record = journal.append(1, recordDataWriter);
-
-    // when
-    final var invalidChecksumRecord =
-        new TestJournalRecord(record.index(), record.asqn(), -1, record.data());
-
-    // then
-    assertThatThrownBy(() -> receiverJournal.append(invalidChecksumRecord))
-        .isInstanceOf(InvalidChecksum.class);
-  }
-
-  @Test
-  void shouldNotAppendRecordWithTooLowASqn() {
-    // given
-    journal.append(1, recordDataWriter);
-
-    // when/then
-    assertThatThrownBy(() -> journal.append(0, recordDataWriter)).isInstanceOf(InvalidAsqn.class);
-    assertThatThrownBy(() -> journal.append(1, recordDataWriter)).isInstanceOf(InvalidAsqn.class);
-  }
-
-  @Test
-  void shouldNotAppendRecordWithTooLowASqnIfPreviousRecordIsIgnoreASqn() {
-    // given
-    journal.append(1, recordDataWriter);
-
-    // when
-    journal.append(ASQN_IGNORE, recordDataWriter);
-
-    // then
-    assertThatThrownBy(() -> journal.append(0, recordDataWriter)).isInstanceOf(InvalidAsqn.class);
-    assertThatThrownBy(() -> journal.append(1, recordDataWriter)).isInstanceOf(InvalidAsqn.class);
-  }
-
-  @Test
   void shouldReturnFirstIndex() {
     // when
     final long firstIndex = journal.append(recordDataWriter).index();
@@ -681,11 +558,11 @@ final class JournalTest {
         new RecordData(record.index(), record.asqn(), BufferUtil.cloneBuffer(record.data()));
 
     if (record instanceof PersistedJournalRecord p) {
-      return new PersistedJournalRecord(p.metadata(), data);
+      return new PersistedJournalRecord(p.metadata(), data, p.serializedRecord());
     }
 
     return new PersistedJournalRecord(
-        new RecordMetadata(record.checksum(), data.data().capacity()), data);
+        new RecordMetadata(record.checksum(), data.data().capacity()), data, null);
   }
 
   private SegmentedJournal openJournal() {
