@@ -21,6 +21,7 @@ import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import org.agrona.collections.Long2ObjectHashMap;
 import org.assertj.core.api.ThrowableAssert.ThrowingCallable;
@@ -175,12 +176,11 @@ public final class DistributionStateTest {
     // given
     final var distributionKey = 1L;
     final var pendingDistribution = createCommandDistributionRecord();
-    distributionState.addCommandDistribution(distributionKey, pendingDistribution);
 
     final int partitionId3 = 3;
     final int partitionId2 = 2;
-    distributionState.addPendingDistribution(distributionKey, partitionId2);
-    distributionState.addPendingDistribution(distributionKey, partitionId3);
+    addPendingDistributionForPartitions(
+        distributionKey, pendingDistribution, partitionId2, partitionId3);
 
     // when
     final List<VisitedPendingDistribution> visits = new ArrayList<>();
@@ -212,10 +212,8 @@ public final class DistributionStateTest {
     for (int distributionKey = 1; distributionKey <= 5; distributionKey++) {
       final var pendingDistribution = createCommandDistributionRecord();
       distributions.put(distributionKey, pendingDistribution);
-      distributionState.addCommandDistribution(distributionKey, pendingDistribution);
-
-      distributionState.addPendingDistribution(distributionKey, partitionId2);
-      distributionState.addPendingDistribution(distributionKey, partitionId3);
+      addPendingDistributionForPartitions(
+          distributionKey, pendingDistribution, partitionId2, partitionId3);
     }
 
     // when
@@ -249,11 +247,11 @@ public final class DistributionStateTest {
     // given
     final var distributionKey = 1L;
     final var pendingDistribution = createCommandDistributionRecord();
-    distributionState.addCommandDistribution(distributionKey, pendingDistribution);
-    final int partitionId3 = 3;
+
     final int partitionId2 = 2;
-    distributionState.addPendingDistribution(distributionKey, partitionId2);
-    distributionState.addPendingDistribution(distributionKey, partitionId3);
+    final int partitionId3 = 3;
+    addPendingDistributionForPartitions(
+        distributionKey, pendingDistribution, partitionId2, partitionId3);
     distributionState.removeCommandDistribution(distributionKey);
 
     // when
@@ -295,6 +293,16 @@ public final class DistributionStateTest {
         .setResourceName(wrapString("resource"));
 
     return deploymentRecord;
+  }
+
+  private void addPendingDistributionForPartitions(
+      final long distributionKey,
+      final CommandDistributionRecord pendingDistribution,
+      final int... partitionIds) {
+    distributionState.addCommandDistribution(distributionKey, pendingDistribution);
+    Arrays.stream(partitionIds)
+        .forEach(
+            partitionId -> distributionState.addPendingDistribution(distributionKey, partitionId));
   }
 
   record VisitedPendingDistribution(long key, CommandDistributionRecord record) {}
