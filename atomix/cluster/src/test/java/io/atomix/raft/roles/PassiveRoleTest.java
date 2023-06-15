@@ -26,6 +26,7 @@ import static org.mockito.Mockito.when;
 import io.atomix.cluster.MemberId;
 import io.atomix.raft.impl.RaftContext;
 import io.atomix.raft.metrics.RaftReplicationMetrics;
+import io.atomix.raft.protocol.AppendRequest;
 import io.atomix.raft.protocol.AppendResponse;
 import io.atomix.raft.protocol.PersistedRaftRecord;
 import io.atomix.raft.protocol.ProtocolVersionHandler;
@@ -93,7 +94,7 @@ public class PassiveRoleTest {
             .withCommitIndex(1)
             .build();
 
-    when(log.append(any(PersistedRaftRecord.class)))
+    when(log.append(any(ReplicatableJournalRecord.class)))
         .thenThrow(new JournalException.InvalidChecksum("expected"));
 
     // when
@@ -121,7 +122,7 @@ public class PassiveRoleTest {
             .withCommitIndex(2)
             .build();
 
-    when(log.append(any(PersistedRaftRecord.class)))
+    when(log.append(any(ReplicatableJournalRecord.class)))
         .thenReturn(mock(IndexedRaftLogEntry.class))
         .thenReturn(mock(IndexedRaftLogEntry.class));
 
@@ -151,7 +152,7 @@ public class PassiveRoleTest {
             .withCommitIndex(2)
             .build();
 
-    when(log.append(any(PersistedRaftRecord.class)))
+    when(log.append(any(ReplicatableJournalRecord.class)))
         .thenReturn(mock(IndexedRaftLogEntry.class))
         .thenThrow(new InvalidChecksum.InvalidChecksum("expected"));
 
@@ -178,7 +179,7 @@ public class PassiveRoleTest {
             .withCommitIndex(2)
             .build();
 
-    when(log.append(any(PersistedRaftRecord.class)))
+    when(log.append(any(ReplicatableJournalRecord.class)))
         .thenThrow(new InvalidChecksum.InvalidChecksum("expected"));
 
     // when
@@ -208,7 +209,7 @@ public class PassiveRoleTest {
             .withCommitIndex(3)
             .build();
 
-    when(log.append(any(PersistedRaftRecord.class)))
+    when(log.append(any(ReplicatableJournalRecord.class)))
         .thenReturn(mock(IndexedRaftLogEntry.class))
         .thenReturn(mock(IndexedRaftLogEntry.class))
         .thenThrow(new InvalidChecksum("expected"));
@@ -219,5 +220,21 @@ public class PassiveRoleTest {
 
     // then
     verify(log, times(1)).flush();
+  }
+
+  @Test
+  public void shouldAppendOldVersion() {
+    // given
+    final var entries = List.of(new PersistedRaftRecord(1, 1, 1, 1, new byte[1]));
+    final var request = new AppendRequest(2, "a", 0, 0, entries, 1);
+
+    when(log.append(any(PersistedRaftRecord.class))).thenReturn(mock(IndexedRaftLogEntry.class));
+
+    // when
+    final AppendResponse response =
+        role.handleAppend(ProtocolVersionHandler.transform(request)).join();
+
+    // then
+    assertThat(response.succeeded()).isTrue();
   }
 }
