@@ -23,7 +23,8 @@ import java.util.List;
 import java.util.Objects;
 
 /**
- * Append entries request that represent old version (version = 1)
+ * Append entries request that represent old version (version = 1) which only replicated the raft
+ * entry and not the complete serialized journal record.
  *
  * <p>Append entries requests are at the core of the replication protocol. Leaders send append
  * requests to followers to replicate and commit log entries, and followers sent append requests to

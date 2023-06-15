@@ -53,7 +53,7 @@ class RaftMessageContext {
     pollSubject = getSubject(prefix, "poll");
     voteSubject = getSubject(prefix, "vote");
     appendV1subject = getSubject(prefix, "append");
-    appendV2subject = getSubject(prefix, "append-v2");
+    appendV2subject = getSubject(prefix, "append-versioned");
     leaderHeartbeatSubject = getSubject(prefix, "leaderHeartbeat");
   }
 
