@@ -183,10 +183,10 @@ public final class DistributionStateTest {
         distributionKey, pendingDistribution, partitionId2, partitionId3);
 
     // when
-    final List<VisitedPendingDistribution> visits = new ArrayList<>();
+    final List<PendingDistribution> visits = new ArrayList<>();
     distributionState.foreachPendingDistribution(
         (key, commandDistributionRecord) ->
-            visits.add(new VisitedPendingDistribution(key, commandDistributionRecord)));
+            visits.add(new PendingDistribution(key, commandDistributionRecord)));
 
     // then
     assertThat(visits)
@@ -197,7 +197,7 @@ public final class DistributionStateTest {
                     .hasIntent(pendingDistribution.getIntent())
                     .hasValueType(pendingDistribution.getValueType())
                     .hasCommandValue(pendingDistribution.getCommandValue()))
-        .extracting(VisitedPendingDistribution::record)
+        .extracting(PendingDistribution::record)
         .extracting(CommandDistributionRecord::getPartitionId)
         .describedAs("Expect that pending distributions are visited for all other partitions")
         .containsExactly(partitionId2, partitionId3);
@@ -217,14 +217,14 @@ public final class DistributionStateTest {
     }
 
     // when
-    final List<VisitedPendingDistribution> visits = new ArrayList<>();
+    final List<PendingDistribution> visits = new ArrayList<>();
     distributionState.foreachPendingDistribution(
         (key, commandDistributionRecord) ->
-            visits.add(new VisitedPendingDistribution(key, commandDistributionRecord)));
+            visits.add(new PendingDistribution(key, commandDistributionRecord)));
 
     // then
     assertThat(visits)
-        .extracting(VisitedPendingDistribution::key)
+        .extracting(PendingDistribution::key)
         .describedAs("Expect that all pending distribution are visited")
         .containsOnly(1L, 2L, 3L, 4L, 5L);
     assertThat(visits)
@@ -235,7 +235,7 @@ public final class DistributionStateTest {
                     .hasValueType(distributions.get(visited.key).getValueType())
                     .hasCommandValue(distributions.get(visited.key).getCommandValue()));
     assertThat(visits)
-        .extracting(VisitedPendingDistribution::record)
+        .extracting(PendingDistribution::record)
         .extracting(CommandDistributionRecord::getPartitionId)
         .describedAs("Expect that pending distributions are visited for all other partitions")
         .containsOnly(partitionId2, partitionId3);
@@ -255,10 +255,10 @@ public final class DistributionStateTest {
     distributionState.removeCommandDistribution(distributionKey);
 
     // when
-    final List<VisitedPendingDistribution> visits = new ArrayList<>();
+    final List<PendingDistribution> visits = new ArrayList<>();
     distributionState.foreachPendingDistribution(
         (key, commandDistributionRecord) ->
-            visits.add(new VisitedPendingDistribution(key, commandDistributionRecord)));
+            visits.add(new PendingDistribution(key, commandDistributionRecord)));
 
     // then
     assertThat(visits).isEmpty();
@@ -305,5 +305,5 @@ public final class DistributionStateTest {
             partitionId -> distributionState.addPendingDistribution(distributionKey, partitionId));
   }
 
-  record VisitedPendingDistribution(long key, CommandDistributionRecord record) {}
+  record PendingDistribution(long key, CommandDistributionRecord record) {}
 }
