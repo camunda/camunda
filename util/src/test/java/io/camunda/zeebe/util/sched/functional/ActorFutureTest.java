@@ -44,7 +44,11 @@ public final class ActorFutureTest {
         new Actor() {
           @Override
           protected void onActorStarted() {
-            actor.runOnCompletion(future, (r, t) -> callbackInvocations.incrementAndGet());
+            actor.runOnCompletion(
+                future,
+                (r, t) -> {
+                  callbackInvocations.incrementAndGet();
+                });
           }
         };
 
@@ -636,6 +640,73 @@ public final class ActorFutureTest {
 
     // then
     assertThat(callBackError.get())
+        .isInstanceOf(RuntimeException.class)
+        .hasMessageContaining("Expected");
+    assertThat(executorCount).hasValue(1);
+  }
+
+  @Test
+  public void shouldInvokeCallbackAddedAfterCompletionIfCallerIsNonActor() {
+    // given
+    final CompletableActorFuture<Integer> future = new CompletableActorFuture<>();
+    final AtomicInteger futureResult = new AtomicInteger();
+
+    final Actor completingActor =
+        new Actor() {
+          @Override
+          protected void onActorStarted() {
+            future.complete(1);
+          }
+        };
+
+    schedulerRule.submitActor(completingActor);
+    schedulerRule.workUntilDone();
+
+    // when
+    final AtomicInteger executorCount = new AtomicInteger(0);
+    final Executor decoratedExecutor =
+        runnable -> {
+          executorCount.getAndIncrement();
+          runnable.run();
+        };
+
+    future.onComplete((r, t) -> futureResult.set(r), decoratedExecutor);
+
+    // then
+    assertThat(futureResult.get()).isOne();
+    assertThat(executorCount).hasValue(1);
+  }
+
+  @Test
+  public void shouldInvokeCallbackAddedAfterCompletionErrorIfCallerIsNonActor() {
+    // given
+    final CompletableActorFuture<Integer> future = new CompletableActorFuture<>();
+    final AtomicReference<Throwable> futureResult = new AtomicReference<>();
+
+    final Actor completingActor =
+        new Actor() {
+          @Override
+          protected void onActorStarted() {
+            future.completeExceptionally(new RuntimeException("Expected"));
+          }
+        };
+
+    schedulerRule.submitActor(completingActor);
+    schedulerRule.workUntilDone();
+
+    // when
+
+    final AtomicInteger executorCount = new AtomicInteger(0);
+    final Executor decoratedExecutor =
+        runnable -> {
+          executorCount.getAndIncrement();
+          runnable.run();
+        };
+
+    future.onComplete((r, t) -> futureResult.set(t), decoratedExecutor);
+
+    // then
+    assertThat(futureResult.get())
         .isInstanceOf(RuntimeException.class)
         .hasMessageContaining("Expected");
     assertThat(executorCount).hasValue(1);
