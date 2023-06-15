@@ -152,7 +152,7 @@ final class JournalAppendTest {
   }
 
   @Test
-  void shouldAppendRecordWithASqnToIgnore() {
+  void shouldAppendRecordWithASQNToIgnore() {
     // given
     journal.append(1, recordDataWriter);
 
@@ -183,7 +183,7 @@ final class JournalAppendTest {
   }
 
   @Test
-  void shouldNotAppendRecordWithTooLowASqn() {
+  void shouldNotAppendRecordWithTooLowASQN() {
     // given
     journal.append(1, recordDataWriter);
 
@@ -193,7 +193,7 @@ final class JournalAppendTest {
   }
 
   @Test
-  void shouldNotAppendRecordWithTooLowASqnIfPreviousRecordIsIgnoreASqn() {
+  void shouldNotAppendRecordWithTooLowASQNIfPreviousRecordIsIgnoreASQN() {
     // given
     journal.append(1, recordDataWriter);
 
