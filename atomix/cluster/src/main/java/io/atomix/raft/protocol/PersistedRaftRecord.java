@@ -62,7 +62,8 @@ public class PersistedRaftRecord implements JournalRecord {
 
   @Override
   public DirectBuffer serializedRecord() {
-    return null;
+    throw new UnsupportedOperationException(
+        "Serialized journal record is not available in PersistedRaftRecord");
   }
 
   /**
