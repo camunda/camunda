@@ -12,6 +12,7 @@ import static io.camunda.zeebe.db.impl.rocksdb.transaction.RocksDbInternal.isRoc
 import io.camunda.zeebe.db.TransactionOperation;
 import io.camunda.zeebe.db.ZeebeDbException;
 import io.camunda.zeebe.db.ZeebeDbTransaction;
+import org.agrona.LangUtil;
 import org.rocksdb.ColumnFamilyHandle;
 import org.rocksdb.ReadOptions;
 import org.rocksdb.RocksDBException;
@@ -44,8 +45,12 @@ public class ZeebeTransaction implements ZeebeDbTransaction, AutoCloseable {
       final byte[] value,
       final int valueLength)
       throws Exception {
-    RocksDbInternal.putWithHandle.invoke(
-        transaction, nativeHandle, key, keyLength, value, valueLength, columnFamilyHandle, false);
+    try {
+      RocksDbInternal.putWithHandle.invokeExact(
+          transaction, nativeHandle, key, keyLength, value, valueLength, columnFamilyHandle, false);
+    } catch (Throwable e) {
+      LangUtil.rethrowUnchecked(e);
+    }
   }
 
   public byte[] get(
@@ -54,15 +59,24 @@ public class ZeebeTransaction implements ZeebeDbTransaction, AutoCloseable {
       final byte[] key,
       final int keyLength)
       throws Exception {
-    return (byte[])
-        RocksDbInternal.getWithHandle.invoke(
-            transaction, nativeHandle, readOptionsHandle, key, keyLength, columnFamilyHandle);
+    try {
+      return (byte[])
+          RocksDbInternal.getWithHandle.invokeExact(
+              transaction, nativeHandle, readOptionsHandle, key, keyLength, columnFamilyHandle);
+    } catch (Throwable e) {
+      LangUtil.rethrowUnchecked(e);
+      return null; // unreachable
+    }
   }
 
   public void delete(final long columnFamilyHandle, final byte[] key, final int keyLength)
       throws Exception {
-    RocksDbInternal.removeWithHandle.invoke(
-        transaction, nativeHandle, key, keyLength, columnFamilyHandle, false);
+    try {
+      RocksDbInternal.removeWithHandle.invokeExact(
+          transaction, nativeHandle, key, keyLength, columnFamilyHandle, false);
+    } catch (Throwable e) {
+      LangUtil.rethrowUnchecked(e);
+    }
   }
 
   public RocksIterator newIterator(final ReadOptions options, final ColumnFamilyHandle handle) {
