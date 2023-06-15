@@ -6,7 +6,7 @@
     "@bpmn-io/element-template-icon-renderer": "0.4.0",
     "@camunda-cloud/common-ui": "0.0.18-rc13",
     "@camunda-cloud/common-ui-react": "0.0.18-rc13",
-    "@camunda/camunda-composite-components": "0.0.28",
+    "@camunda/camunda-composite-components": "0.0.40",
     "@carbon/elements": "11.22.0",
     "@carbon/react": "1.27.0",
     "@devbookhq/splitter": "1.4.0",
@@ -92,7 +92,8 @@
     "testcafe": "2.5.0",
     "ts-toolbelt": "9.6.0",
     "typescript": "5.0.4",
-    "zeebe-node": "8.1.2"
+    "zeebe-node": "8.1.2",
+    "event-source-polyfill": "1.0.31"
   },
   "lint-staged": {
     "*": [

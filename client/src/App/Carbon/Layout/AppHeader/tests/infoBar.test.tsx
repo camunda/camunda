@@ -45,12 +45,22 @@ describe('Info bar', () => {
       '_blank'
     );
 
+    await user.click(
+      await screen.findByRole('button', {
+        name: /info/i,
+      })
+    );
     await user.click(screen.getByRole('button', {name: 'Camunda Academy'}));
     expect(mockOpenFn).toHaveBeenLastCalledWith(
       'https://academy.camunda.com/',
       '_blank'
     );
 
+    await user.click(
+      await screen.findByRole('button', {
+        name: /info/i,
+      })
+    );
     await user.click(
       screen.getByRole('button', {name: 'Slack Community Channel'})
     );

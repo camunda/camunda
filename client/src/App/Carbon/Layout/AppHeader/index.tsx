@@ -141,7 +141,6 @@ const AppHeader: React.FC = observer(() => {
               ],
       }}
       appBar={{
-        type: 'app',
         ariaLabel: 'App Panel',
         isOpen: false,
         elements: window.clientConfig?.organizationId
@@ -165,7 +164,6 @@ const AppHeader: React.FC = observer(() => {
         },
       }}
       infoSideBar={{
-        type: 'info',
         isOpen: false,
         ariaLabel: 'Info',
         elements: [
@@ -230,7 +228,6 @@ const AppHeader: React.FC = observer(() => {
         ],
       }}
       userSideBar={{
-        type: 'user',
         ariaLabel: 'Settings',
         customElements: {
           profile: {

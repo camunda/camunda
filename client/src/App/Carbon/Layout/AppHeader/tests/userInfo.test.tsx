@@ -137,12 +137,22 @@ describe('User info', () => {
       '_blank'
     );
 
+    await user.click(
+      await screen.findByRole('button', {
+        name: /settings/i,
+      })
+    );
     await user.click(screen.getByRole('button', {name: 'Privacy policy'}));
     expect(mockOpenFn).toHaveBeenLastCalledWith(
       'https://camunda.com/legal/privacy/',
       '_blank'
     );
 
+    await user.click(
+      await screen.findByRole('button', {
+        name: /settings/i,
+      })
+    );
     await user.click(screen.getByRole('button', {name: 'Imprint'}));
     expect(mockOpenFn).toHaveBeenLastCalledWith(
       'https://camunda.com/legal/imprint/',
