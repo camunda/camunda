@@ -434,7 +434,7 @@ class SegmentedJournalTest {
                 firstRecord.index(),
                 firstRecord.asqn(),
                 BufferUtil.cloneBuffer(firstRecord.data())),
-            firstRecord.serializedRecord());
+            BufferUtil.cloneBuffer(firstRecord.serializedRecord()));
     journal.append(journalFactory.entry());
 
     // close the journal before corrupting the segment; since we "flush" when closing, we need to
