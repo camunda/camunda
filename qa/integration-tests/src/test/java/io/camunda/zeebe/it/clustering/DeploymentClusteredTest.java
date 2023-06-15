@@ -16,7 +16,7 @@ import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.record.Record;
-import io.camunda.zeebe.protocol.record.intent.DeploymentDistributionIntent;
+import io.camunda.zeebe.protocol.record.intent.CommandDistributionIntent;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
@@ -126,9 +126,8 @@ public final class DeploymentClusteredTest {
     final var processDefinitionKey = deploymentEvent.getKey();
 
     assertThat(
-            RecordingExporter.deploymentDistributionRecords()
-                .withIntent(DeploymentDistributionIntent.COMPLETED)
-                .withPartitionId(3)
+            RecordingExporter.commandDistributionRecords(CommandDistributionIntent.ACKNOWLEDGED)
+                .withDistributionPartitionId(3)
                 .findFirst())
         .isPresent();
 
@@ -143,9 +142,8 @@ public final class DeploymentClusteredTest {
     clientRule.waitUntilDeploymentIsDone(processDefinitionKey);
 
     assertThat(
-            RecordingExporter.deploymentDistributionRecords()
-                .withIntent(DeploymentDistributionIntent.COMPLETED)
-                .withPartitionId(2)
+            RecordingExporter.commandDistributionRecords(CommandDistributionIntent.ACKNOWLEDGED)
+                .withDistributionPartitionId(2)
                 .findFirst())
         .isPresent();
   }
@@ -180,7 +178,7 @@ public final class DeploymentClusteredTest {
         .pollInterval(Duration.ofMillis(200))
         .until(
             () ->
-                RecordingExporter.deploymentRecords(DeploymentIntent.DISTRIBUTE)
+                RecordingExporter.deploymentRecords(DeploymentIntent.CREATE)
                     .withPartitionId(2)
                     .withResourceName("dmn/decision-table.dmn")
                     .findAny()
@@ -200,7 +198,7 @@ public final class DeploymentClusteredTest {
         .untilAsserted(
             () ->
                 assertThat(
-                        RecordingExporter.deploymentRecords(DeploymentIntent.DISTRIBUTED)
+                        RecordingExporter.deploymentRecords(DeploymentIntent.CREATED)
                             .withPartitionId(2)
                             .withResourceName("dmn/decision-table.dmn")
                             .limit(2))

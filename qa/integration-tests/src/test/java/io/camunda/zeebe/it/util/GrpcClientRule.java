@@ -23,6 +23,7 @@ import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.builder.ServiceTaskBuilder;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.CommandDistributionIntent;
+import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.netty.util.NetUtil;
@@ -104,12 +105,22 @@ public final class GrpcClientRule extends ExternalResource {
   }
 
   public void waitUntilDeploymentIsDone(final long key) {
-    waitUntil(
-        () ->
-            RecordingExporter.commandDistributionRecords()
-                .withIntent(CommandDistributionIntent.FINISHED)
-                .withRecordKey(key)
-                .exists());
+    if (getPartitions().size() > 1) {
+      waitUntil(
+          () ->
+              RecordingExporter.commandDistributionRecords()
+                  .withDistributionIntent(DeploymentIntent.CREATE)
+                  .withRecordKey(key)
+                  .withIntent(CommandDistributionIntent.FINISHED)
+                  .exists());
+    } else {
+      waitUntil(
+          () ->
+              RecordingExporter.deploymentRecords()
+                  .withIntent(DeploymentIntent.CREATED)
+                  .withRecordKey(key)
+                  .exists());
+    }
   }
 
   public List<Integer> getPartitions() {
