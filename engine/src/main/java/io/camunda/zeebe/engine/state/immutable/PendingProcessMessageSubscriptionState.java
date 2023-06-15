@@ -5,7 +5,7 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.camunda.zeebe.engine.state.mutable;
+package io.camunda.zeebe.engine.state.immutable;
 
 import io.camunda.zeebe.engine.state.immutable.ProcessMessageSubscriptionState.ProcessMessageSubscriptionVisitor;
 import io.camunda.zeebe.protocol.impl.record.value.message.ProcessMessageSubscriptionRecord;
@@ -16,9 +16,18 @@ import io.camunda.zeebe.protocol.impl.record.value.message.ProcessMessageSubscri
  * during opening or closing of a process message subscription. This state is not persisted to disk
  * and needs to be recovered after restart
  */
-public interface MutablePendingProcessMessageSubscriptionState {
+public interface PendingProcessMessageSubscriptionState {
 
-  void visitSubscriptionBefore(long deadline, ProcessMessageSubscriptionVisitor visitor);
+  /**
+   * Visits all pending process message subscriptions where a command hasn't been sent out since a
+   * given deadline. The visitor is called for each subscription, from the oldest to the newest.
+   */
+  void visitPending(long deadline, ProcessMessageSubscriptionVisitor visitor);
 
-  void updateSentTime(ProcessMessageSubscriptionRecord record, long commandSentTime);
+  /**
+   * Should be called when a pending subscription is sent out. This is used to keep track of the
+   * last time a command was sent out for a subscription. Freshly sent-out subscriptions are not
+   * visited by {@link #visitPending(long, ProcessMessageSubscriptionVisitor)}.
+   */
+  void onSent(ProcessMessageSubscriptionRecord record, long timestampMs);
 }

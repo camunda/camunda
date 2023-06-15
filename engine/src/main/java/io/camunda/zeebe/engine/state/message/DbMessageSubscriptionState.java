@@ -14,10 +14,12 @@ import io.camunda.zeebe.db.impl.DbCompositeKey;
 import io.camunda.zeebe.db.impl.DbLong;
 import io.camunda.zeebe.db.impl.DbNil;
 import io.camunda.zeebe.db.impl.DbString;
+import io.camunda.zeebe.engine.state.immutable.PendingMessageSubscriptionState;
+import io.camunda.zeebe.engine.state.message.TransientPendingSubscriptionState.PendingSubscription;
 import io.camunda.zeebe.engine.state.mutable.MutableMessageSubscriptionState;
-import io.camunda.zeebe.engine.state.mutable.MutablePendingMessageSubscriptionState;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageSubscriptionRecord;
+import io.camunda.zeebe.scheduler.clock.ActorClock;
 import io.camunda.zeebe.stream.api.ReadonlyStreamProcessorContext;
 import io.camunda.zeebe.stream.api.StreamProcessorLifecycleAware;
 import io.camunda.zeebe.util.buffer.BufferUtil;
@@ -25,7 +27,7 @@ import org.agrona.DirectBuffer;
 
 public final class DbMessageSubscriptionState
     implements MutableMessageSubscriptionState,
-        MutablePendingMessageSubscriptionState,
+        PendingMessageSubscriptionState,
         StreamProcessorLifecycleAware {
 
   // (elementInstanceKey, messageName) => MessageSubscription
@@ -44,8 +46,8 @@ public final class DbMessageSubscriptionState
   private final ColumnFamily<DbCompositeKey<DbCompositeKey<DbString, DbString>, DbLong>, DbNil>
       messageNameAndCorrelationKeyColumnFamily;
 
-  private final PendingMessageSubscriptionState transientState =
-      new PendingMessageSubscriptionState(this);
+  private final TransientPendingSubscriptionState transientState =
+      new TransientPendingSubscriptionState();
 
   public DbMessageSubscriptionState(
       final ZeebeDb<ZbColumnFamilies> zeebeDb, final TransactionContext transactionContext) {
@@ -78,7 +80,9 @@ public final class DbMessageSubscriptionState
     subscriptionColumnFamily.forEach(
         subscription -> {
           if (subscription.isCorrelating()) {
-            transientState.add(subscription.getRecord());
+            transientState.add(
+                new PendingSubscription(elementInstanceKey.getValue(), messageName.toString()),
+                ActorClock.currentTimeMillis());
           }
         });
   }
@@ -151,13 +155,20 @@ public final class DbMessageSubscriptionState
 
     updateCorrelatingFlag(subscription, true);
 
-    transientState.add(record);
+    transientState.update(
+        new PendingSubscription(
+            subscription.getRecord().getElementInstanceKey(),
+            subscription.getRecord().getMessageName()),
+        ActorClock.currentTimeMillis());
   }
 
   @Override
   public void updateToCorrelatedState(final MessageSubscription subscription) {
     updateCorrelatingFlag(subscription, false);
-    transientState.remove(subscription.getRecord());
+    transientState.remove(
+        new PendingSubscription(
+            subscription.getRecord().getElementInstanceKey(),
+            subscription.getRecord().getMessageName()));
   }
 
   @Override
@@ -184,7 +195,8 @@ public final class DbMessageSubscriptionState
     correlationKey.wrapBuffer(record.getCorrelationKeyBuffer());
     messageNameAndCorrelationKeyColumnFamily.deleteExisting(nameCorrelationAndElementInstanceKey);
 
-    transientState.remove(subscription.getRecord());
+    transientState.remove(
+        new PendingSubscription(elementInstanceKey.getValue(), messageName.toString()));
   }
 
   private void updateCorrelatingFlag(
@@ -213,13 +225,20 @@ public final class DbMessageSubscriptionState
   }
 
   @Override
-  public void visitSubscriptionBefore(
-      final long deadline, final MessageSubscriptionVisitor visitor) {
-    transientState.visitSubscriptionBefore(deadline, visitor);
+  public void visitPending(final long deadline, final MessageSubscriptionVisitor visitor) {
+    for (final var pendingSubscription : transientState.entriesBefore(deadline)) {
+      final var subscription =
+          get(
+              pendingSubscription.elementInstanceKey(),
+              BufferUtil.wrapString(pendingSubscription.messageName()));
+
+      visitor.visit(subscription);
+    }
   }
 
   @Override
-  public void updateCommandSentTime(final MessageSubscriptionRecord record, final long sentTime) {
-    transientState.updateCommandSentTime(record, sentTime);
+  public void onSent(
+      final long elementInstanceKey, final String messageName, final long timestampMs) {
+    transientState.update(new PendingSubscription(elementInstanceKey, messageName), timestampMs);
   }
 }

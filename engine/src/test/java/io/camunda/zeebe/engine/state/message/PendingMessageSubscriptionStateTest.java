@@ -10,8 +10,8 @@ package io.camunda.zeebe.engine.state.message;
 import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.zeebe.engine.state.immutable.PendingMessageSubscriptionState;
 import io.camunda.zeebe.engine.state.mutable.MutableMessageSubscriptionState;
-import io.camunda.zeebe.engine.state.mutable.MutablePendingMessageSubscriptionState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.util.ProcessingStateRule;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageSubscriptionRecord;
@@ -28,7 +28,7 @@ public final class PendingMessageSubscriptionStateTest {
   @Rule public final ProcessingStateRule stateRule = new ProcessingStateRule();
 
   private MutableMessageSubscriptionState persistentState;
-  private MutablePendingMessageSubscriptionState transientState;
+  private PendingMessageSubscriptionState transientState;
 
   @Before
   public void setUp() {
@@ -44,17 +44,16 @@ public final class PendingMessageSubscriptionStateTest {
     final var subscription1 = subscriptionWithElementInstanceKey(1L);
     persistentState.put(1L, subscription1);
     persistentState.updateToCorrelatingState(subscription1);
-    transientState.updateCommandSentTime(subscription1, 1_000);
+    transientState.onSent(subscription1, 1_000);
 
     final var subscription2 = subscriptionWithElementInstanceKey(2L);
     persistentState.put(2L, subscription2);
     persistentState.updateToCorrelatingState(subscription2);
-    transientState.updateCommandSentTime(subscription2, 3_000);
+    transientState.onSent(subscription2, 3_000);
 
     // then
     final List<Long> keys = new ArrayList<>();
-    transientState.visitSubscriptionBefore(
-        1_000, s -> keys.add(s.getRecord().getElementInstanceKey()));
+    transientState.visitPending(1_000, s -> keys.add(s.getRecord().getElementInstanceKey()));
 
     assertThat(keys).isEmpty();
   }
@@ -65,17 +64,16 @@ public final class PendingMessageSubscriptionStateTest {
     final var subscription1 = subscriptionWithElementInstanceKey(1L);
     persistentState.put(1L, subscription1);
     persistentState.updateToCorrelatingState(subscription1);
-    transientState.updateCommandSentTime(subscription1, 1_000);
+    transientState.onSent(subscription1, 1_000);
 
     final var subscription2 = subscriptionWithElementInstanceKey(2L);
     persistentState.put(2L, subscription2);
     persistentState.updateToCorrelatingState(subscription2);
-    transientState.updateCommandSentTime(subscription2, 3_000);
+    transientState.onSent(subscription2, 3_000);
 
     // then
     final List<Long> keys = new ArrayList<>();
-    transientState.visitSubscriptionBefore(
-        2_000, s -> keys.add(s.getRecord().getElementInstanceKey()));
+    transientState.visitPending(2_000, s -> keys.add(s.getRecord().getElementInstanceKey()));
 
     assertThat(keys).hasSize(1).contains(1L);
   }
@@ -86,17 +84,16 @@ public final class PendingMessageSubscriptionStateTest {
     final var subscription1 = subscriptionWithElementInstanceKey(1L);
     persistentState.put(1L, subscription1);
     persistentState.updateToCorrelatingState(subscription1);
-    transientState.updateCommandSentTime(subscription1, 1_000);
+    transientState.onSent(subscription1, 1_000);
 
     final var subscription2 = subscriptionWithElementInstanceKey(2L);
     persistentState.put(2L, subscription2);
     persistentState.updateToCorrelatingState(subscription2);
-    transientState.updateCommandSentTime(subscription2, 2_000);
+    transientState.onSent(subscription2, 2_000);
 
     // then
     final List<Long> keys = new ArrayList<>();
-    transientState.visitSubscriptionBefore(
-        3_000, s -> keys.add(s.getRecord().getElementInstanceKey()));
+    transientState.visitPending(3_000, s -> keys.add(s.getRecord().getElementInstanceKey()));
 
     assertThat(keys).hasSize(2).containsExactly(1L, 2L);
   }
@@ -107,15 +104,14 @@ public final class PendingMessageSubscriptionStateTest {
     final var subscription1 = subscriptionWithElementInstanceKey(1L);
     persistentState.put(1L, subscription1);
     persistentState.updateToCorrelatingState(subscription1);
-    transientState.updateCommandSentTime(subscription1, 1_000);
+    transientState.onSent(subscription1, 1_000);
 
     final var subscription2 = subscriptionWithElementInstanceKey(2L);
     persistentState.put(2L, subscription2);
 
     // then
     final List<Long> keys = new ArrayList<>();
-    transientState.visitSubscriptionBefore(
-        2_000, s -> keys.add(s.getRecord().getElementInstanceKey()));
+    transientState.visitPending(2_000, s -> keys.add(s.getRecord().getElementInstanceKey()));
 
     assertThat(keys).hasSize(1).contains(1L);
   }
@@ -131,21 +127,19 @@ public final class PendingMessageSubscriptionStateTest {
 
     // when
     persistentState.updateToCorrelatingState(subscription.getRecord());
-    transientState.updateCommandSentTime(subscription.getRecord(), 1_000);
+    transientState.onSent(subscription.getRecord(), 1_000);
 
     // then
     final List<Long> keys = new ArrayList<>();
-    transientState.visitSubscriptionBefore(
-        2_000, s -> keys.add(s.getRecord().getElementInstanceKey()));
+    transientState.visitPending(2_000, s -> keys.add(s.getRecord().getElementInstanceKey()));
 
     assertThat(keys).hasSize(1).contains(1L);
 
     // and
-    transientState.updateCommandSentTime(subscription.getRecord(), 1_500);
+    transientState.onSent(subscription.getRecord(), 1_500);
 
     keys.clear();
-    transientState.visitSubscriptionBefore(
-        2_000, s -> keys.add(s.getRecord().getElementInstanceKey()));
+    transientState.visitPending(2_000, s -> keys.add(s.getRecord().getElementInstanceKey()));
 
     assertThat(keys).hasSize(1).contains(1L);
   }
@@ -165,7 +159,7 @@ public final class PendingMessageSubscriptionStateTest {
     // when
     subscription.setVariables(MsgPackUtil.asMsgPack("{\"foo\":\"bar\"}")).setMessageKey(5L);
     persistentState.updateToCorrelatingState(subscription);
-    transientState.updateCommandSentTime(subscription, 1_000);
+    transientState.onSent(subscription, 1_000);
 
     // then
     assertThat(
@@ -189,8 +183,7 @@ public final class PendingMessageSubscriptionStateTest {
 
     // and
     final List<Long> keys = new ArrayList<>();
-    transientState.visitSubscriptionBefore(
-        2_000, s -> keys.add(s.getRecord().getElementInstanceKey()));
+    transientState.visitPending(2_000, s -> keys.add(s.getRecord().getElementInstanceKey()));
 
     assertThat(keys).hasSize(1).contains(1L);
   }
@@ -201,7 +194,7 @@ public final class PendingMessageSubscriptionStateTest {
     final var subscription = subscriptionWithElementInstanceKey(1L);
     persistentState.put(1L, subscription);
     persistentState.updateToCorrelatingState(subscription);
-    transientState.updateCommandSentTime(subscription, 1_000);
+    transientState.onSent(subscription, 1_000);
 
     // when
     persistentState.remove(1L, subscription.getMessageNameBuffer());
@@ -216,8 +209,7 @@ public final class PendingMessageSubscriptionStateTest {
     assertThat(keys).isEmpty();
 
     // and
-    transientState.visitSubscriptionBefore(
-        2_000, s -> keys.add(s.getRecord().getElementInstanceKey()));
+    transientState.visitPending(2_000, s -> keys.add(s.getRecord().getElementInstanceKey()));
 
     assertThat(keys).isEmpty();
 

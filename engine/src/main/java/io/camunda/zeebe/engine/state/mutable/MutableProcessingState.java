@@ -62,9 +62,5 @@ public interface MutableProcessingState extends ProcessingState {
 
   MutableMigrationState getMigrationState();
 
-  MutablePendingMessageSubscriptionState getPendingMessageSubscriptionState();
-
-  MutablePendingProcessMessageSubscriptionState getPendingProcessMessageSubscriptionState();
-
   KeyGenerator getKeyGenerator();
 }
