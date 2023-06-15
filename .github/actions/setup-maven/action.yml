@@ -35,7 +35,7 @@ runs:
     uses: s4u/setup-maven-action@v1.8.0
     with:
       java-version: ${{ inputs.java-version }}
-      distribution: ${{ inputs.distribution }}
+      java-distribution: ${{ inputs.distribution }}
       maven-version: ${{ inputs.maven-version }}
   - name: 'Create settings.xml'
     uses: s4u/maven-settings-action@v2.8.0
