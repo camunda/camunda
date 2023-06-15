@@ -31,6 +31,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 
 @ExtendWith(ProcessingStateExtension.class)
 public final class DistributionStateTest {
+  private final StateHelper stateHelper = new StateHelper();
   private MutableProcessingState processingState;
   private MutableDistributionState distributionState;
 
@@ -174,13 +175,11 @@ public final class DistributionStateTest {
   @Test
   public void shouldIterateOverPendingDistributions() {
     // given
-    final var distributionKey = 1L;
-    final var pendingDistribution = createCommandDistributionRecord();
-
+    final var pendingDistribution = new PendingDistribution(1L, createCommandDistributionRecord());
     final int partitionId3 = 3;
     final int partitionId2 = 2;
-    addPendingDistributionForPartitions(
-        distributionKey, pendingDistribution, partitionId2, partitionId3);
+    stateHelper.addPendingDistributionForPartitions(
+        pendingDistribution, partitionId2, partitionId3);
 
     // when
     final List<PendingDistribution> visits = new ArrayList<>();
@@ -190,13 +189,13 @@ public final class DistributionStateTest {
 
     // then
     assertThat(visits)
-        .allSatisfy(visited -> assertThat(visited.key()).isEqualTo(distributionKey))
+        .allSatisfy(visited -> assertThat(visited.key()).isEqualTo(pendingDistribution.key))
         .allSatisfy(
             visited ->
                 Assertions.assertThat(visited.record())
-                    .hasIntent(pendingDistribution.getIntent())
-                    .hasValueType(pendingDistribution.getValueType())
-                    .hasCommandValue(pendingDistribution.getCommandValue()))
+                    .hasIntent(pendingDistribution.record.getIntent())
+                    .hasValueType(pendingDistribution.record.getValueType())
+                    .hasCommandValue(pendingDistribution.record.getCommandValue()))
         .extracting(PendingDistribution::record)
         .extracting(CommandDistributionRecord::getPartitionId)
         .describedAs("Expect that pending distributions are visited for all other partitions")
@@ -212,8 +211,10 @@ public final class DistributionStateTest {
     for (int distributionKey = 1; distributionKey <= 5; distributionKey++) {
       final var pendingDistribution = createCommandDistributionRecord();
       distributions.put(distributionKey, pendingDistribution);
-      addPendingDistributionForPartitions(
-          distributionKey, pendingDistribution, partitionId2, partitionId3);
+      stateHelper.addPendingDistributionForPartitions(
+          new PendingDistribution(distributionKey, pendingDistribution),
+          partitionId2,
+          partitionId3);
     }
 
     // when
@@ -245,14 +246,12 @@ public final class DistributionStateTest {
   @Test
   public void shouldNotFailOnMissingDeploymentInState() {
     // given
-    final var distributionKey = 1L;
-    final var pendingDistribution = createCommandDistributionRecord();
-
+    final var pendingDistribution = new PendingDistribution(1L, createCommandDistributionRecord());
     final int partitionId2 = 2;
     final int partitionId3 = 3;
-    addPendingDistributionForPartitions(
-        distributionKey, pendingDistribution, partitionId2, partitionId3);
-    distributionState.removeCommandDistribution(distributionKey);
+    stateHelper.addPendingDistributionForPartitions(
+        pendingDistribution, partitionId2, partitionId3);
+    distributionState.removeCommandDistribution(pendingDistribution.key);
 
     // when
     final List<PendingDistribution> visits = new ArrayList<>();
@@ -295,14 +294,16 @@ public final class DistributionStateTest {
     return deploymentRecord;
   }
 
-  private void addPendingDistributionForPartitions(
-      final long distributionKey,
-      final CommandDistributionRecord pendingDistribution,
-      final int... partitionIds) {
-    distributionState.addCommandDistribution(distributionKey, pendingDistribution);
-    Arrays.stream(partitionIds)
-        .forEach(
-            partitionId -> distributionState.addPendingDistribution(distributionKey, partitionId));
+  /** Little helper class, to simplify test setup of the State */
+  final class StateHelper {
+    private void addPendingDistributionForPartitions(
+        final PendingDistribution pendingDistribution, final int... partitionIds) {
+      distributionState.addCommandDistribution(pendingDistribution.key, pendingDistribution.record);
+      Arrays.stream(partitionIds)
+          .forEach(
+              partitionId ->
+                  distributionState.addPendingDistribution(pendingDistribution.key, partitionId));
+    }
   }
 
   record PendingDistribution(long key, CommandDistributionRecord record) {}
