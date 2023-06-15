@@ -18,6 +18,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.BiConsumer;
@@ -228,7 +229,38 @@ public final class CompletableActorFuture<V> implements ActorFuture<V> {
 
   @Override
   public void onComplete(final BiConsumer<V, Throwable> consumer, final Executor executor) {
-    blockedCallbacks.add((res, error) -> executor.execute(() -> consumer.accept(res, error)));
+    // There is a possible race condition that the future is completed before adding the consumer to
+    // blockedCallBacks. Then the consumer will never get executed. To ensure that the
+    // consumer is executed we check if the future is done, and trigger the consumer. However, if
+    // future is completed after adding the consumer to the blockedCallBacks, but before the next
+    // isDone is called the consumer might be triggered twice. To ensure exactly once execution, we
+    // use the AtomicBoolean executedOnce. Since this method is not usually called from any actor,
+    // this extra overhead would be acceptable.
+
+    final AtomicBoolean executedOnce = new AtomicBoolean(false);
+    final BiConsumer<V, Throwable> checkedConsumer =
+        (res, error) ->
+            executor.execute(
+                () -> {
+                  if (executedOnce.compareAndSet(false, true)) {
+                    consumer.accept(res, error);
+                  }
+                });
+
+    if (!isDone()) {
+      // If future is already completed, blockedCallbacks are not notified again. So there is no
+      // need to add the consumer.
+      blockedCallbacks.add(checkedConsumer);
+    }
+
+    // Do not replace the following if(isDone()) with an else. The future might be completed after
+    // the previous isDone() check.
+    if (isDone()) {
+      // Due to happens-before order guarantee between write to volatile field state and
+      // non-volatile fields value and failureCause, we can read value and failureCause without
+      // locks.
+      checkedConsumer.accept(value, failureCause);
+    }
   }
 
   @Override
