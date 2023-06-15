@@ -20,6 +20,7 @@ import io.camunda.zeebe.engine.util.client.ProcessInstanceClient;
 import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.stream.impl.StreamProcessorMode;
 import io.camunda.zeebe.test.util.AutoCloseableRule;
+import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.util.FeatureFlags;
 import java.util.ArrayList;
 import java.util.Optional;
@@ -29,11 +30,12 @@ import org.junit.rules.TemporaryFolder;
 public final class TestEngine {
 
   private final StreamProcessingComposite streamProcessingComposite;
+  private final TestStreams testStreams;
 
   private TestEngine(
       final int partitionId, final int partitionCount, final TestContext testContext) {
 
-    final var testStreams =
+    testStreams =
         new TestStreams(
             testContext.temporaryFolder(),
             testContext.autoCloseableRule(),
@@ -92,6 +94,11 @@ public final class TestEngine {
 
   public static TestEngine createSinglePartitionEngine(final TestContext testContext) {
     return new TestEngine(1, 1, testContext);
+  }
+
+  public void reset() {
+    RecordingExporter.reset();
+    testStreams.resetLog();
   }
 
   /**

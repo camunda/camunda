@@ -46,12 +46,13 @@ public class EngineLargeStatePerformanceTest {
   private long count;
   private ProcessInstanceClient processInstanceClient;
   private TestEngine.TestContext testContext;
+  private TestEngine singlePartitionEngine;
 
   @Setup
   public void setup() throws Throwable {
     testContext = createTestContext();
 
-    final var singlePartitionEngine = TestEngine.createSinglePartitionEngine(testContext);
+    singlePartitionEngine = TestEngine.createSinglePartitionEngine(testContext);
 
     setupState(singlePartitionEngine);
   }
