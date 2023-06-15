@@ -19,7 +19,7 @@ import {processesStore} from 'modules/stores/processes';
 import {ProcessOperations} from '../ProcessOperations';
 import {PanelHeader, Section} from './styled';
 import {DiagramShell} from 'modules/components/Carbon/DiagramShell';
-import {Diagram} from 'modules/components/Diagram';
+import {Diagram} from 'modules/components/Carbon/Diagram';
 import {diagramOverlaysStore} from 'modules/stores/diagramOverlays';
 import {observer} from 'mobx-react';
 import {StatisticsOverlay} from 'modules/components/Carbon/StatisticsOverlay';
