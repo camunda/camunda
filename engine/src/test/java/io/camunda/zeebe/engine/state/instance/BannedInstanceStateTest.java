@@ -112,7 +112,7 @@ public final class BannedInstanceStateTest {
     typedEvent.wrap(loggedEvent, metadata, processInstanceRecord);
     final var consumer = mock(Consumer.class);
 
-    // when - no blacklisting
+    // when - no banning of process instance
     bannedInstanceState.tryToBanInstance(typedEvent, consumer);
 
     // then
@@ -139,10 +139,10 @@ public final class BannedInstanceStateTest {
     // given
 
     // when
-    final boolean blackListIsEmpty = bannedInstanceState.isEmpty();
+    final boolean bannedStateIsEmpty = bannedInstanceState.isEmpty();
 
     // then
-    assertThat(blackListIsEmpty).isTrue();
+    assertThat(bannedStateIsEmpty).isTrue();
   }
 
   @Test
