@@ -558,14 +558,11 @@ final class JournalTest {
         new RecordData(record.index(), record.asqn(), BufferUtil.cloneBuffer(record.data()));
 
     if (record instanceof PersistedJournalRecord p) {
-      return new PersistedJournalRecord(
-          p.metadata(), data, BufferUtil.cloneBuffer(p.serializedRecord()));
+      return new PersistedJournalRecord(p.metadata(), data, p.serializedRecord());
     }
 
     return new PersistedJournalRecord(
-        new RecordMetadata(record.checksum(), data.data().capacity()),
-        data,
-        BufferUtil.cloneBuffer(record.serializedRecord()));
+        new RecordMetadata(record.checksum(), data.data().capacity()), data, null);
   }
 
   private SegmentedJournal openJournal() {
