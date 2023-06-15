@@ -23,6 +23,7 @@ import io.camunda.zeebe.engine.processing.deployment.distribute.DeploymentDistri
 import io.camunda.zeebe.engine.processing.deployment.distribute.DeploymentDistributionCommandSender;
 import io.camunda.zeebe.engine.processing.deployment.distribute.DeploymentRedistributor;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionAcknowledgeProcessor;
+import io.camunda.zeebe.engine.processing.distribution.CommandRedistributor;
 import io.camunda.zeebe.engine.processing.dmn.EvaluateDecisionProcessor;
 import io.camunda.zeebe.engine.processing.incident.IncidentEventProcessors;
 import io.camunda.zeebe.engine.processing.job.JobEventProcessors;
@@ -65,6 +66,7 @@ public final class EngineProcessors {
       final JobStreamer jobStreamer) {
 
     final var processingState = typedRecordProcessorContext.getProcessingState();
+    final var scheduledTaskDbState = typedRecordProcessorContext.getScheduledTaskDbState();
     final var writers = typedRecordProcessorContext.getWriters();
     final TypedRecordProcessors typedRecordProcessors =
         TypedRecordProcessors.processors(processingState.getKeyGenerator(), writers);
@@ -78,8 +80,7 @@ public final class EngineProcessors {
     final var config = typedRecordProcessorContext.getConfig();
 
     final DueDateTimerChecker timerChecker =
-        new DueDateTimerChecker(
-            typedRecordProcessorContext.getScheduledTaskDbState().getTimerState(), featureFlags);
+        new DueDateTimerChecker(scheduledTaskDbState.getTimerState(), featureFlags);
 
     final var jobMetrics = new JobMetrics(partitionId);
     final var processEngineMetrics = new ProcessEngineMetrics(processingState.getPartitionId());
@@ -100,9 +101,6 @@ public final class EngineProcessors {
             jobMetrics,
             decisionBehavior);
 
-    final DeploymentDistributionCommandSender deploymentDistributionCommandSender =
-        new DeploymentDistributionCommandSender(
-            typedRecordProcessorContext.getPartitionId(), interPartitionCommandSender);
     // TODO unused for now, will be used with the implementation of
     // https://github.com/camunda/zeebe/issues/11661
     final var commandDistributionBehavior =
@@ -113,6 +111,9 @@ public final class EngineProcessors {
             interPartitionCommandSender,
             processingState.getKeyGenerator());
 
+    final var deploymentDistributionCommandSender =
+        new DeploymentDistributionCommandSender(
+            typedRecordProcessorContext.getPartitionId(), interPartitionCommandSender);
     addDeploymentRelatedProcessorAndServices(
         bpmnBehaviors,
         processingState,
@@ -126,7 +127,7 @@ public final class EngineProcessors {
         bpmnBehaviors,
         subscriptionCommandSender,
         processingState,
-        typedRecordProcessorContext.getScheduledTaskDbState(),
+        scheduledTaskDbState,
         typedRecordProcessors,
         writers,
         config,
@@ -154,7 +155,12 @@ public final class EngineProcessors {
         bpmnBehaviors.jobActivationBehavior());
     addResourceDeletionProcessors(typedRecordProcessors, writers, processingState);
     addSignalBroadcastProcessors(typedRecordProcessors, bpmnBehaviors, writers, processingState);
-    addCommandDistributionProcessors(typedRecordProcessors, writers, processingState);
+    addCommandDistributionProcessors(
+        typedRecordProcessors,
+        writers,
+        processingState,
+        scheduledTaskDbState,
+        interPartitionCommandSender);
 
     return typedRecordProcessors;
   }
@@ -320,7 +326,15 @@ public final class EngineProcessors {
   private static void addCommandDistributionProcessors(
       final TypedRecordProcessors typedRecordProcessors,
       final Writers writers,
-      final ProcessingState processingState) {
+      final ProcessingState processingState,
+      final ScheduledTaskDbState scheduledTaskDbState,
+      final InterPartitionCommandSender interPartitionCommandSender) {
+
+    // periodically retries command distribution
+    typedRecordProcessors.withListener(
+        new CommandRedistributor(
+            scheduledTaskDbState.getDistributionState(), interPartitionCommandSender));
+
     final var commandDistributionAcknowledgeProcessor =
         new CommandDistributionAcknowledgeProcessor(
             processingState.getDistributionState(), writers);
