@@ -67,6 +67,7 @@ public final class DbBannedInstanceState implements MutableBannedInstanceState {
       processInstanceKey.wrapLong(key);
       bannedInstanceColumnFamily.insert(processInstanceKey, DbNil.INSTANCE);
       bannedInstanceMetrics.countBannedInstance();
+      empty = false;
     }
   }
 
