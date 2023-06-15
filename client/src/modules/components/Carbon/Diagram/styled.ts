@@ -5,7 +5,7 @@
  * except in compliance with the proprietary license.
  */
 
-import styled, {css} from 'styled-components';
+import styled from 'styled-components';
 
 const Diagram = styled.div`
   height: 100%;
@@ -14,39 +14,33 @@ const Diagram = styled.div`
 `;
 
 const DiagramCanvas = styled.div`
-  ${({theme}) => {
-    const elementColors = theme.colors.modules.diagram.element;
+  position: absolute;
+  height: 100%;
+  width: 100%;
+  left: 0;
+  top: 0;
 
-    return css`
-      position: absolute;
-      height: 100%;
-      width: 100%;
-      left: 0;
-      top: 0;
+  .op-selectable:hover {
+    cursor: pointer;
+  }
 
-      .op-selectable:hover {
-        cursor: pointer;
-      }
+  .op-selectable:hover .djs-outline,
+  .op-selected-frame .djs-outline {
+    stroke-width: 2px;
+    stroke: var(--cds-link-inverse);
+  }
 
-      .op-selectable:hover .djs-outline,
-      .op-selected-frame .djs-outline {
-        stroke-width: 2px;
-        stroke: ${elementColors.outline};
-      }
+  .op-non-selectable {
+    cursor: not-allowed;
+  }
 
-      .op-non-selectable {
-        cursor: not-allowed;
-      }
-
-      .op-selected .djs-visual {
-        rect,
-        circle,
-        polygon {
-          fill: ${elementColors.background.selected} !important;
-        }
-      }
-    `;
-  }}
+  .op-selected .djs-visual {
+    rect,
+    circle,
+    polygon {
+      fill: var(--cds-highlight) !important;
+    }
+  }
 `;
 
 export {Diagram, DiagramCanvas};
