@@ -144,6 +144,7 @@ public class DbDistributionState implements MutableDistributionState {
           final var distributionKey = compositeKey.first().inner().getValue();
           final var partitionId = compositeKey.second().getValue();
 
+          // we may encounter the same distribution key for several partitions, we can reuse it
           if (lastDistributionKey.value != distributionKey) {
             final var pendingDistribution =
                 getCommandDistributionRecord(distributionKey, partitionId);
