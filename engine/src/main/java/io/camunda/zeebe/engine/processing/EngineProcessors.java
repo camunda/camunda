@@ -101,8 +101,6 @@ public final class EngineProcessors {
             jobMetrics,
             decisionBehavior);
 
-    // TODO unused for now, will be used with the implementation of
-    // https://github.com/camunda/zeebe/issues/11661
     final var commandDistributionBehavior =
         new CommandDistributionBehavior(
             writers,
