@@ -646,19 +646,22 @@ public class PassiveRole extends InactiveRole {
       log.trace("Appended {}", indexed);
       raft.getReplicationMetrics().setAppendIndex(indexed.index());
     } catch (final JournalException.OutOfDiskSpace e) {
-      log.trace("Append failed: ", e);
+      log.trace("Failed to append entry at index {} due to out of disk space", index, e);
       raft.getLogCompactor().compact();
       failAppend(index - 1, future);
       return false;
     } catch (final InvalidChecksum e) {
-      log.debug("Entry checksum doesn't match entry data: ", e);
+      log.debug(
+          "Failed to append entry at index {}. Entry checksum doesn't match entry data: ",
+          index,
+          e);
       failAppend(index - 1, future);
       return false;
     } catch (final InvalidIndex e) {
       failAppend(index - 1, future);
       return false;
     } catch (final Exception e) {
-      log.debug("Failed to append entry at index {}", entry.index(), e);
+      log.error("Failed to append entry at index {}", entry.index(), e);
       failAppend(index - 1, future);
       return false;
     }
