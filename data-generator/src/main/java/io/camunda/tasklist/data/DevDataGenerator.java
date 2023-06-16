@@ -44,7 +44,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
 @Component
-@Profile("dev-data")
+@Profile({"dev-data", "e2e-test"})
 public class DevDataGenerator implements DataGenerator {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(DevDataGenerator.class);

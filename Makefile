@@ -66,4 +66,4 @@ start-e2e:
        CAMUNDA_TASKLIST_IMPORTER_READERBACKOFF=0 \
        CAMUNDA_TASKLIST_IMPORTER_SCHEDULERBACKOFF=0 \
        SERVER_PORT=8081 \
-    mvn -f webapp/pom.xml exec:java -Dexec.mainClass="io.camunda.tasklist.Application"
+    mvn -f webapp/pom.xml exec:java -Dexec.mainClass="io.camunda.tasklist.Application" -Dspring.profiles.active=e2e-test
