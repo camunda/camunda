@@ -6,7 +6,7 @@
  */
 
 import {expect} from '@playwright/test';
-import {test} from '../axe-test';
+import {test} from '../test-fixtures';
 
 test.beforeEach(async ({page}) => {
   await page.goto('/login');
@@ -43,9 +43,7 @@ test.describe.parallel('login page', () => {
 
     await expect(
       page.getByRole('alert').getByText('Username and password do not match'),
-    ).toBeVisible({
-      timeout: 10000,
-    });
+    ).toBeVisible();
 
     const results = await makeAxeBuilder().analyze();
 

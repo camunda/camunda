@@ -5,8 +5,9 @@
  * except in compliance with the proprietary license.
  */
 
-import {test, expect} from '@playwright/test';
+import {expect} from '@playwright/test';
 import {deploy, createInstances} from '../zeebeClient';
+import {test} from '../test-fixtures';
 
 test.beforeAll(async () => {
   await Promise.all([
@@ -24,10 +25,14 @@ test.beforeAll(async () => {
   await createInstances('usertask_to_be_assigned', 1, 1); // this task will be seen on top since it is created last
 });
 
+test.afterAll(async ({resetData}) => {
+  await resetData();
+});
+
 test.beforeEach(async ({page}) => {
   await page.goto('/login');
-  await page.getByPlaceholder('Username').fill('demo');
-  await page.getByPlaceholder('Password').fill('demo');
+  await page.getByLabel('Username').fill('demo');
+  await page.getByLabel('Password').fill('demo');
   await page.getByRole('button', {name: 'Login'}).click();
   await expect(page).toHaveURL('/');
 });
@@ -49,10 +54,8 @@ test.describe('task panel page', () => {
     await expect(page).toHaveURL(/\?filter=assigned-to-me/);
     await page.reload();
     await expect(
-      page.getByTitle('Available tasks').getByText('Some user activity'),
-    ).toHaveCount(0, {
-      timeout: 10000,
-    });
+      page.getByTitle('Available tasks').getByText('No tasks found'),
+    ).toBeVisible();
 
     await page.getByRole('combobox', {name: /filter options/i}).click();
     await page.getByText('All open').click();

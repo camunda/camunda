@@ -10,10 +10,11 @@ import AxeBuilder from '@axe-core/playwright';
 
 type AxeFixture = {
   makeAxeBuilder: () => AxeBuilder;
+  resetData: () => Promise<void>;
 };
 
 const test = base.extend<AxeFixture>({
-  makeAxeBuilder: async ({page}, use, testInfo) => {
+  makeAxeBuilder: async ({page}, use) => {
     const makeAxeBuilder = () =>
       new AxeBuilder({page}).withTags([
         'best-practice',
@@ -24,6 +25,13 @@ const test = base.extend<AxeFixture>({
       ]);
 
     await use(makeAxeBuilder);
+  },
+  resetData: async ({baseURL}, use) => {
+    await use(async () => {
+      await fetch(`${baseURL}/v1/external/devUtil/recreateData`, {
+        method: 'POST',
+      });
+    });
   },
 });
 export {test};

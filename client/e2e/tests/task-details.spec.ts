@@ -5,8 +5,9 @@
  * except in compliance with the proprietary license.
  */
 
-import {test, expect} from '@playwright/test';
+import {expect} from '@playwright/test';
 import {deploy, createInstances} from '../zeebeClient';
+import {test} from '../test-fixtures';
 
 test.beforeAll(async () => {
   await deploy([
@@ -34,10 +35,14 @@ test.beforeAll(async () => {
   ]);
 });
 
+test.afterAll(async ({resetData}) => {
+  await resetData();
+});
+
 test.beforeEach(async ({page}) => {
   await page.goto('/login');
-  await page.getByPlaceholder('Username').fill('demo');
-  await page.getByPlaceholder('Password').fill('demo');
+  await page.getByLabel('Username').fill('demo');
+  await page.getByLabel('Password').fill('demo');
   await page.getByRole('button', {name: 'Login'}).click();
   await expect(page).toHaveURL('/');
 });

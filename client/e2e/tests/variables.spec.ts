@@ -5,8 +5,9 @@
  * except in compliance with the proprietary license.
  */
 
-import {test, expect} from '@playwright/test';
+import {expect} from '@playwright/test';
 import {deploy, createInstances} from '../zeebeClient';
+import {test} from '../test-fixtures';
 
 test.beforeAll(async () => {
   await deploy('./e2e/resources/usertask_with_variables.bpmn');
@@ -17,10 +18,14 @@ test.beforeAll(async () => {
   });
 });
 
+test.afterAll(async ({resetData}) => {
+  await resetData();
+});
+
 test.beforeEach(async ({page}) => {
   await page.goto('/login');
-  await page.getByPlaceholder('Username').fill('demo');
-  await page.getByPlaceholder('Password').fill('demo');
+  await page.getByLabel('Username').fill('demo');
+  await page.getByLabel('Password').fill('demo');
   await page.getByRole('button', {name: 'Login'}).click();
   await expect(page).toHaveURL('/');
 });
@@ -53,14 +58,12 @@ test.describe('variables page', () => {
     const variablesTable = page.getByTestId('variables-table');
     await expect(
       variablesTable.getByRole('columnheader', {name: 'Name'}),
-    ).toBeVisible({
-      timeout: 10000,
-    });
+    ).toBeVisible();
     await expect(
       variablesTable.getByRole('columnheader', {name: 'Value'}),
     ).toBeVisible();
     await expect(
-      variablesTable.getByText('testData', {exact: true}),
+      variablesTable.getByRole('cell', {name: 'testData'}),
     ).toBeVisible();
     await expect(variablesTable.getByText('something')).toBeVisible();
   });
@@ -102,7 +105,7 @@ test.describe('variables page', () => {
 
     await expect(
       page.getByRole('heading', {name: 'Pick a task to work on'}),
-    ).toBeTruthy();
+    ).toBeVisible();
 
     await page.reload();
     await page.getByRole('combobox', {name: 'Filter options'}).click();
@@ -183,9 +186,11 @@ test.describe('variables page', () => {
     await page.getByRole('button', {name: 'Assign to me'}).click();
     await page.getByRole('button', {name: 'Add Variable'}).click();
 
-    await page.getByPlaceholder('Name', {exact: true}).fill('newVariableName');
     await page
-      .getByPlaceholder('Value', {exact: true})
+      .getByRole('textbox', {name: /1st variable name/i})
+      .fill('newVariableName');
+    await page
+      .getByRole('textbox', {name: /1st variable value/i})
       .fill('"newVariableValue"');
 
     await page.reload();
@@ -216,9 +221,7 @@ test.describe('variables page', () => {
     await test.step('assign task', async () => {
       await expect(
         page.getByRole('button', {name: 'Assign to me'}),
-      ).toBeVisible({
-        timeout: 10000,
-      });
+      ).toBeVisible();
 
       await expect(page.getByRole('button', {name: 'Complete'})).toBeDisabled();
 
@@ -231,9 +234,11 @@ test.describe('variables page', () => {
 
     await page.getByRole('button', {name: 'Add Variable'}).click();
 
-    await page.getByPlaceholder('Name', {exact: true}).fill('newVariableName');
     await page
-      .getByPlaceholder('Value', {exact: true})
+      .getByRole('textbox', {name: /1st variable name/i})
+      .fill('newVariableName');
+    await page
+      .getByRole('textbox', {name: /1st variable value/i})
       .fill('"newVariableValue"');
 
     await test.step('complete task', async () => {
@@ -246,7 +251,7 @@ test.describe('variables page', () => {
 
     await expect(
       page.getByRole('heading', {name: 'Pick a task to work on'}),
-    ).toBeTruthy();
+    ).toBeVisible();
 
     await page.reload();
 
