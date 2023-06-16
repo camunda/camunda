@@ -6,6 +6,7 @@
  */
 
 import styled from 'styled-components';
+import {AddVariableButton as BaseAddVariableButton} from '../Variables/AddVariableButton';
 
 const EmptyMessageContainer = styled.div`
   display: flex;
@@ -22,4 +23,25 @@ const Content = styled.div`
   }
 `;
 
-export {Content, EmptyMessageContainer};
+const AddVariableButton = styled(BaseAddVariableButton)`
+  align-self: flex-end;
+`;
+
+const Form = styled.form`
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+`;
+
+const VariablesContainer = styled.div`
+  height: 100%;
+  position: relative;
+`;
+
+export {
+  Content,
+  EmptyMessageContainer,
+  AddVariableButton,
+  Form,
+  VariablesContainer,
+};

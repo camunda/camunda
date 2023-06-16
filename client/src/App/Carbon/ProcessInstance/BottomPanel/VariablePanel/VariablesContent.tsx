@@ -9,14 +9,20 @@ import {useEffect} from 'react';
 import {variablesStore} from 'modules/stores/variables';
 import {observer} from 'mobx-react';
 import {useProcessInstancePageParams} from 'App/ProcessInstance/useProcessInstancePageParams';
+import {Form as ReactFinalForm} from 'react-final-form';
+import {useNotifications} from 'modules/notifications';
+import {VariableFormValues} from 'modules/types/variables';
 
 import {Content, EmptyMessageContainer} from './styled';
+import arrayMutators from 'final-form-arrays';
 import {ErrorMessage} from 'modules/components/Carbon/ErrorMessage';
 import {EmptyMessage} from 'modules/components/Carbon/EmptyMessage';
 import {Loading} from '@carbon/react';
+import {VariablesForm} from './VariablesForm';
 
 const VariablesContent: React.FC = observer(() => {
   const {processInstanceId = ''} = useProcessInstancePageParams();
+  const notifications = useNotifications();
 
   useEffect(() => {
     variablesStore.init(processInstanceId);
@@ -50,8 +56,57 @@ const VariablesContent: React.FC = observer(() => {
   return (
     <Content>
       {displayStatus === 'spinner' && <Loading />}
+      <ReactFinalForm<VariableFormValues>
+        mutators={{
+          ...arrayMutators,
+          triggerValidation(fieldsToValidate: string[], state, {changeValue}) {
+            fieldsToValidate.forEach((fieldName) => {
+              changeValue(state, fieldName, (n) => n);
+            });
+          },
+        }}
+        key={variablesStore.scopeId}
+        render={(props) => <VariablesForm {...props} />}
+        onSubmit={async (values, form) => {
+          const {initialValues} = form.getState();
 
-      <div>variables form</div>
+          const {name, value} = values;
+
+          if (name === undefined || value === undefined) {
+            return;
+          }
+
+          const params = {
+            id: processInstanceId,
+            name,
+            value,
+            onSuccess: () => {
+              notifications.displayNotification('success', {
+                headline: 'Variable added',
+              });
+              form.reset({});
+            },
+            onError: (statusCode: number) => {
+              notifications.displayNotification('error', {
+                headline: 'Variable could not be saved',
+                description:
+                  statusCode === 403 ? 'You do not have permission' : undefined,
+              });
+              form.reset({});
+            },
+          };
+
+          if (initialValues.name === '') {
+            const result = await variablesStore.addVariable(params);
+            if (result === 'VALIDATION_ERROR') {
+              return {name: 'Name should be unique'};
+            }
+          } else if (initialValues.name === name) {
+            variablesStore.updateVariable(params);
+            form.reset({});
+          }
+        }}
+      />
     </Content>
   );
 });
