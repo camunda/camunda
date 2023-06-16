@@ -35,6 +35,7 @@ const Container = styled.div`
 `;
 
 const SubmitButtonRow = styled.div`
+  min-height: 72px;
   display: flex;
   justify-content: space-between;
   align-items: center;

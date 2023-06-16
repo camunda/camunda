@@ -11,10 +11,10 @@ import styled from 'styled-components';
 const Container = styled.div`
   display: flex;
   flex-direction: column;
-  gap: var(--cds-spacing-06);
 `;
 
 const PoweredBy = styled(BasePoweredBy)`
+  min-height: 72px;
   align-self: flex-end;
   padding-right: var(--cds-spacing-06);
 `;

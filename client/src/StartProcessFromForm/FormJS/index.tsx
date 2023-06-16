@@ -15,20 +15,37 @@ import {
 } from './styled';
 import {formManager} from 'modules/formManager';
 import {Variable} from 'modules/types';
-import ErrorRobotImage from 'modules/images/error-robot.svg';
-import {Button, Layer} from '@carbon/react';
+import {InlineLoadingStatus, Layer} from '@carbon/react';
 import {tracking} from 'modules/tracking';
 import {PoweredBy} from 'modules/components/PoweredBy';
-import {Message} from '../Message';
+import {AsyncActionButton} from 'modules/components/AsyncActionButton';
+
+const SUBMIT_OPERATION_MESSAGE = {
+  active: 'Submitting...',
+  error: 'Submission failed!',
+  finished: 'Submitted!',
+  inactive: undefined,
+} as const;
 
 type Props = {
   schema: string;
-  onSubmit: (variables: Variable[]) => void;
+  onImportError: () => void;
+  handleSubmit: (variables: Variable[]) => Promise<void>;
+  onSubmitError: () => void;
+  onSubmitSuccess: () => void;
 };
 
-const FormJS: React.FC<Props> = ({schema, onSubmit}) => {
+const FormJS: React.FC<Props> = ({
+  schema,
+  handleSubmit,
+  onImportError,
+  onSubmitError,
+  onSubmitSuccess,
+}) => {
   const formContainerRef = useRef<HTMLDivElement | null>(null);
   const [isSchemaValid, setIsSchemaValid] = useState(true);
+  const [submissionState, setSubmissionState] =
+    useState<InlineLoadingStatus>('inactive');
 
   useEffect(() => {
     const container = formContainerRef.current;
@@ -41,11 +58,13 @@ const FormJS: React.FC<Props> = ({schema, onSubmit}) => {
         data: {},
         onImportError: () => {
           setIsSchemaValid(false);
+          onImportError();
           tracking.track({
             eventName: 'public-start-form-invalid-form-schema',
           });
         },
         onSubmit: async ({data, errors}) => {
+          setSubmissionState('active');
           if (Object.keys(errors).length === 0) {
             const variables = Object.entries(data).map(
               ([name, value]) =>
@@ -55,45 +74,69 @@ const FormJS: React.FC<Props> = ({schema, onSubmit}) => {
                 } as Variable),
             );
 
-            onSubmit(variables);
+            try {
+              await handleSubmit(variables);
+              setSubmissionState('finished');
+            } catch {
+              setSubmissionState('error');
+            }
+          } else {
+            setSubmissionState('error');
           }
         },
       });
     }
 
+    return () => {};
+  }, [schema, handleSubmit, onImportError]);
+
+  useEffect(() => {
     return () => {
       formManager.detach();
     };
-  }, [schema, onSubmit]);
+  }, []);
 
-  if (isSchemaValid) {
-    return (
-      <Container>
-        <FormCustomStyling />
-        <FormContainer>
-          <Layer>
-            <FormRoot ref={formContainerRef} />
-          </Layer>
-        </FormContainer>
-        <SubmitButtonRow>
-          <Button kind="primary" onClick={() => formManager.submit()} size="lg">
-            Submit
-          </Button>
-          <PoweredBy />
-        </SubmitButtonRow>
-      </Container>
-    );
+  if (!isSchemaValid) {
+    return null;
   }
 
   return (
-    <Message
-      icon={{
-        altText: 'Error robot',
-        path: ErrorRobotImage,
-      }}
-      heading="Invalid form"
-      description="Something went wrong and the form could not be displayed. Please contact your provider."
-    />
+    <Container>
+      <FormCustomStyling />
+      <FormContainer>
+        <Layer>
+          <FormRoot ref={formContainerRef} />
+        </Layer>
+      </FormContainer>
+      <SubmitButtonRow>
+        <AsyncActionButton
+          inlineLoadingProps={{
+            description: SUBMIT_OPERATION_MESSAGE[submissionState],
+            'aria-live': ['error', 'finished'].includes(submissionState)
+              ? 'assertive'
+              : 'polite',
+            onSuccess: () => {
+              onSubmitSuccess();
+              setSubmissionState('inactive');
+            },
+          }}
+          buttonProps={{
+            kind: 'primary',
+            size: 'lg',
+            type: 'submit',
+            onClick: () => formManager.submit(),
+          }}
+          status={submissionState}
+          onError={() => {
+            onSubmitError();
+            setSubmissionState('inactive');
+          }}
+        >
+          Submit
+        </AsyncActionButton>
+        <PoweredBy />
+      </SubmitButtonRow>
+    </Container>
   );
 };
 

@@ -8,7 +8,7 @@
 import {useStartProcessParams} from 'modules/routing';
 import {Content, FormContainer} from './styled';
 import {useExternalForm} from 'modules/queries/useExternalForm';
-import {useEffect} from 'react';
+import {useLayoutEffect, useState} from 'react';
 import {FormJS} from './FormJS';
 import {Skeleton} from './FormJS/Skeleton';
 import {useStartExternalProcess} from 'modules/mutations/useStartExternalProcess';
@@ -19,14 +19,16 @@ import ErrorRobotImage from 'modules/images/error-robot.svg';
 import {Message} from './Message';
 
 const StartProcessFromForm: React.FC = () => {
+  const [pageView, setPageView] = useState<
+    | 'form'
+    | 'submit-success'
+    | 'form-not-found'
+    | 'failed-submission'
+    | 'invalid-form-schema'
+  >('form');
   const {bpmnProcessId} = useStartProcessParams();
   const {data, error, isInitialLoading} = useExternalForm(bpmnProcessId);
-  const {
-    mutate: startExternalProcess,
-    isSuccess,
-    isError,
-    reset,
-  } = useStartExternalProcess({
+  const {mutateAsync: startExternalProcess, reset} = useStartExternalProcess({
     onError: (error) => {
       logger.error(error);
       tracking.track({
@@ -40,25 +42,27 @@ const StartProcessFromForm: React.FC = () => {
     },
   });
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (error !== null) {
       tracking.track({
         eventName: 'public-start-form-load-failed',
       });
+      setPageView('form-not-found');
     }
   }, [error]);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     tracking.track({
       eventName: 'public-start-form-opened',
     });
   }, []);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (data !== undefined) {
       tracking.track({
         eventName: 'public-start-form-loaded',
       });
+      setPageView('form');
     }
   }, [data]);
 
@@ -66,7 +70,30 @@ const StartProcessFromForm: React.FC = () => {
     <>
       <Content id="main-content" tabIndex={-1} tagName="main">
         <FormContainer>
-          {isSuccess ? (
+          {pageView === 'form' ? (
+            <>
+              {isInitialLoading || data === undefined ? (
+                <Skeleton />
+              ) : (
+                <FormJS
+                  schema={data.schema}
+                  handleSubmit={async (variables) => {
+                    await startExternalProcess({variables, bpmnProcessId});
+                  }}
+                  onImportError={() => {
+                    setPageView('invalid-form-schema');
+                  }}
+                  onSubmitError={() => {
+                    setPageView('failed-submission');
+                  }}
+                  onSubmitSuccess={() => {
+                    setPageView('submit-success');
+                  }}
+                />
+              )}
+            </>
+          ) : null}
+          {pageView === 'submit-success' ? (
             <Message
               icon={{
                 altText: 'Success checkmark',
@@ -81,48 +108,43 @@ const StartProcessFromForm: React.FC = () => {
                 </>
               }
             />
-          ) : (
-            <>
-              {isError ? (
-                <Message
-                  icon={{
-                    altText: 'Error robot',
-                    path: ErrorRobotImage,
-                  }}
-                  heading="Something went wrong"
-                  description="Please try again later and reload the page."
-                  button={{
-                    label: 'Reload',
-                    onClick: () => {
-                      reset();
-                    },
-                  }}
-                />
-              ) : (
-                <>
-                  {isInitialLoading && data === undefined ? <Skeleton /> : null}
-                  {data === undefined || error !== null ? null : (
-                    <FormJS
-                      schema={data.schema}
-                      onSubmit={(variables) => {
-                        startExternalProcess({variables, bpmnProcessId});
-                      }}
-                    />
-                  )}
-                  {error === null ? null : (
-                    <Message
-                      icon={{
-                        altText: 'Error robot',
-                        path: ErrorRobotImage,
-                      }}
-                      heading="404 - Page not found"
-                      description="We're sorry! The requested URL you're looking for could not be found."
-                    />
-                  )}
-                </>
-              )}
-            </>
-          )}
+          ) : null}
+          {pageView === 'form-not-found' ? (
+            <Message
+              icon={{
+                altText: 'Error robot',
+                path: ErrorRobotImage,
+              }}
+              heading="404 - Page not found"
+              description="We're sorry! The requested URL you're looking for could not be found."
+            />
+          ) : null}
+          {pageView === 'failed-submission' ? (
+            <Message
+              icon={{
+                altText: 'Error robot',
+                path: ErrorRobotImage,
+              }}
+              heading="Something went wrong"
+              description="Please try again later and reload the page."
+              button={{
+                label: 'Reload',
+                onClick: () => {
+                  reset();
+                },
+              }}
+            />
+          ) : null}
+          {pageView === 'invalid-form-schema' ? (
+            <Message
+              icon={{
+                altText: 'Error robot',
+                path: ErrorRobotImage,
+              }}
+              heading="Invalid form"
+              description="Something went wrong and the form could not be displayed. Please contact your provider."
+            />
+          ) : null}
         </FormContainer>
       </Content>
     </>

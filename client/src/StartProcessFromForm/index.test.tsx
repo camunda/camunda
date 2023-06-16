@@ -6,6 +6,7 @@
  */
 
 import {
+  fireEvent,
   render,
   screen,
   waitForElementToBeRemoved,
@@ -39,6 +40,15 @@ const getWrapper = ({
 };
 
 describe('<StartProcessFromForm />', () => {
+  beforeEach(() => {
+    jest.useFakeTimers();
+  });
+
+  afterEach(() => {
+    jest.clearAllTimers();
+    jest.useRealTimers();
+  });
+
   it('should submit form', async () => {
     nodeMockServer.use(
       rest.get('/v1/external/process/:bpmnProcessId/form', (_, res, ctx) =>
@@ -77,9 +87,9 @@ describe('<StartProcessFromForm />', () => {
       }),
       'Yes',
     );
-    await user.click(
+    fireEvent.click(
       screen.getByRole('button', {
-        name: 'Save',
+        name: 'Submit',
       }),
     );
 
@@ -123,9 +133,9 @@ describe('<StartProcessFromForm />', () => {
       }),
       'Yes',
     );
-    await user.click(
+    fireEvent.click(
       screen.getByRole('button', {
-        name: 'Save',
+        name: 'Submit',
       }),
     );
 
