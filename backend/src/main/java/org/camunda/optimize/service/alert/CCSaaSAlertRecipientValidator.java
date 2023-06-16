@@ -7,7 +7,6 @@ package org.camunda.optimize.service.alert;
 
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.collections4.CollectionUtils;
-import org.camunda.optimize.dto.optimize.UserDto;
 import org.camunda.optimize.service.exceptions.OptimizeAlertEmailValidationException;
 import org.camunda.optimize.service.identity.CCSaaSIdentityService;
 import org.camunda.optimize.service.util.configuration.condition.CCSaaSCondition;
@@ -28,9 +27,10 @@ public class CCSaaSAlertRecipientValidator implements AlertRecipientValidator {
 
   @Override
   public void validateAlertRecipientEmailAddresses(final List<String> emails) {
-    final List<String> userEmails = identityService.getUsersByEmail(emails)
-      .stream().map(UserDto::getEmail).collect(Collectors.toList());
-    final Collection<String> unknownEmails = CollectionUtils.subtract(emails, userEmails);
+    final List<String> lowerCasedUserEmails = identityService.getUsersByEmail(emails)
+      .stream().map(user -> user.getEmail().toLowerCase()).collect(Collectors.toList());
+    final List<String> lowerCasedInputEmails = emails.stream().map(String::toLowerCase).collect(Collectors.toList());
+    final Collection<String> unknownEmails = CollectionUtils.subtract(lowerCasedInputEmails, lowerCasedUserEmails);
     if (!unknownEmails.isEmpty()) {
       throw new OptimizeAlertEmailValidationException(new HashSet<>(unknownEmails));
     }

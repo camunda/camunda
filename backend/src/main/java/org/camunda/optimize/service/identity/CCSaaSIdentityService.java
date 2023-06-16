@@ -16,12 +16,11 @@ import org.camunda.optimize.rest.cloud.CloudUsersService;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.condition.CCSaaSCondition;
-import javax.validation.constraints.NotNull;
-import javax.ws.rs.container.ContainerRequestContext;
-
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
+import javax.validation.constraints.NotNull;
+import javax.ws.rs.container.ContainerRequestContext;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -91,7 +90,7 @@ public class CCSaaSIdentityService extends AbstractIdentityService {
     try {
       return usersService.getAllUsers()
         .stream()
-        .filter(cloudUser -> lowerCasedEmails.contains(cloudUser.getEmail()))
+        .filter(cloudUser -> lowerCasedEmails.contains(cloudUser.getEmail().toLowerCase()))
         .map(this::mapToUserDto)
         .collect(Collectors.toList());
     } catch (OptimizeRuntimeException e) {
