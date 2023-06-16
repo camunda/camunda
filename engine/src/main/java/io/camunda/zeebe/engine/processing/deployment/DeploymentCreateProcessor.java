@@ -20,7 +20,7 @@ import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCatchEventElement;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableStartEvent;
 import io.camunda.zeebe.engine.processing.deployment.transform.DeploymentTransformer;
-import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
+import io.camunda.zeebe.engine.processing.streamprocessor.DistributedTypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
@@ -50,7 +50,8 @@ import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.List;
 import org.agrona.DirectBuffer;
 
-public final class DeploymentCreateProcessor implements TypedRecordProcessor<DeploymentRecord> {
+public final class DeploymentCreateProcessor
+    implements DistributedTypedRecordProcessor<DeploymentRecord> {
 
   private static final String COULD_NOT_CREATE_TIMER_MESSAGE =
       "Expected to create timer for start event, but encountered the following error: %s";
@@ -91,13 +92,15 @@ public final class DeploymentCreateProcessor implements TypedRecordProcessor<Dep
   }
 
   @Override
-  public void processRecord(final TypedRecord<DeploymentRecord> command) {
-    if (!command.isCommandDistributed()) {
-      transformAndDistributeDeployment(command);
-    } else {
-      processDistributedRecord(command);
-    }
+  public void processCommand(final TypedRecord<DeploymentRecord> command) {
+    transformAndDistributeDeployment(command);
+    // manage the top-level start event subscriptions except for timers
+    startEventSubscriptionManager.tryReOpenStartEventSubscription(command.getValue(), stateWriter);
+  }
 
+  @Override
+  public void processDistributedCommand(final TypedRecord<DeploymentRecord> command) {
+    processDistributedRecord(command);
     // manage the top-level start event subscriptions except for timers
     startEventSubscriptionManager.tryReOpenStartEventSubscription(command.getValue(), stateWriter);
   }
