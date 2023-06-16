@@ -6,7 +6,6 @@
  */
 
 import styled, {css} from 'styled-components';
-import {ReactComponent} from 'modules/icons/logo.svg';
 import {Button as BaseButton} from '@carbon/react';
 import {rem} from '@carbon/elements';
 
@@ -51,10 +50,6 @@ const LogoContainer = styled.div`
     `}
 `;
 
-const Logo = styled(ReactComponent)`
-  color: var(--cds-icon-primary);
-`;
-
 const Title = styled.h1`
   ${({theme}) => css`
     padding-bottom: ${theme.spacing10};
@@ -69,7 +64,6 @@ const FieldContainer = styled.div`
 `;
 
 export {
-  Logo,
   Title,
   Error,
   CopyrightNotice,

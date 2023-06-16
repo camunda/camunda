@@ -5,20 +5,18 @@
  * except in compliance with the proprietary license.
  */
 
+import {PoweredBy as BasePoweredBy} from 'modules/components/PoweredBy';
 import styled from 'styled-components';
-import {Content as BaseContent} from '@carbon/react';
 
-const Content = styled(BaseContent)`
-  width: 100vw;
-  height: 100vh;
+const Container = styled.div`
   display: flex;
-  justify-content: center;
-  overflow-y: auto;
+  flex-direction: column;
+  gap: var(--cds-spacing-06);
 `;
 
-const FormContainer = styled.div`
-  width: min(100%, 900px);
-  height: min-content;
+const PoweredBy = styled(BasePoweredBy)`
+  align-self: flex-end;
+  padding-right: var(--cds-spacing-06);
 `;
 
-export {Content, FormContainer};
+export {Container, PoweredBy};

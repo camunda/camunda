@@ -35,7 +35,7 @@ test.describe('start process from form page', () => {
 
     await expect(
       page.getByRole('heading', {
-        name: 'Subscribe',
+        name: 'Subscribe to newsletter',
       }),
     ).toBeVisible();
     await expect(page.getByLabel('Name')).toBeVisible();

@@ -44,10 +44,11 @@ const ReactQueryProvider: React.FC<Props> = ({children}) => {
   return (
     <QueryClientProvider client={reactQueryClient}>
       {children}
-      <ReactQueryDevtools />
+      <ReactQueryDevtools position="bottom-right" />
       {isProdDevtoolsOpen ? (
         <Suspense fallback={null}>
-          <ReactQueryDevtoolsProduction />
+          {/* @ts-expect-error */}
+          <ReactQueryDevtoolsProduction position="bottom-right" />
         </Suspense>
       ) : null}
     </QueryClientProvider>

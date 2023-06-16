@@ -13,7 +13,6 @@ import {pages} from 'modules/routing';
 import {
   Container,
   CopyrightNotice,
-  Logo,
   Title,
   Error,
   Button,
@@ -31,6 +30,7 @@ import {
   InlineNotification,
 } from '@carbon/react';
 import {LoadingSpinner} from './LoadingSpinner';
+import {CamundaLogo} from 'modules/components/CamundaLogo';
 
 function stateHasReferrer(state: unknown): state is {referrer: Location} {
   if (typeof state === 'object' && state?.hasOwnProperty('referrer')) {
@@ -118,7 +118,7 @@ const Login: React.FC = () => {
             >
               <Stack>
                 <LogoContainer>
-                  <Logo aria-label="Camunda logo" />
+                  <CamundaLogo aria-label="Camunda logo" />
                 </LogoContainer>
                 <Title>Tasklist</Title>
               </Stack>

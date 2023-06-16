@@ -6,18 +6,17 @@
  */
 
 import {useStartProcessParams} from 'modules/routing';
-import {Content, LogoIcon, FormContainer} from './styled';
+import {Content, FormContainer} from './styled';
 import {useExternalForm} from 'modules/queries/useExternalForm';
-import {Header} from './Header';
 import {useEffect} from 'react';
 import {FormJS} from './FormJS';
-import {Skeleton} from './Skeleton';
+import {Skeleton} from './FormJS/Skeleton';
 import {useStartExternalProcess} from 'modules/mutations/useStartExternalProcess';
 import {logger} from 'modules/utils/logger';
 import {tracking} from 'modules/tracking';
-import {C3EmptyState} from '@camunda/camunda-composite-components';
 import CheckImage from 'modules/images/orange-check-mark.svg';
 import ErrorRobotImage from 'modules/images/error-robot.svg';
+import {Message} from './Message';
 
 const StartProcessFromForm: React.FC = () => {
   const {bpmnProcessId} = useStartProcessParams();
@@ -65,11 +64,10 @@ const StartProcessFromForm: React.FC = () => {
 
   return (
     <>
-      <Header name={data?.title ?? ''} />
       <Content id="main-content" tabIndex={-1} tagName="main">
         <FormContainer>
           {isSuccess ? (
-            <C3EmptyState
+            <Message
               icon={{
                 altText: 'Success checkmark',
                 path: CheckImage,
@@ -86,7 +84,7 @@ const StartProcessFromForm: React.FC = () => {
           ) : (
             <>
               {isError ? (
-                <C3EmptyState
+                <Message
                   icon={{
                     altText: 'Error robot',
                     path: ErrorRobotImage,
@@ -105,7 +103,6 @@ const StartProcessFromForm: React.FC = () => {
                   {isInitialLoading && data === undefined ? <Skeleton /> : null}
                   {data === undefined || error !== null ? null : (
                     <FormJS
-                      title={data.title}
                       schema={data.schema}
                       onSubmit={(variables) => {
                         startExternalProcess({variables, bpmnProcessId});
@@ -113,7 +110,7 @@ const StartProcessFromForm: React.FC = () => {
                     />
                   )}
                   {error === null ? null : (
-                    <C3EmptyState
+                    <Message
                       icon={{
                         altText: 'Error robot',
                         path: ErrorRobotImage,
@@ -127,7 +124,6 @@ const StartProcessFromForm: React.FC = () => {
             </>
           )}
         </FormContainer>
-        <LogoIcon />
       </Content>
     </>
   );

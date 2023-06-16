@@ -11,24 +11,22 @@ import {
   FormContainer,
   FormCustomStyling,
   FormRoot,
-  Heading,
   SubmitButtonRow,
 } from './styled';
 import {formManager} from 'modules/formManager';
 import {Variable} from 'modules/types';
-import {C3EmptyState} from '@camunda/camunda-composite-components';
 import ErrorRobotImage from 'modules/images/error-robot.svg';
-import {Button, Layer, Link} from '@carbon/react';
+import {Button, Layer} from '@carbon/react';
 import {tracking} from 'modules/tracking';
-import {BodyCompact} from 'modules/components/FontTokens';
+import {PoweredBy} from 'modules/components/PoweredBy';
+import {Message} from '../Message';
 
 type Props = {
-  title: string;
   schema: string;
   onSubmit: (variables: Variable[]) => void;
 };
 
-const FormJS: React.FC<Props> = ({schema, onSubmit, title}) => {
+const FormJS: React.FC<Props> = ({schema, onSubmit}) => {
   const formContainerRef = useRef<HTMLDivElement | null>(null);
   const [isSchemaValid, setIsSchemaValid] = useState(true);
 
@@ -73,7 +71,6 @@ const FormJS: React.FC<Props> = ({schema, onSubmit, title}) => {
       <Container>
         <FormCustomStyling />
         <FormContainer>
-          <Heading>{title}</Heading>
           <Layer>
             <FormRoot ref={formContainerRef} />
           </Layer>
@@ -82,19 +79,14 @@ const FormJS: React.FC<Props> = ({schema, onSubmit, title}) => {
           <Button kind="primary" onClick={() => formManager.submit()} size="lg">
             Submit
           </Button>
-          <BodyCompact as="p">
-            Powered by{' '}
-            <Link href="https://camunda.com/" target="_blank" inline>
-              Camunda
-            </Link>
-          </BodyCompact>
+          <PoweredBy />
         </SubmitButtonRow>
       </Container>
     );
   }
 
   return (
-    <C3EmptyState
+    <Message
       icon={{
         altText: 'Error robot',
         path: ErrorRobotImage,

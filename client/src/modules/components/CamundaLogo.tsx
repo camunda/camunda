@@ -6,19 +6,10 @@
  */
 
 import styled from 'styled-components';
-import {Content as BaseContent} from '@carbon/react';
+import {ReactComponent} from 'modules/icons/logo.svg';
 
-const Content = styled(BaseContent)`
-  width: 100vw;
-  height: 100vh;
-  display: flex;
-  justify-content: center;
-  overflow-y: auto;
+const CamundaLogo = styled(ReactComponent)`
+  color: var(--cds-icon-primary);
 `;
 
-const FormContainer = styled.div`
-  width: min(100%, 900px);
-  height: min-content;
-`;
-
-export {Content, FormContainer};
+export {CamundaLogo};

@@ -7,7 +7,6 @@
 
 import styled, {css, createGlobalStyle} from 'styled-components';
 import {CARBON_STYLES} from '@bpmn-io/form-js-carbon-styles';
-import {Heading as BaseHeading} from '@carbon/react';
 
 const FormCustomStyling = createGlobalStyle`
   ${() => css`
@@ -35,10 +34,6 @@ const Container = styled.div`
   width: 100%;
 `;
 
-const Heading = styled(BaseHeading)`
-  word-break: break-word;
-`;
-
 const SubmitButtonRow = styled.div`
   display: flex;
   justify-content: space-between;
@@ -46,11 +41,35 @@ const SubmitButtonRow = styled.div`
   padding: var(--cds-spacing-04) var(--cds-spacing-06);
 `;
 
+const FormSkeletonContainer = styled.div`
+  width: 100%;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  grid-template-rows: repeat(4, min-content);
+  grid-gap: var(--cds-spacing-04);
+
+  & > :nth-child(1) {
+    grid-area: 1 / 1 / 2 / 2;
+  }
+  & > :nth-child(2) {
+    grid-area: 2 / 1 / 3 / 3;
+  }
+  & > :nth-child(3) {
+    grid-area: 3 / 1 / 4 / 2;
+  }
+  & > :nth-child(4) {
+    grid-area: 3 / 2 / 4 / 3;
+  }
+  & > :nth-child(5) {
+    grid-area: 4 / 1 / 5 / 3;
+  }
+`;
+
 export {
   FormCustomStyling,
   FormRoot,
   Container,
   FormContainer,
-  Heading,
   SubmitButtonRow,
+  FormSkeletonContainer,
 };
