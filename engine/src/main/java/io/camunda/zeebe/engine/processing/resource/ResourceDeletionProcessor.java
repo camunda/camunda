@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.resource;
 
-import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
+import io.camunda.zeebe.engine.processing.streamprocessor.DistributedTypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
@@ -26,7 +26,8 @@ import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 
-public class ResourceDeletionProcessor implements TypedRecordProcessor<ResourceDeletionRecord> {
+public class ResourceDeletionProcessor
+    implements DistributedTypedRecordProcessor<ResourceDeletionRecord> {
   private static final String ERROR_MESSAGE_RESOURCE_NOT_FOUND =
       "Expected to delete resource but no resource found with key `%d`";
 
@@ -46,7 +47,7 @@ public class ResourceDeletionProcessor implements TypedRecordProcessor<ResourceD
   }
 
   @Override
-  public void processRecord(final TypedRecord<ResourceDeletionRecord> command) {
+  public void processCommand(final TypedRecord<ResourceDeletionRecord> command) {
     final var value = command.getValue();
 
     final var drgOptional = decisionState.findDecisionRequirementsByKey(value.getResourceKey());
@@ -63,6 +64,11 @@ public class ResourceDeletionProcessor implements TypedRecordProcessor<ResourceD
     final long eventKey = keyGenerator.nextKey();
     stateWriter.appendFollowUpEvent(eventKey, ResourceDeletionIntent.DELETED, value);
     responseWriter.writeEventOnCommand(eventKey, ResourceDeletionIntent.DELETED, value, command);
+  }
+
+  @Override
+  public void processDistributedCommand(final TypedRecord<ResourceDeletionRecord> command) {
+
   }
 
   private void deleteDecisionRequirements(final PersistedDecisionRequirements drg) {
