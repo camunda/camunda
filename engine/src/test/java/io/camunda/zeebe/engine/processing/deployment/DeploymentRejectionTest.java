@@ -19,7 +19,7 @@ import io.camunda.zeebe.protocol.record.ExecuteCommandResponseDecoder;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RejectionType;
-import io.camunda.zeebe.protocol.record.intent.DeploymentDistributionIntent;
+import io.camunda.zeebe.protocol.record.intent.CommandDistributionIntent;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
 import io.camunda.zeebe.protocol.record.value.DeploymentRecordValue;
@@ -287,6 +287,6 @@ public class DeploymentRejectionTest {
         .doesNotContain(
             tuple(ProcessIntent.CREATED, RecordType.EVENT),
             tuple(DeploymentIntent.CREATED, RecordType.EVENT),
-            tuple(DeploymentDistributionIntent.DISTRIBUTING, RecordType.EVENT));
+            tuple(CommandDistributionIntent.STARTED, RecordType.EVENT));
   }
 }

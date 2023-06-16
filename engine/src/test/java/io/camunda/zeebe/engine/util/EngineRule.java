@@ -260,7 +260,7 @@ public final class EngineRule extends ExternalResource {
   }
 
   public DeploymentClient deployment() {
-    return new DeploymentClient(environmentRule, this::forEachPartition);
+    return new DeploymentClient(environmentRule, this::forEachPartition, partitionCount);
   }
 
   public ProcessInstanceClient processInstance() {

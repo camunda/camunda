@@ -8,6 +8,7 @@
 package io.camunda.zeebe.test.util.record;
 
 import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.value.CommandDistributionRecordValue;
 import java.util.stream.Stream;
 
@@ -23,5 +24,13 @@ public class CommandDistributionRecordStream
   protected CommandDistributionRecordStream supply(
       final Stream<Record<CommandDistributionRecordValue>> wrappedStream) {
     return new CommandDistributionRecordStream(wrappedStream);
+  }
+
+  public CommandDistributionRecordStream withDistributionPartitionId(final int partitionId) {
+    return valueFilter(v -> v.getPartitionId() == partitionId);
+  }
+
+  public CommandDistributionRecordStream withDistributionIntent(final Intent intent) {
+    return valueFilter(v -> v.getIntent() == intent);
   }
 }

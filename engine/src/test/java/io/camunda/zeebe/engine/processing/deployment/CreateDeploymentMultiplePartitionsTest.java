@@ -16,9 +16,9 @@ import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
-import io.camunda.zeebe.protocol.record.intent.DeploymentDistributionIntent;
+import io.camunda.zeebe.protocol.record.intent.CommandDistributionIntent;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
-import io.camunda.zeebe.protocol.record.value.DeploymentDistributionRecordValue;
+import io.camunda.zeebe.protocol.record.value.CommandDistributionRecordValue;
 import io.camunda.zeebe.protocol.record.value.DeploymentRecordValue;
 import io.camunda.zeebe.protocol.record.value.deployment.DecisionRecordValue;
 import io.camunda.zeebe.protocol.record.value.deployment.DecisionRequirementsMetadataValue;
@@ -29,7 +29,6 @@ import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.io.ByteArrayOutputStream;
 import java.util.List;
 import java.util.function.Consumer;
-import java.util.stream.Collectors;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
@@ -80,51 +79,41 @@ public final class CreateDeploymentMultiplePartitionsTest {
         RecordingExporter.records()
             .limit(
                 r ->
-                    r.getIntent() == DeploymentIntent.FULLY_DISTRIBUTED
+                    r.getIntent() == CommandDistributionIntent.FINISHED
                         && r.getKey() == secondDeployment.getKey())
             .withRecordKey(deployment.getKey())
-            .collect(Collectors.toList());
+            .toList();
 
-    final var listOfFullyDistributed =
+    final var listOfFinishedDistributions =
         deploymentRecords.stream()
-            .filter(r -> r.getIntent() == DeploymentIntent.FULLY_DISTRIBUTED)
-            .collect(Collectors.toList());
-    assertThat(listOfFullyDistributed).hasSize(1);
+            .filter(r -> r.getIntent() == CommandDistributionIntent.FINISHED)
+            .toList();
+    assertThat(listOfFinishedDistributions).hasSize(1);
 
-    final var fullyDistributedDeployment = listOfFullyDistributed.get(0);
+    final var fullyDistributedDeployment = listOfFinishedDistributions.get(0);
     assertThat(fullyDistributedDeployment.getKey()).isNotNegative();
     assertThat(fullyDistributedDeployment.getPartitionId()).isEqualTo(PARTITION_ID);
     assertThat(fullyDistributedDeployment.getRecordType()).isEqualTo(RecordType.EVENT);
     assertThat(fullyDistributedDeployment.getIntent())
-        .isEqualTo(DeploymentIntent.FULLY_DISTRIBUTED);
+        .isEqualTo(CommandDistributionIntent.FINISHED);
 
     assertThat(
             deploymentRecords.stream()
-                .filter(r -> r.getIntent() == DeploymentIntent.DISTRIBUTE)
+                .filter(r -> r.getIntent() == DeploymentIntent.CREATE)
                 .count())
         .isEqualTo(PARTITION_COUNT - 1);
 
     assertThat(
             deploymentRecords.stream()
-                .filter(r -> r.getIntent() == DeploymentDistributionIntent.DISTRIBUTING)
+                .filter(r -> r.getIntent() == CommandDistributionIntent.DISTRIBUTING)
                 .count())
         .isEqualTo(PARTITION_COUNT - 1);
 
     assertThat(
             deploymentRecords.stream()
-                .filter(r -> r.getIntent() == DeploymentDistributionIntent.COMPLETE)
+                .filter(r -> r.getIntent() == CommandDistributionIntent.ACKNOWLEDGE)
                 .count())
         .isEqualTo(PARTITION_COUNT - 1);
-
-    //    todo(zell): https://github.com/zeebe-io/zeebe/issues/6314 fully distributed contains
-    //    currently no longer any resources
-    //
-    //    assertDeploymentEventResources(
-    //        DEPLOYMENT_PARTITION,
-    //        DeploymentIntent.CREATED,
-    //        deployment.getKey(),
-    //        (createdDeployment) ->
-    //            assertDeploymentRecord(fullyDistributedDeployment, createdDeployment));
 
     ENGINE
         .getPartitionIds()
@@ -136,7 +125,7 @@ public final class CreateDeploymentMultiplePartitionsTest {
 
               assertDeploymentEventResources(
                   partitionId,
-                  DeploymentIntent.DISTRIBUTED,
+                  DeploymentIntent.CREATED,
                   deployment.getKey(),
                   (createdDeployment) -> assertDeploymentRecord(deployment, createdDeployment));
             });
@@ -166,17 +155,17 @@ public final class CreateDeploymentMultiplePartitionsTest {
     final long deploymentKey1 = ENGINE.deployment().withXmlResource(PROCESS).deploy().getKey();
 
     // then
-    final List<Record<DeploymentDistributionRecordValue>> deploymentRecords =
-        RecordingExporter.deploymentDistributionRecords()
+    final var distributionRecords =
+        RecordingExporter.commandDistributionRecords()
             .withRecordKey(deploymentKey1)
-            .withIntent(DeploymentDistributionIntent.DISTRIBUTING)
+            .withIntent(CommandDistributionIntent.DISTRIBUTING)
             .limit(PARTITION_COUNT - 1)
             .asList();
 
-    assertThat(deploymentRecords).hasSize(PARTITION_COUNT - 1);
-    assertThat(deploymentRecords)
+    assertThat(distributionRecords).hasSize(PARTITION_COUNT - 1);
+    assertThat(distributionRecords)
         .extracting(Record::getValue)
-        .extracting(DeploymentDistributionRecordValue::getPartitionId)
+        .extracting(CommandDistributionRecordValue::getPartitionId)
         .doesNotContain(DEPLOYMENT_PARTITION);
   }
 
@@ -186,23 +175,21 @@ public final class CreateDeploymentMultiplePartitionsTest {
     final long deploymentKey = ENGINE.deployment().withXmlResource(PROCESS).deploy().getKey();
 
     // then
-    final List<Record<DeploymentDistributionRecordValue>> deploymentDistributionRecords =
-        RecordingExporter.deploymentDistributionRecords()
-            .withIntent(DeploymentDistributionIntent.DISTRIBUTING)
+    final var commandDistributionRecords =
+        RecordingExporter.commandDistributionRecords()
+            .withIntent(CommandDistributionIntent.DISTRIBUTING)
             .limit(2)
             .asList();
 
-    assertThat(deploymentDistributionRecords)
-        .extracting(Record::getKey)
-        .containsOnly(deploymentKey);
+    assertThat(commandDistributionRecords).extracting(Record::getKey).containsOnly(deploymentKey);
 
-    assertThat(deploymentDistributionRecords)
+    assertThat(commandDistributionRecords)
         .extracting(Record::getPartitionId)
         .containsOnly(DEPLOYMENT_PARTITION);
 
-    assertThat(deploymentDistributionRecords)
+    assertThat(commandDistributionRecords)
         .extracting(Record::getValue)
-        .extracting(DeploymentDistributionRecordValue::getPartitionId)
+        .extracting(CommandDistributionRecordValue::getPartitionId)
         .containsExactly(2, 3);
   }
 
@@ -222,15 +209,15 @@ public final class CreateDeploymentMultiplePartitionsTest {
     assertThat(deployment.getRecordType()).isEqualTo(RecordType.EVENT);
     assertThat(deployment.getIntent()).isEqualTo(DeploymentIntent.CREATED);
 
-    final List<Record<DeploymentRecordValue>> distributedDeployments =
+    final var deployments =
         RecordingExporter.deploymentRecords()
-            .withIntent(DeploymentIntent.DISTRIBUTED)
+            .withIntent(DeploymentIntent.CREATED)
             .withRecordKey(deployment.getKey())
-            .limit(PARTITION_COUNT - 1)
+            .limit(PARTITION_COUNT)
             .asList();
 
-    assertThat(distributedDeployments)
-        .hasSize(PARTITION_COUNT - 1)
+    assertThat(deployments)
+        .hasSize(PARTITION_COUNT)
         .extracting(Record::getValue)
         .flatExtracting(DeploymentRecordValue::getProcessesMetadata)
         .extracting(ProcessMetadataValue::getBpmnProcessId)
@@ -256,6 +243,7 @@ public final class CreateDeploymentMultiplePartitionsTest {
     final Record<DeploymentRecordValue> firstCreatedDeployment =
         RecordingExporter.deploymentRecords()
             .withIntent(DeploymentIntent.CREATED)
+            .withPartitionId(DEPLOYMENT_PARTITION)
             .withRecordKey(firstDeployment.getKey())
             .getFirst();
 
@@ -265,6 +253,7 @@ public final class CreateDeploymentMultiplePartitionsTest {
     final Record<DeploymentRecordValue> secondCreatedDeployments =
         RecordingExporter.deploymentRecords()
             .withIntent(DeploymentIntent.CREATED)
+            .withPartitionId(DEPLOYMENT_PARTITION)
             .withRecordKey(secondDeployment.getKey())
             .getFirst();
 
@@ -290,18 +279,18 @@ public final class CreateDeploymentMultiplePartitionsTest {
     assertThat(repeatedProcesses.size()).isEqualTo(originalProcesses.size()).isOne();
 
     assertThat(
-            RecordingExporter.deploymentRecords(DeploymentIntent.DISTRIBUTE)
+            RecordingExporter.deploymentRecords(DeploymentIntent.CREATE)
                 .withRecordKey(repeated.getKey())
                 .limit(PARTITION_COUNT - 1)
                 .count())
         .isEqualTo(PARTITION_COUNT - 1);
 
     final var repeatedWfs =
-        RecordingExporter.deploymentRecords(DeploymentIntent.DISTRIBUTED)
+        RecordingExporter.deploymentRecords(DeploymentIntent.CREATED)
             .withRecordKey(repeated.getKey())
             .limit(PARTITION_COUNT - 1)
             .map(r -> r.getValue().getProcessesMetadata().get(0))
-            .collect(Collectors.toList());
+            .toList();
 
     assertThat(repeatedWfs.size()).isEqualTo(PARTITION_COUNT - 1);
     repeatedWfs.forEach(repeatedWf -> assertSameProcess(originalProcesses.get(0), repeatedWf));
@@ -327,18 +316,18 @@ public final class CreateDeploymentMultiplePartitionsTest {
     assertDifferentProcesses(originalProcesses.get(0), repeatedProcesses.get(0));
 
     assertThat(
-            RecordingExporter.deploymentRecords(DeploymentIntent.DISTRIBUTE)
+            RecordingExporter.deploymentRecords(DeploymentIntent.CREATE)
                 .withRecordKey(repeated.getKey())
                 .limit(PARTITION_COUNT - 1)
                 .count())
         .isEqualTo(PARTITION_COUNT - 1);
 
     final List<ProcessMetadataValue> repeatedWfs =
-        RecordingExporter.deploymentRecords(DeploymentIntent.DISTRIBUTED)
+        RecordingExporter.deploymentRecords(DeploymentIntent.CREATED)
             .withRecordKey(repeated.getKey())
             .limit(PARTITION_COUNT - 1)
             .map(r -> r.getValue().getProcessesMetadata().get(0))
-            .collect(Collectors.toList());
+            .toList();
 
     assertThat(repeatedWfs.size()).isEqualTo(PARTITION_COUNT - 1);
     repeatedWfs.forEach(
@@ -366,28 +355,28 @@ public final class CreateDeploymentMultiplePartitionsTest {
     assertThat(repeatedDrg.size()).isEqualTo(originalDrg.size()).isOne();
 
     assertThat(
-            RecordingExporter.deploymentRecords(DeploymentIntent.DISTRIBUTE)
+            RecordingExporter.deploymentRecords(DeploymentIntent.CREATE)
                 .withRecordKey(repeated.getKey())
                 .limit(PARTITION_COUNT - 1)
                 .count())
         .isEqualTo(PARTITION_COUNT - 1);
 
     final var repeatedDecisions =
-        RecordingExporter.deploymentRecords(DeploymentIntent.DISTRIBUTED)
+        RecordingExporter.deploymentRecords(DeploymentIntent.CREATED)
             .withRecordKey(repeated.getKey())
             .limit(PARTITION_COUNT - 1)
             .map(r -> r.getValue().getDecisionsMetadata().get(0))
-            .collect(Collectors.toList());
+            .toList();
 
     assertThat(repeatedDecisions.size()).isEqualTo(PARTITION_COUNT - 1);
     repeatedDecisions.forEach(r -> assertSameDecision(originalDecision.get(0), r));
 
     final var repeatedDrgs =
-        RecordingExporter.deploymentRecords(DeploymentIntent.DISTRIBUTED)
+        RecordingExporter.deploymentRecords(DeploymentIntent.CREATED)
             .withRecordKey(repeated.getKey())
             .limit(PARTITION_COUNT - 1)
             .map(r -> r.getValue().getDecisionRequirementsMetadata().get(0))
-            .collect(Collectors.toList());
+            .toList();
 
     assertThat(repeatedDrgs.size()).isEqualTo(PARTITION_COUNT - 1);
     repeatedDrgs.forEach(r -> assertSameDrg(originalDrg.get(0), r));
@@ -414,28 +403,28 @@ public final class CreateDeploymentMultiplePartitionsTest {
     assertThat(repeatedDrg.size()).isEqualTo(originalDrg.size()).isOne();
 
     assertThat(
-            RecordingExporter.deploymentRecords(DeploymentIntent.DISTRIBUTE)
+            RecordingExporter.deploymentRecords(DeploymentIntent.CREATE)
                 .withRecordKey(repeated.getKey())
                 .limit(PARTITION_COUNT - 1)
                 .count())
         .isEqualTo(PARTITION_COUNT - 1);
 
     final var repeatedDecisions =
-        RecordingExporter.deploymentRecords(DeploymentIntent.DISTRIBUTED)
+        RecordingExporter.deploymentRecords(DeploymentIntent.CREATED)
             .withRecordKey(repeated.getKey())
             .limit(PARTITION_COUNT - 1)
             .map(r -> r.getValue().getDecisionsMetadata().get(0))
-            .collect(Collectors.toList());
+            .toList();
 
     assertThat(repeatedDecisions.size()).isEqualTo(PARTITION_COUNT - 1);
     repeatedDecisions.forEach(r -> assertDifferentDecision(originalDecision.get(0), r));
 
     final var repeatedDrgs =
-        RecordingExporter.deploymentRecords(DeploymentIntent.DISTRIBUTED)
+        RecordingExporter.deploymentRecords(DeploymentIntent.CREATED)
             .withRecordKey(repeated.getKey())
             .limit(PARTITION_COUNT - 1)
             .map(r -> r.getValue().getDecisionRequirementsMetadata().get(0))
-            .collect(Collectors.toList());
+            .toList();
 
     assertThat(repeatedDrgs.size()).isEqualTo(PARTITION_COUNT - 1);
     repeatedDrgs.forEach(r -> assertDifferentDrg(originalDrg.get(0), r));

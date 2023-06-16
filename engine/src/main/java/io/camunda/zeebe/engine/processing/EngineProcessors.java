@@ -101,15 +101,12 @@ public final class EngineProcessors {
             jobMetrics,
             decisionBehavior);
 
-    // TODO unused for now, will be used with the implementation of
-    // https://github.com/camunda/zeebe/issues/11661
     final var commandDistributionBehavior =
         new CommandDistributionBehavior(
             writers,
             typedRecordProcessorContext.getPartitionId(),
             partitionsCount,
-            interPartitionCommandSender,
-            processingState.getKeyGenerator());
+            interPartitionCommandSender);
 
     final var deploymentDistributionCommandSender =
         new DeploymentDistributionCommandSender(
@@ -119,10 +116,10 @@ public final class EngineProcessors {
         processingState,
         typedRecordProcessors,
         writers,
-        partitionsCount,
         deploymentDistributionCommandSender,
         processingState.getKeyGenerator(),
-        featureFlags);
+        featureFlags,
+        commandDistributionBehavior);
     addMessageProcessors(
         bpmnBehaviors,
         subscriptionCommandSender,
@@ -206,10 +203,10 @@ public final class EngineProcessors {
       final ProcessingState processingState,
       final TypedRecordProcessors typedRecordProcessors,
       final Writers writers,
-      final int partitionsCount,
       final DeploymentDistributionCommandSender deploymentDistributionCommandSender,
       final KeyGenerator keyGenerator,
-      final FeatureFlags featureFlags) {
+      final FeatureFlags featureFlags,
+      final CommandDistributionBehavior distributionBehavior) {
 
     // on deployment partition CREATE Command is received and processed
     // it will cause a distribution to other partitions
@@ -217,11 +214,10 @@ public final class EngineProcessors {
         new DeploymentCreateProcessor(
             processingState,
             bpmnBehaviors,
-            partitionsCount,
             writers,
-            deploymentDistributionCommandSender,
             keyGenerator,
-            featureFlags);
+            featureFlags,
+            distributionBehavior);
     typedRecordProcessors.onCommand(ValueType.DEPLOYMENT, CREATE, processor);
 
     // periodically retries deployment distribution

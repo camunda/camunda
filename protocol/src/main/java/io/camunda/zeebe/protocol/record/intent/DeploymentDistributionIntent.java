@@ -15,6 +15,12 @@
  */
 package io.camunda.zeebe.protocol.record.intent;
 
+/**
+ * DeploymentDistributionIntent is deprecated as of 8.3.0. A generalised way of distributing
+ * commands has been introduced in this version. The DeploymentCreateProcessor is now using this new
+ * way. This intent only remains to stay backwards compatible.
+ */
+@Deprecated
 public enum DeploymentDistributionIntent implements Intent {
   DISTRIBUTING((short) 0),
   COMPLETE((short) 1),
