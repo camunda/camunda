@@ -14,7 +14,7 @@ const IS_E2E = Boolean(process.env.IS_E2E);
  * See https://playwright.dev/docs/test-configuration.
  */
 const config: PlaywrightTestConfig = {
-  testDir: './e2e-playwright',
+  testDir: './e2e',
   timeout: 30 * 1000,
   expect: {
     timeout: 5000,

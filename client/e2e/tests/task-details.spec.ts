@@ -10,16 +10,16 @@ import {deploy, createInstances} from '../zeebeClient';
 
 test.beforeAll(async () => {
   await deploy([
-    './e2e-playwright/resources/usertask_to_be_completed.bpmn',
-    './e2e-playwright/resources/user_task_with_form.bpmn',
-    './e2e-playwright/resources/user_task_with_form_and_vars.bpmn',
-    './e2e-playwright/resources/user_task_with_form_rerender_1.bpmn',
-    './e2e-playwright/resources/user_task_with_form_rerender_2.bpmn',
+    './e2e/resources/usertask_to_be_completed.bpmn',
+    './e2e/resources/user_task_with_form.bpmn',
+    './e2e/resources/user_task_with_form_and_vars.bpmn',
+    './e2e/resources/user_task_with_form_rerender_1.bpmn',
+    './e2e/resources/user_task_with_form_rerender_2.bpmn',
   ]);
   await Promise.all([
     createInstances('usertask_to_be_completed', 1, 1),
     createInstances('user_registration', 1, 2),
-    createInstances('user_registration_with_vars', 1, 1, {
+    createInstances('user_registration_with_vars', 1, 2, {
       name: 'Jane',
       age: '50',
     }),
@@ -251,12 +251,33 @@ test.describe('task details page', () => {
       await expect(page.getByText('Task completed')).toBeVisible();
     });
 
-    await expect(
-      page.getByTitle('Available tasks').getByText('User registration'),
-    ).not.toBeVisible();
+    await test.step('open completed task', async () => {
+      await page.getByRole('combobox', {name: 'Filter options'}).click();
+      await page
+        .getByRole('option', {name: 'Completed'})
+        .getByText('Completed')
+        .click();
+      await page
+        .getByTitle('Available tasks')
+        .getByText('User registration')
+        .nth(0)
+        .click();
+    });
+
+    await test.step('check form values', async () => {
+      await expect(page.getByLabel('Name*')).toHaveValue('Gaius Julius Caesar');
+      await expect(page.getByLabel('Address*')).toHaveValue('Rome');
+      await expect(page.getByLabel('Age')).toHaveValue('55');
+    });
   });
 
   test('task completion with prefilled form', async ({page}) => {
+    await page.getByRole('combobox', {name: 'Filter options'}).click();
+    await page
+      .getByRole('option', {name: 'Unassigned'})
+      .getByText('Unassigned')
+      .click();
+
     await page
       .getByTitle('Available tasks')
       .getByText('User registration with vars')
@@ -265,7 +286,7 @@ test.describe('task details page', () => {
 
     await page.getByRole('button', {name: 'Assign to me'}).click();
 
-    await test.step('check preffiled form values', async () => {
+    await test.step('check prefilled form values', async () => {
       await expect(page.getByLabel('Name*')).toHaveValue('Jane');
       await expect(page.getByLabel('Address*')).toHaveValue('');
       await expect(page.getByLabel('Age')).toHaveValue('50');

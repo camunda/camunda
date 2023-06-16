@@ -10,10 +10,10 @@ import {deploy, createInstances} from '../zeebeClient';
 
 test.beforeAll(async () => {
   await Promise.all([
-    deploy('./e2e-playwright/resources/usertask_to_be_assigned.bpmn'),
-    deploy('./e2e-playwright/resources/usertask_for_scrolling_1.bpmn'),
-    deploy('./e2e-playwright/resources/usertask_for_scrolling_2.bpmn'),
-    deploy('./e2e-playwright/resources/usertask_for_scrolling_3.bpmn'),
+    deploy('./e2e/resources/usertask_to_be_assigned.bpmn'),
+    deploy('./e2e/resources/usertask_for_scrolling_1.bpmn'),
+    deploy('./e2e/resources/usertask_for_scrolling_2.bpmn'),
+    deploy('./e2e/resources/usertask_for_scrolling_3.bpmn'),
   ]);
   await createInstances('usertask_for_scrolling_3', 1, 1);
   await createInstances('usertask_for_scrolling_2', 1, 50);
@@ -49,8 +49,10 @@ test.describe('task panel page', () => {
     await expect(page).toHaveURL(/\?filter=assigned-to-me/);
     await page.reload();
     await expect(
-      page.getByTitle('Available tasks').getByText('No tasks found'),
-    ).toBeVisible();
+      page.getByTitle('Available tasks').getByText('Some user activity'),
+    ).toHaveCount(0, {
+      timeout: 10000,
+    });
 
     await page.getByRole('combobox', {name: /filter options/i}).click();
     await page.getByText('All open').click();

@@ -11,9 +11,7 @@ import * as zeebeClient from '../zeebeClient';
 
 test.describe('public start process', () => {
   test('should submit form', async ({page, makeAxeBuilder}) => {
-    await zeebeClient.deploy([
-      './e2e-playwright/resources/subscribeFormProcess.bpmn',
-    ]);
+    await zeebeClient.deploy(['./e2e/resources/subscribeFormProcess.bpmn']);
     await page.goto('/new/subscribeFormProcess');
 
     await expect(page.getByLabel('Name')).toBeVisible();

@@ -27,7 +27,7 @@ jobs:
         run: yarn start:visual-regression &
       - name: Run Playwright tests
         working-directory: ./client
-        run: yarn playwright e2e-playwright/visual
+        run: yarn playwright e2e/visual
       - uses: actions/upload-artifact@v3
         if: always()
         with:
