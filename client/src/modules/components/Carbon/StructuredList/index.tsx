@@ -15,6 +15,7 @@ import {Container, StructuredListCell} from './styled';
 
 type Column = {
   cellContent: React.ReactNode;
+  width?: string;
 };
 
 type RowProps = {
@@ -27,6 +28,23 @@ type Props = {
   headerColumns: Column[];
   rows: RowProps[];
   className?: string;
+  dynamicRows?: React.ReactNode;
+};
+
+const StructuredRows: React.FC<Pick<Props, 'rows'>> = ({rows}) => {
+  return (
+    <>
+      {rows.map(({columns}, index) => (
+        <StructuredListRow key={index}>
+          {columns.map(({cellContent, width}, index) => {
+            return (
+              <StructuredListCell key={index}>{cellContent}</StructuredListCell>
+            );
+          })}
+        </StructuredListRow>
+      ))}
+    </>
+  );
 };
 
 const StructuredList: React.FC<Props> = ({
@@ -35,6 +53,7 @@ const StructuredList: React.FC<Props> = ({
   headerColumns,
   rows,
   className,
+  dynamicRows,
 }) => {
   return (
     <Container className={className}>
@@ -51,23 +70,12 @@ const StructuredList: React.FC<Props> = ({
           </StructuredListRow>
         </StructuredListHead>
         <StructuredListBody>
-          {rows.map(({columns}, index) => {
-            return (
-              <StructuredListRow key={index}>
-                {columns.map(({cellContent}, index) => {
-                  return (
-                    <StructuredListCell key={index}>
-                      {cellContent}
-                    </StructuredListCell>
-                  );
-                })}
-              </StructuredListRow>
-            );
-          })}
+          {dynamicRows}
+          <StructuredRows rows={rows} />
         </StructuredListBody>
       </StructuredListWrapper>
     </Container>
   );
 };
 
-export {StructuredList};
+export {StructuredList, StructuredRows};

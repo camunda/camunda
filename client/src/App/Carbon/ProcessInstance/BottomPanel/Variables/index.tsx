@@ -20,6 +20,7 @@ import {AddVariableButton} from './AddVariableButton';
 import {useFieldArray} from 'react-final-form-arrays';
 import {VariableFormValues} from 'modules/types/variables';
 import {EmptyMessage} from 'modules/components/Carbon/EmptyMessage';
+import {VariablesTable} from './VariablesTable';
 
 const Variables: React.FC = observer(() => {
   const {
@@ -72,7 +73,9 @@ const Variables: React.FC = observer(() => {
           <EmptyMessage message="The Flow Node has no Variables" />
         </EmptyMessageWrapper>
       )}
-      {(!isViewMode || displayStatus === 'variables') && <div>variables</div>}
+      {(!isViewMode || displayStatus === 'variables') && (
+        <VariablesTable scopeId={scopeId} />
+      )}
 
       {!isModificationModeEnabled && (
         <Restricted
