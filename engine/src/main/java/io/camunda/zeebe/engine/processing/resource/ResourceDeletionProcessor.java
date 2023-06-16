@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.resource;
 
+import io.camunda.zeebe.engine.processing.common.CommandDistributionBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.DistributedTypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
@@ -36,14 +37,19 @@ public class ResourceDeletionProcessor
   private final TypedRejectionWriter rejectionWriter;
   private final KeyGenerator keyGenerator;
   private final DecisionState decisionState;
+  private final CommandDistributionBehavior commandDistributionBehavior;
 
   public ResourceDeletionProcessor(
-      final Writers writers, final KeyGenerator keyGenerator, final DecisionState decisionState) {
+      final Writers writers,
+      final KeyGenerator keyGenerator,
+      final DecisionState decisionState,
+      final CommandDistributionBehavior commandDistributionBehavior) {
     stateWriter = writers.state();
     responseWriter = writers.response();
     rejectionWriter = writers.rejection();
     this.keyGenerator = keyGenerator;
     this.decisionState = decisionState;
+    this.commandDistributionBehavior = commandDistributionBehavior;
   }
 
   @Override
@@ -67,9 +73,7 @@ public class ResourceDeletionProcessor
   }
 
   @Override
-  public void processDistributedCommand(final TypedRecord<ResourceDeletionRecord> command) {
-
-  }
+  public void processDistributedCommand(final TypedRecord<ResourceDeletionRecord> command) {}
 
   private void deleteDecisionRequirements(final PersistedDecisionRequirements drg) {
     decisionState

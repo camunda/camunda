@@ -150,7 +150,8 @@ public final class EngineProcessors {
         typedRecordProcessors,
         writers,
         bpmnBehaviors.jobActivationBehavior());
-    addResourceDeletionProcessors(typedRecordProcessors, writers, processingState);
+    addResourceDeletionProcessors(
+        typedRecordProcessors, writers, processingState, commandDistributionBehavior);
     addSignalBroadcastProcessors(typedRecordProcessors, bpmnBehaviors, writers, processingState);
     addCommandDistributionProcessors(
         typedRecordProcessors,
@@ -293,10 +294,14 @@ public final class EngineProcessors {
   private static void addResourceDeletionProcessors(
       final TypedRecordProcessors typedRecordProcessors,
       final Writers writers,
-      final MutableProcessingState processingState) {
+      final MutableProcessingState processingState,
+      final CommandDistributionBehavior commandDistributionBehavior) {
     final var resourceDeletionProcessor =
         new ResourceDeletionProcessor(
-            writers, processingState.getKeyGenerator(), processingState.getDecisionState());
+            writers,
+            processingState.getKeyGenerator(),
+            processingState.getDecisionState(),
+            commandDistributionBehavior);
     typedRecordProcessors.onCommand(
         ValueType.RESOURCE_DELETION, ResourceDeletionIntent.DELETE, resourceDeletionProcessor);
   }
