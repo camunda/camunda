@@ -173,13 +173,13 @@ public final class DeploymentCreateProcessor implements TypedRecordProcessor<Dep
       final TypedRecord<DeploymentRecord> command, final DeploymentRecord deploymentEvent) {
     deploymentEvent.decisionRequirementsMetadata().stream()
         .filter(not(DecisionRequirementsMetadataRecord::isDuplicate))
+        .map(drg -> createDrgRecord(deploymentEvent, drg))
         .forEach(
-            drg -> {
-              final DecisionRequirementsRecord decisionRequirementsRecord =
-                  createDrgRecord(deploymentEvent, drg);
-              stateWriter.appendFollowUpEvent(
-                  command.getKey(), DecisionRequirementsIntent.CREATED, decisionRequirementsRecord);
-            });
+            decisionRequirementsRecord ->
+                stateWriter.appendFollowUpEvent(
+                    command.getKey(),
+                    DecisionRequirementsIntent.CREATED,
+                    decisionRequirementsRecord));
     deploymentEvent.decisionsMetadata().stream()
         .filter(not(DecisionRecord::isDuplicate))
         .forEach(
