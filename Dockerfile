@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1.4
 # Override this based on the architecture; this is currently pointing to amd64
-ARG BASE_DIGEST="sha256:22f133769ce2b956d150ab749cd4630b3e7fbac2b37049911aa0973a1283047c"
+ARG BASE_DIGEST="sha256:901eeb64e3d1e74d261e82e4158386407b95628eaf723058fb96d4efb9141b88"
 
 # set to "build" to build zeebe from scratch instead of using a distball
 ARG DIST="distball"
