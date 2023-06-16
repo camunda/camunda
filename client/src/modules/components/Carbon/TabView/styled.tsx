@@ -5,7 +5,7 @@
  * except in compliance with the proprietary license.
  */
 
-import styled from 'styled-components';
+import styled, {css} from 'styled-components';
 import {
   Tab as BaseTab,
   TabPanel as BaseTabPanel,
@@ -22,16 +22,28 @@ const Container = styled.div`
 `;
 
 const Content = styled.section`
-  padding: var(--cds-spacing-05);
+  height: 100%;
 `;
 
 const Tab = styled(BaseTab)`
   padding: 9px var(--cds-spacing-05) var(--cds-spacing-03) !important;
 `;
 
-const TabPanel = styled(BaseTabPanel)`
-  height: 100%;
-  overflow: hidden;
+type TabPanelProps = {
+  $removePadding?: boolean;
+};
+
+const TabPanel = styled(BaseTabPanel)<TabPanelProps>`
+  ${({$removePadding}) => {
+    return css`
+      height: 100%;
+      overflow: hidden;
+      ${$removePadding &&
+      css`
+        padding: 0;
+      `}
+    `;
+  }}
 `;
 
 const TabList = styled(BaseTabList)`

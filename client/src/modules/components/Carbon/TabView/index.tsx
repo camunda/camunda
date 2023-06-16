@@ -14,6 +14,7 @@ type TabType = {
   id: string;
   label: string;
   content: React.ReactNode;
+  removePadding?: boolean;
 };
 
 type Props = {
@@ -50,8 +51,10 @@ const TabView: React.FC<Props> = ({tabs = [], eventName, dataTestId}) => {
             ))}
           </TabList>
           <TabPanels>
-            {tabs.map(({id, content}) => (
-              <TabPanel key={id}>{content}</TabPanel>
+            {tabs.map(({id, content, removePadding = false}) => (
+              <TabPanel key={id} $removePadding={removePadding}>
+                {content}
+              </TabPanel>
             ))}
           </TabPanels>
         </Tabs>

@@ -13,6 +13,7 @@ import {useEffect} from 'react';
 import {variablesStore} from 'modules/stores/variables';
 import {TabView} from 'modules/components/Carbon/TabView';
 import {InputOutputMappings} from './InputOutputMappings';
+import {VariablesContent} from './VariablesContent';
 
 const VariablePanel = observer(function VariablePanel() {
   useEffect(() => {
@@ -35,7 +36,8 @@ const VariablePanel = observer(function VariablePanel() {
         {
           id: 'variables',
           label: 'Variables',
-          content: <div>variables</div>,
+          content: <VariablesContent />,
+          removePadding: true,
         },
         ...(flowNodeSelectionStore.isRootNodeSelected
           ? []
