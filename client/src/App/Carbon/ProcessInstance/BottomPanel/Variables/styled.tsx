@@ -18,4 +18,11 @@ const Footer = styled.div`
   border-top: 1px solid var(--cds-border-subtle-01);
 `;
 
-export {VariablesContent, Footer};
+const EmptyMessageWrapper = styled.div`
+  display: flex;
+  height: 100%;
+  justify-content: center;
+  align-items: center;
+`;
+
+export {VariablesContent, Footer, EmptyMessageWrapper};

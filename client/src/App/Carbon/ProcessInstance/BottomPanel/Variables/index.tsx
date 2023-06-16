@@ -9,7 +9,7 @@ import {useEffect} from 'react';
 import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
 import {variablesStore} from 'modules/stores/variables';
 import {flowNodeMetaDataStore} from 'modules/stores/flowNodeMetaData';
-import {VariablesContent, Footer} from './styled';
+import {VariablesContent, EmptyMessageWrapper, Footer} from './styled';
 import {observer} from 'mobx-react';
 import {reaction} from 'mobx';
 import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
@@ -19,6 +19,7 @@ import {modificationsStore} from 'modules/stores/modifications';
 import {AddVariableButton} from './AddVariableButton';
 import {useFieldArray} from 'react-final-form-arrays';
 import {VariableFormValues} from 'modules/types/variables';
+import {EmptyMessage} from 'modules/components/Carbon/EmptyMessage';
 
 const Variables: React.FC = observer(() => {
   const {
@@ -66,7 +67,13 @@ const Variables: React.FC = observer(() => {
 
   return (
     <VariablesContent>
-      <div>variables</div>
+      {isViewMode && displayStatus === 'no-variables' && (
+        <EmptyMessageWrapper>
+          <EmptyMessage message="The Flow Node has no Variables" />
+        </EmptyMessageWrapper>
+      )}
+      {(!isViewMode || displayStatus === 'variables') && <div>variables</div>}
+
       {!isModificationModeEnabled && (
         <Restricted
           scopes={['write']}
