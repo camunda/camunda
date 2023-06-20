@@ -56,7 +56,7 @@ export const modalFlowNode = (id) => Selector(`.ProcessPartModal [data-element-i
 export const selectSectionWithLabel = (label) => Selector('section .sectionTitle').withText(label);
 export const selectSwitchLabel = (label) => Selector('.Switch .label').withText(label);
 export const tableGroup = (idx) => Selector('.Table thead tr.groupRow th').nth(idx);
-export const tableHeader = (idx) => Selector('.Table thead tr:last-child th').nth(idx);
+export const tableHeader = (idx) => Selector('.Table thead tr:last-child th.tableHeader').nth(idx);
 export const tableCell = (row, column) =>
   Selector('.Table tbody tr').nth(row).find('td').nth(column);
 export const instanceCountSwitch = Selector('.Configuration .Switch');
