@@ -306,7 +306,7 @@ pipeline {
             LABEL = "optimize-ci-build_870it_${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(10)}-${env.BUILD_ID}"
           }
           steps {
-            integrationTestSteps('Zeebe-test,import,c7EventProcess,reportEvaluation', '')
+            integrationTestSteps('Zeebe-test,import,eventBasedProcess,reportEvaluation', '')
           }
           post {
             always {
@@ -410,7 +410,7 @@ pipeline {
             LABEL = "optimize-ci-build_880it_${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(10)}-${env.BUILD_ID}"
           }
           steps {
-            integrationTestSteps('Zeebe-test,import,c7EventProcess,reportEvaluation', '')
+            integrationTestSteps('Zeebe-test,import,eventBasedProcess,reportEvaluation', '')
           }
           post {
             always {

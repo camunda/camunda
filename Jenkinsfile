@@ -611,7 +611,7 @@ pipeline {
           }
           steps {
             unstash name: "optimize-stash-client"
-            integrationTestSteps('latest', 'Zeebe-test,import,c7EventProcess,reportEvaluation', '')
+            integrationTestSteps('latest', 'Zeebe-test,import,reportEvaluation', '')
           }
           post {
             always {
