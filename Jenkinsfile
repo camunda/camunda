@@ -776,7 +776,7 @@ pipeline {
                   cloud 'optimize-ci'
                   inheritFrom "optimize-ci-build_smoke_${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(10)}-${env.BUILD_ID}"
                   defaultContainer 'jnlp'
-                  yaml smoketestPodSpec(env.CAMBPM_VERSION, env.ES_VERSION)
+                  yaml smoketestPodSpec(env.CAMBPM_VERSION, env.ES8_VERSION)
                 }
               }
               environment {
