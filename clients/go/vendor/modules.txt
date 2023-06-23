@@ -98,7 +98,7 @@ github.com/google/go-cmp/cmp/internal/value
 # github.com/google/uuid v1.3.0
 ## explicit
 github.com/google/uuid
-# github.com/imdario/mergo v0.3.12
+# github.com/imdario/mergo v0.3.15
 ## explicit; go 1.13
 github.com/imdario/mergo
 # github.com/inconshreveable/mousetrap v1.1.0
@@ -123,7 +123,7 @@ github.com/moby/patternmatcher
 # github.com/moby/sys/sequential v0.5.0
 ## explicit; go 1.17
 github.com/moby/sys/sequential
-# github.com/moby/term v0.0.0-20221128092401-c43b287e0e0f
+# github.com/moby/term v0.5.0
 ## explicit; go 1.18
 github.com/moby/term
 github.com/moby/term/windows
@@ -160,14 +160,19 @@ github.com/spf13/pflag
 github.com/stretchr/testify/assert
 github.com/stretchr/testify/require
 github.com/stretchr/testify/suite
-# github.com/testcontainers/testcontainers-go v0.20.1
+# github.com/testcontainers/testcontainers-go v0.21.0
 ## explicit; go 1.19
 github.com/testcontainers/testcontainers-go
 github.com/testcontainers/testcontainers-go/exec
 github.com/testcontainers/testcontainers-go/internal
+github.com/testcontainers/testcontainers-go/internal/config
 github.com/testcontainers/testcontainers-go/internal/testcontainersdocker
 github.com/testcontainers/testcontainers-go/internal/testcontainerssession
 github.com/testcontainers/testcontainers-go/wait
+# golang.org/x/exp v0.0.0-20230510235704-dd950f8aeaea
+## explicit; go 1.20
+golang.org/x/exp/constraints
+golang.org/x/exp/slices
 # golang.org/x/mod v0.8.0
 ## explicit; go 1.17
 golang.org/x/mod/semver

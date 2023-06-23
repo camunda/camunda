@@ -1,4 +1,5 @@
 site_name: Testcontainers for Go
+site_url: https://golang.testcontainers.org
 plugins:
     - search
     - codeinclude
@@ -36,6 +37,7 @@ nav:
     - Quickstart: quickstart.md
     - Features:
         - features/creating_container.md
+        - features/files_and_mounts.md
         - features/configuration.md
         - features/networking.md
         - features/garbage_collector.md
@@ -58,6 +60,7 @@ nav:
     - Modules:
         - modules/index.md
         - modules/couchbase.md
+        - modules/k3s.md
         - modules/localstack.md
         - modules/mysql.md
         - modules/neo4j.md
@@ -74,12 +77,24 @@ nav:
         - examples/datastore.md
         - examples/firestore.md
         - examples/mongodb.md
+        - examples/nats.md
         - examples/nginx.md
         - examples/pubsub.md
         - examples/spanner.md
         - examples/toxiproxy.md
     - System Requirements:
         - system_requirements/index.md
+        - system_requirements/docker.md
+        - Continuous Integration:
+            - system_requirements/ci/aws_codebuild.md
+            - system_requirements/ci/bitbucket_pipelines.md
+            - system_requirements/ci/circle_ci.md
+            - system_requirements/ci/concourse_ci.md
+            - system_requirements/ci/dind_patterns.md
+            - system_requirements/ci/drone.md
+            - system_requirements/ci/gitlab_ci.md
+            - system_requirements/ci/tekton.md
+            - system_requirements/ci/travis.md
         - system_requirements/using_colima.md
         - system_requirements/using_podman.md
     - Contributing:
@@ -88,4 +103,4 @@ nav:
     - Getting help: getting_help.md
 edit_uri: edit/main/docs/
 extra:
-    latest_version: v0.20.1
+    latest_version: v0.21.0
