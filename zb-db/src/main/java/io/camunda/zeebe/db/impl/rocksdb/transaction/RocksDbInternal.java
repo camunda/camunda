@@ -16,8 +16,9 @@ import static org.rocksdb.Status.Code.Ok;
 import static org.rocksdb.Status.Code.TimedOut;
 import static org.rocksdb.Status.Code.TryAgain;
 
+import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Field;
-import java.lang.reflect.Method;
 import java.util.EnumSet;
 import org.rocksdb.RocksDB;
 import org.rocksdb.RocksDBException;
@@ -33,9 +34,9 @@ public final class RocksDbInternal {
 
   static Field nativeHandle;
 
-  static Method putWithHandle;
-  static Method getWithHandle;
-  static Method removeWithHandle;
+  static MethodHandle putWithHandle;
+  static MethodHandle getWithHandle;
+  static MethodHandle removeWithHandle;
 
   static {
     RocksDB.loadLibrary();
@@ -65,7 +66,7 @@ public final class RocksDbInternal {
   //      final long columnFamilyHandle)
 
   private static void putWithHandle() throws NoSuchMethodException {
-    putWithHandle =
+    final var method =
         Transaction.class.getDeclaredMethod(
             "put",
             Long.TYPE,
@@ -75,21 +76,36 @@ public final class RocksDbInternal {
             Integer.TYPE,
             Long.TYPE,
             Boolean.TYPE);
-    putWithHandle.setAccessible(true);
+    method.setAccessible(true);
+    try {
+      putWithHandle = MethodHandles.lookup().unreflect(method);
+    } catch (IllegalAccessException e) {
+      throw new RuntimeException(e);
+    }
   }
 
   private static void getWithHandle() throws NoSuchMethodException {
-    getWithHandle =
+    final var method =
         Transaction.class.getDeclaredMethod(
             "get", Long.TYPE, Long.TYPE, byte[].class, Integer.TYPE, Long.TYPE);
-    getWithHandle.setAccessible(true);
+    method.setAccessible(true);
+    try {
+      getWithHandle = MethodHandles.lookup().unreflect(method);
+    } catch (IllegalAccessException e) {
+      throw new RuntimeException(e);
+    }
   }
 
   private static void removeWithHandle() throws NoSuchMethodException {
-    removeWithHandle =
+    final var method =
         Transaction.class.getDeclaredMethod(
             "delete", Long.TYPE, byte[].class, Integer.TYPE, Long.TYPE, Boolean.TYPE);
-    removeWithHandle.setAccessible(true);
+    method.setAccessible(true);
+    try {
+      removeWithHandle = MethodHandles.lookup().unreflect(method);
+    } catch (IllegalAccessException e) {
+      throw new RuntimeException(e);
+    }
   }
 
   static boolean isRocksDbExceptionRecoverable(final RocksDBException rdbex) {

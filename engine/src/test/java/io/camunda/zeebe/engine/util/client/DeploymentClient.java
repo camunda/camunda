@@ -15,6 +15,7 @@ import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.intent.CommandDistributionIntent;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
 import io.camunda.zeebe.protocol.record.value.DeploymentRecordValue;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
@@ -27,9 +28,23 @@ public final class DeploymentClient {
 
   private static final BiFunction<Long, Consumer<Consumer<Integer>>, Record<DeploymentRecordValue>>
       SUCCESS_EXPECTATION =
+          (sourceRecordPosition, forEachPartition) ->
+              RecordingExporter.deploymentRecords(DeploymentIntent.CREATED)
+                  .withSourceRecordPosition(sourceRecordPosition)
+                  .withPartitionId(Protocol.DEPLOYMENT_PARTITION)
+                  .getFirst();
+
+  private static final BiFunction<Long, Consumer<Consumer<Integer>>, Record<DeploymentRecordValue>>
+      SUCCESS_EXPECTATION_MULTIPLE_PARTITIONS =
           (sourceRecordPosition, forEachPartition) -> {
-            final Record<DeploymentRecordValue> deploymentOnPartitionOne =
+            final var deploymentOnPartitionOne =
                 RecordingExporter.deploymentRecords(DeploymentIntent.CREATED)
+                    .withSourceRecordPosition(sourceRecordPosition)
+                    .withPartitionId(Protocol.DEPLOYMENT_PARTITION)
+                    .getFirst();
+
+            final var distributionStarted =
+                RecordingExporter.commandDistributionRecords(CommandDistributionIntent.STARTED)
                     .withSourceRecordPosition(sourceRecordPosition)
                     .withPartitionId(Protocol.DEPLOYMENT_PARTITION)
                     .getFirst();
@@ -40,15 +55,15 @@ public final class DeploymentClient {
                     return;
                   }
 
-                  RecordingExporter.deploymentRecords(DeploymentIntent.DISTRIBUTED)
+                  RecordingExporter.deploymentRecords(DeploymentIntent.CREATED)
                       .withPartitionId(partitionId)
-                      .withRecordKey(deploymentOnPartitionOne.getKey())
+                      .withRecordKey(distributionStarted.getKey())
                       .getFirst();
                 });
 
-            RecordingExporter.deploymentRecords(DeploymentIntent.FULLY_DISTRIBUTED)
+            RecordingExporter.commandDistributionRecords(CommandDistributionIntent.FINISHED)
                 .withPartitionId(Protocol.DEPLOYMENT_PARTITION)
-                .withRecordKey(deploymentOnPartitionOne.getKey())
+                .withRecordKey(distributionStarted.getKey())
                 .getFirst();
 
             return deploymentOnPartitionOne;
@@ -63,26 +78,21 @@ public final class DeploymentClient {
                   .withPartitionId(Protocol.DEPLOYMENT_PARTITION)
                   .getFirst();
 
-  private static final BiFunction<Long, Consumer<Consumer<Integer>>, Record<DeploymentRecordValue>>
-      CREATED_EXPECTATION =
-          (sourceRecordPosition, forEachPartition) ->
-              RecordingExporter.deploymentRecords(DeploymentIntent.CREATED)
-                  .withSourceRecordPosition(sourceRecordPosition)
-                  .withPartitionId(Protocol.DEPLOYMENT_PARTITION)
-                  .getFirst();
-
   private final CommandWriter writer;
   private final DeploymentRecord deploymentRecord;
   private final Consumer<Consumer<Integer>> forEachPartition;
 
-  private BiFunction<Long, Consumer<Consumer<Integer>>, Record<DeploymentRecordValue>> expectation =
-      SUCCESS_EXPECTATION;
+  private BiFunction<Long, Consumer<Consumer<Integer>>, Record<DeploymentRecordValue>> expectation;
 
   public DeploymentClient(
-      final CommandWriter writer, final Consumer<Consumer<Integer>> forEachPartition) {
+      final CommandWriter writer,
+      final Consumer<Consumer<Integer>> forEachPartition,
+      final int partitionCount) {
     this.writer = writer;
     this.forEachPartition = forEachPartition;
     deploymentRecord = new DeploymentRecord();
+    expectation =
+        partitionCount == 1 ? SUCCESS_EXPECTATION : SUCCESS_EXPECTATION_MULTIPLE_PARTITIONS;
   }
 
   public DeploymentClient withXmlResource(final BpmnModelInstance modelInstance) {
@@ -130,7 +140,7 @@ public final class DeploymentClient {
   }
 
   public DeploymentClient expectCreated() {
-    expectation = CREATED_EXPECTATION;
+    expectation = SUCCESS_EXPECTATION;
     return this;
   }
 

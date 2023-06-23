@@ -86,6 +86,8 @@ public interface RaftServerProtocol {
    */
   CompletableFuture<AppendResponse> append(MemberId memberId, AppendRequest request);
 
+  CompletableFuture<AppendResponse> append(MemberId memberId, VersionedAppendRequest request);
+
   /**
    * Registers a transfer request callback.
    *
@@ -154,7 +156,10 @@ public interface RaftServerProtocol {
    *
    * @param handler the open session request handler to register
    */
-  void registerAppendHandler(Function<AppendRequest, CompletableFuture<AppendResponse>> handler);
+  void registerAppendV1Handler(Function<AppendRequest, CompletableFuture<AppendResponse>> handler);
+
+  void registerAppendV2Handler(
+      Function<VersionedAppendRequest, CompletableFuture<AppendResponse>> handler);
 
   /** Unregisters the append request handler. */
   void unregisterAppendHandler();

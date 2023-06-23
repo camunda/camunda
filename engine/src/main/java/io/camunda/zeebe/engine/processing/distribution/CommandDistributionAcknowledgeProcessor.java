@@ -49,6 +49,7 @@ public class CommandDistributionAcknowledgeProcessor
           record,
           RejectionType.NOT_FOUND,
           String.format(ERROR_PENDING_DISTRIBUTION_NOT_FOUND, distributionKey, partitionId));
+      return;
     }
 
     stateWriter.appendFollowUpEvent(

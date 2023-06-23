@@ -11,6 +11,13 @@ import io.camunda.zeebe.msgpack.property.IntegerProperty;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.value.DeploymentDistributionRecordValue;
 
+/**
+ * DeploymentDistributionRecord is deprecated as of 8.2.0. A generalised way of distributing
+ * commands has been introduced in this version. Distribution should now be handled using the {@link
+ * io.camunda.zeebe.protocol.impl.record.value.distribution.CommandDistributionRecord} This record
+ * only remains to stay backwards compatible.
+ */
+@Deprecated
 public class DeploymentDistributionRecord extends UnifiedRecordValue
     implements DeploymentDistributionRecordValue {
 
@@ -20,6 +27,7 @@ public class DeploymentDistributionRecord extends UnifiedRecordValue
     declareProperty(partitionIdProperty);
   }
 
+  @Override
   public int getPartitionId() {
     return partitionIdProperty.getValue();
   }

@@ -47,11 +47,22 @@ public interface Journal extends AutoCloseable {
    * Appends a {@link JournalRecord}. If the index of the record is not the next expected index, the
    * append will fail.
    *
+   * @deprecated This method was used to append entries received via replication. {@link
+   *     Journal#append(long, long, byte[])} must be used instead.
    * @param record the record to be appended
    * @exception InvalidIndex if the index of record is not the next expected index
    * @exception InvalidChecksum if the checksum in record does not match the checksum of the data
    */
+  @Deprecated(since = "8.4.0")
   void append(JournalRecord record);
+
+  /**
+   * Appends already serialized journal record. See {@link JournalRecord#serializedRecord()}
+   *
+   * @param checksum checksum of serializedRecord
+   * @param serializedRecord serializedRecord
+   */
+  void append(long checksum, byte[] serializedRecord);
 
   /**
    * Delete all records after indexExclusive. After a call to this method, {@link

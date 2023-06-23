@@ -11,17 +11,19 @@ import static io.camunda.zeebe.protocol.Protocol.DEPLOYMENT_PARTITION;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 
-import io.camunda.zeebe.engine.processing.deployment.distribute.DeploymentRedistributor;
+import io.camunda.zeebe.engine.processing.distribution.CommandRedistributor;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
-import io.camunda.zeebe.protocol.record.intent.DeploymentDistributionIntent;
+import io.camunda.zeebe.protocol.record.intent.CommandDistributionIntent;
+import io.camunda.zeebe.protocol.record.intent.DecisionIntent;
+import io.camunda.zeebe.protocol.record.intent.DecisionRequirementsIntent;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
-import io.camunda.zeebe.protocol.record.value.DeploymentDistributionRecordValue;
+import io.camunda.zeebe.protocol.record.value.CommandDistributionRecordValue;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.stream.Collectors;
@@ -57,48 +59,49 @@ public class MultiPartitionDeploymentLifecycleTest {
     assertThat(
             RecordingExporter.records()
                 .withPartitionId(1)
-                .limit(r -> r.getIntent().equals(DeploymentIntent.FULLY_DISTRIBUTED)))
+                .limit(r -> r.getIntent().equals(CommandDistributionIntent.FINISHED)))
         .extracting(
             Record::getIntent,
             Record::getRecordType,
             r ->
                 // We want to verify the partition id where the deployment was distributing to and
-                // where it was completed. Since only the DeploymentDistribution records have a
+                // where it was completed. Since only the CommandDistribution records have a
                 // value that contains the partition id, we use the partition id the record was
                 // written on for the other records. It should be noted that the
                 // DeploymentDistribution records are also written on partition 1!
-                r.getValue() instanceof DeploymentDistributionRecordValue
-                    ? ((DeploymentDistributionRecordValue) r.getValue()).getPartitionId()
+                r.getValue() instanceof CommandDistributionRecordValue
+                    ? ((CommandDistributionRecordValue) r.getValue()).getPartitionId()
                     : r.getPartitionId())
         .startsWith(
             tuple(DeploymentIntent.CREATE, RecordType.COMMAND, 1),
             tuple(ProcessIntent.CREATED, RecordType.EVENT, 1),
-            tuple(DeploymentIntent.CREATED, RecordType.EVENT, 1))
+            tuple(DeploymentIntent.CREATED, RecordType.EVENT, 1),
+            tuple(CommandDistributionIntent.STARTED, RecordType.EVENT, 1))
         .containsSubsequence(
-            tuple(DeploymentDistributionIntent.DISTRIBUTING, RecordType.EVENT, 2),
-            tuple(DeploymentDistributionIntent.COMPLETE, RecordType.COMMAND, 2),
-            tuple(DeploymentDistributionIntent.COMPLETED, RecordType.EVENT, 2))
+            tuple(CommandDistributionIntent.DISTRIBUTING, RecordType.EVENT, 2),
+            tuple(CommandDistributionIntent.ACKNOWLEDGE, RecordType.COMMAND, 2),
+            tuple(CommandDistributionIntent.ACKNOWLEDGED, RecordType.EVENT, 2))
         .containsSubsequence(
-            tuple(DeploymentDistributionIntent.DISTRIBUTING, RecordType.EVENT, 3),
-            tuple(DeploymentDistributionIntent.COMPLETE, RecordType.COMMAND, 3),
-            tuple(DeploymentDistributionIntent.COMPLETED, RecordType.EVENT, 3))
-        .endsWith(tuple(DeploymentIntent.FULLY_DISTRIBUTED, RecordType.EVENT, 1));
+            tuple(CommandDistributionIntent.DISTRIBUTING, RecordType.EVENT, 3),
+            tuple(CommandDistributionIntent.ACKNOWLEDGE, RecordType.COMMAND, 3),
+            tuple(CommandDistributionIntent.ACKNOWLEDGED, RecordType.EVENT, 3))
+        .endsWith(tuple(CommandDistributionIntent.FINISHED, RecordType.EVENT, 1));
 
     assertThat(
             RecordingExporter.records()
                 .withPartitionId(2)
-                .limit(r -> r.getIntent().equals(DeploymentIntent.DISTRIBUTED))
+                .limit(r -> r.getIntent().equals(DeploymentIntent.CREATED))
                 .collect(Collectors.toList()))
         .extracting(Record::getIntent)
-        .containsExactly(DeploymentIntent.DISTRIBUTE, DeploymentIntent.DISTRIBUTED);
+        .containsExactly(DeploymentIntent.CREATE, ProcessIntent.CREATED, DeploymentIntent.CREATED);
 
     assertThat(
             RecordingExporter.records()
                 .withPartitionId(3)
-                .limit(r -> r.getIntent().equals(DeploymentIntent.DISTRIBUTED))
+                .limit(r -> r.getIntent().equals(DeploymentIntent.CREATED))
                 .collect(Collectors.toList()))
         .extracting(Record::getIntent)
-        .containsExactly(DeploymentIntent.DISTRIBUTE, DeploymentIntent.DISTRIBUTED);
+        .containsExactly(DeploymentIntent.CREATE, ProcessIntent.CREATED, DeploymentIntent.CREATED);
   }
 
   @Test
@@ -107,21 +110,53 @@ public class MultiPartitionDeploymentLifecycleTest {
     engine.deployment().withXmlClasspathResource(DMN_RESOURCE).deploy();
 
     // then
-    assertThat(RecordingExporter.deploymentRecords().withPartitionId(DEPLOYMENT_PARTITION).limit(3))
+    assertThat(
+            RecordingExporter.commandDistributionRecords()
+                .withPartitionId(DEPLOYMENT_PARTITION)
+                .limit(r -> r.getIntent().equals(CommandDistributionIntent.FINISHED)))
+        .describedAs("Has dully distributed the deployment")
+        .extracting(Record::getIntent, Record::getRecordType, r -> r.getValue().getPartitionId())
+        .startsWith(tuple(CommandDistributionIntent.STARTED, RecordType.EVENT, 1))
+        .containsSubsequence(
+            tuple(CommandDistributionIntent.DISTRIBUTING, RecordType.EVENT, 2),
+            tuple(CommandDistributionIntent.ACKNOWLEDGE, RecordType.COMMAND, 2),
+            tuple(CommandDistributionIntent.ACKNOWLEDGED, RecordType.EVENT, 2))
+        .containsSubsequence(
+            tuple(CommandDistributionIntent.DISTRIBUTING, RecordType.EVENT, 3),
+            tuple(CommandDistributionIntent.ACKNOWLEDGE, RecordType.COMMAND, 3),
+            tuple(CommandDistributionIntent.ACKNOWLEDGED, RecordType.EVENT, 3))
+        .endsWith(tuple(CommandDistributionIntent.FINISHED, RecordType.EVENT, 1));
+
+    assertThat(
+            RecordingExporter.records()
+                .withPartitionId(2)
+                .limit(r -> r.getIntent().equals(DeploymentIntent.CREATED)))
+        .describedAs("Has created DMN resources on partition 2")
         .extracting(Record::getIntent)
-        .hasSize(3)
-        .contains(DeploymentIntent.FULLY_DISTRIBUTED);
+        .containsExactly(
+            DeploymentIntent.CREATE,
+            DecisionRequirementsIntent.CREATED,
+            DecisionIntent.CREATED,
+            DeploymentIntent.CREATED);
 
-    assertThat(RecordingExporter.deploymentRecords(DeploymentIntent.DISTRIBUTED).limit(2))
-        .extracting(Record::getPartitionId)
-        .contains(2, 3);
+    assertThat(
+            RecordingExporter.records()
+                .withPartitionId(3)
+                .limit(r -> r.getIntent().equals(DeploymentIntent.CREATED)))
+        .describedAs("Has created DMN resources on partition 3")
+        .extracting(Record::getIntent)
+        .containsExactly(
+            DeploymentIntent.CREATE,
+            DecisionRequirementsIntent.CREATED,
+            DecisionIntent.CREATED,
+            DeploymentIntent.CREATED);
 
-    final var distributedEvent =
-        RecordingExporter.deploymentRecords(DeploymentIntent.DISTRIBUTED).getFirst().getValue();
-    assertThat(distributedEvent.getDecisionRequirementsMetadata())
+    final var deploymentCreatedEvent =
+        RecordingExporter.deploymentRecords(DeploymentIntent.CREATED).limit(3).getLast().getValue();
+    assertThat(deploymentCreatedEvent.getDecisionRequirementsMetadata())
         .describedAs("Expect that decision requirements are distributed")
         .isNotEmpty();
-    assertThat(distributedEvent.getDecisionsMetadata())
+    assertThat(deploymentCreatedEvent.getDecisionsMetadata())
         .describedAs("Expect that decisions are distributed")
         .isNotEmpty();
   }
@@ -145,22 +180,22 @@ public class MultiPartitionDeploymentLifecycleTest {
     RecordingExporter.records()
         .withPartitionId(2)
         .withValueType(ValueType.DEPLOYMENT)
-        .withIntent(DeploymentIntent.DISTRIBUTE)
+        .withIntent(DeploymentIntent.CREATE)
         .await();
 
     // first one is skipped
-    engine.getClock().addTime(DeploymentRedistributor.DEPLOYMENT_REDISTRIBUTION_INTERVAL);
+    engine.getClock().addTime(CommandRedistributor.COMMAND_REDISTRIBUTION_INTERVAL);
     Awaitility.await()
         .untilAsserted(
             () -> {
               // continue to add time to the clock until the deployment is re-distributed
-              engine.getClock().addTime(DeploymentRedistributor.DEPLOYMENT_REDISTRIBUTION_INTERVAL);
+              engine.getClock().addTime(CommandRedistributor.COMMAND_REDISTRIBUTION_INTERVAL);
               // todo: could benefit from RecordingExporter without
               assertThat(
                       RecordingExporter.records()
                           .withPartitionId(2)
                           .withValueType(ValueType.DEPLOYMENT)
-                          .withIntent(DeploymentIntent.DISTRIBUTE)
+                          .withIntent(DeploymentIntent.CREATE)
                           .limit(2))
                   .hasSize(2);
             });
@@ -170,9 +205,8 @@ public class MultiPartitionDeploymentLifecycleTest {
 
     // then
     assertThat(
-            RecordingExporter.deploymentDistributionRecords()
-                .withIntent(DeploymentDistributionIntent.COMPLETE)
-                .withPartitionId(2)
+            RecordingExporter.commandDistributionRecords(CommandDistributionIntent.ACKNOWLEDGE)
+                .withDistributionPartitionId(2)
                 .limit(3))
         .extracting(Record::getRecordType)
         .describedAs("Expect second command to be rejected")

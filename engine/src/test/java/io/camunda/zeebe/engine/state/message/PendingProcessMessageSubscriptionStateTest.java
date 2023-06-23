@@ -10,7 +10,7 @@ package io.camunda.zeebe.engine.state.message;
 import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.zeebe.engine.state.mutable.MutablePendingProcessMessageSubscriptionState;
+import io.camunda.zeebe.engine.state.immutable.PendingProcessMessageSubscriptionState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessMessageSubscriptionState;
 import io.camunda.zeebe.engine.util.ProcessingStateRule;
 import io.camunda.zeebe.protocol.impl.record.value.message.ProcessMessageSubscriptionRecord;
@@ -26,7 +26,7 @@ public final class PendingProcessMessageSubscriptionStateTest {
   @Rule public final ProcessingStateRule stateRule = new ProcessingStateRule();
 
   private MutableProcessMessageSubscriptionState persistentState;
-  private MutablePendingProcessMessageSubscriptionState transientState;
+  private PendingProcessMessageSubscriptionState transientState;
 
   @Before
   public void setUp() {
@@ -39,15 +39,14 @@ public final class PendingProcessMessageSubscriptionStateTest {
     // given
     final ProcessMessageSubscriptionRecord record1 = subscriptionRecordWithElementInstanceKey(1L);
     persistentState.put(1L, record1);
-    transientState.updateSentTime(record1, 1_000L);
+    transientState.onSent(record1, 1_000L);
 
     final ProcessMessageSubscriptionRecord record2 = subscriptionRecordWithElementInstanceKey(2L);
-    transientState.updateSentTime(record2, 3_000L);
+    transientState.onSent(record2, 3_000L);
 
     // then
     final List<Long> keys = new ArrayList<>();
-    transientState.visitSubscriptionBefore(
-        1_000, s -> keys.add(s.getRecord().getElementInstanceKey()));
+    transientState.visitPending(1_000, s -> keys.add(s.getRecord().getElementInstanceKey()));
 
     assertThat(keys).isEmpty();
   }
@@ -57,16 +56,15 @@ public final class PendingProcessMessageSubscriptionStateTest {
     // given
     final ProcessMessageSubscriptionRecord record1 = subscriptionRecordWithElementInstanceKey(1L);
     persistentState.put(1L, record1);
-    transientState.updateSentTime(record1, 1_000L);
+    transientState.onSent(record1, 1_000L);
 
     final ProcessMessageSubscriptionRecord record2 = subscriptionRecordWithElementInstanceKey(2L);
     persistentState.put(2L, record2);
-    transientState.updateSentTime(record2, 3_000L);
+    transientState.onSent(record2, 3_000L);
 
     // then
     final List<Long> keys = new ArrayList<>();
-    transientState.visitSubscriptionBefore(
-        2_000, s -> keys.add(s.getRecord().getElementInstanceKey()));
+    transientState.visitPending(2_000, s -> keys.add(s.getRecord().getElementInstanceKey()));
 
     assertThat(keys).hasSize(1).contains(1L);
   }
@@ -76,16 +74,15 @@ public final class PendingProcessMessageSubscriptionStateTest {
     // given
     final ProcessMessageSubscriptionRecord record1 = subscriptionRecordWithElementInstanceKey(1L);
     persistentState.put(1L, record1);
-    transientState.updateSentTime(record1, 1_000L);
+    transientState.onSent(record1, 1_000L);
 
     final ProcessMessageSubscriptionRecord record2 = subscriptionRecordWithElementInstanceKey(2L);
     persistentState.put(2L, record2);
-    transientState.updateSentTime(record2, 2_000L);
+    transientState.onSent(record2, 2_000L);
 
     // then
     final List<Long> keys = new ArrayList<>();
-    transientState.visitSubscriptionBefore(
-        3_000, s -> keys.add(s.getRecord().getElementInstanceKey()));
+    transientState.visitPending(3_000, s -> keys.add(s.getRecord().getElementInstanceKey()));
 
     assertThat(keys).hasSize(2).containsExactly(1L, 2L);
   }
@@ -95,18 +92,17 @@ public final class PendingProcessMessageSubscriptionStateTest {
     // given
     final ProcessMessageSubscriptionRecord record1 = subscriptionRecordWithElementInstanceKey(1L);
     persistentState.put(1L, record1);
-    transientState.updateSentTime(record1, 1_000L);
+    transientState.onSent(record1, 1_000L);
 
     final ProcessMessageSubscriptionRecord record2 = subscriptionRecordWithElementInstanceKey(2L);
     persistentState.put(2L, record2);
-    transientState.updateSentTime(record2, 2_000L);
+    transientState.onSent(record2, 2_000L);
 
     persistentState.updateToOpenedState(record2.setSubscriptionPartitionId(3));
 
     // then
     final List<Long> keys = new ArrayList<>();
-    transientState.visitSubscriptionBefore(
-        2_000, s -> keys.add(s.getRecord().getElementInstanceKey()));
+    transientState.visitPending(2_000, s -> keys.add(s.getRecord().getElementInstanceKey()));
 
     assertThat(keys).hasSize(1).contains(1L);
   }
@@ -118,12 +114,11 @@ public final class PendingProcessMessageSubscriptionStateTest {
 
     // when
     persistentState.put(1L, record);
-    transientState.updateSentTime(record, 1_000L);
+    transientState.onSent(record, 1_000L);
 
     // then
     final List<Long> keys = new ArrayList<>();
-    transientState.visitSubscriptionBefore(
-        2_000, s -> keys.add(s.getRecord().getElementInstanceKey()));
+    transientState.visitPending(2_000, s -> keys.add(s.getRecord().getElementInstanceKey()));
 
     assertThat(keys).hasSize(1).contains(1L);
 
@@ -131,11 +126,10 @@ public final class PendingProcessMessageSubscriptionStateTest {
     final ProcessMessageSubscription existingSubscription =
         persistentState.getSubscription(
             record.getElementInstanceKey(), record.getMessageNameBuffer());
-    transientState.updateSentTime(existingSubscription.getRecord(), 1_500);
+    transientState.onSent(existingSubscription.getRecord(), 1_500);
 
     keys.clear();
-    transientState.visitSubscriptionBefore(
-        2_000, s -> keys.add(s.getRecord().getElementInstanceKey()));
+    transientState.visitPending(2_000, s -> keys.add(s.getRecord().getElementInstanceKey()));
 
     assertThat(keys).hasSize(1).contains(1L);
   }
@@ -145,7 +139,7 @@ public final class PendingProcessMessageSubscriptionStateTest {
     // given
     final ProcessMessageSubscriptionRecord record = subscriptionRecordWithElementInstanceKey(1L);
     persistentState.put(1L, record);
-    transientState.updateSentTime(record, 1_000L);
+    transientState.onSent(record, 1_000L);
 
     final ProcessMessageSubscription subscription =
         persistentState.getSubscription(
@@ -167,8 +161,7 @@ public final class PendingProcessMessageSubscriptionStateTest {
 
     // and
     final List<Long> keys = new ArrayList<>();
-    transientState.visitSubscriptionBefore(
-        2_000, s -> keys.add(s.getRecord().getElementInstanceKey()));
+    transientState.visitPending(2_000, s -> keys.add(s.getRecord().getElementInstanceKey()));
 
     assertThat(keys).isEmpty();
   }
@@ -178,7 +171,7 @@ public final class PendingProcessMessageSubscriptionStateTest {
     // given
     final ProcessMessageSubscriptionRecord record = subscriptionRecordWithElementInstanceKey(1L);
     persistentState.put(1L, record);
-    transientState.updateSentTime(record, 1_000L);
+    transientState.onSent(record, 1_000L);
 
     persistentState.updateToOpenedState(record.setSubscriptionPartitionId(3));
     final ProcessMessageSubscription subscription =
@@ -189,7 +182,7 @@ public final class PendingProcessMessageSubscriptionStateTest {
 
     // when
     persistentState.updateToClosingState(record);
-    transientState.updateSentTime(record, 1_000L);
+    transientState.onSent(record, 1_000L);
 
     // then
     final ProcessMessageSubscription updatedSubscription =
@@ -199,8 +192,7 @@ public final class PendingProcessMessageSubscriptionStateTest {
 
     // and
     final List<Long> keys = new ArrayList<>();
-    transientState.visitSubscriptionBefore(
-        2_000, s -> keys.add(s.getRecord().getElementInstanceKey()));
+    transientState.visitPending(2_000, s -> keys.add(s.getRecord().getElementInstanceKey()));
 
     assertThat(keys).hasSize(1).contains(1L);
   }

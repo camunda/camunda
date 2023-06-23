@@ -55,6 +55,14 @@ public final class CommandDistributionRecord extends UnifiedRecordValue
         .declareProperty(commandValueProperty);
   }
 
+  public CommandDistributionRecord wrap(final CommandDistributionRecord other) {
+    this.setPartitionId(other.getPartitionId())
+        .setValueType(other.getValueType())
+        .setIntent(other.getIntent())
+        .setRecordValue(other.getCommandValue());
+    return this;
+  }
+
   @Override
   public int getPartitionId() {
     return partitionIdProperty.getValue();
@@ -121,6 +129,11 @@ public final class CommandDistributionRecord extends UnifiedRecordValue
   }
 
   public CommandDistributionRecord setRecordValue(final UnifiedRecordValue recordValue) {
+    if (recordValue == null) {
+      commandValueProperty.reset();
+      return this;
+    }
+
     // inspired by IndexedRecord.setValue
     final var valueBuffer = new UnsafeBuffer(0, 0);
     final int encodedLength = recordValue.getLength();

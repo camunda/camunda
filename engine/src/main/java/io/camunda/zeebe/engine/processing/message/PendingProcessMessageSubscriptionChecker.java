@@ -8,8 +8,8 @@
 package io.camunda.zeebe.engine.processing.message;
 
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
+import io.camunda.zeebe.engine.state.immutable.PendingProcessMessageSubscriptionState;
 import io.camunda.zeebe.engine.state.message.ProcessMessageSubscription;
-import io.camunda.zeebe.engine.state.mutable.MutablePendingProcessMessageSubscriptionState;
 import io.camunda.zeebe.scheduler.clock.ActorClock;
 import io.camunda.zeebe.stream.api.ReadonlyStreamProcessorContext;
 import io.camunda.zeebe.stream.api.StreamProcessorLifecycleAware;
@@ -23,7 +23,7 @@ public final class PendingProcessMessageSubscriptionChecker
   private static final Duration SUBSCRIPTION_CHECK_INTERVAL = Duration.ofSeconds(30);
 
   private final SubscriptionCommandSender commandSender;
-  private final MutablePendingProcessMessageSubscriptionState pendingState;
+  private final PendingProcessMessageSubscriptionState pendingState;
   private final long subscriptionTimeoutInMillis;
 
   private ProcessingScheduleService scheduleService;
@@ -31,7 +31,7 @@ public final class PendingProcessMessageSubscriptionChecker
 
   public PendingProcessMessageSubscriptionChecker(
       final SubscriptionCommandSender commandSender,
-      final MutablePendingProcessMessageSubscriptionState pendingState) {
+      final PendingProcessMessageSubscriptionState pendingState) {
     this.commandSender = commandSender;
     this.pendingState = pendingState;
     subscriptionTimeoutInMillis = SUBSCRIPTION_TIMEOUT.toMillis();
@@ -76,7 +76,7 @@ public final class PendingProcessMessageSubscriptionChecker
   }
 
   private void checkPendingSubscriptions() {
-    pendingState.visitSubscriptionBefore(
+    pendingState.visitPending(
         ActorClock.currentTimeMillis() - subscriptionTimeoutInMillis, this::sendPendingCommand);
     rescheduleTimer();
   }
@@ -90,7 +90,7 @@ public final class PendingProcessMessageSubscriptionChecker
     }
 
     final var sentTime = ActorClock.currentTimeMillis();
-    pendingState.updateSentTime(subscription.getRecord(), sentTime);
+    pendingState.onSent(subscription.getRecord(), sentTime);
 
     return true; // to continue visiting
   }

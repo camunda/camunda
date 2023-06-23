@@ -53,8 +53,8 @@ public final class RecordVersionTest {
         .extracting(Record::getBrokerVersion)
         .containsOnly(EXPECTED_VERSION);
 
-    assertThat(RecordingExporter.deploymentRecords().limit(3))
-        .hasSize(3)
+    assertThat(RecordingExporter.deploymentRecords().limit(2))
+        .hasSize(2)
         .extracting(Record::getBrokerVersion)
         .containsOnly(EXPECTED_VERSION);
   }

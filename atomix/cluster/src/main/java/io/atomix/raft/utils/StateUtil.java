@@ -36,10 +36,14 @@ public class StateUtil {
               partitionId, firstIndex, snapshotIndex));
     } else {
       log.info(
-          "In partition %d current snapshot index ({}) is lower than log's first index {}. "
+          "In partition {} current snapshot index ({}) is lower than log's first index {}. "
               + "But the log is empty. Most likely the node crashed while committing a snapshot "
               + "at index {}. Resetting log to {}",
-          partitionId, snapshotIndex, firstIndex, firstIndex - 1, snapshotIndex + 1);
+          partitionId,
+          snapshotIndex,
+          firstIndex,
+          firstIndex - 1,
+          snapshotIndex + 1);
       logResetter.accept(snapshotIndex + 1);
     }
   }

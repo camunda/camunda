@@ -90,7 +90,7 @@ public final class CreateDeploymentTest {
     // then
     final var deploymentPartitionRecords =
         RecordingExporter.records()
-            .limit(r -> r.getIntent() == DeploymentIntent.FULLY_DISTRIBUTED)
+            .limit(r -> r.getIntent() == DeploymentIntent.CREATED)
             .collect(Collectors.toList());
 
     assertThat(deploymentPartitionRecords)
@@ -98,8 +98,7 @@ public final class CreateDeploymentTest {
         .containsExactly(
             tuple(DeploymentIntent.CREATE, RecordType.COMMAND),
             tuple(ProcessIntent.CREATED, RecordType.EVENT),
-            tuple(DeploymentIntent.CREATED, RecordType.EVENT),
-            tuple(DeploymentIntent.FULLY_DISTRIBUTED, RecordType.EVENT));
+            tuple(DeploymentIntent.CREATED, RecordType.EVENT));
   }
 
   @Test
@@ -111,7 +110,7 @@ public final class CreateDeploymentTest {
     // then
     final var deploymentRecords =
         RecordingExporter.records()
-            .limit(r -> r.getIntent() == DeploymentIntent.FULLY_DISTRIBUTED)
+            .limit(r -> r.getIntent() == DeploymentIntent.CREATED)
             .collect(Collectors.toList());
 
     assertThat(deploymentRecords)
@@ -119,8 +118,7 @@ public final class CreateDeploymentTest {
         .containsExactly(
             tuple(DeploymentIntent.CREATE, RecordType.COMMAND),
             tuple(ProcessIntent.CREATED, RecordType.EVENT),
-            tuple(DeploymentIntent.CREATED, RecordType.EVENT),
-            tuple(DeploymentIntent.FULLY_DISTRIBUTED, RecordType.EVENT));
+            tuple(DeploymentIntent.CREATED, RecordType.EVENT));
 
     final var duplicatedDeploymentRecords =
         RecordingExporter.records()
@@ -128,15 +126,14 @@ public final class CreateDeploymentTest {
                 r ->
                     r.getIntent() == DeploymentIntent.CREATE
                         && r.getPosition() == duplicatedDeployment.getSourceRecordPosition())
-            .limit(r -> r.getIntent() == DeploymentIntent.FULLY_DISTRIBUTED)
+            .limit(r -> r.getIntent() == DeploymentIntent.CREATED)
             .collect(Collectors.toList());
 
     assertThat(duplicatedDeploymentRecords)
         .extracting(Record::getIntent, Record::getRecordType)
         .containsExactly(
             tuple(DeploymentIntent.CREATE, RecordType.COMMAND),
-            tuple(DeploymentIntent.CREATED, RecordType.EVENT),
-            tuple(DeploymentIntent.FULLY_DISTRIBUTED, RecordType.EVENT));
+            tuple(DeploymentIntent.CREATED, RecordType.EVENT));
   }
 
   @Test

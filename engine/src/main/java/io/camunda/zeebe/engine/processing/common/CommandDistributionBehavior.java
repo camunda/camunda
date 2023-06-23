@@ -17,7 +17,6 @@ import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.CommandDistributionIntent;
 import io.camunda.zeebe.stream.api.InterPartitionCommandSender;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
-import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import java.util.List;
 import java.util.stream.IntStream;
 
@@ -27,19 +26,16 @@ public final class CommandDistributionBehavior {
   private final SideEffectWriter sideEffectWriter;
   private final List<Integer> otherPartitions;
   private final InterPartitionCommandSender interPartitionCommandSender;
-  private final KeyGenerator keyGenerator;
   private final int currentPartitionId;
 
   public CommandDistributionBehavior(
       final Writers writers,
       final int currentPartition,
       final int partitionsCount,
-      final InterPartitionCommandSender partitionCommandSender,
-      final KeyGenerator keyGenerator) {
+      final InterPartitionCommandSender partitionCommandSender) {
     stateWriter = writers.state();
     sideEffectWriter = writers.sideEffect();
     interPartitionCommandSender = partitionCommandSender;
-    this.keyGenerator = keyGenerator;
     otherPartitions =
         IntStream.range(Protocol.START_PARTITION_ID, Protocol.START_PARTITION_ID + partitionsCount)
             .filter(partition -> partition != currentPartition)
@@ -48,7 +44,15 @@ public final class CommandDistributionBehavior {
     currentPartitionId = currentPartition;
   }
 
-  public <T extends UnifiedRecordValue> void distributeCommand(final TypedRecord<T> command) {
+  /**
+   * Distributes a command to the other partitions
+   *
+   * @param distributionKey the key which is used for the distribution. This could either be a new
+   *     key, but it could also be the key of the entity that's getting distributed.
+   * @param command the command that needs to be distributed
+   */
+  public <T extends UnifiedRecordValue> void distributeCommand(
+      final long distributionKey, final TypedRecord<T> command) {
     if (otherPartitions.isEmpty()) {
       return;
     }
@@ -60,20 +64,21 @@ public final class CommandDistributionBehavior {
             .setIntent(command.getIntent())
             .setRecordValue(command.getValue());
 
-    final long distributionKey = keyGenerator.nextKey();
     stateWriter.appendFollowUpEvent(
         distributionKey, CommandDistributionIntent.STARTED, distributionRecord);
 
-    final var commandValue = distributionRecord.getCommandValue();
     otherPartitions.forEach(
-        (partition) -> distributeToPartition(command, partition, commandValue, distributionKey));
+        (partition) ->
+            distributeToPartition(command, partition, distributionRecord, distributionKey));
   }
 
   private <T extends UnifiedRecordValue> void distributeToPartition(
       final TypedRecord<T> command,
       final int partition,
-      final UnifiedRecordValue commandValue,
+      final CommandDistributionRecord distributionRecord,
       final long distributionKey) {
+    final var valueType = distributionRecord.getValueType();
+    final var commandValue = distributionRecord.getCommandValue();
     // We don't need the actual record in the DISTRIBUTING event applier. In order to prevent
     // reaching the max message size we don't set the record value here.
     stateWriter.appendFollowUpEvent(
@@ -81,7 +86,7 @@ public final class CommandDistributionBehavior {
         CommandDistributionIntent.DISTRIBUTING,
         new CommandDistributionRecord()
             .setPartitionId(partition)
-            .setValueType(command.getValueType())
+            .setValueType(valueType)
             .setIntent(command.getIntent()));
 
     sideEffectWriter.appendSideEffect(

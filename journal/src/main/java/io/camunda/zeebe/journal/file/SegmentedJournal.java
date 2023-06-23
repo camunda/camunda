@@ -181,6 +181,13 @@ public final class SegmentedJournal implements Journal {
   }
 
   @Override
+  public void append(final long checksum, final byte[] serializedRecord) {
+    try (final var ignored = journalMetrics.observeAppendLatency()) {
+      writer.append(checksum, serializedRecord);
+    }
+  }
+
+  @Override
   public void close() {
     flush();
     segments.close();

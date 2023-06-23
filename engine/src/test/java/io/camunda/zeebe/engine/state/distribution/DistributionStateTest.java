@@ -17,7 +17,13 @@ import io.camunda.zeebe.engine.util.ProcessingStateExtension;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.camunda.zeebe.protocol.impl.record.value.distribution.CommandDistributionRecord;
+import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import org.agrona.collections.Long2ObjectHashMap;
 import org.assertj.core.api.ThrowableAssert.ThrowingCallable;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -25,6 +31,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 
 @ExtendWith(ProcessingStateExtension.class)
 public final class DistributionStateTest {
+  private final StateHelper stateHelper = new StateHelper();
   private MutableProcessingState processingState;
   private MutableDistributionState distributionState;
 
@@ -165,10 +172,102 @@ public final class DistributionStateTest {
             "Foreign key DbLong{1} does not exist in COMMAND_DISTRIBUTION_RECORD");
   }
 
+  @Test
+  public void shouldIterateOverPendingDistributions() {
+    // given
+    final var pendingDistribution = new PendingDistribution(1L, createCommandDistributionRecord());
+    final int partitionId3 = 3;
+    final int partitionId2 = 2;
+    stateHelper.addPendingDistributionForPartitions(
+        pendingDistribution, partitionId2, partitionId3);
+
+    // when
+    final List<PendingDistribution> visits = new ArrayList<>();
+    distributionState.foreachPendingDistribution(
+        (key, commandDistributionRecord) ->
+            visits.add(new PendingDistribution(key, commandDistributionRecord)));
+
+    // then
+    assertThat(visits)
+        .allSatisfy(visited -> assertThat(visited.key()).isEqualTo(pendingDistribution.key))
+        .allSatisfy(
+            visited ->
+                Assertions.assertThat(visited.record())
+                    .hasIntent(pendingDistribution.record.getIntent())
+                    .hasValueType(pendingDistribution.record.getValueType())
+                    .hasCommandValue(pendingDistribution.record.getCommandValue()))
+        .extracting(PendingDistribution::record)
+        .extracting(CommandDistributionRecord::getPartitionId)
+        .describedAs("Expect that pending distributions are visited for all other partitions")
+        .containsExactly(partitionId2, partitionId3);
+  }
+
+  @Test
+  public void shouldIterateOverMultiplePendingDeployments() {
+    // given
+    final var distributions = new Long2ObjectHashMap<CommandDistributionRecord>();
+    final int partitionId2 = 2;
+    final int partitionId3 = 3;
+    for (int distributionKey = 1; distributionKey <= 5; distributionKey++) {
+      final var pendingDistribution = createCommandDistributionRecord();
+      distributions.put(distributionKey, pendingDistribution);
+      stateHelper.addPendingDistributionForPartitions(
+          new PendingDistribution(distributionKey, pendingDistribution),
+          partitionId2,
+          partitionId3);
+    }
+
+    // when
+    final List<PendingDistribution> visits = new ArrayList<>();
+    distributionState.foreachPendingDistribution(
+        (key, commandDistributionRecord) ->
+            visits.add(new PendingDistribution(key, commandDistributionRecord)));
+
+    // then
+    assertThat(visits)
+        .extracting(PendingDistribution::key)
+        .describedAs("Expect that all pending distribution are visited")
+        .containsOnly(1L, 2L, 3L, 4L, 5L);
+    assertThat(visits)
+        .allSatisfy(
+            visited ->
+                Assertions.assertThat(visited.record())
+                    .hasIntent(distributions.get(visited.key).getIntent())
+                    .hasValueType(distributions.get(visited.key).getValueType())
+                    .hasCommandValue(distributions.get(visited.key).getCommandValue()));
+    assertThat(visits)
+        .extracting(PendingDistribution::record)
+        .extracting(CommandDistributionRecord::getPartitionId)
+        .describedAs("Expect that pending distributions are visited for all other partitions")
+        .containsOnly(partitionId2, partitionId3);
+    assertThat(visits).hasSize(10);
+  }
+
+  @Test
+  public void shouldNotFailOnMissingDeploymentInState() {
+    // given
+    final var pendingDistribution = new PendingDistribution(1L, createCommandDistributionRecord());
+    final int partitionId2 = 2;
+    final int partitionId3 = 3;
+    stateHelper.addPendingDistributionForPartitions(
+        pendingDistribution, partitionId2, partitionId3);
+    distributionState.removeCommandDistribution(pendingDistribution.key);
+
+    // when
+    final List<PendingDistribution> visits = new ArrayList<>();
+    distributionState.foreachPendingDistribution(
+        (key, commandDistributionRecord) ->
+            visits.add(new PendingDistribution(key, commandDistributionRecord)));
+
+    // then
+    assertThat(visits).isEmpty();
+  }
+
   private CommandDistributionRecord createCommandDistributionRecord() {
     return new CommandDistributionRecord()
         .setPartitionId(1)
         .setValueType(ValueType.DEPLOYMENT)
+        .setIntent(DeploymentIntent.CREATE)
         .setRecordValue(createDeploymentRecord());
   }
 
@@ -194,4 +293,18 @@ public final class DistributionStateTest {
 
     return deploymentRecord;
   }
+
+  /** Little helper class, to simplify test setup of the State */
+  final class StateHelper {
+    private void addPendingDistributionForPartitions(
+        final PendingDistribution pendingDistribution, final int... partitionIds) {
+      distributionState.addCommandDistribution(pendingDistribution.key, pendingDistribution.record);
+      Arrays.stream(partitionIds)
+          .forEach(
+              partitionId ->
+                  distributionState.addPendingDistribution(pendingDistribution.key, partitionId));
+    }
+  }
+
+  record PendingDistribution(long key, CommandDistributionRecord record) {}
 }

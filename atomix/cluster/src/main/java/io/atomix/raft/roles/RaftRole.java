@@ -17,12 +17,12 @@
 package io.atomix.raft.roles;
 
 import io.atomix.raft.RaftServer;
-import io.atomix.raft.protocol.AppendRequest;
 import io.atomix.raft.protocol.AppendResponse;
 import io.atomix.raft.protocol.ConfigureRequest;
 import io.atomix.raft.protocol.ConfigureResponse;
 import io.atomix.raft.protocol.InstallRequest;
 import io.atomix.raft.protocol.InstallResponse;
+import io.atomix.raft.protocol.InternalAppendRequest;
 import io.atomix.raft.protocol.PollRequest;
 import io.atomix.raft.protocol.PollResponse;
 import io.atomix.raft.protocol.ReconfigureRequest;
@@ -82,7 +82,7 @@ public interface RaftRole extends Managed<RaftRole> {
    * @param request The request to handle.
    * @return A completable future to be completed with the request response.
    */
-  CompletableFuture<AppendResponse> onAppend(AppendRequest request);
+  CompletableFuture<AppendResponse> onAppend(InternalAppendRequest request);
 
   /**
    * Handles a poll request.

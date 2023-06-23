@@ -54,8 +54,10 @@ public class DiskSpaceRecoveryClusteredTest {
   @Test
   public void shouldDistributeDeploymentAfterDiskSpaceAvailableAgain() throws InterruptedException {
     // given
+    final int failingPartition = 3;
     final var failingBroker =
-        clusteringRule.getBroker(clusteringRule.getLeaderForPartition(3).getNodeId());
+        clusteringRule.getBroker(
+            clusteringRule.getLeaderForPartition(failingPartition).getNodeId());
     waitUntilDiskSpaceNotAvailable(failingBroker);
 
     final long deploymentKey =
@@ -66,7 +68,10 @@ public class DiskSpaceRecoveryClusteredTest {
         .timeout(Duration.ofSeconds(60))
         .until(
             () ->
-                RecordingExporter.deploymentRecords(DeploymentIntent.DISTRIBUTE).limit(1).exists());
+                RecordingExporter.deploymentRecords(DeploymentIntent.CREATE)
+                    .withPartitionId(failingPartition)
+                    .limit(1)
+                    .exists());
 
     waitUntilDiskSpaceAvailable(failingBroker);
 

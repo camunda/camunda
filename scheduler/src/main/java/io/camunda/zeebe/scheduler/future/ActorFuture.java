@@ -56,7 +56,9 @@ public interface ActorFuture<V> extends Future<V>, BiConsumer<V, Throwable> {
 
   /**
    * Registers a consumer, which is executed after the future was completed. The consumer is
-   * executed in the provided executor.
+   * executed in the provided executor. It is recommended to not use this method if the caller is an
+   * actor (use {@link ActorFuture#onComplete(BiConsumer)} instead), as it has some extra overhead
+   * for synchronization.
    *
    * @param consumer the callback which should be called after the future was completed
    * @param executor the executor on which the callback will be executed

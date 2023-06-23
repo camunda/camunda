@@ -31,9 +31,11 @@ public final class TestEngine {
 
   private final StreamProcessingComposite streamProcessingComposite;
   private final TestStreams testStreams;
+  private final int partitionCount;
 
   private TestEngine(
       final int partitionId, final int partitionCount, final TestContext testContext) {
+    this.partitionCount = partitionCount;
 
     testStreams =
         new TestStreams(
@@ -85,7 +87,7 @@ public final class TestEngine {
   }
 
   public DeploymentClient createDeploymentClient() {
-    return new DeploymentClient(streamProcessingComposite, (p) -> p.accept(1));
+    return new DeploymentClient(streamProcessingComposite, (p) -> p.accept(1), partitionCount);
   }
 
   public ProcessInstanceClient createProcessInstanceClient() {

@@ -83,6 +83,23 @@ final class SegmentedJournalWriter {
     }
   }
 
+  void append(final long checksum, final byte[] serializedRecord) {
+    final var appendResult = currentWriter.append(checksum, serializedRecord);
+    if (appendResult.isRight()) {
+      return;
+    }
+
+    if (currentSegment.index() == currentWriter.getNextIndex()) {
+      throw new SegmentSizeTooSmall("Failed appending, segment size is too small");
+    }
+
+    journalMetrics.observeSegmentCreation(this::createNewSegment);
+    final var resultInNewSegment = currentWriter.append(checksum, serializedRecord);
+    if (resultInNewSegment.isLeft()) {
+      throw resultInNewSegment.getLeft();
+    }
+  }
+
   void reset(final long index) {
     flusher.setLastFlushedIndex(index - 1);
     currentSegment = segments.resetSegments(index);
