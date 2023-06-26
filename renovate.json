@@ -32,9 +32,9 @@
       ],
       "matchUpdateTypes": [
         "major",
-        "minor"
-      ],
-      "enabled": false
+        "minor",
+        "patch"
+      ]
     }
   ],
   "branchPrefix": "fe-renovate/"
