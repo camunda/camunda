@@ -22,7 +22,6 @@ import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.EventApplier;
 import io.camunda.zeebe.engine.state.ProcessingDbState;
-import io.camunda.zeebe.engine.state.ScheduledTaskDbState;
 import io.camunda.zeebe.engine.state.processing.DbBannedInstanceState;
 import io.camunda.zeebe.protocol.impl.record.value.error.ErrorRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
@@ -76,8 +75,6 @@ public class Engine implements RecordProcessor {
             zeebeDb,
             recordProcessorContext.getTransactionContext(),
             recordProcessorContext.getKeyGenerator());
-    final Supplier<ScheduledTaskDbState> scheduledTaskDbStateFactory =
-        () -> new ScheduledTaskDbState(zeebeDb, zeebeDb.createContext());
 
     eventApplier = recordProcessorContext.getEventApplierFactory().apply(processingState);
 
@@ -88,7 +85,7 @@ public class Engine implements RecordProcessor {
             recordProcessorContext.getPartitionId(),
             recordProcessorContext.getScheduleService(),
             processingState,
-            scheduledTaskDbStateFactory,
+            zeebeDb,
             writers,
             recordProcessorContext.getPartitionCommandSender(),
             config);

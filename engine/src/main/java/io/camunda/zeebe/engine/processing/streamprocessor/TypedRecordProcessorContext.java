@@ -27,6 +27,7 @@ public interface TypedRecordProcessorContext {
 
   InterPartitionCommandSender getPartitionCommandSender();
 
+  /** Returns a state factory, where each created state has a separate transaction context. */
   Supplier<ScheduledTaskDbState> getScheduledTaskDbStateFactory();
 
   EngineConfiguration getConfig();
