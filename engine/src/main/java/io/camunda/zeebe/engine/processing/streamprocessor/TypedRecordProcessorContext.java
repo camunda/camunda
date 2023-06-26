@@ -9,7 +9,7 @@ package io.camunda.zeebe.engine.processing.streamprocessor;
 
 import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
-import io.camunda.zeebe.engine.state.ScheduledTaskDbState;
+import io.camunda.zeebe.engine.state.immutable.ScheduledTaskState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.stream.api.InterPartitionCommandSender;
 import io.camunda.zeebe.stream.api.scheduling.ProcessingScheduleService;
@@ -28,7 +28,7 @@ public interface TypedRecordProcessorContext {
   InterPartitionCommandSender getPartitionCommandSender();
 
   /** Returns a state factory, where each created state has a separate transaction context. */
-  Supplier<ScheduledTaskDbState> getScheduledTaskDbStateFactory();
+  Supplier<ScheduledTaskState> getScheduledTaskStateFactory();
 
   EngineConfiguration getConfig();
 }
