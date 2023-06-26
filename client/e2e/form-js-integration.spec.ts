@@ -98,7 +98,9 @@ test.describe('form-js integration', () => {
       route.continue();
     });
 
-    await page.goto('/1');
+    await page.goto(`/${MOCK_TASK.id}/`, {
+      waitUntil: 'networkidle',
+    });
 
     await expect(page.locator('.fjs-container')).toHaveScreenshot();
   });
