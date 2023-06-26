@@ -77,7 +77,8 @@ public class Engine implements RecordProcessor {
             zeebeDb,
             recordProcessorContext.getTransactionContext(),
             recordProcessorContext.getKeyGenerator());
-    final var scheduledTaskDbState = new ScheduledTaskDbState(zeebeDb, zeebeDb.createContext());
+    final Supplier<ScheduledTaskDbState> scheduledTaskDbStateFactory =
+        () -> new ScheduledTaskDbState(zeebeDb, zeebeDb.createContext());
 
     eventApplier = new EventAppliers(processingState);
 
@@ -88,7 +89,7 @@ public class Engine implements RecordProcessor {
             recordProcessorContext.getPartitionId(),
             recordProcessorContext.getScheduleService(),
             processingState,
-            scheduledTaskDbState,
+            scheduledTaskDbStateFactory,
             writers,
             recordProcessorContext.getPartitionCommandSender(),
             config);
