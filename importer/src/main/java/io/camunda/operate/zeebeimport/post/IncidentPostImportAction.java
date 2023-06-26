@@ -155,12 +155,9 @@ public class IncidentPostImportAction implements PostImportAction {
 
     PostImporterRequests updateRequests = new PostImporterRequests();
 
-    if (!data.isTreePathsProcessed()) {
-      final List<String> treePathTerms = data.getIncidentTreePaths().values().stream()
-          .map(s -> getTreePathTerms(s)).flatMap(List::stream).collect(Collectors.toList());
-      getTreePathsWithIncidents(treePathTerms, data);
-      data.setTreePathsProcessed(true);
-    }
+    final List<String> treePathTerms = data.getIncidentTreePaths().values().stream().map(s -> getTreePathTerms(s))
+        .flatMap(List::stream).collect(Collectors.toList());
+    getTreePathsWithIncidents(treePathTerms, data);
 
     for (IncidentEntity incident : batch.getIncidents()) {
       if (instanceExists(incident.getProcessInstanceKey(),
@@ -333,7 +330,7 @@ public class IncidentPostImportAction implements PostImportAction {
       for (String piId: piIds) {
         //add incident id
         data.addPiIdsWithIncidentIds(piId, incidentId);
-        //if there were now incidents and now one
+        //if there were no incidents and now one
         if (data.getPiIdsWithIncidentIds().get(piId).size() == 1) {
           updateProcessInstance(data.getProcessInstanceIndices(), requests, updateFields, piId);
         }
@@ -344,7 +341,7 @@ public class IncidentPostImportAction implements PostImportAction {
       for (String piId: piIds) {
         //remove incident id
         data.deleteIncidentIdByPiId(piId, incidentId);
-        if (data.getPiIdsWithIncidentIds().get(piId).size() == 0) {
+        if (data.getPiIdsWithIncidentIds().get(piId) == null || data.getPiIdsWithIncidentIds().get(piId).size() == 0) {
           updateProcessInstance(data.getProcessInstanceIndices(), requests, updateFields, piId);
         } //otherwise there are more active incidents
       }
@@ -392,7 +389,7 @@ public class IncidentPostImportAction implements PostImportAction {
 
         //remove incident id
         data.deleteIncidentIdByFniId(fniId, incident.getId());
-        if (data.getFniIdsWithIncidentIds().get(fniId).size() == 0) {
+        if (data.getFniIdsWithIncidentIds().get(fniId) == null || data.getFniIdsWithIncidentIds().get(fniId).size() == 0) {
           updateFlowNodeInstance(incident, data.getFlowNodeInstanceIndices(),
               data.getFlowNodeInstanceInListViewIndices(), requests, updateFields, fniId);
         } //otherwise there are more active incidents
@@ -457,9 +454,17 @@ public class IncidentPostImportAction implements PostImportAction {
       data.getProcessInstanceIndices().putAll(
           Arrays.stream(sh.getHits()).collect(toMap(hit -> hit.getId(), hit -> hit.getIndex())));
     });
-    incidents.forEach(i -> data.getIncidentTreePaths().put(i.getId(),
-        new TreePath(data.getProcessInstanceTreePaths().get(i.getProcessInstanceKey())).appendFlowNode(
-            i.getFlowNodeId()).appendFlowNodeInstance(String.valueOf(i.getFlowNodeInstanceKey())).toString()));
+    incidents.forEach(i -> {
+      String piTreePath = data.getProcessInstanceTreePaths().get(i.getProcessInstanceKey());
+      if (piTreePath == null || piTreePath.isEmpty()) {
+        throw new OperateRuntimeException(String.format(
+            "Process instance is not yet imported for incident processing. Incident id: %s, process instance id: %s",
+            i.getId(), i.getProcessInstanceKey()));
+      }
+      data.getIncidentTreePaths().put(i.getId(),
+          new TreePath(piTreePath).appendFlowNode(
+              i.getFlowNodeId()).appendFlowNodeInstance(String.valueOf(i.getFlowNodeInstanceKey())).toString());
+    });
 
     //find flow node instances in list view
     final SearchRequest fniInListViewRequest = ElasticsearchUtil.createSearchRequest(listViewTemplate)
@@ -619,7 +624,6 @@ class AdditionalData {
   private Map<String, String> incidentIndices = new ConcurrentHashMap<>();
   private Map<String, List<String>> flowNodeInstanceIndices = new ConcurrentHashMap<>();
   private Map<String, List<String>> flowNodeInstanceInListViewIndices = new ConcurrentHashMap<>();
-  private boolean treePathsProcessed = false;
   private Map<Long, String> processInstanceTreePaths = new ConcurrentHashMap<>();
   private Map<String, String> incidentTreePaths = new ConcurrentHashMap<>();
   private Map<String, String> processInstanceIndices = new ConcurrentHashMap<>();
@@ -713,15 +717,6 @@ class AdditionalData {
 
   public AdditionalData setFniIdsWithIncidentIds(Map<String, Set<String>> fniIdsWithIncidentIds) {
     this.fniIdsWithIncidentIds = fniIdsWithIncidentIds;
-    return this;
-  }
-
-  public boolean isTreePathsProcessed() {
-    return treePathsProcessed;
-  }
-
-  public AdditionalData setTreePathsProcessed(boolean treePathsProcessed) {
-    this.treePathsProcessed = treePathsProcessed;
     return this;
   }
 

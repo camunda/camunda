@@ -212,27 +212,28 @@ public class ElasticsearchTestRule extends TestWatcher {
   }
 
   public void processAllRecordsAndWait(Integer maxWaitingRounds, Predicate<Object[]> predicate, Object... arguments) {
-    processRecordsAndWaitFor(recordsReaderHolder.getAllRecordsReaders(), maxWaitingRounds, predicate, null, arguments);
+    processRecordsAndWaitFor(recordsReaderHolder.getAllRecordsReaders(), maxWaitingRounds, true, predicate, null, arguments);
   }
 
   public void processAllRecordsAndWait(Predicate<Object[]> predicate, Object... arguments) {
-    processRecordsAndWaitFor(recordsReaderHolder.getAllRecordsReaders(), predicate, null, arguments);
+    processAllRecordsAndWait(50, predicate, arguments);
   }
-
   public void processAllRecordsAndWait(Predicate<Object[]> predicate, Supplier<Object> supplier, Object... arguments) {
-    processRecordsAndWaitFor(recordsReaderHolder.getAllRecordsReaders(), predicate, supplier, arguments);
+    processRecordsAndWaitFor(recordsReaderHolder.getAllRecordsReaders(), 50, true, predicate, supplier, arguments);
   }
 
-  public void processRecordsWithTypeAndWait(ImportValueType importValueType,Predicate<Object[]> predicate, Object... arguments) {
-    processRecordsAndWaitFor(getRecordsReaders(importValueType), predicate, null, arguments);
+  public void processAllRecordsAndWait(boolean runPostImport, Predicate<Object[]> predicate, Supplier<Object> supplier, Object... arguments) {
+    processRecordsAndWaitFor(recordsReaderHolder.getAllRecordsReaders(), 50, runPostImport, predicate, supplier, arguments);
   }
 
-  public void processRecordsAndWaitFor(Collection<RecordsReader> readers,
-      Predicate<Object[]> predicate, Supplier<Object> supplier, Object... arguments) {
-    processRecordsAndWaitFor(readers, 50, predicate, supplier, arguments);
+  public void processRecordsWithTypeAndWait(ImportValueType importValueType, Predicate<Object[]> predicate, Object... arguments) {
+    processRecordsAndWaitFor(getRecordsReaders(importValueType), 50, true, predicate, null, arguments);
+  }
+  public void processRecordsWithTypeAndWait(ImportValueType importValueType, boolean runPostImport, Predicate<Object[]> predicate, Object... arguments) {
+    processRecordsAndWaitFor(getRecordsReaders(importValueType), 50, runPostImport, predicate, null, arguments);
   }
 
-  public void processRecordsAndWaitFor(Collection<RecordsReader> readers, Integer maxWaitingRounds,
+  public void processRecordsAndWaitFor(Collection<RecordsReader> readers, Integer maxWaitingRounds, boolean runPostImport,
       Predicate<Object[]> predicate, Supplier<Object> supplier, Object... arguments) {
     int waitingRound = 0, maxRounds = maxWaitingRounds;
     boolean found = predicate.test(arguments);
@@ -246,7 +247,9 @@ public class ElasticsearchTestRule extends TestWatcher {
         refreshIndexesInElasticsearch();
         zeebeImporter.performOneRoundOfImportFor(readers);
         refreshOperateESIndices();
-        runPostImportActions();
+        if (runPostImport) {
+          runPostImportActions();
+        }
 
       } catch (Exception e) {
         logger.error(e.getMessage(), e);
@@ -260,7 +263,9 @@ public class ElasticsearchTestRule extends TestWatcher {
           sleepFor(2000);
           zeebeImporter.performOneRoundOfImportFor(readers);
           refreshOperateESIndices();
-          runPostImportActions();
+          if (runPostImport) {
+            runPostImportActions();
+          }
 
         } catch (Exception e) {
           waitingRound = 0;
@@ -389,7 +394,7 @@ public class ElasticsearchTestRule extends TestWatcher {
     return getIntValueForJSON(PATH_SEARCH_STATISTICS, OPEN_SCROLL_CONTEXT_FIELD, 0);
   }
 
-  public int getIntValueForJSON(final String path,final String fieldname,final int defaultValue) {
+  private int getIntValueForJSON(final String path,final String fieldname,final int defaultValue) {
     Optional<JsonNode> jsonNode = getJsonFor(path);
     if(jsonNode.isPresent()) {
       JsonNode field = jsonNode.get().findValue(fieldname);
@@ -400,7 +405,7 @@ public class ElasticsearchTestRule extends TestWatcher {
     return defaultValue;
   }
 
-  public Optional<JsonNode> getJsonFor(final String path) {
+  private Optional<JsonNode> getJsonFor(final String path) {
     try {
       ObjectMapper objectMapper = new ObjectMapper();
       Response response = esClient.getLowLevelClient().performRequest(new Request("GET",path));

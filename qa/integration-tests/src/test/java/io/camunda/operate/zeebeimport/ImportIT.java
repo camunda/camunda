@@ -274,7 +274,7 @@ public class ImportIT extends OperateZeebeIntegrationTest {
     List<IncidentEntity> allIncidents = incidentReader.getAllIncidentsByProcessInstanceKey(processInstanceKey);
     assertThat(allIncidents).hasSize(1);
     ZeebeTestUtil.resolveIncident(zeebeClient, allIncidents.get(0).getJobKey(), allIncidents.get(0).getKey());
-    elasticsearchTestRule.processAllRecordsAndWait(incidentIsResolvedCheck, processInstanceKey);
+    elasticsearchTestRule.processAllRecordsAndWait(noActivitiesHaveIncident, processInstanceKey);
 
     //then
     allIncidents = incidentReader.getAllIncidentsByProcessInstanceKey(processInstanceKey);
@@ -435,7 +435,7 @@ public class ImportIT extends OperateZeebeIntegrationTest {
     //when I cancel process instance
     ZeebeTestUtil.cancelProcessInstance(zeebeClient, processInstanceKey);
     elasticsearchTestRule.processAllRecordsAndWait(processInstanceIsCanceledCheck, processInstanceKey);
-    elasticsearchTestRule.processAllRecordsAndWait(incidentIsResolvedCheck, processInstanceKey);
+    elasticsearchTestRule.processAllRecordsAndWait(noActivitiesHaveIncident, processInstanceKey);
 
     //then incident is deleted
     ProcessInstanceForListViewEntity processInstanceEntity = processInstanceReader.getProcessInstanceByKey(processInstanceKey);

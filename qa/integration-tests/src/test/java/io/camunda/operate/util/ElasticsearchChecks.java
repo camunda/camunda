@@ -7,8 +7,7 @@
 package io.camunda.operate.util;
 
 import static io.camunda.operate.qa.util.RestAPITestUtil.*;
-import static io.camunda.operate.schema.templates.IncidentTemplate.ACTIVE_INCIDENT_QUERY;
-import static io.camunda.operate.schema.templates.IncidentTemplate.PROCESS_INSTANCE_KEY;
+import static io.camunda.operate.schema.templates.IncidentTemplate.*;
 import static io.camunda.operate.util.ElasticsearchUtil.joinWithAnd;
 import static io.camunda.operate.util.ElasticsearchUtil.scroll;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -80,6 +79,9 @@ public class ElasticsearchChecks {
 
   @Autowired
   private IncidentTemplate incidentTemplate;
+
+  @Autowired
+  private PostImporterQueueTemplate postImporterQueueTemplate;
 
   @Autowired
   private ListViewReader listViewReader;
@@ -633,6 +635,24 @@ public class ElasticsearchChecks {
     };
   }
 
+  /**
+   * Checks whether given amount of incidents exist and active.
+   * @return
+   */
+  @Bean(name = "postImporterQueueCountCheck")
+  public Predicate<Object[]> getPostImporterQueueCountCheck() {
+    return objects -> {
+      assertThat(objects).hasSize(1);
+      assertThat(objects[0]).isInstanceOf(Integer.class);
+      Integer count = (Integer)objects[0];
+      try {
+        return getPostImporterQueueCount() == count;
+      } catch (NotFoundException ex) {
+        return false;
+      }
+    };
+  }
+
   public long getActiveIncidentsCount() {
     final SearchRequest searchRequest = ElasticsearchUtil.createSearchRequest(incidentTemplate)
         .source(new SearchSourceBuilder()
@@ -656,10 +676,34 @@ public class ElasticsearchChecks {
     }
   }
 
+  public long getPostImporterQueueCount() {
+    final SearchRequest searchRequest = ElasticsearchUtil.createSearchRequest(postImporterQueueTemplate)
+        .source(new SearchSourceBuilder().query(matchAllQuery()));
+    try {
+      final SearchResponse response = esClient.search(searchRequest, RequestOptions.DEFAULT);
+      return response.getHits().getTotalHits().value;
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
+  }
+
   public long getActiveIncidentsCount(Long processInstanceKey) {
     final SearchRequest searchRequest = ElasticsearchUtil.createSearchRequest(incidentTemplate)
         .source(new SearchSourceBuilder()
             .query(joinWithAnd(ACTIVE_INCIDENT_QUERY,
+                termQuery(PROCESS_INSTANCE_KEY, processInstanceKey))));
+    try {
+      final SearchResponse response = esClient.search(searchRequest, RequestOptions.DEFAULT);
+      return response.getHits().getTotalHits().value;
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
+  }
+
+  public long getIncidentsCount(Long processInstanceKey, IncidentState state) {
+    final SearchRequest searchRequest = ElasticsearchUtil.createSearchRequest(incidentTemplate)
+        .source(new SearchSourceBuilder()
+            .query(joinWithAnd(termQuery(STATE, state),
                 termQuery(PROCESS_INSTANCE_KEY, processInstanceKey))));
     try {
       final SearchResponse response = esClient.search(searchRequest, RequestOptions.DEFAULT);
@@ -766,8 +810,8 @@ public class ElasticsearchChecks {
    * Checks whether there are no incidents in activities exists in given processInstanceKey (Long)
    * @return
    */
-  @Bean(name = "incidentIsResolvedCheck")
-  public Predicate<Object[]> getIncidentIsResolvedCheck() {
+  @Bean(name = "noActivitiesHaveIncident")
+  public Predicate<Object[]> getNoActivitiesHaveIncident() {
     return objects -> {
       assertThat(objects).hasSize(1);
       assertThat(objects[0]).isInstanceOf(Long.class);
@@ -775,6 +819,26 @@ public class ElasticsearchChecks {
       try {
         final List<FlowNodeInstanceEntity> allActivityInstances = getAllFlowNodeInstances(processInstanceKey);
         return allActivityInstances.stream().noneMatch(ai -> ai.isIncident());
+      } catch (NotFoundException ex) {
+        return false;
+      }
+    };
+  }
+
+  /**
+   * Checks whether there is a given amount of resolved incidents for given processInstanceKey.
+   * @return
+   */
+  @Bean(name = "incidentsAreResolved")
+  public Predicate<Object[]> getIncidentsAreResolved() {
+    return objects -> {
+      assertThat(objects).hasSize(2);
+      assertThat(objects[0]).isInstanceOf(Long.class);
+      assertThat(objects[1]).isInstanceOf(Integer.class);
+      Long processInstanceKey = (Long)objects[0];
+      int resolvedIncidentsCount = (int)objects[1];
+      try {
+        return getIncidentsCount(processInstanceKey, IncidentState.RESOLVED) == resolvedIncidentsCount;
       } catch (NotFoundException ex) {
         return false;
       }

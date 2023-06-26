@@ -306,7 +306,7 @@ public class OperationIT extends OperateZeebeIntegrationTest {
 
     //after we process messages from Zeebe, the state of the operation is changed to COMPLETED
     //elasticsearchTestRule.processAllEvents(8);
-    elasticsearchTestRule.processAllRecordsAndWait(incidentIsResolvedCheck, processInstanceKey);
+    elasticsearchTestRule.processAllRecordsAndWait(noActivitiesHaveIncident, processInstanceKey);
     processInstance = processInstanceReader.getProcessInstanceWithOperationsByKey(processInstanceKey);
     assertThat(processInstance.isHasActiveOperation()).isEqualTo(false);
     assertThat(processInstance.getOperations()).hasSize(1);
@@ -634,7 +634,7 @@ public class OperationIT extends OperateZeebeIntegrationTest {
 
     //then
     //the state of one operation is COMPLETED and of the other - FAILED
-    elasticsearchTestRule.processAllRecordsAndWait(incidentIsResolvedCheck, processInstanceKey);
+    elasticsearchTestRule.processAllRecordsAndWait(noActivitiesHaveIncident, processInstanceKey);
 
     final ListViewProcessInstanceDto processInstance = processInstanceReader.getProcessInstanceWithOperationsByKey(processInstanceKey);
     final List<OperationDto> operations = processInstance.getOperations();
@@ -704,7 +704,7 @@ public class OperationIT extends OperateZeebeIntegrationTest {
     //then
     //the state of 1st operation is COMPLETED and the 2nd - FAILED
     elasticsearchTestRule.processAllRecordsAndWait(processInstanceIsCanceledCheck, processInstanceKey);
-    elasticsearchTestRule.processAllRecordsAndWait(incidentIsResolvedCheck, processInstanceKey);
+    elasticsearchTestRule.processAllRecordsAndWait(noActivitiesHaveIncident, processInstanceKey);
     //elasticsearchTestRule.refreshIndexesInElasticsearch();
     ListViewResponseDto processInstances = getProcessInstances(processInstanceQuery);
     assertThat(processInstances.getProcessInstances()).hasSize(1);

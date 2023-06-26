@@ -92,8 +92,12 @@ public abstract class OperateZeebeIntegrationTest extends OperateIntegrationTest
 
   /// Predicate checks
   @Autowired
-  @Qualifier("incidentIsResolvedCheck")
-  protected Predicate<Object[]> incidentIsResolvedCheck;
+  @Qualifier("noActivitiesHaveIncident")
+  protected Predicate<Object[]> noActivitiesHaveIncident;
+
+  @Autowired
+  @Qualifier("incidentsAreResolved")
+  protected Predicate<Object[]> incidentsAreResolved;
 
   @Autowired
   @Qualifier("variableExistsCheck")
@@ -114,6 +118,10 @@ public abstract class OperateZeebeIntegrationTest extends OperateIntegrationTest
   @Autowired
   @Qualifier("incidentsArePresentCheck")
   protected Predicate<Object[]> incidentsArePresentCheck;
+
+  @Autowired
+  @Qualifier("postImporterQueueCountCheck")
+  protected Predicate<Object[]> postImporterQueueCountCheck;
 
   @Autowired
   @Qualifier("incidentWithErrorMessageIsActiveCheck")

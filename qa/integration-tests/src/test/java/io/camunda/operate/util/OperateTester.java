@@ -348,6 +348,12 @@ public class OperateTester {
     return this;
   }
 
+  public OperateTester resolveIncident(long jobKey, long incidentKey) {
+    zeebeClient.newUpdateRetriesCommand(jobKey).retries(3).send().join();
+    zeebeClient.newResolveIncidentCommand(incidentKey).send().join();
+    return this;
+  }
+
   public OperateTester incidentIsActive() {
     elasticsearchTestRule.processAllRecordsAndWait(incidentIsActiveCheck, processInstanceKey);
     return this;
