@@ -30,6 +30,7 @@ import io.camunda.zeebe.engine.processing.timer.DueDateTimerChecker;
 import io.camunda.zeebe.engine.state.KeyGenerator;
 import io.camunda.zeebe.engine.state.ScheduledTaskDbState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
+import io.camunda.zeebe.engine.state.immutable.ScheduledTaskState;
 import io.camunda.zeebe.engine.state.migration.DbMigrationController;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
@@ -53,8 +54,8 @@ public final class EngineProcessors {
       final FeatureFlags featureFlags) {
 
     final var processingState = typedRecordProcessorContext.getProcessingState();
-    final var scheduledTaskDbStateFactory =
-        typedRecordProcessorContext.getScheduledTaskDbStateFactory();
+    final var scheduledTaskStateFactory =
+        typedRecordProcessorContext.getScheduledTaskStateFactory();
     final var writers = typedRecordProcessorContext.getWriters();
     final TypedRecordProcessors typedRecordProcessors =
         TypedRecordProcessors.processors(processingState.getKeyGenerator(), writers);
@@ -68,7 +69,7 @@ public final class EngineProcessors {
     final var config = typedRecordProcessorContext.getConfig();
 
     final DueDateTimerChecker timerChecker =
-        new DueDateTimerChecker(scheduledTaskDbStateFactory.get().getTimerState(), featureFlags);
+        new DueDateTimerChecker(scheduledTaskStateFactory.get().getTimerState(), featureFlags);
 
     final var jobMetrics = new JobMetrics(partitionId);
     final var processEngineMetrics = new ProcessEngineMetrics(processingState.getPartitionId());
@@ -96,7 +97,7 @@ public final class EngineProcessors {
         bpmnBehaviors,
         subscriptionCommandSender,
         processingState,
-        scheduledTaskDbStateFactory,
+        scheduledTaskStateFactory,
         typedRecordProcessors,
         writers,
         config,
@@ -218,7 +219,7 @@ public final class EngineProcessors {
       final BpmnBehaviorsImpl bpmnBehaviors,
       final SubscriptionCommandSender subscriptionCommandSender,
       final MutableProcessingState processingState,
-      final Supplier<ScheduledTaskDbState> scheduledTaskDbStateFactory,
+      final Supplier<ScheduledTaskState> scheduledTaskStateFactory,
       final TypedRecordProcessors typedRecordProcessors,
       final Writers writers,
       final EngineConfiguration config,
@@ -227,7 +228,7 @@ public final class EngineProcessors {
         bpmnBehaviors,
         typedRecordProcessors,
         processingState,
-        scheduledTaskDbStateFactory,
+        scheduledTaskStateFactory,
         subscriptionCommandSender,
         writers,
         config,
