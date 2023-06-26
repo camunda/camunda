@@ -29,6 +29,7 @@ import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.ErrorIntent;
 import io.camunda.zeebe.test.util.junit.RegressionTest;
+import org.awaitility.Awaitility;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.verification.VerificationWithTimeout;
 
@@ -55,6 +56,8 @@ final class MigratedStreamProcessorReplayTest {
 
     // await that two commands are failed and processed, to make sure error event has been committed
     verify(processorWhichFails, TIMEOUT.times(2)).onProcessingError(any(), any(), any());
+    Awaitility.await("last processed position is updated")
+        .until(() -> streamPlatform.getLastSuccessfulProcessedRecordPosition(), pos -> pos >= 2);
     // the snapshot should contain last processed position
     streamPlatform.snapshot();
     streamPlatform.closeStreamProcessor();

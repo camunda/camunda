@@ -38,6 +38,7 @@ import io.camunda.zeebe.streamprocessor.StreamProcessor;
 import io.camunda.zeebe.streamprocessor.StreamProcessorContext;
 import io.camunda.zeebe.streamprocessor.StreamProcessorListener;
 import io.camunda.zeebe.streamprocessor.StreamProcessorMode;
+import io.camunda.zeebe.streamprocessor.state.DbLastProcessedPositionState;
 import io.camunda.zeebe.util.FileUtil;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.io.IOException;
@@ -272,6 +273,10 @@ public final class StreamPlatform {
     LOG.info("Snapshot database for processor {}", processorContext.streamProcessor.getName());
   }
 
+  public long getLastSuccessfulProcessedRecordPosition() {
+    return processorContext.getLastSuccessfulProcessedRecordPosition();
+  }
+
   public RecordProcessor getDefaultMockedRecordProcessor() {
     return defaultMockedRecordProcessor;
   }
@@ -330,6 +335,11 @@ public final class StreamPlatform {
 
     public void snapshot() {
       zeebeDb.createSnapshot(snapshotPath.toFile());
+    }
+
+    public Long getLastSuccessfulProcessedRecordPosition() {
+      return new DbLastProcessedPositionState(zeebeDb, zeebeDb.createContext())
+          .getLastSuccessfulProcessedRecordPosition();
     }
 
     @Override
