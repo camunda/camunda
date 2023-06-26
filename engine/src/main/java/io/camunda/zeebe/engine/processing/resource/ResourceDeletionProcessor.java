@@ -53,13 +53,7 @@ public class ResourceDeletionProcessor
   @Override
   public void processCommand(final TypedRecord<ResourceDeletionRecord> command) {
     final var value = command.getValue();
-
-    final var drgOptional = decisionState.findDecisionRequirementsByKey(value.getResourceKey());
-    if (drgOptional.isPresent()) {
-      deleteDecisionRequirements(drgOptional.get());
-    } else {
-      throw new NoSuchResourceException(value.getResourceKey());
-    }
+    deleteResources(command);
 
     final long eventKey = keyGenerator.nextKey();
     stateWriter.appendFollowUpEvent(eventKey, ResourceDeletionIntent.DELETED, value);
@@ -80,6 +74,16 @@ public class ResourceDeletionProcessor
     }
 
     return ProcessingError.UNEXPECTED_ERROR;
+  }
+
+  private void deleteResources(final TypedRecord<ResourceDeletionRecord> command) {
+    final var value = command.getValue();
+    final var drgOptional = decisionState.findDecisionRequirementsByKey(value.getResourceKey());
+    if (drgOptional.isPresent()) {
+      deleteDecisionRequirements(drgOptional.get());
+    } else {
+      throw new NoSuchResourceException(value.getResourceKey());
+    }
   }
 
   private void deleteDecisionRequirements(final PersistedDecisionRequirements drg) {
