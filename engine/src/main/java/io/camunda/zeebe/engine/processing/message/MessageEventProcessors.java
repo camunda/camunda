@@ -23,6 +23,7 @@ import io.camunda.zeebe.protocol.record.intent.MessageIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.util.FeatureFlags;
+import java.util.function.Supplier;
 
 public final class MessageEventProcessors {
 
@@ -30,7 +31,7 @@ public final class MessageEventProcessors {
       final BpmnBehaviors bpmnBehaviors,
       final TypedRecordProcessors typedRecordProcessors,
       final MutableProcessingState processingState,
-      final ScheduledTaskDbState scheduledTaskDbState,
+      final Supplier<ScheduledTaskDbState> scheduledTaskDbStateFactory,
       final SubscriptionCommandSender subscriptionCommandSender,
       final Writers writers,
       final EngineConfiguration config,
@@ -95,7 +96,7 @@ public final class MessageEventProcessors {
                 messageState, subscriptionState, subscriptionCommandSender, writers))
         .withListener(
             new MessageObserver(
-                scheduledTaskDbState.getMessageState(),
+                scheduledTaskDbStateFactory,
                 processingState.getPendingMessageSubscriptionState(),
                 subscriptionCommandSender,
                 config.getMessagesTtlCheckerInterval(),
