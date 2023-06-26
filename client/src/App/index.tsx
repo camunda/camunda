@@ -35,6 +35,10 @@ import {createBrowserHistory} from 'history';
 import {ThemeSwitcher} from 'modules/components/ThemeSwitcher';
 import loadable from '@loadable/component';
 
+const CarbonLogin = loadable(() => import('./Carbon/Login'), {
+  resolveComponent: (components) => components.Login,
+});
+
 const CarbonLayout = loadable(() => import('./Carbon/Layout/index'), {
   resolveComponent: (components) => components.Layout,
 });
@@ -92,7 +96,7 @@ const App: React.FC = () => {
                 </>
               }
             />
-            <Route path={CarbonPaths.login()} element={<Login />} />
+            <Route path={CarbonPaths.login()} element={<CarbonLogin />} />
             <Route
               path={Paths.dashboard()}
               element={

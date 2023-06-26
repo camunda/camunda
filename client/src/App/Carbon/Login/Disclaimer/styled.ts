@@ -1,0 +1,22 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH
+ * under one or more contributor license agreements. Licensed under a proprietary license.
+ * See the License.txt file for more information. You may not use this file
+ * except in compliance with the proprietary license.
+ */
+
+import styled from 'styled-components';
+import {styles} from '@carbon/elements';
+
+const Container = styled.span`
+  color: var(--cds-text-secondary);
+  text-align: center;
+  padding-top: var(--cds-spacing-05);
+
+  &,
+  & a {
+    ${styles.legal01};
+  }
+`;
+
+export {Container};
