@@ -38,6 +38,7 @@ import io.camunda.zeebe.protocol.record.intent.DeploymentDistributionIntent;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
 import io.camunda.zeebe.util.FeatureFlags;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 
 public final class EngineProcessors {
 
@@ -52,6 +53,8 @@ public final class EngineProcessors {
       final FeatureFlags featureFlags) {
 
     final var processingState = typedRecordProcessorContext.getProcessingState();
+    final var scheduledTaskDbStateFactory =
+        typedRecordProcessorContext.getScheduledTaskDbStateFactory();
     final var writers = typedRecordProcessorContext.getWriters();
     final TypedRecordProcessors typedRecordProcessors =
         TypedRecordProcessors.processors(processingState.getKeyGenerator(), writers);
@@ -65,8 +68,7 @@ public final class EngineProcessors {
     final var config = typedRecordProcessorContext.getConfig();
 
     final DueDateTimerChecker timerChecker =
-        new DueDateTimerChecker(
-            typedRecordProcessorContext.getScheduledTaskDbState().getTimerState(), featureFlags);
+        new DueDateTimerChecker(scheduledTaskDbStateFactory.get().getTimerState(), featureFlags);
 
     final var jobMetrics = new JobMetrics(partitionId);
     final var processEngineMetrics = new ProcessEngineMetrics(processingState.getPartitionId());
@@ -94,7 +96,7 @@ public final class EngineProcessors {
         bpmnBehaviors,
         subscriptionCommandSender,
         processingState,
-        typedRecordProcessorContext.getScheduledTaskDbState(),
+        scheduledTaskDbStateFactory,
         typedRecordProcessors,
         writers,
         config,
@@ -216,7 +218,7 @@ public final class EngineProcessors {
       final BpmnBehaviorsImpl bpmnBehaviors,
       final SubscriptionCommandSender subscriptionCommandSender,
       final MutableProcessingState processingState,
-      final ScheduledTaskDbState scheduledTaskDbState,
+      final Supplier<ScheduledTaskDbState> scheduledTaskDbStateFactory,
       final TypedRecordProcessors typedRecordProcessors,
       final Writers writers,
       final EngineConfiguration config,
@@ -225,7 +227,7 @@ public final class EngineProcessors {
         bpmnBehaviors,
         typedRecordProcessors,
         processingState,
-        scheduledTaskDbState,
+        scheduledTaskDbStateFactory,
         subscriptionCommandSender,
         writers,
         config,

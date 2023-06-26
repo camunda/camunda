@@ -13,6 +13,7 @@ import io.camunda.zeebe.engine.api.ProcessingScheduleService;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.ScheduledTaskDbState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
+import java.util.function.Supplier;
 
 public interface TypedRecordProcessorContext {
 
@@ -26,7 +27,7 @@ public interface TypedRecordProcessorContext {
 
   InterPartitionCommandSender getPartitionCommandSender();
 
-  ScheduledTaskDbState getScheduledTaskDbState();
+  Supplier<ScheduledTaskDbState> getScheduledTaskDbStateFactory();
 
   EngineConfiguration getConfig();
 }

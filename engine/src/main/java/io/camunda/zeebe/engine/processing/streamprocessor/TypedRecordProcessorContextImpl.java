@@ -14,13 +14,14 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.ProcessingDbState;
 import io.camunda.zeebe.engine.state.ScheduledTaskDbState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
+import java.util.function.Supplier;
 
 public class TypedRecordProcessorContextImpl implements TypedRecordProcessorContext {
 
   private final int partitionId;
   private final ProcessingScheduleService scheduleService;
   private final ProcessingDbState processingState;
-  private final ScheduledTaskDbState scheduledTaskDbState;
+  private final Supplier<ScheduledTaskDbState> scheduledTaskDbStateFactory;
   private final Writers writers;
   private final InterPartitionCommandSender partitionCommandSender;
   private final EngineConfiguration config;
@@ -29,14 +30,14 @@ public class TypedRecordProcessorContextImpl implements TypedRecordProcessorCont
       final int partitionId,
       final ProcessingScheduleService scheduleService,
       final ProcessingDbState processingState,
-      final ScheduledTaskDbState scheduledTaskDbState,
+      final Supplier<ScheduledTaskDbState> scheduledTaskDbStateFactory,
       final Writers writers,
       final InterPartitionCommandSender partitionCommandSender,
       final EngineConfiguration config) {
     this.partitionId = partitionId;
     this.scheduleService = scheduleService;
     this.processingState = processingState;
-    this.scheduledTaskDbState = scheduledTaskDbState;
+    this.scheduledTaskDbStateFactory = scheduledTaskDbStateFactory;
     this.writers = writers;
     this.partitionCommandSender = partitionCommandSender;
     this.config = config;
@@ -68,8 +69,8 @@ public class TypedRecordProcessorContextImpl implements TypedRecordProcessorCont
   }
 
   @Override
-  public ScheduledTaskDbState getScheduledTaskDbState() {
-    return scheduledTaskDbState;
+  public Supplier<ScheduledTaskDbState> getScheduledTaskDbStateFactory() {
+    return scheduledTaskDbStateFactory;
   }
 
   @Override
