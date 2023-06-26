@@ -280,6 +280,8 @@ final class StreamProcessorReplayTest {
 
     // await that two commands are failed and processed, to make sure error event has been committed
     verify(processorWhichFails, TIMEOUT.times(2)).onProcessingError(any(), any(), any());
+    Awaitility.await("last processed position is updated")
+        .until(() -> streamPlatform.getLastSuccessfulProcessedRecordPosition(), pos -> pos >= 2);
     // the snapshot should contain last processed position
     streamPlatform.snapshot();
     streamPlatform.closeStreamProcessor();
