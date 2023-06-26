@@ -29,8 +29,6 @@ import io.camunda.zeebe.util.buffer.BufferUtil;
 
 public class ResourceDeletionProcessor
     implements DistributedTypedRecordProcessor<ResourceDeletionRecord> {
-  private static final String ERROR_MESSAGE_RESOURCE_NOT_FOUND =
-      "Expected to delete resource but no resource found with key `%d`";
 
   private final StateWriter stateWriter;
   private final TypedResponseWriter responseWriter;
@@ -60,11 +58,7 @@ public class ResourceDeletionProcessor
     if (drgOptional.isPresent()) {
       deleteDecisionRequirements(drgOptional.get());
     } else {
-      final var rejectionReason =
-          ERROR_MESSAGE_RESOURCE_NOT_FOUND.formatted(value.getResourceKey());
-      rejectionWriter.appendRejection(command, RejectionType.NOT_FOUND, rejectionReason);
-      responseWriter.writeRejectionOnCommand(command, RejectionType.NOT_FOUND, rejectionReason);
-      return;
+      throw new NoSuchResourceException(value.getResourceKey());
     }
 
     final long eventKey = keyGenerator.nextKey();
@@ -74,6 +68,19 @@ public class ResourceDeletionProcessor
 
   @Override
   public void processDistributedCommand(final TypedRecord<ResourceDeletionRecord> command) {}
+
+  @Override
+  public ProcessingError tryHandleError(
+      final TypedRecord<ResourceDeletionRecord> command, final Throwable error) {
+    if (error instanceof NoSuchResourceException exception) {
+      rejectionWriter.appendRejection(command, RejectionType.NOT_FOUND, exception.getMessage());
+      responseWriter.writeRejectionOnCommand(
+          command, RejectionType.NOT_FOUND, exception.getMessage());
+      return ProcessingError.EXPECTED_ERROR;
+    }
+
+    return ProcessingError.UNEXPECTED_ERROR;
+  }
 
   private void deleteDecisionRequirements(final PersistedDecisionRequirements drg) {
     decisionState
@@ -106,5 +113,14 @@ public class ResourceDeletionProcessor
                 BufferUtil.bufferAsString(persistedDecision.getDecisionRequirementsId()))
             .setDecisionRequirementsKey(persistedDecision.getDecisionRequirementsKey());
     stateWriter.appendFollowUpEvent(keyGenerator.nextKey(), DecisionIntent.DELETED, decisionRecord);
+  }
+
+  private static final class NoSuchResourceException extends IllegalStateException {
+    private static final String ERROR_MESSAGE_RESOURCE_NOT_FOUND =
+        "Expected to delete resource but no resource found with key `%d`";
+
+    private NoSuchResourceException(final long resourceKey) {
+      super(String.format(ERROR_MESSAGE_RESOURCE_NOT_FOUND, resourceKey));
+    }
   }
 }
