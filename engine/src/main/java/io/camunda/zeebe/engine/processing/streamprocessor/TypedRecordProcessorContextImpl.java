@@ -14,6 +14,7 @@ import io.camunda.zeebe.engine.state.ProcessingDbState;
 import io.camunda.zeebe.engine.state.ScheduledTaskDbState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.stream.api.InterPartitionCommandSender;
+import io.camunda.zeebe.stream.api.RecordProcessorContext;
 import io.camunda.zeebe.stream.api.scheduling.ProcessingScheduleService;
 import java.util.function.Supplier;
 
@@ -28,19 +29,17 @@ public class TypedRecordProcessorContextImpl implements TypedRecordProcessorCont
   private final EngineConfiguration config;
 
   public TypedRecordProcessorContextImpl(
-      final int partitionId,
-      final ProcessingScheduleService scheduleService,
-      final ProcessingDbState processingState,
-      final ZeebeDb zeebeDb,
+      final RecordProcessorContext context,
       final Writers writers,
-      final InterPartitionCommandSender partitionCommandSender,
       final EngineConfiguration config) {
-    this.partitionId = partitionId;
-    this.scheduleService = scheduleService;
-    this.processingState = processingState;
-    this.zeebeDb = zeebeDb;
+    this.partitionId = context.getPartitionId();
+    this.scheduleService = context.getScheduleService();
+    this.zeebeDb = context.getZeebeDb();
+    this.processingState =
+        new ProcessingDbState(
+            partitionId, zeebeDb, context.getTransactionContext(), context.getKeyGenerator());
     this.writers = writers;
-    this.partitionCommandSender = partitionCommandSender;
+    this.partitionCommandSender = context.getPartitionCommandSender();
     this.config = config;
   }
 
