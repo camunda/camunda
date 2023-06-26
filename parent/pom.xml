@@ -67,7 +67,7 @@
     <version.mockito>5.3.1</version.mockito>
     <version.model>7.7.0</version.model>
     <version.msgpack>0.9.3</version.msgpack>
-    <version.netty>4.1.93.Final</version.netty>
+    <version.netty>4.1.94.Final</version.netty>
     <version.objenesis>3.3</version.objenesis>
     <version.prometheus>0.16.0</version.prometheus>
     <version.protobuf>3.21.12</version.protobuf>
@@ -136,7 +136,7 @@
     <plugin.version.scala>4.7.2</plugin.version.scala>
     <plugin.version.shade>3.4.1</plugin.version.shade>
     <plugin.version.sonar>3.9.1.2184</plugin.version.sonar>
-    <plugin.version.spotbugs>4.7.3.4</plugin.version.spotbugs>
+    <plugin.version.spotbugs>4.7.3.5</plugin.version.spotbugs>
     <plugin.version.surefire>3.0.0</plugin.version.surefire>
     <plugin.version.versions>2.12.0</plugin.version.versions>
 
