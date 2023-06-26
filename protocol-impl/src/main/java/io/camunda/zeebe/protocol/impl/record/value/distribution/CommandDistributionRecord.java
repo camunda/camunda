@@ -14,6 +14,7 @@ import io.camunda.zeebe.msgpack.spec.MsgPackReader;
 import io.camunda.zeebe.msgpack.spec.MsgPackWriter;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
+import io.camunda.zeebe.protocol.impl.record.value.resource.ResourceDeletionRecord;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.value.CommandDistributionRecordValue;
@@ -31,6 +32,7 @@ public final class CommandDistributionRecord extends UnifiedRecordValue
   // You'll need to register any of the records value's that you want to distribute
   static {
     RECORDS_BY_TYPE.put(ValueType.DEPLOYMENT, DeploymentRecord::new);
+    RECORDS_BY_TYPE.put(ValueType.RESOURCE_DELETION, ResourceDeletionRecord::new);
   }
 
   /*
@@ -56,7 +58,7 @@ public final class CommandDistributionRecord extends UnifiedRecordValue
   }
 
   public CommandDistributionRecord wrap(final CommandDistributionRecord other) {
-    this.setPartitionId(other.getPartitionId())
+    setPartitionId(other.getPartitionId())
         .setValueType(other.getValueType())
         .setIntent(other.getIntent())
         .setRecordValue(other.getCommandValue());
@@ -113,6 +115,11 @@ public final class CommandDistributionRecord extends UnifiedRecordValue
     return concreteRecordValue;
   }
 
+  public CommandDistributionRecord setIntent(final Intent intent) {
+    intentProperty.setValue(intent.value());
+    return this;
+  }
+
   public CommandDistributionRecord setValueType(final ValueType valueType) {
     valueTypeProperty.setValue(valueType);
     return this;
@@ -120,11 +127,6 @@ public final class CommandDistributionRecord extends UnifiedRecordValue
 
   public CommandDistributionRecord setPartitionId(final int partitionId) {
     partitionIdProperty.setValue(partitionId);
-    return this;
-  }
-
-  public CommandDistributionRecord setIntent(final Intent intent) {
-    intentProperty.setValue(intent.value());
     return this;
   }
 
