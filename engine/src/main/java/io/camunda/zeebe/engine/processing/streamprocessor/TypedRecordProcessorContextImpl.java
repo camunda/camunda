@@ -12,6 +12,7 @@ import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.ProcessingDbState;
 import io.camunda.zeebe.engine.state.ScheduledTaskDbState;
+import io.camunda.zeebe.engine.state.immutable.ScheduledTaskState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.stream.api.InterPartitionCommandSender;
 import io.camunda.zeebe.stream.api.RecordProcessorContext;
@@ -69,7 +70,7 @@ public class TypedRecordProcessorContextImpl implements TypedRecordProcessorCont
   }
 
   @Override
-  public Supplier<ScheduledTaskDbState> getScheduledTaskDbStateFactory() {
+  public Supplier<ScheduledTaskState> getScheduledTaskStateFactory() {
     return () -> new ScheduledTaskDbState(zeebeDb, zeebeDb.createContext());
   }
 
