@@ -52,6 +52,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
+import org.mockito.Mockito;
 import org.slf4j.Logger;
 
 public final class StreamPlatform {
@@ -111,6 +112,14 @@ public final class StreamPlatform {
     closeables.add(() -> recordProcessors.clear());
     mockProcessorLifecycleAware = mock(StreamProcessorLifecycleAware.class);
     mockStreamProcessorListener = mock(StreamProcessorListener.class);
+  }
+
+  public void resetMockInvocations() {
+    Mockito.clearInvocations(
+        mockCommandResponseWriter,
+        mockProcessorLifecycleAware,
+        mockStreamProcessorListener,
+        defaultMockedRecordProcessor);
   }
 
   public CommandResponseWriter getMockCommandResponseWriter() {
