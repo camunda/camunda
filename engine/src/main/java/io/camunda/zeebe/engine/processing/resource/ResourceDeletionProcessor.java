@@ -63,7 +63,12 @@ public class ResourceDeletionProcessor
   }
 
   @Override
-  public void processDistributedCommand(final TypedRecord<ResourceDeletionRecord> command) {}
+  public void processDistributedCommand(final TypedRecord<ResourceDeletionRecord> command) {
+    final var value = command.getValue();
+    deleteResources(command);
+    stateWriter.appendFollowUpEvent(command.getKey(), ResourceDeletionIntent.DELETED, value);
+    commandDistributionBehavior.acknowledgeCommand(command.getKey(), command);
+  }
 
   @Override
   public ProcessingError tryHandleError(
