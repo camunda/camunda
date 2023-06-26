@@ -58,6 +58,8 @@ public class ResourceDeletionProcessor
     final long eventKey = keyGenerator.nextKey();
     stateWriter.appendFollowUpEvent(eventKey, ResourceDeletionIntent.DELETED, value);
     responseWriter.writeEventOnCommand(eventKey, ResourceDeletionIntent.DELETED, value, command);
+
+    commandDistributionBehavior.distributeCommand(eventKey, command);
   }
 
   @Override
