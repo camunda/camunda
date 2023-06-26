@@ -69,14 +69,14 @@ public class Engine implements RecordProcessor {
 
   @Override
   public void init(final RecordProcessorContext recordProcessorContext) {
+    eventApplier = new EventAppliers();
+    writers = new Writers(resultBuilderMutex, eventApplier);
+
     final var typedProcessorContext =
         new TypedRecordProcessorContextImpl(recordProcessorContext, writers, config);
     processingState = typedProcessorContext.getProcessingState();
 
-    eventApplier = new EventAppliers().registerEventAppliers(processingState);
-
-    writers = new Writers(resultBuilderMutex, eventApplier);
-
+    ((EventAppliers) eventApplier).registerEventAppliers(processingState);
     final TypedRecordProcessors typedRecordProcessors =
         typedRecordProcessorFactory.createProcessors(typedProcessorContext);
 
