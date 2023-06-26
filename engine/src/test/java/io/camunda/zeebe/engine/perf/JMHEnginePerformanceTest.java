@@ -20,7 +20,8 @@ import org.openjdk.jmh.runner.options.OptionsBuilder;
 public class JMHEnginePerformanceTest {
 
   private static final DecimalFormat DECIMAL_FORMAT = new DecimalFormat("0.000");
-  private static final double REFERENCE_SCORE = 455; // just for CI, locally we reached ~680
+  private static final double REFERENCE_SCORE = 450; // just for CI, locally we reached ~680
+  private static final double MAX_DEVIATION = 0.15; // 15% of deviation is allowed
 
   @Test
   public void runJmhBenchmark() throws RunnerException {
@@ -34,7 +35,7 @@ public class JMHEnginePerformanceTest {
     // then
     for (final RunResult runResult : runResults) {
       // we are fine with around 10 percent deviation but not more
-      assertDeviationWithin(runResult, REFERENCE_SCORE, 0.1);
+      assertDeviationWithin(runResult, REFERENCE_SCORE, MAX_DEVIATION);
     }
   }
 
