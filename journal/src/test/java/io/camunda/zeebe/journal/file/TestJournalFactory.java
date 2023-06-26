@@ -61,12 +61,16 @@ final class TestJournalFactory {
    * @param maxEntryCount the max number of entries per segment
    */
   TestJournalFactory(final String data, final int maxEntryCount) {
+    this(data, maxEntryCount, SegmentAllocator.noop());
+  }
+
+  TestJournalFactory(final String data, final int maxEntryCount, final SegmentAllocator allocator) {
     entryData = BufferUtil.wrapString(data);
     entry = new DirectBufferWriter().wrap(entryData);
     size = getSerializedSize(entryData);
     this.maxEntryCount = maxEntryCount;
 
-    loader = new SegmentLoader(2 * maxSegmentSize(), metrics);
+    loader = new SegmentLoader(2L * maxSegmentSize(), metrics, allocator);
   }
 
   int serializedEntrySize() {

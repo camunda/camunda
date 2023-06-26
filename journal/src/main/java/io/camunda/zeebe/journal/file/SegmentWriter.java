@@ -190,6 +190,10 @@ final class SegmentWriter {
     }
 
     writeMetadata(startPosition, frameLength, recordLength, checksum);
+
+    final int nextEntryOffset = startPosition + frameLength + metadataLength + recordLength;
+    invalidateNextEntry(nextEntryOffset);
+
     updateLastWrittenEntry(startPosition, frameLength, metadataLength, recordLength);
     FrameUtil.writeVersion(buffer, startPosition);
 
@@ -234,8 +238,6 @@ final class SegmentWriter {
     if (recordLength.isLeft()) {
       return Either.left(new SegmentFull("Not enough space to write record"));
     }
-    final int nextEntryOffset = offset + recordLength.get();
-    invalidateNextEntry(nextEntryOffset);
     return Either.right(recordLength.get());
   }
 
