@@ -12,17 +12,9 @@ import java.util.List;
 
 /** Used by RaftRoles to handle AppendRequest from multiple versions uniformly. */
 public record InternalAppendRequest(
-    int version,
     long term,
     MemberId leader,
     long prevLogIndex,
     long prevLogTerm,
     long commitIndex,
-    List<PersistedRaftRecord> raftRecords,
-    List<ReplicatableJournalRecord> serializedJournalRecords) {
-  static final int APPEND_REQUEST_WITH_RAFT_RECORDS = 1;
-
-  public List<? extends ReplicatableRecord> entries() {
-    return version == APPEND_REQUEST_WITH_RAFT_RECORDS ? raftRecords : serializedJournalRecords;
-  }
-}
+    List<? extends ReplicatableRecord> entries) {}

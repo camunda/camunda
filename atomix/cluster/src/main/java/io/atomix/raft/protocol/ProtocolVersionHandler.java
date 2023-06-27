@@ -15,25 +15,21 @@ public final class ProtocolVersionHandler {
 
   public static InternalAppendRequest transform(final AppendRequest request) {
     return new InternalAppendRequest(
-        InternalAppendRequest.APPEND_REQUEST_WITH_RAFT_RECORDS,
         request.term(),
         request.leader(),
         request.prevLogIndex(),
         request.prevLogTerm(),
         request.commitIndex(),
-        request.entries(),
-        null);
+        request.entries());
   }
 
   public static InternalAppendRequest transform(final VersionedAppendRequest request) {
     return new InternalAppendRequest(
-        request.version(),
         request.term(),
         request.leader(),
         request.prevLogIndex(),
         request.prevLogTerm(),
         request.commitIndex(),
-        null,
         request.entries());
   }
 }
