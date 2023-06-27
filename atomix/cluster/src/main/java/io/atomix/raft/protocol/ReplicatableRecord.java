@@ -7,7 +7,7 @@
  */
 package io.atomix.raft.protocol;
 
-public sealed interface ReplicatableRecord permits PersistedRaftRecord, ReplicatableJournalRecord {
+public interface ReplicatableRecord {
   long index();
 
   long term();
