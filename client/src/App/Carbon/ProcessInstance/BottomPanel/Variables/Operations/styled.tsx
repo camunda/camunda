@@ -15,7 +15,7 @@ type ContainerProps = {
 const Container = styled.div<ContainerProps>`
   display: flex;
   justify-content: end;
-  min-width: 78px;
+  min-width: var(--cds-spacing-10);
 `;
 
 const InlineLoading = styled(BaseInlineLoading)`

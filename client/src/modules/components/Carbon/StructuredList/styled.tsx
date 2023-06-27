@@ -15,16 +15,28 @@ const Container = styled.div`
 
 type StructuredListCellProps = {
   $size?: 'sm' | 'md';
+  $width?: string;
+  $verticalCellPadding?: string;
 };
 
 const StructuredListCell = styled(
   BaseStructuredListCell
 )<StructuredListCellProps>`
-  ${({$size = 'md'}) => {
+  ${({$size = 'md', $width, $verticalCellPadding}) => {
     return css`
+      vertical-align: top;
       ${$size === 'sm' &&
       css`
         ${styles.label01};
+      `}
+      ${$width &&
+      css`
+        width: ${$width};
+      `}
+      ${$verticalCellPadding &&
+      css`
+        padding-top: ${$verticalCellPadding} !important;
+        padding-bottom: ${$verticalCellPadding} !important;
       `}
     `;
   }}

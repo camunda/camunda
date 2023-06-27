@@ -5,7 +5,7 @@
  * except in compliance with the proprietary license.
  */
 
-import {StructuredList} from './styled';
+import {StructuredList, VariableName, VariableValue} from './styled';
 import {StructuredRows} from 'modules/components/Carbon/StructuredList';
 import {OnLastVariableModificationRemoved} from 'App/ProcessInstance/BottomPanel/Variables/OnLastVariableModificationRemoved';
 import {FieldArray} from 'react-final-form-arrays';
@@ -69,11 +69,12 @@ const VariablesTable: React.FC<Props> = observer(({scopeId}) => {
   return (
     <StructuredList
       headerColumns={[
-        {cellContent: 'Name'},
-        {cellContent: 'Value'},
-        {cellContent: ''},
+        {cellContent: 'Name', width: '35%'},
+        {cellContent: 'Value', width: '55%'},
+        {cellContent: '', width: '10%'},
       ]}
       headerSize="sm"
+      verticalCellPadding="var(--cds-spacing-02)"
       label="Variable List"
       dynamicRows={
         isModificationModeEnabled ? (
@@ -89,15 +90,18 @@ const VariablesTable: React.FC<Props> = observer(({scopeId}) => {
             >
               {({fields}) => (
                 <StructuredRows
+                  verticalCellPadding="var(--cds-spacing-02)"
                   rows={fields
                     .map((_, index) => {
                       return {
                         columns: [
                           {
                             cellContent: <div>new variable name</div>,
+                            width: '35%',
                           },
                           {
                             cellContent: <div>new variable value</div>,
+                            width: '55%',
                           },
                           {
                             cellContent: (
@@ -109,6 +113,7 @@ const VariablesTable: React.FC<Props> = observer(({scopeId}) => {
                                 remove new variable
                               </button>
                             ),
+                            width: '10%',
                           },
                         ],
                       };
@@ -130,10 +135,12 @@ const VariablesTable: React.FC<Props> = observer(({scopeId}) => {
         }) => ({
           columns: [
             {
-              cellContent: variableName,
+              cellContent: <VariableName>{variableName}</VariableName>,
+              width: '35%',
             },
             {
-              cellContent: variableValue,
+              cellContent: <VariableValue>{variableValue}</VariableValue>,
+              width: '55%',
             },
             {
               cellContent: (
@@ -226,6 +233,7 @@ const VariablesTable: React.FC<Props> = observer(({scopeId}) => {
                   })()}
                 </Operations>
               ),
+              width: '10%',
             },
           ],
         })

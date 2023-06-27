@@ -7,6 +7,7 @@
 
 import styled from 'styled-components';
 import {StructuredList as BaseStructuredList} from 'modules/components/Carbon/StructuredList';
+import {styles} from '@carbon/elements';
 
 const VariablesContent = styled.div`
   position: absolute;
@@ -19,6 +20,19 @@ const VariablesContent = styled.div`
   justify-content: space-between;
 `;
 
+const VariableName = styled.div`
+  ${styles.bodyShort01};
+  margin: var(--cds-spacing-02) 0;
+`;
+
+const VariableValue = styled.div`
+  ${styles.bodyShort01};
+  margin: var(--cds-spacing-02) 0;
+  max-height: 78px;
+  overflow-y: auto;
+  overflow-wrap: break-word;
+`;
+
 const Footer = styled.div`
   margin-top: auto;
   border-top: 1px solid var(--cds-border-subtle-01);
@@ -26,6 +40,9 @@ const Footer = styled.div`
 
 const StructuredList = styled(BaseStructuredList)`
   padding: var(--cds-spacing-05);
+  [role='table'] {
+    table-layout: fixed;
+  }
 `;
 
 const EmptyMessageWrapper = styled.div`
@@ -35,4 +52,11 @@ const EmptyMessageWrapper = styled.div`
   align-items: center;
 `;
 
-export {VariablesContent, Footer, StructuredList, EmptyMessageWrapper};
+export {
+  VariablesContent,
+  VariableName,
+  VariableValue,
+  Footer,
+  StructuredList,
+  EmptyMessageWrapper,
+};
