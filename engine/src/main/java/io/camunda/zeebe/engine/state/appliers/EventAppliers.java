@@ -35,6 +35,7 @@ import io.camunda.zeebe.protocol.record.intent.ProcessMessageSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.SignalSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.TimerIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableIntent;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -48,7 +49,7 @@ public final class EventAppliers implements EventApplier {
   public static final TypedEventApplier<Intent, RecordValue> NOOP_EVENT_APPLIER =
       (key, value) -> {};
 
-  private final Map<IntentAndVersion, TypedEventApplier> mapping = new HashMap<>();
+  private final Map<Intent, Map<Integer, TypedEventApplier>> mapping = new HashMap<>();
 
   public EventAppliers registerEventAppliers(final MutableProcessingState state) {
     registerProcessInstanceEventAppliers(state);
@@ -300,16 +301,23 @@ public final class EventAppliers implements EventApplier {
 
   <I extends Intent> void register(
       final I intent, final int version, final TypedEventApplier<I, ?> applier) {
-    mapping.put(new IntentAndVersion(intent, version), applier);
+    mapping.computeIfAbsent(intent, unused -> new HashMap<>()).put(version, applier);
+  }
+
+  @Override
+  public int getLatestVersion(final Intent intent) {
+    return mapping.getOrDefault(intent, new HashMap<>()).keySet().stream()
+        .max(Comparator.naturalOrder())
+        .orElse(-1);
   }
 
   @Override
   public void applyState(
       final long key, final Intent intent, final RecordValue value, final int recordVersion) {
     final var eventApplier =
-        mapping.getOrDefault(new IntentAndVersion(intent, recordVersion), NOOP_EVENT_APPLIER);
+        mapping
+            .getOrDefault(intent, new HashMap<>())
+            .getOrDefault(recordVersion, NOOP_EVENT_APPLIER);
     eventApplier.applyState(key, value);
   }
-
-  record IntentAndVersion(Intent intent, int version) {}
 }

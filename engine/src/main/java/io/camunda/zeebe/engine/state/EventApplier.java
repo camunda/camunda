@@ -14,7 +14,16 @@ import io.camunda.zeebe.protocol.record.intent.Intent;
 public interface EventApplier {
 
   /**
-   * Apply the state changes of the given event.
+   * Returns the latest EventApplier version of a given Intent.
+   *
+   * @param intent the Intent of the EventApplier
+   * @return the latest version of the given intent, -1 if no EventApplier is found
+   */
+  int getLatestVersion(final Intent intent);
+
+  /**
+   * Apply the state changes of the given event. It will use the event applier that matches the
+   * specified version.
    *
    * @param key the key of the event
    * @param intent the intent of the event

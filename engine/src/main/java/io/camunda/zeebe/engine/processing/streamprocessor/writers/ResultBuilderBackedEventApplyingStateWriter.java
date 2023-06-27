@@ -38,7 +38,8 @@ final class ResultBuilderBackedEventApplyingStateWriter extends AbstractResultBu
 
   @Override
   public void appendFollowUpEvent(final long key, final Intent intent, final RecordValue value) {
-    appendFollowUpEvent(key, intent, value, RecordMetadata.DEFAULT_RECORD_VERSION);
+    final int latestVersion = eventApplier.getLatestVersion(intent);
+    appendFollowUpEvent(key, intent, value, latestVersion);
   }
 
   @Override
