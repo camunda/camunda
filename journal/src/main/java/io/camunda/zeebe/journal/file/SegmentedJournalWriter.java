@@ -16,9 +16,12 @@
  */
 package io.camunda.zeebe.journal.file;
 
+import io.camunda.zeebe.journal.JournalException.SegmentFull;
 import io.camunda.zeebe.journal.JournalException.SegmentSizeTooSmall;
 import io.camunda.zeebe.journal.JournalRecord;
+import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.buffer.BufferWriter;
+import java.util.function.Function;
 
 final class SegmentedJournalWriter {
   private final SegmentsManager segments;
@@ -49,7 +52,30 @@ final class SegmentedJournalWriter {
   }
 
   JournalRecord append(final long asqn, final BufferWriter recordDataWriter) {
-    final var appendResult = currentWriter.append(asqn, recordDataWriter);
+    return appendInCurrentSegmentOrNext(
+        segmentWriter -> segmentWriter.append(asqn, recordDataWriter));
+  }
+
+  void append(final JournalRecord journalRecord) {
+    appendInCurrentSegmentOrNext(segmentWriter -> segmentWriter.append(journalRecord));
+  }
+
+  JournalRecord append(final long checksum, final byte[] serializedRecord) {
+    return appendInCurrentSegmentOrNext(
+        segmentWriter -> segmentWriter.append(checksum, serializedRecord));
+  }
+
+  /**
+   * Tries to append a record using the given inSegmentAppender. If the segment is full, a new
+   * segment is created and tries to attempt the record in the new segment.
+   *
+   * @param inSegmentAppender A method that appends a record in a given segment, returns a journal
+   *     record if successfully appended or returns SegmentFull.
+   * @return the appended journal record
+   */
+  private JournalRecord appendInCurrentSegmentOrNext(
+      final Function<SegmentWriter, Either<SegmentFull, JournalRecord>> inSegmentAppender) {
+    final var appendResult = inSegmentAppender.apply(currentWriter);
     if (appendResult.isRight()) {
       return appendResult.get();
     }
@@ -59,46 +85,11 @@ final class SegmentedJournalWriter {
     }
 
     journalMetrics.observeSegmentCreation(this::createNewSegment);
-    final var appendResultOnNewSegment = currentWriter.append(asqn, recordDataWriter);
+    final var appendResultOnNewSegment = inSegmentAppender.apply(currentWriter);
     if (appendResultOnNewSegment.isLeft()) {
       throw appendResultOnNewSegment.getLeft();
     }
     return appendResultOnNewSegment.get();
-  }
-
-  void append(final JournalRecord record) {
-    final var appendResult = currentWriter.append(record);
-    if (appendResult.isRight()) {
-      return;
-    }
-
-    if (currentSegment.index() == currentWriter.getNextIndex()) {
-      throw new SegmentSizeTooSmall("Failed appending, segment size is too small");
-    }
-
-    journalMetrics.observeSegmentCreation(this::createNewSegment);
-    final var resultInNewSegment = currentWriter.append(record);
-    if (resultInNewSegment.isLeft()) {
-      throw resultInNewSegment.getLeft();
-    }
-  }
-
-  JournalRecord append(final long checksum, final byte[] serializedRecord) {
-    final var appendResult = currentWriter.append(checksum, serializedRecord);
-    if (appendResult.isRight()) {
-      return appendResult.get();
-    }
-
-    if (currentSegment.index() == currentWriter.getNextIndex()) {
-      throw new SegmentSizeTooSmall("Failed appending, segment size is too small");
-    }
-
-    journalMetrics.observeSegmentCreation(this::createNewSegment);
-    final var resultInNewSegment = currentWriter.append(checksum, serializedRecord);
-    if (resultInNewSegment.isLeft()) {
-      throw resultInNewSegment.getLeft();
-    }
-    return resultInNewSegment.get();
   }
 
   void reset(final long index) {
