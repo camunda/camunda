@@ -6,7 +6,10 @@
  */
 
 import {Icon} from '@carbon/react/icons';
-import {TextInput as BaseTextInput} from '@carbon/react';
+import {
+  TextInput as BaseTextInput,
+  IconButton as BaseIconButton,
+} from '@carbon/react';
 import {Container, IconContainer, TextInput, IconButton} from './styled';
 
 interface Props extends React.ComponentProps<typeof BaseTextInput> {
@@ -14,6 +17,7 @@ interface Props extends React.ComponentProps<typeof BaseTextInput> {
   invalid?: boolean;
   onIconClick: () => void;
   buttonLabel: string;
+  tooltipPosition?: React.ComponentProps<typeof BaseIconButton>['align'];
 }
 
 const IconTextInput: React.FC<Props> = ({
@@ -21,6 +25,7 @@ const IconTextInput: React.FC<Props> = ({
   invalid,
   onIconClick,
   buttonLabel,
+  tooltipPosition = 'top-right',
   ...props
 }) => {
   return (
@@ -32,7 +37,7 @@ const IconTextInput: React.FC<Props> = ({
           size="sm"
           onClick={onIconClick}
           label={buttonLabel}
-          align="top-right"
+          align={tooltipPosition}
         >
           <Icon />
         </IconButton>

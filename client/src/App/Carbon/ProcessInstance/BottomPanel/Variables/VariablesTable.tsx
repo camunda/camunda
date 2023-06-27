@@ -23,223 +23,268 @@ import {useProcessInstancePageParams} from '../../useProcessInstancePageParams';
 import {Edit} from '@carbon/react/icons';
 import {VariableFormValues} from 'modules/types/variables';
 import {EditButtons} from './EditButtons';
+import {ExistingVariableValue} from './ExistingVariableValue';
 
 type Props = {
   scopeId: string | null;
+  isVariableModificationAllowed?: boolean;
 };
 
-const VariablesTable: React.FC<Props> = observer(({scopeId}) => {
-  const {
-    state: {items},
-  } = variablesStore;
-  const {isModificationModeEnabled} = modificationsStore;
+const VariablesTable: React.FC<Props> = observer(
+  ({scopeId, isVariableModificationAllowed}) => {
+    const {
+      state: {items},
+    } = variablesStore;
+    const {isModificationModeEnabled} = modificationsStore;
 
-  const addVariableModifications = useMemo(
-    () => modificationsStore.getAddVariableModifications(scopeId),
-    [scopeId]
-  );
+    const addVariableModifications = useMemo(
+      () => modificationsStore.getAddVariableModifications(scopeId),
+      [scopeId]
+    );
 
-  const {processInstanceId = ''} = useProcessInstancePageParams();
-  const notifications = useNotifications();
-  const {initialValues} = useFormState();
+    const {processInstanceId = ''} = useProcessInstancePageParams();
+    const notifications = useNotifications();
+    const {initialValues} = useFormState();
 
-  function fetchFullVariable({
-    processInstanceId,
-    variableId,
-    enableLoading = true,
-  }: {
-    processInstanceId: ProcessInstanceEntity['id'];
-    variableId: VariableEntity['id'];
-    enableLoading?: boolean;
-  }) {
-    return variablesStore.fetchVariable({
+    function fetchFullVariable({
       processInstanceId,
       variableId,
-      onError: () => {
-        notifications.displayNotification('error', {
-          headline: 'Variable could not be fetched',
-        });
-      },
-      enableLoading,
-    });
-  }
+      enableLoading = true,
+    }: {
+      processInstanceId: ProcessInstanceEntity['id'];
+      variableId: VariableEntity['id'];
+      enableLoading?: boolean;
+    }) {
+      return variablesStore.fetchVariable({
+        processInstanceId,
+        variableId,
+        onError: () => {
+          notifications.displayNotification('error', {
+            headline: 'Variable could not be fetched',
+          });
+        },
+        enableLoading,
+      });
+    }
 
-  const form = useForm<VariableFormValues>();
+    const isEditMode = (variableName: string) =>
+      (initialValues?.name === variableName &&
+        processInstanceDetailsStore.isRunning) ||
+      (isModificationModeEnabled && isVariableModificationAllowed);
 
-  return (
-    <StructuredList
-      headerColumns={[
-        {cellContent: 'Name', width: '35%'},
-        {cellContent: 'Value', width: '55%'},
-        {cellContent: '', width: '10%'},
-      ]}
-      headerSize="sm"
-      verticalCellPadding="var(--cds-spacing-02)"
-      label="Variable List"
-      dynamicRows={
-        isModificationModeEnabled ? (
-          <>
-            <OnLastVariableModificationRemoved />
-            <FieldArray
-              name="newVariables"
-              initialValue={
-                addVariableModifications.length > 0
-                  ? addVariableModifications
-                  : undefined
-              }
-            >
-              {({fields}) => (
-                <StructuredRows
-                  verticalCellPadding="var(--cds-spacing-02)"
-                  rows={fields
-                    .map((_, index) => {
-                      return {
-                        columns: [
-                          {
-                            cellContent: <div>new variable name</div>,
-                            width: '35%',
-                          },
-                          {
-                            cellContent: <div>new variable value</div>,
-                            width: '55%',
-                          },
-                          {
-                            cellContent: (
-                              <button
-                                onClick={() => {
-                                  fields.remove(index);
-                                }}
-                              >
-                                remove new variable
-                              </button>
-                            ),
-                            width: '10%',
-                          },
-                        ],
-                      };
-                    })
-                    .reverse()}
-                />
-              )}
-            </FieldArray>
-          </>
-        ) : undefined
-      }
-      rows={items.map(
-        ({
-          name: variableName,
-          value: variableValue,
-          hasActiveOperation,
-          isPreview,
-          id,
-        }) => ({
-          columns: [
-            {
-              cellContent: <VariableName>{variableName}</VariableName>,
-              width: '35%',
-            },
-            {
-              cellContent: <VariableValue>{variableValue}</VariableValue>,
-              width: '55%',
-            },
-            {
-              cellContent: (
-                <Operations
-                  showLoadingIndicator={
-                    initialValues?.name !== variableName &&
-                    !isModificationModeEnabled &&
-                    hasActiveOperation
-                  }
-                >
-                  {(() => {
-                    if (isModificationModeEnabled) {
-                      return null;
+    const form = useForm<VariableFormValues>();
+
+    return (
+      <StructuredList
+        headerColumns={[
+          {cellContent: 'Name', width: '35%'},
+          {cellContent: 'Value', width: '55%'},
+          {cellContent: '', width: '10%'},
+        ]}
+        headerSize="sm"
+        verticalCellPadding="var(--cds-spacing-02)"
+        label="Variable List"
+        dynamicRows={
+          isModificationModeEnabled ? (
+            <>
+              <OnLastVariableModificationRemoved />
+              <FieldArray
+                name="newVariables"
+                initialValue={
+                  addVariableModifications.length > 0
+                    ? addVariableModifications
+                    : undefined
+                }
+              >
+                {({fields}) => (
+                  <StructuredRows
+                    verticalCellPadding="var(--cds-spacing-02)"
+                    rows={fields
+                      .map((_, index) => {
+                        return {
+                          columns: [
+                            {
+                              cellContent: <div>new variable name</div>,
+                              width: '35%',
+                            },
+                            {
+                              cellContent: <div>new variable value</div>,
+                              width: '55%',
+                            },
+                            {
+                              cellContent: (
+                                <button
+                                  onClick={() => {
+                                    fields.remove(index);
+                                  }}
+                                >
+                                  remove new variable
+                                </button>
+                              ),
+                              width: '10%',
+                            },
+                          ],
+                        };
+                      })
+                      .reverse()}
+                  />
+                )}
+              </FieldArray>
+            </>
+          ) : undefined
+        }
+        rows={items.map(
+          ({
+            name: variableName,
+            value: variableValue,
+            hasActiveOperation,
+            isPreview,
+            id,
+          }) => ({
+            columns: [
+              {
+                cellContent: <VariableName>{variableName}</VariableName>,
+                width: '35%',
+              },
+              {
+                cellContent: isEditMode(variableName) ? (
+                  <ExistingVariableValue
+                    id={id}
+                    variableName={variableName}
+                    variableValue={
+                      variablesStore.getFullVariableValue(id) ?? variableValue
                     }
-
-                    if (!processInstanceDetailsStore.isRunning) {
-                      if (isPreview) {
-                        return <button>view full variable</button>;
+                    pauseValidation={
+                      isPreview &&
+                      variablesStore.getFullVariableValue(id) === undefined
+                    }
+                    onFocus={() => {
+                      if (
+                        isPreview &&
+                        variablesStore.getFullVariableValue(id) === undefined
+                      ) {
+                        variablesStore.fetchVariable({
+                          processInstanceId,
+                          variableId: id,
+                          onSuccess: (variable: VariableEntity) => {
+                            variablesStore.setFullVariableValue(
+                              id,
+                              variable.value
+                            );
+                          },
+                          onError: () => {
+                            notifications.displayNotification('error', {
+                              headline: 'Variable could not be fetched',
+                            });
+                          },
+                        });
+                      }
+                    }}
+                  />
+                ) : (
+                  <VariableValue>{variableValue}</VariableValue>
+                ),
+                width: '55%',
+              },
+              {
+                cellContent: (
+                  <Operations
+                    showLoadingIndicator={
+                      initialValues?.name !== variableName &&
+                      !isModificationModeEnabled &&
+                      hasActiveOperation
+                    }
+                  >
+                    {(() => {
+                      if (isModificationModeEnabled) {
+                        return null;
                       }
 
-                      return null;
-                    }
+                      if (!processInstanceDetailsStore.isRunning) {
+                        if (isPreview) {
+                          return <button>view full variable</button>;
+                        }
 
-                    if (initialValues?.name === variableName) {
-                      return (
-                        <EditButtons
-                          onExitEditMode={() =>
-                            variablesStore.deleteFullVariableValue(id)
-                          }
-                        />
-                      );
-                    }
+                        return null;
+                      }
 
-                    if (!hasActiveOperation) {
-                      return (
-                        <Restricted
-                          scopes={['write']}
-                          resourceBasedRestrictions={{
-                            scopes: ['UPDATE_PROCESS_INSTANCE'],
-                            permissions:
-                              processInstanceDetailsStore.getPermissions(),
-                          }}
-                          fallback={
-                            isPreview ? (
-                              <button>view full variable</button>
-                            ) : null
-                          }
-                        >
-                          <Button
-                            kind="ghost"
-                            size="sm"
-                            iconDescription={`Edit variable ${variableName}`}
-                            data-testid="edit-variable-button"
-                            disabled={
-                              variablesStore.state.loadingItemId !== null
+                      if (initialValues?.name === variableName) {
+                        return (
+                          <EditButtons
+                            onExitEditMode={() =>
+                              variablesStore.deleteFullVariableValue(id)
                             }
-                            onClick={async () => {
-                              let value = variableValue;
-                              if (isPreview) {
-                                const variable = await fetchFullVariable({
-                                  processInstanceId,
-                                  variableId: id,
-                                });
+                          />
+                        );
+                      }
 
-                                if (variable === null) {
-                                  return;
+                      if (!hasActiveOperation) {
+                        return (
+                          <Restricted
+                            scopes={['write']}
+                            resourceBasedRestrictions={{
+                              scopes: ['UPDATE_PROCESS_INSTANCE'],
+                              permissions:
+                                processInstanceDetailsStore.getPermissions(),
+                            }}
+                            fallback={
+                              isPreview ? (
+                                <button>view full variable</button>
+                              ) : null
+                            }
+                          >
+                            <Button
+                              kind="ghost"
+                              size="sm"
+                              iconDescription={`Edit variable ${variableName}`}
+                              data-testid="edit-variable-button"
+                              disabled={
+                                variablesStore.state.loadingItemId !== null
+                              }
+                              onClick={async () => {
+                                let value = variableValue;
+                                if (isPreview) {
+                                  const variable = await fetchFullVariable({
+                                    processInstanceId,
+                                    variableId: id,
+                                  });
+
+                                  if (variable === null) {
+                                    return;
+                                  }
+
+                                  variablesStore.setFullVariableValue(
+                                    id,
+                                    variable.value
+                                  );
+
+                                  value = variable.value;
                                 }
 
-                                variablesStore.setFullVariableValue(
-                                  id,
-                                  variable.value
-                                );
-
-                                value = variable.value;
-                              }
-
-                              form.reset({
-                                name: variableName,
-                                value,
-                              });
-                              form.change('value', value);
-                            }}
-                            hasIconOnly
-                            tooltipPosition="left"
-                            renderIcon={Edit}
-                          />
-                        </Restricted>
-                      );
-                    }
-                  })()}
-                </Operations>
-              ),
-              width: '10%',
-            },
-          ],
-        })
-      )}
-    />
-  );
-});
+                                form.reset({
+                                  name: variableName,
+                                  value,
+                                });
+                                form.change('value', value);
+                              }}
+                              hasIconOnly
+                              tooltipPosition="left"
+                              renderIcon={Edit}
+                            />
+                          </Restricted>
+                        );
+                      }
+                    })()}
+                  </Operations>
+                ),
+                width: '10%',
+              },
+            ],
+          })
+        )}
+      />
+    );
+  }
+);
 
 export {VariablesTable};
