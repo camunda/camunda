@@ -13,6 +13,16 @@ import {variablesStore} from 'modules/stores/variables';
 import {observer} from 'mobx-react';
 import {modificationsStore} from 'modules/stores/modifications';
 import {useMemo} from 'react';
+import {Restricted} from 'modules/components/Restricted';
+import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
+import {Button} from '@carbon/react';
+import {useNotifications} from 'modules/notifications';
+import {useForm, useFormState} from 'react-final-form';
+import {Operations} from './Operations';
+import {useProcessInstancePageParams} from '../../useProcessInstancePageParams';
+import {Edit} from '@carbon/react/icons';
+import {VariableFormValues} from 'modules/types/variables';
+import {EditButtons} from './EditButtons';
 
 type Props = {
   scopeId: string | null;
@@ -28,6 +38,33 @@ const VariablesTable: React.FC<Props> = observer(({scopeId}) => {
     () => modificationsStore.getAddVariableModifications(scopeId),
     [scopeId]
   );
+
+  const {processInstanceId = ''} = useProcessInstancePageParams();
+  const notifications = useNotifications();
+  const {initialValues} = useFormState();
+
+  function fetchFullVariable({
+    processInstanceId,
+    variableId,
+    enableLoading = true,
+  }: {
+    processInstanceId: ProcessInstanceEntity['id'];
+    variableId: VariableEntity['id'];
+    enableLoading?: boolean;
+  }) {
+    return variablesStore.fetchVariable({
+      processInstanceId,
+      variableId,
+      onError: () => {
+        notifications.displayNotification('error', {
+          headline: 'Variable could not be fetched',
+        });
+      },
+      enableLoading,
+    });
+  }
+
+  const form = useForm<VariableFormValues>();
 
   return (
     <StructuredList
@@ -83,19 +120,116 @@ const VariablesTable: React.FC<Props> = observer(({scopeId}) => {
           </>
         ) : undefined
       }
-      rows={items.map(({name: variableName, value: variableValue}) => ({
-        columns: [
-          {
-            cellContent: variableName,
-          },
-          {
-            cellContent: variableValue,
-          },
-          {
-            cellContent: 'operations',
-          },
-        ],
-      }))}
+      rows={items.map(
+        ({
+          name: variableName,
+          value: variableValue,
+          hasActiveOperation,
+          isPreview,
+          id,
+        }) => ({
+          columns: [
+            {
+              cellContent: variableName,
+            },
+            {
+              cellContent: variableValue,
+            },
+            {
+              cellContent: (
+                <Operations
+                  showLoadingIndicator={
+                    initialValues?.name !== variableName &&
+                    !isModificationModeEnabled &&
+                    hasActiveOperation
+                  }
+                >
+                  {(() => {
+                    if (isModificationModeEnabled) {
+                      return null;
+                    }
+
+                    if (!processInstanceDetailsStore.isRunning) {
+                      if (isPreview) {
+                        return <button>view full variable</button>;
+                      }
+
+                      return null;
+                    }
+
+                    if (initialValues?.name === variableName) {
+                      return (
+                        <EditButtons
+                          onExitEditMode={() =>
+                            variablesStore.deleteFullVariableValue(id)
+                          }
+                        />
+                      );
+                    }
+
+                    if (!hasActiveOperation) {
+                      return (
+                        <Restricted
+                          scopes={['write']}
+                          resourceBasedRestrictions={{
+                            scopes: ['UPDATE_PROCESS_INSTANCE'],
+                            permissions:
+                              processInstanceDetailsStore.getPermissions(),
+                          }}
+                          fallback={
+                            isPreview ? (
+                              <button>view full variable</button>
+                            ) : null
+                          }
+                        >
+                          <Button
+                            kind="ghost"
+                            size="sm"
+                            iconDescription={`Edit variable ${variableName}`}
+                            data-testid="edit-variable-button"
+                            disabled={
+                              variablesStore.state.loadingItemId !== null
+                            }
+                            onClick={async () => {
+                              let value = variableValue;
+                              if (isPreview) {
+                                const variable = await fetchFullVariable({
+                                  processInstanceId,
+                                  variableId: id,
+                                });
+
+                                if (variable === null) {
+                                  return;
+                                }
+
+                                variablesStore.setFullVariableValue(
+                                  id,
+                                  variable.value
+                                );
+
+                                value = variable.value;
+                              }
+
+                              form.reset({
+                                name: variableName,
+                                value,
+                              });
+                              form.change('value', value);
+                            }}
+                            hasIconOnly
+                            tooltipPosition="left"
+                            renderIcon={Edit}
+                          />
+                        </Restricted>
+                      );
+                    }
+                  })()}
+                </Operations>
+              ),
+            },
+          ],
+        })
+      )}
     />
   );
 });

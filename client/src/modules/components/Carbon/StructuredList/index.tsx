@@ -38,7 +38,14 @@ const StructuredRows: React.FC<Pick<Props, 'rows'>> = ({rows}) => {
         <StructuredListRow key={index}>
           {columns.map(({cellContent, width}, index) => {
             return (
-              <StructuredListCell key={index}>{cellContent}</StructuredListCell>
+              <StructuredListCell
+                key={index}
+                onFocus={(e) => {
+                  e.stopPropagation();
+                }}
+              >
+                {cellContent}
+              </StructuredListCell>
             );
           })}
         </StructuredListRow>
