@@ -233,12 +233,9 @@ final class SegmentWriter {
 
   private Either<SegmentFull, Integer> writeRecord(
       final long index, final long asqn, final int offset, final BufferWriter recordDataWriter) {
-    final var recordLength =
-        serializer.writeData(index, asqn, recordDataWriter, writeBuffer, offset);
-    if (recordLength.isLeft()) {
-      return Either.left(new SegmentFull("Not enough space to write record"));
-    }
-    return Either.right(recordLength.get());
+    return serializer
+        .writeData(index, asqn, recordDataWriter, writeBuffer, offset)
+        .mapLeft(e -> new SegmentFull("Not enough space to write record"));
   }
 
   private void invalidateNextEntry(final int position) {
