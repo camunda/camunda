@@ -2519,10 +2519,10 @@
   resolved "https://registry.yarnpkg.com/@types/mime/-/mime-3.0.1.tgz#5f8f2bca0a5863cb69bc0b0acd88c96cb1d4ae10"
   integrity sha512-Y4XFY5VJAuw0FgAqPNd6NNoV44jbq9Bz2L7Rh/J6jLTiHBSBJa9fxqQIvkIld4GsoDOcCbvzOUAbLPsSKKg+uA==
 
-"@types/mixpanel-browser@2.38.2":
-  version "2.38.2"
-  resolved "https://registry.yarnpkg.com/@types/mixpanel-browser/-/mixpanel-browser-2.38.2.tgz#fa2cae5bd2baccac1ff2046755b727ebf8635231"
-  integrity sha512-GNVQqnOth4Zh+7Kqc0xr+2m00wzvrNbw5Yly9yi4zsXTvzNxhn10d5j4F+peHmgaSp8B4ml2JSlO6YHTIDO9pA==
+"@types/mixpanel-browser@2.47.0":
+  version "2.47.0"
+  resolved "https://registry.yarnpkg.com/@types/mixpanel-browser/-/mixpanel-browser-2.47.0.tgz#820872282df8ec6f458aec1eedc55cc97d8a5135"
+  integrity sha512-CAMxjbBSmJz+zS8yaTvywvgdfL7ARhuABvON2THxIyczhIxtCAZT4h0LHfLUYUCg8gWux4xH/E5PTgMQR34DIQ==
 
 "@types/ms@*":
   version "0.7.31"
