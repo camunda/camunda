@@ -83,12 +83,12 @@ public final class TestStreams {
   private final ActorScheduler actorScheduler;
 
   private final CommandResponseWriter mockCommandResponseWriter;
-  private final StreamProcessorListener mockStreamProcessorListener;
   private final Map<String, LogContext> logContextMap = new HashMap<>();
   private final Map<String, ProcessorContext> streamContextMap = new HashMap<>();
   private boolean snapshotWasTaken = false;
   private StreamProcessorMode streamProcessorMode = StreamProcessorMode.PROCESSING;
   private int maxCommandsInBatch = StreamProcessorContext.DEFAULT_MAX_COMMANDS_IN_BATCH;
+  private ListLogStorage listLogStorage;
 
   public TestStreams(
       final TemporaryFolder dataDirectory,
@@ -107,8 +107,6 @@ public final class TestStreams {
     when(mockCommandResponseWriter.rejectionReason(any())).thenReturn(mockCommandResponseWriter);
     when(mockCommandResponseWriter.valueType(any())).thenReturn(mockCommandResponseWriter);
     when(mockCommandResponseWriter.valueWriter(any())).thenReturn(mockCommandResponseWriter);
-
-    mockStreamProcessorListener = mock(StreamProcessorListener.class);
   }
 
   public void withStreamProcessorMode(final StreamProcessorMode streamProcessorMode) {
@@ -124,7 +122,7 @@ public final class TestStreams {
   }
 
   public SynchronousLogStream createLogStream(final String name, final int partitionId) {
-    final var listLogStorage = new ListLogStorage();
+    listLogStorage = new ListLogStorage();
     return createLogStream(
         name,
         partitionId,
@@ -249,7 +247,6 @@ public final class TestStreams {
     final String logName = stream.getLogName();
 
     final var streamProcessorListeners = new ArrayList<StreamProcessorListener>();
-    streamProcessorListeners.add(mockStreamProcessorListener);
     streamProcessorListenerOpt.ifPresent(streamProcessorListeners::add);
 
     final var builder =
@@ -292,6 +289,10 @@ public final class TestStreams {
   public void resumeProcessing(final String streamName) {
     streamContextMap.get(streamName).streamProcessor.resumeProcessing();
     LOG.info("Resume processing for stream {}", streamName);
+  }
+
+  public void resetLog() {
+    listLogStorage.reset();
   }
 
   public void snapshot(final String streamName) {

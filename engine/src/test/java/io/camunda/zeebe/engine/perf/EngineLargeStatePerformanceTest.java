@@ -33,9 +33,11 @@ import org.openjdk.jmh.annotations.Warmup;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-@Warmup(iterations = 10, time = 1, timeUnit = TimeUnit.SECONDS)
+@Warmup(iterations = 100, time = 1, timeUnit = TimeUnit.SECONDS)
 @Measurement(iterations = 50, time = 1, timeUnit = TimeUnit.SECONDS)
-@Fork(value = 1)
+@Fork(
+    value = 1,
+    jvmArgs = {"-Xmx4g", "-Xms4g"})
 @BenchmarkMode(Mode.Throughput)
 @OutputTimeUnit(TimeUnit.SECONDS)
 @State(org.openjdk.jmh.annotations.Scope.Benchmark)
@@ -46,12 +48,13 @@ public class EngineLargeStatePerformanceTest {
   private long count;
   private ProcessInstanceClient processInstanceClient;
   private TestEngine.TestContext testContext;
+  private TestEngine singlePartitionEngine;
 
   @Setup
   public void setup() throws Throwable {
     testContext = createTestContext();
 
-    final var singlePartitionEngine = TestEngine.createSinglePartitionEngine(testContext);
+    singlePartitionEngine = TestEngine.createSinglePartitionEngine(testContext);
 
     setupState(singlePartitionEngine);
   }
@@ -70,13 +73,20 @@ public class EngineLargeStatePerformanceTest {
 
     processInstanceClient = singlePartitionEngine.createProcessInstanceClient();
 
-    for (int i = 0; i < 200_000; i++) {
+    final int maxInstanceCount = 200_000;
+    LOG.info("Starting {} process instances, please hold the line...", maxInstanceCount);
+    for (int i = 0; i < maxInstanceCount; i++) {
       processInstanceClient.ofBpmnProcessId("process").create();
       count++;
       RecordingExporter.reset();
+
+      if ((i % 10000) == 0) {
+        LOG.info("\t{} process instances already started.", i);
+        singlePartitionEngine.reset();
+      }
     }
 
-    LOG.info("Started {} process instances", count);
+    LOG.info("Started {} process instances.", count);
   }
 
   private TestEngine.TestContext createTestContext() throws IOException {
@@ -87,8 +97,8 @@ public class EngineLargeStatePerformanceTest {
     // scheduler
     final var builder =
         ActorScheduler.newActorScheduler()
-            .setCpuBoundActorThreadCount(2)
-            .setIoBoundActorThreadCount(2)
+            .setCpuBoundActorThreadCount(1)
+            .setIoBoundActorThreadCount(1)
             .setActorClock(new DefaultActorClock());
 
     final var actorScheduler = builder.build();
@@ -115,7 +125,7 @@ public class EngineLargeStatePerformanceTest {
             .getFirst();
 
     count++;
-    RecordingExporter.reset();
+    singlePartitionEngine.reset();
     return task;
   }
 }

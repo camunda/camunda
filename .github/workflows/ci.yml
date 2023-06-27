@@ -241,6 +241,39 @@ jobs:
         if: failure()
         with:
           name: Property Tests
+  performance-tests:
+    name: Performance Tests
+    runs-on: [ self-hosted, linux, amd64, "16" ]
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v3
+      - uses: ./.github/actions/setup-zeebe
+        with:
+          go: false
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+      - uses: ./.github/actions/build-zeebe
+        with:
+          go: false
+      - name: Create build output log file
+        run: echo "BUILD_OUTPUT_FILE_PATH=$(mktemp)" >> $GITHUB_ENV
+      - name: Maven Test Build
+        run: >
+          ./mvnw -B --no-snapshot-updates
+          -P include-performance-tests
+          -D skipChecks
+          test
+          | tee "${BUILD_OUTPUT_FILE_PATH}"
+      - name: Duplicate Test Check
+        uses: ./.github/actions/check-duplicate-tests
+        with:
+          buildOutputFilePath: ${{ env.BUILD_OUTPUT_FILE_PATH }}
+      - name: Upload test artifacts
+        uses: ./.github/actions/collect-test-artifacts
+        if: failure()
+        with:
+          name: Performance Tests
   go-client:
     name: Go client tests
     runs-on: ubuntu-latest
@@ -416,6 +449,7 @@ jobs:
       - unit-tests
       - smoke-tests
       - property-tests
+      - performance-tests
       - go-client
       - codeql
       - java-checks
@@ -435,6 +469,7 @@ jobs:
       - unit-tests
       - smoke-tests
       - property-tests
+      - performance-tests
       - go-client
     if: always()
     steps:

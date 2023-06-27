@@ -58,11 +58,11 @@ import io.camunda.zeebe.protocol.record.value.deployment.DecisionRecordValue;
 import io.camunda.zeebe.protocol.record.value.deployment.DecisionRequirementsRecordValue;
 import io.camunda.zeebe.protocol.record.value.deployment.Process;
 import java.time.Duration;
+import java.util.Collection;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Spliterator;
 import java.util.Spliterators;
-import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
@@ -73,7 +73,8 @@ import java.util.stream.StreamSupport;
 public final class RecordingExporter implements Exporter {
   public static final long DEFAULT_MAX_WAIT_TIME = Duration.ofSeconds(5).toMillis();
 
-  private static final List<Record<?>> RECORDS = new CopyOnWriteArrayList<>();
+  private static final ConcurrentSkipListMap<Integer, Record<?>> RECORDS =
+      new ConcurrentSkipListMap<Integer, Record<?>>();
   private static final Lock LOCK = new ReentrantLock();
   private static final Condition IS_EMPTY = LOCK.newCondition();
 
@@ -106,7 +107,7 @@ public final class RecordingExporter implements Exporter {
   public void export(final Record<?> record) {
     LOCK.lock();
     try {
-      RECORDS.add(record.copyOf());
+      RECORDS.put(RECORDS.size(), record.copyOf());
       IS_EMPTY.signal();
       if (controller != null) { // the engine tests do not open the exporter
         controller.updateLastExportedRecordPosition(record.getPosition());
@@ -116,8 +117,8 @@ public final class RecordingExporter implements Exporter {
     }
   }
 
-  public static List<Record<?>> getRecords() {
-    return RECORDS;
+  public static Collection<Record<?>> getRecords() {
+    return RECORDS.values();
   }
 
   public static void reset() {
