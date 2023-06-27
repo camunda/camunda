@@ -15,45 +15,57 @@
  */
 package io.atomix.raft.protocol;
 
-public final class ReplicatableJournalRecord implements ReplicatableRaftRecord {
+import java.util.Arrays;
 
-  private final long index;
-  private final long checksum;
-  private final byte[] serializedJournalRecord;
-  private final long term;
+public record ReplicatableJournalRecord(
+    long term, long index, long checksum, byte[] serializedJournalRecord)
+    implements ReplicatableRaftRecord {
 
-  public ReplicatableJournalRecord(
-      final long term,
-      final long index,
-      final long checksum,
-      final byte[] serializedJournalRecord) {
-    this.index = index;
-    this.checksum = checksum;
-    this.serializedJournalRecord = serializedJournalRecord;
-    this.term = term;
+  // Due to having and array member, it is recommended to override equals, hashcode and toString
+  @Override
+  public boolean equals(final Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+
+    final ReplicatableJournalRecord that = (ReplicatableJournalRecord) o;
+
+    if (term != that.term) {
+      return false;
+    }
+    if (index != that.index) {
+      return false;
+    }
+    if (checksum != that.checksum) {
+      return false;
+    }
+    return Arrays.equals(serializedJournalRecord, that.serializedJournalRecord);
   }
 
   @Override
-  public long index() {
-    return index;
+  public int hashCode() {
+    int result = (int) (term ^ (term >>> 32));
+    result = 31 * result + (int) (index ^ (index >>> 32));
+    result = 31 * result + (int) (checksum ^ (checksum >>> 32));
+    result = 31 * result + Arrays.hashCode(serializedJournalRecord);
+    return result;
   }
 
-  /**
-   * Returns the term for this record
-   *
-   * @return term
-   */
   @Override
-  public long term() {
-    return term;
-  }
-
-  public long checksum() {
-    return checksum;
-  }
-
-  public byte[] serializedJournalRecord() {
-    return serializedJournalRecord;
+  public String toString() {
+    return "ReplicatableJournalRecord{"
+        + "term="
+        + term
+        + ", index="
+        + index
+        + ", checksum="
+        + checksum
+        + ", serializedJournalRecord="
+        + Arrays.toString(serializedJournalRecord)
+        + '}';
   }
 
   /**
