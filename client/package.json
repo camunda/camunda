@@ -3,7 +3,7 @@
   "version": "8.2.0-SNAPSHOT",
   "private": true,
   "dependencies": {
-    "@bpmn-io/element-template-icon-renderer": "0.4.0",
+    "@bpmn-io/element-template-icon-renderer": "0.5.1",
     "@camunda-cloud/common-ui": "0.0.18-rc13",
     "@camunda-cloud/common-ui-react": "0.0.18-rc13",
     "@camunda/camunda-composite-components": "0.0.40",
@@ -14,7 +14,7 @@
     "@loadable/component": "^5.15.3",
     "@monaco-editor/react": "4.5.0",
     "@types/loadable__component": "^5.13.4",
-    "bpmn-js": "10.3.0",
+    "bpmn-js": "13.1.0",
     "bpmn-moddle": "8.0.1",
     "date-fns": "2.29.3",
     "dmn-js": "13.0.0",
