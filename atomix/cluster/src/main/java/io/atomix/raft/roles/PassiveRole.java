@@ -31,7 +31,7 @@ import io.atomix.raft.protocol.RaftResponse;
 import io.atomix.raft.protocol.ReconfigureRequest;
 import io.atomix.raft.protocol.ReconfigureResponse;
 import io.atomix.raft.protocol.ReplicatableJournalRecord;
-import io.atomix.raft.protocol.ReplicatableRecord;
+import io.atomix.raft.protocol.ReplicatableRaftRecord;
 import io.atomix.raft.protocol.VoteRequest;
 import io.atomix.raft.protocol.VoteResponse;
 import io.atomix.raft.snapshot.impl.SnapshotChunkImpl;
@@ -504,7 +504,7 @@ public class PassiveRole extends InactiveRole {
       }
 
       // Iterate through entries and append them.
-      for (final ReplicatableRecord entry : request.entries()) {
+      for (final ReplicatableRaftRecord entry : request.entries()) {
         final long index = ++lastLogIndex;
 
         // Get the last entry written to the log by the writer.
@@ -548,7 +548,7 @@ public class PassiveRole extends InactiveRole {
 
   private boolean tryToAppend(
       final CompletableFuture<AppendResponse> future,
-      final ReplicatableRecord entry,
+      final ReplicatableRaftRecord entry,
       final long index,
       final IndexedRaftLogEntry lastEntry) {
     boolean failedToAppend = false;
@@ -579,7 +579,7 @@ public class PassiveRole extends InactiveRole {
 
   private boolean appendEntry(
       final CompletableFuture<AppendResponse> future,
-      final ReplicatableRecord entry,
+      final ReplicatableRaftRecord entry,
       final long index,
       final IndexedRaftLogEntry lastEntry) {
     // If the last entry index isn't the previous index, throw an exception because
@@ -595,7 +595,7 @@ public class PassiveRole extends InactiveRole {
 
   private boolean replaceExistingEntry(
       final CompletableFuture<AppendResponse> future,
-      final ReplicatableRecord entry,
+      final ReplicatableRaftRecord entry,
       final long index) {
 
     try (final RaftLogReader reader = raft.getLog().openUncommittedReader()) {
@@ -629,7 +629,7 @@ public class PassiveRole extends InactiveRole {
    */
   private boolean appendEntry(
       final long index,
-      final ReplicatableRecord entry,
+      final ReplicatableRaftRecord entry,
       final CompletableFuture<AppendResponse> future) {
     try {
       final IndexedRaftLogEntry indexed;

@@ -7,7 +7,7 @@
  */
 package io.atomix.raft.protocol;
 
-public interface ReplicatableRecord {
+public interface ReplicatableRaftRecord {
   long index();
 
   long term();

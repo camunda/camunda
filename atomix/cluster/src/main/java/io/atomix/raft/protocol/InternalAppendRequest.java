@@ -17,4 +17,4 @@ public record InternalAppendRequest(
     long prevLogIndex,
     long prevLogTerm,
     long commitIndex,
-    List<? extends ReplicatableRecord> entries) {}
+    List<? extends ReplicatableRaftRecord> entries) {}

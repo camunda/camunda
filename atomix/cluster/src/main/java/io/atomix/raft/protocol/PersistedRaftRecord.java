@@ -19,7 +19,7 @@ import io.camunda.zeebe.journal.JournalRecord;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
-public class PersistedRaftRecord implements JournalRecord, ReplicatableRecord {
+public class PersistedRaftRecord implements JournalRecord, ReplicatableRaftRecord {
 
   private final long index;
   private final long asqn;

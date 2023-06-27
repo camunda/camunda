@@ -15,7 +15,7 @@
  */
 package io.atomix.raft.protocol;
 
-public final class ReplicatableJournalRecord implements ReplicatableRecord {
+public final class ReplicatableJournalRecord implements ReplicatableRaftRecord {
 
   private final long index;
   private final long checksum;
