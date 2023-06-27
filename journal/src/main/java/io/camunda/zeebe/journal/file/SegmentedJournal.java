@@ -85,6 +85,13 @@ public final class SegmentedJournal implements Journal {
   }
 
   @Override
+  public JournalRecord append(final long checksum, final byte[] serializedRecord) {
+    try (final var ignored = journalMetrics.observeAppendLatency()) {
+      return writer.append(checksum, serializedRecord);
+    }
+  }
+
+  @Override
   public void deleteAfter(final long indexExclusive) {
     journalMetrics.observeSegmentTruncation(
         () -> {
@@ -178,13 +185,6 @@ public final class SegmentedJournal implements Journal {
   @Override
   public boolean isOpen() {
     return open;
-  }
-
-  @Override
-  public void append(final long checksum, final byte[] serializedRecord) {
-    try (final var ignored = journalMetrics.observeAppendLatency()) {
-      writer.append(checksum, serializedRecord);
-    }
   }
 
   @Override

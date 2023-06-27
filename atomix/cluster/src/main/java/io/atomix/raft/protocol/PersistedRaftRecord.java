@@ -19,7 +19,7 @@ import io.camunda.zeebe.journal.JournalRecord;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
-public class PersistedRaftRecord implements JournalRecord {
+public class PersistedRaftRecord implements JournalRecord, ReplicatableRaftRecord {
 
   private final long index;
   private final long asqn;
@@ -67,20 +67,11 @@ public class PersistedRaftRecord implements JournalRecord {
   }
 
   /**
-   * Returns the approximate size needed when serializing this class. The exact size depends on the
-   * serializer.
-   *
-   * @return approximate size
-   */
-  public int approximateSize() {
-    return serializedRaftLogEntry.length + Long.BYTES + Long.BYTES + Long.BYTES;
-  }
-
-  /**
    * Returns the term for this record
    *
    * @return term
    */
+  @Override
   public long term() {
     return term;
   }

@@ -190,6 +190,10 @@ final class SegmentWriter {
     }
 
     writeMetadata(startPosition, frameLength, recordLength, checksum);
+
+    final int nextEntryOffset = startPosition + frameLength + metadataLength + recordLength;
+    invalidateNextEntry(nextEntryOffset);
+
     updateLastWrittenEntry(startPosition, frameLength, metadataLength, recordLength);
     FrameUtil.writeVersion(buffer, startPosition);
 
@@ -229,14 +233,9 @@ final class SegmentWriter {
 
   private Either<SegmentFull, Integer> writeRecord(
       final long index, final long asqn, final int offset, final BufferWriter recordDataWriter) {
-    final var recordLength =
-        serializer.writeData(index, asqn, recordDataWriter, writeBuffer, offset);
-    if (recordLength.isLeft()) {
-      return Either.left(new SegmentFull("Not enough space to write record"));
-    }
-    final int nextEntryOffset = offset + recordLength.get();
-    invalidateNextEntry(nextEntryOffset);
-    return Either.right(recordLength.get());
+    return serializer
+        .writeData(index, asqn, recordDataWriter, writeBuffer, offset)
+        .mapLeft(e -> new SegmentFull("Not enough space to write record"));
   }
 
   private void invalidateNextEntry(final int position) {

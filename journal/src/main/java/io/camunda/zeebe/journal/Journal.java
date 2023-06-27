@@ -62,7 +62,7 @@ public interface Journal extends AutoCloseable {
    * @param checksum checksum of serializedRecord
    * @param serializedRecord serializedRecord
    */
-  void append(long checksum, byte[] serializedRecord);
+  JournalRecord append(long checksum, byte[] serializedRecord);
 
   /**
    * Delete all records after indexExclusive. After a call to this method, {@link

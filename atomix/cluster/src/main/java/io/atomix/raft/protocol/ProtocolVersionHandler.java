@@ -9,15 +9,12 @@ package io.atomix.raft.protocol;
 
 public final class ProtocolVersionHandler {
 
-  private static final int APPENDREQUEST_WITH_RAFTRECORDS = 1;
-
   private ProtocolVersionHandler() {
     // To hide the public constructor
   }
 
   public static InternalAppendRequest transform(final AppendRequest request) {
     return new InternalAppendRequest(
-        APPENDREQUEST_WITH_RAFTRECORDS,
         request.term(),
         request.leader(),
         request.prevLogIndex(),
@@ -28,7 +25,6 @@ public final class ProtocolVersionHandler {
 
   public static InternalAppendRequest transform(final VersionedAppendRequest request) {
     return new InternalAppendRequest(
-        request.version(),
         request.term(),
         request.leader(),
         request.prevLogIndex(),
