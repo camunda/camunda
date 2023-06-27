@@ -267,7 +267,7 @@ final class StreamProcessorReplayTest {
   }
 
   @RegressionTest("https://github.com/camunda/zeebe/issues/13101")
-  public void shouldNotApplyErrorEventOnReplay() throws Exception {
+  public void shouldNotReplayErrorEventAppliedInSnapshot() throws Exception {
     // given
     final var processorWhichFails = setupProcessorWhichFailsOnProcessing();
     setupOnErrorReactionForProcessor(processorWhichFails);
