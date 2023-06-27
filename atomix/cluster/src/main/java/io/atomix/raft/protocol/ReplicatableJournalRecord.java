@@ -63,6 +63,7 @@ public final class ReplicatableJournalRecord implements ReplicatableRaftRecord {
    * @return approximate size
    */
   public int approximateSize() {
-    return serializedJournalRecord.length + Long.BYTES + Long.BYTES;
+    // serializedJournalRecord + index + term + checksum
+    return serializedJournalRecord.length + (3 * Long.BYTES);
   }
 }
