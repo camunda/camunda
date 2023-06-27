@@ -7,6 +7,10 @@
       "helm-camunda-io": "https://helm.camunda.io"
     }
   },
+  "baseBranches": [
+    "master",
+    "/^stable\\/8\\..*/"
+  ],
   "packageRules": [
     {
       "groupName": "definitelyTyped",
