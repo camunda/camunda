@@ -71,7 +71,6 @@ final class MigratedStreamProcessorReplayTest {
     // then
     verifyProcessingErrorLifecycle(processorWhichFails);
     // we shouldn't replay any events - due to snapshot
-    // we shouldn't replay any events - due to snapshot
     verify(processorWhichFails, never()).replay(any());
   }
 
