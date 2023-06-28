@@ -15,9 +15,8 @@ import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessorFa
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.EventApplier;
-import io.camunda.zeebe.engine.state.ProcessingDbState;
-import io.camunda.zeebe.engine.state.ScheduledTaskDbState;
 import io.camunda.zeebe.engine.state.appliers.EventAppliers;
+import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.state.processing.DbBannedInstanceState;
 import io.camunda.zeebe.protocol.impl.record.value.error.ErrorRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
@@ -50,7 +49,7 @@ public class Engine implements RecordProcessor {
 
   private EventApplier eventApplier;
   private RecordProcessorMap recordProcessorMap;
-  private ProcessingDbState processingState;
+  private MutableProcessingState processingState;
 
   private final ErrorRecord errorRecord = new ErrorRecord();
 
@@ -70,29 +69,14 @@ public class Engine implements RecordProcessor {
 
   @Override
   public void init(final RecordProcessorContext recordProcessorContext) {
-    final var zeebeDb = recordProcessorContext.getZeebeDb();
-    processingState =
-        new ProcessingDbState(
-            recordProcessorContext.getPartitionId(),
-            zeebeDb,
-            recordProcessorContext.getTransactionContext(),
-            recordProcessorContext.getKeyGenerator());
-    final var scheduledTaskDbState = new ScheduledTaskDbState(zeebeDb, zeebeDb.createContext());
-
-    eventApplier = new EventAppliers().registerEventAppliers(processingState);
-
+    eventApplier = new EventAppliers();
     writers = new Writers(resultBuilderMutex, eventApplier);
 
     final var typedProcessorContext =
-        new TypedRecordProcessorContextImpl(
-            recordProcessorContext.getPartitionId(),
-            recordProcessorContext.getScheduleService(),
-            processingState,
-            scheduledTaskDbState,
-            writers,
-            recordProcessorContext.getPartitionCommandSender(),
-            config);
+        new TypedRecordProcessorContextImpl(recordProcessorContext, writers, config);
+    processingState = typedProcessorContext.getProcessingState();
 
+    ((EventAppliers) eventApplier).registerEventAppliers(processingState);
     final TypedRecordProcessors typedRecordProcessors =
         typedRecordProcessorFactory.createProcessors(typedProcessorContext);
 
