@@ -94,6 +94,12 @@ public final class CommandDistributionRecord extends UnifiedRecordValue
     if (valueType == ValueType.NULL_VAL) {
       return null;
     }
+
+    final var storedCommandValue = commandValueProperty.getValue();
+    if (storedCommandValue.isEmpty()) {
+      return storedCommandValue;
+    }
+
     final var concrecteRecordValueSupplier = RECORDS_BY_TYPE.get(valueType);
     if (concrecteRecordValueSupplier == null) {
       throw new IllegalStateException(
@@ -104,11 +110,10 @@ public final class CommandDistributionRecord extends UnifiedRecordValue
     final var concreteRecordValue = concrecteRecordValueSupplier.get();
 
     // write the record value property's content into a buffer
-    final var storedRecordValue = commandValueProperty.getValue();
     final var recordValueBuffer = new UnsafeBuffer(0, 0);
-    final int encodedLength = storedRecordValue.getEncodedLength();
+    final int encodedLength = storedCommandValue.getEncodedLength();
     recordValueBuffer.wrap(new byte[encodedLength]);
-    storedRecordValue.write(recordValueWriter.wrap(recordValueBuffer, 0));
+    storedCommandValue.write(recordValueWriter.wrap(recordValueBuffer, 0));
 
     // read the value back from the buffer into the concrete record value
     concreteRecordValue.wrap(recordValueBuffer);
