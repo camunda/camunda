@@ -45,7 +45,7 @@
     <version.graphql.tools>13.0.3</version.graphql.tools>
     <version.graphql-java>20.1</version.graphql-java>
     <version.graphql-java.scalars>20.0</version.graphql-java.scalars>
-    <version.snakeyaml>1.32</version.snakeyaml>
+    <version.snakeyaml>2.0</version.snakeyaml>
     <version.commons-text>1.10.0</version.commons-text>
     <version.failsafe>2.4.4</version.failsafe>
     <version.netty>4.1.92.Final</version.netty>
@@ -133,6 +133,12 @@
         <groupId>org.elasticsearch</groupId>
         <artifactId>elasticsearch</artifactId>
         <version>${version.elasticsearch}</version>
+        <exclusions>
+          <exclusion>
+            <groupId>org.yaml</groupId>
+            <artifactId>snakeyaml</artifactId>
+          </exclusion>
+        </exclusions>
       </dependency>
 
       <dependency>
