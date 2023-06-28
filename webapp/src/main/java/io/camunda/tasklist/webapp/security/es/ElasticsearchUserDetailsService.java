@@ -34,8 +34,6 @@ public class ElasticsearchUserDetailsService implements UserDetailsService {
   private static final Logger LOGGER =
       LoggerFactory.getLogger(ElasticsearchUserDetailsService.class);
 
-  private static final String ACT_USERNAME = "act", ACT_PASSWORD = ACT_USERNAME;
-  private static final String READ_ONLY_USER = "view";
   @Autowired private UserStorage userStorage;
 
   @Autowired private TasklistProperties tasklistProperties;
@@ -50,15 +48,25 @@ public class ElasticsearchUserDetailsService implements UserDetailsService {
       final String userId = tasklistProperties.getUserId();
       final String displayName = tasklistProperties.getDisplayName();
       final String password = tasklistProperties.getPassword();
+
+      final String readerUserId = tasklistProperties.getReaderUserId();
+      final String readerDisplayName = tasklistProperties.getReaderDisplayName();
+      final String readerPassword = tasklistProperties.getReaderPassword();
+
+      final String operatorUserId = tasklistProperties.getOperatorUserId();
+      final String operatorDisplayName = tasklistProperties.getOperatorDisplayName();
+      final String operatorPassword = tasklistProperties.getOperatorPassword();
+
       final List<String> roles = tasklistProperties.getRoles();
       if (!userExists(userId)) {
         addUserWith(userId, displayName, password, roles);
       }
-      if (!userExists(READ_ONLY_USER)) {
-        addUserWith(READ_ONLY_USER, READ_ONLY_USER, READ_ONLY_USER, List.of(Role.READER.name()));
+      if (!userExists(readerUserId)) {
+        addUserWith(readerUserId, readerDisplayName, readerPassword, List.of(Role.READER.name()));
       }
-      if (!userExists(ACT_USERNAME)) {
-        addUserWith(ACT_USERNAME, ACT_USERNAME, ACT_PASSWORD, List.of(Role.OPERATOR.name()));
+      if (!userExists(operatorUserId)) {
+        addUserWith(
+            operatorUserId, operatorDisplayName, operatorPassword, List.of(Role.OPERATOR.name()));
       }
     }
   }

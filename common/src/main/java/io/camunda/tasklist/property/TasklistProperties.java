@@ -40,6 +40,13 @@ public class TasklistProperties {
   private String userId = "demo";
   private String displayName = "demo";
   private String password = "demo";
+  private String operatorUserId = "act";
+  private String operatorPassword = "act";
+  private String operatorDisplayName = "act";
+  private String readerUserId = "view";
+  private String readerPassword = "view";
+  private String readerDisplayName = "view";
+
   private List<String> roles = List.of("OWNER");
 
   /** Maximum size of batch operation. */
@@ -302,6 +309,60 @@ public class TasklistProperties {
 
   public TasklistProperties setFeatureFlag(FeatureFlagProperties featureFlag) {
     this.featureFlag = featureFlag;
+    return this;
+  }
+
+  public String getOperatorUserId() {
+    return operatorUserId;
+  }
+
+  public TasklistProperties setOperatorUserId(String operatorUserId) {
+    this.operatorUserId = operatorUserId;
+    return this;
+  }
+
+  public String getOperatorPassword() {
+    return operatorPassword;
+  }
+
+  public TasklistProperties setOperatorPassword(String operatorPassword) {
+    this.operatorPassword = operatorPassword;
+    return this;
+  }
+
+  public String getOperatorDisplayName() {
+    return operatorDisplayName;
+  }
+
+  public TasklistProperties setOperatorDisplayName(String operatorDisplayName) {
+    this.operatorDisplayName = operatorDisplayName;
+    return this;
+  }
+
+  public String getReaderUserId() {
+    return readerUserId;
+  }
+
+  public TasklistProperties setReaderUserId(String readerUserId) {
+    this.readerUserId = readerUserId;
+    return this;
+  }
+
+  public String getReaderPassword() {
+    return readerPassword;
+  }
+
+  public TasklistProperties setReaderPassword(String readerPassword) {
+    this.readerPassword = readerPassword;
+    return this;
+  }
+
+  public String getReaderDisplayName() {
+    return readerDisplayName;
+  }
+
+  public TasklistProperties setReaderDisplayName(String readerDisplayName) {
+    this.readerDisplayName = readerDisplayName;
     return this;
   }
 }
