@@ -15,6 +15,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
+import io.camunda.zeebe.engine.state.appliers.EventAppliers;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
@@ -52,9 +53,8 @@ public class SubscriptionCommandSenderTest {
     subscriptionCommandSender =
         new SubscriptionCommandSender(SAME_PARTITION, mockInterPartitionCommandSender);
     mockProcessingResultBuilder = mock(ProcessingResultBuilder.class);
-    final var writers =
-        new Writers(
-            () -> mockProcessingResultBuilder, (key, intent, recordValue, recordVersion) -> {});
+    final var mockEventAppliers = mock(EventAppliers.class);
+    final var writers = new Writers(() -> mockProcessingResultBuilder, mockEventAppliers);
     subscriptionCommandSender.setWriters(writers);
   }
 

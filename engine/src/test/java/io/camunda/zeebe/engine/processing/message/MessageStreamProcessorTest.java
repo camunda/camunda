@@ -23,6 +23,7 @@ import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
+import io.camunda.zeebe.engine.state.appliers.EventAppliers;
 import io.camunda.zeebe.engine.util.StreamProcessorRule;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageRecord;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageSubscriptionRecord;
@@ -55,9 +56,8 @@ public final class MessageStreamProcessorTest {
   public void setup() {
     mockInterpartitionCommandSender = mock(InterPartitionCommandSender.class);
     final var mockProcessingResultBuilder = mock(ProcessingResultBuilder.class);
-    final var writers =
-        new Writers(
-            () -> mockProcessingResultBuilder, (key, intent, recordValue, recordVersion) -> {});
+    final var mockEventAppliers = mock(EventAppliers.class);
+    final var writers = new Writers(() -> mockProcessingResultBuilder, mockEventAppliers);
     spySubscriptionCommandSender =
         spy(new SubscriptionCommandSender(1, mockInterpartitionCommandSender));
     spySubscriptionCommandSender.setWriters(writers);
