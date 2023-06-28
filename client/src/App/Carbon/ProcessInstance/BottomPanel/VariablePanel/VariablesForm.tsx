@@ -68,7 +68,9 @@ const VariablesForm: React.FC<
         />
       )}
       <VariablesContainer>
-        <Variables />
+        <Variables
+          isVariableModificationAllowed={isVariableModificationAllowed.get()}
+        />
       </VariablesContainer>
     </Form>
   );

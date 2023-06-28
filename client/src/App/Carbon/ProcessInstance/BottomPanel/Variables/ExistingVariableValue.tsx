@@ -18,6 +18,7 @@ import {variablesStore} from 'modules/stores/variables';
 import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
 import {Popup} from '@carbon/react/icons';
 import {LoadingTextfield} from './LoadingTextField';
+import {Layer} from '@carbon/react';
 
 type Props = {
   id?: string;
@@ -108,7 +109,7 @@ const ExistingVariableValue: React.FC<Props> = observer(
         : variableValue;
 
     return (
-      <>
+      <Layer>
         <Field
           name={fieldName}
           initialValue={initialValue}
@@ -194,7 +195,7 @@ const ExistingVariableValue: React.FC<Props> = observer(
             }}
           />
         )}
-      </>
+      </Layer>
     );
   }
 );

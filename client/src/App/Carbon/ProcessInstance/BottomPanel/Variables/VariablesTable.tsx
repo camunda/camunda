@@ -7,7 +7,7 @@
 
 import {StructuredList, VariableName, VariableValue} from './styled';
 import {StructuredRows} from 'modules/components/Carbon/StructuredList';
-import {OnLastVariableModificationRemoved} from 'App/ProcessInstance/BottomPanel/Variables/OnLastVariableModificationRemoved';
+import {OnLastVariableModificationRemoved} from './OnLastVariableModificationRemoved';
 import {FieldArray} from 'react-final-form-arrays';
 import {variablesStore} from 'modules/stores/variables';
 import {observer} from 'mobx-react';
@@ -24,6 +24,9 @@ import {Edit} from '@carbon/react/icons';
 import {VariableFormValues} from 'modules/types/variables';
 import {EditButtons} from './EditButtons';
 import {ExistingVariableValue} from './ExistingVariableValue';
+import {Name} from './NewVariableModification/Name';
+import {Value} from './NewVariableModification/Value';
+import {Operation} from './NewVariableModification/Operation';
 
 type Props = {
   scopeId: string | null;
@@ -100,26 +103,35 @@ const VariablesTable: React.FC<Props> = observer(
                   <StructuredRows
                     verticalCellPadding="var(--cds-spacing-02)"
                     rows={fields
-                      .map((_, index) => {
+                      .map((variableName, index) => {
                         return {
                           columns: [
                             {
-                              cellContent: <div>new variable name</div>,
+                              cellContent: (
+                                <Name
+                                  variableName={variableName}
+                                  scopeId={scopeId}
+                                />
+                              ),
                               width: '35%',
                             },
                             {
-                              cellContent: <div>new variable value</div>,
+                              cellContent: (
+                                <Value
+                                  variableName={variableName}
+                                  scopeId={scopeId}
+                                />
+                              ),
                               width: '55%',
                             },
                             {
                               cellContent: (
-                                <button
-                                  onClick={() => {
+                                <Operation
+                                  variableName={variableName}
+                                  onRemove={() => {
                                     fields.remove(index);
                                   }}
-                                >
-                                  remove new variable
-                                </button>
+                                />
                               ),
                               width: '10%',
                             },
