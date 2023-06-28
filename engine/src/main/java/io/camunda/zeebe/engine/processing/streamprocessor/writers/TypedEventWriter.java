@@ -16,8 +16,15 @@ public interface TypedEventWriter {
   /**
    * Append a follow up event to the result builder.
    *
-   * <p>If multiple versions of a record exists, consider using {@link #appendFollowUpEvent(long,
-   * Intent, RecordValue, int)} instead.
+   * <p>Different versions of event records may be applied by different {@link
+   * io.camunda.zeebe.engine.state.EventApplier EventApplier}s, leading to differing state changes.
+   * This allows fixing bugs in event appliers because every event applier must produce the same
+   * state changes for an event both when writing it and when replaying it, even on newer versions
+   * of Zeebe.
+   *
+   * <p>This method always uses the latest available {@link
+   * io.camunda.zeebe.engine.state.EventApplier EventApplier}. If a specific needs to be used,
+   * consider using {@link #appendFollowUpEvent(long, Intent, RecordValue, int)} instead.
    *
    * @param key the key of the event
    * @param intent the intent of the event
