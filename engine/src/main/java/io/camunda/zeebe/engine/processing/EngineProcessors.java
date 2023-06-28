@@ -28,7 +28,6 @@ import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.processing.timer.DueDateTimerChecker;
 import io.camunda.zeebe.engine.state.KeyGenerator;
-import io.camunda.zeebe.engine.state.ScheduledTaskDbState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.immutable.ScheduledTaskState;
 import io.camunda.zeebe.engine.state.migration.DbMigrationController;
