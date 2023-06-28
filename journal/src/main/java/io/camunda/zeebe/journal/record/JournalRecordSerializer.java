@@ -42,6 +42,14 @@ public interface JournalRecordSerializer {
       MutableDirectBuffer writeBuffer,
       int offset);
 
+  Either<BufferOverflowException, Integer> writeDataAtVersion(
+      int version,
+      final long index,
+      final long asqn,
+      BufferWriter recordDataWriter,
+      MutableDirectBuffer writeBuffer,
+      int offset);
+
   /**
    * Writes a {@link RecordMetadata} to the buffer.
    *

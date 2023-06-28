@@ -38,6 +38,18 @@ public final class SBESerializer implements JournalRecordSerializer {
       final BufferWriter recordDataWriter,
       final MutableDirectBuffer writeBuffer,
       final int offset) {
+    return writeDataAtVersion(
+        recordEncoder.sbeSchemaVersion(), index, asqn, recordDataWriter, writeBuffer, offset);
+  }
+
+  @Override
+  public Either<BufferOverflowException, Integer> writeDataAtVersion(
+      final int version,
+      final long index,
+      final long asqn,
+      final BufferWriter recordDataWriter,
+      final MutableDirectBuffer writeBuffer,
+      final int offset) {
     final int entryLength = recordDataWriter.getLength();
     final int serializedLength = getSerializedLength(entryLength);
     if (offset + serializedLength > writeBuffer.capacity()) {
@@ -49,7 +61,7 @@ public final class SBESerializer implements JournalRecordSerializer {
         .blockLength(recordEncoder.sbeBlockLength())
         .templateId(recordEncoder.sbeTemplateId())
         .schemaId(recordEncoder.sbeSchemaId())
-        .version(recordEncoder.sbeSchemaVersion());
+        .version(version);
 
     recordEncoder.wrap(writeBuffer, offset + headerEncoder.encodedLength());
 

@@ -112,12 +112,27 @@ final class SegmentWriter {
     return lastAsqn;
   }
 
+  // Used to append records received from a leader that are at version 8.2.x or older.
   Either<SegmentFull, JournalRecord> append(final JournalRecord record) {
-    return append(
-        record.index(),
-        record.asqn(),
-        new DirectBufferWriter().wrap(record.data()),
-        record.checksum());
+    final var entryIndex = record.index();
+    final var asqn = record.asqn();
+    final var recordDataWriter = new DirectBufferWriter().wrap(record.data());
+    final var expectedChecksum = record.checksum();
+
+    verifyAsqnIsIncreasing(asqn);
+
+    final int startPosition = buffer.position();
+    final int frameLength = FrameUtil.getLength();
+    final int metadataLength = serializer.getMetadataLength();
+
+    // Write using sbe old version because the checksum is calculated based on that version. This is
+    // to handle all append requests coming from leaders that are at versions 8.2.x or older.
+    final var writeResult =
+        writeRecordAtOldVersion(
+            entryIndex, asqn, startPosition + frameLength + metadataLength, recordDataWriter);
+
+    return tryFinalizeAppend(
+        expectedChecksum, startPosition, frameLength, metadataLength, writeResult);
   }
 
   Either<SegmentFull, JournalRecord> append(final long asqn, final BufferWriter recordDataWriter) {
@@ -139,15 +154,9 @@ final class SegmentWriter {
     final var writeResult =
         writeRecord(
             entryIndex, asqn, startPosition + frameLength + metadataLength, recordDataWriter);
-    if (writeResult.isLeft()) {
-      buffer.position(startPosition);
-      return Either.left(writeResult.getLeft());
-    }
 
-    final int recordLength = writeResult.get();
-
-    finalizeAppend(expectedChecksum, startPosition, frameLength, metadataLength, recordLength);
-    return Either.right(lastEntry);
+    return tryFinalizeAppend(
+        expectedChecksum, startPosition, frameLength, metadataLength, writeResult);
   }
 
   Either<SegmentFull, JournalRecord> append(
@@ -186,6 +195,26 @@ final class SegmentWriter {
               "The record index is not sequential. Expected the next index to be %d, but the record to append has index %d",
               nextIndex, entryIndex));
     }
+  }
+
+  private Either<SegmentFull, JournalRecord> tryFinalizeAppend(
+      final Long expectedChecksum,
+      final int startPosition,
+      final int frameLength,
+      final int metadataLength,
+      final Either<SegmentFull, Integer> writeResult) {
+    return writeResult
+        .map(
+            recordLength -> {
+              finalizeAppend(
+                  expectedChecksum, startPosition, frameLength, metadataLength, recordLength);
+              return lastEntry;
+            })
+        .mapLeft(
+            segmentFull -> {
+              buffer.position(startPosition);
+              return segmentFull;
+            });
   }
 
   /** Writes record metadata and header. Update lastWrittenEntry. Update JournalIndex */
@@ -254,6 +283,13 @@ final class SegmentWriter {
       final long index, final long asqn, final int offset, final BufferWriter recordDataWriter) {
     return serializer
         .writeData(index, asqn, recordDataWriter, writeBuffer, offset)
+        .mapLeft(e -> new SegmentFull("Not enough space to write record"));
+  }
+
+  private Either<SegmentFull, Integer> writeRecordAtOldVersion(
+      final long index, final long asqn, final int offset, final BufferWriter recordDataWriter) {
+    return serializer
+        .writeDataAtVersion(1, index, asqn, recordDataWriter, writeBuffer, offset)
         .mapLeft(e -> new SegmentFull("Not enough space to write record"));
   }
 
