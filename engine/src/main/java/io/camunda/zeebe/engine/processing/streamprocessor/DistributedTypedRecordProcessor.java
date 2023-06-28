@@ -30,7 +30,7 @@ public interface DistributedTypedRecordProcessor<T extends UnifiedRecordValue>
     if (command.isCommandDistributed()) {
       processDistributedCommand(command);
     } else {
-      processCommand(command);
+      processNewCommand(command);
     }
   }
 
@@ -39,12 +39,12 @@ public interface DistributedTypedRecordProcessor<T extends UnifiedRecordValue>
    *
    * @param command the not yet distributed command to process
    */
-  default void processCommand(final TypedRecord<T> command) {}
+  void processNewCommand(final TypedRecord<T> command);
 
   /**
    * Process a command that has been distributed. Be aware to not distribute it again!
    *
    * @param command the already distributed command to process
    */
-  default void processDistributedCommand(final TypedRecord<T> command) {}
+  void processDistributedCommand(final TypedRecord<T> command);
 }

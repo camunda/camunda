@@ -51,7 +51,7 @@ public class ResourceDeletionProcessor
   }
 
   @Override
-  public void processCommand(final TypedRecord<ResourceDeletionRecord> command) {
+  public void processNewCommand(final TypedRecord<ResourceDeletionRecord> command) {
     final var value = command.getValue();
     deleteResources(command);
 

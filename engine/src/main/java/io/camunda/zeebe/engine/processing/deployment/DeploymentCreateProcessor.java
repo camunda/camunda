@@ -92,7 +92,7 @@ public final class DeploymentCreateProcessor
   }
 
   @Override
-  public void processCommand(final TypedRecord<DeploymentRecord> command) {
+  public void processNewCommand(final TypedRecord<DeploymentRecord> command) {
     transformAndDistributeDeployment(command);
     // manage the top-level start event subscriptions except for timers
     startEventSubscriptionManager.tryReOpenStartEventSubscription(command.getValue(), stateWriter);
