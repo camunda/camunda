@@ -80,12 +80,12 @@ final class SegmentDescriptor {
     directBuffer.wrap(buffer);
 
     version = directBuffer.getByte(0);
-    if (version > NO_META_VERSION) {
+    if (version > NO_META_VERSION && version <= CUR_VERSION) {
       readV2Descriptor(directBuffer);
     } else if (version == NO_META_VERSION) {
       readV1Descriptor(directBuffer);
     } else {
-      throw new CorruptedJournalException(
+      throw new UnknownVersionException(
           String.format(
               "Expected version to be one [%d %d] but read %d instead.",
               NO_META_VERSION, CUR_VERSION, version));
@@ -229,7 +229,7 @@ final class SegmentDescriptor {
 
   /** The number of bytes required to read and write a descriptor of a given version. */
   static int getEncodingLengthForVersion(final byte version) {
-    if (version == 0 || version > VERSION_LENGTHS.length) {
+    if (version <= 0 || version > VERSION_LENGTHS.length) {
       throw new UnknownVersionException(
           String.format(
               "Expected version byte to be one [%d %d] but got %d instead.",

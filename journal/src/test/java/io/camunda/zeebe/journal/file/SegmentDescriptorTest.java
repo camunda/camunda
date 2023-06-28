@@ -25,6 +25,8 @@ import java.nio.ByteBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 class SegmentDescriptorTest {
 
@@ -51,14 +53,16 @@ class SegmentDescriptorTest {
     assertThat(descriptorRead.length()).isEqualTo(SegmentDescriptor.getEncodingLength());
   }
 
-  @Test
-  void shouldValidateDescriptorHeader() {
+  @ParameterizedTest
+  @ValueSource(ints = {-1, 0, 100})
+  void shouldValidateDescriptorHeader(final int invalidVersion) {
     // given
     final ByteBuffer buffer = ByteBuffer.allocate(SegmentDescriptor.getEncodingLength());
+    buffer.put(0, (byte) invalidVersion);
 
     // when/then
     assertThatThrownBy(() -> new SegmentDescriptor(buffer))
-        .isInstanceOf(CorruptedJournalException.class);
+        .isInstanceOf(UnknownVersionException.class);
   }
 
   @Test
