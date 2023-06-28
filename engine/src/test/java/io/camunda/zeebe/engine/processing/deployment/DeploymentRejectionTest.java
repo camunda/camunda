@@ -25,6 +25,7 @@ import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
 import io.camunda.zeebe.protocol.record.value.DeploymentRecordValue;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
+import io.camunda.zeebe.util.ByteValue;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -35,7 +36,6 @@ import org.junit.Test;
 
 public class DeploymentRejectionTest {
   @ClassRule public static final EngineRule ENGINE = EngineRule.singlePartition();
-  private static final String TOO_LARGE_DEPLOYMENT_RESOURCE = "/processes/too_large_process.bpmn";
 
   @Rule
   public final RecordingExporterTestWatcher recordingExporterTestWatcher =
@@ -216,7 +216,12 @@ public class DeploymentRejectionTest {
     final Record<DeploymentRecordValue> deploymentRejection =
         ENGINE
             .deployment()
-            .withXmlClasspathResource(TOO_LARGE_DEPLOYMENT_RESOURCE)
+            .withXmlResource(
+                Bpmn.createExecutableProcess("PROCESS")
+                    .startEvent()
+                    .documentation(
+                        "x".repeat((int) (ByteValue.ofMegabytes(4) - ByteValue.ofKilobytes(2))))
+                    .done())
             .expectRejection()
             .deploy();
 
