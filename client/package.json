@@ -91,7 +91,7 @@
     "source-map-explorer": "2.5.3",
     "testcafe": "2.5.0",
     "ts-toolbelt": "9.6.0",
-    "typescript": "5.0.4",
+    "typescript": "5.1.5",
     "zeebe-node": "8.1.2",
     "event-source-polyfill": "1.0.31"
   },
