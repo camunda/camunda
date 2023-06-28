@@ -7,20 +7,23 @@
  */
 package io.camunda.zeebe.engine.processing.streamprocessor;
 
+import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.ProcessingDbState;
 import io.camunda.zeebe.engine.state.ScheduledTaskDbState;
+import io.camunda.zeebe.engine.state.immutable.ScheduledTaskState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.stream.api.InterPartitionCommandSender;
 import io.camunda.zeebe.stream.api.scheduling.ProcessingScheduleService;
+import java.util.function.Supplier;
 
 public class TypedRecordProcessorContextImpl implements TypedRecordProcessorContext {
 
   private final int partitionId;
   private final ProcessingScheduleService scheduleService;
   private final ProcessingDbState processingState;
-  private final ScheduledTaskDbState scheduledTaskDbState;
+  private final ZeebeDb zeebeDb;
   private final Writers writers;
   private final InterPartitionCommandSender partitionCommandSender;
   private final EngineConfiguration config;
@@ -29,14 +32,14 @@ public class TypedRecordProcessorContextImpl implements TypedRecordProcessorCont
       final int partitionId,
       final ProcessingScheduleService scheduleService,
       final ProcessingDbState processingState,
-      final ScheduledTaskDbState scheduledTaskDbState,
+      final ZeebeDb zeebeDb,
       final Writers writers,
       final InterPartitionCommandSender partitionCommandSender,
       final EngineConfiguration config) {
     this.partitionId = partitionId;
     this.scheduleService = scheduleService;
     this.processingState = processingState;
-    this.scheduledTaskDbState = scheduledTaskDbState;
+    this.zeebeDb = zeebeDb;
     this.writers = writers;
     this.partitionCommandSender = partitionCommandSender;
     this.config = config;
@@ -68,8 +71,8 @@ public class TypedRecordProcessorContextImpl implements TypedRecordProcessorCont
   }
 
   @Override
-  public ScheduledTaskDbState getScheduledTaskDbState() {
-    return scheduledTaskDbState;
+  public Supplier<ScheduledTaskState> getScheduledTaskStateFactory() {
+    return () -> new ScheduledTaskDbState(zeebeDb, zeebeDb.createContext());
   }
 
   @Override

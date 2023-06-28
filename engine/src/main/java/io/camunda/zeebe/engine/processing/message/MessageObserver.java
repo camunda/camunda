@@ -8,11 +8,12 @@
 package io.camunda.zeebe.engine.processing.message;
 
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
-import io.camunda.zeebe.engine.state.immutable.MessageState;
+import io.camunda.zeebe.engine.state.immutable.ScheduledTaskState;
 import io.camunda.zeebe.engine.state.mutable.MutablePendingMessageSubscriptionState;
 import io.camunda.zeebe.stream.api.ReadonlyStreamProcessorContext;
 import io.camunda.zeebe.stream.api.StreamProcessorLifecycleAware;
 import java.time.Duration;
+import java.util.function.Supplier;
 
 public final class MessageObserver implements StreamProcessorLifecycleAware {
 
@@ -20,21 +21,21 @@ public final class MessageObserver implements StreamProcessorLifecycleAware {
   public static final Duration SUBSCRIPTION_CHECK_INTERVAL = Duration.ofSeconds(30);
 
   private final SubscriptionCommandSender subscriptionCommandSender;
-  private final MessageState messageState;
+  private final Supplier<ScheduledTaskState> scheduledTaskStateFactory;
   private final MutablePendingMessageSubscriptionState pendingState;
   private final int messagesTtlCheckerBatchLimit;
   private final Duration messagesTtlCheckerInterval;
   private final boolean enableMessageTtlCheckerAsync;
 
   public MessageObserver(
-      final MessageState messageState,
+      final Supplier<ScheduledTaskState> scheduledTaskStateFactory,
       final MutablePendingMessageSubscriptionState pendingState,
       final SubscriptionCommandSender subscriptionCommandSender,
       final Duration messagesTtlCheckerInterval,
       final int messagesTtlCheckerBatchLimit,
       final boolean enableMessageTtlCheckerAsync) {
     this.subscriptionCommandSender = subscriptionCommandSender;
-    this.messageState = messageState;
+    this.scheduledTaskStateFactory = scheduledTaskStateFactory;
     this.pendingState = pendingState;
     this.messagesTtlCheckerInterval = messagesTtlCheckerInterval;
     this.messagesTtlCheckerBatchLimit = messagesTtlCheckerBatchLimit;
@@ -43,7 +44,13 @@ public final class MessageObserver implements StreamProcessorLifecycleAware {
 
   @Override
   public void onRecovered(final ReadonlyStreamProcessorContext context) {
+    scheduleMessageTtlChecker(context);
+    schedulePendingMessageSubscriptionChecker(context);
+  }
+
+  private void scheduleMessageTtlChecker(final ReadonlyStreamProcessorContext context) {
     final var scheduleService = context.getScheduleService();
+    final var messageState = scheduledTaskStateFactory.get().getMessageState();
     final var timeToLiveChecker =
         new MessageTimeToLiveChecker(
             messagesTtlCheckerInterval,
@@ -56,7 +63,11 @@ public final class MessageObserver implements StreamProcessorLifecycleAware {
     } else {
       scheduleService.runDelayed(messagesTtlCheckerInterval, timeToLiveChecker);
     }
+  }
 
+  private void schedulePendingMessageSubscriptionChecker(
+      final ReadonlyStreamProcessorContext context) {
+    final var scheduleService = context.getScheduleService();
     final var pendingSubscriptionChecker =
         new PendingMessageSubscriptionChecker(
             subscriptionCommandSender, pendingState, SUBSCRIPTION_TIMEOUT.toMillis());
