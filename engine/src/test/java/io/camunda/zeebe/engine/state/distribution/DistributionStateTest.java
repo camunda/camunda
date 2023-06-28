@@ -268,7 +268,7 @@ public final class DistributionStateTest {
         .setPartitionId(1)
         .setValueType(ValueType.DEPLOYMENT)
         .setIntent(DeploymentIntent.CREATE)
-        .setRecordValue(createDeploymentRecord());
+        .setCommandValue(createDeploymentRecord());
   }
 
   private DeploymentRecord createDeploymentRecord() {
@@ -294,6 +294,8 @@ public final class DistributionStateTest {
     return deploymentRecord;
   }
 
+  record PendingDistribution(long key, CommandDistributionRecord record) {}
+
   /** Little helper class, to simplify test setup of the State */
   final class StateHelper {
     private void addPendingDistributionForPartitions(
@@ -305,6 +307,4 @@ public final class DistributionStateTest {
                   distributionState.addPendingDistribution(pendingDistribution.key, partitionId));
     }
   }
-
-  record PendingDistribution(long key, CommandDistributionRecord record) {}
 }

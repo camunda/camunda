@@ -62,7 +62,7 @@ public final class CommandDistributionBehavior {
             .setPartitionId(currentPartitionId)
             .setValueType(command.getValueType())
             .setIntent(command.getIntent())
-            .setRecordValue(command.getValue());
+            .setCommandValue(command.getValue());
 
     stateWriter.appendFollowUpEvent(
         distributionKey, CommandDistributionIntent.STARTED, distributionRecord);

@@ -47,8 +47,8 @@ public final class CommandDistributionRecord extends UnifiedRecordValue
   private final IntegerProperty intentProperty = new IntegerProperty("intent", Intent.NULL_VAL);
   private final ObjectProperty<UnifiedRecordValue> commandValueProperty =
       new ObjectProperty<>("commandValue", new UnifiedRecordValue());
-  private final MsgPackWriter recordValueWriter = new MsgPackWriter();
-  private final MsgPackReader recordValueReader = new MsgPackReader();
+  private final MsgPackWriter commandValueWriter = new MsgPackWriter();
+  private final MsgPackReader commandValueReader = new MsgPackReader();
 
   public CommandDistributionRecord() {
     declareProperty(partitionIdProperty)
@@ -61,7 +61,7 @@ public final class CommandDistributionRecord extends UnifiedRecordValue
     setPartitionId(other.getPartitionId())
         .setValueType(other.getValueType())
         .setIntent(other.getIntent())
-        .setRecordValue(other.getCommandValue());
+        .setCommandValue(other.getCommandValue());
     return this;
   }
 
@@ -100,24 +100,40 @@ public final class CommandDistributionRecord extends UnifiedRecordValue
       return storedCommandValue;
     }
 
-    final var concrecteRecordValueSupplier = RECORDS_BY_TYPE.get(valueType);
-    if (concrecteRecordValueSupplier == null) {
+    final var concrecteCommandValueSupplier = RECORDS_BY_TYPE.get(valueType);
+    if (concrecteCommandValueSupplier == null) {
       throw new IllegalStateException(
           "Expected to read the record value, but it's type `"
               + valueType.name()
               + "` is unknown. Please add it to CommandDistributionRecord.RECORDS_BY_TYPE");
     }
-    final var concreteRecordValue = concrecteRecordValueSupplier.get();
+    final var concreteCommandValue = concrecteCommandValueSupplier.get();
 
-    // write the record value property's content into a buffer
-    final var recordValueBuffer = new UnsafeBuffer(0, 0);
+    // write the command value property's content into a buffer
+    final var commandValueBuffer = new UnsafeBuffer(0, 0);
     final int encodedLength = storedCommandValue.getEncodedLength();
-    recordValueBuffer.wrap(new byte[encodedLength]);
-    storedCommandValue.write(recordValueWriter.wrap(recordValueBuffer, 0));
+    commandValueBuffer.wrap(new byte[encodedLength]);
+    storedCommandValue.write(commandValueWriter.wrap(commandValueBuffer, 0));
 
-    // read the value back from the buffer into the concrete record value
-    concreteRecordValue.wrap(recordValueBuffer);
-    return concreteRecordValue;
+    // read the value back from the buffer into the concrete command value
+    concreteCommandValue.wrap(commandValueBuffer);
+    return concreteCommandValue;
+  }
+
+  public CommandDistributionRecord setCommandValue(final UnifiedRecordValue commandValue) {
+    if (commandValue == null) {
+      commandValueProperty.reset();
+      return this;
+    }
+
+    // inspired by IndexedRecord.setValue
+    final var valueBuffer = new UnsafeBuffer(0, 0);
+    final int encodedLength = commandValue.getLength();
+    valueBuffer.wrap(new byte[encodedLength]);
+
+    commandValue.write(valueBuffer, 0);
+    commandValueProperty.getValue().read(commandValueReader.wrap(valueBuffer, 0, encodedLength));
+    return this;
   }
 
   public CommandDistributionRecord setIntent(final Intent intent) {
@@ -132,22 +148,6 @@ public final class CommandDistributionRecord extends UnifiedRecordValue
 
   public CommandDistributionRecord setPartitionId(final int partitionId) {
     partitionIdProperty.setValue(partitionId);
-    return this;
-  }
-
-  public CommandDistributionRecord setRecordValue(final UnifiedRecordValue recordValue) {
-    if (recordValue == null) {
-      commandValueProperty.reset();
-      return this;
-    }
-
-    // inspired by IndexedRecord.setValue
-    final var valueBuffer = new UnsafeBuffer(0, 0);
-    final int encodedLength = recordValue.getLength();
-    valueBuffer.wrap(new byte[encodedLength]);
-
-    recordValue.write(valueBuffer, 0);
-    commandValueProperty.getValue().read(recordValueReader.wrap(valueBuffer, 0, encodedLength));
     return this;
   }
 }

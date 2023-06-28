@@ -1259,7 +1259,7 @@ final class JsonSerializableToJsonTest {
                   .setPartitionId(1)
                   .setValueType(ValueType.DEPLOYMENT)
                   .setIntent(DeploymentIntent.CREATE)
-                  .setRecordValue(deploymentRecord);
+                  .setCommandValue(deploymentRecord);
             },
         """
           {
