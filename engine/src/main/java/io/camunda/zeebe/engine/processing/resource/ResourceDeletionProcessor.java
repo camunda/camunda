@@ -53,7 +53,7 @@ public class ResourceDeletionProcessor
   @Override
   public void processNewCommand(final TypedRecord<ResourceDeletionRecord> command) {
     final var value = command.getValue();
-    deleteResources(command);
+    tryDeleteResources(command);
 
     final long eventKey = keyGenerator.nextKey();
     stateWriter.appendFollowUpEvent(eventKey, ResourceDeletionIntent.DELETED, value);
@@ -65,7 +65,7 @@ public class ResourceDeletionProcessor
   @Override
   public void processDistributedCommand(final TypedRecord<ResourceDeletionRecord> command) {
     final var value = command.getValue();
-    deleteResources(command);
+    tryDeleteResources(command);
     stateWriter.appendFollowUpEvent(command.getKey(), ResourceDeletionIntent.DELETED, value);
     commandDistributionBehavior.acknowledgeCommand(command.getKey(), command);
   }
@@ -83,7 +83,7 @@ public class ResourceDeletionProcessor
     return ProcessingError.UNEXPECTED_ERROR;
   }
 
-  private void deleteResources(final TypedRecord<ResourceDeletionRecord> command) {
+  private void tryDeleteResources(final TypedRecord<ResourceDeletionRecord> command) {
     final var value = command.getValue();
     final var drgOptional = decisionState.findDecisionRequirementsByKey(value.getResourceKey());
     if (drgOptional.isPresent()) {
