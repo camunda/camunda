@@ -20,7 +20,6 @@ import io.camunda.zeebe.protocol.record.intent.ResourceDeletionIntent;
 import io.camunda.zeebe.protocol.record.value.CommandDistributionRecordValue;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import org.junit.Rule;
 import org.junit.Test;
@@ -50,14 +49,10 @@ public class ResourceDeletionMultiPartitionTest {
     engine.resourceDeletion().withResourceKey(resourceKey).delete();
 
     // then
-    final var index = new AtomicInteger();
     assertThat(
             RecordingExporter.records()
                 .withPartitionId(1)
-                .limit(
-                    r ->
-                        r.getIntent().equals(ResourceDeletionIntent.DELETED)
-                            && index.incrementAndGet() == 3))
+                .limitByCount(r -> r.getIntent().equals(CommandDistributionIntent.FINISHED), 2))
         .extracting(
             Record::getIntent,
             Record::getRecordType,
