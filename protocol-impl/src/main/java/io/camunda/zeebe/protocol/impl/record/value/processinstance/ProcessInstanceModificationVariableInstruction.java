@@ -19,9 +19,9 @@ import java.util.Map;
 import org.agrona.DirectBuffer;
 
 @JsonIgnoreProperties({
-  /* 'encodedLength' is a technical field needed for MsgPack and inherited from ObjectValue; it has
-  no purpose in exported JSON records*/
-  "encodedLength"
+  /* These fields are inherited from ObjectValue; there have no purpose in exported JSON records*/
+  "encodedLength",
+  "empty"
 })
 public final class ProcessInstanceModificationVariableInstruction extends ObjectValue
     implements ProcessInstanceModificationVariableInstructionValue {
