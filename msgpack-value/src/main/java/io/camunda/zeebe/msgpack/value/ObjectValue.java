@@ -194,4 +194,8 @@ public class ObjectValue extends BaseValue {
     }
     return length;
   }
+
+  public boolean isEmpty() {
+    return declaredProperties.isEmpty() && undeclaredProperties.isEmpty();
+  }
 }

@@ -7,7 +7,8 @@
  */
 package io.camunda.zeebe.engine.processing.resource;
 
-import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
+import io.camunda.zeebe.engine.processing.common.CommandDistributionBehavior;
+import io.camunda.zeebe.engine.processing.streamprocessor.DistributedTypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
@@ -26,59 +27,70 @@ import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 
-public class ResourceDeletionProcessor implements TypedRecordProcessor<ResourceDeletionRecord> {
-
-  public static final boolean RESOURCE_DELETION_IMPLEMENTED = false;
-  private static final String ERROR_MESSAGE_NOT_IMPLEMENTED =
-      """
-          Resource deletion has not been fully implemented yet. Stay posted on the latest Camunda \
-          releases to know when this feature will become available.""";
-  private static final String ERROR_MESSAGE_RESOURCE_NOT_FOUND =
-      "Expected to delete resource but no resource found with key `%d`";
+public class ResourceDeletionProcessor
+    implements DistributedTypedRecordProcessor<ResourceDeletionRecord> {
 
   private final StateWriter stateWriter;
   private final TypedResponseWriter responseWriter;
   private final TypedRejectionWriter rejectionWriter;
   private final KeyGenerator keyGenerator;
   private final DecisionState decisionState;
+  private final CommandDistributionBehavior commandDistributionBehavior;
 
   public ResourceDeletionProcessor(
-      final Writers writers, final KeyGenerator keyGenerator, final DecisionState decisionState) {
+      final Writers writers,
+      final KeyGenerator keyGenerator,
+      final DecisionState decisionState,
+      final CommandDistributionBehavior commandDistributionBehavior) {
     stateWriter = writers.state();
     responseWriter = writers.response();
     rejectionWriter = writers.rejection();
     this.keyGenerator = keyGenerator;
     this.decisionState = decisionState;
+    this.commandDistributionBehavior = commandDistributionBehavior;
   }
 
   @Override
-  public void processRecord(final TypedRecord<ResourceDeletionRecord> command) {
-    // Reject resource deletions for now, as the feature is not yet ready for release in Zeebe 8.2
-    // When enabling again please don't forget to un-ignore the tests.
-    if (!RESOURCE_DELETION_IMPLEMENTED) {
-      rejectionWriter.appendRejection(
-          command, RejectionType.PROCESSING_ERROR, ERROR_MESSAGE_NOT_IMPLEMENTED);
-      responseWriter.writeRejectionOnCommand(
-          command, RejectionType.PROCESSING_ERROR, ERROR_MESSAGE_NOT_IMPLEMENTED);
-      return;
-    }
-
+  public void processNewCommand(final TypedRecord<ResourceDeletionRecord> command) {
     final var value = command.getValue();
-
-    final var drgOptional = decisionState.findDecisionRequirementsByKey(value.getResourceKey());
-    if (drgOptional.isPresent()) {
-      deleteDecisionRequirements(drgOptional.get());
-    } else {
-      final var rejectionReason =
-          ERROR_MESSAGE_RESOURCE_NOT_FOUND.formatted(value.getResourceKey());
-      rejectionWriter.appendRejection(command, RejectionType.NOT_FOUND, rejectionReason);
-      responseWriter.writeRejectionOnCommand(command, RejectionType.NOT_FOUND, rejectionReason);
-      return;
-    }
+    tryDeleteResources(command);
 
     final long eventKey = keyGenerator.nextKey();
     stateWriter.appendFollowUpEvent(eventKey, ResourceDeletionIntent.DELETED, value);
     responseWriter.writeEventOnCommand(eventKey, ResourceDeletionIntent.DELETED, value, command);
+
+    commandDistributionBehavior.distributeCommand(eventKey, command);
+  }
+
+  @Override
+  public void processDistributedCommand(final TypedRecord<ResourceDeletionRecord> command) {
+    final var value = command.getValue();
+    tryDeleteResources(command);
+    stateWriter.appendFollowUpEvent(command.getKey(), ResourceDeletionIntent.DELETED, value);
+    commandDistributionBehavior.acknowledgeCommand(command.getKey(), command);
+  }
+
+  @Override
+  public ProcessingError tryHandleError(
+      final TypedRecord<ResourceDeletionRecord> command, final Throwable error) {
+    if (error instanceof NoSuchResourceException exception) {
+      rejectionWriter.appendRejection(command, RejectionType.NOT_FOUND, exception.getMessage());
+      responseWriter.writeRejectionOnCommand(
+          command, RejectionType.NOT_FOUND, exception.getMessage());
+      return ProcessingError.EXPECTED_ERROR;
+    }
+
+    return ProcessingError.UNEXPECTED_ERROR;
+  }
+
+  private void tryDeleteResources(final TypedRecord<ResourceDeletionRecord> command) {
+    final var value = command.getValue();
+    final var drgOptional = decisionState.findDecisionRequirementsByKey(value.getResourceKey());
+    if (drgOptional.isPresent()) {
+      deleteDecisionRequirements(drgOptional.get());
+    } else {
+      throw new NoSuchResourceException(value.getResourceKey());
+    }
   }
 
   private void deleteDecisionRequirements(final PersistedDecisionRequirements drg) {
@@ -112,5 +124,14 @@ public class ResourceDeletionProcessor implements TypedRecordProcessor<ResourceD
                 BufferUtil.bufferAsString(persistedDecision.getDecisionRequirementsId()))
             .setDecisionRequirementsKey(persistedDecision.getDecisionRequirementsKey());
     stateWriter.appendFollowUpEvent(keyGenerator.nextKey(), DecisionIntent.DELETED, decisionRecord);
+  }
+
+  private static final class NoSuchResourceException extends IllegalStateException {
+    private static final String ERROR_MESSAGE_RESOURCE_NOT_FOUND =
+        "Expected to delete resource but no resource found with key `%d`";
+
+    private NoSuchResourceException(final long resourceKey) {
+      super(String.format(ERROR_MESSAGE_RESOURCE_NOT_FOUND, resourceKey));
+    }
   }
 }

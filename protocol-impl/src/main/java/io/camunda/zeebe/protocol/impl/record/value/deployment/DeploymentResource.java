@@ -10,12 +10,19 @@ package io.camunda.zeebe.protocol.impl.record.value.deployment;
 import static io.camunda.zeebe.util.buffer.BufferUtil.wrapArray;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import io.camunda.zeebe.msgpack.UnpackedObject;
 import io.camunda.zeebe.msgpack.property.BinaryProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import org.agrona.DirectBuffer;
 
+@JsonIgnoreProperties({
+  /* These fields are inherited from ObjectValue; there have no purpose in exported JSON records*/
+  "encodedLength",
+  "length",
+  "empty"
+})
 public final class DeploymentResource extends UnpackedObject
     implements io.camunda.zeebe.protocol.record.value.deployment.DeploymentResource {
 
@@ -62,18 +69,6 @@ public final class DeploymentResource extends UnpackedObject
   @JsonIgnore
   public DirectBuffer getResourceNameBuffer() {
     return resourceNameProp.getValue();
-  }
-
-  @Override
-  @JsonIgnore
-  public int getLength() {
-    return super.getLength();
-  }
-
-  @Override
-  @JsonIgnore
-  public int getEncodedLength() {
-    return super.getEncodedLength();
   }
 
   public DeploymentResource setResource(

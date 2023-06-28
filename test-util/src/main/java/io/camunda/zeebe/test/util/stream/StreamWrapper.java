@@ -13,6 +13,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Optional;
 import java.util.Spliterator;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.BinaryOperator;
@@ -52,12 +53,25 @@ public abstract class StreamWrapper<T, S extends StreamWrapper<T, S>> implements
    * short-circuiting operation; limits the stream to the first element that fulfills the predicate
    */
   public S limit(final Predicate<T> predicate) {
+    return limitByCount(predicate, 1);
+  }
+
+  /**
+   * short-circuiting operation; limits the stream until a given count of elements has matched the
+   * predicate.
+   */
+  public S limitByCount(final Predicate<T> predicate, final int count) {
     // looks a bit hacky but we can't use takeWhile(predicate.negate()) here
     // because this doesn't include the element that fulfills the predicate
     // and the underlying record iterator blocks on hasNext()
 
     final var records = new ArrayList<T>();
-    wrappedStream.peek(records::add).filter(predicate).findFirst();
+    final var index = new AtomicInteger();
+    wrappedStream
+        .peek(records::add)
+        .filter(record -> predicate.test(record) && index.getAndIncrement() < count)
+        .limit(count)
+        .count();
     return supply(records.stream());
   }
 

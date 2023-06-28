@@ -15,4 +15,8 @@
  */
 package io.camunda.zeebe.protocol.record;
 
+import org.immutables.value.Value;
+
+@Value.Immutable
+@ImmutableProtocol(builder = ImmutableRecordValue.Builder.class)
 public interface RecordValue extends JsonSerializable {}

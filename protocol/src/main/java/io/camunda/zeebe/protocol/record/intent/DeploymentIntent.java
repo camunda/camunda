@@ -19,9 +19,16 @@ public enum DeploymentIntent implements Intent {
   CREATE((short) 0),
   CREATED((short) 1),
 
+  /**
+   * Intent related to distribution are deprecated as of 8.3.0. A generalised way of distributing
+   * commands has been introduced in this version. The DeploymentCreateProcessor is now using this
+   * new way. This intent only remains to stay backwards compatible.
+   */
+  @Deprecated
   DISTRIBUTE((short) 2),
+  @Deprecated
   DISTRIBUTED((short) 3),
-
+  @Deprecated
   FULLY_DISTRIBUTED((short) 4);
 
   private final short value;

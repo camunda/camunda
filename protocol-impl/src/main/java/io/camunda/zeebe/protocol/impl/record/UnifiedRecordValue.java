@@ -27,6 +27,12 @@ public class UnifiedRecordValue extends UnpackedObject implements RecordValue {
   }
 
   @Override
+  @JsonIgnore
+  public boolean isEmpty() {
+    return super.isEmpty();
+  }
+
+  @Override
   public String toJson() {
     return MsgPackConverter.convertJsonSerializableObjectToJson(this);
   }

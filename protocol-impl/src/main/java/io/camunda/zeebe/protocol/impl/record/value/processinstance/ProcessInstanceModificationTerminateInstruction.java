@@ -13,9 +13,9 @@ import io.camunda.zeebe.msgpack.value.ObjectValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceModificationRecordValue.ProcessInstanceModificationTerminateInstructionValue;
 
 @JsonIgnoreProperties({
-  /* 'encodedLength' is a technical field needed for MsgPack and inherited from ObjectValue; it has
-  no purpose in exported JSON records*/
-  "encodedLength"
+  /* These fields are inherited from ObjectValue; there have no purpose in exported JSON records*/
+  "encodedLength",
+  "empty"
 })
 public final class ProcessInstanceModificationTerminateInstruction extends ObjectValue
     implements ProcessInstanceModificationTerminateInstructionValue {

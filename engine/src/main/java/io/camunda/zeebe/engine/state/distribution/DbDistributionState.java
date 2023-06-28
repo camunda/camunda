@@ -131,7 +131,7 @@ public class DbDistributionState implements MutableDistributionState {
         .setPartitionId(partition)
         .setValueType(persistedDistribution.getValueType())
         .setIntent(persistedDistribution.getIntent())
-        .setRecordValue(persistedDistribution.getCommandValue());
+        .setCommandValue(persistedDistribution.getCommandValue());
   }
 
   @Override
