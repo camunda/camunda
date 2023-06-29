@@ -11,11 +11,8 @@ import static io.camunda.operate.webapp.api.v1.entities.ProcessInstance.PROCESS_
 import static io.camunda.operate.webapp.api.v1.entities.ProcessInstance.VERSION;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.operate.util.ElasticsearchUtil;
 import io.camunda.operate.util.OperateZeebeIntegrationTest;
-import io.camunda.operate.util.ThreadUtil;
 import io.camunda.operate.webapp.api.v1.entities.ChangeStatus;
-import io.camunda.operate.util.OperateZeebeIntegrationTest;
 import io.camunda.operate.webapp.api.v1.entities.ProcessInstance;
 import io.camunda.operate.webapp.api.v1.entities.Query;
 import io.camunda.operate.webapp.api.v1.entities.Query.Sort;
@@ -99,6 +96,21 @@ public class ElasticsearchProcessInstanceDaoIT extends OperateZeebeIntegrationTe
       processInstanceResults = dao.search(new Query<>());
       assertThat(processInstanceResults.getItems().stream()
           .noneMatch(pi -> pi.getKey().equals(key))).isTrue();
+    });
+  }
+
+  @Test
+  public void shouldReturnParentProcessKey() throws Exception {
+    given(() -> {
+      deployProcesses("callActivityProcess.bpmn", "calledProcess.bpmn");
+      processInstanceKeys = startProcesses("CallActivityProcess");
+      processInstanceResults = dao.search(new Query<ProcessInstance>());
+      key = processInstanceKeys.get(0);
+    });
+    when(() -> processInstance = processInstanceResults.getItems().stream()
+        .filter(x -> x.getBpmnProcessId().equals("CalledProcess")).findFirst().orElseThrow());
+    then(() -> {
+      assertThat(processInstance.getParentKey()).isEqualTo(key);
     });
   }
 

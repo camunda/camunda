@@ -8,6 +8,7 @@ package io.camunda.operate.webapp.api.v1.entities;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import io.camunda.operate.schema.templates.ListViewTemplate;
 import java.util.Objects;
 
@@ -60,10 +61,12 @@ public class ProcessInstance {
     return this;
   }
 
+  @JsonProperty("parentKey")
   public Long getParentKey() {
     return parentKey;
   }
 
+  @JsonProperty("parentProcessInstanceKey")
   public ProcessInstance setParentKey(final long parentKey) {
     this.parentKey = parentKey;
     return this;
