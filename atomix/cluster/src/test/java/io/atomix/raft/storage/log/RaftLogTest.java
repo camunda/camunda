@@ -147,31 +147,6 @@ class RaftLogTest {
   }
 
   @Test
-  void shouldAppendPersistedRaftEntry(@TempDir final File directory) {
-    // given
-    final RaftLogEntry entry = new RaftLogEntry(1, firstApplicationEntry);
-    final var persistedRaftRecord = raftlog.append(entry).getPersistedRaftRecord();
-    final var raftlogFollower =
-        RaftLog.builder()
-            .withDirectory(directory)
-            .withName("test-follower")
-            .withMetaStore(new InMemory())
-            .build();
-
-    // when
-    final var appended = raftlogFollower.append(persistedRaftRecord);
-
-    // then
-    assertThat(raftlogFollower.getLastEntry()).isEqualTo(appended);
-    assertThat(appended.index()).isEqualTo(1);
-    assertThat(appended.entry()).isEqualTo(firstApplicationEntry);
-    assertThat(appended.getPersistedRaftRecord().asqn())
-        .isEqualTo(firstApplicationEntry.lowestPosition());
-
-    raftlogFollower.close();
-  }
-
-  @Test
   void shouldAppendReplicatableJournalRecord(@TempDir final File directory) {
     // given
     final RaftLogEntry entry = new RaftLogEntry(1, firstApplicationEntry);

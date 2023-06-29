@@ -24,6 +24,8 @@ import java.nio.ByteBuffer;
 import java.util.Objects;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * The segment descriptor stores the metadata of a single segment {@link Segment} of a {@link
@@ -44,29 +46,32 @@ import org.agrona.concurrent.UnsafeBuffer;
  * segment.
  */
 final class SegmentDescriptor {
-
+  private static final Logger LOG = LoggerFactory.getLogger(SegmentDescriptor.class);
   private static final int VERSION_LENGTH = Byte.BYTES;
-  // current descriptor version containing: header, metadata, header and descriptor
-  private static final byte CUR_VERSION = 2;
+  // current descriptor version containing: header, metadata, header and descriptor. descriptor
+  // contains lastIndex and lastPosition. Version 2 does not contain lastIndex and lastPosition.
+  private static final byte CUR_VERSION = 3;
   // previous descriptor version containing: header and descriptor
   private static final byte NO_META_VERSION = 1;
   // the combined length for each version of the descriptor (starting at version 1)
   // V1 - 29: version byte (1) + header (8) + descriptor (20)
-  private static final int[] VERSION_LENGTHS = {29, getEncodingLength()};
+  private static final int[] VERSION_LENGTHS = {29, 45, getEncodingLength()};
 
+  private byte version = CUR_VERSION;
   private long id;
   private long index;
   private int maxSegmentSize;
+  // index of the last entry in this segment. Can be 0 if not set, even if an entry exists.
+  private long lastIndex;
+  // position of the last entry in this segment. Can be 0 if not set, even if an entry exists.
+  private int lastPosition;
   private int encodedLength;
   private long checksum;
-
   private final DescriptorMetadataEncoder metadataEncoder = new DescriptorMetadataEncoder();
   private final DescriptorMetadataDecoder metadataDecoder = new DescriptorMetadataDecoder();
-
   private final SegmentDescriptorDecoder segmentDescriptorDecoder = new SegmentDescriptorDecoder();
   private final MessageHeaderDecoder headerDecoder = new MessageHeaderDecoder();
   private final MutableDirectBuffer directBuffer = new UnsafeBuffer();
-
   private final SegmentDescriptorEncoder segmentDescriptorEncoder = new SegmentDescriptorEncoder();
   private final MessageHeaderEncoder headerEncoder = new MessageHeaderEncoder();
   private final ChecksumGenerator checksumGen = new ChecksumGenerator();
@@ -74,13 +79,13 @@ final class SegmentDescriptor {
   SegmentDescriptor(final ByteBuffer buffer) {
     directBuffer.wrap(buffer);
 
-    final byte version = directBuffer.getByte(0);
-    if (version == CUR_VERSION) {
+    version = directBuffer.getByte(0);
+    if (version > NO_META_VERSION && version <= CUR_VERSION) {
       readV2Descriptor(directBuffer);
     } else if (version == NO_META_VERSION) {
       readV1Descriptor(directBuffer);
     } else {
-      throw new CorruptedJournalException(
+      throw new UnknownVersionException(
           String.format(
               "Expected version to be one [%d %d] but read %d instead.",
               NO_META_VERSION, CUR_VERSION, version));
@@ -91,6 +96,8 @@ final class SegmentDescriptor {
     this.id = id;
     this.index = index;
     this.maxSegmentSize = maxSegmentSize;
+    lastIndex = 0;
+    lastPosition = 0;
     encodedLength = getEncodingLength();
   }
 
@@ -157,6 +164,8 @@ final class SegmentDescriptor {
     id = segmentDescriptorDecoder.id();
     index = segmentDescriptorDecoder.index();
     maxSegmentSize = segmentDescriptorDecoder.maxSegmentSize();
+    lastIndex = Math.max(0, segmentDescriptorDecoder.lastIndex());
+    lastPosition = Math.max(0, (int) segmentDescriptorDecoder.lastPosition());
     encodedLength =
         offset + headerDecoder.encodedLength() + segmentDescriptorDecoder.encodedLength();
 
@@ -220,7 +229,7 @@ final class SegmentDescriptor {
 
   /** The number of bytes required to read and write a descriptor of a given version. */
   static int getEncodingLengthForVersion(final byte version) {
-    if (version == 0 || version > VERSION_LENGTHS.length) {
+    if (version <= 0 || version > VERSION_LENGTHS.length) {
       throw new UnknownVersionException(
           String.format(
               "Expected version byte to be one [%d %d] but got %d instead.",
@@ -289,7 +298,9 @@ final class SegmentDescriptor {
         .wrapAndApplyHeader(directBuffer, descHeaderOffset, headerEncoder)
         .id(id)
         .index(index)
-        .maxSegmentSize(maxSegmentSize);
+        .maxSegmentSize(maxSegmentSize)
+        .lastIndex(lastIndex)
+        .lastPosition(lastPosition);
 
     final long checksum =
         checksumGen.compute(
@@ -322,14 +333,48 @@ final class SegmentDescriptor {
 
   @Override
   public String toString() {
-    return "JournalSegmentDescriptor{"
+    return "SegmentDescriptor{"
         + "id="
         + id
         + ", index="
         + index
         + ", maxSegmentSize="
         + maxSegmentSize
+        + ", lastIndex="
+        + lastIndex
+        + ", lastPosition="
+        + lastPosition
         + '}';
+  }
+
+  int lastPosition() {
+    return lastPosition;
+  }
+
+  void setLastPosition(final int lastPosition) {
+    this.lastPosition = lastPosition;
+  }
+
+  void setLastIndex(final long lastIndex) {
+    this.lastIndex = lastIndex;
+  }
+
+  void updateIfCurrentVersion(final ByteBuffer buffer) {
+    if (version >= CUR_VERSION) {
+      copyTo(buffer);
+    } else {
+      // Do not overwrite the descriptor for older versions. The new version has a higher length and
+      // will overwrite the first entry.
+      LOG.trace(
+          "Segment descriptor version is {}, which is lower than current version {}."
+              + "Skipping update to the descriptor.",
+          version,
+          CUR_VERSION);
+    }
+  }
+
+  long lastIndex() {
+    return lastIndex;
   }
 
   /** Segment descriptor builder. */

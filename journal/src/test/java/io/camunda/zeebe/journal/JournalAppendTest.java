@@ -19,6 +19,7 @@ import io.camunda.zeebe.journal.file.SegmentedJournal;
 import io.camunda.zeebe.journal.file.SegmentedJournalBuilder;
 import io.camunda.zeebe.journal.util.MockJournalMetastore;
 import io.camunda.zeebe.journal.util.TestJournalRecord;
+import io.camunda.zeebe.util.buffer.BufferUtil;
 import io.camunda.zeebe.util.buffer.DirectBufferWriter;
 import java.nio.file.Path;
 import java.util.function.Consumer;
@@ -91,7 +92,8 @@ final class JournalAppendTest {
       final var expected = journal.append(10, recordDataWriter);
 
       // when
-      receiverJournal.append(expected);
+      receiverJournal.append(
+          expected.checksum(), BufferUtil.bufferAsArray(expected.serializedRecord()));
 
       // then
       final var reader = receiverJournal.openReader();
@@ -122,7 +124,12 @@ final class JournalAppendTest {
     journal.append(recordDataWriter);
 
     // when/then
-    assertThatThrownBy(() -> journal.append(record)).isInstanceOf(InvalidIndex.class);
+    assertThatException()
+        .isThrownBy(
+            () ->
+                journal.append(
+                    record.checksum(), BufferUtil.bufferAsArray(record.serializedRecord())))
+        .isInstanceOf(InvalidIndex.class);
   }
 
   @Test
@@ -138,7 +145,12 @@ final class JournalAppendTest {
       final var record = journal.append(2, recordDataWriter);
 
       // when/then
-      assertThatThrownBy(() -> receiverJournal.append(record)).isInstanceOf(InvalidIndex.class);
+      assertThatException()
+          .isThrownBy(
+              () ->
+                  receiverJournal.append(
+                      record.checksum(), BufferUtil.bufferAsArray(record.serializedRecord())))
+          .isInstanceOf(InvalidIndex.class);
     }
   }
 
@@ -148,16 +160,24 @@ final class JournalAppendTest {
     final var record = journal.append(recordDataWriter);
 
     // when/then
-    assertThatThrownBy(() -> journal.append(record)).isInstanceOf(InvalidIndex.class);
+    assertThatException()
+        .isThrownBy(
+            () ->
+                journal.append(
+                    record.checksum(), BufferUtil.bufferAsArray(record.serializedRecord())))
+        .isInstanceOf(InvalidIndex.class);
   }
 
   @Test
   void shouldAppendRecordWithASQNToIgnore() {
     // given
-    journal.append(1, recordDataWriter);
+    final var firstIndex = journal.append(1, recordDataWriter).index();
 
-    // when/then
-    journal.append(ASQN_IGNORE, recordDataWriter);
+    // when
+    final var appended = journal.append(ASQN_IGNORE, recordDataWriter);
+
+    // then
+    assertThat(appended.index()).isEqualTo(firstIndex + 1);
   }
 
   @Test
