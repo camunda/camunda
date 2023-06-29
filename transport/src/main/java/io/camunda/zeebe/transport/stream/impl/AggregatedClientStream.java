@@ -35,7 +35,7 @@ final class AggregatedClientStream<M extends BufferWriter> {
   private final ClientStreamMetrics metrics;
   private final Int2ObjectHashMap<ClientStreamImpl<M>> clientStreams = new Int2ObjectHashMap<>();
 
-  private State state;
+  private boolean isOpened;
   private int nextLocalId;
 
   AggregatedClientStream(final UUID streamId, final LogicalId<M> logicalId) {
@@ -47,8 +47,6 @@ final class AggregatedClientStream<M extends BufferWriter> {
     this.streamId = streamId;
     this.logicalId = logicalId;
     this.metrics = metrics;
-
-    state = State.INITIAL;
   }
 
   void addClient(final ClientStreamImpl<M> clientStream) {
@@ -58,14 +56,6 @@ final class AggregatedClientStream<M extends BufferWriter> {
 
   UUID getStreamId() {
     return streamId;
-  }
-
-  DirectBuffer getStreamType() {
-    return logicalId.streamType();
-  }
-
-  M getMetadata() {
-    return logicalId.metadata();
   }
 
   Collection<ClientStreamImpl<M>> list() {
@@ -109,11 +99,7 @@ final class AggregatedClientStream<M extends BufferWriter> {
   }
 
   void close() {
-    state = State.CLOSED;
-  }
-
-  boolean isClosed() {
-    return state == State.CLOSED;
+    isOpened = false;
   }
 
   void removeClient(final ClientStreamIdImpl streamId) {
@@ -189,10 +175,12 @@ final class AggregatedClientStream<M extends BufferWriter> {
   }
 
   void open(final ClientStreamRequestManager<M> requestManager, final Set<MemberId> servers) {
-    if (state == State.INITIAL) {
-      requestManager.openStream(this, servers);
-      state = State.OPEN;
+    if (isOpened) {
+      return;
     }
+
+    requestManager.add(this, servers);
+    isOpened = true;
   }
 
   @Override
@@ -206,16 +194,10 @@ final class AggregatedClientStream<M extends BufferWriter> {
         + liveConnections
         + ", clientStreams="
         + clientStreams.size()
-        + ", state="
-        + state
+        + ", isOpened="
+        + isOpened
         + ", nextLocalId="
         + nextLocalId
         + '}';
-  }
-
-  private enum State {
-    INITIAL,
-    OPEN,
-    CLOSED
   }
 }

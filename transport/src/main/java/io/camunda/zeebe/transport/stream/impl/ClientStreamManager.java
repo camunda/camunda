@@ -16,7 +16,6 @@ import io.camunda.zeebe.transport.stream.api.ClientStreamMetrics;
 import io.camunda.zeebe.transport.stream.api.NoSuchStreamException;
 import io.camunda.zeebe.transport.stream.impl.messages.PushStreamRequest;
 import io.camunda.zeebe.util.buffer.BufferWriter;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 import org.agrona.DirectBuffer;
@@ -49,14 +48,13 @@ final class ClientStreamManager<M extends BufferWriter> {
     servers.add(serverId);
     metrics.serverCount(servers.size());
 
-    registry.list().forEach(c -> requestManager.openStream(c, Collections.singleton(serverId)));
+    registry.list().forEach(c -> requestManager.add(c, serverId));
   }
 
   void onServerRemoved(final MemberId serverId) {
     servers.remove(serverId);
     metrics.serverCount(servers.size());
-
-    registry.list().forEach(clientStream -> clientStream.remove(serverId));
+    requestManager.onServerRemoved(serverId);
   }
 
   ClientStreamId add(
@@ -78,11 +76,11 @@ final class ClientStreamManager<M extends BufferWriter> {
         stream -> {
           LOG.debug("Removing aggregated stream [{}]", stream.getStreamId());
           stream.close();
-          requestManager.removeStream(stream, servers);
+          requestManager.remove(stream, servers);
         });
   }
 
-  void removeAll() {
+  void close() {
     registry.clear();
     requestManager.removeAll(servers);
   }
@@ -116,7 +114,7 @@ final class ClientStreamManager<M extends BufferWriter> {
           // Stream does not exist. We expect to have already sent remove request to all servers.
           // But just in case that request is lost, we send remove request again. To keep it simple,
           // we do not retry. Otherwise, it is possible that we send it multiple times unnecessary.
-          requestManager.removeStreamUnreliable(streamId, servers);
+          requestManager.removeUnreliable(streamId, servers);
           LOG.warn("Expected to push payload to stream {}, but no stream found.", streamId);
           responseFuture.completeExceptionally(
               new NoSuchStreamException(
