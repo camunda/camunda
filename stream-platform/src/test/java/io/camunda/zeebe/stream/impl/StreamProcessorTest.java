@@ -47,6 +47,7 @@ import io.camunda.zeebe.stream.impl.records.RecordBatchEntry;
 import io.camunda.zeebe.stream.impl.state.DbKeyGenerator;
 import io.camunda.zeebe.stream.util.RecordToWrite;
 import io.camunda.zeebe.stream.util.Records;
+import io.camunda.zeebe.test.util.junit.RegressionTest;
 import io.camunda.zeebe.util.exception.RecoverableException;
 import java.time.Duration;
 import java.util.List;
@@ -55,6 +56,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import org.assertj.core.api.Assertions;
 import org.assertj.core.api.AssertionsForClassTypes;
+import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -184,6 +186,26 @@ public final class StreamProcessorTest {
         .verify(defaultRecordProcessor, TIMEOUT)
         .onProcessingError(eq(processingError), any(), any());
     inOrder.verifyNoMoreInteractions();
+  }
+
+  @RegressionTest("https://github.com/camunda/zeebe/issues/13101")
+  public void shouldUpdateLastProcessPositionEvenWhenProcessingFails() {
+    // given
+    final var defaultRecordProcessor = streamPlatform.getDefaultMockedRecordProcessor();
+    final var processingError = new RuntimeException("processing error");
+    doThrow(processingError).when(defaultRecordProcessor).process(any(), any());
+    streamPlatform.startStreamProcessor();
+
+    // when
+    streamPlatform.writeBatch(
+        RecordToWrite.command().processInstance(ACTIVATE_ELEMENT, Records.processInstance(1)),
+        RecordToWrite.event()
+            .processInstance(ELEMENT_ACTIVATING, Records.processInstance(1))
+            .causedBy(0));
+
+    // then
+    Awaitility.await("last processed position is updated")
+        .until(() -> streamPlatform.getLastSuccessfulProcessedRecordPosition(), pos -> pos >= 1);
   }
 
   @Test
