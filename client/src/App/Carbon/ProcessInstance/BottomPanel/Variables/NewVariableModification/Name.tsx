@@ -44,6 +44,7 @@ const Name: React.FC<Props> = ({variableName, scopeId}) => {
         {({input}) => (
           <TextInputField
             {...input}
+            data-testid="new-variable-name"
             type="text"
             placeholder="Name"
             id={createNewVariableFieldName(variableName, 'name')}

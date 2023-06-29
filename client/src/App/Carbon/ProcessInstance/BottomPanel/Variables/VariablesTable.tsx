@@ -80,6 +80,7 @@ const VariablesTable: React.FC<Props> = observer(
 
     return (
       <StructuredList
+        dataTestId="variables-list"
         headerColumns={[
           {cellContent: 'Name', width: '35%'},
           {cellContent: 'Value', width: '55%'},
@@ -154,6 +155,7 @@ const VariablesTable: React.FC<Props> = observer(
             isPreview,
             id,
           }) => ({
+            dataTestId: `variable-${variableName}`,
             columns: [
               {
                 cellContent: <VariableName>{variableName}</VariableName>,

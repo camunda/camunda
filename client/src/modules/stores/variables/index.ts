@@ -244,6 +244,19 @@ class Variables extends NetworkReconnectionHandler {
     });
   };
 
+  refreshVariables = async (instanceId: ProcessInstanceEntity['id']) => {
+    this.startFetching();
+
+    this.fetchVariables({
+      fetchType: 'initial',
+      instanceId,
+      payload: {
+        pageSize: MAX_VARIABLES_PER_REQUEST,
+        scopeId: this.scopeId ?? instanceId,
+      },
+    });
+  };
+
   fetchVariable = async ({
     processInstanceId,
     variableId,

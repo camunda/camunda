@@ -53,6 +53,7 @@ const Value: React.FC<Props> = ({variableName, scopeId}) => {
         {({input}) => (
           <IconTextInputField
             {...input}
+            data-testid="new-variable-value"
             size="sm"
             type="text"
             id={valueFieldName}

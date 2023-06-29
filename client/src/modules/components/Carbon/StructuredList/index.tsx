@@ -20,6 +20,7 @@ type Column = {
 
 type RowProps = {
   columns: Column[];
+  dataTestId?: string;
 };
 
 type Props = {
@@ -30,6 +31,7 @@ type Props = {
   className?: string;
   dynamicRows?: React.ReactNode;
   verticalCellPadding?: string;
+  dataTestId?: string;
 };
 
 const StructuredRows: React.FC<Pick<Props, 'rows' | 'verticalCellPadding'>> = ({
@@ -38,8 +40,8 @@ const StructuredRows: React.FC<Pick<Props, 'rows' | 'verticalCellPadding'>> = ({
 }) => {
   return (
     <>
-      {rows.map(({columns}, index) => (
-        <StructuredListRow key={index}>
+      {rows.map(({dataTestId, columns}, index) => (
+        <StructuredListRow key={index} data-testid={dataTestId}>
           {columns.map(({cellContent, width}, index) => {
             return (
               <StructuredListCell
@@ -68,9 +70,10 @@ const StructuredList: React.FC<Props> = ({
   className,
   dynamicRows,
   verticalCellPadding,
+  dataTestId,
 }) => {
   return (
-    <Container className={className}>
+    <Container className={className} data-testid={dataTestId}>
       <StructuredListWrapper aria-label={label} isCondensed isFlush>
         <StructuredListHead>
           <StructuredListRow head tabIndex={0}>

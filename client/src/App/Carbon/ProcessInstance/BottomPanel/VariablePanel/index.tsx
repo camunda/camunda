@@ -6,7 +6,6 @@
  */
 
 import {observer} from 'mobx-react';
-import {when} from 'mobx';
 
 import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
 import {useEffect} from 'react';
@@ -14,21 +13,18 @@ import {variablesStore} from 'modules/stores/variables';
 import {TabView} from 'modules/components/Carbon/TabView';
 import {InputOutputMappings} from './InputOutputMappings';
 import {VariablesContent} from './VariablesContent';
+import {useProcessInstancePageParams} from '../../useProcessInstancePageParams';
 
 const VariablePanel = observer(function VariablePanel() {
+  const {processInstanceId = ''} = useProcessInstancePageParams();
+
   useEffect(() => {
-    const variablesLoadedCheckDisposer = when(
-      () => ['fetched', 'error'].includes(variablesStore.state.status),
-      () => {
-        variablesStore.setAreVariablesLoadedOnce(true);
-      }
-    );
+    variablesStore.init(processInstanceId);
 
     return () => {
-      variablesStore.setAreVariablesLoadedOnce(false);
-      variablesLoadedCheckDisposer();
+      variablesStore.reset();
     };
-  }, []);
+  }, [processInstanceId]);
 
   return (
     <TabView
@@ -38,6 +34,10 @@ const VariablePanel = observer(function VariablePanel() {
           label: 'Variables',
           content: <VariablesContent />,
           removePadding: true,
+          onClick: () => {
+            variablesStore.startPolling(processInstanceId);
+            variablesStore.refreshVariables(processInstanceId);
+          },
         },
         ...(flowNodeSelectionStore.isRootNodeSelected
           ? []
@@ -46,11 +46,13 @@ const VariablePanel = observer(function VariablePanel() {
                 id: 'input-mappings',
                 label: 'Input Mappings',
                 content: <InputOutputMappings type="Input" />,
+                onClick: variablesStore.stopPolling,
               },
               {
                 id: 'output-mappings',
                 label: 'Output Mappings',
                 content: <InputOutputMappings type="Output" />,
+                onClick: variablesStore.stopPolling,
               },
             ]),
       ]}

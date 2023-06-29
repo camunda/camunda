@@ -5,7 +5,6 @@
  * except in compliance with the proprietary license.
  */
 
-import {useEffect} from 'react';
 import {variablesStore} from 'modules/stores/variables';
 import {observer} from 'mobx-react';
 import {useProcessInstancePageParams} from 'App/ProcessInstance/useProcessInstancePageParams';
@@ -23,14 +22,6 @@ import {VariablesForm} from './VariablesForm';
 const VariablesContent: React.FC = observer(() => {
   const {processInstanceId = ''} = useProcessInstancePageParams();
   const notifications = useNotifications();
-
-  useEffect(() => {
-    variablesStore.init(processInstanceId);
-
-    return () => {
-      variablesStore.reset();
-    };
-  }, [processInstanceId]);
 
   const {displayStatus} = variablesStore;
 
@@ -55,7 +46,9 @@ const VariablesContent: React.FC = observer(() => {
 
   return (
     <Content>
-      {displayStatus === 'spinner' && <Loading />}
+      {displayStatus === 'spinner' && (
+        <Loading data-testid="variables-spinner" />
+      )}
       <ReactFinalForm<VariableFormValues>
         mutators={{
           ...arrayMutators,

@@ -15,6 +15,7 @@ type TabType = {
   label: string;
   content: React.ReactNode;
   removePadding?: boolean;
+  onClick?: () => void;
 };
 
 type Props = {
@@ -34,10 +35,11 @@ const TabView: React.FC<Props> = ({tabs = [], eventName, dataTestId}) => {
       ) : (
         <Tabs>
           <TabList aria-label="Variable Panel Tabs">
-            {tabs.map(({id, label}) => (
+            {tabs.map(({id, label, onClick}) => (
               <Tab
                 key={id}
                 onClick={() => {
+                  onClick?.();
                   if (eventName !== undefined) {
                     tracking.track({
                       eventName,
