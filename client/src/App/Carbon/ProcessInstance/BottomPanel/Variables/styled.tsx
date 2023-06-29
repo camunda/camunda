@@ -33,11 +33,6 @@ const VariableValue = styled.div`
   overflow-wrap: break-word;
 `;
 
-const Footer = styled.div`
-  margin-top: auto;
-  border-top: 1px solid var(--cds-border-subtle-01);
-`;
-
 const StructuredList = styled(BaseStructuredList)`
   padding: var(--cds-spacing-05);
   [role='table'] {
@@ -56,7 +51,6 @@ export {
   VariablesContent,
   VariableName,
   VariableValue,
-  Footer,
   StructuredList,
   EmptyMessageWrapper,
 };

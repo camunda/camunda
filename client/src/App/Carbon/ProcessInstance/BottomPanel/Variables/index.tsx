@@ -9,18 +9,18 @@ import {useEffect} from 'react';
 import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
 import {variablesStore} from 'modules/stores/variables';
 import {flowNodeMetaDataStore} from 'modules/stores/flowNodeMetaData';
-import {VariablesContent, EmptyMessageWrapper, Footer} from './styled';
+import {VariablesContent, EmptyMessageWrapper} from './styled';
 import {observer} from 'mobx-react';
-import {reaction} from 'mobx';
+import {computed, reaction} from 'mobx';
 import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
 import {useForm, useFormState} from 'react-final-form';
 import {Restricted} from 'modules/components/Restricted';
 import {modificationsStore} from 'modules/stores/modifications';
-import {AddVariableButton} from './AddVariableButton';
 import {useFieldArray} from 'react-final-form-arrays';
 import {VariableFormValues} from 'modules/types/variables';
 import {EmptyMessage} from 'modules/components/Carbon/EmptyMessage';
 import {VariablesTable} from './VariablesTable';
+import {Footer} from './Footer';
 
 type Props = {
   isVariableModificationAllowed?: boolean;
@@ -66,7 +66,31 @@ const Variables: React.FC<Props> = observer(
       : initialValues === undefined ||
         Object.values(initialValues).length === 0;
 
-    const isAddMode = initialValues?.name === '' && initialValues?.value === '';
+    const footerVariant = computed(() => {
+      if (!processInstanceDetailsStore.isRunning) {
+        return 'disabled';
+      }
+
+      if (pendingItem !== null) {
+        return 'pending-variable';
+      }
+
+      if (initialValues?.name === '' && initialValues?.value === '') {
+        return 'add-variable';
+      }
+
+      if (
+        status === 'first-fetch' ||
+        !isViewMode ||
+        (!flowNodeSelectionStore.isRootNodeSelected &&
+          !flowNodeMetaDataStore.isSelectedInstanceRunning) ||
+        loadingItemId !== null
+      ) {
+        return 'disabled';
+      }
+
+      return 'initial';
+    });
 
     if (displayStatus === 'no-content') {
       return null;
@@ -94,29 +118,7 @@ const Variables: React.FC<Props> = observer(
               permissions: processInstanceDetailsStore.getPermissions(),
             }}
           >
-            <Footer>
-              {processInstanceDetailsStore.isRunning && (
-                <>
-                  {pendingItem !== null && <div>pending variable</div>}
-                  {isAddMode && pendingItem === null && <div>new variable</div>}
-                </>
-              )}
-              {!isAddMode && pendingItem === null && (
-                <AddVariableButton
-                  onClick={() => {
-                    form.reset({name: '', value: ''});
-                  }}
-                  disabled={
-                    status === 'first-fetch' ||
-                    !isViewMode ||
-                    (flowNodeSelectionStore.isRootNodeSelected
-                      ? !processInstanceDetailsStore.isRunning
-                      : !flowNodeMetaDataStore.isSelectedInstanceRunning) ||
-                    loadingItemId !== null
-                  }
-                />
-              )}
-            </Footer>
+            <Footer variant={footerVariant.get()} />
           </Restricted>
         )}
       </VariablesContent>
