@@ -21,6 +21,7 @@ import {VariableFormValues} from 'modules/types/variables';
 import {EmptyMessage} from 'modules/components/Carbon/EmptyMessage';
 import {VariablesTable} from './VariablesTable';
 import {Footer} from './Footer';
+import {Skeleton} from './Skeleton';
 
 type Props = {
   isVariableModificationAllowed?: boolean;
@@ -98,6 +99,7 @@ const Variables: React.FC<Props> = observer(
 
     return (
       <VariablesContent>
+        {isViewMode && displayStatus === 'skeleton' && <Skeleton />}
         {isViewMode && displayStatus === 'no-variables' && (
           <EmptyMessageWrapper>
             <EmptyMessage message="The Flow Node has no Variables" />
