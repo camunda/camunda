@@ -110,3 +110,26 @@ To set this value permanently, update the `vm.max_map_count` setting in /etc/sys
 * Every branch that starts with `fe-` (e.g. `fe-ope-123-frontend-fix`) will skip backend tests in CI.
 
 License: This repository contains files subject to a commercial license.
+
+## Running visual regression tests
+
+On Operate we use Playwright for visual regression testing. These tests run on every push on every branch through Github Actions.
+
+To run these locally you can follow the steps below:
+
+1. Inside the client folder run `yarn build:visual-regression`
+2. After the build is finished start the Docker container with `yarn start-visual-regression-docker`
+3. Inside the container, run `yarn start:visual-regression &`
+4. After that, run `yarn playwright visual`
+
+After the tests run, test report is saved locally in client/playwright-report. In case step 4 fails with `Failed to open browser on ...` , run the following command inside client folder to see the test results: `npx @playwright/test show-report playwright-report/`
+
+#### Updating screenshots
+
+If you made feature changes and want to purposely wants to update the UI baseline you can follow the steps before, but on step 4 you should run `yarn playwright visual --update-snapshots`. Beware the this will update all screenshots, so make sure you only have the changes you want to update in your branch.
+
+#### Inspecting failures in the CI
+
+Sometimes the visual regression tests might fail in the CI and you want to check why. To achieve that you can download the Playwright report assets (like in the image below), unzip the folder and then run `npx @playwright/test show-report folder-with-unzipped-assets/`.
+
+<img src="/docs_assets/playwright_report.png" alt="Playwright report artifact download" width="500"/>

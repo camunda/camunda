@@ -33,6 +33,7 @@
     "react-router-dom": "6.4.2",
     "react-transition-group": "4.4.5",
     "sass": "1.62.0",
+    "serve": "14.2.0",
     "styled-components": "5.3.11"
   },
   "scripts": {
@@ -50,7 +51,11 @@
     "test:e2e:ci": "cross-env PORT=8080 testcafe chrome:headless e2e/tests/*.ts --compiler-options typescript.configPath='e2e/tsconfig.json'",
     "postinstall": "cd .. && husky install",
     "coverage": "yarn test --coverage --collectCoverageFrom=src/**/* --changedSince=origin/master --watchAll=false --passWithNoTests",
-    "analyze-bundle": "react-scripts build && source-map-explorer 'build/static/js/*.js'"
+    "analyze-bundle": "react-scripts build && source-map-explorer 'build/static/js/*.js'",
+    "playwright": "playwright test",
+    "start-visual-regression-docker": "docker run --rm --network host -v $(pwd):/work/ -w /work/ -it mcr.microsoft.com/playwright:v1.35.1-focal /bin/bash",
+    "start:visual-regression": "serve build/ -p 8080 -n -s -L",
+    "build:visual-regression": "REACT_APP_VERSION=0.0.0-SNAPSHOT yarn build"
   },
   "jest": {
     "transformIgnorePatterns": [
@@ -58,6 +63,7 @@
     ]
   },
   "devDependencies": {
+    "@playwright/test": "1.35.1",
     "@testing-library/jest-dom": "5.16.5",
     "@testing-library/react": "14.0.0",
     "@testing-library/react-hooks": "8.0.1",

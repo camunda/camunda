@@ -1,0 +1,36 @@
+name: Visual regression tests
+on: push
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    container:
+      image: mcr.microsoft.com/playwright:v1.35.1
+      options: --user 1001:1000
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@v3
+      - name: Setup yarn cache
+        uses: actions/setup-node@v3
+        with:
+          node-version: "16"
+          cache: "yarn"
+          cache-dependency-path: client/yarn.lock
+      - name: Install node dependencies
+        working-directory: ./client
+        run: yarn
+      - name: Build frontend
+        working-directory: ./client
+        run: yarn build:visual-regression
+      - name: Start server
+        working-directory: ./client
+        run: yarn start:visual-regression &
+      - name: Run Playwright tests
+        working-directory: ./client
+        run: yarn playwright e2e-playwright/visual
+      - uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: Playwright report
+          path: client/playwright-report/
+          retention-days: 30
