@@ -20,6 +20,7 @@ import static org.mockito.Mockito.verify;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.record.RecordType;
+import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.ErrorIntent;
 import io.camunda.zeebe.stream.api.ProcessingResultBuilder;
@@ -325,7 +326,13 @@ final class StreamProcessorReplayTest {
                   .valueType(ValueType.ERROR)
                   .intent(ErrorIntent.CREATED)
                   .recordType(RecordType.EVENT);
-              builder.appendRecord(6, Records.processInstance(6), recordMetadata);
+              builder.appendRecord(
+                  6,
+                  RecordType.EVENT,
+                  ErrorIntent.CREATED,
+                  RejectionType.NULL_VAL,
+                  "",
+                  Records.processInstance(6));
               return builder.build();
             })
         .when(processorWhichFails)
