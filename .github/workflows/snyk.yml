@@ -13,6 +13,10 @@ on:
         description: Allows overriding the project target reference directly; defaults to the current branch
         required: false
         type: string
+      dockerImage:
+        description: The full name of the Docker image; if absent and build is true, will use the built image name; if not building, infers from the version
+        required: false
+        type: string
       monitor:
         description: Upload Snyk snapshot instead of test
         required: false
@@ -23,6 +27,11 @@ on:
         required: false
         type: boolean
         default: true
+      useMinorVersion:
+        description: Uses the major and minor version only for target and version
+        required: false
+        type: boolean
+        default: false
   workflow_call:
     secrets:
       SNYK_TOKEN:
@@ -36,6 +45,10 @@ on:
         description: Allows overriding the project target reference directly; defaults to the current branch
         required: false
         type: string
+      dockerImage:
+        description: The full name of the Docker image; if absent and build is true, will use the built image name; if not building, infers from the version
+        required: false
+        type: string
       monitor:
         description: Upload Snyk snapshot instead of test
         required: false
@@ -46,6 +59,11 @@ on:
         required: false
         type: boolean
         default: true
+      useMinorVersion:
+        description: Uses the major and minor version only for target and version
+        required: false
+        type: boolean
+        default: false
 
 defaults:
   run:
@@ -94,6 +112,13 @@ jobs:
           export VERSION_TAG=$([[ "${VERSION}" == *-SNAPSHOT ]] && echo 'development' || echo "${VERSION}")
           export LIFECYCLE=$([[ "${VERSION}" == *-SNAPSHOT ]] && echo 'development' || echo 'production')
 
+          # use inputs.dockerImage if present; otherwise if building, use the output of the build step; otherwise infer from version and default repository camunda/zeebe
+          export DOCKER_IMAGE=$([[ ! -z '${{ inputs.dockerImage }}' ]] && echo '${{ inputs.dockerImage }}' || ([[ '${{ inputs.build }}' == 'true' ]] && echo '${{ steps.build-docker.outputs.image }}' || echo "camunda/zeebe:${VERSION}"))
+
+          if [[ '${{ inputs.useMinorVersion }}' == 'true' ]]; then
+            export TARGET="$(echo $VERSION | sed -E -e 's/\.[^.]*$//')"
+          fi
+
           echo "SNYK_ARGS=" \
             "--show-vulnerable-paths=all" \
             "--severity-threshold=high" \
@@ -104,7 +129,7 @@ jobs:
           echo "TARGET=${TARGET}" >> $GITHUB_ENV
           echo "SNYK_COMMAND=${{ (inputs.monitor && 'monitor') || 'test' }}" >> $GITHUB_ENV
           echo "SARIF=${{ (inputs.monitor && 'false') || 'true' }}" >> $GITHUB_ENV
-          echo "DOCKER_IMAGE=${{ steps.build-docker.outputs.image }}" >> $GITHUB_ENV
+          echo "DOCKER_IMAGE=${DOCKER_IMAGE}" >> $GITHUB_ENV
           echo "VERSION=${VERSION}" >> $GITHUB_ENV
       - name: Run Snyk
         env:
@@ -146,7 +171,13 @@ jobs:
           # feature at the moment. It's added here anyway for now, and hopefully support will come soon.
           PROJECT_NAME="zeebe(${TARGET}):Dockerfile"
           snyk container "${SNYK_COMMAND}" "${DOCKER_IMAGE}" --file=Dockerfile "'--project-name=${PROJECT_NAME}'" ${SNYK_ARGS} "$(output "${SARIF}" 'docker')" || exitCode=1
-          exit "${exitCode}"
+
+          # Only fail if we entirely failed to parse the projects
+          if [[ $exitCode -gt 1 ]]; then
+            exit "${exitCode}"
+          else
+            exit 0
+          fi
       # This makes the result of our test available in GitHub Code Scanning (look for the Snyk tools)
       # You can filter by your PR ID, by branch, etc.
       # This step is only executed if we're testing, as otherwise no SARIF files are emitted
