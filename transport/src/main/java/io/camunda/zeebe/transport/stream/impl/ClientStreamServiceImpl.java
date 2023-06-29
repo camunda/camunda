@@ -49,7 +49,7 @@ public final class ClientStreamServiceImpl<M extends BufferWriter> extends Actor
     // ClientStream objects.
     clientStreamManager =
         new ClientStreamManager<>(
-            registry, new ClientStreamRequestManager<>(communicationService, actor), metrics);
+            registry, new ClientStreamRequestManager(communicationService, actor), metrics);
   }
 
   @Override
@@ -85,7 +85,7 @@ public final class ClientStreamServiceImpl<M extends BufferWriter> extends Actor
 
   @Override
   protected void onActorCloseRequested() {
-    clientStreamManager.removeAll();
+    clientStreamManager.close();
   }
 
   @Override

@@ -44,7 +44,7 @@ class ClientStreamManagerTest {
   private final ClientStreamManager<TestMetadata> clientStreamManager =
       new ClientStreamManager<>(
           registry,
-          new ClientStreamRequestManager<>(mockTransport, new TestConcurrencyControl()),
+          new ClientStreamRequestManager(mockTransport, new TestConcurrencyControl()),
           metrics);
   private final TestConcurrencyControl executor = new TestConcurrencyControl();
 

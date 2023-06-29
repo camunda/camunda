@@ -16,7 +16,6 @@ import io.camunda.zeebe.transport.stream.api.ClientStreamMetrics;
 import io.camunda.zeebe.transport.stream.api.NoSuchStreamException;
 import io.camunda.zeebe.transport.stream.impl.messages.PushStreamRequest;
 import io.camunda.zeebe.util.buffer.BufferWriter;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 import org.agrona.DirectBuffer;
@@ -26,13 +25,13 @@ import org.slf4j.LoggerFactory;
 final class ClientStreamManager<M extends BufferWriter> {
   private static final Logger LOG = LoggerFactory.getLogger(ClientStreamManager.class);
   private final ClientStreamRegistry<M> registry;
-  private final ClientStreamRequestManager<M> requestManager;
+  private final ClientStreamRequestManager requestManager;
   private final ClientStreamMetrics metrics;
   private final Set<MemberId> servers = new HashSet<>();
 
   ClientStreamManager(
       final ClientStreamRegistry<M> registry,
-      final ClientStreamRequestManager<M> requestManager,
+      final ClientStreamRequestManager requestManager,
       final ClientStreamMetrics metrics) {
     this.registry = registry;
     this.requestManager = requestManager;
@@ -49,13 +48,14 @@ final class ClientStreamManager<M extends BufferWriter> {
     servers.add(serverId);
     metrics.serverCount(servers.size());
 
-    registry.list().forEach(c -> requestManager.openStream(c, Collections.singleton(serverId)));
+    registry.list().forEach(c -> requestManager.add(c.registrationFor(serverId)));
   }
 
   void onServerRemoved(final MemberId serverId) {
     servers.remove(serverId);
     metrics.serverCount(servers.size());
 
+    // no need to send a remove request since the remote server does not exist as far as we're aware
     registry.list().forEach(clientStream -> clientStream.remove(serverId));
   }
 
@@ -74,17 +74,14 @@ final class ClientStreamManager<M extends BufferWriter> {
   void remove(final ClientStreamId streamId) {
     LOG.debug("Removing client stream [{}]", streamId);
     final var serverStream = registry.removeClient(streamId);
-    serverStream.ifPresent(
-        stream -> {
-          LOG.debug("Removing aggregated stream [{}]", stream.getStreamId());
-          stream.close();
-          requestManager.removeStream(stream, servers);
-        });
+    serverStream.ifPresent(stream -> stream.close(requestManager));
   }
 
-  void removeAll() {
+  void close() {
     registry.clear();
     requestManager.removeAll(servers);
+    // prevent further asynchronous requests from being sent out
+    requestManager.close();
   }
 
   public void onPayloadReceived(
@@ -116,7 +113,7 @@ final class ClientStreamManager<M extends BufferWriter> {
           // Stream does not exist. We expect to have already sent remove request to all servers.
           // But just in case that request is lost, we send remove request again. To keep it simple,
           // we do not retry. Otherwise, it is possible that we send it multiple times unnecessary.
-          requestManager.removeStreamUnreliable(streamId, servers);
+          requestManager.removeUnreliable(streamId, servers);
           LOG.warn("Expected to push payload to stream {}, but no stream found.", streamId);
           responseFuture.completeExceptionally(
               new NoSuchStreamException(
