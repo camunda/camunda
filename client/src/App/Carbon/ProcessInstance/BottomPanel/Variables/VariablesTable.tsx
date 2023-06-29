@@ -198,7 +198,9 @@ const VariablesTable: React.FC<Props> = observer(
                   />
                 ) : (
                   <VariableValue hasBackdrop={true}>
-                    {loadingItemId === id && <Loading small />}
+                    {loadingItemId === id && (
+                      <Loading small data-testid="full-variable-loader" />
+                    )}
                     {variableValue}
                   </VariableValue>
                 ),
@@ -279,7 +281,6 @@ const VariablesTable: React.FC<Props> = observer(
                               kind="ghost"
                               size="sm"
                               iconDescription={`Edit variable ${variableName}`}
-                              data-testid="edit-variable-button"
                               disabled={
                                 variablesStore.state.loadingItemId !== null
                               }

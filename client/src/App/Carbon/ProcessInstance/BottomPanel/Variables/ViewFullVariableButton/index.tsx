@@ -9,7 +9,7 @@ import {useState} from 'react';
 import {JSONEditorModal} from 'modules/components/Carbon/JSONEditorModal';
 import {Button} from '@carbon/react';
 import {Popup} from '@carbon/react/icons';
-import {Operations} from './Operations';
+import {Operations} from '../Operations';
 
 type Props = {
   onClick: () => Promise<string | null>;

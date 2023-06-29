@@ -1446,7 +1446,7 @@ describe('VariablePanel', () => {
     ).not.toBeInTheDocument();
     expect(screen.queryByTestId('edit-variable-value')).not.toBeInTheDocument();
     expect(
-      screen.queryByRole('button', {name: /enter edit mode/i})
+      screen.queryByRole('button', {name: /edit variable/i})
     ).not.toBeInTheDocument();
   });
 
@@ -1512,7 +1512,7 @@ describe('VariablePanel', () => {
 
     expect(screen.queryByTestId('edit-variable-value')).not.toBeInTheDocument();
     expect(
-      screen.queryByRole('button', {name: /enter edit mode/i})
+      screen.queryByRole('button', {name: /edit variable/i})
     ).not.toBeInTheDocument();
   });
 

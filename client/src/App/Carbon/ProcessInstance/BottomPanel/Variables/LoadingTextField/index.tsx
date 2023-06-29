@@ -17,7 +17,7 @@ const LoadingTextfield: React.FC<Props> = ({isLoading, ...props}) => {
   if (isLoading) {
     return (
       <LoadingStateContainer>
-        <Loading small />
+        <Loading small data-testid="full-variable-loader" />
         <IconTextInputField {...props} />
       </LoadingStateContainer>
     );
