@@ -7,12 +7,16 @@
  */
 package io.camunda.zeebe.test.util.bpmn.random.blocks;
 
+import io.camunda.zeebe.model.bpmn.builder.AbstractFlowNodeBuilder;
 import io.camunda.zeebe.test.util.bpmn.random.BlockBuilder;
+import io.camunda.zeebe.test.util.bpmn.random.BlockBuilderFactory;
+import io.camunda.zeebe.test.util.bpmn.random.ConstructionContext;
 import io.camunda.zeebe.test.util.bpmn.random.ExecutionPathContext;
 import io.camunda.zeebe.test.util.bpmn.random.ExecutionPathSegment;
+import io.camunda.zeebe.test.util.bpmn.random.steps.StepActivateBPMNElement;
 import java.util.List;
 
-public abstract class AbstractBlockBuilder implements BlockBuilder {
+public class AbstractBlockBuilder implements BlockBuilder {
   protected final String elementId;
   private final String prefix;
 
@@ -24,6 +28,12 @@ public abstract class AbstractBlockBuilder implements BlockBuilder {
   protected AbstractBlockBuilder(final String prefix, final String elementId) {
     this.elementId = elementId;
     this.prefix = prefix;
+  }
+
+  @Override
+  public AbstractFlowNodeBuilder<?, ?> buildFlowNodes(
+      final AbstractFlowNodeBuilder<?, ?> nodeBuilder) {
+    return nodeBuilder.manualTask(elementId).name(elementId);
   }
 
   @Override
@@ -39,6 +49,13 @@ public abstract class AbstractBlockBuilder implements BlockBuilder {
     } else {
       return new ExecutionPathSegment();
     }
+  }
+
+  @Override
+  public ExecutionPathSegment generateRandomExecutionPath(final ExecutionPathContext context) {
+    final ExecutionPathSegment result = new ExecutionPathSegment();
+    result.appendDirectSuccessor(new StepActivateBPMNElement(getElementId()));
+    return result;
   }
 
   @Override
@@ -59,5 +76,18 @@ public abstract class AbstractBlockBuilder implements BlockBuilder {
   @Override
   public boolean equalsOrContains(final List<String> startElementIds) {
     return getPossibleStartingElementIds().stream().anyMatch(startElementIds::contains);
+  }
+
+  static class Factory implements BlockBuilderFactory {
+
+    @Override
+    public BlockBuilder createBlockBuilder(final ConstructionContext context) {
+      return new AbstractBlockBuilder(context.getIdGenerator().nextId());
+    }
+
+    @Override
+    public boolean isAddingDepth() {
+      return false;
+    }
   }
 }

@@ -7,31 +7,14 @@
  */
 package io.camunda.zeebe.test.util.bpmn.random.blocks;
 
-import io.camunda.zeebe.model.bpmn.builder.AbstractFlowNodeBuilder;
 import io.camunda.zeebe.test.util.bpmn.random.BlockBuilder;
 import io.camunda.zeebe.test.util.bpmn.random.BlockBuilderFactory;
 import io.camunda.zeebe.test.util.bpmn.random.ConstructionContext;
-import io.camunda.zeebe.test.util.bpmn.random.ExecutionPathContext;
-import io.camunda.zeebe.test.util.bpmn.random.ExecutionPathSegment;
-import io.camunda.zeebe.test.util.bpmn.random.steps.StepActivateBPMNElement;
 
 public class ManualTaskBlockBuilder extends AbstractBlockBuilder {
 
   public ManualTaskBlockBuilder(final ConstructionContext context) {
     super(context.getIdGenerator().nextId());
-  }
-
-  @Override
-  public AbstractFlowNodeBuilder<?, ?> buildFlowNodes(
-      final AbstractFlowNodeBuilder<?, ?> nodeBuilder) {
-    return nodeBuilder.manualTask(elementId).name(elementId);
-  }
-
-  @Override
-  public ExecutionPathSegment generateRandomExecutionPath(final ExecutionPathContext context) {
-    final ExecutionPathSegment result = new ExecutionPathSegment();
-    result.appendDirectSuccessor(new StepActivateBPMNElement(getElementId()));
-    return result;
   }
 
   static class Factory implements BlockBuilderFactory {
