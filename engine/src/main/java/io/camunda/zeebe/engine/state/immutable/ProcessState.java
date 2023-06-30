@@ -30,4 +30,7 @@ public interface ProcessState {
 
   <T extends ExecutableFlowElement> T getFlowElement(
       long processDefinitionKey, DirectBuffer elementId, Class<T> elementType);
+
+  /** TODO: Remove the cache entirely from the immutable state */
+  void clearCache();
 }
