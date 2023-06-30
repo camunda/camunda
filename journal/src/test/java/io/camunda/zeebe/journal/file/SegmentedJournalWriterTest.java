@@ -129,7 +129,7 @@ final class SegmentedJournalWriterTest {
   @Test
   void shouldInvalidateNextEntryAfterAppend() {
     try (final SegmentedJournalReader reader =
-        new SegmentedJournalReader(journalFactory.journal(segments))) {
+        new SegmentedJournalReader(journalFactory.journal(segments), new JournalMetrics("1"))) {
       // when
       writer.append(-1, journalFactory.entry());
 
@@ -155,7 +155,8 @@ final class SegmentedJournalWriterTest {
             followerJournalFactory.metrics());
 
     try (final SegmentedJournalReader reader =
-        new SegmentedJournalReader(followerJournalFactory.journal(followerSegments))) {
+        new SegmentedJournalReader(
+            followerJournalFactory.journal(followerSegments), new JournalMetrics("1"))) {
       // when
       final byte[] serializedRecord = BufferUtil.bufferAsArray(writtenRecord.serializedRecord());
       followerWriter.append(writtenRecord.checksum(), serializedRecord);
