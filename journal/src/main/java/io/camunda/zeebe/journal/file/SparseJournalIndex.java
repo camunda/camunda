@@ -17,7 +17,6 @@ package io.camunda.zeebe.journal.file;
 
 import io.camunda.zeebe.journal.JournalRecord;
 import java.util.Map;
-import java.util.TreeMap;
 import java.util.concurrent.ConcurrentNavigableMap;
 import java.util.concurrent.ConcurrentSkipListMap;
 
@@ -29,7 +28,7 @@ final class SparseJournalIndex implements JournalIndex {
   private final ConcurrentNavigableMap<Long, Long> asqnToIndex = new ConcurrentSkipListMap<>();
   // This is added to make deleteAfter and deleteUntil easier.
   // TODO: Check if this can be improved. https://github.com/zeebe-io/zeebe/issues/6220
-  private final TreeMap<Long, Long> indexToAsqn = new TreeMap<>();
+  private final ConcurrentNavigableMap<Long, Long> indexToAsqn = new ConcurrentSkipListMap<>();
 
   SparseJournalIndex(final int density) {
     this.density = density;
