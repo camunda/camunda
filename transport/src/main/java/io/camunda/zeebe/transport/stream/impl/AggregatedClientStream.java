@@ -13,12 +13,10 @@ import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.transport.stream.api.ClientStreamMetrics;
 import io.camunda.zeebe.transport.stream.api.NoSuchStreamException;
 import io.camunda.zeebe.transport.stream.api.StreamExhaustedException;
-import io.camunda.zeebe.transport.stream.impl.ClientStreamRegistration.State;
 import io.camunda.zeebe.util.buffer.BufferWriter;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
@@ -33,7 +31,7 @@ final class AggregatedClientStream<M extends BufferWriter> {
   private static final Logger LOGGER = LoggerFactory.getLogger(AggregatedClientStream.class);
   private final UUID streamId;
   private final LogicalId<M> logicalId;
-  private final Map<MemberId, ClientStreamRegistration> registrations = new HashMap<>();
+  private final Set<MemberId> liveConnections = new HashSet<>();
   private final ClientStreamMetrics metrics;
   private final Int2ObjectHashMap<ClientStreamImpl<M>> clientStreams = new Int2ObjectHashMap<>();
 
@@ -71,6 +69,16 @@ final class AggregatedClientStream<M extends BufferWriter> {
   }
 
   /**
+   * Mark that this stream is registered with the given server. Server can send data to this stream
+   * from now on.
+   *
+   * @param serverId id of the server
+   */
+  void add(final MemberId serverId) {
+    liveConnections.add(serverId);
+  }
+
+  /**
    * If true, the stream is registered with the given server. If false, it is also possible the
    * stream is registered with the server, but we failed to receive the acknowledgement.
    *
@@ -78,8 +86,7 @@ final class AggregatedClientStream<M extends BufferWriter> {
    * @return true if a server has acknowledged to add stream request
    */
   boolean isConnected(final MemberId serverId) {
-    final var registration = registrations.get(serverId);
-    return registration != null && registration.state() == State.ADDED;
+    return liveConnections.contains(serverId);
   }
 
   /**
@@ -88,26 +95,11 @@ final class AggregatedClientStream<M extends BufferWriter> {
    * @param serverId id of the server
    */
   void remove(final MemberId serverId) {
-    final var registration = registrations.remove(serverId);
-    registration.transitionToClosed();
+    liveConnections.remove(serverId);
   }
 
-  void clear() {
-    registrations.values().forEach(ClientStreamRegistration::transitionToClosed);
-    clientStreams.clear();
-  }
-
-  void close(final ClientStreamRequestManager requestManager) {
+  void close() {
     isOpened = false;
-
-    LOGGER.debug("Closing aggregated stream [{}]", streamId);
-    final var toRemove = new HashMap<>(this.registrations);
-    registrations.clear();
-
-    // no need to close the registrations, as closing the aggregated stream mean this stream will
-    // not be reused, so there's no risk of out of order modification. by leaving the registration
-    // in its state, we'll let it finish any pending removing operations
-    toRemove.values().forEach(requestManager::remove);
   }
 
   void removeClient(final ClientStreamIdImpl streamId) {
@@ -182,27 +174,13 @@ final class AggregatedClientStream<M extends BufferWriter> {
             });
   }
 
-  void open(final ClientStreamRequestManager requestManager, final Set<MemberId> servers) {
+  void open(final ClientStreamRequestManager<M> requestManager, final Set<MemberId> servers) {
     if (isOpened) {
       return;
     }
 
+    requestManager.add(this, servers);
     isOpened = true;
-    for (final var serverId : servers) {
-      requestManager.add(registrationFor(serverId));
-    }
-  }
-
-  ClientStreamRegistration registrationFor(final MemberId serverId) {
-    if (!isOpened) {
-      // TODO: or return optional? anything but null
-      final var registration = new ClientStreamRegistration(streamId, logicalId, serverId);
-      registration.transitionToClosed();
-      return registration;
-    }
-
-    return registrations.computeIfAbsent(
-        serverId, s -> new ClientStreamRegistration(streamId, logicalId, s));
   }
 
   @Override
@@ -213,7 +191,7 @@ final class AggregatedClientStream<M extends BufferWriter> {
         + ", logicalId="
         + logicalId
         + ", liveConnections="
-        + registrations
+        + liveConnections
         + ", clientStreams="
         + clientStreams.size()
         + ", isOpened="

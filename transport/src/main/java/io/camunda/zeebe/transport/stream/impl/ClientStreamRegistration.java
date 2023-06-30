@@ -24,31 +24,26 @@ import org.slf4j.LoggerFactory;
  * <p>This class is not thread safe, and expects to be always called from the same synchronization
  * context.
  */
-final class ClientStreamRegistration {
+final class ClientStreamRegistration<M extends BufferWriter> {
   private static final Logger LOGGER = LoggerFactory.getLogger(ClientStreamRegistration.class);
 
-  private final UUID streamId;
-  private final LogicalId<? extends BufferWriter> logicalId;
+  private final AggregatedClientStream<M> stream;
   private final MemberId serverId;
 
   private State state = State.INITIAL;
   private CompletionStage<byte[]> pendingRequest;
 
-  ClientStreamRegistration(
-      final UUID streamId,
-      final LogicalId<? extends BufferWriter> logicalId,
-      final MemberId serverId) {
-    this.streamId = streamId;
-    this.logicalId = logicalId;
+  ClientStreamRegistration(final AggregatedClientStream<M> stream, final MemberId serverId) {
+    this.stream = stream;
     this.serverId = serverId;
   }
 
   UUID streamId() {
-    return streamId;
+    return stream.getStreamId();
   }
 
   LogicalId<? extends BufferWriter> logicalId() {
-    return logicalId;
+    return stream.logicalId();
   }
 
   MemberId serverId() {
@@ -72,7 +67,9 @@ final class ClientStreamRegistration {
   }
 
   void transitionToAdded() {
-    transition(State.ADDED, EnumSet.of(State.ADDING));
+    if (transition(State.ADDED, EnumSet.of(State.ADDING))) {
+      stream.add(serverId);
+    }
   }
 
   boolean transitionToRemoving() {
@@ -80,11 +77,14 @@ final class ClientStreamRegistration {
   }
 
   void transitionToRemoved() {
-    transition(State.REMOVED, EnumSet.of(State.INITIAL, State.REMOVING));
+    if (transition(State.REMOVED, EnumSet.of(State.INITIAL, State.REMOVING))) {
+      stream.remove(serverId);
+    }
   }
 
   void transitionToClosed() {
     transition(State.CLOSED, EnumSet.allOf(State.class));
+    stream.remove(serverId);
   }
 
   private boolean transition(final State target, final Set<State> allowed) {
@@ -94,7 +94,7 @@ final class ClientStreamRegistration {
     }
 
     state = target;
-    LOGGER.trace("{} remote client stream {} on server {}", target, streamId, serverId);
+    LOGGER.trace("{} remote client stream {} on server {}", target, stream.getStreamId(), serverId);
     return true;
   }
 
@@ -102,7 +102,7 @@ final class ClientStreamRegistration {
     LOGGER.trace(
         "Skip {} transition of stream {} on {} as its state is {}",
         target,
-        streamId,
+        stream.getStreamId(),
         serverId,
         state);
   }

@@ -36,9 +36,9 @@ import org.junit.jupiter.api.Test;
 final class ClientStreamRequestManagerTest {
 
   private final ClusterCommunicationService mockTransport = mock(ClusterCommunicationService.class);
-  private final ClientStreamRequestManager requestManager =
-      new ClientStreamRequestManager(mockTransport, new TestConcurrencyControl());
-  private final AggregatedClientStream<BufferWriter> clientStream =
+  private final ClientStreamRequestManager<TestMetadata> requestManager =
+      new ClientStreamRequestManager<>(mockTransport, new TestConcurrencyControl());
+  private final AggregatedClientStream<TestMetadata> clientStream =
       new AggregatedClientStream<>(
           UUID.randomUUID(),
           new LogicalId<>(new UnsafeBuffer(BufferUtil.wrapString("foo")), new TestMetadata()));
@@ -52,31 +52,33 @@ final class ClientStreamRequestManagerTest {
 
   @Test
   void shouldNotAddWhenRemoving() {
-    // given
+    // given - adding the stream, then removing it without completing the request, leaving it in
+    // REMOVING indefinitely
     final var serverId = MemberId.anonymous();
-    final var registration = clientStream.registrationFor(serverId);
-    registration.transitionToRemoving();
+    final var pendingRequest = new CompletableFuture<byte[]>();
+    when(mockTransport.<byte[], byte[]>send(
+            eq(StreamTopics.REMOVE.topic()), any(), any(), any(), eq(serverId), any()))
+        .thenReturn(pendingRequest);
+    requestManager.add(clientStream, serverId);
+    requestManager.remove(clientStream, serverId);
 
     // when
-    requestManager.add(registration);
+    requestManager.add(clientStream, serverId);
 
-    // then
-    verify(mockTransport, never())
+    // then - should only have sent one ADD request (the initial one)
+    verify(mockTransport, times(1))
         .send(eq(StreamTopics.ADD.topic()), any(), any(), any(), eq(serverId), any());
-    assertThat(clientStream.isConnected(serverId)).isFalse();
-    assertThat(registration.state()).isEqualTo(State.REMOVING);
   }
 
   @Test
   void shouldNotRemoveWhenRemoved() {
     // given
     final var serverId = MemberId.anonymous();
-    final var registration = clientStream.registrationFor(serverId);
-    requestManager.add(registration);
-    requestManager.remove(registration);
+    requestManager.add(clientStream, serverId);
+    requestManager.remove(clientStream, serverId);
 
     // when
-    requestManager.remove(registration);
+    requestManager.remove(clientStream, serverId);
 
     // then - only one request sent ever
     verify(mockTransport, times(1))
@@ -88,38 +90,39 @@ final class ClientStreamRequestManagerTest {
     // given
     final var pendingRequest = new CompletableFuture<byte[]>();
     final var serverId = MemberId.anonymous();
-    final var registration = clientStream.registrationFor(serverId);
     when(mockTransport.<byte[], byte[]>send(any(), any(), any(), any(), any(), any()))
         .thenReturn(pendingRequest);
-    requestManager.add(registration);
+    requestManager.add(clientStream, serverId);
 
     // when
-    requestManager.remove(registration);
+    requestManager.remove(clientStream, serverId);
 
     // then - no request sent until we complete the future
     verify(mockTransport, never())
         .send(eq(StreamTopics.REMOVE.topic()), any(), any(), any(), eq(serverId), any());
-    assertThat(registration.state()).isEqualTo(State.REMOVING);
 
     // then - completes once future is completed
     pendingRequest.complete(new byte[0]);
     verify(mockTransport, times(1))
         .send(eq(StreamTopics.REMOVE.topic()), any(), any(), any(), eq(serverId), any());
-    assertThat(registration.state()).isEqualTo(State.REMOVED);
   }
 
   @Test
   void shouldNotRemoveIfAlreadyRemoving() {
-    // given
+    // given - we add the stream then remove it, with the remove request pending indefinitely
     final var serverId = MemberId.anonymous();
-    final var registration = clientStream.registrationFor(serverId);
-    registration.transitionToRemoving();
+    final var pendingRequest = new CompletableFuture<byte[]>();
+    when(mockTransport.<byte[], byte[]>send(
+            eq(StreamTopics.REMOVE.topic()), any(), any(), any(), eq(serverId), any()))
+        .thenReturn(pendingRequest);
+    requestManager.add(clientStream, serverId);
+    requestManager.remove(clientStream, serverId);
 
     // when
-    requestManager.remove(registration);
+    requestManager.remove(clientStream, serverId);
 
-    // then
-    verify(mockTransport, never())
+    // then - only one request should have been sent
+    verify(mockTransport, times(1))
         .send(eq(StreamTopics.REMOVE.topic()), any(), any(), any(), eq(serverId), any());
   }
 
@@ -128,113 +131,100 @@ final class ClientStreamRequestManagerTest {
     // given
     final var pendingRequest = new CompletableFuture<byte[]>();
     final var serverId = MemberId.anonymous();
-    final var registration = clientStream.registrationFor(serverId);
     when(mockTransport.<byte[], byte[]>send(any(), any(), any(), any(), any(), any()))
         .thenReturn(pendingRequest)
         .thenReturn(CompletableFuture.completedFuture(new byte[0]));
-    requestManager.add(registration);
+    requestManager.add(clientStream, serverId);
 
     // when
-    requestManager.remove(registration);
+    requestManager.remove(clientStream, serverId);
 
     // then - no request sent until we complete the future
     verify(mockTransport, never())
         .send(eq(StreamTopics.REMOVE.topic()), any(), any(), any(), eq(serverId), any());
-    assertThat(registration.state()).isEqualTo(State.REMOVING);
 
     // then - completes once future is completed
     pendingRequest.completeExceptionally(new RuntimeException("failed"));
     verify(mockTransport, times(1))
         .send(eq(StreamTopics.REMOVE.topic()), any(), any(), any(), eq(serverId), any());
-    assertThat(registration.state()).isEqualTo(State.REMOVED);
   }
 
   @Test
   void shouldAddRegistration() {
     // given
     final var serverId = MemberId.anonymous();
-    final var registration = clientStream.registrationFor(serverId);
 
     // when
-    requestManager.add(registration);
+    requestManager.add(clientStream, serverId);
 
     // then
     verify(mockTransport)
         .send(eq(StreamTopics.ADD.topic()), any(), any(), any(), eq(serverId), any());
     assertThat(clientStream.isConnected(serverId)).isTrue();
-    assertThat(registration.state()).isEqualTo(State.ADDED);
   }
 
   @Test
   void shouldRetryWhenAddRequestFails() {
     // given
     final var serverId = MemberId.anonymous();
-    final var registration = clientStream.registrationFor(serverId);
     when(mockTransport.send(any(), any(), any(), any(), eq(serverId), any()))
         .thenReturn(CompletableFuture.failedFuture(new RuntimeException("Expected")))
         .thenReturn(CompletableFuture.completedFuture(null));
 
     // when
-    requestManager.add(registration);
+    requestManager.add(clientStream, serverId);
 
     // then
     verify(mockTransport, times(2))
         .send(eq(StreamTopics.ADD.topic()), any(), any(), any(), eq(serverId), any());
     assertThat(clientStream.isConnected(serverId)).isTrue();
-    assertThat(registration.state()).isEqualTo(State.ADDED);
   }
 
   @Test
   void shouldSendRemoveRequest() {
     // given
     final var serverId = MemberId.anonymous();
-    final var registration = clientStream.registrationFor(serverId);
-    requestManager.add(registration);
+    requestManager.add(clientStream, serverId);
 
     // when
-    requestManager.remove(registration);
+    requestManager.remove(clientStream, serverId);
 
     // then
     verify(mockTransport)
         .send(eq(StreamTopics.REMOVE.topic()), any(), any(), any(), eq(serverId), any());
     assertThat(clientStream.isConnected(serverId)).isFalse();
-    assertThat(registration.state()).isEqualTo(State.REMOVED);
   }
 
   @Test
   void shouldNotSendRequestOnRemoveIfNeverAdded() {
     // given
     final var serverId = MemberId.anonymous();
-    final var registration = clientStream.registrationFor(serverId);
 
     // when
-    requestManager.remove(registration);
+    requestManager.remove(clientStream, serverId);
 
     // then
     verify(mockTransport, never())
         .send(eq(StreamTopics.REMOVE.topic()), any(), any(), any(), eq(serverId), any());
     assertThat(clientStream.isConnected(serverId)).isFalse();
-    assertThat(registration.state()).isEqualTo(State.REMOVED);
   }
 
   @Test
   void shouldRetryWhenRemoveRequestFails() {
     // given
     final var serverId = MemberId.anonymous();
-    final var registration = clientStream.registrationFor(serverId);
-    requestManager.add(registration);
+    requestManager.add(clientStream, serverId);
     when(mockTransport.send(any(), any(), any(), any(), eq(serverId), any()))
         .thenReturn(CompletableFuture.failedFuture(new RuntimeException("Expected")))
         .thenReturn(CompletableFuture.completedFuture(null));
 
     // when
-    requestManager.remove(registration);
+    requestManager.remove(clientStream, serverId);
 
     // then
     verify(mockTransport, times(2))
         .send(eq(StreamTopics.REMOVE.topic()), any(), any(), any(), eq(serverId), any());
     assertThat(clientStream.isConnected(serverId)).isFalse();
-    assertThat(registration.state()).isEqualTo(State.REMOVED);
   }
 
   @Test
@@ -242,13 +232,13 @@ final class ClientStreamRequestManagerTest {
     // given
     final var pendingRequest = new CompletableFuture<byte[]>();
     final var serverId = MemberId.anonymous();
-    final var registration = clientStream.registrationFor(serverId);
+    final var registration = requestManager.registrationFor(clientStream, serverId);
     requestManager.add(registration);
     when(mockTransport.<byte[], byte[]>send(any(), any(), any(), any(), eq(serverId), any()))
         .thenReturn(pendingRequest);
 
     // when
-    requestManager.add(registration);
+    requestManager.add(clientStream, serverId);
     registration.transitionToClosed();
     pendingRequest.completeExceptionally(new RuntimeException("failed"));
 
@@ -264,21 +254,19 @@ final class ClientStreamRequestManagerTest {
     // given
     final var pendingRequest = new CompletableFuture<byte[]>();
     final var serverId = MemberId.anonymous();
-    final var registration = clientStream.registrationFor(serverId);
-    requestManager.add(registration);
+    requestManager.add(clientStream, serverId);
     when(mockTransport.<byte[], byte[]>send(any(), any(), any(), any(), eq(serverId), any()))
         .thenReturn(pendingRequest);
 
-    // when
-    requestManager.remove(registration);
-    registration.transitionToClosed();
+    // when - remove all, which will close all registrations
+    requestManager.remove(clientStream, serverId);
+    requestManager.removeAll(Collections.singleton(serverId));
     pendingRequest.completeExceptionally(new RuntimeException("failed"));
 
     // then
     verify(mockTransport, times(1))
         .send(eq(StreamTopics.REMOVE.topic()), any(), any(), any(), eq(serverId), any());
     assertThat(clientStream.isConnected(serverId)).isFalse();
-    assertThat(registration.state()).isEqualTo(State.CLOSED);
   }
 
   @Test
@@ -286,21 +274,19 @@ final class ClientStreamRequestManagerTest {
     // given
     final var pendingRequest = new CompletableFuture<byte[]>();
     final var serverId = MemberId.anonymous();
-    final var registration = clientStream.registrationFor(serverId);
     when(mockTransport.<byte[], byte[]>send(
             eq(StreamTopics.ADD.topic()), any(), any(), any(), eq(serverId), any()))
         .thenReturn(pendingRequest);
 
-    // when
-    requestManager.add(registration);
-    requestManager.remove(registration);
+    // when - remove all, which will close all registrations
+    requestManager.add(clientStream, serverId);
+    requestManager.removeAll(Collections.singleton(serverId));
     pendingRequest.completeExceptionally(new RuntimeException("failed"));
 
     // then
     verify(mockTransport, times(1))
         .send(eq(StreamTopics.ADD.topic()), any(), any(), any(), eq(serverId), any());
     assertThat(clientStream.isConnected(serverId)).isFalse();
-    assertThat(registration.state()).isEqualTo(State.REMOVED);
   }
 
   @Test
@@ -318,51 +304,6 @@ final class ClientStreamRequestManagerTest {
         .unicast(eq(StreamTopics.REMOVE_ALL.topic()), any(), any(), eq(server1), anyBoolean());
     verify(mockTransport)
         .unicast(eq(StreamTopics.REMOVE_ALL.topic()), any(), any(), eq(server2), anyBoolean());
-  }
-
-  @Test
-  void shouldNotRetryAddIfManagerIsClosed() {
-    // given
-    final var pendingRequest = new CompletableFuture<byte[]>();
-    final var serverId = MemberId.anonymous();
-    final var registration = clientStream.registrationFor(serverId);
-    when(mockTransport.<byte[], byte[]>send(
-            eq(StreamTopics.ADD.topic()), any(), any(), any(), eq(serverId), any()))
-        .thenReturn(pendingRequest);
-
-    // when
-    requestManager.add(registration);
-    requestManager.close();
-    pendingRequest.completeExceptionally(new RuntimeException("failed"));
-
-    // then
-    verify(mockTransport, times(1))
-        .send(eq(StreamTopics.ADD.topic()), any(), any(), any(), eq(serverId), any());
-    assertThat(clientStream.isConnected(serverId)).isFalse();
-    assertThat(registration.state()).isEqualTo(State.ADDING);
-  }
-
-  @Test
-  void shouldNotRetryRemoveIfManagerIsClosed() {
-    // given
-    final var pendingRequest = new CompletableFuture<byte[]>();
-    final var serverId = MemberId.anonymous();
-    final var registration = clientStream.registrationFor(serverId);
-    requestManager.add(registration);
-    when(mockTransport.<byte[], byte[]>send(
-            eq(StreamTopics.REMOVE.topic()), any(), any(), any(), eq(serverId), any()))
-        .thenReturn(pendingRequest);
-
-    // when
-    requestManager.remove(registration);
-    requestManager.close();
-    pendingRequest.completeExceptionally(new RuntimeException("failed"));
-
-    // then
-    verify(mockTransport, times(1))
-        .send(eq(StreamTopics.REMOVE.topic()), any(), any(), any(), eq(serverId), any());
-    assertThat(clientStream.isConnected(serverId)).isFalse();
-    assertThat(registration.state()).isEqualTo(State.REMOVING);
   }
 
   private static class TestMetadata implements BufferWriter {
