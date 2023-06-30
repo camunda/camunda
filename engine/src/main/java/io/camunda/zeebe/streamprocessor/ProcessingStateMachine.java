@@ -454,6 +454,10 @@ public final class ProcessingStateMachine {
                       .valueWriter(entry.recordValue())
                       .done());
           pendingResponses = currentProcessingResult.getProcessingResponse().stream().toList();
+          // we need to mark the command as processed, even if the processing failed
+          // otherwise we might replay the events, which have been written during
+          // #onProcessingError again on restart
+          lastProcessedPositionState.markAsProcessed(typedCommand.getPosition());
         });
   }
 
