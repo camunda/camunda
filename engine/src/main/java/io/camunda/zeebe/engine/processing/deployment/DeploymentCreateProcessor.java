@@ -108,6 +108,9 @@ public final class DeploymentCreateProcessor
   @Override
   public ProcessingError tryHandleError(
       final TypedRecord<DeploymentRecord> command, final Throwable error) {
+    // Make sure the cache does not contain any leftovers from this run (by hard resetting)
+    processState.clearCache();
+
     if (error instanceof ResourceTransformationFailedException exception) {
       rejectionWriter.appendRejection(
           command, RejectionType.INVALID_ARGUMENT, exception.getMessage());

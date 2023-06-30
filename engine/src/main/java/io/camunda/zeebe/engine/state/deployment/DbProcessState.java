@@ -310,6 +310,13 @@ public final class DbProcessState implements MutableProcessState {
     return element;
   }
 
+  @Override
+  public void clearCache() {
+    processesByKey.clear();
+    processesByProcessIdAndVersion.clear();
+    versionManager.clear();
+  }
+
   private DeployedProcess lookupProcessByIdAndPersistedVersion(final long latestVersion) {
     processVersion.wrapLong(latestVersion);
 
