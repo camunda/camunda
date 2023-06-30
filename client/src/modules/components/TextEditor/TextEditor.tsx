@@ -124,7 +124,7 @@ function reduceChildren(children: SerializedNode[], initial = 0): number {
 }
 
 TextEditor.getEditorStateLength = function (
-  editorState: SerializedEditorState | string | null
+  editorState: SerializedEditorState | string | null | undefined
 ): number {
   if (typeof editorState === 'string' || editorState === null) {
     return editorState?.length || 0;
@@ -143,7 +143,7 @@ TextEditor.CharCount = function ({
   editorState,
   limit = TEXT_REPORT_MAX_CHARACTERS,
 }: {
-  editorState: SerializedEditorState | string | null;
+  editorState: SerializedEditorState | string | null | undefined;
   limit?: number;
 }) {
   const textLength = TextEditor.getEditorStateLength(editorState);

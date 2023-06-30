@@ -13,7 +13,7 @@ import {EntityNameForm} from './EntityNameForm';
 
 const props = {
   entity: 'Report',
-  mightFail: (promise: Promise<any>, cb: ((response: any) => void) | undefined) => cb?.(promise),
+  mightFail: (promise: Promise<any>, cb: ((response: any) => any) | undefined) => cb?.(promise),
   name: 'Name',
   isNew: false,
   onSave: jest.fn(),
