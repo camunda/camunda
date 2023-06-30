@@ -252,4 +252,37 @@ public class DeploymentRejectionTest {
             tuple(DeploymentIntent.CREATED, RecordType.EVENT),
             tuple(DeploymentDistributionIntent.DISTRIBUTING, RecordType.EVENT));
   }
+
+  /** Regression test against https://github.com/camunda/zeebe/issues/13254 */
+  @Test
+  public void shouldNotCacheProcessesWhenDeploymentRejected() {
+    // given
+    final BpmnModelInstance invalidProcess =
+        Bpmn.createExecutableProcess("too_large_process")
+            .startEvent()
+            .documentation("x".repeat((int) ByteValue.ofMegabytes(3)))
+            .done();
+    final BpmnModelInstance validProcess =
+        Bpmn.createExecutableProcess("valid_process").startEvent().task().endEvent().done();
+
+    // when
+    ENGINE
+        .deployment()
+        .withXmlResource(invalidProcess)
+        .withXmlResource(validProcess)
+        .expectRejection()
+        .deploy();
+
+    // then
+    assertThat(
+            RecordingExporter.records()
+                .limit(r -> r.getRecordType() == RecordType.COMMAND_REJECTION)
+                .collect(Collectors.toList()))
+        .extracting(Record::getIntent, Record::getRecordType)
+        .doesNotContain(
+            tuple(ProcessIntent.CREATED, RecordType.EVENT),
+            tuple(DeploymentIntent.CREATED, RecordType.EVENT));
+
+    ENGINE.processInstance().ofBpmnProcessId("valid_process").expectRejection().create();
+  }
 }
