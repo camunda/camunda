@@ -297,7 +297,7 @@ public class DeploymentRejectionTest {
 
   /** Regression test against https://github.com/camunda/zeebe/issues/13254 */
   @Test
-  public void shouldNotCacheProcessesWhenDeploymentRejected() {
+  public void shouldNotBeAbleToCreateInstanceWhenDeploymentIsRejected() {
     // given
     final BpmnModelInstance invalidProcess =
         Bpmn.createExecutableProcess("too_large_process")
