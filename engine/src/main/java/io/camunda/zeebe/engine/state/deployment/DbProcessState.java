@@ -313,6 +313,15 @@ public final class DbProcessState implements MutableProcessState {
     return element;
   }
 
+  @Override
+  public void clearCache() {
+    processesByKey.clear();
+    processesByProcessIdAndVersion.clear();
+
+    // On 8.0, the version manager is not a cache, but it is a cache in 8.1+
+    // versionManager.clear();
+  }
+
   private DeployedProcess lookupProcessByIdAndPersistedVersion(final long latestVersion) {
     processVersion.wrapLong(latestVersion);
 
