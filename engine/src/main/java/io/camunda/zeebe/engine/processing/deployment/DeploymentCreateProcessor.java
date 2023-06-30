@@ -96,6 +96,9 @@ public final class DeploymentCreateProcessor implements TypedRecordProcessor<Dep
     try {
       createTimerIfTimerStartEvent(command);
     } catch (final RuntimeException e) {
+      // Make sure the cache does not contain any leftovers from this run (by hard resetting)
+      processState.clearCache();
+
       final String reason = String.format(COULD_NOT_CREATE_TIMER_MESSAGE, e.getMessage());
       responseWriter.writeRejectionOnCommand(command, RejectionType.PROCESSING_ERROR, reason);
       rejectionWriter.appendRejection(command, RejectionType.PROCESSING_ERROR, reason);
@@ -116,6 +119,9 @@ public final class DeploymentCreateProcessor implements TypedRecordProcessor<Dep
   @Override
   public ProcessingError tryHandleError(
       final TypedRecord<DeploymentRecord> command, final Throwable error) {
+    // Make sure the cache does not contain any leftovers from this run (by hard resetting)
+    processState.clearCache();
+
     if (error instanceof ResourceTransformationFailedException exception) {
       rejectionWriter.appendRejection(
           command, RejectionType.INVALID_ARGUMENT, exception.getMessage());

@@ -69,4 +69,8 @@ public final class ProcessVersionManager {
     }
     return currentValue;
   }
+
+  public void clear() {
+    versionCache.clear();
+  }
 }
