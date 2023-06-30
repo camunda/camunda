@@ -25,7 +25,8 @@ import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.io.IOException;
-import java.util.Map;
+import java.util.*;
+import java.util.stream.Collectors;
 
 public class ElasticsearchDecisionRequirementsDaoIT extends OperateZeebeIntegrationTest {
 
@@ -40,6 +41,8 @@ public class ElasticsearchDecisionRequirementsDaoIT extends OperateZeebeIntegrat
 
   private DecisionRequirements decisionRequirements;
   private Long key;
+  private List<DecisionRequirements> decisionRequirementsList;
+  private Set<Long> keys;
 
   @Test
   public void shouldReturnWhenByKey() throws Exception {
@@ -57,7 +60,7 @@ public class ElasticsearchDecisionRequirementsDaoIT extends OperateZeebeIntegrat
   }
 
   @Test(expected = ResourceNotFoundException.class)
-  public void showThrowWhenByKeyNotExists() throws Exception {
+  public void shouldThrowWhenByKeyNotExists() throws Exception {
     given(() -> {
     });
     when(() -> dao.byKey(-27L));
@@ -68,6 +71,85 @@ public class ElasticsearchDecisionRequirementsDaoIT extends OperateZeebeIntegrat
     given(() -> {
     });
     when(() -> dao.byKey(null));
+  }
+
+  @Test
+  public void shouldReturnEmptyListWhenByKeysEmpty() throws Exception {
+    given(() -> {
+    });
+    when(() -> decisionRequirementsList = dao.byKeys(Set.of()));
+    then(() -> {
+      assertThat(decisionRequirementsList).isEmpty();
+    });
+  }
+
+  @Test
+  public void shouldReturnEmptyListWhenByKeysNotExist() throws Exception {
+    given(() -> {
+    });
+    when(() -> decisionRequirementsList = dao.byKeys(Set.of(-10L, -20L)));
+    then(() -> {
+      assertThat(decisionRequirementsList).isEmpty();
+    });
+  }
+
+  @Test
+  public void shouldReturnEmptyListWhenByKeysNullKey() throws Exception {
+    given(() -> {
+    });
+    when(() -> decisionRequirementsList = dao.byKeys(Collections.singleton(null)));
+    then(() -> {
+      assertThat(decisionRequirementsList).isEmpty();
+    });
+  }
+
+  @Test
+  public void shouldReturnEmptyListWhenByKeysNotExistAndNullKey() throws Exception {
+    given(() -> {
+    });
+    when(() -> decisionRequirementsList = dao.byKeys(new HashSet<>(Arrays.asList(-10L, null))));
+    then(() -> {
+      assertThat(decisionRequirementsList).isEmpty();
+    });
+  }
+
+  @Test
+  public void shouldReturnWhenByKeys() throws Exception {
+    given(() -> {
+      tester.deployDecision("invoiceBusinessDecisions_v_1.dmn")
+          .deployDecision("invoiceBusinessDecisions_v_2.dmn")
+          .waitUntil().decisionsAreDeployed(4);
+      SearchHit[] hits = searchAllDocuments(decisionRequirementsIndex.getAlias());
+      keys = Arrays.stream(hits).map(hit -> Long.parseLong(hit.getSourceAsMap().get("key").toString())).collect(Collectors.toSet());
+    });
+    when(() -> decisionRequirementsList = dao.byKeys(keys));
+    then(() -> {
+      assertThat(decisionRequirementsList).hasSize(2);
+      assertThat(decisionRequirementsList).extracting(DecisionRequirementsIndex.KEY).containsExactlyInAnyOrder(keys.toArray());
+      assertThat(decisionRequirementsList).extracting(DecisionRequirementsIndex.VERSION).containsExactlyInAnyOrder(1, 2);
+    });
+  }
+
+  @Test
+  public void shouldReturnWhenByKeysNullAndNotNull() throws Exception {
+    given(() -> {
+      tester.deployDecision("invoiceBusinessDecisions_v_1.dmn")
+          .deployDecision("invoiceBusinessDecisions_v_2.dmn")
+          .waitUntil().decisionsAreDeployed(4);
+      SearchHit[] hits = searchAllDocuments(decisionRequirementsIndex.getAlias());
+      keys = Arrays.stream(hits).map(hit -> Long.parseLong(hit.getSourceAsMap().get("key").toString())).collect(Collectors.toSet());
+    });
+    when(() -> {
+          Set<Long> keys2 = new HashSet<>(keys);
+          keys2.add(null);
+          decisionRequirementsList = dao.byKeys(keys2);
+        }
+    );
+    then(() -> {
+      assertThat(decisionRequirementsList).hasSize(2);
+      assertThat(decisionRequirementsList).extracting(DecisionRequirementsIndex.KEY).containsExactlyInAnyOrder(keys.toArray());
+      assertThat(decisionRequirementsList).extracting(DecisionRequirementsIndex.VERSION).containsExactlyInAnyOrder(1, 2);
+    });
   }
 
   protected SearchHit[] searchAllDocuments(String index) {

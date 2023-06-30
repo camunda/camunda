@@ -20,8 +20,11 @@ import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Objects;
+import java.util.Set;
 
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
+import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
 
 @Component("ElasticsearchDecisionRequirementsDaoV1")
 public class ElasticsearchDecisionRequirementsDao extends ElasticsearchDao<DecisionRequirements>
@@ -45,6 +48,19 @@ public class ElasticsearchDecisionRequirementsDao extends ElasticsearchDao<Decis
       throw new ServerException(String.format("Found more than one decision requirements for key %s", key));
     }
     return decisionRequirements.get(0);
+  }
+
+  @Override
+  public List<DecisionRequirements> byKeys(Set<Long> keys) throws APIException {
+    final List<Long> nonNullKeys = (keys == null) ? List.of() : keys.stream().filter(Objects::nonNull).toList();
+    if (nonNullKeys.isEmpty()) {
+      return List.of();
+    }
+    try {
+      return searchFor(new SearchSourceBuilder().query(termsQuery(DecisionRequirementsIndex.KEY, nonNullKeys)));
+    } catch (Exception e) {
+      throw new ServerException("Error in reading decision requirements by keys", e);
+    }
   }
 
   @Override
