@@ -35,7 +35,7 @@
     <version.elasticsearch>7.17.9</version.elasticsearch>
     <version.elasticsearch-client>8.7.1</version.elasticsearch-client>
     <version.opensearch>2.4.0</version.opensearch>
-    <version.spring.boot>3.0.7</version.spring.boot>
+    <version.spring.boot>3.1.1</version.spring.boot>
     <version.junit>4.13.2</version.junit>
     <version.springdoc>2.1.0</version.springdoc>
     <version.jakarta.json>2.0.1</version.jakarta.json>
@@ -49,8 +49,8 @@
     <version.snakeyaml>2.0</version.snakeyaml>
     <version.apache.http5>5.2.1</version.apache.http5>
 
-    <zeebe-test-container.version>3.5.2</zeebe-test-container.version>
-    <elasticsearch-test-container.version>1.17.6</elasticsearch-test-container.version>
+    <zeebe-test-container.version>3.6.0</zeebe-test-container.version>
+    <elasticsearch-test-container.version>1.18.3</elasticsearch-test-container.version>
 
     <maven.compiler.target>17</maven.compiler.target>
     <maven.compiler.source>17</maven.compiler.source>
