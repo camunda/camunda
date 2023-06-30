@@ -34,7 +34,7 @@ const InstanceHeader: React.FC<Props> = ({
       data-testid="instance-header"
       $hideBottomBorder={hideBottomBorder}
     >
-      <StateIcon state={state} size={24} />
+      <StateIcon state={state} size={24} data-testid={`${state}-icon`} />
 
       <Table>
         <thead>
