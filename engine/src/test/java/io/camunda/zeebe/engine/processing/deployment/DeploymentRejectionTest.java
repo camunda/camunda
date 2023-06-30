@@ -23,6 +23,7 @@ import io.camunda.zeebe.protocol.record.intent.CommandDistributionIntent;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
 import io.camunda.zeebe.protocol.record.value.DeploymentRecordValue;
+import io.camunda.zeebe.test.util.junit.RegressionTest;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import io.camunda.zeebe.util.ByteValue;
@@ -295,8 +296,7 @@ public class DeploymentRejectionTest {
             tuple(CommandDistributionIntent.STARTED, RecordType.EVENT));
   }
 
-  /** Regression test against https://github.com/camunda/zeebe/issues/13254 */
-  @Test
+  @RegressionTest("https://github.com/camunda/zeebe/issues/13254")
   public void shouldNotBeAbleToCreateInstanceWhenDeploymentIsRejected() {
     // given
     final BpmnModelInstance invalidProcess =
