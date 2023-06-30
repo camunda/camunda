@@ -42,4 +42,6 @@ public interface ProcessStore {
     List<Map<String,String>> createCallHierarchyFor(List<String> processInstanceIds, final String currentProcessInstanceId);
 
     long deleteDocument(final String indexName, final String idField, String id) throws IOException;
+
+  void deleteProcessInstanceFromTreePath(String processInstanceKey);
 }

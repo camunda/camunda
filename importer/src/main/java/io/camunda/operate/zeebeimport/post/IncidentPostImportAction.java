@@ -14,16 +14,13 @@ import io.camunda.operate.entities.post.PostImporterActionType;
 import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.exceptions.PersistenceException;
 import io.camunda.operate.property.OperateProperties;
-import io.camunda.operate.schema.templates.FlowNodeInstanceTemplate;
-import io.camunda.operate.schema.templates.IncidentTemplate;
-import io.camunda.operate.schema.templates.ListViewTemplate;
-import io.camunda.operate.schema.templates.PostImporterQueueTemplate;
+import io.camunda.operate.schema.templates.*;
 import io.camunda.operate.util.CollectionUtil;
 import io.camunda.operate.util.ElasticsearchUtil;
 import io.camunda.operate.util.ThreadUtil;
 import io.camunda.operate.zeebe.ImportValueType;
 import io.camunda.operate.zeebeimport.ImportPositionHolder;
-import io.camunda.operate.zeebeimport.util.TreePath;
+import io.camunda.operate.util.TreePath;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
@@ -53,6 +50,9 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 import static io.camunda.operate.entities.IncidentState.ACTIVE;
+import static io.camunda.operate.entities.OperationState.COMPLETED;
+import static io.camunda.operate.entities.OperationState.SENT;
+import static io.camunda.operate.entities.OperationType.DELETE_PROCESS_INSTANCE;
 import static io.camunda.operate.schema.templates.IncidentTemplate.KEY;
 import static io.camunda.operate.schema.templates.IncidentTemplate.*;
 import static io.camunda.operate.schema.templates.ListViewTemplate.ACTIVITIES_JOIN_RELATION;
@@ -83,6 +83,9 @@ public class IncidentPostImportAction implements PostImportAction {
 
   @Autowired
   private IncidentTemplate incidentTemplate;
+
+  @Autowired
+  private OperationTemplate operationTemplate;
 
   @Autowired
   private ListViewTemplate listViewTemplate;
@@ -454,17 +457,27 @@ public class IncidentPostImportAction implements PostImportAction {
       data.getProcessInstanceIndices().putAll(
           Arrays.stream(sh.getHits()).collect(toMap(hit -> hit.getId(), hit -> hit.getIndex())));
     });
-    incidents.forEach(i -> {
+
+    for(Iterator<IncidentEntity> iterator = incidents.iterator(); iterator.hasNext();) {
+      IncidentEntity i = iterator.next();
       String piTreePath = data.getProcessInstanceTreePaths().get(i.getProcessInstanceKey());
       if (piTreePath == null || piTreePath.isEmpty()) {
-        throw new OperateRuntimeException(String.format(
-            "Process instance is not yet imported for incident processing. Incident id: %s, process instance id: %s",
-            i.getId(), i.getProcessInstanceKey()));
+        //check whether DELETE_PROCESS_INSTANCE operation exists
+        if (processInstanceWasDeleted(i.getProcessInstanceKey())) {
+          logger.debug(
+              "Process instance with the key {} was deleted. Incident post processing will be skipped for id {}.",
+              i.getProcessInstanceKey(), i.getId());
+          iterator.remove();
+        } else {
+          throw new OperateRuntimeException(String.format(
+              "Process instance is not yet imported for incident processing. Incident id: %s, process instance id: %s",
+              i.getId(), i.getProcessInstanceKey()));
+        }
       }
       data.getIncidentTreePaths().put(i.getId(),
           new TreePath(piTreePath).appendFlowNode(
               i.getFlowNodeId()).appendFlowNodeInstance(String.valueOf(i.getFlowNodeInstanceKey())).toString());
-    });
+    }
 
     //find flow node instances in list view
     final SearchRequest fniInListViewRequest = ElasticsearchUtil.createSearchRequest(listViewTemplate)
@@ -480,6 +493,18 @@ public class IncidentPostImportAction implements PostImportAction {
           CollectionUtil.addToMap(data.getFlowNodeInstanceInListViewIndices(), hit.getId(), hit.getIndex())
       );
     });
+  }
+
+  private boolean processInstanceWasDeleted(long processInstanceKey) throws IOException {
+    SearchRequest request =  ElasticsearchUtil.createSearchRequest(operationTemplate)
+        .source(new SearchSourceBuilder()
+            .query(joinWithAnd(
+                termQuery(OperationTemplate.PROCESS_INSTANCE_KEY, processInstanceKey),
+                termQuery(OperationTemplate.TYPE, DELETE_PROCESS_INSTANCE),
+                termsQuery(OperationTemplate.STATE, SENT, COMPLETED)))
+            .size(0));
+    SearchResponse response = esClient.search(request, RequestOptions.DEFAULT);
+    return response.getHits().getTotalHits().value > 0;
   }
 
   private UpdateRequest createUpdateRequestFor(String index, String id, @Nullable Map<String,Object> doc, @Nullable Script script, String routing) {
@@ -511,6 +536,7 @@ public class IncidentPostImportAction implements PostImportAction {
 
   @Override
   public void run() {
+    if (operateProperties.getImporter().isPostImportEnabled()) {
       try {
         if (performOneRound()) {
           postImportScheduler.submit(this);
@@ -518,12 +544,12 @@ public class IncidentPostImportAction implements PostImportAction {
           postImportScheduler.schedule(this, Instant.now().plus(BACKOFF, MILLIS));
         }
       } catch (Exception ex) {
-        logger.error(String.format(
-            "Exception occurred when performing post import for partition %d: %s. Will be retried...",
+        logger.error(String.format("Exception occurred when performing post import for partition %d: %s. Will be retried...",
             partitionId, ex.getMessage()), ex);
         //TODO can it fail here?
         postImportScheduler.schedule(this, Instant.now().plus(BACKOFF, MILLIS));
       }
+    }
   }
 
   @Override

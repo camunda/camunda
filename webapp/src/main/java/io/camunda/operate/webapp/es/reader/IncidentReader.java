@@ -32,7 +32,7 @@ import io.camunda.operate.webapp.rest.dto.incidents.IncidentErrorTypeDto;
 import io.camunda.operate.webapp.rest.dto.incidents.IncidentFlowNodeDto;
 import io.camunda.operate.webapp.rest.dto.incidents.IncidentResponseDto;
 import io.camunda.operate.webapp.rest.exception.NotFoundException;
-import io.camunda.operate.zeebeimport.util.TreePath;
+import io.camunda.operate.util.TreePath;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.HashMap;

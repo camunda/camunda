@@ -72,8 +72,13 @@ public class ProcessInstanceWriter {
           ProcessInstanceDependant.PROCESS_INSTANCE_KEY,
           processInstanceKey);
     }
+    deleteProcessInstanceFromTreePath(processInstanceKey);
     deleteDocument(processInstanceTemplate.getIndexPattern(), ListViewTemplate.PROCESS_INSTANCE_KEY,
         processInstanceKey);
+  }
+
+  private void deleteProcessInstanceFromTreePath(String processInstanceKey) {
+    processStore.deleteProcessInstanceFromTreePath(processInstanceKey);
   }
 
   private long deleteDocument(final String indexName, final String idField, String id)

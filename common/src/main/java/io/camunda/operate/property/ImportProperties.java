@@ -30,6 +30,9 @@ public class ImportProperties {
 
   private int postImportThreadsCount = DEFAULT_POST_IMPORT_THREADS_COUNT;
 
+  //is here for testing purposes
+  private boolean postImportEnabled = true;
+
   private int readerThreadsCount = DEFAULT_READER_THREADS_COUNT;
 
   private int queueSize = DEFAULT_IMPORT_QUEUE_SIZE;
@@ -79,6 +82,15 @@ public class ImportProperties {
 
   public ImportProperties setPostImportThreadsCount(final int postImportThreadsCount) {
     this.postImportThreadsCount = postImportThreadsCount;
+    return this;
+  }
+
+  public boolean isPostImportEnabled() {
+    return postImportEnabled;
+  }
+
+  public ImportProperties setPostImportEnabled(boolean postImportEnabled) {
+    this.postImportEnabled = postImportEnabled;
     return this;
   }
 

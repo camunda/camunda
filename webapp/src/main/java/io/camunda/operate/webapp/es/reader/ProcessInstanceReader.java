@@ -15,7 +15,7 @@ import io.camunda.operate.webapp.rest.dto.ProcessInstanceReferenceDto;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewProcessInstanceDto;
 import io.camunda.operate.webapp.security.identity.IdentityPermission;
 import io.camunda.operate.webapp.security.identity.PermissionsService;
-import io.camunda.operate.zeebeimport.util.TreePath;
+import io.camunda.operate.util.TreePath;
 
 import java.util.*;
 

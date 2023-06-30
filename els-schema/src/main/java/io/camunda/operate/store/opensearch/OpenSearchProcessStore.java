@@ -110,4 +110,9 @@ public class OpenSearchProcessStore implements ProcessStore {
     public long deleteDocument(String indexName, String idField, String id) throws IOException {
         throw new UnsupportedOperationException();
     }
+
+  @Override
+  public void deleteProcessInstanceFromTreePath(String processInstanceKey) {
+    throw new UnsupportedOperationException();
+  }
 }

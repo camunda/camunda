@@ -4,16 +4,13 @@
  * See the License.txt file for more information. You may not use this file
  * except in compliance with the proprietary license.
  */
-package io.camunda.operate.zeebeimport.util;
+package io.camunda.operate.util;
 
-import static io.camunda.operate.zeebeimport.util.TreePath.TreePathEntryType.FN;
-import static io.camunda.operate.zeebeimport.util.TreePath.TreePathEntryType.FNI;
-import static io.camunda.operate.zeebeimport.util.TreePath.TreePathEntryType.PI;
+import static io.camunda.operate.util.TreePath.TreePathEntryType.FN;
+import static io.camunda.operate.util.TreePath.TreePathEntryType.FNI;
+import static io.camunda.operate.util.TreePath.TreePathEntryType.PI;
 
-import java.util.Arrays;
-import java.util.Optional;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -122,6 +119,26 @@ public class TreePath {
   @Override
   public String toString() {
     return treePath.toString();
+  }
+
+  public TreePath removeProcessInstance(String processInstanceKey) {
+    List<String> treePathEntries = new ArrayList<>();
+    Collections.addAll(treePathEntries, treePath.toString().split("/"));
+    int piIndex = treePathEntries.indexOf("PI_" + processInstanceKey);
+    if (piIndex > -1) {
+      if (piIndex == treePathEntries.size() - 1) {
+        //if last element remove only that one
+        treePathEntries.remove(piIndex);
+      } else {
+        //else remove 3 elements: PI, FN and FNI
+        treePathEntries.remove(piIndex + 2);
+        treePathEntries.remove(piIndex + 1);
+        treePathEntries.remove(piIndex);
+      }
+      treePath = new StringBuffer(String.join("/", treePathEntries));
+      return this;
+    }
+    return this;
   }
 
   public enum TreePathEntryType {

@@ -9,6 +9,7 @@ package io.camunda.operate.store.elasticsearch;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.entities.listview.ProcessInstanceForListViewEntity;
 import io.camunda.operate.entities.listview.ProcessInstanceState;
+import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.schema.templates.ListViewTemplate;
 import io.camunda.operate.store.NotFoundException;
 import io.camunda.operate.store.ProcessStore;
@@ -16,10 +17,14 @@ import io.camunda.operate.entities.ProcessEntity;
 import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.schema.indices.ProcessIndex;
 import io.camunda.operate.util.ElasticsearchUtil;
+import io.camunda.operate.util.TreePath;
+import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
+import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
+import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.IdsQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
@@ -50,10 +55,9 @@ import java.util.*;
 import static io.camunda.operate.schema.indices.ProcessIndex.BPMN_XML;
 import static io.camunda.operate.schema.templates.FlowNodeInstanceTemplate.TREE_PATH;
 import static io.camunda.operate.schema.templates.ListViewTemplate.*;
+import static io.camunda.operate.util.ElasticsearchUtil.*;
 import static io.camunda.operate.util.ElasticsearchUtil.QueryType.ALL;
 import static io.camunda.operate.util.ElasticsearchUtil.QueryType.ONLY_RUNTIME;
-import static io.camunda.operate.util.ElasticsearchUtil.joinWithAnd;
-import static io.camunda.operate.util.ElasticsearchUtil.scrollWith;
 import static org.elasticsearch.index.query.QueryBuilders.*;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.*;
 
@@ -90,6 +94,9 @@ public class ElasticsearchProcessStore implements ProcessStore {
 
     @Autowired
     private RestHighLevelClient esClient;
+
+    @Autowired
+    private OperateProperties operateProperties;
 
     @Override
     public Optional<Long> getDistinctCountFor(String indexAlias, String fieldName) {
@@ -376,7 +383,49 @@ public class ElasticsearchProcessStore implements ProcessStore {
         return response.getDeleted();
     }
 
-    private ProcessEntity fromSearchHit(String processString) {
+  @Override
+  public void deleteProcessInstanceFromTreePath(String processInstanceKey) {
+    BulkRequest bulkRequest = new BulkRequest();
+    // select process instance - get tree path
+    String treePath = getProcessInstanceTreePathById(processInstanceKey);
+
+    // select all process instances with term treePath == tree path
+    // update all this process instances to remove corresponding part of tree path
+    // 2 cases:
+    // - middle level: we remove /PI_key/FN_name/FNI_key from the middle
+    // - end level: we remove /PI_key from the end
+
+    final QueryBuilder query = ((BoolQueryBuilder)joinWithAnd(
+        termQuery(JOIN_RELATION, PROCESS_INSTANCE_JOIN_RELATION),
+        termQuery(TREE_PATH, treePath)))
+        .mustNot(termQuery(KEY, processInstanceKey));
+    final SearchRequest request = ElasticsearchUtil
+        .createSearchRequest(listViewTemplate)
+        .source(new SearchSourceBuilder().query(query)
+            .fetchSource(TREE_PATH, null));
+    try {
+      ElasticsearchUtil.scroll(request, hits -> {
+        Arrays.stream(hits.getHits()).forEach(sh -> {
+          UpdateRequest updateRequest = new UpdateRequest();
+          Map<String, Object> updateFields = new HashMap<>();
+          String newTreePath = new TreePath((String)sh.getSourceAsMap().get(TREE_PATH)).removeProcessInstance(processInstanceKey).toString();
+          updateFields.put(TREE_PATH, newTreePath);
+          updateRequest.index(listViewTemplate.getFullQualifiedName()).id(sh.getId())
+              .doc(updateFields)
+              .retryOnConflict(UPDATE_RETRY_COUNT);
+          bulkRequest.add(updateRequest);
+        });
+      }, esClient);
+      ElasticsearchUtil.processBulkRequest(esClient, bulkRequest, operateProperties.getElasticsearch().getBulkRequestMaxSizeInBytes());
+    } catch (Exception e) {
+      throw new OperateRuntimeException(
+          String.format("Exception occurred when deleting process instance %s from tree path: %s", processInstanceKey,
+              e.getMessage()));
+    }
+
+  }
+
+  private ProcessEntity fromSearchHit(String processString) {
         return ElasticsearchUtil.fromSearchHit(processString, objectMapper, ProcessEntity.class);
     }
 
