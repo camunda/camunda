@@ -14,6 +14,7 @@ import com.auth0.json.auth.TokenHolder;
 import com.auth0.jwt.JWT;
 import com.auth0.jwt.exceptions.JWTDecodeException;
 import com.auth0.jwt.interfaces.Claim;
+import com.auth0.net.Response;
 import com.auth0.net.TokenRequest;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.webapp.security.OperateProfileService;
@@ -98,7 +99,8 @@ public class TokenAuthentication extends AbstractAuthenticationToken {
   private void getNewTokenByRefreshToken() {
     try {
       final TokenRequest tokenRequest = getAuthAPI().renewAuth(refreshToken);
-      final TokenHolder tokenHolder = tokenRequest.execute();
+      final Response<TokenHolder> tokenHolderResponse = tokenRequest.execute();
+      final TokenHolder tokenHolder = tokenHolderResponse.getBody();
       authenticate(tokenHolder.getIdToken(), tokenHolder.getRefreshToken(), tokenHolder.getAccessToken());
       logger.info("New tokens received and validated.");
     } catch (Auth0Exception e) {
