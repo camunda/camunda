@@ -124,8 +124,7 @@ class SegmentedJournalReader implements JournalReader {
         final var index = journalIndex.lookupAsqn(asqn, indexUpperBound);
 
         // depending on the type of index, it's possible there is no ASQN indexed, in which case
-        // start
-        // from the beginning
+        // start from the beginning
         if (index == null) {
           unsafeSeekToFirst();
         } else {
