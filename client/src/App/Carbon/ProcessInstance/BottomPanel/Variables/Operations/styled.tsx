@@ -16,6 +16,12 @@ const Container = styled.div<ContainerProps>`
   display: flex;
   justify-content: end;
   min-width: var(--cds-spacing-10);
+
+  .cds--tooltip-content {
+    text-overflow: ellipsis;
+    overflow: hidden;
+    white-space: nowrap;
+  }
 `;
 
 const InlineLoading = styled(BaseInlineLoading)`
