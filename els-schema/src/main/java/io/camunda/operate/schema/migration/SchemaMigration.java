@@ -24,7 +24,7 @@ import org.springframework.context.annotation.FullyQualifiedAnnotationBeanNameGe
 import org.springframework.context.annotation.Import;
 
 @SpringBootApplication
-@ComponentScan(basePackages = { "io.camunda.operate.property", "io.camunda.operate.es", "io.camunda.operate.schema","io.camunda.operate.management" },
+@ComponentScan(basePackages = { "io.camunda.operate.property", "io.camunda.operate.es", "io.camunda.operate.store", "io.camunda.operate.schema","io.camunda.operate.management" },
     nameGenerator = FullyQualifiedAnnotationBeanNameGenerator.class)
 @Import({JacksonConfig.class, Metrics.class})
 public class SchemaMigration implements CommandLineRunner {
