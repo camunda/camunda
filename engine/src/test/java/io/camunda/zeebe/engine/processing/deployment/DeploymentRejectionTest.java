@@ -302,6 +302,7 @@ public class DeploymentRejectionTest {
     final BpmnModelInstance invalidProcess =
         Bpmn.createExecutableProcess("too_large_process")
             .startEvent()
+            // In order to cause BATCH SIZE EXCEEDING we add a big comment
             .documentation("x".repeat((int) ByteValue.ofMegabytes(3)))
             .done();
     final BpmnModelInstance validProcess =
