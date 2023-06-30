@@ -55,7 +55,7 @@ class SegmentedJournalReaderTest {
             .withDirectory(directory.resolve("data").toFile())
             .withMaxSegmentSize(
                 entrySize * ENTRIES_PER_SEGMENT + SegmentDescriptor.getEncodingLength())
-            .withJournalIndexDensity(5)
+            .withJournalIndexDensity(ENTRIES_PER_SEGMENT / 2)
             .withMetaStore(new MockJournalMetastore())
             .build();
     reader = journal.openReader();
@@ -148,6 +148,26 @@ class SegmentedJournalReaderTest {
 
     // then
     assertThat(reader.next().index()).isEqualTo(resetIndex);
+  }
+
+  @Test
+  void shouldBuiltIndexOnDemandWhileSeek() {
+    // given
+    for (int i = 1; i <= ENTRIES_PER_SEGMENT; i++) {
+      assertThat(journal.append(i, recordDataWriter).index()).isEqualTo(i);
+    }
+
+    // simulate restart with no index
+    journal.getJournalIndex().clear();
+    assertThat(journal.getJournalIndex().lookup(journal.getLastIndex())).isNull();
+
+    // when
+    reader.seekToLast();
+
+    // then
+    assertThat(journal.getJournalIndex().lookup(journal.getLastIndex()))
+        .describedAs("Index must be built during seek")
+        .isNotNull();
   }
 
   private int getSerializedSize(final DirectBuffer data) {
