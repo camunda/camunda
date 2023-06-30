@@ -6,12 +6,18 @@
  */
 package io.camunda.operate.it;
 
+import static io.camunda.operate.util.ElasticsearchUtil.requestOptionsFor;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.util.ArrayList;
 import java.util.Map;
+
+import io.camunda.operate.util.ElasticsearchUtil;
 import io.camunda.operate.util.OperateZeebeIntegrationTest;
 import io.camunda.operate.util.PayloadUtil;
 import io.camunda.operate.webapp.zeebe.operation.UpdateVariableHandler;
+import io.camunda.operate.zeebeimport.RecordsReader;
+import org.elasticsearch.client.RequestOptions;
 import org.junit.Before;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -83,6 +89,36 @@ public class ImportFieldsIT extends OperateZeebeIntegrationTest {
     assertThat(tester.hasVariable(varName, bigJSONVariablePayload)).isTrue();
   }
 
+  @Test public void testThrottleBatchSize() throws Exception {
+
+    // having
+    ElasticsearchUtil.setRequestOptions(requestOptionsFor(1024 * 32 * 10));
+
+    var bigVarBuilder = new StringBuilder();
+    for (int i = 0; i < 1024 * 32; i++) {
+      bigVarBuilder.append("a");
+    }
+
+    var vars = new StringBuilder("{");
+    for (int i = 0; i < 50; i++) {
+      vars.append("\"test" + i + "\" : \"" + bigVarBuilder.toString() + "\", ");
+    }
+    vars.append("\"end\" : \"" + bigVarBuilder.toString() + "\"}");
+
+    // when
+    tester.deployProcess("single-task.bpmn").waitUntil().processIsDeployed();
+
+    var processInstanceKeys = new ArrayList<Long>();
+    for (int i = 0; i < 5; i++) {
+      processInstanceKeys.add(
+          tester.startProcessInstance("process", vars.toString()).waitUntil().processInstanceIsStarted()
+              .getProcessInstanceKey());
+    }
+
+    tester.waitUntil().variableExists("end");
+    ElasticsearchUtil.setRequestOptions(RequestOptions.DEFAULT);
+  }
+
   protected String buildStringWithLengthOf(int length) {
     StringBuilder result = new StringBuilder();
     String fillChar = "a";
@@ -91,5 +127,4 @@ public class ImportFieldsIT extends OperateZeebeIntegrationTest {
     }
     return result.toString();
   }
-
 }

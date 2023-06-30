@@ -52,10 +52,7 @@ import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.search.SearchScrollRequest;
 import org.elasticsearch.action.support.WriteRequest;
 import org.elasticsearch.action.update.UpdateRequest;
-import org.elasticsearch.client.Request;
-import org.elasticsearch.client.RequestOptions;
-import org.elasticsearch.client.Response;
-import org.elasticsearch.client.RestHighLevelClient;
+import org.elasticsearch.client.*;
 import org.elasticsearch.client.indices.GetIndexRequest;
 import org.elasticsearch.client.tasks.GetTaskRequest;
 import org.elasticsearch.client.tasks.GetTaskResponse;
@@ -88,6 +85,12 @@ public abstract class ElasticsearchUtil {
 
   public static final Function<SearchHit,Long> searchHitIdToLong = (hit) -> Long.valueOf(hit.getId());
   public static final Function<SearchHit,String> searchHitIdToString = SearchHit::getId;
+
+  public static RequestOptions requestOptions = RequestOptions.DEFAULT;
+
+  public static void setRequestOptions(final RequestOptions newRequestOptions){
+    requestOptions = newRequestOptions;
+  }
 
   public static CompletableFuture<SearchResponse> searchAsync(final SearchRequest searchRequest,
       final Executor executor, final RestHighLevelClient esClient) {
@@ -754,6 +757,13 @@ public abstract class ElasticsearchUtil {
     return searchResponse.getHits().getTotalHits().value > 0;
   }
 
+  public static RequestOptions requestOptionsFor(int maxSizeInBytes) {
+    RequestOptions.Builder options = RequestOptions.DEFAULT.toBuilder();
+    options.setHttpAsyncResponseConsumerFactory(
+        new HttpAsyncResponseConsumerFactory.HeapBufferedResponseConsumerFactory(maxSizeInBytes));
+    return options.build();
+  }
+
   private static class DelegatingActionListener<Response> implements ActionListener<Response> {
 
     private final CompletableFuture<Response> future;
@@ -774,4 +784,5 @@ public abstract class ElasticsearchUtil {
       executorDelegate.execute(() -> future.completeExceptionally(e));
     }
   }
+
 }

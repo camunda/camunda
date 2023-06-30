@@ -21,6 +21,7 @@ import io.camunda.operate.exceptions.NoSuchIndexException;
 import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.schema.indices.ImportPositionIndex;
+import io.camunda.operate.util.NumberThrottleable;
 import io.camunda.operate.zeebe.ImportValueType;
 
 import java.io.IOException;
@@ -36,6 +37,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.locks.ReentrantLock;
 
+import jakarta.annotation.PostConstruct;
 import org.elasticsearch.ElasticsearchStatusException;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
@@ -85,6 +87,7 @@ public class RecordsReader implements Runnable {
    * The queue of executed tasks for execution.
    */
   private final BlockingQueue<Callable<Boolean>> importJobs;
+  private NumberThrottleable batchSizeThrottle;
 
   /**
    * The job that we are currently busy with.
@@ -127,6 +130,11 @@ public class RecordsReader implements Runnable {
     this.importValueType = importValueType;
     this.importJobs = new LinkedBlockingQueue<>(queueSize);
     this.schedulingImportJobLock = new ReentrantLock();
+  }
+
+  @PostConstruct
+  public void postConstruct(){
+    this.batchSizeThrottle = new NumberThrottleable.DivideNumberThrottle(operateProperties.getZeebeElasticsearch().getBatchSize());
   }
 
   @Override
@@ -187,8 +195,10 @@ public class RecordsReader implements Runnable {
 
   public ImportBatch readNextBatchBySequence(final Long sequence, final Long lastSequence) throws NoSuchIndexException {
     final String aliasName = importValueType.getAliasName(operateProperties.getZeebeElasticsearch().getPrefix());
-    int batchSize = operateProperties.getZeebeElasticsearch().getBatchSize();
-
+    int batchSize = batchSizeThrottle.get();
+    if( batchSize != batchSizeThrottle.getOriginal() ){
+      logger.warn("Use new batch size {} (original {})", batchSize ,batchSizeThrottle.getOriginal());
+    }
     final long lessThanEqualsSequence;
     final int maxNumberOfHits;
 
@@ -227,8 +237,15 @@ public class RecordsReader implements Runnable {
         throw new OperateRuntimeException(message, ex);
       }
     } catch (Exception e) {
-      final String message = String.format("Exception occurred for alias [%s], while obtaining next Zeebe records batch: %s", aliasName, e.getMessage());
-      throw new OperateRuntimeException(message, e);
+      if( e.getMessage().contains("entity content is too long")){
+        logger.info("{}. Will decrease batch size for {}-{}", e.getMessage(), importValueType.name(), partitionId);
+        batchSizeThrottle.throttle();
+        return readNextBatchBySequence(sequence, lastSequence);
+      } else {
+        final String message = String.format(
+            "Exception occurred for alias [%s], while obtaining next Zeebe records batch: %s", aliasName, e.getMessage());
+        throw new OperateRuntimeException(message, e);
+      }
     }
   }
 
@@ -240,7 +257,7 @@ public class RecordsReader implements Runnable {
       if (scrollNeeded) {
         searchRequest.scroll(TimeValue.timeValueMillis(SCROLL_KEEP_ALIVE_MS));
       }
-      SearchResponse response = zeebeEsClient.search(searchRequest, RequestOptions.DEFAULT);
+      SearchResponse response = zeebeEsClient.search(searchRequest, requestOptions);
       checkForFailedShards(response);
 
       searchHits.addAll(Arrays.stream(response.getHits().getHits()).map(this::searchHitToOperateHit).toList());
@@ -251,7 +268,7 @@ public class RecordsReader implements Runnable {
           SearchScrollRequest scrollRequest = new SearchScrollRequest(scrollId);
           scrollRequest.scroll(TimeValue.timeValueMillis(SCROLL_KEEP_ALIVE_MS));
 
-          response = zeebeEsClient.scroll(scrollRequest, RequestOptions.DEFAULT);
+          response = zeebeEsClient.scroll(scrollRequest, requestOptions);
           checkForFailedShards(response);
 
           scrollId = response.getScrollId();
@@ -326,8 +343,14 @@ public class RecordsReader implements Runnable {
         throw new OperateRuntimeException(message, ex);
       }
     } catch (Exception e) {
-      final String message = String.format("Exception occurred for alias [%s], while obtaining next Zeebe records batch: %s", aliasName, e.getMessage());
-      throw new OperateRuntimeException(message, e);
+      if( e.getMessage().contains("entity content is too long")) {
+        batchSizeThrottle.throttle();
+        return readNextBatchByPositionAndPartition(positionFrom, positionTo);
+      }else {
+        final String message = String.format(
+            "Exception occurred for alias [%s], while obtaining next Zeebe records batch: %s", aliasName, e.getMessage());
+        throw new OperateRuntimeException(message, e);
+      }
     }
   }
 
@@ -365,7 +388,7 @@ public class RecordsReader implements Runnable {
 
     SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder().query(queryBuilder).sort(ImportPositionIndex.POSITION, SortOrder.ASC);
     if (positionTo == null) {
-      searchSourceBuilder = searchSourceBuilder.size(operateProperties.getZeebeElasticsearch().getBatchSize());
+      searchSourceBuilder = searchSourceBuilder.size(batchSizeThrottle.get());
     } else {
       logger.debug("Import batch reread was called. Data type {}, partitionId {}, positionFrom {}, positionTo {}.", importValueType, partitionId, positionFrom, positionTo);
       int size = (int)(positionTo - positionFrom);
