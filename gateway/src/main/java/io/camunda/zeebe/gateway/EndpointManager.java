@@ -397,55 +397,51 @@ public final class EndpointManager {
             .setTimeout(request.getTimeout());
     final var consumer = new JobClientStreamConsumer(responseObserver);
 
-    responseObserver.setOnReadyHandler(
-        () -> {
-          Loggers.JOB_STREAM_LOGGER.trace(
-              "Adding new job stream for {} with {} properties", jobType, activationProperties);
-          jobStreamer
-              .add(streamType, activationProperties, consumer)
-              .whenComplete(
-                  (id, error) -> {
-                    if (error != null) {
-                      Loggers.JOB_STREAM_LOGGER.warn(
-                          "Closing client stream: failed to register new job stream for {} with properties {}",
-                          jobType,
-                          activationProperties,
-                          error);
-                      responseObserver.onError(error);
-                      jobStreamer.remove(id);
-                      return;
-                    }
+    Loggers.JOB_STREAM_LOGGER.trace(
+        "Adding new job stream for {} with {} properties", jobType, activationProperties);
+    jobStreamer
+        .add(streamType, activationProperties, consumer)
+        .whenComplete(
+            (id, error) -> {
+              if (error != null) {
+                Loggers.JOB_STREAM_LOGGER.warn(
+                    "Closing client stream: failed to register new job stream for {} with properties {}",
+                    jobType,
+                    activationProperties,
+                    error);
+                responseObserver.onError(error);
+                return;
+              }
 
-                    consumer.setErrorHandler(
-                        t -> {
-                          Loggers.JOB_STREAM_LOGGER.debug(
-                              "Removing client stream [{}] (type={}, props={}) due to error",
-                              id,
-                              jobType,
-                              activationProperties);
-                          jobStreamer.remove(id);
-                        });
-
-                    responseObserver.setOnCancelHandler(
-                        () -> {
-                          Loggers.JOB_STREAM_LOGGER.debug(
-                              "Removing client stream [{}] (type={}, props={}) due to cancellation",
-                              id,
-                              jobType,
-                              activationProperties);
-                          jobStreamer.remove(id);
-                        });
-                    responseObserver.setOnCloseHandler(
-                        () -> {
-                          Loggers.JOB_STREAM_LOGGER.debug(
-                              "Removing client stream [{}] (type={}, props={}) due to closing",
-                              id,
-                              jobType,
-                              activationProperties);
-                          jobStreamer.remove(id);
-                        });
+              consumer.setErrorHandler(
+                  t -> {
+                    Loggers.JOB_STREAM_LOGGER.debug(
+                        "Removing client stream [{}] (type={}, props={}) due to error",
+                        id,
+                        jobType,
+                        activationProperties);
+                    jobStreamer.remove(id);
                   });
-        });
+
+              responseObserver.setOnCancelHandler(
+                  () -> {
+                    Loggers.JOB_STREAM_LOGGER.debug(
+                        "Removing client stream [{}] (type={}, props={}) due to cancellation",
+                        id,
+                        jobType,
+                        activationProperties);
+                    jobStreamer.remove(id);
+                  });
+              responseObserver.setOnCloseHandler(
+                  () -> {
+                    Loggers.JOB_STREAM_LOGGER.debug(
+                        "Removing client stream [{}] (type={}, props={}) due to closing",
+                        id,
+                        jobType,
+                        activationProperties);
+                    jobStreamer.remove(id);
+                  });
+            });
   }
 
   private <GrpcRequestT, BrokerResponseT, GrpcResponseT> void sendRequest(
