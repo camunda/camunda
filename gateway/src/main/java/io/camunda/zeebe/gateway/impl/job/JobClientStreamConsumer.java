@@ -12,7 +12,6 @@ import io.camunda.zeebe.gateway.ResponseMapper;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivatedJob;
 import io.camunda.zeebe.protocol.impl.stream.job.ActivatedJobImpl;
 import io.camunda.zeebe.transport.stream.api.ClientStreamConsumer;
-import io.grpc.stub.ServerCallStreamObserver;
 import io.grpc.stub.StreamObserver;
 import java.util.concurrent.CompletableFuture;
 import org.agrona.DirectBuffer;

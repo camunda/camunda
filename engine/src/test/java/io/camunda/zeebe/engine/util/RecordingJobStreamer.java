@@ -7,9 +7,9 @@
  */
 package io.camunda.zeebe.engine.util;
 
-import io.camunda.zeebe.protocol.impl.stream.job.JobActivationProperties;
 import io.camunda.zeebe.engine.processing.streamprocessor.JobStreamer;
 import io.camunda.zeebe.protocol.impl.stream.job.ActivatedJob;
+import io.camunda.zeebe.protocol.impl.stream.job.JobActivationProperties;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -63,9 +63,7 @@ public class RecordingJobStreamer implements JobStreamer {
     }
 
     @Override
-    public void write(final MutableDirectBuffer buffer, final int offset) {
-
-    }
+    public void write(final MutableDirectBuffer buffer, final int offset) {}
   }
 
   public static class RecordingJobStream implements JobStream {

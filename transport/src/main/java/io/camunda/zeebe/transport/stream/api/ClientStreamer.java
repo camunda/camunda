@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.transport.stream.api;
 
-import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.util.CloseableSilently;
 import io.camunda.zeebe.util.buffer.BufferWriter;
 import java.util.concurrent.CompletableFuture;

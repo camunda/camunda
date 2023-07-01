@@ -60,7 +60,8 @@ public final class Gateway implements CloseableSilently {
   private final GatewayCfg gatewayCfg;
   private final ActorSchedulingService actorSchedulingService;
   private final GatewayHealthManager healthManager;
-  private final ClientStreamer<io.camunda.zeebe.protocol.impl.stream.job.JobActivationProperties> jobStreamer;
+  private final ClientStreamer<io.camunda.zeebe.protocol.impl.stream.job.JobActivationProperties>
+      jobStreamer;
 
   private Server server;
   private final BrokerClient brokerClient;

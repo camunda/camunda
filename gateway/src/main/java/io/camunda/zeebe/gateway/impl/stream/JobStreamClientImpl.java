@@ -27,7 +27,9 @@ import io.camunda.zeebe.transport.stream.api.ClientStreamer;
  */
 public final class JobStreamClientImpl implements JobStreamClient {
   private final ActorSchedulingService schedulingService;
-  private final ClientStreamService<io.camunda.zeebe.protocol.impl.stream.job.JobActivationProperties> streamService;
+  private final ClientStreamService<
+          io.camunda.zeebe.protocol.impl.stream.job.JobActivationProperties>
+      streamService;
 
   private boolean started;
   private ActorFuture<Void> startedFuture;

@@ -24,7 +24,6 @@ import io.camunda.zeebe.client.api.command.StreamJobsCommandStep1.StreamJobsComm
 import io.camunda.zeebe.client.api.response.StreamJobsResponse;
 import io.camunda.zeebe.client.api.worker.JobClient;
 import io.camunda.zeebe.client.api.worker.JobHandler;
-import io.camunda.zeebe.client.impl.Loggers;
 import io.camunda.zeebe.client.impl.RetriableStreamingFutureImpl;
 import io.camunda.zeebe.client.impl.response.ActivatedJobImpl;
 import io.camunda.zeebe.client.impl.response.StreamJobsResponseImpl;

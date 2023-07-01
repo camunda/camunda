@@ -17,7 +17,6 @@ package io.camunda.zeebe;
 
 import io.camunda.zeebe.Worker.DelayedCommand;
 import io.camunda.zeebe.client.api.ZeebeFuture;
-import io.camunda.zeebe.client.impl.Loggers;
 import io.prometheus.client.Gauge;
 import io.prometheus.client.Histogram;
 import java.util.concurrent.BlockingQueue;

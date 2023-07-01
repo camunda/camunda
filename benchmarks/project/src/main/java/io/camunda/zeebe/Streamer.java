@@ -18,7 +18,6 @@ package io.camunda.zeebe;
 import io.camunda.zeebe.Worker.DelayedCommand;
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.client.ZeebeClientBuilder;
-import io.camunda.zeebe.client.impl.Loggers;
 import io.camunda.zeebe.config.AppCfg;
 import io.camunda.zeebe.config.WorkerCfg;
 import io.prometheus.client.Counter;
