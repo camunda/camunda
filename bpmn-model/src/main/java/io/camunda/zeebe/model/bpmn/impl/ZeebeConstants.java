@@ -28,6 +28,8 @@ public class ZeebeConstants {
   public static final String ATTRIBUTE_TARGET = "target";
 
   public static final String ATTRIBUTE_CORRELATION_KEY = "correlationKey";
+  public static final String ATTRIBUTE_MESSAGE_ID = "messageId";
+  public static final String ATTRIBUTE_MESSAGE_TIME_TO_LIVE = "timeToLive";
 
   public static final String ATTRIBUTE_INPUT_COLLECTION = "inputCollection";
   public static final String ATTRIBUTE_INPUT_ELEMENT = "inputElement";
@@ -59,6 +61,7 @@ public class ZeebeConstants {
 
   public static final String ELEMENT_SCRIPT = "script";
   public static final String ELEMENT_SUBSCRIPTION = "subscription";
+  public static final String ELEMENT_PUBLISH_MESSAGE = "publishMessage";
 
   public static final String ELEMENT_TASK_DEFINITION = "taskDefinition";
   public static final String ELEMENT_TASK_HEADERS = "taskHeaders";
