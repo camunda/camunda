@@ -106,6 +106,11 @@ class ZeebeEndEventValidationTest {
         new EndEventTypeBuilder(
             MessageEventDefinition.class,
             endEvent -> endEvent.message("message-name").zeebeJobType("job-type")),
+        new EndEventTypeBuilder(
+            MessageEventDefinition.class,
+            endEvent ->
+                endEvent.message(
+                    b -> b.name("message-name").zeebeCorrelationKey("correlationKey"))),
         new EndEventTypeBuilder(TerminateEventDefinition.class, EndEventBuilder::terminate));
   }
 

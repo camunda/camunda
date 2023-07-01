@@ -18,12 +18,12 @@ package io.camunda.zeebe.model.bpmn.validation.zeebe;
 import io.camunda.zeebe.model.bpmn.impl.ZeebeConstants;
 import io.camunda.zeebe.model.bpmn.instance.CallActivity;
 import io.camunda.zeebe.model.bpmn.instance.MultiInstanceLoopCharacteristics;
-import io.camunda.zeebe.model.bpmn.instance.SendTask;
 import io.camunda.zeebe.model.bpmn.instance.ServiceTask;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeCalledDecision;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeCalledElement;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeFormDefinition;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeLoopCharacteristics;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebePublishMessage;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeScript;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeSubscription;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskDefinition;
@@ -67,10 +67,6 @@ public final class ZeebeDesignTimeValidators {
     validators.add(new ScriptTaskValidation());
     validators.add(new SequenceFlowValidator());
     validators.add(
-        ExtensionElementsValidator.verifyThat(SendTask.class)
-            .hasSingleExtensionElement(
-                ZeebeTaskDefinition.class, ZeebeConstants.ELEMENT_TASK_DEFINITION));
-    validators.add(
         ExtensionElementsValidator.verifyThat(ServiceTask.class)
             .hasSingleExtensionElement(
                 ZeebeTaskDefinition.class, ZeebeConstants.ELEMENT_TASK_DEFINITION));
@@ -113,6 +109,11 @@ public final class ZeebeDesignTimeValidators {
     validators.add(new LinkEventDefinitionValidator());
     validators.add(new EscalationEventDefinitionValidator());
     validators.add(new EscalationValidator());
+    validators.add(new SendTaskValidator());
+    validators.add(
+        ZeebeElementValidator.verifyThat(ZeebePublishMessage.class)
+            .hasNonEmptyAttribute(
+                ZeebePublishMessage::getCorrelationKey, ZeebeConstants.ATTRIBUTE_CORRELATION_KEY));
 
     VALIDATORS = Collections.unmodifiableList(validators);
   }

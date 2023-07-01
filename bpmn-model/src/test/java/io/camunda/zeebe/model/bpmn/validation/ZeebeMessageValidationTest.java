@@ -21,10 +21,13 @@ import static java.util.Collections.singletonList;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.builder.ProcessBuilder;
+import io.camunda.zeebe.model.bpmn.instance.IntermediateThrowEvent;
 import io.camunda.zeebe.model.bpmn.instance.Message;
 import io.camunda.zeebe.model.bpmn.instance.MessageEventDefinition;
 import io.camunda.zeebe.model.bpmn.instance.ReceiveTask;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebePublishMessage;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeSubscription;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskDefinition;
 import java.util.Arrays;
 import org.junit.runners.Parameterized.Parameters;
 
@@ -178,6 +181,67 @@ public class ZeebeMessageValidationTest extends AbstractZeebeValidationTest {
         getEventSubProcessWithEmbeddedSubProcessWithBoundaryEventWithoutCorrelationKey(),
         singletonList(
             expect(Message.class, "Must have exactly one zeebe:subscription extension element"))
+      },
+      // validate message throw events
+      {
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .intermediateThrowEvent("foo")
+            .message("")
+            .done(),
+        Arrays.asList(
+            expect(
+                IntermediateThrowEvent.class,
+                "Must have either one 'zeebe:publishMessage' or one 'zeebe:taskDefinition' extension element"),
+            expect(Message.class, "Name must be present and not empty"))
+      },
+      {
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .intermediateThrowEvent("foo")
+            .message(b -> b.zeebeCorrelationKey("correlationKey"))
+            .done(),
+        Arrays.asList(expect(IntermediateThrowEvent.class, "Must reference a message"))
+      },
+      {
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .intermediateThrowEvent("foo")
+            .message(b -> b.name("").zeebeCorrelationKey("correlationKey"))
+            .done(),
+        Arrays.asList(expect(Message.class, "Name must be present and not empty"))
+      },
+      {
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .intermediateThrowEvent("foo")
+            .message(b -> b.name("messageName").zeebeCorrelationKey(""))
+            .done(),
+        Arrays.asList(
+            expect(
+                ZeebePublishMessage.class,
+                "Attribute 'correlationKey' must be present and not empty"))
+      },
+      {
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .intermediateThrowEvent("foo")
+            .zeebeJobType("")
+            .done(),
+        Arrays.asList(
+            expect(ZeebeTaskDefinition.class, "Attribute 'type' must be present and not empty"))
+      },
+      {
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .intermediateThrowEvent("foo")
+            .zeebeJobType("test")
+            .message(b -> b.name("messageName").zeebeCorrelationKey("correlationKey"))
+            .done(),
+        Arrays.asList(
+            expect(
+                IntermediateThrowEvent.class,
+                "Must have either one 'zeebe:publishMessage' or one 'zeebe:taskDefinition' extension element"))
       }
     };
   }
