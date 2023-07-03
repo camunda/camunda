@@ -76,9 +76,7 @@ public final class ZeebePartition extends Actor
 
     transition.setConcurrencyControl(actor);
 
-    actorName =
-        buildActorName(
-            "ZeebePartition", transitionContext.getPartitionId());
+    actorName = buildActorName("ZeebePartition", transitionContext.getPartitionId());
     transitionContext.setComponentHealthMonitor(
         new CriticalComponentsHealthMonitor(
             "Partition-" + transitionContext.getPartitionId(), actor, LOG));
