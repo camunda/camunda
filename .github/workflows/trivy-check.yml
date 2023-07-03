@@ -57,7 +57,10 @@ jobs:
           java-version: ${{ steps.pom-info.outputs.x_java_version }}
           java-distribution: "temurin"
           maven-version: "3.8.6"
-
+      - name: Checkout code 2
+        uses: actions/checkout@v3
+        with:
+          ref: ${{ matrix.branch}}
       - name: "Create settings.xml"
         uses: s4u/maven-settings-action@v2.8.0
         with:
