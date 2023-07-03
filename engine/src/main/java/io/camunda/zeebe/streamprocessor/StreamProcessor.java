@@ -585,8 +585,7 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
     private final int partitionId;
 
     public AsyncProcessingScheduleServiceActor(
-        final ProcessingScheduleServiceImpl scheduleService,
-        final int partitionId) {
+        final ProcessingScheduleServiceImpl scheduleService, final int partitionId) {
       this.scheduleService = scheduleService;
       asyncScheduleActorName = buildActorName("AsyncProcessingScheduleActor", partitionId);
       this.partitionId = partitionId;
