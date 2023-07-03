@@ -440,7 +440,7 @@ public final class ZeebePartition extends Actor
     actor.call(
         () -> {
           context.setDiskSpaceAvailable(true);
-          zeebePartitionHealth.setDiskSpaceAvailable(false);
+          zeebePartitionHealth.setDiskSpaceAvailable(true);
           if (context.getStreamProcessor() != null && context.shouldProcess()) {
             LOG.info("Disk space usage is below threshold. Resuming stream processor.");
             context.getStreamProcessor().resumeProcessing();
