@@ -21,7 +21,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        branche:
+        branch:
           [
             "master",
             "maintenance/3.10",
