@@ -43,6 +43,7 @@ import org.awaitility.Awaitility;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InOrder;
 
 public class ZeebePartitionTest {
@@ -349,6 +350,85 @@ public class ZeebePartitionTest {
 
     // then
     Awaitility.await().until(closeFuture::isDone);
+  }
+
+  @Test
+  public void shouldReportUnhealthyPerDefault() {
+    // given
+    final var captor = ArgumentCaptor.forClass(ZeebePartitionHealth.class);
+    schedulerRule.submitActor(partition);
+
+    // when
+    schedulerRule.workUntilDone();
+
+    // then
+    verify(healthMonitor).registerComponent(any(), captor.capture());
+
+    final var zeebePartitionHealth = captor.getValue();
+    final HealthReport healthReport = zeebePartitionHealth.getHealthReport();
+    assertThat(healthReport.getStatus()).isEqualTo(HealthStatus.UNHEALTHY);
+    assertThat(healthReport.getIssue().message()).contains("Initial state");
+  }
+
+  @Test
+  public void shouldReportHealthyAfterTransition() {
+    // given
+    final var captor = ArgumentCaptor.forClass(ZeebePartitionHealth.class);
+    schedulerRule.submitActor(partition);
+
+    // when
+    partition.onNewRole(Role.LEADER, 1);
+    schedulerRule.workUntilDone();
+
+    // then
+    verify(healthMonitor).registerComponent(any(), captor.capture());
+
+    final var zeebePartitionHealth = captor.getValue();
+    final HealthReport healthReport = zeebePartitionHealth.getHealthReport();
+    assertThat(healthReport.getStatus()).isEqualTo(HealthStatus.HEALTHY);
+  }
+
+  @Test
+  public void shouldReportUnhealthyWhenNoDiskAvailable() {
+    // given
+    final var captor = ArgumentCaptor.forClass(ZeebePartitionHealth.class);
+    schedulerRule.submitActor(partition);
+    partition.onNewRole(Role.LEADER, 1);
+    schedulerRule.workUntilDone();
+
+    // when
+    partition.onDiskSpaceNotAvailable();
+    schedulerRule.workUntilDone();
+
+    // then
+    verify(healthMonitor).registerComponent(any(), captor.capture());
+
+    final var zeebePartitionHealth = captor.getValue();
+    final HealthReport healthReport = zeebePartitionHealth.getHealthReport();
+    assertThat(healthReport.getStatus()).isEqualTo(HealthStatus.UNHEALTHY);
+    assertThat(healthReport.getIssue().message()).contains("Not enough disk space available");
+  }
+
+  @Test
+  public void shouldReportHealthyWhenDiskIsAvailableAgain() {
+    // given
+    final var captor = ArgumentCaptor.forClass(ZeebePartitionHealth.class);
+    schedulerRule.submitActor(partition);
+    partition.onNewRole(Role.LEADER, 1);
+    partition.onDiskSpaceNotAvailable();
+    schedulerRule.workUntilDone();
+
+    // when
+    partition.onDiskSpaceAvailable();
+    schedulerRule.workUntilDone();
+
+    // then
+    verify(healthMonitor).registerComponent(any(), captor.capture());
+
+    final var zeebePartitionHealth = captor.getValue();
+    final HealthReport healthReport = zeebePartitionHealth.getHealthReport();
+    assertThat(healthReport.getStatus()).isEqualTo(HealthStatus.HEALTHY);
+    assertThat(healthReport.getIssue()).isNull();
   }
 
   private static class NoopStartupStep implements PartitionStartupStep {
