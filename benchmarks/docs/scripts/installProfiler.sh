@@ -7,7 +7,7 @@ set -oxe pipefail
 unset JAVA_TOOL_OPTIONS
 
 if hash apk 2> /dev/null; then
-    apk add --no-cache openjdk11 openjdk11-dbg
+    apk add --no-cache openjdk17-jdk
 else
     mkdir -p /usr/share/man/man1
     apt-get update

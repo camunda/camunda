@@ -118,16 +118,7 @@ the pod installed. In order to do a heap dump you would need to install the jdk 
 To do that run the following:
 
 ```sh
-    # add stretch backports to get java 11
-    echo 'deb http://ftp.debian.org/debian stretch-backports main' | tee /etc/apt/sources.list.d/stretch-backports.list
-
-    # update - to get backports as well
-    echo "update"
-    apt-get update
-
-    # install jdk 11 from backport
-    echo "install jdk"
-    apt-get -t stretch-backports install -y openjdk-11-jdk openjdk-11-dbg
+apk add -u openjdk17-jdk
 ```
 
 After you installed the JDK to your pod you should be able to use jmap to create an heap dump.
