@@ -105,8 +105,6 @@ public class ActorThread extends Thread implements Consumer<Runnable> {
     boolean resubmit = false;
 
     final var actorName = properties.getOrDefault("actor-name", "");
-    final var scopedActorName = "%s-%s".formatted(actorThreadGroup.getSchedulerName(), actorName);
-
     try (final var ignored = MDC.putCloseable("actor-name", actorName)) {
       resubmit = currentTask.execute(this);
     } catch (final Throwable e) {
