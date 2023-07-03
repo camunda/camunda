@@ -357,8 +357,6 @@ public class ZeebePartitionTest {
     // given
     final var captor = ArgumentCaptor.forClass(ZeebePartitionHealth.class);
     schedulerRule.submitActor(partition);
-    partition.onNewRole(Role.LEADER, 1);
-    schedulerRule.workUntilDone();
 
     // when
     schedulerRule.workUntilDone();
@@ -370,6 +368,24 @@ public class ZeebePartitionTest {
     final HealthReport healthReport = zeebePartitionHealth.getHealthReport();
     assertThat(healthReport.getStatus()).isEqualTo(HealthStatus.UNHEALTHY);
     assertThat(healthReport.getIssue().message()).contains("Initial state");
+  }
+
+  @Test
+  public void shouldReportHealthyAfterTransition() {
+    // given
+    final var captor = ArgumentCaptor.forClass(ZeebePartitionHealth.class);
+    schedulerRule.submitActor(partition);
+
+    // when
+    partition.onNewRole(Role.LEADER, 1);
+    schedulerRule.workUntilDone();
+
+    // then
+    verify(healthMonitor).registerComponent(any(), captor.capture());
+
+    final var zeebePartitionHealth = captor.getValue();
+    final HealthReport healthReport = zeebePartitionHealth.getHealthReport();
+    assertThat(healthReport.getStatus()).isEqualTo(HealthStatus.HEALTHY);
   }
 
   @Test
