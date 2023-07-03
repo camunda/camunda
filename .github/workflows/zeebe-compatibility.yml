@@ -46,7 +46,7 @@ jobs:
           compose_file: ${{ github.workspace }}/.github/actions/compose/docker-compose.elasticsearch.yml
           project_name: elasticsearch
         env:
-          ELASTIC_VERSION: ${{ inputs.es-version && inputs.es-version || steps.pom-info.outputs.x_elasticsearch_test_version }}
+          ELASTIC_VERSION: ${{ inputs.es-version && inputs.es-version || steps.pom-info.outputs.x_elasticsearch8_test_version }}
           ELASTIC_JVM_MEMORY: 2
           ELASTIC_HTTP_PORT: 9200
       - name: Parse Zeebe Version from Artifactory

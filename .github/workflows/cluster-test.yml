@@ -56,7 +56,7 @@ jobs:
       uses: YunaBraska/java-info-action@main
 
     - name: Deploy cluster
-      run: .github/podSpecs/clusterTests/deploy.sh $NAMESPACE ${{ steps.pom-info.outputs.x_elasticsearch_test_version }} ${{ steps.pom-info.outputs.x_camunda_engine_version }}
+      run: .github/podSpecs/clusterTests/deploy.sh $NAMESPACE ${{ steps.pom-info.outputs.x_elasticsearch8_test_version }} ${{ steps.pom-info.outputs.x_camunda_engine_version }}
 
     - name: Run Tests
       uses: ./.github/actions/run-maven

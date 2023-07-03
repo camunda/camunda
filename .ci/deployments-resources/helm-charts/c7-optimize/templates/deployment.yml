@@ -173,6 +173,8 @@ spec:
             value: single-node
           - name: bootstrap.memory_lock
             value: "true"
+          - name: xpack.security.enabled
+            value: "false"
         securityContext:
           capabilities:
             add:

@@ -57,6 +57,8 @@ spec:
               value: single-node
             - name: ES_JAVA_OPTS
               value: "-Xms1g -Xmx1g"
+            - name: xpack.security.enabled
+              value: "false"
           resources:
             limits:
               cpu: 4
