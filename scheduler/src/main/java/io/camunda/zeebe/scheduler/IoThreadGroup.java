@@ -13,8 +13,6 @@ public final class IoThreadGroup extends ActorThreadGroup {
 
   public IoThreadGroup(final ActorSchedulerBuilder builder) {
     super(
-        String.format("%s-%s", builder.getSchedulerName(), "zb-fs-workers"),
-        builder.getIoBoundActorThreadCount(),
-        builder);
+        "zb-fs-workers", builder.getIoBoundActorThreadCount(), builder, builder.getSchedulerName());
   }
 }

@@ -40,7 +40,7 @@ public abstract class Actor implements AutoCloseable, AsyncClosable, Concurrency
   }
 
   public String getName() {
-    return getClass().getName();
+    return getClass().getSimpleName();
   }
 
   /**
@@ -102,12 +102,8 @@ public abstract class Actor implements AutoCloseable, AsyncClosable, Concurrency
     return actor.close();
   }
 
-  public static String buildActorName(final int nodeId, final String name) {
-    return String.format("Broker-%d-%s", nodeId, name);
-  }
-
-  public static String buildActorName(final int nodeId, final String name, final int partitionId) {
-    return String.format("Broker-%d-%s-%d", nodeId, name, partitionId);
+  public static String buildActorName(final String name, final int partitionId) {
+    return "%s-%d".formatted(name, partitionId);
   }
 
   /** Invoked when a task throws and the actor phase is not 'STARTING' and 'CLOSING'. */
