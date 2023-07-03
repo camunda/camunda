@@ -126,7 +126,7 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
     logStream = streamProcessorContext.getLogStream();
     partitionId = logStream.getPartitionId();
     nodeId = processorBuilder.getNodeId();
-    actorName = buildActorName(nodeId, "StreamProcessor", partitionId);
+    actorName = buildActorName("StreamProcessor", partitionId);
     metrics = new StreamProcessorMetrics(partitionId);
     recordProcessors.addAll(processorBuilder.getRecordProcessors());
   }
@@ -173,7 +173,7 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
               () -> false, // we will just stop the actor in this case, no need to provide this
               logStream::newLogStreamWriter);
       asyncActor =
-          new AsyncProcessingScheduleServiceActor(asyncScheduleService, nodeId, partitionId);
+          new AsyncProcessingScheduleServiceActor(asyncScheduleService, partitionId);
       final var extendedProcessingScheduleService =
           new ExtendedProcessingScheduleServiceImpl(
               processorActorService, asyncScheduleService, asyncActor.getActorControl());
@@ -575,10 +575,9 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
 
     public AsyncProcessingScheduleServiceActor(
         final ProcessingScheduleServiceImpl scheduleService,
-        final int nodeId,
         final int partitionId) {
       this.scheduleService = scheduleService;
-      asyncScheduleActorName = buildActorName(nodeId, "AsyncProcessingScheduleActor", partitionId);
+      asyncScheduleActorName = buildActorName("AsyncProcessingScheduleActor", partitionId);
       this.partitionId = partitionId;
     }
 

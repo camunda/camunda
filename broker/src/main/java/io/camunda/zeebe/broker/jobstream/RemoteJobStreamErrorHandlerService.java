@@ -7,8 +7,6 @@
  */
 package io.camunda.zeebe.broker.jobstream;
 
-import static io.camunda.zeebe.scheduler.Actor.buildActorName;
-
 import io.camunda.zeebe.broker.PartitionListener;
 import io.camunda.zeebe.engine.state.QueryService;
 import io.camunda.zeebe.logstreams.log.LogStream;
@@ -30,9 +28,9 @@ public final class RemoteJobStreamErrorHandlerService extends Actor
   private final String name;
 
   public RemoteJobStreamErrorHandlerService(
-      final JobStreamErrorHandler errorHandler, final int nodeId) {
+      final JobStreamErrorHandler errorHandler) {
     delegate = new RemoteJobStreamErrorHandler(errorHandler);
-    name = buildActorName(nodeId, "RemoteJobStreamErrorHandler");
+    name = "RemoteJobStreamErrorHandler";
   }
 
   @Override

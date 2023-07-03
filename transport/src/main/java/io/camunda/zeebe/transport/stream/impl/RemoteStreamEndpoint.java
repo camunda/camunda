@@ -29,10 +29,6 @@ public final class RemoteStreamEndpoint<M extends BufferReader> extends Actor {
     this.requestHandler = requestHandler;
   }
 
-  public void removeAll(final MemberId member) {
-    actor.run(() -> requestHandler.removeAll(member));
-  }
-
   @Override
   protected void onActorStarting() {
     transport.replyTo(
@@ -61,6 +57,10 @@ public final class RemoteStreamEndpoint<M extends BufferReader> extends Actor {
     transport.unsubscribe(StreamTopics.REMOVE.topic());
     transport.unsubscribe(StreamTopics.REMOVE_ALL.topic());
     requestHandler.close();
+  }
+
+  public void removeAll(final MemberId member) {
+    actor.run(() -> requestHandler.removeAll(member));
   }
 
   private byte[] onAdd(final MemberId sender, final AddStreamRequest request) {

@@ -64,7 +64,6 @@ public final class FileBasedSnapshotStoreFactory implements ReceivableSnapshotSt
     }
 
     return new FileBasedSnapshotStore(
-        nodeId,
         partitionId,
         new SnapshotMetrics(Integer.toString(partitionId)),
         snapshotDirectory,
