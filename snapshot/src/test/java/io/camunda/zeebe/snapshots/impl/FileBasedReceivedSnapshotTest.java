@@ -381,7 +381,6 @@ public class FileBasedReceivedSnapshotTest {
       final int nodeId, final Path snapshotDir, final Path pendingDir) throws IOException {
     final var store =
         new FileBasedSnapshotStore(
-            nodeId,
             PARTITION_ID,
             new SnapshotMetrics(nodeId + "-" + PARTITION_ID),
             snapshotDir,

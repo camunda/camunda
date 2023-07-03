@@ -30,7 +30,6 @@ public class LogDeletionPartitionStartupStep implements PartitionStartupStep {
         new AtomixLogCompactor(partitionStartupContext.getRaftPartition().getServer());
     final LogDeletionService deletionService =
         new LogDeletionService(
-            partitionStartupContext.getNodeId(),
             partitionStartupContext.getPartitionId(),
             logCompactor,
             partitionStartupContext.getPersistedSnapshotStore());

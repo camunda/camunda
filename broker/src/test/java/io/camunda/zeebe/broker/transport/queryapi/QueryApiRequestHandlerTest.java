@@ -318,7 +318,7 @@ final class QueryApiRequestHandlerTest {
   private QueryApiRequestHandler createQueryApiRequestHandler(final boolean enabled) {
     final var config = new QueryApiCfg();
     config.setEnabled(enabled);
-    final var requestHandler = new QueryApiRequestHandler(config, 0);
+    final var requestHandler = new QueryApiRequestHandler(config);
     scheduler.submitActor(requestHandler);
 
     return requestHandler;

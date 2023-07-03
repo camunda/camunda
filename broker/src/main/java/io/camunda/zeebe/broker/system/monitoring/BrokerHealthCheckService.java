@@ -94,7 +94,6 @@ public final class BrokerHealthCheckService extends Actor implements PartitionLi
 
   private static final String PARTITION_COMPONENT_NAME_FORMAT = "Partition-%d";
   private static final Logger LOG = Loggers.SYSTEM_LOGGER;
-  private final String actorName;
   private Map<Integer, Boolean> partitionInstallStatus;
   /* set to true when all partitions are installed. Once set to true, it is never
   changed. */
@@ -104,7 +103,6 @@ public final class BrokerHealthCheckService extends Actor implements PartitionLi
   private final MemberId nodeId;
 
   public BrokerHealthCheckService(final BrokerInfo localBroker) {
-    actorName = buildActorName(localBroker.getNodeId(), "HealthCheckService");
     nodeId = MemberId.from(String.valueOf(localBroker.getNodeId()));
     healthMonitor = new CriticalComponentsHealthMonitor("Broker-" + nodeId, actor, LOG);
   }
@@ -181,7 +179,7 @@ public final class BrokerHealthCheckService extends Actor implements PartitionLi
 
   @Override
   public String getName() {
-    return actorName;
+    return "HealthCheckService";
   }
 
   @Override
