@@ -64,7 +64,7 @@ public final class LogStreamImpl extends Actor
 
     this.partitionId = partitionId;
     this.nodeId = nodeId;
-    actorName = buildActorName(nodeId, "LogStream", partitionId);
+    actorName = buildActorName("LogStream", partitionId);
 
     this.maxFragmentSize = maxFragmentSize;
     this.logStorage = logStorage;
@@ -306,7 +306,7 @@ public final class LogStreamImpl extends Actor
   private ActorFuture<Void> createAndScheduleLogStorageAppender(final Sequencer sequencer) {
     appender =
         new LogStorageAppender(
-            buildActorName(nodeId, "LogAppender", partitionId), partitionId, logStorage, sequencer);
+            buildActorName("LogAppender", partitionId), partitionId, logStorage, sequencer);
     return actorSchedulingService.submitActor(appender);
   }
 

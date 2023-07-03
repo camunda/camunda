@@ -87,7 +87,7 @@ public final class ExporterDirectorPartitionTransitionStep implements PartitionT
     final ExporterDirectorContext exporterCtx =
         new ExporterDirectorContext()
             .id(EXPORTER_PROCESSOR_ID)
-            .name(Actor.buildActorName(context.getNodeId(), "Exporter", context.getPartitionId()))
+            .name(Actor.buildActorName("Exporter", context.getPartitionId()))
             .logStream(context.getLogStream())
             .zeebeDb(context.getZeebeDb())
             .partitionMessagingService(context.getMessagingService())
