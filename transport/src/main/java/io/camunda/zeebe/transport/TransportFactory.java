@@ -22,7 +22,7 @@ public final class TransportFactory {
 
   public ServerTransport createServerTransport(
       final int nodeId, final MessagingService messagingService) {
-    final var atomixServerTransport = new AtomixServerTransport(nodeId, messagingService);
+    final var atomixServerTransport = new AtomixServerTransport(messagingService);
     actorSchedulingService.submitActor(atomixServerTransport);
     return atomixServerTransport;
   }

@@ -33,18 +33,16 @@ public class AtomixServerTransport extends Actor implements ServerTransport {
       partitionsRequestMap;
   private final AtomicLong requestCount;
   private final MessagingService messagingService;
-  private final String actorName;
 
-  public AtomixServerTransport(final int nodeId, final MessagingService messagingService) {
+  public AtomixServerTransport(final MessagingService messagingService) {
     this.messagingService = messagingService;
     partitionsRequestMap = new Int2ObjectHashMap<>();
     requestCount = new AtomicLong(0);
-    actorName = buildActorName(nodeId, "ServerTransport");
   }
 
   @Override
   public String getName() {
-    return actorName;
+    return "ServerTransport";
   }
 
   @Override

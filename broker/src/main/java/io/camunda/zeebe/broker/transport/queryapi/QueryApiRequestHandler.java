@@ -42,10 +42,10 @@ public final class QueryApiRequestHandler
   private final QueryApiCfg config;
   private final String actorName;
 
-  public QueryApiRequestHandler(final QueryApiCfg config, final int nodeId) {
+  public QueryApiRequestHandler(final QueryApiCfg config) {
     super(QueryRequestReader::new, QueryResponseWriter::new);
     this.config = config;
-    actorName = buildActorName(nodeId, "QueryApi");
+    actorName = "QueryApi";
   }
 
   @Override

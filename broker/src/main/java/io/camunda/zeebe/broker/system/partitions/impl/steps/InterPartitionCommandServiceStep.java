@@ -99,10 +99,7 @@ public final class InterPartitionCommandServiceStep implements PartitionTransiti
               }
               final var receiver =
                   new InterPartitionCommandReceiverActor(
-                      context.getNodeId(),
-                      context.getPartitionId(),
-                      context.getClusterCommunicationService(),
-                      writer);
+                      context.getPartitionId(), context.getClusterCommunicationService(), writer);
               context.getActorSchedulingService().submitActor(receiver);
               context.setPartitionCommandReceiver(receiver);
               context.getCheckpointProcessor().addCheckpointListener(receiver);
