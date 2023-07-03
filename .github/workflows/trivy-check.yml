@@ -1,6 +1,10 @@
 name: Trivy check docker image
 
-on: [push]
+on:
+  push:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 2 * * 1-5"
 
 permissions:
   contents: read # for git clone
@@ -14,47 +18,38 @@ env:
 
 jobs:
   trivy-check:
+    strategy:
+      fail-fast: false
+      matrix:
+        branche:
+          [
+            "master",
+            "maintenance/3.10",
+            "maintenance/3.9",
+            "maintenance/3.8",
+            "maintenance/3.7",
+          ]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
-
-      - name: Import secrets
-        id: secrets
-        uses: hashicorp/vault-action@v2.5.0
         with:
-          url: ${{ secrets.VAULT_ADDR }}
-          method: approle
-          roleId: ${{ secrets.VAULT_ROLE_ID }}
-          secretId: ${{ secrets.VAULT_SECRET_ID }}
-          secrets: |
-            secret/data/products/optimize/ci/optimize NEXUS_USERNAME;
-            secret/data/products/optimize/ci/optimize NEXUS_PASSWORD;
+          ref: ${{ matrix.branch}}
+
+      - name: "Read Java Info"
+        id: "pom-info"
+        uses: YunaBraska/java-info-action@main
+
+      - name: Setup Maven
+        uses: ./.github/actions/setup-maven
+        with:
+          secrets: ${{ toJSON(secrets) }}
 
       - name: Configure Google tools
         id: auth
         uses: camunda-cloud/action-setup-gcloud@v2
         with:
           account-alias: registry
-
-      - name: Set up Java
-        uses: actions/setup-java@v3
-        with:
-          distribution: "adopt"
-          java-version: "11"
-          cache: "maven"
-
-      - name: "Create settings.xml"
-        uses: s4u/maven-settings-action@v2.8.0
-        with:
-          githubServer: false
-          servers: |
-            [{
-              "id": "camunda-nexus",
-              "username": "${{ steps.secrets.outputs.NEXUS_USERNAME }}",
-              "password": "${{ steps.secrets.outputs.NEXUS_PASSWORD }}"
-            }]
-          mirrors: '[{"url": "https://repository.nexus.camunda.cloud/content/groups/internal/", "id": "camunda-nexus", "mirrorOf": "*", "name": "camunda Nexus"}]'
 
       - name: Build a package
         run: mvn -B package --file pom.xml -Dmaven.test.skip
@@ -73,7 +68,7 @@ jobs:
           context: .
           load: true
           build-args: |
-            VERSION=3.10.0-SNAPSHOT
+            VERSION=${{ steps.pom-info.outputs.version }}
             REVISION= ${{ github.sha }}
           tags: ${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}
 
@@ -89,7 +84,7 @@ jobs:
           output: trivy-log.json
 
       - name: Publish results in PR comment
-        if: always()
+        if: ${{always() && github.event_name == 'push'}}
         uses: actions/github-script@v6
         with:
           github-token: ${{secrets.GITHUB_TOKEN}}
@@ -167,3 +162,13 @@ jobs:
               repo: context.repo.repo,
               body: commentContent
             })
+
+      - name: Upload Test Results
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: trivy-test-results
+          path: |
+            trivy-log.json
+          retention-days: 7
+          if-no-files-found: ignore
