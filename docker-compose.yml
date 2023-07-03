@@ -10,6 +10,7 @@ services:
       - xpack.security.enabled=false
       - "ES_JAVA_OPTS=-Xms1024m -Xmx1024m"
       - path.repo=/usr/local/els-snapshots
+      - action.destructive_requires_name=false
     ulimits:
       memlock:
         soft: -1
