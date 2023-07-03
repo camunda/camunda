@@ -19,9 +19,11 @@ import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstan
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceModificationVariableInstruction;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.intent.ErrorIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceModificationIntent;
+import io.camunda.zeebe.protocol.record.value.ErrorRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceCreationRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceModificationRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
@@ -193,6 +195,10 @@ public final class ProcessInstanceClient {
                 .withProcessInstanceKey(processInstanceKey)
                 .getFirst();
 
+    public static final Function<Long, Record<ErrorRecordValue>> ERROR_EXPECTATION =
+        (processInstanceKey) ->
+            RecordingExporter.errorRecords().withIntent(ErrorIntent.CREATED).getFirst();
+
     private static final int DEFAULT_PARTITION = -1;
     private final CommandWriter writer;
     private final long processInstanceKey;
@@ -216,6 +222,16 @@ public final class ProcessInstanceClient {
     }
 
     public Record<ProcessInstanceRecordValue> cancel() {
+      writeCancelCommand();
+      return expectation.apply(processInstanceKey);
+    }
+
+    public Record<ErrorRecordValue> cancelWithError() {
+      writeCancelCommand();
+      return ERROR_EXPECTATION.apply(processInstanceKey);
+    }
+
+    private void writeCancelCommand() {
       if (partition == DEFAULT_PARTITION) {
         partition =
             RecordingExporter.processInstanceRecords()
@@ -229,8 +245,6 @@ public final class ProcessInstanceClient {
           processInstanceKey,
           ProcessInstanceIntent.CANCEL,
           new ProcessInstanceRecord().setProcessInstanceKey(processInstanceKey));
-
-      return expectation.apply(processInstanceKey);
     }
 
     public ProcessInstanceModificationClient modification() {
