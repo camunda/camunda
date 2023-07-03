@@ -37,7 +37,6 @@ import org.agrona.LangUtil;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Named;
@@ -82,11 +81,6 @@ final class AsymmetricNetworkPartitionIT {
         Arguments.arguments(Named.named("Message correlation", new MessageCorrelationTestCase())));
   }
 
-  @BeforeAll
-  static void beforeAll() {
-    CLUSTER.getBrokers().forEach((id, broker) -> installNetworkUtilities(broker));
-  }
-
   @AfterAll
   static void afterAll() {
     CloseHelper.quietClose(NETWORK);
@@ -106,8 +100,8 @@ final class AsymmetricNetworkPartitionIT {
   @DisplayName("Withstand Asymmetric Network Partition")
   @ParameterizedTest(name = "{index}: {0}")
   @MethodSource("provideTestCases")
-  void shouldWithstandAsymmetricNetworkPartition(final AsymmetricNetworkPartitionTestCase testCase)
-      throws IOException, InterruptedException {
+  void shouldWithstandAsymmetricNetworkPartition(
+      final AsymmetricNetworkPartitionTestCase testCase) {
     // given
 
     // the test only works if the leaders of partition 1 and 3 are different nodes
@@ -206,15 +200,6 @@ final class AsymmetricNetworkPartitionIT {
     exec(container, "ip route flush type unreachable");
   }
 
-  /**
-   * Installs required network utilities to block certain hosts. Additionally, backs up the routes
-   * table, so we can restore it between tests.
-   */
-  private static void installNetworkUtilities(final ZeebeNode<?> container) {
-    exec(container, "apt-get -qq update");
-    exec(container, "apt-get -qq -y install iproute2");
-  }
-
   private static void exec(final ZeebeNode<?> container, final String command) {
     LOGGER.info("Executing command {} on container {}", command, container.getContainerId());
 
@@ -224,7 +209,7 @@ final class AsymmetricNetworkPartitionIT {
           .as(
               "command [%s] failed with status [%d] and output: [%s]",
               command, result.getExitCode(), result.getStdout())
-          .isEqualTo(0);
+          .isZero();
 
     } catch (final IOException e) {
       throw new UncheckedIOException(e);
