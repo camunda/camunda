@@ -27,8 +27,7 @@ public final class RemoteJobStreamErrorHandlerService extends Actor
   private final RemoteJobStreamErrorHandler delegate;
   private final String name;
 
-  public RemoteJobStreamErrorHandlerService(
-      final JobStreamErrorHandler errorHandler) {
+  public RemoteJobStreamErrorHandlerService(final JobStreamErrorHandler errorHandler) {
     delegate = new RemoteJobStreamErrorHandler(errorHandler);
     name = "RemoteJobStreamErrorHandler";
   }
