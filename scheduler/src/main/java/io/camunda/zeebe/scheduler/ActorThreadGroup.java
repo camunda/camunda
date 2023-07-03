@@ -21,11 +21,16 @@ public abstract class ActorThreadGroup {
   protected final ActorThread[] threads;
   protected final WorkStealingGroup tasks;
   protected final int numOfThreads;
+  private final String schedulerName;
 
   public ActorThreadGroup(
-      final String groupName, final int numOfThreads, final ActorSchedulerBuilder builder) {
+      final String groupName,
+      final int numOfThreads,
+      final ActorSchedulerBuilder builder,
+      final String schedulerName) {
     this.groupName = groupName;
     this.numOfThreads = numOfThreads;
+    this.schedulerName = schedulerName;
 
     tasks = new WorkStealingGroup(numOfThreads);
 
@@ -64,6 +69,10 @@ public abstract class ActorThreadGroup {
     for (final ActorThread actorThread : threads) {
       actorThread.start();
     }
+  }
+
+  public String getSchedulerName() {
+    return schedulerName;
   }
 
   public CompletableFuture<Void> closeAsync() {
