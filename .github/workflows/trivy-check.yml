@@ -57,6 +57,7 @@ jobs:
           java-version: ${{ steps.pom-info.outputs.x_java_version }}
           java-distribution: "temurin"
           maven-version: "3.8.6"
+
       - name: "Create settings.xml"
         uses: s4u/maven-settings-action@v2.8.0
         with:
@@ -75,7 +76,7 @@ jobs:
           account-alias: registry
 
       - name: Build a package
-        run: mvn -B package --file pom.xml -Dmaven.test.skip
+        run: mvn -B clean package -DskipTests --file pom.xml
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v2
