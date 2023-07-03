@@ -218,7 +218,7 @@ public class DeploymentRejectionTest {
 
     // then
     Assertions.assertThat(deploymentRejection)
-        .hasRejectionType(RejectionType.EXCEEDED_BATCH_RECORD_SIZE)
+        .hasRejectionType(RejectionType.PROCESSING_ERROR)
         .hasRejectionReason("");
   }
 
@@ -273,7 +273,7 @@ public class DeploymentRejectionTest {
     final BpmnModelInstance invalidProcess =
         Bpmn.createExecutableProcess("invalid_process_without_start_event").done();
     final BpmnModelInstance validProcess =
-        Bpmn.createExecutableProcess("valid_process").startEvent().task().endEvent().done();
+        Bpmn.createExecutableProcess("valid_process").startEvent().userTask().endEvent().done();
 
     // when
     ENGINE
