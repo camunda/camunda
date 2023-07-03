@@ -68,7 +68,7 @@ jobs:
           context: .
           load: true
           build-args: |
-            VERSION=${{ steps.pom-info.outputs.version }}
+            VERSION=${{ steps.pom-info.outputs.project_version }}
             REVISION= ${{ github.sha }}
           tags: ${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}
 
@@ -81,7 +81,7 @@ jobs:
           hide-progress: true
           severity: "CRITICAL,HIGH"
           format: json
-          output: trivy-log.json
+          output: ${{ steps.pom-info.outputs.project_version }}-trivy-log.json
 
       - name: Publish results in PR comment
         if: ${{always() && github.event_name == 'push'}}
@@ -92,7 +92,7 @@ jobs:
             const fs = require('fs');
             const path = require('path');
 
-            const fileBuffer = fs.readFileSync(path.join('trivy-log.json'));
+            const fileBuffer = fs.readFileSync(path.join('${{ steps.pom-info.outputs.project_version }}-trivy-log.json'));
             const file = JSON.parse(fileBuffer);
 
             const vulnerabilities = file.Results.filter((result) => result.Vulnerabilities !== undefined)
@@ -143,7 +143,7 @@ jobs:
                 : '';
 
             const commentContent = `
-            Hi! This is your trivy test results 🧪\n
+            Hi! This is your trivy test results for ${{ steps.pom-info.outputs.project_version }} 🧪\n
             There are ${vulnCount} problems found:\n
             ${vulnCommentContent}
             ${table}  
@@ -169,6 +169,6 @@ jobs:
         with:
           name: trivy-test-results
           path: |
-            trivy-log.json
+            ${{ steps.pom-info.outputs.project_version }}-trivy-log.json
           retention-days: 7
           if-no-files-found: ignore
