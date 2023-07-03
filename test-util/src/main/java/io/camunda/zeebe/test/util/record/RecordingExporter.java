@@ -28,6 +28,7 @@ import io.camunda.zeebe.protocol.record.intent.VariableIntent;
 import io.camunda.zeebe.protocol.record.value.DecisionEvaluationRecordValue;
 import io.camunda.zeebe.protocol.record.value.DeploymentDistributionRecordValue;
 import io.camunda.zeebe.protocol.record.value.DeploymentRecordValue;
+import io.camunda.zeebe.protocol.record.value.ErrorRecordValue;
 import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
 import io.camunda.zeebe.protocol.record.value.JobBatchRecordValue;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
@@ -292,6 +293,10 @@ public final class RecordingExporter implements Exporter {
   public static DecisionEvaluationRecordStream decisionEvaluationRecords() {
     return new DecisionEvaluationRecordStream(
         records(ValueType.DECISION_EVALUATION, DecisionEvaluationRecordValue.class));
+  }
+
+  public static ErrorRecordStream errorRecords() {
+    return new ErrorRecordStream(records(ValueType.ERROR, ErrorRecordValue.class));
   }
 
   public static class AwaitingRecordIterator implements Iterator<Record<?>> {

@@ -32,7 +32,6 @@ import java.util.Arrays;
 import java.util.function.Function;
 
 public final class BpmnStateTransitionBehavior {
-
   private static final String ALREADY_MIGRATED_ERROR_MSG =
       "The Processor for the element type %s is already migrated no need to call %s again this is already done in the BpmnStreamProcessor for you. Happy to help :) ";
   private static final String NO_PROCESS_FOUND_MESSAGE =
@@ -409,7 +408,19 @@ public final class BpmnStateTransitionBehavior {
         element,
         childContext,
         (containerProcessor, containerScope, containerContext) -> {
-          containerProcessor.onChildTerminated(containerScope, containerContext, childContext);
+          try {
+            containerProcessor.onChildTerminated(containerScope, containerContext, childContext);
+          } catch (final StackOverflowError stackOverFlow) {
+            // This is a dirty quick "fix" for https://github.com/camunda/zeebe/issues/8955
+            // It's done so a cluster doesn't die when a user encounters this.
+            final var message =
+                String.format(
+                    """
+                    Process instance `%d` has too many nested child instances and could not be terminated. \
+                    The deepest nested child instance has been banned as a result.""",
+                    containerContext.getProcessInstanceKey());
+            throw new ChildTerminationStackOverflowException(message);
+          }
           return Either.right(null);
         });
   }
@@ -501,6 +512,13 @@ public final class BpmnStateTransitionBehavior {
             child ->
                 terminateElement(context.copy(child.getKey(), child.getValue(), child.getState())),
             () -> containerProcessor.onChildTerminated(element, context, null));
+  }
+
+  private static final class ChildTerminationStackOverflowException extends RuntimeException {
+
+    public ChildTerminationStackOverflowException(final String message) {
+      super(message);
+    }
   }
 
   @FunctionalInterface
