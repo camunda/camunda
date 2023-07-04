@@ -39,11 +39,23 @@
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>zeebe-elasticsearch-exporter</artifactId>
+      <exclusions>
+        <exclusion>
+          <groupId>commons-logging</groupId>
+          <artifactId>commons-logging</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
 
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>zeebe-opensearch-exporter</artifactId>
+      <exclusions>
+        <exclusion>
+          <groupId>commons-logging</groupId>
+          <artifactId>commons-logging</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
 
     <dependency>
