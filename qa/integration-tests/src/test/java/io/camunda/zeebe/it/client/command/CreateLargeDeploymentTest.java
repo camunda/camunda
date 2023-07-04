@@ -13,7 +13,9 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import io.camunda.zeebe.broker.test.EmbeddedBrokerRule;
 import io.camunda.zeebe.client.api.command.ClientException;
 import io.camunda.zeebe.it.util.GrpcClientRule;
+import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.test.util.BrokerClassRuleHelper;
+import io.camunda.zeebe.util.ByteValue;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
@@ -22,8 +24,10 @@ import org.springframework.util.unit.DataSize;
 
 public final class CreateLargeDeploymentTest {
 
+  private static final int MAX_MSG_SIZE_MB = 1;
   private static final EmbeddedBrokerRule BROKER_RULE =
-      new EmbeddedBrokerRule(b -> b.getNetwork().setMaxMessageSize(DataSize.ofMegabytes(1)));
+      new EmbeddedBrokerRule(
+          b -> b.getNetwork().setMaxMessageSize(DataSize.ofMegabytes(MAX_MSG_SIZE_MB)));
   private static final GrpcClientRule CLIENT_RULE = new GrpcClientRule(BROKER_RULE);
 
   @ClassRule
@@ -39,7 +43,12 @@ public final class CreateLargeDeploymentTest {
         CLIENT_RULE
             .getClient()
             .newDeployResourceCommand()
-            .addResourceFromClasspath("processes/too_large_process.bpmn")
+            .addProcessModel(
+                Bpmn.createExecutableProcess("PROCESS")
+                    .startEvent()
+                    .documentation("x".repeat((int) ByteValue.ofMegabytes(MAX_MSG_SIZE_MB)))
+                    .done(),
+                "too_large_process.bpmn")
             .send();
 
     // then

@@ -15,8 +15,10 @@ import io.camunda.zeebe.engine.processing.distribution.CommandRedistributor;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
+import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
+import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.CommandDistributionIntent;
 import io.camunda.zeebe.protocol.record.intent.DecisionIntent;
@@ -24,10 +26,13 @@ import io.camunda.zeebe.protocol.record.intent.DecisionRequirementsIntent;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
 import io.camunda.zeebe.protocol.record.value.CommandDistributionRecordValue;
+import io.camunda.zeebe.protocol.record.value.DeploymentRecordValue;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
+import io.camunda.zeebe.util.ByteValue;
 import java.util.stream.Collectors;
 import org.awaitility.Awaitility;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -212,5 +217,27 @@ public class MultiPartitionDeploymentLifecycleTest {
         .describedAs("Expect second command to be rejected")
         .containsExactlyInAnyOrder(
             RecordType.COMMAND, RecordType.COMMAND, RecordType.COMMAND_REJECTION);
+  }
+
+  @Ignore("Regression https://github.com/camunda/zeebe/issues/13233")
+  @Test
+  public void shouldDeployIfResourceIsLargeButNotTooMuch() {
+    // when
+    final Record<DeploymentRecordValue> deployment =
+        engine
+            .deployment()
+            .withXmlResource(
+                Bpmn.createExecutableProcess("PROCESS")
+                    .startEvent()
+                    .documentation(
+                        "x".repeat((int) (ByteValue.ofMegabytes(4) / 2 - ByteValue.ofKilobytes(2))))
+                    .done())
+            .deploy();
+
+    // then
+    Assertions.assertThat(deployment)
+        .hasIntent(DeploymentIntent.CREATED)
+        .hasRejectionType(RejectionType.NULL_VAL)
+        .hasRejectionReason("");
   }
 }
