@@ -202,6 +202,7 @@ public class DeploymentRejectionTest {
                 """);
   }
 
+  @Ignore("8.0 Does not have a fix for https://github.com/camunda/zeebe/issues/9946")
   @Test
   public void shouldRejectDeploymentIfResourceIsTooLarge() {
     // when
