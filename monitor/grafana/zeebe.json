@@ -10262,7 +10262,7 @@
       "targets": [
         {
           "datasource": {
-            "uid": "prometheus"
+            "uid": "$DS_PROMETHEUS"
           },
           "refId": "A"
         }
@@ -12232,7 +12232,7 @@
     {
       "collapsed": true,
       "datasource": {
-        "uid": "prometheus"
+        "uid": "${DS_PROMETHEUS}"
       },
       "gridPos": {
         "h": 1,
@@ -13822,7 +13822,7 @@
       "targets": [
         {
           "datasource": {
-            "uid": "prometheus"
+            "uid": "${DS_PROMETHEUS}"
           },
           "refId": "A"
         }
@@ -13833,7 +13833,7 @@
     {
       "collapsed": true,
       "datasource": {
-        "uid": "prometheus"
+        "uid": "${DS_PROMETHEUS}"
       },
       "gridPos": {
         "h": 1,
@@ -14275,7 +14275,7 @@
       "targets": [
         {
           "datasource": {
-            "uid": "prometheus"
+            "uid": "${DS_PROMETHEUS}"
           },
           "refId": "A"
         }
@@ -14286,7 +14286,7 @@
     {
       "collapsed": true,
       "datasource": {
-        "uid": "prometheus"
+        "uid": "${DS_PROMETHEUS}"
       },
       "gridPos": {
         "h": 1,
@@ -14514,7 +14514,7 @@
       "targets": [
         {
           "datasource": {
-            "uid": "prometheus"
+            "uid": "${DS_PROMETHEUS}"
           },
           "refId": "A"
         }
@@ -14525,7 +14525,7 @@
     {
       "collapsed": true,
       "datasource": {
-        "uid": "prometheus"
+        "uid": "${DS_PROMETHEUS}"
       },
       "gridPos": {
         "h": 1,
@@ -15193,7 +15193,7 @@
       "targets": [
         {
           "datasource": {
-            "uid": "prometheus"
+            "uid": "${DS_PROMETHEUS}"
           },
           "refId": "A"
         }
