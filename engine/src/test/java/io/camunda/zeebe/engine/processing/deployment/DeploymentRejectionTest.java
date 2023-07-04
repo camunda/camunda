@@ -28,6 +28,7 @@ import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import io.camunda.zeebe.util.ByteValue;
 import java.util.stream.Collectors;
 import org.junit.ClassRule;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -267,6 +268,7 @@ public class DeploymentRejectionTest {
         .contains("Must contain at least one executable process");
   }
 
+  @Ignore("8.0 Does not have a fix for https://github.com/camunda/zeebe/issues/5723")
   @Test
   public void shouldDoAtomicDeployments() {
     // given
