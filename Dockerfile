@@ -18,7 +18,7 @@ COPY docker/utils/startup.sh ${TMP_DIR}/bin/startup.sh
 RUN chmod +x -R ${TMP_DIR}/bin/
 
 # Building prod image
-FROM eclipse-temurin:17-jre-focal@sha256:901eeb64e3d1e74d261e82e4158386407b95628eaf723058fb96d4efb9141b88 as prod
+FROM eclipse-temurin:17-jre-focal@sha256:1a6c81a1b4144fe893e2452a6340d4e3a54ca53356962ed36dea290d9c43400f as prod
 
 # Building dev image
 FROM eclipse-temurin:17-jdk-focal@sha256:719c17b20fe6946ded1e7eaec2fbb4137de99f83224e137896591900bc6837c2 as dev
