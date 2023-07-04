@@ -89,7 +89,7 @@ final class AsymmetricNetworkPartitionIT {
   @BeforeEach
   void beforeEach() {
     client = CLUSTER.newClientBuilder().build();
-    CLUSTER.getBrokers().forEach((id, broker) -> clearUnreachableRoutes(broker));
+    CLUSTER.getBrokers().values().forEach(AsymmetricNetworkPartitionIT::clearUnreachableRoutes);
   }
 
   @AfterEach
@@ -182,7 +182,7 @@ final class AsymmetricNetworkPartitionIT {
    * @param brokerNode the broker container which should be updated
    */
   private void setupNetworkPartition(final String ipAddress, final ZeebeNode<?> brokerNode) {
-    exec(brokerNode, "ip route add unreachable " + ipAddress);
+    exec(brokerNode, "ip", "route", "add", "unreachable", ipAddress);
   }
 
   private String getContainerNetworkIP(final ZeebeBrokerNode<?> node) {
@@ -197,18 +197,28 @@ final class AsymmetricNetworkPartitionIT {
    * #setupNetworkPartition(String, ZeebeNode)}.
    */
   private static void clearUnreachableRoutes(final ZeebeNode<?> container) {
-    exec(container, "ip route flush type unreachable");
+    // passing directly commands that are piped does not work well when executing them in Docker,
+    // so we need to pass the command directly to /bin/sh
+    exec(
+        container,
+        "/bin/sh",
+        "-c",
+        "ip route list | grep unreachable | xargs -rt -n 2 ip route del");
   }
 
-  private static void exec(final ZeebeNode<?> container, final String command) {
-    LOGGER.info("Executing command {} on container {}", command, container.getContainerId());
+  private static void exec(final ZeebeNode<?> container, final String... command) {
+    LOGGER.info(
+        "Executing command {} on container {}",
+        String.join(" ", command),
+        container.getContainerId());
 
     try {
-      final var result = container.execInContainer(command.split(" "));
+      final var result = container.execInContainer(command);
+      LOGGER.trace("Result: {}", result.getStdout());
       assertThat(result.getExitCode())
           .as(
               "command [%s] failed with status [%d] and output: [%s]",
-              command, result.getExitCode(), result.getStdout())
+              String.join(" ", command), result.getExitCode(), result.getStdout())
           .isZero();
 
     } catch (final IOException e) {
