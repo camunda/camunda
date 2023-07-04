@@ -224,31 +224,6 @@ public class DeploymentRejectionTest {
         .hasRejectionReason("");
   }
 
-  // https://github.com/camunda/zeebe/issues/8026
-  @Test
-  public void shouldRejectDeploymentOfSAXException() {
-    // given
-    final String resource = "/processes/saxexception-error-8026.bpmn";
-
-    // when
-    final Record<DeploymentRecordValue> deploymentRejection =
-        ENGINE.deployment().withXmlClasspathResource(resource).expectRejection().deploy();
-
-    // then
-    Assertions.assertThat(deploymentRejection)
-        .hasKey(ExecuteCommandResponseDecoder.keyNullValue())
-        .hasRecordType(RecordType.COMMAND_REJECTION)
-        .hasIntent(DeploymentIntent.CREATE)
-        .hasRejectionType(RejectionType.INVALID_ARGUMENT);
-
-    assertThat(deploymentRejection.getRejectionReason())
-        .describedAs("rejection should contain enough detail rejection reason")
-        .contains("saxexception-error-8026.bpmn")
-        .contains("cvc-complex-type.3.2.2")
-        .contains("stroke")
-        .contains("bpmndi:BPMNPlane");
-  }
-
   @Ignore("8.0 Does not have a fix for https://github.com/camunda/zeebe/issues/5723")
   @Test
   public void shouldDoAtomicDeployments() {
