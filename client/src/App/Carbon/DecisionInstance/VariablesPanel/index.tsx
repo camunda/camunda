@@ -8,6 +8,7 @@
 import {observer} from 'mobx-react';
 import {decisionInstanceDetailsStore} from 'modules/stores/decisionInstanceDetails';
 import {TabView} from 'modules/components/Carbon/TabView';
+import {InputsAndOutputs} from './InputsAndOutputs';
 
 const VariablesPanel: React.FC = observer(() => {
   const isLiteralExpression =
@@ -24,7 +25,7 @@ const VariablesPanel: React.FC = observer(() => {
               {
                 id: 'inputs-and-outputs',
                 label: 'Inputs and Outputs',
-                content: <div>inputs and outputs</div>,
+                content: <InputsAndOutputs />,
                 removePadding: true,
               },
             ]),

@@ -34,6 +34,7 @@ type Props = {
   dynamicRows?: React.ReactNode;
   verticalCellPadding?: string;
   dataTestId?: string;
+  isFlush?: boolean;
 } & Pick<
   React.ComponentProps<typeof InfiniteScroller>,
   'onVerticalScrollStartReach' | 'onVerticalScrollEndReach'
@@ -78,6 +79,7 @@ const StructuredList: React.FC<Props> = ({
   dataTestId,
   onVerticalScrollStartReach,
   onVerticalScrollEndReach,
+  isFlush = true,
 }) => {
   const scrollableContentRef = useRef<HTMLDivElement | null>(null);
 
@@ -87,7 +89,7 @@ const StructuredList: React.FC<Props> = ({
       data-testid={dataTestId}
       ref={scrollableContentRef}
     >
-      <StructuredListWrapper aria-label={label} isCondensed isFlush>
+      <StructuredListWrapper aria-label={label} isCondensed isFlush={isFlush}>
         <StructuredListHead>
           <StructuredListRow head tabIndex={0}>
             {headerColumns.map(({cellContent, width}, index) => {
