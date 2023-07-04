@@ -19,6 +19,7 @@ package io.camunda.zeebe.model.bpmn.builder;
 import io.camunda.zeebe.model.bpmn.BpmnModelException;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.instance.BpmnModelElementInstance;
+import io.camunda.zeebe.model.bpmn.instance.Documentation;
 import io.camunda.zeebe.model.bpmn.instance.EndEvent;
 import io.camunda.zeebe.model.bpmn.instance.IntermediateThrowEvent;
 import io.camunda.zeebe.model.bpmn.instance.SubProcess;
@@ -88,5 +89,12 @@ public abstract class AbstractBpmnModelElementBuilder<
 
   public E getElement() {
     return element;
+  }
+
+  public AbstractBpmnModelElementBuilder<B, E> documentation(final String content) {
+    final Documentation documentation = modelInstance.newInstance(Documentation.class);
+    documentation.setTextContent(content);
+    element.addChildElement(documentation);
+    return this;
   }
 }
