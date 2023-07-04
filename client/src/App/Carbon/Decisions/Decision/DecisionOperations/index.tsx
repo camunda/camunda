@@ -93,7 +93,12 @@ const DecisionOperations: React.FC<Props> = ({
             ]}
             rows={[
               {
-                columns: [{cellContent: decisionDefinitionStore.name}],
+                key: decisionDefinitionStore.name ?? 'drdName',
+                columns: [
+                  {
+                    cellContent: decisionDefinitionStore.name,
+                  },
+                ],
               },
             ]}
             label="DRD Details"

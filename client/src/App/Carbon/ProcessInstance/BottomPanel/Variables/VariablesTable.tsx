@@ -12,7 +12,7 @@ import {FieldArray} from 'react-final-form-arrays';
 import {variablesStore} from 'modules/stores/variables';
 import {observer} from 'mobx-react';
 import {modificationsStore} from 'modules/stores/modifications';
-import {useMemo} from 'react';
+import {useMemo, useRef} from 'react';
 import {Restricted} from 'modules/components/Restricted';
 import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
 import {Button, Loading} from '@carbon/react';
@@ -28,6 +28,7 @@ import {Name} from './NewVariableModification/Name';
 import {Value} from './NewVariableModification/Value';
 import {Operation} from './NewVariableModification/Operation';
 import {ViewFullVariableButton} from './ViewFullVariableButton';
+import {MAX_VARIABLES_STORED} from 'modules/constants/variables';
 
 type Props = {
   scopeId: string | null;
@@ -49,6 +50,7 @@ const VariablesTable: React.FC<Props> = observer(
     const {processInstanceId = ''} = useProcessInstancePageParams();
     const notifications = useNotifications();
     const {initialValues} = useFormState();
+    const variableNameRef = useRef<HTMLDivElement>(null);
 
     function fetchFullVariable({
       processInstanceId,
@@ -89,6 +91,29 @@ const VariablesTable: React.FC<Props> = observer(
         headerSize="sm"
         verticalCellPadding="var(--cds-spacing-02)"
         label="Variable List"
+        onVerticalScrollStartReach={async (scrollDown) => {
+          if (variablesStore.shouldFetchPreviousVariables() === false) {
+            return;
+          }
+          await variablesStore.fetchPreviousVariables(processInstanceId);
+
+          if (
+            variablesStore.state.items.length === MAX_VARIABLES_STORED &&
+            variablesStore.state.latestFetch.itemsCount !== 0
+          ) {
+            scrollDown(
+              variablesStore.state.latestFetch.itemsCount *
+                (variableNameRef.current?.closest<HTMLElement>('[role=row]')
+                  ?.offsetHeight ?? 0)
+            );
+          }
+        }}
+        onVerticalScrollEndReach={() => {
+          if (variablesStore.shouldFetchNextVariables() === false) {
+            return;
+          }
+          variablesStore.fetchNextVariables(processInstanceId);
+        }}
         dynamicRows={
           isModificationModeEnabled ? (
             <>
@@ -107,6 +132,7 @@ const VariablesTable: React.FC<Props> = observer(
                     rows={fields
                       .map((variableName, index) => {
                         return {
+                          key: fields.value[index]?.id ?? variableName,
                           columns: [
                             {
                               cellContent: (
@@ -155,10 +181,15 @@ const VariablesTable: React.FC<Props> = observer(
             isPreview,
             id,
           }) => ({
+            key: variableName,
             dataTestId: `variable-${variableName}`,
             columns: [
               {
-                cellContent: <VariableName>{variableName}</VariableName>,
+                cellContent: (
+                  <VariableName title={variableName} ref={variableNameRef}>
+                    {variableName}
+                  </VariableName>
+                ),
                 width: '35%',
               },
               {

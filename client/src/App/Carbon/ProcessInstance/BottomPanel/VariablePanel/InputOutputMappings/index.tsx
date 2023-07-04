@@ -73,6 +73,7 @@ const InputOutputMappings: React.FC<Props> = observer(({type}) => {
           rows={mappings.map(({source, target}) => {
             return {
               id: target,
+              key: source,
               columns: [
                 {
                   id: 'target',

@@ -17,6 +17,7 @@ import {TextInputField} from 'modules/components/Carbon/TextInputField';
 import {useVariableFormFields} from './useVariableFormFields';
 import {createModification} from './createModification';
 import {Layer} from '@carbon/react';
+import {useEffect, useRef} from 'react';
 
 type Props = {
   variableName: string;
@@ -28,6 +29,11 @@ const Name: React.FC<Props> = ({variableName, scopeId}) => {
 
   const {currentName, currentValue, currentId, areFormFieldsValid} =
     useVariableFormFields(variableName);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    inputRef?.current?.focus();
+  }, []);
 
   return (
     <Layer>
@@ -44,6 +50,7 @@ const Name: React.FC<Props> = ({variableName, scopeId}) => {
         {({input}) => (
           <TextInputField
             {...input}
+            ref={inputRef}
             data-testid="new-variable-name"
             type="text"
             placeholder="Name"
@@ -51,7 +58,6 @@ const Name: React.FC<Props> = ({variableName, scopeId}) => {
             size="sm"
             hideLabel
             labelText=""
-            autoFocus={input.value === ''}
             onBlur={() => {
               form.mutators?.triggerValidation?.(
                 createNewVariableFieldName(variableName, 'name')

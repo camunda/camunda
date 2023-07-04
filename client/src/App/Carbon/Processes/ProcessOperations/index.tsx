@@ -100,6 +100,7 @@ const ProcessOperations: React.FC<Props> = ({
             ]}
             rows={[
               {
+                key: `${processName}-v${processVersion}`,
                 columns: [
                   {cellContent: `${processName} - Version ${processVersion}`},
                 ],

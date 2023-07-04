@@ -13,11 +13,19 @@ type Props = React.ComponentProps<typeof TextInput> & {
   name: string;
 };
 
-const TextInputField: React.FC<Props> = ({name, ...props}) => {
-  const error = useFieldError(name);
+const TextInputField = React.forwardRef<HTMLInputElement, Props>(
+  ({name, ...props}, ref) => {
+    const error = useFieldError(name);
 
-  return (
-    <TextInput {...props} invalid={error !== undefined} invalidText={error} />
-  );
-};
+    return (
+      <TextInput
+        ref={ref}
+        {...props}
+        invalid={error !== undefined}
+        invalidText={error}
+      />
+    );
+  }
+);
+
 export {TextInputField};

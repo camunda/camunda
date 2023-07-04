@@ -6,12 +6,13 @@
  */
 
 import {
-  StructuredListBody,
   StructuredListHead,
   StructuredListRow,
   StructuredListWrapper,
 } from '@carbon/react';
 import {Container, StructuredListCell} from './styled';
+import React, {useRef} from 'react';
+import {InfiniteScroller} from 'modules/components/InfiniteScroller';
 
 type Column = {
   cellContent: React.ReactNode;
@@ -21,6 +22,7 @@ type Column = {
 type RowProps = {
   columns: Column[];
   dataTestId?: string;
+  key: string;
 };
 
 type Props = {
@@ -32,7 +34,10 @@ type Props = {
   dynamicRows?: React.ReactNode;
   verticalCellPadding?: string;
   dataTestId?: string;
-};
+} & Pick<
+  React.ComponentProps<typeof InfiniteScroller>,
+  'onVerticalScrollStartReach' | 'onVerticalScrollEndReach'
+>;
 
 const StructuredRows: React.FC<Pick<Props, 'rows' | 'verticalCellPadding'>> = ({
   rows,
@@ -40,8 +45,8 @@ const StructuredRows: React.FC<Pick<Props, 'rows' | 'verticalCellPadding'>> = ({
 }) => {
   return (
     <>
-      {rows.map(({dataTestId, columns}, index) => (
-        <StructuredListRow key={index} data-testid={dataTestId}>
+      {rows.map(({key, dataTestId, columns}) => (
+        <StructuredListRow key={key} data-testid={dataTestId}>
           {columns.map(({cellContent, width}, index) => {
             return (
               <StructuredListCell
@@ -71,9 +76,17 @@ const StructuredList: React.FC<Props> = ({
   dynamicRows,
   verticalCellPadding,
   dataTestId,
+  onVerticalScrollStartReach,
+  onVerticalScrollEndReach,
 }) => {
+  const scrollableContentRef = useRef<HTMLDivElement | null>(null);
+
   return (
-    <Container className={className} data-testid={dataTestId}>
+    <Container
+      className={className}
+      data-testid={dataTestId}
+      ref={scrollableContentRef}
+    >
       <StructuredListWrapper aria-label={label} isCondensed isFlush>
         <StructuredListHead>
           <StructuredListRow head tabIndex={0}>
@@ -91,13 +104,19 @@ const StructuredList: React.FC<Props> = ({
             })}
           </StructuredListRow>
         </StructuredListHead>
-        <StructuredListBody>
-          {dynamicRows}
-          <StructuredRows
-            rows={rows}
-            verticalCellPadding={verticalCellPadding}
-          />
-        </StructuredListBody>
+        <InfiniteScroller
+          onVerticalScrollStartReach={onVerticalScrollStartReach}
+          onVerticalScrollEndReach={onVerticalScrollEndReach}
+          scrollableContainerRef={scrollableContentRef}
+        >
+          <div className="cds--structured-list-tbody" role="rowgroup">
+            {dynamicRows}
+            <StructuredRows
+              rows={rows}
+              verticalCellPadding={verticalCellPadding}
+            />
+          </div>
+        </InfiniteScroller>
       </StructuredListWrapper>
     </Container>
   );
