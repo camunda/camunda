@@ -20,6 +20,7 @@ import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.test.util.BrokerClassRuleHelper;
 import io.camunda.zeebe.util.ByteValue;
 import org.junit.ClassRule;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -134,6 +135,7 @@ public final class CreateDeploymentTest {
         .hasMessageContaining("Must have exactly one 'zeebe:taskDefinition' extension element");
   }
 
+  @Ignore("Bug not fixed on 8.0 https://github.com/camunda/zeebe/issues/9946")
   @Test
   public void shouldRejectDeployIfResourceIsTooLarge() {
     // when
