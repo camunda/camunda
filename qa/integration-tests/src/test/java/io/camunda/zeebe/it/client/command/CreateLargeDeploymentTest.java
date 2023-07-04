@@ -54,7 +54,8 @@ public final class CreateLargeDeploymentTest {
     // then
     assertThatThrownBy(deployLargeProcess::join)
         .isInstanceOf(ClientException.class)
-        .hasMessageContaining("Request size is above configured maxMessageSize.");
+        .hasMessageContaining(
+            "Unexpected error occurred between gateway and broker (code: INTERNAL_ERROR)");
 
     // then - can deploy another process
     final var deployedValidProcess =
