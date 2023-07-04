@@ -17,6 +17,7 @@ import {tracking} from 'modules/tracking';
 import {InstanceDetail} from '../Layout/InstanceDetail';
 import {DecisionPanel} from './DecisionPanel';
 import {Header} from './Header';
+import {VariablesPanel} from './VariablesPanel';
 
 const DecisionInstance: React.FC = observer(() => {
   const {decisionInstanceId = ''} = useParams<{decisionInstanceId: string}>();
@@ -61,7 +62,7 @@ const DecisionInstance: React.FC = observer(() => {
       <InstanceDetail
         header={<Header />}
         topPanel={<DecisionPanel />}
-        bottomPanel={<div>bottom panel</div>}
+        bottomPanel={<VariablesPanel />}
         id="decision"
       />
     </>

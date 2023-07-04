@@ -9,6 +9,7 @@ import styled from 'styled-components';
 
 const Section = styled.section`
   height: 100%;
+  overflow: auto;
 `;
 
 export {Section};
