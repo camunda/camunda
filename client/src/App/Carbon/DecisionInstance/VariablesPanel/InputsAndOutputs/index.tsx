@@ -20,6 +20,33 @@ import {
   EmptyMessage,
   ErrorMessage,
 } from './styled';
+import {Skeleton} from './Skeleton';
+
+const inputMappingsColumns = [
+  {
+    cellContent: 'Name',
+    width: '30%',
+  },
+  {
+    cellContent: 'Value',
+    width: '70%',
+  },
+];
+
+const outputMappingsColumns = [
+  {
+    cellContent: 'Rule',
+    width: '20%',
+  },
+  {
+    cellContent: 'Name',
+    width: '40%',
+  },
+  {
+    cellContent: 'Value',
+    width: '40%',
+  },
+];
 
 const InputsAndOutputs: React.FC = observer(() => {
   const {
@@ -45,7 +72,10 @@ const InputsAndOutputs: React.FC = observer(() => {
         <Panel>
           {status !== 'error' && <Title>Inputs</Title>}
           {status === 'initial' && (
-            <div data-testid="inputs-skeleton">skeleton</div>
+            <Skeleton
+              dataTestId="inputs-skeleton"
+              columnWidths={inputMappingsColumns.map(({width}) => width)}
+            />
           )}
           {status === 'fetched' &&
             decisionInstance?.state === 'FAILED' &&
@@ -59,16 +89,7 @@ const InputsAndOutputs: React.FC = observer(() => {
                 label="Inputs"
                 headerSize="sm"
                 isFlush={false}
-                headerColumns={[
-                  {
-                    cellContent: 'Name',
-                    width: '30%',
-                  },
-                  {
-                    cellContent: 'Value',
-                    width: '70%',
-                  },
-                ]}
+                headerColumns={inputMappingsColumns}
                 rows={decisionInstance?.evaluatedInputs.map(
                   ({id, name, value}) => {
                     return {
@@ -89,27 +110,17 @@ const InputsAndOutputs: React.FC = observer(() => {
         <Panel>
           {status !== 'error' && <Title>Outputs</Title>}
           {status === 'initial' && (
-            <div data-testid="outputs-skeleton">skeleton</div>
+            <Skeleton
+              dataTestId="outputs-skeleton"
+              columnWidths={outputMappingsColumns.map(({width}) => width)}
+            />
           )}
           {status === 'fetched' && decisionInstance?.state !== 'FAILED' && (
             <StructuredList
               label="Inputs"
               headerSize="sm"
               isFlush={false}
-              headerColumns={[
-                {
-                  cellContent: 'Rule',
-                  width: '20%',
-                },
-                {
-                  cellContent: 'Name',
-                  width: '40%',
-                },
-                {
-                  cellContent: 'Value',
-                  width: '40%',
-                },
-              ]}
+              headerColumns={outputMappingsColumns}
               rows={
                 decisionInstance?.evaluatedOutputs.map(
                   ({ruleIndex, name, value}) => {
