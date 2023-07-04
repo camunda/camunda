@@ -14,10 +14,12 @@ import io.camunda.zeebe.client.api.response.DeploymentEvent;
 import io.camunda.zeebe.client.api.response.ProcessInstanceResult;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
+import io.camunda.zeebe.qa.util.testcontainers.ContainerLogsDumper;
 import io.camunda.zeebe.qa.util.testcontainers.ZeebeTestContainerDefaults;
 import io.zeebe.containers.cluster.ZeebeCluster;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
@@ -33,6 +35,10 @@ final class ContainerClusterSmokeIT {
           .withEmbeddedGateway(false)
           .withImage(ZeebeTestContainerDefaults.defaultTestImage())
           .build();
+
+  @RegisterExtension
+  @SuppressWarnings("unused")
+  final ContainerLogsDumper logsWatcher = new ContainerLogsDumper(cluster::getNodes);
 
   /** A smoke test which checks that a gateway of a cluster can be accessed. */
   @ContainerSmokeTest
