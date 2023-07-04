@@ -7,11 +7,10 @@
  */
 package io.camunda.zeebe.engine.util;
 
-import io.camunda.zeebe.engine.processing.streamprocessor.JobActivationProperties;
 import io.camunda.zeebe.engine.processing.streamprocessor.JobStreamer;
 import io.camunda.zeebe.protocol.impl.stream.job.ActivatedJob;
+import io.camunda.zeebe.protocol.impl.stream.job.JobActivationProperties;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
@@ -41,20 +40,6 @@ public class RecordingJobStreamer implements JobStreamer {
     final var jobStream = new RecordingJobStream(jobActivationProperties);
     jobStreams.put(jobType, jobStream);
     return jobStream;
-  }
-
-  public void resetJobStreams() {
-    for (final RecordingJobStream jobStream : jobStreams.values()) {
-      jobStream.clearActivatedJobs();
-    }
-  }
-
-  public record TestActivationProperties(
-      DirectBuffer worker, long timeout, Collection<DirectBuffer> fetchVariables)
-      implements JobActivationProperties {
-
-    @Override
-    public void wrap(final DirectBuffer buffer, final int offset, final int length) {}
   }
 
   public static class RecordingJobStream implements JobStream {

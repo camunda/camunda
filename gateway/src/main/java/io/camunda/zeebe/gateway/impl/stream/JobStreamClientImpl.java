@@ -9,6 +9,7 @@ package io.camunda.zeebe.gateway.impl.stream;
 
 import io.atomix.cluster.MemberId;
 import io.atomix.cluster.messaging.ClusterCommunicationService;
+import io.camunda.zeebe.protocol.impl.stream.job.JobActivationProperties;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.transport.TransportFactory;
@@ -35,7 +36,7 @@ public final class JobStreamClientImpl implements JobStreamClient {
       final ActorSchedulingService schedulingService,
       final ClusterCommunicationService clusterCommunicationService) {
     this.schedulingService = schedulingService;
-    this.streamService =
+    streamService =
         new TransportFactory(schedulingService)
             .createRemoteStreamClient(clusterCommunicationService, new JobClientStreamMetrics());
   }
