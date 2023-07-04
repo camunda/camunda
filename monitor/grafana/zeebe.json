@@ -197,7 +197,7 @@
             "h": 6,
             "w": 8,
             "x": 0,
-            "y": 1
+            "y": 9
           },
           "id": 68,
           "interval": "1s",
@@ -298,7 +298,7 @@
             "h": 4,
             "w": 9,
             "x": 8,
-            "y": 1
+            "y": 9
           },
           "id": 243,
           "options": {
@@ -398,7 +398,7 @@
             "h": 6,
             "w": 7,
             "x": 17,
-            "y": 1
+            "y": 9
           },
           "id": 116,
           "links": [],
@@ -474,7 +474,7 @@
             "h": 2,
             "w": 9,
             "x": 8,
-            "y": 5
+            "y": 13
           },
           "id": 542,
           "options": {
@@ -528,7 +528,7 @@
             "h": 5,
             "w": 12,
             "x": 0,
-            "y": 7
+            "y": 15
           },
           "hiddenSeries": false,
           "id": 58,
@@ -635,7 +635,7 @@
             "h": 5,
             "w": 12,
             "x": 12,
-            "y": 7
+            "y": 15
           },
           "hiddenSeries": false,
           "id": 270,
@@ -735,7 +735,7 @@
             "h": 6,
             "w": 8,
             "x": 0,
-            "y": 12
+            "y": 20
           },
           "hiddenSeries": false,
           "id": 62,
@@ -850,7 +850,7 @@
             "h": 2,
             "w": 9,
             "x": 8,
-            "y": 12
+            "y": 20
           },
           "id": 232,
           "links": [],
@@ -907,7 +907,7 @@
             "h": 6,
             "w": 7,
             "x": 17,
-            "y": 12
+            "y": 20
           },
           "hiddenSeries": false,
           "id": 74,
@@ -1020,7 +1020,7 @@
             "h": 2,
             "w": 9,
             "x": 8,
-            "y": 14
+            "y": 22
           },
           "id": 118,
           "links": [],
@@ -1096,7 +1096,7 @@
             "h": 2,
             "w": 9,
             "x": 8,
-            "y": 16
+            "y": 24
           },
           "id": 117,
           "links": [],
@@ -1151,7 +1151,7 @@
             "h": 6,
             "w": 8,
             "x": 0,
-            "y": 18
+            "y": 26
           },
           "hiddenSeries": false,
           "id": 39,
@@ -1262,7 +1262,7 @@
             "h": 6,
             "w": 9,
             "x": 8,
-            "y": 18
+            "y": 26
           },
           "id": 190,
           "links": [],
@@ -1328,7 +1328,7 @@
             "h": 6,
             "w": 7,
             "x": 17,
-            "y": 18
+            "y": 26
           },
           "hiddenSeries": false,
           "id": 33,
@@ -1475,7 +1475,7 @@
             "h": 7,
             "w": 24,
             "x": 0,
-            "y": 2
+            "y": 10
           },
           "hiddenSeries": false,
           "id": 272,
@@ -1588,7 +1588,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 9
+            "y": 17
           },
           "id": 418,
           "options": {
@@ -1703,7 +1703,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 9
+            "y": 17
           },
           "id": 421,
           "options": {
@@ -1800,7 +1800,7 @@
             "h": 4,
             "w": 12,
             "x": 0,
-            "y": 17
+            "y": 25
           },
           "id": 192,
           "options": {
@@ -1848,7 +1848,7 @@
             "h": 4,
             "w": 7,
             "x": 12,
-            "y": 17
+            "y": 25
           },
           "id": 196,
           "showHeader": true,
@@ -1925,7 +1925,7 @@
             "h": 4,
             "w": 5,
             "x": 19,
-            "y": 17
+            "y": 25
           },
           "id": 200,
           "showHeader": true,
@@ -2051,7 +2051,7 @@
             "h": 6,
             "w": 5,
             "x": 0,
-            "y": 21
+            "y": 29
           },
           "id": 194,
           "options": {
@@ -2097,7 +2097,7 @@
             "h": 6,
             "w": 7,
             "x": 5,
-            "y": 21
+            "y": 29
           },
           "id": 199,
           "showHeader": true,
@@ -2174,7 +2174,7 @@
             "h": 12,
             "w": 5,
             "x": 12,
-            "y": 21
+            "y": 29
           },
           "id": 198,
           "showHeader": true,
@@ -2251,7 +2251,7 @@
             "h": 12,
             "w": 7,
             "x": 17,
-            "y": 21
+            "y": 29
           },
           "id": 268,
           "showHeader": true,
@@ -2377,7 +2377,7 @@
             "h": 6,
             "w": 5,
             "x": 0,
-            "y": 27
+            "y": 35
           },
           "id": 189,
           "options": {
@@ -2425,7 +2425,7 @@
             "h": 6,
             "w": 7,
             "x": 5,
-            "y": 27
+            "y": 35
           },
           "id": 201,
           "showHeader": true,
@@ -2551,7 +2551,7 @@
             "h": 6,
             "w": 24,
             "x": 0,
-            "y": 33
+            "y": 41
           },
           "id": 543,
           "options": {
@@ -2618,7 +2618,7 @@
             "h": 5,
             "w": 12,
             "x": 0,
-            "y": 12
+            "y": 20
           },
           "hideTimeOverride": false,
           "id": 12,
@@ -2679,7 +2679,7 @@
             "h": 5,
             "w": 12,
             "x": 12,
-            "y": 12
+            "y": 20
           },
           "hideTimeOverride": false,
           "id": 13,
@@ -2751,7 +2751,7 @@
             "h": 6,
             "w": 12,
             "x": 0,
-            "y": 17
+            "y": 25
           },
           "hiddenSeries": false,
           "id": 2,
@@ -2852,7 +2852,7 @@
             "h": 6,
             "w": 12,
             "x": 12,
-            "y": 17
+            "y": 25
           },
           "hiddenSeries": false,
           "id": 3,
@@ -2955,7 +2955,7 @@
             "h": 6,
             "w": 9,
             "x": 0,
-            "y": 23
+            "y": 31
           },
           "hiddenSeries": false,
           "id": 4,
@@ -3049,7 +3049,7 @@
             "h": 6,
             "w": 7,
             "x": 9,
-            "y": 23
+            "y": 31
           },
           "hiddenSeries": false,
           "id": 266,
@@ -3144,7 +3144,7 @@
             "h": 6,
             "w": 8,
             "x": 16,
-            "y": 23
+            "y": 31
           },
           "hiddenSeries": false,
           "id": 267,
@@ -3234,7 +3234,7 @@
             "h": 8,
             "w": 6,
             "x": 0,
-            "y": 29
+            "y": 37
           },
           "hiddenSeries": false,
           "id": 290,
@@ -3321,7 +3321,7 @@
             "h": 8,
             "w": 6,
             "x": 6,
-            "y": 29
+            "y": 37
           },
           "hiddenSeries": false,
           "id": 291,
@@ -3408,7 +3408,7 @@
             "h": 8,
             "w": 6,
             "x": 12,
-            "y": 29
+            "y": 37
           },
           "hiddenSeries": false,
           "id": 288,
@@ -3495,7 +3495,7 @@
             "h": 8,
             "w": 6,
             "x": 18,
-            "y": 29
+            "y": 37
           },
           "hiddenSeries": false,
           "id": 289,
@@ -3612,7 +3612,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 5
+            "y": 13
           },
           "hiddenSeries": false,
           "id": 102,
@@ -3716,7 +3716,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 5
+            "y": 13
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -3815,7 +3815,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 13
+            "y": 21
           },
           "hiddenSeries": false,
           "id": 105,
@@ -3916,7 +3916,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 13
+            "y": 21
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -4012,7 +4012,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 21
+            "y": 29
           },
           "hiddenSeries": false,
           "id": 182,
@@ -4128,7 +4128,7 @@
             "h": 7,
             "w": 24,
             "x": 0,
-            "y": 61
+            "y": 69
           },
           "hiddenSeries": false,
           "id": 261,
@@ -4250,7 +4250,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 68
+            "y": 76
           },
           "hiddenSeries": false,
           "id": 285,
@@ -4336,7 +4336,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 68
+            "y": 76
           },
           "hiddenSeries": false,
           "id": 286,
@@ -4427,7 +4427,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 76
+            "y": 84
           },
           "hiddenSeries": false,
           "id": 98,
@@ -4543,7 +4543,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 76
+            "y": 84
           },
           "hiddenSeries": false,
           "id": 35,
@@ -4660,7 +4660,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 126
+            "y": 134
           },
           "hiddenSeries": false,
           "id": 64,
@@ -4761,7 +4761,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 126
+            "y": 134
           },
           "hiddenSeries": false,
           "id": 294,
@@ -4885,7 +4885,7 @@
             "h": 5,
             "w": 24,
             "x": 0,
-            "y": 127
+            "y": 135
           },
           "hiddenSeries": false,
           "id": 260,
@@ -5025,7 +5025,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 132
+            "y": 140
           },
           "id": 379,
           "options": {
@@ -5116,7 +5116,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 132
+            "y": 140
           },
           "id": 381,
           "options": {
@@ -5167,7 +5167,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 140
+            "y": 148
           },
           "hiddenSeries": false,
           "id": 37,
@@ -5276,7 +5276,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 140
+            "y": 148
           },
           "hiddenSeries": false,
           "id": 40,
@@ -5369,7 +5369,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 148
+            "y": 156
           },
           "hiddenSeries": false,
           "id": 122,
@@ -5459,7 +5459,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 148
+            "y": 156
           },
           "hiddenSeries": false,
           "id": 124,
@@ -5549,7 +5549,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 156
+            "y": 164
           },
           "hiddenSeries": false,
           "id": 126,
@@ -5639,7 +5639,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 156
+            "y": 164
           },
           "hiddenSeries": false,
           "id": 127,
@@ -5764,7 +5764,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 144
+            "y": 152
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -5890,7 +5890,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 144
+            "y": 152
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -6044,7 +6044,7 @@
             "h": 10,
             "w": 12,
             "x": 0,
-            "y": 152
+            "y": 160
           },
           "id": 343,
           "links": [],
@@ -6165,7 +6165,7 @@
             "h": 10,
             "w": 12,
             "x": 12,
-            "y": 152
+            "y": 160
           },
           "id": 345,
           "links": [],
@@ -6284,7 +6284,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 162
+            "y": 170
           },
           "id": 347,
           "options": {
@@ -6375,7 +6375,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 162
+            "y": 170
           },
           "id": 349,
           "options": {
@@ -6466,7 +6466,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 170
+            "y": 178
           },
           "id": 353,
           "options": {
@@ -6558,7 +6558,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 170
+            "y": 178
           },
           "id": 351,
           "options": {
@@ -6639,7 +6639,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 10
+            "y": 18
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -6739,7 +6739,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 10
+            "y": 18
           },
           "hiddenSeries": false,
           "id": 222,
@@ -6858,7 +6858,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 18
+            "y": 26
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -6969,7 +6969,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 18
+            "y": 26
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -7081,7 +7081,7 @@
             "h": 7,
             "w": 24,
             "x": 0,
-            "y": 26
+            "y": 34
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -7195,7 +7195,7 @@
             "h": 7,
             "w": 12,
             "x": 0,
-            "y": 33
+            "y": 41
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -7308,7 +7308,7 @@
             "h": 7,
             "w": 12,
             "x": 12,
-            "y": 33
+            "y": 41
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -7411,7 +7411,7 @@
             "h": 7,
             "w": 12,
             "x": 0,
-            "y": 40
+            "y": 48
           },
           "id": 420,
           "options": {
@@ -7492,7 +7492,7 @@
             "h": 7,
             "w": 12,
             "x": 12,
-            "y": 40
+            "y": 48
           },
           "id": 419,
           "options": {
@@ -7563,7 +7563,7 @@
             "h": 7,
             "w": 12,
             "x": 0,
-            "y": 47
+            "y": 55
           },
           "hiddenSeries": false,
           "id": 310,
@@ -7680,7 +7680,7 @@
             "h": 7,
             "w": 12,
             "x": 12,
-            "y": 47
+            "y": 55
           },
           "hiddenSeries": false,
           "id": 311,
@@ -7815,7 +7815,7 @@
             "h": 7,
             "w": 12,
             "x": 0,
-            "y": 54
+            "y": 62
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -7926,7 +7926,7 @@
             "h": 7,
             "w": 12,
             "x": 12,
-            "y": 54
+            "y": 62
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -8051,7 +8051,7 @@
             "h": 7,
             "w": 12,
             "x": 0,
-            "y": 224
+            "y": 232
           },
           "hiddenSeries": false,
           "id": 26,
@@ -8144,7 +8144,7 @@
             "h": 7,
             "w": 12,
             "x": 12,
-            "y": 224
+            "y": 232
           },
           "hiddenSeries": false,
           "id": 27,
@@ -8249,7 +8249,7 @@
             "h": 9,
             "w": 8,
             "x": 0,
-            "y": 231
+            "y": 239
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -8312,7 +8312,7 @@
             "h": 9,
             "w": 8,
             "x": 8,
-            "y": 231
+            "y": 239
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -8375,7 +8375,7 @@
             "h": 9,
             "w": 8,
             "x": 16,
-            "y": 231
+            "y": 239
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -8464,7 +8464,7 @@
             "h": 8,
             "w": 24,
             "x": 0,
-            "y": 225
+            "y": 233
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -8523,7 +8523,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 233
+            "y": 241
           },
           "hiddenSeries": false,
           "id": 166,
@@ -8615,7 +8615,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 233
+            "y": 241
           },
           "hiddenSeries": false,
           "id": 168,
@@ -8727,7 +8727,7 @@
             "h": 7,
             "w": 12,
             "x": 0,
-            "y": 12
+            "y": 20
           },
           "hiddenSeries": false,
           "id": 278,
@@ -8819,7 +8819,7 @@
             "h": 7,
             "w": 12,
             "x": 12,
-            "y": 12
+            "y": 20
           },
           "hiddenSeries": false,
           "id": 283,
@@ -8957,7 +8957,7 @@
             "h": 8,
             "w": 24,
             "x": 0,
-            "y": 19
+            "y": 27
           },
           "id": 373,
           "options": {
@@ -9053,7 +9053,7 @@
             "h": 7,
             "w": 12,
             "x": 0,
-            "y": 27
+            "y": 35
           },
           "id": 363,
           "options": {
@@ -9149,7 +9149,7 @@
             "h": 7,
             "w": 12,
             "x": 12,
-            "y": 27
+            "y": 35
           },
           "id": 406,
           "options": {
@@ -9202,7 +9202,7 @@
             "h": 7,
             "w": 12,
             "x": 0,
-            "y": 34
+            "y": 42
           },
           "hiddenSeries": false,
           "id": 79,
@@ -9295,7 +9295,7 @@
             "h": 7,
             "w": 12,
             "x": 12,
-            "y": 34
+            "y": 42
           },
           "hiddenSeries": false,
           "id": 114,
@@ -9396,7 +9396,7 @@
             "h": 7,
             "w": 12,
             "x": 0,
-            "y": 41
+            "y": 49
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -9489,7 +9489,7 @@
             "h": 7,
             "w": 12,
             "x": 12,
-            "y": 41
+            "y": 49
           },
           "hiddenSeries": false,
           "id": 305,
@@ -9602,7 +9602,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 48
+            "y": 56
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -9701,7 +9701,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 48
+            "y": 56
           },
           "hiddenSeries": false,
           "id": 72,
@@ -9835,7 +9835,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 56
+            "y": 64
           },
           "id": 432,
           "interval": "1s",
@@ -9911,7 +9911,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 56
+            "y": 64
           },
           "hiddenSeries": false,
           "id": 95,
@@ -10012,7 +10012,7 @@
             "h": 5,
             "w": 8,
             "x": 0,
-            "y": 64
+            "y": 72
           },
           "id": 205,
           "maxPerRow": 6,
@@ -10080,7 +10080,7 @@
             "h": 5,
             "w": 8,
             "x": 0,
-            "y": 69
+            "y": 77
           },
           "id": 209,
           "maxPerRow": 6,
@@ -10162,7 +10162,7 @@
             "h": 5,
             "w": 12,
             "x": 0,
-            "y": 74
+            "y": 82
           },
           "id": 215,
           "options": {
@@ -10224,7 +10224,7 @@
             "h": 5,
             "w": 12,
             "x": 12,
-            "y": 74
+            "y": 82
           },
           "id": 396,
           "options": {
@@ -11682,6 +11682,211 @@
             "show": true
           },
           "yBucketBound": "auto"
+        },
+        {
+          "cards": {},
+          "color": {
+            "cardColor": "#b4ff00",
+            "colorScale": "sqrt",
+            "colorScheme": "interpolateSpectral",
+            "exponent": 0.5,
+            "mode": "spectrum"
+          },
+          "dataFormat": "tsbuckets",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "$DS_PROMETHEUS"
+          },
+          "description": "Overall latency distribution to seek to an index",
+          "fieldConfig": {
+            "defaults": {
+              "custom": {
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                },
+                "scaleDistribution": {
+                  "type": "linear"
+                }
+              }
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 7,
+            "w": 12,
+            "x": 0,
+            "y": 61
+          },
+          "heatmap": {},
+          "hideZeroBuckets": true,
+          "highlightCards": true,
+          "id": 559,
+          "legend": {
+            "show": false
+          },
+          "links": [],
+          "options": {
+            "calculate": false,
+            "calculation": {},
+            "cellGap": 2,
+            "cellValues": {},
+            "color": {
+              "exponent": 0.5,
+              "fill": "#b4ff00",
+              "mode": "scheme",
+              "reverse": false,
+              "scale": "exponential",
+              "scheme": "Spectral",
+              "steps": 128
+            },
+            "exemplars": {
+              "color": "rgba(255,0,255,0.7)"
+            },
+            "filterValues": {
+              "le": 1e-9
+            },
+            "legend": {
+              "show": false
+            },
+            "rowsFrame": {
+              "layout": "auto"
+            },
+            "showValue": "never",
+            "tooltip": {
+              "show": true,
+              "yHistogram": false
+            },
+            "yAxis": {
+              "axisPlacement": "left",
+              "reverse": false,
+              "unit": "dtdurations"
+            }
+          },
+          "pluginVersion": "9.5.2",
+          "reverseYBuckets": false,
+          "targets": [
+            {
+              "datasource": {
+                "uid": "$DS_PROMETHEUS"
+              },
+              "editorMode": "code",
+              "expr": "sum(increase(atomix_journal_seek_latency_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\", partition=~\"$partition\"}[$__rate_interval])) by (le)",
+              "format": "heatmap",
+              "intervalFactor": 1,
+              "legendFormat": "{{le}}",
+              "range": true,
+              "refId": "A"
+            }
+          ],
+          "title": "Segment Seek Latency",
+          "tooltip": {
+            "show": true,
+            "showHistogram": false
+          },
+          "type": "heatmap",
+          "xAxis": {
+            "show": true
+          },
+          "yAxis": {
+            "format": "dtdurations",
+            "logBase": 1,
+            "show": true
+          },
+          "yBucketBound": "auto"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "description": "Number of times journal seek was executed. This included both seek to an index and seek to asqn.",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "axisCenteredZero": false,
+                "axisColorMode": "text",
+                "axisLabel": "",
+                "axisPlacement": "auto",
+                "barAlignment": 0,
+                "drawStyle": "line",
+                "fillOpacity": 0,
+                "gradientMode": "none",
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                },
+                "lineInterpolation": "linear",
+                "lineWidth": 1,
+                "pointSize": 5,
+                "scaleDistribution": {
+                  "type": "linear"
+                },
+                "showPoints": "never",
+                "spanNulls": false,
+                "stacking": {
+                  "group": "A",
+                  "mode": "none"
+                },
+                "thresholdsStyle": {
+                  "mode": "off"
+                }
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  }
+                ]
+              },
+              "unit": "none"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 7,
+            "w": 12,
+            "x": 12,
+            "y": 61
+          },
+          "id": 560,
+          "options": {
+            "legend": {
+              "calcs": [],
+              "displayMode": "list",
+              "placement": "bottom",
+              "showLegend": true
+            },
+            "tooltip": {
+              "mode": "multi",
+              "sort": "none"
+            }
+          },
+          "pluginVersion": "9.3.6",
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${DS_PROMETHEUS}"
+              },
+              "editorMode": "code",
+              "expr": "sum(rate(atomix_journal_seek_latency_count{cluster=~\"$cluster\", namespace=~\"$namespace\",pod=~\"$pod\", partition=~\"$partition\"}[$__rate_interval])) by (pod, partition)",
+              "interval": "",
+              "legendFormat": "{{ pod }} - p{{ partition }}",
+              "range": true,
+              "refId": "A"
+            }
+          ],
+          "title": "Number of journal seek (per second)",
+          "type": "timeseries"
         }
       ],
       "title": "Journal",
@@ -11757,7 +11962,7 @@
             "h": 6,
             "w": 24,
             "x": 0,
-            "y": 149
+            "y": 157
           },
           "id": 356,
           "links": [],
@@ -11827,7 +12032,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 155
+            "y": 163
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -11940,7 +12145,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 155
+            "y": 163
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -12059,7 +12264,7 @@
             "h": 12,
             "w": 12,
             "x": 0,
-            "y": 227
+            "y": 235
           },
           "hiddenSeries": false,
           "id": 154,
@@ -12152,7 +12357,7 @@
             "h": 6,
             "w": 12,
             "x": 12,
-            "y": 227
+            "y": 235
           },
           "hiddenSeries": false,
           "id": 144,
@@ -12243,7 +12448,7 @@
             "h": 6,
             "w": 12,
             "x": 12,
-            "y": 233
+            "y": 241
           },
           "hiddenSeries": false,
           "id": 142,
@@ -12334,7 +12539,7 @@
             "h": 12,
             "w": 12,
             "x": 0,
-            "y": 239
+            "y": 247
           },
           "hiddenSeries": false,
           "id": 151,
@@ -12426,7 +12631,7 @@
             "h": 6,
             "w": 12,
             "x": 12,
-            "y": 239
+            "y": 247
           },
           "hiddenSeries": false,
           "id": 152,
@@ -12518,7 +12723,7 @@
             "h": 6,
             "w": 12,
             "x": 12,
-            "y": 245
+            "y": 253
           },
           "hiddenSeries": false,
           "id": 150,
@@ -12610,7 +12815,7 @@
             "h": 13,
             "w": 12,
             "x": 0,
-            "y": 251
+            "y": 259
           },
           "hiddenSeries": false,
           "id": 147,
@@ -12702,7 +12907,7 @@
             "h": 7,
             "w": 12,
             "x": 12,
-            "y": 251
+            "y": 259
           },
           "hiddenSeries": false,
           "id": 149,
@@ -12795,7 +13000,7 @@
             "h": 6,
             "w": 12,
             "x": 12,
-            "y": 258
+            "y": 266
           },
           "hiddenSeries": false,
           "id": 148,
@@ -12886,7 +13091,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 264
+            "y": 272
           },
           "hiddenSeries": false,
           "id": 155,
@@ -12977,7 +13182,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 264
+            "y": 272
           },
           "hiddenSeries": false,
           "id": 156,
@@ -13069,7 +13274,7 @@
             "h": 6,
             "w": 6,
             "x": 0,
-            "y": 272
+            "y": 280
           },
           "id": 158,
           "pluginVersion": "6.7.1",
@@ -13179,7 +13384,7 @@
             "h": 6,
             "w": 6,
             "x": 6,
-            "y": 272
+            "y": 280
           },
           "hiddenSeries": false,
           "id": 157,
@@ -13270,7 +13475,7 @@
             "h": 6,
             "w": 12,
             "x": 12,
-            "y": 272
+            "y": 280
           },
           "hiddenSeries": false,
           "id": 146,
@@ -13361,7 +13566,7 @@
             "h": 7,
             "w": 6,
             "x": 0,
-            "y": 278
+            "y": 286
           },
           "hiddenSeries": false,
           "id": 159,
@@ -13452,7 +13657,7 @@
             "h": 7,
             "w": 6,
             "x": 6,
-            "y": 278
+            "y": 286
           },
           "hiddenSeries": false,
           "id": 160,
@@ -13543,7 +13748,7 @@
             "h": 7,
             "w": 12,
             "x": 12,
-            "y": 278
+            "y": 286
           },
           "hiddenSeries": false,
           "id": 153,
@@ -13661,7 +13866,7 @@
             "h": 10,
             "w": 12,
             "x": 0,
-            "y": 228
+            "y": 236
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -13722,7 +13927,7 @@
             "h": 10,
             "w": 12,
             "x": 12,
-            "y": 228
+            "y": 236
           },
           "hiddenSeries": false,
           "id": 255,
@@ -13816,7 +14021,7 @@
             "h": 10,
             "w": 12,
             "x": 0,
-            "y": 238
+            "y": 246
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -13876,7 +14081,7 @@
             "h": 10,
             "w": 12,
             "x": 12,
-            "y": 238
+            "y": 246
           },
           "hiddenSeries": false,
           "id": 185,
@@ -13972,7 +14177,7 @@
             "h": 10,
             "w": 24,
             "x": 0,
-            "y": 248
+            "y": 256
           },
           "height": "400",
           "hiddenSeries": false,
@@ -14125,7 +14330,7 @@
             "h": 6,
             "w": 4,
             "x": 0,
-            "y": 72
+            "y": 80
           },
           "id": 170,
           "maxPerRow": 6,
@@ -14204,7 +14409,7 @@
             "h": 6,
             "w": 12,
             "x": 12,
-            "y": 162
+            "y": 170
           },
           "id": 265,
           "options": {
@@ -14271,7 +14476,7 @@
             "h": 6,
             "w": 12,
             "x": 0,
-            "y": 168
+            "y": 176
           },
           "id": 174,
           "options": {
@@ -14352,7 +14557,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 73
+            "y": 81
           },
           "id": 329,
           "options": {
@@ -14417,7 +14622,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 73
+            "y": 81
           },
           "id": 319,
           "options": {
@@ -14484,7 +14689,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 81
+            "y": 89
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -14594,7 +14799,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 81
+            "y": 89
           },
           "id": 325,
           "options": {
@@ -14688,7 +14893,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 89
+            "y": 97
           },
           "id": 313,
           "options": {
@@ -14748,7 +14953,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 89
+            "y": 97
           },
           "id": 321,
           "options": {
@@ -14830,7 +15035,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 97
+            "y": 105
           },
           "id": 335,
           "options": {
@@ -14888,7 +15093,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 97
+            "y": 105
           },
           "id": 317,
           "options": {
@@ -14950,7 +15155,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 105
+            "y": 113
           },
           "id": 327,
           "options": {
@@ -15040,7 +15245,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 58
+            "y": 66
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -15154,7 +15359,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 58
+            "y": 66
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -15297,7 +15502,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 66
+            "y": 74
           },
           "id": 444,
           "links": [],
@@ -15405,7 +15610,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 66
+            "y": 74
           },
           "id": 446,
           "links": [],
@@ -15512,7 +15717,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 74
+            "y": 82
           },
           "id": 440,
           "options": {
@@ -15604,7 +15809,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 74
+            "y": 82
           },
           "id": 442,
           "options": {
@@ -15683,7 +15888,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 19
+            "y": 27
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -15824,7 +16029,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 19
+            "y": 27
           },
           "id": 549,
           "options": {
