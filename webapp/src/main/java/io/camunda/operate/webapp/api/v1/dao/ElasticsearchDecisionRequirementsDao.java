@@ -42,7 +42,7 @@ public class ElasticsearchDecisionRequirementsDao extends ElasticsearchDao<Decis
       throw new ServerException(String.format("Error in reading decision requirements for key %s", key), e);
     }
     if (decisionRequirements.isEmpty()) {
-      throw new ResourceNotFoundException(String.format("No decision requirements found for key %s ", key));
+      throw new ResourceNotFoundException(String.format("No decision requirements found for key %s", key));
     }
     if (decisionRequirements.size() > 1) {
       throw new ServerException(String.format("Found more than one decision requirements for key %s", key));
