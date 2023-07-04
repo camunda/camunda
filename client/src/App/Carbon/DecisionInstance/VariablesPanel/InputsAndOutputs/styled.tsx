@@ -34,6 +34,7 @@ const StructuredList = styled(BaseStructuredList)`
 const messageStyles = css`
   align-self: center;
   justify-self: center;
+  max-width: unset;
 `;
 
 const EmptyMessage = styled(BaseEmptyMessage)`

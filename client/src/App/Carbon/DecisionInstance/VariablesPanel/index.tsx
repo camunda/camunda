@@ -9,6 +9,7 @@ import {observer} from 'mobx-react';
 import {decisionInstanceDetailsStore} from 'modules/stores/decisionInstanceDetails';
 import {TabView} from 'modules/components/Carbon/TabView';
 import {InputsAndOutputs} from './InputsAndOutputs';
+import {Result} from './Result';
 
 const VariablesPanel: React.FC = observer(() => {
   const isLiteralExpression =
@@ -32,7 +33,8 @@ const VariablesPanel: React.FC = observer(() => {
         {
           id: 'result',
           label: 'Result',
-          content: <div>result</div>,
+          content: <Result />,
+          removePadding: true,
         },
       ]}
       eventName="variables-panel-used"
