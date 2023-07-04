@@ -171,8 +171,7 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "red",
-                    "value": null
+                    "color": "red"
                   }
                 ]
               }
@@ -198,7 +197,7 @@
             "h": 6,
             "w": 8,
             "x": 0,
-            "y": 1
+            "y": 9
           },
           "id": 68,
           "interval": "1s",
@@ -280,8 +279,7 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green",
-                    "value": null
+                    "color": "green"
                   },
                   {
                     "color": "red",
@@ -300,7 +298,7 @@
             "h": 4,
             "w": 9,
             "x": 8,
-            "y": 1
+            "y": 9
           },
           "id": 243,
           "options": {
@@ -384,8 +382,7 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green",
-                    "value": null
+                    "color": "green"
                   },
                   {
                     "color": "red",
@@ -401,7 +398,7 @@
             "h": 6,
             "w": 7,
             "x": 17,
-            "y": 1
+            "y": 9
           },
           "id": 116,
           "links": [],
@@ -462,8 +459,7 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green",
-                    "value": null
+                    "color": "green"
                   },
                   {
                     "color": "red",
@@ -478,7 +474,7 @@
             "h": 2,
             "w": 9,
             "x": 8,
-            "y": 5
+            "y": 13
           },
           "id": 542,
           "options": {
@@ -532,7 +528,7 @@
             "h": 5,
             "w": 12,
             "x": 0,
-            "y": 7
+            "y": 15
           },
           "hiddenSeries": false,
           "id": 58,
@@ -639,7 +635,7 @@
             "h": 5,
             "w": 12,
             "x": 12,
-            "y": 7
+            "y": 15
           },
           "hiddenSeries": false,
           "id": 270,
@@ -739,7 +735,7 @@
             "h": 6,
             "w": 8,
             "x": 0,
-            "y": 12
+            "y": 20
           },
           "hiddenSeries": false,
           "id": 62,
@@ -834,8 +830,7 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "red",
-                    "value": null
+                    "color": "red"
                   },
                   {
                     "color": "#EAB839",
@@ -855,7 +850,7 @@
             "h": 2,
             "w": 9,
             "x": 8,
-            "y": 12
+            "y": 20
           },
           "id": 232,
           "links": [],
@@ -912,7 +907,7 @@
             "h": 6,
             "w": 7,
             "x": 17,
-            "y": 12
+            "y": 20
           },
           "hiddenSeries": false,
           "id": 74,
@@ -1009,8 +1004,7 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green",
-                    "value": null
+                    "color": "green"
                   },
                   {
                     "color": "red",
@@ -1026,7 +1020,7 @@
             "h": 2,
             "w": 9,
             "x": 8,
-            "y": 14
+            "y": 22
           },
           "id": 118,
           "links": [],
@@ -1086,8 +1080,7 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green",
-                    "value": null
+                    "color": "green"
                   },
                   {
                     "color": "red",
@@ -1103,7 +1096,7 @@
             "h": 2,
             "w": 9,
             "x": 8,
-            "y": 16
+            "y": 24
           },
           "id": 117,
           "links": [],
@@ -1158,7 +1151,7 @@
             "h": 6,
             "w": 8,
             "x": 0,
-            "y": 18
+            "y": 26
           },
           "hiddenSeries": false,
           "id": 39,
@@ -1253,8 +1246,7 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green",
-                    "value": null
+                    "color": "green"
                   },
                   {
                     "color": "red",
@@ -1270,7 +1262,7 @@
             "h": 6,
             "w": 9,
             "x": 8,
-            "y": 18
+            "y": 26
           },
           "id": 190,
           "links": [],
@@ -1336,7 +1328,7 @@
             "h": 6,
             "w": 7,
             "x": 17,
-            "y": 18
+            "y": 26
           },
           "hiddenSeries": false,
           "id": 33,
@@ -1483,7 +1475,7 @@
             "h": 7,
             "w": 24,
             "x": 0,
-            "y": 2
+            "y": 10
           },
           "hiddenSeries": false,
           "id": 272,
@@ -1596,7 +1588,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 9
+            "y": 17
           },
           "id": 418,
           "options": {
@@ -1696,8 +1688,7 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green",
-                    "value": null
+                    "color": "green"
                   },
                   {
                     "color": "red",
@@ -1712,7 +1703,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 9
+            "y": 17
           },
           "id": 421,
           "options": {
@@ -1794,8 +1785,7 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green",
-                    "value": null
+                    "color": "green"
                   },
                   {
                     "color": "red",
@@ -1810,7 +1800,7 @@
             "h": 4,
             "w": 12,
             "x": 0,
-            "y": 17
+            "y": 25
           },
           "id": 192,
           "options": {
@@ -1858,7 +1848,7 @@
             "h": 4,
             "w": 7,
             "x": 12,
-            "y": 17
+            "y": 25
           },
           "id": 196,
           "showHeader": true,
@@ -1935,7 +1925,7 @@
             "h": 4,
             "w": 5,
             "x": 19,
-            "y": 17
+            "y": 25
           },
           "id": 200,
           "showHeader": true,
@@ -2046,8 +2036,7 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green",
-                    "value": null
+                    "color": "green"
                   },
                   {
                     "color": "red",
@@ -2062,7 +2051,7 @@
             "h": 6,
             "w": 5,
             "x": 0,
-            "y": 21
+            "y": 29
           },
           "id": 194,
           "options": {
@@ -2108,7 +2097,7 @@
             "h": 6,
             "w": 7,
             "x": 5,
-            "y": 21
+            "y": 29
           },
           "id": 199,
           "showHeader": true,
@@ -2185,7 +2174,7 @@
             "h": 12,
             "w": 5,
             "x": 12,
-            "y": 21
+            "y": 29
           },
           "id": 198,
           "showHeader": true,
@@ -2262,7 +2251,7 @@
             "h": 12,
             "w": 7,
             "x": 17,
-            "y": 21
+            "y": 29
           },
           "id": 268,
           "showHeader": true,
@@ -2373,8 +2362,7 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green",
-                    "value": null
+                    "color": "green"
                   },
                   {
                     "color": "red",
@@ -2389,7 +2377,7 @@
             "h": 6,
             "w": 5,
             "x": 0,
-            "y": 27
+            "y": 35
           },
           "id": 189,
           "options": {
@@ -2437,7 +2425,7 @@
             "h": 6,
             "w": 7,
             "x": 5,
-            "y": 27
+            "y": 35
           },
           "id": 201,
           "showHeader": true,
@@ -2548,8 +2536,7 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green",
-                    "value": null
+                    "color": "green"
                   },
                   {
                     "color": "red",
@@ -2564,7 +2551,7 @@
             "h": 6,
             "w": 24,
             "x": 0,
-            "y": 33
+            "y": 41
           },
           "id": 543,
           "options": {
@@ -2631,7 +2618,7 @@
             "h": 5,
             "w": 12,
             "x": 0,
-            "y": 12
+            "y": 20
           },
           "hideTimeOverride": false,
           "id": 12,
@@ -2692,7 +2679,7 @@
             "h": 5,
             "w": 12,
             "x": 12,
-            "y": 12
+            "y": 20
           },
           "hideTimeOverride": false,
           "id": 13,
@@ -2764,7 +2751,7 @@
             "h": 6,
             "w": 12,
             "x": 0,
-            "y": 17
+            "y": 25
           },
           "hiddenSeries": false,
           "id": 2,
@@ -2865,7 +2852,7 @@
             "h": 6,
             "w": 12,
             "x": 12,
-            "y": 17
+            "y": 25
           },
           "hiddenSeries": false,
           "id": 3,
@@ -2968,7 +2955,7 @@
             "h": 6,
             "w": 9,
             "x": 0,
-            "y": 23
+            "y": 31
           },
           "hiddenSeries": false,
           "id": 4,
@@ -3062,7 +3049,7 @@
             "h": 6,
             "w": 7,
             "x": 9,
-            "y": 23
+            "y": 31
           },
           "hiddenSeries": false,
           "id": 266,
@@ -3157,7 +3144,7 @@
             "h": 6,
             "w": 8,
             "x": 16,
-            "y": 23
+            "y": 31
           },
           "hiddenSeries": false,
           "id": 267,
@@ -3247,7 +3234,7 @@
             "h": 8,
             "w": 6,
             "x": 0,
-            "y": 29
+            "y": 37
           },
           "hiddenSeries": false,
           "id": 290,
@@ -3334,7 +3321,7 @@
             "h": 8,
             "w": 6,
             "x": 6,
-            "y": 29
+            "y": 37
           },
           "hiddenSeries": false,
           "id": 291,
@@ -3421,7 +3408,7 @@
             "h": 8,
             "w": 6,
             "x": 12,
-            "y": 29
+            "y": 37
           },
           "hiddenSeries": false,
           "id": 288,
@@ -3508,7 +3495,7 @@
             "h": 8,
             "w": 6,
             "x": 18,
-            "y": 29
+            "y": 37
           },
           "hiddenSeries": false,
           "id": 289,
@@ -3625,7 +3612,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 5
+            "y": 13
           },
           "hiddenSeries": false,
           "id": 102,
@@ -3729,7 +3716,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 5
+            "y": 13
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -3828,7 +3815,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 13
+            "y": 21
           },
           "hiddenSeries": false,
           "id": 105,
@@ -3929,7 +3916,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 13
+            "y": 21
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -4025,7 +4012,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 21
+            "y": 29
           },
           "hiddenSeries": false,
           "id": 182,
@@ -4141,7 +4128,7 @@
             "h": 7,
             "w": 24,
             "x": 0,
-            "y": 61
+            "y": 69
           },
           "hiddenSeries": false,
           "id": 261,
@@ -4263,7 +4250,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 68
+            "y": 76
           },
           "hiddenSeries": false,
           "id": 285,
@@ -4349,7 +4336,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 68
+            "y": 76
           },
           "hiddenSeries": false,
           "id": 286,
@@ -4440,7 +4427,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 76
+            "y": 84
           },
           "hiddenSeries": false,
           "id": 98,
@@ -4556,7 +4543,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 76
+            "y": 84
           },
           "hiddenSeries": false,
           "id": 35,
@@ -4673,7 +4660,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 126
+            "y": 134
           },
           "hiddenSeries": false,
           "id": 64,
@@ -4774,7 +4761,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 126
+            "y": 134
           },
           "hiddenSeries": false,
           "id": 294,
@@ -4898,7 +4885,7 @@
             "h": 5,
             "w": 24,
             "x": 0,
-            "y": 127
+            "y": 135
           },
           "hiddenSeries": false,
           "id": 260,
@@ -5038,7 +5025,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 132
+            "y": 140
           },
           "id": 379,
           "options": {
@@ -5129,7 +5116,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 132
+            "y": 140
           },
           "id": 381,
           "options": {
@@ -5180,7 +5167,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 140
+            "y": 148
           },
           "hiddenSeries": false,
           "id": 37,
@@ -5289,7 +5276,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 140
+            "y": 148
           },
           "hiddenSeries": false,
           "id": 40,
@@ -5382,7 +5369,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 148
+            "y": 156
           },
           "hiddenSeries": false,
           "id": 122,
@@ -5472,7 +5459,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 148
+            "y": 156
           },
           "hiddenSeries": false,
           "id": 124,
@@ -5562,7 +5549,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 156
+            "y": 164
           },
           "hiddenSeries": false,
           "id": 126,
@@ -5652,7 +5639,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 156
+            "y": 164
           },
           "hiddenSeries": false,
           "id": 127,
@@ -5777,7 +5764,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 144
+            "y": 152
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -5903,7 +5890,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 144
+            "y": 152
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -6057,7 +6044,7 @@
             "h": 10,
             "w": 12,
             "x": 0,
-            "y": 152
+            "y": 160
           },
           "id": 343,
           "links": [],
@@ -6178,7 +6165,7 @@
             "h": 10,
             "w": 12,
             "x": 12,
-            "y": 152
+            "y": 160
           },
           "id": 345,
           "links": [],
@@ -6297,7 +6284,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 162
+            "y": 170
           },
           "id": 347,
           "options": {
@@ -6388,7 +6375,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 162
+            "y": 170
           },
           "id": 349,
           "options": {
@@ -6479,7 +6466,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 170
+            "y": 178
           },
           "id": 353,
           "options": {
@@ -6571,7 +6558,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 170
+            "y": 178
           },
           "id": 351,
           "options": {
@@ -6652,7 +6639,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 10
+            "y": 18
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -6752,7 +6739,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 10
+            "y": 18
           },
           "hiddenSeries": false,
           "id": 222,
@@ -6871,7 +6858,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 18
+            "y": 26
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -6982,7 +6969,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 18
+            "y": 26
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -7094,7 +7081,7 @@
             "h": 7,
             "w": 24,
             "x": 0,
-            "y": 26
+            "y": 34
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -7208,7 +7195,7 @@
             "h": 7,
             "w": 12,
             "x": 0,
-            "y": 33
+            "y": 41
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -7321,7 +7308,7 @@
             "h": 7,
             "w": 12,
             "x": 12,
-            "y": 33
+            "y": 41
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -7424,7 +7411,7 @@
             "h": 7,
             "w": 12,
             "x": 0,
-            "y": 40
+            "y": 48
           },
           "id": 420,
           "options": {
@@ -7505,7 +7492,7 @@
             "h": 7,
             "w": 12,
             "x": 12,
-            "y": 40
+            "y": 48
           },
           "id": 419,
           "options": {
@@ -7576,7 +7563,7 @@
             "h": 7,
             "w": 12,
             "x": 0,
-            "y": 47
+            "y": 55
           },
           "hiddenSeries": false,
           "id": 310,
@@ -7693,7 +7680,7 @@
             "h": 7,
             "w": 12,
             "x": 12,
-            "y": 47
+            "y": 55
           },
           "hiddenSeries": false,
           "id": 311,
@@ -7828,7 +7815,7 @@
             "h": 7,
             "w": 12,
             "x": 0,
-            "y": 54
+            "y": 62
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -7939,7 +7926,7 @@
             "h": 7,
             "w": 12,
             "x": 12,
-            "y": 54
+            "y": 62
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -8064,7 +8051,7 @@
             "h": 7,
             "w": 12,
             "x": 0,
-            "y": 224
+            "y": 232
           },
           "hiddenSeries": false,
           "id": 26,
@@ -8157,7 +8144,7 @@
             "h": 7,
             "w": 12,
             "x": 12,
-            "y": 224
+            "y": 232
           },
           "hiddenSeries": false,
           "id": 27,
@@ -8262,7 +8249,7 @@
             "h": 9,
             "w": 8,
             "x": 0,
-            "y": 231
+            "y": 239
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -8325,7 +8312,7 @@
             "h": 9,
             "w": 8,
             "x": 8,
-            "y": 231
+            "y": 239
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -8388,7 +8375,7 @@
             "h": 9,
             "w": 8,
             "x": 16,
-            "y": 231
+            "y": 239
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -8477,7 +8464,7 @@
             "h": 8,
             "w": 24,
             "x": 0,
-            "y": 225
+            "y": 233
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -8536,7 +8523,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 233
+            "y": 241
           },
           "hiddenSeries": false,
           "id": 166,
@@ -8628,7 +8615,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 233
+            "y": 241
           },
           "hiddenSeries": false,
           "id": 168,
@@ -8738,9 +8725,9 @@
           "fillGradient": 0,
           "gridPos": {
             "h": 7,
-            "w": 24,
+            "w": 12,
             "x": 0,
-            "y": 124
+            "y": 20
           },
           "hiddenSeries": false,
           "id": 278,
@@ -8762,7 +8749,7 @@
             "alertThreshold": true
           },
           "percentage": false,
-          "pluginVersion": "9.3.6",
+          "pluginVersion": "9.5.2",
           "pointradius": 2,
           "points": false,
           "renderer": "flot",
@@ -8802,6 +8789,96 @@
             {
               "format": "short",
               "label": "Requests",
+              "logBase": 1,
+              "min": "0",
+              "show": true
+            },
+            {
+              "format": "short",
+              "logBase": 1,
+              "show": true
+            }
+          ],
+          "yaxis": {
+            "align": false
+          }
+        },
+        {
+          "aliasColors": {},
+          "bars": false,
+          "dashLength": 10,
+          "dashes": false,
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "description": "Shows the total count of send install requests from the leader to the followers",
+          "fill": 1,
+          "fillGradient": 0,
+          "gridPos": {
+            "h": 7,
+            "w": 12,
+            "x": 12,
+            "y": 20
+          },
+          "hiddenSeries": false,
+          "id": 283,
+          "legend": {
+            "avg": false,
+            "current": false,
+            "hideEmpty": true,
+            "hideZero": true,
+            "max": false,
+            "min": false,
+            "show": false,
+            "total": false,
+            "values": false
+          },
+          "lines": true,
+          "linewidth": 1,
+          "nullPointMode": "null as zero",
+          "options": {
+            "alertThreshold": true
+          },
+          "percentage": false,
+          "pluginVersion": "9.5.2",
+          "pointradius": 2,
+          "points": false,
+          "renderer": "flot",
+          "seriesOverrides": [],
+          "spaceLength": 10,
+          "stack": false,
+          "steppedLine": false,
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${DS_PROMETHEUS}"
+              },
+              "expr": "atomix_raft_messages_send_total{cluster=~\"$cluster\", namespace=~\"$namespace\", type=\"InstallRequest\"}",
+              "interval": "",
+              "legendFormat": "{{pod}} {{partition}} send {{type}} to {{to}}",
+              "refId": "A"
+            }
+          ],
+          "thresholds": [],
+          "timeRegions": [],
+          "title": "Total install requests send",
+          "tooltip": {
+            "shared": true,
+            "sort": 2,
+            "value_type": "individual"
+          },
+          "type": "graph",
+          "xaxis": {
+            "mode": "time",
+            "show": true,
+            "values": []
+          },
+          "yaxes": [
+            {
+              "format": "short",
+              "label": "Install Requests",
               "logBase": 1,
               "min": "0",
               "show": true
@@ -8863,7 +8940,8 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green"
+                    "color": "green",
+                    "value": null
                   },
                   {
                     "color": "red",
@@ -8879,7 +8957,7 @@
             "h": 8,
             "w": 24,
             "x": 0,
-            "y": 131
+            "y": 27
           },
           "id": 373,
           "options": {
@@ -8958,7 +9036,8 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green"
+                    "color": "green",
+                    "value": null
                   },
                   {
                     "color": "red",
@@ -8974,7 +9053,7 @@
             "h": 7,
             "w": 12,
             "x": 0,
-            "y": 139
+            "y": 35
           },
           "id": 363,
           "options": {
@@ -9053,7 +9132,8 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green"
+                    "color": "green",
+                    "value": null
                   },
                   {
                     "color": "red",
@@ -9069,7 +9149,7 @@
             "h": 7,
             "w": 12,
             "x": 12,
-            "y": 139
+            "y": 35
           },
           "id": 406,
           "options": {
@@ -9100,6 +9180,1197 @@
           ],
           "title": "Leader append rate",
           "type": "timeseries"
+        },
+        {
+          "aliasColors": {},
+          "bars": false,
+          "dashLength": 10,
+          "dashes": false,
+          "datasource": {
+            "uid": "$DS_PROMETHEUS"
+          },
+          "description": "Approximate Install RPC as measured by the follower.",
+          "fieldConfig": {
+            "defaults": {
+              "links": []
+            },
+            "overrides": []
+          },
+          "fill": 1,
+          "fillGradient": 0,
+          "gridPos": {
+            "h": 7,
+            "w": 12,
+            "x": 0,
+            "y": 42
+          },
+          "hiddenSeries": false,
+          "id": 79,
+          "legend": {
+            "avg": false,
+            "current": false,
+            "max": false,
+            "min": false,
+            "show": true,
+            "total": false,
+            "values": false
+          },
+          "lines": true,
+          "linewidth": 1,
+          "links": [],
+          "nullPointMode": "null",
+          "options": {
+            "alertThreshold": true
+          },
+          "percentage": false,
+          "pluginVersion": "9.5.2",
+          "pointradius": 2,
+          "points": false,
+          "renderer": "flot",
+          "seriesOverrides": [],
+          "spaceLength": 10,
+          "stack": false,
+          "steppedLine": false,
+          "targets": [
+            {
+              "datasource": {
+                "uid": "$DS_PROMETHEUS"
+              },
+              "expr": "atomix_snapshot_replication_duration_milliseconds{cluster=~\"$cluster\", namespace=~\"$namespace\",pod=~\"$pod\",partition=~\"$partition\"}",
+              "format": "time_series",
+              "instant": false,
+              "intervalFactor": 1,
+              "legendFormat": "{{pod}} p{{partition}}",
+              "refId": "A"
+            }
+          ],
+          "thresholds": [],
+          "timeRegions": [],
+          "title": "Snapshot Replication Duration",
+          "tooltip": {
+            "shared": true,
+            "sort": 0,
+            "value_type": "individual"
+          },
+          "type": "graph",
+          "xaxis": {
+            "mode": "time",
+            "show": true,
+            "values": []
+          },
+          "yaxes": [
+            {
+              "format": "ms",
+              "logBase": 1,
+              "show": true
+            },
+            {
+              "format": "short",
+              "logBase": 1,
+              "show": true
+            }
+          ],
+          "yaxis": {
+            "align": false
+          }
+        },
+        {
+          "aliasColors": {},
+          "bars": false,
+          "dashLength": 10,
+          "dashes": false,
+          "datasource": {
+            "uid": "$DS_PROMETHEUS"
+          },
+          "description": "Ongoing snapshot replications per partition, from the follower point-of-view.",
+          "fieldConfig": {
+            "defaults": {
+              "links": []
+            },
+            "overrides": []
+          },
+          "fill": 1,
+          "fillGradient": 0,
+          "gridPos": {
+            "h": 7,
+            "w": 12,
+            "x": 12,
+            "y": 42
+          },
+          "hiddenSeries": false,
+          "id": 114,
+          "legend": {
+            "avg": false,
+            "current": false,
+            "max": false,
+            "min": false,
+            "show": true,
+            "total": false,
+            "values": false
+          },
+          "lines": true,
+          "linewidth": 1,
+          "nullPointMode": "null",
+          "options": {
+            "alertThreshold": true
+          },
+          "percentage": false,
+          "pluginVersion": "9.5.2",
+          "pointradius": 2,
+          "points": false,
+          "renderer": "flot",
+          "seriesOverrides": [],
+          "spaceLength": 10,
+          "stack": false,
+          "steppedLine": false,
+          "targets": [
+            {
+              "datasource": {
+                "uid": "$DS_PROMETHEUS"
+              },
+              "expr": "atomix_snapshot_replication_count{cluster=~\"$cluster\", namespace=~\"$namespace\",pod=~\"$pod\",partition=~\"$partition\"}",
+              "interval": "",
+              "legendFormat": "{{pod}} {{partitionGroupName}}-{{partition}}",
+              "refId": "A"
+            }
+          ],
+          "thresholds": [],
+          "timeRegions": [],
+          "title": "Snapshot Replications",
+          "tooltip": {
+            "shared": true,
+            "sort": 2,
+            "value_type": "individual"
+          },
+          "type": "graph",
+          "xaxis": {
+            "mode": "time",
+            "show": true,
+            "values": []
+          },
+          "yaxes": [
+            {
+              "format": "short",
+              "logBase": 1,
+              "show": true
+            },
+            {
+              "format": "short",
+              "logBase": 1,
+              "show": true
+            }
+          ],
+          "yaxis": {
+            "align": false
+          }
+        },
+        {
+          "cards": {},
+          "color": {
+            "cardColor": "#b4ff00",
+            "colorScale": "sqrt",
+            "colorScheme": "interpolateSpectral",
+            "exponent": 0.5,
+            "mode": "spectrum"
+          },
+          "dataFormat": "tsbuckets",
+          "datasource": {
+            "uid": "$DS_PROMETHEUS"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "custom": {
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                },
+                "scaleDistribution": {
+                  "type": "linear"
+                }
+              }
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 7,
+            "w": 12,
+            "x": 0,
+            "y": 49
+          },
+          "heatmap": {},
+          "hideZeroBuckets": true,
+          "highlightCards": true,
+          "id": 86,
+          "legend": {
+            "show": false
+          },
+          "links": [],
+          "options": {
+            "calculate": false,
+            "calculation": {},
+            "cellGap": 2,
+            "cellValues": {},
+            "color": {
+              "exponent": 0.5,
+              "fill": "#b4ff00",
+              "mode": "scheme",
+              "reverse": false,
+              "scale": "exponential",
+              "scheme": "Spectral",
+              "steps": 128
+            },
+            "exemplars": {
+              "color": "rgba(255,0,255,0.7)"
+            },
+            "filterValues": {
+              "le": 1e-9
+            },
+            "legend": {
+              "show": false
+            },
+            "rowsFrame": {
+              "layout": "auto"
+            },
+            "showValue": "never",
+            "tooltip": {
+              "show": true,
+              "yHistogram": false
+            },
+            "yAxis": {
+              "axisPlacement": "left",
+              "reverse": false,
+              "unit": "dtdurations"
+            }
+          },
+          "pluginVersion": "9.5.2",
+          "reverseYBuckets": false,
+          "targets": [
+            {
+              "datasource": {
+                "uid": "$DS_PROMETHEUS"
+              },
+              "expr": "sum(increase(atomix_append_entries_latency_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\", partition=~\"$partition\"}[$__rate_interval])) by (le)",
+              "format": "heatmap",
+              "interval": "",
+              "intervalFactor": 1,
+              "legendFormat": "{{le}}",
+              "refId": "A"
+            }
+          ],
+          "title": "Append Entry Latency",
+          "tooltip": {
+            "show": true,
+            "showHistogram": false
+          },
+          "type": "heatmap",
+          "xAxis": {
+            "show": true
+          },
+          "yAxis": {
+            "format": "dtdurations",
+            "logBase": 1,
+            "show": true
+          },
+          "yBucketBound": "auto"
+        },
+        {
+          "aliasColors": {},
+          "bars": false,
+          "dashLength": 10,
+          "dashes": false,
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "fill": 1,
+          "fillGradient": 0,
+          "gridPos": {
+            "h": 7,
+            "w": 12,
+            "x": 12,
+            "y": 49
+          },
+          "hiddenSeries": false,
+          "id": 305,
+          "legend": {
+            "avg": false,
+            "current": false,
+            "max": false,
+            "min": false,
+            "show": true,
+            "total": false,
+            "values": false
+          },
+          "lines": true,
+          "linewidth": 1,
+          "nullPointMode": "null",
+          "options": {
+            "alertThreshold": true
+          },
+          "percentage": false,
+          "pluginVersion": "9.5.2",
+          "pointradius": 2,
+          "points": false,
+          "renderer": "flot",
+          "seriesOverrides": [],
+          "spaceLength": 10,
+          "stack": false,
+          "steppedLine": false,
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${DS_PROMETHEUS}"
+              },
+              "expr": "sum(rate(atomix_append_entries_latency_sum{cluster=~\"$cluster\", namespace=~\"$namespace\",pod=~\"$pod\", partition=~\"$partition\"}[$__rate_interval])) / sum(rate(atomix_append_entries_latency_count{cluster=~\"$cluster\", namespace=~\"$namespace\",pod=~\"$pod\", partition=~\"$partition\"}[$__rate_interval]))",
+              "interval": "",
+              "legendFormat": "Avg",
+              "refId": "A"
+            },
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${DS_PROMETHEUS}"
+              },
+              "expr": "histogram_quantile(0.50, sum(rate(atomix_append_entries_latency_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\",pod=~\"$pod\", partition=~\"$partition\"}[$__rate_interval])) by (le))",
+              "hide": false,
+              "interval": "",
+              "legendFormat": "Median",
+              "refId": "C"
+            }
+          ],
+          "thresholds": [],
+          "timeRegions": [],
+          "title": "AppendEntry latency",
+          "tooltip": {
+            "shared": true,
+            "sort": 0,
+            "value_type": "individual"
+          },
+          "type": "graph",
+          "xaxis": {
+            "mode": "time",
+            "show": true,
+            "values": []
+          },
+          "yaxes": [
+            {
+              "format": "s",
+              "logBase": 1,
+              "show": true
+            },
+            {
+              "format": "short",
+              "logBase": 1,
+              "show": true
+            }
+          ],
+          "yaxis": {
+            "align": false
+          }
+        },
+        {
+          "cards": {},
+          "color": {
+            "cardColor": "#b4ff00",
+            "colorScale": "sqrt",
+            "colorScheme": "interpolateSpectral",
+            "exponent": 0.5,
+            "mode": "spectrum"
+          },
+          "dataFormat": "tsbuckets",
+          "datasource": {
+            "uid": "$DS_PROMETHEUS"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "custom": {
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                },
+                "scaleDistribution": {
+                  "type": "linear"
+                }
+              }
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 0,
+            "y": 56
+          },
+          "heatmap": {},
+          "hideZeroBuckets": true,
+          "highlightCards": true,
+          "id": 70,
+          "legend": {
+            "show": true
+          },
+          "links": [],
+          "options": {
+            "calculate": false,
+            "calculation": {},
+            "cellGap": 2,
+            "cellValues": {},
+            "color": {
+              "exponent": 0.5,
+              "fill": "#b4ff00",
+              "mode": "scheme",
+              "reverse": false,
+              "scale": "exponential",
+              "scheme": "Spectral",
+              "steps": 128
+            },
+            "exemplars": {
+              "color": "rgba(255,0,255,0.7)"
+            },
+            "filterValues": {
+              "le": 1e-9
+            },
+            "legend": {
+              "show": true
+            },
+            "rowsFrame": {
+              "layout": "auto"
+            },
+            "showValue": "never",
+            "tooltip": {
+              "show": true,
+              "yHistogram": false
+            },
+            "yAxis": {
+              "axisPlacement": "left",
+              "reverse": false,
+              "unit": "dtdurations"
+            }
+          },
+          "pluginVersion": "9.5.2",
+          "reverseYBuckets": false,
+          "targets": [
+            {
+              "datasource": {
+                "uid": "$DS_PROMETHEUS"
+              },
+              "expr": "sum(increase(atomix_heartbeat_time_in_s_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\", partition=~\"$partition\"}[$__rate_interval])) by (le)",
+              "format": "heatmap",
+              "instant": false,
+              "interval": "1m",
+              "intervalFactor": 1,
+              "legendFormat": "{{le}}",
+              "refId": "A"
+            }
+          ],
+          "title": "Time Between Heartbeats",
+          "tooltip": {
+            "show": true,
+            "showHistogram": false
+          },
+          "type": "heatmap",
+          "xAxis": {
+            "show": true
+          },
+          "yAxis": {
+            "format": "dtdurations",
+            "logBase": 1,
+            "show": true
+          },
+          "yBucketBound": "auto"
+        },
+        {
+          "aliasColors": {},
+          "bars": false,
+          "dashLength": 10,
+          "dashes": false,
+          "datasource": {
+            "uid": "$DS_PROMETHEUS"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "links": []
+            },
+            "overrides": []
+          },
+          "fill": 1,
+          "fillGradient": 0,
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 12,
+            "y": 56
+          },
+          "hiddenSeries": false,
+          "id": 72,
+          "legend": {
+            "avg": false,
+            "current": false,
+            "hideZero": true,
+            "max": false,
+            "min": false,
+            "rightSide": true,
+            "show": true,
+            "sideWidth": 100,
+            "total": false,
+            "values": false
+          },
+          "lines": true,
+          "linewidth": 1,
+          "nullPointMode": "null",
+          "options": {
+            "alertThreshold": true
+          },
+          "percentage": false,
+          "pluginVersion": "9.5.2",
+          "pointradius": 2,
+          "points": false,
+          "renderer": "flot",
+          "seriesOverrides": [],
+          "spaceLength": 10,
+          "stack": false,
+          "steppedLine": false,
+          "targets": [
+            {
+              "datasource": {
+                "uid": "$DS_PROMETHEUS"
+              },
+              "expr": "sum(increase(atomix_heartbeat_miss_count_total{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\", pod=~\"$pod\"}[$__rate_interval])) by (pod, partition)",
+              "format": "time_series",
+              "interval": "",
+              "intervalFactor": 1,
+              "legendFormat": "{{pod}} - {{partition}}",
+              "refId": "A"
+            }
+          ],
+          "thresholds": [],
+          "timeRegions": [],
+          "title": "Heartbeat Miss Counts",
+          "tooltip": {
+            "shared": true,
+            "sort": 0,
+            "value_type": "individual"
+          },
+          "type": "graph",
+          "xaxis": {
+            "mode": "time",
+            "show": true,
+            "values": []
+          },
+          "yaxes": [
+            {
+              "format": "short",
+              "logBase": 1,
+              "show": true
+            },
+            {
+              "format": "short",
+              "logBase": 1,
+              "show": true
+            }
+          ],
+          "yaxis": {
+            "align": false
+          }
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "$DS_PROMETHEUS"
+          },
+          "description": "Shows when a role change has happened",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "thresholds"
+              },
+              "custom": {
+                "fillOpacity": 70,
+                "lineWidth": 1,
+                "spanNulls": false
+              },
+              "links": [],
+              "mappings": [
+                {
+                  "options": {
+                    "0": {
+                      "color": "light-red",
+                      "index": 3,
+                      "text": "Inactive"
+                    },
+                    "1": {
+                      "color": "super-light-orange",
+                      "index": 2,
+                      "text": "Follower"
+                    },
+                    "2": {
+                      "color": "super-light-purple",
+                      "index": 1,
+                      "text": "Candidate"
+                    },
+                    "3": {
+                      "color": "light-green",
+                      "index": 0,
+                      "text": "Leader"
+                    }
+                  },
+                  "type": "value"
+                }
+              ],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "red",
+                    "value": null
+                  }
+                ]
+              }
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 0,
+            "y": 64
+          },
+          "id": 432,
+          "interval": "1s",
+          "links": [],
+          "options": {
+            "alignValue": "center",
+            "legend": {
+              "displayMode": "list",
+              "placement": "bottom",
+              "showLegend": false
+            },
+            "mergeValues": true,
+            "rowHeight": 0.9,
+            "showValue": "auto",
+            "tooltip": {
+              "mode": "single",
+              "sort": "none"
+            }
+          },
+          "pluginVersion": "9.3.6",
+          "targets": [
+            {
+              "datasource": {
+                "uid": "$DS_PROMETHEUS"
+              },
+              "editorMode": "code",
+              "expr": "atomix_role{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\", partition=~\"$partition\"}",
+              "format": "time_series",
+              "hide": false,
+              "instant": false,
+              "interval": "",
+              "intervalFactor": 1,
+              "legendFormat": "{{pod}} p{{partition}} ",
+              "refId": "A"
+            }
+          ],
+          "title": "Role changes over time",
+          "transformations": [
+            {
+              "id": "convertFieldType",
+              "options": {
+                "conversions": [
+                  {
+                    "destinationType": "string",
+                    "targetField": "Value"
+                  }
+                ],
+                "fields": {}
+              }
+            }
+          ],
+          "type": "state-timeline"
+        },
+        {
+          "aliasColors": {},
+          "bars": false,
+          "dashLength": 10,
+          "dashes": false,
+          "datasource": {
+            "uid": "$DS_PROMETHEUS"
+          },
+          "decimals": 0,
+          "description": "Shows when a role change has happened. \n1 = Follower\n2 = Candidate\n3 = Leader\n2 - ",
+          "fieldConfig": {
+            "defaults": {
+              "links": []
+            },
+            "overrides": []
+          },
+          "fill": 0,
+          "fillGradient": 0,
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 12,
+            "y": 64
+          },
+          "hiddenSeries": false,
+          "id": 95,
+          "interval": "1s",
+          "legend": {
+            "alignAsTable": false,
+            "avg": false,
+            "current": true,
+            "hideEmpty": false,
+            "hideZero": true,
+            "max": false,
+            "min": false,
+            "rightSide": false,
+            "show": false,
+            "sideWidth": 300,
+            "total": false,
+            "values": true
+          },
+          "lines": true,
+          "linewidth": 1,
+          "links": [],
+          "nullPointMode": "null",
+          "options": {
+            "alertThreshold": true
+          },
+          "percentage": false,
+          "pluginVersion": "9.5.2",
+          "pointradius": 2,
+          "points": false,
+          "renderer": "flot",
+          "seriesOverrides": [],
+          "spaceLength": 10,
+          "stack": false,
+          "steppedLine": false,
+          "targets": [
+            {
+              "datasource": {
+                "uid": "$DS_PROMETHEUS"
+              },
+              "expr": "atomix_role{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\", partition=~\"$partition\"}",
+              "format": "time_series",
+              "hide": false,
+              "instant": false,
+              "interval": "",
+              "intervalFactor": 1,
+              "legendFormat": "{{pod}} p{{partition}} ",
+              "refId": "A"
+            }
+          ],
+          "thresholds": [],
+          "timeRegions": [],
+          "title": "Role changes over time",
+          "tooltip": {
+            "shared": true,
+            "sort": 2,
+            "value_type": "individual"
+          },
+          "type": "graph",
+          "xaxis": {
+            "mode": "time",
+            "show": true,
+            "values": []
+          },
+          "yaxes": [
+            {
+              "decimals": 0,
+              "format": "short",
+              "label": "Role (3 = Leader)",
+              "logBase": 1,
+              "max": "3",
+              "min": "1",
+              "show": true
+            },
+            {
+              "format": "Misc",
+              "label": "",
+              "logBase": 1,
+              "show": false
+            }
+          ],
+          "yaxis": {
+            "align": false,
+            "alignLevel": 1
+          }
+        },
+        {
+          "columns": [
+            {
+              "text": "Current",
+              "value": "current"
+            }
+          ],
+          "datasource": {
+            "uid": "$DS_PROMETHEUS"
+          },
+          "fontSize": "100%",
+          "gridPos": {
+            "h": 5,
+            "w": 8,
+            "x": 0,
+            "y": 72
+          },
+          "id": 205,
+          "maxPerRow": 6,
+          "pluginVersion": "6.7.1",
+          "repeat": "partition",
+          "repeatDirection": "h",
+          "showHeader": true,
+          "sort": {
+            "col": 0,
+            "desc": true
+          },
+          "styles": [
+            {
+              "alias": "Time",
+              "align": "auto",
+              "dateFormat": "YYYY-MM-DD HH:mm:ss",
+              "pattern": "Time",
+              "type": "date"
+            },
+            {
+              "alias": "Commit index",
+              "align": "right",
+              "colors": [
+                "rgba(245, 54, 54, 0.9)",
+                "rgba(237, 129, 40, 0.89)",
+                "rgba(50, 172, 45, 0.97)"
+              ],
+              "decimals": 2,
+              "mappingType": 1,
+              "pattern": "Current",
+              "thresholds": [],
+              "type": "string",
+              "unit": "short"
+            }
+          ],
+          "targets": [
+            {
+              "datasource": {
+                "uid": "$DS_PROMETHEUS"
+              },
+              "expr": "atomix_partition_raft_commit_index{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\", partition=~\"$partition\"}",
+              "format": "time_series",
+              "instant": true,
+              "interval": "",
+              "legendFormat": "{{pod}} p{{partition}} ",
+              "refId": "A"
+            }
+          ],
+          "title": "Commit Index",
+          "transform": "timeseries_aggregations",
+          "type": "table-old"
+        },
+        {
+          "columns": [
+            {
+              "text": "Current",
+              "value": "current"
+            }
+          ],
+          "datasource": {
+            "uid": "$DS_PROMETHEUS"
+          },
+          "fontSize": "100%",
+          "gridPos": {
+            "h": 5,
+            "w": 8,
+            "x": 0,
+            "y": 77
+          },
+          "id": 209,
+          "maxPerRow": 6,
+          "pluginVersion": "6.7.1",
+          "repeat": "partition",
+          "repeatDirection": "h",
+          "showHeader": true,
+          "sort": {
+            "col": 0,
+            "desc": true
+          },
+          "styles": [
+            {
+              "alias": "Time",
+              "align": "auto",
+              "dateFormat": "YYYY-MM-DD HH:mm:ss",
+              "pattern": "Time",
+              "type": "date"
+            },
+            {
+              "alias": "Last appended index",
+              "align": "right",
+              "colors": [
+                "rgba(245, 54, 54, 0.9)",
+                "rgba(237, 129, 40, 0.89)",
+                "rgba(50, 172, 45, 0.97)"
+              ],
+              "decimals": 2,
+              "mappingType": 1,
+              "pattern": "Current",
+              "thresholds": [],
+              "type": "string",
+              "unit": "short"
+            }
+          ],
+          "targets": [
+            {
+              "datasource": {
+                "uid": "$DS_PROMETHEUS"
+              },
+              "expr": "atomix_partition_raft_append_index{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\", partition=~\"$partition\"}",
+              "format": "time_series",
+              "instant": true,
+              "interval": "",
+              "legendFormat": "{{pod}}-p{{partition}}",
+              "refId": "A"
+            }
+          ],
+          "title": "Index of last appended entry",
+          "transform": "timeseries_aggregations",
+          "type": "table-old"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "$DS_PROMETHEUS"
+          },
+          "description": "The number of locally appended but non committed records on the leader per partition (p)",
+          "fieldConfig": {
+            "defaults": {
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  },
+                  {
+                    "color": "red",
+                    "value": 300
+                  }
+                ]
+              }
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 5,
+            "w": 12,
+            "x": 0,
+            "y": 82
+          },
+          "id": 215,
+          "options": {
+            "orientation": "auto",
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "showThresholdLabels": false,
+            "showThresholdMarkers": true,
+            "text": {}
+          },
+          "pluginVersion": "9.5.2",
+          "targets": [
+            {
+              "datasource": {
+                "uid": "$DS_PROMETHEUS"
+              },
+              "editorMode": "code",
+              "expr": "sum(atomix_non_committed_entries{cluster=~\"$cluster\", namespace=~\"$namespace\",partition=~\"$partition\"}) by (partition)",
+              "interval": "",
+              "legendFormat": "p {{partition}}",
+              "range": true,
+              "refId": "A"
+            }
+          ],
+          "title": "Non committed records",
+          "type": "gauge"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "$DS_PROMETHEUS"
+          },
+          "description": "The number of records a follower is lagging behind for a given partition (p) and follower (f)",
+          "fieldConfig": {
+            "defaults": {
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  },
+                  {
+                    "color": "red",
+                    "value": 1000
+                  }
+                ]
+              }
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 5,
+            "w": 12,
+            "x": 12,
+            "y": 82
+          },
+          "id": 396,
+          "options": {
+            "orientation": "auto",
+            "reduceOptions": {
+              "calcs": [
+                "last"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "showThresholdLabels": false,
+            "showThresholdMarkers": true,
+            "text": {}
+          },
+          "pluginVersion": "9.5.2",
+          "repeatDirection": "h",
+          "targets": [
+            {
+              "datasource": {
+                "uid": "$DS_PROMETHEUS"
+              },
+              "editorMode": "code",
+              "expr": "sum(atomix_non_replicated_entries{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\", partition=~\"$partition\"}) by (partition, follower)",
+              "interval": "",
+              "legendFormat": "p{{partition}} f{{follower}}",
+              "range": true,
+              "refId": "A"
+            }
+          ],
+          "title": "Non replicated records",
+          "type": "gauge"
+        }
+      ],
+      "targets": [
+        {
+          "datasource": {
+            "uid": "$DS_PROMETHEUS"
+          },
+          "refId": "A"
+        }
+      ],
+      "title": "Raft",
+      "type": "row"
+    },
+    {
+      "collapsed": true,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 12
+      },
+      "id": 554,
+      "panels": [
+        {
+          "aliasColors": {},
+          "bars": false,
+          "dashLength": 10,
+          "dashes": false,
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "description": "",
+          "fieldConfig": {
+            "defaults": {
+              "links": []
+            },
+            "overrides": []
+          },
+          "fill": 1,
+          "fillGradient": 0,
+          "gridPos": {
+            "h": 8,
+            "w": 24,
+            "x": 0,
+            "y": 13
+          },
+          "hiddenSeries": false,
+          "id": 180,
+          "legend": {
+            "avg": false,
+            "current": false,
+            "max": false,
+            "min": false,
+            "show": true,
+            "total": false,
+            "values": false
+          },
+          "lines": true,
+          "linewidth": 1,
+          "nullPointMode": "null",
+          "options": {
+            "alertThreshold": true
+          },
+          "percentage": false,
+          "pluginVersion": "9.5.2",
+          "pointradius": 2,
+          "points": false,
+          "renderer": "flot",
+          "seriesOverrides": [],
+          "spaceLength": 10,
+          "stack": false,
+          "steppedLine": false,
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${DS_PROMETHEUS}"
+              },
+              "expr": "atomix_segment_count{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\"}",
+              "interval": "",
+              "legendFormat": "{{pod}} {{partition}}",
+              "refId": "A"
+            }
+          ],
+          "thresholds": [],
+          "timeRegions": [],
+          "title": "Number of log segments",
+          "tooltip": {
+            "shared": true,
+            "sort": 0,
+            "value_type": "individual"
+          },
+          "type": "graph",
+          "xaxis": {
+            "mode": "time",
+            "show": true,
+            "values": []
+          },
+          "yaxes": [
+            {
+              "format": "short",
+              "logBase": 1,
+              "show": true
+            },
+            {
+              "format": "short",
+              "logBase": 1,
+              "show": true
+            }
+          ],
+          "yaxis": {
+            "align": false
+          }
         },
         {
           "datasource": {
@@ -9148,7 +10419,8 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green"
+                    "color": "green",
+                    "value": null
                   },
                   {
                     "color": "red",
@@ -9164,7 +10436,7 @@
             "h": 7,
             "w": 12,
             "x": 0,
-            "y": 146
+            "y": 21
           },
           "id": 368,
           "options": {
@@ -9243,7 +10515,8 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green"
+                    "color": "green",
+                    "value": null
                   },
                   {
                     "color": "red",
@@ -9259,7 +10532,7 @@
             "h": 7,
             "w": 12,
             "x": 12,
-            "y": 146
+            "y": 21
           },
           "id": 411,
           "options": {
@@ -9290,6 +10563,228 @@
           ],
           "title": "Journal append rate",
           "type": "timeseries"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "description": "Overall latency to flush the complete journal",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "axisCenteredZero": false,
+                "axisColorMode": "text",
+                "axisLabel": "",
+                "axisPlacement": "auto",
+                "barAlignment": 0,
+                "drawStyle": "line",
+                "fillOpacity": 10,
+                "gradientMode": "none",
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                },
+                "lineInterpolation": "linear",
+                "lineWidth": 1,
+                "pointSize": 5,
+                "scaleDistribution": {
+                  "type": "linear"
+                },
+                "showPoints": "never",
+                "spanNulls": false,
+                "stacking": {
+                  "group": "A",
+                  "mode": "none"
+                },
+                "thresholdsStyle": {
+                  "mode": "off"
+                }
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  },
+                  {
+                    "color": "red",
+                    "value": 80
+                  }
+                ]
+              },
+              "unit": "s"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 7,
+            "w": 12,
+            "x": 0,
+            "y": 28
+          },
+          "id": 300,
+          "options": {
+            "legend": {
+              "calcs": [],
+              "displayMode": "list",
+              "placement": "bottom",
+              "showLegend": true
+            },
+            "tooltip": {
+              "mode": "multi",
+              "sort": "none"
+            }
+          },
+          "pluginVersion": "9.3.6",
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${DS_PROMETHEUS}"
+              },
+              "editorMode": "code",
+              "expr": "sum(rate(atomix_journal_flush_time_sum{cluster=~\"$cluster\", namespace=~\"$namespace\",pod=~\"$pod\", partition=~\"$partition\"}[$__rate_interval])) by (pod) / sum(rate(atomix_journal_flush_time_count{cluster=~\"$cluster\", namespace=~\"$namespace\",pod=~\"$pod\", partition=~\"$partition\"}[$__rate_interval]))  by (pod)",
+              "interval": "",
+              "legendFormat": "Avg {{ pod }}",
+              "range": true,
+              "refId": "A"
+            },
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${DS_PROMETHEUS}"
+              },
+              "editorMode": "code",
+              "expr": "histogram_quantile(0.50, sum(rate(atomix_journal_flush_time_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\",pod=~\"$pod\", partition=~\"$partition\"}[$__rate_interval])) by (le))",
+              "hide": false,
+              "interval": "",
+              "legendFormat": "Median",
+              "range": true,
+              "refId": "C"
+            }
+          ],
+          "title": "Journal Flush Latency",
+          "type": "timeseries"
+        },
+        {
+          "cards": {},
+          "color": {
+            "cardColor": "#b4ff00",
+            "colorScale": "sqrt",
+            "colorScheme": "interpolateSpectral",
+            "exponent": 0.5,
+            "mode": "spectrum"
+          },
+          "dataFormat": "tsbuckets",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "$DS_PROMETHEUS"
+          },
+          "description": "Overall latency distribution to flush the journal",
+          "fieldConfig": {
+            "defaults": {
+              "custom": {
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                },
+                "scaleDistribution": {
+                  "type": "linear"
+                }
+              }
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 7,
+            "w": 12,
+            "x": 12,
+            "y": 28
+          },
+          "heatmap": {},
+          "hideZeroBuckets": true,
+          "highlightCards": true,
+          "id": 89,
+          "legend": {
+            "show": false
+          },
+          "links": [],
+          "options": {
+            "calculate": false,
+            "calculation": {},
+            "cellGap": 2,
+            "cellValues": {},
+            "color": {
+              "exponent": 0.5,
+              "fill": "#b4ff00",
+              "mode": "scheme",
+              "reverse": false,
+              "scale": "exponential",
+              "scheme": "Spectral",
+              "steps": 128
+            },
+            "exemplars": {
+              "color": "rgba(255,0,255,0.7)"
+            },
+            "filterValues": {
+              "le": 1e-9
+            },
+            "legend": {
+              "show": false
+            },
+            "rowsFrame": {
+              "layout": "auto"
+            },
+            "showValue": "never",
+            "tooltip": {
+              "show": true,
+              "yHistogram": false
+            },
+            "yAxis": {
+              "axisPlacement": "left",
+              "reverse": false,
+              "unit": "dtdurations"
+            }
+          },
+          "pluginVersion": "9.5.2",
+          "reverseYBuckets": false,
+          "targets": [
+            {
+              "datasource": {
+                "uid": "$DS_PROMETHEUS"
+              },
+              "editorMode": "code",
+              "expr": "sum(increase(atomix_journal_flush_time_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\", partition=~\"$partition\"}[$__rate_interval])) by (le)",
+              "format": "heatmap",
+              "intervalFactor": 1,
+              "legendFormat": "{{le}}",
+              "range": true,
+              "refId": "A"
+            }
+          ],
+          "title": "Journal Flush Latency",
+          "tooltip": {
+            "show": true,
+            "showHistogram": false
+          },
+          "type": "heatmap",
+          "xAxis": {
+            "show": true
+          },
+          "yAxis": {
+            "format": "dtdurations",
+            "logBase": 1,
+            "show": true
+          },
+          "yBucketBound": "auto"
         },
         {
           "cards": {},
@@ -9325,7 +10820,7 @@
             "h": 7,
             "w": 12,
             "x": 0,
-            "y": 153
+            "y": 35
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -9372,7 +10867,7 @@
               "unit": "dtdurations"
             }
           },
-          "pluginVersion": "9.3.6",
+          "pluginVersion": "9.5.2",
           "reverseYBuckets": false,
           "targets": [
             {
@@ -9420,7 +10915,7 @@
             "h": 7,
             "w": 12,
             "x": 12,
-            "y": 153
+            "y": 35
           },
           "hiddenSeries": false,
           "id": 416,
@@ -9441,7 +10936,7 @@
             "alertThreshold": true
           },
           "percentage": false,
-          "pluginVersion": "9.3.6",
+          "pluginVersion": "9.5.2",
           "pointradius": 2,
           "points": false,
           "renderer": "flot",
@@ -9560,7 +11055,7 @@
             "h": 6,
             "w": 12,
             "x": 0,
-            "y": 160
+            "y": 42
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -9607,7 +11102,7 @@
               "unit": "dtdurations"
             }
           },
-          "pluginVersion": "9.3.6",
+          "pluginVersion": "9.5.2",
           "reverseYBuckets": false,
           "targets": [
             {
@@ -9671,7 +11166,7 @@
             "h": 6,
             "w": 12,
             "x": 12,
-            "y": 160
+            "y": 42
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -9719,7 +11214,7 @@
               "unit": "dtdurations"
             }
           },
-          "pluginVersion": "9.3.6",
+          "pluginVersion": "9.5.2",
           "reverseYBuckets": false,
           "targets": [
             {
@@ -9764,722 +11259,6 @@
           "datasource": {
             "uid": "$DS_PROMETHEUS"
           },
-          "fieldConfig": {
-            "defaults": {
-              "custom": {
-                "hideFrom": {
-                  "legend": false,
-                  "tooltip": false,
-                  "viz": false
-                },
-                "scaleDistribution": {
-                  "type": "linear"
-                }
-              }
-            },
-            "overrides": []
-          },
-          "gridPos": {
-            "h": 6,
-            "w": 12,
-            "x": 0,
-            "y": 166
-          },
-          "heatmap": {},
-          "hideZeroBuckets": true,
-          "highlightCards": true,
-          "id": 78,
-          "legend": {
-            "show": false
-          },
-          "links": [],
-          "options": {
-            "calculate": false,
-            "calculation": {},
-            "cellGap": 2,
-            "cellValues": {},
-            "color": {
-              "exponent": 0.5,
-              "fill": "#b4ff00",
-              "mode": "scheme",
-              "reverse": false,
-              "scale": "exponential",
-              "scheme": "Spectral",
-              "steps": 128
-            },
-            "exemplars": {
-              "color": "rgba(255,0,255,0.7)"
-            },
-            "filterValues": {
-              "le": 1e-9
-            },
-            "legend": {
-              "show": false
-            },
-            "rowsFrame": {
-              "layout": "auto"
-            },
-            "showValue": "never",
-            "tooltip": {
-              "show": true,
-              "yHistogram": false
-            },
-            "yAxis": {
-              "axisPlacement": "left",
-              "reverse": false,
-              "unit": "dtdurations"
-            }
-          },
-          "pluginVersion": "9.3.6",
-          "reverseYBuckets": false,
-          "targets": [
-            {
-              "datasource": {
-                "uid": "$DS_PROMETHEUS"
-              },
-              "expr": "sum(increase(atomix_compaction_time_ms_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\", partition=~\"$partition\"}[$__rate_interval])) by (le)",
-              "format": "heatmap",
-              "intervalFactor": 1,
-              "legendFormat": "{{le}}",
-              "refId": "A"
-            }
-          ],
-          "title": "Compacting time",
-          "tooltip": {
-            "show": true,
-            "showHistogram": false
-          },
-          "type": "heatmap",
-          "xAxis": {
-            "show": true
-          },
-          "yAxis": {
-            "format": "dtdurations",
-            "logBase": 1,
-            "show": true
-          },
-          "yBucketBound": "auto"
-        },
-        {
-          "cards": {},
-          "color": {
-            "cardColor": "#b4ff00",
-            "colorScale": "sqrt",
-            "colorScheme": "interpolateSpectral",
-            "exponent": 0.5,
-            "mode": "spectrum"
-          },
-          "dataFormat": "tsbuckets",
-          "datasource": {
-            "type": "prometheus",
-            "uid": "$DS_PROMETHEUS"
-          },
-          "description": "Time spent updating the last written index",
-          "fieldConfig": {
-            "defaults": {
-              "custom": {
-                "hideFrom": {
-                  "legend": false,
-                  "tooltip": false,
-                  "viz": false
-                },
-                "scaleDistribution": {
-                  "type": "linear"
-                }
-              }
-            },
-            "overrides": []
-          },
-          "gridPos": {
-            "h": 6,
-            "w": 12,
-            "x": 12,
-            "y": 166
-          },
-          "heatmap": {},
-          "hideZeroBuckets": true,
-          "highlightCards": true,
-          "id": 391,
-          "legend": {
-            "show": false
-          },
-          "links": [],
-          "options": {
-            "calculate": false,
-            "calculation": {},
-            "cellGap": 2,
-            "cellValues": {},
-            "color": {
-              "exponent": 0.5,
-              "fill": "#b4ff00",
-              "mode": "scheme",
-              "reverse": false,
-              "scale": "exponential",
-              "scheme": "Spectral",
-              "steps": 128
-            },
-            "exemplars": {
-              "color": "rgba(255,0,255,0.7)"
-            },
-            "filterValues": {
-              "le": 1e-9
-            },
-            "legend": {
-              "show": false
-            },
-            "rowsFrame": {
-              "layout": "auto"
-            },
-            "showValue": "never",
-            "tooltip": {
-              "show": true,
-              "yHistogram": false
-            },
-            "yAxis": {
-              "axisPlacement": "left",
-              "reverse": false,
-              "unit": "dtdurations"
-            }
-          },
-          "pluginVersion": "9.3.6",
-          "reverseYBuckets": false,
-          "targets": [
-            {
-              "datasource": {
-                "uid": "$DS_PROMETHEUS"
-              },
-              "editorMode": "code",
-              "expr": "sum(increase(atomix_last_flushed_index_update_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\", partition=~\"$partition\"}[$__rate_interval])) by (le)",
-              "format": "heatmap",
-              "intervalFactor": 1,
-              "legendFormat": "{{le}}",
-              "range": true,
-              "refId": "A"
-            }
-          ],
-          "title": "Last Written Index Update",
-          "tooltip": {
-            "show": true,
-            "showHistogram": false
-          },
-          "type": "heatmap",
-          "xAxis": {
-            "show": true
-          },
-          "yAxis": {
-            "format": "dtdurations",
-            "logBase": 1,
-            "show": true
-          },
-          "yBucketBound": "auto"
-        },
-        {
-          "aliasColors": {},
-          "bars": false,
-          "dashLength": 10,
-          "dashes": false,
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
-          },
-          "description": "Shows the total count of send install requests from the leader to the followers",
-          "fill": 1,
-          "fillGradient": 0,
-          "gridPos": {
-            "h": 7,
-            "w": 24,
-            "x": 0,
-            "y": 172
-          },
-          "hiddenSeries": false,
-          "id": 283,
-          "legend": {
-            "avg": false,
-            "current": false,
-            "hideEmpty": true,
-            "hideZero": true,
-            "max": false,
-            "min": false,
-            "show": false,
-            "total": false,
-            "values": false
-          },
-          "lines": true,
-          "linewidth": 1,
-          "nullPointMode": "null as zero",
-          "options": {
-            "alertThreshold": true
-          },
-          "percentage": false,
-          "pluginVersion": "9.3.6",
-          "pointradius": 2,
-          "points": false,
-          "renderer": "flot",
-          "seriesOverrides": [],
-          "spaceLength": 10,
-          "stack": false,
-          "steppedLine": false,
-          "targets": [
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
-              },
-              "expr": "atomix_raft_messages_send_total{cluster=~\"$cluster\", namespace=~\"$namespace\", type=\"InstallRequest\"}",
-              "interval": "",
-              "legendFormat": "{{pod}} {{partition}} send {{type}} to {{to}}",
-              "refId": "A"
-            }
-          ],
-          "thresholds": [],
-          "timeRegions": [],
-          "title": "Total install requests send",
-          "tooltip": {
-            "shared": true,
-            "sort": 2,
-            "value_type": "individual"
-          },
-          "type": "graph",
-          "xaxis": {
-            "mode": "time",
-            "show": true,
-            "values": []
-          },
-          "yaxes": [
-            {
-              "format": "short",
-              "label": "Install Requests",
-              "logBase": 1,
-              "min": "0",
-              "show": true
-            },
-            {
-              "format": "short",
-              "logBase": 1,
-              "show": true
-            }
-          ],
-          "yaxis": {
-            "align": false
-          }
-        },
-        {
-          "aliasColors": {},
-          "bars": false,
-          "dashLength": 10,
-          "dashes": false,
-          "datasource": {
-            "uid": "$DS_PROMETHEUS"
-          },
-          "description": "Approximate Install RPC as measured by the follower.",
-          "fieldConfig": {
-            "defaults": {
-              "links": []
-            },
-            "overrides": []
-          },
-          "fill": 1,
-          "fillGradient": 0,
-          "gridPos": {
-            "h": 7,
-            "w": 12,
-            "x": 0,
-            "y": 179
-          },
-          "hiddenSeries": false,
-          "id": 79,
-          "legend": {
-            "avg": false,
-            "current": false,
-            "max": false,
-            "min": false,
-            "show": true,
-            "total": false,
-            "values": false
-          },
-          "lines": true,
-          "linewidth": 1,
-          "links": [],
-          "nullPointMode": "null",
-          "options": {
-            "alertThreshold": true
-          },
-          "percentage": false,
-          "pluginVersion": "9.3.6",
-          "pointradius": 2,
-          "points": false,
-          "renderer": "flot",
-          "seriesOverrides": [],
-          "spaceLength": 10,
-          "stack": false,
-          "steppedLine": false,
-          "targets": [
-            {
-              "datasource": {
-                "uid": "$DS_PROMETHEUS"
-              },
-              "expr": "atomix_snapshot_replication_duration_milliseconds{cluster=~\"$cluster\", namespace=~\"$namespace\",pod=~\"$pod\",partition=~\"$partition\"}",
-              "format": "time_series",
-              "instant": false,
-              "intervalFactor": 1,
-              "legendFormat": "{{pod}} p{{partition}}",
-              "refId": "A"
-            }
-          ],
-          "thresholds": [],
-          "timeRegions": [],
-          "title": "Snapshot Replication Duration",
-          "tooltip": {
-            "shared": true,
-            "sort": 0,
-            "value_type": "individual"
-          },
-          "type": "graph",
-          "xaxis": {
-            "mode": "time",
-            "show": true,
-            "values": []
-          },
-          "yaxes": [
-            {
-              "format": "ms",
-              "logBase": 1,
-              "show": true
-            },
-            {
-              "format": "short",
-              "logBase": 1,
-              "show": true
-            }
-          ],
-          "yaxis": {
-            "align": false
-          }
-        },
-        {
-          "aliasColors": {},
-          "bars": false,
-          "dashLength": 10,
-          "dashes": false,
-          "datasource": {
-            "uid": "$DS_PROMETHEUS"
-          },
-          "description": "Ongoing snapshot replications per partition, from the follower point-of-view.",
-          "fieldConfig": {
-            "defaults": {
-              "links": []
-            },
-            "overrides": []
-          },
-          "fill": 1,
-          "fillGradient": 0,
-          "gridPos": {
-            "h": 7,
-            "w": 12,
-            "x": 12,
-            "y": 179
-          },
-          "hiddenSeries": false,
-          "id": 114,
-          "legend": {
-            "avg": false,
-            "current": false,
-            "max": false,
-            "min": false,
-            "show": true,
-            "total": false,
-            "values": false
-          },
-          "lines": true,
-          "linewidth": 1,
-          "nullPointMode": "null",
-          "options": {
-            "alertThreshold": true
-          },
-          "percentage": false,
-          "pluginVersion": "9.3.6",
-          "pointradius": 2,
-          "points": false,
-          "renderer": "flot",
-          "seriesOverrides": [],
-          "spaceLength": 10,
-          "stack": false,
-          "steppedLine": false,
-          "targets": [
-            {
-              "datasource": {
-                "uid": "$DS_PROMETHEUS"
-              },
-              "expr": "atomix_snapshot_replication_count{cluster=~\"$cluster\", namespace=~\"$namespace\",pod=~\"$pod\",partition=~\"$partition\"}",
-              "interval": "",
-              "legendFormat": "{{pod}} {{partitionGroupName}}-{{partition}}",
-              "refId": "A"
-            }
-          ],
-          "thresholds": [],
-          "timeRegions": [],
-          "title": "Snapshot Replications",
-          "tooltip": {
-            "shared": true,
-            "sort": 2,
-            "value_type": "individual"
-          },
-          "type": "graph",
-          "xaxis": {
-            "mode": "time",
-            "show": true,
-            "values": []
-          },
-          "yaxes": [
-            {
-              "format": "short",
-              "logBase": 1,
-              "show": true
-            },
-            {
-              "format": "short",
-              "logBase": 1,
-              "show": true
-            }
-          ],
-          "yaxis": {
-            "align": false
-          }
-        },
-        {
-          "cards": {},
-          "color": {
-            "cardColor": "#b4ff00",
-            "colorScale": "sqrt",
-            "colorScheme": "interpolateSpectral",
-            "exponent": 0.5,
-            "mode": "spectrum"
-          },
-          "dataFormat": "tsbuckets",
-          "datasource": {
-            "type": "prometheus",
-            "uid": "$DS_PROMETHEUS"
-          },
-          "description": "Overall latency distribution to flush the journal",
-          "fieldConfig": {
-            "defaults": {
-              "custom": {
-                "hideFrom": {
-                  "legend": false,
-                  "tooltip": false,
-                  "viz": false
-                },
-                "scaleDistribution": {
-                  "type": "linear"
-                }
-              }
-            },
-            "overrides": []
-          },
-          "gridPos": {
-            "h": 7,
-            "w": 12,
-            "x": 0,
-            "y": 186
-          },
-          "heatmap": {},
-          "hideZeroBuckets": true,
-          "highlightCards": true,
-          "id": 89,
-          "legend": {
-            "show": false
-          },
-          "links": [],
-          "options": {
-            "calculate": false,
-            "calculation": {},
-            "cellGap": 2,
-            "cellValues": {},
-            "color": {
-              "exponent": 0.5,
-              "fill": "#b4ff00",
-              "mode": "scheme",
-              "reverse": false,
-              "scale": "exponential",
-              "scheme": "Spectral",
-              "steps": 128
-            },
-            "exemplars": {
-              "color": "rgba(255,0,255,0.7)"
-            },
-            "filterValues": {
-              "le": 1e-9
-            },
-            "legend": {
-              "show": false
-            },
-            "rowsFrame": {
-              "layout": "auto"
-            },
-            "showValue": "never",
-            "tooltip": {
-              "show": true,
-              "yHistogram": false
-            },
-            "yAxis": {
-              "axisPlacement": "left",
-              "reverse": false,
-              "unit": "dtdurations"
-            }
-          },
-          "pluginVersion": "9.3.6",
-          "reverseYBuckets": false,
-          "targets": [
-            {
-              "datasource": {
-                "uid": "$DS_PROMETHEUS"
-              },
-              "editorMode": "code",
-              "expr": "sum(increase(atomix_journal_flush_time_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\", partition=~\"$partition\"}[$__rate_interval])) by (le)",
-              "format": "heatmap",
-              "intervalFactor": 1,
-              "legendFormat": "{{le}}",
-              "range": true,
-              "refId": "A"
-            }
-          ],
-          "title": "Journal Flush Latency",
-          "tooltip": {
-            "show": true,
-            "showHistogram": false
-          },
-          "type": "heatmap",
-          "xAxis": {
-            "show": true
-          },
-          "yAxis": {
-            "format": "dtdurations",
-            "logBase": 1,
-            "show": true
-          },
-          "yBucketBound": "auto"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
-          },
-          "description": "Overall latency to flush the complete journal",
-          "fieldConfig": {
-            "defaults": {
-              "color": {
-                "mode": "palette-classic"
-              },
-              "custom": {
-                "axisCenteredZero": false,
-                "axisColorMode": "text",
-                "axisLabel": "",
-                "axisPlacement": "auto",
-                "barAlignment": 0,
-                "drawStyle": "line",
-                "fillOpacity": 10,
-                "gradientMode": "none",
-                "hideFrom": {
-                  "legend": false,
-                  "tooltip": false,
-                  "viz": false
-                },
-                "lineInterpolation": "linear",
-                "lineWidth": 1,
-                "pointSize": 5,
-                "scaleDistribution": {
-                  "type": "linear"
-                },
-                "showPoints": "never",
-                "spanNulls": false,
-                "stacking": {
-                  "group": "A",
-                  "mode": "none"
-                },
-                "thresholdsStyle": {
-                  "mode": "off"
-                }
-              },
-              "mappings": [],
-              "thresholds": {
-                "mode": "absolute",
-                "steps": [
-                  {
-                    "color": "green"
-                  },
-                  {
-                    "color": "red",
-                    "value": 80
-                  }
-                ]
-              },
-              "unit": "s"
-            },
-            "overrides": []
-          },
-          "gridPos": {
-            "h": 7,
-            "w": 12,
-            "x": 12,
-            "y": 186
-          },
-          "id": 300,
-          "options": {
-            "legend": {
-              "calcs": [],
-              "displayMode": "list",
-              "placement": "bottom",
-              "showLegend": true
-            },
-            "tooltip": {
-              "mode": "multi",
-              "sort": "none"
-            }
-          },
-          "pluginVersion": "9.3.6",
-          "targets": [
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
-              },
-              "editorMode": "code",
-              "expr": "sum(rate(atomix_journal_flush_time_sum{cluster=~\"$cluster\", namespace=~\"$namespace\",pod=~\"$pod\", partition=~\"$partition\"}[$__rate_interval])) by (pod) / sum(rate(atomix_journal_flush_time_count{cluster=~\"$cluster\", namespace=~\"$namespace\",pod=~\"$pod\", partition=~\"$partition\"}[$__rate_interval]))  by (pod)",
-              "interval": "",
-              "legendFormat": "Avg {{ pod }}",
-              "range": true,
-              "refId": "A"
-            },
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
-              },
-              "editorMode": "code",
-              "expr": "histogram_quantile(0.50, sum(rate(atomix_journal_flush_time_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\",pod=~\"$pod\", partition=~\"$partition\"}[$__rate_interval])) by (le))",
-              "hide": false,
-              "interval": "",
-              "legendFormat": "Median",
-              "range": true,
-              "refId": "C"
-            }
-          ],
-          "title": "Journal Flush Latency",
-          "type": "timeseries"
-        },
-        {
-          "cards": {},
-          "color": {
-            "cardColor": "#b4ff00",
-            "colorScale": "sqrt",
-            "colorScheme": "interpolateSpectral",
-            "exponent": 0.5,
-            "mode": "spectrum"
-          },
-          "dataFormat": "tsbuckets",
-          "datasource": {
-            "uid": "$DS_PROMETHEUS"
-          },
           "description": "Overall latency distribution to flush a single segment",
           "fieldConfig": {
             "defaults": {
@@ -10500,7 +11279,7 @@
             "h": 7,
             "w": 12,
             "x": 0,
-            "y": 193
+            "y": 48
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -10547,7 +11326,7 @@
               "unit": "dtdurations"
             }
           },
-          "pluginVersion": "9.3.6",
+          "pluginVersion": "9.5.2",
           "reverseYBuckets": false,
           "targets": [
             {
@@ -10623,7 +11402,8 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green"
+                    "color": "green",
+                    "value": null
                   },
                   {
                     "color": "red",
@@ -10639,7 +11419,7 @@
             "h": 7,
             "w": 12,
             "x": 12,
-            "y": 193
+            "y": 48
           },
           "id": 427,
           "options": {
@@ -10710,15 +11490,15 @@
             "overrides": []
           },
           "gridPos": {
-            "h": 7,
+            "h": 6,
             "w": 12,
             "x": 0,
-            "y": 200
+            "y": 55
           },
           "heatmap": {},
           "hideZeroBuckets": true,
           "highlightCards": true,
-          "id": 86,
+          "id": 78,
           "legend": {
             "show": false
           },
@@ -10760,22 +11540,21 @@
               "unit": "dtdurations"
             }
           },
-          "pluginVersion": "9.3.6",
+          "pluginVersion": "9.5.2",
           "reverseYBuckets": false,
           "targets": [
             {
               "datasource": {
                 "uid": "$DS_PROMETHEUS"
               },
-              "expr": "sum(increase(atomix_append_entries_latency_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\", partition=~\"$partition\"}[$__rate_interval])) by (le)",
+              "expr": "sum(increase(atomix_compaction_time_ms_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\", partition=~\"$partition\"}[$__rate_interval])) by (le)",
               "format": "heatmap",
-              "interval": "",
               "intervalFactor": 1,
               "legendFormat": "{{le}}",
               "refId": "A"
             }
           ],
-          "title": "Append Entry Latency",
+          "title": "Compacting time",
           "tooltip": {
             "show": true,
             "showHistogram": false
@@ -10792,102 +11571,6 @@
           "yBucketBound": "auto"
         },
         {
-          "aliasColors": {},
-          "bars": false,
-          "dashLength": 10,
-          "dashes": false,
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
-          },
-          "fill": 1,
-          "fillGradient": 0,
-          "gridPos": {
-            "h": 7,
-            "w": 12,
-            "x": 12,
-            "y": 200
-          },
-          "hiddenSeries": false,
-          "id": 305,
-          "legend": {
-            "avg": false,
-            "current": false,
-            "max": false,
-            "min": false,
-            "show": true,
-            "total": false,
-            "values": false
-          },
-          "lines": true,
-          "linewidth": 1,
-          "nullPointMode": "null",
-          "options": {
-            "alertThreshold": true
-          },
-          "percentage": false,
-          "pluginVersion": "9.3.6",
-          "pointradius": 2,
-          "points": false,
-          "renderer": "flot",
-          "seriesOverrides": [],
-          "spaceLength": 10,
-          "stack": false,
-          "steppedLine": false,
-          "targets": [
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
-              },
-              "expr": "sum(rate(atomix_append_entries_latency_sum{cluster=~\"$cluster\", namespace=~\"$namespace\",pod=~\"$pod\", partition=~\"$partition\"}[$__rate_interval])) / sum(rate(atomix_append_entries_latency_count{cluster=~\"$cluster\", namespace=~\"$namespace\",pod=~\"$pod\", partition=~\"$partition\"}[$__rate_interval]))",
-              "interval": "",
-              "legendFormat": "Avg",
-              "refId": "A"
-            },
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
-              },
-              "expr": "histogram_quantile(0.50, sum(rate(atomix_append_entries_latency_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\",pod=~\"$pod\", partition=~\"$partition\"}[$__rate_interval])) by (le))",
-              "hide": false,
-              "interval": "",
-              "legendFormat": "Median",
-              "refId": "C"
-            }
-          ],
-          "thresholds": [],
-          "timeRegions": [],
-          "title": "AppendEntry latency",
-          "tooltip": {
-            "shared": true,
-            "sort": 0,
-            "value_type": "individual"
-          },
-          "type": "graph",
-          "xaxis": {
-            "mode": "time",
-            "show": true,
-            "values": []
-          },
-          "yaxes": [
-            {
-              "format": "s",
-              "logBase": 1,
-              "show": true
-            },
-            {
-              "format": "short",
-              "logBase": 1,
-              "show": true
-            }
-          ],
-          "yaxis": {
-            "align": false
-          }
-        },
-        {
           "cards": {},
           "color": {
             "cardColor": "#b4ff00",
@@ -10898,8 +11581,10 @@
           },
           "dataFormat": "tsbuckets",
           "datasource": {
+            "type": "prometheus",
             "uid": "$DS_PROMETHEUS"
           },
+          "description": "Time spent updating the last written index",
           "fieldConfig": {
             "defaults": {
               "custom": {
@@ -10916,17 +11601,17 @@
             "overrides": []
           },
           "gridPos": {
-            "h": 8,
+            "h": 6,
             "w": 12,
-            "x": 0,
-            "y": 207
+            "x": 12,
+            "y": 55
           },
           "heatmap": {},
           "hideZeroBuckets": true,
           "highlightCards": true,
-          "id": 70,
+          "id": 391,
           "legend": {
-            "show": true
+            "show": false
           },
           "links": [],
           "options": {
@@ -10950,7 +11635,7 @@
               "le": 1e-9
             },
             "legend": {
-              "show": true
+              "show": false
             },
             "rowsFrame": {
               "layout": "auto"
@@ -10966,23 +11651,23 @@
               "unit": "dtdurations"
             }
           },
-          "pluginVersion": "9.3.6",
+          "pluginVersion": "9.5.2",
           "reverseYBuckets": false,
           "targets": [
             {
               "datasource": {
                 "uid": "$DS_PROMETHEUS"
               },
-              "expr": "sum(increase(atomix_heartbeat_time_in_s_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\", partition=~\"$partition\"}[$__rate_interval])) by (le)",
+              "editorMode": "code",
+              "expr": "sum(increase(atomix_last_flushed_index_update_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\", partition=~\"$partition\"}[$__rate_interval])) by (le)",
               "format": "heatmap",
-              "instant": false,
-              "interval": "1m",
               "intervalFactor": 1,
               "legendFormat": "{{le}}",
+              "range": true,
               "refId": "A"
             }
           ],
-          "title": "Time Between Heartbeats",
+          "title": "Last Written Index Update",
           "tooltip": {
             "show": true,
             "showHistogram": false
@@ -10999,175 +11684,189 @@
           "yBucketBound": "auto"
         },
         {
-          "aliasColors": {},
-          "bars": false,
-          "dashLength": 10,
-          "dashes": false,
-          "datasource": {
-            "uid": "$DS_PROMETHEUS"
+          "cards": {},
+          "color": {
+            "cardColor": "#b4ff00",
+            "colorScale": "sqrt",
+            "colorScheme": "interpolateSpectral",
+            "exponent": 0.5,
+            "mode": "spectrum"
           },
-          "fieldConfig": {
-            "defaults": {
-              "links": []
-            },
-            "overrides": []
-          },
-          "fill": 1,
-          "fillGradient": 0,
-          "gridPos": {
-            "h": 8,
-            "w": 12,
-            "x": 12,
-            "y": 207
-          },
-          "hiddenSeries": false,
-          "id": 72,
-          "legend": {
-            "avg": false,
-            "current": false,
-            "hideZero": true,
-            "max": false,
-            "min": false,
-            "rightSide": true,
-            "show": true,
-            "sideWidth": 100,
-            "total": false,
-            "values": false
-          },
-          "lines": true,
-          "linewidth": 1,
-          "nullPointMode": "null",
-          "options": {
-            "alertThreshold": true
-          },
-          "percentage": false,
-          "pluginVersion": "9.3.6",
-          "pointradius": 2,
-          "points": false,
-          "renderer": "flot",
-          "seriesOverrides": [],
-          "spaceLength": 10,
-          "stack": false,
-          "steppedLine": false,
-          "targets": [
-            {
-              "datasource": {
-                "uid": "$DS_PROMETHEUS"
-              },
-              "expr": "sum(increase(atomix_heartbeat_miss_count_total{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\", pod=~\"$pod\"}[$__rate_interval])) by (pod, partition)",
-              "format": "time_series",
-              "interval": "",
-              "intervalFactor": 1,
-              "legendFormat": "{{pod}} - {{partition}}",
-              "refId": "A"
-            }
-          ],
-          "thresholds": [],
-          "timeRegions": [],
-          "title": "Heartbeat Miss Counts",
-          "tooltip": {
-            "shared": true,
-            "sort": 0,
-            "value_type": "individual"
-          },
-          "type": "graph",
-          "xaxis": {
-            "mode": "time",
-            "show": true,
-            "values": []
-          },
-          "yaxes": [
-            {
-              "format": "short",
-              "logBase": 1,
-              "show": true
-            },
-            {
-              "format": "short",
-              "logBase": 1,
-              "show": true
-            }
-          ],
-          "yaxis": {
-            "align": false
-          }
-        },
-        {
+          "dataFormat": "tsbuckets",
           "datasource": {
             "type": "prometheus",
             "uid": "$DS_PROMETHEUS"
           },
-          "description": "Shows when a role change has happened",
+          "description": "Overall latency distribution to seek to an index",
           "fieldConfig": {
             "defaults": {
-              "color": {
-                "mode": "thresholds"
-              },
               "custom": {
-                "fillOpacity": 70,
-                "lineWidth": 1,
-                "spanNulls": false
-              },
-              "links": [],
-              "mappings": [
-                {
-                  "options": {
-                    "0": {
-                      "color": "light-red",
-                      "index": 3,
-                      "text": "Inactive"
-                    },
-                    "1": {
-                      "color": "super-light-orange",
-                      "index": 2,
-                      "text": "Follower"
-                    },
-                    "2": {
-                      "color": "super-light-purple",
-                      "index": 1,
-                      "text": "Candidate"
-                    },
-                    "3": {
-                      "color": "light-green",
-                      "index": 0,
-                      "text": "Leader"
-                    }
-                  },
-                  "type": "value"
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                },
+                "scaleDistribution": {
+                  "type": "linear"
                 }
-              ],
-              "thresholds": {
-                "mode": "absolute",
-                "steps": [
-                  {
-                    "color": "red"
-                  }
-                ]
               }
             },
             "overrides": []
           },
           "gridPos": {
-            "h": 8,
+            "h": 7,
             "w": 12,
             "x": 0,
-            "y": 215
+            "y": 61
           },
-          "id": 432,
-          "interval": "1s",
+          "heatmap": {},
+          "hideZeroBuckets": true,
+          "highlightCards": true,
+          "id": 559,
+          "legend": {
+            "show": false
+          },
           "links": [],
           "options": {
-            "alignValue": "center",
+            "calculate": false,
+            "calculation": {},
+            "cellGap": 2,
+            "cellValues": {},
+            "color": {
+              "exponent": 0.5,
+              "fill": "#b4ff00",
+              "mode": "scheme",
+              "reverse": false,
+              "scale": "exponential",
+              "scheme": "Spectral",
+              "steps": 128
+            },
+            "exemplars": {
+              "color": "rgba(255,0,255,0.7)"
+            },
+            "filterValues": {
+              "le": 1e-9
+            },
             "legend": {
+              "show": false
+            },
+            "rowsFrame": {
+              "layout": "auto"
+            },
+            "showValue": "never",
+            "tooltip": {
+              "show": true,
+              "yHistogram": false
+            },
+            "yAxis": {
+              "axisPlacement": "left",
+              "reverse": false,
+              "unit": "dtdurations"
+            }
+          },
+          "pluginVersion": "9.5.2",
+          "reverseYBuckets": false,
+          "targets": [
+            {
+              "datasource": {
+                "uid": "$DS_PROMETHEUS"
+              },
+              "editorMode": "code",
+              "expr": "sum(increase(atomix_journal_seek_latency_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\", partition=~\"$partition\"}[$__rate_interval])) by (le)",
+              "format": "heatmap",
+              "intervalFactor": 1,
+              "legendFormat": "{{le}}",
+              "range": true,
+              "refId": "A"
+            }
+          ],
+          "title": "Segment Seek Latency",
+          "tooltip": {
+            "show": true,
+            "showHistogram": false
+          },
+          "type": "heatmap",
+          "xAxis": {
+            "show": true
+          },
+          "yAxis": {
+            "format": "dtdurations",
+            "logBase": 1,
+            "show": true
+          },
+          "yBucketBound": "auto"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "description": "Number of times journal seek was executed. This included both seek to an index and seek to asqn.",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "axisCenteredZero": false,
+                "axisColorMode": "text",
+                "axisLabel": "",
+                "axisPlacement": "auto",
+                "barAlignment": 0,
+                "drawStyle": "line",
+                "fillOpacity": 0,
+                "gradientMode": "none",
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                },
+                "lineInterpolation": "linear",
+                "lineWidth": 1,
+                "pointSize": 5,
+                "scaleDistribution": {
+                  "type": "linear"
+                },
+                "showPoints": "never",
+                "spanNulls": false,
+                "stacking": {
+                  "group": "A",
+                  "mode": "none"
+                },
+                "thresholdsStyle": {
+                  "mode": "off"
+                }
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  }
+                ]
+              },
+              "unit": "none"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 7,
+            "w": 12,
+            "x": 12,
+            "y": 61
+          },
+          "id": 560,
+          "options": {
+            "legend": {
+              "calcs": [],
               "displayMode": "list",
               "placement": "bottom",
-              "showLegend": false
+              "showLegend": true
             },
-            "mergeValues": true,
-            "rowHeight": 0.9,
-            "showValue": "auto",
             "tooltip": {
-              "mode": "single",
+              "mode": "multi",
               "sort": "none"
             }
           },
@@ -11175,505 +11874,22 @@
           "targets": [
             {
               "datasource": {
-                "uid": "$DS_PROMETHEUS"
-              },
-              "editorMode": "code",
-              "expr": "atomix_role{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\", partition=~\"$partition\"}",
-              "format": "time_series",
-              "hide": false,
-              "instant": false,
-              "interval": "",
-              "intervalFactor": 1,
-              "legendFormat": "{{pod}} p{{partition}} ",
-              "refId": "A"
-            }
-          ],
-          "title": "Role changes over time",
-          "transformations": [
-            {
-              "id": "convertFieldType",
-              "options": {
-                "conversions": [
-                  {
-                    "destinationType": "string",
-                    "targetField": "Value"
-                  }
-                ],
-                "fields": {}
-              }
-            }
-          ],
-          "type": "state-timeline"
-        },
-        {
-          "aliasColors": {},
-          "bars": false,
-          "dashLength": 10,
-          "dashes": false,
-          "datasource": {
-            "uid": "$DS_PROMETHEUS"
-          },
-          "decimals": 0,
-          "description": "Shows when a role change has happened. \n1 = Follower\n2 = Candidate\n3 = Leader\n2 - ",
-          "fieldConfig": {
-            "defaults": {
-              "links": []
-            },
-            "overrides": []
-          },
-          "fill": 0,
-          "fillGradient": 0,
-          "gridPos": {
-            "h": 8,
-            "w": 12,
-            "x": 12,
-            "y": 215
-          },
-          "hiddenSeries": false,
-          "id": 95,
-          "interval": "1s",
-          "legend": {
-            "alignAsTable": false,
-            "avg": false,
-            "current": true,
-            "hideEmpty": false,
-            "hideZero": true,
-            "max": false,
-            "min": false,
-            "rightSide": false,
-            "show": false,
-            "sideWidth": 300,
-            "total": false,
-            "values": true
-          },
-          "lines": true,
-          "linewidth": 1,
-          "links": [],
-          "nullPointMode": "null",
-          "options": {
-            "alertThreshold": true
-          },
-          "percentage": false,
-          "pluginVersion": "9.3.6",
-          "pointradius": 2,
-          "points": false,
-          "renderer": "flot",
-          "seriesOverrides": [],
-          "spaceLength": 10,
-          "stack": false,
-          "steppedLine": false,
-          "targets": [
-            {
-              "datasource": {
-                "uid": "$DS_PROMETHEUS"
-              },
-              "expr": "atomix_role{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\", partition=~\"$partition\"}",
-              "format": "time_series",
-              "hide": false,
-              "instant": false,
-              "interval": "",
-              "intervalFactor": 1,
-              "legendFormat": "{{pod}} p{{partition}} ",
-              "refId": "A"
-            }
-          ],
-          "thresholds": [],
-          "timeRegions": [],
-          "title": "Role changes over time",
-          "tooltip": {
-            "shared": true,
-            "sort": 2,
-            "value_type": "individual"
-          },
-          "type": "graph",
-          "xaxis": {
-            "mode": "time",
-            "show": true,
-            "values": []
-          },
-          "yaxes": [
-            {
-              "decimals": 0,
-              "format": "short",
-              "label": "Role (3 = Leader)",
-              "logBase": 1,
-              "max": "3",
-              "min": "1",
-              "show": true
-            },
-            {
-              "format": "Misc",
-              "label": "",
-              "logBase": 1,
-              "show": false
-            }
-          ],
-          "yaxis": {
-            "align": false,
-            "alignLevel": 1
-          }
-        },
-        {
-          "columns": [
-            {
-              "text": "Current",
-              "value": "current"
-            }
-          ],
-          "datasource": {
-            "uid": "$DS_PROMETHEUS"
-          },
-          "fontSize": "100%",
-          "gridPos": {
-            "h": 5,
-            "w": 8,
-            "x": 0,
-            "y": 224
-          },
-          "id": 205,
-          "maxPerRow": 6,
-          "pluginVersion": "6.7.1",
-          "repeat": "partition",
-          "repeatDirection": "h",
-          "showHeader": true,
-          "sort": {
-            "col": 0,
-            "desc": true
-          },
-          "styles": [
-            {
-              "alias": "Time",
-              "align": "auto",
-              "dateFormat": "YYYY-MM-DD HH:mm:ss",
-              "pattern": "Time",
-              "type": "date"
-            },
-            {
-              "alias": "Commit index",
-              "align": "right",
-              "colors": [
-                "rgba(245, 54, 54, 0.9)",
-                "rgba(237, 129, 40, 0.89)",
-                "rgba(50, 172, 45, 0.97)"
-              ],
-              "decimals": 2,
-              "mappingType": 1,
-              "pattern": "Current",
-              "thresholds": [],
-              "type": "string",
-              "unit": "short"
-            }
-          ],
-          "targets": [
-            {
-              "datasource": {
-                "uid": "$DS_PROMETHEUS"
-              },
-              "expr": "atomix_partition_raft_commit_index{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\", partition=~\"$partition\"}",
-              "format": "time_series",
-              "instant": true,
-              "interval": "",
-              "legendFormat": "{{pod}} p{{partition}} ",
-              "refId": "A"
-            }
-          ],
-          "title": "Commit Index",
-          "transform": "timeseries_aggregations",
-          "type": "table-old"
-        },
-        {
-          "columns": [
-            {
-              "text": "Current",
-              "value": "current"
-            }
-          ],
-          "datasource": {
-            "uid": "$DS_PROMETHEUS"
-          },
-          "fontSize": "100%",
-          "gridPos": {
-            "h": 5,
-            "w": 8,
-            "x": 0,
-            "y": 229
-          },
-          "id": 209,
-          "maxPerRow": 6,
-          "pluginVersion": "6.7.1",
-          "repeat": "partition",
-          "repeatDirection": "h",
-          "showHeader": true,
-          "sort": {
-            "col": 0,
-            "desc": true
-          },
-          "styles": [
-            {
-              "alias": "Time",
-              "align": "auto",
-              "dateFormat": "YYYY-MM-DD HH:mm:ss",
-              "pattern": "Time",
-              "type": "date"
-            },
-            {
-              "alias": "Last appended index",
-              "align": "right",
-              "colors": [
-                "rgba(245, 54, 54, 0.9)",
-                "rgba(237, 129, 40, 0.89)",
-                "rgba(50, 172, 45, 0.97)"
-              ],
-              "decimals": 2,
-              "mappingType": 1,
-              "pattern": "Current",
-              "thresholds": [],
-              "type": "string",
-              "unit": "short"
-            }
-          ],
-          "targets": [
-            {
-              "datasource": {
-                "uid": "$DS_PROMETHEUS"
-              },
-              "expr": "atomix_partition_raft_append_index{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\", partition=~\"$partition\"}",
-              "format": "time_series",
-              "instant": true,
-              "interval": "",
-              "legendFormat": "{{pod}}-p{{partition}}",
-              "refId": "A"
-            }
-          ],
-          "title": "Index of last appended entry",
-          "transform": "timeseries_aggregations",
-          "type": "table-old"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "$DS_PROMETHEUS"
-          },
-          "description": "The number of locally appended but non committed records on the leader per partition (p)",
-          "fieldConfig": {
-            "defaults": {
-              "mappings": [],
-              "thresholds": {
-                "mode": "absolute",
-                "steps": [
-                  {
-                    "color": "green"
-                  },
-                  {
-                    "color": "red",
-                    "value": 300
-                  }
-                ]
-              }
-            },
-            "overrides": []
-          },
-          "gridPos": {
-            "h": 5,
-            "w": 12,
-            "x": 0,
-            "y": 234
-          },
-          "id": 215,
-          "options": {
-            "orientation": "auto",
-            "reduceOptions": {
-              "calcs": [
-                "lastNotNull"
-              ],
-              "fields": "",
-              "values": false
-            },
-            "showThresholdLabels": false,
-            "showThresholdMarkers": true,
-            "text": {}
-          },
-          "pluginVersion": "9.3.6",
-          "targets": [
-            {
-              "datasource": {
-                "uid": "$DS_PROMETHEUS"
-              },
-              "editorMode": "code",
-              "expr": "sum(atomix_non_committed_entries{cluster=~\"$cluster\", namespace=~\"$namespace\",partition=~\"$partition\"}) by (partition)",
-              "interval": "",
-              "legendFormat": "p {{partition}}",
-              "range": true,
-              "refId": "A"
-            }
-          ],
-          "title": "Non committed records",
-          "type": "gauge"
-        },
-        {
-          "aliasColors": {},
-          "bars": false,
-          "dashLength": 10,
-          "dashes": false,
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
-          },
-          "description": "",
-          "fieldConfig": {
-            "defaults": {
-              "links": []
-            },
-            "overrides": []
-          },
-          "fill": 1,
-          "fillGradient": 0,
-          "gridPos": {
-            "h": 8,
-            "w": 24,
-            "x": 0,
-            "y": 216
-          },
-          "hiddenSeries": false,
-          "id": 180,
-          "legend": {
-            "avg": false,
-            "current": false,
-            "max": false,
-            "min": false,
-            "show": true,
-            "total": false,
-            "values": false
-          },
-          "lines": true,
-          "linewidth": 1,
-          "nullPointMode": "null",
-          "options": {
-            "alertThreshold": true
-          },
-          "percentage": false,
-          "pluginVersion": "9.3.6",
-          "pointradius": 2,
-          "points": false,
-          "renderer": "flot",
-          "seriesOverrides": [],
-          "spaceLength": 10,
-          "stack": false,
-          "steppedLine": false,
-          "targets": [
-            {
-              "datasource": {
                 "type": "prometheus",
                 "uid": "${DS_PROMETHEUS}"
               },
-              "expr": "atomix_segment_count{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\"}",
-              "interval": "",
-              "legendFormat": "{{pod}} {{partition}}",
-              "refId": "A"
-            }
-          ],
-          "thresholds": [],
-          "timeRegions": [],
-          "title": "Number of log segments",
-          "tooltip": {
-            "shared": true,
-            "sort": 0,
-            "value_type": "individual"
-          },
-          "type": "graph",
-          "xaxis": {
-            "mode": "time",
-            "show": true,
-            "values": []
-          },
-          "yaxes": [
-            {
-              "format": "short",
-              "logBase": 1,
-              "show": true
-            },
-            {
-              "format": "short",
-              "logBase": 1,
-              "show": true
-            }
-          ],
-          "yaxis": {
-            "align": false
-          }
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "$DS_PROMETHEUS"
-          },
-          "description": "The number of records a follower is lagging behind for a given partition (p) and follower (f)",
-          "fieldConfig": {
-            "defaults": {
-              "mappings": [],
-              "thresholds": {
-                "mode": "absolute",
-                "steps": [
-                  {
-                    "color": "green"
-                  },
-                  {
-                    "color": "red",
-                    "value": 1000
-                  }
-                ]
-              }
-            },
-            "overrides": []
-          },
-          "gridPos": {
-            "h": 5,
-            "w": 12,
-            "x": 12,
-            "y": 234
-          },
-          "id": 396,
-          "options": {
-            "orientation": "auto",
-            "reduceOptions": {
-              "calcs": [
-                "last"
-              ],
-              "fields": "",
-              "values": false
-            },
-            "showThresholdLabels": false,
-            "showThresholdMarkers": true,
-            "text": {}
-          },
-          "pluginVersion": "9.3.6",
-          "repeatDirection": "h",
-          "targets": [
-            {
-              "datasource": {
-                "uid": "$DS_PROMETHEUS"
-              },
               "editorMode": "code",
-              "expr": "sum(atomix_non_replicated_entries{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\", partition=~\"$partition\"}) by (partition, follower)",
+              "expr": "sum(rate(atomix_journal_seek_latency_count{cluster=~\"$cluster\", namespace=~\"$namespace\",pod=~\"$pod\", partition=~\"$partition\"}[$__rate_interval])) by (pod, partition)",
               "interval": "",
-              "legendFormat": "p{{partition}} f{{follower}}",
+              "legendFormat": "{{ pod }} - p{{ partition }}",
               "range": true,
               "refId": "A"
             }
           ],
-          "title": "Non replicated records",
-          "type": "gauge"
+          "title": "Number of journal seek (per second)",
+          "type": "timeseries"
         }
       ],
-      "targets": [
-        {
-          "datasource": {
-            "uid": "${DS_PROMETHEUS}"
-          },
-          "refId": "A"
-        }
-      ],
-      "title": "Raft",
+      "title": "Journal",
       "type": "row"
     },
     {
@@ -11682,7 +11898,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 12
+        "y": 13
       },
       "id": 355,
       "panels": [
@@ -11746,7 +11962,7 @@
             "h": 6,
             "w": 24,
             "x": 0,
-            "y": 149
+            "y": 157
           },
           "id": 356,
           "links": [],
@@ -11816,7 +12032,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 155
+            "y": 163
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -11929,7 +12145,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 155
+            "y": 163
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -12022,7 +12238,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 13
+        "y": 14
       },
       "id": 140,
       "panels": [
@@ -12048,7 +12264,7 @@
             "h": 12,
             "w": 12,
             "x": 0,
-            "y": 227
+            "y": 235
           },
           "hiddenSeries": false,
           "id": 154,
@@ -12141,7 +12357,7 @@
             "h": 6,
             "w": 12,
             "x": 12,
-            "y": 227
+            "y": 235
           },
           "hiddenSeries": false,
           "id": 144,
@@ -12232,7 +12448,7 @@
             "h": 6,
             "w": 12,
             "x": 12,
-            "y": 233
+            "y": 241
           },
           "hiddenSeries": false,
           "id": 142,
@@ -12323,7 +12539,7 @@
             "h": 12,
             "w": 12,
             "x": 0,
-            "y": 239
+            "y": 247
           },
           "hiddenSeries": false,
           "id": 151,
@@ -12415,7 +12631,7 @@
             "h": 6,
             "w": 12,
             "x": 12,
-            "y": 239
+            "y": 247
           },
           "hiddenSeries": false,
           "id": 152,
@@ -12507,7 +12723,7 @@
             "h": 6,
             "w": 12,
             "x": 12,
-            "y": 245
+            "y": 253
           },
           "hiddenSeries": false,
           "id": 150,
@@ -12599,7 +12815,7 @@
             "h": 13,
             "w": 12,
             "x": 0,
-            "y": 251
+            "y": 259
           },
           "hiddenSeries": false,
           "id": 147,
@@ -12691,7 +12907,7 @@
             "h": 7,
             "w": 12,
             "x": 12,
-            "y": 251
+            "y": 259
           },
           "hiddenSeries": false,
           "id": 149,
@@ -12784,7 +13000,7 @@
             "h": 6,
             "w": 12,
             "x": 12,
-            "y": 258
+            "y": 266
           },
           "hiddenSeries": false,
           "id": 148,
@@ -12875,7 +13091,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 264
+            "y": 272
           },
           "hiddenSeries": false,
           "id": 155,
@@ -12966,7 +13182,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 264
+            "y": 272
           },
           "hiddenSeries": false,
           "id": 156,
@@ -13058,7 +13274,7 @@
             "h": 6,
             "w": 6,
             "x": 0,
-            "y": 272
+            "y": 280
           },
           "id": 158,
           "pluginVersion": "6.7.1",
@@ -13168,7 +13384,7 @@
             "h": 6,
             "w": 6,
             "x": 6,
-            "y": 272
+            "y": 280
           },
           "hiddenSeries": false,
           "id": 157,
@@ -13259,7 +13475,7 @@
             "h": 6,
             "w": 12,
             "x": 12,
-            "y": 272
+            "y": 280
           },
           "hiddenSeries": false,
           "id": 146,
@@ -13350,7 +13566,7 @@
             "h": 7,
             "w": 6,
             "x": 0,
-            "y": 278
+            "y": 286
           },
           "hiddenSeries": false,
           "id": 159,
@@ -13441,7 +13657,7 @@
             "h": 7,
             "w": 6,
             "x": 6,
-            "y": 278
+            "y": 286
           },
           "hiddenSeries": false,
           "id": 160,
@@ -13532,7 +13748,7 @@
             "h": 7,
             "w": 12,
             "x": 12,
-            "y": 278
+            "y": 286
           },
           "hiddenSeries": false,
           "id": 153,
@@ -13623,7 +13839,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 14
+        "y": 15
       },
       "id": 50,
       "panels": [
@@ -13650,7 +13866,7 @@
             "h": 10,
             "w": 12,
             "x": 0,
-            "y": 228
+            "y": 236
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -13711,7 +13927,7 @@
             "h": 10,
             "w": 12,
             "x": 12,
-            "y": 228
+            "y": 236
           },
           "hiddenSeries": false,
           "id": 255,
@@ -13805,7 +14021,7 @@
             "h": 10,
             "w": 12,
             "x": 0,
-            "y": 238
+            "y": 246
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -13865,7 +14081,7 @@
             "h": 10,
             "w": 12,
             "x": 12,
-            "y": 238
+            "y": 246
           },
           "hiddenSeries": false,
           "id": 185,
@@ -13961,7 +14177,7 @@
             "h": 10,
             "w": 24,
             "x": 0,
-            "y": 248
+            "y": 256
           },
           "height": "400",
           "hiddenSeries": false,
@@ -14076,7 +14292,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 15
+        "y": 16
       },
       "id": 176,
       "panels": [
@@ -14114,7 +14330,7 @@
             "h": 6,
             "w": 4,
             "x": 0,
-            "y": 72
+            "y": 80
           },
           "id": 170,
           "maxPerRow": 6,
@@ -14193,7 +14409,7 @@
             "h": 6,
             "w": 12,
             "x": 12,
-            "y": 162
+            "y": 170
           },
           "id": 265,
           "options": {
@@ -14260,7 +14476,7 @@
             "h": 6,
             "w": 12,
             "x": 0,
-            "y": 168
+            "y": 176
           },
           "id": 174,
           "options": {
@@ -14315,7 +14531,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 16
+        "y": 17
       },
       "id": 315,
       "panels": [
@@ -14341,7 +14557,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 73
+            "y": 81
           },
           "id": 329,
           "options": {
@@ -14406,7 +14622,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 73
+            "y": 81
           },
           "id": 319,
           "options": {
@@ -14473,7 +14689,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 81
+            "y": 89
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -14583,7 +14799,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 81
+            "y": 89
           },
           "id": 325,
           "options": {
@@ -14677,7 +14893,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 89
+            "y": 97
           },
           "id": 313,
           "options": {
@@ -14737,7 +14953,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 89
+            "y": 97
           },
           "id": 321,
           "options": {
@@ -14819,7 +15035,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 97
+            "y": 105
           },
           "id": 335,
           "options": {
@@ -14877,7 +15093,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 97
+            "y": 105
           },
           "id": 317,
           "options": {
@@ -14939,7 +15155,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 105
+            "y": 113
           },
           "id": 327,
           "options": {
@@ -14991,7 +15207,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 17
+        "y": 18
       },
       "id": 434,
       "panels": [
@@ -15029,7 +15245,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 58
+            "y": 66
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -15143,7 +15359,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 58
+            "y": 66
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -15286,7 +15502,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 66
+            "y": 74
           },
           "id": 444,
           "links": [],
@@ -15394,7 +15610,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 66
+            "y": 74
           },
           "id": 446,
           "links": [],
@@ -15501,7 +15717,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 74
+            "y": 82
           },
           "id": 440,
           "options": {
@@ -15593,7 +15809,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 74
+            "y": 82
           },
           "id": 442,
           "options": {
@@ -15634,7 +15850,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 18
+        "y": 19
       },
       "id": 545,
       "panels": [
@@ -15672,7 +15888,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 19
+            "y": 27
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -15813,7 +16029,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 19
+            "y": 27
           },
           "id": 549,
           "options": {
@@ -16014,6 +16230,6 @@
   "timezone": "",
   "title": "Zeebe",
   "uid": "I4lo7_EZk",
-  "version": 9,
+  "version": 10,
   "weekStart": ""
 }
