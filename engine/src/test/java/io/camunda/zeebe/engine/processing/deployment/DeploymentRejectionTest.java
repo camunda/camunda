@@ -263,7 +263,7 @@ public class DeploymentRejectionTest {
             .documentation("x".repeat((int) ByteValue.ofMegabytes(3)))
             .done();
     final BpmnModelInstance validProcess =
-        Bpmn.createExecutableProcess("valid_process").startEvent().task().endEvent().done();
+        Bpmn.createExecutableProcess("valid_process").startEvent().userTask().endEvent().done();
 
     // when
     ENGINE
