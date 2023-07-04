@@ -15,15 +15,19 @@ import io.camunda.zeebe.engine.processing.deployment.distribute.DeploymentRedist
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
+import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
+import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.DeploymentDistributionIntent;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
 import io.camunda.zeebe.protocol.record.value.DeploymentDistributionRecordValue;
+import io.camunda.zeebe.protocol.record.value.DeploymentRecordValue;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
+import io.camunda.zeebe.util.ByteValue;
 import java.util.stream.Collectors;
 import org.awaitility.Awaitility;
 import org.junit.Rule;
@@ -178,5 +182,26 @@ public class MultiPartitionDeploymentLifecycleTest {
         .describedAs("Expect second command to be rejected")
         .containsExactlyInAnyOrder(
             RecordType.COMMAND, RecordType.COMMAND, RecordType.COMMAND_REJECTION);
+  }
+
+  @Test
+  public void shouldDeployIfResourceIsLargeButNotTooMuch() {
+    // when
+    final Record<DeploymentRecordValue> deployment =
+        engine
+            .deployment()
+            .withXmlResource(
+                Bpmn.createExecutableProcess("PROCESS")
+                    .startEvent()
+                    .documentation(
+                        "x".repeat((int) (ByteValue.ofMegabytes(4) / 2 - ByteValue.ofKilobytes(2))))
+                    .done())
+            .deploy();
+
+    // then
+    Assertions.assertThat(deployment)
+        .hasIntent(DeploymentIntent.CREATED)
+        .hasRejectionType(RejectionType.NULL_VAL)
+        .hasRejectionReason("");
   }
 }
