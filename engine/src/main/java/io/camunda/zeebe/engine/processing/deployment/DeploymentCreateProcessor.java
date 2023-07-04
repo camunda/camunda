@@ -101,17 +101,17 @@ public final class DeploymentCreateProcessor implements TypedRecordProcessor<Dep
     if (accepted) {
       final long key = keyGenerator.nextKey();
 
-    try {
-      createTimerIfTimerStartEvent(command, streamWriter, sideEffects);
-    } catch (final RuntimeException e) {
-      // Make sure the cache does not contain any leftovers from this run (by hard resetting)
-      processState.clearCache();
+      try {
+        createTimerIfTimerStartEvent(command, streamWriter, sideEffects);
+      } catch (final RuntimeException e) {
+        // Make sure the cache does not contain any leftovers from this run (by hard resetting)
+        processState.clearCache();
 
-      final String reason = String.format(COULD_NOT_CREATE_TIMER_MESSAGE, e.getMessage());
-      responseWriter.writeRejectionOnCommand(command, RejectionType.PROCESSING_ERROR, reason);
-      streamWriter.appendRejection(command, RejectionType.PROCESSING_ERROR, reason);
-      return;
-    }
+        final String reason = String.format(COULD_NOT_CREATE_TIMER_MESSAGE, e.getMessage());
+        responseWriter.writeRejectionOnCommand(command, RejectionType.PROCESSING_ERROR, reason);
+        streamWriter.appendRejection(command, RejectionType.PROCESSING_ERROR, reason);
+        return;
+      }
 
       responseWriter.writeEventOnCommand(key, DeploymentIntent.CREATED, deploymentEvent, command);
 
