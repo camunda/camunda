@@ -108,7 +108,8 @@ final class Ipv6IntegrationTest {
       final CreateContainerCmd cmd, final String hostNameWithoutBraces) {
     final var hostConfig = Optional.ofNullable(cmd.getHostConfig()).orElse(new HostConfig());
     cmd.withHostConfig(hostConfig.withNetworkMode(network.getId()));
-    cmd.withIpv6Address(hostNameWithoutBraces).withHostName(hostNameWithoutBraces);
+    cmd.withIpv6Address(hostNameWithoutBraces)
+        .withHostName("[%s]".formatted(hostNameWithoutBraces));
   }
 
   private void configureGateway(final ZeebeGatewayNode<?> gateway) {
