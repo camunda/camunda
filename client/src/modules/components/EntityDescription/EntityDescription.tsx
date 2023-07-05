@@ -106,9 +106,9 @@ export default function EntityDescription({description, onEdit}: EntityDescripti
           </p>
         )}
         {!onEdit && showToggleButton && (
-          <span className="toggle" onClick={toggleDescription}>
+          <LegacyButton onClick={toggleDescription} className="toggle" link>
             {isDescriptionOpen ? t('common.less') : t('common.more')}
-          </span>
+          </LegacyButton>
         )}
         {onEdit && (
           <LegacyButton className={className} link onClick={openModal}>

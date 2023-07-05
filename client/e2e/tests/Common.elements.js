@@ -16,7 +16,7 @@ export const modalConfirmButton = Selector('.Modal.is-visible')
 export const descriptionField = Selector('.EntityDescription');
 export const descriptionParagraph = descriptionField.find('p');
 export const addDescriptionButton = descriptionField.find('button');
-export const showLessMoreDescriptionButton = descriptionField.find('span.toggle');
+export const showLessMoreDescriptionButton = descriptionField.find('button.toggle');
 export const descriptionModal = Selector('.EntityDescriptionEditModal');
 export const descriptionModalInput = descriptionModal.find('textarea');
 export const modalNameInput = Selector('.Modal.is-visible input[type="text"]');
