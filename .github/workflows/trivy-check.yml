@@ -32,20 +32,22 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
+        with:
+          ref: "master"
 
       - name: Setup Maven
         uses: ./.github/actions/setup-maven
         with:
           secrets: ${{ toJSON(secrets) }}
 
-      - name: "Read Java Info"
-        id: "pom-info"
-        uses: YunaBraska/java-info-action@main
-
       - name: Checkout code # We do it here and not at the beginning, because setting up maven checkouts back to the current branch for some reason
         uses: actions/checkout@v3
         with:
           ref: ${{ matrix.branch}}
+
+      - name: "Read Java Info"
+        id: "pom-info"
+        uses: YunaBraska/java-info-action@main
 
       - name: Configure Google tools
         id: auth
