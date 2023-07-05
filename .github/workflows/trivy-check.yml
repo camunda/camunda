@@ -31,6 +31,8 @@ jobs:
           ]
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v3
+
       - name: Setup Maven
         uses: ./.github/actions/setup-maven
         with:
