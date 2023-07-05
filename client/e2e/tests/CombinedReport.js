@@ -65,7 +65,6 @@ test('combine two single number reports', async (t) => {
   });
 
   await t.click(Common.submenuOption('Combined Process Report'));
-  await u.toggleReportAutoPreviewUpdate(t);
   await t.typeText(Common.nameEditField, 'Combined Report', {replace: true});
 
   await t

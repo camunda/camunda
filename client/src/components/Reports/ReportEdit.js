@@ -44,7 +44,7 @@ export class ReportEdit extends React.Component {
     optimizeVersion: 'latest',
     report: this.props.report,
     serverError: this.props.error,
-    shouldAutoReloadPreview: false,
+    shouldAutoReloadPreview: sessionStorage.getItem('shouldAutoReloadPreview') === 'true',
     frozenReport: this.props.report,
   };
 
@@ -278,6 +278,7 @@ export class ReportEdit extends React.Component {
       await this.reEvaluateReport(this.state.report.data);
     }
     this.setState({shouldAutoReloadPreview: shouldReload});
+    sessionStorage.setItem('shouldAutoReloadPreview', shouldReload);
   };
 
   render() {

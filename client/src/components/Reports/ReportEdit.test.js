@@ -31,6 +31,18 @@ jest.mock('notifications', () => ({addNotification: jest.fn()}));
 jest.mock('saveGuard', () => ({nowDirty: jest.fn(), nowPristine: jest.fn()}));
 jest.mock('tracking', () => ({track: jest.fn()}));
 
+const mockSessionStorage = {
+  getItem: jest.fn(),
+  setItem: jest.fn(),
+  removeItem: jest.fn(),
+  clear: jest.fn(),
+};
+
+Object.defineProperty(window, 'sessionStorage', {
+  value: mockSessionStorage,
+  writable: true,
+});
+
 const report = {
   id: '1',
   name: 'name',
@@ -349,6 +361,7 @@ it('should show update preview switch disabled by default', () => {
   const updateSwicth = node.find('.updatePreview Switch');
 
   expect(node.state().shouldAutoReloadPreview).toBe(false);
+  expect(sessionStorage.getItem).toHaveBeenCalledWith('shouldAutoReloadPreview');
   expect(updateSwicth.prop('label')).toBe('Update Preview Automatically');
   expect(updateSwicth.prop('checked')).toBe(false);
   expect(node.find('.RunPreviewButton')).toExist();
@@ -360,10 +373,19 @@ it('should turn off automatic update when switch is toggled', () => {
 
   const updateSwicth = node.find('.updatePreview Switch');
 
-  updateSwicth.prop('onChange')({target: {checked: false}});
+  updateSwicth.simulate('change', {target: {checked: false}});
 
   expect(node.state().shouldAutoReloadPreview).toBe(false);
+  expect(sessionStorage.setItem).toHaveBeenCalledWith('shouldAutoReloadPreview', false);
   expect(node.find('.RunPreviewButton')).toExist();
+});
+
+it('should use sessionStorage value to set the preview toggle', () => {
+  window.sessionStorage.getItem.mockReturnValueOnce('true');
+  const node = shallow(<ReportEdit {...props} />);
+
+  expect(node.state().shouldAutoReloadPreview).toBe(true);
+  expect(node.find('.RunPreviewButton')).not.toExist();
 });
 
 it('should re-evalueate report on reload button click', () => {
