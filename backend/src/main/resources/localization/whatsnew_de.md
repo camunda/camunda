@@ -1,3 +1,6 @@
+## Aktualisierung der Report Vorlagen
+Report Vorlagen helfen dem Nutzer Prozessausführungsdaten schnell in einem Report zu visualisieren. Die neuen Report Vorlagen bieten eine Übersicht der in Optimize verfügbaren Visualisierungsmöglichkeiten, um abhängig von der Problemstellung Daten möglichst aussagekräftig zu darzustellen.
+
 ## Beschreibung für Reports und Dashboards
 Eine Beschreibung, wie Daten verstanden werden sollen, sowie eine Beschreibung des Kontexts der Daten verbessert deren Verständlichkeit beträchtlich. Mit dem Release 3.10 wurden Text Reports eingeführt. Diese können auf Dashboards als Kacheln neben Daten Reports positioniert werden. Mit diesem Release ist es jetzt möglich Beschreibungen direkt für einen Report oder Dashboard zu definieren.
 
