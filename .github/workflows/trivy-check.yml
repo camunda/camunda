@@ -196,6 +196,7 @@ jobs:
       #       })
 
       - name: Publish Test Results
+        if: always() && github.event_name == 'push'
         uses: EnricoMi/publish-unit-test-result-action@v2
         with:
           files: |
