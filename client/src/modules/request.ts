@@ -5,6 +5,7 @@
  * except in compliance with the proprietary license.
  */
 
+import {ReactNode} from 'react';
 import {getLanguage, t} from './translation/translation';
 
 type Handler = {
@@ -152,23 +153,32 @@ function processBody(body: unknown): string {
 }
 
 async function parseError(error: ErrorResponse): Promise<ErrorResponse | Record<string, unknown>> {
-  let parsedProps = {message: error.message || 'Unknown error'};
+  let message: ReactNode = error.message || 'Unknown error';
 
-  if (typeof error.json === 'function') {
-    try {
-      const {errorCode, errorMessage, invalidAlertEmails, ...errorProps} = await error.json();
-
-      parsedProps = {
-        message: errorCode ? t('apiErrors.' + errorCode, {invalidAlertEmails}) : errorMessage,
-        ...errorProps,
-      };
-    } catch (e) {
-      // We should show an error, but cannot parse the error
-      // e.g. the server did not return the expected error object
-      console.error('Tried to parse error object, but failed', error);
-      return error;
-    }
+  if (typeof error.json !== 'function') {
+    return {status: error.status, message};
   }
 
-  return {status: error.status, ...parsedProps};
+  try {
+    const {errorCode, errorMessage, ...errorProps} = await error.json();
+    if (errorMessage) {
+      message = errorMessage;
+    }
+
+    if (errorCode) {
+      try {
+        message = t('apiErrors.' + errorCode, {...errorProps});
+      } catch (e) {
+        console.error('Tried to parse error message, but failed: ', error, e);
+      }
+    }
+
+    return {status: error.status, message, ...errorProps};
+  } catch (e) {
+    // We should show an error, but cannot parse the error
+    // e.g. the server did not return the expected error object
+    console.error('Tried to parse error object, but failed', error, e);
+  }
+
+  return {status: error.status, message};
 }

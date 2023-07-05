@@ -28,6 +28,8 @@ global.fetch = jest.fn();
 const fetch = global.fetch as any;
 fetch.mockReturnValue(Promise.resolve(successResponse));
 
+console.error = jest.fn();
+
 const url = 'https://example.com';
 
 describe('request', () => {
@@ -133,6 +135,92 @@ describe('request', () => {
       });
     } catch (e) {
       expect(e).toEqual(failedResponse);
+    }
+  });
+
+  it('should parse en error message for error with errorCode', async () => {
+    const error = {
+      status: 400,
+      errorCode: 'invalidAlertEmailAddresses',
+      invalidAlertEmails: ['mail1@mail.com', 'mail2@mail.com'],
+    };
+
+    fetch.mockReturnValueOnce(Promise.resolve({...error, json: async () => error}));
+
+    try {
+      await request({
+        url,
+        method,
+      });
+    } catch (e) {
+      expect(e).toEqual({
+        status: 400,
+        invalidAlertEmails: ['mail1@mail.com', 'mail2@mail.com'],
+        message:
+          'Users with the following email addresses are not available for receiving alerts: mail1@mail.com,mail2@mail.com',
+      });
+    }
+  });
+
+  it('should parse en error message even when translation fails', async () => {
+    const error = {
+      status: 400,
+      errorCode: 'someCode',
+      errorMessage: 'Some error message',
+    };
+
+    fetch.mockReturnValueOnce(Promise.resolve({...error, json: async () => error}));
+
+    try {
+      await request({
+        url,
+        method,
+      });
+    } catch (e) {
+      expect(e).toEqual({
+        status: 400,
+        message: 'Some error message',
+      });
+    }
+  });
+
+  it('should return generic message if there is no errorMessage', async () => {
+    const error = {
+      status: 400,
+    };
+
+    fetch.mockReturnValueOnce(Promise.resolve({...error, json: async () => error}));
+
+    try {
+      await request({
+        url,
+        method,
+      });
+    } catch (e) {
+      expect(e).toEqual({
+        status: 400,
+        message: 'Unknown error',
+      });
+    }
+  });
+
+  it('should return generic message ie error has no `json` function', async () => {
+    const error = {
+      status: 400,
+    };
+
+    fetch.mockReturnValueOnce(Promise.resolve(error));
+
+    try {
+      await request({
+        url,
+        method,
+      });
+    } catch (e) {
+      expect(e).toEqual({
+        status: 400,
+        message: 'Unknown error',
+      });
     }
   });
 });
