@@ -24,16 +24,16 @@ test('create a report from a template', async (t) => {
   await t.click(Common.templateModalProcessField);
   await t.click(Common.option('Invoice Receipt with alternative correlation variable'));
 
-  await t.click(e.templateOption('Heatmap: Flownode count'));
+  await t.click(e.templateOption('Analyze shares as Pie Chart'));
 
   await t.takeScreenshot('img/reportTemplate.png', {fullPage: true});
   await t.maximizeWindow();
 
   await t.click(Common.modalConfirmButton);
 
-  await t.expect(Common.nameEditField.value).eql('Heatmap: Flownode count');
-  await t.expect(e.groupbyDropdownButton.textContent).contains('Flow Nodes');
-  await t.expect(e.reportDiagram.visible).ok();
+  await t.expect(Common.nameEditField.value).eql('Analyze shares as Pie Chart');
+  await t.expect(e.groupbyDropdownButton.textContent).contains('Start Date : Year');
+  await t.expect(e.reportChart.visible).ok();
 });
 
 test('create and name a report', async (t) => {

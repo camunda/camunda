@@ -465,7 +465,7 @@ test('add a report from the dashboard', async (t) => {
   await u.save(t);
 
   await t.expect(e.reportTile.nth(0).textContent).contains('Blank report');
-  await t.expect(e.reportTile.nth(1).textContent).contains('KPI: 75th Percentile Duration');
+  await t.expect(e.reportTile.nth(1).textContent).contains('Locate bottlenecks on a Heatmap');
 });
 
 test('add, edit and remove dashboards description', async (t) => {
