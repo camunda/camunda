@@ -6,8 +6,8 @@ ARG JVM="eclipse-temurin"
 ARG JAVA_VERSION="17"
 # We duplicate the JVM and JAVA_VERSION vars here as renovate will otherwise fail to properly parse
 ARG BASE_IMAGE="eclipse-temurin:17-jre-focal"
-ARG BASE_DIGEST_AMD64="sha256:901eeb64e3d1e74d261e82e4158386407b95628eaf723058fb96d4efb9141b88"
-ARG BASE_DIGEST_ARM64="sha256:eb3488634b9b33c601be1bbee8abf59e98bf4f2493abd982baea0f4831f25b31"
+ARG BASE_DIGEST_AMD64="sha256:1a6c81a1b4144fe893e2452a6340d4e3a54ca53356962ed36dea290d9c43400f"
+ARG BASE_DIGEST_ARM64="sha256:78b88c13f8e2a109af3394cafd50377bf1d80ee5d18ee13c1640bf9dfcba1842"
 
 # set to "build" to build zeebe from scratch instead of using a distball
 ARG DIST="distball"
