@@ -31,47 +31,20 @@ jobs:
           ]
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
+      - name: Setup Maven
+        uses: ./.github/actions/setup-maven
         with:
-          ref: ${{ matrix.branch}}
+          secrets: ${{ toJSON(secrets) }}
 
       - name: "Read Java Info"
         id: "pom-info"
         uses: YunaBraska/java-info-action@main
 
-      - name: Import secrets
-        id: secrets
-        uses: hashicorp/vault-action@62aa8bb4c43190676348ad2b146075f0421136db
-        with:
-          url: ${{ secrets.VAULT_ADDR }}
-          method: approle
-          roleId: ${{ secrets.VAULT_ROLE_ID }}
-          secretId: ${{ secrets.VAULT_SECRET_ID }}
-          secrets: |
-            secret/data/products/optimize/ci/optimize NEXUS_USERNAME;
-            secret/data/products/optimize/ci/optimize NEXUS_PASSWORD;
-      - name: Setup Maven Action
-        uses: s4u/setup-maven-action@v1.8.0
-        with:
-          java-version: ${{ steps.pom-info.outputs.x_java_version }}
-          java-distribution: "temurin"
-          maven-version: "3.8.6"
-      - name: Checkout code 2
+      - name: Checkout code # We do it here and not at the beginning, because setting up maven checkouts back to the current branch for some reason
         uses: actions/checkout@v3
         with:
           ref: ${{ matrix.branch}}
-      - name: "Create settings.xml"
-        uses: s4u/maven-settings-action@v2.8.0
-        with:
-          githubServer: false
-          servers: |
-            [{
-              "id": "camunda-nexus",
-              "username": "${{ steps.secrets.outputs.NEXUS_USERNAME }}",
-              "password": "${{ steps.secrets.outputs.NEXUS_PASSWORD }}"
-            }]
-          mirrors: '[{"url": "https://repository.nexus.camunda.cloud/content/groups/internal/", "id": "camunda-nexus", "mirrorOf": "*", "name": "camunda Nexus"}]'
+
       - name: Configure Google tools
         id: auth
         uses: camunda-cloud/action-setup-gcloud@v2
@@ -111,7 +84,7 @@ jobs:
           output: ${{ steps.pom-info.outputs.project_version }}-trivy-log.json
 
       - name: Publish results in PR comment
-        if: ${{always() && github.event_name == 'push'}}
+        if: always() && github.event_name == 'push'
         uses: actions/github-script@v6
         with:
           github-token: ${{secrets.GITHUB_TOKEN}}
@@ -199,3 +172,10 @@ jobs:
             ${{ steps.pom-info.outputs.project_version }}-trivy-log.json
           retention-days: 7
           if-no-files-found: ignore
+
+      - name: Post results on slack
+        if: failure() && github.event_name != 'push'
+        uses: ./.github/actions/notify-on-slack
+        with:
+          slack_webhook_url: ${{ steps.secrets.outputs.SLACK_BOT_URL}}
+          status: ${{ job.status }}
