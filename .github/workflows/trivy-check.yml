@@ -59,6 +59,11 @@ jobs:
           java-distribution: "temurin"
           maven-version: "3.8.6"
 
+      - name: Checkout code 2 # we do it cause setup maven step does the checkout to current branch
+        uses: actions/checkout@v3
+        with:
+          ref: ${{ matrix.branch}}
+
       - name: "Create settings.xml"
         uses: s4u/maven-settings-action@v2.8.0
         with:
