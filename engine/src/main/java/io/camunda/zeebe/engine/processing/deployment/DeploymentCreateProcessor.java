@@ -104,6 +104,9 @@ public final class DeploymentCreateProcessor implements TypedRecordProcessor<Dep
       try {
         createTimerIfTimerStartEvent(command, streamWriter, sideEffects);
       } catch (final RuntimeException e) {
+        // Make sure the cache does not contain any leftovers from this run (by hard resetting)
+        processState.clearCache();
+
         final String reason = String.format(COULD_NOT_CREATE_TIMER_MESSAGE, e.getMessage());
         responseWriter.writeRejectionOnCommand(command, RejectionType.PROCESSING_ERROR, reason);
         streamWriter.appendRejection(command, RejectionType.PROCESSING_ERROR, reason);
@@ -119,6 +122,8 @@ public final class DeploymentCreateProcessor implements TypedRecordProcessor<Dep
           deploymentEvent, stateWriter);
 
     } else {
+      // Make sure the cache does not contain any leftovers from this run (by hard resetting)
+      processState.clearCache();
       responseWriter.writeRejectionOnCommand(
           command,
           deploymentTransformer.getRejectionType(),

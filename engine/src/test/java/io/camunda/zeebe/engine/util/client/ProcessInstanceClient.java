@@ -19,6 +19,7 @@ import io.camunda.zeebe.protocol.record.intent.ErrorIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.ErrorRecordValue;
+import io.camunda.zeebe.protocol.record.value.ProcessInstanceCreationRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.camunda.zeebe.test.util.MsgPackUtil;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
@@ -44,8 +45,28 @@ public final class ProcessInstanceClient {
 
   public static class ProcessInstanceCreationClient {
 
+    private static final Function<Long, Record<ProcessInstanceCreationRecordValue>>
+        SUCCESS_EXPECTATION =
+            (position) ->
+                RecordingExporter.processInstanceCreationRecords()
+                    .withIntent(ProcessInstanceCreationIntent.CREATED)
+                    .withSourceRecordPosition(position)
+                    .getFirst();
+
+    private static final Function<Long, Record<ProcessInstanceCreationRecordValue>>
+        REJECTION_EXPECTATION =
+            (position) ->
+                RecordingExporter.processInstanceCreationRecords()
+                    .onlyCommandRejections()
+                    .withIntent(ProcessInstanceCreationIntent.CREATE)
+                    .withSourceRecordPosition(position)
+                    .getFirst();
+
     private final StreamProcessorRule environmentRule;
     private final ProcessInstanceCreationRecord processInstanceCreationRecord;
+
+    private Function<Long, Record<ProcessInstanceCreationRecordValue>> expectation =
+        SUCCESS_EXPECTATION;
 
     public ProcessInstanceCreationClient(
         final StreamProcessorRule environmentRule, final String bpmnProcessId) {
@@ -79,12 +100,13 @@ public final class ProcessInstanceClient {
           environmentRule.writeCommand(
               ProcessInstanceCreationIntent.CREATE, processInstanceCreationRecord);
 
-      return RecordingExporter.processInstanceCreationRecords()
-          .withIntent(ProcessInstanceCreationIntent.CREATED)
-          .withSourceRecordPosition(position)
-          .getFirst()
-          .getValue()
-          .getProcessInstanceKey();
+      final var resultingRecord = expectation.apply(position);
+      return resultingRecord.getValue().getProcessInstanceKey();
+    }
+
+    public ProcessInstanceCreationClient expectRejection() {
+      expectation = REJECTION_EXPECTATION;
+      return this;
     }
   }
 
