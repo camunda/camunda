@@ -111,9 +111,8 @@ jobs:
           ignore-unfixed: true
           hide-progress: true
           severity: "CRITICAL,HIGH"
-          format: template
-          template: "@trivy-junit.tpl"
-          output: ${{ steps.pom-info.outputs.project_version }}-trivy-log.xml
+          format: json
+          output: ${{ steps.pom-info.outputs.project_version }}-trivy-log.json
 
       # - name: Publish results in PR comment
       #   if: always() && github.event_name == 'push'
@@ -200,7 +199,7 @@ jobs:
         uses: EnricoMi/publish-unit-test-result-action@v2
         with:
           files: |
-            **/${{ steps.pom-info.outputs.project_version }}-trivy-log.xml
+            **/${{ steps.pom-info.outputs.project_version }}-trivy-log.json
 
       - name: Upload Test Results
         if: always()
@@ -208,7 +207,7 @@ jobs:
         with:
           name: trivy-test-results
           path: |
-            **/${{ steps.pom-info.outputs.project_version }}-trivy-log.xml
+            **/${{ steps.pom-info.outputs.project_version }}-trivy-log.json
           retention-days: 7
           if-no-files-found: ignore
 
