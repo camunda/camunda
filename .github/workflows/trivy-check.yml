@@ -112,7 +112,7 @@ jobs:
           hide-progress: true
           severity: "CRITICAL,HIGH"
           format: template
-          template: "@contrib/junit.tpl"
+          template: "@trivy-junit.tpl"
           output: ${{ steps.pom-info.outputs.project_version }}-trivy-log.json
 
       # - name: Publish results in PR comment
