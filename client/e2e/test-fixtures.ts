@@ -7,10 +7,16 @@
 
 import {test as base} from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
+import {TestSetupPage} from './pages/TestSetupPage';
+import {MainPage} from './pages/MainPage';
+import {LoginPage} from './pages/LoginPage';
 
 type AxeFixture = {
   makeAxeBuilder: () => AxeBuilder;
   resetData: () => Promise<void>;
+  testSetupPage: TestSetupPage;
+  mainPage: MainPage;
+  loginPage: LoginPage;
 };
 
 const test = base.extend<AxeFixture>({
@@ -32,6 +38,15 @@ const test = base.extend<AxeFixture>({
         method: 'POST',
       });
     });
+  },
+  testSetupPage: async ({page}, use) => {
+    await use(new TestSetupPage(page));
+  },
+  mainPage: async ({page}, use) => {
+    await use(new MainPage(page));
+  },
+  loginPage: async ({page}, use) => {
+    await use(new LoginPage(page));
   },
 });
 export {test};
