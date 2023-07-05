@@ -31,16 +31,7 @@ jobs:
           ]
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-        with:
-          ref: "master"
-
-      - name: Setup Maven
-        uses: ./.github/actions/setup-maven
-        with:
-          secrets: ${{ toJSON(secrets) }}
-
-      - name: Checkout code # We do it here and not at the beginning, because setting up maven checkouts back to the current branch for some reason
+      - name: Checkout code
         uses: actions/checkout@v3
         with:
           ref: ${{ matrix.branch}}
@@ -48,6 +39,37 @@ jobs:
       - name: "Read Java Info"
         id: "pom-info"
         uses: YunaBraska/java-info-action@main
+
+      - name: Import secrets
+        id: secrets
+        uses: hashicorp/vault-action@62aa8bb4c43190676348ad2b146075f0421136db
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secrets: |
+            secret/data/products/optimize/ci/optimize NEXUS_USERNAME;
+            secret/data/products/optimize/ci/optimize NEXUS_PASSWORD;
+
+      - name: Setup Maven Action
+        uses: s4u/setup-maven-action@v1.8.0
+        with:
+          java-version: ${{ steps.pom-info.outputs.x_java_version }}
+          java-distribution: "temurin"
+          maven-version: "3.8.6"
+
+      - name: "Create settings.xml"
+        uses: s4u/maven-settings-action@v2.8.0
+        with:
+          githubServer: false
+          servers: |
+            [{
+              "id": "camunda-nexus",
+              "username": "${{ steps.secrets.outputs.NEXUS_USERNAME }}",
+              "password": "${{ steps.secrets.outputs.NEXUS_PASSWORD }}"
+            }]
+          mirrors: '[{"url": "https://repository.nexus.camunda.cloud/content/groups/internal/", "id": "camunda-nexus", "mirrorOf": "*", "name": "camunda Nexus"}]'
 
       - name: Configure Google tools
         id: auth
@@ -84,88 +106,95 @@ jobs:
           ignore-unfixed: true
           hide-progress: true
           severity: "CRITICAL,HIGH"
-          format: json
+          format: template
+          template: "@contrib/junit.tpl"
           output: ${{ steps.pom-info.outputs.project_version }}-trivy-log.json
 
-      - name: Publish results in PR comment
-        if: always() && github.event_name == 'push'
-        uses: actions/github-script@v6
+      # - name: Publish results in PR comment
+      #   if: always() && github.event_name == 'push'
+      #   uses: actions/github-script@v6
+      #   with:
+      #     github-token: ${{secrets.GITHUB_TOKEN}}
+      #     script: |
+      #       const fs = require('fs');
+      #       const path = require('path');
+
+      #       const fileBuffer = fs.readFileSync(path.join('${{ steps.pom-info.outputs.project_version }}-trivy-log.json'));
+      #       const file = JSON.parse(fileBuffer);
+
+      #       const vulnerabilities = file.Results.filter((result) => result.Vulnerabilities !== undefined)
+      #         .map((result) => result?.Vulnerabilities)
+      #         .flat();
+
+      #       const vulnCountMap = vulnerabilities
+      #         .map((result) => result.Severity)
+      #         .reduce(
+      #           (sum, vuln) => {
+      #             sum[vuln] += 1;
+      #             return sum;
+      #           },
+      #           {HIGH: 0, CRITICAL: 0}
+      #         );
+
+      #       const vulnCount = Object.values(vulnCountMap).reduce((sum, curr) => {
+      #         return sum + curr;
+      #       }, 0);
+
+      #       const vulnCommentContent = Object.entries(vulnCountMap)
+      #         .map(([vuln, count]) => {
+      #           return `${count > 0 ? '🔴' : '🟢'} ${count} ${vuln}\n`;
+      #         })
+      #         .join('');
+
+      #       const table =
+      #         vulnCount > 0
+      #           ? `
+      #       <details>
+      #         <summary>See the full results</summary>
+
+      #         <table>
+      #           <tr>
+      #             <th>Package</th>
+      #             <th>Vulnerability ID</th>
+      #             <th>Severity</th>
+      #             <th>Installed Version</th>
+      #             <th>Fixed Version</th>
+      #           </tr>
+      #         ${vulnerabilities
+      #           .map(({PkgName, VulnerabilityID, Severity, InstalledVersion, FixedVersion, PrimaryURL}) => {
+      #             return `<tr><td>${PkgName}</td><td><a href="${PrimaryURL}">${VulnerabilityID}</a></td><td>${Severity}</td><td>${InstalledVersion}</td><td>${FixedVersion}</td></tr>\n`;
+      #           })
+      #           .join('')}
+      #         </table>
+      #       </details>`
+      #           : '';
+
+      #       const commentContent = `
+      #       Hi! This is your trivy test results for ${{ steps.pom-info.outputs.project_version }} 🧪\n
+      #       There are ${vulnCount} problems found:\n
+      #       ${vulnCommentContent}
+      #       ${table}
+      #       `;
+
+      #       const issues = await github.rest.pulls.list({
+      #         owner: context.repo.owner,
+      #         repo: context.repo.repo,
+      #         state: 'open',
+      #         head: `${context.repo.owner}:${context.ref.replace('refs/heads/', '')}`
+      #       })
+
+      #       github.rest.issues.createComment({
+      #         issue_number: context.issue.number || issues.data[0].number,
+      #         owner: context.repo.owner,
+      #         repo: context.repo.repo,
+      #         body: commentContent
+      #       })
+
+      - name: Publish Test Results
+        uses: EnricoMi/publish-unit-test-result-action@v2
         with:
-          github-token: ${{secrets.GITHUB_TOKEN}}
-          script: |
-            const fs = require('fs');
-            const path = require('path');
-
-            const fileBuffer = fs.readFileSync(path.join('${{ steps.pom-info.outputs.project_version }}-trivy-log.json'));
-            const file = JSON.parse(fileBuffer);
-
-            const vulnerabilities = file.Results.filter((result) => result.Vulnerabilities !== undefined)
-              .map((result) => result?.Vulnerabilities)
-              .flat();
-
-            const vulnCountMap = vulnerabilities
-              .map((result) => result.Severity)
-              .reduce(
-                (sum, vuln) => {
-                  sum[vuln] += 1;
-                  return sum;
-                },
-                {HIGH: 0, CRITICAL: 0}
-              );
-
-            const vulnCount = Object.values(vulnCountMap).reduce((sum, curr) => {
-              return sum + curr;
-            }, 0);
-
-            const vulnCommentContent = Object.entries(vulnCountMap)
-              .map(([vuln, count]) => {
-                return `${count > 0 ? '🔴' : '🟢'} ${count} ${vuln}\n`;
-              })
-              .join('');
-
-            const table =
-              vulnCount > 0
-                ? `
-            <details>
-              <summary>See the full results</summary>
-
-              <table>
-                <tr>
-                  <th>Package</th>
-                  <th>Vulnerability ID</th>
-                  <th>Severity</th>
-                  <th>Installed Version</th>
-                  <th>Fixed Version</th>
-                </tr>
-              ${vulnerabilities
-                .map(({PkgName, VulnerabilityID, Severity, InstalledVersion, FixedVersion, PrimaryURL}) => {
-                  return `<tr><td>${PkgName}</td><td><a href="${PrimaryURL}">${VulnerabilityID}</a></td><td>${Severity}</td><td>${InstalledVersion}</td><td>${FixedVersion}</td></tr>\n`;
-                })
-                .join('')}
-              </table>
-            </details>`
-                : '';
-
-            const commentContent = `
-            Hi! This is your trivy test results for ${{ steps.pom-info.outputs.project_version }} 🧪\n
-            There are ${vulnCount} problems found:\n
-            ${vulnCommentContent}
-            ${table}  
-            `;
-
-            const issues = await github.rest.pulls.list({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              state: 'open',
-              head: `${context.repo.owner}:${context.ref.replace('refs/heads/', '')}`
-            })
-
-            github.rest.issues.createComment({
-              issue_number: context.issue.number || issues.data[0].number,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body: commentContent
-            })
+          files: |
+            ${{ steps.pom-info.outputs.project_version }}-trivy-log.json
 
       - name: Upload Test Results
         if: always()
