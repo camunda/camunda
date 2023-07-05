@@ -215,7 +215,9 @@ public class ResourceDeletionTest {
         .describedAs("Expect resource to be deleted")
         .extracting(Record::getIntent, r -> r.getValue().getResourceKey())
         .containsOnly(
-            tuple(ResourceDeletionIntent.DELETE, key), tuple(ResourceDeletionIntent.DELETED, key));
+            tuple(ResourceDeletionIntent.DELETE, key),
+            tuple(ResourceDeletionIntent.DELETING, key),
+            tuple(ResourceDeletionIntent.DELETED, key));
   }
 
   private void verifyDecisionRequirementsIsDeleted(final long key) {
