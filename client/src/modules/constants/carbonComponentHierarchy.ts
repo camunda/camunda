@@ -13,5 +13,6 @@ const below = -1;
 
 const zIncidentBanner = above + zLayoutBase;
 const zOverlayCollapsable = below + zAppHeader;
+const zNotificationContainer = above + zAppHeader;
 
-export {zOverlayCollapsable, zIncidentBanner};
+export {zOverlayCollapsable, zIncidentBanner, zNotificationContainer};

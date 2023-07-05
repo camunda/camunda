@@ -17,7 +17,7 @@ import {Decisions} from './';
 import {groupedDecisions} from 'modules/mocks/groupedDecisions';
 import {LocationLog} from 'modules/utils/LocationLog';
 import {groupedDecisionsStore} from 'modules/stores/groupedDecisions';
-import {useNotifications} from 'modules/notifications';
+import {notificationsStore} from 'modules/stores/carbonNotifications';
 import {decisionInstancesStore} from 'modules/stores/decisionInstances';
 import {decisionXmlStore} from 'modules/stores/decisionXml';
 import {mockDmnXml} from 'modules/mocks/mockDmnXml';
@@ -29,17 +29,11 @@ import {mockFetchBatchOperations} from 'modules/mocks/api/fetchBatchOperations';
 
 const handleRefetchSpy = jest.spyOn(groupedDecisionsStore, 'handleRefetch');
 
-jest.mock('modules/notifications', () => {
-  const mockUseNotifications = {
-    displayNotification: jest.fn(),
-  };
-
-  return {
-    useNotifications: () => {
-      return mockUseNotifications;
-    },
-  };
-});
+jest.mock('modules/stores/carbonNotifications', () => ({
+  notificationsStore: {
+    displayNotification: jest.fn(() => () => {}),
+  },
+}));
 
 function createWrapper(initialPath: string = '/decisions') {
   const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
@@ -144,12 +138,11 @@ describe('<Decisions />', () => {
       );
     });
 
-    expect(useNotifications().displayNotification).toHaveBeenCalledWith(
-      'error',
-      {
-        headline: 'Decision could not be found',
-      }
-    );
+    expect(notificationsStore.displayNotification).toHaveBeenCalledWith({
+      isDismissable: true,
+      kind: 'error',
+      title: 'Decision could not be found',
+    });
 
     jest.clearAllTimers();
     jest.useRealTimers();

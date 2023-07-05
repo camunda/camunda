@@ -98,6 +98,7 @@ declare module '@carbon/react' {
   export const ActionableNotification: React.FunctionComponent<{
     actionButtonLabel: string;
     ['aria-label']?: string;
+    caption?: string;
     children?: node;
     className?: string;
     closeOnEscape?: boolean;

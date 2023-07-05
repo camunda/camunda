@@ -21,6 +21,7 @@ import {reaction} from 'mobx';
 import {deleteSearchParams} from 'modules/utils/filter';
 import {useNotifications} from 'modules/notifications';
 import {DecisionViewer} from 'modules/components/Carbon/DecisionViewer';
+import {notificationsStore} from 'modules/stores/carbonNotifications';
 
 const Decision: React.FC = observer(() => {
   const location = useLocation();
@@ -61,8 +62,10 @@ const Decision: React.FC = observer(() => {
           !groupedDecisionsStore.isSelectedDecisionValid(decisions, decisionId)
         ) {
           navigate(deleteSearchParams(location, ['name', 'version']));
-          notifications.displayNotification('error', {
-            headline: 'Decision could not be found',
+          notificationsStore.displayNotification({
+            kind: 'error',
+            title: 'Decision could not be found',
+            isDismissable: true,
           });
         }
       } else {

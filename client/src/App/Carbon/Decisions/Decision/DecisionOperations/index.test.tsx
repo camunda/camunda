@@ -18,16 +18,13 @@ import {useEffect} from 'react';
 import {DecisionOperations} from '.';
 import {panelStatesStore} from 'modules/stores/panelStates';
 import {operationsStore} from 'modules/stores/operations';
+import {notificationsStore} from 'modules/stores/carbonNotifications';
 
-const mockDisplayNotification = jest.fn();
-
-jest.mock('modules/notifications', () => {
-  return {
-    useNotifications: () => {
-      return {displayNotification: mockDisplayNotification};
-    },
-  };
-});
+jest.mock('modules/stores/carbonNotifications', () => ({
+  notificationsStore: {
+    displayNotification: jest.fn(() => () => {}),
+  },
+}));
 
 const mockOperation: OperationEntity = {
   id: '2251799813687094',
@@ -152,8 +149,10 @@ describe('<DecisionOperations />', () => {
     await user.click(screen.getByRole('button', {name: /danger Delete/}));
 
     await waitFor(() => {
-      expect(mockDisplayNotification).toHaveBeenCalledWith('error', {
-        headline: 'Operation could not be created',
+      expect(notificationsStore.displayNotification).toHaveBeenCalledWith({
+        kind: 'error',
+        title: 'Operation could not be created',
+        isDismissable: true,
       });
     });
     expect(panelStatesStore.state.isOperationsCollapsed).toBe(true);
@@ -188,9 +187,11 @@ describe('<DecisionOperations />', () => {
     await user.click(screen.getByRole('button', {name: /danger Delete/}));
 
     await waitFor(() => {
-      expect(mockDisplayNotification).toHaveBeenCalledWith('error', {
-        headline: 'Operation could not be created',
-        description: 'You do not have permission',
+      expect(notificationsStore.displayNotification).toHaveBeenCalledWith({
+        kind: 'error',
+        title: 'Operation could not be created',
+        subtitle: 'You do not have permission',
+        isDismissable: true,
       });
     });
     expect(panelStatesStore.state.isOperationsCollapsed).toBe(true);

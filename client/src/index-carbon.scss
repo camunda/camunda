@@ -10,3 +10,9 @@
 p {
   margin: var(--cds-spacing-05) 0;
 }
+
+html,
+body,
+#root {
+  overflow: hidden;
+}

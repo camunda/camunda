@@ -12,6 +12,7 @@ import {
 } from 'react-router-dom';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {NotificationProvider} from 'modules/notifications';
+import {Notifications} from 'modules/carbonNotifications';
 import {Login} from './Login';
 import {Dashboard} from './Dashboard';
 import {Processes} from './Processes';
@@ -76,6 +77,7 @@ const App: React.FC = () => {
   return (
     <ThemeProvider>
       <ThemeSwitcher />
+      <Notifications />
       <NotificationProvider>
         <NetworkStatusWatcher />
         <CommonUiContext />
