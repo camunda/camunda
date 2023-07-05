@@ -22,6 +22,7 @@ import io.camunda.operate.property.ElasticsearchProperties;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.property.SslProperties;
 import io.camunda.operate.util.RetryOperation;
+import jakarta.annotation.PreDestroy;
 import org.apache.http.HttpHost;
 import org.apache.http.auth.AuthScope;
 import org.apache.http.auth.UsernamePasswordCredentials;
@@ -74,6 +75,8 @@ public class ElasticsearchConnector {
   @Autowired
   private OperateProperties operateProperties;
 
+  private ElasticsearchClient elasticsearchClient;
+
   @Bean
   public ElasticsearchClient elasticsearchClient(){
     logger.debug("Creating ElasticsearchClient ...");
@@ -90,7 +93,7 @@ public class ElasticsearchConnector {
     ElasticsearchTransport transport = new RestClientTransport(restClient, new JacksonJsonpMapper());
 
     // And create the API client
-    final ElasticsearchClient elasticsearchClient = new ElasticsearchClient(transport);
+    elasticsearchClient = new ElasticsearchClient(transport);
     if (!checkHealth(elasticsearchClient)) {
       logger.warn("Elasticsearch cluster is not accessible");
     } else {
@@ -140,6 +143,23 @@ public class ElasticsearchConnector {
         esClient.close();
       } catch (IOException e) {
         logger.error("Could not close esClient",e);
+      }
+    }
+  }
+
+  public static void closeEsClient(ElasticsearchClient esClient) {
+    if (esClient != null) {
+        esClient.shutdown();
+    }
+  }
+
+  @PreDestroy
+  public void tearDown() {
+    if (elasticsearchClient != null) {
+      try {
+        elasticsearchClient._transport().close();
+      } catch (IOException e) {
+        throw new RuntimeException(e);
       }
     }
   }
