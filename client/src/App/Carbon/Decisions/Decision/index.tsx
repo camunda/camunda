@@ -19,14 +19,12 @@ import {DiagramShell} from 'modules/components/Carbon/DiagramShell';
 import {decisionXmlStore} from 'modules/stores/decisionXml';
 import {reaction} from 'mobx';
 import {deleteSearchParams} from 'modules/utils/filter';
-import {useNotifications} from 'modules/notifications';
 import {DecisionViewer} from 'modules/components/Carbon/DecisionViewer';
 import {notificationsStore} from 'modules/stores/carbonNotifications';
 
 const Decision: React.FC = observer(() => {
   const location = useLocation();
   const navigate = useNavigate();
-  const notifications = useNotifications();
 
   const {
     state: {status, decisions},
@@ -77,7 +75,6 @@ const Decision: React.FC = observer(() => {
     isDecisionSelected,
     status,
     decisionId,
-    notifications,
     location,
     navigate,
     decisions,

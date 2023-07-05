@@ -13,9 +13,9 @@ import {InlineLoading, Link, ListItem, Stack} from '@carbon/react';
 import {DeleteDefinitionModal} from 'modules/components/Carbon/DeleteDefinitionModal';
 import {operationsStore} from 'modules/stores/operations';
 import {panelStatesStore} from 'modules/stores/panelStates';
-import {useNotifications} from 'modules/notifications';
 import {StructuredList} from 'modules/components/Carbon/StructuredList';
 import {UnorderedList} from 'modules/components/Carbon/DeleteDefinitionModal/Warning/styled';
+import {notificationsStore} from 'modules/stores/carbonNotifications';
 
 type Props = {
   processDefinitionId: string;
@@ -31,7 +31,6 @@ const ProcessOperations: React.FC<Props> = ({
   const [isDeleteModalVisible, setIsDeleteModalVisible] =
     useState<boolean>(false);
 
-  const notifications = useNotifications();
   const [isOperationRunning, setIsOperationRunning] = useState(false);
 
   useEffect(() => {
@@ -119,10 +118,12 @@ const ProcessOperations: React.FC<Props> = ({
             onError: (statusCode: number) => {
               setIsOperationRunning(false);
 
-              notifications.displayNotification('error', {
-                headline: 'Operation could not be created',
-                description:
+              notificationsStore.displayNotification({
+                kind: 'error',
+                title: 'Operation could not be created',
+                subtitle:
                   statusCode === 403 ? 'You do not have permission' : undefined,
+                isDismissable: true,
               });
             },
           });

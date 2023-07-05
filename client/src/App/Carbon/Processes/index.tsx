@@ -18,10 +18,10 @@ import {
   getProcessInstanceFilters,
 } from 'modules/utils/filter';
 import {useLocation, useNavigate, Location} from 'react-router-dom';
-import {useNotifications} from 'modules/notifications';
 import {processInstancesSelectionStore} from 'modules/stores/processInstancesSelection';
 import {processInstancesStore} from 'modules/stores/processInstances';
 import {PAGE_TITLE} from 'modules/constants';
+import {notificationsStore} from 'modules/stores/carbonNotifications';
 
 type LocationType = Omit<Location, 'state'> & {
   state: {refreshContent?: boolean};
@@ -35,8 +35,6 @@ const Processes: React.FC = observer(() => {
   const {process} = filters;
   const {status: processesStatus} = processesStore.state;
   const filtersJSON = JSON.stringify(filters);
-
-  const notifications = useNotifications();
 
   useEffect(() => {
     if (
@@ -79,12 +77,14 @@ const Processes: React.FC = observer(() => {
           .length === 0
       ) {
         navigate(deleteSearchParams(location, ['process', 'version']));
-        notifications.displayNotification('error', {
-          headline: `Process could not be found`,
+        notificationsStore.displayNotification({
+          kind: 'error',
+          title: 'Process could not be found',
+          isDismissable: true,
         });
       }
     }
-  }, [process, navigate, processesStatus, notifications, location]);
+  }, [process, navigate, processesStatus, location]);
 
   return (
     <>

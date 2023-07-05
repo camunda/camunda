@@ -25,9 +25,9 @@ import {authenticationStore} from 'modules/stores/authentication';
 import {Toolbar} from './Toolbar';
 import {getProcessInstanceFilters} from 'modules/utils/filter';
 import {useLocation} from 'react-router-dom';
-import {useNotifications} from 'modules/notifications';
 import {processesStore} from 'modules/stores/processes';
 import {Operations} from 'modules/components/Carbon/Operations';
+import {notificationsStore} from 'modules/stores/carbonNotifications';
 
 const ROW_HEIGHT = 34;
 
@@ -39,7 +39,6 @@ const InstancesTable: React.FC = observer(() => {
 
   const filters = useFilters();
   const location = useLocation();
-  const notifications = useNotifications();
 
   const {canceled, completed} = getProcessInstanceFilters(location.search);
   const listHasFinishedInstances = canceled || completed;
@@ -202,12 +201,14 @@ const InstancesTable: React.FC = observer(() => {
                       operationType,
                     }
                   );
-                  notifications.displayNotification('error', {
-                    headline: 'Operation could not be created',
-                    description:
+                  notificationsStore.displayNotification({
+                    kind: 'error',
+                    title: 'Operation could not be created',
+                    subtitle:
                       statusCode === 403
                         ? 'You do not have permission'
                         : undefined,
+                    isDismissable: true,
                   });
                 }}
                 onSuccess={(operationType) => {
