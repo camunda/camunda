@@ -82,7 +82,7 @@ const Panel = styled.div<Props>`
 
       ${$isClickable &&
       css`
-        padding: var(--cds-spacing-04);
+        padding: var(--cds-spacing-03);
         cursor: pointer;
         display: flex;
         flex-direction: column;
@@ -123,6 +123,7 @@ const CollapseIcon = styled(BaseRowCollapse)<IconProps>`
 const IconButton = styled(BaseIconButton)`
   padding: 0px !important;
   min-height: 0;
+  align-items: center;
 `;
 
 type HeaderProps = {

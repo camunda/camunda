@@ -23,6 +23,7 @@ const OverflowMenu = styled(BaseOverflowMenu)`
     color: var(--cds-link-primary);
   }
   width: unset;
+  padding: 0 var(--cds-spacing-04);
 `;
 
 const ButtonStack = styled(Stack)`
