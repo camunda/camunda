@@ -147,20 +147,19 @@ export default withErrorHandling(
       if (selectionMade || selectionChanged || selectionCleared) {
         if (!this.camundaSourcesAdded() && showSuggested) {
           this.setState({events: await this.loadEvents(searchQuery)});
-        } else {
-          this.scrollToSelectedElement();
         }
+        this.scrollToSelectedElement();
       }
     };
 
-    scrollToSelectedElement = () => {
+    scrollToSelectedElement = (behavior = 'smooth') => {
       const {selection, mappings} = this.props;
       const {start, end} = (selection && mappings[selection.id]) || {};
       const event = start || end;
       if (event) {
         const mappedElement = this.container.current?.querySelector('.' + event.eventName);
         if (mappedElement) {
-          mappedElement.scrollIntoView({behavior: 'smooth', block: 'nearest'});
+          mappedElement.scrollIntoView({behavior, block: 'nearest'});
         }
       }
     };
@@ -203,9 +202,10 @@ export default withErrorHandling(
                       checked={showSuggested}
                       label={t('events.table.showSuggestions')}
                       onChange={({target: {checked}}) =>
-                        this.setState({showSuggested: checked}, async () =>
-                          this.setState({events: await this.loadEvents(searchQuery)})
-                        )
+                        this.setState({showSuggested: checked}, async () => {
+                          this.setState({events: await this.loadEvents(searchQuery)});
+                          this.scrollToSelectedElement('instant');
+                        })
                       }
                     />
                   )}
