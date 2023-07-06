@@ -1477,7 +1477,9 @@
         "label": "quintillion",
         "label-plural": "quintillion"
       }
-    }
+    },
+    "expand": "Expand",
+    "collapse": "Collapse"
   },
   "apiErrors": {
     "serverError": "An internal server error occurred.",

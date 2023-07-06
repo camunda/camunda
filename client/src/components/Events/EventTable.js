@@ -220,6 +220,7 @@ export default withErrorHandling(
                 </TableToolbarContent>
                 <Button
                   hasIconOnly
+                  label={t(collapsed ? 'common.expand' : 'common.collapse')}
                   kind="ghost"
                   onClick={() => this.setState({collapsed: !collapsed})}
                   className="collapseButton"

@@ -1477,7 +1477,9 @@
         "label": "Trillion",
         "label-plural": "Trillionen"
       }
-    }
+    },
+    "expand": "Erweitern",
+    "collapse": "Ausblenden"
   },
   "apiErrors": {
     "serverError": "Es ist ein interner Server Fehler aufgetreten.",
