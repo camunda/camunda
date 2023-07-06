@@ -8,7 +8,7 @@
 import React from 'react';
 import {Button} from '@carbon/react';
 
-import {Modal, Form, Checklist} from 'components';
+import {Modal, CarbonChecklist} from 'components';
 import {t} from 'translation';
 import {withErrorHandling} from 'HOC';
 
@@ -59,24 +59,21 @@ export default withErrorHandling(
       } = this.props;
 
       const {selectedTenants, definitionTenants} = this.state;
+      const modalTitle = `${t('common.editTenants')} - ${definitionName || definitionKey}
+      `;
 
       return (
         <Modal className="EditSourceModal" open onClose={onClose}>
-          <Modal.Header>
-            {t('common.editName', {name: definitionName || definitionKey})}
-          </Modal.Header>
+          <Modal.Header>{modalTitle}</Modal.Header>
           <Modal.Content>
-            <Form>
-              {t('common.tenant.label-plural')}
-              <Form.Group>
-                <Checklist
-                  selectedItems={selectedTenants}
-                  allItems={definitionTenants}
-                  onChange={this.updateSelectedTenants}
-                  formatter={formatTenants}
-                />
-              </Form.Group>
-            </Form>
+            <CarbonChecklist
+              columnLabel={t('common.tenant.label')}
+              selectedItems={selectedTenants}
+              allItems={definitionTenants ?? []}
+              onChange={this.updateSelectedTenants}
+              formatter={formatTenants}
+              loading={!definitionTenants}
+            />
           </Modal.Content>
           <Modal.Footer>
             <Button kind="secondary" className="cancel" onClick={onClose}>

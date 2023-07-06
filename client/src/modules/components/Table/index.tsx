@@ -6,3 +6,5 @@
  */
 
 export {default as Table} from './Table';
+
+export type {Body as TableBody, Head as TableHead} from './Table';

@@ -1,0 +1,25 @@
+.CarbonChecklist {
+  .customHeader {
+    display: flex;
+    flex-wrap: nowrap;
+    flex: 1;
+    align-self: center;
+    margin-inline: 0.75rem;
+  }
+
+  .cds--search {
+    flex: 1;
+  }
+
+  table {
+    tbody {
+      min-height: 300px;
+    }
+  }
+
+  &.headerHidden {
+    thead {
+      display: none;
+    }
+  }
+}

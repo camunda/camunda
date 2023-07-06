@@ -5,5 +5,4 @@
  * except in compliance with the proprietary license.
  */
 
-export {default as Checklist} from './Checklist';
-export {CarbonChecklist} from './CarbonChecklist';
+export {default as CarbonChecklist} from './CarbonChecklist';

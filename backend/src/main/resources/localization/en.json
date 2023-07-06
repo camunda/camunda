@@ -923,6 +923,7 @@
     "description": "Description",
     "edit": "Edit",
     "editName": "Edit {name}",
+    "editTenants": "Edit tenants",
     "addName": "Add {name}",
     "delete": "Delete",
     "deleteEntity": "Delete {entity}",

@@ -75,14 +75,16 @@ export type TableInstanceWithHooks<T extends object = object> = Omit<
 export type Head =
   | string
   | (Partial<Column> & {
-      label?: string;
+      label?: string | JSX.Element | JSX.Element[];
       title?: string;
       sortable?: boolean;
       type?: string;
       columns?: Head[];
     });
 
-type Body = (string | JSX.Element)[] | {content?: unknown[]; props: unknown};
+export type Body =
+  | (string | JSX.Element | JSX.Element[])[]
+  | {content?: (string | JSX.Element | JSX.Element[])[]; props: unknown};
 
 interface TableProps {
   head: Head[];
@@ -207,7 +209,7 @@ export default function Table<T extends object>({
   }
 
   const MAX_LOADING_COLUMN_COUNT = Math.min(headers.length, 6);
-  const LOADING_ROWS_COUNT = Math.min(body.length, 15);
+  const LOADING_ROWS_COUNT = Math.max(Math.min(body.length, 15), 3);
 
   return (
     <div
@@ -348,7 +350,7 @@ Table.formatColumns = <T extends object = object>(
     }
 
     return {
-      id: elem.id || elem.label || '',
+      id: elem.id || elem.label?.toString() || '',
       Header: elem.label,
       columns: Table.formatColumns(elem.columns, ctx + (elem.id || elem.label), columnWidths, idx),
     };

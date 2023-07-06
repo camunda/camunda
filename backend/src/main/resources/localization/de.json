@@ -923,6 +923,7 @@
     "description": "Beschreibung",
     "edit": "Bearbeiten",
     "editName": "{name} bearbeiten",
+    "editTenants": "Mandanten bearbeiten",
     "addName": "{name} hinzufügen",
     "delete": "Löschen",
     "deleteEntity": "{entity} Löschen",

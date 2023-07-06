@@ -50,7 +50,7 @@ export {DocsLink} from './DocsLink';
 export {Tabs} from './Tabs';
 export {Tag} from './Tag';
 export {MultiValueInput, UncontrolledMultiValueInput} from './MultiValueInput';
-export {Checklist} from './Checklist';
+export {Checklist, CarbonChecklist} from './Checklist';
 export {Tooltip} from './Tooltip';
 export {SelectionPreview} from './SelectionPreview';
 export {DownloadButton} from './DownloadButton';
