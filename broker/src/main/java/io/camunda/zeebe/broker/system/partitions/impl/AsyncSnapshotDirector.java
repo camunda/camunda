@@ -68,7 +68,6 @@ public final class AsyncSnapshotDirector extends Actor
   private long commitPosition;
 
   private AsyncSnapshotDirector(
-      final int nodeId,
       final int partitionId,
       final StreamProcessor streamProcessor,
       final StateController stateController,
@@ -80,7 +79,7 @@ public final class AsyncSnapshotDirector extends Actor
     processorName = streamProcessor.getName();
     this.snapshotRate = snapshotRate;
     this.partitionId = partitionId;
-    actorName = buildActorName(nodeId, "SnapshotDirector", this.partitionId);
+    actorName = buildActorName("SnapshotDirector", this.partitionId);
     this.streamProcessorMode = streamProcessorMode;
     this.flushLog = flushLog;
   }
@@ -148,7 +147,6 @@ public final class AsyncSnapshotDirector extends Actor
       final Duration snapshotRate,
       final Callable<CompletableFuture<Void>> flushLog) {
     return new AsyncSnapshotDirector(
-        nodeId,
         partitionId,
         streamProcessor,
         stateController,
@@ -176,7 +174,6 @@ public final class AsyncSnapshotDirector extends Actor
       final Duration snapshotRate,
       final Callable<CompletableFuture<Void>> flushLog) {
     return new AsyncSnapshotDirector(
-        nodeId,
         partitionId,
         streamProcessor,
         stateController,

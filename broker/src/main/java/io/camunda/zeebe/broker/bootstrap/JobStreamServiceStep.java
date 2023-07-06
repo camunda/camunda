@@ -36,8 +36,7 @@ public final class JobStreamServiceStep extends AbstractBrokerStartupStep {
       final ActorFuture<BrokerStartupContext> startupFuture) {
     final var clusterServices = brokerStartupContext.getClusterServices();
     final var errorHandlerService =
-        new RemoteJobStreamErrorHandlerService(
-            new YieldingJobStreamErrorHandler(), brokerStartupContext.getBrokerInfo().getNodeId());
+        new RemoteJobStreamErrorHandlerService(new YieldingJobStreamErrorHandler());
 
     final var scheduler = brokerStartupContext.getActorSchedulingService();
     final RemoteStreamService<JobActivationProperties, ActivatedJob> remoteStreamService =

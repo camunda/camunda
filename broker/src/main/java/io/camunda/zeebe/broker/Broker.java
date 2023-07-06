@@ -206,7 +206,7 @@ public final class Broker implements AutoCloseable {
 
     @Override
     public String getName() {
-      return buildActorName(nodeId, "Startup");
+      return "Startup";
     }
 
     private ActorFuture<BrokerContext> start() {

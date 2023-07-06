@@ -98,17 +98,19 @@ public class ActorThread extends Thread implements Consumer<Runnable> {
   private void executeCurrentTask() {
     final var properties = currentTask.getActor().getContext();
     MDC.setContextMap(properties);
+    MDC.put("actor-scheduler", actorThreadGroup.getSchedulerName());
+
     idleStrategy.onTaskExecuted();
 
     boolean resubmit = false;
 
-    try {
+    final var actorName = properties.getOrDefault("actor-name", "");
+    try (final var ignored = MDC.putCloseable("actor-name", actorName)) {
       resubmit = currentTask.execute(this);
     } catch (final Throwable e) {
       FATAL_ERROR_HANDLER.handleError(e);
       LOG.error("Unexpected error occurred in task {}", currentTask, e);
     } finally {
-      MDC.remove("actor-name");
       clock.update();
     }
 

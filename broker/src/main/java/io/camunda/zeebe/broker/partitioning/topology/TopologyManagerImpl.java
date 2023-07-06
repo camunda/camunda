@@ -44,7 +44,7 @@ public final class TopologyManagerImpl extends Actor
     this.membershipService = membershipService;
     this.localBroker = localBroker;
 
-    actorName = buildActorName(localBroker.getNodeId(), "TopologyManager");
+    actorName = "TopologyManager";
   }
 
   @Override

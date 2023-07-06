@@ -13,9 +13,6 @@ import io.camunda.zeebe.scheduler.ActorScheduler.ActorSchedulerBuilder;
 public final class CpuThreadGroup extends ActorThreadGroup {
 
   public CpuThreadGroup(final ActorSchedulerBuilder builder) {
-    super(
-        String.format("%s-%s", builder.getSchedulerName(), "zb-actors"),
-        builder.getCpuBoundActorThreadCount(),
-        builder);
+    super("zb-actors", builder.getCpuBoundActorThreadCount(), builder, builder.getSchedulerName());
   }
 }

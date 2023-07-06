@@ -54,7 +54,7 @@ public final class BackupService extends Actor implements BackupManager {
     this.isSegmentsFile = isSegmentsFile;
     metrics = new BackupManagerMetrics(partitionId);
     internalBackupManager = new BackupServiceImpl(backupStore);
-    actorName = buildActorName(nodeId, "BackupService", partitionId);
+    actorName = buildActorName("BackupService", partitionId);
   }
 
   @Override

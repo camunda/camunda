@@ -38,7 +38,6 @@ public final class CommandApiServiceImpl extends Actor
   private final CommandApiRequestHandler commandHandler;
   private final QueryApiRequestHandler queryHandler;
   private final IntHashSet leadPartitions = new IntHashSet();
-  private final String actorName;
   private final ActorSchedulingService scheduler;
 
   public CommandApiServiceImpl(
@@ -51,13 +50,12 @@ public final class CommandApiServiceImpl extends Actor
     this.limiter = limiter;
     this.scheduler = scheduler;
     commandHandler = new CommandApiRequestHandler();
-    queryHandler = new QueryApiRequestHandler(queryApiCfg, localBroker.getNodeId());
-    actorName = buildActorName(localBroker.getNodeId(), "CommandApiService");
+    queryHandler = new QueryApiRequestHandler(queryApiCfg);
   }
 
   @Override
   public String getName() {
-    return actorName;
+    return "CommandApiService";
   }
 
   @Override
