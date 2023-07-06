@@ -32,7 +32,7 @@ const Container = styled.div`
         fill: ${colors.text} !important;
       }
 
-      .dmn-drd-container .djs-connection polyline {
+      .dmn-drd-container .djs-connection path {
         stroke: ${colors.border} !important;
       }
 
