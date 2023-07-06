@@ -31,6 +31,8 @@ public class RecordImpl<T extends RecordValue> implements Record<T> {
   private long timestamp;
   private long sourceRecordPosition;
 
+  private int recordVersion;
+
   private T value;
 
   public RecordImpl() {}
@@ -183,5 +185,14 @@ public class RecordImpl<T extends RecordValue> implements Record<T> {
   @Override
   public String toJson() {
     throw new UnsupportedOperationException("toJson operation is not supported");
+  }
+
+  public RecordImpl<T> setRecordVersion(int recordVersion) {
+    this.recordVersion = recordVersion;
+    return this;
+  }
+
+  public int getRecordVersion() {
+    return recordVersion;
   }
 }

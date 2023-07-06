@@ -31,6 +31,8 @@ public class RecordImpl<T extends RecordValue> implements Record<T> {
   private long timestamp;
   private long sourceRecordPosition;
 
+  private int recordVersion;
+
   private T value;
 
   public RecordImpl() {}
@@ -146,6 +148,15 @@ public class RecordImpl<T extends RecordValue> implements Record<T> {
   @Override
   public Record<T> clone() {
     throw new UnsupportedOperationException("Clone not implemented");
+  }
+
+  public int getRecordVersion() {
+    return recordVersion;
+  }
+
+  public RecordImpl<T> setRecordVersion(int recordVersion) {
+    this.recordVersion = recordVersion;
+    return this;
   }
 
   @Override
