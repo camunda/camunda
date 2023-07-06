@@ -90,8 +90,8 @@ jobs:
         \"testParams\":
         {
         \"maxTestDuration\": \"${{ inputs.maxTestDuration || 'P5D' }}\",
-        \"starter\": [ {\"rate\": 30, \"processId\": \"one-task-one-timer\" },
-                       {\"rate\": 20, \"processId\": \"ping-pong-message\" } ],
+        \"starter\": [ {\"rate\": 20, \"processId\": \"one-task-one-timer\" },
+                       {\"rate\": 10, \"processId\": \"ping-pong-message\" } ],
         \"verifier\" : { \"maxInstanceDuration\" : \"${{ inputs.maxInstanceDuration }}\" },
         \"fault\": ${{ inputs.fault || 'null' }}
         }
