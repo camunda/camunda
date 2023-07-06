@@ -377,12 +377,34 @@ public final class ElementInstanceStateTest {
   }
 
   @Test
+  public void shouldRemoveProcessInstanceByProcessDefinitionKeyOnRemoval() {
+    // given
+    final var processDefinitionKey = 100L;
+    final var processInstanceRecord =
+        createProcessInstanceRecord()
+            .setBpmnElementType(BpmnElementType.PROCESS)
+            .setProcessDefinitionKey(processDefinitionKey);
+    final var processInstanceKey = 101L;
+    elementInstanceState.newInstance(
+        processInstanceKey, processInstanceRecord, ProcessInstanceIntent.ELEMENT_ACTIVATED);
+
+    // when
+    elementInstanceState.removeInstance(processInstanceKey);
+    final List<Long> processInstanceKeys =
+        elementInstanceState.getProcessInstanceKeysByDefinitionKey(processDefinitionKey);
+
+    // then
+    Assertions.assertThat(processInstanceKeys).isEmpty();
+  }
+
+  @Test
   public void shouldNotLeakMemoryOnRemoval() {
     // given
     final int parent = 100;
     final int child = 101;
 
-    final ProcessInstanceRecord processInstanceRecord = createProcessInstanceRecord();
+    final ProcessInstanceRecord processInstanceRecord =
+        createProcessInstanceRecord().setBpmnElementType(BpmnElementType.PROCESS);
     final ElementInstance parentInstance =
         elementInstanceState.newInstance(
             parent, processInstanceRecord, ProcessInstanceIntent.ELEMENT_ACTIVATED);
