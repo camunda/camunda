@@ -42,6 +42,7 @@ import {ModificationSummaryModal} from './ModificationSummaryModal';
 import {useCallbackPrompt} from 'modules/hooks/useCallbackPrompt';
 import {LastModification} from './LastModification';
 import {VariablePanel} from './BottomPanel/VariablePanel';
+import {Forbidden} from 'modules/components/Carbon/Forbidden';
 
 const ProcessInstance: React.FC = observer(() => {
   const {processInstanceId = ''} = useProcessInstancePageParams();
@@ -150,6 +151,10 @@ const ProcessInstance: React.FC = observer(() => {
       0;
 
   const hasPendingModifications = modifications.length > 0;
+
+  if (processInstanceDetailsStore.state.status === 'forbidden') {
+    return <Forbidden />;
+  }
 
   return (
     <>

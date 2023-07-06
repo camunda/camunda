@@ -18,6 +18,7 @@ import {InstanceDetail} from '../Layout/InstanceDetail';
 import {DecisionPanel} from './DecisionPanel';
 import {Header} from './Header';
 import {VariablesPanel} from './VariablesPanel';
+import {Forbidden} from 'modules/components/Carbon/Forbidden';
 
 const DecisionInstance: React.FC = observer(() => {
   const {decisionInstanceId = ''} = useParams<{decisionInstanceId: string}>();
@@ -55,6 +56,10 @@ const DecisionInstance: React.FC = observer(() => {
       });
     }
   }, [decisionInstance]);
+
+  if (decisionInstanceDetailsStore.state.status === 'forbidden') {
+    return <Forbidden />;
+  }
 
   return (
     <>
