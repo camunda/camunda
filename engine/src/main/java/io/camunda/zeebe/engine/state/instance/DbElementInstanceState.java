@@ -327,6 +327,20 @@ public final class DbElementInstanceState implements MutableElementInstanceState
     return count.get();
   }
 
+  @Override
+  public List<Long> getProcessInstanceKeysByDefinitionKey(final long processDefinitionKey) {
+    final List<Long> processInstanceKeys = new ArrayList<>();
+    this.processDefinitionKey.wrapLong(processDefinitionKey);
+
+    processInstanceKeyByProcessDefinitionKeyColumnFamily.whileEqualPrefix(
+        this.processDefinitionKey,
+        (key, value) -> {
+          final DbLong processInstanceKey = key.second();
+          processInstanceKeys.add(processInstanceKey.getValue());
+        });
+    return processInstanceKeys;
+  }
+
   private ElementInstance copyElementInstance(final ElementInstance elementInstance) {
     if (elementInstance != null) {
       final byte[] bytes = new byte[elementInstance.getLength()];

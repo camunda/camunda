@@ -48,4 +48,14 @@ public interface ElementInstanceState {
    * @return the number of taken sequence flows of the given gateway
    */
   int getNumberOfTakenSequenceFlows(final long flowScopeKey, final DirectBuffer gatewayElementId);
+
+  /**
+   * Returns a list of process instance keys that belong to a specific process definition.
+   *
+   * <p>Caution: This will also return the keys of banned process instances!
+   *
+   * @param processDefinitionKey the key of the process definition
+   * @return a list of process instance keys
+   */
+  List<Long> getProcessInstanceKeysByDefinitionKey(final long processDefinitionKey);
 }
