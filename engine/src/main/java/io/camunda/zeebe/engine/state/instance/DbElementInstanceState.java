@@ -22,6 +22,7 @@ import io.camunda.zeebe.engine.state.mutable.MutableVariableState;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.BiFunction;
@@ -191,6 +192,13 @@ public final class DbElementInstanceState implements MutableElementInstanceState
     elementInstanceColumnFamily.insert(elementInstanceKey, instance);
     parentChildColumnFamily.insert(parentChildKey, DbNil.INSTANCE);
     variableState.createScope(elementInstanceKey.getValue(), parentKey.inner().getValue());
+
+    final var recordValue = instance.getValue();
+    if (recordValue.getBpmnElementType() == BpmnElementType.PROCESS) {
+      processDefinitionKey.wrapLong(recordValue.getProcessDefinitionKey());
+      processInstanceKeyByProcessDefinitionKeyColumnFamily.insert(
+          processInstanceKeyByProcessDefinitionKey, DbNil.INSTANCE);
+    }
   }
 
   @Override
