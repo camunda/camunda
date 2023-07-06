@@ -292,10 +292,12 @@ public class ProcessReader {
             new SearchSourceBuilder()
                 .query(qb)
                 .collapse(new CollapseBuilder(ProcessIndex.PROCESS_DEFINITION_ID))
-                .sort(SortBuilders.fieldSort(ProcessIndex.VERSION).order(SortOrder.DESC)));
+                .sort(SortBuilders.fieldSort(ProcessIndex.VERSION).order(SortOrder.DESC))
+                .size(ElasticsearchUtil.QUERY_MAX_SIZE));
   }
 
   private List<ProcessDTO> mapResponse(SearchResponse response) {
+
     final List<ProcessDTO> processes =
         ElasticsearchUtil.mapSearchHits(
             response.getHits().getHits(),
