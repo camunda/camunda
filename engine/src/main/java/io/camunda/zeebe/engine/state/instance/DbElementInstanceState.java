@@ -171,6 +171,13 @@ public final class DbElementInstanceState implements MutableElementInstanceState
     awaitProcessInstanceResultMetadataColumnFamily.deleteIfExists(elementInstanceKey);
     removeNumberOfTakenSequenceFlows(key);
 
+    final var recordValue = instance.getValue();
+    if (recordValue.getBpmnElementType() == BpmnElementType.PROCESS) {
+      processDefinitionKey.wrapLong(recordValue.getProcessDefinitionKey());
+      processInstanceKeyByProcessDefinitionKeyColumnFamily.deleteExisting(
+          processInstanceKeyByProcessDefinitionKey);
+    }
+
     if (parent > 0) {
       elementInstanceKey.wrapLong(parent);
       final var parentInstance = elementInstanceColumnFamily.get(elementInstanceKey);
