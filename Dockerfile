@@ -2,12 +2,12 @@
 # This Dockerfile requires BuildKit to be enabled, by setting the environment variable
 # DOCKER_BUILDKIT=1
 # see https://docs.docker.com/build/buildkit/#getting-started
-ARG BASE_IMAGE="ubuntu:jammy-20230624"
-ARG BASE_DIGEST_AMD64="sha256:b060fffe8e1561c9c3e6dea6db487b900100fc26830b9ea2ec966c151ab4c020"
-ARG BASE_DIGEST_ARM64="sha256:fb4a67ec973b2995214edd101e37a83787b175a16750b372789c8f6314dc20ca"
-ARG JDK_IMAGE="eclipse-temurin:17.0.7_7-jdk-jammy"
-ARG JDK_DIGEST_AMD64="sha256:ab4bbe391a42adc8e590d0c54b3ca7903cbc3b62a3e3b23ac8dce94ebfef6b9e"
-ARG JDK_DIGEST_ARM64="sha256:6af63732bd4bbabe749544e23dac50524b493281208b8b227c7ff87e6d4f2fe9"
+# We use BellSoft's Liberica OpenJDK as base JDK image for two reasons: it provides an Alpine base
+# image with glibc already installed and configured (which is noticeably more performant than musl),
+# and it is slimmer than their JRE offering (which is completely uncompressed)
+ARG BASE_IMAGE="bellsoft/liberica-openjdk-alpine:17.0.7-7"
+ARG BASE_DIGEST_AMD64="sha256:1fb565a396ac8c6d4fd0d7796d8e54e78cfddeb36af9773ff3df02b64d64a739"
+ARG BASE_DIGEST_ARM64="sha256:5b56222283e24aa19a09594001f1c2a2820c09518120762dfff4f77ec3f64b4c"
 
 # set to "build" to build zeebe from scratch instead of using a distball
 ARG DIST="distball"
@@ -26,69 +26,23 @@ FROM ${BASE_IMAGE}@${BASE_DIGEST_ARM64} as base-arm64
 ARG BASE_DIGEST_ARM64
 ARG BASE_DIGEST="${BASE_DIGEST_ARM64}"
 
-### Base image with security updates applied ###
+### Architecture agnostic base image ##
+# This is the actual base image for our application. It's split from the app stage to help with
+# layering, caching, reuse, and debugging. Use this stage to install any additional native
+# dependencies, for example. Since APK is quite slow, we'll centralize everything in a single call
+# here.
 # hadolint ignore=DL3006
-FROM base-${TARGETARCH} as ubuntu
+FROM base-${TARGETARCH} as base
 
-ARG SECURITY_SOURCES=/etc/apt/security.sources.list
-
-# We only want to apply security patches, so we'll grab only the security related sources and create
-# our own source list. From there, we can upgrade all packages with security vulnerabilities.
-# hadolint ignore=DL4006,DL3008,DL3009
-RUN --mount=type=cache,target=/var/cache/apt \
-  apt-get -yqq update && apt-get -yqq --no-install-recommends upgrade && \
-  apt-get -yqq --no-install-recommends install tini
-
-### AMD64 JDK image ###
-# JDK_DIGEST_AMD64 is defined at the top of the Dockerfile
-# hadolint ignore=DL3006
-FROM ${JDK_IMAGE}@${JDK_DIGEST_AMD64} as jdk-amd64
-
-### ARM64 JDK image ##
-# JDK_DIGEST_ARM64 is defined at the top of the Dockerfile
-# hadolint ignore=DL3006
-FROM ${JDK_IMAGE}@${JDK_DIGEST_ARM64} as jdk-arm64
-
-### Build custom JRE using the base JDK image
-# hadolint ignore=DL3006
-FROM jdk-${TARGETARCH} as jre-build
-
-# Build a custom JRE which will strip down and compress modules to end up with a smaller Java \
-# distribution than the official Zulu JRE. This JRE will also include useful debugging tools like
-# jcmd, jmod, jps, etc., which take little to no space. Anecdotally, compressing modules add around
-# 10ms to the start up time, which is negligible considering our application takes ~10s to start up.
-# See https://adoptium.net/blog/2021/10/jlink-to-produce-own-runtime/
+# Prepare a base stage once with all the dependencies required; we do this because APK is quite slow
+# to run and install, so concentrate all dependencies into a single stage
 # hadolint ignore=DL3018
-RUN jlink \
-     --add-modules ALL-MODULE-PATH \
-     --strip-debug \
-     --no-man-pages \
-     --no-header-files \
-     --compress=2 \
-     --output /jre && \
-   rm -rf /jre/lib/src.zip
-
-### Java base ###
-# hadolint ignore=DL3006
-FROM ubuntu as java
-WORKDIR /
-
-# Inherit from previous build stage
-ARG JAVA_HOME=/opt/java/openjdk
-
-# Default to UTF-8 file.encoding
-ENV LANG='en_US.UTF-8' LANGUAGE='en_US:en' LC_ALL='en_US.UTF-8'
-
-# Setup JAVA_HOME and binaries in the path
-ENV JAVA_HOME ${JAVA_HOME}
-ENV PATH $JAVA_HOME/bin:$PATH
-
-# Copy JRE from previous build stage
-COPY --from=jre-build /jre ${JAVA_HOME}
+RUN --mount=type=cache,target=/var/cache/apk,id=apk \
+   apk update && apk add binutils tini libstdc++ libgcc bash && apk upgrade
 
 ### Extract zeebe from distball ###
 # hadolint ignore=DL3006
-FROM base-${TARGETARCH} as distball
+FROM alpine:3.18.2 as distball
 WORKDIR /zeebe
 ARG DISTBALL="dist/target/camunda-zeebe-*.tar.gz"
 COPY --link ${DISTBALL} zeebe.tar.gz
@@ -100,7 +54,7 @@ RUN mkdir camunda-zeebe && \
 ### Build zeebe from scratch ###
 # We use the latest version here to avoid having to track the Java version multiple times
 # hadolint ignore=DL3006,DL3007
-FROM jdk-${TARGETARCH} as build
+FROM base as build
 WORKDIR /zeebe
 ENV MAVEN_OPTS -XX:MaxRAMPercentage=80
 COPY --link . ./
@@ -116,7 +70,7 @@ FROM ${DIST} as dist
 ### Application Image ###
 # https://docs.docker.com/engine/reference/builder/#automatic-platform-args-in-the-global-scope
 # hadolint ignore=DL3006
-FROM java as app
+FROM base as app
 
 # leave unset to use the default value at the top of the file
 ARG BASE_IMAGE
@@ -156,7 +110,7 @@ ENV ZB_HOME=/usr/local/zeebe \
     ZEEBE_RESTORE=false
 ENV PATH "${ZB_HOME}/bin:${PATH}"
 # Disable RocksDB runtime check for musl, which launches `ldd` as a shell process
-ENV ROCKSDB_MUSL_LIBC=false
+ENV ROCKSDB_MUSL_LIBC=true
 
 WORKDIR ${ZB_HOME}
 EXPOSE 26500 26501 26502
@@ -165,7 +119,7 @@ VOLUME ${ZB_HOME}/data
 VOLUME ${ZB_HOME}/logs
 
 WORKDIR /zeebe
-RUN groupadd -g 1000 zeebe && \
+RUN addgroup -g 1000 zeebe && \
     adduser -u 1000 zeebe --system --ingroup zeebe && \
     chmod g=u /etc/passwd && \
     # These directories are to be mounted by users, eagerly creating them and setting ownership
