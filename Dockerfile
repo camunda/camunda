@@ -46,7 +46,7 @@ FROM jdk-${TARGETARCH} as jre-build
 # 10ms to the start up time, which is negligible considering our application takes ~10s to start up.
 # See https://adoptium.net/blog/2021/10/jlink-to-produce-own-runtime/
 # hadolint ignore=DL3018
-RUN --mount=type=cache,target=/var/cache/apk,id=apk,sharing=locked \
+RUN --mount=type=cache,target=/var/cache/apk,id=apk-jre,sharing=shared \
    apk update && apk add binutils && \
    jlink \
      --add-modules ALL-MODULE-PATH \
@@ -74,7 +74,7 @@ ENV PATH $JAVA_HOME/bin:$PATH
 
 # Install missing dependencies and update existing ones to fix any pending security issues
 # hadolint ignore=DL3018
-RUN --mount=type=cache,target=/var/cache/apk,id=apk,sharing=locked \
+RUN --mount=type=cache,target=/var/cache/apk,id=apk-java,sharing=shared \
     ln -s /var/cache/apk /etc/apk/cache && \
     apk update && apk upgrade && \
     apk add java-common java-cacerts musl musl-locales musl-locales-lang tzdata zlib
@@ -112,7 +112,7 @@ FROM ${DIST} as dist
 ### Application Image ###
 # https://docs.docker.com/engine/reference/builder/#automatic-platform-args-in-the-global-scope
 # hadolint ignore=DL3006
-FROM jdk-${TARGETARCH} as app
+FROM bellsoft/liberica-openjre-alpine:17.0.7-7 as app
 
 # leave unset to use the default value at the top of the file
 ARG BASE_IMAGE
@@ -152,7 +152,7 @@ ENV ZB_HOME=/usr/local/zeebe \
     ZEEBE_RESTORE=false
 ENV PATH "${ZB_HOME}/bin:${PATH}"
 # Disable RocksDB runtime check for musl, which launches `ldd` as a shell process
-ENV ROCKSDB_MUSL_LIBC=true
+ENV ROCKSDB_MUSL_LIBC=false
 
 WORKDIR ${ZB_HOME}
 EXPOSE 26500 26501 26502
@@ -175,8 +175,8 @@ RUN addgroup -g 1000 zeebe && \
 # Additionally, install dependencies required to make sure the image works out of the box with the
 # official Helm chart and SaaS controller
 # hadolint ignore=DL3018
-RUN --mount=type=cache,target=/var/cache/apk,id=apk,sharing=locked \
-    apk update && apk add tini libstdc++ libgcc musl-dev bash
+RUN --mount=type=cache,target=/var/cache/apk,id=apk-app,sharing=shared \
+    apk update && apk add tini libstdc++ libgcc bash
 
 COPY --link --chown=1000:0 docker/utils/startup.sh /usr/local/bin/startup.sh
 COPY --from=dist --chown=1000:0 /zeebe/camunda-zeebe ${ZB_HOME}
