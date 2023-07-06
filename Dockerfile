@@ -77,7 +77,11 @@ ENV PATH $JAVA_HOME/bin:$PATH
 RUN --mount=type=cache,target=/var/cache/apk,id=apk-java,sharing=shared \
     ln -s /var/cache/apk /etc/apk/cache && \
     apk update && apk upgrade && \
-    apk add java-common java-cacerts musl musl-locales musl-locales-lang tzdata zlib
+    apk add jemalloc java-common java-cacerts musl musl-locales musl-locales-lang tzdata zlib
+
+# Set jemalloc as the default memory allocator, as it is much more performant than the base malloc
+# implementation in musl
+ENV LD_PRELOAD=/usr/lib/libjemalloc.so.2
 
 # Copy JRE from previous build stage
 COPY --from=jre-build /jre ${JAVA_HOME}
@@ -112,7 +116,7 @@ FROM ${DIST} as dist
 ### Application Image ###
 # https://docs.docker.com/engine/reference/builder/#automatic-platform-args-in-the-global-scope
 # hadolint ignore=DL3006
-FROM bellsoft/liberica-openjre-alpine-musl:17.0.7-7 as app
+FROM java as app
 
 # leave unset to use the default value at the top of the file
 ARG BASE_IMAGE
