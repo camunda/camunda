@@ -14,6 +14,7 @@ import java.util.Optional;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 
 public interface UserReader {
 
@@ -44,6 +45,12 @@ public interface UserReader {
     if (authentication == null || authentication.getPrincipal() == null) {
       return DEFAULT_USER;
     }
+
+    if (authentication instanceof JwtAuthenticationToken) {
+      final JwtAuthenticationToken jwt = (JwtAuthenticationToken) authentication;
+      return authentication.getName();
+    }
+
     return authentication.getPrincipal().toString();
   }
 
