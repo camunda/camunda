@@ -22,8 +22,7 @@ data:
   elasticsearch.yml: |
     cluster.name: "docker-cluster"
     network.host: 0.0.0.0
-    processors: 2
-    discovery.zen.minimum_master_nodes: 1
+    node.processors: 2
 
   environment-config.yaml: |
     ###############################################################################
