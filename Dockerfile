@@ -152,7 +152,7 @@ ENV ZB_HOME=/usr/local/zeebe \
     ZEEBE_RESTORE=false
 ENV PATH "${ZB_HOME}/bin:${PATH}"
 # Disable RocksDB runtime check for musl, which launches `ldd` as a shell process
-ENV ROCKSDB_MUSL_LIBC=false
+ENV ROCKSDB_MUSL_LIBC=true
 
 WORKDIR ${ZB_HOME}
 EXPOSE 26500 26501 26502
