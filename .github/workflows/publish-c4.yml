@@ -1,0 +1,30 @@
+name: publish c4 to npm
+
+on:
+  workflow_dispatch:
+
+jobs:
+  publish-c4:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./c4 
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+      - name: Setup Node
+        uses: actions/setup-node@v3
+        with:
+          node-version: 16
+          cache: "yarn"
+          cache-dependency-path: 'c4/yarn.lock'
+      - name: Install
+        run: yarn install --frozen-lockfile
+      - name: Build
+        run: yarn build
+      - name: Publish to NPM
+        run: |
+          echo "//registry.npmjs.org/:_authToken=${{ env.NPM_TOKEN }}" >> .npmrc
+          npm publish --access=public
+        env:
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
