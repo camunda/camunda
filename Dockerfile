@@ -112,7 +112,7 @@ FROM ${DIST} as dist
 ### Application Image ###
 # https://docs.docker.com/engine/reference/builder/#automatic-platform-args-in-the-global-scope
 # hadolint ignore=DL3006
-FROM java as app
+FROM jdk-${TARGETARCH} as app
 
 # leave unset to use the default value at the top of the file
 ARG BASE_IMAGE
