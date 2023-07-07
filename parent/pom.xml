@@ -6,12 +6,12 @@
   <parent>
     <groupId>io.camunda</groupId>
     <artifactId>zeebe-bom</artifactId>
-    <version>8.0.18-SNAPSHOT</version>
+    <version>8.0.19-SNAPSHOT</version>
     <relativePath>../bom/pom.xml</relativePath>
   </parent>
 
   <artifactId>zeebe-parent</artifactId>
-  <version>8.0.18-SNAPSHOT</version>
+  <version>8.0.19-SNAPSHOT</version>
   <packaging>pom</packaging>
 
   <name>Zeebe Parent</name>
@@ -154,7 +154,7 @@
     <extension.version.os-maven-plugin>1.7.1</extension.version.os-maven-plugin>
 
     <!-- version against which backwards compatibility is checked -->
-    <backwards.compat.version>8.0.17</backwards.compat.version>
+    <backwards.compat.version>8.0.18</backwards.compat.version>
     <ignored.changes.file>ignored-changes.json</ignored.changes.file>
 
     <!--
@@ -1247,7 +1247,7 @@
                 <goal>check</goal>
               </goals>
               <phase>validate</phase>
-              <configuration></configuration>
+              <configuration />
             </execution>
           </executions>
         </plugin>
@@ -1282,7 +1282,7 @@
               <usePhrasedTestCaseClassName>true</usePhrasedTestCaseClassName>
               <usePhrasedTestCaseMethodName>true</usePhrasedTestCaseMethodName>
             </statelessTestsetReporter>
-            <consoleOutputReporter implementation="io.camunda.zeebe.ZeebeConsoleOutputReporter"></consoleOutputReporter>
+            <consoleOutputReporter implementation="io.camunda.zeebe.ZeebeConsoleOutputReporter" />
             <skip>${skipUTs}</skip>
           </configuration>
           <dependencies>
@@ -1322,7 +1322,7 @@
               <usePhrasedTestCaseClassName>true</usePhrasedTestCaseClassName>
               <usePhrasedTestCaseMethodName>true</usePhrasedTestCaseMethodName>
             </statelessTestsetReporter>
-            <consoleOutputReporter implementation="io.camunda.zeebe.ZeebeConsoleOutputReporter"></consoleOutputReporter>
+            <consoleOutputReporter implementation="io.camunda.zeebe.ZeebeConsoleOutputReporter" />
             <skip>${skipITs}</skip>
           </configuration>
           <dependencies>
@@ -1446,7 +1446,7 @@
                     </goals>
                   </pluginExecutionFilter>
                   <action>
-                    <ignore></ignore>
+                    <ignore />
                   </action>
                 </pluginExecution>
               </pluginExecutions>
@@ -1539,7 +1539,7 @@
               </goals>
               <configuration>
                 <rules>
-                  <dependencyConvergence></dependencyConvergence>
+                  <dependencyConvergence />
                 </rules>
               </configuration>
             </execution>
@@ -1550,7 +1550,7 @@
               </goals>
               <configuration>
                 <rules>
-                  <banDuplicatePomDependencyVersions></banDuplicatePomDependencyVersions>
+                  <banDuplicatePomDependencyVersions />
                 </rules>
               </configuration>
             </execution>
