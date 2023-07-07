@@ -2,12 +2,12 @@
 # This Dockerfile requires BuildKit to be enabled, by setting the environment variable
 # DOCKER_BUILDKIT=1
 # see https://docs.docker.com/build/buildkit/#getting-started
-# We use BellSoft's Liberica OpenJDK as base JDK image for two reasons: it provides an Alpine base
-# image with glibc already installed and configured (which is noticeably more performant than musl),
-# and it is slimmer than their JRE offering (which is completely uncompressed)
-ARG BASE_IMAGE="bellsoft/liberica-openjdk-alpine:17.0.7-7"
-ARG BASE_DIGEST_AMD64="sha256:1fb565a396ac8c6d4fd0d7796d8e54e78cfddeb36af9773ff3df02b64d64a739"
-ARG BASE_DIGEST_ARM64="sha256:5b56222283e24aa19a09594001f1c2a2820c09518120762dfff4f77ec3f64b4c"
+ARG BASE_IMAGE="alpine:3.18.2"
+ARG BASE_DIGEST_AMD64="sha256:25fad2a32ad1f6f510e528448ae1ec69a28ef81916a004d3629874104f8a7f70"
+ARG BASE_DIGEST_ARM64="sha256:e3bd82196e98898cae9fe7fbfd6e2436530485974dc4fb3b7ddb69134eda2407"
+ARG JDK_IMAGE="bellsoft/liberica-openjdk-alpine-musl:17.0.7-7"
+ARG JDK_DIGEST_AMD64="sha256:0babb368d5dd941050fb5b237525c0bdd7b0d5e5932c604a73c3dbf1ebc0dfe6"
+ARG JDK_DIGEST_ARM64="sha256:b825c5259b5435404ce510b6a1a0b946e90c5d14e735f74d95a39c21c99bc65e"
 
 # set to "build" to build zeebe from scratch instead of using a distball
 ARG DIST="distball"
@@ -19,8 +19,6 @@ FROM ${BASE_IMAGE}@${BASE_DIGEST_AMD64} as base-amd64
 ARG BASE_DIGEST_AMD64
 ARG BASE_DIGEST="${BASE_DIGEST_AMD64}"
 
-ARG ROCKSDB_MUSL_LIBC=false
-
 ### ARM64 base image ##
 # BASE_DIGEST_ARM64 is defined at the top of the Dockerfile
 # hadolint ignore=DL3006
@@ -28,30 +26,75 @@ FROM ${BASE_IMAGE}@${BASE_DIGEST_ARM64} as base-arm64
 ARG BASE_DIGEST_ARM64
 ARG BASE_DIGEST="${BASE_DIGEST_ARM64}"
 
-# On ARM64, allow RocksDB to use musl since we don't have a glibc linked libstdc++
-ARG ROCKSDB_MUSL_LIBC=true
-
-# hadolint ignore=DL3018
-RUN --mount=type=cache,target=/var/cache/apk,id=apk \
-   apk update && apk add musl musl-dev libstdc++ libgcc && apk upgrade
-
-### Architecture agnostic base image ##
-# This is the actual base image for our application. It's split from the app stage to help with
-# layering, caching, reuse, and debugging. Use this stage to install any additional native
-# dependencies, for example. Since APK is quite slow, we'll centralize everything in a single call
-# here.
+### AMD64 JDK image ###
+# JDK_DIGEST_AMD64 is defined at the top of the Dockerfile
 # hadolint ignore=DL3006
-FROM base-${TARGETARCH} as base
+FROM ${JDK_IMAGE}@${JDK_DIGEST_AMD64} as jdk-amd64
 
-# Prepare a base stage once with all the dependencies required; we do this because APK is quite slow
-# to run and install, so concentrate all dependencies into a single stage
+### ARM64 JDK image ##
+# JDK_DIGEST_ARM64 is defined at the top of the Dockerfile
+# hadolint ignore=DL3006
+FROM ${JDK_IMAGE}@${JDK_DIGEST_ARM64} as jdk-arm64
+
+### ARM64 JDK image ##
+# JDK_DIGEST_ARM64 is defined at the top of the Dockerfile
+# hadolint ignore=DL3006
+FROM jdk-${TARGETARCH} as jdk
+
+### Build custom JRE using the base JDK image
+# hadolint ignore=DL3006
+FROM jdk-${TARGETARCH} as jre-build
+
+# Build a custom JRE which will strip down and compress modules to end up with a smaller Java \
+# distribution than the official Zulu JRE. This JRE will also include useful debugging tools like
+# jcmd, jmod, jps, etc., which take little to no space. Anecdotally, compressing modules add around
+# 10ms to the start up time, which is negligible considering our application takes ~10s to start up.
+# See https://adoptium.net/blog/2021/10/jlink-to-produce-own-runtime/
 # hadolint ignore=DL3018
-RUN --mount=type=cache,target=/var/cache/apk,id=apk \
-   apk update && apk add tini bash && apk upgrade
+RUN --mount=type=cache,target=/var/cache/apkid=apk-jre,sharing=locked \
+   apk update && apk add binutils && \
+   jlink \
+     --add-modules ALL-MODULE-PATH \
+     --strip-debug \
+     --no-man-pages \
+     --no-header-files \
+     --compress=2 \
+     --output /jre && \
+   rm -rf /jre/lib/src.zip
+
+### Java base ###
+# hadolint ignore=DL3006
+FROM base-${TARGETARCH} as java
+WORKDIR /
+
+# Inherit from previous build stage
+ARG JAVA_HOME=/usr/lib/jvm/jdk
+
+# Default to UTF-8 file.encoding
+ENV LANG='en_US.UTF-8' LANGUAGE='en_US:en' LC_ALL='en_US.UTF-8'
+
+# Setup JAVA_HOME and binaries in the path
+ENV JAVA_HOME ${JAVA_HOME}
+ENV PATH $JAVA_HOME/bin:$PATH
+
+# Install missing dependencies and update existing ones to fix any pending security issues
+# hadolint ignore=DL3018
+RUN --mount=type=cache,target=/var/cache/apk,id=apk-java,sharing=locked \
+    ln -s /var/cache/apk /etc/apk/cache && \
+    apk update && apk upgrade && \
+    apk add java-common java-cacerts musl musl-dev musl-locales musl-locales-lang tzdata zlib \
+        mimalloc2 tini libstdc++ libgcc bash
+
+# Set mimalloc as the default memory allocator, as it is much more performant than the base malloc
+# implementation in musl
+ENV LD_PRELOAD=/usr/lib/libmimalloc.so.2
+
+# Copy JRE from previous build stage
+COPY --from=jdk /usr/lib/jvm /usr/lib/jvm
 
 ### Extract zeebe from distball ###
 # hadolint ignore=DL3006
-FROM alpine:3.18.2 as distball
+FROM base-${TARGETARCH} as distball
 WORKDIR /zeebe
 ARG DISTBALL="dist/target/camunda-zeebe-*.tar.gz"
 COPY --link ${DISTBALL} zeebe.tar.gz
@@ -63,7 +106,7 @@ RUN mkdir camunda-zeebe && \
 ### Build zeebe from scratch ###
 # We use the latest version here to avoid having to track the Java version multiple times
 # hadolint ignore=DL3006,DL3007
-FROM base as build
+FROM jdk-${TARGETARCH} as build
 WORKDIR /zeebe
 ENV MAVEN_OPTS -XX:MaxRAMPercentage=80
 COPY --link . ./
@@ -79,7 +122,7 @@ FROM ${DIST} as dist
 ### Application Image ###
 # https://docs.docker.com/engine/reference/builder/#automatic-platform-args-in-the-global-scope
 # hadolint ignore=DL3006
-FROM base as app
+FROM java as app
 
 # leave unset to use the default value at the top of the file
 ARG BASE_IMAGE
@@ -87,7 +130,6 @@ ARG BASE_DIGEST
 ARG VERSION=""
 ARG DATE=""
 ARG REVISION=""
-ARG ROCKSDB_MUSL_LIBC
 
 # OCI labels: https://github.com/opencontainers/image-spec/blob/main/annotations.md
 LABEL org.opencontainers.image.base.digest="${BASE_DIGEST}"
@@ -120,7 +162,7 @@ ENV ZB_HOME=/usr/local/zeebe \
     ZEEBE_RESTORE=false
 ENV PATH "${ZB_HOME}/bin:${PATH}"
 # Disable RocksDB runtime check for musl, which launches `ldd` as a shell process
-ENV ROCKSDB_MUSL_LIBC=${ROCKSDB_MUSL_LIBC}
+ENV ROCKSDB_MUSL_LIBC=true
 
 WORKDIR ${ZB_HOME}
 EXPOSE 26500 26501 26502
