@@ -22,13 +22,12 @@ public final class LogDeletionService extends Actor implements PersistedSnapshot
   private final int partitionId;
 
   public LogDeletionService(
-      final int nodeId,
       final int partitionId,
       final LogCompactor logCompactor,
       final PersistedSnapshotStore persistedSnapshotStore) {
     this.persistedSnapshotStore = persistedSnapshotStore;
     this.logCompactor = logCompactor;
-    actorName = buildActorName(nodeId, "DeletionService", partitionId);
+    actorName = buildActorName("DeletionService", partitionId);
     this.partitionId = partitionId;
   }
 

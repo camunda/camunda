@@ -64,7 +64,6 @@ public final class StateControllerImplTest {
     store =
         new FileBasedSnapshotStore(
             1,
-            1,
             new SnapshotMetrics("partition-1"),
             tempFolderRule.newFolder("snapshots").toPath(),
             tempFolderRule.newFolder("pending").toPath());

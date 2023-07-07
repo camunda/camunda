@@ -37,7 +37,7 @@ class LogDeletionServiceTest {
     snapshotStore = mock(PersistedSnapshotStore.class);
     compactor = mock(LogCompactor.class);
 
-    service = new LogDeletionService(1, 1, compactor, snapshotStore);
+    service = new LogDeletionService(1, compactor, snapshotStore);
     actorScheduler.submitActor(service).join();
   }
 
