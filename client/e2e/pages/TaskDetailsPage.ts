@@ -7,6 +7,25 @@
 
 import {Page, Locator} from '@playwright/test';
 
+function cardinalToOrdinal(numberValue: number): string {
+  const realOrderIndex = numberValue.toString();
+
+  if (['11', '12', '13'].includes(realOrderIndex.slice(-2))) {
+    return `${realOrderIndex}th`;
+  }
+
+  switch (realOrderIndex.slice(-1)) {
+    case '1':
+      return `${realOrderIndex}st`;
+    case '2':
+      return `${realOrderIndex}nd`;
+    case '3':
+      return `${realOrderIndex}rd`;
+    default:
+      return `${realOrderIndex}th`;
+  }
+}
+
 class TaskDetailsPage {
   private page: Page;
   readonly assignToMeButton: Locator;
@@ -23,6 +42,9 @@ class TaskDetailsPage {
   readonly nameInput: Locator;
   readonly addressInput: Locator;
   readonly ageInput: Locator;
+  readonly variablesTable: Locator;
+  readonly nameColumnHeader: Locator;
+  readonly valueColumnHeader: Locator;
 
   constructor(page: Page) {
     this.page = page;
@@ -46,23 +68,55 @@ class TaskDetailsPage {
     this.nameInput = page.getByLabel('Name*');
     this.addressInput = page.getByLabel('Address*');
     this.ageInput = page.getByLabel('Age');
+    this.variablesTable = page.getByTestId('variables-table');
+    this.nameColumnHeader = this.variablesTable.getByRole('columnheader', {
+      name: 'Name',
+    });
+    this.valueColumnHeader = this.variablesTable.getByRole('columnheader', {
+      name: 'Value',
+    });
   }
 
-  async clickAssignToMeButton(): Promise<void> {
+  async clickAssignToMeButton() {
     await this.assignToMeButton.click();
   }
 
-  async clickUnassignButton(): Promise<void> {
+  async clickUnassignButton() {
     await this.unassignButton.click();
   }
 
-  async clickCompleteTaskButton(): Promise<void> {
+  async clickCompleteTaskButton() {
     await this.completeTaskButton.click();
   }
 
-  async clickAddVariableButton(): Promise<void> {
+  async clickAddVariableButton() {
     await this.addVariableButton.click();
   }
-}
 
+  async replaceExistingVariableValue(values: {name: string; value: string}) {
+    const {name, value} = values;
+    await this.page.getByTitle(name).clear();
+    await this.page.getByTitle(name).fill(value);
+  }
+
+  getNthVariableNameInput(nth: number) {
+    return this.page.getByRole('textbox', {
+      name: `${cardinalToOrdinal(nth)} variable name`,
+    });
+  }
+
+  getNthVariableValueInput(nth: number) {
+    return this.page.getByRole('textbox', {
+      name: `${cardinalToOrdinal(nth)} variable value`,
+    });
+  }
+
+  async addVariable(payload: {name: string; value: string}) {
+    const {name, value} = payload;
+
+    this.clickAddVariableButton();
+    await this.getNthVariableNameInput(1).fill(name);
+    await this.getNthVariableValueInput(1).fill(value);
+  }
+}
 export {TaskDetailsPage};

@@ -101,6 +101,7 @@ jobs:
             --username $TESTRAIL_USERNAME \
             --key $TESTRAIL_KEY \
             parse_junit --title "Playwright Automated Regression E2E Tests" \
+            --close-run \
             -f $JUNIT_RESULTS_FILE
       - uses: actions/upload-artifact@v3
         if: always()
