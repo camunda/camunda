@@ -31,5 +31,14 @@ class TaskPanelPage {
       .getByText(option)
       .click();
   }
+
+  async scrollToLastTask(name: string): Promise<void> {
+    await this.page.getByText(name).last().scrollIntoViewIfNeeded();
+  }
+
+  async scrollToFirstTask(name: string): Promise<void> {
+    await this.page.getByText(name).first().scrollIntoViewIfNeeded();
+  }
 }
+
 export {TaskPanelPage};

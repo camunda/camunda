@@ -13,7 +13,7 @@ import {LoginPage} from './pages/LoginPage';
 import {TaskDetailsPage} from './pages/TaskDetailsPage';
 import {TaskPanelPage} from './pages/TaskPanelPage';
 
-type AxeFixture = {
+type PlaywrightFixtures = {
   makeAxeBuilder: () => AxeBuilder;
   resetData: () => Promise<void>;
   testSetupPage: TestSetupPage;
@@ -23,7 +23,7 @@ type AxeFixture = {
   taskPanelPage: TaskPanelPage;
 };
 
-const test = base.extend<AxeFixture>({
+const test = base.extend<PlaywrightFixtures>({
   makeAxeBuilder: async ({page}, use) => {
     const makeAxeBuilder = () =>
       new AxeBuilder({page}).withTags([
@@ -59,4 +59,5 @@ const test = base.extend<AxeFixture>({
     await use(new TaskPanelPage(page));
   },
 });
+
 export {test};

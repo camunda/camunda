@@ -64,4 +64,5 @@ class TaskDetailsPage {
     await this.addVariableButton.click();
   }
 }
+
 export {TaskDetailsPage};

@@ -46,4 +46,5 @@ class LoginPage {
     await this.page.goto(url);
   }
 }
+
 export {LoginPage};

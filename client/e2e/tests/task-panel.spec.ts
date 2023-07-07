@@ -29,159 +29,117 @@ test.afterAll(async ({resetData}) => {
   await resetData();
 });
 
-test.beforeEach(async ({page}) => {
-  await page.goto('/login');
-  await page.getByLabel('Username').fill('demo');
-  await page.getByLabel('Password').fill('demo');
-  await page.getByRole('button', {name: 'Login'}).click();
+test.beforeEach(async ({page, testSetupPage, loginPage}) => {
+  await testSetupPage.goToLoginPage();
+  await loginPage.login({
+    username: 'demo',
+    password: 'demo',
+  });
   await expect(page).toHaveURL('/');
 });
 
 test.describe('task panel page', () => {
-  test('filter selection', async ({page}) => {
+  test('filter selection', async ({page, taskPanelPage}) => {
     await expect(
-      page.getByTitle('Available tasks').getByText('Some user activity'),
+      taskPanelPage.availableTasks.getByText('Some user activity'),
     ).toHaveCount(50, {
       timeout: 10000,
     });
 
-    await page.getByRole('combobox', {name: 'Filter options'}).click();
-    await page
-      .getByRole('region', {name: 'Filters'})
-      .getByText('Assigned to me')
-      .click();
-
+    await taskPanelPage.filterBy('Assigned to me');
     await expect(page).toHaveURL(/\?filter=assigned-to-me/);
+
     await page.reload();
-    await expect(
-      page.getByTitle('Available tasks').getByText('No tasks found'),
-    ).toBeVisible();
 
-    await page.getByRole('combobox', {name: /filter options/i}).click();
-    await page.getByText('All open').click();
+    await expect(taskPanelPage.availableTasks).toContainText('No tasks found');
 
+    await taskPanelPage.filterBy('All open');
     await expect(page).toHaveURL(/\?filter=all-open/);
 
     await page.reload();
 
     await expect(page).toHaveURL(/\?filter=all-open/);
     await expect(
-      page.getByTitle('Available tasks').getByText('Some user activity'),
+      taskPanelPage.availableTasks.getByText('Some user activity'),
     ).toHaveCount(50, {
       timeout: 10000,
     });
 
     await expect(
-      page.getByTitle('Available tasks').getByText('No tasks found'),
-    ).toHaveCount(0);
+      taskPanelPage.availableTasks.getByText('No tasks found'),
+    ).toHaveCount(0, {
+      timeout: 10000,
+    });
   });
 
-  test('update task list according to user actions', async ({page}) => {
-    await page.getByRole('combobox', {name: 'Filter options'}).click();
-    await page
-      .getByRole('option', {name: 'Unassigned'})
-      .getByText('Unassigned')
-      .click();
-
+  test('update task list according to user actions', async ({
+    page,
+    taskPanelPage,
+    taskDetailsPage,
+  }) => {
+    await taskPanelPage.filterBy('Unassigned');
     await expect(page).toHaveURL(/\?filter=unassigned/);
+    await taskPanelPage.openTask('usertask_to_be_assigned');
 
-    await page
-      .getByTitle('Available tasks')
-      .getByText('usertask_to_be_assigned')
-      .click();
-    await expect(
-      page.getByRole('heading', {
-        name: /task has no variables/i,
-      }),
-    ).toBeVisible();
-    await page.getByRole('button', {name: 'Assign to me'}).click();
-    await expect(page.getByRole('button', {name: 'Unassign'})).toBeVisible();
+    await expect(taskDetailsPage.taskHasVariablesHeading).toBeVisible();
+    await taskDetailsPage.clickassignToMeButton();
+    await expect(taskDetailsPage.unassignButton).toBeVisible();
     await page.reload();
+
     await expect(
-      page.getByTitle('Available tasks').getByText('usertask_to_be_assigned'),
+      taskPanelPage.availableTasks.getByText('usertask_to_be_assigned'),
     ).toHaveCount(0);
 
-    await page.getByRole('combobox', {name: 'Filter options'}).click();
-    await page
-      .getByRole('region', {name: 'Filters'})
-      .getByText('Assigned to me')
-      .click();
-
+    await taskPanelPage.filterBy('Assigned to me');
     await expect(page).toHaveURL(/\?filter=assigned-to-me/);
+    await taskPanelPage.openTask('usertask_to_be_assigned');
 
-    await page
-      .getByTestId('scrollable-list')
-      .getByRole('link', {name: 'Task assigned to me: Some user activity'})
-      .first()
-      .click();
-
-    await expect(
-      page.getByRole('button', {name: 'Complete Task'}),
-    ).toBeVisible();
-    expect(page.getByRole('button', {name: 'Complete Task'})).toBeEnabled();
-    await page.getByRole('button', {name: 'Complete Task'}).click();
+    await expect(taskDetailsPage.completeTaskButton).toBeEnabled();
+    await taskDetailsPage.clickcompleteTaskButton();
     await page.reload();
+
     await expect(
-      page.getByTitle('Available tasks').getByText('Some user activity'),
+      taskPanelPage.availableTasks.getByText('Some user activity'),
     ).toHaveCount(0);
 
-    await page.getByRole('combobox', {name: /filter options/i}).click();
-    await page
-      .getByRole('region', {name: 'Filters'})
-      .getByText('Completed')
-      .click();
+    await taskPanelPage.filterBy('Completed');
 
     await expect(page).toHaveURL(/\?filter=completed/);
     await expect(page.getByText(/some text/)).not.toHaveCount(50);
   });
 
-  test.skip('scrolling', async ({page}) => {
+  test.skip('scrolling', async ({page, taskPanelPage}) => {
     test.setTimeout(40000);
 
     await expect(page.getByText('usertask_for_scrolling_1')).toHaveCount(1);
     await expect(page.getByText('usertask_for_scrolling_2')).toHaveCount(49);
     await expect(page.getByText('usertask_for_scrolling_3')).toHaveCount(0);
 
-    await page
-      .getByText('usertask_for_scrolling_2')
-      .last()
-      .scrollIntoViewIfNeeded();
+    await taskPanelPage.scrollToLastTask('usertask_for_scrolling_2');
 
     await expect(page.getByText('usertask_for_scrolling_1')).toHaveCount(1);
     await expect(page.getByText('usertask_for_scrolling_2')).toHaveCount(99);
     await expect(page.getByText('usertask_for_scrolling_3')).toHaveCount(0);
 
-    await page
-      .getByText('usertask_for_scrolling_2')
-      .last()
-      .scrollIntoViewIfNeeded();
+    await taskPanelPage.scrollToLastTask('usertask_for_scrolling_2');
 
     await expect(page.getByText('usertask_for_scrolling_1')).toHaveCount(1);
     await expect(page.getByText('usertask_for_scrolling_2')).toHaveCount(149);
     await expect(page.getByText('usertask_for_scrolling_3')).toHaveCount(0);
 
-    await page
-      .getByText('usertask_for_scrolling_2')
-      .last()
-      .scrollIntoViewIfNeeded();
+    await taskPanelPage.scrollToLastTask('usertask_for_scrolling_2');
 
     await expect(page.getByText('usertask_for_scrolling_1')).toHaveCount(1);
     await expect(page.getByText('usertask_for_scrolling_2')).toHaveCount(199);
     await expect(page.getByText('usertask_for_scrolling_3')).toHaveCount(0);
 
-    await page
-      .getByText('usertask_for_scrolling_2')
-      .last()
-      .scrollIntoViewIfNeeded();
+    await taskPanelPage.scrollToLastTask('usertask_for_scrolling_2');
 
     await expect(page.getByText('usertask_for_scrolling_1')).toHaveCount(0);
     await expect(page.getByText('usertask_for_scrolling_2')).toHaveCount(199);
     await expect(page.getByText('usertask_for_scrolling_3')).toHaveCount(1);
 
-    await page
-      .getByText('usertask_for_scrolling_2')
-      .first()
-      .scrollIntoViewIfNeeded();
+    await taskPanelPage.scrollToFirstTask('usertask_for_scrolling_2');
 
     await expect(page.getByText('usertask_for_scrolling_1')).toHaveCount(1);
     await expect(page.getByText('usertask_for_scrolling_2')).toHaveCount(199);

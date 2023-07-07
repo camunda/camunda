@@ -37,4 +37,5 @@ class MainPage {
     await this.processesTab.click();
   }
 }
+
 export {MainPage};
