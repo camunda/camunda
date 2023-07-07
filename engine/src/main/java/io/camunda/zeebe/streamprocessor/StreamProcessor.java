@@ -184,8 +184,7 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
               streamProcessorContext::getStreamProcessorPhase, // this is volatile
               () -> false, // we will just stop the actor in this case, no need to provide this
               logStream::newLogStreamBatchWriter);
-      asyncActor =
-          new AsyncProcessingScheduleServiceActor(asyncScheduleService, partitionId);
+      asyncActor = new AsyncProcessingScheduleServiceActor(asyncScheduleService, partitionId);
       final var extendedProcessingScheduleService =
           new ExtendedProcessingScheduleServiceImpl(
               processorActorService, asyncScheduleService, asyncActor.getActorControl());
