@@ -1105,15 +1105,15 @@
     "@codemirror/language" "^6.2.1"
     lezer-feel "^0.15.0"
 
-"@bpmn-io/form-js-carbon-styles@1.0.0-alpha.10":
-  version "1.0.0-alpha.10"
-  resolved "https://registry.yarnpkg.com/@bpmn-io/form-js-carbon-styles/-/form-js-carbon-styles-1.0.0-alpha.10.tgz#48c4598a366bafa0d619fde12d315e3525c65160"
-  integrity sha512-5JxbwoyqcIorc4oS8Vdw8PaRsjR1Y7DCJylekY7qu0I5qMRIIHhY6GubFCht7Kio2amgP5PQ5EVxthtjNeQImg==
+"@bpmn-io/form-js-carbon-styles@1.0.0":
+  version "1.0.0"
+  resolved "https://registry.yarnpkg.com/@bpmn-io/form-js-carbon-styles/-/form-js-carbon-styles-1.0.0.tgz#cec6ac53d67ee7a15382ea51f1d69ae87e8d8c97"
+  integrity sha512-NMk3JQg0CaDI7zTQpMAxlRh+4cd5wh59KJ20bhoFBOqvABkVAcO1JGDhtUVWxqqMj3NxKvdoNe3hVYxFvfTJGQ==
 
-"@bpmn-io/form-js-viewer@1.0.0-alpha.10":
-  version "1.0.0-alpha.10"
-  resolved "https://registry.yarnpkg.com/@bpmn-io/form-js-viewer/-/form-js-viewer-1.0.0-alpha.10.tgz#e4012d94d9ef8b24b6b088533a97b766a95fd75b"
-  integrity sha512-slB81l/StYXov7ur1mmE83B5Tca9yZSthkBy96ptLhgQf/UEjucTZtyIXScFkJ7wDJXHQ1gi/VYCrzN/kraesg==
+"@bpmn-io/form-js-viewer@1.0.0":
+  version "1.0.0"
+  resolved "https://registry.yarnpkg.com/@bpmn-io/form-js-viewer/-/form-js-viewer-1.0.0.tgz#ee84d2b1620ea77c0c2041200e0ec2e7c8b9694b"
+  integrity sha512-8h1ay7g8iK+kFjsg/u21/ImyczxasGS/DeBNd3ScHqGbh1YQVTyjTXVJt1HHMkAjLG80/e4eYndrdOsZH3VGBw==
   dependencies:
     "@carbon/grid" "^11.11.0"
     big.js "^6.2.1"
@@ -2519,10 +2519,10 @@
   resolved "https://registry.yarnpkg.com/@types/mime/-/mime-3.0.1.tgz#5f8f2bca0a5863cb69bc0b0acd88c96cb1d4ae10"
   integrity sha512-Y4XFY5VJAuw0FgAqPNd6NNoV44jbq9Bz2L7Rh/J6jLTiHBSBJa9fxqQIvkIld4GsoDOcCbvzOUAbLPsSKKg+uA==
 
-"@types/mixpanel-browser@2.47.0":
-  version "2.47.0"
-  resolved "https://registry.yarnpkg.com/@types/mixpanel-browser/-/mixpanel-browser-2.47.0.tgz#820872282df8ec6f458aec1eedc55cc97d8a5135"
-  integrity sha512-CAMxjbBSmJz+zS8yaTvywvgdfL7ARhuABvON2THxIyczhIxtCAZT4h0LHfLUYUCg8gWux4xH/E5PTgMQR34DIQ==
+"@types/mixpanel-browser@2.47.1":
+  version "2.47.1"
+  resolved "https://registry.yarnpkg.com/@types/mixpanel-browser/-/mixpanel-browser-2.47.1.tgz#9f06b3ebf109f89dcd69288f9326dd0297c5b689"
+  integrity sha512-4Oif1hbjmStA6KI1OLer19rbKjlPd67ujp5Wipfa7rIskA/lOFZbp6kYsPjXD0f5AiiCQTbf0R/SnnzgOaKrbA==
 
 "@types/ms@*":
   version "0.7.31"
