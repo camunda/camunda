@@ -14,12 +14,10 @@ function useStartProcess() {
   return useMutation<
     ProcessInstance,
     RequestError | Error,
-    Pick<Process, 'processDefinitionKey'>
+    Pick<Process, 'bpmnProcessId'>
   >({
-    mutationFn: async ({processDefinitionKey}) => {
-      const {response, error} = await request(
-        api.startProcess(processDefinitionKey),
-      );
+    mutationFn: async ({bpmnProcessId}) => {
+      const {response, error} = await request(api.startProcess(bpmnProcessId));
 
       if (response !== null) {
         return response.json();

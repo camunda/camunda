@@ -33,12 +33,9 @@ const api = {
         'Content-Type': 'application/json',
       },
     }),
-  startProcess: (processDefinitionKey: string) => {
+  startProcess: (bpmnProcessId: string) => {
     return new Request(
-      mergePathname(
-        BASENAME,
-        `/v1/internal/processes/${processDefinitionKey}/start`,
-      ),
+      mergePathname(BASENAME, `/v1/internal/processes/${bpmnProcessId}/start`),
       {
         ...BASE_REQUEST_OPTIONS,
         method: 'PATCH',

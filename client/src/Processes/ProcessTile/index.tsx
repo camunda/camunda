@@ -16,6 +16,9 @@ import {pages} from 'modules/routing';
 import {logger} from 'modules/utils/logger';
 import {tracking} from 'modules/tracking';
 import {useStartProcess} from 'modules/mutations/useStartProcess';
+import {Process} from 'modules/types';
+import {FormModal} from './FormModal';
+import {getProcessDisplayName} from 'modules/utils/getProcessDisplayName';
 
 type LoadingStatus = InlineLoadingStatus | 'active-tasks';
 
@@ -48,8 +51,7 @@ function getAsyncButtonDescription(status: LoadingStatus) {
 }
 
 type Props = {
-  name: string | null;
-  processDefinitionKey: string;
+  process: Process;
   className?: string;
   isFirst: boolean;
   isStartButtonDisabled: boolean;
@@ -57,16 +59,17 @@ type Props = {
 };
 
 const ProcessTile: React.FC<Props> = ({
-  name,
-  processDefinitionKey,
+  process,
   isFirst,
   isStartButtonDisabled,
   ...props
 }) => {
   const {mutate: startProcess, data, error} = useStartProcess();
   const [status, setStatus] = useState<LoadingStatus>('inactive');
-  const displayName = name ?? processDefinitionKey;
+  const {bpmnProcessId, formId} = process;
+  const displayName = getProcessDisplayName(process);
   const navigate = useNavigate();
+  const [isFormModalOpen, setIsFormModalOpen] = useState(false);
 
   useEffect(() => {
     function handleMutationSuccess() {
@@ -161,7 +164,7 @@ const ProcessTile: React.FC<Props> = ({
       <Stack>
         <Title>{displayName}</Title>
         <Subtitle>
-          {displayName !== processDefinitionKey ? processDefinitionKey : ''}
+          {displayName === bpmnProcessId ? '' : bpmnProcessId}
         </Subtitle>
         <AsyncActionButton
           status={convertStatus(status)}
@@ -173,11 +176,15 @@ const ProcessTile: React.FC<Props> = ({
             autoFocus: isFirst,
             disabled: isStartButtonDisabled,
             onClick: async () => {
-              setStatus('active');
-              tracking.track({
-                eventName: 'process-start-clicked',
-              });
-              startProcess({processDefinitionKey});
+              if (formId === null) {
+                setStatus('active');
+                tracking.track({
+                  eventName: 'process-start-clicked',
+                });
+                startProcess({bpmnProcessId});
+              } else {
+                setIsFormModalOpen(true);
+              }
             },
           }}
           onError={() => {
@@ -205,6 +212,15 @@ const ProcessTile: React.FC<Props> = ({
           Start process
         </AsyncActionButton>
       </Stack>
+
+      <FormModal
+        process={process}
+        isOpen={isFormModalOpen}
+        onClose={() => {
+          setIsFormModalOpen(false);
+        }}
+        key={process.bpmnProcessId}
+      />
     </Container>
   );
 };

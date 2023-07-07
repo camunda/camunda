@@ -8,16 +8,16 @@
 import {css, createGlobalStyle} from 'styled-components';
 import {CARBON_STYLES} from '@bpmn-io/form-js-carbon-styles';
 
-const FormCustomStyling = createGlobalStyle`
+const FormJSCustomStyling = createGlobalStyle`
   ${() => css`
     ${CARBON_STYLES}
     .fjs-container {
-      .fjs-powered-by,
-      .fjs-form-field button[type='submit'] {
+      .fjs-form-field button[type='submit'],
+      .fjs-powered-by {
         display: none;
       }
     }
   `}
 `;
 
-export {FormCustomStyling};
+export {FormJSCustomStyling};

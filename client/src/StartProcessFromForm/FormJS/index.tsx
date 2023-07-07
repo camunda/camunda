@@ -6,19 +6,14 @@
  */
 
 import {useEffect, useRef, useState} from 'react';
-import {
-  Container,
-  FormContainer,
-  FormCustomStyling,
-  FormRoot,
-  SubmitButtonRow,
-} from './styled';
+import {Container, FormContainer, FormRoot, SubmitButtonRow} from './styled';
 import {formManager} from 'modules/formManager';
 import {Variable} from 'modules/types';
 import {InlineLoadingStatus, Layer} from '@carbon/react';
 import {tracking} from 'modules/tracking';
 import {PoweredBy} from 'modules/components/PoweredBy';
 import {AsyncActionButton} from 'modules/components/AsyncActionButton';
+import {FormJSCustomStyling} from 'modules/components/FormJSCustomStyling';
 
 const SUBMIT_OPERATION_MESSAGE = {
   active: 'Submitting...',
@@ -102,7 +97,7 @@ const FormJS: React.FC<Props> = ({
 
   return (
     <Container>
-      <FormCustomStyling />
+      <FormJSCustomStyling />
       <FormContainer>
         <Layer>
           <FormRoot ref={formContainerRef} />

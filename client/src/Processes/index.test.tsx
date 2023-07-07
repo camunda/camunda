@@ -6,10 +6,12 @@
  */
 
 import {
+  fireEvent,
   render,
   screen,
   waitFor,
   waitForElementToBeRemoved,
+  within,
 } from 'modules/testing-library';
 import {nodeMockServer} from 'modules/mockServer/nodeMockServer';
 import {createMockProcess} from 'modules/queries/useProcesses';
@@ -19,6 +21,7 @@ import {MemoryRouter} from 'react-router-dom';
 import {Processes} from './index';
 import {notificationsStore} from 'modules/stores/notifications';
 import {ReactQueryProvider} from 'modules/ReactQueryProvider';
+import * as formMocks from 'modules/mock-schema/mocks/form';
 
 jest.mock('modules/stores/notifications', () => ({
   notificationsStore: {
@@ -110,6 +113,42 @@ describe('Processes', () => {
     );
 
     expect(screen.getAllByTestId('process-tile')).toHaveLength(2);
+  });
+
+  it('should open a dialog with the start form', async () => {
+    window.localStorage.setItem('hasConsentedToStartProcess', 'true');
+    const mockProcess = createMockProcess('process-0');
+    nodeMockServer.use(
+      rest.get('/v1/internal/processes', (_, res, ctx) => {
+        return res(ctx.json([mockProcess]));
+      }),
+      rest.get('/v1/forms/:formId', (_, res, ctx) => {
+        return res(ctx.json(formMocks.form));
+      }),
+    );
+
+    render(<Processes />, {
+      wrapper: Wrapper,
+    });
+
+    await waitForElementToBeRemoved(() =>
+      screen.getAllByTestId('process-skeleton'),
+    );
+
+    expect(screen.getAllByTestId('process-tile')).toHaveLength(1);
+
+    fireEvent.click(
+      within(screen.getByTestId('process-tile')).getByRole('button', {
+        name: 'Start process',
+      }),
+    );
+
+    expect(
+      screen.getByRole('dialog', {
+        name: `Start process ${mockProcess.name}`,
+      }),
+    ).toBeInTheDocument();
+    expect(await screen.findByText('A sample text')).toBeInTheDocument();
   });
 
   it('should show an error toast when the query fails', async () => {

@@ -100,12 +100,18 @@ test.describe('processes page', () => {
         {
           id: '2251799813685285',
           name: 'multipleVersions',
-          processDefinitionKey: 'multipleVersions',
+          bpmnProcessId: 'multipleVersions',
+          processDefinitionKey: '2251799813685254',
+          version: 1,
+          formId: null,
         },
         {
           id: '2251799813685271',
           name: 'Order process',
-          processDefinitionKey: 'orderProcess',
+          bpmnProcessId: 'orderProcess',
+          processDefinitionKey: '2251799813685255',
+          version: 1,
+          formId: null,
         },
       ]),
     );

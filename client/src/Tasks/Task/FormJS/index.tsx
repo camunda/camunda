@@ -12,7 +12,6 @@ import {getSchemaVariables} from '@bpmn-io/form-js-viewer';
 import '@bpmn-io/form-js-viewer/dist/assets/form-js-base.css';
 import {DetailsFooter} from 'modules/components/DetailsFooter';
 import {InlineLoadingStatus} from '@carbon/react';
-import {FormCustomStyling} from './styled';
 import {usePermissions} from 'modules/hooks/usePermissions';
 import {notificationsStore} from 'modules/stores/notifications';
 import {AsyncActionButton} from 'modules/components/AsyncActionButton';
@@ -26,6 +25,7 @@ import {
 import {Separator} from 'modules/components/Separator';
 import {useForm} from 'modules/queries/useForm';
 import {useVariables} from 'modules/queries/useVariables';
+import {FormJSCustomStyling} from 'modules/components/FormJSCustomStyling';
 
 function formatVariablesToFormData(variables: Variable[]) {
   return variables.reduce(
@@ -180,7 +180,7 @@ const FormJS: React.FC<Props> = ({
       <Separator />
       <ScrollableContent data-testid="embedded-form" tabIndex={-1}>
         <TaskDetailsContainer>
-          <FormCustomStyling />
+          <FormJSCustomStyling />
           <TaskDetailsRow ref={containerRef} />
           <DetailsFooter>
             <AsyncActionButton

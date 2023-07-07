@@ -5,20 +5,7 @@
  * except in compliance with the proprietary license.
  */
 
-import styled, {css, createGlobalStyle} from 'styled-components';
-import {CARBON_STYLES} from '@bpmn-io/form-js-carbon-styles';
-
-const FormCustomStyling = createGlobalStyle`
-  ${() => css`
-    ${CARBON_STYLES}
-    .fjs-container {
-      .fjs-form-field button[type='submit'],
-      .fjs-powered-by {
-        display: none;
-      }
-    }
-  `}
-`;
+import styled from 'styled-components';
 
 const FormRoot = styled.div`
   width: 100%;
@@ -67,7 +54,6 @@ const FormSkeletonContainer = styled.div`
 `;
 
 export {
-  FormCustomStyling,
   FormRoot,
   Container,
   FormContainer,

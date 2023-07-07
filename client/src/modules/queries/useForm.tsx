@@ -16,7 +16,7 @@ function useForm(
   {id, processDefinitionKey}: Pick<Form, 'id' | 'processDefinitionKey'>,
   options: Pick<
     UseQueryOptions<QueryData, RequestError | Error>,
-    'refetchOnWindowFocus' | 'refetchOnReconnect'
+    'refetchOnWindowFocus' | 'refetchOnReconnect' | 'enabled'
   > = {},
 ) {
   return useQuery<QueryData, RequestError | Error>({

@@ -124,14 +124,13 @@ const Processes: React.FC = observer(() => {
               ? Array.from({length: 5}).map((_, index) => (
                   <TileSkeleton key={index} data-testid="process-skeleton" />
                 ))
-              : processes.map(({name, processDefinitionKey}, idx) => (
+              : processes.map((process, idx) => (
                   <ProcessTile
-                    name={name}
-                    processDefinitionKey={processDefinitionKey}
-                    key={processDefinitionKey}
+                    process={process}
+                    key={process.bpmnProcessId}
                     isFirst={idx === 0}
                     isStartButtonDisabled={
-                      instance !== null && instance.id !== processDefinitionKey
+                      instance !== null && instance.id !== process.bpmnProcessId
                     }
                     data-testid="process-tile"
                   />

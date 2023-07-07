@@ -61,9 +61,11 @@ type Form = {
 type Process = {
   id: string;
   name: string | null;
+  bpmnProcessId: string;
   processDefinitionKey: string;
-  sortValues: [string];
   version: number;
+  formId: string | null;
+  sortValues: [string];
 };
 
 type ProcessInstance = {
