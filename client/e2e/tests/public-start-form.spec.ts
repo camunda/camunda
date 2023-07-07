@@ -10,25 +10,21 @@ import {test} from '../test-fixtures';
 import * as zeebeClient from '../zeebeClient';
 
 test.describe('public start process', () => {
-  test('should submit form', async ({page, makeAxeBuilder}) => {
+  test('should submit form', async ({makeAxeBuilder, publicFormsPage}) => {
     await zeebeClient.deploy(['./e2e/resources/subscribeFormProcess.bpmn']);
-    await page.goto('/new/subscribeFormProcess');
+    await publicFormsPage.goToPublicForm('subscribeFormProcess');
 
-    await expect(page.getByLabel('Name')).toBeVisible();
+    await expect(publicFormsPage.nameInput).toBeVisible();
 
     const results = await makeAxeBuilder().analyze();
 
     expect(results.violations).toHaveLength(0);
     expect(results.passes.length).toBeGreaterThan(0);
 
-    await page.getByLabel('Name').fill('Joe Doe');
-    await page.getByLabel('Email').fill('joe@doe.com');
-    await page.getByRole('button', {name: 'Submit'}).click();
+    await publicFormsPage.nameInput.fill('Joe Doe');
+    await publicFormsPage.emailInput.fill('joe@doe.com');
+    await publicFormsPage.clickSubmitButton();
 
-    await expect(
-      page.getByRole('heading', {
-        name: 'Success!',
-      }),
-    ).toBeVisible();
+    await expect(publicFormsPage.successMessage).toBeVisible();
   });
 });

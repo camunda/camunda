@@ -81,8 +81,8 @@ test.describe('task panel page', () => {
     await expect(page).toHaveURL(/\?filter=unassigned/);
     await taskPanelPage.openTask('usertask_to_be_assigned');
 
-    await expect(taskDetailsPage.taskHasVariablesHeading).toBeVisible();
-    await taskDetailsPage.clickassignToMeButton();
+    await expect(taskDetailsPage.emptyTaskMessage).toBeVisible();
+    await taskDetailsPage.clickAssignToMeButton();
     await expect(taskDetailsPage.unassignButton).toBeVisible();
     await page.reload();
 
@@ -95,7 +95,7 @@ test.describe('task panel page', () => {
     await taskPanelPage.openTask('usertask_to_be_assigned');
 
     await expect(taskDetailsPage.completeTaskButton).toBeEnabled();
-    await taskDetailsPage.clickcompleteTaskButton();
+    await taskDetailsPage.clickCompleteTaskButton();
     await page.reload();
 
     await expect(
