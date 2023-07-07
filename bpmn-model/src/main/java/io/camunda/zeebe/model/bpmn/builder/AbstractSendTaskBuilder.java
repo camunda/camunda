@@ -17,9 +17,11 @@
 package io.camunda.zeebe.model.bpmn.builder;
 
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
+import io.camunda.zeebe.model.bpmn.builder.zeebe.PublishMessageBuilder;
 import io.camunda.zeebe.model.bpmn.instance.Message;
 import io.camunda.zeebe.model.bpmn.instance.Operation;
 import io.camunda.zeebe.model.bpmn.instance.SendTask;
+import java.util.function.Consumer;
 
 /**
  * @author Sebastian Menski
@@ -64,6 +66,13 @@ public abstract class AbstractSendTaskBuilder<B extends AbstractSendTaskBuilder<
   public B message(final String messageName) {
     final Message message = findMessageForName(messageName);
     return message(message);
+  }
+
+  public B message(final Consumer<PublishMessageBuilder> consumer) {
+    final PublishMessageBuilder builder =
+        new PublishMessageBuilder(modelInstance, element, element::setMessage);
+    consumer.accept(builder);
+    return myself;
   }
 
   /**

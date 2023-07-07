@@ -16,12 +16,15 @@
 package io.camunda.zeebe.model.bpmn.validation.zeebe;
 
 import io.camunda.zeebe.model.bpmn.instance.BoundaryEvent;
+import io.camunda.zeebe.model.bpmn.instance.EndEvent;
 import io.camunda.zeebe.model.bpmn.instance.ExtensionElements;
 import io.camunda.zeebe.model.bpmn.instance.IntermediateCatchEvent;
+import io.camunda.zeebe.model.bpmn.instance.IntermediateThrowEvent;
 import io.camunda.zeebe.model.bpmn.instance.Message;
 import io.camunda.zeebe.model.bpmn.instance.MessageEventDefinition;
 import io.camunda.zeebe.model.bpmn.instance.Process;
 import io.camunda.zeebe.model.bpmn.instance.ReceiveTask;
+import io.camunda.zeebe.model.bpmn.instance.SendTask;
 import io.camunda.zeebe.model.bpmn.instance.StartEvent;
 import io.camunda.zeebe.model.bpmn.instance.SubProcess;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeSubscription;
@@ -51,6 +54,8 @@ public class MessageValidator implements ModelElementValidator<Message> {
         || isReferredByEventSubProcessStartEvent(element)) {
       validateName(element, validationResultCollector);
       validateSubscription(element, validationResultCollector);
+    } else if (isReferredByThrowEvent(element) || isReferredBySendTask(element)) {
+      validateName(element, validationResultCollector);
     } else {
       validateIfReferredByStartEvent(element, validationResultCollector);
     }
@@ -110,6 +115,24 @@ public class MessageValidator implements ModelElementValidator<Message> {
             e ->
                 e instanceof MessageEventDefinition
                     && ((MessageEventDefinition) e).getMessage() == element);
+  }
+
+  private boolean isReferredByThrowEvent(final Message element) {
+    final Collection<IntermediateThrowEvent> intermediateCatchEvents =
+        getAllElementsByType(element, IntermediateThrowEvent.class);
+
+    final Collection<EndEvent> endEvents = getAllElementsByType(element, EndEvent.class);
+
+    return Stream.concat(intermediateCatchEvents.stream(), endEvents.stream())
+        .flatMap(i -> i.getEventDefinitions().stream())
+        .filter(MessageEventDefinition.class::isInstance)
+        .anyMatch(e -> ((MessageEventDefinition) e).getMessage() == element);
+  }
+
+  private boolean isReferredBySendTask(final Message element) {
+    final Collection<SendTask> sendTasks = getAllElementsByType(element, SendTask.class);
+
+    return sendTasks.stream().anyMatch(r -> r.getMessage() == element);
   }
 
   private boolean isReferredByReceiveTask(final Message element) {
