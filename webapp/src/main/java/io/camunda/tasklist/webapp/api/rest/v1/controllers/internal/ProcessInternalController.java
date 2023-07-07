@@ -6,11 +6,14 @@
  */
 package io.camunda.tasklist.webapp.api.rest.v1.controllers.internal;
 
+import static java.util.Objects.requireNonNullElse;
+
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.webapp.api.rest.v1.controllers.ApiErrorController;
 import io.camunda.tasklist.webapp.api.rest.v1.entities.ProcessPublicEndpointsResponse;
 import io.camunda.tasklist.webapp.api.rest.v1.entities.ProcessResponse;
+import io.camunda.tasklist.webapp.api.rest.v1.entities.StartProcessRequest;
 import io.camunda.tasklist.webapp.es.ProcessInstanceWriter;
 import io.camunda.tasklist.webapp.es.cache.ProcessReader;
 import io.camunda.tasklist.webapp.graphql.entity.ProcessInstanceDTO;
@@ -82,8 +85,11 @@ public class ProcessInternalController extends ApiErrorController {
   @PreAuthorize("hasPermission('write')")
   @PatchMapping("{bpmnProcessId}/start")
   public ResponseEntity<ProcessInstanceDTO> startProcessInstance(
-      @PathVariable String bpmnProcessId) {
-    final var processInstance = processService.startProcessInstance(bpmnProcessId);
+      @PathVariable String bpmnProcessId,
+      @RequestBody(required = false) StartProcessRequest startProcessRequest) {
+    final var variables =
+        requireNonNullElse(startProcessRequest, new StartProcessRequest()).getVariables();
+    final var processInstance = processService.startProcessInstance(bpmnProcessId, variables);
     return ResponseEntity.ok(processInstance);
   }
 

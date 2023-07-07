@@ -22,13 +22,21 @@ import io.camunda.tasklist.util.TasklistZeebeIntegrationTest;
 import io.camunda.tasklist.util.ZeebeTestUtil;
 import io.camunda.tasklist.webapp.api.rest.v1.entities.ProcessPublicEndpointsResponse;
 import io.camunda.tasklist.webapp.api.rest.v1.entities.ProcessResponse;
+import io.camunda.tasklist.webapp.api.rest.v1.entities.StartProcessRequest;
 import io.camunda.tasklist.webapp.graphql.entity.ProcessInstanceDTO;
+import io.camunda.tasklist.webapp.graphql.entity.VariableInputDTO;
 import io.camunda.tasklist.webapp.security.TasklistURIs;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.List;
+import org.assertj.core.api.Assertions;
 import org.junit.Before;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
@@ -143,24 +151,16 @@ public class ProcessInternalControllerIT extends TasklistZeebeIntegrationTest {
   }
 
   @Test
-  public void startProcessInstance() {
-    // given
-    final String processId1 = ZeebeTestUtil.deployProcess(zeebeClient, "simple_process.bpmn");
-    elasticsearchTestRule.processAllRecordsAndWait(processIsDeployedCheck, processId1);
-
-    // when
+  public void startProcessInstance() throws Exception {
     final var result =
-        mockMvcHelper.doRequest(
-            patch(
-                TasklistURIs.PROCESSES_URL_V1.concat("/{processDefinitionKey}/start"),
-                "Process_1g4wt4m"));
-    // then
+        startProcessDeployInvokeAndReturn("startedByFormProcess.bpmn", "startedByForm");
     assertThat(result)
-        .hasOkHttpStatus()
-        .hasApplicationJsonContentType()
+        .hasHttpStatus(HttpStatus.OK)
         .extractingContent(objectMapper, ProcessInstanceDTO.class)
-        .extracting("id")
-        .isNotNull();
+        .satisfies(
+            processInstanceDTO -> {
+              Assertions.assertThat(processInstanceDTO.getId()).isNotNull();
+            });
   }
 
   @Test
@@ -377,5 +377,32 @@ public class ProcessInternalControllerIT extends TasklistZeebeIntegrationTest {
         .hasStatus(HttpStatus.NOT_FOUND)
         .hasInstanceId()
         .hasMessage("The public endpoint for bpmnProcessId: '%s' is not found", bpmnProcessId);
+  }
+
+  private MockHttpServletResponse startProcessDeployInvokeAndReturn(
+      final String pathProcess, final String bpmnProcessId) throws Exception {
+    final List<VariableInputDTO> variables = new ArrayList<VariableInputDTO>();
+    variables.add(new VariableInputDTO().setName("testVar").setValue("\"testValue\""));
+    variables.add(new VariableInputDTO().setName("testVar2").setValue("\"testValue2\""));
+
+    final StartProcessRequest startProcessRequest =
+        new StartProcessRequest().setVariables(variables);
+
+    final String processId1 = ZeebeTestUtil.deployProcess(zeebeClient, pathProcess);
+
+    elasticsearchTestRule.processAllRecordsAndWait(processIsDeployedCheck, processId1);
+
+    // when
+    final var result =
+        mockMvcHelper.doRequest(
+            patch(
+                    TasklistURIs.PROCESSES_URL_V1.concat("/{processDefinitionKey}/start"),
+                    bpmnProcessId)
+                .content(objectMapper.writeValueAsString(startProcessRequest))
+                .contentType(MediaType.APPLICATION_JSON)
+                .accept(MediaType.APPLICATION_JSON)
+                .characterEncoding(StandardCharsets.UTF_8.name()));
+
+    return result;
   }
 }

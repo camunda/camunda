@@ -21,14 +21,18 @@ import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.webapp.CommonUtils;
 import io.camunda.tasklist.webapp.api.rest.v1.entities.ProcessPublicEndpointsResponse;
 import io.camunda.tasklist.webapp.api.rest.v1.entities.ProcessResponse;
+import io.camunda.tasklist.webapp.api.rest.v1.entities.StartProcessRequest;
 import io.camunda.tasklist.webapp.es.ProcessInstanceWriter;
 import io.camunda.tasklist.webapp.es.cache.ProcessReader;
 import io.camunda.tasklist.webapp.es.enums.DeletionStatus;
 import io.camunda.tasklist.webapp.graphql.entity.ProcessDTO;
 import io.camunda.tasklist.webapp.graphql.entity.ProcessInstanceDTO;
+import io.camunda.tasklist.webapp.graphql.entity.VariableInputDTO;
 import io.camunda.tasklist.webapp.rest.exception.Error;
 import io.camunda.tasklist.webapp.security.TasklistURIs;
 import io.camunda.tasklist.webapp.service.ProcessService;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
@@ -102,17 +106,29 @@ class ProcessInternalControllerTest {
   @Test
   void startProcessInstance() throws Exception {
     // given
+    final List<VariableInputDTO> variables = new ArrayList<VariableInputDTO>();
+    variables.add(new VariableInputDTO().setName("testVar").setValue("testValue"));
+    variables.add(new VariableInputDTO().setName("testVar2").setValue("testValue2"));
+
     final var processDefinitionKey = "key1";
     final var processInstanceDTO = new ProcessInstanceDTO().setId(124L);
-    when(processService.startProcessInstance(processDefinitionKey)).thenReturn(processInstanceDTO);
+
+    final StartProcessRequest startProcessRequest =
+        new StartProcessRequest().setVariables(variables);
+    when(processService.startProcessInstance(processDefinitionKey, variables))
+        .thenReturn(processInstanceDTO);
 
     // when
     final var responseAsString =
         mockMvc
             .perform(
                 patch(
-                    TasklistURIs.PROCESSES_URL_V1.concat("/{processDefinitionKey}/start"),
-                    processDefinitionKey))
+                        TasklistURIs.PROCESSES_URL_V1.concat("/{processDefinitionKey}/start"),
+                        processDefinitionKey)
+                    .content(CommonUtils.OBJECT_MAPPER.writeValueAsString(startProcessRequest))
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .accept(MediaType.APPLICATION_JSON)
+                    .characterEncoding(StandardCharsets.UTF_8.name()))
             .andDo(print())
             .andExpect(content().contentType(MediaType.APPLICATION_JSON))
             .andExpect(status().isOk())
