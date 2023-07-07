@@ -225,6 +225,8 @@ public class ConfigurationService {
 
   private OnboardingConfiguration onboarding;
 
+  private Boolean createManagementEntitiesOnStartup;
+
   @JsonCreator
   public static ConfigurationService createDefault() {
     return ConfigurationServiceBuilder.createDefaultConfiguration();
@@ -1254,6 +1256,16 @@ public class ConfigurationService {
       onboarding = configJsonContext.read(ONBOARDING_CONFIGURATION, OnboardingConfiguration.class);
     }
     return onboarding;
+  }
+
+  public boolean getCreateManagementEntitiesOnStartup() {
+    if (createManagementEntitiesOnStartup == null) {
+      createManagementEntitiesOnStartup = configJsonContext.read(
+        ConfigurationServiceConstants.CREATE_MANAGEMENT_ENTITIES_ON_STARTUP,
+        Boolean.class
+      );
+    }
+    return createManagementEntitiesOnStartup;
   }
 
 }

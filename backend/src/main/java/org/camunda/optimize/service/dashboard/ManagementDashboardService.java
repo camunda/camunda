@@ -36,9 +36,11 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.view.Proces
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewEntity;
 import org.camunda.optimize.service.es.writer.DashboardWriter;
 import org.camunda.optimize.service.es.writer.ReportWriter;
+import org.camunda.optimize.service.util.configuration.ConfigurationService;
+import org.springframework.boot.context.event.ApplicationReadyEvent;
+import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 
-import javax.annotation.PostConstruct;
 import java.util.Collections;
 import java.util.List;
 
@@ -61,26 +63,29 @@ public class ManagementDashboardService {
 
   private final DashboardWriter dashboardWriter;
   private final ReportWriter reportWriter;
+  private final ConfigurationService configurationService;
 
-  @PostConstruct
+  @EventListener(ApplicationReadyEvent.class)
   public void init() {
-    // First we delete all existing management entities
-    log.info("Deleting Management entities");
-    reportWriter.deleteAllManagementReports();
-    dashboardWriter.deleteManagementDashboard();
+    if (configurationService.getCreateManagementEntitiesOnStartup()) {
+      // First we delete all existing management entities
+      log.info("Deleting Management entities");
+      reportWriter.deleteAllManagementReports();
+      dashboardWriter.deleteManagementDashboard();
 
-    // Then recreate the management reports and dashboard
-    log.info("Creating Management Reports and Management Dashboard");
-    createManagementDashboardForReports(
-      List.of(
-        createProcessInstanceByStartMonthReport(new PositionDto(0, 0), new DimensionDto(3, 4)),
-        createOverallIncidentFreeRateReport(new PositionDto(3, 0), new DimensionDto(3, 2)),
-        createAutomationRateReport(new PositionDto(3, 2), new DimensionDto(3, 2)),
-        createLongRunningInstancesReport(new PositionDto(6, 0), new DimensionDto(4, 4)),
-        createAutomationCandidatesReport(new PositionDto(10, 0), new DimensionDto(4, 4)),
-        createActiveBottlenecksReport(new PositionDto(14, 0), new DimensionDto(4, 4))
-      )
-    );
+      // Then recreate the management reports and dashboard
+      log.info("Creating Management Reports and Management Dashboard");
+      createManagementDashboardForReports(
+        List.of(
+          createProcessInstanceByStartMonthReport(new PositionDto(0, 0), new DimensionDto(3, 4)),
+          createOverallIncidentFreeRateReport(new PositionDto(3, 0), new DimensionDto(3, 2)),
+          createAutomationRateReport(new PositionDto(3, 2), new DimensionDto(3, 2)),
+          createLongRunningInstancesReport(new PositionDto(6, 0), new DimensionDto(4, 4)),
+          createAutomationCandidatesReport(new PositionDto(10, 0), new DimensionDto(4, 4)),
+          createActiveBottlenecksReport(new PositionDto(14, 0), new DimensionDto(4, 4))
+        )
+      );
+    }
   }
 
   private DashboardReportTileDto createProcessInstanceByStartMonthReport(final PositionDto positionDto,

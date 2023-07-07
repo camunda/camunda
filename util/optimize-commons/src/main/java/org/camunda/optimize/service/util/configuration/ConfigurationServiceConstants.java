@@ -138,6 +138,8 @@ public class ConfigurationServiceConstants {
 
   public static final String ONBOARDING_CONFIGURATION = "$.onboarding";
 
+  public static final String CREATE_MANAGEMENT_ENTITIES_ON_STARTUP = "$.managementEntities.createOnStartup";
+
   //  This isn't strictly part of the configuration service, but is part of how Optimize is configured
   public static final String CLOUD_PROFILE = "cloud";
   public static final String CCSM_PROFILE = "ccsm";

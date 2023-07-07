@@ -696,3 +696,6 @@ externalVariable:
     scheduleIntervalInMinutes: 10
     # A rollover is triggered when the size of the current external variable index matches or exceeds the maxIndexSizeGB threshold.
     maxIndexSizeGB: 50
+
+managementEntities:
+  createOnStartup: ${CAMUNDA_OPTIMIZE_MANAGEMENT_CREATE_ON_STARTUP:true}
