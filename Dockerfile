@@ -19,12 +19,21 @@ FROM ${BASE_IMAGE}@${BASE_DIGEST_AMD64} as base-amd64
 ARG BASE_DIGEST_AMD64
 ARG BASE_DIGEST="${BASE_DIGEST_AMD64}"
 
+ARG ROCKSDB_MUSL_LIBC=false
+
 ### ARM64 base image ##
 # BASE_DIGEST_ARM64 is defined at the top of the Dockerfile
 # hadolint ignore=DL3006
 FROM ${BASE_IMAGE}@${BASE_DIGEST_ARM64} as base-arm64
 ARG BASE_DIGEST_ARM64
 ARG BASE_DIGEST="${BASE_DIGEST_ARM64}"
+
+# On ARM64, allow RocksDB to use musl since we don't have a glibc linked libstdc++
+ARG ROCKSDB_MUSL_LIBC=true
+
+# hadolint ignore=DL3018
+RUN --mount=type=cache,target=/var/cache/apk,id=apk \
+   apk update && apk add musl musl-dev libstdc++ libgcc && apk upgrade
 
 ### Architecture agnostic base image ##
 # This is the actual base image for our application. It's split from the app stage to help with
@@ -38,7 +47,7 @@ FROM base-${TARGETARCH} as base
 # to run and install, so concentrate all dependencies into a single stage
 # hadolint ignore=DL3018
 RUN --mount=type=cache,target=/var/cache/apk,id=apk \
-   apk update && apk add binutils tini libstdc++ libgcc bash && apk upgrade
+   apk update && apk add tini bash && apk upgrade
 
 ### Extract zeebe from distball ###
 # hadolint ignore=DL3006
@@ -78,6 +87,7 @@ ARG BASE_DIGEST
 ARG VERSION=""
 ARG DATE=""
 ARG REVISION=""
+ARG ROCKSDB_MUSL_LIBC
 
 # OCI labels: https://github.com/opencontainers/image-spec/blob/main/annotations.md
 LABEL org.opencontainers.image.base.digest="${BASE_DIGEST}"
@@ -110,7 +120,7 @@ ENV ZB_HOME=/usr/local/zeebe \
     ZEEBE_RESTORE=false
 ENV PATH "${ZB_HOME}/bin:${PATH}"
 # Disable RocksDB runtime check for musl, which launches `ldd` as a shell process
-ENV ROCKSDB_MUSL_LIBC=true
+ENV ROCKSDB_MUSL_LIBC=${ROCKSDB_MUSL_LIBC}
 
 WORKDIR ${ZB_HOME}
 EXPOSE 26500 26501 26502
