@@ -7,7 +7,7 @@
 
 import {Page} from '@playwright/test';
 
-export class TestSetupPage {
+class TestSetupPage {
   private page: Page;
 
   constructor(page: Page) {
@@ -18,3 +18,4 @@ export class TestSetupPage {
     await this.page.goto('/login');
   }
 }
+export {TestSetupPage};

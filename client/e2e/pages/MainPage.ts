@@ -7,7 +7,7 @@
 
 import {Page, Locator} from '@playwright/test';
 
-export class MainPage {
+class MainPage {
   private page: Page;
   readonly openSettingsButton: Locator;
   readonly processesTab: Locator;
@@ -37,3 +37,4 @@ export class MainPage {
     await this.processesTab.click();
   }
 }
+export {MainPage};

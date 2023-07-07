@@ -6,8 +6,12 @@
  */
 
 import {expect} from '@playwright/test';
-import {deploy, createInstances} from '../zeebeClient';
 import {test} from '../test-fixtures';
+import {deploy, createInstances} from '../zeebeClient';
+
+test.afterAll(async ({resetData}) => {
+  await resetData();
+});
 
 test.beforeAll(async () => {
   await deploy([
@@ -35,313 +39,182 @@ test.beforeAll(async () => {
   ]);
 });
 
-test.afterAll(async ({resetData}) => {
-  await resetData();
-});
-
-test.beforeEach(async ({page}) => {
-  await page.goto('/login');
-  await page.getByLabel('Username').fill('demo');
-  await page.getByLabel('Password').fill('demo');
-  await page.getByRole('button', {name: 'Login'}).click();
+test.beforeEach(async ({page, testSetupPage, loginPage}) => {
+  await testSetupPage.goToLoginPage();
+  await loginPage.login({
+    username: 'demo',
+    password: 'demo',
+  });
   await expect(page).toHaveURL('/');
 });
 
 test.describe('task details page', () => {
-  test('load task details when a task is selected', async ({page}) => {
-    await page
-      .getByTitle('Available tasks')
-      .getByText('usertask_to_be_completed')
-      .nth(0)
-      .click();
+  test('load task details when a task is selected', async ({
+    taskDetailsPage,
+    taskPanelPage,
+  }) => {
+    await taskPanelPage.openTask('usertask_to_be_completed');
 
-    await test.step('check details header', async () => {
-      const taskDetailsHeader = page.getByTitle('Task details header');
+    await expect(taskDetailsPage.detailsHeader).toBeVisible();
+    await expect(taskDetailsPage.detailsHeader).toContainText(
+      'Some user activity',
+    );
+    await expect(taskDetailsPage.detailsHeader).toContainText(
+      'usertask_to_be_completed',
+    );
+    await expect(taskDetailsPage.detailsHeader).toContainText('Unassigned');
+    await expect(taskDetailsPage.assignToMeButton).toBeVisible();
 
-      await expect(taskDetailsHeader).toBeVisible();
-      await expect(
-        taskDetailsHeader.getByText('Some user activity'),
-      ).toBeVisible();
-      await expect(
-        taskDetailsHeader.getByText('usertask_to_be_completed'),
-      ).toBeVisible();
-      await expect(taskDetailsHeader.getByText('Unassigned')).toBeVisible();
-      await expect(
-        taskDetailsHeader.getByRole('button', {name: 'Assign to me'}),
-      ).toBeVisible();
-    });
-
-    await test.step('check details panel', async () => {
-      const detailsPanel = page.getByRole('complementary', {
-        name: 'Task details right panel',
-      });
-
-      await expect(detailsPanel).toBeVisible();
-      await expect(detailsPanel.getByText('Creation date')).toBeVisible();
-      await expect(
-        detailsPanel.getByText(
-          /^\d{2}\s\w{3}\s\d{4}\s-\s\d{2}:\d{2}\s(AM|PM)$/,
-        ),
-      ).toBeVisible();
-      await expect(
-        detailsPanel.getByText('Candidates', {exact: true}),
-      ).toBeVisible();
-      await expect(detailsPanel.getByText('No candidates')).toBeVisible();
-      await expect(detailsPanel.getByText('Completion date')).toBeVisible();
-      await expect(detailsPanel.getByText('Pending task')).toBeVisible();
-      await expect(
-        detailsPanel.getByText('Due date', {exact: true}),
-      ).toBeVisible();
-      await expect(detailsPanel.getByText('No due date')).toBeVisible();
-      await expect(
-        detailsPanel.getByText('Follow up date', {exact: true}),
-      ).toBeVisible();
-      await expect(detailsPanel.getByText('No follow up date')).toBeVisible();
-    });
+    await expect(taskDetailsPage.detailsPanel).toBeVisible();
+    await expect(taskDetailsPage.detailsPanel).toContainText('Creation date');
+    await expect(
+      taskDetailsPage.detailsPanel.getByText(
+        /^\d{2}\s\w{3}\s\d{4}\s-\s\d{2}:\d{2}\s(AM|PM)$/,
+      ),
+    ).toBeVisible();
+    await expect(taskDetailsPage.detailsPanel).toContainText('Candidates');
+    await expect(taskDetailsPage.detailsPanel).toContainText('No candidates');
+    await expect(taskDetailsPage.detailsPanel).toContainText('Completion date');
+    await expect(taskDetailsPage.detailsPanel).toContainText('Pending task');
+    await expect(taskDetailsPage.detailsPanel).toContainText('Due date');
+    await expect(taskDetailsPage.detailsPanel).toContainText('No due date');
+    await expect(taskDetailsPage.detailsPanel).toContainText('Follow up date');
+    await expect(taskDetailsPage.detailsPanel).toContainText(
+      'No follow up date',
+    );
   });
 
-  test('assign and unassign task', async ({page}) => {
-    await page
-      .getByTitle('Available tasks')
-      .getByText('usertask_to_be_completed')
-      .nth(0)
-      .click();
+  test('assign and unassign task', async ({
+    page,
+    taskDetailsPage,
+    taskPanelPage,
+  }) => {
+    await taskPanelPage.openTask('usertask_to_be_completed');
 
-    await test.step('assign task', async () => {
-      await expect(
-        page.getByRole('button', {name: 'Assign to me'}),
-      ).toBeVisible();
+    await expect(taskDetailsPage.assignToMeButton).toBeVisible();
+    await expect(taskDetailsPage.completeButton).toBeDisabled();
+    await taskDetailsPage.clickAssignToMeButton();
 
-      await expect(
-        page.getByRole('button', {name: 'Assign to me'}),
-      ).toBeVisible();
+    await expect(taskDetailsPage.unassignButton).toBeVisible();
+    await expect(taskDetailsPage.completeButton).toBeEnabled();
+    await expect(taskDetailsPage.assignee).toHaveText('Assigned to me');
 
-      await expect(page.getByRole('button', {name: 'Complete'})).toBeDisabled();
-
-      await page.getByRole('button', {name: 'Assign to me'}).click();
-
-      await expect(page.getByRole('button', {name: 'Unassign'})).toBeVisible();
-      await expect(page.getByRole('button', {name: 'Complete'})).toBeEnabled();
-      await expect(page.getByTestId('assignee')).toHaveText('Assigned to me');
-    });
-
-    await test.step('unassign task', async () => {
-      await page.getByRole('button', {name: 'Unassign'}).click();
-
-      await expect(
-        page.getByRole('button', {name: 'Assign to me'}),
-      ).toBeVisible();
-      await expect(page.getByRole('button', {name: 'Complete'})).toBeDisabled();
-      await expect(page.getByTestId('assignee')).toHaveText('Unassigned');
-    });
+    await taskDetailsPage.clickUnassignButton();
+    await expect(taskDetailsPage.assignToMeButton).toBeVisible();
+    await expect(taskDetailsPage.completeButton).toBeDisabled();
+    await expect(taskDetailsPage.assignee).toHaveText('Unassigned');
 
     await page.reload();
 
-    await expect(
-      page.getByRole('button', {name: 'Complete Task'}),
-    ).toBeDisabled();
+    await expect(taskDetailsPage.completeButton).toBeDisabled();
   });
 
-  test('complete task', async ({page}) => {
-    await page
-      .getByTitle('Available tasks')
-      .getByText('usertask_to_be_completed')
-      .nth(0)
-      .click();
+  test('complete task', async ({page, taskDetailsPage, taskPanelPage}) => {
+    await taskPanelPage.openTask('usertask_to_be_completed');
 
-    await expect(page.getByText('Pending task')).toBeVisible();
-
+    await expect(taskDetailsPage.pendingTaskDescription).toBeVisible();
     const taskUrl = page.url();
-
-    await page.getByRole('button', {name: 'Assign to me'}).click();
-    await page.getByRole('button', {name: 'Complete Task'}).click();
-
-    await expect(
-      page.getByRole('heading', {name: 'Pick a task to work on'}),
-    ).toBeVisible();
+    await taskDetailsPage.clickAssignToMeButton();
+    await taskDetailsPage.clickCompleteTaskButton();
+    await expect(taskDetailsPage.pickATaskHeader).toBeVisible();
 
     await page.goto(taskUrl);
 
-    await expect(
-      page.getByRole('button', {name: 'Assign to me'}),
-    ).not.toBeVisible();
-    await expect(
-      page.getByRole('button', {name: 'Unassign'}),
-    ).not.toBeVisible();
-    await expect(
-      page.getByRole('button', {name: 'Complete Task'}),
-    ).not.toBeVisible();
-    await expect(page.getByText('Pending task')).not.toBeVisible();
+    await expect(taskDetailsPage.assignToMeButton).not.toBeVisible();
+    await expect(taskDetailsPage.unassignButton).not.toBeVisible();
+    await expect(taskDetailsPage.completeTaskButton).not.toBeVisible();
+    await expect(taskDetailsPage.pendingTaskDescription).not.toBeVisible();
   });
 
-  test('task completion with form', async ({page}) => {
-    await page
-      .getByTitle('Available tasks')
-      .getByText('User registration')
-      .nth(0)
-      .click();
+  test('task completion with form', async ({
+    page,
+    taskPanelPage,
+    taskDetailsPage,
+  }) => {
+    await taskPanelPage.openTask('User registration');
 
-    await test.step('fill form', async () => {
-      await expect(page.getByLabel('Name*')).toBeVisible();
+    await expect(taskDetailsPage.nameInput).toBeVisible();
+    await taskDetailsPage.clickAssignToMeButton();
+    await expect(taskDetailsPage.unassignButton).toBeVisible();
 
-      await page.getByRole('button', {name: 'Assign to me'}).click();
-
-      await expect(page.getByRole('button', {name: 'Unassign'})).toBeVisible();
-
-      await page.getByLabel('Name*').fill('Jon');
-      await page.getByLabel('Address*').fill('Earth');
-      await page.getByLabel('Age').fill('21');
-    });
-
-    await page.getByRole('button', {name: 'Complete Task'}).click();
-
+    await taskDetailsPage.nameInput.fill('Jon');
+    await taskDetailsPage.addressInput.fill('Earth');
+    await taskDetailsPage.ageInput.fill('21');
+    await taskDetailsPage.clickCompleteTaskButton();
     await expect(page.getByText('Task completed')).toBeVisible();
 
-    await test.step('open completed task', async () => {
-      await page.getByRole('combobox', {name: 'Filter options'}).click();
-      await page
-        .getByRole('option', {name: 'Completed'})
-        .getByText('Completed')
-        .click();
-      await page
-        .getByTitle('Available tasks')
-        .getByText('User registration')
-        .nth(0)
-        .click();
-    });
+    await taskPanelPage.filterBy('Completed');
+    await taskPanelPage.openTask('User registration');
 
-    await test.step('check form values', async () => {
-      await expect(page.getByLabel('Name*')).toHaveValue('Jon');
-      await expect(page.getByLabel('Address*')).toHaveValue('Earth');
-      await expect(page.getByLabel('Age')).toHaveValue('21');
-    });
+    await expect(taskDetailsPage.nameInput).toHaveValue('Jon');
+    await expect(taskDetailsPage.addressInput).toHaveValue('Earth');
+    await expect(taskDetailsPage.ageInput).toHaveValue('21');
   });
 
   test('task completion with form from assigned to me filter', async ({
     page,
+    taskPanelPage,
+    taskDetailsPage,
   }) => {
-    await test.step('assign task', async () => {
-      await page
-        .getByTitle('Available tasks')
-        .getByText('User registration', {exact: true})
-        .nth(0)
-        .click();
-      await page.getByRole('button', {name: 'Assign to me'}).click();
-      await expect(page.getByRole('button', {name: 'Complete'})).toBeEnabled();
-    });
+    await taskPanelPage.openTask('User registration');
 
-    await test.step('open task assigned to me', async () => {
-      await page.getByRole('combobox', {name: 'Filter options'}).click();
-      await page
-        .getByRole('option', {name: 'Assigned to me'})
-        .getByText('Assigned to me')
-        .click();
-      await page
-        .getByTitle('Available tasks')
-        .getByText('User registration')
-        .nth(0)
-        .click();
-    });
+    await expect(taskDetailsPage.nameInput).toBeVisible();
+    await taskDetailsPage.clickAssignToMeButton();
+    await expect(taskDetailsPage.completeButton).toBeEnabled();
 
-    await test.step('fill form', async () => {
-      await expect(page.getByLabel('Name*')).toBeVisible();
+    await taskPanelPage.filterBy('Assigned to me');
+    await taskPanelPage.openTask('User registration');
 
-      await page.getByLabel('Name*').fill('Gaius Julius Caesar');
-      await page.getByLabel('Address*').fill('Rome');
-      await page.getByLabel('Age').fill('55');
-    });
-
-    await test.step('complete task', async () => {
-      await page.getByRole('button', {name: 'Complete Task'}).click();
-      await expect(page.getByText('Task completed')).toBeVisible();
-    });
-
-    await test.step('open completed task', async () => {
-      await page.getByRole('combobox', {name: 'Filter options'}).click();
-      await page
-        .getByRole('option', {name: 'Completed'})
-        .getByText('Completed')
-        .click();
-      await page
-        .getByTitle('Available tasks')
-        .getByText('User registration')
-        .nth(0)
-        .click();
-    });
-
-    await test.step('check form values', async () => {
-      await expect(page.getByLabel('Name*')).toHaveValue('Gaius Julius Caesar');
-      await expect(page.getByLabel('Address*')).toHaveValue('Rome');
-      await expect(page.getByLabel('Age')).toHaveValue('55');
-    });
-  });
-
-  test('task completion with prefilled form', async ({page}) => {
-    await page.getByRole('combobox', {name: 'Filter options'}).click();
-    await page
-      .getByRole('option', {name: 'Unassigned'})
-      .getByText('Unassigned')
-      .click();
-
-    await page
-      .getByTitle('Available tasks')
-      .getByText('User registration with vars')
-      .nth(0)
-      .click();
-
-    await page.getByRole('button', {name: 'Assign to me'}).click();
-
-    await test.step('check prefilled form values', async () => {
-      await expect(page.getByLabel('Name*')).toHaveValue('Jane');
-      await expect(page.getByLabel('Address*')).toHaveValue('');
-      await expect(page.getByLabel('Age')).toHaveValue('50');
-    });
-
-    await test.step('change form values', async () => {
-      await page.getByLabel('Name*').fill('Jon');
-      await page.getByLabel('Address*').fill('Earth');
-      await page.getByLabel('Age').fill('21');
-    });
-
-    await page.getByRole('button', {name: 'Complete Task'}).click();
+    await expect(taskDetailsPage.nameInput).toBeVisible();
+    await taskDetailsPage.nameInput.fill('Gaius Julius Caesar');
+    await taskDetailsPage.addressInput.fill('Rome');
+    await taskDetailsPage.ageInput.fill('55');
+    await taskDetailsPage.clickCompleteTaskButton();
     await expect(page.getByText('Task completed')).toBeVisible();
 
-    await test.step('open completed task', async () => {
-      await page.getByRole('combobox', {name: 'Filter options'}).click();
-      await page
-        .getByRole('option', {name: 'Completed'})
-        .getByText('Completed')
-        .click();
+    await taskPanelPage.filterBy('Completed');
+    await taskPanelPage.openTask('User registration');
 
-      await page
-        .getByTitle('Available tasks')
-        .getByText('User registration with vars')
-        .nth(0)
-        .click();
-    });
-
-    await test.step('check form values', async () => {
-      await expect(page.getByLabel('Name*')).toHaveValue('Jon');
-      await expect(page.getByLabel('Address*')).toHaveValue('Earth');
-      await expect(page.getByLabel('Age')).toHaveValue('21');
-    });
+    await expect(taskDetailsPage.nameInput).toHaveValue('Gaius Julius Caesar');
+    await expect(taskDetailsPage.addressInput).toHaveValue('Rome');
+    await expect(taskDetailsPage.ageInput).toHaveValue('55');
   });
 
-  test('should rerender forms properly', async ({page}) => {
-    await page
-      .getByTitle('Available tasks')
-      .getByText('User Task with form rerender 1')
-      .nth(0)
-      .click();
+  test('task completion with prefilled form', async ({
+    page,
+    taskPanelPage,
+    taskDetailsPage,
+  }) => {
+    await taskPanelPage.filterBy('Unassigned');
+    await taskPanelPage.openTask('User registration with vars');
+    await taskDetailsPage.clickAssignToMeButton();
 
-    await expect(page.getByLabel('Name*')).toHaveValue('Mary');
+    await expect(taskDetailsPage.nameInput).toHaveValue('Jane');
+    await expect(taskDetailsPage.addressInput).toHaveValue('');
+    await expect(taskDetailsPage.ageInput).toHaveValue('50');
 
-    await page
-      .getByTitle('Available tasks')
-      .getByText('User Task with form rerender 2')
-      .nth(0)
-      .click();
+    await taskDetailsPage.nameInput.fill('Jon');
+    await taskDetailsPage.addressInput.fill('Earth');
+    await taskDetailsPage.ageInput.fill('21');
+    await taskDetailsPage.clickCompleteTaskButton();
+    await expect(page.getByText('Task completed')).toBeVisible();
 
-    await expect(page.getByLabel('Name*')).toHaveValue('Stuart');
+    await taskPanelPage.filterBy('Completed');
+    await taskPanelPage.openTask('User registration with vars');
+
+    await expect(taskDetailsPage.nameInput).toHaveValue('Jon');
+    await expect(taskDetailsPage.addressInput).toHaveValue('Earth');
+    await expect(taskDetailsPage.ageInput).toHaveValue('21');
+  });
+
+  test('should rerender forms properly', async ({
+    taskPanelPage,
+    taskDetailsPage,
+  }) => {
+    await taskPanelPage.openTask('User Task with form rerender 1');
+    await expect(taskDetailsPage.nameInput).toHaveValue('Mary');
+
+    await taskPanelPage.openTask('User Task with form rerender 2');
+    await expect(taskDetailsPage.nameInput).toHaveValue('Stuart');
   });
 });

@@ -10,6 +10,8 @@ import AxeBuilder from '@axe-core/playwright';
 import {TestSetupPage} from './pages/TestSetupPage';
 import {MainPage} from './pages/MainPage';
 import {LoginPage} from './pages/LoginPage';
+import {TaskDetailsPage} from './pages/TaskDetailsPage';
+import {TaskPanelPage} from './pages/TaskPanelPage';
 
 type AxeFixture = {
   makeAxeBuilder: () => AxeBuilder;
@@ -17,6 +19,8 @@ type AxeFixture = {
   testSetupPage: TestSetupPage;
   mainPage: MainPage;
   loginPage: LoginPage;
+  taskDetailsPage: TaskDetailsPage;
+  taskPanelPage: TaskPanelPage;
 };
 
 const test = base.extend<AxeFixture>({
@@ -47,6 +51,12 @@ const test = base.extend<AxeFixture>({
   },
   loginPage: async ({page}, use) => {
     await use(new LoginPage(page));
+  },
+  taskDetailsPage: async ({page}, use) => {
+    await use(new TaskDetailsPage(page));
+  },
+  taskPanelPage: async ({page}, use) => {
+    await use(new TaskPanelPage(page));
   },
 });
 export {test};

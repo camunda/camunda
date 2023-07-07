@@ -7,7 +7,7 @@
 
 import {Page, Locator} from '@playwright/test';
 
-export class LoginPage {
+class LoginPage {
   private page: Page;
   readonly usernameInput: Locator;
   readonly passwordInput: Locator;
@@ -46,3 +46,4 @@ export class LoginPage {
     await this.page.goto(url);
   }
 }
+export {LoginPage};
