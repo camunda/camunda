@@ -22,7 +22,7 @@ import {DiagramShell} from 'modules/components/Carbon/DiagramShell';
 import {Diagram} from 'modules/components/Carbon/Diagram';
 import {diagramOverlaysStore} from 'modules/stores/diagramOverlays';
 import {observer} from 'mobx-react';
-import {StatisticsOverlay} from 'modules/components/Carbon/StatisticsOverlay';
+import {StateOverlay} from 'modules/components/Carbon/StateOverlay';
 import {processDiagramStore} from 'modules/stores/processDiagram';
 
 function setSearchParam(
@@ -161,9 +161,9 @@ const DiagramPanel: React.FC = observer(() => {
               };
 
               return (
-                <StatisticsOverlay
+                <StateOverlay
                   key={`${overlay.flowNodeId}-${payload.flowNodeState}`}
-                  flowNodeState={payload.flowNodeState}
+                  state={payload.flowNodeState}
                   count={payload.count}
                   container={overlay.container}
                 />

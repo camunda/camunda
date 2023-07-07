@@ -5,7 +5,7 @@
  * except in compliance with the proprietary license.
  */
 
-import styled, {css} from 'styled-components';
+import styled from 'styled-components';
 import {
   PAGE_TOP_PADDING,
   COLLAPSABLE_PANEL_HEADER_HEIGHT,
@@ -17,55 +17,49 @@ const PanelHeader = styled(BasePanelHeader)`
 `;
 
 const Container = styled.div`
-  ${({theme}) => {
-    const colors = theme.colors.modules.diagram.element;
+  display: grid;
+  grid-template-rows: ${COLLAPSABLE_PANEL_HEADER_HEIGHT} 1fr;
+  height: calc(100vh - ${PAGE_TOP_PADDING}px);
+  position: relative;
+  width: 100%;
+  background: var(--cds-layer);
 
-    return css`
-      display: grid;
-      grid-template-rows: ${COLLAPSABLE_PANEL_HEADER_HEIGHT} 1fr;
-      height: calc(100vh - ${PAGE_TOP_PADDING}px);
-      position: relative;
-      width: 100%;
-      background: var(--cds-layer);
+  .dmn-drd-container .djs-visual rect {
+    stroke: var(--cds-icon-secondary) !important;
+    fill: var(--cds-layer) !important;
+  }
 
-      .dmn-drd-container .djs-visual rect {
-        stroke: ${colors.border} !important;
-        fill: ${colors.background.default} !important;
-      }
+  .dmn-drd-container .djs-label {
+    fill: var(--cds-text-primary) !important;
+  }
 
-      .dmn-drd-container .djs-label {
-        fill: ${colors.text} !important;
-      }
+  .dmn-drd-container .djs-connection path {
+    stroke: var(--cds-icon-secondary) !important;
+  }
 
-      .dmn-drd-container .djs-connection path {
-        stroke: ${colors.border} !important;
-      }
+  marker#information-requirement-end {
+    fill: var(--cds-icon-secondary) !important;
+  }
 
-      marker#information-requirement-end {
-        fill: ${colors.border} !important;
-      }
+  .ope-selectable {
+    cursor: pointer;
 
-      .ope-selectable {
-        cursor: pointer;
+    &.hover .djs-outline {
+      stroke: var(--cds-link-inverse);
+      stroke-width: 2px;
+    }
+  }
 
-        &.hover .djs-outline {
-          stroke: ${colors.outline};
-          stroke-width: 2px;
-        }
-      }
+  .ope-selected {
+    .djs-outline {
+      stroke: var(--cds-link-inverse);
+      stroke-width: 2px;
+    }
 
-      .ope-selected {
-        .djs-outline {
-          stroke: ${colors.outline};
-          stroke-width: 2px;
-        }
-
-        .djs-visual rect {
-          fill: ${colors.background.selected} !important;
-        }
-      }
-    `;
-  }}
+    .djs-visual rect {
+      fill: var(--cds-highlight) !important;
+    }
+  }
 `;
 
 export {PanelHeader, Container};

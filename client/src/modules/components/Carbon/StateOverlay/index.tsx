@@ -7,7 +7,7 @@
 
 import {createPortal} from 'react-dom';
 
-import {Statistic} from './styled';
+import {Container} from './styled';
 import {
   CheckmarkOutline,
   Error,
@@ -18,31 +18,34 @@ import {observer} from 'mobx-react';
 import {currentTheme} from 'modules/stores/currentTheme';
 
 type Props = {
-  flowNodeState: FlowNodeState;
+  state: FlowNodeState | DecisionInstanceEntityState;
   container: HTMLElement;
-  count: number;
+  count?: number;
   isFaded?: boolean;
 };
 
-const StatisticsOverlay: React.FC<Props> = observer(
-  ({flowNodeState, container, count, isFaded = false}) => {
+const StateOverlay: React.FC<Props> = observer(
+  ({state, container, count, isFaded = false}) => {
+    const showStatistic = count !== undefined;
+
     return createPortal(
-      <Statistic
+      <Container
         $theme={currentTheme.theme}
-        $state={flowNodeState}
+        $state={state}
         $isFaded={isFaded}
         orientation="horizontal"
         gap={3}
+        $showStatistic={showStatistic}
       >
-        {flowNodeState === 'incidents' && <WarningFilled />}
-        {flowNodeState === 'active' && <RadioButtonChecked />}
-        {flowNodeState === 'completed' && <CheckmarkOutline />}
-        {flowNodeState === 'canceled' && <Error />}
-        <span>{count}</span>
-      </Statistic>,
+        {['FAILED', 'incidents'].includes(state) && <WarningFilled />}
+        {state === 'active' && <RadioButtonChecked />}
+        {['EVALUATED', 'completed'].includes(state) && <CheckmarkOutline />}
+        {state === 'canceled' && <Error />}
+        {showStatistic && <span>{count}</span>}
+      </Container>,
       container
     );
   }
 );
 
-export {StatisticsOverlay};
+export {StateOverlay};

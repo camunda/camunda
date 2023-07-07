@@ -14,12 +14,12 @@ import {DrdViewer} from 'modules/dmn-js/DrdViewer';
 import {decisionXmlStore} from 'modules/stores/decisionXml';
 import {drdStore} from 'modules/stores/drd';
 import {drdDataStore} from 'modules/stores/drdData';
-import {DecisionState} from './DecisionState';
 import {PanelHeader, Container} from './styled';
 import {tracking} from 'modules/tracking';
 import {decisionDefinitionStore} from 'modules/stores/decisionDefinition';
 import {Button, Stack} from '@carbon/react';
 import {Close, Maximize, Minimize} from '@carbon/react/icons';
+import {StateOverlay} from 'modules/components/Carbon/StateOverlay';
 
 const Drd: React.FC = observer(() => {
   const {
@@ -132,7 +132,7 @@ const Drd: React.FC = observer(() => {
 
       {drdDataStore.state.decisionStateOverlays.map(
         ({decisionId, state, container}) => (
-          <DecisionState key={decisionId} state={state} container={container} />
+          <StateOverlay key={decisionId} state={state} container={container} />
         )
       )}
     </Container>

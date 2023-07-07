@@ -23,7 +23,15 @@ const backgroundColors = {
       color: 'var(--cds-support-error)',
       fadedColor: '#cc8a8a',
     },
+    FAILED: {
+      color: 'var(--cds-support-error)',
+      fadedColor: '#cc8a8a',
+    },
     completed: {
+      color: staticColors.completed,
+      fadedColor: staticColors.completed,
+    },
+    EVALUATED: {
       color: staticColors.completed,
       fadedColor: staticColors.completed,
     },
@@ -41,7 +49,15 @@ const backgroundColors = {
       color: 'var(--cds-support-error)',
       fadedColor: '#94595b',
     },
+    FAILED: {
+      color: 'var(--cds-support-error)',
+      fadedColor: '#94595b',
+    },
     completed: {
+      color: staticColors.completed,
+      fadedColor: staticColors.completed,
+    },
+    EVALUATED: {
       color: staticColors.completed,
       fadedColor: staticColors.completed,
     },
@@ -52,14 +68,15 @@ const backgroundColors = {
   },
 };
 
-type StatisticProps = {
+type ContainerProps = {
   $theme: 'dark' | 'light';
   $state: 'active' | 'incidents' | 'completed' | 'canceled';
   $isFaded: boolean;
+  $showStatistic?: boolean;
 };
 
-const Statistic = styled(Stack)<StatisticProps>`
-  ${({$theme, $state, $isFaded}) => {
+const Container = styled(Stack)<ContainerProps>`
+  ${({$theme, $state, $isFaded, $showStatistic}) => {
     const backgroundColor =
       backgroundColors[$theme][$state][$isFaded ? 'fadedColor' : 'color'];
 
@@ -69,13 +86,16 @@ const Statistic = styled(Stack)<StatisticProps>`
       font-size: 13px;
       height: 24px;
       border-radius: 12px;
-      transform: translateX(-50%);
       background-color: ${backgroundColor};
       color: white;
-      padding: var(--cds-spacing-02) var(--cds-spacing-03) var(--cds-spacing-02)
-        var(--cds-spacing-02);
+      padding: var(--cds-spacing-02);
+      ${$showStatistic &&
+      css`
+        padding-right: var(--cds-spacing-03);
+        transform: translateX(-50%);
+      `}
     `;
   }}
 `;
 
-export {Statistic};
+export {Container};
