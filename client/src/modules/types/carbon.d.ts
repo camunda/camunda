@@ -294,4 +294,6 @@ declare module '@carbon/react/icons' {
   export const Subtract: Icon;
   export const CenterCircle: Icon;
   export const Checkmark: Icon;
+  export const Maximize: Icon;
+  export const Minimize: Icon;
 }

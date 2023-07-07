@@ -19,6 +19,10 @@ import {DecisionPanel} from './DecisionPanel';
 import {Header} from './Header';
 import {VariablesPanel} from './VariablesPanel';
 import {Forbidden} from 'modules/components/Carbon/Forbidden';
+import {DrdPanel} from './DrdPanel';
+import {drdStore} from 'modules/stores/drd';
+import {DecisionInstanceContainer} from './styled';
+import {Drd} from './Drd';
 
 const DecisionInstance: React.FC = observer(() => {
   const {decisionInstanceId = ''} = useParams<{decisionInstanceId: string}>();
@@ -61,15 +65,28 @@ const DecisionInstance: React.FC = observer(() => {
     return <Forbidden />;
   }
 
+  if (drdStore.state.panelState === 'maximized') {
+    return <Drd />;
+  }
+
   return (
     <>
       <VisuallyHiddenH1>Operate Decision Instance</VisuallyHiddenH1>
-      <InstanceDetail
-        header={<Header />}
-        topPanel={<DecisionPanel />}
-        bottomPanel={<VariablesPanel />}
-        id="decision"
-      />
+      <DecisionInstanceContainer>
+        <InstanceDetail
+          header={<Header />}
+          topPanel={<DecisionPanel />}
+          bottomPanel={<VariablesPanel />}
+          id="decision"
+          rightPanel={
+            drdStore.state.panelState === 'minimized' ? (
+              <DrdPanel>
+                <Drd />
+              </DrdPanel>
+            ) : null
+          }
+        />
+      </DecisionInstanceContainer>
     </>
   );
 });

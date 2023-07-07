@@ -6,6 +6,7 @@
  */
 
 import styled, {css} from 'styled-components';
+import {COLLAPSABLE_PANEL_HEADER_HEIGHT} from 'modules/constants';
 
 type HeaderProps = {
   $size?: 'sm' | 'md';
@@ -22,8 +23,8 @@ const Header = styled.header<HeaderProps>`
       justify-content: space-between;
       ${$size === 'md' &&
       css`
-        min-height: var(--cds-spacing-09);
-        height: var(--cds-spacing-09);
+        min-height: ${COLLAPSABLE_PANEL_HEADER_HEIGHT};
+        height: ${COLLAPSABLE_PANEL_HEADER_HEIGHT};
       `}
       ${$size === 'sm' &&
       css`

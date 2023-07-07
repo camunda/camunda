@@ -20,6 +20,7 @@ type Props = {
   breadcrumb?: React.ReactNode;
   topPanel: React.ReactNode;
   bottomPanel: React.ReactNode;
+  rightPanel?: React.ReactNode;
   id: 'process' | 'decision';
 };
 const InstanceDetail: React.FC<Props> = observer(
@@ -31,6 +32,7 @@ const InstanceDetail: React.FC<Props> = observer(
     frameFooter,
     topPanel,
     bottomPanel,
+    rightPanel,
   }) => {
     const [clientHeight, setClientHeight] = useState(0);
     const containerRef = useRef<HTMLDivElement | null>(null);
@@ -60,6 +62,7 @@ const InstanceDetail: React.FC<Props> = observer(
             {bottomPanel}
           </ResizablePanel>
         </div>
+        {rightPanel}
         {frameFooter}
       </Container>
     );
