@@ -8,10 +8,9 @@
 import styled, {css} from 'styled-components';
 
 const Container = styled.div`
-  ${({theme}) =>
-    css`
-      padding-top: ${theme.spacing13};
-    `}
+  ${({theme}) => css`
+    padding-top: ${theme.spacing13};
+  `}
 `;
 
 const ImageContainer = styled.div`

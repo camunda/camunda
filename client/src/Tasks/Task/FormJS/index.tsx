@@ -143,7 +143,7 @@ const FormJS: React.FC<Props> = ({
                 ({
                   name,
                   value: JSON.stringify(value),
-                } as Variable),
+                }) as Variable,
             );
             try {
               setSubmissionState('active');

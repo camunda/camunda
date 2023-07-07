@@ -67,18 +67,20 @@ function useVariables(
       variables.filter((variable) => variable !== id),
     );
 
-    client.setQueryData<Variable[]>(variablesQueryKey, (cachedVariables) =>
-      cachedVariables?.map((variable) => {
-        if (variable.id === id) {
-          return {
-            ...variable,
-            ...fullVariable,
-            isValueTruncated: false,
-          };
-        }
+    client.setQueryData<Variable[]>(
+      variablesQueryKey,
+      (cachedVariables) =>
+        cachedVariables?.map((variable) => {
+          if (variable.id === id) {
+            return {
+              ...variable,
+              ...fullVariable,
+              isValueTruncated: false,
+            };
+          }
 
-        return variable;
-      }),
+          return variable;
+        }),
     );
   }
 

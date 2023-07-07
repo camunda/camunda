@@ -26,13 +26,12 @@ function getEntryPadding(options?: {
   const {top = 0, right = 0, bottom = 0, left = 0} = options ?? {};
 
   return css`
-    ${({theme}) =>
-      css`
-        padding: calc(${theme.spacing05} - ${top}px)
-          calc(${theme.spacing05} - ${right}px)
-          calc(${theme.spacing05} - ${bottom}px)
-          calc(${theme.spacing05} - ${left}px);
-      `}
+    ${({theme}) => css`
+      padding: calc(${theme.spacing05} - ${top}px)
+        calc(${theme.spacing05} - ${right}px)
+        calc(${theme.spacing05} - ${bottom}px)
+        calc(${theme.spacing05} - ${left}px);
+    `}
   `;
 }
 

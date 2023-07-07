@@ -10,19 +10,17 @@ import {Button as BaseButton} from '@carbon/react';
 import {rem} from '@carbon/elements';
 
 const Button: typeof BaseButton = styled(BaseButton)`
-  ${({theme}) =>
-    css`
-      min-width: 100%;
-      margin-top: ${theme.spacing05};
-    `}
+  ${({theme}) => css`
+    min-width: 100%;
+    margin-top: ${theme.spacing05};
+  `}
 `;
 
 const Container = styled.main`
-  ${({theme}) =>
-    css`
-      height: 100%;
-      padding: ${theme.spacing03};
-    `}
+  ${({theme}) => css`
+    height: 100%;
+    padding: ${theme.spacing03};
+  `}
 `;
 
 const CopyrightNotice = styled.span`
@@ -42,12 +40,11 @@ const Error = styled.span`
 `;
 
 const LogoContainer = styled.div`
-  ${({theme}) =>
-    css`
-      text-align: center;
-      padding-top: ${theme.spacing12};
-      padding-bottom: ${theme.spacing02};
-    `}
+  ${({theme}) => css`
+    text-align: center;
+    padding-top: ${theme.spacing12};
+    padding-bottom: ${theme.spacing02};
+  `}
 `;
 
 const Title = styled.h1`

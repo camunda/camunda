@@ -50,8 +50,7 @@ const Processes: React.FC = observer(() => {
       navigate({
         search: searchParams.toString(),
       });
-    },
-    500),
+    }, 500),
   ).current;
   const [searchValue, setSearchValue] = useState(searchParam ?? '');
   const isFiltered = data?.query !== undefined && data.query !== '';
