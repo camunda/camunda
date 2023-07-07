@@ -332,7 +332,7 @@ public final class LogStreamImpl extends Actor
   }
 
   private Dispatcher createAndScheduleWriteBuffer(final long initialPosition) {
-    return Dispatchers.create(buildActorName(nodeId, "dispatcher", partitionId))
+    return Dispatchers.create(buildActorName("dispatcher", partitionId))
         .maxFragmentLength(maxFrameLength)
         .initialPosition(initialPosition)
         .name(logName + "-write-buffer")
