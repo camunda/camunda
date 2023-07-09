@@ -44,6 +44,7 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
   private final ElementActivationBehavior elementActivationBehavior;
   private final BpmnJobActivationBehavior jobActivationBehavior;
   private final BpmnSignalBehavior signalBehavior;
+  private final BpmnMessageBehavior messageBehavior;
 
   public BpmnBehaviorsImpl(
       final MutableProcessingState processingState,
@@ -156,6 +157,13 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
             processingState.getVariableState(),
             writers,
             expressionBehavior);
+
+    messageBehavior =
+        new BpmnMessageBehavior(
+            processingState.getKeyGenerator(),
+            processingState.getVariableState(),
+            writers,
+            expressionBehavior);
   }
 
   @Override
@@ -246,5 +254,10 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
   @Override
   public BpmnJobActivationBehavior jobActivationBehavior() {
     return jobActivationBehavior;
+  }
+
+  @Override
+  public BpmnMessageBehavior messageBehavior() {
+    return messageBehavior;
   }
 }

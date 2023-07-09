@@ -28,6 +28,7 @@ import io.camunda.zeebe.protocol.impl.record.value.message.MessageRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.MessageIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
+import io.camunda.zeebe.scheduler.clock.ActorClock;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 
@@ -111,8 +112,16 @@ public final class MessagePublishProcessor implements TypedRecordProcessor<Messa
   private void handleNewMessage(final TypedRecord<MessageRecord> command) {
     messageKey = keyGenerator.nextKey();
 
-    // calculate the deadline based on the command's timestamp
-    messageRecord.setDeadline(command.getTimestamp() + messageRecord.getTimeToLive());
+    // calculate the deadline based on the command's timestamp,
+    long timestamp;
+    try {
+      timestamp = command.getTimestamp();
+    } catch (UnsupportedOperationException ignore) {
+      // when the batch processing is enabled, due to the command hasn't been written yet,
+      // so the current timestamp is used.
+      timestamp = ActorClock.currentTimeMillis();
+    }
+    messageRecord.setDeadline(timestamp + messageRecord.getTimeToLive());
 
     stateWriter.appendFollowUpEvent(messageKey, MessageIntent.PUBLISHED, command.getValue());
     responseWriter.writeEventOnCommand(
