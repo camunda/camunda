@@ -8,8 +8,10 @@
 package io.camunda.zeebe.broker.system.configuration;
 
 public final class ProcessingCfg implements ConfigurationEntry {
+
   private static final int DEFAULT_PROCESSING_BATCH_LIMIT = 100;
   private Integer maxCommandsInBatch = DEFAULT_PROCESSING_BATCH_LIMIT;
+  private boolean enableAsyncScheduledTasks = true;
 
   @Override
   public void init(final BrokerCfg globalConfig, final String brokerBase) {
@@ -27,8 +29,20 @@ public final class ProcessingCfg implements ConfigurationEntry {
     this.maxCommandsInBatch = maxCommandsInBatch;
   }
 
+
+  public boolean isEnableAsyncScheduledTasks() {
+    return enableAsyncScheduledTasks;
+  }
+
+  public void setEnableAsyncScheduledTasks(final boolean enableAsyncScheduledTasks) {
+    this.enableAsyncScheduledTasks = enableAsyncScheduledTasks;
+  }
+
   @Override
   public String toString() {
-    return "ProcessingCfg{" + "maxCommandsInBatch=" + maxCommandsInBatch + '}';
+    return "ProcessingCfg{" +
+        "maxCommandsInBatch=" + maxCommandsInBatch +
+        ", enableAsyncScheduledTasks=" + enableAsyncScheduledTasks +
+        '}';
   }
 }

@@ -78,4 +78,57 @@ final class ProcessingCfgTest {
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("maxCommandsInBatch must be >= 1");
   }
+
+  @Test
+  void shouldEnableAsyncScheduledTasksByDefault() {
+    // given
+    final var cfg = new ProcessingCfg();
+
+    // when
+    final var enabled = cfg.isEnableAsyncScheduledTasks();
+
+    // then
+    assertThat(enabled).isTrue();
+  }
+
+  @Test
+  void shouldSetAsyncScheduledTasks() {
+    // given
+    final var cfg = new ProcessingCfg();
+    cfg.setEnableAsyncScheduledTasks(false);
+
+    // when
+    final var enabled = cfg.isEnableAsyncScheduledTasks();
+
+    // then
+    assertThat(enabled).isFalse();
+  }
+
+  @Test
+  void shouldSetAsyncScheduledTasksFromConfig() {
+    // given
+    final var cfg =
+        TestConfigReader.readConfig("processing-cfg", Collections.emptyMap()).getProcessing();
+
+    // when
+    final var enabled = cfg.isEnableAsyncScheduledTasks();
+
+    // then
+    assertThat(enabled).isFalse();
+  }
+
+  @Test
+  void shouldDisableAsyncScheduledTasksFromEnvironment() {
+    // given
+    final var environment =
+        Collections.singletonMap("zeebe.broker.processing.enableAsyncScheduledTasks", "true");
+    final var cfg = TestConfigReader.readConfig("processing-cfg", environment).getProcessing();
+
+    // when
+    final var enabled = cfg.isEnableAsyncScheduledTasks();
+
+    // then
+    assertThat(enabled).isFalse();
+
+  }
 }
