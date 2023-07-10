@@ -76,13 +76,16 @@ public class ZeebeJobWorkerElementValidationTest {
 
   @ParameterizedTest
   @MethodSource("jobWorkerElementBuilderProvider")
-  @DisplayName("element without job type")
-  void missingJobType(final JobWorkerElementBuilder elementBuilder) {
-
+  @DisplayName("element without job type or publish message")
+  void missingJobTypeOrPublishMessage(final JobWorkerElementBuilder elementBuilder) {
+    String message =
+        "Must have either one 'zeebe:publishMessage' or one 'zeebe:taskDefinition' extension element";
+    if ("serviceTask".equals(elementBuilder.elementType)) {
+      message = "Must have exactly one 'zeebe:taskDefinition' extension element";
+    }
     final BpmnModelInstance process = processWithJobWorkerElement(elementBuilder, element -> {});
 
-    ProcessValidationUtil.assertThatProcessHasViolations(
-        process, expect("task", "Must have exactly one 'zeebe:taskDefinition' extension element"));
+    ProcessValidationUtil.assertThatProcessHasViolations(process, expect("task", message));
   }
 
   @ParameterizedTest

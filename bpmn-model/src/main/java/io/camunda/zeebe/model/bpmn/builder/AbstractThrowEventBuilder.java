@@ -17,12 +17,14 @@
 package io.camunda.zeebe.model.bpmn.builder;
 
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
+import io.camunda.zeebe.model.bpmn.builder.zeebe.PublishMessageBuilder;
 import io.camunda.zeebe.model.bpmn.instance.CompensateEventDefinition;
 import io.camunda.zeebe.model.bpmn.instance.EscalationEventDefinition;
 import io.camunda.zeebe.model.bpmn.instance.LinkEventDefinition;
 import io.camunda.zeebe.model.bpmn.instance.MessageEventDefinition;
 import io.camunda.zeebe.model.bpmn.instance.SignalEventDefinition;
 import io.camunda.zeebe.model.bpmn.instance.ThrowEvent;
+import java.util.function.Consumer;
 
 /**
  * @author Sebastian Menski
@@ -52,6 +54,17 @@ public abstract class AbstractThrowEventBuilder<
     final MessageEventDefinition messageEventDefinition = createMessageEventDefinition(messageName);
     element.getEventDefinitions().add(messageEventDefinition);
 
+    return myself;
+  }
+
+  public B message(final Consumer<PublishMessageBuilder> consumer) {
+    final MessageEventDefinition messageEventDefinition = createEmptyMessageEventDefinition();
+    final PublishMessageBuilder builder =
+        new PublishMessageBuilder(
+            modelInstance, messageEventDefinition, messageEventDefinition::setMessage);
+
+    consumer.accept(builder);
+    element.getEventDefinitions().add(messageEventDefinition);
     return myself;
   }
 
