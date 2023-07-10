@@ -31,7 +31,7 @@ import org.agrona.DirectBuffer;
 public final class JobFailProcessor implements CommandProcessor<JobRecord> {
 
   private static final DirectBuffer DEFAULT_ERROR_MESSAGE = wrapString("No more retries left.");
-  private static final int MAX_ERROR_MESSAGE_SIZE = 500;
+  private static final int MAX_ERROR_MESSAGE_SIZE = 10000;
   private final IncidentRecord incidentEvent = new IncidentRecord();
 
   private final JobState jobState;
