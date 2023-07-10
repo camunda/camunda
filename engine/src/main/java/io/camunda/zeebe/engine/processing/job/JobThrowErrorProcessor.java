@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.job;
 
+import static io.camunda.zeebe.engine.EngineConfiguration.DEFAULT_MAX_ERROR_MESSAGE_SIZE;
 import static io.camunda.zeebe.util.StringUtil.limitString;
 
 import io.camunda.zeebe.engine.metrics.JobMetrics;
@@ -42,8 +43,6 @@ public class JobThrowErrorProcessor implements CommandProcessor<JobRecord> {
    * (particularly when no catch event can be found)
    */
   public static final String NO_CATCH_EVENT_FOUND = "NO_CATCH_EVENT_FOUND";
-
-  private static final int MAX_ERROR_MESSAGE_SIZE = 500;
 
   private final IncidentRecord incidentEvent = new IncidentRecord();
   private Either<Failure, CatchEventTuple> foundCatchEvent;
@@ -106,7 +105,8 @@ public class JobThrowErrorProcessor implements CommandProcessor<JobRecord> {
 
     final JobRecord job = jobState.getJob(jobKey);
     job.setErrorCode(command.getValue().getErrorCodeBuffer());
-    job.setErrorMessage(limitString(command.getValue().getErrorMessage(), MAX_ERROR_MESSAGE_SIZE));
+    job.setErrorMessage(
+        limitString(command.getValue().getErrorMessage(), DEFAULT_MAX_ERROR_MESSAGE_SIZE));
     job.setVariables(command.getValue().getVariablesBuffer());
 
     final var serviceTaskInstanceKey = job.getElementInstanceKey();
