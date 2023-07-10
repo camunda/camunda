@@ -18,6 +18,7 @@ import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
+import io.camunda.zeebe.scheduler.clock.ActorClock;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 
 public class JobRecurProcessor implements TypedRecordProcessor<JobRecord> {
@@ -42,9 +43,10 @@ public class JobRecurProcessor implements TypedRecordProcessor<JobRecord> {
   @Override
   public void processRecord(final TypedRecord<JobRecord> record) {
     final long jobKey = record.getKey();
-    final JobState.State state = jobState.getState(jobKey);
+    final var job = jobState.getJob(jobKey);
+    final var state = jobState.getState(jobKey);
 
-    if (state == State.FAILED) {
+    if (state == State.FAILED && hasRecurred(job)) {
       final JobRecord recurredJob = jobState.getJob(jobKey);
 
       stateWriter.appendFollowUpEvent(jobKey, JobIntent.RECURRED_AFTER_BACKOFF, recurredJob);
@@ -71,5 +73,9 @@ public class JobRecurProcessor implements TypedRecordProcessor<JobRecord> {
       final String errorMesage = String.format(NOT_FAILED_JOB_MESSAGE, jobKey, textState);
       rejectionWriter.appendRejection(record, RejectionType.NOT_FOUND, errorMesage);
     }
+  }
+
+  private boolean hasRecurred(final JobRecord job) {
+    return job.getRecurringTime() < ActorClock.currentTimeMillis();
   }
 }
