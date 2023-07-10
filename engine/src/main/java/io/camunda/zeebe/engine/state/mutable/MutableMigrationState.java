@@ -27,4 +27,6 @@ public interface MutableMigrationState {
   void migrateDecisionsPopulateDecisionVersionByDecisionIdAndDecisionKey();
 
   void migrateDrgPopulateDrgVersionByDrgIdAndKey();
+
+  void migrateElementInstancePopulateProcessInstanceByDefinitionKey();
 }
