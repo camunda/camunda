@@ -19,6 +19,7 @@ import io.camunda.zeebe.protocol.impl.record.value.distribution.CommandDistribut
 import io.camunda.zeebe.protocol.impl.record.value.incident.IncidentRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobBatchRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
+import io.camunda.zeebe.protocol.impl.record.value.message.MessageBatchRecord;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceBatchRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationRecord;
@@ -44,6 +45,7 @@ public class CommandApiRequestReader implements RequestReader<ExecuteCommandRequ
     RECORDS_BY_TYPE.put(ValueType.JOB, JobRecord::new);
     RECORDS_BY_TYPE.put(ValueType.PROCESS_INSTANCE, ProcessInstanceRecord::new);
     RECORDS_BY_TYPE.put(ValueType.MESSAGE, MessageRecord::new);
+    RECORDS_BY_TYPE.put(ValueType.MESSAGE_BATCH, MessageBatchRecord::new);
     RECORDS_BY_TYPE.put(ValueType.JOB_BATCH, JobBatchRecord::new);
     RECORDS_BY_TYPE.put(ValueType.INCIDENT, IncidentRecord::new);
     RECORDS_BY_TYPE.put(ValueType.VARIABLE_DOCUMENT, VariableDocumentRecord::new);

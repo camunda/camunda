@@ -29,6 +29,7 @@ public interface Intent {
           JobIntent.class,
           ProcessInstanceIntent.class,
           MessageIntent.class,
+          MessageBatchIntent.class,
           MessageSubscriptionIntent.class,
           ProcessMessageSubscriptionIntent.class,
           JobBatchIntent.class,
@@ -59,15 +60,6 @@ public interface Intent {
 
   String name();
 
-  enum UnknownIntent implements Intent {
-    UNKNOWN;
-
-    @Override
-    public short value() {
-      return NULL_VAL;
-    }
-  }
-
   @SuppressWarnings("checkstyle:MissingSwitchDefault")
   static Intent fromProtocolValue(final ValueType valueType, final short intent) {
     switch (valueType) {
@@ -81,6 +73,8 @@ public interface Intent {
         return ProcessInstanceIntent.from(intent);
       case MESSAGE:
         return MessageIntent.from(intent);
+      case MESSAGE_BATCH:
+        return MessageBatchIntent.from(intent);
       case MESSAGE_SUBSCRIPTION:
         return MessageSubscriptionIntent.from(intent);
       case MESSAGE_START_EVENT_SUBSCRIPTION:
@@ -152,6 +146,8 @@ public interface Intent {
         return ProcessInstanceIntent.valueOf(intent);
       case MESSAGE:
         return MessageIntent.valueOf(intent);
+      case MESSAGE_BATCH:
+        return MessageBatchIntent.valueOf(intent);
       case MESSAGE_SUBSCRIPTION:
         return MessageSubscriptionIntent.valueOf(intent);
       case MESSAGE_START_EVENT_SUBSCRIPTION:
@@ -210,5 +206,14 @@ public interface Intent {
         .mapToInt(clazz -> clazz.getEnumConstants().length)
         .max()
         .getAsInt();
+  }
+
+  enum UnknownIntent implements Intent {
+    UNKNOWN;
+
+    @Override
+    public short value() {
+      return NULL_VAL;
+    }
   }
 }

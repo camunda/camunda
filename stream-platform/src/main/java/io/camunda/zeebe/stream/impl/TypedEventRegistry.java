@@ -21,6 +21,7 @@ import io.camunda.zeebe.protocol.impl.record.value.incident.IncidentRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobBatchRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.impl.record.value.management.CheckpointRecord;
+import io.camunda.zeebe.protocol.impl.record.value.message.MessageBatchRecord;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageRecord;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageStartEventSubscriptionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageSubscriptionRecord;
@@ -56,6 +57,7 @@ public final class TypedEventRegistry {
     registry.put(ValueType.PROCESS_INSTANCE, ProcessInstanceRecord.class);
     registry.put(ValueType.INCIDENT, IncidentRecord.class);
     registry.put(ValueType.MESSAGE, MessageRecord.class);
+    registry.put(ValueType.MESSAGE_BATCH, MessageBatchRecord.class);
     registry.put(ValueType.MESSAGE_SUBSCRIPTION, MessageSubscriptionRecord.class);
     registry.put(
         ValueType.MESSAGE_START_EVENT_SUBSCRIPTION, MessageStartEventSubscriptionRecord.class);

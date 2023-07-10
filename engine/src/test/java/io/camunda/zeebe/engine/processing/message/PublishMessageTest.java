@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.processing.message;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
+import static org.assertj.core.api.Assertions.fail;
 
 import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.util.EngineRule;
@@ -18,10 +19,15 @@ import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.intent.MessageBatchIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageIntent;
+import io.camunda.zeebe.protocol.record.value.MessageBatchRecordValue;
 import io.camunda.zeebe.protocol.record.value.MessageRecordValue;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
+import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.LongStream;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Rule;
@@ -181,16 +187,31 @@ public final class PublishMessageTest {
     final Record<MessageRecordValue> publishedRecord =
         messageClient.withTimeToLive(timeToLive).publish();
 
+    final Record<MessageRecordValue> secondPublishedRecord =
+        messageClient.withTimeToLive(timeToLive).withName("order shipped").publish();
+
+    final var publishedMessageKeys =
+        List.of(publishedRecord.getKey(), secondPublishedRecord.getKey());
+
     ENGINE_RULE.increaseTime(EngineConfiguration.DEFAULT_MESSAGES_TTL_CHECKER_INTERVAL);
 
     // then
-    final Record<MessageRecordValue> deletedEvent =
+    final Record<MessageBatchRecordValue> expireBatchMessageCommand =
+        RecordingExporter.messageBatchRecords().withIntent(MessageBatchIntent.EXPIRE).getFirst();
+
+    Assertions.assertThat(expireBatchMessageCommand.getValue())
+        .hasMessageKeys(publishedMessageKeys);
+
+    final List<Long> listOfExpiredMessageKeys =
         RecordingExporter.messageRecords()
             .withIntent(MessageIntent.EXPIRED)
-            .withRecordKey(publishedRecord.getKey())
-            .getFirst();
+            .flatMapToLong(v -> LongStream.of(v.getKey()))
+            .boxed()
+            .collect(Collectors.toList());
 
-    Assertions.assertThat(deletedEvent).hasKey(publishedRecord.getKey());
+    assertThat(listOfExpiredMessageKeys).isEqualTo(publishedMessageKeys);
+
+    fail("ddd");
   }
 
   @Test

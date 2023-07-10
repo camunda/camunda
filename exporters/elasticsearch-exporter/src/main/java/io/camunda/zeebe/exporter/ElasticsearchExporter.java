@@ -219,6 +219,9 @@ public class ElasticsearchExporter implements Exporter {
       if (index.message) {
         createValueIndexTemplate(ValueType.MESSAGE);
       }
+      if (index.messageBatch) {
+        createValueIndexTemplate(ValueType.MESSAGE_BATCH);
+      }
       if (index.messageSubscription) {
         createValueIndexTemplate(ValueType.MESSAGE_SUBSCRIPTION);
       }

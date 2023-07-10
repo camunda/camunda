@@ -23,6 +23,7 @@ import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.intent.JobBatchIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
+import io.camunda.zeebe.protocol.record.intent.MessageBatchIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageStartEventSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
@@ -111,6 +112,11 @@ public final class BanInstanceTest {
       {ValueType.MESSAGE, MessageIntent.PUBLISHED, false},
       {ValueType.MESSAGE, MessageIntent.EXPIRE, false},
       {ValueType.MESSAGE, MessageIntent.EXPIRED, false},
+
+      ////////////////////////////////////////
+      ////////////// MESSAGE BATCH ///////////////
+      ////////////////////////////////////////
+      {ValueType.MESSAGE_BATCH, MessageBatchIntent.EXPIRE, false},
 
       ////////////////////////////////////////
       ////////// MSG START EVENT SUB /////////
