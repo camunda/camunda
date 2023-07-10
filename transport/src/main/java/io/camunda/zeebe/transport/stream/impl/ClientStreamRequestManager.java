@@ -10,26 +10,45 @@ package io.camunda.zeebe.transport.stream.impl;
 import io.atomix.cluster.MemberId;
 import io.atomix.cluster.messaging.ClusterCommunicationService;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
+import io.camunda.zeebe.transport.stream.impl.ClientStreamRegistration.State;
 import io.camunda.zeebe.transport.stream.impl.messages.AddStreamRequest;
 import io.camunda.zeebe.transport.stream.impl.messages.RemoveStreamRequest;
 import io.camunda.zeebe.transport.stream.impl.messages.StreamTopics;
+import io.camunda.zeebe.util.VisibleForTesting;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import io.camunda.zeebe.util.buffer.BufferWriter;
 import java.time.Duration;
 import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/** Handles sending add/remove stream request to the servers. */
+/**
+ * Coordinates registering/de-registering {@link AggregatedClientStream} with arbitrary set of
+ * servers.
+ *
+ * <p>NOTE: all operations are potentially asynchronous as network I/O is involved. To avoid race
+ * conditions w.r.t to the stream lifecycle, the manager keeps track of the registration state per
+ * server via a {@link ClientStreamRegistration}. A registration follows a strict lifecycle via a
+ * state machine: INITIAL -> ADDING -> ADDED -> REMOVING -> REMOVED -> CLOSED. As such,
+ * registrations cannot be reused, and are recreated per stream/host pair.
+ *
+ * <p>This class is NOT thread-safe, and must be executed within the same thread context as the
+ * {@link ClientStreamManager}.
+ */
 final class ClientStreamRequestManager<M extends BufferWriter> {
-
-  private static final Logger LOG = LoggerFactory.getLogger(ClientStreamRequestManager.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(ClientStreamRequestManager.class);
   private static final byte[] REMOVE_ALL_REQUEST = new byte[0];
   private static final Duration RETRY_DELAY = Duration.ofSeconds(1);
   private static final Duration REQUEST_TIMEOUT = Duration.ofSeconds(5);
+
+  // maps the registration state,  for each known host, of each stream
+  private final Map<MemberId, Map<UUID, ClientStreamRegistration<M>>> registrations =
+      new HashMap<>();
+
   private final ClusterCommunicationService communicationService;
   private final ConcurrencyControl executor;
 
@@ -39,104 +58,280 @@ final class ClientStreamRequestManager<M extends BufferWriter> {
     this.executor = executor;
   }
 
-  void openStream(
-      final AggregatedClientStream<M> clientStream, final Collection<MemberId> servers) {
-    final var request =
-        new AddStreamRequest()
-            .streamType(clientStream.getStreamType())
-            .streamId(clientStream.getStreamId())
-            .metadata(clientStream.getMetadata());
-
-    servers.forEach(brokerId -> executor.run(() -> doAdd(request, brokerId, clientStream)));
+  /**
+   * Registers the given stream to all the given servers. See {@link #add(AggregatedClientStream,
+   * MemberId)} for the individual operation.
+   *
+   * @param stream the stream to register
+   * @param serverIds the list of servers on which to register the stream
+   * @throws IllegalStateException if the stream was already removed, is currently being removed, or
+   *     has been closed, on any of the servers
+   */
+  void add(final AggregatedClientStream<M> stream, final Collection<MemberId> serverIds) {
+    for (final var serverId : serverIds) {
+      add(stream, serverId);
+    }
   }
 
-  private void doAdd(
-      final AddStreamRequest request,
-      final MemberId brokerId,
-      final AggregatedClientStream<M> clientStream) {
-    if (clientStream.isConnected(brokerId) || clientStream.isClosed()) {
+  /**
+   * Registers the given stream to all the given servers. When a stream is finally registered
+   * remotely to a specific server, its {@link AggregatedClientStream#isConnected(MemberId)} will
+   * return true.
+   *
+   * <p>This operation is idempotent: if the stream is already registered on a server, it will not
+   * be registered again.
+   *
+   * <p>NOTE: if the stream is currently being removed, this will throw an exception. The idea is
+   * that if the stream is being removed, then it doesn't exist in the top level registry anymore,
+   * and shouldn't be reused.
+   *
+   * @param stream the stream to register
+   * @param serverId the server on which to register the stream
+   * @throws IllegalStateException if the stream was already removed, is currently being removed, or
+   *     has been closed
+   */
+  void add(final AggregatedClientStream<M> stream, final MemberId serverId) {
+    final var registration = registrationFor(stream, serverId);
+    add(registration);
+  }
+
+  /**
+   * De-registers a given stream from all given servers. See {@link #remove(AggregatedClientStream,
+   * MemberId)} for more.
+   *
+   * @param stream the stream to remove
+   * @param serverIds the list of servers to remove it from
+   */
+  void remove(final AggregatedClientStream<M> stream, final Collection<MemberId> serverIds) {
+    for (final var serverId : serverIds) {
+      remove(stream, serverId);
+    }
+  }
+
+  /**
+   * De-registers the stream from the given server. Does nothing if the stream was already closed or
+   * is already removed, or in the process of being removed, from the server. This operation is
+   * fully idempotent.
+   *
+   * @param stream the stream to remove
+   * @param serverId the server on which it should be removed
+   */
+  void remove(final AggregatedClientStream<M> stream, final MemberId serverId) {
+    final var streamsPerHost = registrations.get(serverId);
+    if (streamsPerHost == null) {
       return;
     }
 
-    final CompletableFuture<byte[]> result =
+    final var registration = streamsPerHost.get(stream.getStreamId());
+    if (registration != null) {
+      remove(registration);
+    }
+  }
+
+  /**
+   * Sends a single remove all request to each given server, and closes all pending registrations.
+   *
+   * @param servers the list of servers to notify
+   */
+  void removeAll(final Collection<MemberId> servers) {
+    registrations.values().stream()
+        .flatMap(m -> m.values().stream())
+        .forEach(ClientStreamRegistration::transitionToClosed);
+    registrations.clear();
+
+    servers.forEach(this::doRemoveAll);
+  }
+
+  /**
+   * Send remove stream request to servers without waiting for ack and without retry. As this is
+   * used to send even when no stream was originally registered, we ignore any existing
+   * registrations.
+   */
+  void removeUnreliable(final UUID streamId, final Collection<MemberId> servers) {
+    final var request = new RemoveStreamRequest().streamId(streamId);
+    final var payload = BufferUtil.bufferAsArray(request);
+
+    servers.forEach(
+        serverId -> {
+          communicationService.unicast(
+              StreamTopics.REMOVE.topic(), payload, Function.identity(), serverId, true);
+          purgeRegistration(streamId, serverId);
+        });
+  }
+
+  private void add(final ClientStreamRegistration<M> registration) {
+    if (registration.state() == State.ADDING || !registration.transitionToAdding()) {
+      return;
+    }
+
+    final var request =
+        new AddStreamRequest()
+            .streamId(registration.streamId())
+            .streamType(registration.logicalId().streamType())
+            .metadata(registration.logicalId().metadata());
+
+    final var pendingRequest = registration.pendingRequest();
+    if (pendingRequest != null) {
+      // error - should not have a pending request if we're registering!
+      throw new IllegalStateException(
+          "Failed to add remote client stream %s to %s; there is an incomplete pending request"
+              .formatted(registration.streamId(), registration.serverId()));
+    }
+
+    final var payload = BufferUtil.bufferAsArray(request);
+    sendAddRequest(registration, payload);
+  }
+
+  private void remove(final ClientStreamRegistration<M> registration) {
+    if (registration.state() == State.INITIAL) {
+      // bail early, as we never added this stream
+      registration.transitionToRemoved();
+      return;
+    }
+
+    if (registration.state() == State.REMOVING || !registration.transitionToRemoving()) {
+      return;
+    }
+
+    final var request = new RemoveStreamRequest().streamId(registration.streamId());
+    final var payload = BufferUtil.bufferAsArray(request);
+
+    final var pendingRequest = registration.pendingRequest();
+    if (pendingRequest == null) {
+      sendRemoveRequest(registration, payload);
+      return;
+    }
+
+    // to minimize the likelihood of out-of-order requests on the server side, wait until the
+    // current request is finished before sending the next request, regardless of the result
+    pendingRequest.whenCompleteAsync(
+        (ok, error) -> sendRemoveRequest(registration, payload), executor::run);
+  }
+
+  /**
+   * Closes all pending registrations for this server, and removes them from the in-memory cache.
+   */
+  void onServerRemoved(final MemberId serverId) {
+    final var perHost = registrations.remove(serverId);
+    if (perHost == null) {
+      return;
+    }
+
+    LOGGER.trace("Closing all registrations for server {}", serverId);
+    perHost.values().forEach(ClientStreamRegistration::transitionToClosed);
+  }
+
+  @VisibleForTesting("Allows easier test set up and validation")
+  ClientStreamRegistration<M> registrationFor(
+      final AggregatedClientStream<M> stream, final MemberId serverId) {
+    final var streamsPerHost = registrations.computeIfAbsent(serverId, ignored -> new HashMap<>());
+    return streamsPerHost.computeIfAbsent(
+        stream.getStreamId(), streamId -> new ClientStreamRegistration<>(stream, serverId));
+  }
+
+  private void sendAddRequest(
+      final ClientStreamRegistration<M> registration, final byte[] request) {
+    if (registration.state() != State.ADDING) {
+      return;
+    }
+
+    final var pendingRequest =
         communicationService.send(
             StreamTopics.ADD.topic(),
             request,
-            BufferUtil::bufferAsArray,
             Function.identity(),
-            brokerId,
+            Function.identity(),
+            registration.serverId(),
             REQUEST_TIMEOUT);
-
-    result.whenCompleteAsync(
-        (ignored, error) -> {
-          if (error != null) {
-            LOG.warn(
-                "Failed to open stream {} to node {}. Will retry in {}",
-                clientStream,
-                brokerId,
-                RETRY_DELAY,
-                error);
-            // TODO: define some abort conditions. We may not have to retry indefinitely.
-            // For now we retry always. Eventually the request will succeed. Duplicate add request
-            // are fine.
-            executor.schedule(RETRY_DELAY, () -> doAdd(request, brokerId, clientStream));
-          } else {
-            LOG.debug("Opened stream {} to node {}", clientStream, brokerId);
-            clientStream.add(brokerId);
-          }
-        },
-        executor::run);
+    registration.setPendingRequest(pendingRequest);
+    pendingRequest.whenCompleteAsync(
+        (ok, error) -> handleAddResponse(registration, request, error), executor::run);
   }
 
-  void removeStream(
-      final AggregatedClientStream<M> clientStream, final Collection<MemberId> servers) {
-    final var request = new RemoveStreamRequest().streamId(clientStream.getStreamId());
-    servers.forEach(brokerId -> executor.run(() -> doRemove(request, brokerId, clientStream)));
+  private void handleAddResponse(
+      final ClientStreamRegistration<M> registration, final byte[] request, final Throwable error) {
+    final var state = registration.state();
+    if (state != State.ADDING) {
+      LOGGER.trace("Skip handling ADD response since the state is {}", state, error);
+      return;
+    }
+
+    if (error == null) {
+      registration.transitionToAdded();
+      return;
+    }
+
+    // For now, always retry; eventually the request will succeed, and duplicate add request are
+    // fine.
+    LOGGER.warn(
+        "Failed to add stream {} on {}; will retry in {}",
+        registration.streamId(),
+        registration.serverId(),
+        RETRY_DELAY,
+        error);
+    executor.schedule(RETRY_DELAY, () -> sendAddRequest(registration, request));
   }
 
-  private void doRemove(
-      final RemoveStreamRequest request,
-      final MemberId brokerId,
-      final AggregatedClientStream<M> clientStream) {
+  private void sendRemoveRequest(
+      final ClientStreamRegistration<M> registration, final byte[] request) {
+    if (registration.state() != State.REMOVING) {
+      return;
+    }
 
-    final CompletableFuture<byte[]> result =
+    final var pendingRequest =
         communicationService.send(
             StreamTopics.REMOVE.topic(),
             request,
-            BufferUtil::bufferAsArray,
             Function.identity(),
-            brokerId,
+            Function.identity(),
+            registration.serverId(),
             REQUEST_TIMEOUT);
-
-    result.whenCompleteAsync(
-        (ignored, error) -> {
-          if (error != null && clientStream.isConnected(brokerId)) {
-            // TODO: use backoff delay
-            executor.schedule(RETRY_DELAY, () -> doRemove(request, brokerId, clientStream));
-          } else {
-            LOG.debug("Removed stream {} to node {}", clientStream, brokerId);
-            clientStream.remove(brokerId);
-          }
-        },
-        executor::run);
+    registration.setPendingRequest(pendingRequest);
+    pendingRequest.whenCompleteAsync(
+        (ok, error) -> handleRemoveResponse(registration, request, error), executor::run);
   }
 
-  void removeAll(final Collection<MemberId> servers) {
-    servers.forEach(this::doRemoveAll);
+  private void handleRemoveResponse(
+      final ClientStreamRegistration<M> registration, final byte[] request, final Throwable error) {
+    final var state = registration.state();
+    if (state != State.REMOVING) {
+      LOGGER.trace("Skip handling REMOVE response since the state is {}", state, error);
+      return;
+    }
+
+    if (error == null) {
+      registration.transitionToRemoved();
+      purgeRegistration(registration.streamId(), registration.serverId());
+      return;
+    }
+
+    // TODO: use backoff delay
+    LOGGER.debug(
+        "Failed to remove remote stream {} on {}, will retry in {}",
+        registration.streamId(),
+        registration.serverId(),
+        RETRY_DELAY);
+    executor.schedule(RETRY_DELAY, () -> sendRemoveRequest(registration, request));
+  }
+
+  private void purgeRegistration(final UUID streamId, final MemberId serverId) {
+    final var perHost = registrations.get(serverId);
+    if (perHost != null) {
+      final var registration = perHost.remove(streamId);
+
+      if (registration != null) {
+        registration.transitionToClosed();
+      }
+
+      if (perHost.isEmpty()) {
+        registrations.remove(serverId);
+      }
+    }
   }
 
   private void doRemoveAll(final MemberId brokerId) {
     // Do not wait for response, as this is expected to be called while shutting down.
     communicationService.unicast(
         StreamTopics.REMOVE_ALL.topic(), REMOVE_ALL_REQUEST, Function.identity(), brokerId, true);
-  }
-
-  /** Send remove stream request to servers without waiting for ack and without retry * */
-  void removeStreamUnreliable(final UUID streamId, final Collection<MemberId> servers) {
-    final var request = new RemoveStreamRequest().streamId(streamId);
-    servers.forEach(
-        serverId ->
-            communicationService.unicast(
-                StreamTopics.REMOVE.topic(), request, BufferUtil::bufferAsArray, serverId, true));
   }
 }

@@ -107,7 +107,7 @@ final class StreamIntegrationTest {
                   return CompletableFuture.completedFuture(null);
                 })
             .join();
-    awaitStreamAdded(streamType, streamId);
+    awaitStreamAdded(streamType, streamId, server1, server2);
 
     // when
     server1.streamer.streamFor(streamType).orElseThrow().push(new TestSerializableData().data(100));
@@ -129,7 +129,7 @@ final class StreamIntegrationTest {
         clientStreamer
             .add(streamType, metadata, p -> CompletableFuture.completedFuture(null))
             .join();
-    awaitStreamAdded(streamType, clientStreamId);
+    awaitStreamAdded(streamType, clientStreamId, server1, server2);
     final var serverStream = server1.streamer.streamFor(streamType).orElseThrow();
     server1.errorHandler =
         (e, p) -> {
@@ -153,16 +153,36 @@ final class StreamIntegrationTest {
     return Node.builder().withId(id).withPort(SocketUtil.getNextAddress().getPort()).build();
   }
 
-  private void awaitStreamAdded(final DirectBuffer streamType, final ClientStreamId streamId) {
-    awaitStreamOnServer(streamType, server1, stream -> assertThat(stream).isPresent());
-    awaitStreamOnServer(streamType, server2, stream -> assertThat(stream).isPresent());
+  private void awaitStreamRemoved(
+      final DirectBuffer streamType, final ClientStreamId streamId, final TestServer... servers) {
+    for (final var server : servers) {
+      awaitStreamOnServer(streamType, server, stream -> assertThat(stream).isEmpty());
+    }
+
     awaitStreamOnClient(
         streamId,
         stream -> {
           assertThat(stream).isPresent();
-          //noinspection OptionalGetWithoutIsPresent
-          assertThat(stream.get().isConnected(server1.memberId())).isTrue();
-          assertThat(stream.get().isConnected(server2.memberId())).isTrue();
+          for (final var server : servers) {
+            //noinspection OptionalGetWithoutIsPresent
+            assertThat(stream.get().isConnected(server.memberId())).isFalse();
+          }
+        });
+  }
+
+  private void awaitStreamAdded(
+      final DirectBuffer streamType, final ClientStreamId streamId, final TestServer... servers) {
+    for (final var server : servers) {
+      awaitStreamOnServer(streamType, server, stream -> assertThat(stream).isPresent());
+    }
+    awaitStreamOnClient(
+        streamId,
+        stream -> {
+          assertThat(stream).isPresent();
+          for (final var server : servers) {
+            //noinspection OptionalGetWithoutIsPresent
+            assertThat(stream.get().isConnected(server.memberId())).isTrue();
+          }
         });
   }
 
@@ -211,7 +231,7 @@ final class StreamIntegrationTest {
               .join();
 
       // then
-      awaitStreamAdded(streamType, streamId);
+      awaitStreamAdded(streamType, streamId, server1, server2);
     }
 
     @Test
@@ -226,7 +246,7 @@ final class StreamIntegrationTest {
 
       // must wait until the stream is connected everywhere before removal, as otherwise there is a
       // race condition
-      awaitStreamAdded(streamType, streamId);
+      awaitStreamAdded(streamType, streamId, server1, server2);
 
       // when
       clientStreamer.remove(streamId).join();
@@ -247,7 +267,7 @@ final class StreamIntegrationTest {
           clientStreamer
               .add(streamType, properties, p -> CompletableFuture.completedFuture(null))
               .join();
-      awaitStreamAdded(streamType, streamId);
+      awaitStreamAdded(streamType, streamId, server1, server2);
 
       // when
       client.streamService.onServerRemoved(server1.memberId());
@@ -287,7 +307,7 @@ final class StreamIntegrationTest {
       client.streamService.onServerJoined(server1.memberId());
 
       // then
-      awaitStreamAdded(streamType, streamId);
+      awaitStreamAdded(streamType, streamId, server1, server2);
     }
 
     @Test
@@ -304,7 +324,7 @@ final class StreamIntegrationTest {
       streamTypes.forEach(
           streamType -> {
             final var id = clientStreamer.add(streamType, properties, consumer).join();
-            awaitStreamAdded(streamType, id);
+            awaitStreamAdded(streamType, id, server1, server2);
           });
 
       // when
@@ -317,6 +337,37 @@ final class StreamIntegrationTest {
             awaitStreamOnServer(streamType, server1, stream -> assertThat(stream).isEmpty());
             awaitStreamOnServer(streamType, server2, stream -> assertThat(stream).isEmpty());
           });
+    }
+
+    @Test
+    void shouldAddStreamAgainOnServerRestart() {
+      // given
+      final var streamType = BufferUtil.wrapString("foo");
+      final var properties = new TestSerializableData();
+      final var streamId =
+          clientStreamer
+              .add(streamType, properties, p -> CompletableFuture.completedFuture(null))
+              .join();
+      awaitStreamAdded(streamType, streamId, server1, server2);
+      server1.close();
+      client.streamService.onServerRemoved(server1.memberId());
+      awaitStreamOnClient(
+          streamId,
+          maybeStream -> {
+            assertThat(maybeStream).isPresent();
+            //noinspection OptionalGetWithoutIsPresent
+            assertThat(maybeStream.get().isConnected(server1.memberId())).isFalse();
+          });
+
+      // when - simulate restart by recreating the server entirely
+      try (final var restartedServer =
+          new TestServer(createClusterNode(clusterNodes.get(0), clusterNodes))) {
+        restartedServer.start();
+        client.streamService.onServerJoined(restartedServer.memberId());
+
+        // then
+        awaitStreamAdded(streamType, streamId, restartedServer, server2);
+      }
     }
   }
 
@@ -335,7 +386,7 @@ final class StreamIntegrationTest {
       // indirectly reference the error handler to allow swapping its behavior during tests
       final RemoteStreamErrorHandler<TestSerializableData> dynamicErrorHandler =
           (e, p) -> errorHandler.handleError(e, p);
-      this.streamService =
+      streamService =
           factory.createRemoteStreamServer(
               cluster.getCommunicationService(),
               TestSerializableData::new,
@@ -356,8 +407,11 @@ final class StreamIntegrationTest {
     @Override
     public ActorFuture<Void> closeAsync() {
       final ActorFuture<Void> closed = actor.createFuture();
-      actor.runOnCompletion(
-          streamService.closeAsync(this), (ok, error) -> cluster.stop().whenComplete(closed));
+      actor.run(
+          () ->
+              actor.runOnCompletion(
+                  streamService.closeAsync(this),
+                  (ok, error) -> cluster.stop().whenComplete(closed)));
 
       return closed;
     }

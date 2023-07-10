@@ -65,6 +65,22 @@ class ClientStreamManagerTest {
   }
 
   @Test
+  void shouldAddStreamAfterServerWasRemoved() {
+    // given
+    final var serverId = MemberId.anonymous();
+    clientStreamManager.onServerJoined(serverId);
+    final var streamId = clientStreamManager.add(streamType, metadata, NOOP_CONSUMER);
+    clientStreamManager.onServerRemoved(serverId);
+
+    // when
+    clientStreamManager.onServerJoined(serverId);
+
+    // then
+    final var client = registry.getClient(streamId).orElseThrow();
+    assertThat(client.isConnected(serverId)).isTrue();
+  }
+
+  @Test
   void shouldAggregateStreamsWithSameStreamTypeAndMetadata() {
     // when
     final var uuid1 =
