@@ -252,7 +252,7 @@ public final class DbJobState implements JobState, MutableJobState {
           final boolean isDue = deadline < upperBound;
           if (isDue) {
             final long jobKey1 = key.second().inner().getValue();
-            return visitJob(jobKey1, callback, () -> {});
+            return visitJob(jobKey1, callback);
           }
           return false;
         });
@@ -291,8 +291,7 @@ public final class DbJobState implements JobState, MutableJobState {
         jobTypeKey,
         ((compositeKey, zbNil) -> {
           final long jobKey = compositeKey.second().inner().getValue();
-          // TODO #6521 reconsider race condition and whether or not the cleanup task is needed
-          return visitJob(jobKey, callback::apply, () -> {});
+          return visitJob(jobKey, callback::apply);
         }));
   }
 
@@ -317,8 +316,7 @@ public final class DbJobState implements JobState, MutableJobState {
           boolean consumed = false;
           if (deadline <= timestamp) {
             final long jobKey = key.second().inner().getValue();
-            consumed = visitJob(jobKey, callback, () -> {
-            });
+            consumed = visitJob(jobKey, callback);
           }
           if (!consumed) {
             nextBackOffDueDate = deadline;
@@ -328,14 +326,10 @@ public final class DbJobState implements JobState, MutableJobState {
     return nextBackOffDueDate;
   }
 
-  boolean visitJob(
-      final long jobKey,
-      final BiPredicate<Long, JobRecord> callback,
-      final Runnable cleanupRunnable) {
+  boolean visitJob(final long jobKey, final BiPredicate<Long, JobRecord> callback) {
     final JobRecord job = getJob(jobKey);
     if (job == null) {
       LOG.error("Expected to find job with key {}, but no job found", jobKey);
-      cleanupRunnable.run();
       return true; // we want to continue with the iteration
     }
     return callback.test(jobKey, job);
