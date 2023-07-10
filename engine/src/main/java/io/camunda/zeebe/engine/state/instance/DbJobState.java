@@ -231,9 +231,11 @@ public final class DbJobState implements JobState, MutableJobState {
     }
 
     if (newState != State.ACTIVATED) {
-      // This only works because none of the events actually remove the deadline from the job
+      // This only works because none of the events actually remove the deadline from
+      // the job
       // record.
-      // If, say on job failure, the deadline is removed or reset to 0, then we would need to look
+      // If, say on job failure, the deadline is removed or reset to 0, then we would
+      // need to look
       // at the current state of the job to determine what deadline to remove.
       removeJobDeadline(key, updatedValue.getDeadline());
     }
@@ -252,7 +254,7 @@ public final class DbJobState implements JobState, MutableJobState {
           final boolean isDue = deadline < upperBound;
           if (isDue) {
             final long jobKey1 = key.second().inner().getValue();
-            return visitJob(jobKey1, callback, () -> {});
+            return visitJob(jobKey1, callback);
           }
           return false;
         });
@@ -291,8 +293,7 @@ public final class DbJobState implements JobState, MutableJobState {
         jobTypeKey,
         ((compositeKey, zbNil) -> {
           final long jobKey = compositeKey.second().inner().getValue();
-          // TODO #6521 reconsider race condition and whether or not the cleanup task is needed
-          return visitJob(jobKey, callback::apply, () -> {});
+          return visitJob(jobKey, callback::apply);
         }));
   }
 
@@ -317,7 +318,7 @@ public final class DbJobState implements JobState, MutableJobState {
           boolean consumed = false;
           if (deadline <= timestamp) {
             final long jobKey = key.second().inner().getValue();
-            consumed = visitJob(jobKey, callback, () -> backoffColumnFamily.deleteExisting(key));
+            consumed = visitJob(jobKey, callback);
           }
           if (!consumed) {
             nextBackOffDueDate = deadline;
@@ -327,14 +328,10 @@ public final class DbJobState implements JobState, MutableJobState {
     return nextBackOffDueDate;
   }
 
-  boolean visitJob(
-      final long jobKey,
-      final BiPredicate<Long, JobRecord> callback,
-      final Runnable cleanupRunnable) {
+  boolean visitJob(final long jobKey, final BiPredicate<Long, JobRecord> callback) {
     final JobRecord job = getJob(jobKey);
     if (job == null) {
       LOG.error("Expected to find job with key {}, but no job found", jobKey);
-      cleanupRunnable.run();
       return true; // we want to continue with the iteration
     }
     return callback.test(jobKey, job);
@@ -377,7 +374,8 @@ public final class DbJobState implements JobState, MutableJobState {
     jobTypeKey.wrapBuffer(type);
 
     jobKey.wrapLong(key);
-    // Need to upsert here because jobs can be marked as failed (and thus made activatable)
+    // Need to upsert here because jobs can be marked as failed (and thus made
+    // activatable)
     // without activating them first
     activatableColumnFamily.upsert(typeJobKey, DbNil.INSTANCE);
 
