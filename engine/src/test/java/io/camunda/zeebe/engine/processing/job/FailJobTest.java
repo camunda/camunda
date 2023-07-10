@@ -250,7 +250,6 @@ public final class FailJobTest {
     // given
     ENGINE.createJob(jobType, PROCESS_ID);
     final Record<JobBatchRecordValue> batchRecord = ENGINE.jobs().withType(jobType).activate();
-    final JobRecordValue job = batchRecord.getValue().getJobs().get(0);
     final long jobKey = batchRecord.getValue().getJobKeys().get(0);
 
     ENGINE.job().withKey(jobKey).complete();
