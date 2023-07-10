@@ -106,7 +106,7 @@ RUN mkdir camunda-zeebe && \
 ### Build zeebe from scratch ###
 # We use the latest version here to avoid having to track the Java version multiple times
 # hadolint ignore=DL3006,DL3007
-FROM jdk-${TARGETARCH} as build
+FROM bellsoft/liberica-openjdk-alpine:latest as build
 WORKDIR /zeebe
 ENV MAVEN_OPTS -XX:MaxRAMPercentage=80
 COPY --link . ./
