@@ -4694,9 +4694,9 @@
                 "uid": "$DS_PROMETHEUS"
               },
               "editorMode": "code",
-              "expr": "sum by (pod) (rate(container_cpu_usage_seconds_total{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\"}[$__rate_interval]))",
+              "expr": "sum by (pod, container, service) (rate(container_cpu_usage_seconds_total{cluster=~\"$cluster\", container!~\"\", namespace=~\"$namespace\", pod=~\"$pod\"}[$__rate_interval]))",
               "interval": "",
-              "legendFormat": "{{pod}}",
+              "legendFormat": "{{pod}}:{{container}} {{service}}",
               "range": true,
               "refId": "A"
             }
@@ -16230,6 +16230,6 @@
   "timezone": "",
   "title": "Zeebe",
   "uid": "zeebe-dashboard",
-  "version": 10,
+  "version": 11,
   "weekStart": ""
 }
