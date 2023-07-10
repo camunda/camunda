@@ -132,9 +132,7 @@ public final class DbJobState implements JobState, MutableJobState {
   @Override
   public void recurAfterBackoff(final long key, final JobRecord record) {
     updateJob(key, record, State.ACTIVATABLE);
-    jobKey.wrapLong(key);
-    backoffKey.wrapLong(record.getRecurringTime());
-    backoffColumnFamily.deleteExisting(backoffJobKey);
+    removeJobBackoff(key, record.getRecurringTime());
   }
 
   @Override
@@ -188,9 +186,7 @@ public final class DbJobState implements JobState, MutableJobState {
   public void fail(final long key, final JobRecord updatedValue) {
     if (updatedValue.getRetries() > 0) {
       if (updatedValue.getRetryBackoff() > 0) {
-        jobKey.wrapLong(key);
-        backoffKey.wrapLong(updatedValue.getRecurringTime());
-        backoffColumnFamily.insert(backoffJobKey, DbNil.INSTANCE);
+        addJobBackoff(key, updatedValue.getRecurringTime());
         updateJob(key, updatedValue, State.FAILED);
       } else {
         updateJob(key, updatedValue, State.ACTIVATABLE);
@@ -409,6 +405,22 @@ public final class DbJobState implements JobState, MutableJobState {
       jobKey.wrapLong(job);
       deadlineKey.wrapLong(deadline);
       deadlinesColumnFamily.deleteIfExists(deadlineJobKey);
+    }
+  }
+
+  private void addJobBackoff(final long job, final long backoff) {
+    if (backoff > 0) {
+      jobKey.wrapLong(job);
+      backoffKey.wrapLong(backoff);
+      backoffColumnFamily.insert(backoffJobKey, DbNil.INSTANCE);
+    }
+  }
+
+  private void removeJobBackoff(final long job, final long backoff) {
+    if (backoff > 0) {
+      jobKey.wrapLong(job);
+      backoffKey.wrapLong(backoff);
+      backoffColumnFamily.deleteIfExists(backoffJobKey);
     }
   }
 }
