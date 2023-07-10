@@ -133,7 +133,7 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
     logStream = streamProcessorContext.getLogStream();
     partitionId = logStream.getPartitionId();
     nodeId = processorBuilder.getNodeId();
-    actorName = buildActorName(nodeId, "StreamProcessor", partitionId);
+    actorName = buildActorName("StreamProcessor", partitionId);
     metrics = new StreamProcessorMetrics(partitionId);
     recordProcessors.addAll(processorBuilder.getRecordProcessors());
   }
@@ -184,8 +184,7 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
               streamProcessorContext::getStreamProcessorPhase, // this is volatile
               () -> false, // we will just stop the actor in this case, no need to provide this
               logStream::newLogStreamBatchWriter);
-      asyncActor =
-          new AsyncProcessingScheduleServiceActor(asyncScheduleService, nodeId, partitionId);
+      asyncActor = new AsyncProcessingScheduleServiceActor(asyncScheduleService, partitionId);
       final var extendedProcessingScheduleService =
           new ExtendedProcessingScheduleServiceImpl(
               processorActorService, asyncScheduleService, asyncActor.getActorControl());
@@ -585,11 +584,9 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
     private final int partitionId;
 
     public AsyncProcessingScheduleServiceActor(
-        final ProcessingScheduleServiceImpl scheduleService,
-        final int nodeId,
-        final int partitionId) {
+        final ProcessingScheduleServiceImpl scheduleService, final int partitionId) {
       this.scheduleService = scheduleService;
-      asyncScheduleActorName = buildActorName(nodeId, "AsyncProcessingScheduleActor", partitionId);
+      asyncScheduleActorName = buildActorName("AsyncProcessingScheduleActor", partitionId);
       this.partitionId = partitionId;
     }
 

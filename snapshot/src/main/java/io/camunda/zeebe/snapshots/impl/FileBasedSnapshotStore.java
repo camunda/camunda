@@ -82,7 +82,6 @@ public final class FileBasedSnapshotStore extends Actor
   private final int partitionId;
 
   public FileBasedSnapshotStore(
-      final int nodeId,
       final int partitionId,
       final SnapshotMetrics snapshotMetrics,
       final Path snapshotsDirectory,
@@ -93,7 +92,7 @@ public final class FileBasedSnapshotStore extends Actor
     receivingSnapshotStartCount = new AtomicLong();
 
     listeners = new CopyOnWriteArraySet<>();
-    actorName = buildActorName(nodeId, "SnapshotStore", partitionId);
+    actorName = buildActorName("SnapshotStore", partitionId);
     this.partitionId = partitionId;
   }
 

@@ -34,14 +34,13 @@ public final class InterPartitionCommandReceiverActor extends Actor
   private final InterPartitionCommandReceiverImpl receiver;
 
   public InterPartitionCommandReceiverActor(
-      final int nodeId,
       final int partitionId,
       final ClusterCommunicationService communicationService,
       final LogStreamRecordWriter logStreamWriter) {
     this.partitionId = partitionId;
     this.communicationService = communicationService;
     receiver = new InterPartitionCommandReceiverImpl(logStreamWriter);
-    actorName = buildActorName(nodeId, getClass().getSimpleName(), partitionId);
+    actorName = buildActorName(getClass().getSimpleName(), partitionId);
   }
 
   @Override

@@ -392,7 +392,7 @@ public class FileBasedSnapshotStoreTest {
   private FileBasedSnapshotStore createStore(final Path snapshotDir, final Path pendingDir)
       throws IOException {
     final var store =
-        new FileBasedSnapshotStore(1, 1, new SnapshotMetrics(1 + "-" + 1), snapshotDir, pendingDir);
+        new FileBasedSnapshotStore(1, new SnapshotMetrics(1 + "-" + 1), snapshotDir, pendingDir);
     FileUtil.ensureDirectoryExists(snapshotDir);
     FileUtil.ensureDirectoryExists(pendingSnapshotsDir);
     scheduler.submitActor(store).join();

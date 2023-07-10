@@ -70,7 +70,7 @@ public final class LogStreamImpl extends Actor
 
     this.partitionId = partitionId;
     this.nodeId = nodeId;
-    actorName = buildActorName(nodeId, "LogStream", partitionId);
+    actorName = buildActorName("LogStream", partitionId);
 
     this.maxFrameLength = maxFrameLength;
     this.logStorage = logStorage;
@@ -332,7 +332,7 @@ public final class LogStreamImpl extends Actor
   }
 
   private Dispatcher createAndScheduleWriteBuffer(final long initialPosition) {
-    return Dispatchers.create(buildActorName(nodeId, "dispatcher", partitionId))
+    return Dispatchers.create(buildActorName("dispatcher", partitionId))
         .maxFragmentLength(maxFrameLength)
         .initialPosition(initialPosition)
         .name(logName + "-write-buffer")
@@ -343,7 +343,7 @@ public final class LogStreamImpl extends Actor
   private ActorFuture<Void> createAndScheduleLogStorageAppender(final Subscription subscription) {
     appender =
         new LogStorageAppender(
-            buildActorName(nodeId, "LogAppender", partitionId),
+            buildActorName("LogAppender", partitionId),
             partitionId,
             logStorage,
             subscription,
