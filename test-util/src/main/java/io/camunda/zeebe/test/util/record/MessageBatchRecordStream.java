@@ -23,4 +23,8 @@ public final class MessageBatchRecordStream
       final Stream<Record<MessageBatchRecordValue>> wrappedStream) {
     return new MessageBatchRecordStream(wrappedStream);
   }
+
+  public MessageBatchRecordStream hasMessageKey(final long messageKey) {
+    return valueFilter(v -> v.getMessageKeys().contains(messageKey));
+  }
 }

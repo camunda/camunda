@@ -9,7 +9,6 @@ package io.camunda.zeebe.engine.processing.message;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
-import static org.assertj.core.api.Assertions.fail;
 
 import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.util.EngineRule;
@@ -210,8 +209,6 @@ public final class PublishMessageTest {
             .collect(Collectors.toList());
 
     assertThat(listOfExpiredMessageKeys).isEqualTo(publishedMessageKeys);
-
-    fail("ddd");
   }
 
   @Test
@@ -249,10 +246,10 @@ public final class PublishMessageTest {
     ENGINE_RULE.increaseTime(EngineConfiguration.DEFAULT_MESSAGES_TTL_CHECKER_INTERVAL);
 
     // then
-    final Record<MessageRecordValue> deleteCommand =
-        RecordingExporter.messageRecords()
-            .withIntent(MessageIntent.EXPIRE)
-            .withRecordKey(publishedRecord.getKey())
+    final Record<MessageBatchRecordValue> deleteCommand =
+        RecordingExporter.messageBatchRecords()
+            .withIntent(MessageBatchIntent.EXPIRE)
+            .hasMessageKey(publishedRecord.getKey())
             .getFirst();
 
     // then
