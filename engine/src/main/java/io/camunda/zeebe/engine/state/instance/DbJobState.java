@@ -178,6 +178,7 @@ public final class DbJobState implements JobState, MutableJobState {
     makeJobNotActivatable(type);
 
     removeJobDeadline(key, record.getDeadline());
+    removeJobBackoff(key, record.getRecurringTime());
   }
 
   @Override
