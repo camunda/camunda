@@ -322,7 +322,8 @@ public final class DbJobState implements JobState, MutableJobState {
           boolean consumed = false;
           if (deadline <= timestamp) {
             final long jobKey = key.second().inner().getValue();
-            consumed = visitJob(jobKey, callback, () -> backoffColumnFamily.deleteExisting(key));
+            consumed = visitJob(jobKey, callback, () -> {
+            });
           }
           if (!consumed) {
             nextBackOffDueDate = deadline;
