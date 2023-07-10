@@ -12,7 +12,10 @@ import io.camunda.operate.webapp.api.v1.exceptions.APIException;
 import java.util.List;
 import java.util.Set;
 
-public interface DecisionRequirementsDao {
+public interface DecisionRequirementsDao extends
+    SearchableDao<DecisionRequirements>,
+    SortableDao<DecisionRequirements>,
+    PageableDao<DecisionRequirements> {
 
   DecisionRequirements byKey(Long key) throws APIException;
 

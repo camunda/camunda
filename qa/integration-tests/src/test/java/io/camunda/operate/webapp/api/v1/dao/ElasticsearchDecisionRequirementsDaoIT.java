@@ -6,12 +6,18 @@
  */
 package io.camunda.operate.webapp.api.v1.dao;
 
+import static io.camunda.operate.schema.indices.DecisionRequirementsIndex.DECISION_REQUIREMENTS_ID;
+import static io.camunda.operate.schema.indices.DecisionRequirementsIndex.NAME;
+import static io.camunda.operate.schema.indices.DecisionRequirementsIndex.RESOURCE_NAME;
+import static io.camunda.operate.schema.indices.DecisionRequirementsIndex.VERSION;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.schema.indices.DecisionRequirementsIndex;
 import io.camunda.operate.util.OperateZeebeIntegrationTest;
 import io.camunda.operate.webapp.api.v1.entities.DecisionRequirements;
+import io.camunda.operate.webapp.api.v1.entities.Query;
+import io.camunda.operate.webapp.api.v1.entities.Results;
 import io.camunda.operate.webapp.api.v1.exceptions.ResourceNotFoundException;
 import io.camunda.operate.webapp.api.v1.exceptions.ServerException;
 import org.elasticsearch.action.search.SearchRequest;
@@ -43,6 +49,7 @@ public class ElasticsearchDecisionRequirementsDaoIT extends OperateZeebeIntegrat
   private Long key;
   private List<DecisionRequirements> decisionRequirementsList;
   private Set<Long> keys;
+  private Results<DecisionRequirements> decisionRequirementsResults, decisionRequirementsResultsPage1, decisionRequirementsResultsPage2;
 
   @Test
   public void shouldReturnWhenByKey() throws Exception {
@@ -149,6 +156,143 @@ public class ElasticsearchDecisionRequirementsDaoIT extends OperateZeebeIntegrat
       assertThat(decisionRequirementsList).hasSize(2);
       assertThat(decisionRequirementsList).extracting(DecisionRequirementsIndex.KEY).containsExactlyInAnyOrder(keys.toArray());
       assertThat(decisionRequirementsList).extracting(DecisionRequirementsIndex.VERSION).containsExactlyInAnyOrder(1, 2);
+    });
+  }
+
+  @Test
+  public void shouldReturnEmptyListWhenNoDecisionRequirementsExist() throws Exception {
+    given(() -> { /*"no decision requirements"*/ });
+    when(() -> decisionRequirementsResults = dao.search(new Query<>()));
+    then(() -> {
+      assertThat(decisionRequirementsResults.getItems()).isEmpty();
+      assertThat(decisionRequirementsResults.getTotal()).isZero();
+    });
+  }
+
+  @Test
+  public void shouldReturnNonEmptyListWhenDecisionRequirementsExist() throws Exception {
+    given(() -> tester.deployDecision("invoiceBusinessDecisions_v_1.dmn")
+        .deployDecision("invoiceBusinessDecisions_v_2.dmn")
+        .waitUntil().decisionsAreDeployed(4));
+    when(() -> decisionRequirementsResults = dao.search(new Query<>()));
+    then(() -> {
+      assertThat(decisionRequirementsResults.getTotal()).isEqualTo(2);
+      assertThat(decisionRequirementsResults.getItems()).extracting(DECISION_REQUIREMENTS_ID)
+          .containsExactly("invoiceBusinessDecisions", "invoiceBusinessDecisions");
+      assertThat(decisionRequirementsResults.getItems()).extracting(VERSION).containsExactly(1, 2);
+      assertThat(decisionRequirementsResults.getItems()).extracting(RESOURCE_NAME)
+          .containsExactly("invoiceBusinessDecisions_v_1.dmn", "invoiceBusinessDecisions_v_2.dmn");
+    });
+  }
+
+  @Test
+  public void shouldPageWithSearchAfterSizeAndSortedAsc() throws Exception {
+    given(() -> tester.deployDecision("invoiceBusinessDecisions_v_1.dmn")
+        .deployDecision("invoiceBusinessDecisions_v_2.dmn")
+        .waitUntil().decisionsAreDeployed(4));
+    when(() -> {
+      decisionRequirementsResultsPage1 = dao.search(new Query<DecisionRequirements>().setSize(1)
+          .setSort(Query.Sort.listOf(RESOURCE_NAME, Query.Sort.Order.ASC)));
+      decisionRequirementsResultsPage2 = dao.search(new Query<DecisionRequirements>().setSize(1)
+          .setSort(Query.Sort.listOf(RESOURCE_NAME, Query.Sort.Order.ASC))
+          .setSearchAfter(new Object[] { decisionRequirementsResultsPage1.getItems().get(0).getResourceName(),
+              decisionRequirementsResultsPage1.getItems().get(0).getKey() }));
+    });
+    then(() -> {
+      assertThat(decisionRequirementsResultsPage1.getTotal()).isEqualTo(2);
+      assertThat(decisionRequirementsResultsPage1.getItems()).hasSize(1);
+      assertThat(decisionRequirementsResultsPage1.getItems()).extracting(RESOURCE_NAME).containsExactly("invoiceBusinessDecisions_v_1.dmn");
+      assertThat(decisionRequirementsResultsPage1.getItems()).extracting(VERSION).containsExactly(1);
+      assertThat(decisionRequirementsResultsPage2.getTotal()).isEqualTo(2);
+      assertThat(decisionRequirementsResultsPage2.getItems()).hasSize(1);
+      assertThat(decisionRequirementsResultsPage2.getItems()).extracting(RESOURCE_NAME).containsExactly("invoiceBusinessDecisions_v_2.dmn");
+      assertThat(decisionRequirementsResultsPage2.getItems()).extracting(VERSION).containsExactly(2);
+    });
+  }
+
+  @Test
+  public void shouldPageWithSearchAfterSizeAndSortedDesc() throws Exception {
+    given(() -> tester.deployDecision("invoiceBusinessDecisions_v_1.dmn")
+        .deployDecision("invoiceBusinessDecisions_v_2.dmn")
+        .waitUntil().decisionsAreDeployed(4));
+    when(() -> {
+      decisionRequirementsResultsPage1 = dao.search(new Query<DecisionRequirements>().setSize(1)
+          .setSort(Query.Sort.listOf(RESOURCE_NAME, Query.Sort.Order.DESC)));
+      decisionRequirementsResultsPage2 = dao.search(new Query<DecisionRequirements>().setSize(1)
+          .setSort(Query.Sort.listOf(RESOURCE_NAME, Query.Sort.Order.DESC))
+          .setSearchAfter(new Object[] { decisionRequirementsResultsPage1.getItems().get(0).getResourceName(),
+              decisionRequirementsResultsPage1.getItems().get(0).getKey() }));
+    });
+    then(() -> {
+      assertThat(decisionRequirementsResultsPage1.getTotal()).isEqualTo(2);
+      assertThat(decisionRequirementsResultsPage1.getItems()).hasSize(1);
+      assertThat(decisionRequirementsResultsPage1.getItems()).extracting(RESOURCE_NAME)
+          .containsExactly("invoiceBusinessDecisions_v_2.dmn");
+      assertThat(decisionRequirementsResultsPage1.getItems()).extracting(VERSION).containsExactly(2);
+      assertThat(decisionRequirementsResultsPage2.getTotal()).isEqualTo(2);
+      assertThat(decisionRequirementsResultsPage2.getItems()).hasSize(1);
+      assertThat(decisionRequirementsResultsPage2.getItems()).extracting(RESOURCE_NAME).containsExactly("invoiceBusinessDecisions_v_1.dmn");
+      assertThat(decisionRequirementsResultsPage2.getItems()).extracting(VERSION).containsExactly(1);
+    });
+  }
+
+  @Test
+  public void shouldFilterByFieldAndSortDesc() throws Exception {
+    given(() -> tester.deployDecision("invoiceBusinessDecisions_v_1.dmn")
+        .deployDecision("invoiceBusinessDecisions_v_2.dmn")
+        .waitUntil().decisionsAreDeployed(4));
+    when(() -> {
+      final DecisionRequirements decisionRequirementsFilter = new DecisionRequirements().setName("Invoice Business Decisions");
+      decisionRequirementsResults = dao.search(new Query<DecisionRequirements>()
+          .setFilter(decisionRequirementsFilter)
+          .setSort(Query.Sort.listOf(VERSION, Query.Sort.Order.DESC)));
+    });
+    then(() -> {
+      assertThat(decisionRequirementsResults.getTotal()).isEqualTo(2);
+      List<DecisionRequirements> decisionRequirements = decisionRequirementsResults.getItems();
+      assertThat(decisionRequirements).hasSize(2);
+      assertThat(decisionRequirements).extracting(NAME).containsExactly("Invoice Business Decisions", "Invoice Business Decisions");
+      assertThat(decisionRequirements).extracting(VERSION).containsExactly(2, 1);
+    });
+  }
+
+  @Test
+  public void shouldFilterByMultipleFields() throws Exception {
+    given(() -> tester.deployDecision("invoiceBusinessDecisions_v_1.dmn")
+        .deployDecision("invoiceBusinessDecisions_v_2.dmn")
+        .waitUntil().decisionsAreDeployed(4));
+    when(() -> {
+      final DecisionRequirements decisionRequirementsFilter = new DecisionRequirements().setName("Invoice Business Decisions").setVersion(2);
+      decisionRequirementsResults = dao.search(new Query<DecisionRequirements>()
+          .setFilter(decisionRequirementsFilter));
+    });
+    then(() -> {
+      assertThat(decisionRequirementsResults.getTotal()).isEqualTo(1);
+      List<DecisionRequirements> decisionRequirements = decisionRequirementsResults.getItems();
+      assertThat(decisionRequirements).hasSize(1);
+      assertThat(decisionRequirements).extracting(NAME).containsExactly("Invoice Business Decisions");
+      assertThat(decisionRequirements).extracting(VERSION).containsExactly(2);
+    });
+  }
+
+  @Test
+  public void shouldFilterAndPageAndSort() throws Exception {
+    given(() -> tester.deployDecision("invoiceBusinessDecisions_v_1.dmn")
+        .deployDecision("invoiceBusinessDecisions_v_2.dmn")
+        .waitUntil().decisionsAreDeployed(4));
+    when(() -> {
+      final DecisionRequirements decisionRequirementsFilter = new DecisionRequirements().setName("Invoice Business Decisions");
+      decisionRequirementsResults = dao.search(new Query<DecisionRequirements>()
+          .setFilter(decisionRequirementsFilter)
+          .setSort(Query.Sort.listOf(VERSION, Query.Sort.Order.DESC))
+          .setSize(1));
+    });
+    then(() -> {
+      assertThat(decisionRequirementsResults.getTotal()).isEqualTo(2);
+      List<DecisionRequirements> decisionRequirements = decisionRequirementsResults.getItems();
+      assertThat(decisionRequirements).hasSize(1);
+      assertThat(decisionRequirements).extracting(NAME).containsExactly("Invoice Business Decisions");
+      assertThat(decisionRequirements).extracting(VERSION).containsExactly(2);
     });
   }
 

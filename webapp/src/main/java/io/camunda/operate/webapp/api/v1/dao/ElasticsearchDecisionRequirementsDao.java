@@ -10,15 +10,22 @@ import io.camunda.operate.schema.indices.DecisionRequirementsIndex;
 import io.camunda.operate.util.ElasticsearchUtil;
 import io.camunda.operate.webapp.api.v1.entities.DecisionRequirements;
 import io.camunda.operate.webapp.api.v1.entities.Query;
+import io.camunda.operate.webapp.api.v1.entities.Results;
 import io.camunda.operate.webapp.api.v1.exceptions.APIException;
 import io.camunda.operate.webapp.api.v1.exceptions.ResourceNotFoundException;
 import io.camunda.operate.webapp.api.v1.exceptions.ServerException;
 import org.elasticsearch.action.search.SearchRequest;
+import org.elasticsearch.action.search.SearchResponse;
+import org.elasticsearch.client.RequestOptions;
+import org.elasticsearch.index.query.QueryBuilder;
+import org.elasticsearch.search.SearchHit;
+import org.elasticsearch.search.SearchHits;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
@@ -64,12 +71,44 @@ public class ElasticsearchDecisionRequirementsDao extends ElasticsearchDao<Decis
   }
 
   @Override
-  protected void buildFiltering(Query<DecisionRequirements> query, SearchSourceBuilder searchSourceBuilder) {
+  public Results<DecisionRequirements> search(Query<DecisionRequirements> query) throws APIException {
 
+    final SearchSourceBuilder searchSourceBuilder = buildQueryOn(query, DecisionRequirements.KEY, new SearchSourceBuilder());
+    try {
+      final SearchRequest searchRequest = new SearchRequest().indices(decisionRequirementsIndex.getAlias()).source(searchSourceBuilder);
+      final SearchResponse searchResponse = elasticsearch.search(searchRequest, RequestOptions.DEFAULT);
+      final SearchHits searchHits = searchResponse.getHits();
+      final SearchHit[] searchHitArray = searchHits.getHits();
+      if (searchHitArray != null && searchHitArray.length > 0) {
+        final Object[] sortValues = searchHitArray[searchHitArray.length - 1].getSortValues();
+        List<DecisionRequirements> decisionRequirements = ElasticsearchUtil.mapSearchHits(searchHitArray, objectMapper, DecisionRequirements.class);
+        return new Results<DecisionRequirements>().setTotal(searchHits.getTotalHits().value).setItems(decisionRequirements).setSortValues(sortValues);
+      } else {
+        return new Results<DecisionRequirements>().setTotal(searchHits.getTotalHits().value);
+      }
+    } catch (Exception e) {
+      throw new ServerException("Error in reading decision requirements", e);
+    }
   }
 
   protected List<DecisionRequirements> searchFor(final SearchSourceBuilder searchSource) throws IOException {
     final SearchRequest searchRequest = new SearchRequest(decisionRequirementsIndex.getAlias()).source(searchSource);
     return ElasticsearchUtil.scroll(searchRequest, DecisionRequirements.class, objectMapper, elasticsearch);
+  }
+
+  @Override
+  protected void buildFiltering(Query<DecisionRequirements> query, SearchSourceBuilder searchSourceBuilder) {
+    final DecisionRequirements filter = query.getFilter();
+    if (filter != null) {
+      List<QueryBuilder> queryBuilders = new ArrayList<>();
+      queryBuilders.add(buildTermQuery(DecisionRequirements.ID, filter.getId()));
+      queryBuilders.add(buildTermQuery(DecisionRequirements.KEY, filter.getKey()));
+      queryBuilders.add(buildTermQuery(DecisionRequirements.DECISION_REQUIREMENTS_ID, filter.getDecisionRequirementsId()));
+      queryBuilders.add(buildTermQuery(DecisionRequirements.NAME, filter.getName()));
+      queryBuilders.add(buildTermQuery(DecisionRequirements.VERSION, filter.getVersion()));
+      queryBuilders.add(buildTermQuery(DecisionRequirements.RESOURCE_NAME, filter.getResourceName()));
+
+      searchSourceBuilder.query(ElasticsearchUtil.joinWithAnd(queryBuilders.toArray(new QueryBuilder[] {})));
+    }
   }
 }

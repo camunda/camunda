@@ -7,11 +7,21 @@
 package io.camunda.operate.webapp.api.v1.entities;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import io.camunda.operate.schema.indices.DecisionRequirementsIndex;
 
 import java.util.Objects;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class DecisionRequirements {
+
+  // Used for index field search and sorting
+  public static final String
+      ID = DecisionRequirementsIndex.ID,
+      KEY = DecisionRequirementsIndex.KEY,
+      DECISION_REQUIREMENTS_ID = DecisionRequirementsIndex.DECISION_REQUIREMENTS_ID,
+      NAME = DecisionRequirementsIndex.NAME,
+      VERSION = DecisionRequirementsIndex.VERSION,
+      RESOURCE_NAME = DecisionRequirementsIndex.RESOURCE_NAME;
 
   private String id;
   private Long key;

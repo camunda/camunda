@@ -6,8 +6,11 @@
  */
 package io.camunda.operate.webapp.api.v1.rest;
 
+import static io.camunda.operate.schema.indices.DecisionIndex.VERSION;
 import static io.camunda.operate.webapp.api.v1.rest.DecisionRequirementsController.URI;
+import static io.camunda.operate.webapp.api.v1.rest.SearchController.SEARCH;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -17,11 +20,13 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import io.camunda.operate.util.apps.nobeans.TestApplicationWithNoBeans;
 import io.camunda.operate.webapp.api.v1.dao.DecisionRequirementsDao;
 import io.camunda.operate.webapp.api.v1.entities.DecisionRequirements;
+import io.camunda.operate.webapp.api.v1.entities.Query;
 import io.camunda.operate.webapp.api.v1.exceptions.ResourceNotFoundException;
 
 import java.util.ArrayList;
 import java.util.List;
 
+import io.camunda.operate.webapp.api.v1.exceptions.ServerException;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -76,12 +81,89 @@ public class DecisionRequirementsControllerTest {
     assertGetWithFailed(URI + "/235").andExpect(status().isNotFound()).andExpect(content().string(expectedJSONContent));
   }
 
+  @Test
+  public void shouldAcceptEmptyQuery() throws Exception {
+    assertPostToWithSucceed(DecisionRequirementsController.URI + SEARCH, "{}");
+    verify(decisionRequirementsDao).search(new Query<>());
+  }
+
+  @Test
+  public void shouldAcceptQueryWithSearchAfterAndSize() throws Exception {
+    assertPostToWithSucceed(DecisionRequirementsController.URI + SEARCH , "{\"searchAfter\": [\"name\"], \"size\": 7}");
+    verify(decisionRequirementsDao).search(new Query<DecisionRequirements>().setSearchAfter(new Object[]{"name"}).setSize(7));
+  }
+
+  @Test
+  public void shouldAcceptQueryWithSizeAndSortSpec() throws Exception {
+    assertPostToWithSucceed(DecisionRequirementsController.URI + SEARCH, "{\"size\": 7, \"sort\":  [{\"field\":\"name\", \"order\":\"DESC\"}] }");
+    verify(decisionRequirementsDao).search(new Query<DecisionRequirements>()
+        .setSize(7)
+        .setSort(Query.Sort.listOf(DecisionRequirements.NAME, Query.Sort.Order.DESC)));
+  }
+
+  @Test
+  public void shouldAcceptQueryWithFilter() throws Exception {
+    assertPostToWithSucceed(DecisionRequirementsController.URI + SEARCH, "{\"filter\": { \"name\": \"hase\" } }");
+    verify(decisionRequirementsDao).search(new Query<DecisionRequirements>()
+        .setFilter(new DecisionRequirements().setName("hase")));
+  }
+
+  @Test
+  public void shouldAcceptQueryWithFullFilterAndSortingAndPaging() throws Exception {
+    assertPostToWithSucceed(DecisionRequirementsController.URI + SEARCH,
+        "{\"filter\": "
+            + "{ \"name\": \"hase\","
+            + "\"version\": 5 ,"
+            + "\"decisionRequirementsId\": \"decisionRequirementsId-23\", "
+            + "\"key\": 4217"
+            + "},"
+            + "\"size\": 17, "
+            + "\"sort\": [{\"field\":\"version\", \"order\":\"DESC\"}]"
+            + "}");
+    verify(decisionRequirementsDao).search(new Query<DecisionRequirements>()
+        .setFilter(
+            new DecisionRequirements()
+                .setName("hase")
+                .setVersion(5)
+                .setDecisionRequirementsId("decisionRequirementsId-23")
+                .setKey(4217L))
+        .setSort(Query.Sort.listOf(VERSION, Query.Sort.Order.DESC))
+        .setSize(17));
+  }
+
+  @Test
+  public void shouldReturnErrorMessageForListFailure() throws Exception {
+    final String expectedJSONContent = "{\"status\":500,\"message\":\"Error in retrieving data.\",\"instance\":\"47a7e1e4-5f09-4086-baa0-c9bcd40da029\",\"type\":\"API application error\"}";
+    // given
+    when(decisionRequirementsDao.search(any(Query.class))).thenThrow(
+        new ServerException("Error in retrieving data.").setInstance("47a7e1e4-5f09-4086-baa0-c9bcd40da029"));
+    // then
+    assertPostToWithFailed(DecisionRequirementsController.URI + SEARCH, "{}")
+        .andExpect(status().isInternalServerError())
+        .andExpect(content().string(expectedJSONContent));
+  }
+
   protected ResultActions assertGetToSucceed(final String endpoint) throws Exception {
     return mockMvc.perform(get(endpoint)).andExpect(status().isOk());
   }
 
   protected ResultActions assertGetWithFailed(final String endpoint) throws Exception {
     return mockMvc.perform(get(endpoint)).andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON_VALUE));
+  }
+
+  protected ResultActions assertPostToWithFailed(final String endpoint, final String content)
+      throws Exception {
+    return mockMvc.perform(post(endpoint)
+        .content(content)
+        .contentType(MediaType.APPLICATION_JSON));
+  }
+
+  protected ResultActions assertPostToWithSucceed(final String endpoint, final String content)
+      throws Exception {
+    return mockMvc.perform(post(endpoint)
+            .content(content)
+            .contentType(MediaType.APPLICATION_JSON))
+        .andExpect(status().isOk());
   }
 
   protected List<DecisionRequirements> createDecisionRequirementsOf(final int number) {
