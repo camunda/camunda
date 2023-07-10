@@ -8,7 +8,7 @@ package io.camunda.tasklist.it;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.tasklist.management.HealthCheckTest.AddManagementPropertiesInitializer;
+import io.camunda.tasklist.management.HealthCheckIT.AddManagementPropertiesInitializer;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.util.ElasticsearchTestRule;
 import io.camunda.tasklist.util.TasklistIntegrationTest;

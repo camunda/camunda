@@ -7,7 +7,7 @@
         <version>8.3.0-SNAPSHOT</version>
     </parent>
 
-    <artifactId>test-coverage</artifactId>
+    <artifactId>tasklist-test-coverage</artifactId>
     <name>Tasklist aggregated coverage</name>
     <description>Module created to generate an aggregated report of the code coverage for tasklist sub-modules.</description>
 

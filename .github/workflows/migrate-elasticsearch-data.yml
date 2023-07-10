@@ -33,6 +33,7 @@ jobs:
           secrets: |
             secret/data/github.com/organizations/camunda NEXUS_USR;
             secret/data/github.com/organizations/camunda NEXUS_PSW;
+            secret/data/products/tasklist/ci/tasklist TASKLIST_CI_ALERT_WEBHOOK_URL;
 
       # Setup: configure Java, Maven, settings.xml
       - name: Setup Java ${{ env.JAVA_VERSION }}
@@ -43,11 +44,9 @@ jobs:
           cache: "maven"
 
       - name: Setup Maven
-        uses: s4u/setup-maven-action@v1.8.0
+        uses: stCarolas/setup-maven@v4.5
         with:
-          java-version: ${{ env.JAVA_VERSION }}
-          java-distribution: "adopt"
-          maven-version: "3.8.6"
+          maven-version: 3.8.6
 
       # Use CI Nexus as co-located pull-through cache for Maven artifacts via ~/.m2/settings.xml
       - name: Create Maven settings.xml
@@ -82,3 +81,17 @@ jobs:
           report_suite_logs: error
           files: |
             **/target/surefire-reports/*.xml
+
+      # Notify: send Slack notification on tests failure
+      - name: Send Slack notification on failure
+        if: failure()
+        uses: slackapi/slack-github-action@v1.24.0
+        env:
+          SLACK_WEBHOOK_URL: ${{ steps.secrets.outputs.TASKLIST_CI_ALERT_WEBHOOK_URL }}
+        with:
+          payload: |
+            {
+              "workflow_name": "Migrate elasticsearch data",
+              "github_run_url": "https://github.com/camunda/tasklist/actions/runs/${{ github.run_id }}",
+              "branch": "${{ github.head_ref || github.ref_name }}"
+            }

@@ -8,7 +8,7 @@ package io.camunda.tasklist.modules;
 
 import io.camunda.tasklist.es.RetryElasticsearchClient;
 import io.camunda.tasklist.management.ElsIndicesHealthIndicator;
-import io.camunda.tasklist.management.HealthCheckTest.AddManagementPropertiesInitializer;
+import io.camunda.tasklist.management.HealthCheckIT.AddManagementPropertiesInitializer;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.qa.util.TestElasticsearchSchemaManager;
 import io.camunda.tasklist.util.TestApplication;

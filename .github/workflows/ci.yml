@@ -1,0 +1,19 @@
+# This GitHub Actions workflow that is triggered on push to `master` and `stable/**` branch or on any pull request creation
+# and invokes `ci-reusable` workflow.
+
+name: CI
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - 'master'
+      - 'stable/**'
+  pull_request:
+
+jobs:
+  run-build:
+    name: run
+    uses: ./.github/workflows/ci-reusable.yml
+    secrets: inherit
+    with:
+      branch: ${{ github.head_ref || github.ref_name }} # head_ref = branch name on PR, ref_name = `master` or `stable/**`

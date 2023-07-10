@@ -58,6 +58,7 @@
     <zeebe-test-container.version>3.5.2</zeebe-test-container.version>
     <elasticsearch-test-container.version>1.17.6</elasticsearch-test-container.version>
     <postgres-test-container.version>1.17.6</postgres-test-container.version>
+    <testcontainers.version>1.17.6</testcontainers.version>
 
     <maven.compiler.target>17</maven.compiler.target>
     <maven.compiler.source>17</maven.compiler.source>
@@ -181,6 +182,11 @@
         <groupId>org.testcontainers</groupId>
         <artifactId>postgresql</artifactId>
         <version>${postgres-test-container.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.testcontainers</groupId>
+        <artifactId>testcontainers</artifactId>
+        <version>${testcontainers.version}</version>
       </dependency>
 
       <dependency>

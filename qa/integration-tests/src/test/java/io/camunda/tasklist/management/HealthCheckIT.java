@@ -19,7 +19,7 @@ import io.camunda.tasklist.Application;
 import io.camunda.tasklist.es.ElasticsearchConnector;
 import io.camunda.tasklist.es.ElasticsearchTask;
 import io.camunda.tasklist.es.RetryElasticsearchClient;
-import io.camunda.tasklist.management.HealthCheckTest.AddManagementPropertiesInitializer;
+import io.camunda.tasklist.management.HealthCheckIT.AddManagementPropertiesInitializer;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.util.apps.nobeans.TestApplicationWithNoBeans;
 import io.camunda.tasklist.webapp.security.ElasticsearchSessionRepository;
@@ -61,7 +61,7 @@ import org.springframework.web.context.WebApplicationContext;
     },
     webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ContextConfiguration(initializers = AddManagementPropertiesInitializer.class)
-public class HealthCheckTest {
+public class HealthCheckIT {
 
   @Autowired private WebApplicationContext context;
 

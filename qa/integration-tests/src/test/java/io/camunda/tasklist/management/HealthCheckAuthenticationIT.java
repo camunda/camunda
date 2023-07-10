@@ -14,7 +14,7 @@ import static org.mockito.BDDMockito.given;
 import io.camunda.tasklist.es.ElasticsearchConnector;
 import io.camunda.tasklist.es.ElasticsearchTask;
 import io.camunda.tasklist.es.RetryElasticsearchClient;
-import io.camunda.tasklist.management.HealthCheckTest.AddManagementPropertiesInitializer;
+import io.camunda.tasklist.management.HealthCheckIT.AddManagementPropertiesInitializer;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.util.apps.nobeans.TestApplicationWithNoBeans;
 import io.camunda.tasklist.webapp.security.ElasticsearchSessionRepository;
@@ -52,7 +52,7 @@ import org.springframework.test.context.junit4.SpringRunner;
     webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ContextConfiguration(initializers = AddManagementPropertiesInitializer.class)
 @ActiveProfiles(AUTH_PROFILE)
-public class HealthCheckAuthenticationTest {
+public class HealthCheckAuthenticationIT {
 
   @Autowired private TestRestTemplate testRestTemplate;
 

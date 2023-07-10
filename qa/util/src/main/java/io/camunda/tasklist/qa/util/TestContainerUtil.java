@@ -149,7 +149,7 @@ public class TestContainerUtil {
             .withEnv("KEYCLOAK_IMPORT", containerPath);
 
     keycloakContainer.start();
-    testContext.setExternalKeycloakHost(keycloakContainer.getContainerIpAddress());
+    testContext.setExternalKeycloakHost(keycloakContainer.getHost());
     testContext.setExternalKeycloakPort(keycloakContainer.getFirstMappedPort());
     testContext.setInternalKeycloakHost(KEYCLOAK_NETWORK_ALIAS);
     testContext.setInternalKeycloakPort(KEYCLOAK_PORT);

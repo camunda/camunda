@@ -1,0 +1,167 @@
+# This GitHub Actions workflow automates the CI process for the 'tasklist' service.
+# It triggers on a `workflow_call` event and accepts inputs for branch name[required], Java version[optional], and fork count[optional].
+#
+# It consists of a several steps:
+# 1. Setup: It checks out the specified branch, sets up Java and Maven with the provided inputs, and imports secrets from Vault.
+# 2. Build: Then it builds the Maven artifacts and Docker images
+# 3. Tests: Runs unit and integration tests.
+# 4. Reports: Publishes the test results, even if some steps failed.
+# 5. Upload: Deploys SNAPSHOT Docker image and mvn artifacts
+#
+# Environment variables are used to control CPU limits and define the image tags used for Docker builds.
+# This workflow is designed to provide a comprehensive, automated CI process that ensures code quality, handles secrets securely,
+# and enables detailed reporting of test results.
+
+name: CI Reusable
+
+on:
+  workflow_call:
+    inputs:
+      branch:
+        description: "The branch name to be used for the workflow"
+        required: true
+        type: string
+      javaVersion:
+        description: "The version of Java to be used to build the service"
+        required: false
+        type: number
+        default: 17
+      forkCount:
+        description: "The number of VMs to fork in parallel in order to execute the tests"
+        required: false
+        default: 4
+        type: number
+
+defaults:
+  run:
+    # use bash shell by default to ensure pipefail behavior is the default
+    # see https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#exit-codes-and-error-action-preference
+    shell: bash
+
+env:
+  JAVA_VERSION: ${{ inputs.javaVersion }}
+  BRANCH_NAME: ${{ inputs.branch }}
+  IS_MASTER_BRANCH: ${{ inputs.branch == 'master' }}
+  IS_FE_BRANCH: ${{ startsWith(inputs.branch, 'fe-') }}
+  LIMITS_CPU: ${{ inputs.forkCount }} # consumed by `maven-surefire-plugin` & `maven-failsafe-plugin` plugins defined in main `pom.xml` file
+  ZEEBE_TASKLIST_DOCKER_IMAGE: "registry.camunda.cloud/team-operate/tasklist"
+
+jobs:
+  build:
+    name: "'${{ inputs.branch }}' build"
+    runs-on: n1-standard-16-netssd-preempt
+    steps:
+      # Setup: checkout branch
+      - name: "Checkout '${{ inputs.branch }}' branch"
+        uses: actions/checkout@v3
+        with:
+          ref: refs/heads/${{ inputs.branch }}
+          fetch-depth: 0  # fetches all history for all branches and tags
+
+      #########################################################################
+      # Setup: define env variables
+      - name: Set GitHub environment variables
+        run: |
+          GIT_COMMIT_HASH=$(git rev-parse ${{ inputs.branch }})
+          BRANCH_SLUG=$(echo "${{ inputs.branch }}" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9-]/-/g')
+          echo "IMAGE_TAG=$(if [ "${{ inputs.branch }}" = "master" ]; then echo $GIT_COMMIT_HASH; else echo "branch-$BRANCH_SLUG "; fi)" >> $GITHUB_ENV
+          echo "CI_IMAGE_TAG=ci-$GIT_COMMIT_HASH" >> $GITHUB_ENV
+
+      #########################################################################
+      # Setup: import secrets from vault
+      - name: Import Secrets
+        id: secrets # important to refer to it in later steps
+        uses: hashicorp/vault-action@357cb9c034fd0638a02e0d4140aa5e37f1a10d38
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          exportEnv: false # we rely on step outputs, no need for environment variables
+          secrets: |
+            secret/data/github.com/organizations/camunda NEXUS_USR;
+            secret/data/github.com/organizations/camunda NEXUS_PSW;
+            secret/data/products/tasklist/ci/tasklist REGISTRY_HUB_DOCKER_COM_USR;
+            secret/data/products/tasklist/ci/tasklist REGISTRY_HUB_DOCKER_COM_PSW;
+
+      #########################################################################
+      # Setup: configure Java, Maven, settings.xml
+      - name: Setup Java ${{ env.JAVA_VERSION }}
+        uses: actions/setup-java@v3
+        with:
+          distribution: "adopt"
+          java-version: ${{ env.JAVA_VERSION }}
+          cache: "maven"
+
+      - name: Setup Maven
+        uses: stCarolas/setup-maven@v4.5
+        with:
+          maven-version: 3.8.6
+
+      # Setup: Use CI Nexus as co-located pull-through cache for Maven artifacts via ~/.m2/settings.xml
+      - name: Create Maven settings.xml
+        uses: s4u/maven-settings-action@v2.8.0
+        with:
+          githubServer: false
+          servers: |
+            [{
+              "id": "camunda-nexus",
+              "username": "${{ steps.secrets.outputs.NEXUS_USR }}",
+              "password": "${{ steps.secrets.outputs.NEXUS_PSW }}"
+            }]
+          mirrors: '[{"url": "https://repository.nexus.camunda.cloud/content/groups/internal/", "id": "camunda-nexus", "mirrorOf": "*", "name": "camunda Nexus"}]'
+
+      #########################################################################
+      # Build: maven artifacts and Docker images
+      - name: Build Maven
+        run: |
+          mvn com.coveo:fmt-maven-plugin:check -T1C clean deploy -P -docker -DskipTests=true -DaltStagingDirectory=${{ github.workspace }}/staging-${{ env.BRANCH_NAME }} -DskipRemoteStaging=true -Dmaven.deploy.skip=true
+
+      - name: Build Docker images
+        run: |
+          mvn -B -pl webapp jib:build -Dimage=${{ env.ZEEBE_TASKLIST_DOCKER_IMAGE }}:${{ env.IMAGE_TAG }} -Djib.to.auth.username=${{ steps.secrets.outputs.NEXUS_USR }} -Djib.to.auth.password=${{ steps.secrets.outputs.NEXUS_PSW }}
+          mvn -B -pl webapp jib:build -Dimage=${{ env.ZEEBE_TASKLIST_DOCKER_IMAGE }}:${{ env.CI_IMAGE_TAG }} -Djib.to.auth.username=${{ steps.secrets.outputs.NEXUS_USR }} -Djib.to.auth.password=${{ steps.secrets.outputs.NEXUS_PSW }}
+          
+          if [ ${{ env.IS_MASTER_BRANCH }} ]; then
+            mvn -B -pl webapp jib:build -Dimage=${{ env.ZEEBE_TASKLIST_DOCKER_IMAGE }}:latest -Djib.to.auth.username=${{ steps.secrets.outputs.NEXUS_USR }} -Djib.to.auth.password=${{ steps.secrets.outputs.NEXUS_PSW }}
+          fi
+
+      #########################################################################
+      # Tests: run tests for all Maven modules
+      - name: Run Tests
+        if: ${{ env.IS_FE_BRANCH == 'false' }}
+        run: |
+          mvn -T4 verify -P docker,skipFrontendBuild -B --fail-at-end -Dfailsafe.rerunFailingTestsCount=2
+
+      #########################################################################
+      # Reports: publish test metrics results
+      - name: Publish Test Results
+        uses: EnricoMi/publish-unit-test-result-action@v2.7.0
+        if: ${{ env.IS_FE_BRANCH == 'false' && (success() || failure()) }} # Publish results for non-FE branch even if the build step was failed
+        with:
+          files: |
+            **/target/surefire-reports/*.xml
+            **/target/failsafe-reports/TEST-*.xml
+
+      - name: Upload JaCoCo report
+        uses: actions/upload-artifact@v3
+        if: ${{ env.IS_FE_BRANCH == 'false' && (success() || failure()) }}
+        with:
+          name: jacoco-report-${{ env.BRANCH_NAME }}
+          path: ${{ github.workspace }}/test-coverage/target/site/jacoco-aggregate/
+          retention-days: 2
+
+      #########################################################################
+      # Upload: deploy SNAPSHOT Docker image and mvn artifacts
+      - name: Deploy - Docker Image SNAPSHOT
+        if: ${{ env.IS_MASTER_BRANCH == 'true' }}
+        env:
+          SNAPSHOT_IMAGE_NAME: "camunda/tasklist"
+          SNAPSHOT_IMAGE_TAG: "SNAPSHOT"
+        run: |
+          mvn -B -pl webapp jib:build -Dimage=${{ env.SNAPSHOT_IMAGE_NAME }}:${{ env.SNAPSHOT_IMAGE_TAG }} -Djib.to.auth.username=${{ steps.secrets.outputs.REGISTRY_HUB_DOCKER_COM_USR }} -Djib.to.auth.password=${{ steps.secrets.outputs.REGISTRY_HUB_DOCKER_COM_PSW }}
+
+      - name: Deploy - Nexus SNAPSHOT
+        if: ${{ env.IS_MASTER_BRANCH == 'true' }}
+        run: |
+          mvn org.sonatype.plugins:nexus-staging-maven-plugin:deploy-staged -DskipTests=true -P -docker,skipFrontendBuild -B -DaltStagingDirectory=${{ github.workspace }}/staging-${{ env.BRANCH_NAME }} -DskipRemoteStaging=true -Dmaven.deploy.skip=true
