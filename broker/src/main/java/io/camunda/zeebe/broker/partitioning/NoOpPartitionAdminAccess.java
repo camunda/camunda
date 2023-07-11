@@ -52,6 +52,12 @@ public final class NoOpPartitionAdminAccess implements PartitionAdminAccess {
     return CompletableActorFuture.completed(null);
   }
 
+  @Override
+  public ActorFuture<Void> banInstance(final long processInstanceKey) {
+    logCall();
+    return CompletableActorFuture.completed(null);
+  }
+
   private void logCall() {
     LOG.warn("Received call on NoOp implementation of PartitionAdminAccess");
   }

@@ -10,6 +10,7 @@ package io.camunda.zeebe.broker.system.partitions;
 import io.camunda.zeebe.broker.exporter.stream.ExporterDirector;
 import io.camunda.zeebe.broker.system.partitions.impl.AsyncSnapshotDirector;
 import io.camunda.zeebe.broker.system.partitions.impl.PartitionProcessingState;
+import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.streamprocessor.StreamProcessor;
 import java.io.IOException;
 import java.util.function.Supplier;
@@ -20,16 +21,19 @@ public class PartitionAdminControlImpl implements PartitionAdminControl {
   private final Supplier<ExporterDirector> exporterDirectorSupplier;
   private final Supplier<AsyncSnapshotDirector> snapshotDirectorSupplier;
   private final Supplier<PartitionProcessingState> partitionProcessingStateSupplier;
+  private final Supplier<ZeebeDb> zeebeDbSupplier;
 
   public PartitionAdminControlImpl(
       final Supplier<StreamProcessor> streamProcessorSupplier,
       final Supplier<ExporterDirector> exporterDirectorSupplier,
       final Supplier<AsyncSnapshotDirector> snapshotDirectorSupplier,
-      final Supplier<PartitionProcessingState> partitionProcessingStateSupplier) {
+      final Supplier<PartitionProcessingState> partitionProcessingStateSupplier,
+      final Supplier<ZeebeDb> zeebeDbSupplier) {
     this.streamProcessorSupplier = streamProcessorSupplier;
     this.exporterDirectorSupplier = exporterDirectorSupplier;
     this.snapshotDirectorSupplier = snapshotDirectorSupplier;
     this.partitionProcessingStateSupplier = partitionProcessingStateSupplier;
+    this.zeebeDbSupplier = zeebeDbSupplier;
   }
 
   @Override
@@ -75,5 +79,10 @@ public class PartitionAdminControlImpl implements PartitionAdminControl {
   @Override
   public boolean resumeExporting() throws IOException {
     return partitionProcessingStateSupplier.get().resumeExporting();
+  }
+
+  @Override
+  public ZeebeDb getZeebeDb() {
+    return zeebeDbSupplier.get();
   }
 }
