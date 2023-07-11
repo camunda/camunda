@@ -87,8 +87,18 @@ public final class LongPollingActivateJobsHandler implements ActivateJobsHandler
   public void activateJobs(
       final ActivateJobsRequest request,
       final ServerStreamObserver<ActivateJobsResponse> responseObserver) {
+    final var type = request.getType();
     final var longPollingRequest = toInflightActivateJobsRequest(request, responseObserver);
     activateJobs(longPollingRequest);
+
+    // eagerly removing the request on cancellation may free up some resources
+    responseObserver.setOnCancelHandler(
+        () -> {
+          final var state = jobTypeState.get(type);
+          if (state != null) {
+            state.removeRequest(longPollingRequest);
+          }
+        });
   }
 
   private void completeOrResubmitRequest(
