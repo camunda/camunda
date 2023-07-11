@@ -125,6 +125,9 @@ public class Engine implements RecordProcessor {
       if (noBanCheckNeeded || !processingState.getBannedInstanceState().isBanned(typedCommand)) {
         currentProcessor.processRecord(record);
       }
+      else {
+        LOG.info("Ignore record {} due to banning", record);
+      }
     }
     return processingResultBuilder.build();
   }
