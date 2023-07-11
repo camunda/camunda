@@ -40,7 +40,7 @@
 
       > .actions {
         > .Button,
-        > .CarbonPopover > .buttonWrapper .Button {
+        > .Popover > .buttonWrapper .Button {
           opacity: 1;
         }
       }
@@ -64,7 +64,7 @@
       right: 7px;
 
       > .Button,
-      > .CarbonPopover > .buttonWrapper .Button {
+      > .Popover > .buttonWrapper .Button {
         opacity: 0;
 
         &.focus-visible {
@@ -76,7 +76,7 @@
         @include button-styles;
       }
 
-      > .CarbonPopover {
+      > .Popover {
         display: inline-block;
 
         > .buttonWrapper {
@@ -105,7 +105,7 @@
     }
   }
 
-  &.CarbonPopover {
+  &.Popover {
     > .cds--popover {
       > .popoverContent {
         width: 680px;
@@ -154,21 +154,6 @@
           }
         }
       }
-    }
-  }
-
-  .TenantPopover,
-  .VersionPopover {
-    display: block;
-
-    .dialogArrowBorder,
-    .dialogArrow {
-      display: none;
-    }
-
-    .dialogContainer {
-      border-radius: 0;
-      margin-top: 2px;
     }
   }
 }

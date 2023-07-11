@@ -104,11 +104,11 @@ public class ConfigurationServiceConstants {
   public static final String CONTAINER_STATUS_MAX_CONNECTIONS = "$.container.status.connections.max";
 
   public static final String CONTAINER_ACCESS_URL = "$.container.accessUrl";
+  public static final String CONTAINER_MAX_REQUEST_HEADER_IN_BYTES = "$.container.maxRequestHeaderSizeInBytes";
 
   public static final String ENTITY_CONFIGURATION = "$.entity";
 
   public static final String CSV_CONFIGURATION = "$.export.csv";
-  public static final String EXPORT_CSV_DELIMITER = "$.export.csv.delimiter";
 
   public static final String HISTORY_CLEANUP = "$.historyCleanup";
   public static final String HISTORY_CLEANUP_PROCESS_DATA = HISTORY_CLEANUP + ".processDataCleanup";

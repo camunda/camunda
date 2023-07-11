@@ -18,8 +18,8 @@ Object {
         ],
       },
     ],
-    "description": undefined,
-    "name": "Heatmap: Flownode count",
+    "description": "Locate duration or count bottlenecks visualized as Heatmap for Flow Nodes.",
+    "name": "Locate bottlenecks on a Heatmap",
     "template": Object {
       "view": Object {
         "entity": "flowNode",

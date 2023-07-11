@@ -14,7 +14,7 @@ export const reportName = Selector('.ReportView .name');
 export const reportRenderer = Selector('.ReportRenderer');
 export const report = Selector('.ListItem.report');
 export const definitionCopyButton = (definition) => definition.find('.Button').nth(0);
-export const definitionEditButton = (definition) => definition.find('.CarbonPopover .Button');
+export const definitionEditButton = (definition) => definition.find('.Popover .Button');
 export const checkbox = (name) => Selector('.label').withText(name);
 export const groupbyDropdown = checkbox('Group By').nextSibling();
 export const groupbyDropdownButton = groupbyDropdown.find('button');
@@ -56,7 +56,7 @@ export const modalFlowNode = (id) => Selector(`.ProcessPartModal [data-element-i
 export const selectSectionWithLabel = (label) => Selector('section .sectionTitle').withText(label);
 export const selectSwitchLabel = (label) => Selector('.Switch .label').withText(label);
 export const tableGroup = (idx) => Selector('.Table thead tr.groupRow th').nth(idx);
-export const tableHeader = (idx) => Selector('.Table thead tr:last-child th').nth(idx);
+export const tableHeader = (idx) => Selector('.Table thead tr:last-child th.tableHeader').nth(idx);
 export const tableCell = (row, column) =>
   Selector('.Table tbody tr').nth(row).find('td').nth(column);
 export const instanceCountSwitch = Selector('.Configuration .Switch');
@@ -84,8 +84,9 @@ export const warningMessage = Selector('.Report .MessageBox--warning');
 export const controlPanelFilter = Selector('.ActionItem');
 export const filterRemoveButton = controlPanelFilter.find('.Button:last-child');
 export const definitionElement = (name) => Selector('.DefinitionList li').withText(name);
-export const definitionEditor = Selector('.DefinitionList .CarbonPopover .Button');
-export const definitionSelectionDialog = Selector('.DefinitionList .dialog');
+export const definitionEditorPopover = Selector('.DefinitionList .Popover');
+export const definitionEditor = definitionEditorPopover.find('.Button');
+export const definitionEditorDialog = definitionEditorPopover.find('.popoverContent');
 export const versionPopover = Selector('.VersionPopover');
 export const versionAll = Selector('input[type="radio"]').nth(0);
 export const versionLatest = Selector('input[type="radio"]').nth(1);
@@ -95,7 +96,7 @@ export const versionCheckbox = (number) =>
 export const tenantPopover = Selector('.TenantPopover');
 export const aggregationTypeSelect = Selector('.AggregationType');
 export const aggregationOption = (text) => Selector('.AggregationType .Switch').withText(text);
-export const detailsPopoverButton = Selector('.EntityName .CarbonPopover .buttonWrapper .Button');
+export const detailsPopoverButton = Selector('.EntityName .Popover .buttonWrapper .Button');
 export const modalButton = (text) => Selector('.ReportDetails .modalButton').withText(text);
 export const rawDataTable = Selector('.RawDataModal .Table');
 export const modalDiagram = Selector('.DiagramModal .BPMNDiagram');

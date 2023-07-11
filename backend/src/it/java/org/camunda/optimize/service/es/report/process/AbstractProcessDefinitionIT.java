@@ -33,6 +33,7 @@ import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.service.util.ProcessReportDataType;
 import org.camunda.optimize.service.util.TemplatedProcessReportDataBuilder;
 import org.camunda.optimize.util.BpmnModels;
+import org.junit.jupiter.api.Tag;
 
 import javax.ws.rs.core.Response;
 import java.sql.SQLException;
@@ -62,6 +63,7 @@ import static org.camunda.optimize.util.BpmnModels.getSingleUserTaskDiagram;
 import static org.camunda.optimize.util.BpmnModels.getTripleUserTaskDiagram;
 import static org.camunda.optimize.util.SuppressionConstants.UNUSED;
 
+@Tag("reportEvaluation")
 public class AbstractProcessDefinitionIT extends AbstractIT {
 
   protected static final String TEST_ACTIVITY = "testActivity";

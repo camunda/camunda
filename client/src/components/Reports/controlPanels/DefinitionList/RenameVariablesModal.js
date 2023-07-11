@@ -8,7 +8,7 @@
 import React, {useEffect, useState} from 'react';
 import {Button, TableToolbar, TableToolbarContent, TableToolbarSearch} from '@carbon/react';
 
-import {Input, Modal, Table} from 'components';
+import {Input, Modal, NoDataNotice, Table} from 'components';
 import {loadVariables} from 'services';
 import {t} from 'translation';
 import {withErrorHandling} from 'HOC';
@@ -136,10 +136,9 @@ export function RenameVariablesModal({
           ])}
           loading={!variables}
           noData={
-            (variables?.length > 0 &&
-              filteredVariables.length === 0 &&
-              t('events.table.noResults')) ||
-            undefined
+            variables?.length > 0 && filteredVariables.length === 0 ? (
+              <NoDataNotice title={t('events.table.noResults')} />
+            ) : undefined
           }
           allowLocalSorting
         />

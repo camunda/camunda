@@ -148,7 +148,7 @@ export class Dashboard extends React.Component {
           description,
           tiles: tiles || [],
           availableFilters: availableFilters || [],
-          isAuthorizedToShare: await isAuthorizedToShareDashboard(id),
+          isAuthorizedToShare: !instantPreviewDashboard && (await isAuthorizedToShareDashboard(id)),
           refreshRateSeconds,
           instantPreviewDashboard,
         });

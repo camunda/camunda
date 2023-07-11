@@ -24,16 +24,16 @@ test('create a report from a template', async (t) => {
   await t.click(Common.templateModalProcessField);
   await t.click(Common.option('Invoice Receipt with alternative correlation variable'));
 
-  await t.click(e.templateOption('Heatmap: Flownode count'));
+  await t.click(e.templateOption('Analyze shares as Pie Chart'));
 
   await t.takeScreenshot('img/reportTemplate.png', {fullPage: true});
   await t.maximizeWindow();
 
   await t.click(Common.modalConfirmButton);
 
-  await t.expect(Common.nameEditField.value).eql('Heatmap: Flownode count');
-  await t.expect(e.groupbyDropdownButton.textContent).contains('Flow Nodes');
-  await t.expect(e.reportDiagram.visible).ok();
+  await t.expect(Common.nameEditField.value).eql('Analyze shares as Pie Chart');
+  await t.expect(e.groupbyDropdownButton.textContent).contains('Start Date : Year');
+  await t.expect(e.reportChart.visible).ok();
 });
 
 test('create and name a report', async (t) => {
@@ -143,7 +143,7 @@ test('version selection', async (t) => {
   await t.click(e.versionCheckbox(2));
 
   await t.takeElementScreenshot(
-    e.definitionSelectionDialog,
+    e.definitionEditorDialog,
     'process-analysis/report-analysis/img/report-versionSelection.png'
   );
 
@@ -155,7 +155,7 @@ test('version selection', async (t) => {
   await t.click(e.tenantPopover);
 
   await t.takeElementScreenshot(
-    e.definitionSelectionDialog,
+    e.definitionEditorDialog,
     'process-analysis/report-analysis/img/tenantSelection.png'
   );
 });
@@ -1328,4 +1328,23 @@ test('add, edit and remove reports description', async (t) => {
   await u.save(t);
 
   await t.expect(Common.descriptionField.exists).notOk();
+});
+
+test('change popover alignment and height to stay visible', async (t) => {
+  await u.createNewReport(t);
+  await u.selectReportDefinition(t, 'Invoice Receipt with alternative correlation variable');
+
+  await t.click(e.definitionEditor);
+
+  // alignment
+  await t.expect(e.definitionEditorPopover.hasClass('cds--popover--bottom-right')).ok();
+
+  // height adjustment
+  await t.resizeWindow(1200, 600);
+  const dialogHeight = await e.definitionEditorDialog.getStyleProperty('height');
+  await t.expect(Number(dialogHeight.replace('px', ''))).lt(300);
+
+  // vertical flip
+  await t.resizeWindow(1200, 300);
+  await t.expect(e.definitionEditorPopover.hasClass('cds--popover--top-right')).ok();
 });

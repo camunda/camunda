@@ -26,8 +26,8 @@
       display: none;
     }
 
-    .EntityName .CarbonPopover,
-    .InstanceCount .CarbonPopover {
+    .EntityName .Popover,
+    .InstanceCount .Popover {
       display: none;
     }
 
@@ -43,10 +43,6 @@
 
       > h3 {
         display: none;
-      }
-
-      .Popover {
-        width: max-content;
       }
     }
   }

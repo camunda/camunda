@@ -29,8 +29,8 @@
     <camunda.maven.artifacts.version>7.18.0-ee</camunda.maven.artifacts.version>
 
     <!-- We use this version to compile but run IT against containers with zeebe.docker.version -->
-    <zeebe.version>8.3.0-alpha2</zeebe.version>
-    <identity.version>8.3.0-alpha2</identity.version>
+    <zeebe.version>8.3.0-alpha3</zeebe.version>
+    <identity.version>8.3.0-alpha3</identity.version>
     <!-- We use this for the Zeebe test container version only -->
     <zeebe.docker.version>${zeebe.version}</zeebe.docker.version>
 
@@ -42,7 +42,7 @@
     <jsonpath.version>2.8.0</jsonpath.version>
     <elasticsearch.version>7.17.10</elasticsearch.version>
     <!-- The default es 8 version we are going to be testing with-->
-    <elasticsearch8.test.version>8.6.0</elasticsearch8.test.version>
+    <elasticsearch8.test.version>8.7.0</elasticsearch8.test.version>
     <!--The least supported elasticsearch version we should test against-->
     <elasticsearch.test.version>7.10.0</elasticsearch.test.version>
     <!--the ElasticSearch version of the previous Optimize version -->
@@ -413,7 +413,7 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-shade-plugin</artifactId>
-          <version>3.4.1</version>
+          <version>3.5.0</version>
           <configuration>
             <createDependencyReducedPom>false</createDependencyReducedPom>
           </configuration>

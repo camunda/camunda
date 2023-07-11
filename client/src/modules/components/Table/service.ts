@@ -6,6 +6,10 @@
  */
 
 import {CSSProperties} from 'react';
+import {Column, UseSortByColumnProps, UseSortByOptions} from 'react-table';
+
+import {t} from 'translation';
+
 import {Head} from './Table';
 
 type Entry = Head;
@@ -37,4 +41,42 @@ export function rewriteHeaderStyles(styles?: CSSProperties) {
         th.style[key] = value;
       });
   };
+}
+
+export function formatSorting<T extends object>(
+  sorting: {by: string; order: string} | undefined,
+  resultType: string | undefined,
+  columns: (Column & Partial<UseSortByOptions<T> & UseSortByColumnProps<T>>)[],
+  allowLocalSorting: boolean
+): {id?: string; desc?: boolean; order?: string}[] {
+  if (allowLocalSorting) {
+    const firstSortableColumn = columns.find((column) => !column.disableSortBy);
+    if (firstSortableColumn) {
+      return [{id: firstSortableColumn.id, desc: false}];
+    }
+    return [];
+  }
+
+  if (!sorting) {
+    return [];
+  }
+  const {by, order} = sorting;
+  let id = by;
+  if (resultType === 'map') {
+    if (by === 'label' || by === 'key') {
+      id = columns[0]?.id!;
+    } else if (by === 'value') {
+      id = columns[1]?.id!;
+    }
+  }
+  return [{id, desc: order === 'desc'}];
+}
+
+export function convertHeaderNameToAccessor(name: string) {
+  const joined = name
+    .split(' ')
+    .join('')
+    .replace(t('report.variables.default').toString(), t('report.groupBy.variable') + ':');
+
+  return joined.charAt(0).toLowerCase() + joined.slice(1);
 }

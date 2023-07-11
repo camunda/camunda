@@ -32,14 +32,14 @@ export default function DashboardTemplateModal({onClose}) {
   let templateGroups = [
     {
       name: 'blankGroup',
-      templates: [{name: 'blank'}],
+      templates: [{name: 'blank', disableDescription: true}],
     },
     {
       name: 'singleProcessGroup',
       templates: [
         {
           name: 'processPerformance',
-          description: null,
+          disableDescription: true,
           hasSubtitle: true,
           img: processPerformance,
           disabled: (definitions) => definitions.length > 1,
@@ -49,7 +49,7 @@ export default function DashboardTemplateModal({onClose}) {
               dimensions: {height: 2, width: 3},
               report: {
                 name: t('dashboard.templates.30DayThroughput'),
-                description: null,
+                disableDescription: true,
                 data: {
                   view: {entity: 'processInstance', properties: ['frequency']},
                   groupBy: {type: 'none', value: null},
@@ -86,7 +86,7 @@ export default function DashboardTemplateModal({onClose}) {
               dimensions: {height: 2, width: 4},
               report: {
                 name: t('dashboard.templates.p75Duration'),
-                description: null,
+                disableDescription: true,
                 data: {
                   view: {entity: 'processInstance', properties: ['duration']},
                   groupBy: {type: 'none', value: null},
@@ -120,7 +120,7 @@ export default function DashboardTemplateModal({onClose}) {
               dimensions: {height: 2, width: 4},
               report: {
                 name: t('dashboard.templates.p99Duration'),
-                description: null,
+                disableDescription: true,
                 data: {
                   view: {entity: 'processInstance', properties: ['duration']},
                   groupBy: {type: 'none', value: null},
@@ -154,7 +154,7 @@ export default function DashboardTemplateModal({onClose}) {
               dimensions: {height: 2, width: 3},
               report: {
                 name: t('dashboard.templates.percentSLAMet'),
-                description: null,
+                disableDescription: true,
                 data: {
                   view: {entity: 'processInstance', properties: ['percentage']},
                   groupBy: {type: 'none', value: null},
@@ -191,7 +191,7 @@ export default function DashboardTemplateModal({onClose}) {
               dimensions: {height: 2, width: 4},
               report: {
                 name: t('dashboard.templates.percentNoIncidents'),
-                description: null,
+                disableDescription: true,
                 data: {
                   view: {entity: 'processInstance', properties: ['percentage']},
                   groupBy: {type: 'none', value: null},
@@ -223,7 +223,7 @@ export default function DashboardTemplateModal({onClose}) {
               dimensions: {height: 5, width: 9},
               report: {
                 name: t('dashboard.templates.flownodeDuration'),
-                description: null,
+                disableDescription: true,
                 data: {
                   view: {entity: 'flowNode', properties: ['duration']},
                   groupBy: {type: 'flowNodes', value: null},
@@ -244,7 +244,7 @@ export default function DashboardTemplateModal({onClose}) {
               dimensions: {height: 5, width: 9},
               report: {
                 name: t('dashboard.templates.controlChart'),
-                description: null,
+                disableDescription: true,
                 data: {
                   view: {entity: 'processInstance', properties: ['duration']},
                   groupBy: {type: 'startDate', value: {unit: 'week'}},
@@ -266,7 +266,7 @@ export default function DashboardTemplateModal({onClose}) {
               dimensions: {height: 5, width: 9},
               report: {
                 name: t('dashboard.templates.flownodeFrequency'),
-                description: null,
+                disableDescription: true,
                 data: {
                   view: {entity: 'flowNode', properties: ['frequency']},
                   groupBy: {type: 'flowNodes', value: null},
@@ -280,7 +280,7 @@ export default function DashboardTemplateModal({onClose}) {
               dimensions: {height: 5, width: 9},
               report: {
                 name: t('dashboard.templates.instanceTrends'),
-                description: null,
+                disableDescription: true,
                 data: {
                   view: {entity: 'processInstance', properties: ['frequency']},
                   groupBy: {type: 'startDate', value: {unit: 'week'}},
@@ -298,7 +298,7 @@ export default function DashboardTemplateModal({onClose}) {
               dimensions: {height: 5, width: 9},
               report: {
                 name: t('dashboard.templates.activeIncidentsHeatmap'),
-                description: null,
+                disableDescription: true,
                 data: {
                   view: {entity: 'incident', properties: ['frequency']},
                   groupBy: {type: 'flowNodes', value: null},
@@ -312,7 +312,7 @@ export default function DashboardTemplateModal({onClose}) {
               dimensions: {height: 5, width: 9},
               report: {
                 name: t('dashboard.templates.incidentDurationHeatmap'),
-                description: null,
+                disableDescription: true,
                 data: {
                   view: {entity: 'incident', properties: ['duration']},
                   groupBy: {type: 'flowNodes', value: null},
@@ -333,7 +333,7 @@ export default function DashboardTemplateModal({onClose}) {
               dimensions: {height: 5, width: 18},
               report: {
                 name: t('dashboard.templates.incidentDurationTrend'),
-                description: null,
+                disableDescription: true,
                 data: {
                   view: {entity: 'processInstance', properties: ['frequency', 'duration']},
                   groupBy: {type: 'startDate', value: {unit: 'week'}},
@@ -358,7 +358,7 @@ export default function DashboardTemplateModal({onClose}) {
       templates: [
         {
           name: 'operationsMonitoring',
-          description: null,
+          disableDescription: true,
           hasSubtitle: true,
           img: operationsMonitoring,
           disabled: (definitions) => definitions.length < 2,
@@ -368,7 +368,7 @@ export default function DashboardTemplateModal({onClose}) {
               dimensions: {height: 3, width: 4},
               report: {
                 name: t('dashboard.templates.completedProcesses'),
-                description: null,
+                disableDescription: true,
                 data: {
                   view: {entity: 'processInstance', properties: ['frequency']},
                   groupBy: {type: 'none', value: null},
@@ -390,7 +390,7 @@ export default function DashboardTemplateModal({onClose}) {
               dimensions: {height: 3, width: 5},
               report: {
                 name: t('dashboard.templates.longRunningProcesses'),
-                description: null,
+                disableDescription: true,
                 data: {
                   view: {entity: 'processInstance', properties: ['frequency']},
                   groupBy: {type: 'none', value: null},
@@ -419,7 +419,7 @@ export default function DashboardTemplateModal({onClose}) {
               dimensions: {height: 3, width: 4},
               report: {
                 name: t('dashboard.templates.activeIncidents'),
-                description: null,
+                disableDescription: true,
                 data: {
                   view: {entity: 'incident', properties: ['frequency']},
                   groupBy: {type: 'none', value: null},
@@ -441,7 +441,7 @@ export default function DashboardTemplateModal({onClose}) {
               dimensions: {height: 3, width: 5},
               report: {
                 name: t('dashboard.templates.activeIncidentsByProcess'),
-                description: null,
+                disableDescription: true,
                 data: {
                   view: {entity: 'processInstance', properties: ['frequency']},
                   groupBy: {type: 'none', value: null},
@@ -464,7 +464,7 @@ export default function DashboardTemplateModal({onClose}) {
               dimensions: {height: 5, width: 9},
               report: {
                 name: t('dashboard.templates.processSnapshot'),
-                description: null,
+                disableDescription: true,
                 data: {
                   view: {entity: 'flowNode', properties: ['frequency', 'duration']},
                   groupBy: {type: 'flowNodes', value: null},
@@ -492,7 +492,7 @@ export default function DashboardTemplateModal({onClose}) {
               dimensions: {height: 5, width: 9},
               report: {
                 name: t('dashboard.templates.incidentSnapshot'),
-                description: null,
+                disableDescription: true,
                 data: {
                   view: {entity: 'incident', properties: ['frequency', 'duration']},
                   groupBy: {type: 'flowNodes', value: null},
@@ -525,7 +525,7 @@ export default function DashboardTemplateModal({onClose}) {
               dimensions: {height: 5, width: 9},
               report: {
                 name: t('dashboard.templates.processHistory'),
-                description: null,
+                disableDescription: true,
                 data: {
                   view: {entity: 'processInstance', properties: ['frequency', 'duration']},
                   groupBy: {type: 'startDate', value: {unit: 'week'}},
@@ -552,7 +552,7 @@ export default function DashboardTemplateModal({onClose}) {
               dimensions: {height: 5, width: 9},
               report: {
                 name: t('dashboard.templates.incidentHistory'),
-                description: null,
+                disableDescription: true,
                 data: {
                   view: {entity: 'processInstance', properties: ['frequency', 'duration']},
                   groupBy: {type: 'startDate', value: {unit: 'week'}},
@@ -583,7 +583,7 @@ export default function DashboardTemplateModal({onClose}) {
               dimensions: {height: 5, width: 18},
               report: {
                 name: t('dashboard.templates.durationSLI'),
-                description: null,
+                disableDescription: true,
                 data: {
                   view: {entity: 'processInstance', properties: ['duration']},
                   groupBy: {type: 'startDate', value: {unit: 'week'}},
@@ -611,7 +611,7 @@ export default function DashboardTemplateModal({onClose}) {
     templateGroups[1].templates.push(
       {
         name: 'humanPerformance',
-        description: null,
+        disableDescription: true,
         hasSubtitle: true,
         img: humanPerformance,
         disabled: (definitions) => definitions.length > 1,
@@ -621,7 +621,7 @@ export default function DashboardTemplateModal({onClose}) {
             dimensions: {height: 5, width: 9},
             report: {
               name: t('dashboard.templates.idleTime'),
-              description: null,
+              disableDescription: true,
               data: {
                 view: {entity: 'userTask', properties: ['duration']},
                 groupBy: {type: 'userTasks', value: null},
@@ -636,7 +636,7 @@ export default function DashboardTemplateModal({onClose}) {
             dimensions: {height: 5, width: 9},
             report: {
               name: t('dashboard.templates.tasksStarted'),
-              description: null,
+              disableDescription: true,
               data: {
                 view: {entity: 'userTask', properties: ['frequency']},
                 groupBy: {type: 'startDate', value: {unit: 'month'}},
@@ -655,7 +655,7 @@ export default function DashboardTemplateModal({onClose}) {
             dimensions: {height: 5, width: 9},
             report: {
               name: t('dashboard.templates.workTime'),
-              description: null,
+              disableDescription: true,
               data: {
                 view: {entity: 'userTask', properties: ['duration']},
                 groupBy: {type: 'userTasks', value: null},
@@ -670,7 +670,7 @@ export default function DashboardTemplateModal({onClose}) {
             dimensions: {height: 5, width: 9},
             report: {
               name: t('dashboard.templates.tasksCompleted'),
-              description: null,
+              disableDescription: true,
               data: {
                 view: {entity: 'userTask', properties: ['frequency']},
                 groupBy: {type: 'endDate', value: {unit: 'month'}},
@@ -688,7 +688,7 @@ export default function DashboardTemplateModal({onClose}) {
       },
       {
         name: 'humanBottleneckAnalysis',
-        description: null,
+        disableDescription: true,
         hasSubtitle: true,
         img: humanBottleneckAnalysis,
         disabled: (definitions) => definitions.length > 1,
@@ -698,7 +698,7 @@ export default function DashboardTemplateModal({onClose}) {
             dimensions: {height: 4, width: 9},
             report: {
               name: t('dashboard.templates.bottleneckLocation'),
-              description: null,
+              disableDescription: true,
               data: {
                 view: {entity: 'userTask', properties: ['frequency']},
                 groupBy: {type: 'userTasks', value: null},
@@ -720,7 +720,7 @@ export default function DashboardTemplateModal({onClose}) {
             dimensions: {height: 4, width: 9},
             report: {
               name: t('dashboard.templates.bottleneckSeverity'),
-              description: null,
+              disableDescription: true,
               data: {
                 view: {entity: 'userTask', properties: ['duration']},
                 groupBy: {type: 'userTasks', value: null},
@@ -738,7 +738,7 @@ export default function DashboardTemplateModal({onClose}) {
             dimensions: {height: 4, width: 6},
             report: {
               name: t('dashboard.templates.assigneeVariation'),
-              description: null,
+              disableDescription: true,
               data: {
                 view: {entity: 'userTask', properties: ['duration']},
                 groupBy: {type: 'assignee', value: null},
@@ -766,7 +766,7 @@ export default function DashboardTemplateModal({onClose}) {
             dimensions: {height: 4, width: 6},
             report: {
               name: t('dashboard.templates.userTaskImprovement'),
-              description: null,
+              disableDescription: true,
               data: {
                 view: {entity: 'userTask', properties: ['duration']},
                 groupBy: {type: 'endDate', value: {unit: 'week'}},
@@ -786,7 +786,7 @@ export default function DashboardTemplateModal({onClose}) {
             dimensions: {height: 4, width: 3},
             report: {
               name: t('dashboard.templates.upstreamWork'),
-              description: null,
+              disableDescription: true,
               data: {
                 view: {entity: 'processInstance', properties: ['frequency']},
                 groupBy: {type: 'none', value: null},
@@ -819,7 +819,7 @@ export default function DashboardTemplateModal({onClose}) {
             dimensions: {height: 4, width: 3},
             report: {
               name: t('dashboard.templates.bottleneckQueue'),
-              description: null,
+              disableDescription: true,
               data: {
                 view: {entity: 'processInstance', properties: ['frequency']},
                 groupBy: {type: 'none', value: null},
@@ -852,7 +852,7 @@ export default function DashboardTemplateModal({onClose}) {
             dimensions: {height: 4, width: 6},
             report: {
               name: t('dashboard.templates.durationImprovement'),
-              description: null,
+              disableDescription: true,
               data: {
                 view: {entity: 'processInstance', properties: ['duration']},
                 groupBy: {type: 'endDate', value: {unit: 'week'}},
@@ -874,7 +874,7 @@ export default function DashboardTemplateModal({onClose}) {
             dimensions: {height: 4, width: 6},
             report: {
               name: t('dashboard.templates.workerProductivity'),
-              description: null,
+              disableDescription: true,
               data: {
                 view: {entity: 'userTask', properties: ['frequency']},
                 groupBy: {type: 'assignee', value: null},
@@ -900,7 +900,7 @@ export default function DashboardTemplateModal({onClose}) {
             dimensions: {height: 4, width: 6},
             report: {
               name: t('dashboard.templates.workDuration'),
-              description: null,
+              disableDescription: true,
               data: {
                 view: {entity: 'userTask', properties: ['duration']},
                 groupBy: {type: 'endDate', value: {unit: 'week'}},
@@ -927,7 +927,7 @@ export default function DashboardTemplateModal({onClose}) {
     );
     templateGroups[2].templates.unshift({
       name: 'portfolioPerformance',
-      description: null,
+      disableDescription: true,
       hasSubtitle: true,
       img: portfolioPerformance,
       disabled: (definitions) => definitions.length < 2,
@@ -937,7 +937,7 @@ export default function DashboardTemplateModal({onClose}) {
           dimensions: {height: 3, width: 3},
           report: {
             name: t('dashboard.templates.completedProcesses'),
-            description: null,
+            disableDescription: true,
             data: {
               view: {entity: 'processInstance', properties: ['frequency']},
               groupBy: {type: 'none', value: null},
@@ -959,7 +959,7 @@ export default function DashboardTemplateModal({onClose}) {
           dimensions: {height: 3, width: 3},
           report: {
             name: t('dashboard.templates.activeIncidents'),
-            description: null,
+            disableDescription: true,
             data: {
               view: {entity: 'incident', properties: ['frequency']},
               groupBy: {type: 'none', value: null},
@@ -981,7 +981,7 @@ export default function DashboardTemplateModal({onClose}) {
           dimensions: {height: 3, width: 6},
           report: {
             name: t('dashboard.templates.runningProcesses'),
-            description: null,
+            disableDescription: true,
             data: {
               view: {entity: 'processInstance', properties: ['frequency']},
               groupBy: {type: 'none', value: null},
@@ -1004,7 +1004,7 @@ export default function DashboardTemplateModal({onClose}) {
           dimensions: {height: 3, width: 6},
           report: {
             name: t('dashboard.templates.runningTasks'),
-            description: null,
+            disableDescription: true,
             data: {
               view: {entity: 'userTask', properties: ['frequency']},
               groupBy: {type: 'userTasks', value: null},
@@ -1026,7 +1026,7 @@ export default function DashboardTemplateModal({onClose}) {
           dimensions: {height: 5, width: 9},
           report: {
             name: t('dashboard.templates.processTotal'),
-            description: null,
+            disableDescription: true,
             data: {
               view: {entity: 'processInstance', properties: ['frequency']},
               groupBy: {type: 'startDate', value: {unit: 'month'}},
@@ -1044,7 +1044,7 @@ export default function DashboardTemplateModal({onClose}) {
           dimensions: {height: 5, width: 9},
           report: {
             name: t('dashboard.templates.laborSavings'),
-            description: null,
+            disableDescription: true,
             data: {
               view: {entity: 'userTask', properties: ['duration']},
               groupBy: {type: 'startDate', value: {unit: 'month'}},
@@ -1072,7 +1072,7 @@ export default function DashboardTemplateModal({onClose}) {
           dimensions: {height: 5, width: 9},
           report: {
             name: t('dashboard.templates.processAcceleration'),
-            description: null,
+            disableDescription: true,
             data: {
               view: {entity: 'processInstance', properties: ['duration']},
               groupBy: {type: 'startDate', value: {unit: 'month'}},
@@ -1087,7 +1087,7 @@ export default function DashboardTemplateModal({onClose}) {
           dimensions: {height: 5, width: 9},
           report: {
             name: t('dashboard.templates.taskAutomation'),
-            description: null,
+            disableDescription: true,
             data: {
               view: {entity: 'userTask', properties: ['frequency']},
               groupBy: {type: 'startDate', value: {unit: 'month'}},
@@ -1107,7 +1107,7 @@ export default function DashboardTemplateModal({onClose}) {
           dimensions: {height: 5, width: 9},
           report: {
             name: t('dashboard.templates.incidentHandling'),
-            description: null,
+            disableDescription: true,
             data: {
               view: {entity: 'incident', properties: ['duration']},
               groupBy: {type: 'flowNodes', value: null},
@@ -1137,7 +1137,7 @@ export default function DashboardTemplateModal({onClose}) {
           dimensions: {height: 5, width: 9},
           report: {
             name: t('dashboard.templates.taskLifecycle'),
-            description: null,
+            disableDescription: true,
             data: {
               view: {entity: 'userTask', properties: ['duration']},
               groupBy: {type: 'userTasks', value: null},

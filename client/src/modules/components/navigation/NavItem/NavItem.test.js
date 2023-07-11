@@ -126,41 +126,34 @@ it('should filter out breadcrumbs with no name', async () => {
   expect(node.find({to: '/dashboard/did/report/rid/'})).not.toExist();
 });
 
-it('should override entity with the same name', async () => {
-  loadEntitiesNames.mockReturnValueOnce({dashboardName: 'dashboard'});
+it('should not invoke loadEntitiesNames for instance preview dashboards', async () => {
   const node = shallow(
     <NavItem
       name="testName"
       active={['/dashboard/*']}
       location={{pathname: '/dashboard/instant/did'}}
-      breadcrumbsEntities={[
-        {entity: 'dashboard'},
-        {entity: 'dashboard', entityUrl: 'dashboard/instant'},
-      ]}
+      breadcrumbsEntities={[{entity: 'dashboard'}]}
     />
   );
   await node.update();
 
-  expect(loadEntitiesNames).toHaveBeenCalledWith({dashboardId: 'did'});
-  expect(node.find({to: '/dashboard/instant/did/'})).toExist();
+  expect(loadEntitiesNames).not.toHaveBeenCalledWith({dashboardId: 'did'});
 });
 
 it('should use entity url to build breadcrumbs', async () => {
-  loadEntitiesNames.mockReturnValueOnce({dashboardInstantName: 'dashboard', reportName: 'report'});
+  loadEntitiesNames.mockReturnValueOnce({testName: 'test', reportName: 'report'});
   const node = shallow(
     <NavItem
       name="testName"
-      active={['/dashboard/*', '/report/*']}
-      location={{pathname: '/dashboard/instant/did/report/rid'}}
-      breadcrumbsEntities={[
-        {entity: 'dashboardInstant', entityUrl: 'dashboard/instant'},
-        {entity: 'report'},
-      ]}
+      active={['/test/*', '/report/*']}
+      location={{pathname: '/test/subUrl/tid/report/rid'}}
+      breadcrumbsEntities={[{entity: 'test', entityUrl: 'test/subUrl'}, {entity: 'report'}]}
     />
   );
+
   await node.update();
 
-  expect(loadEntitiesNames).toHaveBeenCalledWith({dashboardInstantId: 'did', reportId: 'rid'});
-  expect(node.find({to: '/dashboard/instant/did/'})).toExist();
-  expect(node.find({to: '/dashboard/instant/did/report/rid/'})).toExist();
+  expect(loadEntitiesNames).toHaveBeenCalledWith({testId: 'tid', reportId: 'rid'});
+  expect(node.find({to: '/test/subUrl/tid/'})).toExist();
+  expect(node.find({to: '/test/subUrl/tid/report/rid/'})).toExist();
 });

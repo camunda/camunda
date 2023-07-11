@@ -17,12 +17,11 @@ export default function createDefaultChartData(props) {
   let labels = [];
 
   const {
-    result,
+    result: {measures = []},
     data: {
       configuration: {measureVisualizations, horizontalBar},
     },
   } = props.report;
-  const measures = result.measures;
 
   measures.forEach((measure, idx) => {
     const {

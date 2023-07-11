@@ -20,6 +20,7 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Component;
 
 import javax.ws.rs.ForbiddenException;
+import javax.ws.rs.container.ContainerRequestContext;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -48,6 +49,8 @@ public abstract class AbstractIdentityService implements ConfigurationReloadable
   }
 
   public abstract Optional<UserDto> getUserById(final String userId);
+
+  public abstract Optional<UserDto> getUserById(final String userId, final ContainerRequestContext requestContext);
 
   public abstract Optional<GroupDto> getGroupById(final String groupId);
 

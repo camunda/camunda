@@ -9,14 +9,7 @@ import React from 'react';
 import classnames from 'classnames';
 import {withRouter} from 'react-router-dom';
 
-import {
-  Message,
-  BPMNDiagram,
-  LoadingIndicator,
-  CarbonPopover,
-  Typeahead,
-  Labeled,
-} from 'components';
+import {Message, BPMNDiagram, LoadingIndicator, Popover, Typeahead, Labeled} from 'components';
 import {withErrorHandling} from 'HOC';
 import {getCollection} from 'services';
 import {t} from 'translation';
@@ -309,7 +302,7 @@ export class DefinitionSelection extends React.Component {
     }
 
     const def = this.getDefinitionObject(selectedKey);
-    const Wrapper = expanded ? 'div' : CarbonPopover;
+    const Wrapper = expanded ? 'div' : Popover;
     const processSelectLabel = expanded
       ? t(`common.definitionSelection.select.${type}`)
       : t('common.name');

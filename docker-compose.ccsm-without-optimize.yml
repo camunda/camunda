@@ -88,6 +88,22 @@ services:
       - elasticsearch
     networks:
       - localhost
+  tasklist:
+    container_name: tasklist
+    image: camunda/tasklist:latest
+    ports:
+      - "8082:8080"
+    environment:
+      - camunda.tasklist.elasticsearch.url=http://elasticsearch:9200
+      - camunda.tasklist.zeebeElasticsearch.url=http://elasticsearch:9200
+      - camunda.tasklist.zeebe.gatewayAddress=zeebe:26500
+      - spring.profiles.active=dev,dev-data,auth
+    depends_on:
+      - elasticsearch
+      - zeebe
+    networks:
+      - localhost
+    restart: always
 # We include Operate here to use its data generator, via the SPRING_PROFILES_ACTIVE property
   operate:
     image: camunda/operate:latest

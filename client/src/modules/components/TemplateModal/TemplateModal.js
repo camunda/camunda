@@ -39,7 +39,9 @@ export function TemplateModal({
 }) {
   const firstTemplate = templateGroups[1].templates[0];
   const [name, setName] = useState(t(entity + '.templates.' + firstTemplate.name));
-  const [description, setDescription] = useState(firstTemplate.description);
+  const [description, setDescription] = useState(
+    getDescription(entity, firstTemplate.name, firstTemplate.disableDescription)
+  );
   const [xmlData, setXmlData] = useState([]);
   const [template, setTemplate] = useState(firstTemplate.config);
   const [selectedDefinitions, setSelectedDefinitions] = useState(initialDefinitions);
@@ -94,7 +96,9 @@ export function TemplateModal({
 
       setTemplate(enabledTemplate.config);
       setName(t(entity + '.templates.' + enabledTemplate.name));
-      setDescription(enabledTemplate.description);
+      setDescription(
+        getDescription(entity, enabledTemplate.name, enabledTemplate.disableDescription)
+      );
     }
   }, [templateGroups, selectedDefinitions, template, entity]);
 
@@ -179,45 +183,55 @@ export function TemplateModal({
               {templateGroups.map(({name, templates}, idx) => (
                 <div key={idx} className="group">
                   <div className="groupTitle">{t('templates.templateGroups.' + name)}</div>
-                  {templates.map(({name, description, hasSubtitle, img, config, disabled}, idx) => (
-                    <Tooltip
-                      key={idx}
-                      content={
-                        disabled?.(selectedDefinitions)
-                          ? getDisableStateText(selectedDefinitions)
-                          : undefined
-                      }
-                      position="bottom"
-                      align="left"
-                    >
-                      <div>
-                        <LegacyButton
-                          className={classnames({
-                            active: !disabled?.(selectedDefinitions) && deepEqual(template, config),
-                            hasSubtitle,
-                          })}
-                          onClick={() => {
-                            setTemplate(config);
-                            setName(t(entity + '.templates.' + name));
-                            setDescription(description);
-                          }}
-                          disabled={disabled?.(selectedDefinitions)}
+                  {templates.map(
+                    ({name, disableDescription, hasSubtitle, img, config, disabled}, idx) => {
+                      const templateDescription = getDescription(entity, name, disableDescription);
+
+                      return (
+                        <Tooltip
+                          key={idx}
+                          content={
+                            disabled?.(selectedDefinitions)
+                              ? getDisableStateText(selectedDefinitions)
+                              : undefined
+                          }
+                          position="bottom"
+                          align="left"
                         >
-                          {img ? (
-                            <img src={img} alt={t(entity + '.templates.' + name)} />
-                          ) : (
-                            <div className="imgPlaceholder" />
-                          )}
-                          <div className="name">{t(entity + '.templates.' + name)}</div>
-                          {hasSubtitle && (
-                            <div className="subTitle">
-                              {t(entity + '.templates.' + name + '_subTitle')}
-                            </div>
-                          )}
-                        </LegacyButton>
-                      </div>
-                    </Tooltip>
-                  ))}
+                          <div>
+                            <LegacyButton
+                              className={classnames({
+                                active:
+                                  !disabled?.(selectedDefinitions) && deepEqual(template, config),
+                                hasSubtitle: hasSubtitle || templateDescription,
+                              })}
+                              onClick={() => {
+                                setTemplate(config);
+                                setName(t(entity + '.templates.' + name));
+                                setDescription(templateDescription);
+                              }}
+                              disabled={disabled?.(selectedDefinitions)}
+                            >
+                              {img ? (
+                                <img src={img} alt={t(entity + '.templates.' + name)} />
+                              ) : (
+                                <div className="imgPlaceholder" />
+                              )}
+                              <div className="name">{t(entity + '.templates.' + name)}</div>
+                              {hasSubtitle && (
+                                <div className="subTitle">
+                                  {t(entity + '.templates.' + name + '_subTitle')}
+                                </div>
+                              )}
+                              {templateDescription && !hasSubtitle && (
+                                <div className="subTitle">{templateDescription}</div>
+                              )}
+                            </LegacyButton>
+                          </div>
+                        </Tooltip>
+                      );
+                    }
+                  )}
                 </div>
               ))}
             </div>
@@ -284,3 +298,7 @@ function getDisableStateText(selectedDefinitions) {
 }
 
 export default withErrorHandling(TemplateModal);
+
+function getDescription(entity, name, disableDescription) {
+  return !disableDescription ? t(entity + '.templates.' + name + '-description') : null;
+}

@@ -69,7 +69,7 @@ public class IdentityRestService {
   @Produces(MediaType.APPLICATION_JSON)
   public UserResponseDto getCurrentUser(@Context final ContainerRequestContext requestContext) {
     final String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
-    final UserDto currentUserDto = identityService.getUserById(userId).orElseGet(() -> new UserDto(userId));
+    final UserDto currentUserDto = identityService.getUserById(userId, requestContext).orElseGet(() -> new UserDto(userId));
     return new UserResponseDto(currentUserDto, identityService.getUserAuthorizations(userId));
   }
 

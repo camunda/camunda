@@ -91,6 +91,8 @@ String elasticSearchContainerSpec(def esVersion) {
       value: single-node
     - name: bootstrap.memory_lock
       value: true
+    - name: xpack.security.enabled
+      value: false
     # We usually run our integration tests concurrently, as some cleanup methods like #deleteAllOptimizeData
     # internally make usage of scroll contexts this lead to hits on the scroll limit.
     # Thus this increased scroll context limit.
@@ -139,10 +141,10 @@ String camBpmContainerSpec(String camBpmVersion) {
     """
 }
 
-void integrationTestSteps(String camBpmVersion) {
+void integrationTestSteps(String camBpmVersion, String excludedGroups = '', String includedGroups = '') {
   optimizeCloneGitRepo(params.BRANCH)
   container('maven') {
-    runMaven("verify -Dit.test.excludedGroups=Zeebe-test -Dskip.docker -Pit,engine-${camBpmVersion} -pl backend -am -T\$LIMITS_CPU")
+    runMaven("verify -Dit.test.excludedGroups=${excludedGroups} -Dit.test.includedGroups=${includedGroups} -Dskip.docker -Dskip.fe.build -Pit,engine-${camBpmVersion} -pl backend -am -T\$LIMITS_CPU")
   }
 }
 
@@ -193,92 +195,248 @@ pipeline {
           env.CAMBPM_7_17_VERSION = getCamBpmVersion('engine-7.17')
           env.CAMBPM_7_18_VERSION = getCamBpmVersion('engine-7.18')
           env.CAMBPM_7_19_VERSION = getCamBpmVersion('engine-7.19')
+          env.ES8_VERSION = '8.7.0'
         }
       }
     }
     stage('IT') {
       failFast false
       parallel {
-        stage('IT 7.18') {
+        stage("CamBPM 7.18 EBP & Import IT") {
           agent {
             kubernetes {
               cloud 'optimize-ci'
-              label "optimize-ci-build-it-7.18_${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(10)}-${env.BUILD_ID}"
+              label "optimize-ci-build_718ebpimp_${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(10)}-${env.BUILD_ID}"
               defaultContainer 'jnlp'
-              yaml integrationTestPodSpec(env.CAMBPM_7_18_VERSION, env.ES_VERSION)
+              yaml integrationTestPodSpec(env.CAMBPM_7_18_VERSION, env.ES8_VERSION)
             }
           }
           environment {
-            LABEL = "optimize-ci-build-it-7.18_${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(10)}-${env.BUILD_ID}"
+            LABEL = "optimize-ci-build_718ebpimp_${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(10)}-${env.BUILD_ID}"
           }
           steps {
-            integrationTestSteps('7.18')
+            integrationTestSteps('7.18', '', 'import,eventBasedProcess')
           }
           post {
             always {
               junit testResults: 'backend/target/failsafe-reports/**/*.xml', allowEmptyResults: true, keepLongStdio: true
-              container('gcloud'){
+              container('gcloud') {
                 sh 'apt-get install kubectl'
-                sh 'kubectl logs -l jenkins/label=$LABEL -c elasticsearch-9200 > elasticsearch_cambpm718.log'
+                sh 'kubectl logs -l jenkins/label=$LABEL -c elasticsearch-9200 > elasticsearch_718_ebpimport.log'
               }
-              archiveArtifacts artifacts: 'elasticsearch_cambpm718.log', onlyIfSuccessful: false
+              archiveArtifacts artifacts: 'elasticsearch_718_ebpimport.log', onlyIfSuccessful: false
             }
           }
         }
-        stage('IT 7.19') {
+        stage("CamBPM 7.18 Report Evaluation IT") {
           agent {
             kubernetes {
               cloud 'optimize-ci'
-              label "optimize-ci-build-it-7.19_${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(10)}-${env.BUILD_ID}"
+              label "optimize-ci-build_718repev_${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(10)}-${env.BUILD_ID}"
               defaultContainer 'jnlp'
-              yaml integrationTestPodSpec(env.CAMBPM_7_19_VERSION, env.ES_VERSION)
+              yaml integrationTestPodSpec(env.CAMBPM_7_18_VERSION, env.ES8_VERSION)
             }
           }
           environment {
-            LABEL = "optimize-ci-build-it-7.19_${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(10)}-${env.BUILD_ID}"
+            LABEL = "optimize-ci-build_718repev_${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(10)}-${env.BUILD_ID}"
           }
           steps {
-            integrationTestSteps('7.19')
+            integrationTestSteps('7.18', '', 'reportEvaluation')
           }
           post {
             always {
               junit testResults: 'backend/target/failsafe-reports/**/*.xml', allowEmptyResults: true, keepLongStdio: true
-              container('gcloud'){
+              container('gcloud') {
                 sh 'apt-get install kubectl'
-                sh 'kubectl logs -l jenkins/label=$LABEL -c elasticsearch-9200 > elasticsearch_cambpm719.log'
+                sh 'kubectl logs -l jenkins/label=$LABEL -c elasticsearch-9200 > elasticsearch_718_reportevaluation.log'
               }
-              archiveArtifacts artifacts: 'elasticsearch_cambpm719.log', onlyIfSuccessful: false
+              archiveArtifacts artifacts: 'elasticsearch_718_reportevaluation.log', onlyIfSuccessful: false
             }
           }
         }
-        stage('IT SNAPSHOT') {
+        stage("CamBPM 7.18 IT") {
           agent {
             kubernetes {
               cloud 'optimize-ci'
-              label "optimize-ci-build-it-engine-snapshot_${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(10)}-${env.BUILD_ID}"
+              label "optimize-ci-build_718it_${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(10)}-${env.BUILD_ID}"
               defaultContainer 'jnlp'
-              yaml integrationTestPodSpec(env.CAMBPM_SNAPSHOT_VERSION, env.ES_VERSION)
+              yaml integrationTestPodSpec(env.CAMBPM_7_18_VERSION, env.ES8_VERSION)
             }
           }
           environment {
-            LABEL = "optimize-ci-build-it-engine-snapshot_${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(10)}-${env.BUILD_ID}"
+            LABEL = "optimize-ci-build_718it_${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(10)}-${env.BUILD_ID}"
           }
           steps {
-            integrationTestSteps('snapshot')
+            integrationTestSteps('7.18', 'Zeebe-test,import,eventBasedProcess,reportEvaluation', '')
           }
           post {
             always {
               junit testResults: 'backend/target/failsafe-reports/**/*.xml', allowEmptyResults: true, keepLongStdio: true
-              container('gcloud'){
+              container('gcloud') {
                 sh 'apt-get install kubectl'
-                sh 'kubectl logs -l jenkins/label=$LABEL -c elasticsearch-9200 > elasticsearch_snapshot.log'
+                sh 'kubectl logs -l jenkins/label=$LABEL -c elasticsearch-9200 > elasticsearch_718_it.log'
               }
-              archiveArtifacts artifacts: 'elasticsearch_snapshot.log', onlyIfSuccessful: false
+              archiveArtifacts artifacts: 'elasticsearch_718_it.log', onlyIfSuccessful: false
+            }
+          }
+        }
+        stage("CamBPM 7.19 Integration EBP & Import IT") {
+          agent {
+            kubernetes {
+              cloud 'optimize-ci'
+              label "optimize-ci-build_719ebpimp_${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(10)}-${env.BUILD_ID}"
+              defaultContainer 'jnlp'
+              yaml integrationTestPodSpec(env.CAMBPM_7_18_VERSION, env.ES8_VERSION)
+            }
+          }
+          environment {
+            LABEL = "optimize-ci-build_719ebpimp_${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(10)}-${env.BUILD_ID}"
+          }
+          steps {
+            integrationTestSteps('7.19', '', 'import,eventBasedProcess')
+          }
+          post {
+            always {
+              junit testResults: 'backend/target/failsafe-reports/**/*.xml', allowEmptyResults: true, keepLongStdio: true
+              container('gcloud') {
+                sh 'apt-get install kubectl'
+                sh 'kubectl logs -l jenkins/label=$LABEL -c elasticsearch-9200 > elasticsearch_719_ebpimport.log'
+              }
+              archiveArtifacts artifacts: 'elasticsearch_719_ebpimport.log', onlyIfSuccessful: false
+            }
+          }
+        }
+        stage("CamBPM 7.19 Integration Report Evaluation IT") {
+          agent {
+            kubernetes {
+              cloud 'optimize-ci'
+              label "optimize-ci-build_719repev_${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(10)}-${env.BUILD_ID}"
+              defaultContainer 'jnlp'
+              yaml integrationTestPodSpec(env.CAMBPM_7_18_VERSION, env.ES8_VERSION)
+            }
+          }
+          environment {
+            LABEL = "optimize-ci-build_719repev_${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(10)}-${env.BUILD_ID}"
+          }
+          steps {
+            integrationTestSteps('7.19', '', 'reportEvaluation')
+          }
+          post {
+            always {
+              junit testResults: 'backend/target/failsafe-reports/**/*.xml', allowEmptyResults: true, keepLongStdio: true
+              container('gcloud') {
+                sh 'apt-get install kubectl'
+                sh 'kubectl logs -l jenkins/label=$LABEL -c elasticsearch-9200 > elasticsearch_719_reportevaluation.log'
+              }
+              archiveArtifacts artifacts: 'elasticsearch_719_reportevaluation.log', onlyIfSuccessful: false
+            }
+          }
+        }
+        stage("CamBPM 7.19 IT") {
+          agent {
+            kubernetes {
+              cloud 'optimize-ci'
+              label "optimize-ci-build_719it_${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(10)}-${env.BUILD_ID}"
+              defaultContainer 'jnlp'
+              yaml integrationTestPodSpec(env.CAMBPM_7_18_VERSION,  env.ES8_VERSION)
+            }
+          }
+          environment {
+            LABEL = "optimize-ci-build_719it_${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(10)}-${env.BUILD_ID}"
+          }
+          steps {
+            integrationTestSteps('7.19', 'Zeebe-test,import,eventBasedProcess,reportEvaluation', '')
+          }
+          post {
+            always {
+              junit testResults: 'backend/target/failsafe-reports/**/*.xml', allowEmptyResults: true, keepLongStdio: true
+              container('gcloud') {
+                sh 'apt-get install kubectl'
+                sh 'kubectl logs -l jenkins/label=$LABEL -c elasticsearch-9200 > elasticsearch_719_it.log'
+              }
+              archiveArtifacts artifacts: 'elasticsearch_719_it.log', onlyIfSuccessful: false
+            }
+          }
+        }
+        stage("CamBPM SNAPSHOT EBP & Import IT") {
+          agent {
+            kubernetes {
+              cloud 'optimize-ci'
+              label "optimize-ci-build_snapebpimport_${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(10)}-${env.BUILD_ID}"
+              defaultContainer 'jnlp'
+              yaml integrationTestPodSpec(env.CAMBPM_7_18_VERSION, env.ES8_VERSION)
+            }
+          }
+          environment {
+            LABEL = "optimize-ci-build_snapebpimport_${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(10)}-${env.BUILD_ID}"
+          }
+          steps {
+            integrationTestSteps('snapshot', '', 'import,eventBasedProcess')
+          }
+          post {
+            always {
+              junit testResults: 'backend/target/failsafe-reports/**/*.xml', allowEmptyResults: true, keepLongStdio: true
+              container('gcloud') {
+                sh 'apt-get install kubectl'
+                sh 'kubectl logs -l jenkins/label=$LABEL -c elasticsearch-9200 > elasticsearch_snapshot_ebpmimport.log'
+              }
+              archiveArtifacts artifacts: 'elasticsearch_snapshot_ebpmimport.log', onlyIfSuccessful: false
+            }
+          }
+        }
+        stage("CamBPM SNAPSHOT Integration Report Evaluation IT") {
+          agent {
+            kubernetes {
+              cloud 'optimize-ci'
+              label "optimize-ci-build_snaprepev_${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(10)}-${env.BUILD_ID}"
+              defaultContainer 'jnlp'
+              yaml integrationTestPodSpec(env.CAMBPM_7_18_VERSION, env.ES8_VERSION)
+            }
+          }
+          environment {
+            LABEL = "ooptimize-ci-build_snaprepev_${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(10)}-${env.BUILD_ID}"
+          }
+          steps {
+            integrationTestSteps('snapshot', '', 'reportEvaluation')
+          }
+          post {
+            always {
+              junit testResults: 'backend/target/failsafe-reports/**/*.xml', allowEmptyResults: true, keepLongStdio: true
+              container('gcloud') {
+                sh 'apt-get install kubectl'
+                sh 'kubectl logs -l jenkins/label=$LABEL -c elasticsearch-9200 > elasticsearch_snapshot_reportevaluation.log'
+              }
+              archiveArtifacts artifacts: 'elasticsearch_snapshot_reportevaluation.log', onlyIfSuccessful: false
+            }
+          }
+        }
+        stage("CamBPM SNAPSHOT IT") {
+          agent {
+            kubernetes {
+              cloud 'optimize-ci'
+              label "optimize-ci-build_snapit_${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(10)}-${env.BUILD_ID}"
+              defaultContainer 'jnlp'
+              yaml integrationTestPodSpec(env.CAMBPM_7_18_VERSION, env.ES8_VERSION)
+            }
+          }
+          environment {
+            LABEL = "optimize-ci-build_snapit_${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(10)}-${env.BUILD_ID}"
+          }
+          steps {
+            integrationTestSteps('snapshot', 'Zeebe-test,import,eventBasedProcess,reportEvaluation', '')
+          }
+          post {
+            always {
+              junit testResults: 'backend/target/failsafe-reports/**/*.xml', allowEmptyResults: true, keepLongStdio: true
+              container('gcloud') {
+                sh 'apt-get install kubectl'
+                sh 'kubectl logs -l jenkins/label=$LABEL -c elasticsearch-9200 > elasticsearch_snapshot_it.log'
+              }
+              archiveArtifacts artifacts: 'elasticsearch_snapshot_it.log', onlyIfSuccessful: false
             }
           }
         }
       }
-
     }
   }
 

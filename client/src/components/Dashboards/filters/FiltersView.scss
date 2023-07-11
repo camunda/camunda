@@ -19,22 +19,16 @@
   }
 
   .Popover {
-    .dialogContainer {
-      background-color: var(--grey-darken-33);
+    .ButtonGroup .Button {
+      background-color: var(--grey-base-40);
+      border-color: var(--grey-darken-33);
 
-      color: var(--white);
+      &:hover {
+        background-color: var(--grey-lighten-50);
+      }
 
-      .ButtonGroup .Button {
-        background-color: var(--grey-base-40);
-        border-color: var(--grey-darken-33);
-
-        &:hover {
-          background-color: var(--grey-lighten-50);
-        }
-
-        &.active {
-          background-color: var(--blue);
-        }
+      &.active {
+        background-color: var(--blue);
       }
     }
   }
@@ -114,20 +108,8 @@
   }
 
   .Popover {
-    .dialogContainer {
-      box-shadow: 0 2px 7px 0 rgba(0, 0, 0, 0.2);
-      border-radius: 3px;
-      margin-top: 4px;
-      border: none;
-
-      .dialog {
-        padding: 0;
-      }
-    }
-
-    .dialogArrowBorder,
-    .dialogArrow {
-      display: none;
+    .popoverContent {
+      padding: 0;
     }
 
     .Form {

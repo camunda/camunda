@@ -37,19 +37,19 @@ const props = {
   templateGroups: [
     {
       name: 'blankGroup',
-      templates: [{name: 'blank'}],
+      templates: [{name: 'blank', disableDescription: true}],
     },
     {
       name: 'templatesGroup',
       templates: [
         {
-          name: 'heatmap',
+          name: 'locateBottlenecsOnAHitmap',
           disabled: (selectedDefinitions) => selectedDefinitions.length !== 1,
           img: <img alt="" />,
           config: {view: {entity: 'flowNode', properties: ['frequency']}},
         },
         {
-          name: 'chart',
+          name: 'analyzeOrExportRawDataFromATable',
           config: {},
         },
       ],
@@ -136,7 +136,8 @@ it('should call the templateToState prop to determine link state', async () => {
   await flushPromises();
 
   expect(spy).toHaveBeenCalledWith({
-    name: 'Heatmap: Flownode count',
+    description: 'Locate duration or count bottlenecks visualized as Heatmap for Flow Nodes.',
+    name: 'Locate bottlenecks on a Heatmap',
     definitions: [
       {
         key: 'processDefinition',
@@ -160,10 +161,13 @@ it('should show templates with subTitles', () => {
       {...props}
       entity="dashboard"
       templateGroups={[
-        {name: 'singleProcessGroup', templates: [{name: 'processPerformance', hasSubtitle: true}]},
+        {
+          name: 'singleProcessGroup',
+          templates: [{name: 'processPerformance', disableDescription: true, hasSubtitle: true}],
+        },
         {
           name: 'multiProcessGroup',
-          templates: [{name: 'humanPerformance', hasSubtitle: true}],
+          templates: [{name: 'humanPerformance', disableDescription: true, hasSubtitle: true}],
         },
       ]}
     />
@@ -190,7 +194,7 @@ it('should update the selected template if it is disabled for the selected defin
   await flushPromises();
 
   expect(node.find('.active')).not.toIncludeText('Heatmap');
-  expect(node.find('.active')).toIncludeText('Bar Chart');
+  expect(node.find('.active')).toIncludeText('Analyze or export raw data from a Table');
 });
 
 it('should invoke the onConfirm when when clicking the create button', async () => {

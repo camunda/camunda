@@ -271,7 +271,6 @@ export default class DurationHeatmapModal extends React.Component {
                 t('report.heatTarget.table.target'),
               ]}
               body={this.constructTableBody()}
-              foot={[]}
               disablePagination
             />
           )}

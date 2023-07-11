@@ -71,12 +71,7 @@ public class JettyConfig {
     } catch (UnknownHostException ex) {
       throw new OptimizeConfigurationException("Invalid container host specified");
     }
-    jetty.addServerCustomizers(server -> server.addConnector(
-      initHttpsConnector(
-        configurationService, host, configurationService.getContainerKeystorePassword(),
-        configurationService.getContainerKeystoreLocation(), server
-      )
-    ));
+    jetty.addServerCustomizers(server -> server.addConnector(initHttpsConnector(configurationService, host, server)));
     return jetty;
   }
 
@@ -108,8 +103,7 @@ public class JettyConfig {
     ));
   }
 
-  private ServerConnector initHttpsConnector(ConfigurationService configurationService, String host,
-                                             String keystorePass, String keystoreLocation, Server server) {
+  private ServerConnector initHttpsConnector(ConfigurationService configurationService, String host, Server server) {
     HttpConfiguration https = new HttpConfiguration();
     https.setSendServerVersion(false);
     https.addCustomizer(new SecureRequestCustomizer(
@@ -118,10 +112,11 @@ public class JettyConfig {
       getResponseHeadersConfiguration(configurationService).getHttpStrictTransportSecurityIncludeSubdomains()
     ));
     https.setSecureScheme("https");
+    https.setRequestHeaderSize(configurationService.getMaxRequestHeaderSizeInBytes());
     SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
-    sslContextFactory.setKeyStorePath(keystoreLocation);
-    sslContextFactory.setKeyStorePassword(keystorePass);
-    sslContextFactory.setKeyManagerPassword(keystorePass);
+    sslContextFactory.setKeyStorePath(configurationService.getContainerKeystoreLocation());
+    sslContextFactory.setKeyStorePassword(configurationService.getContainerKeystorePassword());
+    sslContextFactory.setKeyManagerPassword(configurationService.getContainerKeystorePassword());
     // not relevant for server setup but otherwise we get a warning on startup
     // see https://github.com/eclipse/jetty.project/issues/3049
     sslContextFactory.setEndpointIdentificationAlgorithm("HTTPS");

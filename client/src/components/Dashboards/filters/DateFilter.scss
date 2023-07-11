@@ -12,9 +12,10 @@
     color: var(--silver-darken-80);
   }
 
-  .CarbonPopover .popoverContent {
+  .Popover .popoverContent {
     padding: 0;
-    max-width: max-content;
+    width: auto;
+    max-width: unset;
   }
 
   .DateFields {

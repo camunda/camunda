@@ -136,3 +136,12 @@ it('should set isInvalid property for input if value is invalid', async () => {
     true
   );
 });
+
+it('should not crash if report result is not an array', async () => {
+  const node = shallow(
+    <DurationHeatmapModal report={{...validProps.report, result: {data: 123}}} />
+  );
+
+  node.setProps({open: true});
+  await flushPromises();
+});

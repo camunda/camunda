@@ -15,7 +15,7 @@ import './NoDataNotice.scss';
 
 interface NoDataNoticeProps {
   type?: string;
-  title?: string;
+  title?: ReactNode;
   children?: ReactNode;
 }
 

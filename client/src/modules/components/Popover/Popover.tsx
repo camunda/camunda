@@ -8,11 +8,16 @@
 import {ReactNode, useCallback, useEffect, useLayoutEffect, useRef, useState} from 'react';
 import {Button, Icon, Tooltip, TooltipProps} from 'components';
 import {getScreenBounds} from 'services';
-import {Popover, PopoverAlignment, PopoverContent, PopoverProps} from '@carbon/react';
+import {
+  Popover as CarbonPopover,
+  PopoverAlignment,
+  PopoverContent,
+  PopoverProps as CarbonPopoverProps,
+} from '@carbon/react';
 
 import classNames from 'classnames';
 
-import './CarbonPopover.scss';
+import './Popover.scss';
 
 const possibleAlignments: PopoverAlignment[] = [
   'top',
@@ -29,7 +34,7 @@ const possibleAlignments: PopoverAlignment[] = [
   'right-top',
 ];
 
-interface CarbonPopoverProps extends Omit<PopoverProps<'div'>, 'title' | 'open' | 'align'> {
+interface PopoverProps extends Omit<CarbonPopoverProps<'div'>, 'title' | 'open' | 'align'> {
   className?: string;
   children: ReactNode;
   title?: ReactNode;
@@ -45,7 +50,7 @@ interface CarbonPopoverProps extends Omit<PopoverProps<'div'>, 'title' | 'open' 
   tooltipPosition?: TooltipProps['position'];
 }
 
-export default function CarbonPopover({
+export default function Popover({
   className,
   children,
   title,
@@ -60,7 +65,7 @@ export default function CarbonPopover({
   align,
   tooltipPosition,
   ...props
-}: CarbonPopoverProps): JSX.Element {
+}: PopoverProps): JSX.Element {
   const [open, setOpen] = useState(autoOpen);
   const [scrollable, setScrollable] = useState<boolean>(false);
   const [popoverStyles, setPopoverStyles] = useState({});
@@ -216,8 +221,8 @@ export default function CarbonPopover({
   }, [open]);
 
   return (
-    <Popover
-      className={classNames(className, 'CarbonPopover')}
+    <CarbonPopover
+      className={classNames(className, 'Popover')}
       {...props}
       open={open}
       ref={popoverRef}
@@ -238,7 +243,6 @@ export default function CarbonPopover({
           </Button>
         </div>
       </Tooltip>
-
       {open && (
         <PopoverContent
           className={classNames('popoverContent', {scrollable})}
@@ -251,7 +255,7 @@ export default function CarbonPopover({
           <div ref={contentRef}>{children}</div>
         </PopoverContent>
       )}
-    </Popover>
+    </CarbonPopover>
   );
 }
 

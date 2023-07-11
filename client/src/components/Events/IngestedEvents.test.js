@@ -49,6 +49,8 @@ jest.mock(
 );
 jest.mock('debounce', () => (fn) => fn);
 
+jest.useFakeTimers();
+
 const props = {
   mightFail: jest.fn().mockImplementation((data, cb) => cb(data)),
 };
@@ -89,7 +91,7 @@ it('should add sorting and search params to the load event request', () => {
   });
 });
 
-it('should be possible to delete multiple events from the table', () => {
+it('should be possible to delete multiple events from the table', async () => {
   const node = shallow(<IngestedEvents {...props} />);
 
   runAllEffects();
@@ -102,6 +104,8 @@ it('should be possible to delete multiple events from the table', () => {
     .prop('body')[1][0]
     .props.onSelect({target: {checked: true}});
 
+  await flushPromises();
+
   node.find('Table').dive().find('DataTable').dive().find(Dropdown.Option).simulate('click');
 
   expect(node.find(Deleter).prop('entity')).toBe(true);
@@ -113,7 +117,7 @@ it('should be possible to delete multiple events from the table', () => {
   ]);
 });
 
-it('should select all events in view', () => {
+it('should select all events in view', async () => {
   const node = shallow(<IngestedEvents {...props} />);
 
   runAllEffects();
@@ -122,6 +126,8 @@ it('should select all events in view', () => {
     .find('Table')
     .prop('head')[0]
     .label.props.onSelect({target: {checked: true}});
+
+  await flushPromises();
 
   expect(
     node.find('Table').dive().find('DataTable').dive().find('.selectionActions').prop('label')

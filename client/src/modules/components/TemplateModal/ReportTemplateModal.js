@@ -11,12 +11,17 @@ import {t} from 'translation';
 
 import TemplateModal from './TemplateModal';
 
-import heatmapImg from './images/heatmap.png';
-import durationImg from './images/duration.png';
-import durationProgress from './images/durationProgress.png';
-import percentageProgress from './images/percentageProgress.png';
-import tableImg from './images/table.png';
-import chartImg from './images/chart.png';
+import analyzeSharesAsPieChart from './images/analyzeSharesAsPieChart.png';
+import analyzeOrExportRawDataFromATable from './images/analyzeOrExportRawDataFromATable.png';
+import compareProcessesAndVersionsInABarChart from './images/compareProcessesAndVersionsInABarChart.png';
+import correlateDurationAndCountInPieChart from './images/correlateDurationAndCountInPieChart.png';
+import correlateMetricsInLineBarChart from './images/correlateMetricsInLineBarChart.png';
+import listIncidentsAsTable from './images/listIncidentsAsTable.png';
+import locateBottlenecsOnAHitmap from './images/locateBottlenecsOnAHitmap.png';
+import localeIncidentHotspotsOnAHeatmap from './images/localeIncidentHotspotsOnAHeatmap.png';
+import monitorTargetAsKpi from './images/monitorTargetAsKpi.png';
+import monitorTargetAsMetric from './images/monitorTargetAsMetric.png';
+import monitorTargetsOverTime from './images/monitorTargetsOverTime.png';
 
 import './ReportTemplateModal.scss';
 
@@ -24,227 +29,312 @@ export default function ReportTemplateModal({onClose, onConfirm, initialDefiniti
   const templateGroups = [
     {
       name: 'blankGroup',
-      description: null,
-      templates: [{name: 'blank'}],
+      templates: [{name: 'blank', disableDescription: true}],
     },
     {
       name: 'templatesGroup',
-      description: null,
       templates: [
         {
-          name: 'p75Duration',
-          img: durationProgress,
+          name: 'locateBottlenecsOnAHitmap',
+          img: locateBottlenecsOnAHitmap,
           disabled: (definitions) => definitions.length === 0,
           config: {
-            view: {entity: 'processInstance', properties: ['duration']},
-            groupBy: {type: 'none', value: null},
-            visualization: 'number',
+            view: {
+              entity: 'flowNode',
+              properties: ['duration'],
+            },
+            groupBy: {
+              type: 'flowNodes',
+              value: null,
+            },
+            visualization: 'heat',
+          },
+        },
+        {
+          name: 'localeIncidentHotspotsOnAHeatmap',
+          img: localeIncidentHotspotsOnAHeatmap,
+          disabled: (definitions) => definitions.length === 0,
+          config: {
+            view: {
+              entity: 'incident',
+              properties: ['duration'],
+            },
+            groupBy: {
+              type: 'flowNodes',
+              value: null,
+            },
+            visualization: 'heat',
+          },
+        },
+        {
+          name: 'monitorTargetAsKpi',
+          img: monitorTargetAsKpi,
+          disabled: (definitions) => definitions.length === 0,
+          config: {
             configuration: {
               aggregationTypes: [
                 {
                   type: 'percentile',
-                  value: 75,
+                  value: 75.0,
+                },
+              ],
+              precision: 1,
+              targetValue: {
+                durationProgress: {
+                  target: {
+                    unit: 'hours',
+                    value: '12',
+                    isBelow: true,
+                  },
+                },
+                active: true,
+                isKpi: true,
+              },
+            },
+            view: {
+              entity: 'processInstance',
+              properties: ['duration'],
+            },
+            groupBy: {
+              type: 'none',
+              value: null,
+            },
+            visualization: 'number',
+          },
+        },
+        {
+          name: 'monitorTargetAsMetric',
+          img: monitorTargetAsMetric,
+          disabled: (definitions) => definitions.length === 0,
+          config: {
+            configuration: {
+              aggregationTypes: [
+                {
+                  type: 'percentile',
+                  value: 75.0,
                 },
               ],
               precision: 1,
               targetValue: {
                 active: true,
-                isKpi: true,
-                durationProgress: {
-                  target: {
-                    unit: 'hours',
-                    value: '24',
-                    isBelow: true,
-                  },
+                countProgress: {
+                  baseline: '1000',
+                  target: '2500',
+                  isBelow: false,
                 },
+                isKpi: false,
               },
             },
+            view: {
+              entity: 'processInstance',
+              properties: ['frequency'],
+            },
+            groupBy: {
+              type: 'none',
+              value: null,
+            },
+            visualization: 'number',
           },
         },
         {
-          name: 'percentSLAMet',
-          description: null,
-          img: percentageProgress,
+          name: 'monitorTargetsOverTime',
+          img: monitorTargetsOverTime,
           disabled: (definitions) => definitions.length === 0,
           config: {
-            view: {entity: 'processInstance', properties: ['percentage']},
-            groupBy: {type: 'none', value: null},
-            visualization: 'number',
             configuration: {
+              color: '#FCCB00',
+              aggregationTypes: [
+                {
+                  type: 'avg',
+                  value: null,
+                },
+              ],
               targetValue: {
                 active: true,
-                isKpi: true,
-                countProgress: {
-                  baseline: '0',
-                  target: '99',
+                durationChart: {
+                  unit: 'days',
+                  isBelow: false,
+                  value: '1',
                 },
+                isKpi: false,
+              },
+              xLabel: t('report.groupBy.endDate'),
+              yLabel: t('report.view.pi') + ' ' + t('report.view.duration'),
+            },
+            view: {
+              entity: 'processInstance',
+              properties: ['duration'],
+            },
+            groupBy: {
+              type: 'endDate',
+              value: {
+                unit: 'month',
               },
             },
-            filter: [
-              {
-                type: 'processInstanceDuration',
-                data: {
-                  value: 7,
-                  unit: 'days',
-                  operator: '<',
-                  includeNull: false,
-                },
-                filterLevel: 'instance',
-                appliedTo: ['all'],
-              },
-            ],
+            visualization: 'bar',
           },
         },
         {
-          name: 'chart',
-          description: null,
-          img: chartImg,
+          name: 'correlateMetricsInLineBarChart',
+          img: correlateMetricsInLineBarChart,
           disabled: (definitions) => definitions.length === 0,
           config: {
-            view: {entity: 'processInstance', properties: ['frequency']},
-            groupBy: {type: 'startDate', value: {unit: 'automatic'}},
-            visualization: 'bar',
             configuration: {
-              xLabel: t('report.groupBy.startDate'),
+              pointMarkers: true,
+              xLabel: t('report.groupBy.endDate'),
               yLabel: t('report.view.pi') + ' ' + t('report.view.count'),
             },
-          },
-        },
-        {
-          name: 'heatmap',
-          description: null,
-          img: heatmapImg,
-          disabled: (definitions) => definitions.length !== 1,
-          config: {
-            view: {entity: 'flowNode', properties: ['frequency']},
-            groupBy: {type: 'flowNodes', value: null},
-            visualization: 'heat',
-            configuration: {
-              xLabel: t('report.groupBy.flowNodes'),
-              yLabel: t('report.view.fn') + ' ' + t('report.view.count'),
+            view: {
+              entity: 'processInstance',
+              properties: ['frequency', 'duration'],
             },
+            groupBy: {
+              type: 'endDate',
+              value: {
+                unit: 'month',
+              },
+            },
+            visualization: 'barLine',
           },
         },
         {
-          name: 'table',
-          description: null,
-          img: tableImg,
+          name: 'correlateDurationAndCountInPieChart',
+          img: correlateDurationAndCountInPieChart,
           disabled: (definitions) => definitions.length === 0,
           config: {
-            view: {entity: 'userTask', properties: ['frequency']},
-            groupBy: {type: 'userTasks', value: null},
+            configuration: {
+              showInstanceCount: true,
+              sorting: {
+                by: 'value',
+                order: 'desc',
+              },
+            },
+            filter: [
+              {
+                type: 'flowNodeStartDate',
+                data: {
+                  type: 'relative',
+                  start: {
+                    value: 1,
+                    unit: 'years',
+                  },
+                  end: null,
+                  includeUndefined: false,
+                  excludeUndefined: false,
+                  flowNodeIds: null,
+                },
+                filterLevel: 'view',
+                appliedTo: ['definition'],
+              },
+            ],
+            view: {
+              entity: 'userTask',
+              properties: ['frequency', 'duration'],
+            },
+            groupBy: {
+              type: 'userTasks',
+              value: null,
+            },
+            visualization: 'pie',
+            userTaskReport: true,
+          },
+        },
+        {
+          name: 'listIncidentsAsTable',
+          img: listIncidentsAsTable,
+          disabled: (definitions) => definitions.length === 0,
+          config: {
+            configuration: {
+              showInstanceCount: true,
+              tableColumns: {
+                includeNewVariables: true,
+                excludedColumns: [],
+                includedColumns: [],
+                columnOrder: ['Incidents by Flow Node', 'Count', 'Relative Frequency '],
+              },
+            },
+            view: {
+              entity: 'incident',
+              properties: ['frequency'],
+            },
+            groupBy: {
+              type: 'flowNodes',
+              value: null,
+            },
             visualization: 'table',
-            configuration: {
-              xLabel: t('report.groupBy.userTasks'),
-              yLabel: t('report.view.userTask') + ' ' + t('report.view.count'),
-            },
           },
         },
         {
-          name: 'number',
-          description: null,
-          img: durationImg,
+          name: 'compareProcessesAndVersionsInABarChart',
+          img: compareProcessesAndVersionsInABarChart,
+          disabled: (definitions) => definitions.length < 2,
+          config: {
+            configuration: {
+              color: '#00d0a3',
+              sorting: {
+                by: 'value',
+                order: 'desc',
+              },
+              xLabel: t('common.process.label'),
+              yLabel: t('report.view.pi') + ' ' + t('report.view.count'),
+            },
+            view: {
+              entity: 'processInstance',
+              properties: ['frequency'],
+            },
+            distributedBy: {
+              type: 'process',
+              value: null,
+            },
+            groupBy: {
+              type: 'none',
+              value: null,
+            },
+            visualization: 'bar',
+          },
+        },
+        {
+          name: 'analyzeSharesAsPieChart',
+          img: analyzeSharesAsPieChart,
           disabled: (definitions) => definitions.length === 0,
           config: {
-            view: {entity: 'processInstance', properties: ['duration']},
-            groupBy: {type: 'none', value: null},
-            visualization: 'number',
             configuration: {
-              precision: 2,
+              alwaysShowAbsolute: true,
             },
+            view: {
+              entity: 'processInstance',
+              properties: ['frequency'],
+            },
+            groupBy: {
+              type: 'startDate',
+              value: {
+                unit: 'year',
+              },
+            },
+            visualization: 'pie',
           },
         },
         {
-          name: 'percentSuccess',
-          description: null,
-          img: percentageProgress,
-          disabled: (definitions) => definitions.length !== 1,
-          config: {
-            view: {entity: 'processInstance', properties: ['percentage']},
-            groupBy: {type: 'none', value: null},
-            visualization: 'number',
-            configuration: {
-              targetValue: {
-                active: true,
-                isKpi: true,
-                countProgress: {
-                  baseline: '0',
-                  target: '70',
-                },
-              },
-            },
-            filter: [
-              {
-                type: 'executedFlowNodes',
-                appliedTo: ['definition'],
-                filterLevel: 'instance',
-                data: {
-                  operator: 'in',
-                  values: ['StartEvent_1'],
-                },
-              },
-            ],
-          },
-        },
-        {
-          name: 'percentAutomated',
-          description: null,
-          img: percentageProgress,
-          disabled: (definitions) => definitions.length !== 1,
-          config: {
-            view: {entity: 'processInstance', properties: ['percentage']},
-            groupBy: {type: 'none', value: null},
-            visualization: 'number',
-            configuration: {
-              targetValue: {
-                active: true,
-                isKpi: true,
-                countProgress: {
-                  baseline: '0',
-                  target: '90',
-                },
-              },
-            },
-            filter: [
-              {
-                type: 'executedFlowNodes',
-                appliedTo: ['definition'],
-                filterLevel: 'instance',
-                data: {
-                  operator: 'not in',
-                  values: ['StartEvent_1'],
-                },
-              },
-            ],
-          },
-        },
-        {
-          name: 'percentNoIncidents',
-          description: null,
-          img: percentageProgress,
+          name: 'analyzeOrExportRawDataFromATable',
+          img: analyzeOrExportRawDataFromATable,
           disabled: (definitions) => definitions.length === 0,
           config: {
-            view: {entity: 'processInstance', properties: ['percentage']},
-            groupBy: {type: 'none', value: null},
-            visualization: 'number',
             configuration: {
-              targetValue: {
-                active: true,
-                isKpi: true,
-                countProgress: {
-                  baseline: '0',
-                  target: '99',
-                },
+              showInstanceCount: true,
+              sorting: {
+                by: 'startDate',
+                order: 'desc',
               },
             },
-            filter: [
-              {
-                type: 'doesNotIncludeIncident',
-                data: null,
-                filterLevel: 'instance',
-                appliedTo: ['all'],
-              },
-            ],
+            view: {
+              entity: null,
+              properties: ['rawData'],
+            },
+            groupBy: {
+              type: 'none',
+              value: null,
+            },
+            visualization: 'table',
           },
         },
       ],

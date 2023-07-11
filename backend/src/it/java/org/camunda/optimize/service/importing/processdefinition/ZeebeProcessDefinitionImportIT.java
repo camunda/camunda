@@ -130,7 +130,8 @@ public class ZeebeProcessDefinitionImportIT extends AbstractZeebeIT {
     zeebeExtension.setClock(Instant.now().plus(1, ChronoUnit.DAYS));
     final String secondProcessName = "secondProcess";
     deployProcessAndStartInstance(createSimpleServiceTaskProcess(secondProcessName));
-    waitUntilNumberOfDefinitionsExported(2);
+    waitUntilDefinitionWithIdExported(firstProcessName);
+    waitUntilDefinitionWithIdExported(secondProcessName);
 
     // when
     importAllZeebeEntitiesFromScratch();

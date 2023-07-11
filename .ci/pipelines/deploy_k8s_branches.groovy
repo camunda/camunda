@@ -131,7 +131,7 @@ pipeline {
                 parameters: [
                   string(name: 'BRANCH', value: "master"),
                   string(name: 'CAMBPM_VERSION', value: env.CAMBPM_VERSION),
-                  string(name: 'ES_VERSION', value: env.ES_VERSION),
+                  string(name: 'ES_VERSION', value: env.ES8_VERSION),
                   string(name: 'ZEEBE_VERSION', value: env.ZEEBE_VERSION),
                   string(name: 'IDENTITY_VERSION', value: env.IDENTITY_VERSION),
                   string(name: 'REF', value: "master"),

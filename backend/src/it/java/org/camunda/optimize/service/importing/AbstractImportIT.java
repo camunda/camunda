@@ -14,6 +14,7 @@ import org.camunda.optimize.test.it.extension.MockServerUtil;
 import org.camunda.optimize.util.BpmnModels;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.search.SearchHit;
+import org.junit.jupiter.api.Tag;
 import org.mockserver.model.HttpResponse;
 
 import javax.ws.rs.core.Response;
@@ -28,6 +29,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.util.BpmnModels.getSingleServiceTaskProcess;
 import static org.camunda.optimize.util.SuppressionConstants.UNUSED;
 
+@Tag("import")
 public abstract class AbstractImportIT extends AbstractIT {
 
   protected void assertAllEntriesInElasticsearchHaveAllData(String elasticsearchIndex,

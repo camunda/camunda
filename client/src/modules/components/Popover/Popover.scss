@@ -1,57 +1,22 @@
+@use '@carbon/styles/scss/theme';
+@use '@carbon/styles/scss/spacing';
 @import 'shared-styles/shared-styles.scss';
 
 .Popover {
-  position: relative;
+  display: block;
 
-  &.overlay {
-    position: absolute;
-  }
-
-  .dialogArrow {
-    &,
-    &Border {
-      bottom: -11px;
-      z-index: calc(var(--z-popup) + 1);
-      left: 50%;
-      border: solid transparent;
-      height: 0;
-      width: 0;
-      position: absolute;
-      pointer-events: none;
-    }
-
-    &Border {
-      border-color: transparent;
-      border-bottom-color: var(--silver-darken-80);
-      border-width: 11px;
-      margin-left: -11px;
-    }
-
-    & {
-      border-color: transparent;
-      border-bottom-color: var(--white);
-      border-width: 10px;
-      margin-left: -10px;
-    }
-  }
-
-  .dialogContainer {
-    position: absolute;
-    width: auto;
-    min-width: 250px;
-    background-color: var(--white);
-    box-shadow: 0 2px 7px 0 rgba(0, 0, 0, 0.5);
-    border-radius: 8px;
-    margin-top: 10px;
-    z-index: var(--z-popup);
-    box-sizing: content-box;
-
-    .dialog {
-      padding: 10px 20px 15px 20px;
+  > .cds--popover {
+    > .popoverContent {
+      background-color: theme.$layer-02;
+      padding: spacing.$spacing-05;
 
       &.scrollable {
         @include scrollable;
       }
+    }
+
+    > .cds--popover-caret {
+      background-color: theme.$layer-02;
     }
   }
 

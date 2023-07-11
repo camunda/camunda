@@ -11,7 +11,7 @@ import classnames from 'classnames';
 import useDeepCompareEffect from 'use-deep-compare-effect';
 import deepEqual from 'fast-deep-equal';
 
-import {Button, Icon, CarbonPopover, Tooltip} from 'components';
+import {Button, Icon, Popover, Tooltip} from 'components';
 import {withDocs, withErrorHandling} from 'HOC';
 import {getCollection, formatters} from 'services';
 import {t} from 'translation';
@@ -87,7 +87,7 @@ export function DefinitionList({
                   </Button>
                 </Tooltip>
               )}
-              <CarbonPopover
+              <Popover
                 className="DefinitionList"
                 onOpen={() => setOpenPopover(idx)}
                 onClose={() => setOpenPopover()}
@@ -104,7 +104,7 @@ export function DefinitionList({
                   onChange={(change) => onChange(change, idx)}
                   type={type}
                 />
-              </CarbonPopover>
+              </Popover>
               <Tooltip
                 content={t('common.removeEntity', {entity: t('common.process.label')})}
                 position="bottom"

@@ -9,13 +9,13 @@ import {shallow} from 'enzyme';
 
 import {Button, Tooltip} from 'components';
 
-import CarbonPopover from './CarbonPopover';
+import Popover from './Popover';
 
 it('opens and closes on button click', () => {
   const node = shallow(
-    <CarbonPopover title="Popover Title">
+    <Popover title="Popover Title">
       <div>Popover Content</div>
-    </CarbonPopover>
+    </Popover>
   );
 
   expect(node.find('.popoverContent').exists()).toBe(false);
@@ -31,9 +31,9 @@ it('opens and closes on button click', () => {
 
 it('opens and closes on button click', () => {
   const node = shallow(
-    <CarbonPopover title="Foobar">
+    <Popover title="Foobar">
       <div>Popover Content</div>
-    </CarbonPopover>
+    </Popover>
   );
 
   expect(node.find(Button)).toIncludeText('Foobar');
@@ -41,25 +41,25 @@ it('opens and closes on button click', () => {
 
 it('should specify the open button as icon button if it has an icon, but no title', () => {
   const node = shallow(
-    <CarbonPopover icon="open">
+    <Popover icon="open">
       <div>Popover Content</div>
-    </CarbonPopover>
+    </Popover>
   );
 
   expect(node.find(Button).prop('icon')).toBe(true);
 });
 
 it('should do not display child content initially', () => {
-  const node = shallow(<CarbonPopover title="a">Child content</CarbonPopover>);
+  const node = shallow(<Popover title="a">Child content</Popover>);
 
   expect(node).not.toIncludeText('Child content');
 });
 
 it('should automatically open the popover on mount with the autoOpen prop', () => {
   const node = shallow(
-    <CarbonPopover title="a" autoOpen>
+    <Popover title="a" autoOpen>
       Child content
-    </CarbonPopover>
+    </Popover>
   );
 
   expect(node).toIncludeText('Child content');
@@ -67,9 +67,9 @@ it('should automatically open the popover on mount with the autoOpen prop', () =
 
 it('should pass tooltip props to the tooltip component', () => {
   const node = shallow(
-    <CarbonPopover title="a" tooltip="test" tooltipPosition="bottom">
+    <Popover title="a" tooltip="test" tooltipPosition="bottom">
       Child content
-    </CarbonPopover>
+    </Popover>
   );
 
   expect(node.find(Tooltip).prop('content')).toBe('test');

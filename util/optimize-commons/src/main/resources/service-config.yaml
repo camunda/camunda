@@ -119,6 +119,8 @@ container:
       max: ${CAMUNDA_OPTIMIZE_CONTAINER_STATUS_CONNECTIONS_MAX:10}
   # Optional url to access Optimize (used for links to Optimize in e.g. alert emails)
   accessUrl: ${CONTAINER_ACCESS_URL:null}
+  # Maximum size of a single request header. Note that higher values consume more memory
+  maxRequestHeaderSizeInBytes: ${CAMUNDA_OPTIMIZE_CONTAINER_MAX_REQUEST_HEADER_SIZE_BYTES:8192}
 
 # Configuration for fetching user data
 users:

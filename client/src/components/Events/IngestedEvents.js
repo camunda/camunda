@@ -9,7 +9,16 @@ import React, {useCallback, useEffect, useState, useMemo} from 'react';
 import debounce from 'debounce';
 import {TableSelectRow, TableSelectAll} from '@carbon/react';
 
-import {Deleter, DocsLink, Dropdown, Icon, PageTitle, Table, Tooltip} from 'components';
+import {
+  Deleter,
+  DocsLink,
+  Dropdown,
+  Icon,
+  NoDataNotice,
+  PageTitle,
+  Table,
+  Tooltip,
+} from 'components';
 import {withErrorHandling} from 'HOC';
 import {showError} from 'notifications';
 import {t} from 'translation';
@@ -174,12 +183,11 @@ export function IngestedEvents({mightFail}) {
           setSortOrder(order);
         }}
         noData={
-          <>
-            {t('events.ingested.noData')}{' '}
+          <NoDataNotice title={t('events.ingested.noData')}>
             <DocsLink location="apis-clients/optimize-api/event-ingestion/">
               {t('events.sources.learnMore')}
             </DocsLink>
-          </>
+          </NoDataNotice>
         }
       />
       <Deleter

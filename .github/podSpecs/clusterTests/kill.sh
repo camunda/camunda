@@ -8,4 +8,4 @@ die () {
 
 NAMESPACE=$1
 
-sed -e "s/\${NAMESPACE}/$NAMESPACE/g" < .ci/podSpecs/clusterTests/ns.yml | kubectl delete -f -
+sed -e "s/\${NAMESPACE}/$NAMESPACE/g" < .github/podSpecs/clusterTests/ns.yml | kubectl delete -f -
