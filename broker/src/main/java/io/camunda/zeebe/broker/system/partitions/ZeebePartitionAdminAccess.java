@@ -12,9 +12,9 @@ import static java.util.Objects.requireNonNull;
 import io.camunda.zeebe.broker.Loggers;
 import io.camunda.zeebe.broker.partitioning.PartitionAdminAccess;
 import io.camunda.zeebe.engine.state.processing.DbBannedInstanceState;
-import io.camunda.zeebe.scheduler.ConcurrencyControl;
+import io.camunda.zeebe.logstreams.log.LogStream;import io.camunda.zeebe.logstreams.log.LogStreamWriter.WriteFailure;import io.camunda.zeebe.protocol.impl.record.RecordMetadata;import io.camunda.zeebe.protocol.impl.record.value.error.ErrorRecord;import io.camunda.zeebe.protocol.record.RecordType;import io.camunda.zeebe.protocol.record.RejectionType;import io.camunda.zeebe.protocol.record.intent.ErrorIntent;import io.camunda.zeebe.protocol.record.value.ProcessInstanceRelated;import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
-import java.io.IOException;
+import io.camunda.zeebe.stream.impl.records.RecordBatchEntry;import io.camunda.zeebe.util.Either;import java.io.IOException;
 import java.util.Optional;
 import org.slf4j.Logger;
 
@@ -144,24 +144,65 @@ class ZeebePartitionAdminAccess implements PartitionAdminAccess {
 
   @Override
   public ActorFuture<Void> banInstance(final long processInstanceKey) {
-    final ActorFuture<Void> completed = concurrencyControl.createFuture();
+    final ActorFuture<Void> future = concurrencyControl.createFuture();
     concurrencyControl.run(
         () -> {
           try {
-            final var zeebeDb = adminControl.getZeebeDb();
-            final var context = zeebeDb.createContext();
-            final var dbBannedInstanceState =
-                new DbBannedInstanceState(zeebeDb, context, partitionId);
 
-            dbBannedInstanceState.banProcessInstance(processInstanceKey);
+            final LogStream logStream = adminControl.getLogStream();
+            logStream
+                .newLogStreamWriter()
+                .onComplete(
+                    (writer, error) -> {
+                      if (error != null) {
+                        LOG.error(
+                            "Could not retrieve writer to write error record for process instance.",
+                            error);
+                        future.completeExceptionally(error);
+                      } else {
+                        final var errorRecord = new ErrorRecord();
+                        errorRecord.initErrorRecord(
+                            new Exception("Instance was banned from outside."), -1);
+                        errorRecord.setProcessInstanceKey(processInstanceKey);
 
-            LOG.info("Successful banned instance with key {}", processInstanceKey);
+                        final var recordMetadata =
+                            new RecordMetadata()
+                                .recordType(RecordType.EVENT)
+                                .intent(ErrorIntent.CREATED)
+                                .recordVersion(RecordMetadata.DEFAULT_RECORD_VERSION)
+                                .rejectionType(RejectionType.NULL_VAL)
+                                .rejectionReason("");
+                        final var entry =
+                            RecordBatchEntry.createEntry(
+                                processInstanceKey, recordMetadata, -1, errorRecord);
+                        final var eitherWrittenOrFailure = writer.tryWrite(entry);
 
+                        eitherWrittenOrFailure.ifRightOrLeft((position) -> {
+                              LOG.info("Wrote error record on position {}", position);
+
+                              // we only want to make the state change after we wrote the event
+                              final var zeebeDb = adminControl.getZeebeDb();
+                              final var context = zeebeDb.createContext();
+                              final var dbBannedInstanceState =
+                                  new DbBannedInstanceState(zeebeDb, context, partitionId);
+
+                              dbBannedInstanceState.banProcessInstance(processInstanceKey);
+
+                              LOG.info("Successful banned instance with key {}", processInstanceKey);
+                              future.complete(null);
+                            },
+                            writeFailure -> {
+                              final String errorMsg = String.format("Failure %s on writing error record to ban instance %d", writeFailure, processInstanceKey);
+                              future.completeExceptionally(new IllegalStateException(errorMsg));
+                              LOG.error(errorMsg);
+                            });
+                      }
+                    });
           } catch (final Exception e) {
             LOG.error("Could not resume processing", e);
-            completed.completeExceptionally(e);
+            future.completeExceptionally(e);
           }
         });
-    return completed;
+    return future;
   }
 }

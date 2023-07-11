@@ -9,13 +9,15 @@ package io.camunda.zeebe.broker.system.partitions;
 
 import io.camunda.zeebe.broker.exporter.stream.ExporterDirector;
 import io.camunda.zeebe.db.ZeebeDb;
-import io.camunda.zeebe.stream.impl.StreamProcessor;
+import io.camunda.zeebe.logstreams.log.LogStream;import io.camunda.zeebe.stream.impl.StreamProcessor;
 import java.io.IOException;
 
 public interface PartitionAdminControl {
   StreamProcessor getStreamProcessor();
 
   ZeebeDb getZeebeDb();
+
+  LogStream getLogStream();
 
   ExporterDirector getExporterDirector();
 
