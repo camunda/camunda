@@ -39,6 +39,32 @@
         ],
         "messages": [
           {
+            "name": "StreamActivatedJobsRequest",
+            "fields": [
+              {
+                "id": 1,
+                "name": "type",
+                "type": "string"
+              },
+              {
+                "id": 2,
+                "name": "worker",
+                "type": "string"
+              },
+              {
+                "id": 3,
+                "name": "timeout",
+                "type": "int64"
+              },
+              {
+                "id": 5,
+                "name": "fetchVariable",
+                "type": "string",
+                "is_repeated": true
+              }
+            ]
+          },
+          {
             "name": "ActivateJobsRequest",
             "fields": [
               {
@@ -1066,6 +1092,12 @@
                 "name": "ActivateJobs",
                 "in_type": "ActivateJobsRequest",
                 "out_type": "ActivateJobsResponse",
+                "out_streamed": true
+              },
+              {
+                "name": "StreamActivatedJobs",
+                "in_type": "StreamActivatedJobsRequest",
+                "out_type": "ActivatedJob",
                 "out_streamed": true
               },
               {
