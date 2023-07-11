@@ -9,6 +9,7 @@ package io.camunda.zeebe.gateway.admin;
 
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerRequest;
 import io.camunda.zeebe.gateway.impl.broker.response.BrokerResponse;
+import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.encoding.AdminRequest;
 import io.camunda.zeebe.protocol.impl.encoding.AdminResponse;
 import io.camunda.zeebe.protocol.management.AdminRequestEncoder;
@@ -38,6 +39,13 @@ public class BrokerAdminRequest extends BrokerRequest<Void> {
 
   public void resumeExporting() {
     request.setType(AdminRequestType.RESUME_EXPORTING);
+  }
+
+  public BrokerAdminRequest banInstance(final long key) {
+    request.setType(AdminRequestType.BAN_INSTANCE);
+    request.setKey(key);
+    request.setPartitionId(Protocol.decodePartitionId(key));
+    return this;
   }
 
   @Override
