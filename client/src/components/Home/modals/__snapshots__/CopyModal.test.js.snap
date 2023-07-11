@@ -7,8 +7,6 @@ exports[`should hide option to move the copy for collection entities 1`] = `
   open={true}
 >
   <ForwardRef(ModalHeader)
-    buttonOnClick={[Function]}
-    closeModal={[Function]}
     iconDescription="Close"
   >
     Copy collection
@@ -59,8 +57,6 @@ exports[`should match snapshot 1`] = `
   open={true}
 >
   <ForwardRef(ModalHeader)
-    buttonOnClick={[Function]}
-    closeModal={[Function]}
     iconDescription="Close"
   >
     Copy Test Dashboard

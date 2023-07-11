@@ -9,7 +9,7 @@ import {runAllEffects} from '__mocks__/react';
 import {shallow} from 'enzyme';
 import {RouteComponentProps} from 'react-router';
 
-import {Tabs, Typeahead} from 'components';
+import {CarbonTabs, Typeahead} from 'components';
 import {loadReports} from 'services';
 
 import {ReportModal} from './ReportModal';
@@ -102,13 +102,13 @@ it('should show a loading message while loading available reports', () => {
 it('should contain an External Website field', () => {
   const node = shallow(<ReportModal {...props} />);
 
-  expect(node.find(Tabs.Tab).at(1).prop('title')).toBe('External Website');
+  expect(node.find(CarbonTabs.Tab).at(1).prop('title')).toBe('External Website');
 });
 
 it('should hide the typeahead when external mode is enabled', () => {
   const node = shallow(<ReportModal {...props} />);
 
-  node.find(Tabs).simulate('change', 'external');
+  node.find(CarbonTabs).simulate('change', 'external');
 
   expect(node.find('Typeahead')).not.toExist();
 });
@@ -116,7 +116,7 @@ it('should hide the typeahead when external mode is enabled', () => {
 it('should contain a text input field if in external source mode', () => {
   const node = shallow(<ReportModal {...props} />);
 
-  node.find(Tabs).simulate('change', 'external');
+  node.find(CarbonTabs).simulate('change', 'external');
 
   expect(node.find('.externalInput')).toExist();
 });
@@ -124,7 +124,7 @@ it('should contain a text input field if in external source mode', () => {
 it('should  disable the submit button if the url does not start with http in external mode', () => {
   const node = shallow(<ReportModal {...props} />);
 
-  node.find(Tabs).simulate('change', 'external');
+  node.find(CarbonTabs).simulate('change', 'external');
   node.find('.externalInput').simulate('change', {
     target: {value: 'Dear computer, please show me a report. Thanks.'},
   });
@@ -135,13 +135,13 @@ it('should  disable the submit button if the url does not start with http in ext
 it('should contain an Text field', () => {
   const node = shallow(<ReportModal {...props} />);
 
-  expect(node.find(Tabs.Tab).at(2).prop('title')).toBe('Text');
+  expect(node.find(CarbonTabs.Tab).at(2).prop('title')).toBe('Text');
 });
 
 it('should contain text editor if in text report mode', () => {
   const node = shallow(<ReportModal {...props} />);
 
-  node.find(Tabs).simulate('change', 'text');
+  node.find(CarbonTabs).simulate('change', 'text');
 
   expect(node.find('TextEditor')).toExist();
 });
@@ -149,7 +149,7 @@ it('should contain text editor if in text report mode', () => {
 it('should  disable the submit button if the text in editor is empty or too long', () => {
   const node = shallow(<ReportModal {...props} />);
 
-  node.find(Tabs).simulate('change', 'text');
+  node.find(CarbonTabs).simulate('change', 'text');
 
   expect(node.find('Button').at(1)).toBeDisabled();
 

@@ -5,5 +5,4 @@
  * except in compliance with the proprietary license.
  */
 
-export {default as Tabs} from './Tabs';
-export {CarbonTabs} from './CarbonTabs';
+export {default as CarbonTabs} from './CarbonTabs';

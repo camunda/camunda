@@ -22,8 +22,6 @@ exports[`should show different text depending on the republish prop 1`] = `
   open={true}
 >
   <ForwardRef(ModalHeader)
-    buttonOnClick={[Function]}
-    closeModal={[Function]}
     iconDescription="Close"
   >
     Publishing Process
@@ -79,8 +77,6 @@ exports[`should show different text depending on the republish prop 2`] = `
   open={true}
 >
   <ForwardRef(ModalHeader)
-    buttonOnClick={[Function]}
-    closeModal={[Function]}
     iconDescription="Close"
   >
     Re-Publishing Process

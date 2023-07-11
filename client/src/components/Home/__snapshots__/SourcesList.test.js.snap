@@ -114,8 +114,6 @@ exports[`should match snapshot 1`] = `
     open={null}
   >
     <ForwardRef(ModalHeader)
-      buttonOnClick={[Function]}
-      closeModal={[Function]}
       iconDescription="Close"
     >
       Destructive Changes

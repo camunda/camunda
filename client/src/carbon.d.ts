@@ -5,7 +5,7 @@
  * except in compliance with the proprietary license.
  */
 
-import {RadioButtonSkeletonProps} from '@carbon/react';
+import {RadioButtonSkeletonProps, TabPanelsProps} from '@carbon/react';
 import {
   FC,
   ComponentProps,
@@ -625,6 +625,13 @@ declare module '@carbon/react' {
   }
 
   declare const TableToolbarSearch: FC<TableToolbarSearchProps>;
+
+  export interface TabListProps extends DivAttributes {
+    leftOverflowButtonProps?: HTMLAttributes<HTMLButtonElement>;
+    rightOverflowButtonProps?: HTMLAttributes<HTMLButtonElement>;
+  }
+
+  declare function TabPanels({children}: TabPanelsProps): JSX.Element;
 }
 
 // export {};

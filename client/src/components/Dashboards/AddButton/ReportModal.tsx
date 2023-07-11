@@ -17,7 +17,7 @@ import {
   LoadingIndicator,
   Labeled,
   Form,
-  Tabs,
+  CarbonTabs,
   Icon,
   TextEditor,
 } from 'components';
@@ -93,8 +93,8 @@ export function ReportModal({close, confirm, location}: ReportModalProps) {
       <Modal.Header>{t('dashboard.addButton.addTile')}</Modal.Header>
       <Modal.Content>
         <Form>
-          <Tabs<TabOpen> value={tabOpen} onChange={setTabOpen}>
-            <Tabs.Tab value="report" title={t('dashboard.addButton.optimizeReport')}>
+          <CarbonTabs<TabOpen> value={tabOpen} onChange={setTabOpen}>
+            <CarbonTabs.Tab value="report" title={t('dashboard.addButton.optimizeReport')}>
               <Form.Group>
                 {!loading && (
                   <Labeled label={t('dashboard.addButton.addReportLabel')}>
@@ -122,8 +122,8 @@ export function ReportModal({close, confirm, location}: ReportModalProps) {
                 )}
                 {loading && <LoadingIndicator />}
               </Form.Group>
-            </Tabs.Tab>
-            <Tabs.Tab value="external" title={t('dashboard.addButton.externalWebsite')}>
+            </CarbonTabs.Tab>
+            <CarbonTabs.Tab value="external" title={t('dashboard.addButton.externalWebsite')}>
               <Form.Group>
                 <Labeled label={t('dashboard.addButton.externalWebsite')}>
                   <Input
@@ -135,15 +135,15 @@ export function ReportModal({close, confirm, location}: ReportModalProps) {
                   />
                 </Labeled>
               </Form.Group>
-            </Tabs.Tab>
-            <Tabs.Tab value="text" title={t('dashboard.addButton.text')}>
+            </CarbonTabs.Tab>
+            <CarbonTabs.Tab value="text" title={t('dashboard.addButton.text')}>
               <Form.Group className="Labeled">
                 <span className="label before">{t('dashboard.addButton.text')}</span>
                 <TextEditor initialValue={text} onChange={setText} />
                 <TextEditor.CharCount editorState={text} />
               </Form.Group>
-            </Tabs.Tab>
-          </Tabs>
+            </CarbonTabs.Tab>
+          </CarbonTabs>
         </Form>
       </Modal.Content>
       <Modal.Footer>

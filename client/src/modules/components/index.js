@@ -47,7 +47,7 @@ export {LastModifiedInfo} from './LastModifiedInfo';
 export {ReportDetails} from './ReportDetails';
 export {InstanceCount} from './InstanceCount';
 export {DocsLink} from './DocsLink';
-export {Tabs} from './Tabs';
+export {Tabs, CarbonTabs} from './Tabs';
 export {Tag} from './Tag';
 export {MultiValueInput, UncontrolledMultiValueInput} from './MultiValueInput';
 export {Checklist, CarbonChecklist} from './Checklist';

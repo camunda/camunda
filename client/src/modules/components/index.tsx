@@ -7,7 +7,7 @@
 
 export {Button} from './Button';
 export {ButtonGroup} from './ButtonGroup';
-export {Tabs} from './Tabs';
+export {Tabs, CarbonTabs} from './Tabs';
 export {Message} from './Message';
 export {MessageBox} from './MessageBox';
 export {Icon} from './Icon';
