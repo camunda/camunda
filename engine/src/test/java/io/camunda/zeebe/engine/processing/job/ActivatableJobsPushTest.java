@@ -15,12 +15,13 @@ import static io.camunda.zeebe.test.util.record.RecordingExporter.jobRecords;
 import static io.camunda.zeebe.test.util.record.RecordingExporter.records;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.zeebe.engine.processing.streamprocessor.JobActivationProperties;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.engine.util.RecordingJobStreamer;
 import io.camunda.zeebe.engine.util.RecordingJobStreamer.RecordingJobStream;
-import io.camunda.zeebe.engine.util.RecordingJobStreamer.TestActivationProperties;
+import io.camunda.zeebe.msgpack.value.StringValue;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
+import io.camunda.zeebe.protocol.impl.stream.job.JobActivationProperties;
+import io.camunda.zeebe.protocol.impl.stream.job.JobActivationPropertiesImpl;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.Intent;
@@ -78,13 +79,11 @@ public class ActivatableJobsPushTest {
     timeout = 30000L;
 
     jobActivationProperties =
-        new TestActivationProperties(
-            worker,
-            timeout,
-            List.of(
-                BufferUtil.wrapString("a"),
-                BufferUtil.wrapString("b"),
-                BufferUtil.wrapString("c")));
+        new JobActivationPropertiesImpl()
+            .setWorker(worker, 0, worker.capacity())
+            .setTimeout(timeout)
+            .setFetchVariables(
+                List.of(new StringValue("a"), new StringValue("b"), new StringValue("c")));
     jobStream = JOB_STREAMER.addJobStream(jobTypeBuffer, jobActivationProperties);
   }
 
