@@ -507,6 +507,8 @@ entity:
   # Specifies the frequency with which we want to refresh the KPI values on ES
   # The given number is the interval in seconds
   kpiRefreshInterval: 600
+  # flag to determine whether this Optimize instance should (re)create management entities on startup
+  createOnStartup: ${CAMUNDA_OPTIMIZE_ENTITY_CREATE_ON_STARTUP:true}
 
 export:
   csv:
@@ -696,6 +698,3 @@ externalVariable:
     scheduleIntervalInMinutes: 10
     # A rollover is triggered when the size of the current external variable index matches or exceeds the maxIndexSizeGB threshold.
     maxIndexSizeGB: 50
-
-managementEntities:
-  createOnStartup: ${CAMUNDA_OPTIMIZE_MANAGEMENT_CREATE_ON_STARTUP:true}

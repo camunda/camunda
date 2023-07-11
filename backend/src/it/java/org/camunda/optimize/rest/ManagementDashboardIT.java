@@ -161,7 +161,7 @@ public class ManagementDashboardIT extends AbstractIT {
   @Test
   public void managementEntityCreationCanBeDisabled() {
     // given
-    embeddedOptimizeExtension.getConfigurationService().setCreateManagementEntitiesOnStartup(false);
+    embeddedOptimizeExtension.getConfigurationService().getEntityConfiguration().setCreateOnStartup(false);
     embeddedOptimizeExtension.reloadConfiguration();
 
     // when

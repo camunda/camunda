@@ -67,7 +67,7 @@ public class ManagementDashboardService {
 
   @EventListener(ApplicationReadyEvent.class)
   public void init() {
-    if (configurationService.getCreateManagementEntitiesOnStartup()) {
+    if (configurationService.getEntityConfiguration().getCreateOnStartup()) {
       // First we delete all existing management entities
       log.info("Deleting Management entities");
       reportWriter.deleteAllManagementReports();
