@@ -116,6 +116,7 @@ public final class EngineProcessors {
     addDeploymentRelatedProcessorAndServices(
         bpmnBehaviors,
         processingState,
+        scheduledTaskStateFactory,
         typedRecordProcessors,
         writers,
         deploymentDistributionCommandSender,
@@ -209,6 +210,7 @@ public final class EngineProcessors {
   private static void addDeploymentRelatedProcessorAndServices(
       final BpmnBehaviorsImpl bpmnBehaviors,
       final ProcessingState processingState,
+      final Supplier<ScheduledTaskState> scheduledTaskStateSupplier,
       final TypedRecordProcessors typedRecordProcessors,
       final Writers writers,
       final DeploymentDistributionCommandSender deploymentDistributionCommandSender,
@@ -231,7 +233,8 @@ public final class EngineProcessors {
     // periodically retries deployment distribution
     final var deploymentRedistributor =
         new DeploymentRedistributor(
-            deploymentDistributionCommandSender, processingState.getDeploymentState());
+            deploymentDistributionCommandSender,
+            scheduledTaskStateSupplier.get().getDeploymentState());
     typedRecordProcessors.withListener(deploymentRedistributor);
 
     // on other partitions DISTRIBUTE command is received and processed
