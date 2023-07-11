@@ -76,6 +76,9 @@
         "type": "text",
         "index": false
       },
+      "tenantId": {
+        "type": "keyword"
+      },
       "evaluatedInputs": {
         "properties": {
           "id": {

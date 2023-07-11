@@ -26,4 +26,8 @@ public class DecisionIndex extends AbstractIndexDescriptor implements Prio4Backu
     return INDEX_NAME;
   }
 
+  @Override
+  public String getVersion() {
+    return "8.3.0";
+  }
 }

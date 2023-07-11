@@ -28,6 +28,6 @@ public class SequenceFlowTemplate extends AbstractTemplateDescriptor implements 
 
   @Override
   public String getVersion() {
-    return "8.2.0";
+    return "8.3.0";
   }
 }

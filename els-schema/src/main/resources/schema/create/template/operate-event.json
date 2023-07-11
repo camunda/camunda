@@ -70,7 +70,10 @@
 			},
 			"key": {
 				"type": "long"
-			}
+			},
+            "tenantId": {
+              "type": "keyword"
+            }
 		}
 	}
 }

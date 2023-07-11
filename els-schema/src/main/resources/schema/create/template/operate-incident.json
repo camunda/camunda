@@ -64,7 +64,10 @@
 				"type": "text",
 				"analyzer": "ca_path_tree",
 				"fielddata": true
-			}
+			},
+            "tenantId": {
+              "type": "keyword"
+            }
 		}
 	}
 }

@@ -37,7 +37,10 @@
                   "type": "keyword"
                 }
               }
+            },
+            "tenantId": {
+              "type": "keyword"
             }
         }
-	}
+    }
 }

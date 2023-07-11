@@ -117,7 +117,10 @@
 			},
 			"pendingIncident": {
 				"type": "boolean"
-			}
+			},
+            "tenantId": {
+              "type": "keyword"
+            }
 		}
 	}
 }

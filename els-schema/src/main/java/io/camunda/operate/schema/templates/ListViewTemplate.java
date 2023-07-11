@@ -55,7 +55,7 @@ public class ListViewTemplate extends AbstractTemplateDescriptor implements Prio
 
   @Override
   public String getVersion() {
-     return "8.1.0";
+     return "8.3.0";
   }
 
 }

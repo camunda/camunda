@@ -27,4 +27,9 @@ public class DecisionRequirementsIndex extends AbstractIndexDescriptor implement
     return INDEX_NAME;
   }
 
+  @Override
+  public String getVersion() {
+    return "8.3.0";
+  }
+
 }

@@ -64,14 +64,17 @@
 			"treePath": {
 				"type": "text",
 				"analyzer": "flownode_path_tree",
-        "fielddata": true
+                "fielddata": true
 			},
 			"level": {
 				"type": "long"
 			},
 			"incident": {
 				"type": "boolean"
-			}
+			},
+            "tenantId": {
+              "type": "keyword"
+            }
 		}
 	}
 }
