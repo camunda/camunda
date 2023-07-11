@@ -128,7 +128,6 @@ final class ProcessingCfgTest {
     final var enabled = cfg.isEnableAsyncScheduledTasks();
 
     // then
-    assertThat(enabled).isFalse();
-
+    assertThat(enabled).isTrue();
   }
 }

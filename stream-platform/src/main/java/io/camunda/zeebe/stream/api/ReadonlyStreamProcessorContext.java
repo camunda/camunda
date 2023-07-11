@@ -19,4 +19,9 @@ public interface ReadonlyStreamProcessorContext {
    * @return partition ID
    */
   int getPartitionId();
+
+  /**
+   * @return true when scheduled tasks should run async, concurrently to the processing actor.
+   */
+  boolean enableAsyncScheduledTasks();
 }

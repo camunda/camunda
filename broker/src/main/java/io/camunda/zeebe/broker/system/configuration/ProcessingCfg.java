@@ -29,7 +29,6 @@ public final class ProcessingCfg implements ConfigurationEntry {
     this.maxCommandsInBatch = maxCommandsInBatch;
   }
 
-
   public boolean isEnableAsyncScheduledTasks() {
     return enableAsyncScheduledTasks;
   }
@@ -40,9 +39,11 @@ public final class ProcessingCfg implements ConfigurationEntry {
 
   @Override
   public String toString() {
-    return "ProcessingCfg{" +
-        "maxCommandsInBatch=" + maxCommandsInBatch +
-        ", enableAsyncScheduledTasks=" + enableAsyncScheduledTasks +
-        '}';
+    return "ProcessingCfg{"
+        + "maxCommandsInBatch="
+        + maxCommandsInBatch
+        + ", enableAsyncScheduledTasks="
+        + enableAsyncScheduledTasks
+        + '}';
   }
 }
