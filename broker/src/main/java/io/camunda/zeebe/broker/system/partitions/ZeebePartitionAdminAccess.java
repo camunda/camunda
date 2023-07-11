@@ -12,9 +12,17 @@ import static java.util.Objects.requireNonNull;
 import io.camunda.zeebe.broker.Loggers;
 import io.camunda.zeebe.broker.partitioning.PartitionAdminAccess;
 import io.camunda.zeebe.engine.state.processing.DbBannedInstanceState;
-import io.camunda.zeebe.logstreams.log.LogStream;import io.camunda.zeebe.logstreams.log.LogStreamWriter.WriteFailure;import io.camunda.zeebe.protocol.impl.record.RecordMetadata;import io.camunda.zeebe.protocol.impl.record.value.error.ErrorRecord;import io.camunda.zeebe.protocol.record.RecordType;import io.camunda.zeebe.protocol.record.RejectionType;import io.camunda.zeebe.protocol.record.intent.ErrorIntent;import io.camunda.zeebe.protocol.record.value.ProcessInstanceRelated;import io.camunda.zeebe.scheduler.ConcurrencyControl;
+import io.camunda.zeebe.logstreams.log.LogStream;
+import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
+import io.camunda.zeebe.protocol.impl.record.value.error.ErrorRecord;
+import io.camunda.zeebe.protocol.record.RecordType;
+import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.intent.ErrorIntent;
+import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
-import io.camunda.zeebe.stream.impl.records.RecordBatchEntry;import io.camunda.zeebe.util.Either;import java.io.IOException;
+import io.camunda.zeebe.stream.impl.records.RecordBatchEntry;
+import java.io.IOException;
 import java.util.Optional;
 import org.slf4j.Logger;
 
@@ -168,6 +176,7 @@ class ZeebePartitionAdminAccess implements PartitionAdminAccess {
                         final var recordMetadata =
                             new RecordMetadata()
                                 .recordType(RecordType.EVENT)
+                                .valueType(ValueType.ERROR)
                                 .intent(ErrorIntent.CREATED)
                                 .recordVersion(RecordMetadata.DEFAULT_RECORD_VERSION)
                                 .rejectionType(RejectionType.NULL_VAL)
@@ -177,7 +186,8 @@ class ZeebePartitionAdminAccess implements PartitionAdminAccess {
                                 processInstanceKey, recordMetadata, -1, errorRecord);
                         final var eitherWrittenOrFailure = writer.tryWrite(entry);
 
-                        eitherWrittenOrFailure.ifRightOrLeft((position) -> {
+                        eitherWrittenOrFailure.ifRightOrLeft(
+                            (position) -> {
                               LOG.info("Wrote error record on position {}", position);
 
                               // we only want to make the state change after we wrote the event
@@ -188,11 +198,15 @@ class ZeebePartitionAdminAccess implements PartitionAdminAccess {
 
                               dbBannedInstanceState.banProcessInstance(processInstanceKey);
 
-                              LOG.info("Successful banned instance with key {}", processInstanceKey);
+                              LOG.info(
+                                  "Successful banned instance with key {}", processInstanceKey);
                               future.complete(null);
                             },
                             writeFailure -> {
-                              final String errorMsg = String.format("Failure %s on writing error record to ban instance %d", writeFailure, processInstanceKey);
+                              final String errorMsg =
+                                  String.format(
+                                      "Failure %s on writing error record to ban instance %d",
+                                      writeFailure, processInstanceKey);
                               future.completeExceptionally(new IllegalStateException(errorMsg));
                               LOG.error(errorMsg);
                             });
