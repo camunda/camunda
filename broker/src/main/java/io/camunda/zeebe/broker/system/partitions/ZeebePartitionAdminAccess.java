@@ -155,6 +155,8 @@ class ZeebePartitionAdminAccess implements PartitionAdminAccess {
 
             dbBannedInstanceState.banProcessInstance(processInstanceKey);
 
+            LOG.info("Successfully banned instance with key {}", processInstanceKey);
+
           } catch (final Exception e) {
             LOG.error("Could not resume processing", e);
             completed.completeExceptionally(e);
