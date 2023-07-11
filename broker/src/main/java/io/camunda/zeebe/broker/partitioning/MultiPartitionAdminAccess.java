@@ -9,9 +9,11 @@ package io.camunda.zeebe.broker.partitioning;
 
 import static java.util.Objects.requireNonNull;
 
+import io.camunda.zeebe.broker.Loggers;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.ActorFutureCollector;
+import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Optional;
@@ -60,6 +62,15 @@ final class MultiPartitionAdminAccess implements PartitionAdminAccess {
   @Override
   public ActorFuture<Void> resumeProcessing() {
     return callOnEachPartition(PartitionAdminAccess::resumeProcessing);
+  }
+
+  @Override
+  public ActorFuture<Void> banInstance(final long processInstanceKey) {
+    final String errorMsg =
+        String.format("Can't ban instance %s on all partitions.", processInstanceKey);
+    Loggers.CLUSTERING_LOGGER.error(errorMsg);
+    return CompletableActorFuture.completedExceptionally(
+        new UnsupportedOperationException(errorMsg));
   }
 
   private ActorFuture<Void> callOnEachPartition(
