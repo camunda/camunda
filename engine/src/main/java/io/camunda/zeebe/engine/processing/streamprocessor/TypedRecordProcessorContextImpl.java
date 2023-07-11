@@ -13,6 +13,7 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.ProcessingDbState;
 import io.camunda.zeebe.engine.state.ScheduledTaskDbState;
 import io.camunda.zeebe.engine.state.immutable.ScheduledTaskState;
+import io.camunda.zeebe.engine.state.message.TransientPendingSubscriptionState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.stream.api.InterPartitionCommandSender;
 import io.camunda.zeebe.stream.api.RecordProcessorContext;
@@ -28,6 +29,8 @@ public class TypedRecordProcessorContextImpl implements TypedRecordProcessorCont
   private final Writers writers;
   private final InterPartitionCommandSender partitionCommandSender;
   private final EngineConfiguration config;
+  private final TransientPendingSubscriptionState transientMessageSubscriptionState;
+  private final TransientPendingSubscriptionState transientProcessMessageSubscriptionState;
 
   public TypedRecordProcessorContextImpl(
       final RecordProcessorContext context,
@@ -36,9 +39,16 @@ public class TypedRecordProcessorContextImpl implements TypedRecordProcessorCont
     partitionId = context.getPartitionId();
     scheduleService = context.getScheduleService();
     zeebeDb = context.getZeebeDb();
+    transientMessageSubscriptionState = new TransientPendingSubscriptionState();
+    transientProcessMessageSubscriptionState = new TransientPendingSubscriptionState();
     processingState =
         new ProcessingDbState(
-            partitionId, zeebeDb, context.getTransactionContext(), context.getKeyGenerator());
+            partitionId,
+            zeebeDb,
+            context.getTransactionContext(),
+            context.getKeyGenerator(),
+            transientMessageSubscriptionState,
+            transientProcessMessageSubscriptionState);
     this.writers = writers;
     partitionCommandSender = context.getPartitionCommandSender();
     this.config = config;
@@ -71,7 +81,13 @@ public class TypedRecordProcessorContextImpl implements TypedRecordProcessorCont
 
   @Override
   public Supplier<ScheduledTaskState> getScheduledTaskStateFactory() {
-    return () -> new ScheduledTaskDbState(zeebeDb, zeebeDb.createContext(), partitionId);
+    return () ->
+        new ScheduledTaskDbState(
+            zeebeDb,
+            zeebeDb.createContext(),
+            partitionId,
+            transientMessageSubscriptionState,
+            transientProcessMessageSubscriptionState);
   }
 
   @Override

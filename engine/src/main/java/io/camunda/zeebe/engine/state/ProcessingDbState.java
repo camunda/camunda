@@ -26,6 +26,7 @@ import io.camunda.zeebe.engine.state.message.DbMessageStartEventSubscriptionStat
 import io.camunda.zeebe.engine.state.message.DbMessageState;
 import io.camunda.zeebe.engine.state.message.DbMessageSubscriptionState;
 import io.camunda.zeebe.engine.state.message.DbProcessMessageSubscriptionState;
+import io.camunda.zeebe.engine.state.message.TransientPendingSubscriptionState;
 import io.camunda.zeebe.engine.state.migration.DbMigrationState;
 import io.camunda.zeebe.engine.state.mutable.MutableBannedInstanceState;
 import io.camunda.zeebe.engine.state.mutable.MutableDecisionState;
@@ -83,7 +84,9 @@ public class ProcessingDbState implements MutableProcessingState {
       final int partitionId,
       final ZeebeDb<ZbColumnFamilies> zeebeDb,
       final TransactionContext transactionContext,
-      final KeyGenerator keyGenerator) {
+      final KeyGenerator keyGenerator,
+      final TransientPendingSubscriptionState transientMessageSubscriptionState,
+      final TransientPendingSubscriptionState transientProcessMessageSubscriptionState) {
     this.partitionId = partitionId;
     this.zeebeDb = zeebeDb;
     this.keyGenerator = Objects.requireNonNull(keyGenerator);
@@ -97,11 +100,14 @@ public class ProcessingDbState implements MutableProcessingState {
     deploymentState = new DbDeploymentState(zeebeDb, transactionContext);
     jobState = new DbJobState(zeebeDb, transactionContext);
     messageState = new DbMessageState(zeebeDb, transactionContext, partitionId);
-    messageSubscriptionState = new DbMessageSubscriptionState(zeebeDb, transactionContext);
+    messageSubscriptionState =
+        new DbMessageSubscriptionState(
+            zeebeDb, transactionContext, transientMessageSubscriptionState);
     messageStartEventSubscriptionState =
         new DbMessageStartEventSubscriptionState(zeebeDb, transactionContext);
     processMessageSubscriptionState =
-        new DbProcessMessageSubscriptionState(zeebeDb, transactionContext);
+        new DbProcessMessageSubscriptionState(
+            zeebeDb, transactionContext, transientProcessMessageSubscriptionState);
     incidentState = new DbIncidentState(zeebeDb, transactionContext, partitionId);
     bannedInstanceState = new DbBannedInstanceState(zeebeDb, transactionContext, partitionId);
     decisionState = new DbDecisionState(zeebeDb, transactionContext);

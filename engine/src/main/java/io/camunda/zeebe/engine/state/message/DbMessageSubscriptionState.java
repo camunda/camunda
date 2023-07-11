@@ -46,11 +46,12 @@ public final class DbMessageSubscriptionState
   private final ColumnFamily<DbCompositeKey<DbCompositeKey<DbString, DbString>, DbLong>, DbNil>
       messageNameAndCorrelationKeyColumnFamily;
 
-  private final TransientPendingSubscriptionState transientState =
-      new TransientPendingSubscriptionState();
+  private final TransientPendingSubscriptionState transientState;
 
   public DbMessageSubscriptionState(
-      final ZeebeDb<ZbColumnFamilies> zeebeDb, final TransactionContext transactionContext) {
+      final ZeebeDb<ZbColumnFamilies> zeebeDb,
+      final TransactionContext transactionContext,
+      final TransientPendingSubscriptionState transientState) {
 
     elementInstanceKey = new DbLong();
     messageName = new DbString();
@@ -73,6 +74,7 @@ public final class DbMessageSubscriptionState
             transactionContext,
             nameCorrelationAndElementInstanceKey,
             DbNil.INSTANCE);
+    this.transientState = transientState;
   }
 
   @Override

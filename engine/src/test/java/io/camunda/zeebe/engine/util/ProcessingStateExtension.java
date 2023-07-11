@@ -15,6 +15,7 @@ import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.engine.state.DefaultZeebeDbFactory;
 import io.camunda.zeebe.engine.state.ProcessingDbState;
+import io.camunda.zeebe.engine.state.message.TransientPendingSubscriptionState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
@@ -141,6 +142,7 @@ public class ProcessingStateExtension implements BeforeEachCallback {
   }
 
   private static final class ProcessingStateExtensionState implements CloseableResource {
+
     private Path tempFolder;
     private ZeebeDb<ZbColumnFamilies> zeebeDb;
     private TransactionContext transactionContext;
@@ -157,7 +159,12 @@ public class ProcessingStateExtension implements BeforeEachCallback {
             new DbKeyGenerator(Protocol.DEPLOYMENT_PARTITION, zeebeDb, transactionContext);
         processingState =
             new ProcessingDbState(
-                Protocol.DEPLOYMENT_PARTITION, zeebeDb, transactionContext, keyGenerator);
+                Protocol.DEPLOYMENT_PARTITION,
+                zeebeDb,
+                transactionContext,
+                keyGenerator,
+                new TransientPendingSubscriptionState(),
+                new TransientPendingSubscriptionState());
       } catch (final Exception e) {
         ExceptionUtils.throwAsUncheckedException(e);
       }

@@ -38,15 +38,17 @@ public final class DbProcessMessageSubscriptionState
   private final ColumnFamily<DbCompositeKey<DbLong, DbString>, ProcessMessageSubscription>
       subscriptionColumnFamily;
 
-  private final TransientPendingSubscriptionState transientState =
-      new TransientPendingSubscriptionState();
+  private final TransientPendingSubscriptionState transientState;
 
   public DbProcessMessageSubscriptionState(
-      final ZeebeDb<ZbColumnFamilies> zeebeDb, final TransactionContext transactionContext) {
+      final ZeebeDb<ZbColumnFamilies> zeebeDb,
+      final TransactionContext transactionContext,
+      final TransientPendingSubscriptionState transientProcessMessageSubscriptionState) {
     elementInstanceKey = new DbLong();
     messageName = new DbString();
     elementKeyAndMessageName = new DbCompositeKey<>(elementInstanceKey, messageName);
     processMessageSubscription = new ProcessMessageSubscription();
+    transientState = transientProcessMessageSubscriptionState;
 
     subscriptionColumnFamily =
         zeebeDb.createColumnFamily(
