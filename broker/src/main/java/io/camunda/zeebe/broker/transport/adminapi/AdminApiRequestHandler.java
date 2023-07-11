@@ -19,7 +19,7 @@ import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.transport.RequestType;
 import io.camunda.zeebe.transport.impl.AtomixServerTransport;
-import io.camunda.zeebe.util.Either;
+import io.camunda.zeebe.util.Either;import java.util.Optional;
 
 public class AdminApiRequestHandler
     extends AsyncApiRequestHandler<ApiRequestReader, ApiResponseWriter> {
@@ -54,8 +54,47 @@ public class AdminApiRequestHandler
           stepDownIfNotPrimary(responseWriter, partitionId, errorWriter));
       case PAUSE_EXPORTING -> pauseExporting(responseWriter, partitionId, errorWriter);
       case RESUME_EXPORTING -> resumeExporting(responseWriter, partitionId, errorWriter);
+      case BAN_INSTANCE -> banInstance(requestReader, responseWriter, partitionId, errorWriter);
       default -> unknownRequest(errorWriter, requestReader.getMessageDecoder().type());
     };
+  }
+
+  private ActorFuture<Either<ErrorResponseWriter, ApiResponseWriter>> banInstance(
+      final ApiRequestReader requestReader,
+      final ApiResponseWriter responseWriter,
+      final int partitionId,
+      final ErrorResponseWriter errorWriter) {
+    final long key = requestReader.key();
+
+    final Optional<PartitionAdminAccess> partitionAdminAccess = adminAccess.forPartition(partitionId);
+
+    if (partitionAdminAccess.isEmpty()) {
+      LOG.warn("Failed to ban instance {} on partition {}. Could not find the partition.", key, partitionId);
+      return CompletableActorFuture.completed(
+          Either.left(
+              errorWriter.internalError(
+                  "Failed to ban instance %s on partition %s. Could not find the partition.",
+                  key,
+                  partitionId)));
+    }
+
+    final ActorFuture<Either<ErrorResponseWriter, ApiResponseWriter>> result = actor.createFuture();
+    partitionAdminAccess.orElseThrow()
+        .banInstance(requestReader.key())
+        .onComplete(
+        (r, t) -> {
+          if (t == null) {
+            result.complete(Either.right(responseWriter));
+          } else {
+            LOG.error("Failed to ban instance {} on partition {}", key, partitionId, t);
+            result.complete(
+                Either.left(
+                    errorWriter.internalError(
+                        "Failed to ban instance %s, on partition %s", key, partitionId)));
+          }
+        });
+
+    return result;
   }
 
   private ActorFuture<Either<ErrorResponseWriter, ApiResponseWriter>> unknownRequest(

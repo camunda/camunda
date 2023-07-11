@@ -11,7 +11,7 @@ import static java.util.Objects.requireNonNull;
 
 import io.camunda.zeebe.broker.Loggers;
 import io.camunda.zeebe.broker.partitioning.PartitionAdminAccess;
-import io.camunda.zeebe.scheduler.ConcurrencyControl;
+import io.camunda.zeebe.db.TransactionContext;import io.camunda.zeebe.db.ZeebeDb;import io.camunda.zeebe.engine.state.processing.DbBannedInstanceState;import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import java.io.IOException;
 import java.util.Optional;
@@ -134,6 +134,26 @@ class ZeebePartitionAdminAccess implements PartitionAdminAccess {
             }
             completed.complete(null);
           } catch (final IOException e) {
+            LOG.error("Could not resume processing", e);
+            completed.completeExceptionally(e);
+          }
+        });
+    return completed;
+  }
+
+  @Override
+  public ActorFuture<Void> banInstance(final long processInstanceKey) {
+    final ActorFuture<Void> completed = concurrencyControl.createFuture();
+    concurrencyControl.run(
+        () -> {
+          try {
+            final var zeebeDb = adminControl.getZeebeDb();
+            final var context = zeebeDb.createContext();
+            final var dbBannedInstanceState = new DbBannedInstanceState(zeebeDb, context, partitionId);
+
+            dbBannedInstanceState.banProcessInstance(processInstanceKey);
+
+          } catch (final Exception e) {
             LOG.error("Could not resume processing", e);
             completed.completeExceptionally(e);
           }
