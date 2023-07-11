@@ -30,6 +30,7 @@ import io.camunda.zeebe.engine.processing.timer.TriggerTimerProcessor;
 import io.camunda.zeebe.engine.processing.variable.UpdateVariableDocumentProcessor;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
+import io.camunda.zeebe.engine.state.immutable.ScheduledTaskState;
 import io.camunda.zeebe.engine.state.mutable.MutableElementInstanceState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessMessageSubscriptionState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
@@ -44,11 +45,13 @@ import io.camunda.zeebe.protocol.record.intent.TimerIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableDocumentIntent;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import java.util.Arrays;
+import java.util.function.Supplier;
 
 public final class ProcessEventProcessors {
 
   public static TypedRecordProcessor<ProcessInstanceRecord> addProcessProcessors(
       final MutableProcessingState processingState,
+      final Supplier<ScheduledTaskState> scheduledTaskState,
       final BpmnBehaviors bpmnBehaviors,
       final TypedRecordProcessors typedRecordProcessors,
       final SubscriptionCommandSender subscriptionCommandSender,
@@ -73,6 +76,7 @@ public final class ProcessEventProcessors {
         subscriptionCommandSender,
         bpmnBehaviors,
         processingState,
+        scheduledTaskState,
         writers);
     addTimerStreamProcessors(
         typedRecordProcessors, timerChecker, processingState, bpmnBehaviors, writers);
@@ -125,6 +129,7 @@ public final class ProcessEventProcessors {
       final SubscriptionCommandSender subscriptionCommandSender,
       final BpmnBehaviors bpmnBehaviors,
       final MutableProcessingState processingState,
+      final Supplier<ScheduledTaskState> scheduledTaskState,
       final Writers writers) {
     typedRecordProcessors
         .onCommand(
@@ -148,7 +153,7 @@ public final class ProcessEventProcessors {
         .withListener(
             new PendingProcessMessageSubscriptionChecker(
                 subscriptionCommandSender,
-                processingState.getPendingProcessMessageSubscriptionState()));
+                scheduledTaskState.get().getPendingProcessMessageSubscriptionState()));
   }
 
   private static void addTimerStreamProcessors(

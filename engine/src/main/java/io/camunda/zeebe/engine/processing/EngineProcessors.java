@@ -136,6 +136,7 @@ public final class EngineProcessors {
     final TypedRecordProcessor<ProcessInstanceRecord> bpmnStreamProcessor =
         addProcessProcessors(
             processingState,
+            scheduledTaskStateFactory,
             bpmnBehaviors,
             typedRecordProcessors,
             subscriptionCommandSender,
@@ -193,6 +194,7 @@ public final class EngineProcessors {
 
   private static TypedRecordProcessor<ProcessInstanceRecord> addProcessProcessors(
       final MutableProcessingState processingState,
+      final Supplier<ScheduledTaskState> scheduledTaskState,
       final BpmnBehaviorsImpl bpmnBehaviors,
       final TypedRecordProcessors typedRecordProcessors,
       final SubscriptionCommandSender subscriptionCommandSender,
@@ -200,6 +202,7 @@ public final class EngineProcessors {
       final DueDateTimerChecker timerChecker) {
     return ProcessEventProcessors.addProcessProcessors(
         processingState,
+        scheduledTaskState,
         bpmnBehaviors,
         typedRecordProcessors,
         subscriptionCommandSender,
