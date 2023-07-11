@@ -8,6 +8,7 @@ package io.camunda.operate.webapp.api.v1.rest;
 
 import static io.camunda.operate.schema.indices.DecisionIndex.VERSION;
 import static io.camunda.operate.webapp.api.v1.rest.DecisionRequirementsController.URI;
+import static io.camunda.operate.webapp.api.v1.rest.DecisionRequirementsController.AS_XML;
 import static io.camunda.operate.webapp.api.v1.rest.SearchController.SEARCH;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
@@ -79,6 +80,29 @@ public class DecisionRequirementsControllerTest {
         new ResourceNotFoundException("Error in retrieving data for key.").setInstance("ab1d796b-fc25-4cb0-a5c5-8e4c2f9abb7c"));
     // then
     assertGetWithFailed(URI + "/235").andExpect(status().isNotFound()).andExpect(content().string(expectedJSONContent));
+  }
+
+  @Test
+  public void shouldReturnDecisionRequirementsXmlByKey() throws Exception {
+    final String expectedXMLContent = "<xml><value/></xml>";
+    // given
+    when(decisionRequirementsDao.xmlByKey(0L)).thenReturn(expectedXMLContent);
+    // then
+    assertGetToSucceed(URI + "/0" + AS_XML)
+        .andExpect(content().contentType("text/xml;charset=UTF-8"))
+        .andExpect(content().string(expectedXMLContent));
+  }
+
+  @Test
+  public void shouldReturnErrorMessageForXmlByKeyFailure() throws Exception {
+    final String expectedJSONContent = "{\"status\":500,\"message\":\"Error in retrieving data for key.\",\"instance\":\"instanceValue\",\"type\":\"API application error\"}";
+    // given
+    when(decisionRequirementsDao.xmlByKey(any(Long.class))).thenThrow(
+        new ServerException("Error in retrieving data for key.").setInstance("instanceValue"));
+    // then
+    assertGetWithFailed(URI + "/235" + AS_XML)
+        .andExpect(status().isInternalServerError())
+        .andExpect(content().string(expectedJSONContent));
   }
 
   @Test

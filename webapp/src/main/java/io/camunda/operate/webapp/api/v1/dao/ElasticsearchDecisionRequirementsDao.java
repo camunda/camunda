@@ -25,10 +25,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
@@ -68,6 +65,23 @@ public class ElasticsearchDecisionRequirementsDao extends ElasticsearchDao<Decis
     } catch (Exception e) {
       throw new ServerException("Error in reading decision requirements by keys", e);
     }
+  }
+
+  @Override
+  public String xmlByKey(final Long key) throws APIException {
+    try {
+      final SearchRequest searchRequest = new SearchRequest(decisionRequirementsIndex.getAlias())
+          .source(new SearchSourceBuilder()
+              .query(termQuery(DecisionRequirementsIndex.KEY, key)).fetchSource(DecisionRequirementsIndex.XML, null));
+      final SearchResponse response = elasticsearch.search(searchRequest, RequestOptions.DEFAULT);
+      if (response.getHits().getTotalHits().value == 1) {
+        Map<String, Object> result = response.getHits().getHits()[0].getSourceAsMap();
+        return (String) result.get(DecisionRequirementsIndex.XML);
+      }
+    } catch (IOException e) {
+      throw new ServerException(String.format("Error in reading decision requirements as xml for key %s", key), e);
+    }
+    throw new ResourceNotFoundException(String.format("Decision requirements for key %s not found.", key));
   }
 
   @Override

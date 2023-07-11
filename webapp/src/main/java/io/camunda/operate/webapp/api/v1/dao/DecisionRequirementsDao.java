@@ -20,4 +20,6 @@ public interface DecisionRequirementsDao extends
   DecisionRequirements byKey(Long key) throws APIException;
 
   List<DecisionRequirements> byKeys(Set<Long> keys) throws APIException;
+
+  String xmlByKey(Long key) throws APIException;
 }

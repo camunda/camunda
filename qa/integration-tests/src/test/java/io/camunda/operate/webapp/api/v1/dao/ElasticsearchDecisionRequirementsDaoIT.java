@@ -11,6 +11,7 @@ import static io.camunda.operate.schema.indices.DecisionRequirementsIndex.NAME;
 import static io.camunda.operate.schema.indices.DecisionRequirementsIndex.RESOURCE_NAME;
 import static io.camunda.operate.schema.indices.DecisionRequirementsIndex.VERSION;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.fail;
 
 import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.schema.indices.DecisionRequirementsIndex;
@@ -20,6 +21,7 @@ import io.camunda.operate.webapp.api.v1.entities.Query;
 import io.camunda.operate.webapp.api.v1.entities.Results;
 import io.camunda.operate.webapp.api.v1.exceptions.ResourceNotFoundException;
 import io.camunda.operate.webapp.api.v1.exceptions.ServerException;
+import io.camunda.operate.zeebeimport.util.XMLUtil;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
@@ -29,8 +31,14 @@ import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.xml.sax.SAXException;
+import org.xml.sax.helpers.DefaultHandler;
 
+import javax.xml.parsers.ParserConfigurationException;
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -49,6 +57,7 @@ public class ElasticsearchDecisionRequirementsDaoIT extends OperateZeebeIntegrat
   private Long key;
   private List<DecisionRequirements> decisionRequirementsList;
   private Set<Long> keys;
+  private String decisionRequirementsXml;
   private Results<DecisionRequirements> decisionRequirementsResults, decisionRequirementsResultsPage1, decisionRequirementsResultsPage2;
 
   @Test
@@ -157,6 +166,35 @@ public class ElasticsearchDecisionRequirementsDaoIT extends OperateZeebeIntegrat
       assertThat(decisionRequirementsList).extracting(DecisionRequirementsIndex.KEY).containsExactlyInAnyOrder(keys.toArray());
       assertThat(decisionRequirementsList).extracting(DecisionRequirementsIndex.VERSION).containsExactlyInAnyOrder(1, 2);
     });
+  }
+
+  @Test
+  public void shouldReturnWhenXmlByKey() throws Exception {
+    given(() -> {
+      tester.deployDecision("invoiceBusinessDecisions_v_1.dmn")
+          .waitUntil().decisionsAreDeployed(2);
+      SearchHit[] hits = searchAllDocuments(decisionRequirementsIndex.getAlias());
+      key = Arrays.stream(hits).map(hit -> Long.parseLong(hit.getSourceAsMap().get("key").toString())).findFirst().orElseThrow();
+    });
+    when(() -> decisionRequirementsXml = dao.xmlByKey(key));
+    then(() -> {
+      assertThat(decisionRequirementsXml).contains("id=\"invoiceBusinessDecisions\"");
+      assertThatIsXML(decisionRequirementsXml);
+    });
+  }
+
+  @Test(expected = ResourceNotFoundException.class)
+  public void showThrowWhenXmlByKeyNotExists() throws Exception {
+    given(() -> {
+    });
+    when(() -> dao.byKey(-27L));
+  }
+
+  @Test(expected = ServerException.class)
+  public void shouldThrowWhenXmlByKeyFails() throws Exception {
+    given(() -> {
+    });
+    when(() -> dao.byKey(null));
   }
 
   @Test
@@ -303,6 +341,17 @@ public class ElasticsearchDecisionRequirementsDaoIT extends OperateZeebeIntegrat
       return response.getHits().getHits();
     } catch (IOException ex) {
       throw new OperateRuntimeException("Search failed for index " + index, ex);
+    }
+  }
+
+  protected void assertThatIsXML(String xml) {
+    try {
+      final InputStream xmlInputStream = new ByteArrayInputStream(
+          xml.getBytes(StandardCharsets.UTF_8));
+      new XMLUtil().getSAXParserFactory().newSAXParser()
+          .parse(xmlInputStream, new DefaultHandler());
+    } catch (SAXException | IOException | ParserConfigurationException e) {
+      fail(String.format("String '%s' should be of type xml", xml), e);
     }
   }
 
