@@ -57,9 +57,8 @@ public final class JobTimeoutTrigger implements StreamProcessorLifecycleAware {
 
   @Override
   public void onResumed() {
-    if (shouldReschedule) {
-      scheduleDeactivateTimedOutJobsTask();
-    }
+    shouldReschedule = true;
+    scheduleDeactivateTimedOutJobsTask();
   }
 
   private void scheduleDeactivateTimedOutJobsTask() {
