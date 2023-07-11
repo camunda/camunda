@@ -113,6 +113,18 @@ public abstract class AbstractZeebeIT extends AbstractIT {
     );
   }
 
+  protected void waitUntilDefinitionWithIdExported(final String processDefinitionId) {
+    waitUntilMinimumDataExportedCount(
+      1,
+      ElasticsearchConstants.ZEEBE_PROCESS_DEFINITION_INDEX_NAME,
+      boolQuery()
+        .must(termQuery(ZeebeProcessDefinitionRecordDto.Fields.intent, ProcessIntent.CREATED.name()))
+        .must(termQuery(ZeebeProcessDefinitionRecordDto.Fields.value + "." +
+                               ZeebeProcessInstanceDataDto.Fields.bpmnProcessId,
+                               processDefinitionId))
+    );
+  }
+
   protected void waitUntilInstanceRecordWithIdExported(final String instanceRecordId, final long timeoutInSeconds) {
     waitUntilMinimumDataExportedCount(
       1,
