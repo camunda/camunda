@@ -144,7 +144,12 @@ public final class EngineProcessors {
     addDecisionProcessors(typedRecordProcessors, decisionBehavior, writers, processingState);
 
     JobEventProcessors.addJobProcessors(
-        typedRecordProcessors, processingState, bpmnBehaviors, writers, jobMetrics);
+        typedRecordProcessors,
+        processingState,
+        scheduledTaskStateFactory,
+        bpmnBehaviors,
+        writers,
+        jobMetrics);
 
     addIncidentProcessors(
         processingState,
