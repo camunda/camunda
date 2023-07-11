@@ -11,6 +11,7 @@
       <validValue name="STEP_DOWN_IF_NOT_PRIMARY">0</validValue>
       <validValue name="PAUSE_EXPORTING">1</validValue>
       <validValue name="RESUME_EXPORTING">2</validValue>
+      <validValue name="BAN_INSTANCE">3</validValue>
     </enum>
 
     <enum name="BackupRequestType" encodingType="uint8">
@@ -30,6 +31,7 @@
     <field name="partitionId" id="1" type="uint16"/>
     <field name="type" id="2" type="AdminRequestType"/>
     <field name="brokerId" id="3" type="uint16" presence="optional"/>
+    <field name="key" id="4" type="uint64" presence="optional"/>
   </sbe:message>
 
   <sbe:message name="AdminResponse" id="2">
