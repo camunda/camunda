@@ -11,6 +11,7 @@ import com.fasterxml.jackson.databind.type.SimpleType;
 
 import io.camunda.operate.Metrics;
 import io.camunda.operate.exceptions.PersistenceException;
+import io.camunda.operate.store.BatchRequest;
 import io.camunda.operate.util.CollectionUtil;
 import io.camunda.operate.util.ElasticsearchUtil;
 import io.camunda.operate.zeebe.ImportValueType;
@@ -30,7 +31,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
-import org.elasticsearch.action.bulk.BulkRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -83,7 +83,7 @@ public class ElasticsearchBulkProcessor extends AbstractImportBatchProcessor {
   private ObjectMapper localObjectMapper;
 
   @Override
-  protected void processZeebeRecords(ImportBatch importBatch, BulkRequest bulkRequest) throws PersistenceException {
+  protected void processZeebeRecords(ImportBatch importBatch, BatchRequest batchRequest) throws PersistenceException {
     final List<Record> zeebeRecords = ElasticsearchUtil
         .mapSearchHits(importBatch.getHits(), getLocalObjectMapper(), SimpleType.constructUnsafe(Record.class));
 
@@ -95,34 +95,34 @@ public class ElasticsearchBulkProcessor extends AbstractImportBatchProcessor {
     ImportValueType importValueType = importBatch.getImportValueType();
     switch (importValueType) {
       case DECISION:
-        processDecisionRecords(bulkRequest, zeebeRecords);
+        processDecisionRecords(batchRequest, zeebeRecords);
         break;
       case DECISION_REQUIREMENTS:
-        processDecisionRequirementsRecord(bulkRequest, zeebeRecords);
+        processDecisionRequirementsRecord(batchRequest, zeebeRecords);
         break;
       case DECISION_EVALUATION:
-        processDecisionEvaluationRecords(bulkRequest, zeebeRecords);
+        processDecisionEvaluationRecords(batchRequest, zeebeRecords);
         break;
       case PROCESS_INSTANCE:
-        processProcessInstanceRecords(importBatch, bulkRequest, zeebeRecords);
+        processProcessInstanceRecords(importBatch, batchRequest, zeebeRecords);
         break;
       case INCIDENT:
-        processIncidentRecords(bulkRequest, zeebeRecords);
+        processIncidentRecords(batchRequest, zeebeRecords);
         break;
       case VARIABLE:
-        processVariableRecords(bulkRequest, zeebeRecords);
+        processVariableRecords(batchRequest, zeebeRecords);
         break;
       case VARIABLE_DOCUMENT:
-        processVariableDocumentRecords(bulkRequest, zeebeRecords);
+        processVariableDocumentRecords(batchRequest, zeebeRecords);
         break;
       case PROCESS:
-        processProcessRecords(bulkRequest, zeebeRecords);
+        processProcessRecords(batchRequest, zeebeRecords);
         break;
       case JOB:
-        processJobRecords(bulkRequest, zeebeRecords);
+        processJobRecords(batchRequest, zeebeRecords);
         break;
       case PROCESS_MESSAGE_SUBSCRIPTION:
-        processProcessMessageSubscription(bulkRequest, zeebeRecords);
+        processProcessMessageSubscription(batchRequest, zeebeRecords);
         break;
       default:
         logger.debug("Default case triggered for type {}", importValueType);
@@ -141,13 +141,13 @@ public class ElasticsearchBulkProcessor extends AbstractImportBatchProcessor {
     ).record(currentTime - record.getTimestamp(), TimeUnit.MILLISECONDS));
   }
 
-  private void processProcessMessageSubscription(final BulkRequest bulkRequest,
+  private void processProcessMessageSubscription(final BatchRequest batchRequest,
       final List<Record> zeebeRecords) throws PersistenceException {
     // per flow node instance
     Map<Long, List<Record<ProcessMessageSubscriptionRecordValue>>> groupedRecordsPerFlowNodeInst
         = zeebeRecords.stream().map(obj -> (Record<ProcessMessageSubscriptionRecordValue>)obj)
         .collect(Collectors.groupingBy(obj -> obj.getValue().getElementInstanceKey()));
-    eventZeebeRecordProcessor.processProcessMessageSubscription(groupedRecordsPerFlowNodeInst, bulkRequest);
+    eventZeebeRecordProcessor.processProcessMessageSubscription(groupedRecordsPerFlowNodeInst, batchRequest);
   }
 
   private ObjectMapper getLocalObjectMapper() {
@@ -157,53 +157,53 @@ public class ElasticsearchBulkProcessor extends AbstractImportBatchProcessor {
     return localObjectMapper;
   }
 
-  private void processDecisionRecords(final BulkRequest bulkRequest, final List<Record> zeebeRecords)
+  private void processDecisionRecords(final BatchRequest batchRequest, final List<Record> zeebeRecords)
       throws PersistenceException {
     for (Record record : zeebeRecords) {
       // deployment records can be processed one by one
-      decisionZeebeRecordProcessor.processDecisionRecord(record, bulkRequest);
+      decisionZeebeRecordProcessor.processDecisionRecord(record, batchRequest);
     }
   }
 
-  private void processDecisionRequirementsRecord(final BulkRequest bulkRequest, final List<Record> zeebeRecords)
+  private void processDecisionRequirementsRecord(final BatchRequest batchRequest, final List<Record> zeebeRecords)
       throws PersistenceException {
     for (Record record : zeebeRecords) {
       // deployment records can be processed one by one
-      decisionRequirementsZeebeRecordProcessor.processDecisionRequirementsRecord(record, bulkRequest);
+      decisionRequirementsZeebeRecordProcessor.processDecisionRequirementsRecord(record, batchRequest);
     }
   }
 
-  private void processDecisionEvaluationRecords(final BulkRequest bulkRequest, final List<Record> zeebeRecords)
+  private void processDecisionEvaluationRecords(final BatchRequest batchRequest, final List<Record> zeebeRecords)
       throws PersistenceException {
     for (Record record : zeebeRecords) {
-      decisionEvaluationZeebeRecordProcessor.processDecisionEvaluationRecord(record, bulkRequest);
+      decisionEvaluationZeebeRecordProcessor.processDecisionEvaluationRecord(record, batchRequest);
     }
   }
 
-  private void processJobRecords(final BulkRequest bulkRequest, final List<Record> zeebeRecords)
+  private void processJobRecords(final BatchRequest batchRequest, final List<Record> zeebeRecords)
       throws PersistenceException {
     // per activity
     Map<Long, List<Record<JobRecordValue>>> groupedJobRecordsPerActivityInst = zeebeRecords.stream().map(obj -> (Record<JobRecordValue>)obj)
         .collect(Collectors.groupingBy(obj -> obj.getValue().getElementInstanceKey()));
-    eventZeebeRecordProcessor.processJobRecords(groupedJobRecordsPerActivityInst, bulkRequest);
+    eventZeebeRecordProcessor.processJobRecords(groupedJobRecordsPerActivityInst, batchRequest);
   }
 
-  private void processProcessRecords(final BulkRequest bulkRequest, final List<Record> zeebeRecords)
+  private void processProcessRecords(final BatchRequest batchRequest, final List<Record> zeebeRecords)
       throws PersistenceException {
     for (Record record : zeebeRecords) {
       // deployment records can be processed one by one
-      processZeebeRecordProcessor.processDeploymentRecord(record, bulkRequest);
+      processZeebeRecordProcessor.processDeploymentRecord(record, batchRequest);
     }
   }
 
-  private void processVariableDocumentRecords(final BulkRequest bulkRequest,
+  private void processVariableDocumentRecords(final BatchRequest batchRequest,
       final List<Record> zeebeRecords) throws PersistenceException {
     for (Record record : zeebeRecords) {
-      operationZeebeRecordProcessor.processVariableDocumentRecords(record, bulkRequest);
+      operationZeebeRecordProcessor.processVariableDocumentRecords(record, batchRequest);
     }
   }
 
-  private void processVariableRecords(final BulkRequest bulkRequest,
+  private void processVariableRecords(final BatchRequest batchRequest,
       final List<Record> zeebeRecords) throws PersistenceException {
 
     final var variablesGroupedByScopeKey = zeebeRecords
@@ -211,34 +211,34 @@ public class ElasticsearchBulkProcessor extends AbstractImportBatchProcessor {
         .map(obj -> (Record<VariableRecordValue>) obj)
         .collect(Collectors.groupingBy(obj -> obj.getValue().getScopeKey()));
 
-    listViewZeebeRecordProcessor.processVariableRecords(variablesGroupedByScopeKey, bulkRequest);
-    variableZeebeRecordProcessor.processVariableRecords(variablesGroupedByScopeKey, bulkRequest);
+    listViewZeebeRecordProcessor.processVariableRecords(variablesGroupedByScopeKey, batchRequest);
+    variableZeebeRecordProcessor.processVariableRecords(variablesGroupedByScopeKey, batchRequest);
   }
 
-  private void processIncidentRecords(final BulkRequest bulkRequest,
+  private void processIncidentRecords(final BatchRequest batchRequest,
       final List<Record> zeebeRecords) throws PersistenceException {
     // old style
-    incidentZeebeRecordProcessor.processIncidentRecord(zeebeRecords, bulkRequest);
+    incidentZeebeRecordProcessor.processIncidentRecord(zeebeRecords, batchRequest);
     for (Record record : zeebeRecords) {
-      listViewZeebeRecordProcessor.processIncidentRecord(record, bulkRequest);
-      flowNodeInstanceZeebeRecordProcessor.processIncidentRecord(record, bulkRequest);
+      listViewZeebeRecordProcessor.processIncidentRecord(record, batchRequest);
+      flowNodeInstanceZeebeRecordProcessor.processIncidentRecord(record, batchRequest);
     }
     Map<Long, List<Record<IncidentRecordValue>>> groupedIncidentRecordsPerActivityInst = zeebeRecords
         .stream()
         .map(obj -> (Record<IncidentRecordValue>) obj).collect(Collectors.groupingBy(obj -> obj.getValue().getElementInstanceKey()));
     eventZeebeRecordProcessor.processIncidentRecords(groupedIncidentRecordsPerActivityInst,
-        bulkRequest);
+        batchRequest);
   }
 
   private void processProcessInstanceRecords(final ImportBatch importBatch,
-      final BulkRequest bulkRequest, final List<Record> zeebeRecords) throws PersistenceException {
+                                             final BatchRequest batchRequest, final List<Record> zeebeRecords) throws PersistenceException {
     Map<Long, List<Record<ProcessInstanceRecordValue>>> groupedWIRecords = zeebeRecords
         .stream()
         .map(obj -> (Record<ProcessInstanceRecordValue>) obj).collect(LinkedHashMap::new,
             (map, item) -> CollectionUtil
                 .addToMap(map, item.getValue().getProcessInstanceKey(), item),
             Map::putAll);
-    listViewZeebeRecordProcessor.processProcessInstanceRecord(groupedWIRecords, bulkRequest,
+    listViewZeebeRecordProcessor.processProcessInstanceRecord(groupedWIRecords, batchRequest,
         importBatch);
     Map<Long, List<Record<ProcessInstanceRecordValue>>> groupedWIRecordsPerActivityInst = zeebeRecords
         .stream()
@@ -248,11 +248,11 @@ public class ElasticsearchBulkProcessor extends AbstractImportBatchProcessor {
         .distinct()
         .collect(Collectors.toList());
     flowNodeInstanceZeebeRecordProcessor.processProcessInstanceRecord(groupedWIRecordsPerActivityInst, flowNodeInstanceKeysOrdered,
-        bulkRequest);
+        batchRequest);
     eventZeebeRecordProcessor.processProcessInstanceRecords(groupedWIRecordsPerActivityInst,
-        bulkRequest);
+        batchRequest);
     for (Record record : zeebeRecords) {
-      sequenceFlowZeebeRecordProcessor.processSequenceFlowRecord(record, bulkRequest);
+      sequenceFlowZeebeRecordProcessor.processSequenceFlowRecord(record, batchRequest);
     }
   }
 

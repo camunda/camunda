@@ -10,6 +10,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import io.camunda.operate.entities.ErrorType;
 import io.camunda.operate.entities.OperationType;
 import io.camunda.operate.property.OperateProperties;
+import io.camunda.operate.store.BatchRequest;
 import io.camunda.operate.util.OperateZeebeIntegrationTest;
 import io.camunda.operate.util.OperationsManager;
 import io.camunda.operate.util.TestApplication;
@@ -18,8 +19,6 @@ import io.camunda.operate.webapp.rest.dto.incidents.IncidentDto;
 import io.camunda.operate.webapp.rest.dto.incidents.IncidentResponseDto;
 import io.camunda.operate.webapp.rest.dto.operation.CreateOperationRequestDto;
 import io.camunda.operate.webapp.zeebe.operation.ResolveIncidentHandler;
-import org.elasticsearch.action.bulk.BulkRequest;
-import org.elasticsearch.action.update.UpdateRequest;
 import org.junit.Before;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -30,7 +29,7 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.boot.test.mock.mockito.SpyBean;
 import org.springframework.test.web.servlet.MvcResult;
 
-import java.util.HashMap;
+import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -71,10 +70,8 @@ public class IncidentWithFailingOperationIT extends OperateZeebeIntegrationTest 
     AtomicInteger count = new AtomicInteger(0);
     doAnswer(invocation -> {
       if (count.get() < 4 ) {
-        BulkRequest bulkRequest = invocation.getArgument(4);
-        UpdateRequest updateRequest = new UpdateRequest().index("wrong_index").id("someId")
-            .doc(new HashMap<>());
-        bulkRequest.add(updateRequest);
+        BatchRequest batchRequest = invocation.getArgument(4);
+        batchRequest.update("wrong_index", "someId", Map.of());
         count.incrementAndGet();
       } else {
         invocation.callRealMethod();

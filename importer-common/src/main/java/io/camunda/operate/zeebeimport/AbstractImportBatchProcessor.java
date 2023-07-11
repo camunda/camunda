@@ -9,34 +9,29 @@ package io.camunda.operate.zeebeimport;
 import java.util.concurrent.Callable;
 import io.camunda.operate.Metrics;
 import io.camunda.operate.exceptions.PersistenceException;
-import io.camunda.operate.property.OperateProperties;
-import io.camunda.operate.util.ElasticsearchUtil;
-import org.elasticsearch.action.bulk.BulkRequest;
-import org.elasticsearch.client.RestHighLevelClient;
+import io.camunda.operate.store.BatchRequest;
+import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 
 public abstract class AbstractImportBatchProcessor implements ImportBatchProcessor {
 
   @Autowired
-  private RestHighLevelClient esClient;
-
-  @Autowired
-  private OperateProperties operateProperties;
+  private BeanFactory beanFactory;
 
   @Autowired
   private Metrics metrics;
 
   @Override
   public void performImport(ImportBatch importBatch) throws PersistenceException {
-    BulkRequest bulkRequest = new BulkRequest();
+    BatchRequest batchRequest = beanFactory.getBean(BatchRequest.class);
     try {
       withProcessingTimer(() -> {
-        processZeebeRecords(importBatch, bulkRequest);
+        processZeebeRecords(importBatch, batchRequest);
         return null;
       }, importBatch);
 
       withImportIndexQueryTimer(() -> {
-        ElasticsearchUtil.processBulkRequest(esClient, bulkRequest, operateProperties.getElasticsearch().getBulkRequestMaxSizeInBytes());
+        batchRequest.execute();
         return null;
       }, importBatch);
 
@@ -63,10 +58,9 @@ public abstract class AbstractImportBatchProcessor implements ImportBatchProcess
   /**
    * Returns action to be performed (synchronously) after successful execution of bulk request.
    * @param importBatch
-   * @param bulkRequest
-   * @return
+   * @param batchRequest
    * @throws PersistenceException
    */
-  protected abstract void processZeebeRecords(ImportBatch importBatch, BulkRequest bulkRequest) throws PersistenceException;
+  protected abstract void processZeebeRecords(ImportBatch importBatch, BatchRequest batchRequest) throws PersistenceException;
 
 }

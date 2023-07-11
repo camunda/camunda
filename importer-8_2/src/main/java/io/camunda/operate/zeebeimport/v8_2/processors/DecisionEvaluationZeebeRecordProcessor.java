@@ -6,8 +6,6 @@
  */
 package io.camunda.operate.zeebeimport.v8_2.processors;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.entities.dmn.DecisionInstanceEntity;
 import io.camunda.operate.entities.dmn.DecisionInstanceInputEntity;
 import io.camunda.operate.entities.dmn.DecisionInstanceOutputEntity;
@@ -16,6 +14,7 @@ import io.camunda.operate.entities.dmn.DecisionType;
 import io.camunda.operate.es.writer.MetricWriter;
 import io.camunda.operate.exceptions.PersistenceException;
 import io.camunda.operate.schema.templates.DecisionInstanceTemplate;
+import io.camunda.operate.store.BatchRequest;
 import io.camunda.operate.util.DateUtil;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.DecisionEvaluationIntent;
@@ -28,9 +27,6 @@ import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
-import org.elasticsearch.action.bulk.BulkRequest;
-import org.elasticsearch.action.index.IndexRequest;
-import org.elasticsearch.xcontent.XContentType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -43,42 +39,29 @@ public class DecisionEvaluationZeebeRecordProcessor {
       DecisionEvaluationZeebeRecordProcessor.class);
 
   @Autowired
-  private ObjectMapper objectMapper;
-
-  @Autowired
   private DecisionInstanceTemplate decisionInstanceTemplate;
 
   @Autowired
   private MetricWriter metricWriter;
 
-  public void processDecisionEvaluationRecord(Record record, BulkRequest bulkRequest)
+  public void processDecisionEvaluationRecord(Record record, BatchRequest batchRequest)
       throws PersistenceException {
     final DecisionEvaluationRecordValue decision = (DecisionEvaluationRecordValue)record.getValue();
-    persistDecisionInstance(record, decision, bulkRequest);
+    persistDecisionInstance(record, decision, batchRequest);
   }
 
   private void persistDecisionInstance(final Record record,
-      final DecisionEvaluationRecordValue decisionEvaluation, final BulkRequest bulkRequest)
+      final DecisionEvaluationRecordValue decisionEvaluation, final BatchRequest batchRequest)
       throws PersistenceException {
     final List<DecisionInstanceEntity> decisionEntities = createEntities(record,
         decisionEvaluation);
     logger.debug("Decision evaluation: key {}, decisionId {}", record.getKey(),
         decisionEvaluation.getDecisionId());
 
-    try {
-      OffsetDateTime timestamp = DateUtil.toOffsetDateTime(Instant.ofEpochMilli(record.getTimestamp()));
-      for (DecisionInstanceEntity entity : decisionEntities) {
-        bulkRequest.add(new IndexRequest(decisionInstanceTemplate.getFullQualifiedName())
-            .id(entity.getId())
-            .source(objectMapper.writeValueAsString(entity), XContentType.JSON)
-        );
-        bulkRequest.add(metricWriter
-            .registerDecisionInstanceCompleteEvent(entity.getId(), timestamp));
-      }
-    } catch (JsonProcessingException e) {
-      throw new PersistenceException(String
-          .format("Error preparing the query to insert decision instance [%s]", record.getKey()),
-          e);
+    OffsetDateTime timestamp = DateUtil.toOffsetDateTime(Instant.ofEpochMilli(record.getTimestamp()));
+    for (DecisionInstanceEntity entity : decisionEntities) {
+      batchRequest.add(decisionInstanceTemplate.getFullQualifiedName(), entity);
+      metricWriter.registerDecisionInstanceCompleteEvent(entity.getId(), timestamp, batchRequest);
     }
   }
 

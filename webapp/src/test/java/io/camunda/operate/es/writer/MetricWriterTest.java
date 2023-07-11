@@ -7,11 +7,11 @@
 package io.camunda.operate.es.writer;
 
 import io.camunda.operate.entities.MetricEntity;
-import io.camunda.operate.es.dao.UsageMetricDAO;
-import org.elasticsearch.action.index.IndexRequest;
+import io.camunda.operate.exceptions.PersistenceException;
+import io.camunda.operate.schema.indices.MetricIndex;
+import io.camunda.operate.store.BatchRequest;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -19,52 +19,47 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.time.OffsetDateTime;
 
 import static io.camunda.operate.es.contract.MetricContract.*;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 public class MetricWriterTest {
-  @Mock
-  private UsageMetricDAO dao;
 
   @InjectMocks
   private MetricWriter subject;
+  @Mock
+  BatchRequest batchRequest;
+  @Mock
+  private MetricIndex metricIndex;
 
   @Test
-  public void verifyRegisterProcessEventWasCalledWithRightArgument() {
+  public void verifyRegisterProcessEventWasCalledWithRightArgument() throws PersistenceException {
     // Given
     final String key = "processInstanceKey";
+    var now = OffsetDateTime.now();
 
     // When
-    when(dao.buildESIndexRequest(any())).thenReturn(new IndexRequest("index"));
-    subject.registerProcessInstanceStartEvent(key, OffsetDateTime.now());
+    subject.registerProcessInstanceStartEvent(key, now, batchRequest);
 
     // Then
-    ArgumentCaptor<MetricEntity> entityCaptor = ArgumentCaptor.forClass(MetricEntity.class);
-    verify(dao).buildESIndexRequest(entityCaptor.capture());
-
-    MetricEntity calledValue = entityCaptor.getValue();
-    assertEquals(EVENT_PROCESS_INSTANCE_STARTED, calledValue.getEvent());
-    assertEquals(key, calledValue.getValue());
+    verify(batchRequest).add(metricIndex.getFullQualifiedName(), new MetricEntity()
+        .setEvent(EVENT_PROCESS_INSTANCE_STARTED)
+        .setValue(key)
+        .setEventTime(now));
   }
 
   @Test
-  public void verifyRegisterDecisionEventWasCalledWithRightArgument() {
+  public void verifyRegisterDecisionEventWasCalledWithRightArgument() throws PersistenceException {
     // Given
     final String key = "decisionInstanceKey";
+    var now = OffsetDateTime.now();
 
     // When
-    when(dao.buildESIndexRequest(any())).thenReturn(new IndexRequest("index"));
-    subject.registerDecisionInstanceCompleteEvent(key, OffsetDateTime.now());
+    subject.registerDecisionInstanceCompleteEvent(key, now, batchRequest);
 
     // Then
-    ArgumentCaptor<MetricEntity> entityCaptor = ArgumentCaptor.forClass(MetricEntity.class);
-    verify(dao).buildESIndexRequest(entityCaptor.capture());
-
-    MetricEntity calledValue = entityCaptor.getValue();
-    assertEquals(EVENT_DECISION_INSTANCE_EVALUATED, calledValue.getEvent());
-    assertEquals(key, calledValue.getValue());
+    verify(batchRequest).add( metricIndex.getFullQualifiedName(), new MetricEntity()
+        .setEvent(EVENT_DECISION_INSTANCE_EVALUATED)
+        .setValue(key)
+        .setEventTime(now));
   }
 }

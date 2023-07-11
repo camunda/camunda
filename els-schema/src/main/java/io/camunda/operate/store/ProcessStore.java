@@ -19,29 +19,30 @@ import java.util.Set;
 public interface ProcessStore {
 
 
-    // General methods -> TODO: refactor to upper interface?
-    public Optional<Long> getDistinctCountFor(final String indexAlias,final String fieldName);
+  // General methods -> TODO: refactor to upper interface?
+  Optional<Long> getDistinctCountFor(final String indexAlias, final String fieldName);
 
-    // ProcessStore
-    ProcessEntity getProcessByKey(final Long processDefinitionKey);
-    String getDiagramByKey(final Long processDefinitionKey);
+  // ProcessStore
+  ProcessEntity getProcessByKey(final Long processDefinitionKey);
 
-    Map<String, List<ProcessEntity>> getProcessesGrouped(@Nullable Set<String> allowedBPMNprocessIds);
+  String getDiagramByKey(final Long processDefinitionKey);
 
-    Map<Long, ProcessEntity> getProcessIdsToProcesses();
+  Map<String, List<ProcessEntity>> getProcessesGrouped(@Nullable Set<String> allowedBPMNprocessIds);
 
-    Map<Long, ProcessEntity> getProcessesIdsToProcessesWithFields(@Nullable Set<String> allowedBPMNIds, int maxSize,String ...fields);
+  Map<Long, ProcessEntity> getProcessIdsToProcesses();
 
-    /// Process instance methods
-    ProcessInstanceForListViewEntity getProcessInstanceListViewByKey(Long processInstanceKey);
+  Map<Long, ProcessEntity> getProcessesIdsToProcessesWithFields(@Nullable Set<String> allowedBPMNIds, int maxSize, String... fields);
 
-    Map<String,Long> getCoreStatistics(@Nullable Set<String> allowedBPMNids);
+  /// Process instance methods
+  ProcessInstanceForListViewEntity getProcessInstanceListViewByKey(Long processInstanceKey);
 
-    String getProcessInstanceTreePathById(final String processInstanceId);
+  Map<String, Long> getCoreStatistics(@Nullable Set<String> allowedBPMNids);
 
-    List<Map<String,String>> createCallHierarchyFor(List<String> processInstanceIds, final String currentProcessInstanceId);
+  String getProcessInstanceTreePathById(final String processInstanceId);
 
-    long deleteDocument(final String indexName, final String idField, String id) throws IOException;
+  List<Map<String, String>> createCallHierarchyFor(List<String> processInstanceIds, final String currentProcessInstanceId);
+
+  long deleteDocument(final String indexName, final String idField, String id) throws IOException;
 
   void deleteProcessInstanceFromTreePath(String processInstanceKey);
 }

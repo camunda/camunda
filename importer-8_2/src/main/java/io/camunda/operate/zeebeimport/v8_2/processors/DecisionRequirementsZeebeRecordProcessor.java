@@ -6,11 +6,10 @@
  */
 package io.camunda.operate.zeebeimport.v8_2.processors;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.entities.dmn.definition.DecisionRequirementsEntity;
 import io.camunda.operate.exceptions.PersistenceException;
 import io.camunda.operate.schema.indices.DecisionRequirementsIndex;
+import io.camunda.operate.store.BatchRequest;
 import io.camunda.operate.util.ConversionUtils;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
@@ -19,9 +18,6 @@ import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.HashSet;
 import java.util.Set;
-import org.elasticsearch.action.bulk.BulkRequest;
-import org.elasticsearch.action.index.IndexRequest;
-import org.elasticsearch.xcontent.XContentType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -41,38 +37,25 @@ public class DecisionRequirementsZeebeRecordProcessor {
   }
 
   @Autowired
-  private ObjectMapper objectMapper;
-
-  @Autowired
   private DecisionRequirementsIndex decisionRequirementsIndex;
 
-  public void processDecisionRequirementsRecord(Record record, BulkRequest bulkRequest)
+  public void processDecisionRequirementsRecord(Record record, BatchRequest batchRequest)
       throws PersistenceException {
     final String intentStr = record.getIntent().name();
     if (STATES.contains(intentStr)) {
       final DecisionRequirementsRecordValue decisionRequirements = (DecisionRequirementsRecordValue) record
           .getValue();
-      persistDecisionRequirements(decisionRequirements, bulkRequest);
+      persistDecisionRequirements(decisionRequirements, batchRequest);
     }
   }
 
   private void persistDecisionRequirements(final DecisionRequirementsRecordValue decision,
-      final BulkRequest bulkRequest)
+      final BatchRequest batchRequest)
       throws PersistenceException {
     final DecisionRequirementsEntity decisionReqEntity = createEntity(decision);
     logger.debug("Process: key {}, decisionRequirementsId {}", decisionReqEntity.getKey(),
         decisionReqEntity.getDecisionRequirementsId());
-
-    try {
-      bulkRequest.add(new IndexRequest(decisionRequirementsIndex.getFullQualifiedName())
-          .id(ConversionUtils.toStringOrNull(decisionReqEntity.getKey()))
-          .source(objectMapper.writeValueAsString(decisionReqEntity), XContentType.JSON)
-      );
-    } catch (JsonProcessingException e) {
-      throw new PersistenceException(String
-          .format("Error preparing the query to insert decision requirements [%s]",
-              decisionReqEntity.getKey()), e);
-    }
+    batchRequest.addWithId(decisionRequirementsIndex.getFullQualifiedName(),ConversionUtils.toStringOrNull(decisionReqEntity.getKey()),decisionReqEntity);
   }
 
   private DecisionRequirementsEntity createEntity(DecisionRequirementsRecordValue decisionRequirements) {

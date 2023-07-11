@@ -6,20 +6,16 @@
  */
 package io.camunda.operate.zeebeimport.v8_2.processors;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.entities.dmn.definition.DecisionDefinitionEntity;
 import io.camunda.operate.exceptions.PersistenceException;
 import io.camunda.operate.schema.indices.DecisionIndex;
+import io.camunda.operate.store.BatchRequest;
 import io.camunda.operate.util.ConversionUtils;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
 import io.camunda.zeebe.protocol.record.value.deployment.DecisionRecordValue;
 import java.util.HashSet;
 import java.util.Set;
-import org.elasticsearch.action.bulk.BulkRequest;
-import org.elasticsearch.action.index.IndexRequest;
-import org.elasticsearch.xcontent.XContentType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -37,36 +33,23 @@ public class DecisionZeebeRecordProcessor {
   }
 
   @Autowired
-  private ObjectMapper objectMapper;
-
-  @Autowired
   private DecisionIndex decisionIndex;
 
-  public void processDecisionRecord(Record record, BulkRequest bulkRequest)
+  public void processDecisionRecord(Record record, BatchRequest batchRequest)
       throws PersistenceException {
     final String intentStr = record.getIntent().name();
     if (STATES.contains(intentStr)) {
       final DecisionRecordValue decision = (DecisionRecordValue) record.getValue();
-      persistDecision(decision, bulkRequest);
+      persistDecision(decision, batchRequest);
     }
   }
 
-  private void persistDecision(final DecisionRecordValue decision, final BulkRequest bulkRequest)
+  private void persistDecision(final DecisionRecordValue decision, final BatchRequest batchRequest)
       throws PersistenceException {
     final DecisionDefinitionEntity decisionEntity = createEntity(decision);
     logger.debug("Decision: key {}, decisionId {}", decisionEntity.getKey(),
         decisionEntity.getDecisionId());
-
-    try {
-
-      bulkRequest.add(new IndexRequest(decisionIndex.getFullQualifiedName())
-          .id(ConversionUtils.toStringOrNull(decisionEntity.getKey()))
-          .source(objectMapper.writeValueAsString(decisionEntity), XContentType.JSON)
-      );
-    } catch (JsonProcessingException e) {
-      throw new PersistenceException(String
-          .format("Error preparing the query to insert decision [%s]", decisionEntity.getKey()), e);
-    }
+    batchRequest.addWithId(decisionIndex.getFullQualifiedName(),ConversionUtils.toStringOrNull(decisionEntity.getKey()), decisionEntity);
   }
 
   private DecisionDefinitionEntity createEntity(DecisionRecordValue decision) {

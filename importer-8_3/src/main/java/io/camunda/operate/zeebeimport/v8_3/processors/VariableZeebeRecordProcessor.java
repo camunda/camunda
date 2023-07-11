@@ -6,31 +6,23 @@
  */
 package io.camunda.operate.zeebeimport.v8_3.processors;
 
-import static io.camunda.operate.util.ElasticsearchUtil.UPDATE_RETRY_COUNT;
-
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.entities.VariableEntity;
 import io.camunda.operate.entities.listview.VariableForListViewEntity;
 import io.camunda.operate.exceptions.PersistenceException;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.schema.templates.VariableTemplate;
+import io.camunda.operate.store.BatchRequest;
 import io.camunda.operate.util.Tuple;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.intent.VariableIntent;
 import io.camunda.zeebe.protocol.record.value.VariableRecordValue;
-import java.io.IOException;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import org.elasticsearch.action.DocWriteRequest;
-import org.elasticsearch.action.bulk.BulkRequest;
-import org.elasticsearch.action.index.IndexRequest;
-import org.elasticsearch.action.update.UpdateRequest;
-import org.elasticsearch.xcontent.XContentType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -49,16 +41,13 @@ public class VariableZeebeRecordProcessor {
   }
 
   @Autowired
-  private ObjectMapper objectMapper;
-
-  @Autowired
   private VariableTemplate variableTemplate;
 
   @Autowired
   private OperateProperties operateProperties;
 
   public void processVariableRecords(final Map<Long, List<Record<VariableRecordValue>>> variablesGroupedByScopeKey,
-      final BulkRequest bulkRequest) throws PersistenceException {
+      final BatchRequest batchRequest) throws PersistenceException {
     for (final var variableRecords : variablesGroupedByScopeKey.entrySet()) {
       final var temporaryVariableCache = new HashMap<String, Tuple<Intent, VariableEntity>>();
       final var scopedVariables = variableRecords.getValue();
@@ -77,17 +66,18 @@ public class VariableZeebeRecordProcessor {
       for (final var cachedVariable : temporaryVariableCache.values()) {
         final var initialIntent = cachedVariable.getLeft();
         final var variableEntity = cachedVariable.getRight();
-        final DocWriteRequest<?> request;
 
         logger.debug("Variable instance: id {}", variableEntity.getId());
 
         if (initialIntent == VariableIntent.CREATED) {
-          request = prepareVariableIndexRequest(variableEntity);
+          batchRequest.add(variableTemplate.getFullQualifiedName(), variableEntity);
         } else {
-          request = prepareVariableUpdateRequest(variableEntity);
+          Map<String, Object> updateFields = new HashMap<>();
+          updateFields.put( VariableTemplate.VALUE, variableEntity.getValue());
+          updateFields.put(    VariableTemplate.FULL_VALUE, variableEntity.getFullValue());
+          updateFields.put(  VariableTemplate.IS_PREVIEW, variableEntity.getIsPreview());
+          batchRequest.upsert(variableTemplate.getFullQualifiedName(), variableEntity.getId(), variableEntity, updateFields);
         }
-
-        bulkRequest.add(request);
       }
     }
   }
@@ -115,36 +105,6 @@ public class VariableZeebeRecordProcessor {
       entity.setValue(recordValue.getValue());
       entity.setFullValue(null);
       entity.setIsPreview(false);
-    }
-  }
-
-  private IndexRequest prepareVariableIndexRequest(VariableEntity entity) throws PersistenceException {
-    try {
-      return new IndexRequest()
-          .index(variableTemplate.getFullQualifiedName())
-          .id(entity.getId())
-          .source(objectMapper.writeValueAsString(entity), XContentType.JSON);
-    } catch (IOException e) {
-      logger.error("Error preparing the query to index variable instance", e);
-      throw new PersistenceException(String.format("Error preparing the query to index variable instance [%s]", entity.getId()), e);
-    }
-  }
-
-  private UpdateRequest prepareVariableUpdateRequest(VariableEntity entity) throws PersistenceException {
-    try {
-      Map<String, Object> updateFields = new HashMap<>();
-      updateFields.put(VariableTemplate.VALUE, entity.getValue());
-      updateFields.put(VariableTemplate.FULL_VALUE, entity.getFullValue());
-      updateFields.put(VariableTemplate.IS_PREVIEW, entity.getIsPreview());
-
-      return new UpdateRequest().index(variableTemplate.getFullQualifiedName()).id(entity.getId())
-        .upsert(objectMapper.writeValueAsString(entity), XContentType.JSON)
-        .doc(updateFields)
-        .retryOnConflict(UPDATE_RETRY_COUNT);
-
-    } catch (IOException e) {
-      logger.error("Error preparing the query to upsert variable instance", e);
-      throw new PersistenceException(String.format("Error preparing the query to upsert variable instance [%s]", entity.getId()), e);
     }
   }
 

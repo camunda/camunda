@@ -6,7 +6,8 @@
  */
 package io.camunda.operate.es.contract;
 
-import org.elasticsearch.action.index.IndexRequest;
+import io.camunda.operate.exceptions.PersistenceException;
+import io.camunda.operate.store.BatchRequest;
 
 import java.time.OffsetDateTime;
 
@@ -22,7 +23,7 @@ public interface MetricContract {
   }
 
   interface Writer {
-    IndexRequest registerProcessInstanceStartEvent(String processInstanceKey, OffsetDateTime timestamp);
-    IndexRequest registerDecisionInstanceCompleteEvent(String processInstanceKey, OffsetDateTime timestamp);
+    void registerProcessInstanceStartEvent(String processInstanceKey, OffsetDateTime timestamp, BatchRequest batchRequest) throws PersistenceException;
+    void registerDecisionInstanceCompleteEvent(String processInstanceKey, OffsetDateTime timestamp, BatchRequest batchRequest) throws PersistenceException;
   }
 }

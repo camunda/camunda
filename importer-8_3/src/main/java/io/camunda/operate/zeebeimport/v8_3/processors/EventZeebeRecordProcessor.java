@@ -14,8 +14,6 @@ import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEM
 import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEMENT_COMPLETED;
 import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEMENT_TERMINATED;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.entities.ErrorType;
 import io.camunda.operate.entities.EventEntity;
 import io.camunda.operate.entities.EventMetadataEntity;
@@ -23,6 +21,7 @@ import io.camunda.operate.entities.EventSourceType;
 import io.camunda.operate.entities.EventType;
 import io.camunda.operate.exceptions.PersistenceException;
 import io.camunda.operate.schema.templates.EventTemplate;
+import io.camunda.operate.store.BatchRequest;
 import io.camunda.operate.util.DateUtil;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordValue;
@@ -41,9 +40,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Consumer;
-import org.elasticsearch.action.bulk.BulkRequest;
-import org.elasticsearch.action.update.UpdateRequest;
-import org.elasticsearch.xcontent.XContentType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -84,51 +80,48 @@ public class EventZeebeRecordProcessor {
   }
 
   @Autowired
-  private ObjectMapper objectMapper;
-
-  @Autowired
   private EventTemplate eventTemplate;
 
   public void processIncidentRecords(Map<Long, List<Record<IncidentRecordValue>>> records,
-      BulkRequest bulkRequest) throws PersistenceException {
+      BatchRequest batchRequest) throws PersistenceException {
     for (List<Record<IncidentRecordValue>> incidentRecords : records.values()) {
       processLastRecord(incidentRecords, INCIDENT_EVENTS, rethrowConsumer(record -> {
         IncidentRecordValue recordValue = (IncidentRecordValue) record.getValue();
-        processIncident(record, recordValue, bulkRequest);
+        processIncident(record, recordValue, batchRequest);
       }));
     }
   }
 
   public void processJobRecords(Map<Long, List<Record<JobRecordValue>>> records,
-      BulkRequest bulkRequest) throws PersistenceException {
+      BatchRequest batchRequest) throws PersistenceException {
     for (List<Record<JobRecordValue>> jobRecords : records.values()) {
       processLastRecord(jobRecords, JOB_EVENTS, rethrowConsumer(record -> {
         JobRecordValue recordValue = (JobRecordValue) record.getValue();
-        processJob(record, recordValue, bulkRequest);
+        processJob(record, recordValue, batchRequest);
       }));
     }
   }
 
   public void processProcessMessageSubscription(
       final Map<Long, List<Record<ProcessMessageSubscriptionRecordValue>>> records,
-      final BulkRequest bulkRequest) throws PersistenceException {
+      final BatchRequest batchRequest) throws PersistenceException {
     for (List<Record<ProcessMessageSubscriptionRecordValue>> pmsRecords : records.values()) {
       processLastRecord(pmsRecords, PROCESS_MESSAGE_SUBSCRIPTION_STATES, rethrowConsumer(record -> {
         ProcessMessageSubscriptionRecordValue recordValue = (ProcessMessageSubscriptionRecordValue) record
             .getValue();
-        processMessage(record, recordValue, bulkRequest);
+        processMessage(record, recordValue, batchRequest);
       }));
     }
 
   }
 
   public void processProcessInstanceRecords(
-      Map<Long, List<Record<ProcessInstanceRecordValue>>> records, BulkRequest bulkRequest)
+      Map<Long, List<Record<ProcessInstanceRecordValue>>> records, BatchRequest batchRequest)
       throws PersistenceException {
     for (List<Record<ProcessInstanceRecordValue>> piRecords : records.values()) {
       processLastRecord(piRecords, PROCESS_INSTANCE_STATES, rethrowConsumer(record -> {
         ProcessInstanceRecordValue recordValue = (ProcessInstanceRecordValue) record.getValue();
-        processProcessInstance(record, recordValue, bulkRequest);
+        processProcessInstance(record, recordValue, batchRequest);
       }));
     }
   }
@@ -147,7 +140,7 @@ public class EventZeebeRecordProcessor {
     }
   }
 
-  private void processProcessInstance(Record record, ProcessInstanceRecordValue recordValue, BulkRequest bulkRequest)
+  private void processProcessInstance(Record record, ProcessInstanceRecordValue recordValue, BatchRequest batchRequest)
     throws PersistenceException {
     if (!isProcessEvent(recordValue)) {   //we do not need to store process level events
       EventEntity eventEntity = new EventEntity();
@@ -168,12 +161,12 @@ public class EventZeebeRecordProcessor {
         eventEntity.setFlowNodeInstanceKey(record.getKey());
       }
 
-      persistEvent(eventEntity, record.getPosition(), bulkRequest);
+      persistEvent(eventEntity, record.getPosition(), batchRequest);
     }
   }
 
   private void processMessage(final Record record,
-      final ProcessMessageSubscriptionRecordValue recordValue, final BulkRequest bulkRequest)
+      final ProcessMessageSubscriptionRecordValue recordValue, final BatchRequest batchRequest)
       throws PersistenceException {
     EventEntity eventEntity = new EventEntity();
 
@@ -201,11 +194,11 @@ public class EventZeebeRecordProcessor {
 
     eventEntity.setMetadata(eventMetadata);
 
-    persistEvent(eventEntity, record.getPosition(), bulkRequest);
+    persistEvent(eventEntity, record.getPosition(), batchRequest);
 
   }
 
-  private void processJob(Record record, JobRecordValue recordValue, BulkRequest bulkRequest) throws PersistenceException {
+  private void processJob(Record record, JobRecordValue recordValue, BatchRequest batchRequest) throws PersistenceException {
     EventEntity eventEntity = new EventEntity();
 
     eventEntity.setId(String.format(ID_PATTERN, recordValue.getProcessInstanceKey(), recordValue.getElementInstanceKey()));
@@ -248,11 +241,11 @@ public class EventZeebeRecordProcessor {
 
     eventEntity.setMetadata(eventMetadata);
 
-    persistEvent(eventEntity, record.getPosition(), bulkRequest);
+    persistEvent(eventEntity, record.getPosition(), batchRequest);
 
   }
 
-  private void processIncident(Record record, IncidentRecordValue recordValue, BulkRequest bulkRequest) throws PersistenceException {
+  private void processIncident(Record record, IncidentRecordValue recordValue, BatchRequest batchRequest) throws PersistenceException {
     EventEntity eventEntity = new EventEntity();
 
     eventEntity.setId(String.format(ID_PATTERN, recordValue.getProcessInstanceKey(), recordValue.getElementInstanceKey()));
@@ -273,7 +266,7 @@ public class EventZeebeRecordProcessor {
     eventMetadata.setIncidentErrorType(ErrorType.fromZeebeErrorType(recordValue.getErrorType() == null ? null : recordValue.getErrorType().name()));
     eventEntity.setMetadata(eventMetadata);
 
-    persistEvent(eventEntity, record.getPosition(), bulkRequest);
+    persistEvent(eventEntity, record.getPosition(), batchRequest);
   }
 
   private boolean isProcessEvent(ProcessInstanceRecordValue recordValue) {
@@ -296,8 +289,7 @@ public class EventZeebeRecordProcessor {
     eventEntity.setEventType(EventType.fromZeebeIntent(record.getIntent().name()));
   }
 
-  private void persistEvent(EventEntity entity, long position, BulkRequest bulkRequest) throws PersistenceException {
-    try {
+  private void persistEvent(EventEntity entity, long position, BatchRequest batchRequest) throws PersistenceException {
       logger.debug("Event: id {}, eventSourceType {}, eventType {}, processInstanceKey {}", entity.getId(), entity.getEventSourceType(), entity.getEventType(),
         entity.getProcessInstanceKey());
       Map<String, Object> jsonMap = new HashMap<>();
@@ -332,16 +324,7 @@ public class EventZeebeRecordProcessor {
           jsonMap.put(METADATA, metadataMap);
         }
       }
-
       //write event
-      bulkRequest
-          .add(new UpdateRequest().index(eventTemplate.getFullQualifiedName()).id(entity.getId())
-              .upsert(objectMapper.writeValueAsString(entity), XContentType.JSON)
-              .doc(objectMapper.writeValueAsString(jsonMap), XContentType.JSON));
-
-    } catch (JsonProcessingException e) {
-      logger.error("Error preparing the query to insert event", e);
-      throw new PersistenceException(String.format("Error preparing the query to insert event [%s]", entity.getId()), e);
-    }
+      batchRequest.upsert(eventTemplate.getFullQualifiedName(), entity.getId(), entity, jsonMap);
   }
 }

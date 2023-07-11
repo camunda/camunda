@@ -6,13 +6,11 @@
  */
 package io.camunda.operate.zeebeimport.v8_2.processors;
 
-import static io.camunda.operate.util.ElasticsearchUtil.UPDATE_RETRY_COUNT;
 import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEMENT_ACTIVATING;
 import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEMENT_COMPLETED;
 import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEMENT_TERMINATED;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.entities.FlowNodeInstanceEntity;
 import io.camunda.operate.entities.FlowNodeState;
 import io.camunda.operate.entities.FlowNodeType;
@@ -20,6 +18,7 @@ import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.exceptions.PersistenceException;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.schema.templates.FlowNodeInstanceTemplate;
+import io.camunda.operate.store.BatchRequest;
 import io.camunda.operate.util.ConversionUtils;
 import io.camunda.operate.util.DateUtil;
 import io.camunda.operate.util.ElasticsearchUtil;
@@ -39,15 +38,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import org.elasticsearch.action.DocWriteRequest;
 import jakarta.annotation.PostConstruct;
-import org.elasticsearch.action.bulk.BulkRequest;
-import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.search.SearchRequest;
-import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
-import org.elasticsearch.xcontent.XContentType;
 import org.elasticsearch.search.SearchHits;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.slf4j.Logger;
@@ -62,9 +56,6 @@ public class FlowNodeInstanceZeebeRecordProcessor {
 
   private static final Set<String> AI_FINISH_STATES = Set.of(ELEMENT_COMPLETED.name(), ELEMENT_TERMINATED.name());
   private static final Set<String> AI_START_STATES = Set.of(ELEMENT_ACTIVATING.name());
-
-  @Autowired
-  private ObjectMapper objectMapper;
 
   @Autowired
   private FlowNodeInstanceTemplate flowNodeInstanceTemplate;
@@ -83,18 +74,34 @@ public class FlowNodeInstanceZeebeRecordProcessor {
     treePathCache = new SoftHashMap<>(operateProperties.getImporter().getFlowNodeTreeCacheSize());
   }
 
-  public void processIncidentRecord(Record record, BulkRequest bulkRequest) throws PersistenceException {
+  public void processIncidentRecord(Record record, BatchRequest batchRequest) throws PersistenceException {
     final String intentStr = record.getIntent().name();
     IncidentRecordValue recordValue = (IncidentRecordValue)record.getValue();
 
     //update activity instance
-    bulkRequest.add(persistFlowNodeInstanceFromIncident(record, intentStr, recordValue));
+    FlowNodeInstanceEntity entity = new FlowNodeInstanceEntity();
+    entity.setId(ConversionUtils.toStringOrNull(recordValue.getElementInstanceKey()));
+    entity.setKey(recordValue.getElementInstanceKey());
+    entity.setPartitionId(record.getPartitionId());
+    entity.setFlowNodeId(recordValue.getElementId());
+    entity.setProcessInstanceKey(recordValue.getProcessInstanceKey());
+    entity.setProcessDefinitionKey(recordValue.getProcessDefinitionKey());
+    entity.setBpmnProcessId(recordValue.getBpmnProcessId());
+    if (intentStr.equals(IncidentIntent.CREATED.name())) {
+      entity.setIncidentKey(record.getKey());
+    } else if (intentStr.equals(IncidentIntent.RESOLVED.name())) {
+      entity.setIncidentKey(null);
+    }
 
+    logger.debug("Flow node instance: id {}", entity.getId());
+    var updateFields = new HashMap<String,Object>();
+    updateFields.put(FlowNodeInstanceTemplate.INCIDENT_KEY, entity.getIncidentKey());
+    batchRequest.upsert(flowNodeInstanceTemplate.getFullQualifiedName(), entity.getId(), entity, updateFields);
   }
 
   public void processProcessInstanceRecord(
       Map<Long, List<Record<ProcessInstanceRecordValue>>> records,
-      final List<Long> flowNodeInstanceKeysOrdered, BulkRequest bulkRequest) throws PersistenceException {
+      final List<Long> flowNodeInstanceKeysOrdered, BatchRequest batchRequest) throws PersistenceException {
 
     for (Long key: flowNodeInstanceKeysOrdered) {
       List<Record<ProcessInstanceRecordValue>> wiRecords = records.get(key);
@@ -106,8 +113,30 @@ public class FlowNodeInstanceZeebeRecordProcessor {
         }
       }
       if (fniEntity != null) {
-        final var request = getFlowNodeInstanceQuery(fniEntity);
-        bulkRequest.add(request);
+        logger.debug("Flow node instance: id {}", fniEntity.getId());
+        if (canOptimizeFlowNodeInstanceIndexing(fniEntity)) {
+          batchRequest.add(flowNodeInstanceTemplate.getFullQualifiedName(), fniEntity);
+        } else {
+            Map<String, Object> updateFields = new HashMap<>();
+            updateFields.put(FlowNodeInstanceTemplate.ID, fniEntity.getId());
+            updateFields.put(FlowNodeInstanceTemplate.PARTITION_ID, fniEntity.getPartitionId());
+            updateFields.put(FlowNodeInstanceTemplate.TYPE, fniEntity.getType());
+            updateFields.put(FlowNodeInstanceTemplate.STATE, fniEntity.getState());
+            updateFields.put(FlowNodeInstanceTemplate.TREE_PATH, fniEntity.getTreePath());
+            updateFields.put(FlowNodeInstanceTemplate.FLOW_NODE_ID, fniEntity.getFlowNodeId());
+            updateFields.put(FlowNodeInstanceTemplate.PROCESS_DEFINITION_KEY, fniEntity.getProcessDefinitionKey());
+            updateFields.put(FlowNodeInstanceTemplate.LEVEL, fniEntity.getLevel());
+            if (fniEntity.getStartDate() != null) {
+              updateFields.put(FlowNodeInstanceTemplate.START_DATE, fniEntity.getStartDate());
+            }
+            if (fniEntity.getEndDate() != null) {
+              updateFields.put(FlowNodeInstanceTemplate.END_DATE, fniEntity.getEndDate());
+            }
+            if (fniEntity.getPosition() != null) {
+              updateFields.put(FlowNodeInstanceTemplate.POSITION, fniEntity.getPosition());
+            }
+            batchRequest.upsert(flowNodeInstanceTemplate.getFullQualifiedName(), fniEntity.getId(), fniEntity, updateFields);
+        }
       }
     }
   }
@@ -225,37 +254,6 @@ public class FlowNodeInstanceZeebeRecordProcessor {
     }
   }
 
-  private UpdateRequest persistFlowNodeInstanceFromIncident(Record record, String intentStr, IncidentRecordValue recordValue) throws PersistenceException {
-    FlowNodeInstanceEntity entity = new FlowNodeInstanceEntity();
-    entity.setId(ConversionUtils.toStringOrNull(recordValue.getElementInstanceKey()));
-    entity.setKey(recordValue.getElementInstanceKey());
-    entity.setPartitionId(record.getPartitionId());
-    entity.setFlowNodeId(recordValue.getElementId());
-    entity.setProcessInstanceKey(recordValue.getProcessInstanceKey());
-    entity.setProcessDefinitionKey(recordValue.getProcessDefinitionKey());
-    entity.setBpmnProcessId(recordValue.getBpmnProcessId());
-    if (intentStr.equals(IncidentIntent.CREATED.name())) {
-      entity.setIncidentKey(record.getKey());
-    } else if (intentStr.equals(IncidentIntent.RESOLVED.name())) {
-      entity.setIncidentKey(null);
-    }
-
-    return getFlowNodeInstanceFromIncidentQuery(entity);
-  }
-
-  private DocWriteRequest<?> getFlowNodeInstanceQuery(FlowNodeInstanceEntity entity) throws PersistenceException {
-    logger.debug("Flow node instance: id {}", entity.getId());
-
-    final DocWriteRequest<?> request;
-    if (canOptimizeFlowNodeInstanceIndexing(entity)) {
-      request = prepareFlowNodeInstanceIndexRequest(entity);
-    } else {
-      request = prepareFlowNodeInstanceUpdateRequest(entity);
-    }
-
-    return request;
-  }
-
   private boolean canOptimizeFlowNodeInstanceIndexing(final FlowNodeInstanceEntity entity) {
     final var startDate = entity.getStartDate();
     final var endDate = entity.getEndDate();
@@ -277,67 +275,6 @@ public class FlowNodeInstanceZeebeRecordProcessor {
     }
 
     return false;
-  }
-
-  private IndexRequest prepareFlowNodeInstanceIndexRequest(final FlowNodeInstanceEntity entity) throws PersistenceException {
-    try {
-      return new IndexRequest()
-          .index(flowNodeInstanceTemplate.getFullQualifiedName())
-          .id(entity.getId())
-          .source(objectMapper.writeValueAsString(entity), XContentType.JSON);
-    } catch (IOException e) {
-      throw new PersistenceException(String.format("Error preparing the query to index flow node instance [%s]  for list view", entity.getId()), e);
-    }
-  }
-
-  private UpdateRequest prepareFlowNodeInstanceUpdateRequest(final FlowNodeInstanceEntity entity) throws PersistenceException {
-    try {
-      Map<String, Object> updateFields = new HashMap<>();
-      updateFields.put(FlowNodeInstanceTemplate.ID, entity.getId());
-      updateFields.put(FlowNodeInstanceTemplate.PARTITION_ID, entity.getPartitionId());
-      updateFields.put(FlowNodeInstanceTemplate.TYPE, entity.getType());
-      updateFields.put(FlowNodeInstanceTemplate.STATE, entity.getState());
-      updateFields.put(FlowNodeInstanceTemplate.TREE_PATH, entity.getTreePath());
-      updateFields.put(FlowNodeInstanceTemplate.FLOW_NODE_ID, entity.getFlowNodeId());
-      updateFields.put(FlowNodeInstanceTemplate.PROCESS_DEFINITION_KEY, entity.getProcessDefinitionKey());
-      updateFields.put(FlowNodeInstanceTemplate.LEVEL, entity.getLevel());
-      if (entity.getStartDate() != null) {
-        updateFields.put(FlowNodeInstanceTemplate.START_DATE, entity.getStartDate());
-      }
-      if (entity.getEndDate() != null) {
-        updateFields.put(FlowNodeInstanceTemplate.END_DATE, entity.getEndDate());
-      }
-      if (entity.getPosition() != null) {
-        updateFields.put(FlowNodeInstanceTemplate.POSITION, entity.getPosition());
-      }
-
-      //TODO some weird not efficient magic is needed here, in order to format date fields properly, may be this can be improved
-      Map<String, Object> jsonMap = objectMapper.readValue(objectMapper.writeValueAsString(updateFields), HashMap.class);
-
-      return new UpdateRequest().index(flowNodeInstanceTemplate.getFullQualifiedName()).id(entity.getId())
-        .upsert(objectMapper.writeValueAsString(entity), XContentType.JSON)
-        .doc(jsonMap)
-        .retryOnConflict(UPDATE_RETRY_COUNT);
-
-    } catch (IOException e) {
-      throw new PersistenceException(String.format("Error preparing the query to upsert flow node instance [%s]  for list view", entity.getId()), e);
-    }
-  }
-
-  private UpdateRequest getFlowNodeInstanceFromIncidentQuery(FlowNodeInstanceEntity entity) throws PersistenceException {
-    try {
-      logger.debug("Flow node instance: id {}", entity.getId());
-      Map<String, Object> jsonMap = new HashMap<>();
-      jsonMap.put(FlowNodeInstanceTemplate.INCIDENT_KEY, entity.getIncidentKey());
-
-      return new UpdateRequest().index(flowNodeInstanceTemplate.getFullQualifiedName()).id(entity.getId())
-        .upsert(objectMapper.writeValueAsString(entity), XContentType.JSON)
-        .doc(jsonMap)
-        .retryOnConflict(UPDATE_RETRY_COUNT);
-
-    } catch (IOException e) {
-      throw new PersistenceException(String.format("Error preparing the query to upsert flow node instance [%s]  for list view", entity.getId()), e);
-    }
   }
 
   private boolean isProcessEvent(ProcessInstanceRecordValue recordValue) {

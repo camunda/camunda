@@ -6,17 +6,10 @@
  */
 package io.camunda.operate.zeebeimport.v8_2.processors;
 
-import static io.camunda.operate.schema.templates.ListViewTemplate.ACTIVITIES_JOIN_RELATION;
-import static io.camunda.operate.schema.templates.ListViewTemplate.ACTIVITY_ID;
-import static io.camunda.operate.schema.templates.ListViewTemplate.JOIN_RELATION;
-import static io.camunda.operate.util.ElasticsearchUtil.UPDATE_RETRY_COUNT;
-import static io.camunda.operate.util.ElasticsearchUtil.joinWithAnd;
 import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEMENT_ACTIVATING;
 import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEMENT_COMPLETED;
 import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEMENT_TERMINATED;
-import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.cache.ProcessCache;
 import io.camunda.operate.entities.FlowNodeState;
 import io.camunda.operate.entities.FlowNodeType;
@@ -30,10 +23,10 @@ import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.exceptions.PersistenceException;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.schema.templates.ListViewTemplate;
+import io.camunda.operate.store.BatchRequest;
+import io.camunda.operate.store.FlowNodeStore;
 import io.camunda.operate.util.ConversionUtils;
 import io.camunda.operate.util.DateUtil;
-import io.camunda.operate.util.ElasticsearchUtil;
-import io.camunda.operate.util.ElasticsearchUtil.QueryType;
 import io.camunda.operate.util.OperationsManager;
 import io.camunda.operate.util.SoftHashMap;
 import io.camunda.operate.util.Tuple;
@@ -49,7 +42,6 @@ import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.camunda.zeebe.protocol.record.value.VariableRecordValue;
-import java.io.IOException;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.OffsetDateTime;
@@ -59,17 +51,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import org.elasticsearch.action.DocWriteRequest;
-import org.elasticsearch.action.bulk.BulkRequest;
-import org.elasticsearch.action.index.IndexRequest;
-import org.elasticsearch.action.search.SearchRequest;
-import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.action.update.UpdateRequest;
-import org.elasticsearch.client.RequestOptions;
-import org.elasticsearch.client.RestHighLevelClient;
-import org.elasticsearch.xcontent.XContentType;
-import org.elasticsearch.index.query.QueryBuilder;
-import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -92,9 +73,6 @@ public class ListViewZeebeRecordProcessor {
   }
 
   @Autowired
-  private ObjectMapper objectMapper;
-
-  @Autowired
   private ListViewTemplate listViewTemplate;
 
   @Autowired
@@ -107,13 +85,13 @@ public class ListViewZeebeRecordProcessor {
   private ElasticsearchQueries elasticsearchQueries;
 
   @Autowired
-  private RestHighLevelClient esClient;
-
-  @Autowired
   private OperateProperties operateProperties;
 
   @Autowired
   private PartitionHolder partitionHolder;
+
+  @Autowired
+  private FlowNodeStore flowNodeStore;
 
   @Autowired
   private MetricContract.Writer metricWriter;
@@ -141,17 +119,36 @@ public class ListViewZeebeRecordProcessor {
     return callActivityIdCache;
   }
 
-  public void processIncidentRecord(Record record, BulkRequest bulkRequest) throws PersistenceException {
+  public void processIncidentRecord(Record record, BatchRequest batchRequest) throws PersistenceException {
     final String intentStr = record.getIntent().name();
     IncidentRecordValue recordValue = (IncidentRecordValue)record.getValue();
 
     //update activity instance
-    bulkRequest.add(persistFlowNodeInstanceFromIncident(record, intentStr, recordValue));
+    FlowNodeInstanceForListViewEntity entity = new FlowNodeInstanceForListViewEntity();
+    entity.setId( ConversionUtils.toStringOrNull(recordValue.getElementInstanceKey()));
+    entity.setKey(recordValue.getElementInstanceKey());
+    entity.setPartitionId(record.getPartitionId());
+    entity.setActivityId(recordValue.getElementId());
+    entity.setProcessInstanceKey(recordValue.getProcessInstanceKey());
+    if (intentStr.equals(IncidentIntent.CREATED.name())) {
+      entity.setErrorMessage(StringUtils.trimWhitespace(recordValue.getErrorMessage()));
+    } else if (intentStr.equals(IncidentIntent.RESOLVED.name())) {
+      entity.setErrorMessage(null);
+    }
 
+    //set parent
+    Long processInstanceKey = recordValue.getProcessInstanceKey();
+    entity.getJoinRelation().setParent(processInstanceKey);
+
+    logger.debug("Activity instance for list view: id {}", entity.getId());
+
+    var updateFields = new HashMap<String,Object>();
+    updateFields.put(ListViewTemplate.ERROR_MSG, entity.getErrorMessage());
+    batchRequest.upsertWithRouting(listViewTemplate.getFullQualifiedName(), entity.getId(), entity, updateFields, processInstanceKey.toString());
   }
 
   public void processVariableRecords(final Map<Long, List<Record<VariableRecordValue>>> variablesGroupedByScopeKey,
-      final BulkRequest bulkRequest) throws PersistenceException {
+      final BatchRequest batchRequest) throws PersistenceException {
     for (final var variableRecords : variablesGroupedByScopeKey.entrySet()) {
       final var temporaryVariableCache = new HashMap<String, Tuple<Intent, VariableForListViewEntity>>();
       final var scopedVariables = variableRecords.getValue();
@@ -160,9 +157,7 @@ public class ListViewZeebeRecordProcessor {
         final var intent = scopedVariable.getIntent();
         final var variableValue = scopedVariable.getValue();
         final var variableName = variableValue.getName();
-        final var cachedVariable = temporaryVariableCache.computeIfAbsent(variableName, (k) -> {
-          return Tuple.of(intent, new VariableForListViewEntity());
-        });
+        final var cachedVariable = temporaryVariableCache.computeIfAbsent(variableName, (k) -> Tuple.of(intent, new VariableForListViewEntity()));
         final var variableEntity = cachedVariable.getRight();
         processVariableRecord(scopedVariable, variableEntity);
       }
@@ -170,23 +165,25 @@ public class ListViewZeebeRecordProcessor {
       for (final var cachedVariable: temporaryVariableCache.values()) {
         final var initialIntent = cachedVariable.getLeft();
         final var variableEntity = cachedVariable.getRight();
-        final DocWriteRequest<?> request;
 
         logger.debug("Variable for list view: id {}", variableEntity.getId());
 
         if (initialIntent == VariableIntent.CREATED) {
-          request = prepareVariableIndexRequest(variableEntity);
+            final var processInstanceKey = variableEntity.getProcessInstanceKey();
+            batchRequest.addWithRouting(listViewTemplate.getFullQualifiedName(), variableEntity, processInstanceKey.toString());
         } else {
-          request = prepareVariableUpdateRequest(variableEntity);
+            final var processInstanceKey = variableEntity.getProcessInstanceKey();
+            Map<String, Object> updateFields = new HashMap<>();
+            updateFields.put(ListViewTemplate.VAR_NAME, variableEntity.getVarName());
+            updateFields.put(ListViewTemplate.VAR_VALUE, variableEntity.getVarValue());
+            batchRequest.upsertWithRouting(listViewTemplate.getFullQualifiedName(), variableEntity.getId(), variableEntity,updateFields, processInstanceKey.toString());
         }
-
-        bulkRequest.add(request);
       }
     }
   }
 
   public void processProcessInstanceRecord(
-      Map<Long, List<Record<ProcessInstanceRecordValue>>> records, BulkRequest bulkRequest,
+      Map<Long, List<Record<ProcessInstanceRecordValue>>> records, BatchRequest batchRequest,
       ImportBatch importBatch) throws PersistenceException {
     final Map<String, String> treePathMap = new HashMap<>();
     for (Map.Entry<Long, List<Record<ProcessInstanceRecordValue>>> wiRecordsEntry: records.entrySet()) {
@@ -201,19 +198,47 @@ public class ListViewZeebeRecordProcessor {
             //complete operation
             if (isProcessInstanceTerminated(record)) {
               //resolve corresponding operation
-              operationsManager.completeOperation(null, record.getKey(), null, OperationType.CANCEL_PROCESS_INSTANCE, bulkRequest);
+              operationsManager.completeOperation(null, record.getKey(), null, OperationType.CANCEL_PROCESS_INSTANCE, batchRequest);
             }
-            piEntity = updateProcessInstance(importBatch, record, piEntity, treePathMap, bulkRequest);
+            piEntity = updateProcessInstance(importBatch, record, piEntity, treePathMap, batchRequest);
           } else {
             updateFlowNodeInstance(record, actEntities);
           }
         }
       }
       if (piEntity != null) {
-        bulkRequest.add(getProcessInstanceQuery(piEntity));
+        logger.debug("Process instance for list view: id {}", piEntity.getId());
+
+        if (canOptimizeProcessInstanceIndexing(piEntity)) {
+          batchRequest.add(listViewTemplate.getFullQualifiedName(), piEntity);
+        } else {
+          Map<String, Object> updateFields = new HashMap<>();
+          if (piEntity.getStartDate() != null) {
+            updateFields.put(ListViewTemplate.START_DATE, piEntity.getStartDate());
+          }
+          if (piEntity.getEndDate() != null) {
+            updateFields.put(ListViewTemplate.END_DATE, piEntity.getEndDate());
+          }
+          updateFields.put(ListViewTemplate.PROCESS_NAME, piEntity.getProcessName());
+          updateFields.put(ListViewTemplate.PROCESS_VERSION, piEntity.getProcessVersion());
+          if (piEntity.getState() != null) {
+            updateFields.put(ListViewTemplate.STATE, piEntity.getState());
+          }
+          batchRequest.upsert(listViewTemplate.getFullQualifiedName(), piEntity.getId(), piEntity, updateFields);
+        }
       }
       for (FlowNodeInstanceForListViewEntity actEntity: actEntities.values()) {
-        bulkRequest.add(getFlowNodeInstanceQuery(actEntity, processInstanceKey));
+        logger.debug("Flow node instance for list view: id {}", actEntity.getId());
+        if (canOptimizeFlowNodeInstanceIndexing(actEntity)) {
+          batchRequest.addWithRouting(listViewTemplate.getFullQualifiedName(), actEntity, processInstanceKey.toString());
+        } else {
+            Map<String, Object> updateFields = new HashMap<>();
+            updateFields.put(ListViewTemplate.ID, actEntity.getId());
+            updateFields.put(ListViewTemplate.PARTITION_ID, actEntity.getPartitionId());
+            updateFields.put(ListViewTemplate.ACTIVITY_TYPE, actEntity.getActivityType());
+            updateFields.put(ListViewTemplate.ACTIVITY_STATE, actEntity.getActivityState());
+            batchRequest.upsertWithRouting(listViewTemplate.getFullQualifiedName(),actEntity.getId(),actEntity,updateFields, processInstanceKey.toString());
+        }
       }
     }
   }
@@ -231,7 +256,7 @@ public class ListViewZeebeRecordProcessor {
       Record<ProcessInstanceRecordValue> record,
       ProcessInstanceForListViewEntity piEntity,
       Map<String, String> treePathMap,
-      BulkRequest bulkRequest) {
+      BatchRequest batchRequest) throws PersistenceException {
     if (piEntity == null) {
       piEntity = new ProcessInstanceForListViewEntity();
     }
@@ -264,7 +289,7 @@ public class ListViewZeebeRecordProcessor {
       piEntity.setStartDate(timestamp);
       piEntity.setState(ProcessInstanceState.ACTIVE);
       if(isRootProcessInstance){
-        registerStartedRootProcessInstance(piEntity, bulkRequest, timestamp);
+        registerStartedRootProcessInstance(piEntity, batchRequest, timestamp);
       }
     } else {
       piEntity.setState(ProcessInstanceState.ACTIVE);
@@ -291,10 +316,10 @@ public class ListViewZeebeRecordProcessor {
     return piEntity;
   }
 
-  private void registerStartedRootProcessInstance(ProcessInstanceForListViewEntity piEntity, BulkRequest bulkRequest, OffsetDateTime timestamp) {
+  private void registerStartedRootProcessInstance(ProcessInstanceForListViewEntity piEntity, BatchRequest batchRequest, OffsetDateTime timestamp)
+      throws PersistenceException {
     String processInstanceKey = String.valueOf(piEntity.getProcessInstanceKey());
-    bulkRequest.add(metricWriter
-        .registerProcessInstanceStartEvent(processInstanceKey, timestamp));
+    metricWriter.registerProcessInstanceStartEvent(processInstanceKey, timestamp, batchRequest);
   }
 
   private String getTreePathForCalledProcess(final ProcessInstanceRecordValue recordValue) {
@@ -333,33 +358,11 @@ public class ListViewZeebeRecordProcessor {
   private String getCallActivityId(String flowNodeInstanceId) {
     String callActivityId = getCallActivityIdCache().get(flowNodeInstanceId);
     if (callActivityId == null) {
-      callActivityId = getFlowNodeIdByFlowNodeInstanceId(flowNodeInstanceId);
+      callActivityId = flowNodeStore.getFlowNodeIdByFlowNodeInstanceId(flowNodeInstanceId);
       getCallActivityIdCache().put(flowNodeInstanceId, callActivityId);
     }
     return callActivityId;
   }
-
-  private String getFlowNodeIdByFlowNodeInstanceId(String flowNodeInstanceId) {
-    final QueryBuilder query = joinWithAnd(termQuery(JOIN_RELATION, ACTIVITIES_JOIN_RELATION),
-        termQuery(ListViewTemplate.ID, flowNodeInstanceId));
-    final SearchRequest request = ElasticsearchUtil
-        .createSearchRequest(listViewTemplate, QueryType.ONLY_RUNTIME)
-        .source(new SearchSourceBuilder()
-            .query(query).fetchSource(ACTIVITY_ID, null));
-    final SearchResponse response;
-    try {
-      response = esClient.search(request, RequestOptions.DEFAULT);
-      if (response.getHits().getTotalHits().value != 1) {
-        throw new OperateRuntimeException("Flow node instance is not found: " + flowNodeInstanceId);
-      } else {
-        return String.valueOf(response.getHits().getAt(0).getSourceAsMap().get(ACTIVITY_ID));
-      }
-    } catch (IOException e) {
-      throw new OperateRuntimeException(
-          "Error occurred when searching for flow node instance: " + flowNodeInstanceId, e);
-    }
-  }
-
 
   private void updateFlowNodeInstance(Record<ProcessInstanceRecordValue> record, Map<Long, FlowNodeInstanceForListViewEntity> entities) {
     if (entities.get(record.getKey()) == null) {
@@ -402,26 +405,6 @@ public class ListViewZeebeRecordProcessor {
 
   }
 
-  private UpdateRequest persistFlowNodeInstanceFromIncident(Record record, String intentStr, IncidentRecordValue recordValue) throws PersistenceException {
-    FlowNodeInstanceForListViewEntity entity = new FlowNodeInstanceForListViewEntity();
-    entity.setId( ConversionUtils.toStringOrNull(recordValue.getElementInstanceKey()));
-    entity.setKey(recordValue.getElementInstanceKey());
-    entity.setPartitionId(record.getPartitionId());
-    entity.setActivityId(recordValue.getElementId());
-    entity.setProcessInstanceKey(recordValue.getProcessInstanceKey());
-    if (intentStr.equals(IncidentIntent.CREATED.name())) {
-      entity.setErrorMessage(StringUtils.trimWhitespace(recordValue.getErrorMessage()));
-    } else if (intentStr.equals(IncidentIntent.RESOLVED.name())) {
-      entity.setErrorMessage(null);
-    }
-
-    //set parent
-    Long processInstanceKey = recordValue.getProcessInstanceKey();
-    entity.getJoinRelation().setParent(processInstanceKey);
-
-    return getFlowNodeInstanceFromIncidentQuery(entity, processInstanceKey);
-  }
-
   private void processVariableRecord(Record<VariableRecordValue> record, VariableForListViewEntity entity) {
     final var recordValue = record.getValue();
     entity.setId(VariableForListViewEntity.getIdBy(recordValue.getScopeKey(), recordValue.getName()));
@@ -435,19 +418,6 @@ public class ListViewZeebeRecordProcessor {
     //set parent
     Long processInstanceKey = recordValue.getProcessInstanceKey();
     entity.getJoinRelation().setParent(processInstanceKey);
-  }
-
-  private DocWriteRequest<?> getFlowNodeInstanceQuery(FlowNodeInstanceForListViewEntity entity, Long processInstanceKey) throws PersistenceException {
-    logger.debug("Flow node instance for list view: id {}", entity.getId());
-
-    final DocWriteRequest<?> request;
-    if (canOptimizeFlowNodeInstanceIndexing(entity)) {
-      request = prepareFlowNodeInstanceIndexQuery(entity, processInstanceKey);
-    } else {
-      request = prepareFlowNodeInstanceUpdateQuery(entity, processInstanceKey);
-    }
-
-    return request;
   }
 
   private boolean canOptimizeFlowNodeInstanceIndexing(final FlowNodeInstanceForListViewEntity entity) {
@@ -472,103 +442,6 @@ public class ListViewZeebeRecordProcessor {
     return false;
   }
 
-  private IndexRequest prepareFlowNodeInstanceIndexQuery(FlowNodeInstanceForListViewEntity entity, Long processInstanceKey) throws PersistenceException {
-    try {
-      return new IndexRequest()
-          .index(listViewTemplate.getFullQualifiedName()).id(entity.getId())
-          .source(objectMapper.writeValueAsString(entity), XContentType.JSON)
-          .routing(processInstanceKey.toString());
-    } catch (IOException e) {
-      logger.error("Error preparing the query to index activity instance for list view", e);
-      throw new PersistenceException(String.format("Error preparing the query to index activity instance [%s]  for list view", entity.getId()), e);
-    }
-  }
-
-  private UpdateRequest prepareFlowNodeInstanceUpdateQuery(FlowNodeInstanceForListViewEntity entity, Long processInstanceKey) throws PersistenceException {
-    try {
-      Map<String, Object> updateFields = new HashMap<>();
-      updateFields.put(ListViewTemplate.ID, entity.getId());
-      updateFields.put(ListViewTemplate.PARTITION_ID, entity.getPartitionId());
-      updateFields.put(ListViewTemplate.ACTIVITY_TYPE, entity.getActivityType());
-      updateFields.put(ListViewTemplate.ACTIVITY_STATE, entity.getActivityState());
-
-      return new UpdateRequest().index(listViewTemplate.getFullQualifiedName()).id(entity.getId())
-        .upsert(objectMapper.writeValueAsString(entity), XContentType.JSON)
-        .doc(updateFields)
-        .routing(processInstanceKey.toString())
-        .retryOnConflict(UPDATE_RETRY_COUNT);
-
-    } catch (IOException e) {
-      logger.error("Error preparing the query to upsert activity instance for list view", e);
-      throw new PersistenceException(String.format("Error preparing the query to upsert activity instance [%s]  for list view", entity.getId()), e);
-    }
-  }
-
-  private IndexRequest prepareVariableIndexRequest(final VariableForListViewEntity entity) throws PersistenceException {
-    try {
-      final var processInstanceKey = entity.getProcessInstanceKey();
-      return new IndexRequest()
-          .index(listViewTemplate.getFullQualifiedName())
-          .id(entity.getId())
-          .source(objectMapper.writeValueAsString(entity), XContentType.JSON)
-          .routing(processInstanceKey.toString());
-
-    } catch (IOException e) {
-      logger.error("Error preparing the query to index variable for list view", e);
-      throw new PersistenceException(String.format("Error preparing the query to index variable [%s] for list view", entity.getId()), e);
-    }
-  }
-
-  private UpdateRequest prepareVariableUpdateRequest(final VariableForListViewEntity entity) throws PersistenceException {
-    try {
-      final var processInstanceKey = entity.getProcessInstanceKey();
-      Map<String, Object> updateFields = new HashMap<>();
-      updateFields.put(ListViewTemplate.VAR_NAME, entity.getVarName());
-      updateFields.put(ListViewTemplate.VAR_VALUE, entity.getVarValue());
-
-      return new UpdateRequest().index(listViewTemplate.getFullQualifiedName()).id(entity.getId())
-        .upsert(objectMapper.writeValueAsString(entity), XContentType.JSON)
-        .doc(updateFields)
-        .routing(processInstanceKey.toString())
-        .retryOnConflict(UPDATE_RETRY_COUNT);
-
-    } catch (IOException e) {
-      logger.error("Error preparing the query to upsert variable for list view", e);
-      throw new PersistenceException(String.format("Error preparing the query to upsert variable [%s] for list view", entity.getId()), e);
-    }
-  }
-
-  private UpdateRequest getFlowNodeInstanceFromIncidentQuery(
-      FlowNodeInstanceForListViewEntity entity, Long processInstanceKey) throws PersistenceException {
-    try {
-      logger.debug("Activity instance for list view: id {}", entity.getId());
-      Map<String, Object> updateFields = new HashMap<>();
-      updateFields.put(ListViewTemplate.ERROR_MSG, entity.getErrorMessage());
-      return new UpdateRequest().index(listViewTemplate.getFullQualifiedName()).id(entity.getId())
-          .upsert(objectMapper.writeValueAsString(entity), XContentType.JSON)
-          .doc(updateFields)
-          .routing(processInstanceKey.toString())
-          .retryOnConflict(UPDATE_RETRY_COUNT);
-
-    } catch (IOException e) {
-      logger.error("Error preparing the query to upsert activity instance for list view", e);
-      throw new PersistenceException(String.format("Error preparing the query to upsert activity instance [%s]  for list view", entity.getId()), e);
-    }
-  }
-
-  private DocWriteRequest<?> getProcessInstanceQuery(ProcessInstanceForListViewEntity piEntity) throws PersistenceException {
-    logger.debug("Process instance for list view: id {}", piEntity.getId());
-
-    final DocWriteRequest<?> request;
-    if (canOptimizeProcessInstanceIndexing(piEntity)) {
-      request = prepareProcessInstanceIndexQuery(piEntity);
-    } else {
-      request = prepareProcessInstanceUpdateQuery(piEntity);
-    }
-
-    return request;
-  }
-
   private boolean canOptimizeProcessInstanceIndexing(final ProcessInstanceForListViewEntity entity) {
     final var startDate = entity.getStartDate();
     final var endDate = entity.getEndDate();
@@ -589,47 +462,6 @@ public class ListViewZeebeRecordProcessor {
     }
 
     return false;
-  }
-
-  private IndexRequest prepareProcessInstanceIndexQuery(ProcessInstanceForListViewEntity piEntity) throws PersistenceException {
-    try {
-      return new IndexRequest()
-          .index(listViewTemplate.getFullQualifiedName())
-          .id(piEntity.getId())
-          .source(objectMapper.writeValueAsString(piEntity), XContentType.JSON);
-
-    } catch (IOException e) {
-      logger.error("Error preparing the query to index process instance for list view", e);
-      throw new PersistenceException(String.format("Error preparing the query to index process instance [%s]  for list view", piEntity.getId()), e);
-    }
-  }
-
-  private UpdateRequest prepareProcessInstanceUpdateQuery(ProcessInstanceForListViewEntity piEntity) throws PersistenceException {
-    try {
-      Map<String, Object> updateFields = new HashMap<>();
-      if (piEntity.getStartDate() != null) {
-        updateFields.put(ListViewTemplate.START_DATE, piEntity.getStartDate());
-      }
-      if (piEntity.getEndDate() != null) {
-        updateFields.put(ListViewTemplate.END_DATE, piEntity.getEndDate());
-      }
-      updateFields.put(ListViewTemplate.PROCESS_NAME, piEntity.getProcessName());
-      updateFields.put(ListViewTemplate.PROCESS_VERSION, piEntity.getProcessVersion());
-      if (piEntity.getState() != null) {
-        updateFields.put(ListViewTemplate.STATE, piEntity.getState());
-      }
-
-      //TODO some weird not efficient magic is needed here, in order to format date fields properly, may be this can be improved
-      Map<String, Object> jsonMap = objectMapper.readValue(objectMapper.writeValueAsString(updateFields), HashMap.class);
-      return new UpdateRequest().index(listViewTemplate.getFullQualifiedName()).id(piEntity.getId())
-        .upsert(objectMapper.writeValueAsString(piEntity), XContentType.JSON)
-        .doc(jsonMap)
-        .retryOnConflict(UPDATE_RETRY_COUNT);
-
-    } catch (IOException e) {
-      logger.error("Error preparing the query to upsert process instance for list view", e);
-      throw new PersistenceException(String.format("Error preparing the query to upsert process instance [%s]  for list view", piEntity.getId()), e);
-    }
   }
 
   private boolean isProcessEvent(ProcessInstanceRecordValue recordValue) {
