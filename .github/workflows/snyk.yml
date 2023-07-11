@@ -178,21 +178,11 @@ jobs:
           else
             exit 0
           fi
-      # This makes the result of our test available in GitHub Code Scanning (look for the Snyk tools)
-      # You can filter by your PR ID, by branch, etc.
-      # This step is only executed if we're testing, as otherwise no SARIF files are emitted
-      - name: Upload Snyk results to GitHub Code Scanning
-        if: ${{ ! inputs.monitor }}
-        uses: github/codeql-action/upload-sarif@v2
-        with:
-          sarif_file: sarif-results/
       - name: Code Scanning summary
         if: ${{ ! inputs.monitor }}
         run: |
           export PR_NUMBER=$(echo $GITHUB_REF | awk 'BEGIN { FS = "/" } ; { print $3 }')
           cat >> $GITHUB_STEP_SUMMARY <<EOF
             ## Result Links
-            - [Code scanning (PR)](https://github.com/camunda/zeebe/security/code-scanning?query=pr:${PR_NUMBER}+tool:"Snyk+Container","Snyk+Open+Source"+is:open)
-            - [Code scanning (branch)](https://github.com/camunda/zeebe/security/code-scanning?query=branch:${{ github.ref_name }}+tool:"Snyk+Container","Snyk+Open+Source"+is:open)
             - [Snyk projects](https://app.snyk.io/org/team-zeebe/projects)
           EOF
