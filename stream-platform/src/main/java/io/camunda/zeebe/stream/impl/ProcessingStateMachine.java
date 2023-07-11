@@ -269,12 +269,12 @@ public final class ProcessingStateMachine {
         processingMetrics.observeCommandCount(processedCommandsCount);
       }
 
+      lastProcessedPositionState.markAsProcessed(typedCommand.getPosition());
       if (currentProcessingResult.isEmpty()) {
         skipRecord();
         return;
       }
 
-      lastProcessedPositionState.markAsProcessed(typedCommand.getPosition());
       writeRecords();
       processedCommandsCount = 0;
     } catch (final RecoverableException recoverableException) {
