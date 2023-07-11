@@ -196,6 +196,13 @@
           "old": "method boolean io.camunda.zeebe.protocol.record.intent.ProcessInstanceBatchIntent::shouldBlacklistInstanceOnError()",
           "justification": "This method had a racial loaded term. It was replaced with a better name, this shouldn't been an issue as it was for internally use only."
         }
+      ,{
+          "ignore": true,
+          "code": "java.field.constantValueChanged",
+          "old": "field io.camunda.zeebe.protocol.management.AdminRequestDecoder.BLOCK_LENGTH",
+          "new": "field io.camunda.zeebe.protocol.management.AdminRequestDecoder.BLOCK_LENGTH",
+          "justification": "Added a new type to ban an instance"
+        }
       ]
     }
   }
