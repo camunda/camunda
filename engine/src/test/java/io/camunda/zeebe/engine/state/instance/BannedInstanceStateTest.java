@@ -134,28 +134,6 @@ public final class BannedInstanceStateTest {
     assertThat(bannedInstanceState.isBanned(differentProcessInstanceRecord)).isFalse();
   }
 
-  @Test
-  public void bannedInstancesIsEmptyIsTrueIfNothingIsBanned() {
-    // given
-
-    // when
-    final boolean blackListIsEmpty = bannedInstanceState.isEmpty();
-
-    // then
-    assertThat(blackListIsEmpty).isTrue();
-  }
-
-  @Test
-  public void bannedInstanceIsEmptyIsFalseIfSomethingGotBanned() {
-    // given
-
-    // when
-    bannedInstanceState.banProcessInstance(1001);
-
-    // then
-    assertThat(bannedInstanceState.isEmpty()).isFalse();
-  }
-
   private TypedRecordImpl createRecord() {
     return createRecord(1000L);
   }
