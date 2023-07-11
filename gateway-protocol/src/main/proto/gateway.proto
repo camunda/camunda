@@ -8,6 +8,20 @@ option go_package = "./;pb";
 // For a more complete documentation, refer to Zeebe documentation at:
 // https://docs.camunda.io/docs/reference/grpc
 
+message StreamActivatedJobsRequest {
+  // the job type, as defined in the BPMN process (e.g. <zeebe:taskDefinition
+  // type="payment-service" />)
+  string type = 1;
+  // the name of the worker activating the jobs, mostly used for logging purposes
+  string worker = 2;
+  // a job returned after this call will not be activated by another call until the
+  // timeout (in ms) has been reached
+  int64 timeout = 3;
+  // a list of variables to fetch as the job variables; if empty, all visible variables at
+  // the time of activation for the scope of the job will be returned
+  repeated string fetchVariable = 5;
+}
+
 message ActivateJobsRequest {
   // the job type, as defined in the BPMN process (e.g. <zeebe:taskDefinition
   // type="payment-service" />)
@@ -586,6 +600,18 @@ service Gateway {
       - maxJobsToActivate is less than 1
    */
   rpc ActivateJobs (ActivateJobsRequest) returns (stream ActivateJobsResponse) {
+  }
+
+  /*
+   Registers client to a job stream that will stream jobs back to the client as
+   they are created.
+   Errors:
+    INVALID_ARGUMENT:
+     - type is blank (empty string, null)
+     - worker is blank (empty string, null)
+     - timeout less than 1
+  */
+  rpc StreamActivatedJobs (StreamActivatedJobsRequest) returns (stream ActivatedJob) {
   }
 
   /*
