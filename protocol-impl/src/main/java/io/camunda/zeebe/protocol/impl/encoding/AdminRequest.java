@@ -27,7 +27,7 @@ public class AdminRequest implements BufferReader, BufferWriter {
   private int partitionId = AdminRequestEncoder.partitionIdNullValue();
   private AdminRequestType type = AdminRequestType.NULL_VAL;
 
-  private final long key = AdminRequestEncoder.keyNullValue();
+  private long key = AdminRequestEncoder.keyNullValue();
 
   @Override
   public void wrap(final DirectBuffer buffer, final int offset, final int length) {
@@ -74,6 +74,10 @@ public class AdminRequest implements BufferReader, BufferWriter {
 
   public long getKey() {
     return key;
+  }
+
+  public void setKey(final long key) {
+    this.key = key;
   }
 
   public void setType(final AdminRequestType type) {
