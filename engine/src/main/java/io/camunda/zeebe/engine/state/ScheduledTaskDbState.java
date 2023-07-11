@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.state;
 
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
+import io.camunda.zeebe.db.impl.rocksdb.BufferedMessagesMetrics;
 import io.camunda.zeebe.engine.state.distribution.DbDistributionState;
 import io.camunda.zeebe.engine.state.immutable.DistributionState;
 import io.camunda.zeebe.engine.state.immutable.MessageState;
@@ -25,10 +26,12 @@ public final class ScheduledTaskDbState implements ScheduledTaskState {
   private final TimerInstanceState timerInstanceState;
 
   public ScheduledTaskDbState(
-      final ZeebeDb<ZbColumnFamilies> zeebeDb, final TransactionContext transactionContext) {
-    this.distributionState = new DbDistributionState(zeebeDb, transactionContext);
-    this.messageState = new DbMessageState(zeebeDb, transactionContext);
-    this.timerInstanceState = new DbTimerInstanceState(zeebeDb, transactionContext);
+      final ZeebeDb<ZbColumnFamilies> zeebeDb,
+      final TransactionContext transactionContext,
+      final BufferedMessagesMetrics bufferedMessagesMetrics) {
+    distributionState = new DbDistributionState(zeebeDb, transactionContext);
+    messageState = new DbMessageState(zeebeDb, transactionContext, bufferedMessagesMetrics);
+    timerInstanceState = new DbTimerInstanceState(zeebeDb, transactionContext);
   }
 
   @Override

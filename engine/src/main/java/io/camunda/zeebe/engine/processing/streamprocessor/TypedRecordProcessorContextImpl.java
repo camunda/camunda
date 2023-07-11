@@ -8,6 +8,7 @@
 package io.camunda.zeebe.engine.processing.streamprocessor;
 
 import io.camunda.zeebe.db.ZeebeDb;
+import io.camunda.zeebe.db.impl.rocksdb.BufferedMessagesMetrics;
 import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.ProcessingDbState;
@@ -33,14 +34,14 @@ public class TypedRecordProcessorContextImpl implements TypedRecordProcessorCont
       final RecordProcessorContext context,
       final Writers writers,
       final EngineConfiguration config) {
-    this.partitionId = context.getPartitionId();
-    this.scheduleService = context.getScheduleService();
-    this.zeebeDb = context.getZeebeDb();
-    this.processingState =
+    partitionId = context.getPartitionId();
+    scheduleService = context.getScheduleService();
+    zeebeDb = context.getZeebeDb();
+    processingState =
         new ProcessingDbState(
             partitionId, zeebeDb, context.getTransactionContext(), context.getKeyGenerator());
     this.writers = writers;
-    this.partitionCommandSender = context.getPartitionCommandSender();
+    partitionCommandSender = context.getPartitionCommandSender();
     this.config = config;
   }
 
@@ -71,7 +72,9 @@ public class TypedRecordProcessorContextImpl implements TypedRecordProcessorCont
 
   @Override
   public Supplier<ScheduledTaskState> getScheduledTaskStateFactory() {
-    return () -> new ScheduledTaskDbState(zeebeDb, zeebeDb.createContext());
+    return () ->
+        new ScheduledTaskDbState(
+            zeebeDb, zeebeDb.createContext(), new BufferedMessagesMetrics(partitionId));
   }
 
   @Override
