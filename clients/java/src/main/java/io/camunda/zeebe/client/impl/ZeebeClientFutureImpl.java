@@ -16,12 +16,14 @@
 
 package io.camunda.zeebe.client.impl;
 
+import com.google.protobuf.GeneratedMessageV3;
 import io.camunda.zeebe.client.api.ZeebeFuture;
 import io.camunda.zeebe.client.api.command.ClientException;
 import io.camunda.zeebe.client.api.command.ClientStatusException;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
-import io.grpc.stub.StreamObserver;
+import io.grpc.stub.ClientCallStreamObserver;
+import io.grpc.stub.ClientResponseObserver;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -30,8 +32,10 @@ import java.util.function.Function;
 
 public class ZeebeClientFutureImpl<ClientResponse, BrokerResponse>
     extends CompletableFuture<ClientResponse>
-    implements ZeebeFuture<ClientResponse>, StreamObserver<BrokerResponse> {
+    implements ZeebeFuture<ClientResponse>,
+        ClientResponseObserver<GeneratedMessageV3, BrokerResponse> {
 
+  protected ClientCallStreamObserver<GeneratedMessageV3> clientCall;
   private final Function<BrokerResponse, ClientResponse> responseMapper;
 
   public ZeebeClientFutureImpl() {
@@ -51,6 +55,15 @@ public class ZeebeClientFutureImpl<ClientResponse, BrokerResponse>
     } catch (final InterruptedException e) {
       throw new ClientException("Unexpectedly interrupted awaiting client response", e);
     }
+  }
+
+  @Override
+  public boolean cancel(final boolean mayInterruptIfRunning) {
+    if (mayInterruptIfRunning && clientCall != null) {
+      clientCall.cancel("Client call explicitly cancelled by user", null);
+    }
+
+    return super.cancel(mayInterruptIfRunning);
   }
 
   @Override
@@ -83,6 +96,16 @@ public class ZeebeClientFutureImpl<ClientResponse, BrokerResponse>
   @Override
   public void onCompleted() {
     // do nothing as we don't support streaming
+  }
+
+  @Override
+  public void beforeStart(final ClientCallStreamObserver<GeneratedMessageV3> requestStream) {
+    if (isDone()) {
+      requestStream.cancel("Call was completed by the client before it was started", null);
+      return;
+    }
+
+    clientCall = requestStream;
   }
 
   private RuntimeException transformExecutionException(final ExecutionException e) {

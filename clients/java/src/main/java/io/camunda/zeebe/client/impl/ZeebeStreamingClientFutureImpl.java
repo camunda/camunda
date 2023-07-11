@@ -36,6 +36,7 @@ public class ZeebeStreamingClientFutureImpl<ClientResponse, BrokerResponse>
       collector.accept(brokerResponse);
     } catch (final Exception e) {
       completeExceptionally(e);
+      rethrow(e);
     }
   }
 
@@ -47,5 +48,10 @@ public class ZeebeStreamingClientFutureImpl<ClientResponse, BrokerResponse>
   @Override
   public void onCompleted() {
     complete(response);
+  }
+
+  @SuppressWarnings("unchecked")
+  private <T extends Throwable> void rethrow(final Throwable exception) throws T {
+    throw (T) exception;
   }
 }
