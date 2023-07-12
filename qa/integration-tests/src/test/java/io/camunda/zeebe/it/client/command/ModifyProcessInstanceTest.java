@@ -139,6 +139,84 @@ public class ModifyProcessInstanceTest {
   }
 
   @Test
+  public void shouldModifyExistingProcessInstanceWithSingleVariable() {
+    // given
+    final var processInstance =
+        CLIENT_RULE
+            .getClient()
+            .newCreateInstanceCommand()
+            .bpmnProcessId(processId2)
+            .latestVersion()
+            .send()
+            .join();
+    final var processInstanceKey = processInstance.getProcessInstanceKey();
+
+    final var activatedUserTask =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementId("A")
+            .getFirst();
+
+    // when
+    final var command =
+        CLIENT_RULE
+            .getClient()
+            .newModifyProcessInstanceCommand(processInstanceKey)
+            .activateElement("B")
+            .withVariable("foo", "bar", "B")
+            .and()
+            .activateElement("C")
+            .withVariable("fizz", "buzz", "C")
+            .and()
+            .terminateElement(activatedUserTask.getKey())
+            .send();
+
+    // then
+    assertThatNoException()
+        .describedAs("Expect that modification command is not rejected")
+        .isThrownBy(command::join);
+
+    final var terminatedTaskA =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_TERMINATED)
+            .withRecordKey(activatedUserTask.getKey())
+            .withElementId("A")
+            .findAny();
+    final var activatedTaskB =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementId("B")
+            .findAny();
+    final var activatedTaskC =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementId("C")
+            .findAny();
+
+    Assertions.assertThat(terminatedTaskA)
+        .describedAs("Expect that task A is terminated")
+        .isPresent();
+    Assertions.assertThat(activatedTaskB)
+        .describedAs("Expect that task B is activated")
+        .isPresent();
+    Assertions.assertThat(activatedTaskC)
+        .describedAs("Expect that task C is activated")
+        .isPresent();
+
+    Assertions.assertThat(
+            RecordingExporter.variableRecords(VariableIntent.CREATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withScopeKey(activatedTaskB.get().getKey())
+                .withName("foo")
+                .getFirst())
+        .describedAs("Expect that variable 'foo' is created in task B's scope")
+        .isNotNull()
+        .extracting(Record::getValue)
+        .extracting(VariableRecordValue::getValue)
+        .describedAs("Expect that variable is created with value '\"bar\"'")
+        .isEqualTo("\"bar\"");
+  }
+
+  @Test
   public void shouldRejectCommandWhenProcessInstanceUnknown() {
     // when
     final var command =

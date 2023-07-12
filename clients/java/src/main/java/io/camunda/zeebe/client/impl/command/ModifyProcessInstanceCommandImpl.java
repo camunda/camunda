@@ -32,6 +32,7 @@ import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ModifyProcessInstance
 import io.grpc.stub.StreamObserver;
 import java.io.InputStream;
 import java.time.Duration;
+import java.util.Collections;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
@@ -150,11 +151,32 @@ public final class ModifyProcessInstanceCommandImpl
     return this;
   }
 
+  @Override
+  public ModifyProcessInstanceCommandStep3 withVariable(final String key, final Object value) {
+    return withVariable(key, value, EMPTY_SCOPE_ID);
+  }
+
+  @Override
+  public ModifyProcessInstanceCommandStep3 withVariable(
+      final String key, final Object value, final String scopeId) {
+    final VariableInstruction variableInstruction = createVariableInstruction(key, value, scopeId);
+    addVariableInstructionToLatestActivateInstruction(variableInstruction);
+    return this;
+  }
+
   private VariableInstruction createVariableInstruction(
       final InputStream variables, final String scopeId) {
     ArgumentUtil.ensureNotNull("variables", variables);
     final String variablesString = jsonMapper.validateJson("variables", variables);
     return createVariableInstruction(variablesString, scopeId);
+  }
+
+  private VariableInstruction createVariableInstruction(
+      final String key, final Object value, final String scopeId) {
+    ArgumentUtil.ensureNotNull("key", key);
+    ArgumentUtil.ensureNotNull("value", value);
+    final Map<String, Object> variable = Collections.singletonMap(key, value);
+    return createVariableInstruction(variable, scopeId);
   }
 
   private VariableInstruction createVariableInstruction(
