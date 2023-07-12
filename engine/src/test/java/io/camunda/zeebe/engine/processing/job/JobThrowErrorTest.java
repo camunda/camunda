@@ -141,8 +141,7 @@ public final class JobThrowErrorTest {
     final Record<JobRecordValue> failedRecord =
         ENGINE.job().withKey(job.getKey()).withErrorMessage(errorMessage).throwError();
 
-    final Record<IncidentRecordValue> incident =
-        RecordingExporter.incidentRecords(CREATED).getFirst();
+    final var incident = RecordingExporter.incidentRecords(CREATED).getFirst();
 
     // then
     Assertions.assertThat(failedRecord).hasRecordType(RecordType.EVENT).hasIntent(ERROR_THROWN);
