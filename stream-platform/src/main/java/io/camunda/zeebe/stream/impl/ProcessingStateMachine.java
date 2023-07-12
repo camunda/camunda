@@ -270,15 +270,6 @@ public final class ProcessingStateMachine {
       }
 
       finalizeCommandProcessing();
-
-      if (currentProcessingResult.isEmpty()) {
-        updateState();
-
-        notifySkippedListener(currentRecord);
-        metrics.eventSkipped();
-        return;
-      }
-
       writeRecords();
     } catch (final RecoverableException recoverableException) {
       // recoverable
@@ -472,7 +463,9 @@ public final class ProcessingStateMachine {
     final ActorFuture<Boolean> retryFuture =
         writeRetryStrategy.runWithRetry(
             () -> {
-              if (pendingWrites.isEmpty()) {
+              if (pendingWrites.isEmpty()) { // we skipped the processing
+                notifySkippedListener(currentRecord);
+                metrics.eventSkipped();
                 return true;
               }
               final var writeResult = logStreamWriter.tryWrite(pendingWrites, sourceRecordPosition);
