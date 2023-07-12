@@ -30,13 +30,12 @@ import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CreateProcessInstance
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CreateProcessInstanceRequest.Builder;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ProcessInstanceCreationStartInstruction;
 import io.grpc.stub.StreamObserver;
-import java.io.InputStream;
 import java.time.Duration;
-import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
 
 public final class CreateProcessInstanceCommandImpl
+    extends CommandWithVariables<CreateProcessInstanceCommandImpl>
     implements CreateProcessInstanceCommandStep1,
         CreateProcessInstanceCommandStep2,
         CreateProcessInstanceCommandStep3 {
@@ -52,6 +51,7 @@ public final class CreateProcessInstanceCommandImpl
       final JsonMapper jsonMapper,
       final Duration requestTimeout,
       final Predicate<Throwable> retryPredicate) {
+    super(jsonMapper);
     this.asyncStub = asyncStub;
     this.requestTimeout = requestTimeout;
     this.retryPredicate = retryPredicate;
@@ -60,26 +60,9 @@ public final class CreateProcessInstanceCommandImpl
   }
 
   @Override
-  public CreateProcessInstanceCommandStep3 variables(final InputStream variables) {
-    ArgumentUtil.ensureNotNull("variables", variables);
-    return setVariables(jsonMapper.validateJson("variables", variables));
-  }
-
-  @Override
-  public CreateProcessInstanceCommandStep3 variables(final String variables) {
-    ArgumentUtil.ensureNotNull("variables", variables);
-    return setVariables(jsonMapper.validateJson("variables", variables));
-  }
-
-  @Override
-  public CreateProcessInstanceCommandStep3 variables(final Map<String, Object> variables) {
-    return variables((Object) variables);
-  }
-
-  @Override
-  public CreateProcessInstanceCommandStep3 variables(final Object variables) {
-    ArgumentUtil.ensureNotNull("variables", variables);
-    return setVariables(jsonMapper.toJson(variables));
+  protected CreateProcessInstanceCommandImpl setVariablesInternal(final String variables) {
+    builder.setVariables(variables);
+    return this;
   }
 
   @Override
@@ -147,10 +130,5 @@ public final class CreateProcessInstanceCommandImpl
     asyncStub
         .withDeadlineAfter(requestTimeout.toMillis(), TimeUnit.MILLISECONDS)
         .createProcessInstance(request, future);
-  }
-
-  private CreateProcessInstanceCommandStep3 setVariables(final String jsonDocument) {
-    builder.setVariables(jsonDocument);
-    return this;
   }
 }
