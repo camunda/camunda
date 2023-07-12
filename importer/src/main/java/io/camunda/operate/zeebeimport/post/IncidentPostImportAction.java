@@ -468,6 +468,7 @@ public class IncidentPostImportAction implements PostImportAction {
               "Process instance with the key {} was deleted. Incident post processing will be skipped for id {}.",
               i.getProcessInstanceKey(), i.getId());
           iterator.remove();
+          continue;
         } else {
           throw new OperateRuntimeException(String.format(
               "Process instance is not yet imported for incident processing. Incident id: %s, process instance id: %s",
@@ -500,8 +501,8 @@ public class IncidentPostImportAction implements PostImportAction {
         .source(new SearchSourceBuilder()
             .query(joinWithAnd(
                 termQuery(OperationTemplate.PROCESS_INSTANCE_KEY, processInstanceKey),
-                termQuery(OperationTemplate.TYPE, DELETE_PROCESS_INSTANCE),
-                termsQuery(OperationTemplate.STATE, SENT, COMPLETED)))
+                termQuery(OperationTemplate.TYPE, DELETE_PROCESS_INSTANCE.name()),
+                termsQuery(OperationTemplate.STATE, SENT.name(), COMPLETED.name())))
             .size(0));
     SearchResponse response = esClient.search(request, RequestOptions.DEFAULT);
     return response.getHits().getTotalHits().value > 0;

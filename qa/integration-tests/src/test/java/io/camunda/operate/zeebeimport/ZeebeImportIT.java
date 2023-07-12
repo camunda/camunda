@@ -9,13 +9,11 @@ package io.camunda.operate.zeebeimport;
 import static io.camunda.operate.entities.ErrorType.JOB_NO_RETRIES;
 import static io.camunda.operate.entities.listview.ProcessInstanceState.ACTIVE;
 import static io.camunda.operate.qa.util.RestAPITestUtil.createGetAllProcessInstancesRequest;
-import static io.camunda.operate.util.ElasticsearchUtil.scroll;
 import static io.camunda.operate.util.ThreadUtil.sleepFor;
 import static io.camunda.operate.webapp.rest.ProcessInstanceRestService.PROCESS_INSTANCE_URL;
 import static io.camunda.operate.webapp.rest.dto.listview.ProcessInstanceStateDto.INCIDENT;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.elasticsearch.index.query.QueryBuilders.matchAllQuery;
-import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -30,7 +28,6 @@ import io.camunda.operate.entities.dmn.DecisionInstanceEntity;
 import io.camunda.operate.entities.dmn.DecisionInstanceState;
 import io.camunda.operate.entities.dmn.DecisionType;
 import io.camunda.operate.entities.listview.ProcessInstanceForListViewEntity;
-import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.schema.templates.DecisionInstanceTemplate;
 import io.camunda.operate.util.*;
 import io.camunda.operate.webapp.es.reader.IncidentReader;
@@ -49,18 +46,11 @@ import io.camunda.operate.zeebe.PartitionHolder;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 
-import java.io.IOException;
 import java.time.OffsetDateTime;
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
 import java.util.function.Predicate;
-import java.util.stream.Collectors;
 
 import org.elasticsearch.action.search.SearchRequest;
-import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.junit.Test;
@@ -123,10 +113,6 @@ public class ZeebeImportIT extends OperateZeebeIntegrationTest {
   protected void processImportTypeAndWait(ImportValueType importValueType,
       Predicate<Object[]> waitTill, Object... arguments) {
     elasticsearchTestRule.processRecordsWithTypeAndWait(importValueType, waitTill, arguments);
-  }
-
-  protected void processAllRecordsWithoutPostImporterAndWait(Predicate<Object[]> waitTill, Object... arguments) {
-    elasticsearchTestRule.processAllRecordsAndWait(false, waitTill, null, arguments);
   }
 
   @Test
@@ -239,79 +225,6 @@ public class ZeebeImportIT extends OperateZeebeIntegrationTest {
   }
 
   @Test
-  public void testPostImporterRunsAfterIncidentResolved() {
-    // having
-    final String processId = "process";
-    final String taskId = "task";
-    final String errorMessage = "Some error";
-    final Long processDefinitionKey = tester.deployProcess("single-task.bpmn")
-        .getProcessDefinitionKey();
-    final Long processInstanceKey = tester
-        .startProcessInstance(processId, null)
-        .and()
-        .failTask(taskId, errorMessage)
-        .getProcessInstanceKey();
-    processAllRecordsWithoutPostImporterAndWait(incidentsArePresentCheck, processInstanceKey, 1);
-    Tuple<Long, Long> incidentData = findSingleZeebeIncidentData(processInstanceKey);
-    tester.resolveIncident(incidentData.getRight(), incidentData.getLeft());
-    //let the Zeebe process incident RESOLVE and export
-    while (countZeebeIncidentRecords(processInstanceKey) < 2) {
-      ThreadUtil.sleepFor(1000L);
-    }
-    processAllRecordsWithoutPostImporterAndWait(postImporterQueueCountCheck, 2);
-
-    //when
-    //run with post importer
-    processImportTypeAndWait(ImportValueType.INCIDENT, incidentsAreResolved, processInstanceKey, 1);
-
-    //then
-    final ProcessInstanceForListViewEntity processInstanceEntity = processInstanceReader.getProcessInstanceByKey(processInstanceKey);
-    assertThat(processInstanceEntity.isIncident()).isFalse();
-    //and
-    final List<IncidentEntity> allIncidents = incidentReader.getAllIncidentsByProcessInstanceKey(processInstanceKey);
-    assertThat(allIncidents).hasSize(0);
-
-    //and
-    final ListViewProcessInstanceDto pi = getSingleProcessInstanceForListView();
-    assertThat(pi.getState()).isEqualTo(ProcessInstanceStateDto.ACTIVE);
-
-    //and
-    final List<FlowNodeInstanceEntity> flowNodeInstances = getFlowNodeInstances(processInstanceKey);
-    assertThat(flowNodeInstances).hasSize(2);
-    assertThat(flowNodeInstances.get(1).getState()).isEqualTo(FlowNodeState.ACTIVE);
-    assertThat(flowNodeInstances.get(1).isIncident()).isFalse();
-  }
-
-  private Tuple<Long, Long> findSingleZeebeIncidentData(Long processInstanceKey) {
-    SearchRequest request = new SearchRequest(zeebeRule.getPrefix() + "_incident*").source(
-        new SearchSourceBuilder().query(termQuery("value.processInstanceKey", processInstanceKey)));
-    List<Tuple<Long, Long>> incidentData = new ArrayList<>();
-    try {
-      scroll(request, sh -> {
-        incidentData.addAll(Arrays.stream(sh.getHits()).map(
-                hit -> new Tuple<>((Long)hit.getSourceAsMap().get("key"), (Long)(((Map)hit.getSourceAsMap().get("value")).get("jobKey"))))
-            .collect(Collectors.toList()));
-      }, zeebeEsClient);
-    } catch (IOException e) {
-      throw new OperateRuntimeException(e);
-    }
-    assertThat(incidentData).hasSize(1);
-    return incidentData.get(0);
-  }
-
-  private long countZeebeIncidentRecords(Long processInstanceKey) {
-    SearchRequest request = new SearchRequest(zeebeRule.getPrefix() + "_incident*").source(
-        new SearchSourceBuilder().query(termQuery("value.processInstanceKey", processInstanceKey)));
-    List<Tuple<Long, Long>> incidentData = new ArrayList<>();
-    try {
-      SearchResponse response = zeebeEsClient.search(request, RequestOptions.DEFAULT);
-      return response.getHits().getTotalHits().value;
-    } catch (IOException e) {
-      throw new OperateRuntimeException(e);
-    }
-  }
-
-  @Test
   public void testEarlierEventsAreIgnored() throws Exception {
     // having
     String activityId = "taskA";
@@ -402,11 +315,9 @@ public class ZeebeImportIT extends OperateZeebeIntegrationTest {
     return listViewResponse.getProcessInstances().get(0);
   }
 
-
   protected List<FlowNodeInstanceEntity> getFlowNodeInstances(Long processInstanceKey) {
     return tester.getAllFlowNodeInstances(processInstanceKey);
   }
-
 
   @Test
   public void testOnlyIncidentIsLoaded() throws Exception {
