@@ -152,12 +152,10 @@ public final class BroadcastSignalTest extends ClientTest {
 
   public static class Variables {
 
-    private final String foo = "bar";
-
     Variables() {}
 
     public String getFoo() {
-      return foo;
+      return "bar";
     }
   }
 }
