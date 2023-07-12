@@ -17,7 +17,8 @@ package io.camunda.zeebe.protocol.record.intent;
 
 public enum ResourceDeletionIntent implements Intent {
   DELETE(0),
-  DELETED(1);
+  DELETING(1),
+  DELETED(2);
 
   private final short value;
 
@@ -39,6 +40,8 @@ public enum ResourceDeletionIntent implements Intent {
       case 0:
         return DELETE;
       case 1:
+        return DELETING;
+      case 2:
         return DELETED;
       default:
         return Intent.UNKNOWN;
