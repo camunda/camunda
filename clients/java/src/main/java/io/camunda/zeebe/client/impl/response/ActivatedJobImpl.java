@@ -19,6 +19,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.camunda.zeebe.client.api.JsonMapper;
 import io.camunda.zeebe.client.api.response.ActivatedJob;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass;
+import java.util.HashMap;
 import java.util.Map;
 
 public final class ActivatedJobImpl implements ActivatedJob {
@@ -44,7 +45,12 @@ public final class ActivatedJobImpl implements ActivatedJob {
 
     key = job.getKey();
     type = job.getType();
-    customHeaders = jsonMapper.fromJsonAsStringMap(job.getCustomHeaders());
+
+    // the default value of a string in Protobuf is an empty string, so this could fail if no
+    // headers were given
+    final String customHeaders = job.getCustomHeaders();
+    this.customHeaders =
+        customHeaders.isEmpty() ? new HashMap<>() : jsonMapper.fromJsonAsStringMap(customHeaders);
     worker = job.getWorker();
     retries = job.getRetries();
     deadline = job.getDeadline();
