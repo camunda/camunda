@@ -61,6 +61,13 @@ public final class DbElementInstanceState implements MutableElementInstanceState
 
   private final MutableVariableState variableState;
 
+  private final DbLong processDefinitionKey;
+  private final DbCompositeKey<DbLong, DbLong> processInstanceKeyByProcessDefinitionKey;
+
+  /** [process definition key | process instance key] => [Nil] */
+  private final ColumnFamily<DbCompositeKey<DbLong, DbLong>, DbNil>
+      processInstanceKeyByProcessDefinitionKeyColumnFamily;
+
   public DbElementInstanceState(
       final ZeebeDb<ZbColumnFamilies> zeebeDb,
       final TransactionContext transactionContext,
@@ -111,6 +118,16 @@ public final class DbElementInstanceState implements MutableElementInstanceState
             transactionContext,
             numberOfTakenSequenceFlowsKey,
             numberOfTakenSequenceFlows);
+
+    processDefinitionKey = new DbLong();
+    processInstanceKeyByProcessDefinitionKey =
+        new DbCompositeKey<>(processDefinitionKey, elementInstanceKey);
+    processInstanceKeyByProcessDefinitionKeyColumnFamily =
+        zeebeDb.createColumnFamily(
+            ZbColumnFamilies.PROCESS_INSTANCE_KEY_BY_DEFINITION_KEY,
+            transactionContext,
+            processInstanceKeyByProcessDefinitionKey,
+            DbNil.INSTANCE);
   }
 
   @Override
