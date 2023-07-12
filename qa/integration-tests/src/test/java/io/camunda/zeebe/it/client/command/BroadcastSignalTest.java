@@ -10,6 +10,7 @@ package io.camunda.zeebe.it.client.command;
 
 import static io.camunda.zeebe.test.util.record.RecordingExporter.signalRecords;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.zeebe.broker.test.EmbeddedBrokerRule;
 import io.camunda.zeebe.it.util.GrpcClientRule;
@@ -99,5 +100,43 @@ public class BroadcastSignalTest {
     Assertions.assertThat(record.getValue()).hasSignalName(signalName);
 
     assertThat(record.getValue().getVariables()).containsExactlyInAnyOrderEntriesOf(variables);
+  }
+
+  @Test
+  public void shouldBroadcastSignalWithSingleVariable() {
+    // when
+    final String key = "key";
+    final String value = "value";
+
+    CLIENT_RULE
+        .getClient()
+        .newBroadcastSignalCommand()
+        .signalName(signalName)
+        .variable(key, value)
+        .send()
+        .join();
+
+    // then
+    final Record<SignalRecordValue> record =
+        signalRecords(SignalIntent.BROADCASTED).withSignalName(signalName).getFirst();
+    Assertions.assertThat(record.getValue()).hasSignalName(signalName);
+
+    assertThat(record.getValue().getVariables())
+        .containsExactlyInAnyOrderEntriesOf(Map.of(key, value));
+  }
+
+  @Test
+  public void shouldThrowErrorWhenTryToBroadcastSignalWithNullVariable() {
+    // when
+    assertThatThrownBy(
+            () ->
+                CLIENT_RULE
+                    .getClient()
+                    .newBroadcastSignalCommand()
+                    .signalName(signalName)
+                    .variable(null, null)
+                    .send()
+                    .join())
+        .isInstanceOf(IllegalArgumentException.class);
   }
 }
