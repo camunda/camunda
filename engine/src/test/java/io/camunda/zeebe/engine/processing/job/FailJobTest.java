@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.job;
 
+import static io.camunda.zeebe.protocol.record.intent.IncidentIntent.CREATED;
 import static io.camunda.zeebe.protocol.record.intent.JobIntent.FAIL;
 import static io.camunda.zeebe.protocol.record.intent.JobIntent.FAILED;
 import static io.camunda.zeebe.test.util.record.RecordingExporter.jobRecords;
@@ -21,6 +22,7 @@ import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.JobBatchIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
+import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
 import io.camunda.zeebe.protocol.record.value.JobBatchRecordValue;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
 import io.camunda.zeebe.test.util.Strings;
@@ -37,6 +39,8 @@ import org.junit.Test;
 public final class FailJobTest {
 
   @ClassRule public static final EngineRule ENGINE = EngineRule.singlePartition();
+
+  private static final int MAX_MESSAGE_SIZE = 500;
   private static final String PROCESS_ID = "process";
   private static String jobType;
 
@@ -271,5 +275,26 @@ public final class FailJobTest {
     // then
     Assertions.assertThat(jobRecord).hasRejectionType(RejectionType.INVALID_STATE);
     assertThat(jobRecord.getRejectionReason()).contains("is in state 'ERROR_THROWN'");
+  }
+
+  @Test
+  public void shouldTruncateErrorMessage() {
+    // given
+    final Record<JobRecordValue> job = ENGINE.createJob(jobType, PROCESS_ID);
+    final String exceedingErrorMessage = "*".repeat(MAX_MESSAGE_SIZE + 1);
+
+    // when
+    final Record<JobRecordValue> failedRecord =
+        ENGINE.job().withKey(job.getKey()).withErrorMessage(exceedingErrorMessage).fail();
+
+    final Record<IncidentRecordValue> incident =
+        RecordingExporter.incidentRecords(CREATED).getFirst();
+
+    // then
+    Assertions.assertThat(failedRecord).hasRecordType(RecordType.EVENT).hasIntent(FAILED);
+
+    final String expectedErrorMessage = "*".repeat(MAX_MESSAGE_SIZE).concat("...");
+    assertThat(failedRecord.getValue().getErrorMessage()).isEqualTo(expectedErrorMessage);
+    assertThat(incident.getValue().getErrorMessage()).isEqualTo(expectedErrorMessage);
   }
 }
