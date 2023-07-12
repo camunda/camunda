@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.job;
 
+import static io.camunda.zeebe.util.StringUtil.limitString;
 import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 
 import io.camunda.zeebe.engine.api.TypedRecord;
@@ -32,6 +33,7 @@ import org.agrona.DirectBuffer;
 public final class JobFailProcessor implements TypedRecordProcessor<JobRecord> {
 
   private static final DirectBuffer DEFAULT_ERROR_MESSAGE = wrapString("No more retries left.");
+  private static final int MAX_ERROR_MESSAGE_SIZE = 500;
   private final IncidentRecord incidentEvent = new IncidentRecord();
 
   private final JobState jobState;
@@ -86,7 +88,8 @@ public final class JobFailProcessor implements TypedRecordProcessor<JobRecord> {
 
     final JobRecord failedJob = jobState.getJob(jobKey);
     failedJob.setRetries(retries);
-    failedJob.setErrorMessage(failJobCommandRecord.getErrorMessageBuffer());
+    failedJob.setErrorMessage(
+        limitString(failJobCommandRecord.getErrorMessage(), MAX_ERROR_MESSAGE_SIZE));
     failedJob.setRetryBackoff(retryBackOff);
     failedJob.setVariables(failJobCommandRecord.getVariablesBuffer());
 
