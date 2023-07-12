@@ -28,6 +28,7 @@ import java.io.ByteArrayInputStream;
 import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
+import org.assertj.core.api.Assertions;
 import org.junit.Test;
 
 public final class PublishMessageTest extends ClientTest {
@@ -131,6 +132,39 @@ public final class PublishMessageTest extends ClientTest {
     // then
     final PublishMessageRequest request = gatewayService.getLastRequest();
     assertThat(fromJsonAsMap(request.getVariables())).contains(entry("foo", "bar"));
+  }
+
+  @Test
+  public void shouldPublishMessageWithSingleVariable() {
+    // when
+    final String key = "key";
+    final String value = "value";
+    client
+        .newPublishMessageCommand()
+        .messageName("name")
+        .correlationKey("key")
+        .variable(key, value)
+        .send()
+        .join();
+
+    // then
+    final PublishMessageRequest request = gatewayService.getLastRequest();
+    assertThat(fromJsonAsMap(request.getVariables())).contains(entry(key, value));
+  }
+
+  @Test
+  public void shouldThrowErrorWhenTryToPublishMessageWithNullVariable() {
+    // when
+    Assertions.assertThatThrownBy(
+            () ->
+                client
+                    .newPublishMessageCommand()
+                    .messageName("name")
+                    .correlationKey("key")
+                    .variable(null, null)
+                    .send()
+                    .join())
+        .isInstanceOf(IllegalArgumentException.class);
   }
 
   @Test
