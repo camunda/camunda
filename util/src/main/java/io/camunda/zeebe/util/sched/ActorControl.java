@@ -154,8 +154,8 @@ public class ActorControl implements ConcurrencyControl {
   /**
    * Scheduled a repeating timer
    *
-   * <p>The runnable is is executed while the actor is in the following actor lifecycle phases:
-   * {@link ActorLifecyclePhase#STARTED}
+   * <p>The runnable is executed while the actor is in the following actor lifecycle phases: {@link
+   * ActorLifecyclePhase#STARTED}
    *
    * @param delay
    * @param runnable
@@ -186,8 +186,8 @@ public class ActorControl implements ConcurrencyControl {
    * call does not block the actor. If close is requested the actor will not wait on this future, in
    * this case the callback is never called.
    *
-   * <p>The callback is is executed while the actor is in the following actor lifecycle phases:
-   * {@link ActorLifecyclePhase#STARTED}
+   * <p>The callback is executed while the actor is in the following actor lifecycle phases: {@link
+   * ActorLifecyclePhase#STARTED}
    *
    * @param future the future to wait on
    * @param callback the callback that handle the future's result. The throwable is <code>null
@@ -223,12 +223,12 @@ public class ActorControl implements ConcurrencyControl {
   }
 
   /**
-   * Like {@link #run(Runnable)} but submits the runnable to the end end of the actor's queue such
-   * that other other actions may be executed before this. This method is useful in case an actor is
-   * in a (potentially endless) loop and it should be able to interrupt it.
+   * Like {@link #run(Runnable)} but submits the runnable to the end of the actor's queue such that
+   * other actions may be executed before this. This method is useful in case an actor is in a
+   * (potentially endless) loop, and it should be able to interrupt it.
    *
-   * <p>The runnable is is executed while the actor is in the following actor lifecycle phases:
-   * {@link ActorLifecyclePhase#STARTED}
+   * <p>The runnable is executed while the actor is in the following actor lifecycle phases: {@link
+   * ActorLifecyclePhase#STARTED}
    *
    * @param action the action to run.
    */
@@ -255,10 +255,10 @@ public class ActorControl implements ConcurrencyControl {
   /**
    * Invoke the callback when the given future is completed (successfully or exceptionally). This
    * call does not block the actor. If close is requested the actor will wait on this future and not
-   * change the phase, in this case the callback will eventually called.
+   * change the phase, in this case the callback will eventually be called.
    *
-   * <p>The callback is is executed while the actor is in the following actor lifecycle phases:
-   * {@link ActorLifecyclePhase#STARTED}
+   * <p>The callback is executed while the actor is in the following actor lifecycle phases: {@link
+   * ActorLifecyclePhase#STARTED}
    *
    * @param future the future to wait on
    * @param callback the callback that handle the future's result. The throwable is <code>null
@@ -300,8 +300,8 @@ public class ActorControl implements ConcurrencyControl {
    * Invoke the callback when the given futures are completed (successfully or exceptionally). This
    * call does not block the actor.
    *
-   * <p>The callback is is executed while the actor is in the following actor lifecycle phases:
-   * {@link ActorLifecyclePhase#STARTED}
+   * <p>The callback is executed while the actor is in the following actor lifecycle phases: {@link
+   * ActorLifecyclePhase#STARTED}
    *
    * @param futures the futures to wait on
    * @param callback The throwable is <code>null</code> when all futures are completed successfully.
