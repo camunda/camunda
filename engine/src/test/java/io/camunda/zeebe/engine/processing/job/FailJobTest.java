@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.job;
 
+import static io.camunda.zeebe.engine.EngineConfiguration.DEFAULT_MAX_ERROR_MESSAGE_SIZE;
 import static io.camunda.zeebe.protocol.record.intent.IncidentIntent.CREATED;
 import static io.camunda.zeebe.protocol.record.intent.JobIntent.FAIL;
 import static io.camunda.zeebe.protocol.record.intent.JobIntent.FAILED;
@@ -42,7 +43,6 @@ public final class FailJobTest {
 
   @ClassRule public static final EngineRule ENGINE = EngineRule.singlePartition();
 
-  private static final int MAX_MESSAGE_SIZE = 500;
   private static final String PROCESS_ID = "process";
   private static String jobType;
 
@@ -250,7 +250,6 @@ public final class FailJobTest {
     // given
     ENGINE.createJob(jobType, PROCESS_ID);
     final Record<JobBatchRecordValue> batchRecord = ENGINE.jobs().withType(jobType).activate();
-    final JobRecordValue job = batchRecord.getValue().getJobs().get(0);
     final long jobKey = batchRecord.getValue().getJobKeys().get(0);
 
     ENGINE.job().withKey(jobKey).complete();
@@ -324,7 +323,7 @@ public final class FailJobTest {
   public void shouldTruncateErrorMessage() {
     // given
     final Record<JobRecordValue> job = ENGINE.createJob(jobType, PROCESS_ID);
-    final String exceedingErrorMessage = "*".repeat(MAX_MESSAGE_SIZE + 1);
+    final String exceedingErrorMessage = "*".repeat(DEFAULT_MAX_ERROR_MESSAGE_SIZE + 1);
 
     // when
     final Record<JobRecordValue> failedRecord =
@@ -336,7 +335,27 @@ public final class FailJobTest {
     // then
     Assertions.assertThat(failedRecord).hasRecordType(RecordType.EVENT).hasIntent(FAILED);
 
-    final String expectedErrorMessage = "*".repeat(MAX_MESSAGE_SIZE).concat("...");
+    final String expectedErrorMessage = "*".repeat(DEFAULT_MAX_ERROR_MESSAGE_SIZE).concat("...");
+    assertThat(failedRecord.getValue().getErrorMessage()).isEqualTo(expectedErrorMessage);
+    assertThat(incident.getValue().getErrorMessage()).isEqualTo(expectedErrorMessage);
+  }
+
+  @Test
+  public void shouldNotTruncateErrorMessage() {
+    // given
+    final Record<JobRecordValue> job = ENGINE.createJob(jobType, PROCESS_ID);
+    final String errorMessage = "*".repeat(DEFAULT_MAX_ERROR_MESSAGE_SIZE);
+
+    // when
+    final Record<JobRecordValue> failedRecord =
+        ENGINE.job().withKey(job.getKey()).withErrorMessage(errorMessage).fail();
+
+    final var incident = RecordingExporter.incidentRecords(CREATED).getFirst();
+
+    // then
+    Assertions.assertThat(failedRecord).hasRecordType(RecordType.EVENT).hasIntent(FAILED);
+
+    final String expectedErrorMessage = "*".repeat(DEFAULT_MAX_ERROR_MESSAGE_SIZE);
     assertThat(failedRecord.getValue().getErrorMessage()).isEqualTo(expectedErrorMessage);
     assertThat(incident.getValue().getErrorMessage()).isEqualTo(expectedErrorMessage);
   }
