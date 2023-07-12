@@ -39,6 +39,8 @@ camunda-platform:
       value: "-XX:MaxRAMFraction=1"
     - name: SPRING_PROFILES_ACTIVE
       value: "dev-data,preview"
+    - name: CAMUNDA_TASKLIST_CLOUD_CLUSTERID
+      value: "preview-env"
     resources:
       limits:
         cpu: 1
