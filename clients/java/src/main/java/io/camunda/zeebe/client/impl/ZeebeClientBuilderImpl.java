@@ -40,6 +40,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Properties;
+import java.util.concurrent.ScheduledExecutorService;
 
 public final class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeClientConfiguration {
   public static final String PLAINTEXT_CONNECTION_VAR = "ZEEBE_INSECURE_CONNECTION";
@@ -66,6 +67,8 @@ public final class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeCl
   private JsonMapper jsonMapper = new ZeebeObjectMapper();
   private String overrideAuthority;
   private int maxMessageSize = 4 * ONE_MB;
+  private ScheduledExecutorService jobWorkerExecutor;
+  private boolean ownsJobWorkerExecutor;
 
   @Override
   public String getGatewayAddress() {
@@ -145,6 +148,16 @@ public final class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeCl
   @Override
   public int getMaxMessageSize() {
     return maxMessageSize;
+  }
+
+  @Override
+  public ScheduledExecutorService jobWorkerExecutor() {
+    return jobWorkerExecutor;
+  }
+
+  @Override
+  public boolean ownsJobWorkerExecutor() {
+    return ownsJobWorkerExecutor;
   }
 
   @Override
@@ -237,43 +250,51 @@ public final class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeCl
 
   @Override
   public ZeebeClientBuilder numJobWorkerExecutionThreads(final int numSubscriptionThreads) {
-    this.numJobWorkerExecutionThreads = numSubscriptionThreads;
+    numJobWorkerExecutionThreads = numSubscriptionThreads;
+    return this;
+  }
+
+  @Override
+  public ZeebeClientBuilder jobWorkerExecutor(
+      final ScheduledExecutorService executor, final boolean takeOwnership) {
+    jobWorkerExecutor = executor;
+    ownsJobWorkerExecutor = takeOwnership;
     return this;
   }
 
   @Override
   public ZeebeClientBuilder defaultJobWorkerName(final String workerName) {
-    this.defaultJobWorkerName = workerName;
+    defaultJobWorkerName = workerName;
     return this;
   }
 
   @Override
   public ZeebeClientBuilder defaultJobTimeout(final Duration timeout) {
-    this.defaultJobTimeout = timeout;
+    defaultJobTimeout = timeout;
     return this;
   }
 
   @Override
   public ZeebeClientBuilder defaultJobPollInterval(final Duration pollInterval) {
-    this.defaultJobPollInterval = pollInterval;
+    defaultJobPollInterval = pollInterval;
     return this;
   }
 
   @Override
   public ZeebeClientBuilder defaultMessageTimeToLive(final Duration timeToLive) {
-    this.defaultMessageTimeToLive = timeToLive;
+    defaultMessageTimeToLive = timeToLive;
     return this;
   }
 
   @Override
   public ZeebeClientBuilder defaultRequestTimeout(final Duration requestTimeout) {
-    this.defaultRequestTimeout = requestTimeout;
+    defaultRequestTimeout = requestTimeout;
     return this;
   }
 
   @Override
   public ZeebeClientBuilder usePlaintext() {
-    this.usePlaintextConnection = true;
+    usePlaintextConnection = true;
     return this;
   }
 
@@ -313,7 +334,7 @@ public final class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeCl
 
   @Override
   public ZeebeClientBuilder overrideAuthority(final String authority) {
-    this.overrideAuthority = authority;
+    overrideAuthority = authority;
     return this;
   }
 
@@ -376,6 +397,8 @@ public final class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeCl
     appendProperty(sb, "defaultRequestTimeout", defaultRequestTimeout);
     appendProperty(sb, "overrideAuthority", overrideAuthority);
     appendProperty(sb, "maxMessageSize", maxMessageSize);
+    appendProperty(sb, "jobWorkerExecutor", jobWorkerExecutor);
+    appendProperty(sb, "ownsJobWorkerExecutor", ownsJobWorkerExecutor);
 
     return sb.toString();
   }

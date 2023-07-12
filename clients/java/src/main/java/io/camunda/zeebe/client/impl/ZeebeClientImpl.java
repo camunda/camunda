@@ -56,6 +56,7 @@ import io.camunda.zeebe.client.impl.command.ResolveIncidentCommandImpl;
 import io.camunda.zeebe.client.impl.command.SetVariablesCommandImpl;
 import io.camunda.zeebe.client.impl.command.StreamJobsCommandImpl;
 import io.camunda.zeebe.client.impl.command.TopologyRequestImpl;
+import io.camunda.zeebe.client.impl.util.ExecutorResource;
 import io.camunda.zeebe.client.impl.util.VersionUtil;
 import io.camunda.zeebe.client.impl.worker.JobClientImpl;
 import io.camunda.zeebe.client.impl.worker.JobWorkerBuilderImpl;
@@ -83,7 +84,7 @@ public final class ZeebeClientImpl implements ZeebeClient {
   private final JsonMapper jsonMapper;
   private final GatewayStub asyncStub;
   private final ManagedChannel channel;
-  private final ScheduledExecutorService executorService;
+  private final ExecutorResource executorResource;
   private final List<Closeable> closeables = new CopyOnWriteArrayList<>();
   private final JobClient jobClient;
   private final CredentialsProvider credentialsProvider;
@@ -108,12 +109,12 @@ public final class ZeebeClientImpl implements ZeebeClient {
       final ZeebeClientConfiguration config,
       final ManagedChannel channel,
       final GatewayStub gatewayStub,
-      final ScheduledExecutorService executorService) {
+      final ExecutorResource executorResource) {
     this.config = config;
     jsonMapper = config.getJsonMapper();
     this.channel = channel;
     asyncStub = gatewayStub;
-    this.executorService = executorService;
+    this.executorResource = executorResource;
 
     if (config.getCredentialsProvider() != null) {
       credentialsProvider = config.getCredentialsProvider();
@@ -191,10 +192,16 @@ public final class ZeebeClientImpl implements ZeebeClient {
     return gatewayStub;
   }
 
-  private static ScheduledExecutorService buildExecutorService(
+  private static ExecutorResource buildExecutorService(
       final ZeebeClientConfiguration configuration) {
+    if (configuration.jobWorkerExecutor() != null) {
+      return new ExecutorResource(
+          configuration.jobWorkerExecutor(), configuration.ownsJobWorkerExecutor());
+    }
+
     final int threadCount = configuration.getNumJobWorkerExecutionThreads();
-    return Executors.newScheduledThreadPool(threadCount);
+    final ScheduledExecutorService executor = Executors.newScheduledThreadPool(threadCount);
+    return new ExecutorResource(executor, true);
   }
 
   @Override
@@ -219,18 +226,7 @@ public final class ZeebeClientImpl implements ZeebeClient {
           }
         });
 
-    executorService.shutdownNow();
-
-    try {
-      if (!executorService.awaitTermination(15, TimeUnit.SECONDS)) {
-        throw new ClientException(
-            "Timed out awaiting termination of job worker executor after 15 seconds");
-      }
-    } catch (final InterruptedException e) {
-      throw new ClientException(
-          "Unexpected interrupted awaiting termination of job worker executor", e);
-    }
-
+    executorResource.close();
     channel.shutdownNow();
 
     try {
@@ -341,7 +337,7 @@ public final class ZeebeClientImpl implements ZeebeClient {
 
   @Override
   public JobWorkerBuilderStep1 newWorker() {
-    return new JobWorkerBuilderImpl(config, jobClient, executorService, closeables);
+    return new JobWorkerBuilderImpl(config, jobClient, executorResource.executor(), closeables);
   }
 
   @Override

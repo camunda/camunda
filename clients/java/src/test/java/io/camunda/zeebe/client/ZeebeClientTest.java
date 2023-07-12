@@ -26,6 +26,7 @@ import static io.camunda.zeebe.client.impl.util.DataSizeUtil.ONE_MB;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import io.camunda.zeebe.client.api.worker.JobWorker;
 import io.camunda.zeebe.client.impl.NoopCredentialsProvider;
 import io.camunda.zeebe.client.impl.ZeebeClientBuilderImpl;
 import io.camunda.zeebe.client.impl.oauth.OAuthCredentialsProvider;
@@ -35,6 +36,9 @@ import io.camunda.zeebe.client.util.ClientTest;
 import java.io.FileNotFoundException;
 import java.time.Duration;
 import java.util.Properties;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -370,6 +374,56 @@ public final class ZeebeClientTest extends ClientTest {
           .isInstanceOf(OAuthCredentialsProvider.class);
       assertThat(clientConfiguration.getGatewayAddress())
           .isEqualTo(String.format("clusterId.%s.zeebe.camunda.io:443", defaultRegion));
+    }
+  }
+
+  @Test
+  public void shouldCloseOwnedExecutorOnClose() {
+    // given
+    final ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
+    try (final ZeebeClient client =
+        ZeebeClient.newClientBuilder().jobWorkerExecutor(executor, true).build()) {
+      // when
+      client.close();
+
+      // then
+      assertThat(executor.isShutdown()).isTrue();
+    }
+  }
+
+  @Test
+  public void shouldNotCloseNotOwnedExecutor() {
+    // given
+    final ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
+    try (final ZeebeClient client =
+        ZeebeClient.newClientBuilder().jobWorkerExecutor(executor, false).build()) {
+      // when
+      client.close();
+
+      // then
+      assertThat(executor.isShutdown()).isFalse();
+    }
+
+    executor.shutdownNow();
+  }
+
+  @Test
+  public void shouldUseCustomExecutorWithJobWorker() {
+    // given
+    final ScheduledThreadPoolExecutor executor = new ScheduledThreadPoolExecutor(1);
+    try (final ZeebeClient client =
+            ZeebeClient.newClientBuilder().jobWorkerExecutor(executor).build();
+        final JobWorker ignored =
+            client
+                .newWorker()
+                .jobType("type")
+                .handler((c, j) -> {})
+                .pollInterval(Duration.ZERO)
+                .open()) {
+      // when - then - polling should be scheduled immediately on open, but may fail faster than
+      // we assert here, so we need to check both the scheduled count and the completed task count
+      // to see if anything has happened
+      assertThat(executor.getActiveCount() + executor.getCompletedTaskCount()).isPositive();
     }
   }
 }
