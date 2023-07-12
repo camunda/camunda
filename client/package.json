@@ -79,7 +79,7 @@
     "http-proxy-middleware": "2.0.6",
     "husky": "8.0.3",
     "lint-staged": "13.2.3",
-    "monaco-editor": "0.39.0",
+    "monaco-editor": "0.40.0",
     "msw": "1.2.2",
     "prettier": "3.0.0",
     "react-scripts": "5.0.1",
