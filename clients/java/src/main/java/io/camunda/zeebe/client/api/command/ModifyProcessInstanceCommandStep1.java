@@ -162,5 +162,31 @@ public interface ModifyProcessInstanceCommandStep1 {
      * @return the builder for this command
      */
     ModifyProcessInstanceCommandStep3 withVariables(final Object variables, final String scopeId);
+
+    /**
+     * Create a {@link
+     * io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ModifyProcessInstanceRequest.VariableInstruction}
+     * for the element that's getting activated. These variable will be created in the global scope
+     * of the process instance.
+     *
+     * @param key the key of the variable to be serialized to JSON
+     * @param value the value of the variable to be serialized to JSON
+     * @return the builder for this command
+     */
+    ModifyProcessInstanceCommandStep3 withVariable(final String key, final Object value);
+
+    /**
+     * Create a {@link
+     * io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ModifyProcessInstanceRequest.VariableInstruction}
+     * for the element that's getting activated. These variable will be created in the scope of the
+     * passed element.
+     *
+     * @param key the key of the variable to be serialized to JSON
+     * @param value the value of the variable to be serialized to JSON
+     * @param scopeId the id of the element in which scope the variable should be created
+     * @return the builder for this command
+     */
+    ModifyProcessInstanceCommandStep3 withVariable(
+        final String key, final Object value, final String scopeId);
   }
 }
