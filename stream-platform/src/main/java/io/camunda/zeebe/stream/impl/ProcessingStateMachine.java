@@ -269,14 +269,17 @@ public final class ProcessingStateMachine {
         processingMetrics.observeCommandCount(processedCommandsCount);
       }
 
+      finalizeCommandProcessing();
+
       if (currentProcessingResult.isEmpty()) {
-        skipRecord();
+        updateState();
+
+        notifySkippedListener(currentRecord);
+        metrics.eventSkipped();
         return;
       }
 
-      lastProcessedPositionState.markAsProcessed(typedCommand.getPosition());
       writeRecords();
-      processedCommandsCount = 0;
     } catch (final RecoverableException recoverableException) {
       // recoverable
       LOG.error(
@@ -310,6 +313,17 @@ public final class ProcessingStateMachine {
             writeRecords();
           });
     }
+  }
+
+  /**
+   * Finalize the command processing, which includes certain clean-up tasks, like mark the command
+   * as processed and reset transient processing state, etc.
+   *
+   * <p>Should be called after processing or error handling is done.
+   */
+  private void finalizeCommandProcessing() {
+    lastProcessedPositionState.markAsProcessed(typedCommand.getPosition());
+    processedCommandsCount = 0;
   }
 
   /**
@@ -449,7 +463,7 @@ public final class ProcessingStateMachine {
           // we need to mark the command as processed, even if the processing failed
           // otherwise we might replay the events, which have been written during
           // #onProcessingError again on restart
-          lastProcessedPositionState.markAsProcessed(typedCommand.getPosition());
+          finalizeCommandProcessing();
         });
   }
 

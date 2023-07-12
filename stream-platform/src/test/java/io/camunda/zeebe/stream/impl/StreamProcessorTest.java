@@ -18,6 +18,7 @@ import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doCallRealMethod;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
@@ -194,6 +195,25 @@ public final class StreamProcessorTest {
     final var defaultRecordProcessor = streamPlatform.getDefaultMockedRecordProcessor();
     final var processingError = new RuntimeException("processing error");
     doThrow(processingError).when(defaultRecordProcessor).process(any(), any());
+    streamPlatform.startStreamProcessor();
+
+    // when
+    streamPlatform.writeBatch(
+        RecordToWrite.command().processInstance(ACTIVATE_ELEMENT, Records.processInstance(1)),
+        RecordToWrite.event()
+            .processInstance(ELEMENT_ACTIVATING, Records.processInstance(1))
+            .causedBy(0));
+
+    // then
+    Awaitility.await("last processed position is updated")
+        .until(() -> streamPlatform.getLastSuccessfulProcessedRecordPosition(), pos -> pos >= 1);
+  }
+
+  @RegressionTest("not updated when instance was banned")
+  public void shouldUpdateLastProcessPositionEvenWhenProcessingSkippedCommand() {
+    // given
+    final var defaultRecordProcessor = streamPlatform.getDefaultMockedRecordProcessor();
+    doReturn(EmptyProcessingResult.INSTANCE).when(defaultRecordProcessor).process(any(), any());
     streamPlatform.startStreamProcessor();
 
     // when
