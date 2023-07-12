@@ -57,6 +57,7 @@ import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ResolveIncidentReques
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ResolveIncidentResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.SetVariablesRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.SetVariablesResponse;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.StreamActivatedJobsRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ThrowErrorRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ThrowErrorResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.TopologyRequest;
@@ -68,6 +69,8 @@ import io.grpc.StatusRuntimeException;
 import io.grpc.stub.StreamObserver;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -117,6 +120,7 @@ public final class RecordingGatewayService extends GatewayImplBase {
         DeleteResourceRequest.class, r -> DeleteResourceResponse.getDefaultInstance());
     addRequestHandler(
         BroadcastSignalRequest.class, r -> BroadcastSignalResponse.getDefaultInstance());
+    addRequestHandler(StreamActivatedJobsRequest.class, r -> ActivatedJob.getDefaultInstance());
   }
 
   public static Partition partition(
@@ -216,6 +220,13 @@ public final class RecordingGatewayService extends GatewayImplBase {
   public void activateJobs(
       final ActivateJobsRequest request,
       final StreamObserver<ActivateJobsResponse> responseObserver) {
+    handle(request, responseObserver);
+  }
+
+  @Override
+  public void streamActivatedJobs(
+      final StreamActivatedJobsRequest request,
+      final StreamObserver<ActivatedJob> responseObserver) {
     handle(request, responseObserver);
   }
 
@@ -435,6 +446,27 @@ public final class RecordingGatewayService extends GatewayImplBase {
     addRequestHandler(ActivateJobsRequest.class, () -> error);
   }
 
+  public void onStreamJobsRequest(final Throwable error) {
+    addRequestHandler(StreamActivatedJobsRequest.class, () -> error);
+  }
+
+  public void onStreamJobsRequest(final ActivatedJob... activatedJobs) {
+    final List<ActivatedJob> jobs = Arrays.asList(activatedJobs);
+    addRequestHandler(
+        StreamActivatedJobsRequest.class,
+        new RequestHandler<StreamActivatedJobsRequest, ActivatedJob>() {
+          @Override
+          public ActivatedJob handle(final StreamActivatedJobsRequest request) {
+            throw new UnsupportedOperationException();
+          }
+
+          @Override
+          public Collection<ActivatedJob> handleMultiple(final StreamActivatedJobsRequest request) {
+            return jobs;
+          }
+        });
+  }
+
   public void onSetVariablesRequest(final long key) {
     addRequestHandler(
         SetVariablesRequest.class,
@@ -483,9 +515,9 @@ public final class RecordingGatewayService extends GatewayImplBase {
     requests.add(request);
     try {
       final Class<? extends GeneratedMessageV3> requestType = request.getClass();
-      if (requestHandlers.containsKey(requestType)) {
-        final ResponseT response = (ResponseT) requestHandlers.get(requestType).handle(request);
-        responseObserver.onNext(response);
+      final RequestHandler<RequestT, ResponseT> requestHandler = requestHandlers.get(requestType);
+      if (requestHandler != null) {
+        requestHandler.handleMultiple(request).forEach(responseObserver::onNext);
         responseObserver.onCompleted();
       } else if (errorHandlers.containsKey(requestType)) {
         final Throwable error = errorHandlers.get(requestType).get();
@@ -504,5 +536,9 @@ public final class RecordingGatewayService extends GatewayImplBase {
   interface RequestHandler<
       RequestT extends GeneratedMessageV3, ResponseT extends GeneratedMessageV3> {
     ResponseT handle(RequestT request) throws Exception;
+
+    default Collection<ResponseT> handleMultiple(final RequestT request) throws Exception {
+      return Collections.singleton(handle(request));
+    }
   }
 }
