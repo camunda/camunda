@@ -118,6 +118,20 @@ public final class CreateProcessInstanceTest extends ClientTest {
   }
 
   @Test
+  public void shouldCreateProcessInstanceWithSingleVariable() {
+    // given
+    final String key = "key";
+    final String value = "value";
+
+    // when
+    client.newCreateInstanceCommand().processDefinitionKey(123).variable(key, value).send().join();
+
+    // then
+    final CreateProcessInstanceRequest request = gatewayService.getLastRequest();
+    assertThat(fromJsonAsMap(request.getVariables())).containsOnly(entry(key, value));
+  }
+
+  @Test
   public void shouldCreateProcessInstanceWithMapVariables() {
     // when
     client

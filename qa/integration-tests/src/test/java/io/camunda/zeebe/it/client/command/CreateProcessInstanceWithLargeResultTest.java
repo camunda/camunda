@@ -63,4 +63,27 @@ public final class CreateProcessInstanceWithLargeResultTest {
     assertThat(processInstance.getVariables().getBytes(StandardCharsets.UTF_8))
         .hasSizeGreaterThan((int) ByteValue.ofMegabytes(10));
   }
+
+  @Test
+  public void shouldCreateInstanceWithLargeResultAndSingleVariable() {
+    // given
+    CLIENT_RULE.deployProcess(
+        Bpmn.createExecutableProcess("PROCESS").startEvent().endEvent().done());
+
+    // when
+    final ProcessInstanceResult processInstance =
+        CLIENT_RULE
+            .getClient()
+            .newCreateInstanceCommand()
+            .bpmnProcessId("PROCESS")
+            .latestVersion()
+            .variable("variable", "x".repeat((int) (ByteValue.ofMegabytes(10))))
+            .withResult()
+            .send()
+            .join();
+
+    // then
+    assertThat(processInstance.getVariables().getBytes(StandardCharsets.UTF_8))
+        .hasSizeGreaterThan((int) ByteValue.ofMegabytes(10));
+  }
 }

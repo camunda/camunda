@@ -199,6 +199,49 @@ public final class CreateProcessInstanceTest {
   }
 
   @Test
+  public void shouldCreateWithSingleVariable() {
+    // given
+    final String key = "key";
+    final String value = "value";
+
+    // when
+    final ProcessInstanceEvent event =
+        CLIENT_RULE
+            .getClient()
+            .newCreateInstanceCommand()
+            .bpmnProcessId(processId)
+            .latestVersion()
+            .variable(key, value)
+            .send()
+            .join();
+
+    // then
+    final var createdEvent =
+        RecordingExporter.processInstanceCreationRecords()
+            .withIntent(ProcessInstanceCreationIntent.CREATED)
+            .withInstanceKey(event.getProcessInstanceKey())
+            .getFirst();
+
+    assertThat(createdEvent.getValue().getVariables()).containsExactlyEntriesOf(Map.of(key, value));
+  }
+
+  @Test
+  public void shouldThrowErrorWhenTryToCreateInstanceWithNullVariable() {
+    // when
+    assertThatThrownBy(
+            () ->
+                CLIENT_RULE
+                    .getClient()
+                    .newCreateInstanceCommand()
+                    .bpmnProcessId(processId)
+                    .latestVersion()
+                    .variable(null, null)
+                    .send()
+                    .join())
+        .isInstanceOf(IllegalArgumentException.class);
+  }
+
+  @Test
   public void shouldRejectCompleteJobIfVariablesAreInvalid() {
     // when
     final var command =

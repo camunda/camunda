@@ -117,6 +117,24 @@ public final class CreateProcessInstanceWithResultTest extends ClientTest {
         .containsOnly(entry("foo", "bar"));
   }
 
+  @Test
+  public void shouldCreateProcessInstanceWithSingleVariable() {
+    // when
+    final String key = "key";
+    final String value = "value";
+    client
+        .newCreateInstanceCommand()
+        .processDefinitionKey(123)
+        .variable(key, value)
+        .withResult()
+        .send()
+        .join();
+
+    // then
+    final CreateProcessInstanceWithResultRequest request = gatewayService.getLastRequest();
+    assertThat(fromJsonAsMap(request.getRequest().getVariables())).containsOnly(entry(key, value));
+  }
+
   private static class VariablesPojo {
     String key;
 
