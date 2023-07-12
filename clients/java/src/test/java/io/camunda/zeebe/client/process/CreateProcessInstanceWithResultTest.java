@@ -66,15 +66,14 @@ public final class CreateProcessInstanceWithResultTest extends ClientTest {
     gatewayService.onCreateProcessInstanceWithResultRequest(123, "testProcess", 12, 32, variables);
 
     // when
-    final ProcessInstanceResult response =
-        client
-            .newCreateInstanceCommand()
-            .processDefinitionKey(123)
-            .withResult()
-            .fetchVariables("x")
-            .requestTimeout(Duration.ofSeconds(123))
-            .send()
-            .join();
+    client
+        .newCreateInstanceCommand()
+        .processDefinitionKey(123)
+        .withResult()
+        .fetchVariables("x")
+        .requestTimeout(Duration.ofSeconds(123))
+        .send()
+        .join();
 
     // then
     final CreateProcessInstanceWithResultRequest request = gatewayService.getLastRequest();

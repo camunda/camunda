@@ -236,12 +236,10 @@ public final class CreateProcessInstanceTest extends ClientTest {
 
   public static class VariableDocument {
 
-    private final String foo = "bar";
-
     VariableDocument() {}
 
     public String getFoo() {
-      return foo;
+      return "bar";
     }
   }
 }

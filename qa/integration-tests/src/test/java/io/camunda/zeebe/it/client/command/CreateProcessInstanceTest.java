@@ -253,7 +253,7 @@ public final class CreateProcessInstanceTest {
             .variables("[]")
             .send();
 
-    assertThatThrownBy(() -> command.join())
+    assertThatThrownBy(command::join)
         .isInstanceOf(ClientException.class)
         .hasMessageContaining(
             "Property 'variables' is invalid: Expected document to be a root level object, but was 'ARRAY'");
@@ -270,7 +270,7 @@ public final class CreateProcessInstanceTest {
             .latestVersion()
             .send();
 
-    assertThatThrownBy(() -> command.join())
+    assertThatThrownBy(command::join)
         .isInstanceOf(ClientException.class)
         .hasMessageContaining(
             "Expected to find process definition with process ID 'non-existing', but none found");
@@ -282,7 +282,7 @@ public final class CreateProcessInstanceTest {
     final var command =
         CLIENT_RULE.getClient().newCreateInstanceCommand().processDefinitionKey(123L).send();
 
-    assertThatThrownBy(() -> command.join())
+    assertThatThrownBy(command::join)
         .isInstanceOf(ClientException.class)
         .hasMessageContaining("Expected to find process definition with key '123', but none found");
   }
