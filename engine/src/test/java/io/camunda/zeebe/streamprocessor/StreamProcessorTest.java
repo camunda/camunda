@@ -190,7 +190,7 @@ public final class StreamProcessorTest {
         .until(() -> streamPlatform.getLastSuccessfulProcessedRecordPosition(), pos -> pos >= 1);
   }
 
-  @RegressionTest("not updated when instance was banned")
+  @RegressionTest("https://github.com/camunda/zeebe/pull/13427#issuecomment-1630700316")
   public void shouldUpdateLastProcessPositionEvenWhenProcessingSkippedCommand() {
     // given
     final var defaultRecordProcessor = streamPlatform.getDefaultMockedRecordProcessor();
