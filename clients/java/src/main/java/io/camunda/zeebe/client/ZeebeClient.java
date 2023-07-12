@@ -26,6 +26,8 @@ import io.camunda.zeebe.client.api.command.ModifyProcessInstanceCommandStep1;
 import io.camunda.zeebe.client.api.command.PublishMessageCommandStep1;
 import io.camunda.zeebe.client.api.command.ResolveIncidentCommandStep1;
 import io.camunda.zeebe.client.api.command.SetVariablesCommandStep1;
+import io.camunda.zeebe.client.api.command.StreamJobsCommandStep1;
+import io.camunda.zeebe.client.api.command.StreamJobsCommandStep1.StreamJobsCommandStep3;
 import io.camunda.zeebe.client.api.command.TopologyRequestStep1;
 import io.camunda.zeebe.client.api.command.UpdateRetriesJobCommandStep1;
 import io.camunda.zeebe.client.api.response.ActivatedJob;
@@ -34,6 +36,7 @@ import io.camunda.zeebe.client.api.worker.JobWorkerBuilderStep1;
 import io.camunda.zeebe.client.impl.ZeebeClientBuilderImpl;
 import io.camunda.zeebe.client.impl.ZeebeClientCloudBuilderImpl;
 import io.camunda.zeebe.client.impl.ZeebeClientImpl;
+import java.time.Duration;
 
 /** The client to communicate with a Zeebe broker/cluster. */
 public interface ZeebeClient extends AutoCloseable, JobClient {
@@ -354,4 +357,71 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
    * @return the builder for the command
    */
   DeleteResourceCommandStep1 newDeleteResourceCommand(long resourceKey);
+
+  /**
+   * Activates and streams jobs of a specific type.
+   *
+   * <pre>{@code
+   * final Consumer<ActivatedJob> consumer = ...; // do something with the consumed job
+   * final ZeebeFuture<StreamJobsResponse> stream = jobClient
+   *  .newStreamJobsCommand()
+   *  .jobType("payment")
+   *  .consumer(consumer)
+   *  .workerName("paymentWorker")
+   *  .timeout(Duration.ofMinutes(10))
+   *  .send();
+   *
+   *  stream.whenComplete((ok, error) -> {
+   *    // recreate stream if necessary
+   *    // be careful if you've cancelled the stream explicitly to not recreate it if shutting down
+   *  });
+   *
+   *  // You can later terminate the stream by cancelling the future
+   *  stream.cancel(true);
+   * }</pre>
+   *
+   * <h2>Stream or Activate?</h2>
+   *
+   * <p>As opposed to {@link #newActivateJobsCommand()}, which polls each partition until it has
+   * activated enough jobs or a timeout has elapsed, this command opens a long living stream onto
+   * which activated jobs are pushed. This typically results in lower latency, as jobs are activated
+   * and pushed out immediately, instead of waiting to be polled.
+   *
+   * <h2>Limitations</h2>
+   *
+   * <p>This feature is still under development; as such, there is currently no way to rate limit
+   * how many jobs are streamed over a single call. This can be mitigated by opening more streams of
+   * the same type, which will ensure work is fairly load balanced.
+   *
+   * <p>Additionally, only jobs which are created, retried, or timed out <em>after</em> the command
+   * has been registered will be streamed out. For older jobs, you must still use the {@link
+   * #newActivateJobsCommand()}. It's generally recommended that you use the {@link
+   * io.camunda.zeebe.client.api.worker.JobWorker} API to avoid having to coordinate both calls.
+   *
+   * <h2>Activation</h2>
+   *
+   * <p>Jobs activated via this command will use the given worker name, activation time out, and
+   * fetch variables parameters in the same way as the {@link #newActivateJobsCommand()}.
+   *
+   * <h2>Termination</h2>
+   *
+   * <p>The stream can be explicitly cancelled by performing one of the following:
+   *
+   * <ul>
+   *   <li>Closing the Zeebe client
+   *   <li>Cancelling the result of {@link StreamJobsCommandStep3#send()} via {@link
+   *       io.camunda.zeebe.client.api.ZeebeFuture#cancel(boolean)} (the argument is irrelevant)
+   *   <li>Setting a {@link StreamJobsCommandStep3#requestTimeout(Duration)}; the stream will be
+   *       closed once this time out is reached. By default, there is no request time out at all.
+   *       <strong>It's recommended to assign a long-ish time out and recreate your streams from
+   *       time to time to ensure good load balancing across gateways.</strong>
+   * </ul>
+   *
+   * NOTE: streams can be closed for various reasons - for example, the server is restarting. As
+   * such, it's recommended to add listeners to the resulting future to handle such cases and reopen
+   * streams if necessary.
+   *
+   * @return a builder for the command
+   */
+  StreamJobsCommandStep1 newStreamJobsCommand();
 }
