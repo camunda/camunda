@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.engine.processing.job;
 
-import static io.camunda.zeebe.engine.EngineConfiguration.DEFAULT_MAX_ERROR_MESSAGE_SIZE;
 import static io.camunda.zeebe.protocol.record.intent.IncidentIntent.CREATED;
 import static io.camunda.zeebe.protocol.record.intent.JobIntent.ERROR_THROWN;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -29,6 +28,8 @@ import org.junit.Test;
 public final class JobThrowErrorTest {
 
   @ClassRule public static final EngineRule ENGINE = EngineRule.singlePartition();
+
+  private static final int MAX_MESSAGE_SIZE = 10000;
 
   private static final String PROCESS_ID = "process";
   private static String jobType;
@@ -109,7 +110,7 @@ public final class JobThrowErrorTest {
   public void shouldTruncateErrorMessage() {
     // given
     final var job = ENGINE.createJob(jobType, PROCESS_ID);
-    final String exceedingErrorMessage = "*".repeat(DEFAULT_MAX_ERROR_MESSAGE_SIZE + 1);
+    final String exceedingErrorMessage = "*".repeat(MAX_MESSAGE_SIZE + 1);
 
     // when
     final Record<JobRecordValue> failedRecord =
@@ -121,7 +122,7 @@ public final class JobThrowErrorTest {
     // then
     Assertions.assertThat(failedRecord).hasRecordType(RecordType.EVENT).hasIntent(ERROR_THROWN);
 
-    final String expectedJobMessage = "*".repeat(DEFAULT_MAX_ERROR_MESSAGE_SIZE).concat("...");
+    final String expectedJobMessage = "*".repeat(MAX_MESSAGE_SIZE).concat("...");
     assertThat(failedRecord.getValue().getErrorMessage()).isEqualTo(expectedJobMessage);
 
     final String expectedIncidentMessage =
@@ -135,19 +136,18 @@ public final class JobThrowErrorTest {
   public void shouldNotTruncateErrorMessage() {
     // given
     final var job = ENGINE.createJob(jobType, PROCESS_ID);
-    final String errorMessage = "*".repeat(DEFAULT_MAX_ERROR_MESSAGE_SIZE);
+    final String errorMessage = "*".repeat(MAX_MESSAGE_SIZE);
 
     // when
     final Record<JobRecordValue> failedRecord =
         ENGINE.job().withKey(job.getKey()).withErrorMessage(errorMessage).throwError();
 
-    final Record<IncidentRecordValue> incident =
-        RecordingExporter.incidentRecords(CREATED).getFirst();
+    final var incident = RecordingExporter.incidentRecords(CREATED).getFirst();
 
     // then
     Assertions.assertThat(failedRecord).hasRecordType(RecordType.EVENT).hasIntent(ERROR_THROWN);
 
-    final String expectedJobMessage = "*".repeat(DEFAULT_MAX_ERROR_MESSAGE_SIZE);
+    final String expectedJobMessage = "*".repeat(MAX_MESSAGE_SIZE);
     assertThat(failedRecord.getValue().getErrorMessage()).isEqualTo(expectedJobMessage);
 
     final String expectedIncidentMessage =
