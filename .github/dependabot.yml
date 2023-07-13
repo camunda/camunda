@@ -21,6 +21,10 @@ updates:
       # as we need to sync with the other teams before doing that
       - dependency-name: org.elasticsearch.client:*
         update-types: [ "version-update:semver-major", "version-update:semver-minor" ]
+      # we will always manually update OS dependencies to minor or major releases
+      # as we need to sync with the other teams before doing that
+      - dependency-name: org.opensearch.client:*
+        update-types: [ "version-update:semver-major", "version-update:semver-minor" ]
       # After updating to Jacoco 0.8.9 we ran into the issue that our smoke tests on macOS kept
       # failing as it couldn't resolve all of Jacoco's dependencies. It's not quite clear why this
       # happened, but we could identify that it started after updating to this patch version. We
