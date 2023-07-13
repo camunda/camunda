@@ -24,6 +24,7 @@ import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageMonitor;
 import io.camunda.zeebe.broker.system.partitions.impl.AsyncSnapshotDirector;
 import io.camunda.zeebe.broker.system.partitions.impl.PartitionProcessingState;
+import io.camunda.zeebe.broker.system.partitions.impl.TransitionStepContext;
 import io.camunda.zeebe.broker.transport.backupapi.BackupApiRequestHandler;
 import io.camunda.zeebe.broker.transport.partitionapi.InterPartitionCommandReceiverActor;
 import io.camunda.zeebe.broker.transport.partitionapi.InterPartitionCommandSenderService;
@@ -99,6 +100,8 @@ public class PartitionStartupAndTransitionContextImpl
   private CheckpointRecordsProcessor checkpointRecordsProcessor;
   private final TopologyManager topologyManager;
 
+  private final TransitionStepContext transitionStepContext;
+
   private BackupStore backupStore;
 
   public PartitionStartupAndTransitionContextImpl(
@@ -138,6 +141,7 @@ public class PartitionStartupAndTransitionContextImpl
     this.diskSpaceUsageMonitor = diskSpaceUsageMonitor;
     this.gatewayBrokerTransport = gatewayBrokerTransport;
     this.topologyManager = topologyManager;
+    transitionStepContext = new TransitionStepContext();
   }
 
   public PartitionAdminControl getPartitionAdminControl() {
@@ -334,6 +338,36 @@ public class PartitionStartupAndTransitionContextImpl
   @Override
   public void setBackupStore(final BackupStore backupStore) {
     this.backupStore = backupStore;
+  }
+
+  @Override
+  public Long getTimeOfLastTransitionStep() {
+    return transitionStepContext.getTimeOfLastTransitionStep();
+  }
+
+  @Override
+  public void setTimeOfLastTransitionStep(final long timeOfLastTransitionStep) {
+    transitionStepContext.setTimeOfLastCompleteStepTransition(timeOfLastTransitionStep);
+  }
+
+  @Override
+  public String getCurrentStepTransition() {
+    return transitionStepContext.getCurrentStepTransition();
+  }
+
+  @Override
+  public void setCurrentStepTransition(final String currentStepTransition) {
+    transitionStepContext.setCurrentStepTransition(currentStepTransition);
+  }
+
+  @Override
+  public boolean getIsPartitionInTransition() {
+    return transitionStepContext.getIsPartitionInTransition();
+  }
+
+  @Override
+  public void setIsPartitionInTransition(final boolean isPartitionInTransition) {
+    transitionStepContext.setIsPartitionInTransition(isPartitionInTransition);
   }
 
   @Override

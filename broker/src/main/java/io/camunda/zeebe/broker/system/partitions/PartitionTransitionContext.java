@@ -128,4 +128,16 @@ public interface PartitionTransitionContext extends PartitionContext {
   BackupStore getBackupStore();
 
   void setBackupStore(BackupStore backupStore);
+
+  Long getTimeOfLastTransitionStep();
+
+  void setTimeOfLastTransitionStep(long timeOfLastTransitionStep);
+
+  String getCurrentStepTransition();
+
+  void setCurrentStepTransition(String lastTransitionStep);
+
+  boolean getIsPartitionInTransition();
+
+  void setIsPartitionInTransition(boolean isPartitionInTransition);
 }

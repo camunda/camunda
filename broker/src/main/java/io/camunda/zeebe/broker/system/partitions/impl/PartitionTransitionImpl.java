@@ -68,6 +68,10 @@ public final class PartitionTransitionImpl implements PartitionTransition {
     // ongoing activity at this point in time
     steps.forEach(step -> step.onNewRaftRole(context, role));
 
+    // setup transition step monitor
+    context.setIsPartitionInTransition(true);
+    context.setTimeOfLastTransitionStep(System.currentTimeMillis());
+
     final ActorFuture<Void> nextTransitionFuture = concurrencyControl.createFuture();
     concurrencyControl.run(
         () -> {
@@ -82,6 +86,7 @@ public final class PartitionTransitionImpl implements PartitionTransition {
                   context.setCurrentRole(role);
                 }
                 lastTransition = nextTransition;
+                context.setIsPartitionInTransition(false);
               });
 
           enqueueNextTransition(term, role, nextTransitionFuture, nextTransition);

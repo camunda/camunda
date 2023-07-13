@@ -73,13 +73,17 @@ final class PartitionTransitionProcess {
     concurrencyControl.run(
         () -> {
           final var nextStep = pendingSteps.remove(0);
-
+          context.setCurrentStepTransition(nextStep.getName());
           LOG.info(
               "Transition to {} on term {} - transitioning {}", role, term, nextStep.getName());
 
           nextStep
               .transitionTo(context, term, role)
-              .onComplete((ok, error) -> onStepCompletion(future, error));
+              .onComplete(
+                  (ok, error) -> {
+                    context.setTimeOfLastTransitionStep(System.currentTimeMillis());
+                    onStepCompletion(future, error);
+                  });
         });
   }
 
