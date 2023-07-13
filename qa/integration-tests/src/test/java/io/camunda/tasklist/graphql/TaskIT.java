@@ -32,6 +32,7 @@ import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
 import org.junit.Before;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -687,18 +688,29 @@ public class TaskIT extends TasklistZeebeIntegrationTest {
   }
   /** Tests variables loader. */
   @Test
-  public void shouldReturnManyTasksWithVariables() throws IOException {
+  public void shouldReturnManyTasksWithVariables() {
     // having
     createCreatedAndCompletedTasksWithVariables("testProcess_", "task_");
 
     // when
-    final GraphQLResponse response = tester.getAllTasks();
+    final CompletableFuture<GraphQLResponse> getAllTasksFuture =
+        CompletableFuture.supplyAsync(
+            () -> {
+              try {
+                return tester.getAllTasks();
+              } catch (IOException e) {
+                throw new RuntimeException(e);
+              }
+            });
+    final GraphQLResponse response = getAllTasksFuture.join();
 
     // then
     assertEquals("6", response.get("$.data.tasks.length()"));
+    assertNotNull(response.getRawResponse().getBody());
     for (int i = 0; i < 6; i++) {
-      final String flowNodeBpmnId = response.get("$.data.tasks[" + i + "].name");
-      final String variableValue = response.get("$.data.tasks[" + i + "].variables[0].value");
+      final String flowNodeBpmnId = response.get(String.format("$.data.tasks[%d].name", i));
+      final String variableValue =
+          response.get(String.format("$.data.tasks[%d].variables[0].value", i));
       assertEquals("\"" + flowNodeBpmnId + "\"", variableValue);
     }
   }
@@ -714,6 +726,8 @@ public class TaskIT extends TasklistZeebeIntegrationTest {
               .userTask(flowNodeBpmnId)
               .endEvent()
               .done();
+
+      // Deploy the process
       tester
           .deployProcess(process, process + ".bpmn")
           .waitUntil()
@@ -722,6 +736,7 @@ public class TaskIT extends TasklistZeebeIntegrationTest {
           .startProcessInstance(bpmnProcessId, "{\"flowNodeBpmnId\": \"" + flowNodeBpmnId + "\"}")
           .waitUntil()
           .taskIsCreated(flowNodeBpmnId);
+
       if (i % 2 == 0) {
         tester.claimAndCompleteHumanTask(flowNodeBpmnId);
       }
