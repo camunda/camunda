@@ -10,9 +10,11 @@ import {VisuallyHiddenH1} from 'modules/components/VisuallyHiddenH1';
 import {MetricPanel} from './MetricPanel';
 import {PAGE_TITLE} from 'modules/constants';
 import {processInstancesByNameStore} from 'modules/stores/processInstancesByName';
-import {Grid, Tile, TileTitle} from './styled';
+import {Grid, ScrollableContent, Tile, TileTitle} from './styled';
 import {observer} from 'mobx-react';
 import {useLocation} from 'react-router-dom';
+import {InstancesByProcess} from './InstancesByProcess';
+import {IncidentsByError} from './IncidentsByError';
 
 const Dashboard = observer(() => {
   const location = useLocation();
@@ -39,17 +41,17 @@ const Dashboard = observer(() => {
       </Tile>
       <Tile>
         <TileTitle>Process Instances by Name</TileTitle>
-        <div>
-          <div>instances by process</div>
-        </div>
+        <ScrollableContent>
+          <InstancesByProcess />
+        </ScrollableContent>
       </Tile>
 
       {!hasNoInstances && (
         <Tile>
           <TileTitle>Process Incidents by Error Message</TileTitle>
-          <div>
-            <div>incidents by error</div>
-          </div>
+          <ScrollableContent>
+            <IncidentsByError />
+          </ScrollableContent>
         </Tile>
       )}
     </Grid>

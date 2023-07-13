@@ -37,8 +37,13 @@ const Grid = styled.div<GridProps>`
   }}
 `;
 
-const Tile = styled(BaseTitle)`
+const ScrollableContent = styled.div`
   overflow-y: auto;
+`;
+
+const Tile = styled(BaseTitle)`
+  display: flex;
+  flex-direction: column;
   border: 1px solid var(--cds-border-subtle-01);
 `;
 
@@ -48,4 +53,4 @@ const TileTitle = styled.h2`
   margin-bottom: var(--cds-spacing-06);
 `;
 
-export {Grid, Tile, TileTitle};
+export {Grid, ScrollableContent, Tile, TileTitle};
