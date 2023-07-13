@@ -266,11 +266,8 @@ public final class ProcessingStateMachine {
       finalizeCommandProcessing();
 
       if (currentProcessingResult.isEmpty()) {
-        updateState();
-
         notifySkippedListener(currentRecord);
         metrics.eventSkipped();
-        return;
       }
 
       writeRecords();
