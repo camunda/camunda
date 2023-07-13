@@ -9,8 +9,8 @@ WORKDIR /tmp/operate
 
 # download operate
 COPY distro/target/camunda-operate-*.tar.gz operate.tar.gz
-RUN tar xzvf operate.tar.gz --strip 1
-RUN rm operate.tar.gz
+RUN tar xzvf operate.tar.gz --strip 1 && \
+    rm operate.tar.gz
 COPY docker-notice.txt notice.txt
 RUN sed -i '/^exec /i cat /usr/local/operate/notice.txt' bin/operate
 

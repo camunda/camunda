@@ -16,6 +16,9 @@ jobs:
     steps:
       - name: Check out repository code
         uses: actions/checkout@v3
+      - uses: hadolint/hadolint-action@v3.1.0
+        with:
+          ignore: DL3018 # redundant when pinning the base image
       - name: Import Secrets
         id: secrets
         uses: hashicorp/vault-action@v2.5.0
