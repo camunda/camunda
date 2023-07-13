@@ -49,7 +49,8 @@ env:
 jobs:
   build:
     name: "'${{ inputs.branch }}' build"
-    runs-on: n1-standard-16-netssd-preempt
+    runs-on: ${{ (github.event_name == 'pull_request' && startsWith(inputs.branch, 'fe-')) && 'ubuntu-latest' || 'n1-standard-8-netssd-preempt-quick' }}
+    timeout-minutes: 120
     steps:
       # Setup: checkout branch
       - name: "Checkout '${{ inputs.branch }}' branch"
@@ -143,11 +144,18 @@ jobs:
             **/target/surefire-reports/*.xml
             **/target/failsafe-reports/TEST-*.xml
 
+      # Sanitize the branch name to replace non alphanumeric characters with `-`
+      - id: sanitize
+        uses: camunda/infra-global-github-actions/sanitize-branch-name@main
+        with:
+          branch: ${{ env.BRANCH_NAME }}
+          max_length: '50'
+
       - name: Upload JaCoCo report
         uses: actions/upload-artifact@v3
         if: ${{ env.IS_FE_BRANCH == 'false' && (success() || failure()) }}
         with:
-          name: jacoco-report-${{ env.BRANCH_NAME }}
+          name: jacoco-report-${{ steps.sanitize.outputs.branch_name }}
           path: ${{ github.workspace }}/test-coverage/target/site/jacoco-aggregate/
           retention-days: 2
 
