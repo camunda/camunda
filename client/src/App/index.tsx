@@ -44,6 +44,10 @@ const CarbonLayout = loadable(() => import('./Carbon/Layout/index'), {
   resolveComponent: (components) => components.Layout,
 });
 
+const CarbonDashboard = loadable(() => import('./Carbon/Dashboard/index'), {
+  resolveComponent: (components) => components.Dashboard,
+});
+
 const CarbonDecisions = loadable(() => import('./Carbon/Decisions/index'), {
   resolveComponent: (components) => components.Decisions,
 });
@@ -128,7 +132,7 @@ const App: React.FC = () => {
                 </AuthenticationCheck>
               }
             >
-              <Route index element={<div>Carbon - Dashboard</div>} />
+              <Route index element={<CarbonDashboard />} />
               <Route
                 path={CarbonPaths.processes()}
                 element={<CarbonProcesses />}
