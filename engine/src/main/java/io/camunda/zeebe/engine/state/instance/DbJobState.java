@@ -63,9 +63,7 @@ public final class DbJobState implements JobState, MutableJobState {
   private long nextBackOffDueDate;
 
   public DbJobState(
-      final ZeebeDb<ZbColumnFamilies> zeebeDb,
-      final TransactionContext transactionContext,
-      final int partitionId) {
+      final ZeebeDb<ZbColumnFamilies> zeebeDb, final TransactionContext transactionContext) {
 
     jobKey = new DbLong();
     fkJob = new DbForeignKey<>(jobKey, ZbColumnFamilies.JOBS);

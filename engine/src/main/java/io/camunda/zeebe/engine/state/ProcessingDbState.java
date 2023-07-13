@@ -96,7 +96,7 @@ public class ProcessingDbState implements MutableProcessingState {
     eventScopeInstanceState = new DbEventScopeInstanceState(zeebeDb, transactionContext);
 
     deploymentState = new DbDeploymentState(zeebeDb, transactionContext);
-    jobState = new DbJobState(zeebeDb, transactionContext, partitionId);
+    jobState = new DbJobState(zeebeDb, transactionContext);
     messageState =
         new DbMessageState(zeebeDb, transactionContext, new BufferedMessagesMetrics(partitionId));
     messageSubscriptionState = new DbMessageSubscriptionState(zeebeDb, transactionContext);

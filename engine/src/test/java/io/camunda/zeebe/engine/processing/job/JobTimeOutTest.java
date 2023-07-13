@@ -12,6 +12,7 @@ import static io.camunda.zeebe.test.util.record.RecordingExporter.jobBatchRecord
 import static io.camunda.zeebe.test.util.record.RecordingExporter.jobRecords;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.zeebe.engine.scheduled.task.JobTimeoutChecker;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.engine.util.RecordToWrite;
 import io.camunda.zeebe.model.bpmn.Bpmn;
@@ -32,6 +33,7 @@ import org.junit.Rule;
 import org.junit.Test;
 
 public final class JobTimeOutTest {
+
   @ClassRule public static final EngineRule ENGINE = EngineRule.singlePartition();
   private static final String PROCESS_ID = "process";
   private static String jobType;
@@ -52,7 +54,7 @@ public final class JobTimeOutTest {
     final long timeout = 10L;
 
     ENGINE.jobs().withType(jobType).withTimeout(timeout).activate();
-    ENGINE.increaseTime(JobTimeoutTrigger.TIME_OUT_POLLING_INTERVAL);
+    ENGINE.increaseTime(JobTimeoutChecker.INTERVAL);
 
     // when expired
     jobRecords(TIME_OUT).withType(jobType).getFirst();
@@ -75,7 +77,7 @@ public final class JobTimeOutTest {
     final long timeout = 10L;
 
     ENGINE.jobs().withType(jobType).withTimeout(timeout).activate();
-    ENGINE.increaseTime(JobTimeoutTrigger.TIME_OUT_POLLING_INTERVAL);
+    ENGINE.increaseTime(JobTimeoutChecker.INTERVAL);
     jobRecords(TIME_OUT).withRecordKey(jobKey).getFirst();
 
     final long jobKey2 = ENGINE.createJob(jobType, PROCESS_ID).getKey();
@@ -87,7 +89,7 @@ public final class JobTimeOutTest {
     ENGINE.jobs().withType(jobType).activate();
 
     // then
-    ENGINE.increaseTime(JobTimeoutTrigger.TIME_OUT_POLLING_INTERVAL);
+    ENGINE.increaseTime(JobTimeoutChecker.INTERVAL);
     jobRecords(TIME_OUT).withRecordKey(jobKey2).getFirst();
   }
 
@@ -116,7 +118,7 @@ public final class JobTimeOutTest {
     // when
     jobBatchRecords(JobBatchIntent.ACTIVATED).withType(jobType).getFirst();
 
-    ENGINE.increaseTime(JobTimeoutTrigger.TIME_OUT_POLLING_INTERVAL);
+    ENGINE.increaseTime(JobTimeoutChecker.INTERVAL);
     jobRecords(JobIntent.TIMED_OUT).withProcessInstanceKey(instanceKey1).getFirst();
     ENGINE.jobs().withType(jobType).activate();
 
@@ -166,7 +168,7 @@ public final class JobTimeOutTest {
 
     // when
     jobBatchRecords(JobBatchIntent.ACTIVATED).withType(jobType).getFirst();
-    ENGINE.increaseTime(JobTimeoutTrigger.TIME_OUT_POLLING_INTERVAL);
+    ENGINE.increaseTime(JobTimeoutChecker.INTERVAL);
     final Record<JobRecordValue> timedOutRecord =
         jobRecords(TIME_OUT).withProcessInstanceKey(processInstanceKey).getFirst();
 
