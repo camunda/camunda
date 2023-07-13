@@ -94,7 +94,7 @@ public class ProcessInternalControllerIT extends TasklistZeebeIntegrationTest {
         .satisfies(
             process -> {
               assertThat(process.getId()).isEqualTo(processId2);
-              assertThat(process.getProcessDefinitionKey()).isEqualTo("testProcess2");
+              assertThat(process.getBpmnProcessId()).isEqualTo("testProcess2");
               assertThat(process.getVersion()).isEqualTo(1);
             });
   }
@@ -119,7 +119,7 @@ public class ProcessInternalControllerIT extends TasklistZeebeIntegrationTest {
         .hasOkHttpStatus()
         .hasApplicationJsonContentType()
         .extractingListContent(objectMapper, ProcessResponse.class)
-        .extracting("id", "processDefinitionKey", "version")
+        .extracting("id", "bpmnProcessId", "version")
         .containsExactlyInAnyOrder(
             tuple(processId1, "Process_1g4wt4m", 1),
             tuple(processId2, "testProcess2", 1),

@@ -60,7 +60,7 @@ public class ProcessInternalController extends ApiErrorController {
       @RequestParam(defaultValue = StringUtils.EMPTY) String query) {
     final var processes =
         processReader.getProcesses(query).stream()
-            .map(ProcessResponse::fromProcessDTO)
+            .map(process -> ProcessResponse.fromProcessDTO(process, processReader))
             .collect(Collectors.toList());
     return ResponseEntity.ok(processes);
   }

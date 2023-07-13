@@ -75,15 +75,18 @@ class ProcessInternalControllerTest {
             .setName("Register car for rent")
             .setProcessDefinitionId("registerCarForRent")
             .setSortValues(new String[] {"1"})
+            .setStartedByForm(true)
             .setVersion(1);
     final var expectedProcessResponse =
         new ProcessResponse()
             .setId("2251799813685257")
             .setName("Register car for rent")
-            .setProcessDefinitionKey("registerCarForRent")
+            .setBpmnProcessId("registerCarForRent")
             .setSortValues(new String[] {"1"})
-            .setVersion(1);
+            .setVersion(1)
+            .setStartEventFormId("task");
     when(processReader.getProcesses(query)).thenReturn(List.of(providedProcessDTO));
+    when(processReader.getStartEventFormIdByBpmnProcess(providedProcessDTO)).thenReturn("task");
 
     // when
     final var responseAsString =

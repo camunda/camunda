@@ -14,6 +14,7 @@ import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.schema.indices.ProcessIndex;
 import io.camunda.tasklist.util.ElasticsearchUtil;
 import io.camunda.tasklist.util.SpringContextHolder;
+import io.camunda.tasklist.webapp.es.FormReader;
 import io.camunda.tasklist.webapp.graphql.entity.ProcessDTO;
 import io.camunda.tasklist.webapp.rest.exception.NotFoundException;
 import io.camunda.tasklist.webapp.security.identity.IdentityAuthentication;
@@ -22,6 +23,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
+import org.apache.commons.lang3.StringUtils;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
@@ -55,6 +57,8 @@ public class ProcessReader {
 
   @Autowired private TasklistProperties tasklistProperties;
 
+  @Autowired private FormReader formReader;
+
   public ProcessDTO getProcessByProcessDefinitionKey(String processDefinitionKey) {
     final QueryBuilder qb = QueryBuilders.termQuery(ProcessIndex.KEY, processDefinitionKey);
 
@@ -79,6 +83,16 @@ public class ProcessReader {
     } catch (IOException e) {
       throw new TasklistRuntimeException(e);
     }
+  }
+
+  /** Uses form reader to retrieve the start event form id when exists. */
+  public String getStartEventFormIdByBpmnProcess(ProcessDTO process) {
+    if (process.isStartedByForm()) {
+      final String formId = StringUtils.substringAfterLast(process.getFormKey(), ":");
+      final var form = formReader.getFormDTO(formId, process.getId());
+      return form.getId();
+    }
+    return null;
   }
 
   /** Gets the process by id. */
