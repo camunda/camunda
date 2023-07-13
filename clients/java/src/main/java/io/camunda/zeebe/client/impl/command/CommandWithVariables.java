@@ -17,6 +17,7 @@ package io.camunda.zeebe.client.impl.command;
 
 import io.camunda.zeebe.client.api.JsonMapper;
 import java.io.InputStream;
+import java.util.Collections;
 import java.util.Map;
 
 public abstract class CommandWithVariables<T> {
@@ -24,7 +25,7 @@ public abstract class CommandWithVariables<T> {
   protected final JsonMapper objectMapper;
 
   public CommandWithVariables(final JsonMapper jsonMapper) {
-    this.objectMapper = jsonMapper;
+    objectMapper = jsonMapper;
   }
 
   public T variables(final InputStream variables) {
@@ -45,6 +46,12 @@ public abstract class CommandWithVariables<T> {
   public T variables(final Object variables) {
     ArgumentUtil.ensureNotNull("variables", variables);
     return setVariablesInternal(objectMapper.toJson(variables));
+  }
+
+  public T variable(final String key, final Object value) {
+    ArgumentUtil.ensureNotNull("key", key);
+    ArgumentUtil.ensureNotNull("value", value);
+    return variables(Collections.singletonMap(key, value));
   }
 
   protected abstract T setVariablesInternal(String variables);

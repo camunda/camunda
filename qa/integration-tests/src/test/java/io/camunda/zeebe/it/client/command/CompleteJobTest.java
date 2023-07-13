@@ -121,4 +121,30 @@ public final class CompleteJobTest {
         .isInstanceOf(ClientStatusException.class)
         .hasMessageContaining(expectedMessage);
   }
+
+  @Test
+  public void shouldCompleteJobWithSingleVariable() {
+    final String key = "key";
+    final var value = "value";
+    // when
+    CLIENT_RULE.getClient().newCompleteCommand(jobKey).variable(key, value).send().join();
+
+    // then
+    ZeebeAssertHelper.assertJobCompleted(
+        jobType, (job) -> assertThat(job.getVariables()).containsOnly(entry(key, value)));
+  }
+
+  @Test
+  public void shouldThrowErrorWhenTryToCompleteJobWithNullVariable() {
+    // when
+    assertThatThrownBy(
+            () ->
+                CLIENT_RULE
+                    .getClient()
+                    .newCompleteCommand(jobKey)
+                    .variable(null, null)
+                    .send()
+                    .join())
+        .isInstanceOf(IllegalArgumentException.class);
+  }
 }

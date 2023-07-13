@@ -137,6 +137,25 @@ public final class CompleteJobTest extends ClientTest {
   }
 
   @Test
+  public void shouldCompleteWithSingleVariable() {
+
+    // given
+    final long jobKey = 12;
+    final String key = "key";
+    final String value = "value";
+
+    // when
+    client.newCompleteCommand(jobKey).variable(key, value).send().join();
+
+    // then
+    final String expectedVariable = JsonUtil.toJson(Collections.singletonMap(key, value));
+
+    final CompleteJobRequest request = gatewayService.getLastRequest();
+    assertThat(request.getJobKey()).isEqualTo(jobKey);
+    JsonUtil.assertEquality(request.getVariables(), expectedVariable);
+  }
+
+  @Test
   public void shouldSetRequestTimeout() {
     // given
     final Duration requestTimeout = Duration.ofHours(124);
