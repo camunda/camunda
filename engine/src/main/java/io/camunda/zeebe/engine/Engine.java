@@ -14,6 +14,7 @@ import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessorCo
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessorFactory;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
+import io.camunda.zeebe.engine.scheduled.ScheduledEngineTasks;
 import io.camunda.zeebe.engine.state.EventApplier;
 import io.camunda.zeebe.engine.state.appliers.EventAppliers;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
@@ -79,6 +80,9 @@ public class Engine implements RecordProcessor {
     ((EventAppliers) eventApplier).registerEventAppliers(processingState);
     final TypedRecordProcessors typedRecordProcessors =
         typedRecordProcessorFactory.createProcessors(typedProcessorContext);
+
+    ScheduledEngineTasks.registerScheduledTasks(
+        recordProcessorContext, typedProcessorContext.getScheduledTaskStateFactory());
 
     recordProcessorContext.addLifecycleListeners(typedRecordProcessors.getLifecycleListeners());
     recordProcessorMap = typedRecordProcessors.getRecordProcessorMap();
