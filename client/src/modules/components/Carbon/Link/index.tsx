@@ -9,11 +9,12 @@ import {Link as BaseLink} from 'react-router-dom';
 
 type Props = {
   children: React.ReactNode;
+  className?: string;
 } & React.ComponentProps<typeof BaseLink>;
 
-const Link: React.FC<Props> = ({children, ...props}) => {
+const Link: React.FC<Props> = ({children, className, ...props}) => {
   return (
-    <BaseLink className="cds--link" {...props}>
+    <BaseLink className={`cds--link ${className ?? ''}`} {...props}>
       {children}
     </BaseLink>
   );

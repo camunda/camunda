@@ -7,6 +7,7 @@
 
 import {useEffect} from 'react';
 import {VisuallyHiddenH1} from 'modules/components/VisuallyHiddenH1';
+import {MetricPanel} from './MetricPanel';
 import {PAGE_TITLE} from 'modules/constants';
 import {processInstancesByNameStore} from 'modules/stores/processInstancesByName';
 import {Grid, Tile, TileTitle} from './styled';
@@ -34,7 +35,7 @@ const Dashboard = observer(() => {
     <Grid $numberOfColumns={hasNoInstances ? 1 : 2}>
       <VisuallyHiddenH1>Operate Dashboard</VisuallyHiddenH1>
       <Tile>
-        <div>metric panel</div>
+        <MetricPanel />
       </Tile>
       <Tile>
         <TileTitle>Process Instances by Name</TileTitle>
