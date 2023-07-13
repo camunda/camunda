@@ -92,6 +92,41 @@ public final class JobTimeOutTest {
   }
 
   @Test
+  public void shouldTimeOutAfterResumed() {
+    // given
+    final long jobKey = ENGINE.createJob(jobType, PROCESS_ID).getKey();
+    final long timeout = JobTimeoutTrigger.TIME_OUT_POLLING_INTERVAL.toMillis() * 2;
+
+    ENGINE.jobs().withType(jobType).withTimeout(timeout).activate();
+    ENGINE.pauseProcessing(1);
+    ENGINE.increaseTime(JobTimeoutTrigger.TIME_OUT_POLLING_INTERVAL);
+
+    // when
+    ENGINE.resumeProcessing(1);
+    ENGINE.increaseTime(JobTimeoutTrigger.TIME_OUT_POLLING_INTERVAL);
+
+    // then
+    jobRecords(TIME_OUT).withRecordKey(jobKey).getFirst();
+  }
+
+  @Test
+  public void shouldActivateAndTimeOutAfterResumed() {
+    // given
+    final long jobKey = ENGINE.createJob(jobType, PROCESS_ID).getKey();
+    final long timeout = JobTimeoutTrigger.TIME_OUT_POLLING_INTERVAL.toMillis();
+    ENGINE.pauseProcessing(1);
+    ENGINE.increaseTime(JobTimeoutTrigger.TIME_OUT_POLLING_INTERVAL);
+
+    // when
+    ENGINE.resumeProcessing(1);
+    ENGINE.jobs().withType(jobType).withTimeout(timeout).activate();
+    ENGINE.increaseTime(JobTimeoutTrigger.TIME_OUT_POLLING_INTERVAL);
+
+    // then
+    jobRecords(TIME_OUT).withRecordKey(jobKey).getFirst();
+  }
+
+  @Test
   public void shouldExpireMultipleActivatedJobsAtOnce() {
     // given
     final long instanceKey1 = createInstance();
