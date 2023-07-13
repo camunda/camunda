@@ -42,6 +42,7 @@ public class DecisionInstanceEntity extends OperateZeebeEntity<DecisionInstanceE
   private String result;
   private List<DecisionInstanceInputEntity> evaluatedInputs = new ArrayList<>();
   private List<DecisionInstanceOutputEntity> evaluatedOutputs = new ArrayList<>();
+  private String tenantId;
   @JsonIgnore
   private Object[] sortValues;
 
@@ -276,54 +277,44 @@ public class DecisionInstanceEntity extends OperateZeebeEntity<DecisionInstanceE
     return this;
   }
 
+  public String getTenantId() {
+    return tenantId;
+  }
+
+  public DecisionInstanceEntity setTenantId(String tenantId) {
+    this.tenantId = tenantId;
+    return this;
+  }
+
   @Override
-  public boolean equals(final Object o) {
-    if (this == o) {
+  public boolean equals(Object o) {
+    if (this == o)
       return true;
-    }
-    if (o == null || getClass() != o.getClass()) {
+    if (o == null || getClass() != o.getClass())
       return false;
-    }
-    if (!super.equals(o)) {
+    if (!super.equals(o))
       return false;
-    }
-    final DecisionInstanceEntity that = (DecisionInstanceEntity) o;
-    return decisionRequirementsKey == that.decisionRequirementsKey &&
-        processDefinitionKey == that.processDefinitionKey &&
-        processInstanceKey == that.processInstanceKey &&
-        Objects.equals(bpmnProcessId, that.bpmnProcessId) &&
-        elementInstanceKey == that.elementInstanceKey &&
-        decisionVersion == that.decisionVersion &&
-        Objects.equals(executionIndex, that.executionIndex) &&
-        state == that.state &&
-        Objects.equals(evaluationDate, that.evaluationDate) &&
-        Objects.equals(evaluationFailure, that.evaluationFailure) &&
-        Objects.equals(position, that.position) &&
-        Objects.equals(decisionRequirementsId, that.decisionRequirementsId) &&
-        Objects.equals(elementId, that.elementId) &&
-        Objects.equals(decisionId, that.decisionId) &&
-        Objects.equals(decisionDefinitionId, that.decisionDefinitionId) &&
-        Objects.equals(decisionName, that.decisionName) &&
-        Objects.equals(rootDecisionName, that.rootDecisionName) &&
-        Objects.equals(rootDecisionId, that.rootDecisionId) &&
-        Objects.equals(rootDecisionDefinitionId, that.rootDecisionDefinitionId) &&
-        decisionType == that.decisionType &&
-        Objects.equals(result, that.result) &&
-        Objects.equals(evaluatedInputs, that.evaluatedInputs) &&
-        Objects.equals(evaluatedOutputs, that.evaluatedOutputs) &&
-        Arrays.equals(sortValues, that.sortValues);
+    DecisionInstanceEntity that = (DecisionInstanceEntity) o;
+    return decisionRequirementsKey == that.decisionRequirementsKey && processDefinitionKey == that.processDefinitionKey && processInstanceKey == that.processInstanceKey && elementInstanceKey == that.elementInstanceKey && decisionVersion == that.decisionVersion && Objects.equals(
+        executionIndex, that.executionIndex) && state == that.state && Objects.equals(evaluationDate,
+        that.evaluationDate) && Objects.equals(evaluationFailure, that.evaluationFailure) && Objects.equals(position,
+        that.position) && Objects.equals(decisionRequirementsId, that.decisionRequirementsId) && Objects.equals(
+        bpmnProcessId, that.bpmnProcessId) && Objects.equals(elementId, that.elementId) && Objects.equals(decisionId,
+        that.decisionId) && Objects.equals(decisionDefinitionId, that.decisionDefinitionId) && Objects.equals(
+        decisionName, that.decisionName) && Objects.equals(rootDecisionName, that.rootDecisionName) && Objects.equals(
+        rootDecisionId, that.rootDecisionId) && Objects.equals(rootDecisionDefinitionId,
+        that.rootDecisionDefinitionId) && decisionType == that.decisionType && Objects.equals(result,
+        that.result) && Objects.equals(evaluatedInputs, that.evaluatedInputs) && Objects.equals(evaluatedOutputs,
+        that.evaluatedOutputs) && Objects.equals(tenantId, that.tenantId) && Arrays.equals(sortValues, that.sortValues);
   }
 
   @Override
   public int hashCode() {
-    int result1 = Objects
-        .hash(super.hashCode(), executionIndex, state, evaluationDate, evaluationFailure, position,
-            decisionRequirementsKey, decisionRequirementsId, processDefinitionKey,
-            processInstanceKey, bpmnProcessId,
-            elementInstanceKey, elementId, decisionId, decisionDefinitionId, decisionName,
-            decisionVersion, rootDecisionName, rootDecisionId, rootDecisionDefinitionId,
-            decisionType,
-            result, evaluatedInputs, evaluatedOutputs);
+    int result1 = Objects.hash(super.hashCode(), executionIndex, state, evaluationDate, evaluationFailure, position,
+        decisionRequirementsKey, decisionRequirementsId, processDefinitionKey, processInstanceKey, bpmnProcessId,
+        elementInstanceKey, elementId, decisionId, decisionDefinitionId, decisionName, decisionVersion,
+        rootDecisionName, rootDecisionId, rootDecisionDefinitionId, decisionType, result, evaluatedInputs,
+        evaluatedOutputs, tenantId);
     result1 = 31 * result1 + Arrays.hashCode(sortValues);
     return result1;
   }

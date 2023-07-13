@@ -46,6 +46,8 @@ public class DMNDataGenerator {
   public static final String PROCESS_BPMN_PROCESS_ID = "basicDecision";
   public static final int PROCESS_INSTANCE_COUNT = 13;
 
+  public static final int DECISION_COUNT = 2;
+
   /**
    * ZeebeClient must not be reused between different test fixtures, as this may be different versions of client in the future.
    */

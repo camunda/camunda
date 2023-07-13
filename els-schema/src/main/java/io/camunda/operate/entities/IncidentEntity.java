@@ -38,6 +38,8 @@ public class IncidentEntity extends OperateZeebeEntity<IncidentEntity> {
 
   private String treePath;
 
+  private String tenantId;
+
   @Deprecated
   @JsonIgnore
   private boolean pending = true;
@@ -159,39 +161,39 @@ public class IncidentEntity extends OperateZeebeEntity<IncidentEntity> {
     return this;
   }
 
+  public String getTenantId() {
+    return tenantId;
+  }
+
+  public IncidentEntity setTenantId(String tenantId) {
+    this.tenantId = tenantId;
+    return this;
+  }
+
   @Override
-  public boolean equals(final Object o) {
-    if (this == o) {
+  public boolean equals(Object o) {
+    if (this == o)
       return true;
-    }
-    if (o == null || getClass() != o.getClass()) {
+    if (o == null || getClass() != o.getClass())
       return false;
-    }
-    if (!super.equals(o)) {
+    if (!super.equals(o))
       return false;
-    }
-    final IncidentEntity that = (IncidentEntity) o;
-    return pending == that.pending &&
-        errorType == that.errorType &&
-        Objects.equals(errorMessage, that.errorMessage) &&
-        Objects.equals(errorMessageHash, that.errorMessageHash) &&
-        state == that.state &&
-        Objects.equals(flowNodeId, that.flowNodeId) &&
-        Objects.equals(flowNodeInstanceKey, that.flowNodeInstanceKey) &&
-        Objects.equals(jobKey, that.jobKey) &&
-        Objects.equals(processInstanceKey, that.processInstanceKey) &&
-        Objects.equals(creationTime, that.creationTime) &&
-        Objects.equals(processDefinitionKey, that.processDefinitionKey) &&
-        Objects.equals(bpmnProcessId, that.bpmnProcessId) &&
-        Objects.equals(treePath, that.treePath);
+    IncidentEntity incident = (IncidentEntity) o;
+    return pending == incident.pending && errorType == incident.errorType && Objects.equals(errorMessage,
+        incident.errorMessage) && Objects.equals(errorMessageHash,
+        incident.errorMessageHash) && state == incident.state && Objects.equals(flowNodeId,
+        incident.flowNodeId) && Objects.equals(flowNodeInstanceKey, incident.flowNodeInstanceKey) && Objects.equals(
+        jobKey, incident.jobKey) && Objects.equals(processInstanceKey, incident.processInstanceKey) && Objects.equals(
+        creationTime, incident.creationTime) && Objects.equals(processDefinitionKey,
+        incident.processDefinitionKey) && Objects.equals(bpmnProcessId, incident.bpmnProcessId) && Objects.equals(
+        treePath, incident.treePath) && Objects.equals(tenantId, incident.tenantId);
   }
 
   @Override
   public int hashCode() {
-    return Objects
-        .hash(super.hashCode(), errorType, errorMessage, errorMessageHash, state, flowNodeId,
-            flowNodeInstanceKey, jobKey, processInstanceKey, creationTime, processDefinitionKey,
-            bpmnProcessId, treePath, pending);
+    return Objects.hash(super.hashCode(), errorType, errorMessage, errorMessageHash, state, flowNodeId,
+        flowNodeInstanceKey, jobKey, processInstanceKey, creationTime, processDefinitionKey, bpmnProcessId, treePath,
+        tenantId, pending);
   }
 
   @Override

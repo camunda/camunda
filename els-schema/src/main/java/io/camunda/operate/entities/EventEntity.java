@@ -7,6 +7,7 @@
 package io.camunda.operate.entities;
 
 import java.time.OffsetDateTime;
+import java.util.Objects;
 
 public class EventEntity extends OperateZeebeEntity<EventEntity> {
 
@@ -34,6 +35,7 @@ public class EventEntity extends OperateZeebeEntity<EventEntity> {
    * Metadata
    */
   private EventMetadataEntity metadata;
+  private String tenantId;
 
   public Long getProcessDefinitionKey() {
     return processDefinitionKey;
@@ -107,6 +109,15 @@ public class EventEntity extends OperateZeebeEntity<EventEntity> {
     this.metadata = metadata;
   }
 
+  public String getTenantId() {
+    return tenantId;
+  }
+
+  public EventEntity setTenantId(String tenantId) {
+    this.tenantId = tenantId;
+    return this;
+  }
+
   @Override
   public boolean equals(Object o) {
     if (this == o)
@@ -115,40 +126,17 @@ public class EventEntity extends OperateZeebeEntity<EventEntity> {
       return false;
     if (!super.equals(o))
       return false;
-
     EventEntity that = (EventEntity) o;
-
-    if (processDefinitionKey != null ? !processDefinitionKey.equals(that.processDefinitionKey) : that.processDefinitionKey != null)
-      return false;
-    if (processInstanceKey != null ? !processInstanceKey.equals(that.processInstanceKey) : that.processInstanceKey != null)
-      return false;
-    if (bpmnProcessId != null ? !bpmnProcessId.equals(that.bpmnProcessId) : that.bpmnProcessId != null)
-      return false;
-    if (flowNodeId != null ? !flowNodeId.equals(that.flowNodeId) : that.flowNodeId != null)
-      return false;
-    if (flowNodeInstanceKey != null ? !flowNodeInstanceKey.equals(that.flowNodeInstanceKey) : that.flowNodeInstanceKey != null)
-      return false;
-    if (eventSourceType != that.eventSourceType)
-      return false;
-    if (eventType != that.eventType)
-      return false;
-    if (dateTime != null ? !dateTime.equals(that.dateTime) : that.dateTime != null)
-      return false;
-    return metadata != null ? metadata.equals(that.metadata) : that.metadata == null;
+    return Objects.equals(processDefinitionKey, that.processDefinitionKey) && Objects.equals(processInstanceKey,
+        that.processInstanceKey) && Objects.equals(bpmnProcessId, that.bpmnProcessId) && Objects.equals(flowNodeId,
+        that.flowNodeId) && Objects.equals(flowNodeInstanceKey,
+        that.flowNodeInstanceKey) && eventSourceType == that.eventSourceType && eventType == that.eventType && Objects.equals(
+        dateTime, that.dateTime) && Objects.equals(metadata, that.metadata) && Objects.equals(tenantId, that.tenantId);
   }
 
   @Override
   public int hashCode() {
-    int result = super.hashCode();
-    result = 31 * result + (processDefinitionKey != null ? processDefinitionKey.hashCode() : 0);
-    result = 31 * result + (processInstanceKey != null ? processInstanceKey.hashCode() : 0);
-    result = 31 * result + (bpmnProcessId != null ? bpmnProcessId.hashCode() : 0);
-    result = 31 * result + (flowNodeId != null ? flowNodeId.hashCode() : 0);
-    result = 31 * result + (flowNodeInstanceKey != null ? flowNodeInstanceKey.hashCode() : 0);
-    result = 31 * result + (eventSourceType != null ? eventSourceType.hashCode() : 0);
-    result = 31 * result + (eventType != null ? eventType.hashCode() : 0);
-    result = 31 * result + (dateTime != null ? dateTime.hashCode() : 0);
-    result = 31 * result + (metadata != null ? metadata.hashCode() : 0);
-    return result;
+    return Objects.hash(super.hashCode(), processDefinitionKey, processInstanceKey, bpmnProcessId, flowNodeId,
+        flowNodeInstanceKey, eventSourceType, eventType, dateTime, metadata, tenantId);
   }
 }

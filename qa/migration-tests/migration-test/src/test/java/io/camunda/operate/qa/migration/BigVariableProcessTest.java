@@ -6,15 +6,19 @@
  */
 package io.camunda.operate.qa.migration;
 
+import static io.camunda.operate.qa.migration.util.TestConstants.DEFAULT_TENANT_ID;
 import static io.camunda.operate.qa.util.VariablesUtil.VAR_SUFFIX;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
 
+import io.camunda.operate.entities.ProcessEntity;
 import io.camunda.operate.entities.VariableEntity;
 import io.camunda.operate.property.ImportProperties;
 import io.camunda.operate.qa.migration.util.AbstractMigrationTest;
 import io.camunda.operate.qa.migration.util.EntityReader;
 import io.camunda.operate.qa.migration.v100.BigVariableDataGenerator;
+import io.camunda.operate.schema.templates.EventTemplate;
 import io.camunda.operate.schema.templates.VariableTemplate;
 import io.camunda.operate.util.ThreadUtil;
 import java.util.List;
@@ -56,5 +60,13 @@ public class BigVariableProcessTest extends AbstractMigrationTest {
     assertThat(vars).extracting(VariableEntity::getIsPreview).containsOnly(true);
   }
 
+  @Test
+  public void testProcess() {
+    SearchRequest searchRequest = new SearchRequest(processTemplate.getAlias());
+    searchRequest.source().query(termQuery(EventTemplate.BPMN_PROCESS_ID, bpmnProcessId));
+    List<ProcessEntity> processes = entityReader.searchEntitiesFor(searchRequest, ProcessEntity.class);
+    assertThat(processes).hasSize(1);
+    assertThat(processes.get(0).getTenantId()).isEqualTo(DEFAULT_TENANT_ID);
+  }
 
 }

@@ -26,6 +26,7 @@ public class VariableEntity extends OperateZeebeEntity<VariableEntity> {
    * Attention! This field will be filled in only for data imported after v. 8.2.0.
    */
   private String bpmnProcessId;
+  private String tenantId;
 
   @JsonIgnore
   private Object[] sortValues;
@@ -96,6 +97,15 @@ public class VariableEntity extends OperateZeebeEntity<VariableEntity> {
     this.bpmnProcessId = bpmnProcessId;
   }
 
+  public String getTenantId() {
+    return tenantId;
+  }
+
+  public VariableEntity setTenantId(String tenantId) {
+    this.tenantId = tenantId;
+    return this;
+  }
+
   public Object[] getSortValues() {
     return sortValues;
   }
@@ -106,32 +116,25 @@ public class VariableEntity extends OperateZeebeEntity<VariableEntity> {
   }
 
   @Override
-  public boolean equals(final Object o) {
-    if (this == o) {
+  public boolean equals(Object o) {
+    if (this == o)
       return true;
-    }
-    if (o == null || getClass() != o.getClass()) {
+    if (o == null || getClass() != o.getClass())
       return false;
-    }
-    if (!super.equals(o)) {
+    if (!super.equals(o))
       return false;
-    }
-    final VariableEntity that = (VariableEntity) o;
-    return isPreview == that.isPreview &&
-        Objects.equals(name, that.name) &&
-        Objects.equals(value, that.value) &&
-        Objects.equals(fullValue, that.fullValue) &&
-        Objects.equals(scopeKey, that.scopeKey) &&
-        Objects.equals(processInstanceKey, that.processInstanceKey) &&
-        Objects.equals(processDefinitionKey, that.processDefinitionKey) &&
-        Objects.equals(bpmnProcessId, that.bpmnProcessId) &&
-        Arrays.equals(sortValues, that.sortValues);
+    VariableEntity that = (VariableEntity) o;
+    return isPreview == that.isPreview && Objects.equals(name, that.name) && Objects.equals(value,
+        that.value) && Objects.equals(fullValue, that.fullValue) && Objects.equals(scopeKey,
+        that.scopeKey) && Objects.equals(processInstanceKey, that.processInstanceKey) && Objects.equals(
+        processDefinitionKey, that.processDefinitionKey) && Objects.equals(bpmnProcessId,
+        that.bpmnProcessId) && Objects.equals(tenantId, that.tenantId) && Arrays.equals(sortValues, that.sortValues);
   }
 
   @Override
   public int hashCode() {
-    int result = Objects
-        .hash(super.hashCode(), name, value, fullValue, isPreview, scopeKey, processInstanceKey, processDefinitionKey, bpmnProcessId);
+    int result = Objects.hash(super.hashCode(), name, value, fullValue, isPreview, scopeKey, processInstanceKey,
+        processDefinitionKey, bpmnProcessId, tenantId);
     result = 31 * result + Arrays.hashCode(sortValues);
     return result;
   }

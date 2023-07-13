@@ -6,6 +6,7 @@
  */
 package io.camunda.operate.qa.migration;
 
+import static io.camunda.operate.qa.migration.util.TestConstants.DEFAULT_TENANT_ID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static io.camunda.operate.entities.listview.ProcessInstanceState.COMPLETED;
 import static io.camunda.operate.schema.templates.ListViewTemplate.JOIN_RELATION;
@@ -14,10 +15,13 @@ import static io.camunda.operate.util.ElasticsearchUtil.joinWithAnd;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
 import java.util.List;
+
+import io.camunda.operate.entities.ProcessEntity;
 import io.camunda.operate.entities.listview.ProcessInstanceForListViewEntity;
 import io.camunda.operate.qa.migration.util.AbstractMigrationTest;
 import io.camunda.operate.qa.migration.util.EntityReader;
 import io.camunda.operate.qa.migration.v100.BigProcessDataGenerator;
+import io.camunda.operate.schema.templates.EventTemplate;
 import io.camunda.operate.schema.templates.ListViewTemplate;
 import io.camunda.operate.util.ThreadUtil;
 import org.elasticsearch.action.search.SearchRequest;
@@ -45,6 +49,15 @@ public class BigProcessTest extends AbstractMigrationTest {
 
     assertThat(wfis).hasSize(1);
     assertThat(wfis.get(0).getState()).isEqualTo(COMPLETED);
+  }
+
+  @Test
+  public void testProcess() {
+    SearchRequest searchRequest = new SearchRequest(processTemplate.getAlias());
+    searchRequest.source().query(termQuery(EventTemplate.BPMN_PROCESS_ID, bpmnProcessId));
+    List<ProcessEntity> processes = entityReader.searchEntitiesFor(searchRequest, ProcessEntity.class);
+    assertThat(processes).hasSize(1);
+    assertThat(processes.get(0).getTenantId()).isEqualTo(DEFAULT_TENANT_ID);
   }
 
 }

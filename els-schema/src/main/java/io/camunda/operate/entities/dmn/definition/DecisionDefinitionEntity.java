@@ -16,6 +16,7 @@ public class DecisionDefinitionEntity extends OperateZeebeEntity<DecisionDefinit
   private int version;
   private String decisionRequirementsId;
   private long decisionRequirementsKey;
+  private String tenantId;
 
   public String getDecisionId() {
     return decisionId;
@@ -62,28 +63,32 @@ public class DecisionDefinitionEntity extends OperateZeebeEntity<DecisionDefinit
     return this;
   }
 
+  public String getTenantId() {
+    return tenantId;
+  }
+
+  public DecisionDefinitionEntity setTenantId(String tenantId) {
+    this.tenantId = tenantId;
+    return this;
+  }
+
   @Override
-  public boolean equals(final Object o) {
-    if (this == o) {
+  public boolean equals(Object o) {
+    if (this == o)
       return true;
-    }
-    if (o == null || getClass() != o.getClass()) {
+    if (o == null || getClass() != o.getClass())
       return false;
-    }
-    if (!super.equals(o)) {
+    if (!super.equals(o))
       return false;
-    }
-    final DecisionDefinitionEntity that = (DecisionDefinitionEntity) o;
-    return version == that.version &&
-        decisionRequirementsKey == that.decisionRequirementsKey &&
-        Objects.equals(decisionId, that.decisionId) &&
-        Objects.equals(name, that.name) &&
-        Objects.equals(decisionRequirementsId, that.decisionRequirementsId);
+    DecisionDefinitionEntity that = (DecisionDefinitionEntity) o;
+    return version == that.version && decisionRequirementsKey == that.decisionRequirementsKey && Objects.equals(
+        decisionId, that.decisionId) && Objects.equals(name, that.name) && Objects.equals(decisionRequirementsId,
+        that.decisionRequirementsId) && Objects.equals(tenantId, that.tenantId);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(super.hashCode(), decisionId, name, version, decisionRequirementsId,
-        decisionRequirementsKey);
+    return Objects.hash(super.hashCode(), decisionId, name, version, decisionRequirementsId, decisionRequirementsKey,
+        tenantId);
   }
 }

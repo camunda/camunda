@@ -20,6 +20,7 @@ public class SequenceFlowEntity extends OperateEntity<SequenceFlowEntity> {
    */
   private String bpmnProcessId;
   private String activityId;
+  private String tenantId;
 
   public Long getProcessInstanceKey() {
     return processInstanceKey;
@@ -57,6 +58,15 @@ public class SequenceFlowEntity extends OperateEntity<SequenceFlowEntity> {
     return this;
   }
 
+  public String getTenantId() {
+    return tenantId;
+  }
+
+  public SequenceFlowEntity setTenantId(String tenantId) {
+    this.tenantId = tenantId;
+    return this;
+  }
+
   @Override
   public boolean equals(Object o) {
     if (this == o)
@@ -66,12 +76,14 @@ public class SequenceFlowEntity extends OperateEntity<SequenceFlowEntity> {
     if (!super.equals(o))
       return false;
     SequenceFlowEntity that = (SequenceFlowEntity) o;
-    return Objects.equals(processInstanceKey, that.processInstanceKey) && Objects.equals(processDefinitionKey, that.processDefinitionKey) && Objects.equals(
-        bpmnProcessId, that.bpmnProcessId) && Objects.equals(activityId, that.activityId);
+    return Objects.equals(processInstanceKey, that.processInstanceKey) && Objects.equals(processDefinitionKey,
+        that.processDefinitionKey) && Objects.equals(bpmnProcessId, that.bpmnProcessId) && Objects.equals(activityId,
+        that.activityId) && Objects.equals(tenantId, that.tenantId);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(super.hashCode(), processInstanceKey, processDefinitionKey, bpmnProcessId, activityId);
+    return Objects.hash(super.hashCode(), processInstanceKey, processDefinitionKey, bpmnProcessId, activityId,
+        tenantId);
   }
 }

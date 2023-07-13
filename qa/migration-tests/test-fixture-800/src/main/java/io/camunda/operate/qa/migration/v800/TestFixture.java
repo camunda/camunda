@@ -14,7 +14,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class TestFixture extends AbstractTestFixture {
 
-  public static final String VERSION = "8.0.0";
+  public static final String VERSION = "8.0.18";
 
   @Autowired
   private DMNDataGenerator dmnDataGenerator;

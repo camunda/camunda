@@ -8,8 +8,7 @@ package io.camunda.operate.qa.migration.util;
 
 import io.camunda.operate.qa.util.DependencyInjectionTestExecutionListener;
 import io.camunda.operate.qa.util.TestContext;
-import io.camunda.operate.schema.indices.ImportPositionIndex;
-import io.camunda.operate.schema.indices.UserIndex;
+import io.camunda.operate.schema.indices.*;
 import io.camunda.operate.schema.templates.*;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.junit.runner.RunWith;
@@ -36,6 +35,15 @@ public abstract class AbstractMigrationTest {
 
   @Autowired
   protected EntityReader entityReader;
+
+  @Autowired
+  protected ProcessIndex processTemplate;
+
+  @Autowired
+  protected DecisionIndex decisionTemplate;
+
+  @Autowired
+  protected DecisionRequirementsIndex decisionRequirementsIndex;
 
   @Autowired
   protected ListViewTemplate listViewTemplate;

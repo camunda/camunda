@@ -6,6 +6,7 @@
  */
 package io.camunda.operate.qa.migration;
 
+import static io.camunda.operate.qa.migration.util.TestConstants.DEFAULT_TENANT_ID;
 import static io.camunda.operate.schema.templates.ListViewTemplate.*;
 import static io.camunda.operate.util.CollectionUtil.chooseOne;
 import static io.camunda.operate.util.ElasticsearchUtil.joinWithAnd;
@@ -13,13 +14,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
 
-import io.camunda.operate.entities.EventEntity;
-import io.camunda.operate.entities.FlowNodeInstanceEntity;
-import io.camunda.operate.entities.IncidentEntity;
-import io.camunda.operate.entities.OperationEntity;
-import io.camunda.operate.entities.SequenceFlowEntity;
-import io.camunda.operate.entities.UserEntity;
-import io.camunda.operate.entities.VariableEntity;
+import io.camunda.operate.entities.*;
 import io.camunda.operate.entities.listview.FlowNodeInstanceForListViewEntity;
 import io.camunda.operate.entities.listview.ProcessInstanceForListViewEntity;
 import io.camunda.operate.entities.listview.VariableForListViewEntity;
@@ -76,6 +71,15 @@ public class BasicProcessTest extends AbstractMigrationTest {
   }
 
   @Test
+  public void testProcess() {
+    SearchRequest searchRequest = new SearchRequest(processTemplate.getAlias());
+    searchRequest.source().query(termQuery(EventTemplate.BPMN_PROCESS_ID, bpmnProcessId));
+    List<ProcessEntity> processes = entityReader.searchEntitiesFor(searchRequest, ProcessEntity.class);
+    assertThat(processes).hasSize(1);
+    assertThat(processes.get(0).getTenantId()).isEqualTo(DEFAULT_TENANT_ID);
+  }
+
+  @Test
   public void testEvents() {
     SearchRequest searchRequest = new SearchRequest(eventTemplate.getAlias());
     searchRequest.source().query(termsQuery(EventTemplate.PROCESS_INSTANCE_KEY, processInstanceIds));
@@ -84,6 +88,7 @@ public class BasicProcessTest extends AbstractMigrationTest {
     assertThat(events.stream().filter(e -> e.getMetadata() != null).count()).describedAs("At least one event has metadata").isGreaterThan(0);
     assertThat(events.stream().allMatch(e -> e.getEventSourceType()!= null)).describedAs("All events have a EventSourceType").isTrue();
     assertThat(events.stream().allMatch(e -> e.getEventType() != null)).describedAs("All events have a EventType").isTrue();
+    assertThat(events.stream().allMatch(e -> e.getTenantId().equals(DEFAULT_TENANT_ID))).describedAs("All events have <default> tenant id").isTrue();
   }
 
   @Test
@@ -92,6 +97,8 @@ public class BasicProcessTest extends AbstractMigrationTest {
     searchRequest.source().query(termsQuery(SequenceFlowTemplate.PROCESS_INSTANCE_KEY, processInstanceIds));
     List<SequenceFlowEntity> sequenceFlows = entityReader.searchEntitiesFor(searchRequest, SequenceFlowEntity.class);
     assertThat(sequenceFlows.size()).isEqualTo(BasicProcessDataGenerator.PROCESS_INSTANCE_COUNT * 2);
+    assertThat(sequenceFlows.stream().allMatch(sf -> sf.getTenantId().equals(DEFAULT_TENANT_ID))).describedAs("All sequence flows have <default> tenant id").isTrue();
+
   }
 
   @Test
@@ -102,6 +109,7 @@ public class BasicProcessTest extends AbstractMigrationTest {
     assertThat(flowNodeInstances.size()).isEqualTo(BasicProcessDataGenerator.PROCESS_INSTANCE_COUNT * 3);
     assertThat(flowNodeInstances.stream().allMatch( a -> a.getType() != null)).as("All flow node instances have a type").isTrue();
     assertThat(flowNodeInstances.stream().allMatch( a -> a.getState()!= null)).as("All flow node instances have a state").isTrue();
+    assertThat(flowNodeInstances.stream().allMatch( a -> a.getTenantId().equals(DEFAULT_TENANT_ID))).describedAs("All flow node instances have <default> tenant id").isTrue();
   }
 
   @Test
@@ -110,6 +118,7 @@ public class BasicProcessTest extends AbstractMigrationTest {
     searchRequest.source().query(termsQuery(VariableTemplate.PROCESS_INSTANCE_KEY, processInstanceIds));
     List<VariableEntity> variableEntities = entityReader.searchEntitiesFor(searchRequest, VariableEntity.class);
     assertThat(variableEntities.size()).isEqualTo(BasicProcessDataGenerator.PROCESS_INSTANCE_COUNT * 4);
+    assertThat(variableEntities.stream().allMatch( v -> v.getTenantId().equals(DEFAULT_TENANT_ID))).describedAs("All variables have <default> tenant id").isTrue();
   }
 
   @Test
@@ -132,6 +141,7 @@ public class BasicProcessTest extends AbstractMigrationTest {
     processInstances.forEach(pi -> {
       assertThat(pi.getTreePath()).isNotNull();
       assertThat(pi).matches(p -> p.getTreePath().equals("PI_" + p.getProcessInstanceKey()));
+      assertThat(pi.getTenantId()).isEqualTo(DEFAULT_TENANT_ID);
     });
 
     //  Variables list
@@ -159,6 +169,7 @@ public class BasicProcessTest extends AbstractMigrationTest {
     );
     assertThat(incidents.stream().allMatch(i -> i.getState() != null)).describedAs("Each incident has a state").isTrue();
     assertThat(incidents.stream().allMatch(i -> i.getErrorType() != null)).describedAs("Each incident has an errorType").isTrue();
+    assertThat(incidents.stream().allMatch(i -> i.getTenantId().equals(DEFAULT_TENANT_ID))).describedAs("Each incident has <default> tenant id").isTrue();
     IncidentEntity randomIncident = chooseOne(incidents);
     assertThat(randomIncident.getErrorMessageHash()).isNotNull();
 

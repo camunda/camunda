@@ -37,6 +37,8 @@ public class ProcessInstanceForListViewEntity extends OperateZeebeEntity<Process
 
   private boolean incident;
 
+  private String tenantId;
+
   private ListViewJoinRelation joinRelation = new ListViewJoinRelation(ListViewTemplate.PROCESS_INSTANCE_JOIN_RELATION);
 
   @JsonIgnore
@@ -155,6 +157,15 @@ public class ProcessInstanceForListViewEntity extends OperateZeebeEntity<Process
     return this;
   }
 
+  public String getTenantId() {
+    return tenantId;
+  }
+
+  public ProcessInstanceForListViewEntity setTenantId(String tenantId) {
+    this.tenantId = tenantId;
+    return this;
+  }
+
   public ListViewJoinRelation getJoinRelation() {
     return joinRelation;
   }
@@ -172,39 +183,29 @@ public class ProcessInstanceForListViewEntity extends OperateZeebeEntity<Process
   }
 
   @Override
-  public boolean equals(final Object o) {
-    if (this == o) {
+  public boolean equals(Object o) {
+    if (this == o)
       return true;
-    }
-    if (o == null || getClass() != o.getClass()) {
+    if (o == null || getClass() != o.getClass())
       return false;
-    }
-    if (!super.equals(o)) {
+    if (!super.equals(o))
       return false;
-    }
-    final ProcessInstanceForListViewEntity that = (ProcessInstanceForListViewEntity) o;
-    return incident == that.incident &&
-        Objects.equals(processDefinitionKey, that.processDefinitionKey) &&
-        Objects.equals(processName, that.processName) &&
-        Objects.equals(processVersion, that.processVersion) &&
-        Objects.equals(bpmnProcessId, that.bpmnProcessId) &&
-        Objects.equals(startDate, that.startDate) &&
-        Objects.equals(endDate, that.endDate) &&
-        state == that.state &&
-        Objects.equals(batchOperationIds, that.batchOperationIds) &&
-        Objects.equals(parentProcessInstanceKey, that.parentProcessInstanceKey) &&
-        Objects.equals(parentFlowNodeInstanceKey, that.parentFlowNodeInstanceKey) &&
-        Objects.equals(treePath, that.treePath) &&
-        Objects.equals(joinRelation, that.joinRelation) &&
-        Arrays.equals(sortValues, that.sortValues);
+    ProcessInstanceForListViewEntity that = (ProcessInstanceForListViewEntity) o;
+    return incident == that.incident && Objects.equals(processDefinitionKey,
+        that.processDefinitionKey) && Objects.equals(processName, that.processName) && Objects.equals(processVersion,
+        that.processVersion) && Objects.equals(bpmnProcessId, that.bpmnProcessId) && Objects.equals(startDate,
+        that.startDate) && Objects.equals(endDate, that.endDate) && state == that.state && Objects.equals(
+        batchOperationIds, that.batchOperationIds) && Objects.equals(parentProcessInstanceKey,
+        that.parentProcessInstanceKey) && Objects.equals(parentFlowNodeInstanceKey,
+        that.parentFlowNodeInstanceKey) && Objects.equals(treePath, that.treePath) && Objects.equals(tenantId,
+        that.tenantId) && Objects.equals(joinRelation, that.joinRelation) && Arrays.equals(sortValues, that.sortValues);
   }
 
   @Override
   public int hashCode() {
-    int result = Objects
-        .hash(super.hashCode(), processDefinitionKey, processName, processVersion, bpmnProcessId,
-            startDate, endDate, state, batchOperationIds, parentProcessInstanceKey,
-            parentFlowNodeInstanceKey, treePath, incident, joinRelation);
+    int result = Objects.hash(super.hashCode(), processDefinitionKey, processName, processVersion, bpmnProcessId,
+        startDate, endDate, state, batchOperationIds, parentProcessInstanceKey, parentFlowNodeInstanceKey, treePath,
+        incident, tenantId, joinRelation);
     result = 31 * result + Arrays.hashCode(sortValues);
     return result;
   }
