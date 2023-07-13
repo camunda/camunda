@@ -22,6 +22,7 @@ import io.camunda.zeebe.engine.state.mutable.MutableVariableState;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.BiFunction;
@@ -170,6 +171,13 @@ public final class DbElementInstanceState implements MutableElementInstanceState
     awaitProcessInstanceResultMetadataColumnFamily.deleteIfExists(elementInstanceKey);
     removeNumberOfTakenSequenceFlows(key);
 
+    final var recordValue = instance.getValue();
+    if (recordValue.getBpmnElementType() == BpmnElementType.PROCESS) {
+      processDefinitionKey.wrapLong(recordValue.getProcessDefinitionKey());
+      processInstanceKeyByProcessDefinitionKeyColumnFamily.deleteExisting(
+          processInstanceKeyByProcessDefinitionKey);
+    }
+
     if (parent > 0) {
       elementInstanceKey.wrapLong(parent);
       final var parentInstance = elementInstanceColumnFamily.get(elementInstanceKey);
@@ -191,6 +199,13 @@ public final class DbElementInstanceState implements MutableElementInstanceState
     elementInstanceColumnFamily.insert(elementInstanceKey, instance);
     parentChildColumnFamily.insert(parentChildKey, DbNil.INSTANCE);
     variableState.createScope(elementInstanceKey.getValue(), parentKey.inner().getValue());
+
+    final var recordValue = instance.getValue();
+    if (recordValue.getBpmnElementType() == BpmnElementType.PROCESS) {
+      processDefinitionKey.wrapLong(recordValue.getProcessDefinitionKey());
+      processInstanceKeyByProcessDefinitionKeyColumnFamily.insert(
+          processInstanceKeyByProcessDefinitionKey, DbNil.INSTANCE);
+    }
   }
 
   @Override
@@ -325,6 +340,20 @@ public final class DbElementInstanceState implements MutableElementInstanceState
         });
 
     return count.get();
+  }
+
+  @Override
+  public List<Long> getProcessInstanceKeysByDefinitionKey(final long processDefinitionKey) {
+    final List<Long> processInstanceKeys = new ArrayList<>();
+    this.processDefinitionKey.wrapLong(processDefinitionKey);
+
+    processInstanceKeyByProcessDefinitionKeyColumnFamily.whileEqualPrefix(
+        this.processDefinitionKey,
+        (key, value) -> {
+          final DbLong processInstanceKey = key.second();
+          processInstanceKeys.add(processInstanceKey.getValue());
+        });
+    return processInstanceKeys;
   }
 
   private ElementInstance copyElementInstance(final ElementInstance elementInstance) {

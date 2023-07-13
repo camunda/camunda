@@ -282,12 +282,129 @@ public final class ElementInstanceStateTest {
   }
 
   @Test
+  public void shouldInsertProcessInstanceKeyByProcessDefinitionKey() {
+    // given
+    final var processInstanceRecord =
+        createProcessInstanceRecord().setBpmnElementType(BpmnElementType.PROCESS);
+    final var processInstanceKey = 100L;
+    elementInstanceState.newInstance(
+        processInstanceKey, processInstanceRecord, ProcessInstanceIntent.ELEMENT_ACTIVATED);
+
+    // when
+    final List<Long> processInstanceKeys =
+        elementInstanceState.getProcessInstanceKeysByDefinitionKey(
+            processInstanceRecord.getProcessDefinitionKey());
+
+    // then
+    Assertions.assertThat(processInstanceKeys).hasSize(1);
+    assertThat(processInstanceKeys).containsOnly(processInstanceKey);
+  }
+
+  @Test
+  public void shouldInsertMultipleProcessInstanceKeyByProcessDefinitionKey() {
+    // given
+    final var processDefinitionKey = 100L;
+    final var processInstanceRecord1 =
+        createProcessInstanceRecord()
+            .setBpmnElementType(BpmnElementType.PROCESS)
+            .setProcessDefinitionKey(processDefinitionKey);
+    final var processInstanceRecord2 =
+        createProcessInstanceRecord()
+            .setBpmnElementType(BpmnElementType.PROCESS)
+            .setProcessDefinitionKey(processDefinitionKey);
+    final var processInstanceKey1 = 101L;
+    final var processInstanceKey2 = 102L;
+    elementInstanceState.newInstance(
+        processInstanceKey1, processInstanceRecord1, ProcessInstanceIntent.ELEMENT_ACTIVATED);
+    elementInstanceState.newInstance(
+        processInstanceKey2, processInstanceRecord2, ProcessInstanceIntent.ELEMENT_ACTIVATED);
+
+    // when
+    final List<Long> processInstanceKeys =
+        elementInstanceState.getProcessInstanceKeysByDefinitionKey(processDefinitionKey);
+
+    // then
+    Assertions.assertThat(processInstanceKeys).hasSize(2);
+    assertThat(processInstanceKeys).containsOnly(processInstanceKey1, processInstanceKey2);
+  }
+
+  @Test
+  public void shouldOnlyReturnProcessInstanceKeyBelongingToProcessDefinition() {
+    // given
+    final var processDefinitionKey = 100L;
+    final var processInstanceRecord1 =
+        createProcessInstanceRecord()
+            .setBpmnElementType(BpmnElementType.PROCESS)
+            .setProcessDefinitionKey(processDefinitionKey);
+    final var processInstanceRecord2 =
+        createProcessInstanceRecord()
+            .setBpmnElementType(BpmnElementType.PROCESS)
+            .setProcessDefinitionKey(101L);
+    final var processInstanceKey1 = 102L;
+    final var processInstanceKey2 = 103L;
+    elementInstanceState.newInstance(
+        processInstanceKey1, processInstanceRecord1, ProcessInstanceIntent.ELEMENT_ACTIVATED);
+    elementInstanceState.newInstance(
+        processInstanceKey2, processInstanceRecord2, ProcessInstanceIntent.ELEMENT_ACTIVATED);
+
+    // when
+    final List<Long> processInstanceKeys =
+        elementInstanceState.getProcessInstanceKeysByDefinitionKey(processDefinitionKey);
+
+    // then
+    Assertions.assertThat(processInstanceKeys).hasSize(1);
+    assertThat(processInstanceKeys).containsOnly(processInstanceKey1);
+  }
+
+  @Test
+  public void shouldOnlyReturnEmptyListWhenNoProcessInstanceForProcessDefinitionKeyExist() {
+    // given
+    final var processDefinitionKey = 100L;
+    final var processInstanceRecord =
+        createProcessInstanceRecord()
+            .setBpmnElementType(BpmnElementType.PROCESS)
+            .setProcessDefinitionKey(101L);
+    final var processInstanceKey = 102L;
+    elementInstanceState.newInstance(
+        processInstanceKey, processInstanceRecord, ProcessInstanceIntent.ELEMENT_ACTIVATED);
+
+    // when
+    final List<Long> processInstanceKeys =
+        elementInstanceState.getProcessInstanceKeysByDefinitionKey(processDefinitionKey);
+
+    // then
+    Assertions.assertThat(processInstanceKeys).isEmpty();
+  }
+
+  @Test
+  public void shouldRemoveProcessInstanceByProcessDefinitionKeyOnRemoval() {
+    // given
+    final var processDefinitionKey = 100L;
+    final var processInstanceRecord =
+        createProcessInstanceRecord()
+            .setBpmnElementType(BpmnElementType.PROCESS)
+            .setProcessDefinitionKey(processDefinitionKey);
+    final var processInstanceKey = 101L;
+    elementInstanceState.newInstance(
+        processInstanceKey, processInstanceRecord, ProcessInstanceIntent.ELEMENT_ACTIVATED);
+
+    // when
+    elementInstanceState.removeInstance(processInstanceKey);
+    final List<Long> processInstanceKeys =
+        elementInstanceState.getProcessInstanceKeysByDefinitionKey(processDefinitionKey);
+
+    // then
+    Assertions.assertThat(processInstanceKeys).isEmpty();
+  }
+
+  @Test
   public void shouldNotLeakMemoryOnRemoval() {
     // given
     final int parent = 100;
     final int child = 101;
 
-    final ProcessInstanceRecord processInstanceRecord = createProcessInstanceRecord();
+    final ProcessInstanceRecord processInstanceRecord =
+        createProcessInstanceRecord().setBpmnElementType(BpmnElementType.PROCESS);
     final ElementInstance parentInstance =
         elementInstanceState.newInstance(
             parent, processInstanceRecord, ProcessInstanceIntent.ELEMENT_ACTIVATED);
