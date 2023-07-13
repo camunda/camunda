@@ -31,9 +31,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 final class OpensearchClientIT {
   @Container
   private static final OpensearchContainer CONTAINER =
-      TestSupport.createDefaultContainer()
-          .withSecurityEnabled()
-          .withEnv("plugins.security.restapi.password_score_based_validation_strength", "fair");
+      TestSupport.createDefaultContainer().withSecurityEnabled();
 
   private static final int PARTITION_ID = 1;
 
@@ -139,9 +137,9 @@ final class OpensearchClientIT {
   @Test
   void shouldAuthenticateWithBasicAuth() {
     // given
-    testClient.putUser("user", "strongpassword", List.of("admin"));
+    testClient.putUser("user", "password", List.of("admin"));
     config.getAuthentication().setUsername("user");
-    config.getAuthentication().setPassword("strongpassword");
+    config.getAuthentication().setPassword("password");
 
     // when
     // force recreating the client
