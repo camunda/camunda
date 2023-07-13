@@ -3,7 +3,7 @@
   "includePaths": ["client/**", ".github/**", ".ci/**", "Dockerfile"],
   "ignorePaths": ["client/pom.xml"],
   "baseBranches": [
-    "main",
+    "master",
     "/^stable\\/8\\..*/"
   ],
   "prConcurrentLimit": 30,
@@ -33,7 +33,7 @@
     },
     {
       "matchBaseBranches": ["/^stable\\/8\\..*/"],
-      "matchFileNames": ["client/**"],
+      "matchFileNames": ["client/**", ".github/**", ".ci/**"],
       "enabled": false
     },
     {
