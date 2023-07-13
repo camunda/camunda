@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.gateway;
 
+import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 import static org.agrona.LangUtil.rethrowUnchecked;
 
 import com.fasterxml.jackson.core.JsonParseException;
@@ -43,10 +44,14 @@ import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.PublishMessageRequest
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ResolveIncidentRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.Resource;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.SetVariablesRequest;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.StreamActivatedJobsRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ThrowErrorRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.UpdateJobRetriesRequest;
 import io.camunda.zeebe.msgpack.value.DocumentValue;
+import io.camunda.zeebe.msgpack.value.StringValue;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
+import io.camunda.zeebe.protocol.impl.stream.job.JobActivationProperties;
+import io.camunda.zeebe.protocol.impl.stream.job.JobActivationPropertiesImpl;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
@@ -208,6 +213,18 @@ public final class RequestMapper {
       final BroadcastSignalRequest grpcRequest) {
     return new BrokerBroadcastSignalRequest(grpcRequest.getSignalName())
         .setVariables(ensureJsonSet(grpcRequest.getVariables()));
+  }
+
+  public static JobActivationProperties toJobActivationProperties(
+      final StreamActivatedJobsRequest request) {
+    final JobActivationPropertiesImpl jobActivationProperties = new JobActivationPropertiesImpl();
+    final DirectBuffer worker = wrapString(request.getWorker());
+    jobActivationProperties.setWorker(worker, 0, worker.capacity());
+    jobActivationProperties.setTimeout(request.getTimeout());
+    jobActivationProperties.setFetchVariables(
+        request.getFetchVariableList().stream().map(StringValue::new).toList());
+
+    return jobActivationProperties;
   }
 
   public static DirectBuffer ensureJsonSet(final String value) {

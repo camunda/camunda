@@ -63,28 +63,8 @@ public final class ErrorMappingStreamObserver<GrpcResponseT>
   }
 
   @Override
-  public boolean isReady() {
-    return delegate.isReady();
-  }
-
-  @Override
-  public void setOnReadyHandler(final Runnable onReadyHandler) {
-    delegate.setOnReadyHandler(onReadyHandler);
-  }
-
-  @Override
   public void disableAutoInboundFlowControl() {
     delegate.disableAutoInboundFlowControl();
-  }
-
-  @Override
-  public void request(final int count) {
-    delegate.request(count);
-  }
-
-  @Override
-  public void setMessageCompression(final boolean enable) {
-    delegate.setMessageCompression(enable);
   }
 
   @Override
@@ -123,6 +103,31 @@ public final class ErrorMappingStreamObserver<GrpcResponseT>
   @Override
   public void setCompression(final String compression) {
     delegate.setCompression(compression);
+  }
+
+  @Override
+  public boolean isReady() {
+    return delegate.isReady();
+  }
+
+  @Override
+  public void setOnReadyHandler(final Runnable onReadyHandler) {
+    delegate.setOnReadyHandler(onReadyHandler);
+  }
+
+  @Override
+  public void request(final int count) {
+    delegate.request(count);
+  }
+
+  @Override
+  public void setMessageCompression(final boolean enable) {
+    delegate.setMessageCompression(enable);
+  }
+
+  @Override
+  public void setOnCloseHandler(final Runnable onCloseHandler) {
+    delegate.setOnCloseHandler(onCloseHandler);
   }
 
   private void suppressCancelException() {
