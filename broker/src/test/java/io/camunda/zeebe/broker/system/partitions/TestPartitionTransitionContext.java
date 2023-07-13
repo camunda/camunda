@@ -255,6 +255,30 @@ public class TestPartitionTransitionContext implements PartitionTransitionContex
     this.backupStore = backupStore;
   }
 
+  @Override
+  public Long getTimeOfLastTransitionStep() {
+    return 0L;
+  }
+
+  @Override
+  public void setTimeOfLastTransitionStep(final long timeOfLastTransitionStep) {}
+
+  @Override
+  public String getCurrentStepTransition() {
+    return null;
+  }
+
+  @Override
+  public void setCurrentStepTransition(final String lastTransitionStep) {}
+
+  @Override
+  public boolean getIsPartitionInTransition() {
+    return false;
+  }
+
+  @Override
+  public void setIsPartitionInTransition(final boolean isPartitionInTransition) {}
+
   public void setGatewayBrokerTransport(final AtomixServerTransport gatewayBrokerTransport) {
     this.gatewayBrokerTransport = gatewayBrokerTransport;
   }
