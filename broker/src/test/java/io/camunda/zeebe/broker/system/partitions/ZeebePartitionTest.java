@@ -27,6 +27,8 @@ import io.atomix.raft.partition.RaftPartition;
 import io.atomix.raft.partition.impl.RaftPartitionServer;
 import io.camunda.zeebe.broker.system.partitions.impl.PartitionTransitionImpl;
 import io.camunda.zeebe.broker.system.partitions.impl.RecoverablePartitionTransitionException;
+import io.camunda.zeebe.broker.system.partitions.impl.TransitionStepContext;
+import io.camunda.zeebe.scheduler.clock.ActorClock;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.scheduler.health.CriticalComponentsHealthMonitor;
@@ -55,11 +57,14 @@ public class ZeebePartitionTest {
   private CriticalComponentsHealthMonitor healthMonitor;
   private RaftPartition raft;
   private ZeebePartition partition;
+  private TransitionStepContext transitionStepContext;
 
   @Before
   public void setup() {
     ctx = mock(PartitionStartupAndTransitionContextImpl.class);
     transition = spy(new PartitionTransitionImpl(List.of(new NoopTransitionStep())));
+    transition.updateTransitionContext(ctx);
+    transitionStepContext = mock(TransitionStepContext.class);
 
     raft = mock(RaftPartition.class);
     when(raft.id()).thenReturn(new PartitionId("", 0));
@@ -72,6 +77,9 @@ public class ZeebePartitionTest {
     when(ctx.getPartitionContext()).thenReturn(ctx);
     when(ctx.getComponentHealthMonitor()).thenReturn(healthMonitor);
     when(ctx.createTransitionContext()).thenReturn(ctx);
+    when(ctx.getTransitionStepContext()).thenReturn(transitionStepContext);
+
+    doNothing().when(transitionStepContext).setIsPartitionInTransition(any(boolean.class));
 
     partition = new ZeebePartition(ctx, transition, List.of(new NoopStartupStep()));
   }
@@ -353,6 +361,31 @@ public class ZeebePartitionTest {
   }
 
   @Test
+  public void shouldReportUnhealthyIfTransitionStepIsStuck() {
+    // given
+    final var captor = ArgumentCaptor.forClass(ZeebePartitionHealth.class);
+    when(ctx.getTransitionStepContext().getIsPartitionInTransition()).thenReturn(true);
+    // threshold is 60 seconds for timeout
+    when(ctx.getTransitionStepContext().getTimeOfLastTransitionStep())
+        .thenReturn(ActorClock.currentTimeMillis() - 61000L);
+    schedulerRule.submitActor(partition);
+
+    // when
+    partition.onNewRole(Role.LEADER, 1);
+    schedulerRule.workUntilDone();
+
+    // then
+    verify(healthMonitor).registerComponent(any(), captor.capture());
+    final var zeebePartitionHealth = captor.getValue();
+
+    // then
+    final HealthReport healthReport = zeebePartitionHealth.getHealthReport();
+    assertThat(healthReport.getStatus()).isEqualTo(HealthStatus.UNHEALTHY);
+    assertThat(healthReport.getIssue().message())
+        .contains("Partition is blocked in Transition Step");
+  }
+
+  @Test
   public void shouldReportUnhealthyPerDefault() {
     // given
     final var captor = ArgumentCaptor.forClass(ZeebePartitionHealth.class);
@@ -366,8 +399,10 @@ public class ZeebePartitionTest {
 
     final var zeebePartitionHealth = captor.getValue();
     final HealthReport healthReport = zeebePartitionHealth.getHealthReport();
+    zeebePartitionHealth.setServicesInstalled(true);
+
     assertThat(healthReport.getStatus()).isEqualTo(HealthStatus.UNHEALTHY);
-    assertThat(healthReport.getIssue().message()).contains("Initial state");
+    assertThat(healthReport.getIssue().message()).contains("Services not installed");
   }
 
   @Test
