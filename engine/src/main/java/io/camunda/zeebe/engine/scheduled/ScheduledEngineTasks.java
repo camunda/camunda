@@ -7,7 +7,9 @@
  */
 package io.camunda.zeebe.engine.scheduled;
 
+import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.scheduled.task.JobTimeoutChecker;
+import io.camunda.zeebe.engine.scheduled.task.MessageTimeToLiveChecker;
 import io.camunda.zeebe.engine.state.immutable.ScheduledTaskState;
 import io.camunda.zeebe.stream.api.RecordProcessorContext;
 import java.util.List;
@@ -20,11 +22,15 @@ public final class ScheduledEngineTasks {
   /** Builds and registers all {@link ScheduledEngineTask}s. */
   public static void registerScheduledTasks(
       final RecordProcessorContext context,
-      final Supplier<ScheduledTaskState> scheduledTaskStateFactory) {
+      final Supplier<ScheduledTaskState> scheduledTaskStateFactory,
+      final EngineConfiguration config) {
     final var manager =
         new ScheduledEngineTaskManager(context.getScheduleService(), scheduledTaskStateFactory);
 
     manager.register(new JobTimeoutChecker());
+    manager.register(
+        new MessageTimeToLiveChecker(
+            config.getMessagesTtlCheckerBatchLimit(), config.getMessagesTtlCheckerInterval()));
 
     context.addLifecycleListeners(List.of(manager));
   }

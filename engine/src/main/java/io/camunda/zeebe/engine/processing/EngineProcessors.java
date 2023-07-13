@@ -10,7 +10,6 @@ package io.camunda.zeebe.engine.processing;
 import static io.camunda.zeebe.protocol.record.intent.DeploymentIntent.CREATE;
 
 import io.camunda.zeebe.dmn.DecisionEngineFactory;
-import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.metrics.JobMetrics;
 import io.camunda.zeebe.engine.metrics.ProcessEngineMetrics;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviorsImpl;
@@ -123,14 +122,7 @@ public final class EngineProcessors {
         featureFlags,
         commandDistributionBehavior);
     addMessageProcessors(
-        bpmnBehaviors,
-        subscriptionCommandSender,
-        processingState,
-        scheduledTaskStateFactory,
-        typedRecordProcessors,
-        writers,
-        config,
-        featureFlags);
+        bpmnBehaviors, subscriptionCommandSender, processingState, typedRecordProcessors, writers);
 
     final TypedRecordProcessor<ProcessInstanceRecord> bpmnStreamProcessor =
         addProcessProcessors(
@@ -263,20 +255,10 @@ public final class EngineProcessors {
       final BpmnBehaviorsImpl bpmnBehaviors,
       final SubscriptionCommandSender subscriptionCommandSender,
       final MutableProcessingState processingState,
-      final Supplier<ScheduledTaskState> scheduledTaskStateFactory,
       final TypedRecordProcessors typedRecordProcessors,
-      final Writers writers,
-      final EngineConfiguration config,
-      final FeatureFlags featureFlags) {
+      final Writers writers) {
     MessageEventProcessors.addMessageProcessors(
-        bpmnBehaviors,
-        typedRecordProcessors,
-        processingState,
-        scheduledTaskStateFactory,
-        subscriptionCommandSender,
-        writers,
-        config,
-        featureFlags);
+        bpmnBehaviors, typedRecordProcessors, processingState, subscriptionCommandSender, writers);
   }
 
   private static void addDecisionProcessors(

@@ -82,7 +82,7 @@ public class Engine implements RecordProcessor {
         typedRecordProcessorFactory.createProcessors(typedProcessorContext);
 
     ScheduledEngineTasks.registerScheduledTasks(
-        recordProcessorContext, typedProcessorContext.getScheduledTaskStateFactory());
+        recordProcessorContext, typedProcessorContext.getScheduledTaskStateFactory(), config);
 
     recordProcessorContext.addLifecycleListeners(typedRecordProcessors.getLifecycleListeners());
     recordProcessorMap = typedRecordProcessors.getRecordProcessorMap();

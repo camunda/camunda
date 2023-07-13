@@ -19,7 +19,6 @@ import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 
-import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
@@ -35,7 +34,6 @@ import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessMessageSubscriptionIntent;
 import io.camunda.zeebe.stream.api.InterPartitionCommandSender;
 import io.camunda.zeebe.stream.api.ProcessingResultBuilder;
-import io.camunda.zeebe.util.FeatureFlags;
 import java.time.Duration;
 import org.agrona.DirectBuffer;
 import org.awaitility.Awaitility;
@@ -44,8 +42,6 @@ import org.junit.Rule;
 import org.junit.Test;
 
 public final class MessageStreamProcessorTest {
-
-  private static final EngineConfiguration DEFAULT_ENGINE_CONFIGURATION = new EngineConfiguration();
 
   @Rule public final StreamProcessorRule rule = new StreamProcessorRule();
 
@@ -65,16 +61,12 @@ public final class MessageStreamProcessorTest {
     rule.startTypedStreamProcessor(
         (typedRecordProcessors, processingContext) -> {
           final var processingState = processingContext.getProcessingState();
-          final var scheduledTaskState = processingContext.getScheduledTaskStateFactory();
           MessageEventProcessors.addMessageProcessors(
               mock(BpmnBehaviors.class),
               typedRecordProcessors,
               processingState,
-              scheduledTaskState,
               spySubscriptionCommandSender,
-              processingContext.getWriters(),
-              DEFAULT_ENGINE_CONFIGURATION,
-              FeatureFlags.createDefault());
+              processingContext.getWriters());
           return typedRecordProcessors;
         });
   }

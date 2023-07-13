@@ -7,12 +7,10 @@
  */
 package io.camunda.zeebe.engine.processing.message;
 
-import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
-import io.camunda.zeebe.engine.state.immutable.ScheduledTaskState;
 import io.camunda.zeebe.engine.state.mutable.MutableEventScopeInstanceState;
 import io.camunda.zeebe.engine.state.mutable.MutableMessageStartEventSubscriptionState;
 import io.camunda.zeebe.engine.state.mutable.MutableMessageState;
@@ -22,8 +20,6 @@ import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.MessageIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
-import io.camunda.zeebe.util.FeatureFlags;
-import java.util.function.Supplier;
 
 public final class MessageEventProcessors {
 
@@ -31,11 +27,8 @@ public final class MessageEventProcessors {
       final BpmnBehaviors bpmnBehaviors,
       final TypedRecordProcessors typedRecordProcessors,
       final MutableProcessingState processingState,
-      final Supplier<ScheduledTaskState> scheduledTaskStateFactory,
       final SubscriptionCommandSender subscriptionCommandSender,
-      final Writers writers,
-      final EngineConfiguration config,
-      final FeatureFlags featureFlags) {
+      final Writers writers) {
 
     final MutableMessageState messageState = processingState.getMessageState();
     final MutableMessageSubscriptionState subscriptionState =
@@ -96,11 +89,6 @@ public final class MessageEventProcessors {
                 messageState, subscriptionState, subscriptionCommandSender, writers))
         .withListener(
             new MessageObserver(
-                scheduledTaskStateFactory,
-                processingState.getPendingMessageSubscriptionState(),
-                subscriptionCommandSender,
-                config.getMessagesTtlCheckerInterval(),
-                config.getMessagesTtlCheckerBatchLimit(),
-                featureFlags.enableMessageTTLCheckerAsync()));
+                processingState.getPendingMessageSubscriptionState(), subscriptionCommandSender));
   }
 }
