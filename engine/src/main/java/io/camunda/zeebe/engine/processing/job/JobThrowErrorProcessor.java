@@ -43,7 +43,7 @@ public class JobThrowErrorProcessor implements CommandProcessor<JobRecord> {
    */
   public static final String NO_CATCH_EVENT_FOUND = "NO_CATCH_EVENT_FOUND";
 
-  private static final int MAX_ERROR_MESSAGE_SIZE = 500;
+  private static final int MAX_ERROR_MESSAGE_SIZE = 10000;
 
   private final IncidentRecord incidentEvent = new IncidentRecord();
   private Either<Failure, CatchEventTuple> foundCatchEvent;

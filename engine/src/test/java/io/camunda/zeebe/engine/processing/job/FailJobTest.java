@@ -40,7 +40,8 @@ public final class FailJobTest {
 
   @ClassRule public static final EngineRule ENGINE = EngineRule.singlePartition();
 
-  private static final int MAX_MESSAGE_SIZE = 500;
+  private static final int MAX_MESSAGE_SIZE = 10000;
+
   private static final String PROCESS_ID = "process";
   private static String jobType;
 
@@ -248,7 +249,6 @@ public final class FailJobTest {
     // given
     ENGINE.createJob(jobType, PROCESS_ID);
     final Record<JobBatchRecordValue> batchRecord = ENGINE.jobs().withType(jobType).activate();
-    final JobRecordValue job = batchRecord.getValue().getJobs().get(0);
     final long jobKey = batchRecord.getValue().getJobKeys().get(0);
 
     ENGINE.job().withKey(jobKey).complete();
@@ -294,6 +294,26 @@ public final class FailJobTest {
     Assertions.assertThat(failedRecord).hasRecordType(RecordType.EVENT).hasIntent(FAILED);
 
     final String expectedErrorMessage = "*".repeat(MAX_MESSAGE_SIZE).concat("...");
+    assertThat(failedRecord.getValue().getErrorMessage()).isEqualTo(expectedErrorMessage);
+    assertThat(incident.getValue().getErrorMessage()).isEqualTo(expectedErrorMessage);
+  }
+
+  @Test
+  public void shouldNotTruncateErrorMessage() {
+    // given
+    final Record<JobRecordValue> job = ENGINE.createJob(jobType, PROCESS_ID);
+    final String errorMessage = "*".repeat(MAX_MESSAGE_SIZE);
+
+    // when
+    final Record<JobRecordValue> failedRecord =
+        ENGINE.job().withKey(job.getKey()).withErrorMessage(errorMessage).fail();
+
+    final var incident = RecordingExporter.incidentRecords(CREATED).getFirst();
+
+    // then
+    Assertions.assertThat(failedRecord).hasRecordType(RecordType.EVENT).hasIntent(FAILED);
+
+    final String expectedErrorMessage = "*".repeat(MAX_MESSAGE_SIZE);
     assertThat(failedRecord.getValue().getErrorMessage()).isEqualTo(expectedErrorMessage);
     assertThat(incident.getValue().getErrorMessage()).isEqualTo(expectedErrorMessage);
   }
