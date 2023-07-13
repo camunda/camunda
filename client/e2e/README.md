@@ -5,7 +5,7 @@
 Ensure that Node.js and yarn are installed on your computer and run the following command:
 
 ```sh
-cd client/e2e
+cd client
 yarn install
 ```
 
