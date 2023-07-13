@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.gateway.grpc;
 
+import io.grpc.stub.ServerCallStreamObserver;
 import io.grpc.stub.StreamObserver;
 
 /**
@@ -19,5 +20,13 @@ import io.grpc.stub.StreamObserver;
  * @param <GrpcResponseT> the expected gRPC response type
  */
 public interface ServerStreamObserver<GrpcResponseT> extends StreamObserver<GrpcResponseT> {
+  /**
+   * @see ServerCallStreamObserver#isCancelled()
+   */
   boolean isCancelled();
+
+  /**
+   * @see ServerCallStreamObserver#setOnCancelHandler(Runnable)
+   */
+  void setOnCancelHandler(final Runnable handler);
 }

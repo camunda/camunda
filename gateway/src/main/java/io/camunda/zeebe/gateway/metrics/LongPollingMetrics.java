@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.gateway.metrics;
 
+import io.camunda.zeebe.util.VisibleForTesting;
 import io.prometheus.client.Gauge;
 
 public final class LongPollingMetrics {
@@ -20,5 +21,10 @@ public final class LongPollingMetrics {
 
   public void setBlockedRequestsCount(final String type, final int count) {
     REQUESTS_QUEUED_CURRENT.labels(type).set(count);
+  }
+
+  @VisibleForTesting("Allows introspecting the long polling state in QA tests")
+  public double getBlockedRequestsCount(final String type) {
+    return REQUESTS_QUEUED_CURRENT.labels(type).get();
   }
 }
