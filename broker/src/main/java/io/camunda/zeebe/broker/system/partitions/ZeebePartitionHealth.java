@@ -61,8 +61,8 @@ class ZeebePartitionHealth implements HealthMonitorable {
       // we check if the time since last transition step is larger than timeout
       // while if we're still in transition
       LOG.error(
-          "Transition from {} on term {}, on transtion step {} seems to be blocked."
-              + "Timeout configured is {}s.",
+          "Transition from {} on term {}, on transition step {} seems to be blocked."
+              + " Timeout configured is {}s.",
           partitionContext.getCurrentRole(),
           partitionContext.getCurrentTerm(),
           partitionContext.getCurrentStepTransition(),
@@ -71,7 +71,7 @@ class ZeebePartitionHealth implements HealthMonitorable {
       healthReport =
           HealthReport.unhealthy(this)
               .withMessage(
-                  "Partition is blocked in Transition Step {}"
+                  "Partition is blocked in Transition Step %s"
                       .formatted(partitionContext.getCurrentStepTransition()));
     } else {
       healthReport = HealthReport.healthy(this);

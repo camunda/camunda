@@ -99,7 +99,6 @@ public class PartitionStartupAndTransitionContextImpl
   private BackupManager backupManager;
   private CheckpointRecordsProcessor checkpointRecordsProcessor;
   private final TopologyManager topologyManager;
-
   private final TransitionStepContext transitionStepContext;
 
   private BackupStore backupStore;
