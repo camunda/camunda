@@ -19,6 +19,7 @@ import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.scheduler.ActorControl;
 import io.camunda.zeebe.scheduler.clock.ActorClock;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
+import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.scheduler.retry.AbortableRetryStrategy;
 import io.camunda.zeebe.scheduler.retry.RecoverableRetryStrategy;
 import io.camunda.zeebe.scheduler.retry.RetryStrategy;
@@ -269,14 +270,8 @@ public final class ProcessingStateMachine {
         processingMetrics.observeCommandCount(processedCommandsCount);
       }
 
-      if (currentProcessingResult.isEmpty()) {
-        skipRecord();
-        return;
-      }
-
-      lastProcessedPositionState.markAsProcessed(typedCommand.getPosition());
+      finalizeCommandProcessing();
       writeRecords();
-      processedCommandsCount = 0;
     } catch (final RecoverableException recoverableException) {
       // recoverable
       LOG.error(
@@ -310,6 +305,17 @@ public final class ProcessingStateMachine {
             writeRecords();
           });
     }
+  }
+
+  /**
+   * Finalize the command processing, which includes certain clean-up tasks, like mark the command
+   * as processed and reset transient processing state, etc.
+   *
+   * <p>Should be called after processing or error handling is done.
+   */
+  private void finalizeCommandProcessing() {
+    lastProcessedPositionState.markAsProcessed(typedCommand.getPosition());
+    processedCommandsCount = 0;
   }
 
   /**
@@ -449,31 +455,45 @@ public final class ProcessingStateMachine {
           // we need to mark the command as processed, even if the processing failed
           // otherwise we might replay the events, which have been written during
           // #onProcessingError again on restart
-          lastProcessedPositionState.markAsProcessed(typedCommand.getPosition());
+          finalizeCommandProcessing();
         });
   }
 
-  private void writeRecords() {
+  private ActorFuture<Boolean> writeWithRetryAsync() {
     final var sourceRecordPosition = typedCommand.getPosition();
 
-    final ActorFuture<Boolean> retryFuture =
-        writeRetryStrategy.runWithRetry(
-            () -> {
-              if (pendingWrites.isEmpty()) {
-                return true;
-              }
-              final var writeResult = logStreamWriter.tryWrite(pendingWrites, sourceRecordPosition);
-              if (writeResult.isRight()) {
-                writtenPosition = writeResult.get();
-                return true;
-              } else {
-                return false;
-              }
-            },
-            abortCondition);
+    final ActorFuture<Boolean> writeFuture;
+    if (currentProcessingResult.isEmpty()) {
+      // we skipped the processing entirely; we have no results
+      notifySkippedListener(currentRecord);
+      metrics.eventSkipped();
+      writeFuture = CompletableActorFuture.completed(true);
+    } else if (pendingWrites.isEmpty()) {
+      // we might have nothing to write but likely something to send as response
+      // means we will not mark the record as skipped
+      writeFuture = CompletableActorFuture.completed(true);
+    } else {
+      writeFuture =
+          writeRetryStrategy.runWithRetry(
+              () -> {
+                final var writeResult =
+                    logStreamWriter.tryWrite(pendingWrites, sourceRecordPosition);
+                if (writeResult.isRight()) {
+                  writtenPosition = writeResult.get();
+                  return true;
+                } else {
+                  return false;
+                }
+              },
+              abortCondition);
+    }
+    return writeFuture;
+  }
 
+  private void writeRecords() {
+    final ActorFuture<Boolean> writeFuture = writeWithRetryAsync();
     actor.runOnCompletion(
-        retryFuture,
+        writeFuture,
         (bool, t) -> {
           if (t != null) {
             LOG.error(ERROR_MESSAGE_WRITE_RECORD_ABORTED, currentRecord, metadata, t);
