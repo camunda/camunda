@@ -27,17 +27,18 @@ import org.awaitility.Awaitility;
 import org.junit.Test;
 
 public class StreamActivatedJobsTest extends GatewayTest {
+  public static final long DEADLINE = 123123123L;
+  private static final String WORKER = "testWorker";
 
   @Test
   public void shouldMapRequestAndResponse() {
     // given
     final String jobType = "testJob";
-    final String worker = "testWorker";
     final Duration timeout = Duration.ofMinutes(1);
     final List<String> fetchVariables = Arrays.asList("foo", "bar");
 
     final List<ActivatedJob> streamedJobs =
-        getStreamActivatedJobsRequest(jobType, worker, timeout, fetchVariables).streamedJobs;
+        getStreamActivatedJobsRequest(jobType, WORKER, timeout, fetchVariables).getStreamedJobs();
 
     assertThat(streamedJobs).isEmpty();
 
@@ -45,6 +46,8 @@ public class StreamActivatedJobsTest extends GatewayTest {
     final ActivatedJobImpl activatedJob = new ActivatedJobImpl();
     final JobRecord jobRecord = new JobRecord();
     jobRecord.setType(jobType);
+    jobRecord.setWorker(WORKER);
+    jobRecord.setDeadline(DEADLINE);
     final Map<String, Object> fetchedVariables = Map.of("foo", 1, "bar", 2);
     jobRecord.setVariables(MsgPackUtil.asMsgPack(fetchedVariables));
     activatedJob.setRecord(jobRecord);
@@ -53,22 +56,23 @@ public class StreamActivatedJobsTest extends GatewayTest {
 
     // then
     final ActivatedJob streamedActivatedJob = streamedJobs.get(0);
-    assertThat(streamedActivatedJob.getType()).isEqualTo(activatedJob.jobRecord().getType());
+    assertThat(streamedActivatedJob.getType()).isEqualTo(jobType);
+    assertThat(streamedActivatedJob.getWorker()).isEqualTo(WORKER);
+    assertThat(streamedActivatedJob.getDeadline()).isEqualTo(DEADLINE);
     assertThat(activatedJob.jobRecord().getVariables()).isEqualTo(fetchedVariables);
   }
 
   @Test
-  public void shouldPushNoJobsWhenNonAvailable() {
+  public void shouldNotPushJobsWhenNoneAvailableForJobType() {
     // given
     final String jobType1 = "testJob1";
     final String jobType2 = "testJob2";
-    final String worker = "testWorker";
     final Duration timeout = Duration.ofMinutes(1);
     final List<String> fetchVariables = List.of("foo");
 
     final List<ActivatedJob> streamedJobs1 =
-        getStreamActivatedJobsRequest(jobType1, worker, timeout, fetchVariables).streamedJobs;
-    getStreamActivatedJobsRequest(jobType2, worker, timeout, fetchVariables);
+        getStreamActivatedJobsRequest(jobType1, WORKER, timeout, fetchVariables).getStreamedJobs();
+    getStreamActivatedJobsRequest(jobType2, WORKER, timeout, fetchVariables);
 
     // when
     final ActivatedJobImpl activatedJob = new ActivatedJobImpl();
@@ -86,12 +90,11 @@ public class StreamActivatedJobsTest extends GatewayTest {
   public void shouldRemoveStreamOnError() {
     // given
     final String jobType = "testJobOnError";
-    final String worker = "testWorker";
     final Duration timeout = Duration.ofMinutes(1);
     final List<String> fetchVariables = List.of("foo");
 
     final TestStreamObserver streamObserver =
-        getStreamActivatedJobsRequest(jobType, worker, timeout, fetchVariables);
+        getStreamActivatedJobsRequest(jobType, WORKER, timeout, fetchVariables);
 
     assertThat(jobStreamer.containsStreamFor(jobType)).isTrue();
 
@@ -107,11 +110,10 @@ public class StreamActivatedJobsTest extends GatewayTest {
   public void shouldRemoveStreamOnCancel() {
     // given
     final String jobType = "testJobOnCancel";
-    final String worker = "testWorker";
     final Duration timeout = Duration.ofMinutes(1);
     final List<String> fetchVariables = List.of("foo");
     final TestStreamObserver streamObserver =
-        getStreamActivatedJobsRequest(jobType, worker, timeout, fetchVariables);
+        getStreamActivatedJobsRequest(jobType, WORKER, timeout, fetchVariables);
     assertThat(jobStreamer.containsStreamFor(jobType)).isTrue();
 
     // when
@@ -154,6 +156,10 @@ public class StreamActivatedJobsTest extends GatewayTest {
 
     public TestStreamObserver(final List<ActivatedJob> streamedJobs) {
       this.streamedJobs = streamedJobs;
+    }
+
+    public List<ActivatedJob> getStreamedJobs() {
+      return streamedJobs;
     }
 
     @Override
