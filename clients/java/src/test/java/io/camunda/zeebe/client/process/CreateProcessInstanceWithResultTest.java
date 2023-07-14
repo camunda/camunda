@@ -66,15 +66,14 @@ public final class CreateProcessInstanceWithResultTest extends ClientTest {
     gatewayService.onCreateProcessInstanceWithResultRequest(123, "testProcess", 12, 32, variables);
 
     // when
-    final ProcessInstanceResult response =
-        client
-            .newCreateInstanceCommand()
-            .processDefinitionKey(123)
-            .withResult()
-            .fetchVariables("x")
-            .requestTimeout(Duration.ofSeconds(123))
-            .send()
-            .join();
+    client
+        .newCreateInstanceCommand()
+        .processDefinitionKey(123)
+        .withResult()
+        .fetchVariables("x")
+        .requestTimeout(Duration.ofSeconds(123))
+        .send()
+        .join();
 
     // then
     final CreateProcessInstanceWithResultRequest request = gatewayService.getLastRequest();
@@ -115,6 +114,24 @@ public final class CreateProcessInstanceWithResultTest extends ClientTest {
     final CreateProcessInstanceWithResultRequest request = gatewayService.getLastRequest();
     assertThat(fromJsonAsMap(request.getRequest().getVariables()))
         .containsOnly(entry("foo", "bar"));
+  }
+
+  @Test
+  public void shouldCreateProcessInstanceWithSingleVariable() {
+    // when
+    final String key = "key";
+    final String value = "value";
+    client
+        .newCreateInstanceCommand()
+        .processDefinitionKey(123)
+        .variable(key, value)
+        .withResult()
+        .send()
+        .join();
+
+    // then
+    final CreateProcessInstanceWithResultRequest request = gatewayService.getLastRequest();
+    assertThat(fromJsonAsMap(request.getRequest().getVariables())).containsOnly(entry(key, value));
   }
 
   private static class VariablesPojo {

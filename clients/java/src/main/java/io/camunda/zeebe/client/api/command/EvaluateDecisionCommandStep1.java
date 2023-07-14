@@ -76,5 +76,15 @@ public interface EvaluateDecisionCommandStep1 {
      *     it to the broker.
      */
     EvaluateDecisionCommandStep2 variables(Object variables);
+
+    /**
+     * Set a single variable for the decision evaluation.
+     *
+     * @param key the key of the variable as string
+     * @param value the value of the variable as object
+     * @return the builder for this command. Call {@link #send()} to complete the command and send
+     *     it to the broker.
+     */
+    EvaluateDecisionCommandStep2 variable(String key, Object value);
   }
 }

@@ -28,13 +28,11 @@ import io.camunda.zeebe.gateway.protocol.GatewayOuterClass;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.EvaluateDecisionRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.EvaluateDecisionRequest.Builder;
 import io.grpc.stub.StreamObserver;
-import java.io.InputStream;
 import java.time.Duration;
-import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
 
-public class EvaluateDecisionCommandImpl
+public class EvaluateDecisionCommandImpl extends CommandWithVariables<EvaluateDecisionCommandImpl>
     implements EvaluateDecisionCommandStep1, EvaluateDecisionCommandStep2 {
 
   private final GatewayStub asyncStub;
@@ -48,11 +46,18 @@ public class EvaluateDecisionCommandImpl
       final JsonMapper jsonMapper,
       final Duration requestTimeout,
       final Predicate<Throwable> retryPredicate) {
+    super(jsonMapper);
     this.asyncStub = asyncStub;
     this.retryPredicate = retryPredicate;
     this.jsonMapper = jsonMapper;
     this.requestTimeout = requestTimeout;
     builder = EvaluateDecisionRequest.newBuilder();
+  }
+
+  @Override
+  protected EvaluateDecisionCommandImpl setVariablesInternal(final String variables) {
+    builder.setVariables(variables);
+    return this;
   }
 
   @Override
@@ -65,30 +70,6 @@ public class EvaluateDecisionCommandImpl
   public EvaluateDecisionCommandStep2 decisionKey(final long decisionKey) {
     builder.setDecisionKey(decisionKey);
     return this;
-  }
-
-  @Override
-  public EvaluateDecisionCommandStep2 variables(final InputStream variables) {
-    ArgumentUtil.ensureNotNull("variables", variables);
-    return setVariables(jsonMapper.validateJson("variables", variables));
-  }
-
-  @Override
-  public EvaluateDecisionCommandStep2 variables(final String variables) {
-    ArgumentUtil.ensureNotNull("variables", variables);
-    return setVariables(variables);
-  }
-
-  @Override
-  public EvaluateDecisionCommandStep2 variables(final Map<String, Object> variables) {
-    ArgumentUtil.ensureNotNull("variables", variables);
-    return setVariables(jsonMapper.toJson(variables));
-  }
-
-  @Override
-  public EvaluateDecisionCommandStep2 variables(final Object variables) {
-    ArgumentUtil.ensureNotNull("variables", variables);
-    return setVariables(jsonMapper.toJson(variables));
   }
 
   @Override
@@ -120,10 +101,5 @@ public class EvaluateDecisionCommandImpl
     asyncStub
         .withDeadlineAfter(requestTimeout.toMillis(), TimeUnit.MILLISECONDS)
         .evaluateDecision(request, streamObserver);
-  }
-
-  private EvaluateDecisionCommandStep2 setVariables(final String jsonDocument) {
-    builder.setVariables(jsonDocument);
-    return this;
   }
 }

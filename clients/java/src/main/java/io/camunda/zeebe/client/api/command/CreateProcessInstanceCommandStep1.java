@@ -102,6 +102,16 @@ public interface CreateProcessInstanceCommandStep1 {
     CreateProcessInstanceCommandStep3 variables(Object variables);
 
     /**
+     * Set a single initial variable of the process instance.
+     *
+     * @param key the key of the variable as string
+     * @param value the value of the variable as object
+     * @return the builder for this command. Call {@link #send()} to complete the command and send
+     *     it to the broker.
+     */
+    CreateProcessInstanceCommandStep3 variable(String key, Object value);
+
+    /**
      * Overrides the default start position of the process. Calling this method will make the
      * process start at the given {@code elementId}, if possible. This method can be called more
      * than once to simultaneously start at different elements in different branches of the process.

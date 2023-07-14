@@ -199,6 +199,49 @@ public final class CreateProcessInstanceTest {
   }
 
   @Test
+  public void shouldCreateWithSingleVariable() {
+    // given
+    final String key = "key";
+    final String value = "value";
+
+    // when
+    final ProcessInstanceEvent event =
+        CLIENT_RULE
+            .getClient()
+            .newCreateInstanceCommand()
+            .bpmnProcessId(processId)
+            .latestVersion()
+            .variable(key, value)
+            .send()
+            .join();
+
+    // then
+    final var createdEvent =
+        RecordingExporter.processInstanceCreationRecords()
+            .withIntent(ProcessInstanceCreationIntent.CREATED)
+            .withInstanceKey(event.getProcessInstanceKey())
+            .getFirst();
+
+    assertThat(createdEvent.getValue().getVariables()).containsExactlyEntriesOf(Map.of(key, value));
+  }
+
+  @Test
+  public void shouldThrowErrorWhenTryToCreateInstanceWithNullVariable() {
+    // when
+    assertThatThrownBy(
+            () ->
+                CLIENT_RULE
+                    .getClient()
+                    .newCreateInstanceCommand()
+                    .bpmnProcessId(processId)
+                    .latestVersion()
+                    .variable(null, null)
+                    .send()
+                    .join())
+        .isInstanceOf(IllegalArgumentException.class);
+  }
+
+  @Test
   public void shouldRejectCompleteJobIfVariablesAreInvalid() {
     // when
     final var command =
@@ -210,7 +253,7 @@ public final class CreateProcessInstanceTest {
             .variables("[]")
             .send();
 
-    assertThatThrownBy(() -> command.join())
+    assertThatThrownBy(command::join)
         .isInstanceOf(ClientException.class)
         .hasMessageContaining(
             "Property 'variables' is invalid: Expected document to be a root level object, but was 'ARRAY'");
@@ -227,7 +270,7 @@ public final class CreateProcessInstanceTest {
             .latestVersion()
             .send();
 
-    assertThatThrownBy(() -> command.join())
+    assertThatThrownBy(command::join)
         .isInstanceOf(ClientException.class)
         .hasMessageContaining(
             "Expected to find process definition with process ID 'non-existing', but none found");
@@ -239,7 +282,7 @@ public final class CreateProcessInstanceTest {
     final var command =
         CLIENT_RULE.getClient().newCreateInstanceCommand().processDefinitionKey(123L).send();
 
-    assertThatThrownBy(() -> command.join())
+    assertThatThrownBy(command::join)
         .isInstanceOf(ClientException.class)
         .hasMessageContaining("Expected to find process definition with key '123', but none found");
   }

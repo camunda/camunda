@@ -34,11 +34,13 @@ import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.Collections;
+import org.assertj.core.api.Assertions;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
 public class StandaloneDecisionEvaluationTest extends ClientTest {
 
+  private static final long DECISION_KEY = 123L;
   private static GatewayOuterClass.EvaluatedDecisionOutput evaluatedOutput;
   private static GatewayOuterClass.MatchedDecisionRule matchedRule;
   private static GatewayOuterClass.EvaluatedDecisionInput evaluatedInput;
@@ -71,7 +73,7 @@ public class StandaloneDecisionEvaluationTest extends ClientTest {
     evaluatedDecision =
         GatewayOuterClass.EvaluatedDecision.newBuilder()
             .setDecisionId("my-decision")
-            .setDecisionKey(123L)
+            .setDecisionKey(DECISION_KEY)
             .setDecisionName("My Decision")
             .setDecisionVersion(1)
             .setDecisionType("TABLE")
@@ -82,7 +84,7 @@ public class StandaloneDecisionEvaluationTest extends ClientTest {
 
     evaluateDecisionResponse =
         GatewayOuterClass.EvaluateDecisionResponse.newBuilder()
-            .setDecisionKey(123L)
+            .setDecisionKey(DECISION_KEY)
             .setDecisionId("my-decision")
             .setDecisionName("My Decision")
             .setDecisionVersion(1)
@@ -102,7 +104,7 @@ public class StandaloneDecisionEvaluationTest extends ClientTest {
 
     // when
     final EvaluateDecisionResponse response =
-        client.newEvaluateDecisionCommand().decisionKey(123L).send().join();
+        client.newEvaluateDecisionCommand().decisionKey(DECISION_KEY).send().join();
 
     // then
     assertResponse(response);
@@ -126,7 +128,7 @@ public class StandaloneDecisionEvaluationTest extends ClientTest {
     // given
     client
         .newEvaluateDecisionCommand()
-        .decisionKey(123L)
+        .decisionKey(DECISION_KEY)
         .variables("{\"foo\": \"bar\"}")
         .send()
         .join();
@@ -144,7 +146,12 @@ public class StandaloneDecisionEvaluationTest extends ClientTest {
     final String variables = "{\"foo\": \"bar\"}";
     final InputStream inputStream =
         new ByteArrayInputStream(variables.getBytes(StandardCharsets.UTF_8));
-    client.newEvaluateDecisionCommand().decisionKey(123L).variables(inputStream).send().join();
+    client
+        .newEvaluateDecisionCommand()
+        .decisionKey(DECISION_KEY)
+        .variables(inputStream)
+        .send()
+        .join();
 
     // when
     final EvaluateDecisionRequest request = gatewayService.getLastRequest();
@@ -158,7 +165,7 @@ public class StandaloneDecisionEvaluationTest extends ClientTest {
     // given
     client
         .newEvaluateDecisionCommand()
-        .decisionKey(123L)
+        .decisionKey(DECISION_KEY)
         .variables(Collections.singletonMap("foo", "bar"))
         .send()
         .join();
@@ -175,7 +182,7 @@ public class StandaloneDecisionEvaluationTest extends ClientTest {
     // given
     client
         .newEvaluateDecisionCommand()
-        .decisionKey(123L)
+        .decisionKey(DECISION_KEY)
         .variables(new VariableDocument())
         .send()
         .join();
@@ -188,13 +195,47 @@ public class StandaloneDecisionEvaluationTest extends ClientTest {
   }
 
   @Test
+  public void shouldEvaluateStandaloneDecisionWithSingleVariable() {
+    // given
+    final String key = "key";
+    final String value = "value";
+    client
+        .newEvaluateDecisionCommand()
+        .decisionKey(DECISION_KEY)
+        .variable(key, value)
+        .send()
+        .join();
+
+    // when
+    final EvaluateDecisionRequest request = gatewayService.getLastRequest();
+
+    // then
+    assertThat(fromJsonAsMap(request.getVariables())).containsOnly(entry(key, value));
+  }
+
+  @Test
+  public void shouldThrowErrorWhenTryToEvaluateStandaloneDecisionWithNullVariable() {
+    // when
+    Assertions.assertThatThrownBy(
+            () ->
+                client
+                    .newEvaluateDecisionCommand()
+                    .decisionKey(DECISION_KEY)
+                    .variable(null, null)
+                    .send()
+                    .join())
+        .isInstanceOf(IllegalArgumentException.class);
+  }
+
+  @Test
   public void shouldRaise() {
     // when
     gatewayService.errorOnRequest(
         EvaluateDecisionRequest.class, () -> new ClientException("Invalid request"));
 
     // then
-    assertThatThrownBy(() -> client.newEvaluateDecisionCommand().decisionKey(123).send().join())
+    assertThatThrownBy(
+            () -> client.newEvaluateDecisionCommand().decisionKey(DECISION_KEY).send().join())
         .isInstanceOf(ClientException.class)
         .hasMessageContaining("Invalid request");
   }
@@ -207,7 +248,7 @@ public class StandaloneDecisionEvaluationTest extends ClientTest {
     // when
     client
         .newEvaluateDecisionCommand()
-        .decisionKey(123)
+        .decisionKey(DECISION_KEY)
         .requestTimeout(requestTimeout)
         .send()
         .join();
@@ -277,12 +318,10 @@ public class StandaloneDecisionEvaluationTest extends ClientTest {
 
   public static class VariableDocument {
 
-    private final String foo = "bar";
-
     VariableDocument() {}
 
     public String getFoo() {
-      return foo;
+      return "bar";
     }
   }
 }
