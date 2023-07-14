@@ -35,6 +35,7 @@ import io.camunda.zeebe.client.api.command.ModifyProcessInstanceCommandStep1;
 import io.camunda.zeebe.client.api.command.PublishMessageCommandStep1;
 import io.camunda.zeebe.client.api.command.ResolveIncidentCommandStep1;
 import io.camunda.zeebe.client.api.command.SetVariablesCommandStep1;
+import io.camunda.zeebe.client.api.command.StreamJobsCommandStep1;
 import io.camunda.zeebe.client.api.command.ThrowErrorCommandStep1;
 import io.camunda.zeebe.client.api.command.TopologyRequestStep1;
 import io.camunda.zeebe.client.api.command.UpdateRetriesJobCommandStep1;
@@ -53,6 +54,7 @@ import io.camunda.zeebe.client.impl.command.ModifyProcessInstanceCommandImpl;
 import io.camunda.zeebe.client.impl.command.PublishMessageCommandImpl;
 import io.camunda.zeebe.client.impl.command.ResolveIncidentCommandImpl;
 import io.camunda.zeebe.client.impl.command.SetVariablesCommandImpl;
+import io.camunda.zeebe.client.impl.command.StreamJobsCommandImpl;
 import io.camunda.zeebe.client.impl.command.TopologyRequestImpl;
 import io.camunda.zeebe.client.impl.util.VersionUtil;
 import io.camunda.zeebe.client.impl.worker.JobClientImpl;
@@ -343,17 +345,18 @@ public final class ZeebeClientImpl implements ZeebeClient {
   }
 
   @Override
-  public ActivateJobsCommandStep1 newActivateJobsCommand() {
-    return jobClient.newActivateJobsCommand();
-  }
-
-  @Override
   public DeleteResourceCommandStep1 newDeleteResourceCommand(final long resourceKey) {
     return new DeleteResourceCommandImpl(
         resourceKey,
         asyncStub,
         credentialsProvider::shouldRetryRequest,
         config.getDefaultRequestTimeout());
+  }
+
+  @Override
+  public StreamJobsCommandStep1 newStreamJobsCommand() {
+    return new StreamJobsCommandImpl(
+        asyncStub, jsonMapper, credentialsProvider::shouldRetryRequest, config);
   }
 
   private JobClient newJobClient() {
@@ -389,5 +392,10 @@ public final class ZeebeClientImpl implements ZeebeClient {
   @Override
   public ThrowErrorCommandStep1 newThrowErrorCommand(final ActivatedJob job) {
     return newThrowErrorCommand(job.getKey());
+  }
+
+  @Override
+  public ActivateJobsCommandStep1 newActivateJobsCommand() {
+    return jobClient.newActivateJobsCommand();
   }
 }
