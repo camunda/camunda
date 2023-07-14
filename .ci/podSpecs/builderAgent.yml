@@ -3,9 +3,9 @@ metadata:
     agent: operate-ci-build
 spec:
   nodeSelector:
-    cloud.google.com/gke-nodepool: agents-n1-standard-32-netssd-preempt
+    cloud.google.com/gke-nodepool: agents-n1-standard-16-netssd-preempt
   tolerations:
-    - key: "agents-n1-standard-32-netssd-preempt"
+    - key: "agents-n1-standard-16-netssd-preempt"
       operator: "Exists"
       effect: "NoSchedule"
   initContainers:
@@ -80,25 +80,8 @@ spec:
       tty: true
       resources:
         limits:
-          cpu: 6
+          cpu: 3
           memory: 12Gi
         requests:
-          cpu: 6
+          cpu: 3
           memory: 12Gi
-    - name: zeebe
-      image: camunda/zeebe:8.3.0-alpha3
-      # imagePullPolicy: Always   #this must be uncommented when snapshot is used
-      env:
-        - name: ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_CLASSNAME
-          value: io.camunda.zeebe.exporter.ElasticsearchExporter
-        - name: ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_BULK_SIZE
-          value: 1
-        - name: ZEEBE_BROKER_BACKPRESSURE_ENABLED
-          value: false
-      resources:
-        limits:
-          cpu: 4
-          memory: 8Gi
-        requests:
-          cpu: 4
-          memory: 8Gi
