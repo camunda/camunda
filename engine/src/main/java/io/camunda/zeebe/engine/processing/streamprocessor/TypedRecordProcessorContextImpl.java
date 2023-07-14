@@ -8,7 +8,6 @@
 package io.camunda.zeebe.engine.processing.streamprocessor;
 
 import io.camunda.zeebe.db.ZeebeDb;
-import io.camunda.zeebe.db.impl.rocksdb.BufferedMessagesMetrics;
 import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.ProcessingDbState;
@@ -72,9 +71,7 @@ public class TypedRecordProcessorContextImpl implements TypedRecordProcessorCont
 
   @Override
   public Supplier<ScheduledTaskState> getScheduledTaskStateFactory() {
-    return () ->
-        new ScheduledTaskDbState(
-            zeebeDb, zeebeDb.createContext(), new BufferedMessagesMetrics(partitionId));
+    return () -> new ScheduledTaskDbState(zeebeDb, zeebeDb.createContext(), partitionId);
   }
 
   @Override

@@ -11,7 +11,6 @@ import io.camunda.zeebe.db.DbKey;
 import io.camunda.zeebe.db.DbValue;
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
-import io.camunda.zeebe.db.impl.rocksdb.BufferedMessagesMetrics;
 import io.camunda.zeebe.engine.state.deployment.DbDecisionState;
 import io.camunda.zeebe.engine.state.deployment.DbDeploymentState;
 import io.camunda.zeebe.engine.state.deployment.DbProcessState;
@@ -97,8 +96,7 @@ public class ProcessingDbState implements MutableProcessingState {
 
     deploymentState = new DbDeploymentState(zeebeDb, transactionContext);
     jobState = new DbJobState(zeebeDb, transactionContext, partitionId);
-    messageState =
-        new DbMessageState(zeebeDb, transactionContext, new BufferedMessagesMetrics(partitionId));
+    messageState = new DbMessageState(zeebeDb, transactionContext, partitionId);
     messageSubscriptionState = new DbMessageSubscriptionState(zeebeDb, transactionContext);
     messageStartEventSubscriptionState =
         new DbMessageStartEventSubscriptionState(zeebeDb, transactionContext);
