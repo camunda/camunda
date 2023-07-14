@@ -13,7 +13,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.spy;
-import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
@@ -382,8 +381,6 @@ public final class EngineErrorHandlingTest {
   public void shouldNotBanInstanceOnJobCommand() {
     // given
     final List<Long> processedInstances = new ArrayList<>();
-    final AtomicReference<TypedRecordProcessor<JobRecord>> dumpProcessorRef =
-        new AtomicReference<>();
 
     final TypedRecordProcessor<JobRecord> errorProneProcessor =
         new TypedRecordProcessor<>() {
@@ -398,9 +395,14 @@ public final class EngineErrorHandlingTest {
         DefaultZeebeDbFactory.defaultFactory(),
         (processingContext) -> {
           processingState = processingContext.getProcessingState();
-          dumpProcessorRef.set(
-              spy(
-                  new TypedRecordProcessor<>() {
+
+          return TypedRecordProcessors.processors(
+                  processingState.getKeyGenerator(), processingContext.getWriters())
+              .onCommand(ValueType.JOB, JobIntent.COMPLETE, errorProneProcessor)
+              .onCommand(
+                  ValueType.JOB,
+                  JobIntent.THROW_ERROR,
+                  new TypedRecordProcessor<JobRecord>() {
                     @Override
                     public void processRecord(final TypedRecord<JobRecord> record) {
                       processedInstances.add(record.getValue().getProcessInstanceKey());
@@ -414,12 +416,7 @@ public final class EngineErrorHandlingTest {
                               ProcessInstanceIntent.COMPLETE_ELEMENT,
                               Records.processInstance(processInstanceKey));
                     }
-                  }));
-
-          return TypedRecordProcessors.processors(
-                  processingState.getKeyGenerator(), processingContext.getWriters())
-              .onCommand(ValueType.JOB, JobIntent.COMPLETE, errorProneProcessor)
-              .onCommand(ValueType.JOB, JobIntent.THROW_ERROR, dumpProcessorRef.get());
+                  });
         });
 
     streams
@@ -447,10 +444,18 @@ public final class EngineErrorHandlingTest {
         .write();
 
     // when
-    waitForRecordWhichSatisfies(
-        e ->
-            Records.isCommand(
-                e, ValueType.PROCESS_INSTANCE, ProcessInstanceIntent.COMPLETE_ELEMENT));
+    TestUtil.doRepeatedly(
+            () ->
+                streams
+                    .events(STREAM_NAME)
+                    .filter(
+                        e ->
+                            Records.isCommand(
+                                e,
+                                ValueType.PROCESS_INSTANCE,
+                                ProcessInstanceIntent.COMPLETE_ELEMENT))
+                    .toList())
+        .until(o -> o.size() == 2);
 
     // then
     final RecordMetadata metadata = new RecordMetadata();
@@ -460,7 +465,6 @@ public final class EngineErrorHandlingTest {
     Assertions.assertThat(processingState.getBannedInstanceState().isBanned(mockTypedRecord))
         .isFalse();
 
-    verify(dumpProcessorRef.get(), timeout(1000).times(2)).processRecord(any());
     assertThat(processedInstances).containsExactly(1L, 2L);
   }
 
