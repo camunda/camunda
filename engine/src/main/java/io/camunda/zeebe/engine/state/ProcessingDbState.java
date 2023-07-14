@@ -11,8 +11,8 @@ import io.camunda.zeebe.db.DbKey;
 import io.camunda.zeebe.db.DbValue;
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
-import io.camunda.zeebe.db.impl.rocksdb.BufferedMessagesMetrics;
 import io.camunda.zeebe.engine.api.ReadonlyStreamProcessorContext;
+import io.camunda.zeebe.engine.metrics.BufferedMessagesMetrics;
 import io.camunda.zeebe.engine.state.deployment.DbDecisionState;
 import io.camunda.zeebe.engine.state.deployment.DbDeploymentState;
 import io.camunda.zeebe.engine.state.deployment.DbProcessState;
@@ -69,7 +69,6 @@ public class ProcessingDbState implements MutableProcessingState {
   private final MutableBannedInstanceState bannedInstanceState;
   private final MutableMigrationState mutableMigrationState;
   private final MutableDecisionState decisionState;
-
   private final int partitionId;
 
   public ProcessingDbState(
@@ -99,7 +98,6 @@ public class ProcessingDbState implements MutableProcessingState {
     incidentState = new DbIncidentState(zeebeDb, transactionContext, partitionId);
     bannedInstanceState = new DbBannedInstanceState(zeebeDb, transactionContext, partitionId);
     decisionState = new DbDecisionState(zeebeDb, transactionContext);
-
     mutableMigrationState = new DbMigrationState(zeebeDb, transactionContext);
   }
 
