@@ -122,9 +122,7 @@ public final class DbJobState implements JobState, MutableJobState {
   @Override
   public void recurAfterBackoff(final long key, final JobRecord record) {
     updateJob(key, record, State.ACTIVATABLE);
-    jobKey.wrapLong(key);
-    backoffKey.wrapLong(record.getRecurringTime());
-    backoffColumnFamily.deleteExisting(backoffJobKey);
+    removeJobBackoff(key, record.getRecurringTime());
   }
 
   @Override
@@ -172,15 +170,14 @@ public final class DbJobState implements JobState, MutableJobState {
     makeJobNotActivatable(type);
 
     removeJobDeadline(key, record.getDeadline());
+    removeJobBackoff(key, record.getRecurringTime());
   }
 
   @Override
   public void fail(final long key, final JobRecord updatedValue) {
     if (updatedValue.getRetries() > 0) {
       if (updatedValue.getRetryBackoff() > 0) {
-        jobKey.wrapLong(key);
-        backoffKey.wrapLong(updatedValue.getRecurringTime());
-        backoffColumnFamily.insert(backoffJobKey, DbNil.INSTANCE);
+        addJobBackoff(key, updatedValue.getRecurringTime());
         updateJob(key, updatedValue, State.FAILED);
       } else {
         updateJob(key, updatedValue, State.ACTIVATABLE);
@@ -252,7 +249,7 @@ public final class DbJobState implements JobState, MutableJobState {
           final boolean isDue = deadline < upperBound;
           if (isDue) {
             final long jobKey1 = key.second().inner().getValue();
-            return visitJob(jobKey1, callback, () -> {});
+            return visitJob(jobKey1, callback);
           }
           return false;
         });
@@ -291,8 +288,7 @@ public final class DbJobState implements JobState, MutableJobState {
         jobTypeKey,
         ((compositeKey, zbNil) -> {
           final long jobKey = compositeKey.second().inner().getValue();
-          // TODO #6521 reconsider race condition and whether or not the cleanup task is needed
-          return visitJob(jobKey, callback::apply, () -> {});
+          return visitJob(jobKey, callback::apply);
         }));
   }
 
@@ -312,7 +308,7 @@ public final class DbJobState implements JobState, MutableJobState {
           boolean consumed = false;
           if (deadline <= timestamp) {
             final long jobKey = key.second().inner().getValue();
-            consumed = visitJob(jobKey, callback, () -> backoffColumnFamily.deleteExisting(key));
+            consumed = visitJob(jobKey, callback);
           }
           if (!consumed) {
             nextBackOffDueDate = deadline;
@@ -322,14 +318,10 @@ public final class DbJobState implements JobState, MutableJobState {
     return nextBackOffDueDate;
   }
 
-  boolean visitJob(
-      final long jobKey,
-      final BiPredicate<Long, JobRecord> callback,
-      final Runnable cleanupRunnable) {
+  boolean visitJob(final long jobKey, final BiPredicate<Long, JobRecord> callback) {
     final JobRecord job = getJob(jobKey);
     if (job == null) {
       LOG.error("Expected to find job with key {}, but no job found", jobKey);
-      cleanupRunnable.run();
       return true; // we want to continue with the iteration
     }
     return callback.test(jobKey, job);
@@ -391,6 +383,22 @@ public final class DbJobState implements JobState, MutableJobState {
       jobKey.wrapLong(job);
       deadlineKey.wrapLong(deadline);
       deadlinesColumnFamily.deleteIfExists(deadlineJobKey);
+    }
+  }
+
+  private void addJobBackoff(final long job, final long backoff) {
+    if (backoff > 0) {
+      jobKey.wrapLong(job);
+      backoffKey.wrapLong(backoff);
+      backoffColumnFamily.insert(backoffJobKey, DbNil.INSTANCE);
+    }
+  }
+
+  private void removeJobBackoff(final long job, final long backoff) {
+    if (backoff > 0) {
+      jobKey.wrapLong(job);
+      backoffKey.wrapLong(backoff);
+      backoffColumnFamily.deleteIfExists(backoffJobKey);
     }
   }
 }
