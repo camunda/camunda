@@ -124,7 +124,7 @@ public final class DbMessageState implements MutableMessageState {
   public DbMessageState(
       final ZeebeDb<ZbColumnFamilies> zeebeDb,
       final TransactionContext transactionContext,
-      final BufferedMessagesMetrics bufferedMessagesMetrics) {
+      final int partitionId) {
     messageKey = new DbLong();
     fkMessage = new DbForeignKey<>(messageKey, ZbColumnFamilies.MESSAGE_KEY);
     message = new StoredMessage();
@@ -197,7 +197,7 @@ public final class DbMessageState implements MutableMessageState {
             processInstanceKey,
             correlationKey);
 
-    this.bufferedMessagesMetrics = bufferedMessagesMetrics;
+    bufferedMessagesMetrics = new BufferedMessagesMetrics(partitionId);
   }
 
   @Override
