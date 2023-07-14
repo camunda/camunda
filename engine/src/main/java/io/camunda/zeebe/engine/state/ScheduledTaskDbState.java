@@ -9,7 +9,6 @@ package io.camunda.zeebe.engine.state;
 
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
-import io.camunda.zeebe.engine.metrics.BufferedMessagesMetrics;
 import io.camunda.zeebe.engine.state.distribution.DbDistributionState;
 import io.camunda.zeebe.engine.state.immutable.DistributionState;
 import io.camunda.zeebe.engine.state.immutable.MessageState;
@@ -28,9 +27,9 @@ public final class ScheduledTaskDbState implements ScheduledTaskState {
   public ScheduledTaskDbState(
       final ZeebeDb<ZbColumnFamilies> zeebeDb,
       final TransactionContext transactionContext,
-      final BufferedMessagesMetrics bufferedMessagesMetrics) {
+      final int partitionId) {
     distributionState = new DbDistributionState(zeebeDb, transactionContext);
-    messageState = new DbMessageState(zeebeDb, transactionContext, bufferedMessagesMetrics);
+    messageState = new DbMessageState(zeebeDb, transactionContext, partitionId);
     timerInstanceState = new DbTimerInstanceState(zeebeDb, transactionContext);
   }
 
