@@ -110,6 +110,18 @@ public final class BroadcastSignalTest extends ClientTest {
   }
 
   @Test
+  public void shouldBroadcastSignalWithSingleVariable() {
+    // when
+    final String key = "key";
+    final String value = "value";
+    client.newBroadcastSignalCommand().signalName("name").variable(key, value).send().join();
+
+    // then
+    final BroadcastSignalRequest request = gatewayService.getLastRequest();
+    assertThat(fromJsonAsMap(request.getVariables())).containsOnly(entry(key, value));
+  }
+
+  @Test
   public void shouldRaiseExceptionOnError() {
     // given
     gatewayService.errorOnRequest(
@@ -140,12 +152,10 @@ public final class BroadcastSignalTest extends ClientTest {
 
   public static class Variables {
 
-    private final String foo = "bar";
-
     Variables() {}
 
     public String getFoo() {
-      return foo;
+      return "bar";
     }
   }
 }

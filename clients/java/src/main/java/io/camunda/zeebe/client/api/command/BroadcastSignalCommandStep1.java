@@ -65,5 +65,15 @@ public interface BroadcastSignalCommandStep1 {
      *     it to the broker.
      */
     BroadcastSignalCommandStep2 variables(Object variables);
+
+    /**
+     * Set a single variable of the signal.
+     *
+     * @param key the key of the variable as string
+     * @param value the value of the variable as object
+     * @return the builder for this command. Call {@link #send()} to complete the command and send
+     *     it to the broker.
+     */
+    BroadcastSignalCommandStep2 variable(String key, Object value);
   }
 }
