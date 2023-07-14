@@ -1,10 +1,27 @@
-<!-- Please link the related GitHub issue here -->
-
-Closes #
-
 ## Description
 
 <!-- Please explain the changes you made here. -->
+
+## Related issues
+
+<!-- Which issues are closed by this PR or are related -->
+
+closes #
+
+<!-- Cut-off marker
+_All lines under and including the cut-off marker will be removed from the merge commit message_
+
+## Definition of Ready
+
+Please check the items that apply, before requesting a review.
+
+You can find more details in our [wiki page] (https://github.com/camunda/zeebe/wiki/Pull-Requests-and-Code-Reviews).
+
+* [ ] I've reviewed my own code
+* [ ] I've written a clear changelist description
+* [ ] I've narrowly scoped my changes
+* [ ] I've separated structural from behavioural changes
+-->
 
 ## Definition of Done
 
@@ -12,18 +29,28 @@ Closes #
 
 _Not all items need to be done depending on the issue and the pull request._
 
-- [ ] All acceptance criteria described in the issue are met
+Code changes:
+* [ ] All acceptance criteria described in the issue are met
+* [ ] The changes are backwards compatibility with previous versions
+* [ ] If it fixes a bug then PRs are created to backport (TODO: link to GitHub backport action here) the fix to the last two minor versions. You can trigger a backport by assigning labels (e.g. `backport stable/8.1`) to the PR, in case that fails you need to create backports manually.
 
 Testing:
-
-- [ ] Unit/integration tests are written, that verify all acceptance criteria of the issue
-- [ ] E2E tests are written, if the acceptance criteria can't be covered in unit/integration tests
-- [ ] The fix/feature is tested manually by the author
+* [ ] There are unit/integration tests that verify all acceptance criterias of the issue
+* [ ] New tests are written to ensure backwards compatibility with further versions
+* [ ] The behavior is tested manually
+* [ ] The change has been verified by a QA run
+* [ ] The impact of the changes is verified by a benchmark
 
 Documentation:
-
 - [ ] If documentation needs to be updated, an issue is created in the [camunda-platform-docs](https://github.com/camunda/camunda-platform-docs) repo, and the issue is added to our Operate/Tasklist project board.
 
+Other teams:
+If the change impacts another team an issue has been created for this team, explaining what they need to do to support this change.
+- [ ] [Zeebe](https://github.com/camunda/zeebe/issues)
+- [ ] [Tasklist](https://github.com/camunda/tasklist/issues)
+- [ ] [Optimize](https://github.com/camunda/camunda-optimize/issues)
+- [ ] Zeebe Play
+      
 ## Definition of Reviewed
 
 <!-- As a reviewer please check the items that apply before approving this PR -->
@@ -32,3 +59,5 @@ Documentation:
 - [ ] Unit/integration tests are written, that verify all acceptance criteria of the issue
 - [ ] E2E tests are written, if the acceptance criteria can't be covered in unit/integration tests
 - [ ] The fix/feature is tested manually by the reviewer
+
+Some additional [review guidelines](https://github.com/camunda/zeebe/wiki/Pull-Requests-and-Code-Reviews#code-review-guidelines).
