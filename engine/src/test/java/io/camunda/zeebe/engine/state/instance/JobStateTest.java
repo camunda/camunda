@@ -347,8 +347,13 @@ public final class JobStateTest {
   public void shouldFailJobWithRetriesAndBackOff() {
     // given
     final long key = 1L;
+    final long now = 0;
     final var retryBackoff = 100;
-    final JobRecord jobRecord = newJobRecord().setRetries(1).setRetryBackoff(retryBackoff);
+    final JobRecord jobRecord =
+        newJobRecord()
+            .setRetries(1)
+            .setRetryBackoff(retryBackoff)
+            .setRecurringTime(now + retryBackoff);
 
     // when
     jobState.create(key, jobRecord);
@@ -361,7 +366,7 @@ public final class JobStateTest {
     assertJobRecordIsEqualTo(jobState.getJob(key), jobRecord);
     refuteListedAsActivatable(key, jobRecord.getTypeBuffer());
     refuteListedAsTimedOut(key, jobRecord.getDeadline() + 1);
-    assertListedAsBackOff(key, jobRecord.getRecurringTime() + 1 + retryBackoff);
+    assertListedAsBackOff(key, jobRecord.getRecurringTime() + 1);
   }
 
   @Test
@@ -408,8 +413,13 @@ public final class JobStateTest {
   public void shouldRetryJobAfterRecurredAndHasRetries() {
     // given
     final long jobKey = 1L;
+    final long now = 0;
     final long retryBackoff = Duration.ofDays(1).toMillis();
-    final JobRecord jobRecord = newJobRecord().setRetries(1).setRetryBackoff(retryBackoff);
+    final JobRecord jobRecord =
+        newJobRecord()
+            .setRetries(1)
+            .setRetryBackoff(retryBackoff)
+            .setRecurringTime(now + retryBackoff);
 
     // when
     jobState.create(jobKey, jobRecord);
@@ -417,12 +427,12 @@ public final class JobStateTest {
     jobState.fail(jobKey, jobRecord);
     assertThat(jobState.exists(jobKey)).isTrue();
     assertJobState(jobKey, State.FAILED);
-    assertListedAsBackOff(jobKey, jobRecord.getRecurringTime() + 1 + retryBackoff);
+    assertListedAsBackOff(jobKey, jobRecord.getRecurringTime() + 1);
     jobState.recurAfterBackoff(jobKey, jobRecord);
 
     // then
     assertJobState(jobKey, State.ACTIVATABLE);
-    refuteListedAsBackOff(jobKey, jobRecord.getRecurringTime() + 1 + retryBackoff);
+    refuteListedAsBackOff(jobKey, jobRecord.getRecurringTime() + 1);
   }
 
   @Test

@@ -16,6 +16,7 @@ import io.camunda.zeebe.engine.state.immutable.ZeebeState;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
+import io.camunda.zeebe.util.sched.clock.ActorClock;
 
 public final class JobTimeOutProcessor implements CommandProcessor<JobRecord> {
   public static final String NOT_ACTIVATED_JOB_MESSAGE =
@@ -31,30 +32,30 @@ public final class JobTimeOutProcessor implements CommandProcessor<JobRecord> {
   @Override
   public boolean onCommand(
       final TypedRecord<JobRecord> command, final CommandControl<JobRecord> commandControl) {
-    final long jobKey = command.getKey();
-    final JobState.State state = jobState.getState(jobKey);
+    final var jobKey = command.getKey();
+    final var job = jobState.getJob(jobKey);
+    final var state = jobState.getState(jobKey);
 
-    if (state == State.ACTIVATED) {
-      commandControl.accept(JobIntent.TIMED_OUT, command.getValue());
-      jobMetrics.jobTimedOut(command.getValue().getType());
+    if (state == State.ACTIVATED && hasTimedOut(job)) {
+      commandControl.accept(JobIntent.TIMED_OUT, job);
+      jobMetrics.jobTimedOut(job.getType());
     } else {
-      final String textState;
-
-      switch (state) {
-        case ACTIVATABLE:
-          textState = "it must be activated first";
-          break;
-        case FAILED:
-          textState = "it is marked as failed";
-          break;
-        default:
-          textState = "no such job was found";
-          break;
-      }
+      final var reason =
+          switch (state) {
+            case ACTIVATED -> "it has not timed out";
+            case ACTIVATABLE -> "it must be activated first";
+            case FAILED -> "it is marked as failed and is not activated";
+            case ERROR_THROWN -> "it has thrown an error and is not activated";
+            case NOT_FOUND -> "no such job was found";
+          };
 
       commandControl.reject(
-          RejectionType.NOT_FOUND, String.format(NOT_ACTIVATED_JOB_MESSAGE, jobKey, textState));
+          RejectionType.NOT_FOUND, String.format(NOT_ACTIVATED_JOB_MESSAGE, jobKey, reason));
     }
     return true;
+  }
+
+  private boolean hasTimedOut(final JobRecord job) {
+    return job.getDeadline() < ActorClock.currentTimeMillis();
   }
 }

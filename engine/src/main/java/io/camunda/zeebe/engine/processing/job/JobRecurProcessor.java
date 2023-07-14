@@ -15,6 +15,7 @@ import io.camunda.zeebe.engine.state.immutable.ZeebeState;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
+import io.camunda.zeebe.util.sched.clock.ActorClock;
 
 public class JobRecurProcessor implements CommandProcessor<JobRecord> {
 
@@ -30,10 +31,13 @@ public class JobRecurProcessor implements CommandProcessor<JobRecord> {
   public boolean onCommand(
       final TypedRecord<JobRecord> command, final CommandControl<JobRecord> commandControl) {
     final long jobKey = command.getKey();
-    final JobState.State state = jobState.getState(jobKey);
+    final var job = jobState.getJob(jobKey);
+    final var state = jobState.getState(jobKey);
 
-    if (state == State.FAILED) {
-      commandControl.accept(JobIntent.RECURRED_AFTER_BACKOFF, command.getValue());
+    if (state == State.FAILED && hasRecurred(job)) {
+      final JobRecord recurredJob = jobState.getJob(jobKey);
+
+      commandControl.accept(JobIntent.RECURRED_AFTER_BACKOFF, recurredJob);
     } else {
       final String textState;
 
@@ -56,5 +60,9 @@ public class JobRecurProcessor implements CommandProcessor<JobRecord> {
           RejectionType.NOT_FOUND, String.format(NOT_FAILED_JOB_MESSAGE, jobKey, textState));
     }
     return true;
+  }
+
+  private boolean hasRecurred(final JobRecord job) {
+    return job.getRecurringTime() < ActorClock.currentTimeMillis();
   }
 }
