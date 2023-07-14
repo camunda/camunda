@@ -50,7 +50,6 @@ public abstract class CommandWithVariables<T> {
 
   public T variable(final String key, final Object value) {
     ArgumentUtil.ensureNotNull("key", key);
-    ArgumentUtil.ensureNotNull("value", value);
     return variables(Collections.singletonMap(key, value));
   }
 

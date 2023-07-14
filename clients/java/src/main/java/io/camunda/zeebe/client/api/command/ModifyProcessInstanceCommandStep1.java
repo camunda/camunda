@@ -166,7 +166,7 @@ public interface ModifyProcessInstanceCommandStep1 {
     /**
      * Create a {@link
      * io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ModifyProcessInstanceRequest.VariableInstruction}
-     * for the element that's getting activated. These variable will be created in the global scope
+     * for the element that's getting activated. This variable will be created in the global scope
      * of the process instance.
      *
      * @param key the key of the variable to be serialized to JSON
@@ -178,7 +178,7 @@ public interface ModifyProcessInstanceCommandStep1 {
     /**
      * Create a {@link
      * io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ModifyProcessInstanceRequest.VariableInstruction}
-     * for the element that's getting activated. These variable will be created in the scope of the
+     * for the element that's getting activated. This variable will be created in the scope of the
      * passed element.
      *
      * @param key the key of the variable to be serialized to JSON

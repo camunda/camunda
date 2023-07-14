@@ -159,9 +159,8 @@ public final class ModifyProcessInstanceCommandImpl
   @Override
   public ModifyProcessInstanceCommandStep3 withVariable(
       final String key, final Object value, final String scopeId) {
-    final VariableInstruction variableInstruction = createVariableInstruction(key, value, scopeId);
-    addVariableInstructionToLatestActivateInstruction(variableInstruction);
-    return this;
+    ArgumentUtil.ensureNotNull("key", key);
+    return withVariables(Collections.singletonMap(key, value), scopeId);
   }
 
   private VariableInstruction createVariableInstruction(
@@ -169,14 +168,6 @@ public final class ModifyProcessInstanceCommandImpl
     ArgumentUtil.ensureNotNull("variables", variables);
     final String variablesString = jsonMapper.validateJson("variables", variables);
     return createVariableInstruction(variablesString, scopeId);
-  }
-
-  private VariableInstruction createVariableInstruction(
-      final String key, final Object value, final String scopeId) {
-    ArgumentUtil.ensureNotNull("key", key);
-    ArgumentUtil.ensureNotNull("value", value);
-    final Map<String, Object> variable = Collections.singletonMap(key, value);
-    return createVariableInstruction(variable, scopeId);
   }
 
   private VariableInstruction createVariableInstruction(
