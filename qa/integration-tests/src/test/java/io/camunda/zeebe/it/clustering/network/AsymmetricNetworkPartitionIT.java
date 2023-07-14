@@ -48,6 +48,9 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testcontainers.containers.Network;
+import org.testcontainers.containers.output.FrameConsumerResultCallback;
+import org.testcontainers.containers.output.OutputFrame;
+import org.testcontainers.containers.output.ToStringConsumer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
@@ -106,11 +109,11 @@ final class AsymmetricNetworkPartitionIT {
   @DisplayName("Withstand Asymmetric Network Partition")
   @ParameterizedTest(name = "{index}: {0}")
   @MethodSource("provideTestCases")
-  void shouldWithstandAsymmetricNetworkPartition(final AsymmetricNetworkPartitionTestCase testCase)
-      throws IOException, InterruptedException {
+  void shouldWithstandAsymmetricNetworkPartition(
+      final AsymmetricNetworkPartitionTestCase testCase) {
     // given
 
-    // the test only works if the leaders of partition 1 and 3 are different nodes
+    // the test only works if the leaders of partition 1 and 2 are different nodes
     Awaitility.await("partitions have a different leader")
         .atMost(Duration.ofSeconds(30))
         .during(Duration.ofSeconds(5))
@@ -218,12 +221,30 @@ final class AsymmetricNetworkPartitionIT {
   private static void exec(final ZeebeNode<?> container, final String command) {
     LOGGER.info("Executing command {} on container {}", command, container.getContainerId());
 
+    // can't use container.execInContainer here as we need to switch to the root user
     try {
-      final var result = container.execInContainer(command.split(" "));
-      assertThat(result.getExitCode())
+      final String commandId =
+          container
+              .getDockerClient()
+              .execCreateCmd(container.getContainerId())
+              .withAttachStdout(true)
+              .withUser("root")
+              .withCmd(command.split(" "))
+              .exec()
+              .getId();
+
+      final ToStringConsumer stdoutConsumer = new ToStringConsumer();
+      try (final FrameConsumerResultCallback callback = new FrameConsumerResultCallback()) {
+        callback.addConsumer(OutputFrame.OutputType.STDOUT, stdoutConsumer);
+        container.getDockerClient().execStartCmd(commandId).exec(callback).awaitCompletion();
+      }
+
+      final Long exitCode =
+          container.getDockerClient().inspectExecCmd(commandId).exec().getExitCodeLong();
+      assertThat(exitCode)
           .as(
               "command [%s] failed with status [%d] and output: [%s]",
-              command, result.getExitCode(), result.getStdout())
+              command, exitCode, stdoutConsumer.toUtf8String())
           .isEqualTo(0);
 
     } catch (final IOException e) {
