@@ -32,6 +32,7 @@ import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ModifyProcessInstance
 import io.grpc.stub.StreamObserver;
 import java.io.InputStream;
 import java.time.Duration;
+import java.util.Collections;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
@@ -148,6 +149,18 @@ public final class ModifyProcessInstanceCommandImpl
     final VariableInstruction variableInstruction = createVariableInstruction(variables, scopeId);
     addVariableInstructionToLatestActivateInstruction(variableInstruction);
     return this;
+  }
+
+  @Override
+  public ModifyProcessInstanceCommandStep3 withVariable(final String key, final Object value) {
+    return withVariable(key, value, EMPTY_SCOPE_ID);
+  }
+
+  @Override
+  public ModifyProcessInstanceCommandStep3 withVariable(
+      final String key, final Object value, final String scopeId) {
+    ArgumentUtil.ensureNotNull("key", key);
+    return withVariables(Collections.singletonMap(key, value), scopeId);
   }
 
   private VariableInstruction createVariableInstruction(

@@ -29,6 +29,7 @@ import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.Collections;
+import org.assertj.core.api.Assertions;
 import org.junit.Test;
 
 public class ModifyProcessInstanceTest extends ClientTest {
@@ -294,25 +295,6 @@ public class ModifyProcessInstanceTest extends ClientTest {
   }
 
   @Test
-  public void shouldActivateElementWithMapVariablesAndScopeId() {
-    // when
-    client
-        .newModifyProcessInstanceCommand(PI_KEY)
-        .activateElement(ELEMENT_ID_A)
-        .withVariables(Collections.singletonMap("foo", "bar"), ELEMENT_ID_B)
-        .send()
-        .join();
-
-    // then
-    final ModifyProcessInstanceRequest request = gatewayService.getLastRequest();
-    assertRequest(request, 1, 0);
-    final ActivateInstruction activateInstruction = request.getActivateInstructions(0);
-    assertActivateInstruction(activateInstruction, ELEMENT_ID_A, EMPTY_KEY, 1);
-    final VariableInstruction variableInstruction = activateInstruction.getVariableInstructions(0);
-    assertVariableInstruction(variableInstruction, ELEMENT_ID_B);
-  }
-
-  @Test
   public void shouldActivateElementWithObjectVariablesAndScopeId() {
     // when
     client
@@ -362,6 +344,77 @@ public class ModifyProcessInstanceTest extends ClientTest {
     assertVariableInstruction(variableInstruction3, EMPTY_ELEMENT_ID);
     final VariableInstruction variableInstruction4 = activateInstruction.getVariableInstructions(3);
     assertVariableInstruction(variableInstruction4, EMPTY_ELEMENT_ID);
+  }
+
+  @Test
+  public void shouldActivateElementWithMapVariablesAndScopeId() {
+    // when
+    client
+        .newModifyProcessInstanceCommand(PI_KEY)
+        .activateElement(ELEMENT_ID_A)
+        .withVariables(Collections.singletonMap("foo", "bar"), ELEMENT_ID_B)
+        .send()
+        .join();
+
+    // then
+    final ModifyProcessInstanceRequest request = gatewayService.getLastRequest();
+    assertRequest(request, 1, 0);
+    final ActivateInstruction activateInstruction = request.getActivateInstructions(0);
+    assertActivateInstruction(activateInstruction, ELEMENT_ID_A, EMPTY_KEY, 1);
+    final VariableInstruction variableInstruction = activateInstruction.getVariableInstructions(0);
+    assertVariableInstruction(variableInstruction, ELEMENT_ID_B);
+  }
+
+  @Test
+  public void shouldActivateElementWithSingleVariableAndScopeId() {
+    // when
+    client
+        .newModifyProcessInstanceCommand(PI_KEY)
+        .activateElement(ELEMENT_ID_A)
+        .withVariable("foo", "bar", ELEMENT_ID_B)
+        .send()
+        .join();
+
+    // then
+    final ModifyProcessInstanceRequest request = gatewayService.getLastRequest();
+    assertRequest(request, 1, 0);
+    final ActivateInstruction activateInstruction = request.getActivateInstructions(0);
+    assertActivateInstruction(activateInstruction, ELEMENT_ID_A, EMPTY_KEY, 1);
+    final VariableInstruction variableInstruction = activateInstruction.getVariableInstructions(0);
+    assertVariableInstruction(variableInstruction, ELEMENT_ID_B);
+  }
+
+  @Test
+  public void shouldActivateElementWithSingleVariable() {
+    // when
+    client
+        .newModifyProcessInstanceCommand(PI_KEY)
+        .activateElement(ELEMENT_ID_A)
+        .withVariable("foo", "bar")
+        .send()
+        .join();
+
+    // then
+    final ModifyProcessInstanceRequest request = gatewayService.getLastRequest();
+    assertRequest(request, 1, 0);
+    final ActivateInstruction activateInstruction = request.getActivateInstructions(0);
+    assertActivateInstruction(activateInstruction, ELEMENT_ID_A, EMPTY_KEY, 1);
+    final VariableInstruction variableInstruction = activateInstruction.getVariableInstructions(0);
+    assertVariableInstruction(variableInstruction, EMPTY_ELEMENT_ID);
+  }
+
+  @Test
+  public void shouldThrowErrorWhenTryToActivateElementWithNullVariable() {
+    // when
+    Assertions.assertThatThrownBy(
+            () ->
+                client
+                    .newModifyProcessInstanceCommand(PI_KEY)
+                    .activateElement(ELEMENT_ID_A)
+                    .withVariable(null, null)
+                    .send()
+                    .join())
+        .isInstanceOf(IllegalArgumentException.class);
   }
 
   private void assertRequest(
