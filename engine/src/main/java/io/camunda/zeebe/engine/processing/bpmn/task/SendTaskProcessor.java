@@ -87,6 +87,7 @@ public final class SendTaskProcessor implements BpmnElementProcessor<ExecutableS
     public void onActivate(final ExecutableSendTask element, final BpmnElementContext context) {
       variableMappingBehavior
           .applyInputMappings(context, element)
+          .flatMap(ok -> eventSubscriptionBehavior.subscribeToEvents(element, context))
           .flatMap(ok -> messageBehavior.publishMessage(element, context))
           .ifRightOrLeft(
               ok -> {
@@ -100,7 +101,11 @@ public final class SendTaskProcessor implements BpmnElementProcessor<ExecutableS
     public void onComplete(final ExecutableSendTask element, final BpmnElementContext context) {
       variableMappingBehavior
           .applyOutputMappings(context, element)
-          .flatMap(ok -> stateTransitionBehavior.transitionToCompleted(element, context))
+          .flatMap(
+              ok -> {
+                eventSubscriptionBehavior.unsubscribeFromEvents(context);
+                return stateTransitionBehavior.transitionToCompleted(element, context);
+              })
           .ifRightOrLeft(
               completed -> stateTransitionBehavior.takeOutgoingSequenceFlows(element, completed),
               failure -> incidentBehavior.createIncident(failure, context));
@@ -110,6 +115,7 @@ public final class SendTaskProcessor implements BpmnElementProcessor<ExecutableS
     public void onTerminate(final ExecutableSendTask element, final BpmnElementContext context) {
       final var flowScopeInstance = stateBehavior.getFlowScopeInstance(context);
 
+      eventSubscriptionBehavior.unsubscribeFromEvents(context);
       incidentBehavior.resolveIncidents(context);
 
       eventSubscriptionBehavior

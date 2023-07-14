@@ -22,6 +22,7 @@ import io.camunda.zeebe.engine.processing.timer.DueDateTimerChecker;
 import io.camunda.zeebe.engine.processing.variable.VariableBehavior;
 import io.camunda.zeebe.engine.processing.variable.VariableStateEvaluationContextLookup;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
+import io.camunda.zeebe.stream.api.InterPartitionCommandSender;
 
 public final class BpmnBehaviorsImpl implements BpmnBehaviors {
 
@@ -54,7 +55,8 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
       final SubscriptionCommandSender subscriptionCommandSender,
       final int partitionsCount,
       final DueDateTimerChecker timerChecker,
-      final JobStreamer jobStreamer) {
+      final JobStreamer jobStreamer,
+      final InterPartitionCommandSender interPartitionCommandSender) {
     expressionBehavior =
         new ExpressionProcessor(
             ExpressionLanguageFactory.createExpressionLanguage(),
@@ -163,7 +165,9 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
             processingState.getKeyGenerator(),
             processingState.getVariableState(),
             writers,
-            expressionBehavior);
+            expressionBehavior,
+            partitionsCount,
+            interPartitionCommandSender);
   }
 
   @Override

@@ -17,18 +17,22 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWr
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.immutable.VariableState;
 import io.camunda.zeebe.msgpack.value.DocumentValue;
+import io.camunda.zeebe.protocol.impl.SubscriptionUtil;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageRecord;
+import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.MessageIntent;
 import io.camunda.zeebe.scheduler.clock.ActorClock;
+import io.camunda.zeebe.stream.api.InterPartitionCommandSender;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.util.Either;
+import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.time.Duration;
 import java.util.Optional;
 import org.agrona.DirectBuffer;
 
 public class BpmnMessageBehavior {
 
-  private static final Duration DEFAULT_MSG_TTL = Duration.ofHours(1);
+  private static final Duration DEFAULT_MSG_TTL = Duration.ZERO;
 
   private final MessageRecord messageRecord =
       new MessageRecord().setVariables(DocumentValue.EMPTY_DOCUMENT);
@@ -36,15 +40,22 @@ public class BpmnMessageBehavior {
   private final VariableState variableState;
   private final TypedCommandWriter commandWriter;
   private final ExpressionProcessor expressionBehavior;
+  private final InterPartitionCommandSender partitionCommandSender;
+
+  private final int partitionsCount;
 
   public BpmnMessageBehavior(
       final KeyGenerator keyGenerator,
       final VariableState variableState,
       final Writers writers,
-      final ExpressionProcessor expressionBehavior) {
+      final ExpressionProcessor expressionBehavior,
+      final int partitionsCount,
+      final InterPartitionCommandSender interPartitionCommandSender) {
     this.keyGenerator = keyGenerator;
     this.expressionBehavior = expressionBehavior;
     this.variableState = variableState;
+    this.partitionsCount = partitionsCount;
+    this.partitionCommandSender = interPartitionCommandSender;
     commandWriter = writers.command();
   }
 
@@ -123,8 +134,11 @@ public class BpmnMessageBehavior {
         Optional.ofNullable(properties.getTimeToLive()).orElse(DEFAULT_MSG_TTL.toMillis());
     messageRecord.setTimeToLive(timeToLive);
 
-    final var key = keyGenerator.nextKey();
-    commandWriter.appendFollowUpCommand(key, MessageIntent.PUBLISH, messageRecord);
+    final var partitionId =
+        SubscriptionUtil.getSubscriptionPartitionId(
+            BufferUtil.wrapString(properties.getCorrelationKey()), partitionsCount);
+    partitionCommandSender.sendCommand(
+        partitionId, ValueType.MESSAGE, MessageIntent.PUBLISH, messageRecord);
   }
 
   private static final class MessageProperties {

@@ -101,7 +101,8 @@ public final class EngineProcessors {
             timerChecker,
             jobStreamer,
             jobMetrics,
-            decisionBehavior);
+            decisionBehavior,
+            interPartitionCommandSender);
 
     final var commandDistributionBehavior =
         new CommandDistributionBehavior(
@@ -173,7 +174,8 @@ public final class EngineProcessors {
       final DueDateTimerChecker timerChecker,
       final JobStreamer jobStreamer,
       final JobMetrics jobMetrics,
-      final DecisionBehavior decisionBehavior) {
+      final DecisionBehavior decisionBehavior,
+      final InterPartitionCommandSender interPartitionCommandSender) {
     return new BpmnBehaviorsImpl(
         processingState,
         writers,
@@ -182,7 +184,8 @@ public final class EngineProcessors {
         subscriptionCommandSender,
         partitionsCount,
         timerChecker,
-        jobStreamer);
+        jobStreamer,
+        interPartitionCommandSender);
   }
 
   private static TypedRecordProcessor<ProcessInstanceRecord> addProcessProcessors(
