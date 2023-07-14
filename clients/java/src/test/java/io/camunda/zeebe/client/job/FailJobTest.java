@@ -15,7 +15,9 @@
  */
 package io.camunda.zeebe.client.job;
 
+import static io.camunda.zeebe.client.util.JsonUtil.fromJsonAsMap;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.entry;
 
 import io.camunda.zeebe.client.api.command.FailJobCommandStep1;
 import io.camunda.zeebe.client.api.response.ActivatedJob;
@@ -25,6 +27,7 @@ import io.camunda.zeebe.client.util.JsonUtil;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.FailJobRequest;
 import java.time.Duration;
 import java.util.Collections;
+import org.assertj.core.api.Assertions;
 import org.junit.Test;
 import org.mockito.Mockito;
 
@@ -167,5 +170,40 @@ public final class FailJobTest extends ClientTest {
     assertThat(request.getJobKey()).isEqualTo(jobKey);
     JsonUtil.assertEquality(request.getVariables(), json);
     assertThat(response).isNotNull();
+  }
+
+  @Test
+  public void shouldFailJobWithSingleVariable() {
+    // given
+    final long jobKey = 12;
+    final int newRetries = 0;
+    final String key = "key";
+    final String value = "value";
+
+    // when
+    final FailJobResponse response =
+        client.newFailCommand(jobKey).retries(newRetries).variable(key, value).send().join();
+
+    // then
+    final FailJobRequest request = gatewayService.getLastRequest();
+    assertThat(fromJsonAsMap(request.getVariables())).containsOnly(entry(key, value));
+    assertThat(request.getJobKey()).isEqualTo(jobKey);
+    assertThat(response).isNotNull();
+  }
+
+  @Test
+  public void shouldThrowErrorWhenTryToFailJobWithNullVariable() {
+    // when
+    final long jobKey = 12;
+    final int newRetries = 0;
+    Assertions.assertThatThrownBy(
+            () ->
+                client
+                    .newFailCommand(jobKey)
+                    .retries(newRetries)
+                    .variable(null, null)
+                    .send()
+                    .join())
+        .isInstanceOf(IllegalArgumentException.class);
   }
 }

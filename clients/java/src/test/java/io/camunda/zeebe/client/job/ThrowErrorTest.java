@@ -15,7 +15,9 @@
  */
 package io.camunda.zeebe.client.job;
 
+import static io.camunda.zeebe.client.util.JsonUtil.fromJsonAsMap;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.entry;
 
 import io.camunda.zeebe.client.api.response.ActivatedJob;
 import io.camunda.zeebe.client.util.ClientTest;
@@ -23,6 +25,7 @@ import io.camunda.zeebe.client.util.JsonUtil;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ThrowErrorRequest;
 import java.time.Duration;
 import java.util.Collections;
+import org.assertj.core.api.Assertions;
 import org.junit.Test;
 import org.mockito.Mockito;
 
@@ -117,5 +120,42 @@ public final class ThrowErrorTest extends ClientTest {
     JsonUtil.assertEquality(request.getVariables(), json);
 
     rule.verifyDefaultRequestTimeout();
+  }
+
+  @Test
+  public void shouldThrowErrorWithSingleVariable() {
+    // given
+    final long jobKey = 12;
+    final String errorCode = "errorCode";
+    final String key = "key";
+    final String value = "value";
+
+    // when
+    client.newThrowErrorCommand(jobKey).errorCode(errorCode).variable(key, value).send().join();
+
+    // then
+    final ThrowErrorRequest request = gatewayService.getLastRequest();
+    assertThat(request.getJobKey()).isEqualTo(jobKey);
+    assertThat(request.getErrorCode()).isEqualTo(errorCode);
+    assertThat(fromJsonAsMap(request.getVariables())).containsOnly(entry(key, value));
+
+    rule.verifyDefaultRequestTimeout();
+  }
+
+  @Test
+  public void shouldThrowErrorWhenTryToThrowErrorCommandWithNullVariable() {
+    // given
+    final long jobKey = 12;
+    final String errorCode = "errorCode";
+    // when
+    Assertions.assertThatThrownBy(
+            () ->
+                client
+                    .newThrowErrorCommand(jobKey)
+                    .errorCode(errorCode)
+                    .variable(null, null)
+                    .send()
+                    .join())
+        .isInstanceOf(IllegalArgumentException.class);
   }
 }
