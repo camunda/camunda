@@ -15,6 +15,6 @@ test.beforeEach(async ({context}) => {
         'Content-Type': 'text/javascript;charset=UTF-8',
       },
       body: 'window.clientConfig = {"isEnterprise":false,"canLogout":true,"isLoginDelegated":false,"contextPath":"","organizationId":null,"clusterId":null,"stage":null,"mixpanelToken":null,"mixpanelAPIHost":null};',
-    }),
+    })
   );
 });

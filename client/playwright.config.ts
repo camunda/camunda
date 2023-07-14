@@ -26,14 +26,19 @@ const config: PlaywrightTestConfig = {
   reporter: 'html',
   projects: [
     {
+      name: 'setup',
+      testMatch: IS_E2E ? /e2e.setup\.ts/ : /visual.setup\.ts/,
+    },
+    {
       name: 'chromium',
       use: {...devices['Desktop Chrome']},
+      dependencies: ['setup'],
     },
   ],
   outputDir: 'test-results/',
   use: {
     actionTimeout: 0,
-    baseURL: `http://localhost:${IS_CI && IS_E2E ? 8080 : 8081}`,
+    baseURL: `http://localhost:${IS_E2E ? (IS_CI ? 8080 : 3001) : 8081}`,
     trace: 'on-first-retry',
   },
 };

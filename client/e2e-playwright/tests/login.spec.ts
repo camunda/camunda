@@ -6,7 +6,7 @@
  */
 
 import {expect} from '@playwright/test';
-import {test} from '../test-fixtures';
+import {loginTest as test} from '../test-fixtures';
 
 test.beforeEach(async ({loginPage}) => {
   await loginPage.navigateToLogin();

@@ -8,6 +8,7 @@
 import {test as base} from '@playwright/test';
 import {Common} from './pages/Common';
 import {Login} from './pages/Login';
+import fs from 'fs';
 
 type Fixture = {
   resetData: () => Promise<void>;
@@ -15,7 +16,7 @@ type Fixture = {
   loginPage: Login;
 };
 
-const test = base.extend<Fixture>({
+const loginTest = base.extend<Fixture>({
   commonPage: async ({page}, use) => {
     await use(new Common(page));
   },
@@ -24,4 +25,40 @@ const test = base.extend<Fixture>({
   },
 });
 
-export {test};
+const authFile = 'playwright/.auth/user.json';
+
+const test = base.extend<{}, {workerStorageState: string}>({
+  storageState: ({workerStorageState}, use) => use(workerStorageState),
+
+  workerStorageState: [
+    async (
+      {browser},
+      use,
+      {
+        project: {
+          use: {baseURL},
+        },
+      }
+    ) => {
+      if (fs.existsSync(authFile)) {
+        await use(authFile);
+        return;
+      }
+      // Important: make sure we authenticate in a clean environment by unsetting storage state.
+      const page = await browser.newPage({storageState: undefined});
+      await page.goto(`${baseURL}/carbon/login`);
+      await page.getByLabel('Username').fill('demo');
+      await page.getByLabel('Password').fill('demo');
+      await page.getByRole('button', {name: 'Login'}).click();
+
+      await page.waitForURL(`${baseURL}/carbon`);
+
+      await page.context().storageState({path: authFile});
+      await page.close();
+      await use(authFile);
+    },
+    {scope: 'worker'},
+  ],
+});
+
+export {loginTest, test};
