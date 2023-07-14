@@ -341,7 +341,11 @@ final class RollingUpdateTest {
         .withEnv("ZEEBE_BROKER_CLUSTER_MEMBERSHIP_SUSPECTPROBES", "2")
         // ensure we have an exporter present to test sharing exporter state across nodes
         .withEnv("ZEEBE_BROKER_EXECUTIONMETRICSEXPORTERENABLED", "true")
-        .withEnv("ZEEBE_LOG_LEVEL", "DEBUG");
+        .withEnv("ZEEBE_LOG_LEVEL", "DEBUG")
+        // user needs to be set to allow a smooth update from zeebe 8.2 to 8.3
+        // as the default user changed to `zeebe` with 8.3 and was `root` with 8.2
+        // TODO remove after 8.3 release
+        .withCreateContainerCmdModifier(createContainerCmd -> createContainerCmd.withUser("zeebe"));
     broker.setDockerImageName(PREVIOUS_VERSION.asCanonicalNameString());
   }
 }

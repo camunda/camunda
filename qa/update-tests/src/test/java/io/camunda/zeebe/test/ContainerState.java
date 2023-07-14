@@ -23,6 +23,7 @@ import java.util.regex.Pattern;
 import net.jodah.failsafe.Failsafe;
 import net.jodah.failsafe.RetryPolicy;
 import org.agrona.LangUtil;
+import org.agrona.Strings;
 import org.junit.jupiter.api.extension.ExtensionContext.Store.CloseableResource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -32,9 +33,10 @@ import org.testcontainers.containers.Network;
 import org.testcontainers.utility.DockerImageName;
 
 final class ContainerState implements CloseableResource {
+
+  private static final String ZEEBE_USER = "zeebe";
   private static final RetryPolicy<Void> CONTAINER_START_RETRY_POLICY =
       new RetryPolicy<Void>().withMaxRetries(5).withBackoff(3, 30, ChronoUnit.SECONDS);
-
   private static final Pattern DOUBLE_NEWLINE = Pattern.compile("\n\n");
   private static final Duration CLOSE_TIMEOUT = Duration.ofSeconds(30);
   private static final Logger LOG = LoggerFactory.getLogger(ContainerState.class);
@@ -68,12 +70,19 @@ final class ContainerState implements CloseableResource {
   private DockerImageName gatewayImage;
   private boolean withRemoteDebugging;
 
+  private String withUser;
+
   ZeebeClient client() {
     return client;
   }
 
   ContainerState withOldBroker() {
-    return broker(PREVIOUS_VERSION);
+    broker(PREVIOUS_VERSION);
+    // user needs to be set to allow a smooth update from zeebe 8.2 to 8.3
+    // as the default user changed to `zeebe` with 8.3 and was `root` with 8.2
+    // TODO remove after 8.3 release
+    withUser(ZEEBE_USER);
+    return this;
   }
 
   ContainerState withNewBroker() {
@@ -87,6 +96,11 @@ final class ContainerState implements CloseableResource {
 
   ContainerState withOldGateway() {
     gatewayImage = PREVIOUS_VERSION;
+    return this;
+  }
+
+  ContainerState withUser(final String user) {
+    withUser = user;
     return this;
   }
 
@@ -126,6 +140,11 @@ final class ContainerState implements CloseableResource {
 
     if (enableDebug) {
       broker = broker.withEnv("ZEEBE_DEBUG", "true");
+    }
+
+    if (!Strings.isEmpty(withUser)) {
+      broker.withCreateContainerCmdModifier(
+          createContainerCmd -> createContainerCmd.withUser(withUser));
     }
 
     Failsafe.with(CONTAINER_START_RETRY_POLICY).run(() -> broker.self().start());
