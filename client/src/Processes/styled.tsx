@@ -11,7 +11,7 @@ import {SkeletonPlaceholder} from '@carbon/react';
 
 const Container = styled.main`
   ${({theme}) => css`
-    padding: var(--cds-spacing-08) 0 0 var(--cds-spacing-13);
+    padding: var(--cds-spacing-08) 0 var(--cds-spacing-08) var(--cds-spacing-13);
     width: 100%;
     height: 100%;
     box-sizing: border-box;

@@ -62,9 +62,8 @@ type Process = {
   id: string;
   name: string | null;
   bpmnProcessId: string;
-  processDefinitionKey: string;
   version: number;
-  formId: string | null;
+  startEventFormId: string | null;
   sortValues: [string];
 };
 

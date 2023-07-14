@@ -5,15 +5,15 @@
  * except in compliance with the proprietary license.
  */
 
-import {useEffect, useRef, useState} from 'react';
-import {Container, FormContainer, FormRoot, SubmitButtonRow} from './styled';
-import {formManager} from 'modules/formManager';
+import {useRef, useState} from 'react';
+import {Container, FormContainer, SubmitButtonRow} from './styled';
+import {FormManager} from 'modules/formManager';
 import {Variable} from 'modules/types';
-import {InlineLoadingStatus, Layer} from '@carbon/react';
+import {InlineLoadingStatus} from '@carbon/react';
 import {tracking} from 'modules/tracking';
 import {PoweredBy} from 'modules/components/PoweredBy';
 import {AsyncActionButton} from 'modules/components/AsyncActionButton';
-import {FormJSCustomStyling} from 'modules/components/FormJSCustomStyling';
+import {FormJSRenderer} from 'modules/components/FormJSRenderer';
 
 const SUBMIT_OPERATION_MESSAGE = {
   active: 'Submitting...',
@@ -37,59 +37,10 @@ const FormJS: React.FC<Props> = ({
   onSubmitError,
   onSubmitSuccess,
 }) => {
-  const formContainerRef = useRef<HTMLDivElement | null>(null);
+  const formManagerRef = useRef<FormManager | null>(null);
   const [isSchemaValid, setIsSchemaValid] = useState(true);
   const [submissionState, setSubmissionState] =
     useState<InlineLoadingStatus>('inactive');
-
-  useEffect(() => {
-    const container = formContainerRef.current;
-
-    if (container !== null) {
-      setIsSchemaValid(true);
-      formManager.render({
-        container,
-        schema,
-        data: {},
-        onImportError: () => {
-          setIsSchemaValid(false);
-          onImportError();
-          tracking.track({
-            eventName: 'public-start-form-invalid-form-schema',
-          });
-        },
-        onSubmit: async ({data, errors}) => {
-          setSubmissionState('active');
-          if (Object.keys(errors).length === 0) {
-            const variables = Object.entries(data).map(
-              ([name, value]) =>
-                ({
-                  name,
-                  value: JSON.stringify(value),
-                }) as Variable,
-            );
-
-            try {
-              await handleSubmit(variables);
-              setSubmissionState('finished');
-            } catch {
-              setSubmissionState('error');
-            }
-          } else {
-            setSubmissionState('error');
-          }
-        },
-      });
-    }
-
-    return () => {};
-  }, [schema, handleSubmit, onImportError]);
-
-  useEffect(() => {
-    return () => {
-      formManager.detach();
-    };
-  }, []);
 
   if (!isSchemaValid) {
     return null;
@@ -97,11 +48,38 @@ const FormJS: React.FC<Props> = ({
 
   return (
     <Container>
-      <FormJSCustomStyling />
       <FormContainer>
-        <Layer>
-          <FormRoot ref={formContainerRef} />
-        </Layer>
+        {schema === null ? null : (
+          <FormJSRenderer
+            schema={schema}
+            handleSubmit={handleSubmit}
+            onMount={(formManager) => {
+              formManagerRef.current = formManager;
+            }}
+            onImportError={() => {
+              setIsSchemaValid(false);
+              onImportError();
+              tracking.track({
+                eventName: 'public-start-form-invalid-form-schema',
+              });
+            }}
+            onRender={() => {
+              setIsSchemaValid(true);
+            }}
+            onSubmitStart={() => {
+              setSubmissionState('active');
+            }}
+            onSubmitSuccess={() => {
+              setSubmissionState('finished');
+            }}
+            onSubmitError={() => {
+              setSubmissionState('error');
+            }}
+            onValidationError={() => {
+              setSubmissionState('error');
+            }}
+          />
+        )}
       </FormContainer>
       <SubmitButtonRow>
         <AsyncActionButton
@@ -119,7 +97,7 @@ const FormJS: React.FC<Props> = ({
             kind: 'primary',
             size: 'lg',
             type: 'submit',
-            onClick: () => formManager.submit(),
+            onClick: () => formManagerRef.current?.submit(),
           }}
           status={submissionState}
           onError={() => {

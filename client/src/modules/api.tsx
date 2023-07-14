@@ -33,12 +33,14 @@ const api = {
         'Content-Type': 'application/json',
       },
     }),
-  startProcess: (bpmnProcessId: string) => {
+  startProcess: (payload: {bpmnProcessId: string; variables: Variable[]}) => {
+    const {bpmnProcessId, variables} = payload;
     return new Request(
       mergePathname(BASENAME, `/v1/internal/processes/${bpmnProcessId}/start`),
       {
         ...BASE_REQUEST_OPTIONS,
         method: 'PATCH',
+        body: JSON.stringify({variables}),
         headers: {
           'Content-Type': 'application/json',
         },

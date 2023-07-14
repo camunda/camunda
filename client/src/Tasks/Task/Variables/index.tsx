@@ -55,6 +55,7 @@ import {
   StructuredListRow,
   StructuredListBody,
   Heading,
+  Layer,
 } from '@carbon/react';
 import {Information, Close, Popup, Add} from '@carbon/react/icons';
 import {AsyncActionButton} from 'modules/components/AsyncActionButton';
@@ -420,7 +421,7 @@ const Variables: React.FC<Props> = ({
                     </StructuredListWrapper>
                   </Container>
                 ) : (
-                  <TaskDetailsRow>
+                  <TaskDetailsRow as={Layer}>
                     <C3EmptyState
                       heading="Task has no variables"
                       description={

@@ -5,79 +5,162 @@
  * except in compliance with the proprietary license.
  */
 
-import {Modal} from 'modules/components/Modal';
-import {formManager} from 'modules/formManager';
+import {FormManager} from 'modules/formManager';
 import {useForm} from 'modules/queries/useForm';
-import {Process} from 'modules/types';
+import {Process, Variable} from 'modules/types';
 import {getProcessDisplayName} from 'modules/utils/getProcessDisplayName';
-import {useEffect, useLayoutEffect, useRef} from 'react';
-import {FormRoot} from './styled';
-import {Layer} from '@carbon/react';
-import {FormJSCustomStyling} from 'modules/components/FormJSCustomStyling';
+import {useRef, useState} from 'react';
+import {
+  FormContainer,
+  FormSkeletonContainer,
+  InlineNotification,
+} from './styled';
+import {TextInputSkeleton, Loading, Modal} from '@carbon/react';
+import {match} from 'ts-pattern';
+import {FormJSRenderer} from 'modules/components/FormJSRenderer';
+import {createPortal} from 'react-dom';
 
 type Props = {
   process: Process;
   isOpen: boolean;
   onClose: () => void;
+  onSubmit: (variables: Variable[]) => Promise<void>;
 };
 
-const FormModal: React.FC<Props> = ({isOpen, onClose, process}) => {
-  const formContainerRef = useRef<HTMLDivElement | null>(null);
+const FormModal: React.FC<Props> = ({isOpen, onClose, process, onSubmit}) => {
+  const formManagerRef = useRef<FormManager | null>(null);
   const processDisplayName = getProcessDisplayName(process);
-  const {
-    data: {schema},
-  } = useForm(
+  const {data, fetchStatus, status} = useForm(
     {
-      id: process.formId!,
-      processDefinitionKey: process.processDefinitionKey,
+      id: process.startEventFormId!,
+      processDefinitionKey: process.id,
     },
     {
-      enabled: isOpen && process.formId !== null,
+      enabled: isOpen && process.startEventFormId !== null,
       refetchOnReconnect: false,
       refetchOnWindowFocus: false,
     },
   );
+  const [isFormSchemaValid, setIsFormSchemaValid] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [hasSubmissionFailed, setHasSubmissionFailed] = useState(false);
+  const {schema} = data ?? {};
 
-  useLayoutEffect(() => {
-    const container = formContainerRef.current;
-
-    if (container !== null && schema !== null && isOpen) {
-      formManager.render({
-        container,
-        schema,
-        data: {},
-        onImportError: () => {},
-        onSubmit: () => {},
-      });
-    }
-  }, [schema, isOpen]);
-
-  useEffect(() => {
-    return () => {
-      formManager.detach();
-    };
-  }, []);
-
-  return (
+  return createPortal(
     <>
-      <FormJSCustomStyling />
       <Modal
         aria-label={`Start process ${processDisplayName}`}
         modalHeading={`Start process ${processDisplayName}`}
         secondaryButtonText="Cancel"
-        primaryButtonText="Start process"
+        primaryButtonText={
+          <>
+            Start process
+            {isSubmitting ? (
+              <Loading
+                withOverlay={false}
+                small
+                data-testid="loading-spinner"
+              />
+            ) : null}
+          </>
+        }
         open={isOpen}
         onRequestClose={onClose}
-        onRequestSubmit={() => {}}
+        onRequestSubmit={() => {
+          formManagerRef.current?.submit();
+        }}
         onSecondarySubmit={onClose}
         preventCloseOnClickOutside
+        primaryButtonDisabled={
+          status !== 'success' || !isFormSchemaValid || isSubmitting
+        }
         size="lg"
       >
-        <Layer>
-          <FormRoot ref={formContainerRef} />
-        </Layer>
+        {match({
+          status,
+          fetchStatus,
+          isFormSchemaValid,
+        })
+          .with({fetchStatus: 'fetching'}, () => (
+            <FormContainer>
+              <FormSkeletonContainer data-testid="form-skeleton">
+                <TextInputSkeleton />
+                <TextInputSkeleton />
+                <TextInputSkeleton />
+                <TextInputSkeleton />
+                <TextInputSkeleton />
+                <TextInputSkeleton />
+              </FormSkeletonContainer>
+            </FormContainer>
+          ))
+          .with(
+            {
+              status: 'success',
+              isFormSchemaValid: true,
+            },
+            () => (
+              <FormContainer>
+                <FormJSRenderer
+                  schema={schema!}
+                  handleSubmit={onSubmit}
+                  onMount={(formManager) => {
+                    formManagerRef.current = formManager;
+                  }}
+                  onSubmitStart={() => {
+                    setIsSubmitting(true);
+                  }}
+                  onImportError={() => {
+                    setIsFormSchemaValid(false);
+                  }}
+                  onSubmitError={() => {
+                    setHasSubmissionFailed(true);
+                    setIsSubmitting(false);
+                  }}
+                  onSubmitSuccess={() => {
+                    setIsSubmitting(false);
+                  }}
+                  onValidationError={() => {
+                    setIsSubmitting(false);
+                  }}
+                />
+                {hasSubmissionFailed ? (
+                  <InlineNotification
+                    kind="error"
+                    role="alert"
+                    hideCloseButton
+                    lowContrast
+                    title="Something went wrong"
+                    subtitle="Form could not be submitted. Please try again later."
+                  />
+                ) : null}
+              </FormContainer>
+            ),
+          )
+          .with({status: 'success', isFormSchemaValid: false}, () => (
+            <InlineNotification
+              kind="error"
+              role="alert"
+              hideCloseButton
+              lowContrast
+              title="Something went wrong"
+              subtitle="We were not able to render the form. Please contact your process administrator to fix the form schema."
+            />
+          ))
+          .with({status: 'error'}, () => (
+            <InlineNotification
+              kind="error"
+              role="alert"
+              hideCloseButton
+              lowContrast
+              title="Something went wrong"
+              subtitle="We were not able to load the form. Please check your connection
+              and try again later."
+            />
+          ))
+          .exhaustive()}
       </Modal>
-    </>
+    </>,
+    document.body,
   );
 };
 

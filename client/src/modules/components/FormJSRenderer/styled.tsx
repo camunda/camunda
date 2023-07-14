@@ -5,8 +5,13 @@
  * except in compliance with the proprietary license.
  */
 
-import {css, createGlobalStyle} from 'styled-components';
+import styled, {css, createGlobalStyle} from 'styled-components';
 import {CARBON_STYLES} from '@bpmn-io/form-js-carbon-styles';
+import {Layer as BaseLayer} from '@carbon/react';
+
+const FormRoot = styled.div`
+  width: 100%;
+`;
 
 const FormJSCustomStyling = createGlobalStyle`
   ${() => css`
@@ -20,4 +25,9 @@ const FormJSCustomStyling = createGlobalStyle`
   `}
 `;
 
-export {FormJSCustomStyling};
+const Layer = styled(BaseLayer)`
+  width: 100%;
+  max-width: 900px;
+`;
+
+export {FormRoot, FormJSCustomStyling, Layer};

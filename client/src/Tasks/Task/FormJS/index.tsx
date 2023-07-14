@@ -5,18 +5,17 @@
  * except in compliance with the proprietary license.
  */
 
-import {useEffect, useMemo, useRef, useState} from 'react';
+import {useMemo, useRef, useState} from 'react';
 import {Form, Variable, CurrentUser, Task} from 'modules/types';
 import {useRemoveFormReference} from 'modules/queries/useTask';
 import {getSchemaVariables} from '@bpmn-io/form-js-viewer';
-import '@bpmn-io/form-js-viewer/dist/assets/form-js-base.css';
 import {DetailsFooter} from 'modules/components/DetailsFooter';
 import {InlineLoadingStatus} from '@carbon/react';
 import {usePermissions} from 'modules/hooks/usePermissions';
 import {notificationsStore} from 'modules/stores/notifications';
 import {AsyncActionButton} from 'modules/components/AsyncActionButton';
 import {getCompletionButtonDescription} from 'modules/utils/getCompletionButtonDescription';
-import {formManager} from 'modules/formManager';
+import {FormManager} from 'modules/formManager';
 import {
   ScrollableContent,
   TaskDetailsContainer,
@@ -25,7 +24,7 @@ import {
 import {Separator} from 'modules/components/Separator';
 import {useForm} from 'modules/queries/useForm';
 import {useVariables} from 'modules/queries/useVariables';
-import {FormJSCustomStyling} from 'modules/components/FormJSCustomStyling';
+import {FormJSRenderer} from 'modules/components/FormJSRenderer';
 
 function formatVariablesToFormData(variables: Variable[]) {
   return variables.reduce(
@@ -70,7 +69,7 @@ const FormJS: React.FC<Props> = ({
   onSubmitFailure,
   user,
 }) => {
-  const containerRef = useRef<HTMLDivElement | null>(null);
+  const formManagerRef = useRef<FormManager | null>(null);
   const [submissionState, setSubmissionState] =
     useState<InlineLoadingStatus>('inactive');
   const {assignee, taskState} = task;
@@ -99,89 +98,49 @@ const FormJS: React.FC<Props> = ({
     },
   );
   const variables = useMemo(() => variablesData ?? [], [variablesData]);
-  const isAssignedToMe = user.userId === assignee;
   const canCompleteTask =
     user.userId === assignee && taskState === 'CREATED' && hasPermission;
   const {removeFormReference} = useRemoveFormReference(task);
-
-  useEffect(() => {
-    formManager.setReadOnly(!canCompleteTask);
-
-    if (!isAssignedToMe) {
-      formManager.reset();
-    }
-  }, [canCompleteTask, isAssignedToMe]);
-
-  useEffect(() => {
-    const container = containerRef.current;
-
-    function onImportError() {
-      removeFormReference();
-      notificationsStore.displayNotification({
-        kind: 'error',
-        title: 'Invalid Form schema',
-        isDismissable: true,
-      });
-    }
-
-    if (
-      schema !== null &&
-      !isFetching &&
-      container !== null &&
-      submissionState === 'inactive'
-    ) {
-      const data = formatVariablesToFormData(variables);
-      formManager.render({
-        container,
-        data,
-        schema,
-        onImportError,
-        onSubmit: async ({errors, data}: any) => {
-          if (Object.keys(errors).length === 0) {
-            const variables = Object.entries(data).map(
-              ([name, value]) =>
-                ({
-                  name,
-                  value: JSON.stringify(value),
-                }) as Variable,
-            );
-            try {
-              setSubmissionState('active');
-              await onSubmit(variables);
-              setSubmissionState('finished');
-            } catch (error) {
-              onSubmitFailure(error as Error);
-              setSubmissionState('error');
-            }
-          } else {
-            setSubmissionState('inactive');
-          }
-        },
-      });
-    }
-  }, [
-    isFetching,
-    variables,
-    schema,
-    removeFormReference,
-    onSubmit,
-    onSubmitFailure,
-    submissionState,
-  ]);
-
-  useEffect(() => {
-    return () => {
-      formManager.detach();
-    };
-  }, [task.id]);
 
   return (
     <>
       <Separator />
       <ScrollableContent data-testid="embedded-form" tabIndex={-1}>
         <TaskDetailsContainer>
-          <FormJSCustomStyling />
-          <TaskDetailsRow ref={containerRef} />
+          <TaskDetailsRow>
+            {schema === null || isFetching ? null : (
+              <FormJSRenderer
+                schema={schema}
+                data={formatVariablesToFormData(variables)}
+                readOnly={!canCompleteTask}
+                onMount={(formManager) => {
+                  formManagerRef.current = formManager;
+                }}
+                handleSubmit={onSubmit}
+                onImportError={() => {
+                  removeFormReference();
+                  notificationsStore.displayNotification({
+                    kind: 'error',
+                    title: 'Invalid Form schema',
+                    isDismissable: true,
+                  });
+                }}
+                onSubmitStart={() => {
+                  setSubmissionState('active');
+                }}
+                onSubmitSuccess={() => {
+                  setSubmissionState('finished');
+                }}
+                onSubmitError={(error) => {
+                  onSubmitFailure(error as Error);
+                  setSubmissionState('error');
+                }}
+                onValidationError={() => {
+                  setSubmissionState('inactive');
+                }}
+              />
+            )}
+          </TaskDetailsRow>
           <DetailsFooter>
             <AsyncActionButton
               inlineLoadingProps={{
@@ -201,7 +160,7 @@ const FormJS: React.FC<Props> = ({
                 disabled: submissionState === 'active' || !canCompleteTask,
                 onClick: () => {
                   setSubmissionState('active');
-                  formManager.submit();
+                  formManagerRef.current?.submit();
                 },
                 title: canCompleteTask
                   ? undefined

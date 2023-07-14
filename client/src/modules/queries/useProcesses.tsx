@@ -47,9 +47,8 @@ function createMockProcess(id: string): Process {
   return {
     id,
     name: `Process ${id}`,
-    processDefinitionKey: `definition-id-${id}`,
     bpmnProcessId: `bpmn-process-id-${id}`,
-    formId: `form-id-${id}`,
+    startEventFormId: `form-id-${id}`,
     sortValues: ['1'],
     version: 1,
   };

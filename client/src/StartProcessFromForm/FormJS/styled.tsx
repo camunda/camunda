@@ -7,10 +7,6 @@
 
 import styled from 'styled-components';
 
-const FormRoot = styled.div`
-  width: 100%;
-`;
-
 const FormContainer = styled.div`
   width: 100%;
   background-color: var(--cds-layer);
@@ -53,10 +49,4 @@ const FormSkeletonContainer = styled.div`
   }
 `;
 
-export {
-  FormRoot,
-  Container,
-  FormContainer,
-  SubmitButtonRow,
-  FormSkeletonContainer,
-};
+export {Container, FormContainer, SubmitButtonRow, FormSkeletonContainer};

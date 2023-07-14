@@ -7,9 +7,8 @@
 
 import {rem} from '@carbon/elements';
 import styled, {css} from 'styled-components';
-import {Layer} from '@carbon/react';
 
-const ScrollableContent = styled(Layer)`
+const ScrollableContent = styled.div`
   width: 100%;
   height: 100%;
   overflow: auto;

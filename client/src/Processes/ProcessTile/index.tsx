@@ -64,9 +64,9 @@ const ProcessTile: React.FC<Props> = ({
   isStartButtonDisabled,
   ...props
 }) => {
-  const {mutate: startProcess, data, error} = useStartProcess();
+  const {mutateAsync: startProcess, data} = useStartProcess();
   const [status, setStatus] = useState<LoadingStatus>('inactive');
-  const {bpmnProcessId, formId} = process;
+  const {bpmnProcessId, startEventFormId} = process;
   const displayName = getProcessDisplayName(process);
   const navigate = useNavigate();
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);
@@ -152,13 +152,6 @@ const ProcessTile: React.FC<Props> = ({
     handleMutationSuccess();
   }, [data, navigate]);
 
-  useEffect(() => {
-    if (error !== null) {
-      logger.error(error);
-      setStatus('error');
-    }
-  }, [error]);
-
   return (
     <Container {...props}>
       <Stack>
@@ -176,12 +169,17 @@ const ProcessTile: React.FC<Props> = ({
             autoFocus: isFirst,
             disabled: isStartButtonDisabled,
             onClick: async () => {
-              if (formId === null) {
+              if (startEventFormId === null) {
                 setStatus('active');
                 tracking.track({
                   eventName: 'process-start-clicked',
                 });
-                startProcess({bpmnProcessId});
+                try {
+                  await startProcess({bpmnProcessId});
+                } catch (error) {
+                  logger.error(error);
+                  setStatus('error');
+                }
               } else {
                 setIsFormModalOpen(true);
               }
@@ -213,14 +211,20 @@ const ProcessTile: React.FC<Props> = ({
         </AsyncActionButton>
       </Stack>
 
-      <FormModal
-        process={process}
-        isOpen={isFormModalOpen}
-        onClose={() => {
-          setIsFormModalOpen(false);
-        }}
-        key={process.bpmnProcessId}
-      />
+      {startEventFormId === null ? null : (
+        <FormModal
+          key={process.bpmnProcessId}
+          process={process}
+          isOpen={isFormModalOpen}
+          onClose={() => {
+            setIsFormModalOpen(false);
+          }}
+          onSubmit={async (variables) => {
+            await startProcess({bpmnProcessId, variables});
+            setIsFormModalOpen(false);
+          }}
+        />
+      )}
     </Container>
   );
 };

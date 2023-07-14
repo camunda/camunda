@@ -16,7 +16,7 @@ class FormManager {
     schema: string;
     data: Parameters<Form['importSchema']>[1];
     onSubmit: (result: {errors: any; data: any}) => void;
-    onImportError: () => void;
+    onImportError?: () => void;
     container: HTMLElement;
   }) => {
     const {schema, data, onSubmit, onImportError, container} = options;
@@ -36,7 +36,7 @@ class FormManager {
       await this.#form.importSchema(JSON.parse(schema), data);
       this.#schema = schema;
     } catch {
-      onImportError();
+      onImportError?.();
     }
   };
 
@@ -59,6 +59,4 @@ class FormManager {
   };
 }
 
-const formManager = new FormManager();
-
-export {formManager};
+export {FormManager};

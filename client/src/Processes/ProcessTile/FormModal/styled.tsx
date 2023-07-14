@@ -6,10 +6,49 @@
  */
 
 import styled from 'styled-components';
+import {InlineNotification as BaseInlineNotification} from '@carbon/react';
 
-const FormRoot = styled.div`
+const FormSkeletonContainer = styled.div`
   width: 100%;
-  height: 100vh;
+  max-width: 900px;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  grid-template-rows: repeat(4, min-content);
+  grid-gap: var(--cds-spacing-04);
+  grid-template-areas:
+    'a b'
+    'c c'
+    'd .'
+    'e f';
+
+  & > :nth-child(1) {
+    grid-area: a;
+  }
+  & > :nth-child(2) {
+    grid-area: b;
+  }
+  & > :nth-child(3) {
+    grid-area: c;
+  }
+  & > :nth-child(4) {
+    grid-area: d;
+  }
+  & > :nth-child(5) {
+    grid-area: e;
+  }
+  & > :nth-child(6) {
+    grid-area: f;
+  }
 `;
 
-export {FormRoot};
+const InlineNotification = styled(BaseInlineNotification)`
+  width: 100%;
+`;
+
+const FormContainer = styled.div`
+  width: 100%;
+  display: flex;
+  justify-content: center;
+`;
+
+export {FormSkeletonContainer, InlineNotification, FormContainer};
