@@ -9,8 +9,6 @@ package io.camunda.zeebe.engine.state;
 
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
-import io.camunda.zeebe.engine.state.distribution.DbDistributionState;
-import io.camunda.zeebe.engine.state.immutable.DistributionState;
 import io.camunda.zeebe.engine.state.immutable.MessageState;
 import io.camunda.zeebe.engine.state.immutable.ScheduledTaskState;
 import io.camunda.zeebe.engine.state.immutable.TimerInstanceState;
