@@ -25,6 +25,10 @@ import static io.camunda.zeebe.client.impl.ZeebeClientBuilderImpl.PLAINTEXT_CONN
 import static io.camunda.zeebe.client.impl.util.DataSizeUtil.ONE_MB;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.verify;
 
 import io.camunda.zeebe.client.api.worker.JobWorker;
 import io.camunda.zeebe.client.impl.NoopCredentialsProvider;
@@ -39,6 +43,7 @@ import java.util.Properties;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -410,7 +415,8 @@ public final class ZeebeClientTest extends ClientTest {
   @Test
   public void shouldUseCustomExecutorWithJobWorker() {
     // given
-    final ScheduledThreadPoolExecutor executor = new ScheduledThreadPoolExecutor(1);
+    final ScheduledThreadPoolExecutor executor = spy(new ScheduledThreadPoolExecutor(1));
+    final Duration pollInterval = Duration.ZERO;
     try (final ZeebeClient client =
             ZeebeClient.newClientBuilder().jobWorkerExecutor(executor).build();
         final JobWorker ignored =
@@ -418,12 +424,11 @@ public final class ZeebeClientTest extends ClientTest {
                 .newWorker()
                 .jobType("type")
                 .handler((c, j) -> {})
-                .pollInterval(Duration.ZERO)
+                .pollInterval(pollInterval)
                 .open()) {
-      // when - then - polling should be scheduled immediately on open, but may fail faster than
-      // we assert here, so we need to check both the scheduled count and the completed task count
-      // to see if anything has happened
-      assertThat(executor.getActiveCount() + executor.getCompletedTaskCount()).isPositive();
+      // when - then
+      verify(executor)
+          .schedule(any(Runnable.class), eq(pollInterval.toMillis()), eq(TimeUnit.MILLISECONDS));
     }
   }
 }
