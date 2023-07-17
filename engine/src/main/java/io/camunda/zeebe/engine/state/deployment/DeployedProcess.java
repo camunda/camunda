@@ -8,6 +8,7 @@
 package io.camunda.zeebe.engine.state.deployment;
 
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableProcess;
+import io.camunda.zeebe.engine.state.deployment.PersistedProcess.PersistedProcessState;
 import org.agrona.DirectBuffer;
 
 public final class DeployedProcess {
@@ -41,6 +42,10 @@ public final class DeployedProcess {
 
   public DirectBuffer getBpmnProcessId() {
     return persistedProcess.getBpmnProcessId();
+  }
+
+  public PersistedProcessState getState() {
+    return persistedProcess.getState();
   }
 
   @Override
