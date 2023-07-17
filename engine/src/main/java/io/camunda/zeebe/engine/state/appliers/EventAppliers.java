@@ -56,7 +56,7 @@ public final class EventAppliers implements EventApplier {
     registerProcessInstanceCreationAppliers(state);
     registerProcessInstanceModificationAppliers(state);
 
-    register(ProcessIntent.CREATED, new ProcessCreatedApplier(state));
+    registerProcessAppliers(state);
     register(ErrorIntent.CREATED, new ErrorCreatedApplier(state.getBannedInstanceState()));
     registerDeploymentAppliers(state);
 
@@ -79,6 +79,10 @@ public final class EventAppliers implements EventApplier {
 
     registerCommandDistributionAppliers(state);
     return this;
+  }
+
+  private void registerProcessAppliers(final MutableProcessingState state) {
+    register(ProcessIntent.CREATED, new ProcessCreatedApplier(state));
   }
 
   private void registerTimeEventAppliers(final MutableProcessingState state) {
