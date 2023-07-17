@@ -21,6 +21,8 @@ import org.camunda.optimize.service.CollectionRoleCleanupService;
 import org.camunda.optimize.test.it.extension.ErrorResponseMock;
 import org.camunda.optimize.test.it.extension.MockServerUtil;
 import org.camunda.optimize.util.SuppressionConstants;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -59,6 +61,18 @@ public class CollectionRoleCleanupIT extends AbstractIT {
   @Order(5)
   protected final LogCapturer collectionRoleCleanupServiceLogCapturer =
     LogCapturer.create().captureForType(CollectionRoleCleanupService.class);
+
+  @BeforeEach
+  public void setup() {
+    embeddedOptimizeExtension.getConfigurationService().getUserIdentityCacheConfiguration().setCollectionRoleCleanupEnabled(true);
+  }
+
+  @AfterEach
+  public void tearDown() {
+    embeddedOptimizeExtension.getConfigurationService()
+      .getUserIdentityCacheConfiguration()
+      .setCollectionRoleCleanupEnabled(false);
+  }
 
   @Test
   public void cleanupAfterIdentitySync() {

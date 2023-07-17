@@ -17,6 +17,7 @@ import java.util.Optional;
 @FieldNameConstants
 public abstract class IdentityCacheConfiguration {
   private boolean includeUserMetaData;
+  private boolean collectionRoleCleanupEnabled;
   private String cronTrigger;
   private int maxPageSize;
   private long maxEntryLimit;

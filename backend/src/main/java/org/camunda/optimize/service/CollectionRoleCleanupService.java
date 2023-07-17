@@ -15,6 +15,9 @@ import org.camunda.optimize.service.es.reader.CollectionReader;
 import org.camunda.optimize.service.es.writer.CollectionWriter;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.identity.IdentityCacheSyncListener;
+import org.camunda.optimize.service.util.configuration.ConfigurationService;
+import org.camunda.optimize.service.util.configuration.condition.CamundaPlatformCondition;
+import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
 import java.util.HashSet;
@@ -24,22 +27,28 @@ import java.util.Set;
 @AllArgsConstructor
 @Slf4j
 @Component
+@Conditional(CamundaPlatformCondition.class)
 public class CollectionRoleCleanupService implements IdentityCacheSyncListener {
   private final CollectionReader collectionReader;
   private final CollectionWriter collectionWriter;
+  private final ConfigurationService configurationService;
 
   @Override
   public void onFinishIdentitySync(final SearchableIdentityCache newIdentityCache) {
-    if (newIdentityCache.getSize() > 0) {
-      final List<CollectionDefinitionDto> allCollections = collectionReader.getAllCollections();
-      for (final CollectionDefinitionDto collection : allCollections) {
-        final Set<String> roleIdsToRemove = collectNonExistingIdentityRoleIds(newIdentityCache, collection);
-        if (!roleIdsToRemove.isEmpty()) {
-          removeRolesFromCollections(collection.getId(), roleIdsToRemove);
+    if (configurationService.getUserIdentityCacheConfiguration().isCollectionRoleCleanupEnabled()) {
+      if (newIdentityCache.getSize() > 0) {
+        final List<CollectionDefinitionDto> allCollections = collectionReader.getAllCollections();
+        for (final CollectionDefinitionDto collection : allCollections) {
+          final Set<String> roleIdsToRemove = collectNonExistingIdentityRoleIds(newIdentityCache, collection);
+          if (!roleIdsToRemove.isEmpty()) {
+            removeRolesFromCollections(collection.getId(), roleIdsToRemove);
+          }
         }
+      } else {
+        log.info("Identity cache is empty, will thus not perform collection role cleanup.");
       }
     } else {
-      log.info("Identity cache is empty, will thus not perform collection role cleanup.");
+      log.info("Collection role cleanup not enabled.");
     }
   }
 
