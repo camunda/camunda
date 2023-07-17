@@ -132,7 +132,7 @@ const ArrowPopover: React.FC<Props> = ({
             </>
           )}
         </Container>,
-        document.body
+        document.body,
       );
 };
 

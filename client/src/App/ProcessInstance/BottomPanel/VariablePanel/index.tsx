@@ -22,7 +22,7 @@ const VariablePanel = observer(function VariablePanel() {
       () => ['fetched', 'error'].includes(variablesStore.state.status),
       () => {
         variablesStore.setAreVariablesLoadedOnce(true);
-      }
+      },
     );
 
     return () => {

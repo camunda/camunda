@@ -30,7 +30,7 @@ jest.mock('modules/constants/variables', () => ({
 describe('stores/variables', () => {
   beforeEach(async () => {
     mockFetchProcessInstance().withSuccess(
-      createInstance({id: '123', state: 'ACTIVE'})
+      createInstance({id: '123', state: 'ACTIVE'}),
     );
 
     mockApplyOperation().withSuccess(mockVariableOperation);
@@ -76,7 +76,7 @@ describe('stores/variables', () => {
     });
 
     processInstanceDetailsStore.setProcessInstance(
-      createInstance({id: '123', state: 'CANCELED'})
+      createInstance({id: '123', state: 'CANCELED'}),
     );
 
     expect(variablesStore.state.items).toEqual(mockVariables);
@@ -89,7 +89,7 @@ describe('stores/variables', () => {
     variablesStore.init('123');
 
     await waitFor(() =>
-      expect(variablesStore.state.items).toEqual(mockVariables)
+      expect(variablesStore.state.items).toEqual(mockVariables),
     );
 
     mockFetchVariables().withSuccess([
@@ -110,7 +110,7 @@ describe('stores/variables', () => {
           isFirst: false,
           sortValues: ['clientNo'],
         },
-      ])
+      ]),
     );
 
     mockFetchVariables().withSuccess([
@@ -141,11 +141,11 @@ describe('stores/variables', () => {
           isFirst: false,
           sortValues: ['orderNo'],
         },
-      ])
+      ]),
     );
 
     processInstanceDetailsStore.setProcessInstance(
-      createInstance({id: '123', state: 'CANCELED'})
+      createInstance({id: '123', state: 'CANCELED'}),
     );
     jest.runOnlyPendingTimers();
     jest.runOnlyPendingTimers();
@@ -171,7 +171,7 @@ describe('stores/variables', () => {
           isFirst: false,
           sortValues: ['orderNo'],
         },
-      ])
+      ]),
     );
 
     jest.clearAllTimers();
@@ -197,7 +197,7 @@ describe('stores/variables', () => {
     });
     expect(variablesStore.state.status).toBe('first-fetch');
     await waitFor(() =>
-      expect(variablesStore.state.items).toEqual(mockVariables)
+      expect(variablesStore.state.items).toEqual(mockVariables),
     );
     expect(variablesStore.state.status).toBe('fetched');
   });
@@ -386,7 +386,7 @@ describe('stores/variables', () => {
     variablesStore.init('1');
 
     await waitFor(() =>
-      expect(variablesStore.state.items).toEqual(mockVariables)
+      expect(variablesStore.state.items).toEqual(mockVariables),
     );
 
     const newMockVariables = [
@@ -402,7 +402,7 @@ describe('stores/variables', () => {
     eventListeners.online?.();
 
     await waitFor(() =>
-      expect(variablesStore.state.items).toEqual(newMockVariables)
+      expect(variablesStore.state.items).toEqual(newMockVariables),
     );
 
     window.addEventListener = originalEventListener;
@@ -416,13 +416,13 @@ describe('stores/variables', () => {
     });
     expect(variablesStore.state.status).toBe('first-fetch');
     await waitFor(() =>
-      expect(variablesStore.state.items).toEqual(mockVariables)
+      expect(variablesStore.state.items).toEqual(mockVariables),
     );
     expect(variablesStore.state.status).toBe('fetched');
 
     expect(variablesStore.state.items[0]?.name).toBe('mwst');
     expect(
-      variablesStore.state.items[variablesStore.state.items.length - 1]?.name
+      variablesStore.state.items[variablesStore.state.items.length - 1]?.name,
     ).toBe('paid');
 
     expect(variablesStore.shouldFetchPreviousVariables()).toBe(false);
@@ -442,7 +442,7 @@ describe('stores/variables', () => {
 
     expect(variablesStore.state.items[0]?.name).toBe('orderStatus');
     expect(
-      variablesStore.state.items[variablesStore.state.items.length - 1]!.name
+      variablesStore.state.items[variablesStore.state.items.length - 1]!.name,
     ).toBe('test3');
 
     expect(variablesStore.shouldFetchPreviousVariables()).toBe(true);
@@ -462,7 +462,7 @@ describe('stores/variables', () => {
 
     expect(variablesStore.state.items[0]?.name).toBe('test1');
     expect(
-      variablesStore.state.items[variablesStore.state.items.length - 1]?.name
+      variablesStore.state.items[variablesStore.state.items.length - 1]?.name,
     ).toBe('test5');
 
     expect(variablesStore.shouldFetchPreviousVariables()).toBe(true);
@@ -478,7 +478,7 @@ describe('stores/variables', () => {
 
     expect(variablesStore.state.items[0]?.name).toBe('mwst');
     expect(
-      variablesStore.state.items[variablesStore.state.items.length - 1]?.name
+      variablesStore.state.items[variablesStore.state.items.length - 1]?.name,
     ).toBe('test2');
 
     expect(variablesStore.shouldFetchPreviousVariables()).toBe(false);
@@ -493,7 +493,7 @@ describe('stores/variables', () => {
     });
     expect(variablesStore.state.status).toBe('first-fetch');
     await waitFor(() =>
-      expect(variablesStore.state.items).toEqual(mockVariables)
+      expect(variablesStore.state.items).toEqual(mockVariables),
     );
     expect(variablesStore.state.status).toBe('fetched');
 
@@ -506,7 +506,7 @@ describe('stores/variables', () => {
     variablesStore.init('id');
 
     await waitFor(() =>
-      expect(variablesStore.state.items).toEqual(mockVariables)
+      expect(variablesStore.state.items).toEqual(mockVariables),
     );
 
     flowNodeSelectionStore.setSelection({

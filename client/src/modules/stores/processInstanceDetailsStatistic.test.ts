@@ -67,11 +67,11 @@ const mockProcessInstanceDetailsStatistics = [
 describe('stores/processInstanceDetailsStatistics', () => {
   beforeEach(async () => {
     mockFetchProcessInstanceDetailStatistics().withSuccess(
-      mockProcessInstanceDetailsStatistics
+      mockProcessInstanceDetailsStatistics,
     );
     mockFetchProcessXML().withSuccess(mockComplexProcess);
     mockFetchProcessInstance().withSuccess(
-      createInstance({id: PROCESS_INSTANCE_ID, state: 'INCIDENT'})
+      createInstance({id: PROCESS_INSTANCE_ID, state: 'INCIDENT'}),
     );
     processInstanceDetailsStore.fetchProcessInstance(PROCESS_INSTANCE_ID);
     processInstanceDetailsDiagramStore.fetchProcessXml(PROCESS_INSTANCE_ID);
@@ -88,39 +88,39 @@ describe('stores/processInstanceDetailsStatistics', () => {
     await waitFor(() => {
       expect(processInstanceDetailsDiagramStore.state.status).toBe('fetched');
       expect(processInstanceDetailsStatisticsStore.state.statistics).toEqual(
-        mockProcessInstanceDetailsStatistics
+        mockProcessInstanceDetailsStatistics,
       );
     });
 
     expect(
       processInstanceDetailsStatisticsStore.getTotalRunningInstancesForFlowNode(
-        'inclGatewayFork'
-      )
+        'inclGatewayFork',
+      ),
     ).toBe(2);
     expect(
       processInstanceDetailsStatisticsStore.getTotalRunningInstancesForFlowNode(
-        'exclusiveGateway'
-      )
+        'exclusiveGateway',
+      ),
     ).toBe(1);
     expect(
       processInstanceDetailsStatisticsStore.getTotalRunningInstancesForFlowNode(
-        'startEvent'
-      )
+        'startEvent',
+      ),
     ).toBe(0);
     expect(
       processInstanceDetailsStatisticsStore.getTotalRunningInstancesForFlowNode(
-        'alwaysFailingTask'
-      )
+        'alwaysFailingTask',
+      ),
     ).toBe(4);
     expect(
       processInstanceDetailsStatisticsStore.getTotalRunningInstancesForFlowNode(
-        'messageCatchEvent'
-      )
+        'messageCatchEvent',
+      ),
     ).toBe(6);
     expect(
       processInstanceDetailsStatisticsStore.getTotalRunningInstancesForFlowNode(
-        'endEvent'
-      )
+        'endEvent',
+      ),
     ).toBe(0);
     expect(processInstanceDetailsStatisticsStore.flowNodeStatistics).toEqual([
       {count: 2, flowNodeId: 'inclGatewayFork', flowNodeState: 'active'},
@@ -182,17 +182,17 @@ describe('stores/processInstanceDetailsStatistics', () => {
     processInstanceDetailsStatisticsStore.init(PROCESS_INSTANCE_ID);
 
     mockFetchProcessInstanceDetailStatistics().withSuccess(
-      mockProcessInstanceDetailsStatistics
+      mockProcessInstanceDetailsStatistics,
     );
 
     await waitFor(() => {
       expect(processInstanceDetailsStatisticsStore.state.statistics).toEqual(
-        mockProcessInstanceDetailsStatistics
+        mockProcessInstanceDetailsStatistics,
       );
     });
 
     mockFetchProcessInstance().withSuccess(
-      createInstance({id: PROCESS_INSTANCE_ID, state: 'COMPLETED'})
+      createInstance({id: PROCESS_INSTANCE_ID, state: 'COMPLETED'}),
     );
 
     expect(processInstanceDetailsStatisticsStore.intervalId).not.toBeNull();
@@ -213,8 +213,8 @@ describe('stores/processInstanceDetailsStatistics', () => {
 
     await waitFor(() =>
       expect(processInstanceDetailsStatisticsStore.state.statistics).toEqual(
-        mockProcessInstanceDetailsStatistics
-      )
+        mockProcessInstanceDetailsStatistics,
+      ),
     );
 
     mockFetchProcessInstanceDetailStatistics().withSuccess([
@@ -240,7 +240,7 @@ describe('stores/processInstanceDetailsStatistics', () => {
           incidents: 0,
           completed: 0,
         },
-      ])
+      ]),
     );
 
     window.addEventListener = originalEventListener;
@@ -279,13 +279,13 @@ describe('stores/processInstanceDetailsStatistics', () => {
     ];
 
     mockFetchProcessInstanceDetailStatistics().withSuccess(
-      subProcessStatistics
+      subProcessStatistics,
     );
 
     mockFetchProcessXML().withSuccess(mockSubProcesses);
 
     mockFetchProcessInstance().withSuccess(
-      createInstance({id: PROCESS_INSTANCE_ID, state: 'INCIDENT'})
+      createInstance({id: PROCESS_INSTANCE_ID, state: 'INCIDENT'}),
     );
 
     processInstanceDetailsStore.fetchProcessInstance(PROCESS_INSTANCE_ID);
@@ -296,7 +296,7 @@ describe('stores/processInstanceDetailsStatistics', () => {
     await waitFor(() => {
       expect(processInstanceDetailsDiagramStore.state.status).toBe('fetched');
       expect(processInstanceDetailsStatisticsStore.state.statistics).toEqual(
-        subProcessStatistics
+        subProcessStatistics,
       );
     });
 
@@ -329,7 +329,7 @@ describe('stores/processInstanceDetailsStatistics', () => {
 
     await waitFor(() => {
       expect(processInstanceDetailsStatisticsStore.selectableFlowNodes).toEqual(
-        ['startEvent1', 'serviceTask1']
+        ['startEvent1', 'serviceTask1'],
       );
     });
   });

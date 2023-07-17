@@ -26,7 +26,7 @@ const VariablesForm: React.FC<
       (variable) =>
         variable === undefined ||
         variable.name === undefined ||
-        variable.value === undefined
+        variable.value === undefined,
     );
 
   const {isModificationModeEnabled} = modificationsStore;

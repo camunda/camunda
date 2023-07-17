@@ -32,7 +32,7 @@ describe('Table', () => {
           </TR>
         </TBody>
       </Table>,
-      {wrapper: ThemeProvider}
+      {wrapper: ThemeProvider},
     );
 
     expect(screen.getByRole('columnheader', {name: 'header 1'}));

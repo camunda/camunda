@@ -70,7 +70,7 @@ describe('<SessionWatcher />', () => {
     await waitFor(() =>
       expect(mockDisplayNotification).toHaveBeenCalledWith('info', {
         headline: 'Session expired',
-      })
+      }),
     );
 
     act(() => {
@@ -112,7 +112,7 @@ describe('<SessionWatcher />', () => {
     await waitFor(() =>
       expect(mockDisplayNotification).toHaveBeenCalledWith('info', {
         headline: 'Session expired',
-      })
+      }),
     );
   });
 
@@ -146,7 +146,7 @@ describe('<SessionWatcher />', () => {
     await waitFor(() =>
       expect(mockDisplayNotification).toHaveBeenNthCalledWith(1, 'info', {
         headline: 'Session expired',
-      })
+      }),
     );
   });
 });

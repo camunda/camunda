@@ -18,6 +18,6 @@ export function getFlowNodes(elementsById?: DiagramModel['elementsById']) {
   }
 
   return Object.values(elementsById).filter((businessObject) =>
-    isFlowNode(businessObject)
+    isFlowNode(businessObject),
   );
 }

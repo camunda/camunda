@@ -34,8 +34,8 @@ const Restricted: React.FC<Props> = observer(
 
     const {scopes, permissions} = resourceBasedRestrictions;
 
-    const hasResourceBasedPermission = scopes.some((permission) =>
-      permissions?.includes(permission)
+    const hasResourceBasedPermission = scopes.some(
+      (permission) => permissions?.includes(permission),
     );
 
     if (!hasResourceBasedPermission) {
@@ -43,7 +43,7 @@ const Restricted: React.FC<Props> = observer(
     }
 
     return <>{children}</>;
-  }
+  },
 );
 
 export {Restricted};

@@ -76,7 +76,7 @@ const Notification: React.FC<Props> = observer(
         </div>
       </CSSTransition>
     );
-  }
+  },
 );
 
 export {Notification};

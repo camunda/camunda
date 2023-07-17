@@ -15,7 +15,7 @@ type Appcues = {
   identify: (userId: string, properties?: {[property: string]: any}) => void;
   track: (
     eventName: string,
-    properties?: {[eventProperty: string]: any}
+    properties?: {[eventProperty: string]: any},
   ) => void;
 };
 
@@ -39,7 +39,7 @@ export declare global {
         showDrawer: (arg: string) => void;
         addEventListener: (
           eventType: string,
-          callback: (arg: any) => void
+          callback: (arg: any) => void,
         ) => void;
       };
     };

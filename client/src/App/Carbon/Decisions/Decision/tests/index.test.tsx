@@ -27,7 +27,7 @@ describe('<Decision />', () => {
     });
 
     expect(
-      await screen.findByText('DecisionTable view mock')
+      await screen.findByText('DecisionTable view mock'),
     ).toBeInTheDocument();
     expect(screen.getByRole('heading', {name: 'invoiceClassification'}));
   });
@@ -40,17 +40,17 @@ describe('<Decision />', () => {
     });
 
     expect(
-      await screen.findByText(/there is no decision selected/i)
+      await screen.findByText(/there is no decision selected/i),
     ).toBeInTheDocument();
     expect(
       screen.getByText(
-        /to see a decision table or a literal expression, select a decision in the filters panel/i
-      )
+        /to see a decision table or a literal expression, select a decision in the filters panel/i,
+      ),
     ).toBeInTheDocument();
     expect(screen.getByRole('heading', {name: 'Decision'}));
 
     await waitFor(() =>
-      expect(groupedDecisionsStore.state.status).toBe('fetched')
+      expect(groupedDecisionsStore.state.status).toBe('fetched'),
     );
   });
 
@@ -59,19 +59,19 @@ describe('<Decision />', () => {
 
     render(<Decision />, {
       wrapper: createWrapper(
-        '/decisions?name=invoiceClassification&version=all'
+        '/decisions?name=invoiceClassification&version=all',
       ),
     });
 
     expect(
       await screen.findByText(
-        /there is more than one version selected for decision "invoiceClassification"/i
-      )
+        /there is more than one version selected for decision "invoiceClassification"/i,
+      ),
     ).toBeInTheDocument();
     expect(
       screen.getByText(
-        /to see a decision table or a literal expression, select a single version/i
-      )
+        /to see a decision table or a literal expression, select a single version/i,
+      ),
     ).toBeInTheDocument();
     expect(screen.getByRole('heading', {name: 'invoiceClassification'}));
   });
@@ -84,12 +84,12 @@ describe('<Decision />', () => {
     });
 
     expect(
-      await screen.findByText(/data could not be fetched/i)
+      await screen.findByText(/data could not be fetched/i),
     ).toBeInTheDocument();
     expect(
       screen.getByRole('heading', {
         name: 'Calculate Credit History Key Figures',
-      })
+      }),
     );
   });
 });

@@ -96,7 +96,7 @@ const Header: React.FC = observer(() => {
                 {decisionInstance.processInstanceId ? (
                   <Link
                     to={CarbonPaths.processInstance(
-                      decisionInstance.processInstanceId
+                      decisionInstance.processInstanceId,
                     )}
                     title={`View process instance ${decisionInstance.processInstanceId}`}
                     onClick={() => {

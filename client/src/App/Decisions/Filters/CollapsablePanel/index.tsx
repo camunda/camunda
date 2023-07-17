@@ -17,7 +17,7 @@ type Props = {
 const CollapsablePanel: React.FC<Props> = ({label, children}) => {
   const {isDecisionsFiltersCollapsed = false} = getStateLocally('panelStates');
   const [panelState, setPanelState] = useState<'expanded' | 'collapsed'>(
-    isDecisionsFiltersCollapsed ? 'collapsed' : 'expanded'
+    isDecisionsFiltersCollapsed ? 'collapsed' : 'expanded',
   );
 
   useEffect(() => {
@@ -25,7 +25,7 @@ const CollapsablePanel: React.FC<Props> = ({label, children}) => {
       {
         isDecisionsFiltersCollapsed: panelState === 'collapsed',
       },
-      'panelStates'
+      'panelStates',
     );
   }, [panelState]);
 

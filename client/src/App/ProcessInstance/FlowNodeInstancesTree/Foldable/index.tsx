@@ -76,7 +76,7 @@ const Summary = React.forwardRef<HTMLDivElement, SummaryProps>(
       nodeName,
       ...props
     },
-    ref
+    ref,
   ) => {
     return (
       <SummaryContainer
@@ -104,7 +104,7 @@ const Summary = React.forwardRef<HTMLDivElement, SummaryProps>(
         </FocusButton>
       </SummaryContainer>
     );
-  }
+  },
 );
 
 type DetailsProps = {

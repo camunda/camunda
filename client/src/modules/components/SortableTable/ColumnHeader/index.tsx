@@ -14,7 +14,7 @@ const INITIAL_SORT_ORDER = 'desc';
 function toggleSorting(
   search: string,
   sortKey: string,
-  currentSortOrder?: 'asc' | 'desc'
+  currentSortOrder?: 'asc' | 'desc',
 ) {
   const params = new URLSearchParams(search);
   if (currentSortOrder === undefined) {
@@ -24,7 +24,7 @@ function toggleSorting(
 
   params.set(
     'sort',
-    `${sortKey}+${currentSortOrder === 'asc' ? 'desc' : 'asc'}`
+    `${sortKey}+${currentSortOrder === 'asc' ? 'desc' : 'asc'}`,
   );
   return params.toString();
 }

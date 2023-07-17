@@ -41,7 +41,7 @@ describe('spinner', () => {
 
     expect(panelStatesStore.state.isOperationsCollapsed).toBe(true);
     await waitFor(() =>
-      expect(processInstancesStore.state.status).toBe('fetched')
+      expect(processInstancesStore.state.status).toBe('fetched'),
     );
 
     await user.click(screen.getByLabelText(/select all instances/i));
@@ -57,7 +57,7 @@ describe('spinner', () => {
     });
 
     await waitFor(() =>
-      expect(processInstancesStore.state.status).toBe('fetched')
+      expect(processInstancesStore.state.status).toBe('fetched'),
     );
     expect(screen.queryAllByTestId('operation-spinner')).toHaveLength(0);
     expect(panelStatesStore.state.isOperationsCollapsed).toBe(false);
@@ -78,7 +78,7 @@ describe('spinner', () => {
     });
 
     await waitFor(() =>
-      expect(processInstancesStore.state.status).toBe('fetched')
+      expect(processInstancesStore.state.status).toBe('fetched'),
     );
 
     mockFetchProcessInstances().withSuccess({
@@ -92,10 +92,10 @@ describe('spinner', () => {
     await user.click(screen.getByText(/^apply$/i));
 
     await waitFor(() =>
-      expect(screen.queryAllByTestId('operation-spinner')).toHaveLength(3)
+      expect(screen.queryAllByTestId('operation-spinner')).toHaveLength(3),
     );
     await waitFor(() =>
-      expect(screen.queryAllByTestId('operation-spinner')).toHaveLength(0)
+      expect(screen.queryAllByTestId('operation-spinner')).toHaveLength(0),
     );
 
     expect(panelStatesStore.state.isOperationsCollapsed).toBe(true);
@@ -115,7 +115,7 @@ describe('spinner', () => {
     });
 
     await waitFor(() =>
-      expect(processInstancesStore.state.status).toBe('fetched')
+      expect(processInstancesStore.state.status).toBe('fetched'),
     );
 
     mockFetchProcessInstances().withSuccess({
@@ -131,7 +131,7 @@ describe('spinner', () => {
     expect(screen.getAllByTestId('operation-spinner')).toHaveLength(3);
 
     await waitFor(() =>
-      expect(screen.queryAllByTestId('operation-spinner')).toHaveLength(0)
+      expect(screen.queryAllByTestId('operation-spinner')).toHaveLength(0),
     );
 
     jest.clearAllTimers();

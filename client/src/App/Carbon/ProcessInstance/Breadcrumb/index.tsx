@@ -32,7 +32,7 @@ const Breadcrumb: React.FC<Props> = ({processInstance}) => {
     breadcrumbs = callHierarchy.slice(0, PRECEDING_BREADCRUMB_COUNT);
     overflowingBreadcrumbs = callHierarchy.slice(
       PRECEDING_BREADCRUMB_COUNT,
-      callHierarchy.length - 1
+      callHierarchy.length - 1,
     );
   }
 
@@ -71,7 +71,7 @@ const Breadcrumb: React.FC<Props> = ({processInstance}) => {
                       navigate(CarbonPaths.processInstance(instanceId));
                     }}
                   />
-                )
+                ),
               )}
             </OverflowMenu>
           </BreadcrumbItem>

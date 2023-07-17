@@ -71,7 +71,7 @@ const mockBatchOperations =
                 : []),
 
               ...batchOperations,
-            ])
+            ]),
           );
         }),
       ]
@@ -92,9 +92,9 @@ const mockDeleteDecisionDefinition = IS_DECISION_DEFINITION_DELETION_ENABLED
               instancesCount: 23,
               operationsTotalCount: 23,
               operationsFinishedCount: 0,
-            })
+            }),
           );
-        }
+        },
       ),
     ]
   : [];
@@ -114,9 +114,9 @@ const mockDeleteProcessDefinition = IS_PROCESS_DEFINITION_DELETION_ENABLED
               instancesCount: 23,
               operationsTotalCount: 23,
               operationsFinishedCount: 0,
-            })
+            }),
           );
-        }
+        },
       ),
     ]
   : [];

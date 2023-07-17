@@ -31,7 +31,7 @@ fixture('Processes')
       .click(
         screen.queryByRole('link', {
           name: /processes/i,
-        })
+        }),
       );
   });
 
@@ -49,7 +49,7 @@ test('Processes Page Initial Load', async (t) => {
   await t.click(
     screen.getByRole('link', {
       name: /processes/i,
-    })
+    }),
   );
 
   await validateCheckedState({
@@ -62,8 +62,8 @@ test('Processes Page Initial Load', async (t) => {
     .ok()
     .expect(
       screen.queryByText(
-        'To see a Diagram, select a Process in the Filters panel'
-      ).exists
+        'To see a Diagram, select a Process in the Filters panel',
+      ).exists,
     )
     .ok();
 
@@ -71,7 +71,7 @@ test('Processes Page Initial Load', async (t) => {
 
   await ProcessesPage.typeText(
     ProcessesPage.Filters.instanceIds.field,
-    `${initialData.instanceWithoutAnIncident.processInstanceKey}, ${initialData.instanceWithAnIncident.processInstanceKey}`
+    `${initialData.instanceWithoutAnIncident.processInstanceKey}, ${initialData.instanceWithAnIncident.processInstanceKey}`,
   );
 
   await t.expect(screen.queryByTestId('data-list').exists).ok();
@@ -82,14 +82,14 @@ test('Processes Page Initial Load', async (t) => {
   await t
     .expect(
       withinInstancesList.queryByTestId(
-        `INCIDENT-icon-${initialData.instanceWithAnIncident.processInstanceKey}`
-      ).exists
+        `INCIDENT-icon-${initialData.instanceWithAnIncident.processInstanceKey}`,
+      ).exists,
     )
     .ok()
     .expect(
       withinInstancesList.queryByTestId(
-        `ACTIVE-icon-${initialData.instanceWithoutAnIncident.processInstanceKey}`
-      ).exists
+        `ACTIVE-icon-${initialData.instanceWithoutAnIncident.processInstanceKey}`,
+      ).exists,
     )
     .ok();
 });
@@ -101,7 +101,7 @@ test('Select flow node in diagram', async (t) => {
   await t.click(
     screen.getByRole('link', {
       name: /processes/i,
-    })
+    }),
   );
 
   await displayOptionalFilter('Process Instance Key(s)');
@@ -112,7 +112,7 @@ test('Select flow node in diagram', async (t) => {
     instance.processInstanceKey,
     {
       paste: true,
-    }
+    },
   );
 
   // Select "Order Process"
@@ -125,7 +125,7 @@ test('Select flow node in diagram', async (t) => {
   const shipArticlesTaskId = 'shipArticles';
 
   await t.click(
-    within(screen.queryByTestId('diagram')).queryByText('Ship Articles')
+    within(screen.queryByTestId('diagram')).queryByText('Ship Articles'),
   );
 
   await t
@@ -135,7 +135,7 @@ test('Select flow node in diagram', async (t) => {
   await t
     .expect(
       screen.queryByText('There are no Instances matching this filter set')
-        .exists
+        .exists,
     )
     .ok()
     .expect(await getPathname())
@@ -149,13 +149,13 @@ test('Select flow node in diagram', async (t) => {
         process: 'orderProcess',
         version: '1',
         flowNodeId: shipArticlesTaskId,
-      })
+      }),
     );
 
   // Select "Check Payment" flow node
   const checkPaymentTaskId = 'checkPayment';
   await t.click(
-    within(screen.queryByTestId('diagram')).queryByText('Check payment')
+    within(screen.queryByTestId('diagram')).queryByText('Check payment'),
   );
 
   await t
@@ -176,13 +176,13 @@ test('Select flow node in diagram', async (t) => {
         process: 'orderProcess',
         version: '1',
         flowNodeId: checkPaymentTaskId,
-      })
+      }),
     );
 });
 
 test('Wait for process creation', async (t) => {
   await t.navigateTo(
-    '/processes?active=true&incidents=true&process=testProcess&version=1'
+    '/processes?active=true&incidents=true&process=testProcess&version=1',
   );
 
   await t.expect(screen.queryByTestId('table-skeleton').exists).ok();
@@ -200,7 +200,8 @@ test('Wait for process creation', async (t) => {
   await t.expect(screen.queryByTestId('table-skeleton').exists).notOk();
   await t
     .expect(
-      screen.getByText('There are no Instances matching this filter set').exists
+      screen.getByText('There are no Instances matching this filter set')
+        .exists,
     )
     .ok();
 

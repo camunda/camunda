@@ -66,7 +66,7 @@ const OPTIONAL_FILTER_FIELDS: Record<
     validate: mergeValidators(
       validateDecisionIdsCharacters,
       validateDecisionIdsLength,
-      validatesDecisionIdsComplete
+      validatesDecisionIdsComplete,
     ),
   },
   processInstanceId: {
@@ -76,7 +76,7 @@ const OPTIONAL_FILTER_FIELDS: Record<
     validate: mergeValidators(
       validateParentInstanceIdComplete,
       validateParentInstanceIdNotTooLong,
-      validateParentInstanceIdCharacters
+      validateParentInstanceIdCharacters,
     ),
   },
   evaluationDateRange: {
@@ -107,9 +107,9 @@ const OptionalFiltersFormGroup: React.FC<Props> = observer(
 
     useEffect(() => {
       const params = Array.from(
-        new URLSearchParams(location.search).keys()
+        new URLSearchParams(location.search).keys(),
       ).filter((param) =>
-        (optionalFilters as string[]).includes(param)
+        (optionalFilters as string[]).includes(param),
       ) as OptionalFilter[];
 
       const filters = getDecisionInstanceFilters(location.search);
@@ -123,8 +123,8 @@ const OptionalFiltersFormGroup: React.FC<Props> = observer(
             'evaluationDateBefore' in filters
               ? ['evaluationDateRange']
               : []),
-          ] as OptionalFilter[])
-        )
+          ] as OptionalFilter[]),
+        ),
       );
     }, [location.search, onVisibleFilterChange]);
 
@@ -141,7 +141,7 @@ const OptionalFiltersFormGroup: React.FC<Props> = observer(
           }))}
           onFilterSelect={(filter) => {
             onVisibleFilterChange(
-              Array.from(new Set([...visibleFilters, ...[filter]]))
+              Array.from(new Set([...visibleFilters, ...[filter]])),
             );
             tracking.track({
               eventName: 'optional-filter-selected',
@@ -212,8 +212,8 @@ const OptionalFiltersFormGroup: React.FC<Props> = observer(
                   onClick={() => {
                     onVisibleFilterChange(
                       visibleFilters.filter(
-                        (visibleFilter) => visibleFilter !== filter
-                      )
+                        (visibleFilter) => visibleFilter !== filter,
+                      ),
                     );
 
                     OPTIONAL_FILTER_FIELDS[filter].keys.forEach((key) => {
@@ -230,7 +230,7 @@ const OptionalFiltersFormGroup: React.FC<Props> = observer(
         </Stack>
       </Stack>
     );
-  }
+  },
 );
 
 export {OptionalFiltersFormGroup};

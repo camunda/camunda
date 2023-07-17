@@ -71,7 +71,7 @@ describe('IncidentsByError', () => {
     });
 
     expect(
-      await screen.findByText('Data could not be fetched')
+      await screen.findByText('Data could not be fetched'),
     ).toBeInTheDocument();
   });
 
@@ -83,7 +83,7 @@ describe('IncidentsByError', () => {
     });
 
     expect(
-      await screen.findByText('Data could not be fetched')
+      await screen.findByText('Data could not be fetched'),
     ).toBeInTheDocument();
   });
 
@@ -95,10 +95,10 @@ describe('IncidentsByError', () => {
     });
 
     expect(
-      await screen.findByText('Your processes are healthy')
+      await screen.findByText('Your processes are healthy'),
     ).toBeInTheDocument();
     expect(
-      screen.getByText('There are no incidents on any instances.')
+      screen.getByText('There are no incidents on any instances.'),
     ).toBeInTheDocument();
   });
 
@@ -110,7 +110,7 @@ describe('IncidentsByError', () => {
     });
 
     const withinIncident = within(
-      await screen.findByTestId('incident-byError-0')
+      await screen.findByTestId('incident-byError-0'),
     );
 
     const expandButton = withinIncident.getByRole('button', {
@@ -127,7 +127,7 @@ describe('IncidentsByError', () => {
 
     expect(processLink).toHaveAttribute(
       'href',
-      '/processes?errorMessage=JSON+path+%27%24.paid%27+has+no+result.&incidents=true'
+      '/processes?errorMessage=JSON+path+%27%24.paid%27+has+no+result.&incidents=true',
     );
 
     // this button click has no effect (check useEffect in Collapse component)
@@ -138,15 +138,15 @@ describe('IncidentsByError', () => {
         "View 37 Instances with error JSON path '$.paid' has no result. in version 1 of Process mockProcess",
     });
     expect(
-      within(firstVersion).getByTestId('incident-instances-badge')
+      within(firstVersion).getByTestId('incident-instances-badge'),
     ).toHaveTextContent('37');
     expect(
-      within(firstVersion).getByText('mockProcess – Version 1')
+      within(firstVersion).getByText('mockProcess – Version 1'),
     ).toBeInTheDocument();
 
     expect(firstVersion).toHaveAttribute(
       'href',
-      '/processes?process=mockProcess&version=1&errorMessage=JSON+path+%27%24.paid%27+has+no+result.&incidents=true'
+      '/processes?process=mockProcess&version=1&errorMessage=JSON+path+%27%24.paid%27+has+no+result.&incidents=true',
     );
   });
 
@@ -160,14 +160,14 @@ describe('IncidentsByError', () => {
     });
 
     const withinIncident = within(
-      await screen.findByTestId('incident-byError-0')
+      await screen.findByTestId('incident-byError-0'),
     );
 
     expect(
       withinIncident.getByRole('button', {
         description:
           "Expand 36 Instances with error JSON path '$.paid' has no result.",
-      })
+      }),
     ).toBeInTheDocument();
 
     mockFetchIncidentsByError().withSuccess([
@@ -181,7 +181,7 @@ describe('IncidentsByError', () => {
       await withinIncident.findByRole('button', {
         description:
           "Expand 40 Instances with error JSON path '$.paid' has no result.",
-      })
+      }),
     ).toBeInTheDocument();
 
     jest.clearAllTimers();
@@ -190,7 +190,7 @@ describe('IncidentsByError', () => {
 
   it.skip('should truncate the error message search param', async () => {
     mockFetchIncidentsByError().withSuccess(
-      mockIncidentsByErrorWithBigErrorMessage
+      mockIncidentsByErrorWithBigErrorMessage,
     );
 
     const {user} = render(<IncidentsByError />, {
@@ -198,7 +198,7 @@ describe('IncidentsByError', () => {
     });
 
     const withinIncident = within(
-      await screen.findByTestId('incident-byError-0')
+      await screen.findByTestId('incident-byError-0'),
     );
 
     const expandButton = withinIncident.getByRole('button', {
@@ -208,10 +208,10 @@ describe('IncidentsByError', () => {
     expect(
       withinIncident.getByRole('link', {
         description: `View 36 Instances with error ${bigErrorMessage}`,
-      })
+      }),
     ).toHaveAttribute(
       'href',
-      '/processes?errorMessage=Lorem+ipsum+dolor+sit+amet%2C+consectetur+adipiscing+elit%2C+sed+do+eiusmod+tempor+incididunt+ut+labore&incidents=true'
+      '/processes?errorMessage=Lorem+ipsum+dolor+sit+amet%2C+consectetur+adipiscing+elit%2C+sed+do+eiusmod+tempor+incididunt+ut+labore&incidents=true',
     );
 
     // this button click has no effect (check useEffect in Collapse component)
@@ -220,10 +220,10 @@ describe('IncidentsByError', () => {
     expect(
       await screen.findByRole('link', {
         description: `View 37 Instances with error ${bigErrorMessage} in version 1 of Process mockProcess`,
-      })
+      }),
     ).toHaveAttribute(
       'href',
-      '/processes?process=mockProcess&version=1&errorMessage=Lorem+ipsum+dolor+sit+amet%2C+consectetur+adipiscing+elit%2C+sed+do+eiusmod+tempor+incididunt+ut+labore&incidents=true'
+      '/processes?process=mockProcess&version=1&errorMessage=Lorem+ipsum+dolor+sit+amet%2C+consectetur+adipiscing+elit%2C+sed+do+eiusmod+tempor+incididunt+ut+labore&incidents=true',
     );
   });
 
@@ -238,7 +238,7 @@ describe('IncidentsByError', () => {
     expect(panelStatesStore.state.isFiltersCollapsed).toBe(true);
 
     const withinIncident = within(
-      await screen.findByTestId('incident-byError-0')
+      await screen.findByTestId('incident-byError-0'),
     );
 
     const expandButton = withinIncident.getByRole('button', {
@@ -256,8 +256,8 @@ describe('IncidentsByError', () => {
 
     await waitFor(() =>
       expect(screen.getByTestId('search')).toHaveTextContent(
-        /^\?errorMessage=JSON\+path\+%27%24.paid%27\+has\+no\+result.&incidents=true$/
-      )
+        /^\?errorMessage=JSON\+path\+%27%24.paid%27\+has\+no\+result.&incidents=true$/,
+      ),
     );
     expect(panelStatesStore.state.isFiltersCollapsed).toBe(false);
 

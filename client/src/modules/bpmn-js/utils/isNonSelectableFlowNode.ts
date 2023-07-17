@@ -10,7 +10,7 @@ import {isFlowNode} from 'modules/utils/flowNodes';
 
 function isNonSelectableFlowNode(
   bpmnElement: BpmnElement,
-  selectableFlowNodes?: string[]
+  selectableFlowNodes?: string[],
 ) {
   return (
     selectableFlowNodes !== undefined &&

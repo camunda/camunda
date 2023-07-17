@@ -15,16 +15,16 @@ describe('SortableTable', () => {
       <SortableTable {...mockProps} {...mockSelectableProps} state="content" />,
       {
         wrapper: Wrapper,
-      }
+      },
     );
 
     await user.click(screen.getByRole('checkbox', {name: 'Select all rows'}));
 
     expect(
-      screen.queryByRole('checkbox', {name: 'Select all rows'})
+      screen.queryByRole('checkbox', {name: 'Select all rows'}),
     ).not.toBeInTheDocument();
     expect(
-      screen.getByRole('checkbox', {name: 'Unselect all rows'})
+      screen.getByRole('checkbox', {name: 'Unselect all rows'}),
     ).toBeInTheDocument();
     expect(mockSelectableProps.onSelectAll).toHaveBeenCalledTimes(1);
   });
@@ -34,7 +34,7 @@ describe('SortableTable', () => {
       <SortableTable {...mockProps} {...mockSelectableProps} state="content" />,
       {
         wrapper: Wrapper,
-      }
+      },
     );
 
     const [firstRow, secondRow] = mockProps.rows;
@@ -46,22 +46,22 @@ describe('SortableTable', () => {
     await user.click(firstCheckbox!);
     expect(mockSelectableProps.onSelect).toHaveBeenNthCalledWith(
       1,
-      firstRow!.id
+      firstRow!.id,
     );
 
     await user.click(secondCheckbox!);
     expect(mockSelectableProps.onSelect).toHaveBeenNthCalledWith(
       2,
-      secondRow!.id
+      secondRow!.id,
     );
 
     expect(mockSelectableProps.checkIsRowSelected).toHaveBeenNthCalledWith(
       1,
-      firstRow!.id
+      firstRow!.id,
     );
     expect(mockSelectableProps.checkIsRowSelected).toHaveBeenNthCalledWith(
       2,
-      secondRow!.id
+      secondRow!.id,
     );
   });
 });

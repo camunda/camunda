@@ -23,10 +23,10 @@ describe('decisionInstanceDetailsStore', () => {
     decisionInstanceDetailsStore.fetchDecisionInstance('22517947328274621');
 
     await waitFor(() =>
-      expect(decisionInstanceDetailsStore.state.status).toBe('fetched')
+      expect(decisionInstanceDetailsStore.state.status).toBe('fetched'),
     );
     expect(decisionInstanceDetailsStore.state.decisionInstance).toEqual(
-      invoiceClassification
+      invoiceClassification,
     );
 
     decisionInstanceDetailsStore.reset();

@@ -42,12 +42,12 @@ class FlowNodeSelection {
   init = () => {
     this.rootNodeSelectionDisposer = when(
       () => processInstanceDetailsStore.state.processInstance?.id !== undefined,
-      () => this.clearSelection()
+      () => this.clearSelection(),
     );
 
     this.modificationModeChangeDisposer = reaction(
       () => modificationsStore.isModificationModeEnabled,
-      this.clearSelection
+      this.clearSelection,
     );
     this.lastModificationRemovedDisposer = reaction(
       () => modificationsStore.flowNodeModifications,
@@ -91,7 +91,7 @@ class FlowNodeSelection {
         if (!newScopeIds.includes(flowNodeInstanceId)) {
           this.clearSelection();
         }
-      }
+      },
     );
   };
 
@@ -164,7 +164,7 @@ class FlowNodeSelection {
     }
 
     return processInstanceDetailsStatisticsStore.getTotalRunningInstancesForFlowNode(
-      currentSelection.flowNodeId
+      currentSelection.flowNodeId,
     );
   }
 
@@ -185,7 +185,7 @@ class FlowNodeSelection {
     }
 
     return processInstanceDetailsDiagramStore.getFlowNodeName(
-      this.state.selection.flowNodeId
+      this.state.selection.flowNodeId,
     );
   }
 
@@ -195,7 +195,7 @@ class FlowNodeSelection {
     return (
       currentFlowNodeSelection?.flowNodeId !== undefined &&
       processInstanceDetailsStatisticsStore.state.statistics.some(
-        ({activityId}) => activityId === currentFlowNodeSelection.flowNodeId
+        ({activityId}) => activityId === currentFlowNodeSelection.flowNodeId,
       )
     );
   }
@@ -213,7 +213,7 @@ class FlowNodeSelection {
       modificationsStore.flowNodeModifications.filter(
         (modification) =>
           modification.operation !== 'CANCEL_TOKEN' &&
-          Object.keys(modification.parentScopeIds).includes(flowNodeId)
+          Object.keys(modification.parentScopeIds).includes(flowNodeId),
       ).length
     );
   }
@@ -242,7 +242,7 @@ class FlowNodeSelection {
       flowNodeInstanceId !== undefined &&
       modificationsStore.hasPendingCancelOrMoveModification(
         flowNodeId,
-        flowNodeInstanceId
+        flowNodeInstanceId,
       )
     );
   }

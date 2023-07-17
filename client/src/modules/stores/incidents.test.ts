@@ -23,14 +23,14 @@ describe('stores/incidents', () => {
 
   it('should poll for incidents if instance state is incident', async () => {
     processInstanceDetailsStore.setProcessInstance(
-      createInstance({id: '123', state: 'INCIDENT'})
+      createInstance({id: '123', state: 'INCIDENT'}),
     );
 
     jest.useFakeTimers();
     incidentsStore.init();
 
     await waitFor(() =>
-      expect(incidentsStore.state.response).toEqual(mockIncidents)
+      expect(incidentsStore.state.response).toEqual(mockIncidents),
     );
 
     mockFetchProcessInstanceIncidents().withSuccess({
@@ -44,7 +44,7 @@ describe('stores/incidents', () => {
       expect(incidentsStore.state.response).toEqual({
         ...mockIncidents,
         count: 2,
-      })
+      }),
     );
 
     mockFetchProcessInstanceIncidents().withSuccess({
@@ -58,12 +58,12 @@ describe('stores/incidents', () => {
       expect(incidentsStore.state.response).toEqual({
         ...mockIncidents,
         count: 3,
-      })
+      }),
     );
 
     // stop polling when instance state is no longer an incident.
     processInstanceDetailsStore.setProcessInstance(
-      createInstance({id: '123', state: 'CANCELED'})
+      createInstance({id: '123', state: 'CANCELED'}),
     );
 
     jest.runOnlyPendingTimers();
@@ -73,7 +73,7 @@ describe('stores/incidents', () => {
       expect(incidentsStore.state.response).toEqual({
         ...mockIncidents,
         count: 3,
-      })
+      }),
     );
 
     jest.clearAllTimers();
@@ -164,12 +164,12 @@ describe('stores/incidents', () => {
       createInstance({
         id: '123',
         state: 'INCIDENT',
-      })
+      }),
     );
     incidentsStore.init();
 
     await waitFor(() =>
-      expect(incidentsStore.state.response).toEqual(mockIncidents)
+      expect(incidentsStore.state.response).toEqual(mockIncidents),
     );
 
     mockFetchProcessInstanceIncidents().withSuccess({
@@ -183,7 +183,7 @@ describe('stores/incidents', () => {
       expect(incidentsStore.state.response).toEqual({
         ...mockIncidents,
         count: 3,
-      })
+      }),
     );
 
     window.addEventListener = originalEventListener;

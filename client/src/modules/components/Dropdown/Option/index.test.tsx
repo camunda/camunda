@@ -25,7 +25,7 @@ describe('Option', () => {
       <Option onClick={noop}>
         <Child />
       </Option>,
-      {wrapper: ThemeProvider}
+      {wrapper: ThemeProvider},
     );
 
     expect(screen.getByText(CHILD_CONTENT)).toBeInTheDocument();
@@ -40,7 +40,7 @@ describe('Option', () => {
         onStateChange={mockOnStateChange}
         disabled={true}
       />,
-      {wrapper: ThemeProvider}
+      {wrapper: ThemeProvider},
     );
 
     await user.click(screen.getByRole('button'));
@@ -49,7 +49,7 @@ describe('Option', () => {
     expect(mockOnStateChange).not.toHaveBeenCalled();
 
     rerender(
-      <Option onClick={onClickMock} onStateChange={mockOnStateChange} />
+      <Option onClick={onClickMock} onStateChange={mockOnStateChange} />,
     );
 
     await user.click(screen.getByRole('button'));

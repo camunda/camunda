@@ -78,7 +78,7 @@ class ProcessDiagram extends NetworkReconnectionHandler {
   };
 
   fetchProcessDiagram: (
-    processId: ProcessInstanceEntity['processId']
+    processId: ProcessInstanceEntity['processId'],
   ) => Promise<void> = this.retryOnConnectionLost(
     async (processId: ProcessInstanceEntity['processId']) => {
       try {
@@ -93,12 +93,12 @@ class ProcessDiagram extends NetworkReconnectionHandler {
       } catch (error) {
         this.handleFetchError(error);
       }
-    }
+    },
   );
 
   #fetchProcessStatistics = async () => {
     const response = await fetchProcessInstancesStatistics(
-      getProcessInstancesRequestFilters()
+      getProcessInstancesRequestFilters(),
     );
 
     if (response.isSuccess) {
@@ -109,7 +109,7 @@ class ProcessDiagram extends NetworkReconnectionHandler {
   };
 
   #fetchProcessXmlAndStatistics = async (
-    processId: ProcessInstanceEntity['processId']
+    processId: ProcessInstanceEntity['processId'],
   ) => {
     const [processXMLResponse, processInstancesStatisticsResponse] =
       await Promise.all([
@@ -148,7 +148,7 @@ class ProcessDiagram extends NetworkReconnectionHandler {
   handleFetchSuccess = (
     xml: string,
     diagramModel: DiagramModel,
-    statistics: ProcessInstancesStatisticsDto[]
+    statistics: ProcessInstancesStatisticsDto[],
   ) => {
     this.state.xml = xml;
     this.state.diagramModel = diagramModel;
@@ -157,7 +157,7 @@ class ProcessDiagram extends NetworkReconnectionHandler {
   };
 
   handleFetchStatisticsSuccess = (
-    statistics: ProcessInstancesStatisticsDto[]
+    statistics: ProcessInstancesStatisticsDto[],
   ) => {
     this.state.statistics = statistics;
     this.state.status = 'fetched';

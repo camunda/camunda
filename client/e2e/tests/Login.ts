@@ -72,6 +72,6 @@ test('Redirect to initial page after login', async (t) => {
       convertToQueryString({
         active: 'true',
         incidents: 'true',
-      })
+      }),
     );
 });

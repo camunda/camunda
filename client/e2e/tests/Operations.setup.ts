@@ -28,8 +28,8 @@ async function setup() {
       createOperation({
         id: singleOperationInstance.processInstanceKey,
         operationType: 'RESOLVE_INCIDENT',
-      })
-    )
+      }),
+    ),
   );
 
   await wait();

@@ -52,7 +52,7 @@ const Toolbar: React.FC<Props> = ({selectedInstancesCount}) => {
       ? ''
       : `About to ${ACTION_NAMES[modalMode]} ${pluralSuffix(
           selectedInstancesCount,
-          'Instance'
+          'Instance',
         )}.${
           modalMode === 'CANCEL_PROCESS_INSTANCE'
             ? ' In case there are called instances, these will be canceled too.'

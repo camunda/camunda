@@ -46,7 +46,7 @@ const InstancesList: React.FC<Props> = observer(
         <OperationsPanel />
       </Container>
     );
-  }
+  },
 );
 
 export {InstancesList};

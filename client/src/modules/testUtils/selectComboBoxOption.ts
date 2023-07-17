@@ -40,9 +40,9 @@ const selectProcessVersion = async ({user, option}: SelectProps) => {
   await user.click(screen.getByLabelText('Version', {selector: 'button'}));
   await user.selectOptions(
     within(screen.getByLabelText('Select a Process Version')).getByRole(
-      'listbox'
+      'listbox',
     ),
-    [screen.getByRole('option', {name: option})]
+    [screen.getByRole('option', {name: option})],
   );
 };
 
@@ -68,9 +68,9 @@ const selectDecisionVersion = async ({user, option}: SelectProps) => {
   await user.click(screen.getByLabelText('Version', {selector: 'button'}));
   await user.selectOptions(
     within(screen.getByLabelText('Select a Decision Version')).getByRole(
-      'listbox'
+      'listbox',
     ),
-    [screen.getByRole('option', {name: option})]
+    [screen.getByRole('option', {name: option})],
   );
 };
 
@@ -89,7 +89,7 @@ const clearComboBox = async ({
     return user.click(
       within(parentElement).getByRole('button', {
         name: 'Clear selected item',
-      })
+      }),
     );
   }
 };

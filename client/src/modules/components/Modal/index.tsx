@@ -112,7 +112,7 @@ class Modal extends React.Component<ModalProps> {
   handleTabKeyDown = (e: any) => {
     const focusableModalElements = [
       ...this.modalRef?.current.querySelectorAll(
-        'a[href], button, textarea, code, input[type="text"], input[type="radio"], input[type="checkbox"], select, cm-checkbox, cm-button'
+        'a[href], button, textarea, code, input[type="text"], input[type="radio"], input[type="checkbox"], select, cm-checkbox, cm-button',
       ),
     ].filter((element) => !!element.disabled === false);
 
@@ -120,7 +120,7 @@ class Modal extends React.Component<ModalProps> {
     const lastElement =
       focusableModalElements[focusableModalElements.length - 1];
     const indexOfActiveElement = [...focusableModalElements].indexOf(
-      document.activeElement
+      document.activeElement,
     );
 
     const isLastElement =
@@ -181,7 +181,7 @@ class Modal extends React.Component<ModalProps> {
           </Styled.ModalContent>
         </Styled.ModalRoot>
       </Styled.Transition>,
-      document.body
+      document.body,
     );
   }
 }

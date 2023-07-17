@@ -108,7 +108,7 @@ const ModificationHelperModal: React.FC<Props> = observer(
         }
       />
     );
-  }
+  },
 );
 
 export {ModificationHelperModal};

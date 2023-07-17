@@ -43,19 +43,19 @@ describe('Optional Filters', () => {
       wrapper: getWrapper(),
     });
     expect(
-      screen.queryByTestId('optional-filter-variable-name')
+      screen.queryByTestId('optional-filter-variable-name'),
     ).not.toBeInTheDocument();
     expect(screen.queryByLabelText(/value/i)).not.toBeInTheDocument();
     expect(
-      screen.queryByLabelText(/process instance key\(s\)/i)
+      screen.queryByLabelText(/process instance key\(s\)/i),
     ).not.toBeInTheDocument();
     expect(screen.queryByLabelText(/operation id/i)).not.toBeInTheDocument();
     expect(
-      screen.queryByLabelText(/Parent Process Instance Key/i)
+      screen.queryByLabelText(/Parent Process Instance Key/i),
     ).not.toBeInTheDocument();
     expect(screen.queryByLabelText(/error message/i)).not.toBeInTheDocument();
     expect(
-      screen.queryByLabelText(/start date range/i)
+      screen.queryByLabelText(/start date range/i),
     ).not.toBeInTheDocument();
     expect(screen.queryByLabelText(/end date range/i)).not.toBeInTheDocument();
   });
@@ -69,15 +69,15 @@ describe('Optional Filters', () => {
     await user.click(screen.getByText('Variable'));
 
     expect(
-      screen.getByTestId('optional-filter-variable-name')
+      screen.getByTestId('optional-filter-variable-name'),
     ).toBeInTheDocument();
     expect(screen.getByLabelText(/value/i)).toBeInTheDocument();
     await user.click(screen.getByText(/^more filters$/i));
     expect(
       // eslint-disable-next-line testing-library/prefer-presence-queries
       within(screen.getByTestId('more-filters-dropdown')).queryByText(
-        'Variable'
-      )
+        'Variable',
+      ),
     ).not.toBeInTheDocument();
   });
 
@@ -91,13 +91,13 @@ describe('Optional Filters', () => {
     await user.click(screen.getByText(/^more filters$/i));
 
     expect(
-      screen.getByLabelText(/process instance key\(s\)/i)
+      screen.getByLabelText(/process instance key\(s\)/i),
     ).toBeInTheDocument();
     expect(
       // eslint-disable-next-line testing-library/prefer-presence-queries
       within(screen.getByTestId('more-filters-dropdown')).queryByText(
-        'Process Instance Key(s)'
-      )
+        'Process Instance Key(s)',
+      ),
     ).not.toBeInTheDocument();
   });
 
@@ -114,8 +114,8 @@ describe('Optional Filters', () => {
     expect(
       // eslint-disable-next-line testing-library/prefer-presence-queries
       within(screen.getByTestId('more-filters-dropdown')).queryByText(
-        'Operation Id'
-      )
+        'Operation Id',
+      ),
     ).not.toBeInTheDocument();
   });
 
@@ -129,13 +129,13 @@ describe('Optional Filters', () => {
     await user.click(screen.getByText(/^more filters$/i));
 
     expect(
-      screen.getByLabelText(/Parent Process Instance Key/i)
+      screen.getByLabelText(/Parent Process Instance Key/i),
     ).toBeInTheDocument();
     expect(
       // eslint-disable-next-line testing-library/prefer-presence-queries
       within(screen.getByTestId('more-filters-dropdown')).queryByText(
-        'Parent Process Instance Key'
-      )
+        'Parent Process Instance Key',
+      ),
     ).not.toBeInTheDocument();
   });
 
@@ -152,8 +152,8 @@ describe('Optional Filters', () => {
     expect(
       // eslint-disable-next-line testing-library/prefer-presence-queries
       within(screen.getByTestId('more-filters-dropdown')).queryByText(
-        'Error Message'
-      )
+        'Error Message',
+      ),
     ).not.toBeInTheDocument();
   });
 
@@ -173,7 +173,7 @@ describe('Optional Filters', () => {
 
     expect(
       // eslint-disable-next-line testing-library/prefer-presence-queries
-      within(screen.getByTestId('more-filters-dropdown')).queryByText(LABEL)
+      within(screen.getByTestId('more-filters-dropdown')).queryByText(LABEL),
     ).not.toBeInTheDocument();
   });
 
@@ -191,7 +191,7 @@ describe('Optional Filters', () => {
     expect(screen.getByLabelText(/end date range/i)).toBeInTheDocument();
     expect(
       // eslint-disable-next-line testing-library/prefer-presence-queries
-      within(screen.getByTestId('more-filters-dropdown')).queryByText(LABEL)
+      within(screen.getByTestId('more-filters-dropdown')).queryByText(LABEL),
     ).not.toBeInTheDocument();
   });
 
@@ -216,7 +216,7 @@ describe('Optional Filters', () => {
     await user.click(screen.getByText('End Date Range'));
 
     expect(
-      screen.queryByTestId('more-filters-dropdown')
+      screen.queryByTestId('more-filters-dropdown'),
     ).not.toBeInTheDocument();
 
     await user.click(screen.getByTestId('delete-variable'));
@@ -247,19 +247,19 @@ describe('Optional Filters', () => {
 
     const {user} = render(<Filters />, {
       wrapper: getWrapper(
-        `/?${new URLSearchParams(Object.entries(MOCK_PARAMS)).toString()}`
+        `/?${new URLSearchParams(Object.entries(MOCK_PARAMS)).toString()}`,
       ),
     });
 
     expect(screen.getByTestId('search').textContent).toBe(
-      `?${new URLSearchParams(Object.entries(MOCK_PARAMS)).toString()}`
+      `?${new URLSearchParams(Object.entries(MOCK_PARAMS)).toString()}`,
     );
 
     expect(
-      screen.getByLabelText(/process instance key\(s\)/i)
+      screen.getByLabelText(/process instance key\(s\)/i),
     ).toBeInTheDocument();
     expect(
-      screen.getByLabelText(/Parent Process Instance Key/i)
+      screen.getByLabelText(/Parent Process Instance Key/i),
     ).toBeInTheDocument();
     expect(screen.getByLabelText(/error message/i)).toBeInTheDocument();
 
@@ -267,7 +267,7 @@ describe('Optional Filters', () => {
     expect(screen.getByLabelText(/end date range/i)).toBeInTheDocument();
 
     expect(
-      screen.getByTestId('optional-filter-variable-name')
+      screen.getByTestId('optional-filter-variable-name'),
     ).toBeInTheDocument();
     expect(screen.getByLabelText(/value/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/operation id/i)).toBeInTheDocument();
@@ -294,13 +294,13 @@ describe('Optional Filters', () => {
             incidents: 'true',
             completed: 'true',
             canceled: 'true',
-          })
-        ).toString()}`
-      )
+          }),
+        ).toString()}`,
+      ),
     );
 
     expect(
-      screen.queryByLabelText(/process instance key\(s\)/i)
+      screen.queryByLabelText(/process instance key\(s\)/i),
     ).not.toBeInTheDocument();
 
     await user.click(screen.getByTestId('delete-parentInstanceId'));
@@ -324,12 +324,12 @@ describe('Optional Filters', () => {
             incidents: 'true',
             completed: 'true',
             canceled: 'true',
-          })
-        ).toString()}`
-      )
+          }),
+        ).toString()}`,
+      ),
     );
     expect(
-      screen.queryByLabelText(/Parent Process Instance Key/i)
+      screen.queryByLabelText(/Parent Process Instance Key/i),
     ).not.toBeInTheDocument();
 
     await user.click(screen.getByTestId('delete-errorMessage'));
@@ -352,9 +352,9 @@ describe('Optional Filters', () => {
             incidents: 'true',
             completed: 'true',
             canceled: 'true',
-          })
-        ).toString()}`
-      )
+          }),
+        ).toString()}`,
+      ),
     );
     expect(screen.queryByLabelText(/error message/i)).not.toBeInTheDocument();
 
@@ -376,12 +376,12 @@ describe('Optional Filters', () => {
             incidents: 'true',
             completed: 'true',
             canceled: 'true',
-          })
-        ).toString()}`
-      )
+          }),
+        ).toString()}`,
+      ),
     );
     expect(
-      screen.queryByLabelText(/start date range/i)
+      screen.queryByLabelText(/start date range/i),
     ).not.toBeInTheDocument();
 
     await user.click(screen.getByTestId('delete-endDateRange'));
@@ -400,9 +400,9 @@ describe('Optional Filters', () => {
             incidents: 'true',
             completed: 'true',
             canceled: 'true',
-          })
-        ).toString()}`
-      )
+          }),
+        ).toString()}`,
+      ),
     );
     expect(screen.queryByLabelText(/end date range/i)).not.toBeInTheDocument();
 
@@ -420,12 +420,12 @@ describe('Optional Filters', () => {
             incidents: 'true',
             completed: 'true',
             canceled: 'true',
-          })
-        ).toString()}`
-      )
+          }),
+        ).toString()}`,
+      ),
     );
     expect(
-      screen.queryByTestId('optional-filter-variable-name')
+      screen.queryByTestId('optional-filter-variable-name'),
     ).not.toBeInTheDocument();
     expect(screen.queryByLabelText(/value/i)).not.toBeInTheDocument();
 
@@ -442,9 +442,9 @@ describe('Optional Filters', () => {
             incidents: 'true',
             completed: 'true',
             canceled: 'true',
-          })
-        ).toString()}`
-      )
+          }),
+        ).toString()}`,
+      ),
     );
     expect(screen.queryByLabelText(/operation id/i)).not.toBeInTheDocument();
   });
@@ -472,25 +472,25 @@ describe('Optional Filters', () => {
 
     const {user} = render(<Filters />, {
       wrapper: getWrapper(
-        `/?${new URLSearchParams(Object.entries(MOCK_PARAMS)).toString()}`
+        `/?${new URLSearchParams(Object.entries(MOCK_PARAMS)).toString()}`,
       ),
     });
 
     expect(screen.getByTestId('search').textContent).toBe(
-      `?${new URLSearchParams(Object.entries(MOCK_PARAMS)).toString()}`
+      `?${new URLSearchParams(Object.entries(MOCK_PARAMS)).toString()}`,
     );
 
     expect(
-      screen.getByLabelText(/process instance key\(s\)/i)
+      screen.getByLabelText(/process instance key\(s\)/i),
     ).toBeInTheDocument();
     expect(
-      screen.getByLabelText(/Parent Process Instance Key/i)
+      screen.getByLabelText(/Parent Process Instance Key/i),
     ).toBeInTheDocument();
     expect(screen.getByLabelText(/error message/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/start date range/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/end date range/i)).toBeInTheDocument();
     expect(
-      screen.getByTestId('optional-filter-variable-name')
+      screen.getByTestId('optional-filter-variable-name'),
     ).toBeInTheDocument();
     expect(screen.getByLabelText(/value/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/operation id/i)).toBeInTheDocument();
@@ -499,23 +499,23 @@ describe('Optional Filters', () => {
 
     await waitFor(() =>
       expect(screen.getByTestId('search')).toHaveTextContent(
-        /^\?active=true&incidents=true$/
-      )
+        /^\?active=true&incidents=true$/,
+      ),
     );
 
     expect(
-      screen.queryByLabelText(/process instance key\(s\)/i)
+      screen.queryByLabelText(/process instance key\(s\)/i),
     ).not.toBeInTheDocument();
     expect(
-      screen.queryByLabelText(/Parent Process Instance Key/i)
+      screen.queryByLabelText(/Parent Process Instance Key/i),
     ).not.toBeInTheDocument();
     expect(screen.queryByLabelText(/error message/i)).not.toBeInTheDocument();
     expect(
-      screen.queryByLabelText(/start date range/i)
+      screen.queryByLabelText(/start date range/i),
     ).not.toBeInTheDocument();
     expect(screen.queryByLabelText(/end date range/i)).not.toBeInTheDocument();
     expect(
-      screen.queryByTestId('optional-filter-variable-name')
+      screen.queryByTestId('optional-filter-variable-name'),
     ).not.toBeInTheDocument();
     expect(screen.queryByLabelText(/value/i)).not.toBeInTheDocument();
     expect(screen.queryByLabelText(/operation id/i)).not.toBeInTheDocument();

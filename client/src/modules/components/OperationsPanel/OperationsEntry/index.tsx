@@ -74,7 +74,7 @@ const OperationsEntry: React.FC<Props> = ({operation}) => {
         canceled: true,
         operationId,
       }),
-      {state: {hideOptionalFilters: true}}
+      {state: {hideOptionalFilters: true}},
     );
   }
 
@@ -114,11 +114,11 @@ const OperationsEntry: React.FC<Props> = ({operation}) => {
         )}
 
         {['DELETE_PROCESS_DEFINITION', 'DELETE_DECISION_DEFINITION'].includes(
-          type
+          type,
         ) && (
           <InstancesDeletedCount>{`${pluralSuffix(
             operationsFinishedCount,
-            'instance'
+            'instance',
           )} deleted`}</InstancesDeletedCount>
         )}
 

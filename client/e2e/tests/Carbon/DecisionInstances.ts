@@ -27,7 +27,7 @@ test('Switch between Decision versions', async (t) => {
   await t.click(
     screen.queryByRole('link', {
       name: /decisions/i,
-    })
+    }),
   );
 
   const withinDecisionViewer = within(screen.getByTestId('decision-viewer'));

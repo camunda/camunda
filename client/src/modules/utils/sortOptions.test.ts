@@ -26,7 +26,7 @@ describe('sortOptions', () => {
         {
           label: 'X',
         },
-      ].sort(sortOptions)
+      ].sort(sortOptions),
     ).toEqual([
       {
         label: '1',

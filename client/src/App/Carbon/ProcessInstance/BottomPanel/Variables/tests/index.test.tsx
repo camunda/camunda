@@ -56,7 +56,7 @@ describe('Variables', () => {
 
       items.forEach((item) => {
         const withinVariableRow = within(
-          screen.getByTestId(`variable-${item.name}`)
+          screen.getByTestId(`variable-${item.name}`),
         );
 
         expect(withinVariableRow.getByText(item.name)).toBeInTheDocument();
@@ -78,25 +78,25 @@ describe('Variables', () => {
       await waitForElementToBeRemoved(screen.getByTestId('variables-skeleton'));
       const {items} = variablesStore.state;
       const [activeOperationVariable] = items.filter(
-        ({hasActiveOperation}) => hasActiveOperation
+        ({hasActiveOperation}) => hasActiveOperation,
       );
 
       expect(activeOperationVariable).toBeDefined();
       expect(
         within(
-          screen.getByTestId(`variable-${activeOperationVariable!.name}`)
-        ).getByTestId('variable-operation-spinner')
+          screen.getByTestId(`variable-${activeOperationVariable!.name}`),
+        ).getByTestId('variable-operation-spinner'),
       ).toBeInTheDocument();
 
       const [inactiveOperationVariable] = items.filter(
-        ({hasActiveOperation}) => !hasActiveOperation
+        ({hasActiveOperation}) => !hasActiveOperation,
       );
 
       expect(
         within(
           // eslint-disable-next-line testing-library/prefer-presence-queries
-          screen.getByTestId(`variable-${inactiveOperationVariable!.name!}`)
-        ).queryByTestId('variable-operation-spinner')
+          screen.getByTestId(`variable-${inactiveOperationVariable!.name!}`),
+        ).queryByTestId('variable-operation-spinner'),
       ).not.toBeInTheDocument();
     });
 
@@ -117,13 +117,13 @@ describe('Variables', () => {
       render(<Variables />, {wrapper: Wrapper});
 
       await waitForElementToBeRemoved(() =>
-        screen.getByTestId('variables-skeleton')
+        screen.getByTestId('variables-skeleton'),
       );
 
       expect(
         screen.getByRole('button', {
           name: 'View full value of testVariableName',
-        })
+        }),
       ).toBeInTheDocument();
     });
   });

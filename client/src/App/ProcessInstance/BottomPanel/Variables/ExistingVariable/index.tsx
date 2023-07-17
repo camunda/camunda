@@ -61,7 +61,7 @@ const createModification = ({
   const lastEditModification = modificationsStore.getLastVariableModification(
     scopeId,
     name,
-    'EDIT_VARIABLE'
+    'EDIT_VARIABLE',
   );
 
   if (
@@ -114,7 +114,7 @@ const ExistingVariable: React.FC<Props> = observer(
     const lastEditModification = modificationsStore.getLastVariableModification(
       variablesStore.scopeId,
       variableName,
-      'EDIT_VARIABLE'
+      'EDIT_VARIABLE',
     );
 
     const initialValue =
@@ -219,7 +219,7 @@ const ExistingVariable: React.FC<Props> = observer(
         />
       </>
     );
-  }
+  },
 );
 
 export {ExistingVariable};

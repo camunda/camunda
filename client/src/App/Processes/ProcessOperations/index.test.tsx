@@ -57,24 +57,24 @@ describe('<ProcessOperations />', () => {
         processName="myProcess"
         processVersion="2"
       />,
-      {wrapper: Wrapper}
+      {wrapper: Wrapper},
     );
 
     user.click(
       screen.getByRole('button', {
         name: /^delete process definition "myProcess - version 2"$/i,
-      })
+      }),
     );
 
     expect(await screen.findByTestId('modal')).toBeInTheDocument();
     expect(
-      screen.getByRole('heading', {name: /delete process definition/i})
+      screen.getByRole('heading', {name: /delete process definition/i}),
     ).toBeInTheDocument();
 
     user.click(
       screen.getByRole('button', {
         name: 'Cancel',
-      })
+      }),
     );
 
     await waitForElementToBeRemoved(screen.getByTestId('modal'));
@@ -87,58 +87,58 @@ describe('<ProcessOperations />', () => {
         processName="myProcess"
         processVersion="2"
       />,
-      {wrapper: Wrapper}
+      {wrapper: Wrapper},
     );
 
     user.click(
       screen.getByRole('button', {
         name: /^delete process definition "myProcess - version 2"$/i,
-      })
+      }),
     );
 
     expect(await screen.findByTestId('modal')).toBeInTheDocument();
     expect(
       screen.getByText(
-        /You are about to delete the following process definition:/
-      )
+        /You are about to delete the following process definition:/,
+      ),
     ).toBeInTheDocument();
     expect(screen.getByText(/myProcess - Version 2/)).toBeInTheDocument();
 
     expect(
       screen.getByText(
-        /Deleting a process definition will permanently remove it and will impact the following:/i
-      )
+        /Deleting a process definition will permanently remove it and will impact the following:/i,
+      ),
     ).toBeInTheDocument();
     expect(
       screen.getByText(
-        /All the deleted process definition’s running process instances will be immediately canceled and deleted./i
-      )
+        /All the deleted process definition’s running process instances will be immediately canceled and deleted./i,
+      ),
     ).toBeInTheDocument();
     expect(
       screen.getByText(
-        /All the deleted process definition’s finished process instances will be deleted from the application./i
-      )
+        /All the deleted process definition’s finished process instances will be deleted from the application./i,
+      ),
     ).toBeInTheDocument();
     expect(
       screen.getByText(
-        /All decision and process instances referenced by the deleted process instances will be deleted./i
-      )
+        /All decision and process instances referenced by the deleted process instances will be deleted./i,
+      ),
     ).toBeInTheDocument();
     expect(
       screen.getByText(
-        /If a process definition contains user tasks, they will be canceled and deleted from Tasklist./i
-      )
+        /If a process definition contains user tasks, they will be canceled and deleted from Tasklist./i,
+      ),
     ).toBeInTheDocument();
     expect(
       screen.getByText(
-        /For a detailed overview, please view our guide on deleting a process definition/i
-      )
+        /For a detailed overview, please view our guide on deleting a process definition/i,
+      ),
     ).toBeInTheDocument();
 
     expect(
       screen.getByText(
-        /Yes, I confirm I want to delete this process definition./i
-      )
+        /Yes, I confirm I want to delete this process definition./i,
+      ),
     ).toBeInTheDocument();
   });
 
@@ -151,21 +151,21 @@ describe('<ProcessOperations />', () => {
         processName="myProcess"
         processVersion="2"
       />,
-      {wrapper: Wrapper}
+      {wrapper: Wrapper},
     );
 
     user.click(
       screen.getByRole('button', {
         name: /^delete process definition "myProcess - version 2"$/i,
-      })
+      }),
     );
 
     expect(panelStatesStore.state.isOperationsCollapsed).toBe(true);
 
     user.click(
       await screen.findByLabelText(
-        /Yes, I confirm I want to delete this process definition./i
-      )
+        /Yes, I confirm I want to delete this process definition./i,
+      ),
     );
 
     user.click(await screen.findByTestId('delete-button'));
@@ -184,21 +184,21 @@ describe('<ProcessOperations />', () => {
         processName="myProcess"
         processVersion="2"
       />,
-      {wrapper: Wrapper}
+      {wrapper: Wrapper},
     );
 
     user.click(
       screen.getByRole('button', {
         name: /^delete process definition "myProcess - version 2"$/i,
-      })
+      }),
     );
 
     expect(panelStatesStore.state.isOperationsCollapsed).toBe(true);
 
     user.click(
       await screen.findByLabelText(
-        /Yes, I confirm I want to delete this process definition./i
-      )
+        /Yes, I confirm I want to delete this process definition./i,
+      ),
     );
 
     user.click(await screen.findByTestId('delete-button'));
@@ -219,21 +219,21 @@ describe('<ProcessOperations />', () => {
         processName="myProcess"
         processVersion="2"
       />,
-      {wrapper: Wrapper}
+      {wrapper: Wrapper},
     );
 
     user.click(
       screen.getByRole('button', {
         name: /^delete process definition "myProcess - version 2"$/i,
-      })
+      }),
     );
 
     expect(panelStatesStore.state.isOperationsCollapsed).toBe(true);
 
     user.click(
       await screen.findByLabelText(
-        /Yes, I confirm I want to delete this process definition./i
-      )
+        /Yes, I confirm I want to delete this process definition./i,
+      ),
     );
 
     user.click(await screen.findByTestId('delete-button'));
@@ -255,29 +255,29 @@ describe('<ProcessOperations />', () => {
         processName="myProcess"
         processVersion="2"
       />,
-      {wrapper: Wrapper}
+      {wrapper: Wrapper},
     );
 
     user.click(
       screen.getByRole('button', {
         name: /^delete process definition "myProcess - version 2"$/i,
-      })
+      }),
     );
 
     user.click(
       await screen.findByLabelText(
-        /Yes, I confirm I want to delete this process definition./i
-      )
+        /Yes, I confirm I want to delete this process definition./i,
+      ),
     );
 
     user.click(await screen.findByTestId('delete-button'));
     expect(
-      await screen.findByTestId('delete-operation-spinner')
+      await screen.findByTestId('delete-operation-spinner'),
     ).toBeInTheDocument();
     expect(
       screen.getByRole('button', {
         name: /^delete process definition "myProcess - version 2"$/i,
-      })
+      }),
     ).toBeDisabled();
   });
 
@@ -290,39 +290,39 @@ describe('<ProcessOperations />', () => {
         processName="myProcess"
         processVersion="2"
       />,
-      {wrapper: Wrapper}
+      {wrapper: Wrapper},
     );
 
     user.click(
       screen.getByRole('button', {
         name: /^delete process definition "myProcess - version 2"$/i,
-      })
+      }),
     );
 
     user.click(
       await screen.findByLabelText(
-        /Yes, I confirm I want to delete this process definition./i
-      )
+        /Yes, I confirm I want to delete this process definition./i,
+      ),
     );
 
     user.click(await screen.findByTestId('delete-button'));
     expect(
-      await screen.findByTestId('delete-operation-spinner')
+      await screen.findByTestId('delete-operation-spinner'),
     ).toBeInTheDocument();
     expect(
       screen.getByRole('button', {
         name: /^delete process definition "myProcess - version 2"$/i,
-      })
+      }),
     ).toBeDisabled();
 
     await waitForElementToBeRemoved(() =>
-      screen.getByTestId('delete-operation-spinner')
+      screen.getByTestId('delete-operation-spinner'),
     );
 
     expect(
       screen.getByRole('button', {
         name: /^delete process definition "myProcess - version 2"$/i,
-      })
+      }),
     ).toBeEnabled();
   });
 });

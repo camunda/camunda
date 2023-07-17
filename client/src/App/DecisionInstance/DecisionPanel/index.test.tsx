@@ -44,7 +44,7 @@ describe('<DecisionPanel />', () => {
     render(<DecisionPanel />, {wrapper: Wrapper});
 
     expect(
-      await screen.findByText('DecisionTable view mock')
+      await screen.findByText('DecisionTable view mock'),
     ).toBeInTheDocument();
     expect(screen.queryByText('An error occurred')).not.toBeInTheDocument();
   });
@@ -57,7 +57,7 @@ describe('<DecisionPanel />', () => {
     render(<DecisionPanel />, {wrapper: Wrapper});
 
     expect(
-      await screen.findByText('LiteralExpression view mock')
+      await screen.findByText('LiteralExpression view mock'),
     ).toBeInTheDocument();
   });
 

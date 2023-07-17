@@ -39,7 +39,7 @@ const ModificationBadgeOverlay: React.FC<Props> = ({
         </>
       )}
     </Modifications>,
-    container
+    container,
   );
 };
 

@@ -17,7 +17,7 @@ describe('<Menu />', () => {
       <Menu onKeyDown={noop} placement="top">
         <span>I am a Dropdown.Option Component</span>
       </Menu>,
-      {wrapper: ThemeProvider}
+      {wrapper: ThemeProvider},
     );
 
     expect(screen.getByRole('listitem')).toBeInTheDocument();

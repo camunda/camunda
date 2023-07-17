@@ -12,7 +12,7 @@ type DrdDataDto = {
     {
       decisionInstanceId: DecisionInstanceEntity['id'];
       state: DecisionInstanceEntityState;
-    }
+    },
   ];
 };
 

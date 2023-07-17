@@ -188,7 +188,7 @@ const MetadataPopover = observer(({selectedFlowNodeRef}: Props) => {
                     incidentsStore.clearSelection();
                     incidentsStore.toggleFlowNodeSelection(flowNodeId);
                     incidentsStore.toggleErrorTypeSelection(
-                      incident.errorType.id
+                      incident.errorType.id,
                     );
                     incidentsStore.setIncidentBarOpen(true);
                   }}

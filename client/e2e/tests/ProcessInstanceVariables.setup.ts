@@ -26,7 +26,7 @@ const setup = async () => {
   const instanceWithManyVariables = await createSingleInstance(
     'onlyIncidentsProcess',
     1,
-    variables
+    variables,
   );
   return {instance, instanceWithManyVariables};
 };

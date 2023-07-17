@@ -13,6 +13,6 @@ type Theme = Union.Merge<typeof theme.light | typeof theme.dark>;
 declare module 'styled-components' {
   export interface DefaultTheme extends Theme {}
   export type ThemedInterpolationFunction<P = {}> = (
-    props: P & {theme: DefaultTheme}
+    props: P & {theme: DefaultTheme},
   ) => Interpolation<P & {theme: DefaultTheme}>;
 }

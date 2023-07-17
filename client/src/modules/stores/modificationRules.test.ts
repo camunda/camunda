@@ -72,7 +72,7 @@ describe('stores/modificationRules', () => {
         state: 'ACTIVE',
         processName: 'processName',
         bpmnProcessId: 'processName',
-      })
+      }),
     );
 
     flowNodeMetaDataStore.setMetaData(incidentFlowNodeMetaData);

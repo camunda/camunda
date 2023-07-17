@@ -78,8 +78,8 @@ describe('selectedRunningInstanceCount', () => {
 
     await waitFor(() =>
       expect(
-        processInstanceDetailsDiagramStore.state.diagramModel
-      ).not.toBeNull()
+        processInstanceDetailsDiagramStore.state.diagramModel,
+      ).not.toBeNull(),
     );
 
     act(() => {
@@ -89,11 +89,11 @@ describe('selectedRunningInstanceCount', () => {
     });
 
     expect(
-      await screen.findByText(/Flow Node Modifications/)
+      await screen.findByText(/Flow Node Modifications/),
     ).toBeInTheDocument();
 
     expect(
-      screen.queryByText(/Selected running instances/)
+      screen.queryByText(/Selected running instances/),
     ).not.toBeInTheDocument();
   });
 
@@ -104,8 +104,8 @@ describe('selectedRunningInstanceCount', () => {
 
     await waitFor(() =>
       expect(
-        processInstanceDetailsDiagramStore.state.diagramModel
-      ).not.toBeNull()
+        processInstanceDetailsDiagramStore.state.diagramModel,
+      ).not.toBeNull(),
     );
 
     act(() => {
@@ -115,7 +115,7 @@ describe('selectedRunningInstanceCount', () => {
     });
 
     expect(
-      await screen.findByText(/Flow Node Modifications/)
+      await screen.findByText(/Flow Node Modifications/),
     ).toBeInTheDocument();
 
     expect(screen.getByText(/Selected running instances/)).toBeInTheDocument();

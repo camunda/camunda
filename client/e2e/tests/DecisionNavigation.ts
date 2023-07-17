@@ -32,35 +32,35 @@ test('Navigation between process and decision', async (t) => {
     .click(
       screen.queryByRole('link', {
         name: /processes/i,
-      })
+      }),
     )
     .click(
       screen.queryByRole('link', {
         description: `View instance ${processInstanceKey}`,
-      })
+      }),
     )
     .expect(screen.queryByTestId('diagram').exists)
     .ok()
     .click(
-      within(screen.getByTestId('diagram')).queryByText(/define approver/i)
+      within(screen.getByTestId('diagram')).queryByText(/define approver/i),
     )
     .expect(screen.queryByTestId('popover').exists)
     .ok()
     .click(
       within(screen.getByTestId('popover')).queryByRole('link', {
         description: /view root cause decision invoice classification/i,
-      })
+      }),
     )
     .expect(screen.queryByTestId('decision-panel').exists)
     .ok()
     .expect(
       within(screen.getByTestId('decision-panel')).queryByText('Invoice Amount')
-        .exists
+        .exists,
     )
     .ok();
 
   const calledDecisionInstanceId = await within(
-    screen.getByTestId('decision-instance-header')
+    screen.getByTestId('decision-instance-header'),
   )
     .getAllByRole('cell')
     .nth(1).textContent;
@@ -70,21 +70,21 @@ test('Navigation between process and decision', async (t) => {
     .click(
       screen.getByRole('link', {
         description: `View process instance ${processInstanceKey}`,
-      })
+      }),
     )
     .expect(screen.queryByTestId('instance-header').exists)
     .ok()
     .expect(
       within(screen.getByTestId('instance-header')).queryByText(
-        processInstanceKey
-      ).exists
+        processInstanceKey,
+      ).exists,
     )
     .ok()
     .expect(screen.queryByTestId('diagram').exists)
     .ok()
     .expect(
       within(screen.getByTestId('diagram')).queryByText(/define approver/i)
-        .exists
+        .exists,
     )
     .ok();
 
@@ -92,18 +92,18 @@ test('Navigation between process and decision', async (t) => {
     .click(
       screen.getByRole('link', {
         name: /decisions/i,
-      })
+      }),
     )
     .click(
       screen.queryByRole('link', {
         description: `View decision instance ${calledDecisionInstanceId}`,
-      })
+      }),
     )
     .expect(screen.queryByTestId('decision-panel').exists)
     .ok()
     .expect(
       within(screen.getByTestId('decision-panel')).queryByText('Invoice Amount')
-        .exists
+        .exists,
     )
     .ok();
 });

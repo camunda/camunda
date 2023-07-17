@@ -59,11 +59,11 @@ describe('<DecisionInstance />', () => {
     await waitForElementToBeRemoved(screen.queryByTestId('inputs-skeleton'));
 
     expect(
-      await screen.findByText('Definitions Name Mock')
+      await screen.findByText('Definitions Name Mock'),
     ).toBeInTheDocument();
 
     expect(document.title).toBe(
-      `Operate: Decision Instance ${DECISION_INSTANCE_ID} of ${invoiceClassification.decisionName}`
+      `Operate: Decision Instance ${DECISION_INSTANCE_ID} of ${invoiceClassification.decisionName}`,
     );
   });
 
@@ -78,7 +78,7 @@ describe('<DecisionInstance />', () => {
     expect(screen.getByTestId('drd')).toBeInTheDocument();
 
     await user.click(
-      await screen.findByRole('button', {name: 'Close DRD Panel'})
+      await screen.findByRole('button', {name: 'Close DRD Panel'}),
     );
 
     expect(screen.queryByTestId('drd-panel')).not.toBeInTheDocument();
@@ -86,7 +86,7 @@ describe('<DecisionInstance />', () => {
     expect(screen.getByTestId('decision-instance-header')).toBeInTheDocument();
     expect(screen.getByTestId('decision-panel')).toBeInTheDocument();
     expect(
-      screen.getByTestId('decision-instance-variables-panel')
+      screen.getByTestId('decision-instance-variables-panel'),
     ).toBeInTheDocument();
   });
 
@@ -98,17 +98,17 @@ describe('<DecisionInstance />', () => {
     await user.click(
       within(screen.getByTestId('drd')).getByRole('button', {
         name: 'Maximize DRD Panel',
-      })
+      }),
     );
 
     expect(screen.getByTestId('drd')).toBeInTheDocument();
     expect(screen.queryByTestId('drd-panel')).not.toBeInTheDocument();
     expect(
-      screen.queryByTestId('decision-instance-header')
+      screen.queryByTestId('decision-instance-header'),
     ).not.toBeInTheDocument();
     expect(screen.queryByTestId('decision-panel')).not.toBeInTheDocument();
     expect(
-      screen.queryByTestId('decision-instance-variables-panel')
+      screen.queryByTestId('decision-instance-variables-panel'),
     ).not.toBeInTheDocument();
   });
 
@@ -120,12 +120,12 @@ describe('<DecisionInstance />', () => {
     await user.click(
       within(screen.getByTestId('drd')).getByRole('button', {
         name: 'Maximize DRD Panel',
-      })
+      }),
     );
     await user.click(
       within(screen.getByTestId('drd')).getByRole('button', {
         name: 'Minimize DRD Panel',
-      })
+      }),
     );
 
     expect(screen.getByTestId('drd-panel')).toBeInTheDocument();
@@ -133,7 +133,7 @@ describe('<DecisionInstance />', () => {
     expect(screen.getByTestId('decision-instance-header')).toBeInTheDocument();
     expect(screen.getByTestId('decision-panel')).toBeInTheDocument();
     expect(
-      screen.getByTestId('decision-instance-variables-panel')
+      screen.getByTestId('decision-instance-variables-panel'),
     ).toBeInTheDocument();
   });
 
@@ -145,23 +145,23 @@ describe('<DecisionInstance />', () => {
     await user.click(
       await screen.findByRole('button', {
         name: 'Close DRD Panel',
-      })
+      }),
     );
 
     await waitFor(() =>
       expect(
         within(screen.getByTestId('decision-instance-header')).getByRole(
           'button',
-          {name: /open decision requirements diagram/i}
-        )
-      ).toBeEnabled()
+          {name: /open decision requirements diagram/i},
+        ),
+      ).toBeEnabled(),
     );
 
     await user.click(
       within(screen.getByTestId('decision-instance-header')).getByRole(
         'button',
-        {name: /open decision requirements diagram/i}
-      )
+        {name: /open decision requirements diagram/i},
+      ),
     );
 
     expect(screen.getByTestId('drd-panel')).toBeInTheDocument();
@@ -169,7 +169,7 @@ describe('<DecisionInstance />', () => {
     expect(screen.getByTestId('decision-instance-header')).toBeInTheDocument();
     expect(screen.getByTestId('decision-panel')).toBeInTheDocument();
     expect(
-      screen.getByTestId('decision-instance-variables-panel')
+      screen.getByTestId('decision-instance-variables-panel'),
     ).toBeInTheDocument();
   });
 
@@ -181,7 +181,7 @@ describe('<DecisionInstance />', () => {
     await user.click(
       await screen.findByRole('button', {
         name: 'Close DRD Panel',
-      })
+      }),
     );
 
     expect(screen.queryByTestId('drd-panel')).not.toBeInTheDocument();
@@ -211,29 +211,29 @@ describe('<DecisionInstance />', () => {
     expect(
       screen.getByRole('heading', {
         name: /inputs/i,
-      })
+      }),
     ).toBeInTheDocument();
     expect(
       screen.getByRole('heading', {
         name: /outputs/i,
-      })
+      }),
     ).toBeInTheDocument();
 
     await user.click(
       screen.getByRole('button', {
         name: /result/i,
-      })
+      }),
     );
 
     expect(
       screen.queryByRole('heading', {
         name: /inputs/i,
-      })
+      }),
     ).not.toBeInTheDocument();
     expect(
       screen.queryByRole('heading', {
         name: /outputs/i,
-      })
+      }),
     ).not.toBeInTheDocument();
 
     rerender(<DecisionInstance />);
@@ -241,12 +241,12 @@ describe('<DecisionInstance />', () => {
     expect(
       screen.queryByRole('heading', {
         name: /inputs/i,
-      })
+      }),
     ).not.toBeInTheDocument();
     expect(
       screen.queryByRole('heading', {
         name: /outputs/i,
-      })
+      }),
     ).not.toBeInTheDocument();
 
     unmount();
@@ -262,12 +262,12 @@ describe('<DecisionInstance />', () => {
     expect(
       screen.getByRole('heading', {
         name: /inputs/i,
-      })
+      }),
     ).toBeInTheDocument();
     expect(
       screen.getByRole('heading', {
         name: /outputs/i,
-      })
+      }),
     ).toBeInTheDocument();
   });
 
@@ -277,19 +277,19 @@ describe('<DecisionInstance />', () => {
 
     expect(
       await screen.findByText(
-        '403 - You do not have permission to view this information'
-      )
+        '403 - You do not have permission to view this information',
+      ),
     ).toBeInTheDocument();
 
     expect(
-      screen.getByText('Contact your administrator to get access.')
+      screen.getByText('Contact your administrator to get access.'),
     ).toBeInTheDocument();
 
     expect(
-      screen.getByRole('link', {name: 'Learn more about permissions'})
+      screen.getByRole('link', {name: 'Learn more about permissions'}),
     ).toHaveAttribute(
       'href',
-      'https://docs.camunda.io/docs/self-managed/operate-deployment/operate-authentication/#resource-based-permissions'
+      'https://docs.camunda.io/docs/self-managed/operate-deployment/operate-authentication/#resource-based-permissions',
     );
   });
 });

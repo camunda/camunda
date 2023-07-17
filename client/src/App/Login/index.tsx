@@ -68,7 +68,7 @@ const Login: React.FC = () => {
                   ...location,
                   pathname: Paths.dashboard(),
                 },
-            {replace: true}
+            {replace: true},
           );
           return;
         }

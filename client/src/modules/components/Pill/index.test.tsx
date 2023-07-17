@@ -35,7 +35,7 @@ describe('Pill', () => {
       </Pill>,
       {
         wrapper: ThemeProvider,
-      }
+      },
     );
 
     expect(screen.getByTestId('target-icon')).toBeInTheDocument();
@@ -48,7 +48,7 @@ describe('Pill', () => {
       </Pill>,
       {
         wrapper: ThemeProvider,
-      }
+      },
     );
     expect(screen.getByText('10')).toBeInTheDocument();
   });

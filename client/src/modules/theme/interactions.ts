@@ -55,7 +55,8 @@ const errorBorders: ThemedInterpolationFunction<ErrorBorderProps> = ({
     &:focus {
       ${$hasError
         ? css`
-            box-shadow: 0 0 0 1px ${theme.colors.incidentsAndErrors},
+            box-shadow:
+              0 0 0 1px ${theme.colors.incidentsAndErrors},
               0 0 0 4px ${theme.colors.outlineError};
           `
         : ''}

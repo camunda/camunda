@@ -10,19 +10,19 @@ import {getAccordionItemLabel} from './getAccordionItemLabel';
 describe('getAccordionItemLabel', () => {
   it('should get label for multiple instances', () => {
     expect(getAccordionItemLabel('myProcessName', 77, 3)).toBe(
-      'myProcessName – 77 Instances in Version 3'
+      'myProcessName – 77 Instances in Version 3',
     );
   });
 
   it('should get label for single instance', () => {
     expect(getAccordionItemLabel('myProcessName', 1, 5)).toBe(
-      'myProcessName – 1 Instance in Version 5'
+      'myProcessName – 1 Instance in Version 5',
     );
   });
 
   it('should get label for no instances', () => {
     expect(getAccordionItemLabel('myProcessName', 0, 2)).toBe(
-      'myProcessName – 0 Instances in Version 2'
+      'myProcessName – 0 Instances in Version 2',
     );
   });
 });

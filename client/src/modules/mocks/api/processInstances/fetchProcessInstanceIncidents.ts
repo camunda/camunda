@@ -10,7 +10,7 @@ import {ProcessInstanceIncidentsDto} from 'modules/api/processInstances/fetchPro
 
 const mockFetchProcessInstanceIncidents = (contextPath = '') =>
   mockGetRequest<ProcessInstanceIncidentsDto>(
-    `${contextPath}/api/process-instances/:instanceId/incidents`
+    `${contextPath}/api/process-instances/:instanceId/incidents`,
   );
 
 export {mockFetchProcessInstanceIncidents};

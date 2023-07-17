@@ -57,7 +57,7 @@ const Operations: React.FC<Props> = observer(
     const {isModificationModeEnabled} = modificationsStore;
 
     const applyOperation = async (
-      operationType: InstanceOperationEntity['type']
+      operationType: InstanceOperationEntity['type'],
     ) => {
       operationsStore.applyOperation({
         instanceId: instance.id,
@@ -75,7 +75,7 @@ const Operations: React.FC<Props> = observer(
       return instance.operations.some(
         (operation) =>
           operation.type === operationType &&
-          ACTIVE_OPERATION_STATES.includes(operation.state)
+          ACTIVE_OPERATION_STATES.includes(operation.state),
       );
     };
 
@@ -83,7 +83,7 @@ const Operations: React.FC<Props> = observer(
       <OperationsContainer orientation="horizontal">
         {(forceSpinner ||
           processInstancesStore.processInstanceIdsWithActiveOperations.includes(
-            instance.id
+            instance.id,
           )) && (
           <InlineLoading
             data-testid="operation-spinner"
@@ -246,7 +246,7 @@ const Operations: React.FC<Props> = observer(
         )}
       </OperationsContainer>
     );
-  }
+  },
 );
 
 export {Operations};

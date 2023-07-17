@@ -21,14 +21,14 @@ describe('TabView', () => {
           },
         ]}
       />,
-      {wrapper: ThemeProvider}
+      {wrapper: ThemeProvider},
     );
 
     expect(
-      screen.getByRole('heading', {name: 'First Tab'})
+      screen.getByRole('heading', {name: 'First Tab'}),
     ).toBeInTheDocument();
     expect(
-      screen.queryByRole('tab', {name: 'First Tab'})
+      screen.queryByRole('tab', {name: 'First Tab'}),
     ).not.toBeInTheDocument();
     expect(screen.getByText('Content of the first tab')).toBeInTheDocument();
   });
@@ -49,7 +49,7 @@ describe('TabView', () => {
           },
         ]}
       />,
-      {wrapper: ThemeProvider}
+      {wrapper: ThemeProvider},
     );
 
     expect(screen.getByRole('tab', {name: 'First Tab'})).toBeInTheDocument();
@@ -74,7 +74,7 @@ describe('TabView', () => {
           },
         ]}
       />,
-      {wrapper: ThemeProvider}
+      {wrapper: ThemeProvider},
     );
 
     expect(screen.getByText('Content of the first tab')).toBeVisible();

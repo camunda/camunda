@@ -56,7 +56,7 @@ const getCredentials = memoize(
     return {
       Cookie: `${tokens.session};`,
     };
-  }
+  },
 );
 
 export {getCredentials};

@@ -10,7 +10,7 @@ import {DecisionInstanceDto} from 'modules/api/decisionInstances/fetchDecisionIn
 
 const mockFetchDecisionInstance = () =>
   mockGetRequest<DecisionInstanceDto>(
-    '/api/decision-instances/:decisionInstanceId'
+    '/api/decision-instances/:decisionInstanceId',
   );
 
 export {mockFetchDecisionInstance};

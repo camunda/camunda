@@ -26,34 +26,39 @@ describe('<JSONEditorModal />', () => {
       <JSONEditorModal isVisible value={mockValue} title={mockTitle} />,
       {
         wrapper: ThemeProvider,
-      }
+      },
     );
 
     expect(
       screen.getByRole('heading', {
         name: mockTitle,
-      })
+      }),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole('button', {name: /exit modal/i})
+      screen.getByRole('button', {name: /exit modal/i}),
     ).toBeInTheDocument();
     expect(screen.getByDisplayValue(mockValue)).toBeInTheDocument();
     expect(screen.getByRole('button', {name: /cancel/i})).toBeInTheDocument();
     expect(screen.getByRole('button', {name: /apply/i})).toBeInTheDocument();
 
     rerender(
-      <JSONEditorModal isVisible readOnly value={mockValue} title={mockTitle} />
+      <JSONEditorModal
+        isVisible
+        readOnly
+        value={mockValue}
+        title={mockTitle}
+      />,
     );
 
     expect(
       screen.getByRole('heading', {
         name: mockTitle,
-      })
+      }),
     ).toBeInTheDocument();
     expect(screen.getByDisplayValue(mockValue)).toBeInTheDocument();
     expect(screen.getByRole('button', {name: /close/i})).toBeInTheDocument();
     expect(
-      screen.queryByRole('button', {name: /apply/i})
+      screen.queryByRole('button', {name: /apply/i}),
     ).not.toBeInTheDocument();
   });
 
@@ -64,7 +69,7 @@ describe('<JSONEditorModal />', () => {
       <JSONEditorModal isVisible value="" onClose={mockOnClose} />,
       {
         wrapper: ThemeProvider,
-      }
+      },
     );
 
     await user.click(screen.getByRole('button', {name: /exit modal/i}));
@@ -76,7 +81,7 @@ describe('<JSONEditorModal />', () => {
     expect(mockOnClose).toHaveBeenCalledTimes(2);
 
     rerender(
-      <JSONEditorModal isVisible readOnly value="" onClose={mockOnClose} />
+      <JSONEditorModal isVisible readOnly value="" onClose={mockOnClose} />,
     );
 
     await user.click(screen.getByRole('button', {name: /close/i}));
@@ -92,7 +97,7 @@ describe('<JSONEditorModal />', () => {
       <JSONEditorModal isVisible value={mockValue} onApply={mockOnApply} />,
       {
         wrapper: ThemeProvider,
-      }
+      },
     );
 
     await user.click(screen.getByRole('button', {name: /apply/i}));
@@ -113,7 +118,7 @@ describe('<JSONEditorModal />', () => {
       />,
       {
         wrapper: ThemeProvider,
-      }
+      },
     );
 
     const editor = screen.getByDisplayValue(mockInitialValue);

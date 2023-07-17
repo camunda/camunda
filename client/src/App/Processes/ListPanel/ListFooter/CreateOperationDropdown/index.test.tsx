@@ -29,10 +29,10 @@ describe('CreateOperationDropdown', () => {
 
     expect(screen.queryByText('Apply Operation')).not.toBeInTheDocument();
     expect(
-      screen.queryByRole('button', {name: 'Retry'})
+      screen.queryByRole('button', {name: 'Retry'}),
     ).not.toBeInTheDocument();
     expect(
-      screen.queryByRole('button', {name: 'Cancel'})
+      screen.queryByRole('button', {name: 'Cancel'}),
     ).not.toBeInTheDocument();
   });
 
@@ -41,7 +41,7 @@ describe('CreateOperationDropdown', () => {
       <CreateOperationDropdown label="MyLabel" selectedCount={2} />,
       {
         wrapper: ThemeProvider,
-      }
+      },
     );
 
     await user.click(screen.getByRole('button', {name: /^MyLabel/}));
@@ -55,7 +55,7 @@ describe('CreateOperationDropdown', () => {
       <CreateOperationDropdown label="MyLabel" selectedCount={2} />,
       {
         wrapper: ThemeProvider,
-      }
+      },
     );
 
     await user.click(screen.getByRole('button', {name: /^MyLabel/}));
@@ -66,20 +66,20 @@ describe('CreateOperationDropdown', () => {
     expect(screen.getByText(/About to retry 2 Instances./)).toBeInTheDocument();
     expect(
       screen.queryByText(
-        /In case there are called instances, these will be canceled too./
-      )
+        /In case there are called instances, these will be canceled too./,
+      ),
     ).not.toBeInTheDocument();
     expect(screen.getByText('Click "Apply" to proceed.')).toBeInTheDocument();
     expect(
-      within(screen.getByTestId('modal')).getByRole('button', {name: 'Apply'})
+      within(screen.getByTestId('modal')).getByRole('button', {name: 'Apply'}),
     ).toBeInTheDocument();
     expect(
-      within(screen.getByTestId('modal')).getByRole('button', {name: 'Cancel'})
+      within(screen.getByTestId('modal')).getByRole('button', {name: 'Cancel'}),
     ).toBeInTheDocument();
     expect(
       within(screen.getByTestId('modal')).getByRole('button', {
         name: 'Exit Modal',
-      })
+      }),
     ).toBeInTheDocument();
   });
 
@@ -88,7 +88,7 @@ describe('CreateOperationDropdown', () => {
       <CreateOperationDropdown label="MyLabel" selectedCount={2} />,
       {
         wrapper: ThemeProvider,
-      }
+      },
     );
 
     await user.click(screen.getByRole('button', {name: /^MyLabel/}));
@@ -97,24 +97,24 @@ describe('CreateOperationDropdown', () => {
 
     expect(screen.getByText('Apply Operation')).toBeInTheDocument();
     expect(
-      screen.getByText(/About to cancel 2 Instances./)
+      screen.getByText(/About to cancel 2 Instances./),
     ).toBeInTheDocument();
     expect(
       screen.getByText(
-        /In case there are called instances, these will be canceled too./
-      )
+        /In case there are called instances, these will be canceled too./,
+      ),
     ).toBeInTheDocument();
     expect(screen.getByText('Click "Apply" to proceed.')).toBeInTheDocument();
     expect(
-      within(screen.getByTestId('modal')).getByRole('button', {name: 'Apply'})
+      within(screen.getByTestId('modal')).getByRole('button', {name: 'Apply'}),
     ).toBeInTheDocument();
     expect(
-      within(screen.getByTestId('modal')).getByRole('button', {name: 'Cancel'})
+      within(screen.getByTestId('modal')).getByRole('button', {name: 'Cancel'}),
     ).toBeInTheDocument();
     expect(
       within(screen.getByTestId('modal')).getByRole('button', {
         name: 'Exit Modal',
-      })
+      }),
     ).toBeInTheDocument();
   });
 
@@ -123,14 +123,14 @@ describe('CreateOperationDropdown', () => {
       <CreateOperationDropdown label="MyLabel" selectedCount={2} />,
       {
         wrapper: ThemeProvider,
-      }
+      },
     );
 
     await user.click(screen.getByRole('button', {name: /^MyLabel/}));
 
     await user.click(screen.getByRole('button', {name: 'Cancel'}));
     await user.click(
-      within(screen.getByTestId('modal')).getByRole('button', {name: 'Apply'})
+      within(screen.getByTestId('modal')).getByRole('button', {name: 'Apply'}),
     );
 
     await waitForElementToBeRemoved(screen.getByText('Apply Operation'));
@@ -141,14 +141,14 @@ describe('CreateOperationDropdown', () => {
       <CreateOperationDropdown label="MyLabel" selectedCount={2} />,
       {
         wrapper: ThemeProvider,
-      }
+      },
     );
 
     await user.click(screen.getByRole('button', {name: /^MyLabel/}));
 
     await user.click(screen.getByRole('button', {name: 'Cancel'}));
     await user.click(
-      within(screen.getByTestId('modal')).getByRole('button', {name: 'Cancel'})
+      within(screen.getByTestId('modal')).getByRole('button', {name: 'Cancel'}),
     );
 
     await waitForElementToBeRemoved(screen.getByText('Apply Operation'));
@@ -159,7 +159,7 @@ describe('CreateOperationDropdown', () => {
       <CreateOperationDropdown label="MyLabel" selectedCount={2} />,
       {
         wrapper: ThemeProvider,
-      }
+      },
     );
 
     await user.click(screen.getByRole('button', {name: /^MyLabel/}));
@@ -168,7 +168,7 @@ describe('CreateOperationDropdown', () => {
     await user.click(
       within(screen.getByTestId('modal')).getByRole('button', {
         name: 'Exit Modal',
-      })
+      }),
     );
 
     await waitForElementToBeRemoved(screen.getByText('Apply Operation'));

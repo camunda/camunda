@@ -48,7 +48,7 @@ describe('User info', () => {
     await user.click(
       await screen.findByRole('button', {
         name: /settings/i,
-      })
+      }),
     );
 
     expect(await screen.findByText('Franz Kafka')).toBeInTheDocument();
@@ -66,14 +66,14 @@ describe('User info', () => {
     await user.click(
       await screen.findByRole('button', {
         name: /settings/i,
-      })
+      }),
     );
 
     expect(await screen.findByText('Michael Jordan')).toBeInTheDocument();
     expect(
       screen.queryByRole('button', {
         name: /log out/i,
-      })
+      }),
     ).not.toBeInTheDocument();
   });
 
@@ -90,7 +90,7 @@ describe('User info', () => {
     await user.click(
       await screen.findByRole('button', {
         name: /settings/i,
-      })
+      }),
     );
 
     expect(await screen.findByText('Franz Kafka')).toBeInTheDocument();
@@ -98,13 +98,13 @@ describe('User info', () => {
     await user.click(
       screen.getByRole('button', {
         name: /log out/i,
-      })
+      }),
     );
 
     await user.click(
       screen.getByRole('button', {
         name: /settings/i,
-      })
+      }),
     );
 
     await waitForElementToBeRemoved(() => screen.getByText('Franz Kafka'));
@@ -126,45 +126,45 @@ describe('User info', () => {
     await user.click(
       await screen.findByRole('button', {
         name: /settings/i,
-      })
+      }),
     );
     expect(await screen.findByText('Franz Kafka')).toBeInTheDocument();
 
     await user.click(screen.getByRole('button', {name: 'Terms of use'}));
     expect(mockOpenFn).toHaveBeenLastCalledWith(
       'https://camunda.com/legal/terms/camunda-platform/camunda-platform-8-saas-trial/',
-      '_blank'
+      '_blank',
     );
 
     await user.click(
       await screen.findByRole('button', {
         name: /settings/i,
-      })
+      }),
     );
     await user.click(screen.getByRole('button', {name: 'Privacy policy'}));
     expect(mockOpenFn).toHaveBeenLastCalledWith(
       'https://camunda.com/legal/privacy/',
-      '_blank'
+      '_blank',
     );
 
     await user.click(
       await screen.findByRole('button', {
         name: /settings/i,
-      })
+      }),
     );
     await user.click(screen.getByRole('button', {name: 'Imprint'}));
     expect(mockOpenFn).toHaveBeenLastCalledWith(
       'https://camunda.com/legal/imprint/',
-      '_blank'
+      '_blank',
     );
 
     await user.click(
       await screen.findByRole('button', {
         name: /settings/i,
-      })
+      }),
     );
     expect(
-      screen.queryByRole('button', {name: 'Cookie preferences'})
+      screen.queryByRole('button', {name: 'Cookie preferences'}),
     ).not.toBeInTheDocument();
 
     window.open = originalWindowOpen;
@@ -195,7 +195,7 @@ describe('User info', () => {
     await user.click(
       await screen.findByRole('button', {
         name: /settings/i,
-      })
+      }),
     );
 
     expect(await screen.findByText('Franz Kafka')).toBeInTheDocument();
@@ -203,7 +203,7 @@ describe('User info', () => {
     await user.click(screen.getByRole('button', {name: 'Cookie preferences'}));
 
     expect(mockShowDrawer).toHaveBeenLastCalledWith(
-      'osano-cm-dom-info-dialog-open'
+      'osano-cm-dom-info-dialog-open',
     );
 
     window.open = originalWindowOpen;

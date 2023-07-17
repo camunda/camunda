@@ -45,7 +45,7 @@ const DateInput = forwardRef<DatePickerInput, Props>(
         }}
       </Field>
     );
-  }
+  },
 );
 
 export {DateInput};

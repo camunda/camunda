@@ -47,25 +47,25 @@ describe('Edit variable', () => {
     await waitForElementToBeRemoved(screen.getByTestId('skeleton-rows'));
 
     const [activeOperationVariable] = variablesStore.state.items.filter(
-      ({hasActiveOperation}) => hasActiveOperation
+      ({hasActiveOperation}) => hasActiveOperation,
     );
 
     expect(
       within(
         // @ts-expect-error ts-migrate(2345) FIXME: Type 'null' is not assignable to type 'HTMLElement... Remove this comment to see the full error message
-        screen.queryByTestId(activeOperationVariable.name)
-      ).queryByTestId('edit-variable-button')
+        screen.queryByTestId(activeOperationVariable.name),
+      ).queryByTestId('edit-variable-button'),
     ).not.toBeInTheDocument();
 
     const [inactiveOperationVariable] = variablesStore.state.items.filter(
-      ({hasActiveOperation}) => !hasActiveOperation
+      ({hasActiveOperation}) => !hasActiveOperation,
     );
 
     expect(inactiveOperationVariable).toBeDefined();
     expect(
       within(screen.getByTestId(inactiveOperationVariable!.name)).getByTestId(
-        'edit-variable-button'
-      )
+        'edit-variable-button',
+      ),
     ).toBeInTheDocument();
   });
 
@@ -84,25 +84,25 @@ describe('Edit variable', () => {
     await waitForElementToBeRemoved(screen.getByTestId('skeleton-rows'));
 
     const [inactiveOperationVariable] = variablesStore.state.items.filter(
-      ({hasActiveOperation}) => !hasActiveOperation
+      ({hasActiveOperation}) => !hasActiveOperation,
     );
 
     expect(inactiveOperationVariable).toBeDefined();
     expect(
       within(screen.getByTestId(inactiveOperationVariable!.name)).getByTestId(
-        'edit-variable-button'
-      )
+        'edit-variable-button',
+      ),
     ).toBeInTheDocument();
 
     act(() =>
       processInstanceDetailsStore.setProcessInstance({
         ...instanceMock,
         state: 'CANCELED',
-      })
+      }),
     );
 
     expect(
-      screen.queryByTestId('edit-variable-button')
+      screen.queryByTestId('edit-variable-button'),
     ).not.toBeInTheDocument();
   });
 
@@ -126,25 +126,25 @@ describe('Edit variable', () => {
     expect(firstVariable).toBeDefined();
     const withinFirstVariable = within(screen.getByTestId(firstVariable!.name));
     expect(
-      withinFirstVariable.queryByTestId('edit-variable-value')
+      withinFirstVariable.queryByTestId('edit-variable-value'),
     ).not.toBeInTheDocument();
     expect(
-      withinFirstVariable.queryByTitle(/exit edit mode/i)
+      withinFirstVariable.queryByTitle(/exit edit mode/i),
     ).not.toBeInTheDocument();
     expect(
-      withinFirstVariable.queryByTitle(/save variable/i)
+      withinFirstVariable.queryByTitle(/save variable/i),
     ).not.toBeInTheDocument();
 
     await user.click(withinFirstVariable.getByTestId('edit-variable-button'));
 
     expect(
-      withinFirstVariable.getByTestId('edit-variable-value')
+      withinFirstVariable.getByTestId('edit-variable-value'),
     ).toBeInTheDocument();
     expect(
-      withinFirstVariable.getByTitle(/exit edit mode/i)
+      withinFirstVariable.getByTitle(/exit edit mode/i),
     ).toBeInTheDocument();
     expect(
-      withinFirstVariable.getByTitle(/save variable/i)
+      withinFirstVariable.getByTitle(/save variable/i),
     ).toBeInTheDocument();
   });
 
@@ -196,7 +196,7 @@ describe('Edit variable', () => {
     await user.click(withinFirstVariable.getByTestId('edit-variable-button'));
     await user.type(
       screen.getByTestId('edit-variable-value'),
-      "{{invalidKey: 'value'}}"
+      "{{invalidKey: 'value'}}",
     );
 
     expect(screen.getByTitle(/save variable/i)).toBeDisabled();
@@ -207,7 +207,7 @@ describe('Edit variable', () => {
     await user.type(screen.getByTestId('edit-variable-value'), '123');
 
     await waitFor(() =>
-      expect(screen.getByTitle(/save variable/i)).toBeEnabled()
+      expect(screen.getByTitle(/save variable/i)).toBeEnabled(),
     );
 
     expect(screen.queryByText('Value has to be JSON')).not.toBeInTheDocument();
@@ -243,15 +243,15 @@ describe('Edit variable', () => {
         name: 'clientNo',
         value: '"full-value"',
         isPreview: false,
-      })
+      }),
     );
 
     await user.click(
-      within(screen.getByTestId('clientNo')).getByTitle(/enter edit mode/i)
+      within(screen.getByTestId('clientNo')).getByTitle(/enter edit mode/i),
     );
     expect(screen.getByTestId('variable-backdrop')).toBeInTheDocument();
     expect(
-      within(screen.getByTestId('mwst')).getByTitle(/enter edit mode/i)
+      within(screen.getByTestId('mwst')).getByTitle(/enter edit mode/i),
     ).toBeDisabled();
 
     await waitForElementToBeRemoved(screen.getByTestId('variable-backdrop'));
@@ -259,10 +259,10 @@ describe('Edit variable', () => {
     expect(screen.queryByText('"value-preview"')).not.toBeInTheDocument();
 
     expect(screen.getByTestId('edit-variable-value')).toHaveValue(
-      '"full-value"'
+      '"full-value"',
     );
     expect(
-      within(screen.getByTestId('mwst')).getByTitle(/enter edit mode/i)
+      within(screen.getByTestId('mwst')).getByTitle(/enter edit mode/i),
     ).toBeEnabled();
     expect(mockDisplayNotification).not.toHaveBeenCalled();
   });
@@ -288,8 +288,8 @@ describe('Edit variable', () => {
 
     await user.click(
       within(screen.getByTestId('testVariableName')).getByTitle(
-        /enter edit mode/i
-      )
+        /enter edit mode/i,
+      ),
     );
     expect(screen.getByTestId('variable-backdrop')).toBeInTheDocument();
 
@@ -320,8 +320,8 @@ describe('Edit variable', () => {
 
     await user.click(
       within(screen.getByTestId('testVariableName')).getByTitle(
-        /enter edit mode/i
-      )
+        /enter edit mode/i,
+      ),
     );
 
     expect(screen.queryByTestId('variable-backdrop')).not.toBeInTheDocument();
@@ -350,7 +350,7 @@ describe('Edit variable', () => {
     expect(screen.getByTestId('edit-variable-value')).toHaveValue('123');
 
     mockFetchVariable().withSuccess(
-      createVariable({isPreview: false, value: '123456'})
+      createVariable({isPreview: false, value: '123456'}),
     );
 
     await user.click(screen.getByTestId('edit-variable-value'));
@@ -360,7 +360,7 @@ describe('Edit variable', () => {
     jest.runOnlyPendingTimers();
 
     await waitForElementToBeRemoved(() =>
-      screen.getByTestId('variable-backdrop')
+      screen.getByTestId('variable-backdrop'),
     );
 
     expect(screen.getByTestId('edit-variable-value')).toHaveValue('123456');
@@ -391,13 +391,13 @@ describe('Edit variable', () => {
     expect(screen.getByTestId('edit-variable-value')).toHaveValue('123');
 
     mockFetchVariable().withSuccess(
-      createVariable({isPreview: false, value: '123456'})
+      createVariable({isPreview: false, value: '123456'}),
     );
 
     await user.click(screen.getByTitle(/open json editor modal/i));
 
     await waitFor(() =>
-      expect(screen.getByTestId('monaco-editor')).toHaveValue('123456')
+      expect(screen.getByTestId('monaco-editor')).toHaveValue('123456'),
     );
   });
 
@@ -420,13 +420,15 @@ describe('Edit variable', () => {
     await user.click(screen.getByTitle(/open json editor modal/i));
 
     expect(
-      within(screen.getByTestId('modal')).getByRole('button', {name: /cancel/i})
+      within(screen.getByTestId('modal')).getByRole('button', {
+        name: /cancel/i,
+      }),
     ).toBeEnabled();
     expect(
-      within(screen.getByTestId('modal')).getByRole('button', {name: /apply/i})
+      within(screen.getByTestId('modal')).getByRole('button', {name: /apply/i}),
     ).toBeEnabled();
     expect(
-      within(screen.getByTestId('modal')).getByTestId('json-editor-container')
+      within(screen.getByTestId('modal')).getByTestId('json-editor-container'),
     ).toBeInTheDocument();
   });
 });

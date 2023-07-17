@@ -15,7 +15,7 @@ describe('selectable table', () => {
       <SortableTable {...mockProps} {...mockSelectableProps} state="loading" />,
       {
         wrapper: Wrapper,
-      }
+      },
     );
     expect(screen.getByTestId('instances-loader')).toBeInTheDocument();
     expect(screen.getByText('Column Header 1')).toBeInTheDocument();
@@ -24,10 +24,10 @@ describe('selectable table', () => {
     expect(screen.queryByTestId('table-skeleton')).not.toBeInTheDocument();
     expect(screen.queryByText('List is empty')).not.toBeInTheDocument();
     expect(
-      screen.queryByText('Data could not be fetched')
+      screen.queryByText('Data could not be fetched'),
     ).not.toBeInTheDocument();
     expect(
-      screen.getByRole('checkbox', {name: 'Select all instances'})
+      screen.getByRole('checkbox', {name: 'Select all instances'}),
     ).toBeDisabled();
   });
 
@@ -41,7 +41,7 @@ describe('selectable table', () => {
       />,
       {
         wrapper: Wrapper,
-      }
+      },
     );
     expect(screen.queryByTestId('instances-loader')).not.toBeInTheDocument();
     expect(screen.getByText('Column Header 1')).toBeInTheDocument();
@@ -50,10 +50,10 @@ describe('selectable table', () => {
     expect(screen.queryByTestId('table-skeleton')).not.toBeInTheDocument();
     expect(screen.getByText('List is empty')).toBeInTheDocument();
     expect(
-      screen.queryByText('Data could not be fetched')
+      screen.queryByText('Data could not be fetched'),
     ).not.toBeInTheDocument();
     expect(
-      screen.getByRole('checkbox', {name: 'Select all instances'})
+      screen.getByRole('checkbox', {name: 'Select all instances'}),
     ).toBeDisabled();
   });
 
@@ -67,7 +67,7 @@ describe('selectable table', () => {
       />,
       {
         wrapper: Wrapper,
-      }
+      },
     );
     expect(screen.queryByTestId('instances-loader')).not.toBeInTheDocument();
     expect(screen.getByText('Column Header 1')).toBeInTheDocument();
@@ -77,7 +77,7 @@ describe('selectable table', () => {
     expect(screen.queryByText('List is empty')).not.toBeInTheDocument();
     expect(screen.getByText('Data could not be fetched')).toBeInTheDocument();
     expect(
-      screen.getByRole('checkbox', {name: 'Select all instances'})
+      screen.getByRole('checkbox', {name: 'Select all instances'}),
     ).toBeDisabled();
   });
 
@@ -91,7 +91,7 @@ describe('selectable table', () => {
       />,
       {
         wrapper: Wrapper,
-      }
+      },
     );
     expect(screen.queryByTestId('instances-loader')).not.toBeInTheDocument();
     expect(screen.getByText('Column Header 1')).toBeInTheDocument();
@@ -99,10 +99,10 @@ describe('selectable table', () => {
     expect(screen.getByTestId('table-skeleton')).toBeInTheDocument();
     expect(screen.queryByText('List is empty')).not.toBeInTheDocument();
     expect(
-      screen.queryByText('Data could not be fetched')
+      screen.queryByText('Data could not be fetched'),
     ).not.toBeInTheDocument();
     expect(
-      screen.queryByRole('checkbox', {name: 'Select all instances'})
+      screen.queryByRole('checkbox', {name: 'Select all instances'}),
     ).not.toBeInTheDocument();
   });
 
@@ -111,7 +111,7 @@ describe('selectable table', () => {
       <SortableTable {...mockProps} {...mockSelectableProps} state="content" />,
       {
         wrapper: Wrapper,
-      }
+      },
     );
 
     expect(screen.queryByTestId('instances-loader')).not.toBeInTheDocument();
@@ -121,13 +121,13 @@ describe('selectable table', () => {
     expect(screen.queryByTestId('instances-loader')).not.toBeInTheDocument();
     expect(screen.queryByText('List is empty')).not.toBeInTheDocument();
     expect(
-      screen.queryByText('Data could not be fetched')
+      screen.queryByText('Data could not be fetched'),
     ).not.toBeInTheDocument();
     expect(
-      screen.getByRole('checkbox', {name: 'Select all instances'})
+      screen.getByRole('checkbox', {name: 'Select all instances'}),
     ).toBeEnabled();
     expect(
-      screen.getAllByRole('checkbox', {name: /Select instance/})
+      screen.getAllByRole('checkbox', {name: /Select instance/}),
     ).toHaveLength(4);
   });
 });

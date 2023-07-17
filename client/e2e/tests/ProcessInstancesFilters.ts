@@ -27,7 +27,7 @@ fixture('Process Instances Filters')
       .click(
         screen.queryByRole('link', {
           name: /processes/i,
-        })
+        }),
       );
   });
 
@@ -40,13 +40,13 @@ test('Apply Filters', async (t) => {
   await ProcessesPage.typeText(
     ProcessesPage.Filters.parentInstanceId.field,
     callActivityProcessInstance.processInstanceKey,
-    {paste: true}
+    {paste: true},
   );
 
   await t
     .expect(
       screen.queryByText('There are no Instances matching this filter set')
-        .exists
+        .exists,
     )
     .ok();
 
@@ -60,17 +60,17 @@ test('Apply Filters', async (t) => {
     .expect(
       await within(screen.queryByTestId('data-list'))
         .getAllByRole('link', {description: /View parent instance/i})
-        .nth(0).innerText
+        .nth(0).innerText,
     )
     .eql(callActivityProcessInstance.processInstanceKey);
 
   const endDate = await within(screen.queryByTestId('data-list')).queryByTestId(
-    'end-time'
+    'end-time',
   ).innerText;
   const day = new Date(endDate).getDate();
 
   const rowCount = within(screen.queryByTestId('data-list')).getAllByRole(
-    'row'
+    'row',
   ).count;
 
   await t.click(ProcessesPage.resetFiltersButton);
@@ -110,7 +110,7 @@ test('Apply Filters', async (t) => {
     "failed to evaluate expression 'nonExistingClientId': no variable found for name 'nonExistingClientId'",
     {
       paste: true,
-    }
+    },
   );
 
   await t.expect(rowCount).lt(currentRowCount);
@@ -129,7 +129,7 @@ test('Apply Filters', async (t) => {
   await t
     .expect(
       screen.queryByText('There are no Instances matching this filter set')
-        .exists
+        .exists,
     )
     .ok();
 
@@ -137,7 +137,7 @@ test('Apply Filters', async (t) => {
   await t
     .expect(
       screen.queryByText('There are no Instances matching this filter set')
-        .exists
+        .exists,
     )
     .notOk()
     .expect(ProcessesPage.Filters.errorMessage.field.exists)
@@ -163,13 +163,13 @@ test('Interaction between diagram and filters', async (t) => {
   await t
     .expect(
       screen.queryByText('There are no Instances matching this filter set')
-        .exists
+        .exists,
     )
     .ok();
 
   // select another flow node from the diagram
   await t.click(
-    within(screen.queryByTestId('diagram')).queryByText(/always fails/i)
+    within(screen.queryByTestId('diagram')).queryByText(/always fails/i),
   );
 
   await t
@@ -181,7 +181,7 @@ test('Interaction between diagram and filters', async (t) => {
     .click(within(screen.queryByTestId('diagram')).queryByText(/always fails/i))
     .expect(
       screen.queryByText('There are no Instances matching this filter set')
-        .exists
+        .exists,
     )
     .notOk();
 

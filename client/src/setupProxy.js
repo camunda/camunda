@@ -14,6 +14,6 @@ module.exports = function (app) {
     [`${BASENAME}/api`, `${BASENAME}/client-config.js`],
     createProxyMiddleware({
       target: `http://localhost:${process.env.IS_E2E ? '8081' : '8080'}`,
-    })
+    }),
   );
 };

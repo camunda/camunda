@@ -15,7 +15,7 @@ import {getNewVariablePrefix} from './getNewVariablePrefix';
 import {VariableFormValues} from 'modules/types/variables';
 
 const validateNameCharacters: FieldValidator<string | undefined> = (
-  variableName = ''
+  variableName = '',
 ) => {
   if (variableName.includes('"') || variableName.includes(' ')) {
     return ERRORS.INVALID_NAME;
@@ -25,7 +25,7 @@ const validateNameCharacters: FieldValidator<string | undefined> = (
 const validateModifiedNameComplete: FieldValidator<string | undefined> = (
   variableName = '',
   allValues: {value?: string} | undefined,
-  meta
+  meta,
 ) => {
   const fieldName = meta?.name ?? '';
 
@@ -42,14 +42,14 @@ const validateModifiedNameNotDuplicate: FieldValidator<string | undefined> = (
   allValues:
     | {value?: string; newVariables?: Array<VariableFormValues>}
     | undefined,
-  meta
+  meta,
 ) => {
   if (allValues?.newVariables === undefined) {
     return;
   }
 
   const isVariableDuplicate = variablesStore.state.items.some(
-    ({name}) => name === variableName
+    ({name}) => name === variableName,
   );
 
   if (meta?.dirty && isVariableDuplicate) {
@@ -84,20 +84,20 @@ const validateNameComplete: FieldValidator<string | undefined> =
       }
 
       const isVariableDuplicate = variablesStore.state.items.some(
-        ({name}) => name === variableName
+        ({name}) => name === variableName,
       );
 
       if (meta?.dirty && isVariableDuplicate) {
         return ERRORS.DUPLICATE_NAME;
       }
     },
-    VALIDATION_DELAY
+    VALIDATION_DELAY,
   );
 
 const validateNameNotDuplicate: FieldValidator<string | undefined> =
   promisifyValidator((variableName = '', _, meta) => {
     const isVariableDuplicate = variablesStore.state.items.some(
-      ({name}) => name === variableName
+      ({name}) => name === variableName,
     );
 
     if (meta?.dirty && isVariableDuplicate) {
@@ -119,7 +119,7 @@ const validateValueComplete: FieldValidator<string | undefined> =
 
       return ERRORS.EMPTY_VALUE;
     },
-    VALIDATION_DELAY
+    VALIDATION_DELAY,
   );
 
 const validateValueValid: FieldValidator<string | undefined> =
@@ -134,7 +134,7 @@ const validateValueValid: FieldValidator<string | undefined> =
 const validateModifiedValueComplete: FieldValidator<string | undefined> = (
   variableValue = '',
   allValues: {name?: string} | undefined,
-  meta
+  meta,
 ) => {
   if (!meta?.visited) {
     return undefined;
@@ -153,7 +153,7 @@ const validateModifiedValueComplete: FieldValidator<string | undefined> = (
 };
 
 const validateModifiedValueValid: FieldValidator<string | undefined> = (
-  variableValue = ''
+  variableValue = '',
 ) => {
   if (variableValue === '' || isValidJSON(variableValue)) {
     return;

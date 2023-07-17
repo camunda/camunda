@@ -8,7 +8,7 @@
 import {requestAndParse} from 'modules/request';
 
 const fetchProcessInstance = async (
-  processInstanceId: ProcessInstanceEntity['id']
+  processInstanceId: ProcessInstanceEntity['id'],
 ) => {
   return requestAndParse<ProcessInstanceEntity>({
     url: `/api/process-instances/${processInstanceId}`,

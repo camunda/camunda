@@ -28,7 +28,7 @@ describe('ColumnHeader', () => {
     });
     expect(screen.getByText('Start Date')).toBeInTheDocument();
     expect(
-      screen.getByRole('button', {name: 'Sort by Start Date'})
+      screen.getByRole('button', {name: 'Sort by Start Date'}),
     ).toBeInTheDocument();
   });
 
@@ -38,7 +38,7 @@ describe('ColumnHeader', () => {
     });
     expect(screen.getByText('Start Date')).toBeInTheDocument();
     expect(
-      screen.queryByRole('button', {name: 'Sort by Start Date'})
+      screen.queryByRole('button', {name: 'Sort by Start Date'}),
     ).not.toBeInTheDocument();
   });
 
@@ -52,7 +52,7 @@ describe('ColumnHeader', () => {
     await user.click(screen.getByRole('button', {name: 'Sort by Version'}));
 
     expect(screen.getByTestId('search')).toHaveTextContent(
-      /^\?sort=version%2Bdesc$/
+      /^\?sort=version%2Bdesc$/,
     );
   });
 
@@ -61,7 +61,7 @@ describe('ColumnHeader', () => {
       <ColumnHeader label="Version" sortKey="version" isDefault />,
       {
         wrapper: Wrapper,
-      }
+      },
     );
 
     expect(screen.getByTestId('search')).toBeEmptyDOMElement();
@@ -69,7 +69,7 @@ describe('ColumnHeader', () => {
     await user.click(screen.getByRole('button', {name: 'Sort by Version'}));
 
     expect(screen.getByTestId('search')).toHaveTextContent(
-      /^\?sort=version%2Basc$/
+      /^\?sort=version%2Basc$/,
     );
   });
 });

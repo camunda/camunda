@@ -32,7 +32,7 @@ describe('<Result />', () => {
     render(<Result />, {wrapper: ThemeProvider});
 
     expect(
-      await screen.findByText(/data could not be fetched/i)
+      await screen.findByText(/data could not be fetched/i),
     ).toBeInTheDocument();
   });
 
@@ -48,7 +48,7 @@ describe('<Result />', () => {
     expect(screen.getByTestId('result-loading-spinner')).toBeInTheDocument();
 
     await waitForElementToBeRemoved(() =>
-      screen.getByTestId('result-loading-spinner')
+      screen.getByTestId('result-loading-spinner'),
     );
   });
 
@@ -60,7 +60,7 @@ describe('<Result />', () => {
     render(<Result />, {wrapper: ThemeProvider});
 
     expect(
-      await screen.findByTestId('results-json-viewer')
+      await screen.findByTestId('results-json-viewer'),
     ).toBeInTheDocument();
   });
 
@@ -73,8 +73,8 @@ describe('<Result />', () => {
 
     expect(
       await screen.findByText(
-        'No result available because the evaluation failed'
-      )
+        'No result available because the evaluation failed',
+      ),
     ).toBeInTheDocument();
   });
 });

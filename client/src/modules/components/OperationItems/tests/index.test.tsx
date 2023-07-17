@@ -17,7 +17,7 @@ describe('OperationItems', () => {
       <OperationItems>
         <OperationItem type="RESOLVE_INCIDENT" onClick={noop} />
       </OperationItems>,
-      {wrapper: ThemeProvider}
+      {wrapper: ThemeProvider},
     );
 
     expect(screen.getByRole('listitem')).toBeInTheDocument();

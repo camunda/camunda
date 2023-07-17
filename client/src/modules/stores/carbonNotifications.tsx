@@ -38,7 +38,7 @@ class Notifications {
   }
 
   displayNotification = (
-    notification: Omit<Notification, 'date' | 'id' | 'hideNotification'>
+    notification: Omit<Notification, 'date' | 'id' | 'hideNotification'>,
   ) => {
     const notificationId = `${Date.now()}${Math.random()}`;
     const hideNotification = () => {
@@ -92,7 +92,7 @@ class Notifications {
     const queuedNotification = this.#dequeueNotification();
 
     this.notifications = this.notifications.filter(
-      ({id}) => id !== notificationId
+      ({id}) => id !== notificationId,
     );
 
     if (queuedNotification !== undefined) {

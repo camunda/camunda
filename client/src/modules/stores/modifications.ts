@@ -130,7 +130,7 @@ class Modifications {
 
   startMovingToken = (
     sourceFlowNodeId: string,
-    sourceFlowNodeInstanceKey?: string
+    sourceFlowNodeInstanceKey?: string,
   ) => {
     this.state.status = 'moving-token';
     this.state.sourceFlowNodeIdForMoveOperation = sourceFlowNodeId;
@@ -154,10 +154,10 @@ class Modifications {
             (modification) =>
               (modification.operation === 'ADD_TOKEN' ||
                 modification.operation === 'MOVE_TOKEN') &&
-              Object.keys(modification.parentScopeIds).includes(flowNodeId)
+              Object.keys(modification.parentScopeIds).includes(flowNodeId),
           ) ||
           processInstanceDetailsStatisticsStore.getTotalRunningInstancesForFlowNode(
-            flowNodeId
+            flowNodeId,
           ) === 1;
 
         if (!hasExistingParentScopeId) {
@@ -166,18 +166,18 @@ class Modifications {
 
         return parentFlowNodeScopes;
       },
-      {}
+      {},
     );
   };
 
   generateScopeIdsInBetween = (
     targetFlowNodeId: string,
-    ancestorFlowNodeId: string
+    ancestorFlowNodeId: string,
   ) => {
     const flowNodesInBetween =
       processInstanceDetailsDiagramStore.getFlowNodesInBetween(
         targetFlowNodeId,
-        ancestorFlowNodeId
+        ancestorFlowNodeId,
       );
 
     return flowNodesInBetween.reduce<{[flowNodeId: string]: string}>(
@@ -185,7 +185,7 @@ class Modifications {
         flowNodeScopes[flowNodeId] = generateUniqueID();
         return flowNodeScopes;
       },
-      {}
+      {},
     );
   };
 
@@ -204,17 +204,17 @@ class Modifications {
       if (this.state.sourceFlowNodeInstanceKeyForMoveOperation === null) {
         affectedTokenCount =
           processInstanceDetailsStatisticsStore.getTotalRunningInstancesForFlowNode(
-            this.state.sourceFlowNodeIdForMoveOperation
+            this.state.sourceFlowNodeIdForMoveOperation,
           );
 
         visibleAffectedTokenCount =
           processInstanceDetailsStatisticsStore.getTotalRunningInstancesVisibleForFlowNode(
-            this.state.sourceFlowNodeIdForMoveOperation
+            this.state.sourceFlowNodeIdForMoveOperation,
           );
         newScopeCount = isMultiInstance(
           processInstanceDetailsDiagramStore.businessObjects[
             this.state.sourceFlowNodeIdForMoveOperation
-          ]
+          ],
         )
           ? 1
           : affectedTokenCount;
@@ -238,7 +238,7 @@ class Modifications {
 
   finishAddingToken = (
     ancestorElementId?: string,
-    ancestorElementInstanceKey?: string
+    ancestorElementInstanceKey?: string,
   ) => {
     if (
       ancestorElementInstanceKey !== undefined &&
@@ -253,7 +253,7 @@ class Modifications {
           flowNode: {
             id: this.state.sourceFlowNodeIdForAddOperation,
             name: processInstanceDetailsDiagramStore.getFlowNodeName(
-              this.state.sourceFlowNodeIdForAddOperation
+              this.state.sourceFlowNodeIdForAddOperation,
             ),
           },
           affectedTokenCount: 1,
@@ -264,7 +264,7 @@ class Modifications {
           },
           parentScopeIds: modificationsStore.generateScopeIdsInBetween(
             this.state.sourceFlowNodeIdForAddOperation,
-            ancestorElementId
+            ancestorElementId,
           ),
         },
       });
@@ -301,7 +301,7 @@ class Modifications {
   };
 
   removeFlowNodeModification = (
-    flowNodeModification: FlowNodeModificationPayload
+    flowNodeModification: FlowNodeModificationPayload,
   ) => {
     if (flowNodeModification.operation === 'ADD_TOKEN') {
       this.state.modifications = this.state.modifications.filter(
@@ -311,7 +311,7 @@ class Modifications {
             payload.flowNode.id === flowNodeModification.flowNode.id &&
             payload.operation === flowNodeModification.operation &&
             payload.scopeId === flowNodeModification.scopeId
-          )
+          ),
       );
     } else {
       this.state.modifications = this.state.modifications.filter(
@@ -322,7 +322,7 @@ class Modifications {
             payload.operation === flowNodeModification.operation &&
             payload.flowNodeInstanceKey ===
               flowNodeModification.flowNodeInstanceKey
-          )
+          ),
       );
     }
   };
@@ -331,12 +331,12 @@ class Modifications {
     scopeId: string,
     id: string,
     operation: 'ADD_VARIABLE' | 'EDIT_VARIABLE',
-    source: RemovedModificationSource
+    source: RemovedModificationSource,
   ) => {
     const lastModification = this.getLastVariableModification(
       scopeId,
       id,
-      operation
+      operation,
     );
 
     if (lastModification === undefined) {
@@ -350,7 +350,7 @@ class Modifications {
           payload.scopeId === lastModification.scopeId &&
           payload.id === lastModification.id &&
           payload.operation === lastModification.operation
-        )
+        ),
     );
 
     this.state.lastRemovedModification = {
@@ -395,7 +395,7 @@ class Modifications {
 
       const totalRunningInstancesCount =
         processInstanceDetailsStatisticsStore.getTotalRunningInstancesForFlowNode(
-          flowNode.id
+          flowNode.id,
         );
 
       if (operation === 'ADD_TOKEN') {
@@ -427,7 +427,7 @@ class Modifications {
         };
 
         targetFlowNode.newTokens += isMultiInstance(
-          processInstanceDetailsDiagramStore.businessObjects[flowNode.id]
+          processInstanceDetailsDiagramStore.businessObjects[flowNode.id],
         )
           ? 1
           : affectedTokenCount;
@@ -439,7 +439,7 @@ class Modifications {
         if (sourceFlowNode.areAllTokensCanceled) {
           // set cancel token counts for child elements if flow node has any
           const elementIds = getFlowElementIds(
-            processInstanceDetailsDiagramStore.businessObjects[flowNode.id]
+            processInstanceDetailsDiagramStore.businessObjects[flowNode.id],
           );
 
           let affectedChildTokenCount = 0;
@@ -450,11 +450,11 @@ class Modifications {
 
             childFlowNode.cancelledTokens =
               processInstanceDetailsStatisticsStore.getTotalRunningInstancesForFlowNode(
-                elementId
+                elementId,
               );
             childFlowNode.visibleCancelledTokens =
               processInstanceDetailsStatisticsStore.getTotalRunningInstancesVisibleForFlowNode(
-                elementId
+                elementId,
               );
             childFlowNode.areAllTokensCanceled = true;
 
@@ -474,13 +474,13 @@ class Modifications {
 
   hasPendingCancelOrMoveModification = (
     flowNodeId: string,
-    flowNodeInstanceKey?: string
+    flowNodeInstanceKey?: string,
   ) => {
     if (flowNodeInstanceKey !== undefined) {
       return this.flowNodeModifications.some(
         (modification) =>
           modification.operation !== 'ADD_TOKEN' &&
-          modification.flowNodeInstanceKey === flowNodeInstanceKey
+          modification.flowNodeInstanceKey === flowNodeInstanceKey,
       );
     }
 
@@ -489,7 +489,7 @@ class Modifications {
 
   get variableModifications() {
     function isVariableModification(
-      modification: Modification
+      modification: Modification,
     ): modification is VariableModification {
       const {type} = modification;
 
@@ -512,7 +512,7 @@ class Modifications {
 
   get flowNodeModifications() {
     function isFlowNodeModification(
-      modification: Modification
+      modification: Modification,
     ): modification is FlowNodeModification {
       const {type} = modification;
 
@@ -527,13 +527,13 @@ class Modifications {
   getLastVariableModification = (
     flowNodeInstanceId: string | null,
     id: string,
-    operation: 'ADD_VARIABLE' | 'EDIT_VARIABLE'
+    operation: 'ADD_VARIABLE' | 'EDIT_VARIABLE',
   ) => {
     return this.variableModifications.find(
       (modification) =>
         modification.operation === operation &&
         modification.scopeId === flowNodeInstanceId &&
-        modification.id === id
+        modification.id === id,
     );
   };
 
@@ -546,7 +546,7 @@ class Modifications {
       .filter(
         (modification) =>
           modification.operation === 'ADD_VARIABLE' &&
-          modification.scopeId === scopeId
+          modification.scopeId === scopeId,
       )
       .map(({name, newValue, id}) => ({
         name,
@@ -557,7 +557,7 @@ class Modifications {
 
   getVariableModificationsPerScope = (scopeId: string) => {
     const variableModifications = this.variableModifications.filter(
-      (modification) => modification.scopeId === scopeId
+      (modification) => modification.scopeId === scopeId,
     );
 
     if (variableModifications.length === 0) {
@@ -569,7 +569,7 @@ class Modifications {
         accumulator[name] = JSON.parse(newValue);
         return accumulator;
       },
-      {}
+      {},
     );
   };
 
@@ -592,7 +592,7 @@ class Modifications {
 
         return variableModifications;
       },
-      {}
+      {},
     );
   };
 
@@ -605,7 +605,7 @@ class Modifications {
 
       if (operation === 'ADD_TOKEN') {
         const variablesPerScope = this.getVariableModificationsPerScope(
-          payload.scopeId
+          payload.scopeId,
         );
 
         const variablesForParentScopes =
@@ -664,7 +664,7 @@ class Modifications {
         const variablesForParentScopes =
           this.setVariableModificationsForParentScopes(parentScopeIds);
         variablesForNewScopes = variablesForNewScopes.concat(
-          Object.values(parentScopeIds)
+          Object.values(parentScopeIds),
         );
 
         const allVariables = {...variablesForParentScopes};
@@ -733,7 +733,7 @@ class Modifications {
     const parentScope = this.flowNodeModifications.find(
       (modification) =>
         modification.operation !== 'CANCEL_TOKEN' &&
-        modification.parentScopeIds[flowNodeId] !== undefined
+        modification.parentScopeIds[flowNodeId] !== undefined,
     );
 
     if (parentScope !== undefined && 'parentScopeIds' in parentScope) {
@@ -781,11 +781,11 @@ class Modifications {
       flowNodeId,
       affectedTokenCount:
         processInstanceDetailsStatisticsStore.getTotalRunningInstancesForFlowNode(
-          flowNodeId
+          flowNodeId,
         ),
       visibleAffectedTokenCount:
         processInstanceDetailsStatisticsStore.getTotalRunningInstancesVisibleForFlowNode(
-          flowNodeId
+          flowNodeId,
         ),
     });
   };
@@ -812,14 +812,14 @@ class Modifications {
         flowNode: {
           id: sourceFlowNodeId,
           name: processInstanceDetailsDiagramStore.getFlowNodeName(
-            sourceFlowNodeId
+            sourceFlowNodeId,
           ),
         },
         flowNodeInstanceKey: sourceFlowNodeInstanceKey,
         targetFlowNode: {
           id: targetFlowNodeId,
           name: processInstanceDetailsDiagramStore.getFlowNodeName(
-            targetFlowNodeId
+            targetFlowNodeId,
           ),
         },
         affectedTokenCount,
@@ -843,7 +843,7 @@ class Modifications {
     const addTokenModification = this.flowNodeModifications.find(
       (modification) =>
         modification.operation === 'ADD_TOKEN' &&
-        modification.flowNode.id === flowNodeId
+        modification.flowNode.id === flowNodeId,
     );
 
     if (
@@ -856,7 +856,7 @@ class Modifications {
     const moveTokenModification = this.flowNodeModifications.find(
       (modification) =>
         modification.operation === 'MOVE_TOKEN' &&
-        modification.targetFlowNode.id === flowNodeId
+        modification.targetFlowNode.id === flowNodeId,
     );
 
     if (

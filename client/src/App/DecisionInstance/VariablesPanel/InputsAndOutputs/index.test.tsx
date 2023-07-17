@@ -41,7 +41,7 @@ describe('<InputsAndOutputs />', () => {
     });
 
     await waitForElementToBeRemoved(() =>
-      screen.getByTestId('inputs-skeleton')
+      screen.getByTestId('inputs-skeleton'),
     );
 
     expect(screen.getByRole('heading', {name: /inputs/i})).toBeInTheDocument();
@@ -59,7 +59,7 @@ describe('<InputsAndOutputs />', () => {
     expect(screen.getByTestId('outputs-skeleton')).toBeInTheDocument();
 
     await waitForElementToBeRemoved(() =>
-      screen.getByTestId('inputs-skeleton')
+      screen.getByTestId('inputs-skeleton'),
     );
 
     expect(screen.queryByTestId('inputs-skeleton')).not.toBeInTheDocument();
@@ -75,18 +75,18 @@ describe('<InputsAndOutputs />', () => {
 
     expect(
       await screen.findByText(
-        'No output available because the evaluation failed'
-      )
+        'No output available because the evaluation failed',
+      ),
     ).toBeInTheDocument();
 
     expect(
-      screen.queryByText('No input available because the evaluation failed')
+      screen.queryByText('No input available because the evaluation failed'),
     ).not.toBeInTheDocument();
   });
 
   it('should show empty message for failed decision instances without variables', async () => {
     mockFetchDecisionInstance().withSuccess(
-      assignApproverGroupWithoutVariables
+      assignApproverGroupWithoutVariables,
     );
 
     decisionInstanceDetailsStore.fetchDecisionInstance('1');
@@ -95,12 +95,12 @@ describe('<InputsAndOutputs />', () => {
 
     expect(
       await screen.findByText(
-        'No output available because the evaluation failed'
-      )
+        'No output available because the evaluation failed',
+      ),
     ).toBeInTheDocument();
 
     expect(
-      screen.getByText('No input available because the evaluation failed')
+      screen.getByText('No input available because the evaluation failed'),
     ).toBeInTheDocument();
   });
 
@@ -112,13 +112,13 @@ describe('<InputsAndOutputs />', () => {
     render(<InputsAndOutputs />, {wrapper: Wrapper});
 
     await waitForElementToBeRemoved(() =>
-      screen.getByTestId('inputs-skeleton')
+      screen.getByTestId('inputs-skeleton'),
     );
 
     const [inputsTable, outputsTable] = screen.getAllByRole('table');
 
     const [inputsNameColumnHeader, inputsValueColumnHeader] = within(
-      inputsTable!
+      inputsTable!,
     ).getAllByRole('columnheader');
     const [
       outputsRuleColumnHeader,
@@ -126,16 +126,16 @@ describe('<InputsAndOutputs />', () => {
       outputsValueColumnHeader,
     ] = within(outputsTable!).getAllByRole('columnheader');
     const [, inputsFirstTableBodyRow] = within(inputsTable!).getAllByRole(
-      'row'
+      'row',
     );
     const [, outputsFirstTableBodyRow] = within(outputsTable!).getAllByRole(
-      'row'
+      'row',
     );
     const [inputsNameCell, inputsValueCell] = within(
-      inputsFirstTableBodyRow!
+      inputsFirstTableBodyRow!,
     ).getAllByRole('cell');
     const [outputsRuleCell, outputsNameCell, outputsValueCell] = within(
-      outputsFirstTableBodyRow!
+      outputsFirstTableBodyRow!,
     ).getAllByRole('cell');
 
     expect(inputsNameColumnHeader).toBeInTheDocument();
@@ -159,7 +159,7 @@ describe('<InputsAndOutputs />', () => {
     render(<InputsAndOutputs />, {wrapper: Wrapper});
 
     expect(
-      await screen.findAllByText(/data could not be fetched/i)
+      await screen.findAllByText(/data could not be fetched/i),
     ).toHaveLength(2);
   });
 });

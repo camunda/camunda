@@ -59,7 +59,7 @@ describe('InstancesByProcess', () => {
     expect(screen.getByTestId('skeleton')).toBeInTheDocument();
 
     expect(
-      await screen.findByTestId('instances-by-process')
+      await screen.findByTestId('instances-by-process'),
     ).toBeInTheDocument();
 
     expect(screen.queryByTestId('skeleton')).not.toBeInTheDocument();
@@ -74,7 +74,7 @@ describe('InstancesByProcess', () => {
     });
 
     expect(
-      await screen.findByText('Data could not be fetched')
+      await screen.findByText('Data could not be fetched'),
     ).toBeInTheDocument();
   });
 
@@ -87,7 +87,7 @@ describe('InstancesByProcess', () => {
     });
 
     expect(
-      await screen.findByText('Data could not be fetched')
+      await screen.findByText('Data could not be fetched'),
     ).toBeInTheDocument();
   });
 
@@ -100,12 +100,12 @@ describe('InstancesByProcess', () => {
     });
 
     expect(
-      await screen.findByText('Start by deploying a process')
+      await screen.findByText('Start by deploying a process'),
     ).toBeInTheDocument();
     expect(
       screen.getByText(
-        'There are no processes deployed. Deploy and start a process from our Modeler, then come back here to track its progress.'
-      )
+        'There are no processes deployed. Deploy and start a process from our Modeler, then come back here to track its progress.',
+      ),
     ).toBeInTheDocument();
   });
 
@@ -118,7 +118,7 @@ describe('InstancesByProcess', () => {
     });
 
     const withinIncident = within(
-      await screen.findByTestId('incident-byProcess-0')
+      await screen.findByTestId('incident-byProcess-0'),
     );
 
     const processLink = withinIncident.getByRole('link', {
@@ -127,18 +127,18 @@ describe('InstancesByProcess', () => {
 
     expect(processLink).toHaveAttribute(
       'href',
-      '/processes?process=orderProcess&version=all&active=true&incidents=true'
+      '/processes?process=orderProcess&version=all&active=true&incidents=true',
     );
 
     expect(screen.getByTestId('incident-instances-badge')).toHaveTextContent(
-      '65'
+      '65',
     );
     expect(screen.getByTestId('active-instances-badge')).toHaveTextContent(
-      '136'
+      '136',
     );
 
     const expandButton = withinIncident.getByTitle(
-      'Expand 201 Instances of Process Order process'
+      'Expand 201 Instances of Process Order process',
     );
 
     // this button click has no effect (check useEffect in Collapse component)
@@ -149,19 +149,19 @@ describe('InstancesByProcess', () => {
     });
 
     expect(
-      within(firstVersion).getByTestId('incident-instances-badge')
+      within(firstVersion).getByTestId('incident-instances-badge'),
     ).toHaveTextContent('37');
     expect(
-      within(firstVersion).getByTestId('active-instances-badge')
+      within(firstVersion).getByTestId('active-instances-badge'),
     ).toHaveTextContent('5');
     expect(
       within(firstVersion).getByText(
-        'First Version – 42 Instances in Version 1'
-      )
+        'First Version – 42 Instances in Version 1',
+      ),
     ).toBeInTheDocument();
     expect(firstVersion).toHaveAttribute(
       'href',
-      '/processes?process=mockProcess&version=1&active=true&incidents=true'
+      '/processes?process=mockProcess&version=1&active=true&incidents=true',
     );
 
     const secondVersion = screen.getByRole('link', {
@@ -169,19 +169,19 @@ describe('InstancesByProcess', () => {
     });
 
     expect(
-      within(secondVersion).getByTestId('incident-instances-badge')
+      within(secondVersion).getByTestId('incident-instances-badge'),
     ).toHaveTextContent('37');
     expect(
-      within(secondVersion).getByTestId('active-instances-badge')
+      within(secondVersion).getByTestId('active-instances-badge'),
     ).toHaveTextContent('5');
     expect(
       within(secondVersion).getByText(
-        'Second Version – 42 Instances in Version 2'
-      )
+        'Second Version – 42 Instances in Version 2',
+      ),
     ).toBeInTheDocument();
     expect(secondVersion).toHaveAttribute(
       'href',
-      '/processes?process=mockProcess&version=2&active=true&incidents=true'
+      '/processes?process=mockProcess&version=2&active=true&incidents=true',
     );
   });
 
@@ -194,15 +194,15 @@ describe('InstancesByProcess', () => {
     });
 
     const withinIncident = within(
-      await screen.findByTestId('incident-byProcess-0')
+      await screen.findByTestId('incident-byProcess-0'),
     );
 
     expect(
-      withinIncident.queryByTestId('expand-button')
+      withinIncident.queryByTestId('expand-button'),
     ).not.toBeInTheDocument();
 
     expect(
-      withinIncident.getByText('loanProcess – 138 Instances in 1 Version')
+      withinIncident.getByText('loanProcess – 138 Instances in 1 Version'),
     ).toBeInTheDocument();
 
     const processLink = withinIncident.getByRole('link', {
@@ -211,14 +211,14 @@ describe('InstancesByProcess', () => {
 
     expect(processLink).toHaveAttribute(
       'href',
-      '/processes?process=loanProcess&version=1&active=true&incidents=true'
+      '/processes?process=loanProcess&version=1&active=true&incidents=true',
     );
 
     expect(screen.getByTestId('incident-instances-badge')).toHaveTextContent(
-      '16'
+      '16',
     );
     expect(screen.getByTestId('active-instances-badge')).toHaveTextContent(
-      '122'
+      '122',
     );
   });
 
@@ -234,7 +234,7 @@ describe('InstancesByProcess', () => {
     expect(panelStatesStore.state.isFiltersCollapsed).toBe(true);
 
     const withinIncident = within(
-      await screen.findByTestId('incident-byProcess-0')
+      await screen.findByTestId('incident-byProcess-0'),
     );
 
     const processLink = withinIncident.getByRole('link', {
@@ -245,8 +245,8 @@ describe('InstancesByProcess', () => {
 
     await waitFor(() =>
       expect(screen.getByTestId('search')).toHaveTextContent(
-        /^\?process=loanProcess&version=1&active=true&incidents=true$/
-      )
+        /^\?process=loanProcess&version=1&active=true&incidents=true$/,
+      ),
     );
     expect(panelStatesStore.state.isFiltersCollapsed).toBe(false);
 
@@ -266,11 +266,11 @@ describe('InstancesByProcess', () => {
     });
 
     const withinIncident = within(
-      await screen.findByTestId('incident-byProcess-0')
+      await screen.findByTestId('incident-byProcess-0'),
     );
 
     expect(
-      withinIncident.getByText('loanProcess – 138 Instances in 1 Version')
+      withinIncident.getByText('loanProcess – 138 Instances in 1 Version'),
     ).toBeInTheDocument();
 
     mockFetchProcessInstancesByName().withSuccess([
@@ -281,8 +281,8 @@ describe('InstancesByProcess', () => {
 
     expect(
       await withinIncident.findByText(
-        'loanProcess – 158 Instances in 1 Version'
-      )
+        'loanProcess – 158 Instances in 1 Version',
+      ),
     ).toBeInTheDocument();
 
     jest.clearAllTimers();
@@ -297,7 +297,7 @@ describe('InstancesByProcess', () => {
         c8Links: {
           modeler: 'https://link-to-modeler',
         },
-      })
+      }),
     );
     processInstancesByNameStore.getProcessInstancesByName();
 
@@ -306,11 +306,11 @@ describe('InstancesByProcess', () => {
     });
 
     expect(
-      await screen.findByRole('button', {name: 'Go to Modeler'})
+      await screen.findByRole('button', {name: 'Go to Modeler'}),
     ).toBeInTheDocument();
 
     expect(
-      screen.getByRole('button', {name: 'Go to Modeler'}).closest('a')
+      screen.getByRole('button', {name: 'Go to Modeler'}).closest('a'),
     ).toHaveAttribute('href', 'https://link-to-modeler');
   });
 
@@ -325,7 +325,7 @@ describe('InstancesByProcess', () => {
     });
 
     expect(
-      screen.queryByRole('button', {name: 'Go to Modeler'})
+      screen.queryByRole('button', {name: 'Go to Modeler'}),
     ).not.toBeInTheDocument();
   });
 });

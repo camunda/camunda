@@ -19,7 +19,7 @@ const applyBatchOperation = async (
     ids: string[];
     incidents?: boolean;
     running?: boolean;
-  }
+  },
 ) => {
   return requestAndParse<BatchOperationDto>({
     url: '/api/process-instances/batch-operation',
@@ -39,7 +39,7 @@ const applyOperation = async (
     variableScopeId?: string | undefined;
     variableValue?: string;
     incidentId?: string;
-  }
+  },
 ) => {
   return requestAndParse<BatchOperationDto>({
     url: `/api/process-instances/${instanceId}/operation`,

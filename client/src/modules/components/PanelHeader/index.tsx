@@ -28,7 +28,7 @@ const PanelHeader = forwardRef<HTMLDivElement, Props>(
         {children}
       </Container>
     );
-  }
+  },
 );
 
 export {PanelHeader};

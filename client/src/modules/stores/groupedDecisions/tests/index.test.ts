@@ -37,7 +37,7 @@ describe('groupedDecisionsStore', () => {
       groupedDecisionsStore.getDecisionDefinitionId({
         decisionId: 'invoice-assign-approver',
         version: 1,
-      })
+      }),
     ).toEqual('0');
   });
 
@@ -50,7 +50,7 @@ describe('groupedDecisionsStore', () => {
 
     expect(getDecisionName(firstDecision.decisionId)).toBe(firstDecision.name);
     expect(getDecisionName(secondDecision.decisionId)).toBe(
-      secondDecision.decisionId
+      secondDecision.decisionId,
     );
     expect(getDecisionName(thirdDecision.decisionId)).toBe(thirdDecision.name);
     expect(getDecisionName('invalidId')).toBeUndefined();
@@ -62,7 +62,7 @@ describe('groupedDecisionsStore', () => {
       groupedDecisionsStore.getDecisionDefinitionId({
         decisionId: 'invalidDecisionId',
         version: 1,
-      })
+      }),
     ).toEqual(null);
   });
 
@@ -95,13 +95,13 @@ describe('groupedDecisionsStore', () => {
     const [version2, version1] = firstDecision.decisions;
 
     expect(
-      groupedDecisionsStore.decisionVersionsById['invoice-assign-approver']
+      groupedDecisionsStore.decisionVersionsById['invoice-assign-approver'],
     ).toEqual([version1, version2]);
     expect(
-      groupedDecisionsStore.decisionVersionsById['invoiceClassification']
+      groupedDecisionsStore.decisionVersionsById['invoiceClassification'],
     ).toEqual(secondDecision.decisions);
     expect(
-      groupedDecisionsStore.decisionVersionsById['calc-key-figures']
+      groupedDecisionsStore.decisionVersionsById['calc-key-figures'],
     ).toEqual(thirdDecision.decisions);
   });
 
@@ -110,20 +110,20 @@ describe('groupedDecisionsStore', () => {
       1,
     ]);
     expect(
-      groupedDecisionsStore.getVersions('invoice-assign-approver')
+      groupedDecisionsStore.getVersions('invoice-assign-approver'),
     ).toEqual([1, 2]);
     expect(groupedDecisionsStore.getVersions('invalidDecisionId')).toEqual([]);
   });
 
   it('should get default version', () => {
     expect(
-      groupedDecisionsStore.getDefaultVersion('invoiceClassification')
+      groupedDecisionsStore.getDefaultVersion('invoiceClassification'),
     ).toBe(1);
     expect(
-      groupedDecisionsStore.getDefaultVersion('invoice-assign-approver')
+      groupedDecisionsStore.getDefaultVersion('invoice-assign-approver'),
     ).toBe(2);
     expect(
-      groupedDecisionsStore.getDefaultVersion('invalidDecisionId')
+      groupedDecisionsStore.getDefaultVersion('invalidDecisionId'),
     ).toBeUndefined();
   });
 });

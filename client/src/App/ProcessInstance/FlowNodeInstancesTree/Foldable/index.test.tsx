@@ -27,7 +27,7 @@ describe('<Foldable />', () => {
           {mockContent}
         </Summary>
       </Foldable>,
-      {wrapper: ThemeProvider}
+      {wrapper: ThemeProvider},
     );
 
     expect(screen.getByText(mockContent)).toBeInTheDocument();
@@ -48,7 +48,7 @@ describe('<Foldable />', () => {
           {mockContent}
         </Summary>
       </Foldable>,
-      {wrapper: ThemeProvider}
+      {wrapper: ThemeProvider},
     );
 
     await user.click(screen.getByText(mockContent));
@@ -73,7 +73,7 @@ describe('<Foldable />', () => {
         </Summary>
         <Details>{mockDetails}</Details>
       </Foldable>,
-      {wrapper: ThemeProvider}
+      {wrapper: ThemeProvider},
     );
 
     expect(screen.getByText(mockContent)).toBeInTheDocument();
@@ -96,7 +96,7 @@ describe('<Foldable />', () => {
         </Summary>
         <Details>{mockDetails}</Details>
       </Foldable>,
-      {wrapper: ThemeProvider}
+      {wrapper: ThemeProvider},
     );
 
     expect(screen.getByText(mockContent)).toBeInTheDocument();

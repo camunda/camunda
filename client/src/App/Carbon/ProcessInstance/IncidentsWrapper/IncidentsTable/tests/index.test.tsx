@@ -104,44 +104,44 @@ describe('IncidentsTable', () => {
     let withinRow = within(
       screen.getByRole('row', {
         name: new RegExp(firstIncident!.errorType.name),
-      })
+      }),
     );
 
     expect(
-      withinRow.getByText(firstIncident!.errorType.name)
+      withinRow.getByText(firstIncident!.errorType.name),
     ).toBeInTheDocument();
     expect(withinRow.getByText(firstIncident.flowNodeId)).toBeInTheDocument();
     expect(withinRow.getByText(firstIncident.jobId!)).toBeInTheDocument();
     expect(
-      withinRow.getByText(formatDate(firstIncident.creationTime) || '--')
+      withinRow.getByText(formatDate(firstIncident.creationTime) || '--'),
     ).toBeInTheDocument();
     expect(withinRow.getByText(firstIncident.errorMessage)).toBeInTheDocument();
     expect(
       withinRow.getByRole('link', {
         description: /view root cause instance/i,
-      })
+      }),
     ).toBeInTheDocument();
     expect(
-      withinRow.queryByRole('button', {name: 'Retry Incident'})
+      withinRow.queryByRole('button', {name: 'Retry Incident'}),
     ).not.toBeInTheDocument();
     withinRow = within(
       screen.getByRole('row', {
         name: new RegExp(secondIncident!.errorType.name),
-      })
+      }),
     );
     expect(
-      withinRow.getByText(secondIncident.errorType.name)
+      withinRow.getByText(secondIncident.errorType.name),
     ).toBeInTheDocument();
     expect(withinRow.getByText(secondIncident.flowNodeId)).toBeInTheDocument();
     expect(withinRow.getByText(secondIncident.jobId!)).toBeInTheDocument();
     expect(
-      withinRow.getByText(formatDate(secondIncident.creationTime) || '--')
+      withinRow.getByText(formatDate(secondIncident.creationTime) || '--'),
     ).toBeInTheDocument();
     expect(
-      withinRow.getByText(secondIncident.errorMessage)
+      withinRow.getByText(secondIncident.errorMessage),
     ).toBeInTheDocument();
     expect(
-      withinRow.getByRole('button', {name: 'Retry Incident'})
+      withinRow.getByRole('button', {name: 'Retry Incident'}),
     ).toBeInTheDocument();
   });
 
@@ -164,51 +164,51 @@ describe('IncidentsTable', () => {
     let withinRow = within(
       screen.getByRole('row', {
         name: new RegExp(firstIncident.errorType.name),
-      })
+      }),
     );
 
     expect(
-      withinRow.getByText(firstIncident.errorType.name)
+      withinRow.getByText(firstIncident.errorType.name),
     ).toBeInTheDocument();
     expect(withinRow.getByText(firstIncident.flowNodeId)).toBeInTheDocument();
     expect(withinRow.getByText(firstIncident.jobId!)).toBeInTheDocument();
     expect(
-      withinRow.getByText(formatDate(firstIncident.creationTime) || '--')
+      withinRow.getByText(formatDate(firstIncident.creationTime) || '--'),
     ).toBeInTheDocument();
     expect(withinRow.getByText(firstIncident.errorMessage)).toBeInTheDocument();
 
     expect(
       withinRow.getByRole('link', {
         description: /view root cause instance/i,
-      })
+      }),
     ).toBeInTheDocument();
     expect(
-      withinRow.queryByRole('button', {name: 'Retry Incident'})
+      withinRow.queryByRole('button', {name: 'Retry Incident'}),
     ).not.toBeInTheDocument();
 
     withinRow = within(
       screen.getByRole('row', {
         name: new RegExp(secondIncident.errorType.name),
-      })
+      }),
     );
     expect(
-      withinRow.getByText(secondIncident.errorType.name)
+      withinRow.getByText(secondIncident.errorType.name),
     ).toBeInTheDocument();
     expect(withinRow.getByText(secondIncident.flowNodeId)).toBeInTheDocument();
     expect(withinRow.getByText(secondIncident.jobId!)).toBeInTheDocument();
     expect(
-      withinRow.getByText(formatDate(secondIncident.creationTime) || '--')
+      withinRow.getByText(formatDate(secondIncident.creationTime) || '--'),
     ).toBeInTheDocument();
     expect(
-      withinRow.getByText(secondIncident.errorMessage)
+      withinRow.getByText(secondIncident.errorMessage),
     ).toBeInTheDocument();
     expect(
-      withinRow.queryByRole('button', {name: 'Retry Incident'})
+      withinRow.queryByRole('button', {name: 'Retry Incident'}),
     ).not.toBeInTheDocument();
     expect(
       withinRow.queryByRole('link', {
         description: /view root cause instance/i,
-      })
+      }),
     ).not.toBeInTheDocument();
   });
 
@@ -235,51 +235,51 @@ describe('IncidentsTable', () => {
     let withinRow = within(
       screen.getByRole('row', {
         name: new RegExp(firstIncident.errorType.name),
-      })
+      }),
     );
 
     expect(
-      withinRow.getByText(firstIncident.errorType.name)
+      withinRow.getByText(firstIncident.errorType.name),
     ).toBeInTheDocument();
     expect(withinRow.getByText(firstIncident.flowNodeId)).toBeInTheDocument();
     expect(withinRow.getByText(firstIncident.jobId!)).toBeInTheDocument();
     expect(
-      withinRow.getByText(formatDate(firstIncident.creationTime) || '--')
+      withinRow.getByText(formatDate(firstIncident.creationTime) || '--'),
     ).toBeInTheDocument();
     expect(withinRow.getByText(firstIncident.errorMessage)).toBeInTheDocument();
 
     expect(
       withinRow.getByRole('link', {
         description: /view root cause instance/i,
-      })
+      }),
     ).toBeInTheDocument();
     expect(
-      withinRow.queryByRole('button', {name: 'Retry Incident'})
+      withinRow.queryByRole('button', {name: 'Retry Incident'}),
     ).not.toBeInTheDocument();
 
     withinRow = within(
       screen.getByRole('row', {
         name: new RegExp(secondIncident.errorType.name),
-      })
+      }),
     );
     expect(
-      withinRow.getByText(secondIncident.errorType.name)
+      withinRow.getByText(secondIncident.errorType.name),
     ).toBeInTheDocument();
     expect(withinRow.getByText(secondIncident.flowNodeId)).toBeInTheDocument();
     expect(withinRow.getByText(secondIncident.jobId!)).toBeInTheDocument();
     expect(
-      withinRow.getByText(formatDate(secondIncident.creationTime) || '--')
+      withinRow.getByText(formatDate(secondIncident.creationTime) || '--'),
     ).toBeInTheDocument();
     expect(
-      withinRow.getByText(secondIncident.errorMessage)
+      withinRow.getByText(secondIncident.errorMessage),
     ).toBeInTheDocument();
     expect(
-      withinRow.queryByRole('button', {name: 'Retry Incident'})
+      withinRow.queryByRole('button', {name: 'Retry Incident'}),
     ).not.toBeInTheDocument();
     expect(
       withinRow.queryByRole('link', {
         description: /view root cause instance/i,
-      })
+      }),
     ).not.toBeInTheDocument();
   });
 
@@ -294,7 +294,7 @@ describe('IncidentsTable', () => {
     let withinFirstRow = within(
       screen.getByRole('row', {
         name: new RegExp(incidentMock.errorType.name),
-      })
+      }),
     );
 
     expect(withinFirstRow.getByText('--')).toBeInTheDocument();
@@ -306,7 +306,7 @@ describe('IncidentsTable', () => {
     let withinFirstRow = within(
       screen.getByRole('row', {
         name: new RegExp(firstIncident.errorType.name),
-      })
+      }),
     );
 
     expect(withinFirstRow.queryByText('More')).not.toBeInTheDocument();
@@ -314,7 +314,7 @@ describe('IncidentsTable', () => {
     let withinSecondRow = within(
       screen.getByRole('row', {
         name: new RegExp(secondIncident.errorType.name),
-      })
+      }),
     );
 
     expect(withinSecondRow.getByText('More')).toBeInTheDocument();
@@ -327,7 +327,7 @@ describe('IncidentsTable', () => {
     let withinSecondRow = within(
       screen.getByRole('row', {
         name: new RegExp(secondIncident.errorType.name),
-      })
+      }),
     );
 
     expect(withinSecondRow.getByText('More')).toBeInTheDocument();
@@ -339,10 +339,10 @@ describe('IncidentsTable', () => {
     const modal = screen.getByRole('dialog');
 
     expect(
-      await within(modal).findByText(secondIncident.errorMessage)
+      await within(modal).findByText(secondIncident.errorMessage),
     ).toBeInTheDocument();
     expect(
-      within(modal).getByText(`Flow Node "${secondIncident.flowNodeId}" Error`)
+      within(modal).getByText(`Flow Node "${secondIncident.flowNodeId}" Error`),
     ).toBeInTheDocument();
   });
 });

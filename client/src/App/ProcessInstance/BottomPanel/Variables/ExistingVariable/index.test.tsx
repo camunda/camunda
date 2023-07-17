@@ -61,7 +61,7 @@ const Wrapper: React.FC<Props> = ({children}) => {
 
 const editValueFromTextfieldAndBlur = async (
   user: UserEvent,
-  value: string
+  value: string,
 ) => {
   await user.click(screen.getByTestId('edit-variable-value'));
   await user.type(screen.getByTestId('edit-variable-value'), value);
@@ -72,7 +72,7 @@ const editValueFromJSONEditor = async (user: UserEvent, value: string) => {
   await user.click(screen.getByTitle(/open json editor modal/i));
   await user.click(screen.getByTestId('monaco-editor'));
   await waitFor(() =>
-    expect(screen.getByTestId('monaco-editor')).toHaveValue()
+    expect(screen.getByTestId('monaco-editor')).toHaveValue(),
   );
   await user.type(screen.getByTestId('monaco-editor'), value);
   await user.click(screen.getByRole('button', {name: /apply/i}));
@@ -90,7 +90,7 @@ const editValue = async (type: string, user: UserEvent, value: string) => {
 describe('Variables', () => {
   beforeEach(() => {
     processInstanceDetailsStore.setProcessInstance(
-      createInstance({id: 'process-instance-id'})
+      createInstance({id: 'process-instance-id'}),
     );
     flowNodeSelectionStore.setSelection({
       flowNodeId: 'some-scope',
@@ -103,13 +103,13 @@ describe('Variables', () => {
     async (type) => {
       const {user} = render(
         <ExistingVariable variableName="foo" variableValue="123" />,
-        {wrapper: Wrapper}
+        {wrapper: Wrapper},
       );
 
       await editValue(type, user, '4');
 
       expect(modificationsStore.state.modifications.length).toBe(0);
-    }
+    },
   );
 
   it.each(['textfield', 'jsoneditor'])(
@@ -119,7 +119,7 @@ describe('Variables', () => {
 
       const {user} = render(
         <ExistingVariable variableName="foo" variableValue="123" />,
-        {wrapper: Wrapper}
+        {wrapper: Wrapper},
       );
 
       await editValue(type, user, '4');
@@ -181,7 +181,7 @@ describe('Variables', () => {
           scopeId: 'flow-node-instance-id',
         },
       ]);
-    }
+    },
   );
 
   it('should not apply modification if value is invalid', async () => {
@@ -189,7 +189,7 @@ describe('Variables', () => {
 
     const {user} = render(
       <ExistingVariable variableName="foo" variableValue="123" />,
-      {wrapper: Wrapper}
+      {wrapper: Wrapper},
     );
 
     await editValue('textfield', user, 'invalid value');
@@ -202,7 +202,7 @@ describe('Variables', () => {
 
     const {user} = render(
       <ExistingVariable variableName="foo" variableValue="1" />,
-      {wrapper: Wrapper}
+      {wrapper: Wrapper},
     );
 
     await editValue('textfield', user, '{backspace}');
@@ -215,7 +215,7 @@ describe('Variables', () => {
 
     const {user} = render(
       <ExistingVariable variableName="foo" variableValue="123" />,
-      {wrapper: Wrapper}
+      {wrapper: Wrapper},
     );
 
     await user.click(screen.getByTestId('edit-variable-value'));
@@ -229,7 +229,7 @@ describe('Variables', () => {
 
     const {user} = render(
       <ExistingVariable variableName="foo" variableValue="123" />,
-      {wrapper: Wrapper}
+      {wrapper: Wrapper},
     );
 
     await user.click(screen.getByTitle(/open json editor modal/i));
@@ -243,7 +243,7 @@ describe('Variables', () => {
 
     const {user} = render(
       <ExistingVariable variableName="foo" variableValue="123" />,
-      {wrapper: Wrapper}
+      {wrapper: Wrapper},
     );
 
     await editValue('textfield', user, '4');
@@ -292,7 +292,7 @@ describe('Variables', () => {
 
       const {user} = render(
         <ExistingVariable variableName="foo" variableValue="123" />,
-        {wrapper: Wrapper}
+        {wrapper: Wrapper},
       );
 
       await editValue(type, user, '4');
@@ -361,6 +361,6 @@ describe('Variables', () => {
           scopeId: 'flow-node-instance-id',
         },
       ]);
-    }
+    },
   );
 });

@@ -32,7 +32,7 @@ describe('<Decision /> - operations', () => {
     expect(
       await screen.findByRole('button', {
         name: /^delete decision definition "invoiceClassification - version 1"$/i,
-      })
+      }),
     ).toBeInTheDocument();
   });
 
@@ -44,7 +44,7 @@ describe('<Decision /> - operations', () => {
     expect(
       screen.queryByRole('button', {
         name: /delete decision definition/i,
-      })
+      }),
     ).not.toBeInTheDocument();
   });
 
@@ -56,7 +56,7 @@ describe('<Decision /> - operations', () => {
     expect(
       screen.queryByRole('button', {
         name: /delete decision definition/i,
-      })
+      }),
     ).not.toBeInTheDocument();
   });
 
@@ -78,7 +78,7 @@ describe('<Decision /> - operations', () => {
     expect(
       screen.queryByRole('button', {
         name: /delete decision definition/i,
-      })
+      }),
     ).not.toBeInTheDocument();
   });
 
@@ -99,14 +99,14 @@ describe('<Decision /> - operations', () => {
 
     render(<Decision />, {
       wrapper: createWrapper(
-        '/decisions?name=invoice-assign-approver&version=1'
+        '/decisions?name=invoice-assign-approver&version=1',
       ),
     });
 
     expect(
       screen.queryByRole('button', {
         name: /delete decision definition/i,
-      })
+      }),
     ).not.toBeInTheDocument();
 
     window.clientConfig = undefined;

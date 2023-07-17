@@ -20,7 +20,7 @@ type StructuredListCellProps = {
 };
 
 const StructuredListCell = styled(
-  BaseStructuredListCell
+  BaseStructuredListCell,
 )<StructuredListCellProps>`
   ${({$size = 'md', $width, $verticalCellPadding}) => {
     return css`

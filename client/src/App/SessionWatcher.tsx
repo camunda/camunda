@@ -23,7 +23,7 @@ const SessionWatcher: React.FC = observer(() => {
       setNotification(
         await displayNotification('info', {
           headline: 'Session expired',
-        })
+        }),
       );
     }
 

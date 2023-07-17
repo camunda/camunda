@@ -21,7 +21,7 @@ describe('Delete Item', () => {
           title="delete process instance"
         />
       </OperationItems>,
-      {wrapper: ThemeProvider}
+      {wrapper: ThemeProvider},
     );
 
     expect(screen.getByTestId('delete-operation')).toBeInTheDocument();
@@ -33,7 +33,7 @@ describe('Delete Item', () => {
       <OperationItems>
         <DangerButton type="DELETE" onClick={noop} title={BUTTON_TITLE} />
       </OperationItems>,
-      {wrapper: ThemeProvider}
+      {wrapper: ThemeProvider},
     );
 
     expect(screen.getByRole('button', {name: /delete/i})).toBeInTheDocument();
@@ -50,7 +50,7 @@ describe('Delete Item', () => {
           title={BUTTON_TITLE}
         />
       </OperationItems>,
-      {wrapper: ThemeProvider}
+      {wrapper: ThemeProvider},
     );
 
     await user.click(screen.getByRole('button', {name: /delete/i}));

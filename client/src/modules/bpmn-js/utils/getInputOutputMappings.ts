@@ -19,10 +19,10 @@ type InputOutputMappings = {
 };
 
 const getInputOutputMappings = (
-  businessObject: BusinessObject
+  businessObject: BusinessObject,
 ): InputOutputMappings => {
   const ioMappings = businessObject.extensionElements?.values?.find(
-    (element) => element.$type === 'zeebe:ioMapping'
+    (element) => element.$type === 'zeebe:ioMapping',
   );
 
   if (ioMappings === undefined || ioMappings.$children === undefined) {
@@ -45,13 +45,13 @@ const getInputOutputMappings = (
       }
       return ioMappings;
     },
-    {inputMappings: [], outputMappings: []}
+    {inputMappings: [], outputMappings: []},
   );
 };
 
 const getMappings = (
   businessObject: BusinessObject,
-  type: 'Input' | 'Output'
+  type: 'Input' | 'Output',
 ) => {
   const mappings = getInputOutputMappings(businessObject);
 

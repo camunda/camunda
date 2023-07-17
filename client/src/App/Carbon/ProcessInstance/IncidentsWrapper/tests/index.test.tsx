@@ -41,33 +41,33 @@ describe('IncidentsFilter', () => {
     });
 
     await user.click(
-      await screen.findByRole('button', {name: /filter by incident type/i})
+      await screen.findByRole('button', {name: /filter by incident type/i}),
     );
 
     expect(
       screen.getByRole('option', {
         name: /^condition error/i,
-      })
+      }),
     ).toBeInTheDocument();
     expect(
       screen.getByRole('option', {
         name: /^Extract value error/i,
-      })
+      }),
     ).toBeInTheDocument();
 
     await user.click(
-      await screen.findByRole('button', {name: /filter by flow node/i})
+      await screen.findByRole('button', {name: /filter by flow node/i}),
     );
 
     expect(
       screen.getByRole('option', {
         name: /^flowNodeId_exclusiveGateway/i,
-      })
+      }),
     ).toBeInTheDocument();
     expect(
       screen.getByRole('option', {
         name: /^flowNodeId_alwaysFailingTask/i,
-      })
+      }),
     ).toBeInTheDocument();
 
     expect(screen.getByText(/^Reset Filters/)).toBeInTheDocument();

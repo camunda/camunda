@@ -30,7 +30,7 @@ const formatInputValue = (fromDateTime?: Date, toDateTime?: Date) => {
     return '';
   }
   return `${formatDate(fromDateTime)} ${formatTime(
-    fromDateTime
+    fromDateTime,
   )} - ${formatDate(toDateTime)} ${formatTime(toDateTime)}`;
 };
 
@@ -119,7 +119,7 @@ const DateRangeField: React.FC<Props> = observer(
         ) : null}
       </>
     );
-  }
+  },
 );
 
 export {DateRangeField};

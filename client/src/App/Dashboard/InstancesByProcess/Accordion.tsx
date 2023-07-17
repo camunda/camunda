@@ -50,14 +50,14 @@ const Accordion: React.FC<Props> = ({item, version}) => {
       title={getAccordionTitle(
         name,
         totalInstancesCount,
-        item.processes.length
+        item.processes.length,
       )}
     >
       <InstancesBar
         label={getAccordionLabel(
           name,
           totalInstancesCount,
-          item.processes.length
+          item.processes.length,
         )}
         incidentsCount={item.instancesWithActiveIncidentsCount}
         activeCount={item.activeInstancesCount}

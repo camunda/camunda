@@ -25,7 +25,7 @@ describe('<DrdViewer />', () => {
     await decisionViewer.render(
       screen.getByTestId('container'),
       mockDmnXml,
-      'invoiceClassification'
+      'invoiceClassification',
     );
 
     expect(decisionDefinitionStore.name).toBe('Definitions Name Mock');

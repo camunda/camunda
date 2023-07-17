@@ -63,24 +63,24 @@ describe('<DecisionOperations />', () => {
         decisionVersion="2"
         decisionDefinitionId="2251799813687094"
       />,
-      {wrapper: Wrapper}
+      {wrapper: Wrapper},
     );
 
     user.click(
       screen.getByRole('button', {
         name: /^delete decision definition "myDecision - version 2"$/i,
-      })
+      }),
     );
 
     expect(await screen.findByTestId('modal')).toBeInTheDocument();
     expect(
-      screen.getByRole('heading', {name: /delete drd/i})
+      screen.getByRole('heading', {name: /delete drd/i}),
     ).toBeInTheDocument();
 
     user.click(
       screen.getByRole('button', {
         name: 'Cancel',
-      })
+      }),
     );
 
     await waitForElementToBeRemoved(screen.getByTestId('modal'));
@@ -93,29 +93,29 @@ describe('<DecisionOperations />', () => {
         decisionVersion="2"
         decisionDefinitionId="2251799813687094"
       />,
-      {wrapper: Wrapper}
+      {wrapper: Wrapper},
     );
 
     user.click(
       screen.getByRole('button', {
         name: /^delete decision definition "myDecision - version 2"$/i,
-      })
+      }),
     );
 
     expect(await screen.findByTestId('modal')).toBeInTheDocument();
     expect(
-      screen.getByText(/You are about to delete the following DRD:/)
+      screen.getByText(/You are about to delete the following DRD:/),
     ).toBeInTheDocument();
     expect(screen.getByText(/My Definition/)).toBeInTheDocument();
     expect(
       screen.getByText(
-        /Deleting a decision definition will delete the DRD and will impact the following/
-      )
+        /Deleting a decision definition will delete the DRD and will impact the following/,
+      ),
     ).toBeInTheDocument();
     expect(
       screen.getByText(
-        /^Yes, I confirm I want to delete this DRD and all related instances.$/
-      )
+        /^Yes, I confirm I want to delete this DRD and all related instances.$/,
+      ),
     ).toBeInTheDocument();
   });
 
@@ -128,21 +128,21 @@ describe('<DecisionOperations />', () => {
         decisionVersion="2"
         decisionDefinitionId="2251799813687094"
       />,
-      {wrapper: Wrapper}
+      {wrapper: Wrapper},
     );
 
     user.click(
       screen.getByRole('button', {
         name: /^delete decision definition "myDecision - version 2"$/i,
-      })
+      }),
     );
 
     expect(panelStatesStore.state.isOperationsCollapsed).toBe(true);
 
     user.click(
       await screen.findByLabelText(
-        'Yes, I confirm I want to delete this DRD and all related instances.'
-      )
+        'Yes, I confirm I want to delete this DRD and all related instances.',
+      ),
     );
 
     user.click(await screen.findByTestId('delete-button'));
@@ -161,21 +161,21 @@ describe('<DecisionOperations />', () => {
         decisionVersion="2"
         decisionDefinitionId="2251799813687094"
       />,
-      {wrapper: Wrapper}
+      {wrapper: Wrapper},
     );
 
     user.click(
       screen.getByRole('button', {
         name: /^delete decision definition "myDecision - version 2"$/i,
-      })
+      }),
     );
 
     expect(panelStatesStore.state.isOperationsCollapsed).toBe(true);
 
     user.click(
       await screen.findByLabelText(
-        'Yes, I confirm I want to delete this DRD and all related instances.'
-      )
+        'Yes, I confirm I want to delete this DRD and all related instances.',
+      ),
     );
 
     user.click(await screen.findByTestId('delete-button'));
@@ -196,21 +196,21 @@ describe('<DecisionOperations />', () => {
         decisionVersion="2"
         decisionDefinitionId="2251799813687094"
       />,
-      {wrapper: Wrapper}
+      {wrapper: Wrapper},
     );
 
     user.click(
       screen.getByRole('button', {
         name: /^delete decision definition "myDecision - version 2"$/i,
-      })
+      }),
     );
 
     expect(panelStatesStore.state.isOperationsCollapsed).toBe(true);
 
     user.click(
       await screen.findByLabelText(
-        'Yes, I confirm I want to delete this DRD and all related instances.'
-      )
+        'Yes, I confirm I want to delete this DRD and all related instances.',
+      ),
     );
 
     user.click(await screen.findByTestId('delete-button'));
@@ -232,29 +232,29 @@ describe('<DecisionOperations />', () => {
         decisionVersion="2"
         decisionDefinitionId="2251799813687094"
       />,
-      {wrapper: Wrapper}
+      {wrapper: Wrapper},
     );
 
     user.click(
       screen.getByRole('button', {
         name: /^delete decision definition "myDecision - version 2"$/i,
-      })
+      }),
     );
 
     user.click(
       await screen.findByLabelText(
-        'Yes, I confirm I want to delete this DRD and all related instances.'
-      )
+        'Yes, I confirm I want to delete this DRD and all related instances.',
+      ),
     );
 
     user.click(await screen.findByTestId('delete-button'));
     expect(
-      await screen.findByTestId('delete-operation-spinner')
+      await screen.findByTestId('delete-operation-spinner'),
     ).toBeInTheDocument();
     expect(
       screen.getByRole('button', {
         name: /^delete decision definition "myDecision - version 2"$/i,
-      })
+      }),
     ).toBeDisabled();
   });
 
@@ -267,39 +267,39 @@ describe('<DecisionOperations />', () => {
         decisionVersion="2"
         decisionDefinitionId="2251799813687094"
       />,
-      {wrapper: Wrapper}
+      {wrapper: Wrapper},
     );
 
     user.click(
       screen.getByRole('button', {
         name: /^delete decision definition "myDecision - version 2"$/i,
-      })
+      }),
     );
 
     user.click(
       await screen.findByLabelText(
-        'Yes, I confirm I want to delete this DRD and all related instances.'
-      )
+        'Yes, I confirm I want to delete this DRD and all related instances.',
+      ),
     );
 
     user.click(await screen.findByTestId('delete-button'));
     expect(
-      await screen.findByTestId('delete-operation-spinner')
+      await screen.findByTestId('delete-operation-spinner'),
     ).toBeInTheDocument();
     expect(
       screen.getByRole('button', {
         name: /^delete decision definition "myDecision - version 2"$/i,
-      })
+      }),
     ).toBeDisabled();
 
     await waitForElementToBeRemoved(() =>
-      screen.getByTestId('delete-operation-spinner')
+      screen.getByTestId('delete-operation-spinner'),
     );
 
     expect(
       screen.getByRole('button', {
         name: /^delete decision definition "myDecision - version 2"$/i,
-      })
+      }),
     ).toBeEnabled();
   });
 });

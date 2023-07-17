@@ -17,7 +17,7 @@ describe('Modification Mode', () => {
       <OperationItems>
         <OperationItem type="ENTER_MODIFICATION_MODE" onClick={noop} />
       </OperationItems>,
-      {wrapper: ThemeProvider}
+      {wrapper: ThemeProvider},
     );
 
     expect(screen.getByTestId('modification-mode-icon')).toBeInTheDocument();
@@ -33,11 +33,11 @@ describe('Modification Mode', () => {
           title={BUTTON_TITLE}
         />
       </OperationItems>,
-      {wrapper: ThemeProvider}
+      {wrapper: ThemeProvider},
     );
 
     expect(
-      screen.getByRole('button', {name: BUTTON_TITLE})
+      screen.getByRole('button', {name: BUTTON_TITLE}),
     ).toBeInTheDocument();
   });
 
@@ -52,7 +52,7 @@ describe('Modification Mode', () => {
           title={BUTTON_TITLE}
         />
       </OperationItems>,
-      {wrapper: ThemeProvider}
+      {wrapper: ThemeProvider},
     );
 
     await user.click(screen.getByRole('button', {name: BUTTON_TITLE}));

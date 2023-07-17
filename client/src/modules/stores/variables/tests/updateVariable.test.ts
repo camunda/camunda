@@ -24,7 +24,7 @@ jest.mock('modules/constants/variables', () => ({
 describe('Update Variable', () => {
   beforeEach(async () => {
     mockFetchProcessInstance().withSuccess(
-      createInstance({id: '123', state: 'ACTIVE'})
+      createInstance({id: '123', state: 'ACTIVE'}),
     );
 
     mockApplyOperation().withSuccess(mockVariableOperation);

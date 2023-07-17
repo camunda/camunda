@@ -128,7 +128,7 @@ describe('stores/statistics', () => {
     processInstancesStore.fetchProcessInstancesFromFilters();
 
     await waitFor(() =>
-      expect(processInstancesStore.state.status).toBe('fetched')
+      expect(processInstancesStore.state.status).toBe('fetched'),
     );
 
     expect(statisticsStore.state.running).toBe(1087);
@@ -157,7 +157,7 @@ describe('stores/statistics', () => {
     });
 
     await waitFor(() =>
-      expect(processInstancesStore.state.filteredProcessInstancesCount).toBe(2)
+      expect(processInstancesStore.state.filteredProcessInstancesCount).toBe(2),
     );
 
     await waitFor(() => expect(statisticsStore.state.running).toBe(1088));

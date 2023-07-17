@@ -33,11 +33,11 @@ describe('Sorting', () => {
     await user.click(
       screen.getByRole('button', {
         name: /sort by incident type/i,
-      })
+      }),
     );
 
     expect(screen.getByTestId('search')).toHaveTextContent(
-      /^\?sort=errorType%2Bdesc$/
+      /^\?sort=errorType%2Bdesc$/,
     );
 
     [, firstRow, secondRow] = screen.getAllByRole('row');
@@ -47,11 +47,11 @@ describe('Sorting', () => {
     await user.click(
       screen.getByRole('button', {
         name: /sort by incident type/i,
-      })
+      }),
     );
 
     expect(screen.getByTestId('search')).toHaveTextContent(
-      /^\?sort=errorType%2Basc$/
+      /^\?sort=errorType%2Basc$/,
     );
 
     [, firstRow, secondRow] = screen.getAllByRole('row');
@@ -71,11 +71,11 @@ describe('Sorting', () => {
     await user.click(
       screen.getByRole('button', {
         name: /sort by failing flow node/i,
-      })
+      }),
     );
 
     expect(screen.getByTestId('search')).toHaveTextContent(
-      /^\?sort=flowNodeName%2Bdesc$/
+      /^\?sort=flowNodeName%2Bdesc$/,
     );
 
     [, firstRow, secondRow] = screen.getAllByRole('row');
@@ -85,11 +85,11 @@ describe('Sorting', () => {
     await user.click(
       screen.getByRole('button', {
         name: /sort by failing flow node/i,
-      })
+      }),
     );
 
     expect(screen.getByTestId('search')).toHaveTextContent(
-      /^\?sort=flowNodeName%2Basc$/
+      /^\?sort=flowNodeName%2Basc$/,
     );
 
     [, firstRow, secondRow] = screen.getAllByRole('row');
@@ -109,11 +109,11 @@ describe('Sorting', () => {
     await user.click(
       screen.getByRole('button', {
         name: /sort by creation date/i,
-      })
+      }),
     );
 
     expect(screen.getByTestId('search')).toHaveTextContent(
-      /^\?sort=creationTime%2Basc$/
+      /^\?sort=creationTime%2Basc$/,
     );
 
     [, firstRow, secondRow] = screen.getAllByRole('row');
@@ -123,11 +123,11 @@ describe('Sorting', () => {
     await user.click(
       screen.getByRole('button', {
         name: /sort by creation date/i,
-      })
+      }),
     );
 
     expect(screen.getByTestId('search')).toHaveTextContent(
-      /^\?sort=creationTime%2Bdesc$/
+      /^\?sort=creationTime%2Bdesc$/,
     );
 
     [, firstRow, secondRow] = screen.getAllByRole('row');

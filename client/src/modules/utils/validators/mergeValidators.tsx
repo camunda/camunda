@@ -18,18 +18,18 @@ const mergeValidators = (
     ...validateParams: Parameters<FieldValidator<string | undefined>>
   ) => {
     const executedValidators = validators.map((validator) =>
-      validator(...validateParams)
+      validator(...validateParams),
     );
     const syncValidators = executedValidators.filter(
-      (validator) => !isPromise(validator)
+      (validator) => !isPromise(validator),
     );
     const asyncValidators = executedValidators.filter((validator) =>
-      isPromise(validator)
+      isPromise(validator),
     );
 
     const immediateError = syncValidators.reduce(
       (error, result) => error ?? result,
-      undefined
+      undefined,
     );
 
     if (immediateError !== undefined) {

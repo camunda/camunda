@@ -107,7 +107,7 @@ const ModificationSummaryModal: React.FC<Props> = observer(
               Planned modifications for Process Instance{' '}
               {
                 <Process>{`"${getProcessName(
-                  processInstance
+                  processInstance,
                 )} - ${processInstanceId}"`}</Process>
               }
               . Click "Apply" to proceed.
@@ -218,7 +218,7 @@ const ModificationSummaryModal: React.FC<Props> = observer(
                               title="Delete flow node modification"
                               onClick={() => {
                                 modificationsStore.removeFlowNodeModification(
-                                  modification
+                                  modification,
                                 );
                               }}
                               icon={<DeleteIcon />}
@@ -227,7 +227,7 @@ const ModificationSummaryModal: React.FC<Props> = observer(
                         },
                       ],
                     };
-                  }
+                  },
                 )}
               />
             )}
@@ -311,7 +311,7 @@ const ModificationSummaryModal: React.FC<Props> = observer(
                                   scopeId,
                                   id,
                                   operation,
-                                  'summaryModal'
+                                  'summaryModal',
                                 );
                               }}
                               icon={<DeleteIcon />}
@@ -320,7 +320,7 @@ const ModificationSummaryModal: React.FC<Props> = observer(
                         },
                       ],
                     };
-                  }
+                  },
                 )}
               />
             )}
@@ -337,19 +337,19 @@ const ModificationSummaryModal: React.FC<Props> = observer(
                 tracking.track({
                   eventName: 'apply-modifications',
                   addToken: modificationsStore.flowNodeModifications.filter(
-                    ({operation}) => operation === 'ADD_TOKEN'
+                    ({operation}) => operation === 'ADD_TOKEN',
                   ).length,
                   cancelToken: modificationsStore.flowNodeModifications.filter(
-                    ({operation}) => operation === 'CANCEL_TOKEN'
+                    ({operation}) => operation === 'CANCEL_TOKEN',
                   ).length,
                   moveToken: modificationsStore.flowNodeModifications.filter(
-                    ({operation}) => operation === 'MOVE_TOKEN'
+                    ({operation}) => operation === 'MOVE_TOKEN',
                   ).length,
                   addVariable: modificationsStore.variableModifications.filter(
-                    ({operation}) => operation === 'ADD_VARIABLE'
+                    ({operation}) => operation === 'ADD_VARIABLE',
                   ).length,
                   editVariable: modificationsStore.variableModifications.filter(
-                    ({operation}) => operation === 'EDIT_VARIABLE'
+                    ({operation}) => operation === 'EDIT_VARIABLE',
                   ).length,
                   isProcessCanceled:
                     processInstanceDetailsStatisticsStore.willAllFlowNodesBeCanceled,
@@ -388,7 +388,7 @@ const ModificationSummaryModal: React.FC<Props> = observer(
         }
       />
     );
-  }
+  },
 );
 
 export {ModificationSummaryModal};

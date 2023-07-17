@@ -100,11 +100,11 @@ describe('VariablePanel', () => {
       createInstance({
         id: 'instance_id',
         state: 'ACTIVE',
-      })
+      }),
     );
 
     processInstanceDetailsStatisticsStore.fetchFlowNodeStatistics(
-      'instance_id'
+      'instance_id',
     );
   });
 
@@ -127,7 +127,7 @@ describe('VariablePanel', () => {
       await waitFor(() => expect(variablesStore.state.status).toBe('fetched'));
 
       expect(
-        screen.getByRole('button', {name: /add variable/i})
+        screen.getByRole('button', {name: /add variable/i}),
       ).toBeInTheDocument();
 
       act(() => {
@@ -138,13 +138,13 @@ describe('VariablePanel', () => {
 
       expect(
         await screen.findByText(
-          'To view the Variables, select a single Flow Node Instance in the Instance History.'
-        )
+          'To view the Variables, select a single Flow Node Instance in the Instance History.',
+        ),
       ).toBeInTheDocument();
       expect(
-        screen.queryByRole('button', {name: /add variable/i})
+        screen.queryByRole('button', {name: /add variable/i}),
       ).not.toBeInTheDocument();
-    }
+    },
   );
 
   it.each([true, false])(
@@ -158,7 +158,7 @@ describe('VariablePanel', () => {
 
       await waitFor(() => expect(variablesStore.state.status).toBe('fetched'));
       expect(
-        screen.getByRole('button', {name: /add variable/i})
+        screen.getByRole('button', {name: /add variable/i}),
       ).toBeInTheDocument();
 
       mockFetchVariables().withServerError();
@@ -172,12 +172,12 @@ describe('VariablePanel', () => {
       });
 
       expect(
-        await screen.findByText('Variables could not be fetched')
+        await screen.findByText('Variables could not be fetched'),
       ).toBeInTheDocument();
       expect(
-        screen.queryByRole('button', {name: /add variable/i})
+        screen.queryByRole('button', {name: /add variable/i}),
       ).not.toBeInTheDocument();
-    }
+    },
   );
 
   it.each([true, false])(
@@ -191,7 +191,7 @@ describe('VariablePanel', () => {
 
       await waitFor(() => expect(variablesStore.state.status).toBe('fetched'));
       expect(
-        screen.getByRole('button', {name: /add variable/i})
+        screen.getByRole('button', {name: /add variable/i}),
       ).toBeInTheDocument();
 
       mockFetchVariables().withNetworkError();
@@ -205,12 +205,12 @@ describe('VariablePanel', () => {
       });
 
       expect(
-        await screen.findByText('Variables could not be fetched')
+        await screen.findByText('Variables could not be fetched'),
       ).toBeInTheDocument();
       expect(
-        screen.queryByRole('button', {name: /add variable/i})
+        screen.queryByRole('button', {name: /add variable/i}),
       ).not.toBeInTheDocument();
-    }
+    },
   );
 
   it('should render variables', async () => {
@@ -224,7 +224,7 @@ describe('VariablePanel', () => {
 
     const {user} = render(<VariablePanel />, {wrapper: Wrapper});
     await waitFor(() =>
-      expect(screen.getByTitle(/add variable/i)).toBeEnabled()
+      expect(screen.getByTitle(/add variable/i)).toBeEnabled(),
     );
 
     await user.click(screen.getByTitle(/add variable/i));
@@ -239,7 +239,7 @@ describe('VariablePanel', () => {
     mockFetchFlowNodeMetadata().withSuccess(singleInstanceMetadata);
 
     await waitFor(() =>
-      expect(screen.getByTitle(/save variable/i)).toBeEnabled()
+      expect(screen.getByTitle(/save variable/i)).toBeEnabled(),
     );
 
     mockFetchVariables().withSuccess([
@@ -254,7 +254,7 @@ describe('VariablePanel', () => {
     ]);
 
     mockApplyOperation().withSuccess(
-      createBatchOperation({id: 'batch-operation-id'})
+      createBatchOperation({id: 'batch-operation-id'}),
     );
 
     mockGetOperation().withSuccess([createOperation({state: 'COMPLETED'})]);
@@ -263,14 +263,14 @@ describe('VariablePanel', () => {
     expect(screen.queryByTitle(/add variable/i)).not.toBeInTheDocument();
 
     expect(
-      within(screen.getByTestId('foo')).getByTestId('edit-variable-spinner')
+      within(screen.getByTestId('foo')).getByTestId('edit-variable-spinner'),
     ).toBeInTheDocument();
 
     const withinVariablesList = within(screen.getByTestId('variables-list'));
     expect(withinVariablesList.queryByTestId('foo')).not.toBeInTheDocument();
 
     await waitForElementToBeRemoved(
-      within(screen.getByTestId('foo')).getByTestId('edit-variable-spinner')
+      within(screen.getByTestId('foo')).getByTestId('edit-variable-spinner'),
     );
 
     expect(screen.getByTitle(/add variable/i)).toBeInTheDocument();
@@ -297,7 +297,7 @@ describe('VariablePanel', () => {
 
     const {user} = render(<VariablePanel />, {wrapper: Wrapper});
     await waitFor(() =>
-      expect(screen.getByTitle(/add variable/i)).toBeEnabled()
+      expect(screen.getByTitle(/add variable/i)).toBeEnabled(),
     );
 
     await user.click(screen.getByTitle(/add variable/i));
@@ -308,17 +308,17 @@ describe('VariablePanel', () => {
 
     mockFetchVariables().withSuccess([]);
     mockApplyOperation().withSuccess(
-      createBatchOperation({id: 'batch-operation-id'})
+      createBatchOperation({id: 'batch-operation-id'}),
     );
 
     await waitFor(() =>
-      expect(screen.getByTitle(/save variable/i)).toBeEnabled()
+      expect(screen.getByTitle(/save variable/i)).toBeEnabled(),
     );
     await user.click(screen.getByTitle(/save variable/i));
     expect(screen.queryByTitle(/add variable/i)).not.toBeInTheDocument();
 
     expect(
-      within(screen.getByTestId('foo')).getByTestId('edit-variable-spinner')
+      within(screen.getByTestId('foo')).getByTestId('edit-variable-spinner'),
     ).toBeInTheDocument();
 
     act(() => {
@@ -330,10 +330,10 @@ describe('VariablePanel', () => {
 
     expect(await screen.findByTestId('variables-spinner')).toBeInTheDocument();
     await waitForElementToBeRemoved(() =>
-      screen.getByTestId('variables-spinner')
+      screen.getByTestId('variables-spinner'),
     );
     expect(
-      screen.queryByTestId('edit-variable-spinner')
+      screen.queryByTestId('edit-variable-spinner'),
     ).not.toBeInTheDocument();
 
     expect(screen.getByTitle(/add variable/i)).toBeInTheDocument();
@@ -345,7 +345,7 @@ describe('VariablePanel', () => {
   it('should display validation error if backend validation fails while adding variable', async () => {
     const {user} = render(<VariablePanel />, {wrapper: Wrapper});
     await waitFor(() =>
-      expect(screen.getByTitle(/add variable/i)).toBeEnabled()
+      expect(screen.getByTitle(/add variable/i)).toBeEnabled(),
     );
 
     await user.click(screen.getByTitle(/add variable/i));
@@ -357,14 +357,14 @@ describe('VariablePanel', () => {
     mockApplyOperation().withServerError(400);
 
     await waitFor(() =>
-      expect(screen.getByTitle(/save variable/i)).toBeEnabled()
+      expect(screen.getByTitle(/save variable/i)).toBeEnabled(),
     );
     await user.click(screen.getByTitle(/save variable/i));
 
     await waitFor(() =>
       expect(
-        screen.queryByTestId('edit-variable-spinner')
-      ).not.toBeInTheDocument()
+        screen.queryByTestId('edit-variable-spinner'),
+      ).not.toBeInTheDocument(),
     );
 
     expect(screen.queryByTitle(/add variable/i)).not.toBeInTheDocument();
@@ -374,27 +374,27 @@ describe('VariablePanel', () => {
     });
 
     expect(
-      await screen.findByText('Name should be unique')
+      await screen.findByText('Name should be unique'),
     ).toBeInTheDocument();
 
     await user.type(screen.getByTestId('add-variable-name'), '2');
     await waitFor(() =>
       expect(
-        screen.queryByText('Name should be unique')
-      ).not.toBeInTheDocument()
+        screen.queryByText('Name should be unique'),
+      ).not.toBeInTheDocument(),
     );
 
     await user.type(screen.getByTestId('add-variable-name'), '{backspace}');
 
     expect(
-      await screen.findByText('Name should be unique')
+      await screen.findByText('Name should be unique'),
     ).toBeInTheDocument();
   });
 
   it('should display error notification if add variable operation could not be created', async () => {
     const {user} = render(<VariablePanel />, {wrapper: Wrapper});
     await waitFor(() =>
-      expect(screen.getByTitle(/add variable/i)).toBeEnabled()
+      expect(screen.getByTitle(/add variable/i)).toBeEnabled(),
     );
 
     await user.click(screen.getByTitle(/add variable/i));
@@ -406,13 +406,13 @@ describe('VariablePanel', () => {
     mockApplyOperation().withServerError();
 
     await waitFor(() =>
-      expect(screen.getByTitle(/save variable/i)).toBeEnabled()
+      expect(screen.getByTitle(/save variable/i)).toBeEnabled(),
     );
 
     await user.click(screen.getByTitle(/save variable/i));
 
     await waitForElementToBeRemoved(
-      within(screen.getByTestId('foo')).getByTestId('edit-variable-spinner')
+      within(screen.getByTestId('foo')).getByTestId('edit-variable-spinner'),
     );
 
     expect(screen.getByTitle(/add variable/i)).toBeInTheDocument();
@@ -425,7 +425,7 @@ describe('VariablePanel', () => {
   it('should display error notification if add variable operation could not be created because of auth error', async () => {
     const {user} = render(<VariablePanel />, {wrapper: Wrapper});
     await waitFor(() =>
-      expect(screen.getByTitle(/add variable/i)).toBeEnabled()
+      expect(screen.getByTitle(/add variable/i)).toBeEnabled(),
     );
 
     await user.click(screen.getByTitle(/add variable/i));
@@ -437,13 +437,13 @@ describe('VariablePanel', () => {
     mockApplyOperation().withServerError(403);
 
     await waitFor(() =>
-      expect(screen.getByTitle(/save variable/i)).toBeEnabled()
+      expect(screen.getByTitle(/save variable/i)).toBeEnabled(),
     );
 
     await user.click(screen.getByTitle(/save variable/i));
 
     await waitForElementToBeRemoved(
-      within(screen.getByTestId('foo')).getByTestId('edit-variable-spinner')
+      within(screen.getByTestId('foo')).getByTestId('edit-variable-spinner'),
     );
 
     expect(screen.getByTitle(/add variable/i)).toBeInTheDocument();
@@ -459,7 +459,7 @@ describe('VariablePanel', () => {
 
     const {user} = render(<VariablePanel />, {wrapper: Wrapper});
     await waitFor(() =>
-      expect(screen.getByTitle(/add variable/i)).toBeEnabled()
+      expect(screen.getByTitle(/add variable/i)).toBeEnabled(),
     );
 
     await user.click(screen.getByTitle(/add variable/i));
@@ -474,12 +474,12 @@ describe('VariablePanel', () => {
 
     jest.runOnlyPendingTimers();
     await waitFor(() =>
-      expect(screen.getByTitle(/save variable/i)).toBeEnabled()
+      expect(screen.getByTitle(/save variable/i)).toBeEnabled(),
     );
 
     mockFetchVariables().withSuccess([createVariable()]);
     mockApplyOperation().withSuccess(
-      createBatchOperation({id: 'batch-operation-id'})
+      createBatchOperation({id: 'batch-operation-id'}),
     );
 
     mockGetOperation().withSuccess([createOperation({state: 'FAILED'})]);
@@ -487,7 +487,7 @@ describe('VariablePanel', () => {
     await user.click(screen.getByTitle(/save variable/i));
 
     expect(
-      within(screen.getByTestId('foo')).getByTestId('edit-variable-spinner')
+      within(screen.getByTestId('foo')).getByTestId('edit-variable-spinner'),
     ).toBeInTheDocument();
 
     jest.runOnlyPendingTimers();
@@ -511,7 +511,7 @@ describe('VariablePanel', () => {
 
     const {user} = render(<VariablePanel />, {wrapper: Wrapper});
     await waitFor(() =>
-      expect(screen.getByTitle(/add variable/i)).toBeEnabled()
+      expect(screen.getByTitle(/add variable/i)).toBeEnabled(),
     );
 
     await user.click(screen.getByTitle(/add variable/i));
@@ -525,7 +525,7 @@ describe('VariablePanel', () => {
 
     jest.runOnlyPendingTimers();
     await waitFor(() =>
-      expect(screen.getByTitle(/save variable/i)).toBeEnabled()
+      expect(screen.getByTitle(/save variable/i)).toBeEnabled(),
     );
 
     await user.click(screen.getByTitle(/save variable/i));
@@ -542,7 +542,7 @@ describe('VariablePanel', () => {
 
     jest.runOnlyPendingTimers();
     await waitForElementToBeRemoved(
-      screen.getByTestId('edit-variable-spinner')
+      screen.getByTestId('edit-variable-spinner'),
     );
     expect(await screen.findByRole('cell', {name: 'foo'})).toBeInTheDocument();
 
@@ -568,7 +568,7 @@ describe('VariablePanel', () => {
     expect(await screen.findByTestId('variables-spinner')).toBeInTheDocument();
 
     await waitForElementToBeRemoved(() =>
-      screen.getByTestId('variables-spinner')
+      screen.getByTestId('variables-spinner'),
     );
   });
 
@@ -614,19 +614,19 @@ describe('VariablePanel', () => {
     });
 
     expect(
-      screen.queryByText('No Input Mappings defined')
+      screen.queryByText('No Input Mappings defined'),
     ).not.toBeInTheDocument();
     expect(
-      screen.getByRole('heading', {name: 'Variables'})
+      screen.getByRole('heading', {name: 'Variables'}),
     ).toBeInTheDocument();
     expect(
-      screen.queryByRole('button', {name: 'Variables'})
+      screen.queryByRole('button', {name: 'Variables'}),
     ).not.toBeInTheDocument();
     expect(
-      screen.queryByRole('button', {name: 'Input Mappings'})
+      screen.queryByRole('button', {name: 'Input Mappings'}),
     ).not.toBeInTheDocument();
     expect(
-      screen.queryByRole('button', {name: 'Output Mappings'})
+      screen.queryByRole('button', {name: 'Output Mappings'}),
     ).not.toBeInTheDocument();
 
     mockFetchFlowNodeMetadata().withSuccess(singleInstanceMetadata);
@@ -639,19 +639,19 @@ describe('VariablePanel', () => {
     });
 
     expect(
-      await screen.findByText('No Input Mappings defined')
+      await screen.findByText('No Input Mappings defined'),
     ).toBeInTheDocument();
 
     expect(
-      screen.queryByRole('heading', {name: 'Variables'})
+      screen.queryByRole('heading', {name: 'Variables'}),
     ).not.toBeInTheDocument();
 
     expect(screen.getByRole('button', {name: 'Variables'})).toBeInTheDocument();
     expect(
-      screen.getByRole('button', {name: 'Input Mappings'})
+      screen.getByRole('button', {name: 'Input Mappings'}),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole('button', {name: 'Output Mappings'})
+      screen.getByRole('button', {name: 'Output Mappings'}),
     ).toBeInTheDocument();
   });
 
@@ -713,7 +713,7 @@ describe('VariablePanel', () => {
     });
 
     expect(
-      screen.getByRole('button', {name: /add variable/i})
+      screen.getByRole('button', {name: /add variable/i}),
     ).toBeInTheDocument();
     expect(screen.getByText('testVariableName')).toBeInTheDocument();
 
@@ -725,11 +725,11 @@ describe('VariablePanel', () => {
 
     // initial state
     expect(
-      screen.queryByRole('button', {name: /add variable/i})
+      screen.queryByRole('button', {name: /add variable/i}),
     ).not.toBeInTheDocument();
     expect(screen.queryByText('testVariableName')).not.toBeInTheDocument();
     expect(
-      screen.queryByText('The Flow Node has no Variables')
+      screen.queryByText('The Flow Node has no Variables'),
     ).not.toBeInTheDocument();
 
     // one 'add token' modification is created
@@ -753,11 +753,11 @@ describe('VariablePanel', () => {
     });
 
     expect(
-      await screen.findByText('The Flow Node has no Variables')
+      await screen.findByText('The Flow Node has no Variables'),
     ).toBeInTheDocument();
 
     expect(
-      screen.getByRole('button', {name: /add variable/i})
+      screen.getByRole('button', {name: /add variable/i}),
     ).toBeInTheDocument();
 
     // go to input mappings and back, see the correct state
@@ -766,7 +766,7 @@ describe('VariablePanel', () => {
 
     await user.click(screen.getByRole('button', {name: 'Variables'}));
     expect(
-      await screen.findByText('The Flow Node has no Variables')
+      await screen.findByText('The Flow Node has no Variables'),
     ).toBeInTheDocument();
     expect(screen.queryByTestId('variables-spinner')).not.toBeInTheDocument();
 
@@ -790,12 +790,12 @@ describe('VariablePanel', () => {
 
     expect(
       await screen.findByText(
-        'To view the Variables, select a single Flow Node Instance in the Instance History.'
-      )
+        'To view the Variables, select a single Flow Node Instance in the Instance History.',
+      ),
     ).toBeInTheDocument();
 
     expect(
-      screen.queryByRole('button', {name: /add variable/i})
+      screen.queryByRole('button', {name: /add variable/i}),
     ).not.toBeInTheDocument();
 
     // select only one of the scopes
@@ -808,11 +808,11 @@ describe('VariablePanel', () => {
     });
 
     expect(
-      await screen.findByText('The Flow Node has no Variables')
+      await screen.findByText('The Flow Node has no Variables'),
     ).toBeInTheDocument();
 
     expect(
-      screen.getByRole('button', {name: /add variable/i})
+      screen.getByRole('button', {name: /add variable/i}),
     ).toBeInTheDocument();
 
     // select new parent scope
@@ -825,11 +825,11 @@ describe('VariablePanel', () => {
     });
 
     expect(
-      screen.getByText('The Flow Node has no Variables')
+      screen.getByText('The Flow Node has no Variables'),
     ).toBeInTheDocument();
 
     expect(
-      screen.getByRole('button', {name: /add variable/i})
+      screen.getByRole('button', {name: /add variable/i}),
     ).toBeInTheDocument();
   });
 
@@ -849,7 +849,7 @@ describe('VariablePanel', () => {
     expect(await screen.findByText('testVariableName')).toBeInTheDocument();
 
     expect(
-      screen.getByRole('button', {name: /add variable/i})
+      screen.getByRole('button', {name: /add variable/i}),
     ).toBeInTheDocument();
     expect(screen.getByText('testVariableName')).toBeInTheDocument();
 
@@ -869,15 +869,15 @@ describe('VariablePanel', () => {
           ...singleInstanceMetadata.instanceMetadata!,
           endDate: '2018-12-12 00:00:00',
         },
-      })
+      }),
     );
 
     // initial state
     expect(
-      await screen.findByText('The Flow Node has no Variables')
+      await screen.findByText('The Flow Node has no Variables'),
     ).toBeInTheDocument();
     expect(
-      screen.queryByRole('button', {name: /add variable/i})
+      screen.queryByRole('button', {name: /add variable/i}),
     ).not.toBeInTheDocument();
 
     // one 'add token' modification is created
@@ -900,11 +900,11 @@ describe('VariablePanel', () => {
 
     expect(
       await screen.findByText(
-        'To view the Variables, select a single Flow Node Instance in the Instance History.'
-      )
+        'To view the Variables, select a single Flow Node Instance in the Instance History.',
+      ),
     ).toBeInTheDocument();
     expect(
-      screen.queryByRole('button', {name: /add variable/i})
+      screen.queryByRole('button', {name: /add variable/i}),
     ).not.toBeInTheDocument();
 
     // go to input mappings and back, see the correct state
@@ -915,8 +915,8 @@ describe('VariablePanel', () => {
     await user.click(screen.getByRole('button', {name: 'Variables'}));
     expect(
       await screen.findByText(
-        'To view the Variables, select a single Flow Node Instance in the Instance History.'
-      )
+        'To view the Variables, select a single Flow Node Instance in the Instance History.',
+      ),
     ).toBeInTheDocument();
     expect(screen.queryByTestId('variables-spinner')).not.toBeInTheDocument();
 
@@ -930,11 +930,11 @@ describe('VariablePanel', () => {
     });
 
     expect(
-      await screen.findByText('The Flow Node has no Variables')
+      await screen.findByText('The Flow Node has no Variables'),
     ).toBeInTheDocument();
 
     expect(
-      screen.getByRole('button', {name: /add variable/i})
+      screen.getByRole('button', {name: /add variable/i}),
     ).toBeInTheDocument();
   });
 
@@ -955,7 +955,7 @@ describe('VariablePanel', () => {
     expect(await screen.findByText('testVariableName')).toBeInTheDocument();
 
     expect(
-      screen.getByRole('button', {name: /add variable/i})
+      screen.getByRole('button', {name: /add variable/i}),
     ).toBeInTheDocument();
     expect(screen.getByText('testVariableName')).toBeInTheDocument();
 
@@ -976,15 +976,15 @@ describe('VariablePanel', () => {
           ...singleInstanceMetadata.instanceMetadata!,
           endDate: null,
         },
-      })
+      }),
     );
 
     // initial state
     expect(
-      await screen.findByText('The Flow Node has no Variables')
+      await screen.findByText('The Flow Node has no Variables'),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole('button', {name: /add variable/i})
+      screen.getByRole('button', {name: /add variable/i}),
     ).toBeInTheDocument();
 
     act(() => {
@@ -992,10 +992,10 @@ describe('VariablePanel', () => {
     });
 
     expect(
-      screen.queryByRole('button', {name: /add variable/i})
+      screen.queryByRole('button', {name: /add variable/i}),
     ).not.toBeInTheDocument();
     expect(
-      screen.getByText('The Flow Node has no Variables')
+      screen.getByText('The Flow Node has no Variables'),
     ).toBeInTheDocument();
 
     // add a new token
@@ -1018,12 +1018,12 @@ describe('VariablePanel', () => {
 
     expect(
       await screen.findByText(
-        'To view the Variables, select a single Flow Node Instance in the Instance History.'
-      )
+        'To view the Variables, select a single Flow Node Instance in the Instance History.',
+      ),
     ).toBeInTheDocument();
 
     expect(
-      screen.queryByRole('button', {name: /add variable/i})
+      screen.queryByRole('button', {name: /add variable/i}),
     ).not.toBeInTheDocument();
 
     // remove cancel modification
@@ -1041,12 +1041,12 @@ describe('VariablePanel', () => {
 
     expect(
       screen.getByText(
-        'To view the Variables, select a single Flow Node Instance in the Instance History.'
-      )
+        'To view the Variables, select a single Flow Node Instance in the Instance History.',
+      ),
     ).toBeInTheDocument();
 
     expect(
-      screen.queryByRole('button', {name: /add variable/i})
+      screen.queryByRole('button', {name: /add variable/i}),
     ).not.toBeInTheDocument();
 
     mockFetchFlowNodeMetadata().withSuccess({
@@ -1077,21 +1077,21 @@ describe('VariablePanel', () => {
           ...singleInstanceMetadata.instanceMetadata!,
           endDate: null,
         },
-      })
+      }),
     );
 
     expect(
       screen.queryByText(
-        'To view the Variables, select a single Flow Node Instance in the Instance History.'
-      )
+        'To view the Variables, select a single Flow Node Instance in the Instance History.',
+      ),
     ).not.toBeInTheDocument();
 
     expect(
-      screen.getByText('The Flow Node has no Variables')
+      screen.getByText('The Flow Node has no Variables'),
     ).toBeInTheDocument();
 
     expect(
-      screen.getByRole('button', {name: /add variable/i})
+      screen.getByRole('button', {name: /add variable/i}),
     ).toBeInTheDocument();
 
     // select new scope
@@ -1105,16 +1105,16 @@ describe('VariablePanel', () => {
 
     expect(
       screen.queryByText(
-        'To view the Variables, select a single Flow Node Instance in the Instance History.'
-      )
+        'To view the Variables, select a single Flow Node Instance in the Instance History.',
+      ),
     ).not.toBeInTheDocument();
 
     expect(
-      screen.getByText('The Flow Node has no Variables')
+      screen.getByText('The Flow Node has no Variables'),
     ).toBeInTheDocument();
 
     expect(
-      screen.getByRole('button', {name: /add variable/i})
+      screen.getByRole('button', {name: /add variable/i}),
     ).toBeInTheDocument();
   });
 
@@ -1134,7 +1134,7 @@ describe('VariablePanel', () => {
     expect(await screen.findByText('testVariableName')).toBeInTheDocument();
 
     expect(
-      screen.getByRole('button', {name: /add variable/i})
+      screen.getByRole('button', {name: /add variable/i}),
     ).toBeInTheDocument();
     expect(screen.getByText('testVariableName')).toBeInTheDocument();
     expect(screen.getByTestId('edit-variable-value')).toBeInTheDocument();
@@ -1160,11 +1160,11 @@ describe('VariablePanel', () => {
 
     expect(await screen.findByText('some-other-variable')).toBeInTheDocument();
     expect(
-      screen.queryByRole('button', {name: /add variable/i})
+      screen.queryByRole('button', {name: /add variable/i}),
     ).not.toBeInTheDocument();
     expect(screen.queryByTestId('edit-variable-value')).not.toBeInTheDocument();
     expect(
-      screen.queryByRole('button', {name: /enter edit mode/i})
+      screen.queryByRole('button', {name: /enter edit mode/i}),
     ).not.toBeInTheDocument();
   });
 
@@ -1184,7 +1184,7 @@ describe('VariablePanel', () => {
     expect(await screen.findByText('testVariableName')).toBeInTheDocument();
 
     expect(
-      screen.getByRole('button', {name: /add variable/i})
+      screen.getByRole('button', {name: /add variable/i}),
     ).toBeInTheDocument();
     expect(screen.getByText('testVariableName')).toBeInTheDocument();
     expect(screen.getByTestId('edit-variable-value')).toBeInTheDocument();
@@ -1211,7 +1211,7 @@ describe('VariablePanel', () => {
     // initial state
     expect(await screen.findByText('some-other-variable')).toBeInTheDocument();
     expect(
-      screen.getByRole('button', {name: /add variable/i})
+      screen.getByRole('button', {name: /add variable/i}),
     ).toBeInTheDocument();
     expect(screen.getByTestId('edit-variable-value')).toBeInTheDocument();
 
@@ -1220,13 +1220,13 @@ describe('VariablePanel', () => {
     });
 
     expect(
-      screen.queryByRole('button', {name: /add variable/i})
+      screen.queryByRole('button', {name: /add variable/i}),
     ).not.toBeInTheDocument();
     expect(screen.getByText('some-other-variable')).toBeInTheDocument();
 
     expect(screen.queryByTestId('edit-variable-value')).not.toBeInTheDocument();
     expect(
-      screen.queryByRole('button', {name: /enter edit mode/i})
+      screen.queryByRole('button', {name: /enter edit mode/i}),
     ).not.toBeInTheDocument();
   });
 
@@ -1246,7 +1246,7 @@ describe('VariablePanel', () => {
     expect(await screen.findByText('testVariableName')).toBeInTheDocument();
 
     expect(
-      screen.getByRole('button', {name: /add variable/i})
+      screen.getByRole('button', {name: /add variable/i}),
     ).toBeInTheDocument();
     expect(screen.getByText('testVariableName')).toBeInTheDocument();
     expect(screen.getByTestId('edit-variable-value')).toBeInTheDocument();
@@ -1275,7 +1275,7 @@ describe('VariablePanel', () => {
     expect(await screen.findByText('testVariableName')).toBeInTheDocument();
 
     expect(
-      screen.getByRole('button', {name: /add variable/i})
+      screen.getByRole('button', {name: /add variable/i}),
     ).toBeInTheDocument();
     expect(screen.getByText('testVariableName')).toBeInTheDocument();
 
@@ -1297,15 +1297,15 @@ describe('VariablePanel', () => {
           ...singleInstanceMetadata.instanceMetadata!,
           endDate: null,
         },
-      })
+      }),
     );
 
     // initial state
     expect(
-      await screen.findByText('The Flow Node has no Variables')
+      await screen.findByText('The Flow Node has no Variables'),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole('button', {name: /add variable/i})
+      screen.getByRole('button', {name: /add variable/i}),
     ).toBeInTheDocument();
 
     act(() => {
@@ -1313,11 +1313,11 @@ describe('VariablePanel', () => {
     });
 
     expect(
-      screen.queryByRole('button', {name: /add variable/i})
+      screen.queryByRole('button', {name: /add variable/i}),
     ).not.toBeInTheDocument();
 
     expect(
-      screen.getByText('The Flow Node has no Variables')
+      screen.getByText('The Flow Node has no Variables'),
     ).toBeInTheDocument();
 
     // add a new token
@@ -1339,10 +1339,10 @@ describe('VariablePanel', () => {
     });
 
     expect(
-      screen.queryByRole('button', {name: /add variable/i})
+      screen.queryByRole('button', {name: /add variable/i}),
     ).not.toBeInTheDocument();
     expect(
-      screen.getByText('The Flow Node has no Variables')
+      screen.getByText('The Flow Node has no Variables'),
     ).toBeInTheDocument();
   });
 
@@ -1363,7 +1363,7 @@ describe('VariablePanel', () => {
     expect(await screen.findByText('testVariableName')).toBeInTheDocument();
 
     expect(
-      screen.getByRole('button', {name: /add variable/i})
+      screen.getByRole('button', {name: /add variable/i}),
     ).toBeInTheDocument();
     expect(screen.getByText('testVariableName')).toBeInTheDocument();
 
@@ -1385,16 +1385,16 @@ describe('VariablePanel', () => {
           ...singleInstanceMetadata.instanceMetadata!,
           endDate: '2018-12-12 00:00:00',
         },
-      })
+      }),
     );
 
     // initial state
     expect(
-      await screen.findByText('The Flow Node has no Variables')
+      await screen.findByText('The Flow Node has no Variables'),
     ).toBeInTheDocument();
 
     expect(
-      screen.queryByRole('button', {name: /add variable/i})
+      screen.queryByRole('button', {name: /add variable/i}),
     ).not.toBeInTheDocument();
 
     // add one new token
@@ -1416,10 +1416,10 @@ describe('VariablePanel', () => {
     });
 
     expect(
-      screen.queryByRole('button', {name: /add variable/i})
+      screen.queryByRole('button', {name: /add variable/i}),
     ).not.toBeInTheDocument();
     expect(
-      screen.getByText('The Flow Node has no Variables')
+      screen.getByText('The Flow Node has no Variables'),
     ).toBeInTheDocument();
   });
 });

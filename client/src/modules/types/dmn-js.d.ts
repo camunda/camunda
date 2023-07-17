@@ -17,7 +17,7 @@ declare module 'dmn-js-shared/lib/base/Manager' {
 
   export type EventCallback = (
     eventName: String,
-    callback: (event: DiagramJSEvent) => void
+    callback: (event: DiagramJSEvent) => void,
   ) => void;
 
   type Viewer = {

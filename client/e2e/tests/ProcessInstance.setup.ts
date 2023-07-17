@@ -24,22 +24,22 @@ export async function setup() {
   const instances = await createInstances('processWithAnIncident', 1, 2);
   const instanceWithoutAnIncident = await createSingleInstance(
     'withoutIncidentsProcess',
-    1
+    1,
   );
   const processWithMultipleTokens = await createSingleInstance(
     'processWithMultipleTokens',
-    1
+    1,
   );
   const instanceWithIncidentForIncidentsBar = await createSingleInstance(
     'processWithMultiIncidents',
     1,
-    {goUp: 3}
+    {goUp: 3},
   );
 
   const instanceWithIncidentToResolve = await createSingleInstance(
     'processWithMultiIncidents',
     1,
-    {goUp: 3}
+    {goUp: 3},
   );
 
   completeTask('processWithMultipleTokensTaskA', false, {

@@ -53,7 +53,7 @@ const IncidentsByError: React.FC = observer(() => {
           ...accumulator,
           [errorMessage]: <div>{errorMessage}</div>,
         }),
-        {}
+        {},
       )}
     />
   );

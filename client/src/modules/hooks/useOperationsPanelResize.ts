@@ -11,7 +11,7 @@ import {panelStatesStore} from 'modules/stores/panelStates';
 
 const useOperationsPanelResize = (
   targetRef: React.RefObject<HTMLElement>,
-  onResize: (target: HTMLElement, width: number) => void
+  onResize: (target: HTMLElement, width: number) => void,
 ) => {
   useEffect(() => {
     let observer: ResizeObserver;

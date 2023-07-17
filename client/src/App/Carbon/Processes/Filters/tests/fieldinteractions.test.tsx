@@ -65,8 +65,8 @@ describe('Interaction with other fields during validation', () => {
 
     expect(
       await screen.findByText(
-        'Key has to be a 16 to 19 digit number, separated by space or comma'
-      )
+        'Key has to be a 16 to 19 digit number, separated by space or comma',
+      ),
     ).toBeInTheDocument();
 
     expect(screen.getByText('Id has to be a UUID')).toBeInTheDocument();
@@ -83,8 +83,8 @@ describe('Interaction with other fields during validation', () => {
 
     expect(
       await screen.findByText(
-        'Key has to be a 16 to 19 digit number, separated by space or comma'
-      )
+        'Key has to be a 16 to 19 digit number, separated by space or comma',
+      ),
     ).toBeInTheDocument();
 
     await user.click(screen.getByRole('button', {name: 'More Filters'}));
@@ -93,16 +93,16 @@ describe('Interaction with other fields during validation', () => {
 
     expect(
       screen.getByText(
-        'Key has to be a 16 to 19 digit number, separated by space or comma'
-      )
+        'Key has to be a 16 to 19 digit number, separated by space or comma',
+      ),
     ).toBeInTheDocument();
 
     expect(await screen.findByText('Id has to be a UUID')).toBeInTheDocument();
 
     expect(
       screen.getByText(
-        'Key has to be a 16 to 19 digit number, separated by space or comma'
-      )
+        'Key has to be a 16 to 19 digit number, separated by space or comma',
+      ),
     ).toBeInTheDocument();
   });
 
@@ -117,8 +117,8 @@ describe('Interaction with other fields during validation', () => {
 
     expect(
       await screen.findByText(
-        'Key has to be a 16 to 19 digit number, separated by space or comma'
-      )
+        'Key has to be a 16 to 19 digit number, separated by space or comma',
+      ),
     ).toBeInTheDocument();
 
     await user.click(screen.getByRole('button', {name: 'More Filters'}));
@@ -127,20 +127,20 @@ describe('Interaction with other fields during validation', () => {
 
     expect(
       screen.getByText(
-        'Key has to be a 16 to 19 digit number, separated by space or comma'
-      )
+        'Key has to be a 16 to 19 digit number, separated by space or comma',
+      ),
     ).toBeInTheDocument();
 
     expect(
-      await screen.findByText('Name has to be filled')
+      await screen.findByText('Name has to be filled'),
     ).toBeInTheDocument();
 
     expect(await screen.findByText('Value has to be JSON')).toBeInTheDocument();
 
     expect(
       screen.getByText(
-        'Key has to be a 16 to 19 digit number, separated by space or comma'
-      )
+        'Key has to be a 16 to 19 digit number, separated by space or comma',
+      ),
     ).toBeInTheDocument();
   });
 
@@ -155,8 +155,8 @@ describe('Interaction with other fields during validation', () => {
 
     expect(
       await screen.findByText(
-        'Key has to be a 16 to 19 digit number, separated by space or comma'
-      )
+        'Key has to be a 16 to 19 digit number, separated by space or comma',
+      ),
     ).toBeInTheDocument();
 
     await user.click(screen.getByRole('button', {name: 'More Filters'}));
@@ -165,18 +165,18 @@ describe('Interaction with other fields during validation', () => {
 
     expect(
       screen.getByText(
-        'Key has to be a 16 to 19 digit number, separated by space or comma'
-      )
+        'Key has to be a 16 to 19 digit number, separated by space or comma',
+      ),
     ).toBeInTheDocument();
 
     expect(
-      await screen.findByText('Value has to be filled')
+      await screen.findByText('Value has to be filled'),
     ).toBeInTheDocument();
 
     expect(
       screen.getByText(
-        'Key has to be a 16 to 19 digit number, separated by space or comma'
-      )
+        'Key has to be a 16 to 19 digit number, separated by space or comma',
+      ),
     ).toBeInTheDocument();
   });
 
@@ -191,34 +191,34 @@ describe('Interaction with other fields during validation', () => {
 
     expect(
       await screen.findByText(
-        'Key has to be a 16 to 19 digit number, separated by space or comma'
-      )
+        'Key has to be a 16 to 19 digit number, separated by space or comma',
+      ),
     ).toBeInTheDocument();
 
     await selectProcess({user, option: 'eventBasedGatewayProcess'});
     expect(
-      screen.getByLabelText('Version', {selector: 'button'})
+      screen.getByLabelText('Version', {selector: 'button'}),
     ).toBeEnabled();
     expect(
       screen.getByText(
-        'Key has to be a 16 to 19 digit number, separated by space or comma'
-      )
+        'Key has to be a 16 to 19 digit number, separated by space or comma',
+      ),
     ).toBeInTheDocument();
 
     await selectProcessVersion({user, option: '2'});
 
     expect(
       screen.getByText(
-        'Key has to be a 16 to 19 digit number, separated by space or comma'
-      )
+        'Key has to be a 16 to 19 digit number, separated by space or comma',
+      ),
     ).toBeInTheDocument();
 
     await selectFlowNode({user, option: 'ServiceTask_0kt6c5i'});
 
     expect(
       screen.getByText(
-        'Key has to be a 16 to 19 digit number, separated by space or comma'
-      )
+        'Key has to be a 16 to 19 digit number, separated by space or comma',
+      ),
     ).toBeInTheDocument();
   });
 
@@ -233,56 +233,56 @@ describe('Interaction with other fields during validation', () => {
 
     expect(
       await screen.findByText(
-        'Key has to be a 16 to 19 digit number, separated by space or comma'
-      )
+        'Key has to be a 16 to 19 digit number, separated by space or comma',
+      ),
     ).toBeInTheDocument();
 
     await user.click(screen.getByLabelText(/^active$/i));
 
     expect(
       screen.getByText(
-        'Key has to be a 16 to 19 digit number, separated by space or comma'
-      )
+        'Key has to be a 16 to 19 digit number, separated by space or comma',
+      ),
     ).toBeInTheDocument();
 
     await user.click(screen.getByLabelText(/^incidents$/i));
 
     expect(
       screen.getByText(
-        'Key has to be a 16 to 19 digit number, separated by space or comma'
-      )
+        'Key has to be a 16 to 19 digit number, separated by space or comma',
+      ),
     ).toBeInTheDocument();
 
     await user.click(screen.getByLabelText(/^completed$/i));
 
     expect(
       screen.getByText(
-        'Key has to be a 16 to 19 digit number, separated by space or comma'
-      )
+        'Key has to be a 16 to 19 digit number, separated by space or comma',
+      ),
     ).toBeInTheDocument();
 
     await user.click(screen.getByLabelText(/^canceled$/i));
 
     expect(
       screen.getByText(
-        'Key has to be a 16 to 19 digit number, separated by space or comma'
-      )
+        'Key has to be a 16 to 19 digit number, separated by space or comma',
+      ),
     ).toBeInTheDocument();
 
     await user.click(screen.getByTestId('filter-running-instances'));
 
     expect(
       screen.getByText(
-        'Key has to be a 16 to 19 digit number, separated by space or comma'
-      )
+        'Key has to be a 16 to 19 digit number, separated by space or comma',
+      ),
     ).toBeInTheDocument();
 
     await user.click(screen.getByTestId('filter-finished-instances'));
 
     expect(
       screen.getByText(
-        'Key has to be a 16 to 19 digit number, separated by space or comma'
-      )
+        'Key has to be a 16 to 19 digit number, separated by space or comma',
+      ),
     ).toBeInTheDocument();
   });
 
@@ -300,11 +300,11 @@ describe('Interaction with other fields during validation', () => {
 
     await user.type(
       screen.getByLabelText(/^parent process instance key$/i),
-      '1'
+      '1',
     );
 
     expect(
-      await screen.findByText('Key has to be a 16 to 19 digit number')
+      await screen.findByText('Key has to be a 16 to 19 digit number'),
     ).toBeInTheDocument();
 
     expect(await screen.findByText('Id has to be a UUID')).toBeInTheDocument();

@@ -16,9 +16,9 @@ const DecisionPanel: React.FC = observer(() => {
   const highlightableRules = Array.from(
     new Set(
       decisionInstanceDetailsStore.state.decisionInstance?.evaluatedOutputs.map(
-        (output) => output.ruleIndex
-      )
-    )
+        (output) => output.ruleIndex,
+      ),
+    ),
   ).filter((item) => item !== undefined);
 
   return (

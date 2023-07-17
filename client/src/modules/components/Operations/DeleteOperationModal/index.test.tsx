@@ -14,7 +14,7 @@ describe('ConfirmOperationModal', () => {
   it('should render', () => {
     render(<DeleteOperationModal {...mockProps} />, {wrapper: ThemeProvider});
     expect(
-      screen.getByText(`About to delete Instance ${mockProps.instanceId}.`)
+      screen.getByText(`About to delete Instance ${mockProps.instanceId}.`),
     ).toBeInTheDocument();
     expect(screen.getByText('Click "Delete" to proceed.')).toBeInTheDocument();
     expect(screen.getByTestId('delete-button')).toBeInTheDocument();
@@ -28,7 +28,7 @@ describe('ConfirmOperationModal', () => {
     });
     await user.click(screen.getByTestId('delete-button'));
     await waitFor(() =>
-      expect(mockProps.onDeleteClick).toHaveBeenCalledTimes(1)
+      expect(mockProps.onDeleteClick).toHaveBeenCalledTimes(1),
     );
   });
 

@@ -103,19 +103,19 @@ const ModificationSummaryModal: React.FC<StateProps> = observer(
           tracking.track({
             eventName: 'apply-modifications',
             addToken: modificationsStore.flowNodeModifications.filter(
-              ({operation}) => operation === 'ADD_TOKEN'
+              ({operation}) => operation === 'ADD_TOKEN',
             ).length,
             cancelToken: modificationsStore.flowNodeModifications.filter(
-              ({operation}) => operation === 'CANCEL_TOKEN'
+              ({operation}) => operation === 'CANCEL_TOKEN',
             ).length,
             moveToken: modificationsStore.flowNodeModifications.filter(
-              ({operation}) => operation === 'MOVE_TOKEN'
+              ({operation}) => operation === 'MOVE_TOKEN',
             ).length,
             addVariable: modificationsStore.variableModifications.filter(
-              ({operation}) => operation === 'ADD_VARIABLE'
+              ({operation}) => operation === 'ADD_VARIABLE',
             ).length,
             editVariable: modificationsStore.variableModifications.filter(
-              ({operation}) => operation === 'EDIT_VARIABLE'
+              ({operation}) => operation === 'EDIT_VARIABLE',
             ).length,
             isProcessCanceled:
               processInstanceDetailsStatisticsStore.willAllFlowNodesBeCanceled,
@@ -145,7 +145,7 @@ const ModificationSummaryModal: React.FC<StateProps> = observer(
       >
         <p>
           {`Planned modifications for Process Instance "${getProcessName(
-            processInstance
+            processInstance,
           )} - ${processInstanceId}". Click "Apply" to proceed.`}
         </p>
 
@@ -247,7 +247,7 @@ const ModificationSummaryModal: React.FC<StateProps> = observer(
                       size="sm"
                       onClick={() => {
                         modificationsStore.removeFlowNodeModification(
-                          modification
+                          modification,
                         );
                       }}
                     >
@@ -255,7 +255,7 @@ const ModificationSummaryModal: React.FC<StateProps> = observer(
                     </Button>
                   ),
                 };
-              }
+              },
             )}
           />
         )}
@@ -288,7 +288,7 @@ const ModificationSummaryModal: React.FC<StateProps> = observer(
                     />
                   ),
               }),
-              {}
+              {},
             )}
             headers={[
               {
@@ -338,7 +338,7 @@ const ModificationSummaryModal: React.FC<StateProps> = observer(
                           scopeId,
                           id,
                           operation,
-                          'summaryModal'
+                          'summaryModal',
                         );
                       }}
                     >
@@ -346,13 +346,13 @@ const ModificationSummaryModal: React.FC<StateProps> = observer(
                     </Button>
                   ),
                 };
-              }
+              },
             )}
           />
         )}
       </Modal>
     );
-  }
+  },
 );
 
 export {ModificationSummaryModal};

@@ -59,7 +59,7 @@ describe('FlowNodeInstancesTree - Modification placeholders', () => {
       />,
       {
         wrapper: Wrapper,
-      }
+      },
     );
 
     expect(screen.queryByText('Peter Join')).not.toBeInTheDocument();
@@ -67,7 +67,7 @@ describe('FlowNodeInstancesTree - Modification placeholders', () => {
     // modification icons
     expect(screen.queryByTestId('add-icon')).not.toBeInTheDocument();
     expect(
-      screen.queryByText('warning-message-icon.svg')
+      screen.queryByText('warning-message-icon.svg'),
     ).not.toBeInTheDocument();
     expect(screen.queryByTestId('cancel-icon')).not.toBeInTheDocument();
 
@@ -100,7 +100,7 @@ describe('FlowNodeInstancesTree - Modification placeholders', () => {
     });
 
     await waitFor(() =>
-      expect(screen.getAllByText('Peter Join')).toHaveLength(2)
+      expect(screen.getAllByText('Peter Join')).toHaveLength(2),
     );
 
     expect(screen.getByText('Multi-Instance Process')).toBeInTheDocument();
@@ -112,7 +112,7 @@ describe('FlowNodeInstancesTree - Modification placeholders', () => {
     expect(screen.queryByTestId('cancel-icon')).not.toBeInTheDocument();
 
     expect(
-      screen.getByText('Filter-Map Sub Process (Multi Instance)')
+      screen.getByText('Filter-Map Sub Process (Multi Instance)'),
     ).toBeInTheDocument();
 
     act(() => {
@@ -139,7 +139,7 @@ describe('FlowNodeInstancesTree - Modification placeholders', () => {
 
     await processInstanceDetailsDiagramStore.fetchProcessXml(processId);
     await processInstanceDetailsStatisticsStore.fetchFlowNodeStatistics(
-      processInstanceId
+      processInstanceId,
     );
     processInstanceDetailsStore.init({id: processInstanceId});
     flowNodeInstanceStore.init();
@@ -158,7 +158,7 @@ describe('FlowNodeInstancesTree - Modification placeholders', () => {
       />,
       {
         wrapper: Wrapper,
-      }
+      },
     );
 
     // modification icons
@@ -220,7 +220,7 @@ describe('FlowNodeInstancesTree - Modification placeholders', () => {
     ]);
 
     mockFetchFlowNodeInstances().withSuccess(
-      multipleSubprocessesWithNoRunningScopeMock.firstLevel
+      multipleSubprocessesWithNoRunningScopeMock.firstLevel,
     );
 
     mockFetchProcessXML().withSuccess(mockNestedSubprocess);
@@ -236,7 +236,7 @@ describe('FlowNodeInstancesTree - Modification placeholders', () => {
     });
 
     await processInstanceDetailsStatisticsStore.fetchFlowNodeStatistics(
-      processInstanceId
+      processInstanceId,
     );
 
     const {user} = render(
@@ -251,13 +251,13 @@ describe('FlowNodeInstancesTree - Modification placeholders', () => {
       />,
       {
         wrapper: Wrapper,
-      }
+      },
     );
 
     expect(
       screen.getAllByLabelText('parent_sub_process', {
         selector: "[aria-expanded='false']",
-      })
+      }),
     ).toHaveLength(2);
 
     act(() => {
@@ -292,12 +292,12 @@ describe('FlowNodeInstancesTree - Modification placeholders', () => {
       expect(
         screen.getAllByLabelText('parent_sub_process', {
           selector: "[aria-expanded='false']",
-        })
-      ).toHaveLength(3)
+        }),
+      ).toHaveLength(3),
     );
 
     mockFetchFlowNodeInstances().withSuccess(
-      multipleSubprocessesWithNoRunningScopeMock.secondLevel1
+      multipleSubprocessesWithNoRunningScopeMock.secondLevel1,
     );
 
     const [expandFirstScope, expandSecondScope, expandNewScope] =
@@ -310,40 +310,40 @@ describe('FlowNodeInstancesTree - Modification placeholders', () => {
     expect(await screen.findByText('inner_sub_process')).toBeInTheDocument();
 
     mockFetchFlowNodeInstances().withSuccess(
-      multipleSubprocessesWithNoRunningScopeMock.thirdLevel1
+      multipleSubprocessesWithNoRunningScopeMock.thirdLevel1,
     );
 
     await user.type(
       screen.getByLabelText('inner_sub_process', {
         selector: "[aria-expanded='false']",
       }),
-      '{arrowright}'
+      '{arrowright}',
     );
     expect(await screen.findByText('user_task')).toBeInTheDocument();
 
     mockFetchFlowNodeInstances().withSuccess(
-      multipleSubprocessesWithNoRunningScopeMock.secondLevel2
+      multipleSubprocessesWithNoRunningScopeMock.secondLevel2,
     );
 
     await user.type(expandSecondScope!, '{arrowright}');
 
     await waitFor(() =>
-      expect(screen.getAllByText('inner_sub_process')).toHaveLength(2)
+      expect(screen.getAllByText('inner_sub_process')).toHaveLength(2),
     );
 
     mockFetchFlowNodeInstances().withSuccess(
-      multipleSubprocessesWithNoRunningScopeMock.thirdLevel2
+      multipleSubprocessesWithNoRunningScopeMock.thirdLevel2,
     );
 
     await user.type(
       screen.getByLabelText('inner_sub_process', {
         selector: "[aria-expanded='false']",
       }),
-      '{arrowright}'
+      '{arrowright}',
     );
 
     await waitFor(() =>
-      expect(screen.getAllByText('user_task')).toHaveLength(2)
+      expect(screen.getAllByText('user_task')).toHaveLength(2),
     );
 
     await user.type(expandNewScope!, '{arrowright}');
@@ -354,7 +354,7 @@ describe('FlowNodeInstancesTree - Modification placeholders', () => {
       screen.getByLabelText('inner_sub_process', {
         selector: "[aria-expanded='false']",
       }),
-      '{arrowright}'
+      '{arrowright}',
     );
 
     expect(screen.getAllByText('user_task')).toHaveLength(4);
@@ -364,7 +364,7 @@ describe('FlowNodeInstancesTree - Modification placeholders', () => {
       screen.getAllByLabelText('parent_sub_process', {
         selector: "[aria-expanded='true']",
       })[0]!,
-      '{arrowleft}'
+      '{arrowleft}',
     );
 
     expect(screen.getAllByText('inner_sub_process')).toHaveLength(2);
@@ -375,7 +375,7 @@ describe('FlowNodeInstancesTree - Modification placeholders', () => {
       screen.getAllByLabelText('parent_sub_process', {
         selector: "[aria-expanded='true']",
       })[0]!,
-      '{arrowleft}'
+      '{arrowleft}',
     );
 
     expect(screen.getAllByText('inner_sub_process')).toHaveLength(1);
@@ -386,7 +386,7 @@ describe('FlowNodeInstancesTree - Modification placeholders', () => {
       screen.getByLabelText('parent_sub_process', {
         selector: "[aria-expanded='true']",
       }),
-      '{arrowleft}'
+      '{arrowleft}',
     );
 
     expect(screen.queryByText('inner_sub_process')).not.toBeInTheDocument();
@@ -424,7 +424,7 @@ describe('FlowNodeInstancesTree - Modification placeholders', () => {
     ]);
 
     mockFetchFlowNodeInstances().withSuccess(
-      multipleSubprocessesWithOneRunningScopeMock.firstLevel
+      multipleSubprocessesWithOneRunningScopeMock.firstLevel,
     );
 
     mockFetchProcessXML().withSuccess(mockNestedSubprocess);
@@ -439,7 +439,7 @@ describe('FlowNodeInstancesTree - Modification placeholders', () => {
       expect(processInstanceDetailsStore.state.status).toBe('fetched');
     });
     await processInstanceDetailsStatisticsStore.fetchFlowNodeStatistics(
-      processInstanceId
+      processInstanceId,
     );
 
     const {user} = render(
@@ -454,13 +454,13 @@ describe('FlowNodeInstancesTree - Modification placeholders', () => {
       />,
       {
         wrapper: Wrapper,
-      }
+      },
     );
 
     expect(
       screen.getAllByLabelText('parent_sub_process', {
         selector: "[aria-expanded='false']",
-      })
+      }),
     ).toHaveLength(2);
 
     act(() => {
@@ -494,18 +494,18 @@ describe('FlowNodeInstancesTree - Modification placeholders', () => {
     expect(
       screen.getAllByLabelText('parent_sub_process', {
         selector: "[aria-expanded='false']",
-      })
+      }),
     ).toHaveLength(2);
 
     mockFetchFlowNodeInstances().withSuccess(
-      multipleSubprocessesWithOneRunningScopeMock.secondLevel1
+      multipleSubprocessesWithOneRunningScopeMock.secondLevel1,
     );
 
     const [expandFirstScope, expandSecondScope] = screen.getAllByLabelText(
       'parent_sub_process',
       {
         selector: "[aria-expanded='false']",
-      }
+      },
     );
 
     await user.type(expandFirstScope!, '{arrowright}');
@@ -513,41 +513,41 @@ describe('FlowNodeInstancesTree - Modification placeholders', () => {
     expect(await screen.findByText('inner_sub_process')).toBeInTheDocument();
 
     mockFetchFlowNodeInstances().withSuccess(
-      multipleSubprocessesWithOneRunningScopeMock.thirdLevel1
+      multipleSubprocessesWithOneRunningScopeMock.thirdLevel1,
     );
 
     await user.type(
       screen.getByLabelText('inner_sub_process', {
         selector: "[aria-expanded='false']",
       }),
-      '{arrowright}'
+      '{arrowright}',
     );
 
     expect(await screen.findByText('user_task')).toBeInTheDocument();
 
     mockFetchFlowNodeInstances().withSuccess(
-      multipleSubprocessesWithOneRunningScopeMock.secondLevel2
+      multipleSubprocessesWithOneRunningScopeMock.secondLevel2,
     );
 
     await user.type(expandSecondScope!, '{arrowright}');
 
     await waitFor(() =>
-      expect(screen.getAllByText('inner_sub_process')).toHaveLength(2)
+      expect(screen.getAllByText('inner_sub_process')).toHaveLength(2),
     );
 
     mockFetchFlowNodeInstances().withSuccess(
-      multipleSubprocessesWithOneRunningScopeMock.thirdLevel2
+      multipleSubprocessesWithOneRunningScopeMock.thirdLevel2,
     );
 
     await user.type(
       screen.getByLabelText('inner_sub_process', {
         selector: "[aria-expanded='false']",
       }),
-      '{arrowright}'
+      '{arrowright}',
     );
 
     await waitFor(() =>
-      expect(screen.getAllByText('Event_1rw6vny')).toHaveLength(2)
+      expect(screen.getAllByText('Event_1rw6vny')).toHaveLength(2),
     );
 
     expect(screen.getAllByText('user_task')).toHaveLength(4);
@@ -557,7 +557,7 @@ describe('FlowNodeInstancesTree - Modification placeholders', () => {
       screen.getAllByLabelText('parent_sub_process', {
         selector: "[aria-expanded='true']",
       })[0]!,
-      '{arrowleft}'
+      '{arrowleft}',
     );
 
     expect(screen.getByText('inner_sub_process')).toBeInTheDocument();
@@ -568,7 +568,7 @@ describe('FlowNodeInstancesTree - Modification placeholders', () => {
       screen.getByLabelText('parent_sub_process', {
         selector: "[aria-expanded='true']",
       }),
-      '{arrowleft}'
+      '{arrowleft}',
     );
 
     expect(screen.queryByText('inner_sub_process')).not.toBeInTheDocument();

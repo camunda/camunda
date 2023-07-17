@@ -20,7 +20,7 @@ describe('CollapsablePanel', () => {
       >
         <div data-testid="cool-panel-content">Cool Panel Content</div>
       </CollapsablePanel>,
-      {wrapper: ThemeProvider}
+      {wrapper: ThemeProvider},
     );
 
     expect(screen.getByText('Cool Panel Content')).toBeInTheDocument();
@@ -36,7 +36,7 @@ describe('CollapsablePanel', () => {
       >
         <div>Cool Panel Content</div>
       </CollapsablePanel>,
-      {wrapper: ThemeProvider}
+      {wrapper: ThemeProvider},
     );
 
     expect(screen.queryByText('Cool Panel Content')).not.toBeInTheDocument();
@@ -54,7 +54,7 @@ describe('CollapsablePanel', () => {
       >
         <div data-testid="cool-panel-content">Cool Panel Content</div>
       </CollapsablePanel>,
-      {wrapper: ThemeProvider}
+      {wrapper: ThemeProvider},
     );
 
     await user.click(screen.getByTestId('collapse-button'));
@@ -67,7 +67,7 @@ describe('CollapsablePanel', () => {
         toggle={toggleMock}
       >
         <div data-testid="cool-panel-content">Cool Panel Content</div>
-      </CollapsablePanel>
+      </CollapsablePanel>,
     );
 
     await user.click(screen.getByTestId('expand-button'));
@@ -87,12 +87,12 @@ it('should have background color style rule when hasBackgroundColor is true', ()
     >
       <div data-testid="cool-panel-content">Cool Panel Content</div>
     </CollapsablePanel>,
-    {wrapper: ThemeProvider}
+    {wrapper: ThemeProvider},
   );
 
   expect(screen.getByTestId('expanded-panel')).toHaveStyleRule(
     'background-color',
-    '#f7f8fa'
+    '#f7f8fa',
   );
 });
 
@@ -106,12 +106,12 @@ it('should have border-right rule when panel position is RIGHT', () => {
     >
       <div data-testid="cool-panel-content">Cool Panel Content</div>
     </CollapsablePanel>,
-    {wrapper: ThemeProvider}
+    {wrapper: ThemeProvider},
   );
 
   expect(screen.getByTestId('expanded-panel')).toHaveStyleRule(
     'border-right',
-    'none'
+    'none',
   );
 });
 
@@ -125,11 +125,11 @@ it('should not have border-right rule when panel position is not RIGHT', () => {
     >
       <div data-testid="cool-panel-content">Cool Panel Content</div>
     </CollapsablePanel>,
-    {wrapper: ThemeProvider}
+    {wrapper: ThemeProvider},
   );
 
   expect(screen.getByTestId('expanded-panel')).not.toHaveStyleRule(
     'border-right',
-    'none'
+    'none',
   );
 });

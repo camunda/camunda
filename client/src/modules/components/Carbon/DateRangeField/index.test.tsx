@@ -46,7 +46,7 @@ describe('Date Range Field', () => {
     await applyDateRange(user, screen);
 
     expect(screen.getByLabelText('Start Date Range')).toHaveValue(
-      `${year}-${month}-${fromDay} ${fromTime} - ${year}-${month}-${toDay} ${toTime}`
+      `${year}-${month}-${fromDay} ${fromTime} - ${year}-${month}-${toDay} ${toTime}`,
     );
   });
 
@@ -66,7 +66,7 @@ describe('Date Range Field', () => {
 
     const expectedValue = `${year}-${month}-${fromDay} 00:00:00 - ${year}-${month}-${toDay} 23:59:59`;
     expect(screen.getByLabelText('Start Date Range')).toHaveValue(
-      expectedValue
+      expectedValue,
     );
 
     await user.click(screen.getByLabelText('Start Date Range'));
@@ -74,7 +74,7 @@ describe('Date Range Field', () => {
 
     await user.click(screen.getByText('Cancel'));
     expect(screen.getByLabelText('Start Date Range')).toHaveValue(
-      expectedValue
+      expectedValue,
     );
   });
 
@@ -87,7 +87,7 @@ describe('Date Range Field', () => {
     });
 
     expect(screen.getByLabelText('Start Date Range')).toHaveValue(
-      '2021-02-03 12:34:56 - 2021-02-06 01:02:03'
+      '2021-02-03 12:34:56 - 2021-02-06 01:02:03',
     );
 
     await user.click(screen.getByLabelText('Start Date Range'));
@@ -113,7 +113,7 @@ describe('Date Range Field', () => {
     await applyDateRange(user, screen);
 
     expect(screen.getByLabelText('Start Date Range')).toHaveValue(
-      '2022-01-01 12:30:00 - 2022-12-01 17:15:00'
+      '2022-01-01 12:30:00 - 2022-12-01 17:15:00',
     );
   });
 

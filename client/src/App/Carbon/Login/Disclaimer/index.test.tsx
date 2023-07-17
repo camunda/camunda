@@ -24,17 +24,17 @@ describe('<Disclaimer />', () => {
     expect(
       screen.getByText((content, element) => {
         return content !== '' && element?.textContent === DISCLAIMER_TEXT;
-      })
+      }),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole('link', {name: 'terms & conditions page'})
+      screen.getByRole('link', {name: 'terms & conditions page'}),
     ).toHaveAttribute(
       'href',
-      'https://camunda.com/legal/terms/camunda-platform/camunda-platform-8-self-managed/'
+      'https://camunda.com/legal/terms/camunda-platform/camunda-platform-8-self-managed/',
     );
     expect(screen.getByRole('link', {name: 'contact sales'})).toHaveAttribute(
       'href',
-      'https://camunda.com/contact/'
+      'https://camunda.com/contact/',
     );
 
     window.clientConfig = {
@@ -45,17 +45,17 @@ describe('<Disclaimer />', () => {
     expect(
       screen.getByText((content, element) => {
         return content !== '' && element?.textContent === DISCLAIMER_TEXT;
-      })
+      }),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole('link', {name: 'terms & conditions page'})
+      screen.getByRole('link', {name: 'terms & conditions page'}),
     ).toHaveAttribute(
       'href',
-      'https://camunda.com/legal/terms/camunda-platform/camunda-platform-8-self-managed/'
+      'https://camunda.com/legal/terms/camunda-platform/camunda-platform-8-self-managed/',
     );
     expect(screen.getByRole('link', {name: 'contact sales'})).toHaveAttribute(
       'href',
-      'https://camunda.com/contact/'
+      'https://camunda.com/contact/',
     );
   });
 
@@ -68,13 +68,13 @@ describe('<Disclaimer />', () => {
     expect(
       screen.queryByText((content, element) => {
         return content !== '' && element?.textContent === DISCLAIMER_TEXT;
-      })
+      }),
     ).not.toBeInTheDocument();
     expect(
-      screen.queryByRole('link', {name: 'terms & conditions page'})
+      screen.queryByRole('link', {name: 'terms & conditions page'}),
     ).not.toBeInTheDocument();
     expect(
-      screen.queryByRole('link', {name: 'contact sales'})
+      screen.queryByRole('link', {name: 'contact sales'}),
     ).not.toBeInTheDocument();
   });
 });

@@ -20,7 +20,7 @@ const DecisionState: React.FC<Props> = ({state, container}) => {
       {state === 'FAILED' && <IncidentIcon />}
       {state === 'EVALUATED' && <CompletedIcon />}
     </>,
-    container
+    container,
   );
 };
 

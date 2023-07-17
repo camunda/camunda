@@ -101,7 +101,7 @@ declare module 'bpmn-js/lib/NavigatedViewer' {
 
   export type EventCallback = (
     event: string,
-    callback: (event: Event) => void
+    callback: (event: Event) => void,
   ) => void;
 
   export type OverlayPosition = {
@@ -136,7 +136,7 @@ declare module 'bpmn-js/lib/NavigatedViewer' {
       resized(): void;
       zoom(
         newScale: number | 'fit-viewport',
-        center: 'auto' | {x: number; y: number} | null
+        center: 'auto' | {x: number; y: number} | null,
       ): void;
     };
     get(module: 'graphicsFactory'): {
@@ -150,7 +150,7 @@ declare module 'bpmn-js/lib/NavigatedViewer' {
           html: HTMLElement;
           position: OverlayPosition;
           scale?: {min: number; max: number};
-        }
+        },
       );
       clear(): void;
     };

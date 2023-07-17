@@ -10,7 +10,7 @@ import {mockPostRequest} from '../mockRequest';
 
 const mockFetchProcessInstancesStatistics = () =>
   mockPostRequest<ProcessInstancesStatisticsDto[]>(
-    '/api/process-instances/statistics'
+    '/api/process-instances/statistics',
   );
 
 export {mockFetchProcessInstancesStatistics};

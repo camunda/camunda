@@ -105,13 +105,13 @@ class Operations extends NetworkReconnectionHandler {
       } else {
         this.handleFetchError();
       }
-    }
+    },
   );
 
   fetchNextOperations = async () => {
     this.increasePage();
     this.fetchOperations(
-      this.state.operations[this.state.operations.length - 1]!.sortValues
+      this.state.operations[this.state.operations.length - 1]!.sortValues,
     );
   };
 
@@ -262,7 +262,7 @@ class Operations extends NetworkReconnectionHandler {
         accumulator[operation.id] = operation;
         return accumulator;
       },
-      {}
+      {},
     );
 
     this.state.operations = sortOperations(Object.values(operations));
@@ -279,7 +279,7 @@ class Operations extends NetworkReconnectionHandler {
 
   get hasRunningOperations() {
     return this.state.operations.some(
-      (operation) => operation.endDate === null
+      (operation) => operation.endDate === null,
     );
   }
 

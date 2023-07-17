@@ -72,7 +72,7 @@ describe('stores/incidentsByError', () => {
     expect(incidentsByErrorStore.state.status).toBe('first-fetch');
     await waitFor(() => {
       expect(incidentsByErrorStore.state.incidents).toEqual(
-        mockIncidentsByError
+        mockIncidentsByError,
       );
     });
   });
@@ -81,7 +81,7 @@ describe('stores/incidentsByError', () => {
     jest.useFakeTimers();
     incidentsByErrorStore.init();
     await waitFor(() =>
-      expect(incidentsByErrorStore.state.status).toBe('fetched')
+      expect(incidentsByErrorStore.state.status).toBe('fetched'),
     );
 
     expect(incidentsByErrorStore.state.incidents).toEqual(mockIncidentsByError);
@@ -127,8 +127,8 @@ describe('stores/incidentsByError', () => {
 
     await waitFor(() =>
       expect(incidentsByErrorStore.state.incidents).toEqual(
-        mockIncidentsByError
-      )
+        mockIncidentsByError,
+      ),
     );
 
     const newMockIncidentsByError = [
@@ -146,8 +146,8 @@ describe('stores/incidentsByError', () => {
 
     await waitFor(() =>
       expect(incidentsByErrorStore.state.incidents).toEqual(
-        newMockIncidentsByError
-      )
+        newMockIncidentsByError,
+      ),
     );
 
     window.addEventListener = originalEventListener;

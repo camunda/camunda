@@ -25,7 +25,7 @@ const TextInputField = React.forwardRef<HTMLInputElement, Props>(
         invalidText={error}
       />
     );
-  }
+  },
 );
 
 export {TextInputField};

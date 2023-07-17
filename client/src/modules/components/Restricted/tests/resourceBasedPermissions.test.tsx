@@ -64,7 +64,7 @@ describe('Restricted', () => {
       <Restricted scopes={['write']}>
         <div>test content</div>
       </Restricted>,
-      {wrapper: createWrapper()}
+      {wrapper: createWrapper()},
     );
 
     expect(screen.getByText('test content')).toBeInTheDocument();
@@ -78,7 +78,7 @@ describe('Restricted', () => {
         }}
       >
         <div>test content</div>
-      </Restricted>
+      </Restricted>,
     );
 
     expect(screen.getByText('test content')).toBeInTheDocument();
@@ -108,7 +108,7 @@ describe('Restricted', () => {
       >
         <div>test content</div>
       </Restricted>,
-      {wrapper: createWrapper()}
+      {wrapper: createWrapper()},
     );
 
     expect(screen.queryByText('test content')).not.toBeInTheDocument();
@@ -139,7 +139,7 @@ describe('Restricted', () => {
       >
         <div>test content</div>
       </Restricted>,
-      {wrapper: createWrapper()}
+      {wrapper: createWrapper()},
     );
 
     expect(screen.getByText('test content')).toBeInTheDocument();
@@ -169,7 +169,7 @@ describe('Restricted', () => {
       >
         <div>test content</div>
       </Restricted>,
-      {wrapper: createWrapper()}
+      {wrapper: createWrapper()},
     );
 
     expect(screen.getByText('test content')).toBeInTheDocument();
@@ -183,7 +183,7 @@ describe('Restricted', () => {
         }}
       >
         <div>test content</div>
-      </Restricted>
+      </Restricted>,
     );
 
     expect(screen.queryByText('test content')).not.toBeInTheDocument();
@@ -194,12 +194,12 @@ describe('Restricted', () => {
         resourceBasedRestrictions={{
           scopes: ['DELETE'],
           permissions: processesStore.getPermissions(
-            'eventBasedGatewayProcess'
+            'eventBasedGatewayProcess',
           ),
         }}
       >
         <div>test content</div>
-      </Restricted>
+      </Restricted>,
     );
 
     expect(screen.getByText('test content')).toBeInTheDocument();
@@ -213,7 +213,7 @@ describe('Restricted', () => {
         }}
       >
         <div>test content</div>
-      </Restricted>
+      </Restricted>,
     );
 
     expect(screen.getByText('test content')).toBeInTheDocument();
@@ -227,7 +227,7 @@ describe('Restricted', () => {
         }}
       >
         <div>test content</div>
-      </Restricted>
+      </Restricted>,
     );
 
     expect(screen.queryByText('test content')).not.toBeInTheDocument();

@@ -10,7 +10,7 @@ import {getFlowNodes} from '..';
 
 const createElement = (
   type: ElementType,
-  id: string = 'FlowNode'
+  id: string = 'FlowNode',
 ): BusinessObject => {
   return {
     id,

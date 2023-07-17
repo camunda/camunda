@@ -28,7 +28,7 @@ const Operation: React.FC<Props> = ({variableName, onRemove}) => {
   const scopeId =
     variablesStore.scopeId ??
     modificationsStore.getNewScopeIdForFlowNode(
-      flowNodeSelectionStore.state.selection?.flowNodeId
+      flowNodeSelectionStore.state.selection?.flowNodeId,
     );
 
   return (
@@ -46,7 +46,7 @@ const Operation: React.FC<Props> = ({variableName, onRemove}) => {
             scopeId!,
             currentId,
             'ADD_VARIABLE',
-            'variables'
+            'variables',
           );
         }}
       />

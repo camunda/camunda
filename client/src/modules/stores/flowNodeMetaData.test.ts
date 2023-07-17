@@ -35,7 +35,7 @@ describe('stores/flowNodeMetaData', () => {
       createInstance({
         id: PROCESS_INSTANCE_ID,
         state: 'ACTIVE',
-      })
+      }),
     );
 
     await processInstanceDetailsStore.fetchProcessInstance(PROCESS_INSTANCE_ID);
@@ -129,7 +129,7 @@ describe('stores/flowNodeMetaData', () => {
 
     modificationsStore.enableModificationMode();
     await processInstanceDetailsStatisticsStore.fetchFlowNodeStatistics(
-      PROCESS_INSTANCE_ID
+      PROCESS_INSTANCE_ID,
     );
 
     flowNodeMetaDataStore.init();

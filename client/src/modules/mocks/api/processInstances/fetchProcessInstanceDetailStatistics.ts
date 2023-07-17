@@ -10,7 +10,7 @@ import {ProcessInstanceDetailStatisticsDto} from 'modules/api/processInstances/f
 
 const mockFetchProcessInstanceDetailStatistics = (contextPath = '') =>
   mockGetRequest<ProcessInstanceDetailStatisticsDto[]>(
-    `${contextPath}/api/process-instances/:processInstanceId/statistics`
+    `${contextPath}/api/process-instances/:processInstanceId/statistics`,
   );
 
 export {mockFetchProcessInstanceDetailStatistics};

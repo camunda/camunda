@@ -9,7 +9,10 @@ import {MetaDataDto} from 'modules/api/processInstances/fetchFlowNodeMetaData';
 
 export const buildMetadata = (
   metadata: MetaDataDto['instanceMetadata'] | null,
-  incident: {errorType: {id: string; name: string}; errorMessage: string} | null
+  incident: {
+    errorType: {id: string; name: string};
+    errorMessage: string;
+  } | null,
 ) => {
   if (metadata === null) {
     return '';

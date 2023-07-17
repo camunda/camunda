@@ -106,8 +106,8 @@ describe('stores/instanceHistoryModification', () => {
     expect(
       instanceHistoryModificationStore.getVisibleChildPlaceholders(
         'id',
-        'process_1'
-      )
+        'process_1',
+      ),
     ).toEqual([
       {
         flowNodeId: 'startEvent_1',
@@ -124,8 +124,8 @@ describe('stores/instanceHistoryModification', () => {
     expect(
       instanceHistoryModificationStore.getVisibleChildPlaceholders(
         'id',
-        'subprocess_1'
-      )
+        'subprocess_1',
+      ),
     ).toEqual([
       {
         flowNodeId: 'endEvent_1',
@@ -150,25 +150,25 @@ describe('stores/instanceHistoryModification', () => {
     ]);
 
     modificationsStore.removeFlowNodeModification(
-      startEventModification.payload
+      startEventModification.payload,
     );
 
     modificationsStore.removeFlowNodeModification(
-      endEvent2Modification.payload
+      endEvent2Modification.payload,
     );
 
     expect(
       instanceHistoryModificationStore.getVisibleChildPlaceholders(
         'id',
-        'process_1'
-      )
+        'process_1',
+      ),
     ).toEqual([]);
 
     expect(
       instanceHistoryModificationStore.getVisibleChildPlaceholders(
         'id',
-        'subprocess_1'
-      )
+        'subprocess_1',
+      ),
     ).toEqual([
       {
         flowNodeId: 'endEvent_1',
@@ -199,8 +199,8 @@ describe('stores/instanceHistoryModification', () => {
     expect(
       instanceHistoryModificationStore.getVisibleChildPlaceholders(
         'id',
-        'process_1'
-      )
+        'process_1',
+      ),
     ).toEqual([
       {
         flowNodeId: 'startEvent_1',
@@ -219,8 +219,8 @@ describe('stores/instanceHistoryModification', () => {
     expect(
       instanceHistoryModificationStore.getVisibleChildPlaceholders(
         'id',
-        'process_1'
-      )
+        'process_1',
+      ),
     ).toEqual([]);
   });
 
@@ -230,8 +230,8 @@ describe('stores/instanceHistoryModification', () => {
     expect(
       instanceHistoryModificationStore.getVisibleChildPlaceholders(
         'id',
-        'subprocess_1'
-      )
+        'subprocess_1',
+      ),
     ).toEqual([
       {
         flowNodeId: 'endEvent_1',

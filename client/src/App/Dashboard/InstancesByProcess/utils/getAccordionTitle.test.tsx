@@ -10,19 +10,19 @@ import {getAccordionTitle} from './getAccordionTitle';
 describe('getAccordionTitle', () => {
   it('should get title for multiple instances/versions', () => {
     expect(getAccordionTitle('myProcessName', 100, 3)).toBe(
-      'View 100 Instances in 3 Versions of Process myProcessName'
+      'View 100 Instances in 3 Versions of Process myProcessName',
     );
   });
 
   it('should get title for single instance/version', () => {
     expect(getAccordionTitle('myProcessName', 1, 1)).toBe(
-      'View 1 Instance in 1 Version of Process myProcessName'
+      'View 1 Instance in 1 Version of Process myProcessName',
     );
   });
 
   it('should get title for no instances/versions', () => {
     expect(getAccordionTitle('myProcessName', 0, 0)).toBe(
-      'View 0 Instances in 0 Versions of Process myProcessName'
+      'View 0 Instances in 0 Versions of Process myProcessName',
     );
   });
 });

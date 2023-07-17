@@ -51,7 +51,7 @@ class DecisionXml extends NetworkReconnectionHandler {
         if (decisionDefinitionId !== undefined) {
           this.fetchDiagramXml(decisionDefinitionId);
         }
-      }
+      },
     );
   };
 

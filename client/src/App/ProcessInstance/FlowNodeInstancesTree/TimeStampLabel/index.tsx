@@ -24,7 +24,7 @@ const TimeStampLabel: React.FC<Props> = observer(
     return isTimeStampVisible && timeStamp ? (
       <TimeStamp isSelected={isSelected}>{formatDate(timeStamp)}</TimeStamp>
     ) : null;
-  }
+  },
 );
 
 export {TimeStampLabel};

@@ -40,14 +40,14 @@ describe('ListPanel', () => {
     });
 
     mockApplyOperation().withSuccess(
-      createBatchOperation({type: 'CANCEL_PROCESS_INSTANCE'})
+      createBatchOperation({type: 'CANCEL_PROCESS_INSTANCE'}),
     );
 
     processInstancesStore.fetchProcessInstancesFromFilters();
     processInstancesStore.init();
 
     await waitFor(() =>
-      expect(processInstancesStore.state.status).toBe('fetched')
+      expect(processInstancesStore.state.status).toBe('fetched'),
     );
 
     const {user} = render(<ListPanel />, {
@@ -55,12 +55,12 @@ describe('ListPanel', () => {
     });
 
     expect(
-      screen.queryByTitle(/has scheduled operations/i)
+      screen.queryByTitle(/has scheduled operations/i),
     ).not.toBeInTheDocument();
     await user.click(screen.getByTitle('Cancel Instance 1'));
     await user.click(screen.getByTitle('Apply'));
     expect(
-      screen.getByTitle(/instance 1 has scheduled operations/i)
+      screen.getByTitle(/instance 1 has scheduled operations/i),
     ).toBeInTheDocument();
     expect(screen.getByTestId('operation-spinner')).toBeInTheDocument();
 
@@ -95,7 +95,7 @@ describe('ListPanel', () => {
     processInstancesStore.fetchProcessInstancesFromFilters();
 
     await waitFor(() =>
-      expect(processInstancesStore.state.status).toBe('fetched')
+      expect(processInstancesStore.state.status).toBe('fetched'),
     );
 
     const {user} = render(<ListPanel />, {
@@ -103,7 +103,7 @@ describe('ListPanel', () => {
     });
 
     expect(
-      screen.queryByTitle(/has scheduled operations/i)
+      screen.queryByTitle(/has scheduled operations/i),
     ).not.toBeInTheDocument();
     await user.click(screen.getByTitle('Cancel Instance 1'));
     await user.click(screen.getByTitle('Apply'));
@@ -111,7 +111,7 @@ describe('ListPanel', () => {
     await waitFor(() =>
       expect(mockDisplayNotification).toHaveBeenCalledWith('error', {
         headline: 'Operation could not be created',
-      })
+      }),
     );
   });
 
@@ -126,7 +126,7 @@ describe('ListPanel', () => {
     processInstancesStore.fetchProcessInstancesFromFilters();
 
     await waitFor(() =>
-      expect(processInstancesStore.state.status).toBe('fetched')
+      expect(processInstancesStore.state.status).toBe('fetched'),
     );
 
     const {user} = render(<ListPanel />, {
@@ -134,7 +134,7 @@ describe('ListPanel', () => {
     });
 
     expect(
-      screen.queryByTitle(/has scheduled operations/i)
+      screen.queryByTitle(/has scheduled operations/i),
     ).not.toBeInTheDocument();
     await user.click(screen.getByTitle('Cancel Instance 1'));
     await user.click(screen.getByTitle('Apply'));
@@ -143,7 +143,7 @@ describe('ListPanel', () => {
       expect(mockDisplayNotification).toHaveBeenCalledWith('error', {
         headline: 'Operation could not be created',
         description: 'You do not have permission',
-      })
+      }),
     );
   });
 });

@@ -48,7 +48,7 @@ const IncidentsTable: React.FC = observer(function IncidentsTable() {
 
   const handleMoreButtonClick = (
     errorMessage: string,
-    flowNodeName: string
+    flowNodeName: string,
   ) => {
     setIsModalVisible(true);
     setModalContent(errorMessage);
@@ -58,7 +58,7 @@ const IncidentsTable: React.FC = observer(function IncidentsTable() {
   const sortedIncidents: Incident[] = sortIncidents(
     filteredIncidents,
     sortBy,
-    sortOrder
+    sortOrder,
   );
 
   const isJobIdPresent = sortedIncidents.some(({jobId}) => jobId !== null);
@@ -169,7 +169,7 @@ const IncidentsTable: React.FC = observer(function IncidentsTable() {
 
                       handleMoreButtonClick(
                         incident.errorMessage,
-                        incident.flowNodeName
+                        incident.flowNodeName,
                       );
                     }}
                   >
@@ -188,7 +188,7 @@ const IncidentsTable: React.FC = observer(function IncidentsTable() {
                   <Link
                     to={{
                       pathname: Paths.processInstance(
-                        rootCauseInstance.instanceId
+                        rootCauseInstance.instanceId,
                       ),
                     }}
                     title={`View root cause instance ${rootCauseInstance.processDefinitionName} - ${rootCauseInstance.instanceId}`}

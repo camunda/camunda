@@ -26,12 +26,12 @@ describe('<VariablesPanel />', () => {
     expect(
       screen.getByRole('button', {
         name: /inputs and outputs/i,
-      })
+      }),
     ).toBeInTheDocument();
     expect(
       screen.getByRole('button', {
         name: /result/i,
-      })
+      }),
     ).toBeInTheDocument();
   });
 
@@ -41,12 +41,12 @@ describe('<VariablesPanel />', () => {
     expect(
       screen.getByRole('heading', {
         name: /inputs/i,
-      })
+      }),
     ).toBeInTheDocument();
     expect(
       screen.getByRole('heading', {
         name: /outputs/i,
-      })
+      }),
     ).toBeInTheDocument();
   });
 
@@ -58,13 +58,13 @@ describe('<VariablesPanel />', () => {
     const {user} = render(<VariablesPanel />, {wrapper: ThemeProvider});
 
     await waitForElementToBeRemoved(() =>
-      screen.getByTestId('inputs-skeleton')
+      screen.getByTestId('inputs-skeleton'),
     );
 
     await user.click(
       screen.getByRole('button', {
         name: /result/i,
-      })
+      }),
     );
 
     expect(screen.getByTestId('results-json-viewer')).toBeInTheDocument();
@@ -72,18 +72,18 @@ describe('<VariablesPanel />', () => {
     await user.click(
       screen.getByRole('button', {
         name: /inputs and outputs/i,
-      })
+      }),
     );
 
     expect(
       screen.getByRole('heading', {
         name: /inputs/i,
-      })
+      }),
     ).toBeInTheDocument();
     expect(
       screen.getByRole('heading', {
         name: /outputs/i,
-      })
+      }),
     ).toBeInTheDocument();
   });
 
@@ -95,19 +95,19 @@ describe('<VariablesPanel />', () => {
     render(<VariablesPanel />, {wrapper: ThemeProvider});
 
     expect(
-      await screen.findByTestId('results-json-viewer')
+      await screen.findByTestId('results-json-viewer'),
     ).toBeInTheDocument();
 
     expect(
       screen.getByRole('heading', {
         name: /result/i,
-      })
+      }),
     ).toBeInTheDocument();
 
     expect(
       screen.queryByRole('button', {
         name: /inputs and outputs/i,
-      })
+      }),
     ).not.toBeInTheDocument();
   });
 });

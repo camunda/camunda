@@ -39,7 +39,7 @@ class DrdViewer {
     xml: string,
     selectableDecisions: string[],
     selectedDecision: string | null,
-    decisionStates: DecisionStates
+    decisionStates: DecisionStates,
   ) => {
     if (this.#viewer === null) {
       this.#viewer = new Viewer('drd', {

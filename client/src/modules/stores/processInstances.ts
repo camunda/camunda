@@ -127,7 +127,7 @@ class ProcessInstances extends NetworkReconnectionHandler {
 
   setLatestFetchDetails = (
     fetchType: FetchType,
-    processInstancesCount: number
+    processInstancesCount: number,
   ) => {
     this.state.latestFetch = {
       fetchType,
@@ -137,7 +137,7 @@ class ProcessInstances extends NetworkReconnectionHandler {
 
   getProcessInstances = (
     fetchType: FetchType,
-    processInstances: ProcessInstanceEntity[]
+    processInstances: ProcessInstanceEntity[],
   ) => {
     switch (fetchType) {
       case 'next':
@@ -147,12 +147,15 @@ class ProcessInstances extends NetworkReconnectionHandler {
         ];
 
         return allProcessInstances.slice(
-          Math.max(allProcessInstances.length - MAX_PROCESS_INSTANCES_STORED, 0)
+          Math.max(
+            allProcessInstances.length - MAX_PROCESS_INSTANCES_STORED,
+            0,
+          ),
         );
       case 'prev':
         return [...processInstances, ...this.state.processInstances].slice(
           0,
-          MAX_PROCESS_INSTANCES_STORED
+          MAX_PROCESS_INSTANCES_STORED,
         );
       case 'initial':
       default:
@@ -415,7 +418,7 @@ class ProcessInstances extends NetworkReconnectionHandler {
         .forEach((instance) => {
           instance.operations = instance.operations.filter(
             (operation) =>
-              !(operation.type === operationType && operation.id === undefined)
+              !(operation.type === operationType && operation.id === undefined),
           );
 
           if (!hasActiveOperations(instance.operations)) {
@@ -442,7 +445,7 @@ class ProcessInstances extends NetworkReconnectionHandler {
 
       this.refreshInstanceTimeout = window.setTimeout(
         this.refreshAllInstances,
-        2000
+        2000,
       );
     }
   };

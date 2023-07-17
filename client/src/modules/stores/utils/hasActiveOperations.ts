@@ -9,7 +9,7 @@ import {ACTIVE_OPERATION_STATES} from 'modules/constants';
 
 const hasActiveOperations = (operations: InstanceOperationEntity[]) => {
   return operations.some((operation) =>
-    ACTIVE_OPERATION_STATES.includes(operation.state)
+    ACTIVE_OPERATION_STATES.includes(operation.state),
   );
 };
 

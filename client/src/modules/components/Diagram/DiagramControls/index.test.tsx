@@ -20,11 +20,11 @@ describe('<DiagramControls />', () => {
         handleZoomOut={handleZoomOut}
         handleZoomReset={handleZoomReset}
       />,
-      {wrapper: ThemeProvider}
+      {wrapper: ThemeProvider},
     );
 
     await user.click(
-      await screen.findByRole('button', {name: 'Reset diagram zoom'})
+      await screen.findByRole('button', {name: 'Reset diagram zoom'}),
     );
 
     expect(handleZoomReset).toHaveBeenCalled();

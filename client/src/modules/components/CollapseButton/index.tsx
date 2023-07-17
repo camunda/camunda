@@ -22,7 +22,7 @@ interface Props extends React.ButtonHTMLAttributes<HTMLButtonElement> {
 
 const CollapseButton = React.forwardRef<any, Props>(function CollapseButton(
   {direction, onClick, ...props},
-  ref
+  ref,
 ) {
   return (
     <StyledCollapseButton ref={ref} {...props} onClick={onClick}>

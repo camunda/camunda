@@ -30,7 +30,7 @@ const useLoadingProgress = ({
       totalCount > 0
     ) {
       const realProgressPercentage = Math.floor(
-        (100 / totalCount) * finishedCount
+        (100 / totalCount) * finishedCount,
       );
 
       fakeTimeoutId.current = setTimeout(() => {
@@ -38,8 +38,8 @@ const useLoadingProgress = ({
           Math.max(
             Math.min(fakeProgressPercentage + 1, 95),
             realProgressPercentage,
-            fakeStartPercentage
-          )
+            fakeStartPercentage,
+          ),
         );
         fakeTimeoutId.current = null;
       }, fakeProgressUpdateRate);

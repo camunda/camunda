@@ -26,8 +26,8 @@ const Container = styled.div<Props>`
         ${
           $hasBreadcrumb ? 'var(--cds-spacing-07)' : ''
         } var(--cds-spacing-09) 1fr ${
-        $hasFrameFooter ? 'var(--cds-spacing-09)' : ''
-      }
+          $hasFrameFooter ? 'var(--cds-spacing-09)' : ''
+        }
       `};
 
       ${$hasFrameHeader &&

@@ -21,7 +21,7 @@ describe('Modification Mode', () => {
           title="modify process instance"
         />
       </OperationItems>,
-      {wrapper: ThemeProvider}
+      {wrapper: ThemeProvider},
     );
 
     expect(screen.getByTestId('enter-modification-mode')).toBeInTheDocument();
@@ -37,11 +37,11 @@ describe('Modification Mode', () => {
           title={BUTTON_TITLE}
         />
       </OperationItems>,
-      {wrapper: ThemeProvider}
+      {wrapper: ThemeProvider},
     );
 
     expect(
-      screen.getByRole('button', {name: BUTTON_TITLE})
+      screen.getByRole('button', {name: BUTTON_TITLE}),
     ).toBeInTheDocument();
   });
 
@@ -56,7 +56,7 @@ describe('Modification Mode', () => {
           title={BUTTON_TITLE}
         />
       </OperationItems>,
-      {wrapper: ThemeProvider}
+      {wrapper: ThemeProvider},
     );
 
     await user.click(screen.getByRole('button', {name: BUTTON_TITLE}));

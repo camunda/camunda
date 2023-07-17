@@ -58,7 +58,7 @@ const MetricPanel = observer(() => {
             : {
                 incidents: true,
                 active: true,
-              }
+              },
         )}
       >
         {`${

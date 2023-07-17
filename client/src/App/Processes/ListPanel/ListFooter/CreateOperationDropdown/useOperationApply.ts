@@ -21,7 +21,7 @@ export default function useOperationApply() {
   return {
     applyBatchOperation: (
       operationType: OperationEntityType,
-      onSuccess: () => void
+      onSuccess: () => void,
     ) => {
       const query = getProcessInstancesRequestFilters();
       const filterIds = query.ids || [];

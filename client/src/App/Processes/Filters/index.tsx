@@ -107,7 +107,7 @@ const OPTIONAL_FILTER_FIELDS: Record<
     validate: mergeValidators(
       validateIdsCharacters,
       validateIdsLength,
-      validatesIdsComplete
+      validatesIdsComplete,
     ),
   },
   operationId: {
@@ -116,7 +116,7 @@ const OPTIONAL_FILTER_FIELDS: Record<
     type: 'text',
     validate: mergeValidators(
       validateOperationIdCharacters,
-      validateOperationIdComplete
+      validateOperationIdComplete,
     ),
   },
   parentInstanceId: {
@@ -126,7 +126,7 @@ const OPTIONAL_FILTER_FIELDS: Record<
     validate: mergeValidators(
       validateParentInstanceIdComplete,
       validateParentInstanceIdNotTooLong,
-      validateParentInstanceIdCharacters
+      validateParentInstanceIdCharacters,
     ),
   },
   errorMessage: {
@@ -150,7 +150,7 @@ const Filters: React.FC = observer(() => {
 
   const [visibleFilters, setVisibleFilters] = useState<OptionalFilter[]>([]);
   const unselectedOptionalFilters = optionalFilters.filter(
-    (filter) => !visibleFilters.includes(filter)
+    (filter) => !visibleFilters.includes(filter),
   );
 
   useEffect(() => {
@@ -172,7 +172,7 @@ const Filters: React.FC = observer(() => {
               ? ['endDateRange']
               : []),
           ] as OptionalFilter[]),
-        ])
+        ]),
       );
     });
   }, [location.state, location.search]);
@@ -254,8 +254,8 @@ const Filters: React.FC = observer(() => {
                         handler: () => {
                           setVisibleFilters(
                             Array.from(
-                              new Set([...visibleFilters, ...[filter]])
-                            )
+                              new Set([...visibleFilters, ...[filter]]),
+                            ),
                           );
                           tracking.track({
                             eventName: 'optional-filter-selected',
@@ -265,7 +265,7 @@ const Filters: React.FC = observer(() => {
                             ['startDateRange', 'endDateRange'].includes(filter)
                           ) {
                             setTimeout(() =>
-                              dateRangePopoverStore.setVisiblePopover(filter)
+                              dateRangePopoverStore.setVisiblePopover(filter),
                             );
                           }
                         },
@@ -287,8 +287,8 @@ const Filters: React.FC = observer(() => {
                       onClick={() => {
                         setVisibleFilters(
                           visibleFilters.filter(
-                            (visibleFilter) => visibleFilter !== filter
-                          )
+                            (visibleFilter) => visibleFilter !== filter,
+                          ),
                         );
 
                         OPTIONAL_FILTER_FIELDS[filter].keys.forEach((key) => {

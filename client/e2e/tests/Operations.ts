@@ -26,7 +26,7 @@ fixture('Operations')
       .click(
         screen.queryByRole('link', {
           name: /processes/i,
-        })
+        }),
       );
   });
 
@@ -55,7 +55,7 @@ test('Retry and Cancel single instance ', async (t) => {
     instance.processInstanceKey,
     {
       paste: true,
-    }
+    },
   );
 
   // wait for filter to be applied
@@ -65,7 +65,7 @@ test('Retry and Cancel single instance ', async (t) => {
   await t.click(
     screen.queryByRole('button', {
       name: `Retry Instance ${instance.processInstanceKey}`,
-    })
+    }),
   );
 
   // expect spinner to show and disappear
@@ -77,7 +77,7 @@ test('Retry and Cancel single instance ', async (t) => {
     .click(
       screen.queryByRole('button', {
         name: `Cancel Instance ${instance.processInstanceKey}`,
-      })
+      }),
     )
     .click(screen.getByRole('button', {name: 'Apply'}));
 
@@ -101,7 +101,7 @@ test('Retry and Cancel single instance ', async (t) => {
     .ok()
     .expect(
       screen.queryByText('There are no Instances matching this filter set')
-        .exists
+        .exists,
     )
     .ok();
 
@@ -114,13 +114,13 @@ test('Retry and Cancel single instance ', async (t) => {
     .ok();
 
   const instanceRow = within(
-    within(screen.queryByTestId('data-list')).getAllByRole('row').nth(0)
+    within(screen.queryByTestId('data-list')).getAllByRole('row').nth(0),
   );
 
   await t
     .expect(
       screen.queryByTestId(`CANCELED-icon-${instance.processInstanceKey}`)
-        .exists
+        .exists,
     )
     .ok()
     .expect(instanceRow.queryByText(instance.bpmnProcessId).exists)
@@ -138,7 +138,7 @@ test('Retry and cancel multiple instances ', async (t) => {
   await t.expect(screen.queryByTestId('data-list').exists).ok();
 
   const instancesListItems = within(
-    screen.queryByTestId('operations-list')
+    screen.queryByTestId('operations-list'),
   ).getAllByRole('listitem');
 
   await displayOptionalFilter('Process Instance Key(s)');
@@ -148,7 +148,7 @@ test('Retry and cancel multiple instances ', async (t) => {
     ProcessesPage.Filters.instanceIds.field,
     // @ts-ignore I had to use ignore instead of expect-error here because Testcafe would not run the tests with it
     instances.map((instance) => instance.processInstanceKey).join(','),
-    {paste: true}
+    {paste: true},
   );
 
   const instancesList = screen.queryByTestId('data-list');
@@ -163,14 +163,14 @@ test('Retry and cancel multiple instances ', async (t) => {
   await t.click(
     screen.queryByRole('button', {
       name: `Apply Operation on ${instances.length} Instances...`,
-    })
+    }),
   );
 
   await t
     .click(
       within(screen.queryByTestId('menu')).queryByRole('button', {
         name: 'Retry',
-      })
+      }),
     )
     .expect(screen.queryByTestId('operations-list').visible)
     .notOk()
@@ -183,7 +183,7 @@ test('Retry and cancel multiple instances ', async (t) => {
   // expect first operation item to have progress bar
   await t
     .expect(
-      within(instancesListItems.nth(0)).queryByTestId('progress-bar').exists
+      within(instancesListItems.nth(0)).queryByTestId('progress-bar').exists,
     )
     .ok();
 
@@ -192,7 +192,7 @@ test('Retry and cancel multiple instances ', async (t) => {
     .expect(within(instancesListItems.nth(0)).queryByText(DATE_REGEX).exists)
     .ok()
     .expect(
-      within(instancesListItems.nth(0)).queryByTestId('progress-bar').exists
+      within(instancesListItems.nth(0)).queryByTestId('progress-bar').exists,
     )
     .notOk();
 
@@ -206,15 +206,15 @@ test('Retry and cancel multiple instances ', async (t) => {
   await t
     .click(
       within(instancesListItems.nth(0)).queryByText(
-        `${instances.length} Instances`
-      )
+        `${instances.length} Instances`,
+      ),
     )
     .expect(within(instancesList).getAllByRole('row').count)
     .eql(instances.length)
     .expect(ProcessesPage.Filters.operationId.value.value)
     .eql(
       await within(instancesListItems.nth(0)).queryByTestId('operation-id')
-        .innerText
+        .innerText,
     );
 
   // check if all instances are shown
@@ -225,10 +225,10 @@ test('Retry and cancel multiple instances ', async (t) => {
         await t
           .expect(
             within(instancesList).queryByText(instance.processInstanceKey)
-              .exists
+              .exists,
           )
-          .ok()
-    )
+          .ok(),
+    ),
   );
 
   await t.click(ProcessesPage.selectAllInstancesCheckbox);
@@ -236,14 +236,14 @@ test('Retry and cancel multiple instances ', async (t) => {
   await t.click(
     screen.queryByRole('button', {
       name: `Apply Operation on ${instances.length} Instances...`,
-    })
+    }),
   );
 
   await t
     .click(
       within(screen.queryByTestId('menu')).queryByRole('button', {
         name: 'Cancel',
-      })
+      }),
     )
     .click(screen.queryByRole('button', {name: 'Apply'}))
     .expect(screen.queryByTestId('operations-list').visible)
@@ -254,7 +254,7 @@ test('Retry and cancel multiple instances ', async (t) => {
   // expect first operation item to have progress bar
   await t
     .expect(
-      within(instancesListItems.nth(0)).queryByTestId('progress-bar').exists
+      within(instancesListItems.nth(0)).queryByTestId('progress-bar').exists,
     )
     .ok();
 
@@ -265,9 +265,9 @@ test('Retry and cancel multiple instances ', async (t) => {
       t
         .expect(
           screen.queryByTestId(`CANCELED-icon-${instance.processInstanceKey}`)
-            .exists
+            .exists,
         )
-        .ok({timeout: 30000})
-    )
+        .ok({timeout: 30000}),
+    ),
   );
 });

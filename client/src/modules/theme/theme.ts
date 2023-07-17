@@ -1011,7 +1011,7 @@ const theme = {
       filters: {
         resetButtonContainer: `0px -2px 4px 0px ${rgba(
           SEMANTIC_COLORS.black,
-          0.1
+          0.1,
         )}`,
       },
       variablesPanel: {
@@ -1027,7 +1027,7 @@ const theme = {
       topPanel: {
         modificationInfoBanner: `0 2px 4px 0 ${rgba(
           SEMANTIC_COLORS.black,
-          0.2
+          0.2,
         )}`,
       },
       modules: {
@@ -1967,7 +1967,7 @@ const theme = {
       filters: {
         resetButtonContainer: `0px -1px 2px 0px ${rgba(
           SEMANTIC_COLORS.black,
-          0.1
+          0.1,
         )}`,
       },
       variablesPanel: {
@@ -1983,7 +1983,7 @@ const theme = {
       topPanel: {
         modificationInfoBanner: `0 2px 4px 0 ${rgba(
           SEMANTIC_COLORS.black,
-          0.2
+          0.2,
         )}`,
       },
       modules: {

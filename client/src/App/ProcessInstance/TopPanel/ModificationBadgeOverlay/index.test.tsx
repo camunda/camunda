@@ -27,7 +27,7 @@ describe('ModificationBadgeOverlay', () => {
         newTokenCount={0}
         cancelledTokenCount={3}
       />,
-      {wrapper: ThemeProvider}
+      {wrapper: ThemeProvider},
     );
 
     expect(screen.getByTestId('badge-minus-icon')).toBeInTheDocument();
@@ -42,7 +42,7 @@ describe('ModificationBadgeOverlay', () => {
         newTokenCount={2}
         cancelledTokenCount={0}
       />,
-      {wrapper: ThemeProvider}
+      {wrapper: ThemeProvider},
     );
 
     expect(screen.getByTestId('badge-plus-icon')).toBeInTheDocument();
@@ -57,7 +57,7 @@ describe('ModificationBadgeOverlay', () => {
         newTokenCount={2}
         cancelledTokenCount={3}
       />,
-      {wrapper: ThemeProvider}
+      {wrapper: ThemeProvider},
     );
 
     expect(screen.getByTestId('badge-minus-icon')).toBeInTheDocument();

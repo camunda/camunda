@@ -7,7 +7,7 @@
 
 const getError = (
   nameFieldError?: string,
-  valueFieldError?: string
+  valueFieldError?: string,
 ): string | undefined => {
   if (nameFieldError === undefined && valueFieldError === undefined) {
     return;

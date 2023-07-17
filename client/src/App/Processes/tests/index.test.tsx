@@ -90,12 +90,12 @@ describe('Instances', () => {
     // diagram panel
     expect(screen.getByRole('heading', {name: 'Process'})).toBeInTheDocument();
     expect(
-      screen.getByText('There is no Process selected')
+      screen.getByText('There is no Process selected'),
     ).toBeInTheDocument();
     expect(
       screen.getByText(
-        'To see a Diagram, select a Process in the Filters panel'
-      )
+        'To see a Diagram, select a Process in the Filters panel',
+      ),
     ).toBeInTheDocument();
 
     // filters panel
@@ -103,7 +103,7 @@ describe('Instances', () => {
 
     // instances table
     expect(
-      screen.getByRole('heading', {name: /^process instances$/i})
+      screen.getByRole('heading', {name: /^process instances$/i}),
     ).toBeInTheDocument();
     expect(await screen.findByText(/^912 results found$/i)).toBeInTheDocument();
   });
@@ -118,16 +118,16 @@ describe('Instances', () => {
     await waitForElementToBeRemoved(screen.getByTestId('table-skeleton'));
 
     expect(
-      screen.getByLabelText(/select instance 2251799813685594/i)
+      screen.getByLabelText(/select instance 2251799813685594/i),
     ).not.toBeChecked();
 
     await user.click(
       await screen.findByRole('checkbox', {
         name: /select instance 2251799813685594/i,
-      })
+      }),
     );
     expect(
-      screen.getByLabelText(/select instance 2251799813685594/i)
+      screen.getByLabelText(/select instance 2251799813685594/i),
     ).toBeChecked();
 
     mockFetchProcessInstances().withSuccess(mockProcessInstances);
@@ -135,7 +135,7 @@ describe('Instances', () => {
     await waitForElementToBeRemoved(screen.getByTestId('instances-loader'));
 
     expect(
-      screen.getByLabelText(/select instance 2251799813685594/i)
+      screen.getByLabelText(/select instance 2251799813685594/i),
     ).not.toBeChecked();
   });
 
@@ -147,16 +147,16 @@ describe('Instances', () => {
     await waitForElementToBeRemoved(screen.getByTestId('table-skeleton'));
 
     expect(
-      screen.getByLabelText(/select instance 2251799813685594/i)
+      screen.getByLabelText(/select instance 2251799813685594/i),
     ).not.toBeChecked();
 
     await user.click(
       await screen.findByRole('checkbox', {
         name: /select instance 2251799813685594/i,
-      })
+      }),
     );
     expect(
-      screen.getByLabelText(/select instance 2251799813685594/i)
+      screen.getByLabelText(/select instance 2251799813685594/i),
     ).toBeChecked();
 
     mockFetchProcessInstances().withSuccess(mockProcessInstances);
@@ -166,7 +166,7 @@ describe('Instances', () => {
     await waitForElementToBeRemoved(screen.getByTestId('instances-loader'));
 
     expect(
-      screen.getByLabelText(/select instance 2251799813685594/i)
+      screen.getByLabelText(/select instance 2251799813685594/i),
     ).toBeChecked();
   });
 
@@ -178,7 +178,7 @@ describe('Instances', () => {
     mockFetchProcessInstances().withSuccess(mockProcessInstances);
     mockFetchProcessXML().withSuccess(mockProcessXML);
     mockFetchProcessInstancesStatistics().withSuccess(
-      firstProcessStatisticsResponse
+      firstProcessStatisticsResponse,
     );
 
     const {user} = render(<Processes />, {
@@ -186,22 +186,22 @@ describe('Instances', () => {
     });
 
     await waitFor(() =>
-      expect(processDiagramStore.state.status).toBe('fetched')
+      expect(processDiagramStore.state.status).toBe('fetched'),
     );
 
     expect(processDiagramStore.state.diagramModel).not.toBe(null);
     expect(processDiagramStore.state.statistics).toEqual(
-      firstProcessStatisticsResponse
+      firstProcessStatisticsResponse,
     );
 
     await user.click(screen.getByText(/go to event based/i));
 
     await waitFor(() =>
-      expect(processDiagramStore.state.status).toBe('fetching')
+      expect(processDiagramStore.state.status).toBe('fetching'),
     );
 
     await waitFor(() =>
-      expect(processDiagramStore.state.status).toBe('fetched')
+      expect(processDiagramStore.state.status).toBe('fetched'),
     );
     expect(processDiagramStore.state.diagramModel).not.toBe(null);
     expect(processDiagramStore.state.statistics).toEqual(mockProcessStatistics);
@@ -214,7 +214,7 @@ describe('Instances', () => {
     await user.click(screen.getByText(/go to no filters/i));
 
     await waitFor(() =>
-      expect(processDiagramStore.state.statistics).toEqual([])
+      expect(processDiagramStore.state.statistics).toEqual([]),
     );
   });
 
@@ -226,13 +226,13 @@ describe('Instances', () => {
       </>,
       {
         wrapper: getWrapper('/processes?active=true&incidents=true'),
-      }
+      },
     );
 
     await waitForElementToBeRemoved(screen.getByTestId('table-skeleton'));
 
     await waitFor(() =>
-      expect(screen.queryByTestId('diagram-spinner')).not.toBeInTheDocument()
+      expect(screen.queryByTestId('diagram-spinner')).not.toBeInTheDocument(),
     );
 
     mockFetchProcessInstances().withSuccess(mockProcessInstances);
@@ -242,21 +242,21 @@ describe('Instances', () => {
       within(
         screen.getByRole('navigation', {
           name: /camunda operate/i,
-        })
+        }),
       ).getByRole('link', {
         name: /processes/i,
-      })
+      }),
     );
     expect(await screen.findByTestId('diagram-spinner')).toBeInTheDocument();
 
     await waitFor(() =>
-      expect(screen.queryByTestId('diagram-spinner')).not.toBeInTheDocument()
+      expect(screen.queryByTestId('diagram-spinner')).not.toBeInTheDocument(),
     );
 
     expect(await screen.findByTestId('instances-loader')).toBeInTheDocument();
 
     await waitFor(() =>
-      expect(screen.queryByTestId('instances-loader')).not.toBeInTheDocument()
+      expect(screen.queryByTestId('instances-loader')).not.toBeInTheDocument(),
     );
   });
 });

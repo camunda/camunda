@@ -57,7 +57,7 @@ const createModification = ({
   const lastAddModification = modificationsStore.getLastVariableModification(
     scopeId,
     id,
-    'ADD_VARIABLE'
+    'ADD_VARIABLE',
   );
 
   if (
@@ -105,7 +105,7 @@ const NewVariableModification: React.FC<Props> = ({variableName, onRemove}) => {
   const scopeId =
     variablesStore.scopeId ??
     modificationsStore.getNewScopeIdForFlowNode(
-      flowNodeSelectionStore.state.selection?.flowNodeId
+      flowNodeSelectionStore.state.selection?.flowNodeId,
     );
 
   return (
@@ -117,7 +117,7 @@ const NewVariableModification: React.FC<Props> = ({variableName, onRemove}) => {
             validate={mergeValidators(
               validateNameCharacters,
               validateModifiedNameComplete,
-              validateModifiedNameNotDuplicate
+              validateModifiedNameNotDuplicate,
             )}
             allowNull={false}
             parse={(value) => value}
@@ -132,7 +132,7 @@ const NewVariableModification: React.FC<Props> = ({variableName, onRemove}) => {
                 autoFocus={input.value === ''}
                 onBlur={() => {
                   form.mutators?.triggerValidation?.(
-                    createNewVariableFieldName(variableName, 'name')
+                    createNewVariableFieldName(variableName, 'name'),
                   );
 
                   input.onBlur();
@@ -156,7 +156,7 @@ const NewVariableModification: React.FC<Props> = ({variableName, onRemove}) => {
             name={valueFieldName}
             validate={mergeValidators(
               validateModifiedValueComplete,
-              validateModifiedValueValid
+              validateModifiedValueValid,
             )}
             parse={(value) => value}
           >
@@ -199,7 +199,7 @@ const NewVariableModification: React.FC<Props> = ({variableName, onRemove}) => {
                   scopeId!,
                   currentId,
                   'ADD_VARIABLE',
-                  'variables'
+                  'variables',
                 );
               }}
               icon={<DeleteIcon />}

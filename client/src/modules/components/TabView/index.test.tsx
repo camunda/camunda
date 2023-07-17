@@ -21,14 +21,14 @@ describe('TabView', () => {
           },
         ]}
       />,
-      {wrapper: ThemeProvider}
+      {wrapper: ThemeProvider},
     );
 
     expect(
-      screen.getByRole('heading', {name: 'First Tab'})
+      screen.getByRole('heading', {name: 'First Tab'}),
     ).toBeInTheDocument();
     expect(
-      screen.queryByRole('button', {name: 'First Tab'})
+      screen.queryByRole('button', {name: 'First Tab'}),
     ).not.toBeInTheDocument();
     expect(screen.getByText('Content of the first tab')).toBeInTheDocument();
   });
@@ -49,12 +49,12 @@ describe('TabView', () => {
           },
         ]}
       />,
-      {wrapper: ThemeProvider}
+      {wrapper: ThemeProvider},
     );
 
     expect(screen.getByRole('button', {name: 'First Tab'})).toBeInTheDocument();
     expect(
-      screen.getByRole('button', {name: 'Second Tab'})
+      screen.getByRole('button', {name: 'Second Tab'}),
     ).toBeInTheDocument();
 
     expect(screen.getByText('Content of the first tab')).toBeInTheDocument();
@@ -76,21 +76,21 @@ describe('TabView', () => {
           },
         ]}
       />,
-      {wrapper: ThemeProvider}
+      {wrapper: ThemeProvider},
     );
 
     expect(screen.getByText('Content of the first tab')).toBeInTheDocument();
 
     await user.click(screen.getByRole('button', {name: 'Second Tab'}));
     expect(
-      screen.queryByText('Content of the first tab')
+      screen.queryByText('Content of the first tab'),
     ).not.toBeInTheDocument();
     expect(screen.getByText('Content of the second tab')).toBeInTheDocument();
 
     await user.click(screen.getByRole('button', {name: 'First Tab'}));
     expect(screen.getByText('Content of the first tab')).toBeInTheDocument();
     expect(
-      screen.queryByText('Content of the second tab')
+      screen.queryByText('Content of the second tab'),
     ).not.toBeInTheDocument();
   });
 });

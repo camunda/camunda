@@ -32,7 +32,7 @@ export default class Option extends React.Component<Props> {
       // @ts-expect-error
       React.cloneElement(child, {
         onStateChange: this.props.onStateChange,
-      })
+      }),
     );
 
   render() {

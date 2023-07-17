@@ -42,7 +42,7 @@ describe('EmptyPanel', () => {
         type="skeleton"
         Skeleton={SkeletonMock}
       />,
-      {wrapper: ThemeProvider}
+      {wrapper: ThemeProvider},
     );
 
     expect(screen.getByTestId('Skeleton')).toBeInTheDocument();
@@ -55,7 +55,7 @@ describe('EmptyPanel', () => {
       <WithRowCount rowHeight={12} containerRef={containerRef}>
         <SkeletonMock />
       </WithRowCount>,
-      {wrapper: ThemeProvider}
+      {wrapper: ThemeProvider},
     );
 
     expect(screen.getByText('16')).toBeInTheDocument();

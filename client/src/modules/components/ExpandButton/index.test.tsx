@@ -20,7 +20,7 @@ describe('ExpandButton', () => {
       />,
       {
         wrapper: ThemeProvider,
-      }
+      },
     );
 
     expect(screen.getByTestId('arrow-icon')).toBeInTheDocument();
@@ -36,7 +36,7 @@ describe('ExpandButton', () => {
         <div id="child1">child node 1</div>
         <div id="child2">child node 2</div>
       </ExpandButton>,
-      {wrapper: ThemeProvider}
+      {wrapper: ThemeProvider},
     );
 
     expect(screen.getByText('child node 1')).toBeInTheDocument();

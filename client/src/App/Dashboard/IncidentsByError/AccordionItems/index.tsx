@@ -46,7 +46,7 @@ const AccordionItems: React.FC<Props> = ({errorMessage, processes}) => {
                 name,
                 item.instancesWithActiveIncidentsCount,
                 item.version,
-                errorMessage
+                errorMessage,
               )}
               $boxSize="small"
             >

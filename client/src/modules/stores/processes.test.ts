@@ -27,7 +27,7 @@ describe('stores/processes', () => {
     processesStore.fetchProcesses();
 
     await waitFor(() =>
-      expect(processesStore.state.processes).toEqual(groupedProcessesMock)
+      expect(processesStore.state.processes).toEqual(groupedProcessesMock),
     );
 
     const firstGroupedProcess = groupedProcessesMock[0]!;
@@ -39,8 +39,8 @@ describe('stores/processes', () => {
 
     await waitFor(() =>
       expect(processesStore.state.processes).toEqual(
-        newGroupedProcessesResponse
-      )
+        newGroupedProcessesResponse,
+      ),
     );
 
     window.addEventListener = originalEventListener;
@@ -52,20 +52,20 @@ describe('stores/processes', () => {
     processesStore.fetchProcesses();
 
     await waitFor(() =>
-      expect(processesStore.state.processes).toEqual(groupedProcessesMock)
+      expect(processesStore.state.processes).toEqual(groupedProcessesMock),
     );
 
     expect(processesStore.getProcessId('demoProcess', '1')).toBe(
-      'demoProcess1'
+      'demoProcess1',
     );
     expect(processesStore.getProcessId('demoProcess', '2')).toBe(
-      'demoProcess2'
+      'demoProcess2',
     );
     expect(processesStore.getProcessId('demoProcess', '3')).toBe(
-      'demoProcess3'
+      'demoProcess3',
     );
     expect(processesStore.getProcessId('eventBasedGatewayProcess', '1')).toBe(
-      '2251799813685911'
+      '2251799813685911',
     );
     expect(processesStore.getProcessId()).toBeUndefined();
     expect(processesStore.getProcessId('demoProcess')).toBeUndefined();
@@ -78,7 +78,7 @@ describe('stores/processes', () => {
     processesStore.fetchProcesses();
 
     await waitFor(() =>
-      expect(processesStore.state.processes).toEqual(groupedProcessesMock)
+      expect(processesStore.state.processes).toEqual(groupedProcessesMock),
     );
 
     expect(processesStore.versionsByProcess['demoProcess']?.[1]).toEqual({
@@ -89,7 +89,7 @@ describe('stores/processes', () => {
     });
 
     expect(
-      processesStore.versionsByProcess['eventBasedGatewayProcess']?.[0]
+      processesStore.versionsByProcess['eventBasedGatewayProcess']?.[0],
     ).toEqual({
       bpmnProcessId: 'eventBasedGatewayProcess',
       id: '2251799813685911',

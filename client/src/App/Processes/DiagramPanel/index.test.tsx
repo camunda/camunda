@@ -85,12 +85,12 @@ describe('DiagramPanel', () => {
     });
 
     expect(
-      screen.getByText('There is no Process selected')
+      screen.getByText('There is no Process selected'),
     ).toBeInTheDocument();
     expect(
       screen.getByText(
-        'To see a Diagram, select a Process in the Filters panel'
-      )
+        'To see a Diagram, select a Process in the Filters panel',
+      ),
     ).toBeInTheDocument();
     expect(screen.queryByTestId('diagram')).not.toBeInTheDocument();
   });
@@ -102,11 +102,11 @@ describe('DiagramPanel', () => {
 
     expect(
       await screen.findByText(
-        'There is more than one Version selected for Process "Big variable process"'
-      )
+        'There is more than one Version selected for Process "Big variable process"',
+      ),
     ).toBeInTheDocument();
     expect(
-      screen.getByText('To see a Diagram, select a single Version')
+      screen.getByText('To see a Diagram, select a single Version'),
     ).toBeInTheDocument();
 
     expect(screen.queryByTestId('diagram')).not.toBeInTheDocument();
@@ -115,14 +115,14 @@ describe('DiagramPanel', () => {
   it('should display bpmnProcessId as process name in the message when no process version is selected', async () => {
     render(<DiagramPanel />, {
       wrapper: getWrapper(
-        '/processes?process=eventBasedGatewayProcess&version=all'
+        '/processes?process=eventBasedGatewayProcess&version=all',
       ),
     });
 
     expect(
       await screen.findByText(
-        'There is more than one Version selected for Process "eventBasedGatewayProcess"'
-      )
+        'There is more than one Version selected for Process "eventBasedGatewayProcess"',
+      ),
     ).toBeInTheDocument();
   });
 
@@ -139,10 +139,10 @@ describe('DiagramPanel', () => {
     });
 
     expect(
-      await screen.findByText('Diagram could not be fetched')
+      await screen.findByText('Diagram could not be fetched'),
     ).toBeInTheDocument();
     expect(
-      screen.queryByText(/There is no Process selected/)
+      screen.queryByText(/There is no Process selected/),
     ).not.toBeInTheDocument();
 
     mockFetchProcessInstancesStatistics().withSuccess(mockProcessStatistics);
@@ -156,7 +156,7 @@ describe('DiagramPanel', () => {
     await waitForElementToBeRemoved(screen.getByTestId('diagram-spinner'));
 
     expect(
-      screen.queryByText('Diagram could not be fetched')
+      screen.queryByText('Diagram could not be fetched'),
     ).not.toBeInTheDocument();
 
     mockFetchProcessInstancesStatistics().withSuccess(mockProcessStatistics);
@@ -167,10 +167,10 @@ describe('DiagramPanel', () => {
     });
 
     expect(
-      await screen.findByText('Diagram could not be fetched')
+      await screen.findByText('Diagram could not be fetched'),
     ).toBeInTheDocument();
     expect(
-      screen.queryByText(/There is no Process selected/)
+      screen.queryByText(/There is no Process selected/),
     ).not.toBeInTheDocument();
   });
 });

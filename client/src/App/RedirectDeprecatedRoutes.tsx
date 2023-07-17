@@ -17,7 +17,7 @@ const RedirectDeprecatedRoutes: React.FC = () => {
   useEffect(() => {
     if (
       DEPRECATED_ROUTES.some(
-        (route) => matchPath(route, location.pathname) !== null
+        (route) => matchPath(route, location.pathname) !== null,
       )
     ) {
       return navigate(
@@ -27,7 +27,7 @@ const RedirectDeprecatedRoutes: React.FC = () => {
         },
         {
           replace: true,
-        }
+        },
       );
     }
   }, [location, navigate]);

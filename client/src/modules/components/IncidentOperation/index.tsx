@@ -77,7 +77,7 @@ const IncidentOperation: React.FC<Props> = observer(
         </OperationItems>
       </Styled.Operations>
     );
-  }
+  },
 );
 
 export {IncidentOperation};

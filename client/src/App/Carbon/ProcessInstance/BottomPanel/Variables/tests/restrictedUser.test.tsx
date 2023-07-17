@@ -48,7 +48,7 @@ describe('Restricted user', () => {
     await waitForElementToBeRemoved(screen.getByTestId('variables-skeleton'));
 
     expect(
-      screen.queryByRole('button', {name: /edit variable/i})
+      screen.queryByRole('button', {name: /edit variable/i}),
     ).not.toBeInTheDocument();
   });
 
@@ -85,11 +85,11 @@ describe('Restricted user', () => {
     render(<Variables />, {wrapper: Wrapper});
 
     await waitForElementToBeRemoved(() =>
-      screen.getByTestId('variables-skeleton')
+      screen.getByTestId('variables-skeleton'),
     );
 
     expect(
-      screen.getByRole('button', {name: 'View full value of testVariableName'})
+      screen.getByRole('button', {name: 'View full value of testVariableName'}),
     ).toBeInTheDocument();
   });
 });

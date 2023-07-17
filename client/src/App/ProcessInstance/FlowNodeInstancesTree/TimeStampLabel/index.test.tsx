@@ -19,7 +19,7 @@ describe('TimeStampLabel', () => {
         isSelected={false}
         timeStamp={'2020-07-09T12:26:22.237+0000'}
       />,
-      {wrapper: ThemeProvider}
+      {wrapper: ThemeProvider},
     );
     expect(screen.queryByText(MOCK_TIMESTAMP)).not.toBeInTheDocument();
 

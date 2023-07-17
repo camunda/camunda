@@ -50,7 +50,7 @@ const getVisibleChildPlaceholders = ({
   return instanceHistoryModificationStore.getVisibleChildPlaceholders(
     id,
     flowNodeId,
-    isPlaceholder
+    isPlaceholder,
   );
 };
 
@@ -123,7 +123,7 @@ const FlowNodeInstancesTree: React.FC<Props> = observer(
     const hasChildren = flowNodeInstance.isPlaceholder
       ? isFoldable &&
         instanceHistoryModificationStore.hasChildPlaceholders(
-          flowNodeInstance.id
+          flowNodeInstance.id,
         )
       : isFoldable;
 
@@ -140,7 +140,7 @@ const FlowNodeInstancesTree: React.FC<Props> = observer(
         fetchSubTree({treePath: flowNodeInstance.treePath});
       } else {
         instanceHistoryModificationStore.appendExpandedFlowNodeInstanceIds(
-          flowNodeInstance.id
+          flowNodeInstance.id,
         );
       }
     };
@@ -152,7 +152,7 @@ const FlowNodeInstancesTree: React.FC<Props> = observer(
         });
       } else {
         instanceHistoryModificationStore.removeFromExpandedFlowNodeInstanceIds(
-          flowNodeInstance.id
+          flowNodeInstance.id,
         );
       }
     };
@@ -163,7 +163,7 @@ const FlowNodeInstancesTree: React.FC<Props> = observer(
       }
       if (flowNodeInstance.treePath !== null) {
         const fetchedInstancesCount = await flowNodeInstanceStore.fetchNext(
-          flowNodeInstance.treePath
+          flowNodeInstance.treePath,
         );
 
         // This ensures that the container is scrolling up when MAX_INSTANCES_STORED is reached.
@@ -209,7 +209,7 @@ const FlowNodeInstancesTree: React.FC<Props> = observer(
           if (modificationsStore.state.status === 'adding-token') {
             modificationsStore.finishAddingToken(
               flowNodeInstance.flowNodeId,
-              flowNodeInstance.id
+              flowNodeInstance.id,
             );
           } else {
             tracking.track({eventName: 'instance-history-item-clicked'});
@@ -247,12 +247,12 @@ const FlowNodeInstancesTree: React.FC<Props> = observer(
               }
               const fetchedInstancesCount =
                 await flowNodeInstanceStore.fetchPrevious(
-                  flowNodeInstance.treePath
+                  flowNodeInstance.treePath,
                 );
 
               if (fetchedInstancesCount !== undefined) {
                 scrollDown(
-                  fetchedInstancesCount * (rowRef.current?.offsetHeight ?? 0)
+                  fetchedInstancesCount * (rowRef.current?.offsetHeight ?? 0),
                 );
               }
             }}
@@ -262,7 +262,7 @@ const FlowNodeInstancesTree: React.FC<Props> = observer(
         ) : undefined}
       </TreeNode>
     );
-  }
+  },
 );
 
 export {FlowNodeInstancesTree};

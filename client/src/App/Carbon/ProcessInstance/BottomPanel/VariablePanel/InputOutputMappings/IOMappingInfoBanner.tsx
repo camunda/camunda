@@ -25,7 +25,7 @@ const IOMappingInfoBanner: React.FC<Props> = ({type, text, onClose}) => {
       onActionButtonClick={() => {
         window.open(
           'https://docs.camunda.io/docs/components/concepts/variables/#inputoutput-variable-mappings',
-          '_blank'
+          '_blank',
         );
       }}
       onClose={() => {

@@ -15,7 +15,7 @@ export function useCallbackPrompt(when: boolean) {
   const location = useLocation();
   const [showPrompt, setShowPrompt] = useState(false);
   const [lastLocation, setLastLocation] = useState<{location: Location} | null>(
-    null
+    null,
   );
   const [confirmedNavigation, setConfirmedNavigation] = useState(false);
 
@@ -35,7 +35,7 @@ export function useCallbackPrompt(when: boolean) {
       }
       return true;
     },
-    [confirmedNavigation, location.pathname]
+    [confirmedNavigation, location.pathname],
   );
 
   const confirmNavigation = useCallback(() => {
@@ -50,7 +50,7 @@ export function useCallbackPrompt(when: boolean) {
       if (contextPath !== undefined) {
         const pathname = lastLocation.location.pathname.replace(
           contextPath,
-          ''
+          '',
         );
 
         navigate({

@@ -30,7 +30,7 @@ const ModalStateManager: React.FC<Props> = ({
         ? null
         : createPortal(
             <ModalContent open={open} setOpen={setOpen} />,
-            document.body
+            document.body,
           )}
       {LauncherContent && <LauncherContent open={open} setOpen={setOpen} />}
     </>

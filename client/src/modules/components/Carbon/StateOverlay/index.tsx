@@ -43,9 +43,9 @@ const StateOverlay: React.FC<Props> = observer(
         {state === 'canceled' && <Error />}
         {showStatistic && <span>{count}</span>}
       </Container>,
-      container
+      container,
     );
-  }
+  },
 );
 
 export {StateOverlay};

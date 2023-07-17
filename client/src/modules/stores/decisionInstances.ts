@@ -100,7 +100,7 @@ class DecisionInstances extends NetworkReconnectionHandler {
       this.setDecisionInstances({
         decisionInstances: this.getDecisionInstances(
           fetchType,
-          decisionInstances
+          decisionInstances,
         ),
         totalCount,
       });
@@ -206,7 +206,7 @@ class DecisionInstances extends NetworkReconnectionHandler {
 
   setLatestFetchDetails = (
     fetchType: FetchType,
-    decisionInstancesCount: number
+    decisionInstancesCount: number,
   ) => {
     this.state.latestFetch = {
       fetchType,
@@ -216,7 +216,7 @@ class DecisionInstances extends NetworkReconnectionHandler {
 
   getDecisionInstances = (
     fetchType: FetchType,
-    decisionInstances: DecisionInstanceEntity[]
+    decisionInstances: DecisionInstanceEntity[],
   ) => {
     switch (fetchType) {
       case 'next':
@@ -228,13 +228,13 @@ class DecisionInstances extends NetworkReconnectionHandler {
         return allDecisionInstances.slice(
           Math.max(
             allDecisionInstances.length - MAX_PROCESS_INSTANCES_STORED,
-            0
-          )
+            0,
+          ),
         );
       case 'prev':
         return [...decisionInstances, ...this.state.decisionInstances].slice(
           0,
-          MAX_PROCESS_INSTANCES_STORED
+          MAX_PROCESS_INSTANCES_STORED,
         );
       case 'initial':
       default:

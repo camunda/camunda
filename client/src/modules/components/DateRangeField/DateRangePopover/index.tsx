@@ -165,7 +165,7 @@ const DateRangePopover: React.FC<Props> = ({
                   short
                   onOpen={() => {
                     setCalendarRef(
-                      document.querySelector('.flatpickr-calendar')
+                      document.querySelector('.flatpickr-calendar'),
                     );
                   }}
                   onClose={() => setCalendarRef(null)}

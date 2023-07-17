@@ -41,7 +41,7 @@ describe('polling', () => {
       createInstance({
         id: PROCESS_INSTANCE_ID,
         state: 'ACTIVE',
-      })
+      }),
     );
 
     flowNodeInstanceStore.init();
@@ -65,7 +65,7 @@ describe('polling', () => {
       createInstance({
         id: PROCESS_INSTANCE_ID,
         state: 'COMPLETED',
-      })
+      }),
     );
 
     flowNodeInstanceStore.init();
@@ -86,7 +86,7 @@ describe('polling', () => {
       createInstance({
         id: PROCESS_INSTANCE_ID,
         state: 'ACTIVE',
-      })
+      }),
     );
 
     flowNodeInstanceStore.init();
@@ -99,7 +99,7 @@ describe('polling', () => {
       createInstance({
         id: PROCESS_INSTANCE_ID,
         state: 'COMPLETED',
-      })
+      }),
     );
 
     jest.runOnlyPendingTimers();
@@ -115,7 +115,7 @@ describe('polling', () => {
       createInstance({
         id: PROCESS_INSTANCE_ID,
         state: 'ACTIVE',
-      })
+      }),
     );
 
     flowNodeInstanceStore.fetchFlowNodeInstances({
@@ -123,7 +123,7 @@ describe('polling', () => {
     });
 
     await waitFor(() =>
-      expect(flowNodeInstanceStore.state.status).toBe('error')
+      expect(flowNodeInstanceStore.state.status).toBe('error'),
     );
     jest.runOnlyPendingTimers();
 

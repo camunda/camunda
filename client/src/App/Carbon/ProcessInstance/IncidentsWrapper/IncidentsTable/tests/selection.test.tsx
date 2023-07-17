@@ -57,13 +57,13 @@ describe('Selection', () => {
       screen.getByRole('row', {
         name: /condition error/i,
         selected: true,
-      })
+      }),
     ).toBeInTheDocument();
     expect(
       screen.getByRole('row', {
         name: /condition error/i,
         selected: false,
-      })
+      }),
     ).toBeInTheDocument();
   });
 });

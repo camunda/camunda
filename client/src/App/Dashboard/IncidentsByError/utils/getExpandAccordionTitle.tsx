@@ -9,11 +9,11 @@ import pluralSuffix from 'modules/utils/pluralSuffix';
 
 function getExpandAccordionTitle(
   instancesWithErrorCount: number,
-  errorMessage: string
+  errorMessage: string,
 ) {
   return `Expand ${pluralSuffix(
     instancesWithErrorCount,
-    'Instance'
+    'Instance',
   )} with error ${errorMessage}`;
 }
 

@@ -10,19 +10,19 @@ import {getExpandAccordionTitle} from './getExpandAccordionTitle';
 describe('getExpandAccordionTitle', () => {
   it('should get title for multiple instances', () => {
     expect(getExpandAccordionTitle('myProcessName', 432)).toBe(
-      'Expand 432 Instances of Process myProcessName'
+      'Expand 432 Instances of Process myProcessName',
     );
   });
 
   it('should get title for single instance', () => {
     expect(getExpandAccordionTitle('myProcessName', 1)).toBe(
-      'Expand 1 Instance of Process myProcessName'
+      'Expand 1 Instance of Process myProcessName',
     );
   });
 
   it('should get title for no instances', () => {
     expect(getExpandAccordionTitle('myProcessName', 0)).toBe(
-      'Expand 0 Instances of Process myProcessName'
+      'Expand 0 Instances of Process myProcessName',
     );
   });
 });

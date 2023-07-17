@@ -55,7 +55,7 @@ class SequenceFlows extends NetworkReconnectionHandler {
         if (instanceId !== undefined) {
           this.fetchProcessSequenceFlows(instanceId);
         }
-      }
+      },
     );
 
     this.disposer = autorun(() => {
@@ -78,7 +78,7 @@ class SequenceFlows extends NetworkReconnectionHandler {
       if (response.isSuccess) {
         this.setItems(getProcessedSequenceFlows(response.data));
       }
-    }
+    },
   );
 
   handlePolling = async (instanceId: ProcessInstanceEntity['id']) => {

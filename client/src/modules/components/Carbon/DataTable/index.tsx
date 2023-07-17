@@ -40,7 +40,7 @@ const TableCells: React.FC<{
         <TableCell
           key={cell.id}
           $hideCellPadding={columnsWithNoContentPadding?.includes(
-            cell.info.header
+            cell.info.header,
           )}
         >
           {cell.value}
@@ -61,7 +61,7 @@ const DataTable = React.forwardRef<HTMLDivElement, Props>(
       expandableRowTitle,
       expandedContents,
     },
-    ref
+    ref,
   ) => {
     return (
       <Container className={className} ref={ref}>
@@ -135,7 +135,7 @@ const DataTable = React.forwardRef<HTMLDivElement, Props>(
         />
       </Container>
     );
-  }
+  },
 );
 
 export {DataTable};

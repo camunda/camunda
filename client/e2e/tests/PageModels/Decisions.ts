@@ -33,8 +33,8 @@ class DecisionsPage {
     await t.click(
       within(screen.queryByLabelText('Select a Decision Version')).getByRole(
         'option',
-        {name: option}
-      )
+        {name: option},
+      ),
     );
   };
 }

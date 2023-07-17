@@ -51,8 +51,8 @@ describe('Modification Dropdown - Multi Scopes', () => {
 
     await waitFor(() =>
       expect(
-        processInstanceDetailsDiagramStore.state.diagramModel
-      ).not.toBeNull()
+        processInstanceDetailsDiagramStore.state.diagramModel,
+      ).not.toBeNull(),
     );
 
     act(() => {
@@ -62,7 +62,7 @@ describe('Modification Dropdown - Multi Scopes', () => {
     });
 
     expect(
-      await screen.findByText(/Flow Node Modifications/)
+      await screen.findByText(/Flow Node Modifications/),
     ).toBeInTheDocument();
     expect(screen.getByText(/Cancel/)).toBeInTheDocument();
     expect(screen.getByText(/Move/)).toBeInTheDocument();
@@ -100,8 +100,8 @@ describe('Modification Dropdown - Multi Scopes', () => {
 
       await waitFor(() =>
         expect(
-          processInstanceDetailsDiagramStore.state.diagramModel
-        ).not.toBeNull()
+          processInstanceDetailsDiagramStore.state.diagramModel,
+        ).not.toBeNull(),
       );
 
       act(() => {
@@ -111,12 +111,12 @@ describe('Modification Dropdown - Multi Scopes', () => {
       });
 
       expect(
-        await screen.findByText(/Flow Node Modifications/)
+        await screen.findByText(/Flow Node Modifications/),
       ).toBeInTheDocument();
       expect(screen.getByText(/Cancel/)).toBeInTheDocument();
       expect(screen.getByText(/Move/)).toBeInTheDocument();
       expect(screen.queryByText(/Add/)).not.toBeInTheDocument();
-    }
+    },
   );
 
   (IS_ADD_TOKEN_WITH_ANCESTOR_KEY_SUPPORTED ? it.skip : it)(
@@ -150,8 +150,8 @@ describe('Modification Dropdown - Multi Scopes', () => {
 
       await waitFor(() =>
         expect(
-          processInstanceDetailsDiagramStore.state.diagramModel
-        ).not.toBeNull()
+          processInstanceDetailsDiagramStore.state.diagramModel,
+        ).not.toBeNull(),
       );
 
       act(() => {
@@ -161,12 +161,12 @@ describe('Modification Dropdown - Multi Scopes', () => {
       });
 
       expect(
-        await screen.findByText(/Flow Node Modifications/)
+        await screen.findByText(/Flow Node Modifications/),
       ).toBeInTheDocument();
       expect(screen.getByText(/Cancel/)).toBeInTheDocument();
       expect(screen.getByText(/Move/)).toBeInTheDocument();
       expect(screen.queryByText(/Add/)).not.toBeInTheDocument();
-    }
+    },
   );
 
   (IS_ADD_TOKEN_WITH_ANCESTOR_KEY_SUPPORTED ? it.skip : it)(
@@ -200,8 +200,8 @@ describe('Modification Dropdown - Multi Scopes', () => {
 
       await waitFor(() =>
         expect(
-          processInstanceDetailsDiagramStore.state.diagramModel
-        ).not.toBeNull()
+          processInstanceDetailsDiagramStore.state.diagramModel,
+        ).not.toBeNull(),
       );
 
       modificationsStore.cancelAllTokens('TaskB');
@@ -213,15 +213,15 @@ describe('Modification Dropdown - Multi Scopes', () => {
       });
 
       expect(
-        await screen.findByText(/Flow Node Modifications/)
+        await screen.findByText(/Flow Node Modifications/),
       ).toBeInTheDocument();
       expect(
-        screen.getByText(/No modifications available/)
+        screen.getByText(/No modifications available/),
       ).toBeInTheDocument();
       expect(screen.queryByText(/Cancel/)).not.toBeInTheDocument();
       expect(screen.queryByText(/Move/)).not.toBeInTheDocument();
       expect(screen.queryByText(/Add/)).not.toBeInTheDocument();
-    }
+    },
   );
 
   (IS_ADD_TOKEN_WITH_ANCESTOR_KEY_SUPPORTED ? it : it.skip)(
@@ -255,8 +255,8 @@ describe('Modification Dropdown - Multi Scopes', () => {
 
       await waitFor(() =>
         expect(
-          processInstanceDetailsDiagramStore.state.diagramModel
-        ).not.toBeNull()
+          processInstanceDetailsDiagramStore.state.diagramModel,
+        ).not.toBeNull(),
       );
 
       modificationsStore.cancelAllTokens('TaskB');
@@ -268,11 +268,11 @@ describe('Modification Dropdown - Multi Scopes', () => {
       });
 
       expect(
-        await screen.findByText(/Flow Node Modifications/)
+        await screen.findByText(/Flow Node Modifications/),
       ).toBeInTheDocument();
       expect(screen.queryByText(/Cancel/)).not.toBeInTheDocument();
       expect(screen.queryByText(/Move/)).not.toBeInTheDocument();
       expect(screen.getByText(/Add/)).toBeInTheDocument();
-    }
+    },
   );
 });

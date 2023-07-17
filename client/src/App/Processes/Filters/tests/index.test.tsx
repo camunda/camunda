@@ -54,14 +54,14 @@ describe('Filters', () => {
     await selectProcess({user, option: 'Big variable process'});
 
     expect(
-      screen.getByLabelText('Version', {selector: 'button'})
+      screen.getByLabelText('Version', {selector: 'button'}),
     ).toBeEnabled();
     await selectProcessVersion({user, option: '1'});
 
     await waitFor(() =>
       expect(screen.getByTestId('search')).toHaveTextContent(
-        /^\?process=bigVarProcess&version=1$/
-      )
+        /^\?process=bigVarProcess&version=1$/,
+      ),
     );
 
     jest.clearAllTimers();
@@ -87,7 +87,7 @@ describe('Filters', () => {
 
     render(<Filters />, {
       wrapper: getWrapper(
-        `/?${new URLSearchParams(Object.entries(MOCK_PARAMS)).toString()}`
+        `/?${new URLSearchParams(Object.entries(MOCK_PARAMS)).toString()}`,
       ),
     });
 
@@ -95,40 +95,40 @@ describe('Filters', () => {
       expect(
         screen.getByRole('combobox', {
           name: 'Name',
-        })
-      ).toBeEnabled()
+        }),
+      ).toBeEnabled(),
     );
     expect(
       screen.getByRole('combobox', {
         name: 'Name',
-      })
+      }),
     ).toHaveValue('Big variable process');
     expect(
-      screen.getByLabelText('Version', {selector: 'button'})
+      screen.getByLabelText('Version', {selector: 'button'}),
     ).toHaveTextContent('1');
 
     expect(screen.getByLabelText('Flow Node')).toHaveValue(
-      MOCK_PARAMS.flowNodeId
+      MOCK_PARAMS.flowNodeId,
     );
 
     expect(screen.getByDisplayValue(MOCK_PARAMS.ids)).toBeInTheDocument();
 
     expect(
-      screen.getByDisplayValue(MOCK_PARAMS.parentInstanceId)
+      screen.getByDisplayValue(MOCK_PARAMS.parentInstanceId),
     ).toBeInTheDocument();
 
     expect(
-      screen.getByDisplayValue(MOCK_PARAMS.errorMessage)
+      screen.getByDisplayValue(MOCK_PARAMS.errorMessage),
     ).toBeInTheDocument();
 
     expect(
-      screen.getByDisplayValue(MOCK_PARAMS.variableName)
+      screen.getByDisplayValue(MOCK_PARAMS.variableName),
     ).toBeInTheDocument();
     expect(
-      screen.getByDisplayValue(MOCK_PARAMS.variableValue)
+      screen.getByDisplayValue(MOCK_PARAMS.variableValue),
     ).toBeInTheDocument();
     expect(
-      screen.getByDisplayValue(MOCK_PARAMS.operationId)
+      screen.getByDisplayValue(MOCK_PARAMS.operationId),
     ).toBeInTheDocument();
     expect(screen.getByTestId(/active/)).toBeChecked();
     expect(screen.getByTestId(/incidents/)).toBeChecked();
@@ -145,7 +145,7 @@ describe('Filters', () => {
     } as const;
 
     const initialPath = `/?${new URLSearchParams(
-      Object.entries(MOCK_PARAMS)
+      Object.entries(MOCK_PARAMS),
     ).toString()}`;
 
     render(<Filters />, {
@@ -157,23 +157,23 @@ describe('Filters', () => {
 
     // Hidden fields
     expect(
-      screen.getByDisplayValue(MOCK_PARAMS.endDateAfter)
+      screen.getByDisplayValue(MOCK_PARAMS.endDateAfter),
     ).toBeInTheDocument();
     expect(
-      screen.getByDisplayValue(MOCK_PARAMS.endDateBefore)
+      screen.getByDisplayValue(MOCK_PARAMS.endDateBefore),
     ).toBeInTheDocument();
     expect(
-      screen.getByDisplayValue(MOCK_PARAMS.endDateAfter)
+      screen.getByDisplayValue(MOCK_PARAMS.endDateAfter),
     ).toBeInTheDocument();
     expect(
-      screen.getByDisplayValue(MOCK_PARAMS.endDateBefore)
+      screen.getByDisplayValue(MOCK_PARAMS.endDateBefore),
     ).toBeInTheDocument();
     // Non-hidden fields
     expect(
-      screen.getByDisplayValue('2021-02-21 09:00:00 - 2021-02-22 10:00:00')
+      screen.getByDisplayValue('2021-02-21 09:00:00 - 2021-02-22 10:00:00'),
     ).toBeInTheDocument();
     expect(
-      screen.getByDisplayValue('2021-02-23 11:00:00 - 2021-02-24 12:00:00')
+      screen.getByDisplayValue('2021-02-23 11:00:00 - 2021-02-24 12:00:00'),
     ).toBeInTheDocument();
   });
 
@@ -200,12 +200,12 @@ describe('Filters', () => {
     // Wait for data to be fetched
     await waitFor(() => expect(screen.getByLabelText('Name')).toBeEnabled());
     await waitFor(() =>
-      expect(screen.getByLabelText('Flow Node')).toBeEnabled()
+      expect(screen.getByLabelText('Flow Node')).toBeEnabled(),
     );
 
     expect(screen.getByLabelText('Name')).toHaveValue('');
     expect(
-      screen.getByLabelText('Version', {selector: 'button'})
+      screen.getByLabelText('Version', {selector: 'button'}),
     ).toBeDisabled();
     expect(screen.getByLabelText('Flow Node')).toHaveValue('');
     expect(screen.getByTestId(/active/)).not.toBeChecked();
@@ -219,21 +219,21 @@ describe('Filters', () => {
     await user.click(screen.getByText('Process Instance Key(s)'));
     await user.type(
       screen.getByLabelText(/process instance key\(s\)/i),
-      MOCK_VALUES.ids
+      MOCK_VALUES.ids,
     );
 
     await user.click(screen.getByText(/^more filters$/i));
     await user.click(screen.getByText('Parent Process Instance Key'));
     await user.type(
       screen.getByLabelText(/Parent Process Instance Key/i),
-      MOCK_VALUES.parentInstanceId
+      MOCK_VALUES.parentInstanceId,
     );
 
     await user.click(screen.getByText(/^more filters$/i));
     await user.click(screen.getByText('Error Message'));
     await user.type(
       screen.getByLabelText(/error message/i),
-      MOCK_VALUES.errorMessage
+      MOCK_VALUES.errorMessage,
     );
 
     await selectFlowNode({user, option: MOCK_VALUES.flowNodeId});
@@ -242,7 +242,7 @@ describe('Filters', () => {
     await user.click(screen.getByText('Variable'));
     await user.type(
       screen.getByTestId('optional-filter-variable-name'),
-      MOCK_VALUES.variableName
+      MOCK_VALUES.variableName,
     );
     await user.type(screen.getByLabelText(/value/i), MOCK_VALUES.variableValue);
 
@@ -251,7 +251,7 @@ describe('Filters', () => {
     await user.type(
       screen.getByLabelText(/operation id/i),
 
-      MOCK_VALUES.operationId
+      MOCK_VALUES.operationId,
     );
 
     await user.click(screen.getByTestId(/active/));
@@ -263,10 +263,10 @@ describe('Filters', () => {
       expect(
         Object.fromEntries(
           new URLSearchParams(
-            screen.getByTestId('search').textContent ?? ''
-          ).entries()
-        )
-      ).toEqual(expect.objectContaining(MOCK_VALUES))
+            screen.getByTestId('search').textContent ?? '',
+          ).entries(),
+        ),
+      ).toEqual(expect.objectContaining(MOCK_VALUES)),
     );
   });
 
@@ -278,7 +278,7 @@ describe('Filters', () => {
     await waitFor(() => expect(screen.getByLabelText('Name')).toBeEnabled());
 
     await waitFor(() =>
-      expect(screen.getByLabelText('Flow Node')).toBeEnabled()
+      expect(screen.getByLabelText('Flow Node')).toBeEnabled(),
     );
 
     await user.click(screen.getByText(/^more filters$/i));
@@ -315,9 +315,9 @@ describe('Filters', () => {
       return expect(
         Object.fromEntries(
           new URLSearchParams(
-            screen.getByTestId('search').textContent ?? ''
-          ).entries()
-        )
+            screen.getByTestId('search').textContent ?? '',
+          ).entries(),
+        ),
       ).toEqual(expect.objectContaining(MOCK_VALUES));
     });
   });
@@ -334,13 +334,13 @@ describe('Filters', () => {
     expect(
       within(screen.getByTestId('modal')).getByRole('button', {
         name: /cancel/i,
-      })
+      }),
     ).toBeEnabled();
     expect(
-      within(screen.getByTestId('modal')).getByRole('button', {name: /apply/i})
+      within(screen.getByTestId('modal')).getByRole('button', {name: /apply/i}),
     ).toBeEnabled();
     expect(
-      within(screen.getByTestId('modal')).getByTestId('json-editor-container')
+      within(screen.getByTestId('modal')).getByTestId('json-editor-container'),
     ).toBeInTheDocument();
   });
 
@@ -356,7 +356,7 @@ describe('Filters', () => {
     await user.click(screen.getByTestId(/incidents/));
 
     await waitFor(() =>
-      expect(screen.getByTestId('search')).toHaveTextContent(/^\?active=true$/)
+      expect(screen.getByTestId('search')).toHaveTextContent(/^\?active=true$/),
     );
 
     expect(screen.getByTitle(/reset filters/i)).toBeEnabled();
@@ -376,7 +376,7 @@ describe('Filters', () => {
     await user.type(screen.getByLabelText(/parent process instance key/i), 'a');
 
     expect(
-      await screen.findByText('Key has to be a 16 to 19 digit number')
+      await screen.findByText('Key has to be a 16 to 19 digit number'),
     ).toBeInTheDocument();
 
     expect(screen.getByTestId('search')).toBeEmptyDOMElement();
@@ -392,7 +392,7 @@ describe('Filters', () => {
       wrapper: getWrapper('/?active=true&incidents=true'),
     });
     expect(screen.getByTestId('search')).toHaveTextContent(
-      /^\?active=true&incidents=true$/
+      /^\?active=true&incidents=true$/,
     );
 
     await user.click(screen.getByText(/^more filters$/i));
@@ -400,11 +400,11 @@ describe('Filters', () => {
     await user.type(screen.getByLabelText(/parent process instance key/i), 'a');
 
     expect(
-      await screen.findByText('Key has to be a 16 to 19 digit number')
+      await screen.findByText('Key has to be a 16 to 19 digit number'),
     ).toBeInTheDocument();
 
     expect(screen.getByTestId('search')).toHaveTextContent(
-      /^\?active=true&incidents=true$/
+      /^\?active=true&incidents=true$/,
     );
 
     await user.click(screen.getByTestId('delete-parentInstanceId'));
@@ -415,8 +415,8 @@ describe('Filters', () => {
 
     await waitFor(() =>
       expect(screen.getByTestId('search')).toHaveTextContent(
-        /^\?active=true&incidents=true&errorMessage=test$/
-      )
+        /^\?active=true&incidents=true&errorMessage=test$/,
+      ),
     );
   });
 
@@ -450,8 +450,8 @@ describe('Filters', () => {
     for (let i = 0; i < visibleOptionalFilters.length; i++) {
       expect(
         within(visibleOptionalFilters[i]?.parentElement!).getByText(
-          fieldLabels[i]!
-        )
+          fieldLabels[i]!,
+        ),
       ).toBeInTheDocument();
     }
 
@@ -460,8 +460,8 @@ describe('Filters', () => {
     for (let i = 0; i < visibleOptionalFilters.length; i++) {
       expect(
         within(visibleOptionalFilters[i]?.parentElement!).queryByText(
-          fieldLabels[i]!
-        )
+          fieldLabels[i]!,
+        ),
       ).not.toBeInTheDocument();
     }
 
@@ -480,8 +480,8 @@ describe('Filters', () => {
     for (let i = 0; i < visibleOptionalFilters.length; i++) {
       expect(
         within(visibleOptionalFilters[i]?.parentElement!).getByText(
-          fieldLabels[i]!
-        )
+          fieldLabels[i]!,
+        ),
       ).toBeInTheDocument();
     }
   });
@@ -494,8 +494,8 @@ describe('Filters', () => {
           Object.entries({
             process: 'bigVarProcess',
             version: '1',
-          })
-        ).toString()}`
+          }),
+        ).toString()}`,
       ),
     });
 
@@ -504,13 +504,13 @@ describe('Filters', () => {
     expect(
       within(screen.getByLabelText(/version/i)!).getByRole('option', {
         name: '1',
-      })
+      }),
     ).toBeInTheDocument();
 
     expect(
       within(screen.queryByLabelText(/version/i)!).queryByRole('option', {
         name: /all/i,
-      })
+      }),
     ).not.toBeInTheDocument();
   });
 });

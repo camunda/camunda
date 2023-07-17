@@ -60,7 +60,7 @@ const Drd: React.FC = observer(() => {
           decisionXmlStore.state.xml,
           drdDataStore.selectableDecisions,
           drdDataStore.currentDecision,
-          drdDataStore.decisionStates
+          drdDataStore.decisionStates,
         );
       }
     });
@@ -133,7 +133,7 @@ const Drd: React.FC = observer(() => {
       {drdDataStore.state.decisionStateOverlays.map(
         ({decisionId, state, container}) => (
           <StateOverlay key={decisionId} state={state} container={container} />
-        )
+        ),
       )}
     </Container>
   );

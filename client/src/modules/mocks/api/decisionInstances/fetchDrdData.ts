@@ -10,7 +10,7 @@ import {DrdDataDto} from 'modules/api/decisionInstances/fetchDrdData';
 
 const mockFetchDrdData = () =>
   mockGetRequest<DrdDataDto>(
-    '/api/decision-instances/:decisionInstanceId/drd-data'
+    '/api/decision-instances/:decisionInstanceId/drd-data',
   );
 
 export {mockFetchDrdData};

@@ -34,7 +34,7 @@ describe('fetch error', () => {
       groupedDecisionsStore.getDecisionDefinitionId({
         decisionId: 'invoice-assign-approver',
         version: 1,
-      })
+      }),
     ).toBe(null);
   });
 });

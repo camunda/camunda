@@ -73,7 +73,7 @@ const ProcessInstance: React.FC = observer(() => {
   ] = useState(false);
 
   const {showPrompt, confirmNavigation, cancelNavigation} = useCallbackPrompt(
-    modificationsStore.isModificationModeEnabled
+    modificationsStore.isModificationModeEnabled,
   );
 
   useEffect(() => {
@@ -99,7 +99,7 @@ const ProcessInstance: React.FC = observer(() => {
           flowNodeInstanceStore.startPolling();
           processInstanceDetailsStatisticsStore.startPolling(processInstanceId);
         }
-      }
+      },
     );
 
     return () => {
@@ -120,7 +120,7 @@ const ProcessInstance: React.FC = observer(() => {
             Locations.processes({
               active: true,
               incidents: true,
-            })
+            }),
           );
           notifications?.displayNotification('error', {
             headline: `Instance ${processInstanceId} could not be found`,
@@ -158,7 +158,7 @@ const ProcessInstance: React.FC = observer(() => {
       () => processInstanceDetailsStore.processTitle !== null,
       () => {
         document.title = processInstanceDetailsStore.processTitle ?? '';
-      }
+      },
     );
 
     return () => {

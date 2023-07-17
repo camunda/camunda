@@ -26,13 +26,13 @@ describe('EmptyState', () => {
         icon={<EmptyStateProcessIncidents title="Alt Text" />}
         link={{href: '/link-to-home', label: 'Go Home', onClick: linkSpy}}
       />,
-      {wrapper: Wrapper}
+      {wrapper: Wrapper},
     );
 
     expect(screen.getByText('Nothing to see')).toBeInTheDocument();
     expect(screen.getByText('Please move on')).toBeInTheDocument();
     expect(
-      screen.getByText('empty-state-process-incidents.svg')
+      screen.getByText('empty-state-process-incidents.svg'),
     ).toBeInTheDocument();
 
     await user.click(screen.getByRole('link', {name: 'Go Home'}));
@@ -49,13 +49,13 @@ describe('EmptyState', () => {
         description="Please move on"
         icon={<EmptyStateProcessIncidents title="Alt Text" />}
       />,
-      {wrapper: Wrapper}
+      {wrapper: Wrapper},
     );
 
     expect(screen.getByText('Nothing to see')).toBeInTheDocument();
     expect(screen.getByText('Please move on')).toBeInTheDocument();
     expect(
-      screen.getByText('empty-state-process-incidents.svg')
+      screen.getByText('empty-state-process-incidents.svg'),
     ).toBeInTheDocument();
     expect(screen.queryByRole('button')).not.toBeInTheDocument();
     expect(screen.queryByRole('link')).not.toBeInTheDocument();

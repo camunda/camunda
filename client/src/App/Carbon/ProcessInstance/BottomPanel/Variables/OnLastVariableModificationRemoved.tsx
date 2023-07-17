@@ -46,14 +46,14 @@ const OnLastVariableModificationRemoved: React.FC = observer(() => {
             modificationsStore.getLastVariableModification(
               scopeId,
               id,
-              'EDIT_VARIABLE'
+              'EDIT_VARIABLE',
             );
 
           form.change(
             createVariableFieldName(name),
             lastEditModification !== undefined
               ? lastEditModification.newValue
-              : oldValue
+              : oldValue,
           );
         } else if (payload.operation === 'ADD_VARIABLE') {
           const {scopeId: removedVariableScopeId, id} = payload;
@@ -69,7 +69,7 @@ const OnLastVariableModificationRemoved: React.FC = observer(() => {
             modificationsStore.getLastVariableModification(
               scopeId,
               id,
-              'ADD_VARIABLE'
+              'ADD_VARIABLE',
             );
 
           const index = newVariables.findIndex((field) => field.id === id);
@@ -86,7 +86,7 @@ const OnLastVariableModificationRemoved: React.FC = observer(() => {
             }
           }
         }
-      }
+      },
     );
 
     return () => {

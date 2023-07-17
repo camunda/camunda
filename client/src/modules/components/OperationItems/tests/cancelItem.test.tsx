@@ -17,7 +17,7 @@ describe('Cancel Item', () => {
       <OperationItems>
         <OperationItem type="CANCEL_PROCESS_INSTANCE" onClick={noop} />
       </OperationItems>,
-      {wrapper: ThemeProvider}
+      {wrapper: ThemeProvider},
     );
 
     expect(screen.getByTestId('cancel-operation-icon')).toBeInTheDocument();
@@ -33,11 +33,11 @@ describe('Cancel Item', () => {
           title={BUTTON_TITLE}
         />
       </OperationItems>,
-      {wrapper: ThemeProvider}
+      {wrapper: ThemeProvider},
     );
 
     expect(
-      screen.getByRole('button', {name: BUTTON_TITLE})
+      screen.getByRole('button', {name: BUTTON_TITLE}),
     ).toBeInTheDocument();
   });
 
@@ -52,7 +52,7 @@ describe('Cancel Item', () => {
           title={BUTTON_TITLE}
         />
       </OperationItems>,
-      {wrapper: ThemeProvider}
+      {wrapper: ThemeProvider},
     );
 
     await user.click(screen.getByRole('button', {name: BUTTON_TITLE}));

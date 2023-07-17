@@ -22,7 +22,7 @@ const OptionalFiltersMenu = <T extends string>({
   onFilterSelect,
 }: Props<T>): ReactElement | null => {
   const unselectedOptionalFilters = optionalFilters.filter(
-    (filter) => !visibleFilters.includes(filter.id)
+    (filter) => !visibleFilters.includes(filter.id),
   );
 
   return unselectedOptionalFilters.length > 0 ? (

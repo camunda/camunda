@@ -66,7 +66,7 @@ const Row: React.FC<Props> = React.memo(
         })}
       </TR>
     );
-  }
+  },
 );
 export {Row};
 export type {SelectionType};

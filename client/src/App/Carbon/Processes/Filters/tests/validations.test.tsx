@@ -52,8 +52,8 @@ describe('Validations', () => {
 
     expect(
       await screen.findByText(
-        'Key has to be a 16 to 19 digit number, separated by space or comma'
-      )
+        'Key has to be a 16 to 19 digit number, separated by space or comma',
+      ),
     ).toBeInTheDocument();
     expect(screen.getByTestId('search')).toBeEmptyDOMElement();
 
@@ -61,24 +61,24 @@ describe('Validations', () => {
 
     expect(
       screen.queryByText(
-        'Key has to be a 16 to 19 digit number, separated by space or comma'
-      )
+        'Key has to be a 16 to 19 digit number, separated by space or comma',
+      ),
     ).not.toBeInTheDocument();
 
     await user.type(screen.getByLabelText(/^process instance key\(s\)$/i), '1');
 
     expect(
       await screen.findByText(
-        'Key has to be a 16 to 19 digit number, separated by space or comma'
-      )
+        'Key has to be a 16 to 19 digit number, separated by space or comma',
+      ),
     ).toBeInTheDocument();
 
     await user.clear(screen.getByLabelText(/^process instance key\(s\)$/i));
 
     expect(
       screen.queryByText(
-        'Key has to be a 16 to 19 digit number, separated by space or comma'
-      )
+        'Key has to be a 16 to 19 digit number, separated by space or comma',
+      ),
     ).not.toBeInTheDocument();
   });
 
@@ -92,48 +92,48 @@ describe('Validations', () => {
     await user.click(screen.getByText('Parent Process Instance Key'));
     await user.type(
       screen.getByLabelText(/^Parent Process Instance Key$/i),
-      'a'
+      'a',
     );
 
     expect(
-      await screen.findByText('Key has to be a 16 to 19 digit number')
+      await screen.findByText('Key has to be a 16 to 19 digit number'),
     ).toBeInTheDocument();
     expect(screen.getByTestId('search')).toBeEmptyDOMElement();
 
     await user.clear(screen.getByLabelText(/^Parent Process Instance Key$/i));
 
     expect(
-      screen.queryByText('Key has to be a 16 to 19 digit number')
+      screen.queryByText('Key has to be a 16 to 19 digit number'),
     ).not.toBeInTheDocument();
 
     await user.type(
       screen.getByLabelText(/^Parent Process Instance Key$/i),
-      '1'
+      '1',
     );
 
     expect(
-      await screen.findByText('Key has to be a 16 to 19 digit number')
+      await screen.findByText('Key has to be a 16 to 19 digit number'),
     ).toBeInTheDocument();
 
     await user.clear(screen.getByLabelText(/^Parent Process Instance Key$/i));
 
     expect(
-      screen.queryByText('Key has to be a 16 to 19 digit number')
+      screen.queryByText('Key has to be a 16 to 19 digit number'),
     ).not.toBeInTheDocument();
 
     await user.type(
       screen.getByLabelText(/^Parent Process Instance Key$/i),
-      '1111111111111111, 2222222222222222'
+      '1111111111111111, 2222222222222222',
     );
 
     expect(
-      await screen.findByText('Key has to be a 16 to 19 digit number')
+      await screen.findByText('Key has to be a 16 to 19 digit number'),
     ).toBeInTheDocument();
 
     await user.clear(screen.getByLabelText(/^Parent Process Instance Key$/i));
 
     expect(
-      screen.queryByText('Key has to be a 16 to 19 digit number')
+      screen.queryByText('Key has to be a 16 to 19 digit number'),
     ).not.toBeInTheDocument();
   });
 
@@ -149,7 +149,7 @@ describe('Validations', () => {
     await user.type(screen.getByLabelText(/^value$/i), '"someValidValue"');
 
     expect(
-      await screen.findByText('Name has to be filled')
+      await screen.findByText('Name has to be filled'),
     ).toBeInTheDocument();
 
     expect(screen.getByTestId('search')).toBeEmptyDOMElement();
@@ -158,7 +158,7 @@ describe('Validations', () => {
     await user.type(screen.getByLabelText(/^value$/i), 'somethingInvalid');
 
     expect(
-      await screen.findByText('Name has to be filled')
+      await screen.findByText('Name has to be filled'),
     ).toBeInTheDocument();
 
     expect(await screen.findByText('Value has to be JSON')).toBeInTheDocument();
@@ -177,11 +177,11 @@ describe('Validations', () => {
 
     await user.type(
       screen.getByTestId('optional-filter-variable-name'),
-      'aRandomVariable'
+      'aRandomVariable',
     );
 
     expect(
-      await screen.findByText('Value has to be filled')
+      await screen.findByText('Value has to be filled'),
     ).toBeInTheDocument();
 
     expect(screen.getByTestId('search')).toBeEmptyDOMElement();
@@ -189,20 +189,20 @@ describe('Validations', () => {
     await user.clear(screen.getByTestId('optional-filter-variable-name'));
 
     expect(
-      screen.queryByText('Value has to be filled')
+      screen.queryByText('Value has to be filled'),
     ).not.toBeInTheDocument();
 
     await user.type(screen.getByLabelText(/^value$/i), 'invalidValue');
 
     expect(await screen.findByText('Value has to be JSON')).toBeInTheDocument();
     expect(
-      await screen.findByText('Name has to be filled')
+      await screen.findByText('Name has to be filled'),
     ).toBeInTheDocument();
     expect(screen.getByTestId('search')).toBeEmptyDOMElement();
 
     await user.type(
       screen.getByTestId('optional-filter-variable-name'),
-      'aRandomVariable'
+      'aRandomVariable',
     );
 
     expect(await screen.findByText('Value has to be JSON')).toBeInTheDocument();

@@ -10,19 +10,19 @@ import {getAccordionItemTitle} from './getAccordionItemTitle';
 describe('getAccordionItemTitle', () => {
   it('should get title for multiple instances', () => {
     expect(getAccordionItemTitle('myProcess', 100, 3, 'bad error')).toBe(
-      'View 100 Instances with error bad error in version 3 of Process myProcess'
+      'View 100 Instances with error bad error in version 3 of Process myProcess',
     );
   });
 
   it('should get title for single instance', () => {
     expect(getAccordionItemTitle('myProcess', 1, 1, 'bad error')).toBe(
-      'View 1 Instance with error bad error in version 1 of Process myProcess'
+      'View 1 Instance with error bad error in version 1 of Process myProcess',
     );
   });
 
   it('should get title for no instances', () => {
     expect(getAccordionItemTitle('myProcess', 0, 2, 'bad error')).toBe(
-      'View 0 Instances with error bad error in version 2 of Process myProcess'
+      'View 0 Instances with error bad error in version 2 of Process myProcess',
     );
   });
 });

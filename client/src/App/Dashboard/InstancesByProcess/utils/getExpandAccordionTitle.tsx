@@ -10,7 +10,7 @@ import pluralSuffix from 'modules/utils/pluralSuffix';
 function getExpandAccordionTitle(name: string, instancesCount: number) {
   return `Expand ${pluralSuffix(
     instancesCount,
-    'Instance'
+    'Instance',
   )} of Process ${name}`;
 }
 

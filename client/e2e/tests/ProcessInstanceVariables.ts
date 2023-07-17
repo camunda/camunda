@@ -42,7 +42,7 @@ test('Edit variables', async (t) => {
 
   // delete the value of the variable and add something else. see that save variable button is enabled, and no spinner is displayed.
   const valueField = within(
-    ProcessInstancePage.editVariableValueField
+    ProcessInstancePage.editVariableValueField,
   ).queryByRole('textbox');
 
   await t
@@ -90,11 +90,11 @@ test('Add variables', async (t) => {
     .click(ProcessInstancePage.addVariableButton)
     .typeText(
       within(ProcessInstancePage.newVariableNameField).queryByRole('textbox'),
-      'secondTestKey'
+      'secondTestKey',
     )
     .typeText(
       within(ProcessInstancePage.newVariableValueField).queryByRole('textbox'),
-      '"secondTestValue"'
+      '"secondTestValue"',
     )
     .expect(ProcessInstancePage.saveVariableButton.hasAttribute('disabled'))
     .notOk();
@@ -126,7 +126,7 @@ test('Add variables', async (t) => {
   await t.click(
     screen.queryByRole('link', {
       name: /processes/i,
-    })
+    }),
   );
 
   await displayOptionalFilter('Process Instance Key(s)');
@@ -134,17 +134,17 @@ test('Add variables', async (t) => {
 
   await ProcessesPage.typeText(
     ProcessesPage.Filters.variableName.field,
-    'secondTestKey'
+    'secondTestKey',
   );
 
   await ProcessesPage.typeText(
     ProcessesPage.Filters.variableValue.field,
-    '"secondTestValue"'
+    '"secondTestValue"',
   );
 
   await ProcessesPage.typeText(
     ProcessesPage.Filters.instanceIds.field,
-    instance.processInstanceKey
+    instance.processInstanceKey,
   );
 
   await t
@@ -153,7 +153,7 @@ test('Add variables', async (t) => {
     .expect(
       screen.queryByRole('link', {
         description: `View instance ${instance.processInstanceKey}`,
-      }).exists
+      }).exists,
     )
     .ok();
 });
@@ -164,7 +164,7 @@ test('Infinite scrolling', async (t) => {
   } = t.fixtureCtx;
 
   await t.navigateTo(
-    `/processes/${instanceWithManyVariables.processInstanceKey}`
+    `/processes/${instanceWithManyVariables.processInstanceKey}`,
   );
 
   await t.expect(screen.queryByTestId('variables-list').exists).ok();

@@ -26,7 +26,7 @@ fixture('Process Instances Table')
       .click(
         screen.queryByRole('link', {
           name: /processes/i,
-        })
+        }),
       );
   });
 
@@ -48,13 +48,13 @@ test('Sorting', async (t) => {
     instanceIds.join(),
     {
       paste: true,
-    }
+    },
   );
 
   await t.expect(screen.queryByText(/3 results found/).exists).ok();
 
   const instanceRows = within(screen.queryByTestId('data-list')).getAllByRole(
-    'row'
+    'row',
   );
 
   // test default Start Date sorting
@@ -155,11 +155,11 @@ test('Scrolling', async (t) => {
   await ProcessesPage.selectProcess('Process For Infinite Scroll');
 
   await t.click(
-    screen.queryByRole('button', {name: /Sort by Process Instance Key/})
+    screen.queryByRole('button', {name: /Sort by Process Instance Key/}),
   );
 
   const instanceRows = within(screen.queryByTestId('data-list')).getAllByRole(
-    'row'
+    'row',
   );
 
   await t
@@ -172,17 +172,17 @@ test('Scrolling', async (t) => {
 
   // scroll until max stored instances is reached (200)
   await t.scrollIntoView(
-    screen.getByRole('row', {name: `Instance ${descendingInstanceIds[49]}`})
+    screen.getByRole('row', {name: `Instance ${descendingInstanceIds[49]}`}),
   );
   await t.expect(instanceRows.count).eql(100);
 
   await t.scrollIntoView(
-    screen.getByRole('row', {name: `Instance ${descendingInstanceIds[99]}`})
+    screen.getByRole('row', {name: `Instance ${descendingInstanceIds[99]}`}),
   );
   await t.expect(instanceRows.count).eql(150);
 
   await t.scrollIntoView(
-    screen.getByRole('row', {name: `Instance ${descendingInstanceIds[149]}`})
+    screen.getByRole('row', {name: `Instance ${descendingInstanceIds[149]}`}),
   );
   await t.expect(instanceRows.count).eql(200);
 
@@ -195,7 +195,7 @@ test('Scrolling', async (t) => {
     .contains(descendingInstanceIds[199]);
 
   await t.scrollIntoView(
-    screen.getByRole('row', {name: `Instance ${descendingInstanceIds[199]}`})
+    screen.getByRole('row', {name: `Instance ${descendingInstanceIds[199]}`}),
   );
 
   await t
@@ -207,7 +207,7 @@ test('Scrolling', async (t) => {
     .contains(descendingInstanceIds[249]);
 
   await t.scrollIntoView(
-    screen.getByRole('row', {name: `Instance ${descendingInstanceIds[50]}`})
+    screen.getByRole('row', {name: `Instance ${descendingInstanceIds[50]}`}),
   );
 
   await t

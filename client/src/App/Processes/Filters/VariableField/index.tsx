@@ -31,7 +31,7 @@ const Variable: React.FC = observer(() => {
         name="variableName"
         validate={mergeValidators(
           validateVariableNameCharacters,
-          validateVariableNameComplete
+          validateVariableNameComplete,
         )}
       >
         {({input, meta}) => (
@@ -49,7 +49,7 @@ const Variable: React.FC = observer(() => {
         name="variableValue"
         validate={mergeValidators(
           validateVariableValueComplete,
-          validateVariableValueValid
+          validateVariableValueValid,
         )}
       >
         {({input, meta}) => (

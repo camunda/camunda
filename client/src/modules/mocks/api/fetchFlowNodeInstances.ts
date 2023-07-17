@@ -13,7 +13,7 @@ import {mockPostRequest} from './mockRequest';
 
 const mockFetchFlowNodeInstances = (contextPath = '') =>
   mockPostRequest<FlowNodeInstancesDto<FlowNodeInstanceDto>>(
-    `${contextPath}/api/flow-node-instances`
+    `${contextPath}/api/flow-node-instances`,
   );
 
 export {mockFetchFlowNodeInstances};

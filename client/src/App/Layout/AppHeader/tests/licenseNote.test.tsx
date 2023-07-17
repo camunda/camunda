@@ -23,34 +23,34 @@ describe('license note', () => {
       await within(
         screen.getByRole('navigation', {
           name: /camunda operate/i,
-        })
+        }),
       ).findByRole('link', {
         name: /dashboard/i,
-      })
+      }),
     ).toBeInTheDocument();
 
     expect(
       screen.getByRole('button', {
         name: 'Non-Production License',
         expanded: false,
-      })
+      }),
     ).toBeInTheDocument();
 
     await user.click(
-      screen.getByRole('button', {name: 'Non-Production License'})
+      screen.getByRole('button', {name: 'Non-Production License'}),
     );
 
     expect(
       screen.getByRole('button', {
         name: 'Non-Production License',
         expanded: true,
-      })
+      }),
     ).toBeInTheDocument();
 
     expect(
       screen.getByText(
-        /Non-Production License. If you would like information on production usage, please refer to our/
-      )
+        /Non-Production License. If you would like information on production usage, please refer to our/,
+      ),
     ).toBeInTheDocument();
   });
 
@@ -65,7 +65,7 @@ describe('license note', () => {
     });
 
     expect(
-      await screen.findByText('Non-Production License')
+      await screen.findByText('Non-Production License'),
     ).toBeInTheDocument();
   });
 
@@ -83,14 +83,14 @@ describe('license note', () => {
       await within(
         screen.getByRole('navigation', {
           name: /camunda operate/i,
-        })
+        }),
       ).findByRole('link', {
         name: /dashboard/i,
-      })
+      }),
     ).toBeInTheDocument();
 
     expect(
-      screen.queryByText('Non-Production License')
+      screen.queryByText('Non-Production License'),
     ).not.toBeInTheDocument();
   });
 
@@ -108,14 +108,14 @@ describe('license note', () => {
       await within(
         screen.getByRole('navigation', {
           name: /camunda operate/i,
-        })
+        }),
       ).findByRole('link', {
         name: /dashboard/i,
-      })
+      }),
     ).toBeInTheDocument();
 
     expect(
-      screen.queryByText('Non-Production License')
+      screen.queryByText('Non-Production License'),
     ).not.toBeInTheDocument();
   });
 });

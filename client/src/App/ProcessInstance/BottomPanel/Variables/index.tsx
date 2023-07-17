@@ -49,7 +49,7 @@ const Variables: React.FC<Props> = observer(
     const scopeId =
       variablesStore.scopeId ??
       modificationsStore.getNewScopeIdForFlowNode(
-        flowNodeSelectionStore.state.selection?.flowNodeId
+        flowNodeSelectionStore.state.selection?.flowNodeId,
       );
 
     const scrollableContentRef = useRef<HTMLDivElement>(null);
@@ -63,7 +63,7 @@ const Variables: React.FC<Props> = observer(
 
     const addVariableModifications = useMemo(
       () => modificationsStore.getAddVariableModifications(scopeId),
-      [scopeId]
+      [scopeId],
     );
 
     useEffect(() => {
@@ -73,7 +73,7 @@ const Variables: React.FC<Props> = observer(
           if (!isModificationModeEnabled) {
             form.reset({});
           }
-        }
+        },
       );
 
       return disposer;
@@ -147,7 +147,7 @@ const Variables: React.FC<Props> = observer(
                       return;
                     }
                     await variablesStore.fetchPreviousVariables(
-                      processInstanceId
+                      processInstanceId,
                     );
 
                     if (
@@ -157,7 +157,7 @@ const Variables: React.FC<Props> = observer(
                     ) {
                       scrollDown(
                         variablesStore.state.latestFetch.itemsCount *
-                          (variableRowRef.current?.offsetHeight ?? 0)
+                          (variableRowRef.current?.offsetHeight ?? 0),
                       );
                     }
                   }}
@@ -247,7 +247,7 @@ const Variables: React.FC<Props> = observer(
                                     onSuccess: (variable: VariableEntity) => {
                                       variablesStore.setFullVariableValue(
                                         id,
-                                        variable.value
+                                        variable.value,
                                       );
                                     },
                                     onError: () => {
@@ -256,7 +256,7 @@ const Variables: React.FC<Props> = observer(
                                         {
                                           headline:
                                             'Variable could not be fetched',
-                                        }
+                                        },
                                       );
                                     },
                                   });
@@ -339,7 +339,7 @@ const Variables: React.FC<Props> = observer(
 
                                                   variablesStore.setFullVariableValue(
                                                     id,
-                                                    variable.value
+                                                    variable.value,
                                                   );
 
                                                   value = variable.value;
@@ -381,7 +381,7 @@ const Variables: React.FC<Props> = observer(
                             </>
                           )}
                         </TR>
-                      )
+                      ),
                     )}
                   </tbody>
                 </InfiniteScroller>
@@ -431,7 +431,7 @@ const Variables: React.FC<Props> = observer(
         )}
       </Styled.VariablesContent>
     );
-  }
+  },
 );
 
 export default Variables;

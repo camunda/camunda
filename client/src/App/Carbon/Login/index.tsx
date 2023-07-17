@@ -72,7 +72,7 @@ const Login: React.FC = () => {
                       ...location,
                       pathname: CarbonPaths.dashboard(),
                     },
-                {replace: true}
+                {replace: true},
               );
             }
 

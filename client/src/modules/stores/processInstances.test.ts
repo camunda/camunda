@@ -76,15 +76,15 @@ describe('stores/processInstances', () => {
     expect(processInstancesStore.state.status).toBe('first-fetch');
 
     await waitFor(() =>
-      expect(processInstancesStore.state.status).toBe('fetched')
+      expect(processInstancesStore.state.status).toBe('fetched'),
     );
 
     expect(processInstancesStore.state.filteredProcessInstancesCount).toBe(100);
     expect(processInstancesStore.state.processInstances).toEqual(
-      mockProcessInstances.processInstances
+      mockProcessInstances.processInstances,
     );
     expect(
-      processInstancesStore.processInstanceIdsWithActiveOperations
+      processInstancesStore.processInstanceIdsWithActiveOperations,
     ).toEqual(['2251799813685627']);
   });
 
@@ -96,7 +96,7 @@ describe('stores/processInstances', () => {
     processInstancesStore.fetchProcessInstancesFromFilters();
 
     await waitFor(() =>
-      expect(processInstancesStore.state.status).toBe('fetched')
+      expect(processInstancesStore.state.status).toBe('fetched'),
     );
 
     mockFetchProcessInstances().withSuccess({
@@ -111,7 +111,7 @@ describe('stores/processInstances', () => {
 
     expect(processInstancesStore.state.status).toBe('fetching-next');
     await waitFor(() =>
-      expect(processInstancesStore.state.status).toBe('fetched')
+      expect(processInstancesStore.state.status).toBe('fetched'),
     );
 
     expect(processInstancesStore.state.processInstances.length).toBe(4);
@@ -131,7 +131,7 @@ describe('stores/processInstances', () => {
 
     expect(processInstancesStore.state.status).toBe('fetching-next');
     await waitFor(() =>
-      expect(processInstancesStore.state.status).toBe('fetched')
+      expect(processInstancesStore.state.status).toBe('fetched'),
     );
 
     expect(processInstancesStore.state.processInstances.length).toBe(5);
@@ -142,7 +142,7 @@ describe('stores/processInstances', () => {
     });
 
     expect(
-      processInstancesStore.processInstanceIdsWithActiveOperations
+      processInstancesStore.processInstanceIdsWithActiveOperations,
     ).toEqual(['2251799813685627', '101']);
   });
 
@@ -154,7 +154,7 @@ describe('stores/processInstances', () => {
     processInstancesStore.fetchProcessInstancesFromFilters();
 
     await waitFor(() =>
-      expect(processInstancesStore.state.status).toBe('fetched')
+      expect(processInstancesStore.state.status).toBe('fetched'),
     );
 
     mockFetchProcessInstances().withSuccess({
@@ -166,7 +166,7 @@ describe('stores/processInstances', () => {
 
     expect(processInstancesStore.state.status).toBe('fetching-prev');
     await waitFor(() =>
-      expect(processInstancesStore.state.status).toBe('fetched')
+      expect(processInstancesStore.state.status).toBe('fetched'),
     );
 
     expect(processInstancesStore.state.processInstances.length).toBe(3);
@@ -185,7 +185,7 @@ describe('stores/processInstances', () => {
 
     expect(processInstancesStore.state.status).toBe('fetching-prev');
     await waitFor(() =>
-      expect(processInstancesStore.state.status).toBe('fetched')
+      expect(processInstancesStore.state.status).toBe('fetched'),
     );
 
     expect(processInstancesStore.state.processInstances.length).toBe(4);
@@ -197,7 +197,7 @@ describe('stores/processInstances', () => {
     });
 
     expect(
-      processInstancesStore.processInstanceIdsWithActiveOperations
+      processInstancesStore.processInstanceIdsWithActiveOperations,
     ).toEqual(['2251799813685627']);
   });
 
@@ -207,10 +207,10 @@ describe('stores/processInstances', () => {
     processInstancesStore.fetchProcessInstancesFromFilters();
 
     await waitFor(() =>
-      expect(processInstancesStore.state.status).toBe('fetched')
+      expect(processInstancesStore.state.status).toBe('fetched'),
     );
     expect(
-      processInstancesStore.processInstanceIdsWithActiveOperations
+      processInstancesStore.processInstanceIdsWithActiveOperations,
     ).toEqual(['2251799813685627']);
 
     mockFetchProcessInstances().withSuccess({
@@ -224,8 +224,8 @@ describe('stores/processInstances', () => {
     processInstancesStore.refreshAllInstances();
     await waitFor(() =>
       expect(
-        processInstancesStore.processInstanceIdsWithActiveOperations
-      ).toEqual([])
+        processInstancesStore.processInstanceIdsWithActiveOperations,
+      ).toEqual([]),
     );
 
     mockFetchProcessInstances().withSuccess({
@@ -239,8 +239,8 @@ describe('stores/processInstances', () => {
     processInstancesStore.refreshAllInstances();
     await waitFor(() =>
       expect(
-        processInstancesStore.processInstanceIdsWithActiveOperations
-      ).toEqual(['2251799813685625', '2251799813685627'])
+        processInstancesStore.processInstanceIdsWithActiveOperations,
+      ).toEqual(['2251799813685625', '2251799813685627']),
     );
   });
 
@@ -253,7 +253,7 @@ describe('stores/processInstances', () => {
     });
 
     expect(processInstancesStore.state.processInstances).toEqual(
-      mockProcessInstances.processInstances
+      mockProcessInstances.processInstances,
     );
 
     processInstancesStore.reset();
@@ -274,7 +274,7 @@ describe('stores/processInstances', () => {
     });
 
     expect(processInstancesStore.visibleIdsInListPanel).toEqual(
-      mockInstances.map(({id}) => id)
+      mockInstances.map(({id}) => id),
     );
   });
 
@@ -338,7 +338,7 @@ describe('stores/processInstances', () => {
       {...instance, id: '3'},
     ]);
     expect(
-      processInstancesStore.processInstanceIdsWithActiveOperations
+      processInstancesStore.processInstanceIdsWithActiveOperations,
     ).toEqual(['1', '2']);
 
     processInstancesStore.markProcessInstancesWithActiveOperations({
@@ -346,7 +346,7 @@ describe('stores/processInstances', () => {
       operationType: 'CANCEL_PROCESS_INSTANCE',
     });
     expect(
-      processInstancesStore.processInstanceIdsWithActiveOperations
+      processInstancesStore.processInstanceIdsWithActiveOperations,
     ).toEqual(['1', '2']);
     expect(processInstancesStore.state.processInstances).toEqual([
       {
@@ -370,7 +370,7 @@ describe('stores/processInstances', () => {
       operationType: 'CANCEL_PROCESS_INSTANCE',
     });
     expect(
-      processInstancesStore.processInstanceIdsWithActiveOperations
+      processInstancesStore.processInstanceIdsWithActiveOperations,
     ).toEqual(['1', '2', '3']);
 
     expect(processInstancesStore.state.processInstances).toEqual([
@@ -408,7 +408,7 @@ describe('stores/processInstances', () => {
       payload: {query: {}},
     });
     expect(
-      processInstancesStore.processInstanceIdsWithActiveOperations
+      processInstancesStore.processInstanceIdsWithActiveOperations,
     ).toEqual([]);
 
     expect(processInstancesStore.state.processInstances).toEqual([
@@ -441,7 +441,7 @@ describe('stores/processInstances', () => {
       },
     ]);
     expect(
-      processInstancesStore.processInstanceIdsWithActiveOperations
+      processInstancesStore.processInstanceIdsWithActiveOperations,
     ).toEqual(['1', '3']);
 
     processInstancesStore.markProcessInstancesWithActiveOperations({
@@ -450,7 +450,7 @@ describe('stores/processInstances', () => {
       operationType: 'CANCEL_PROCESS_INSTANCE',
     });
     expect(
-      processInstancesStore.processInstanceIdsWithActiveOperations
+      processInstancesStore.processInstanceIdsWithActiveOperations,
     ).toEqual(['1', '2', '3']);
 
     expect(processInstancesStore.state.processInstances).toEqual([
@@ -489,10 +489,10 @@ describe('stores/processInstances', () => {
     processInstancesStore.fetchProcessInstancesFromFilters();
 
     await waitFor(() =>
-      expect(processInstancesStore.state.status).toBe('fetched')
+      expect(processInstancesStore.state.status).toBe('fetched'),
     );
     expect(
-      processInstancesStore.processInstanceIdsWithActiveOperations
+      processInstancesStore.processInstanceIdsWithActiveOperations,
     ).toEqual(['1', '2', '3']);
 
     mockFetchProcessInstances().withSuccess({
@@ -512,8 +512,8 @@ describe('stores/processInstances', () => {
 
     await waitFor(() =>
       expect(
-        processInstancesStore.processInstanceIdsWithActiveOperations
-      ).toEqual([])
+        processInstancesStore.processInstanceIdsWithActiveOperations,
+      ).toEqual([]),
     );
 
     // when not polling all visible instances
@@ -528,10 +528,10 @@ describe('stores/processInstances', () => {
 
     processInstancesStore.fetchProcessInstancesFromFilters();
     await waitFor(() =>
-      expect(processInstancesStore.state.status).toBe('fetched')
+      expect(processInstancesStore.state.status).toBe('fetched'),
     );
     expect(
-      processInstancesStore.processInstanceIdsWithActiveOperations
+      processInstancesStore.processInstanceIdsWithActiveOperations,
     ).toEqual(['1', '2', '3']);
 
     processInstancesStore.unmarkProcessInstancesWithActiveOperations({
@@ -540,7 +540,7 @@ describe('stores/processInstances', () => {
       operationType: 'CANCEL_PROCESS_INSTANCE',
     });
     expect(
-      processInstancesStore.processInstanceIdsWithActiveOperations
+      processInstancesStore.processInstanceIdsWithActiveOperations,
     ).toEqual(['1', '2']);
   });
 
@@ -570,10 +570,10 @@ describe('stores/processInstances', () => {
     processInstancesStore.fetchProcessInstancesFromFilters();
 
     await waitFor(() =>
-      expect(processInstancesStore.state.status).toBe('fetched')
+      expect(processInstancesStore.state.status).toBe('fetched'),
     );
     expect(
-      processInstancesStore.processInstanceIdsWithActiveOperations
+      processInstancesStore.processInstanceIdsWithActiveOperations,
     ).toEqual(['1']);
 
     processInstancesStore.unmarkProcessInstancesWithActiveOperations({
@@ -583,10 +583,10 @@ describe('stores/processInstances', () => {
     });
 
     expect(
-      processInstancesStore.processInstanceIdsWithActiveOperations
+      processInstancesStore.processInstanceIdsWithActiveOperations,
     ).toEqual(['1']);
     expect(
-      processInstancesStore.state.processInstances[0]?.hasActiveOperation
+      processInstancesStore.state.processInstances[0]?.hasActiveOperation,
     ).toBe(true);
   });
 
@@ -601,10 +601,10 @@ describe('stores/processInstances', () => {
     processInstancesStore.fetchProcessInstancesFromFilters();
 
     await waitFor(() =>
-      expect(processInstancesStore.state.processInstances).toHaveLength(2)
+      expect(processInstancesStore.state.processInstances).toHaveLength(2),
     );
     expect(
-      processInstancesStore.processInstanceIdsWithActiveOperations
+      processInstancesStore.processInstanceIdsWithActiveOperations,
     ).toEqual(['2251799813685627']);
 
     mockFetchProcessInstances().withSuccess({
@@ -626,7 +626,7 @@ describe('stores/processInstances', () => {
     });
 
     await waitFor(() =>
-      expect(processInstancesStore.state.filteredProcessInstancesCount).toBe(3)
+      expect(processInstancesStore.state.filteredProcessInstancesCount).toBe(3),
     );
 
     expect(handlerMock).toHaveBeenCalledTimes(1);
@@ -650,10 +650,10 @@ describe('stores/processInstances', () => {
     processInstancesStore.fetchProcessInstancesFromFilters();
 
     await waitFor(() =>
-      expect(processInstancesStore.state.processInstances).toHaveLength(2)
+      expect(processInstancesStore.state.processInstances).toHaveLength(2),
     );
     expect(
-      processInstancesStore.processInstanceIdsWithActiveOperations
+      processInstancesStore.processInstanceIdsWithActiveOperations,
     ).toEqual(['2']);
 
     mockFetchProcessInstances().withSuccess({
@@ -684,11 +684,11 @@ describe('stores/processInstances', () => {
 
     await waitFor(() => {
       expect(processInstancesStore.state.filteredProcessInstancesCount).toEqual(
-        2
+        2,
       );
     });
     expect(
-      processInstancesStore.processInstanceIdsWithActiveOperations
+      processInstancesStore.processInstanceIdsWithActiveOperations,
     ).toEqual([]);
 
     jest.clearAllTimers();
@@ -714,8 +714,8 @@ describe('stores/processInstances', () => {
 
     await waitFor(() =>
       expect(processInstancesStore.state.processInstances).toEqual(
-        mockedProcessInstances.processInstances
-      )
+        mockedProcessInstances.processInstances,
+      ),
     );
 
     const newProcessInstancesResponse = {
@@ -729,8 +729,8 @@ describe('stores/processInstances', () => {
 
     await waitFor(() =>
       expect(processInstancesStore.state.processInstances).toEqual(
-        newProcessInstancesResponse.processInstances
-      )
+        newProcessInstancesResponse.processInstances,
+      ),
     );
 
     window.addEventListener = originalEventListener;

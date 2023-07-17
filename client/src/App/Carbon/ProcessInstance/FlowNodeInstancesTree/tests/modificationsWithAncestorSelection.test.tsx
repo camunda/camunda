@@ -62,13 +62,13 @@ describe('FlowNodeInstancesTree - modifications with ancestor selection', () => 
     ]);
 
     mockFetchFlowNodeInstances().withSuccess(
-      multipleSubprocessesWithTwoRunningScopesMock.firstLevel
+      multipleSubprocessesWithTwoRunningScopesMock.firstLevel,
     );
 
     mockFetchProcessXML().withSuccess(mockNestedSubprocess);
 
     await processInstanceDetailsDiagramStore.fetchProcessXml(
-      'nested_sub_process'
+      'nested_sub_process',
     );
 
     processInstanceDetailsStore.init({id: processInstanceId});
@@ -80,7 +80,7 @@ describe('FlowNodeInstancesTree - modifications with ancestor selection', () => 
     });
 
     await processInstanceDetailsStatisticsStore.fetchFlowNodeStatistics(
-      processInstanceId
+      processInstanceId,
     );
 
     modificationsStore.enableModificationMode();
@@ -95,13 +95,13 @@ describe('FlowNodeInstancesTree - modifications with ancestor selection', () => 
       />,
       {
         wrapper: Wrapper,
-      }
+      },
     );
 
     expect(
       screen.getAllByLabelText('parent_sub_process', {
         selector: "[aria-expanded='false']",
-      })
+      }),
     ).toHaveLength(2);
 
     act(() => {
@@ -113,7 +113,7 @@ describe('FlowNodeInstancesTree - modifications with ancestor selection', () => 
     });
 
     mockFetchFlowNodeInstances().withSuccess(
-      multipleSubprocessesWithTwoRunningScopesMock.secondLevel1
+      multipleSubprocessesWithTwoRunningScopesMock.secondLevel1,
     );
 
     const [expandFirstScope] = screen.getAllByLabelText('parent_sub_process', {
@@ -125,14 +125,14 @@ describe('FlowNodeInstancesTree - modifications with ancestor selection', () => 
     expect(await screen.findByText('inner_sub_process')).toBeInTheDocument();
 
     mockFetchFlowNodeInstances().withSuccess(
-      multipleSubprocessesWithTwoRunningScopesMock.thirdLevel1
+      multipleSubprocessesWithTwoRunningScopesMock.thirdLevel1,
     );
 
     await user.type(
       screen.getByLabelText('inner_sub_process', {
         selector: "[aria-expanded='false']",
       }),
-      '{arrowright}'
+      '{arrowright}',
     );
     expect(await screen.findByText('user_task')).toBeInTheDocument();
 
@@ -140,24 +140,24 @@ describe('FlowNodeInstancesTree - modifications with ancestor selection', () => 
       screen.getByLabelText('parent_sub_process', {
         selector: "[aria-expanded='true']",
       }),
-      '{arrowleft}'
+      '{arrowleft}',
     );
 
     expect(
       screen.getAllByLabelText('parent_sub_process', {
         selector: "[aria-expanded='false']",
-      })
+      }),
     ).toHaveLength(2);
 
     mockFetchFlowNodeInstances().withSuccess(
-      multipleSubprocessesWithTwoRunningScopesMock.secondLevel2
+      multipleSubprocessesWithTwoRunningScopesMock.secondLevel2,
     );
 
     const [, expandSecondScope] = screen.getAllByLabelText(
       'parent_sub_process',
       {
         selector: "[aria-expanded='false']",
-      }
+      },
     );
 
     await user.type(expandSecondScope!, '{arrowright}');
@@ -165,18 +165,18 @@ describe('FlowNodeInstancesTree - modifications with ancestor selection', () => 
     expect(await screen.findByText('inner_sub_process')).toBeInTheDocument();
 
     mockFetchFlowNodeInstances().withSuccess(
-      multipleSubprocessesWithTwoRunningScopesMock.thirdLevel2
+      multipleSubprocessesWithTwoRunningScopesMock.thirdLevel2,
     );
 
     await user.type(
       screen.getByLabelText('inner_sub_process', {
         selector: "[aria-expanded='false']",
       }),
-      '{arrowright}'
+      '{arrowright}',
     );
 
     await waitFor(() =>
-      expect(screen.getAllByText('user_task')).toHaveLength(3)
+      expect(screen.getAllByText('user_task')).toHaveLength(3),
     );
   });
 
@@ -189,13 +189,13 @@ describe('FlowNodeInstancesTree - modifications with ancestor selection', () => 
       />,
       {
         wrapper: Wrapper,
-      }
+      },
     );
 
     expect(
       screen.getAllByLabelText('parent_sub_process', {
         selector: "[aria-expanded='false']",
-      })
+      }),
     ).toHaveLength(2);
 
     act(() => {
@@ -207,7 +207,7 @@ describe('FlowNodeInstancesTree - modifications with ancestor selection', () => 
     });
 
     mockFetchFlowNodeInstances().withSuccess(
-      multipleSubprocessesWithTwoRunningScopesMock.secondLevel1
+      multipleSubprocessesWithTwoRunningScopesMock.secondLevel1,
     );
 
     const [expandFirstScope] = screen.getAllByLabelText('parent_sub_process', {
@@ -219,14 +219,14 @@ describe('FlowNodeInstancesTree - modifications with ancestor selection', () => 
     expect(await screen.findByText('inner_sub_process')).toBeInTheDocument();
 
     mockFetchFlowNodeInstances().withSuccess(
-      multipleSubprocessesWithTwoRunningScopesMock.thirdLevel1
+      multipleSubprocessesWithTwoRunningScopesMock.thirdLevel1,
     );
 
     await user.type(
       screen.getByLabelText('inner_sub_process', {
         selector: "[aria-expanded='false']",
       }),
-      '{arrowright}'
+      '{arrowright}',
     );
     expect(await screen.findByText('user_task')).toBeInTheDocument();
 
@@ -234,115 +234,115 @@ describe('FlowNodeInstancesTree - modifications with ancestor selection', () => 
       screen.getByLabelText('parent_sub_process', {
         selector: "[aria-expanded='true']",
       }),
-      '{arrowleft}'
+      '{arrowleft}',
     );
 
     expect(
       screen.getAllByLabelText('parent_sub_process', {
         selector: "[aria-expanded='false']",
-      })
+      }),
     ).toHaveLength(2);
 
     mockFetchFlowNodeInstances().withSuccess(
-      multipleSubprocessesWithTwoRunningScopesMock.secondLevel2
+      multipleSubprocessesWithTwoRunningScopesMock.secondLevel2,
     );
 
     const [, expandSecondScope] = screen.getAllByLabelText(
       'parent_sub_process',
       {
         selector: "[aria-expanded='false']",
-      }
+      },
     );
 
     await user.type(expandSecondScope!, '{arrowright}');
 
     await waitFor(() =>
-      expect(screen.getAllByText('inner_sub_process')).toHaveLength(3)
+      expect(screen.getAllByText('inner_sub_process')).toHaveLength(3),
     );
 
     mockFetchFlowNodeInstances().withSuccess(
-      multipleSubprocessesWithTwoRunningScopesMock.thirdLevel2
+      multipleSubprocessesWithTwoRunningScopesMock.thirdLevel2,
     );
 
     const [expandFirstInnerSubprocess, ,] = screen.getAllByLabelText(
       'inner_sub_process',
       {
         selector: "[aria-expanded='false']",
-      }
+      },
     );
 
     await user.type(expandFirstInnerSubprocess!, '{arrowright}');
     await waitFor(() =>
-      expect(screen.getAllByText('user_task')).toHaveLength(1)
+      expect(screen.getAllByText('user_task')).toHaveLength(1),
     );
 
     await user.type(
       screen.getByLabelText('inner_sub_process', {
         selector: "[aria-expanded='true']",
       }),
-      '{arrowleft}'
+      '{arrowleft}',
     );
 
     await waitFor(() =>
       expect(
         screen.getAllByLabelText('inner_sub_process', {
           selector: "[aria-expanded='false']",
-        })
-      ).toHaveLength(3)
+        }),
+      ).toHaveLength(3),
     );
 
     const [, expandSecondInnerSubprocess] = screen.getAllByLabelText(
       'inner_sub_process',
       {
         selector: "[aria-expanded='false']",
-      }
+      },
     );
 
     await user.type(expandSecondInnerSubprocess!, '{arrowright}');
     await waitFor(() =>
-      expect(screen.getAllByText('user_task')).toHaveLength(1)
+      expect(screen.getAllByText('user_task')).toHaveLength(1),
     );
 
     await user.type(
       screen.getByLabelText('inner_sub_process', {
         selector: "[aria-expanded='true']",
       }),
-      '{arrowleft}'
+      '{arrowleft}',
     );
 
     await waitFor(() =>
       expect(
         screen.getAllByLabelText('inner_sub_process', {
           selector: "[aria-expanded='false']",
-        })
-      ).toHaveLength(3)
+        }),
+      ).toHaveLength(3),
     );
 
     const [, , expandThirdInnerSubprocess] = screen.getAllByLabelText(
       'inner_sub_process',
       {
         selector: "[aria-expanded='false']",
-      }
+      },
     );
 
     await user.type(expandThirdInnerSubprocess!, '{arrowright}');
     await waitFor(() =>
-      expect(screen.getAllByText('user_task')).toHaveLength(1)
+      expect(screen.getAllByText('user_task')).toHaveLength(1),
     );
 
     await user.type(
       screen.getByLabelText('inner_sub_process', {
         selector: "[aria-expanded='true']",
       }),
-      '{arrowleft}'
+      '{arrowleft}',
     );
 
     await waitFor(() =>
       expect(
         screen.getAllByLabelText('inner_sub_process', {
           selector: "[aria-expanded='false']",
-        })
-      ).toHaveLength(3)
+        }),
+      ).toHaveLength(3),
     );
   });
 
@@ -355,46 +355,46 @@ describe('FlowNodeInstancesTree - modifications with ancestor selection', () => 
       />,
       {
         wrapper: Wrapper,
-      }
+      },
     );
 
     expect(
       screen.getAllByLabelText('parent_sub_process', {
         selector: "[aria-expanded='false']",
-      })
+      }),
     ).toHaveLength(2);
 
     act(() => {
       modificationsStore.startAddingToken('user_task');
       modificationsStore.finishAddingToken(
         'nested_sub_process',
-        processInstanceId
+        processInstanceId,
       );
 
       modificationsStore.startAddingToken('user_task');
       modificationsStore.finishAddingToken(
         'nested_sub_process',
-        processInstanceId
+        processInstanceId,
       );
     });
 
     mockFetchFlowNodeInstances().withSuccess(
-      multipleSubprocessesWithTwoRunningScopesMock.secondLevel1
+      multipleSubprocessesWithTwoRunningScopesMock.secondLevel1,
     );
 
     await waitFor(() =>
       expect(
         screen.getAllByLabelText('parent_sub_process', {
           selector: "[aria-expanded='false']",
-        })
-      ).toHaveLength(4)
+        }),
+      ).toHaveLength(4),
     );
 
     const [expandFirstScope, ,] = screen.getAllByLabelText(
       'parent_sub_process',
       {
         selector: "[aria-expanded='false']",
-      }
+      },
     );
 
     await user.type(expandFirstScope!, '{arrowright}');
@@ -402,14 +402,14 @@ describe('FlowNodeInstancesTree - modifications with ancestor selection', () => 
     expect(await screen.findByText('inner_sub_process')).toBeInTheDocument();
 
     mockFetchFlowNodeInstances().withSuccess(
-      multipleSubprocessesWithTwoRunningScopesMock.thirdLevel1
+      multipleSubprocessesWithTwoRunningScopesMock.thirdLevel1,
     );
 
     await user.type(
       screen.getByLabelText('inner_sub_process', {
         selector: "[aria-expanded='false']",
       }),
-      '{arrowright}'
+      '{arrowright}',
     );
     expect(await screen.findByText('user_task')).toBeInTheDocument();
 
@@ -417,24 +417,24 @@ describe('FlowNodeInstancesTree - modifications with ancestor selection', () => 
       screen.getByLabelText('parent_sub_process', {
         selector: "[aria-expanded='true']",
       }),
-      '{arrowleft}'
+      '{arrowleft}',
     );
 
     expect(
       screen.getAllByLabelText('parent_sub_process', {
         selector: "[aria-expanded='false']",
-      })
+      }),
     ).toHaveLength(4);
 
     mockFetchFlowNodeInstances().withSuccess(
-      multipleSubprocessesWithTwoRunningScopesMock.secondLevel2
+      multipleSubprocessesWithTwoRunningScopesMock.secondLevel2,
     );
 
     const [, expandSecondScope, ,] = screen.getAllByLabelText(
       'parent_sub_process',
       {
         selector: "[aria-expanded='false']",
-      }
+      },
     );
 
     await user.type(expandSecondScope!, '{arrowright}');
@@ -442,14 +442,14 @@ describe('FlowNodeInstancesTree - modifications with ancestor selection', () => 
     expect(await screen.findByText('inner_sub_process')).toBeInTheDocument();
 
     mockFetchFlowNodeInstances().withSuccess(
-      multipleSubprocessesWithTwoRunningScopesMock.thirdLevel2
+      multipleSubprocessesWithTwoRunningScopesMock.thirdLevel2,
     );
 
     await user.type(
       screen.getByLabelText('inner_sub_process', {
         selector: "[aria-expanded='false']",
       }),
-      '{arrowright}'
+      '{arrowright}',
     );
     expect(await screen.findByText('user_task')).toBeInTheDocument();
 
@@ -457,20 +457,20 @@ describe('FlowNodeInstancesTree - modifications with ancestor selection', () => 
       screen.getByLabelText('parent_sub_process', {
         selector: "[aria-expanded='true']",
       }),
-      '{arrowleft}'
+      '{arrowleft}',
     );
 
     expect(
       screen.getAllByLabelText('parent_sub_process', {
         selector: "[aria-expanded='false']",
-      })
+      }),
     ).toHaveLength(4);
 
     const [, , expandThirdScope] = screen.getAllByLabelText(
       'parent_sub_process',
       {
         selector: "[aria-expanded='false']",
-      }
+      },
     );
 
     await user.type(expandThirdScope!, '{arrowright}');
@@ -479,7 +479,7 @@ describe('FlowNodeInstancesTree - modifications with ancestor selection', () => 
       screen.getByLabelText('inner_sub_process', {
         selector: "[aria-expanded='false']",
       }),
-      '{arrowright}'
+      '{arrowright}',
     );
     expect(await screen.findByText('user_task')).toBeInTheDocument();
 
@@ -487,20 +487,20 @@ describe('FlowNodeInstancesTree - modifications with ancestor selection', () => 
       screen.getByLabelText('parent_sub_process', {
         selector: "[aria-expanded='true']",
       }),
-      '{arrowleft}'
+      '{arrowleft}',
     );
 
     expect(
       screen.getAllByLabelText('parent_sub_process', {
         selector: "[aria-expanded='false']",
-      })
+      }),
     ).toHaveLength(4);
 
     const [, , , expandFourthScope] = screen.getAllByLabelText(
       'parent_sub_process',
       {
         selector: "[aria-expanded='false']",
-      }
+      },
     );
 
     await user.type(expandFourthScope!, '{arrowright}');
@@ -509,7 +509,7 @@ describe('FlowNodeInstancesTree - modifications with ancestor selection', () => 
       screen.getByLabelText('inner_sub_process', {
         selector: "[aria-expanded='false']",
       }),
-      '{arrowright}'
+      '{arrowright}',
     );
     expect(await screen.findByText('user_task')).toBeInTheDocument();
 
@@ -517,13 +517,13 @@ describe('FlowNodeInstancesTree - modifications with ancestor selection', () => 
       screen.getByLabelText('parent_sub_process', {
         selector: "[aria-expanded='true']",
       }),
-      '{arrowleft}'
+      '{arrowleft}',
     );
 
     expect(
       screen.getAllByLabelText('parent_sub_process', {
         selector: "[aria-expanded='false']",
-      })
+      }),
     ).toHaveLength(4);
   });
 
@@ -536,20 +536,20 @@ describe('FlowNodeInstancesTree - modifications with ancestor selection', () => 
       />,
       {
         wrapper: Wrapper,
-      }
+      },
     );
 
     expect(
       screen.getAllByLabelText('parent_sub_process', {
         selector: "[aria-expanded='false']",
-      })
+      }),
     ).toHaveLength(2);
 
     act(() => {
       modificationsStore.startAddingToken('user_task');
       modificationsStore.finishAddingToken(
         'nested_sub_process',
-        processInstanceId
+        processInstanceId,
       );
 
       modificationsStore.addModification({
@@ -566,13 +566,13 @@ describe('FlowNodeInstancesTree - modifications with ancestor selection', () => 
     });
 
     await waitFor(() =>
-      expect(screen.getAllByText('parent_sub_process')).toHaveLength(4)
+      expect(screen.getAllByText('parent_sub_process')).toHaveLength(4),
     );
 
     expect(
       screen.getAllByLabelText('parent_sub_process', {
         selector: "[aria-expanded='false']",
-      })
+      }),
     ).toHaveLength(3);
   });
 });

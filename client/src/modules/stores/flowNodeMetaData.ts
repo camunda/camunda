@@ -62,7 +62,7 @@ class FlowNodeMetaData extends NetworkReconnectionHandler {
         if (selection !== null) {
           this.fetchMetaData(selection);
         }
-      }
+      },
     );
   };
   startFetching = () => {
@@ -122,7 +122,7 @@ class FlowNodeMetaData extends NetworkReconnectionHandler {
         flowNodeId === undefined ||
         (modificationsStore.isModificationModeEnabled &&
           !processInstanceDetailsStatisticsStore.state.statistics.some(
-            ({activityId}) => activityId === flowNodeId
+            ({activityId}) => activityId === flowNodeId,
           ))
       ) {
         return;
@@ -155,7 +155,7 @@ class FlowNodeMetaData extends NetworkReconnectionHandler {
       } else {
         this.handleError();
       }
-    }
+    },
   );
 
   get isSelectedInstanceRunning() {

@@ -11,11 +11,11 @@ function getAccordionItemTitle(
   processName: string,
   instancesCount: number,
   versionName: number,
-  errorMessage: string
+  errorMessage: string,
 ) {
   return `View ${pluralSuffix(
     instancesCount,
-    'Instance'
+    'Instance',
   )} with error ${errorMessage} in version ${versionName} of Process ${processName}`;
 }
 

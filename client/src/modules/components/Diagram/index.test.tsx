@@ -17,7 +17,7 @@ const OVERLAY_TYPE = 'myType';
 const Overlay: React.FC<{container: HTMLElement; data: any}> = observer(
   ({container, data}) => {
     return createPortal(<div>{data}</div>, container);
-  }
+  },
 );
 
 describe('<Diagram />', () => {
@@ -31,13 +31,13 @@ describe('<Diagram />', () => {
     expect(await screen.findByText('Diagram mock')).toBeInTheDocument();
 
     expect(
-      await screen.findByRole('button', {name: 'Reset diagram zoom'})
+      await screen.findByRole('button', {name: 'Reset diagram zoom'}),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole('button', {name: 'Zoom in diagram'})
+      screen.getByRole('button', {name: 'Zoom in diagram'}),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole('button', {name: 'Zoom out diagram'})
+      screen.getByRole('button', {name: 'Zoom out diagram'}),
     ).toBeInTheDocument();
   });
 
@@ -57,7 +57,7 @@ describe('<Diagram />', () => {
         {diagramOverlaysStore.state.overlays.map(
           ({container, payload, flowNodeId}) => (
             <Overlay key={flowNodeId} container={container} data={payload} />
-          )
+          ),
         )}
       </Diagram>
     );

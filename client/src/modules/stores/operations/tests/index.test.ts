@@ -112,7 +112,7 @@ describe('stores/operations', () => {
 
     operationsStore.fetchOperations();
     await waitFor(() =>
-      expect(operationsStore.hasRunningOperations).toBe(true)
+      expect(operationsStore.hasRunningOperations).toBe(true),
     );
 
     mockFetchBatchOperations().withSuccess([
@@ -123,7 +123,7 @@ describe('stores/operations', () => {
     jest.runOnlyPendingTimers();
 
     await waitFor(() =>
-      expect(operationsStore.hasRunningOperations).toBe(false)
+      expect(operationsStore.hasRunningOperations).toBe(false),
     );
 
     jest.clearAllTimers();
@@ -142,7 +142,7 @@ describe('stores/operations', () => {
     operationsStore.init();
 
     await waitFor(() =>
-      expect(operationsStore.state.status).toEqual('fetched')
+      expect(operationsStore.state.status).toEqual('fetched'),
     );
 
     mockFetchBatchOperations().withSuccess(operations);
@@ -152,7 +152,7 @@ describe('stores/operations', () => {
     expect(operationsStore.state.status).toEqual('fetching');
 
     await waitFor(() =>
-      expect(operationsStore.state.status).toEqual('fetched')
+      expect(operationsStore.state.status).toEqual('fetched'),
     );
 
     window.addEventListener = originalEventListener;

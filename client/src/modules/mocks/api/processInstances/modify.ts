@@ -9,7 +9,7 @@ import {mockPostRequest} from '../mockRequest';
 
 const mockModify = (contextPath = '') =>
   mockPostRequest<OperationEntity>(
-    `${contextPath}/api/process-instances/:processInstanceId/modify`
+    `${contextPath}/api/process-instances/:processInstanceId/modify`,
   );
 
 export {mockModify};

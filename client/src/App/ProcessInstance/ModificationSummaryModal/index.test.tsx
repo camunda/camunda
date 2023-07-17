@@ -56,7 +56,7 @@ describe('Modification Summary Modal', () => {
     });
 
     expect(
-      screen.getByText(/Planned modifications for Process Instance/)
+      screen.getByText(/Planned modifications for Process Instance/),
     ).toBeInTheDocument();
     expect(screen.getByText('"someProcessName - 1"')).toBeInTheDocument();
     expect(screen.getByText(/Click "Apply" to proceed/)).toBeInTheDocument();
@@ -68,10 +68,10 @@ describe('Modification Summary Modal', () => {
     });
 
     expect(
-      screen.getByText('No planned flow node modifications')
+      screen.getByText('No planned flow node modifications'),
     ).toBeInTheDocument();
     expect(
-      screen.getByText('No planned variable modifications')
+      screen.getByText('No planned variable modifications'),
     ).toBeInTheDocument();
   });
 
@@ -90,36 +90,36 @@ describe('Modification Summary Modal', () => {
     });
 
     expect(
-      await screen.findByRole('columnheader', {name: /operation/i})
+      await screen.findByRole('columnheader', {name: /operation/i}),
     ).toBeInTheDocument();
     expect(
       screen.getByRole('cell', {
         name: /add/i,
-      })
+      }),
     ).toBeInTheDocument();
 
     expect(
       screen.getByRole('columnheader', {
         name: /scope/i,
-      })
+      }),
     ).toBeInTheDocument();
 
     expect(
       screen.getByRole('cell', {
         name: /flow node 1/i,
-      })
+      }),
     ).toBeInTheDocument();
 
     expect(
       screen.getByRole('columnheader', {
         name: /name \/ value/i,
-      })
+      }),
     ).toBeInTheDocument();
 
     expect(
       screen.getByRole('cell', {
         name: /test: 123/i,
-      })
+      }),
     ).toBeInTheDocument();
   });
 
@@ -128,7 +128,7 @@ describe('Modification Summary Modal', () => {
       <ModificationSummaryModal isVisible onClose={() => {}} />,
       {
         wrapper: Wrapper,
-      }
+      },
     );
 
     act(() => {
@@ -141,11 +141,11 @@ describe('Modification Summary Modal', () => {
     });
 
     await user.click(
-      await screen.findByRole('button', {name: 'Delete variable modification'})
+      await screen.findByRole('button', {name: 'Delete variable modification'}),
     );
 
     expect(
-      screen.getByText('No planned variable modifications')
+      screen.getByText('No planned variable modifications'),
     ).toBeInTheDocument();
     expect(modificationsStore.variableModifications).toEqual([]);
   });
@@ -171,42 +171,42 @@ describe('Modification Summary Modal', () => {
     expect(
       await screen.findByRole('columnheader', {
         name: /operation/i,
-      })
+      }),
     ).toBeInTheDocument();
     expect(
       screen.getByRole('cell', {
         name: /move/i,
-      })
+      }),
     ).toBeInTheDocument();
 
     expect(
       screen.getByRole('columnheader', {
         name: /flow node/i,
-      })
+      }),
     ).toBeInTheDocument();
 
     expect(
       screen.getByRole('columnheader', {
         name: /instance key/i,
-      })
+      }),
     ).toBeInTheDocument();
 
     expect(
       screen.getByRole('cell', {
         name: /flow node 1 → flow node 2/i,
-      })
+      }),
     ).toBeInTheDocument();
 
     expect(
       screen.getByRole('cell', {
         name: /--/i,
-      })
+      }),
     ).toBeInTheDocument();
 
     expect(
       screen.getByRole('columnheader', {
         name: /affected tokens/i,
-      })
+      }),
     ).toBeInTheDocument();
 
     act(() => {
@@ -217,12 +217,12 @@ describe('Modification Summary Modal', () => {
     expect(
       screen.queryByRole('cell', {
         name: /--/i,
-      })
+      }),
     ).not.toBeInTheDocument();
     expect(
       screen.getByRole('cell', {
         name: /some-instance-key-1/i,
-      })
+      }),
     ).toBeInTheDocument();
 
     act(() => {
@@ -240,12 +240,12 @@ describe('Modification Summary Modal', () => {
     expect(
       screen.queryByRole('cell', {
         name: /some-instance-key-1/i,
-      })
+      }),
     ).not.toBeInTheDocument();
     expect(
       screen.getByRole('cell', {
         name: /some-instance-key-2/i,
-      })
+      }),
     ).toBeInTheDocument();
   });
 
@@ -267,19 +267,19 @@ describe('Modification Summary Modal', () => {
       <ModificationSummaryModal isVisible onClose={() => {}} />,
       {
         wrapper: Wrapper,
-      }
+      },
     );
 
     await waitFor(() =>
-      expect(screen.getByRole('button', {name: 'Apply'})).toBeEnabled()
+      expect(screen.getByRole('button', {name: 'Apply'})).toBeEnabled(),
     );
 
     await user.click(
-      screen.getByRole('button', {name: 'Delete flow node modification'})
+      screen.getByRole('button', {name: 'Delete flow node modification'}),
     );
 
     expect(
-      screen.getByText('No planned flow node modifications')
+      screen.getByText('No planned flow node modifications'),
     ).toBeInTheDocument();
     expect(modificationsStore.flowNodeModifications).toEqual([]);
     expect(screen.getByRole('button', {name: 'Apply'})).toBeDisabled();
@@ -290,7 +290,7 @@ describe('Modification Summary Modal', () => {
       <ModificationSummaryModal isVisible onClose={() => {}} />,
       {
         wrapper: Wrapper,
-      }
+      },
     );
 
     act(() => {
@@ -299,7 +299,7 @@ describe('Modification Summary Modal', () => {
     });
 
     await waitFor(() =>
-      expect(screen.getByRole('button', {name: 'Apply'})).toBeEnabled()
+      expect(screen.getByRole('button', {name: 'Apply'})).toBeEnabled(),
     );
 
     const [deleteFirstModification] = screen.getAllByRole('button', {
@@ -312,12 +312,12 @@ describe('Modification Summary Modal', () => {
     expect(screen.getByText('some-instance-key-2')).toBeInTheDocument();
 
     await user.click(
-      screen.getByRole('button', {name: 'Delete flow node modification'})
+      screen.getByRole('button', {name: 'Delete flow node modification'}),
     );
     expect(screen.queryByText('some-instance-key-2')).not.toBeInTheDocument();
 
     expect(
-      screen.getByText('No planned flow node modifications')
+      screen.getByText('No planned flow node modifications'),
     ).toBeInTheDocument();
   });
 
@@ -344,11 +344,11 @@ describe('Modification Summary Modal', () => {
       <ModificationSummaryModal isVisible onClose={() => {}} />,
       {
         wrapper: Wrapper,
-      }
+      },
     );
 
     await waitFor(() =>
-      expect(screen.getByRole('button', {name: 'Apply'})).toBeEnabled()
+      expect(screen.getByRole('button', {name: 'Apply'})).toBeEnabled(),
     );
 
     const [deleteFirstModification] = screen.getAllByRole('button', {
@@ -361,12 +361,12 @@ describe('Modification Summary Modal', () => {
     expect(screen.getByText('some-instance-key-2')).toBeInTheDocument();
 
     await user.click(
-      screen.getByRole('button', {name: 'Delete flow node modification'})
+      screen.getByRole('button', {name: 'Delete flow node modification'}),
     );
     expect(screen.queryByText('some-instance-key-2')).not.toBeInTheDocument();
 
     expect(
-      screen.getByText('No planned flow node modifications')
+      screen.getByText('No planned flow node modifications'),
     ).toBeInTheDocument();
   });
 
@@ -377,7 +377,7 @@ describe('Modification Summary Modal', () => {
       <ModificationSummaryModal isVisible onClose={mockOnClose} />,
       {
         wrapper: Wrapper,
-      }
+      },
     );
 
     await user.click(screen.getByRole('button', {name: /cancel/i}));
@@ -414,41 +414,41 @@ describe('Modification Summary Modal', () => {
       <ModificationSummaryModal isVisible onClose={() => {}} />,
       {
         wrapper: Wrapper,
-      }
+      },
     );
 
     const [jsonEditorModal, diffEditorModal] = await screen.findAllByRole(
       'button',
       {
         name: /open json editor modal/i,
-      }
+      },
     );
 
     await user.click(jsonEditorModal!);
 
     expect(
-      screen.getByRole('heading', {name: /variable "test"/i})
+      screen.getByRole('heading', {name: /variable "test"/i}),
     ).toBeInTheDocument();
     expect(await screen.findByDisplayValue('123')).toBeInTheDocument();
 
     await user.click(screen.getByRole('button', {name: /close/i}));
     await waitForElementToBeRemoved(() =>
-      screen.getByRole('heading', {name: /variable "test"/i})
+      screen.getByRole('heading', {name: /variable "test"/i}),
     );
 
     await user.click(diffEditorModal!);
 
     expect(
-      screen.getByRole('heading', {name: /variable "anotherVariable"/i})
+      screen.getByRole('heading', {name: /variable "anotherVariable"/i}),
     ).toBeInTheDocument();
     expect(screen.getByDisplayValue('"someOldValue"')).toBeInTheDocument();
     expect(
-      screen.getByDisplayValue('"someOldValue-edited"')
+      screen.getByDisplayValue('"someOldValue-edited"'),
     ).toBeInTheDocument();
 
     await user.click(screen.getByRole('button', {name: /close/i}));
     await waitForElementToBeRemoved(() =>
-      screen.getByRole('heading', {name: /variable "anotherVariable"/i})
+      screen.getByRole('heading', {name: /variable "anotherVariable"/i}),
     );
   });
 
@@ -473,7 +473,7 @@ describe('Modification Summary Modal', () => {
     mockFetchProcessXML().withSuccess(open('diagramForModifications.bpmn'));
 
     await processInstanceDetailsDiagramStore.fetchProcessXml(
-      'processInstanceId'
+      'processInstanceId',
     );
     await processInstanceDetailsStatisticsStore.fetchFlowNodeStatistics(1);
 
@@ -513,7 +513,7 @@ describe('Modification Summary Modal', () => {
     const mockOnClose = jest.fn();
 
     mockModify().withSuccess(
-      createBatchOperation({type: 'MODIFY_PROCESS_INSTANCE'})
+      createBatchOperation({type: 'MODIFY_PROCESS_INSTANCE'}),
     );
 
     modificationsStore.addModification({
@@ -532,7 +532,7 @@ describe('Modification Summary Modal', () => {
       <ModificationSummaryModal isVisible onClose={mockOnClose} />,
       {
         wrapper: Wrapper,
-      }
+      },
     );
 
     await user.click(screen.getByRole('button', {name: 'Apply'}));
@@ -540,7 +540,7 @@ describe('Modification Summary Modal', () => {
     await waitFor(() =>
       expect(mockDisplayNotification).toHaveBeenCalledWith('success', {
         headline: 'Modifications applied',
-      })
+      }),
     );
     expect(mockOnClose).toHaveBeenCalled();
     expect(modificationsStore.isModificationModeEnabled).toBe(false);
@@ -568,7 +568,7 @@ describe('Modification Summary Modal', () => {
       <ModificationSummaryModal isVisible onClose={mockOnClose} />,
       {
         wrapper: Wrapper,
-      }
+      },
     );
 
     await user.click(screen.getByRole('button', {name: 'Apply'}));
@@ -577,7 +577,7 @@ describe('Modification Summary Modal', () => {
       expect(mockDisplayNotification).toHaveBeenCalledWith('error', {
         headline: 'Modification failed',
         description: 'Unable to apply modifications, please try again.',
-      })
+      }),
     );
     expect(mockOnClose).toHaveBeenCalled();
     expect(modificationsStore.isModificationModeEnabled).toBe(false);
@@ -605,7 +605,7 @@ describe('Modification Summary Modal', () => {
       <ModificationSummaryModal isVisible onClose={mockOnClose} />,
       {
         wrapper: ThemeProvider,
-      }
+      },
     );
 
     await user.click(screen.getByRole('button', {name: 'Apply'}));
@@ -614,7 +614,7 @@ describe('Modification Summary Modal', () => {
       expect(mockDisplayNotification).toHaveBeenCalledWith('error', {
         headline: 'Modification failed',
         description: 'You do not have permission',
-      })
+      }),
     );
     expect(mockOnClose).toHaveBeenCalled();
     expect(modificationsStore.isModificationModeEnabled).toBe(false);
@@ -646,8 +646,8 @@ describe('Modification Summary Modal', () => {
 
     expect(
       screen.queryByText(
-        'The planned modifications will cancel all remaining running flow node instances. Applying these modifications will cancel the entire process instance.'
-      )
+        'The planned modifications will cancel all remaining running flow node instances. Applying these modifications will cancel the entire process instance.',
+      ),
     ).not.toBeInTheDocument();
 
     act(() => {
@@ -656,8 +656,8 @@ describe('Modification Summary Modal', () => {
 
     expect(
       screen.queryByText(
-        'The planned modifications will cancel all remaining running flow node instances. Applying these modifications will cancel the entire process instance.'
-      )
+        'The planned modifications will cancel all remaining running flow node instances. Applying these modifications will cancel the entire process instance.',
+      ),
     ).not.toBeInTheDocument();
 
     act(() => {
@@ -666,8 +666,8 @@ describe('Modification Summary Modal', () => {
 
     expect(
       await screen.findByText(
-        'The planned modifications will cancel all remaining running flow node instances. Applying these modifications will cancel the entire process instance.'
-      )
+        'The planned modifications will cancel all remaining running flow node instances. Applying these modifications will cancel the entire process instance.',
+      ),
     ).toBeInTheDocument();
 
     act(() => {
@@ -686,8 +686,8 @@ describe('Modification Summary Modal', () => {
 
     expect(
       screen.queryByText(
-        'The planned modifications will cancel all remaining running flow node instances. Applying these modifications will cancel the entire process instance.'
-      )
+        'The planned modifications will cancel all remaining running flow node instances. Applying these modifications will cancel the entire process instance.',
+      ),
     ).not.toBeInTheDocument();
   });
 
@@ -700,7 +700,7 @@ describe('Modification Summary Modal', () => {
           {instanceId: '3', processDefinitionName: 'some root process'},
           {instanceId: '2', processDefinitionName: 'some parent process'},
         ],
-      })
+      }),
     );
 
     mockFetchProcessInstanceDetailStatistics().withSuccess([
@@ -721,26 +721,26 @@ describe('Modification Summary Modal', () => {
 
     expect(
       screen.queryByText(
-        /This set of planned modifications cannot be applied. This instance is a child instance of/i
-      )
+        /This set of planned modifications cannot be applied. This instance is a child instance of/i,
+      ),
     ).not.toBeInTheDocument();
 
     expect(
-      screen.queryByText(/This instance is the child instance of/i)
+      screen.queryByText(/This instance is the child instance of/i),
     ).not.toBeInTheDocument();
     expect(
-      screen.queryByText(/some parent process - 2/i)
+      screen.queryByText(/some parent process - 2/i),
     ).not.toBeInTheDocument();
     expect(
       screen.queryByText(
-        /, and cannot be canceled entirely. To cancel this instance, the root instance/i
-      )
+        /, and cannot be canceled entirely. To cancel this instance, the root instance/i,
+      ),
     ).not.toBeInTheDocument();
     expect(
-      screen.queryByText(/some root process - 3/i)
+      screen.queryByText(/some root process - 3/i),
     ).not.toBeInTheDocument();
     expect(
-      screen.queryByText(/needs to be canceled./i)
+      screen.queryByText(/needs to be canceled./i),
     ).not.toBeInTheDocument();
     expect(screen.getByRole('button', {name: 'Apply'})).toBeDisabled();
 
@@ -750,14 +750,14 @@ describe('Modification Summary Modal', () => {
 
     expect(
       await screen.findByText(
-        /This set of planned modifications cannot be applied. This instance is a child instance of/i
-      )
+        /This set of planned modifications cannot be applied. This instance is a child instance of/i,
+      ),
     ).toBeInTheDocument();
     expect(screen.getByText(/some parent process - 2/i)).toBeInTheDocument();
     expect(
       screen.getByText(
-        /, and cannot be canceled entirely. To cancel this instance, the root instance/i
-      )
+        /, and cannot be canceled entirely. To cancel this instance, the root instance/i,
+      ),
     ).toBeInTheDocument();
     expect(screen.getByText(/some root process - 3/i)).toBeInTheDocument();
     expect(screen.getByText(/needs to be canceled./i)).toBeInTheDocument();

@@ -51,7 +51,8 @@ const Input = styled.input`
 
       &:focus-visible {
         outline: none;
-        box-shadow: 0px 0px 0px 1px ${colors.focusInner},
+        box-shadow:
+          0px 0px 0px 1px ${colors.focusInner},
           0px 0px 0px 4px ${theme.colors.focusOuter};
       }
     `;

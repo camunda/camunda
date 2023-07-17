@@ -9,7 +9,7 @@ import {mockPostRequest} from '../mockRequest';
 
 const mockFetchVariables = (contextPath = '') =>
   mockPostRequest<VariableEntity[]>(
-    `${contextPath}/api/process-instances/:instanceId/variables`
+    `${contextPath}/api/process-instances/:instanceId/variables`,
   );
 
 export {mockFetchVariables};

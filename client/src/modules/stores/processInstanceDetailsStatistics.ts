@@ -63,7 +63,7 @@ class ProcessInstanceDetailsStatistics extends NetworkReconnectionHandler {
       () => {
         this.fetchFlowNodeStatistics(processInstanceId);
         this.startPolling(processInstanceId);
-      }
+      },
     );
     this.completedFlowNodesDisposer = when(
       () =>
@@ -71,14 +71,14 @@ class ProcessInstanceDetailsStatistics extends NetworkReconnectionHandler {
         !processInstanceDetailsStore.isRunning,
       () => {
         this.stopPolling();
-      }
+      },
     );
   };
 
   fetchFlowNodeStatistics = this.retryOnConnectionLost(
     async (processInstanceId: string) => {
       const response = await fetchProcessInstanceDetailStatistics(
-        processInstanceId
+        processInstanceId,
       );
 
       if (response.isSuccess) {
@@ -86,13 +86,13 @@ class ProcessInstanceDetailsStatistics extends NetworkReconnectionHandler {
       } else {
         this.handleFetchFailure();
       }
-    }
+    },
   );
 
   handlePolling = async (processInstanceId: string) => {
     this.isPollRequestRunning = true;
     const response = await fetchProcessInstanceDetailStatistics(
-      processInstanceId
+      processInstanceId,
     );
 
     if (this.intervalId !== null) {
@@ -218,7 +218,7 @@ class ProcessInstanceDetailsStatistics extends NetworkReconnectionHandler {
   get willAllFlowNodesBeCanceled() {
     if (
       modificationsStore.flowNodeModifications.filter(({operation}) =>
-        ['ADD_TOKEN', 'MOVE_TOKEN'].includes(operation)
+        ['ADD_TOKEN', 'MOVE_TOKEN'].includes(operation),
       ).length > 0
     ) {
       return false;
@@ -228,7 +228,7 @@ class ProcessInstanceDetailsStatistics extends NetworkReconnectionHandler {
       ({activityId, active, incidents}) =>
         (active === 0 && incidents === 0) ||
         modificationsStore.modificationsByFlowNode[activityId]
-          ?.areAllTokensCanceled
+          ?.areAllTokensCanceled,
     );
   }
 

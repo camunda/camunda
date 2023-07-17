@@ -38,7 +38,7 @@ const test = base.extend<{}, {workerStorageState: string}>({
         project: {
           use: {baseURL},
         },
-      }
+      },
     ) => {
       if (fs.existsSync(authFile)) {
         await use(authFile);

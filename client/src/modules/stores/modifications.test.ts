@@ -146,7 +146,7 @@ describe('stores/modifications', () => {
     mockFetchProcessXML().withSuccess(open('diagramForModifications.bpmn'));
 
     await processInstanceDetailsDiagramStore.fetchProcessXml(
-      'processInstanceId'
+      'processInstanceId',
     );
 
     await processInstanceDetailsStatisticsStore.fetchFlowNodeStatistics(1);
@@ -294,7 +294,7 @@ describe('stores/modifications', () => {
       'non-existing-variable',
       'variable1',
       'EDIT_VARIABLE',
-      'variables'
+      'variables',
     );
     expect(modificationsStore.state.modifications.length).toEqual(2);
 
@@ -302,7 +302,7 @@ describe('stores/modifications', () => {
       '1',
       'non-existing-variable-name',
       'ADD_VARIABLE',
-      'variables'
+      'variables',
     );
     expect(modificationsStore.state.modifications.length).toEqual(2);
 
@@ -310,7 +310,7 @@ describe('stores/modifications', () => {
       '1',
       '1',
       'ADD_VARIABLE',
-      'variables'
+      'variables',
     );
     expect(modificationsStore.state.modifications.length).toEqual(1);
 
@@ -347,7 +347,7 @@ describe('stores/modifications', () => {
       '2',
       'variable1',
       'EDIT_VARIABLE',
-      'variables'
+      'variables',
     );
 
     expect(modificationsStore.state.lastRemovedModification).toEqual({
@@ -373,7 +373,7 @@ describe('stores/modifications', () => {
     mockFetchProcessXML().withSuccess(open('diagramForModifications.bpmn'));
 
     await processInstanceDetailsDiagramStore.fetchProcessXml(
-      'processInstanceId'
+      'processInstanceId',
     );
 
     await processInstanceDetailsStatisticsStore.fetchFlowNodeStatistics(1);
@@ -427,7 +427,7 @@ describe('stores/modifications', () => {
     mockFetchProcessXML().withSuccess(open('diagramForModifications.bpmn'));
 
     await processInstanceDetailsDiagramStore.fetchProcessXml(
-      'processInstanceId'
+      'processInstanceId',
     );
     await processInstanceDetailsStatisticsStore.fetchFlowNodeStatistics(1);
 
@@ -575,7 +575,7 @@ describe('stores/modifications', () => {
     mockFetchProcessXML().withSuccess(open('diagramForModifications.bpmn'));
 
     await processInstanceDetailsDiagramStore.fetchProcessXml(
-      'processInstanceId'
+      'processInstanceId',
     );
 
     await processInstanceDetailsStatisticsStore.fetchFlowNodeStatistics(1);
@@ -593,19 +593,19 @@ describe('stores/modifications', () => {
     });
 
     expect(
-      modificationsStore.hasPendingCancelOrMoveModification('service-task-1')
+      modificationsStore.hasPendingCancelOrMoveModification('service-task-1'),
     ).toBe(false);
 
     modificationsStore.cancelAllTokens('service-task-1');
 
     expect(
-      modificationsStore.hasPendingCancelOrMoveModification('service-task-1')
+      modificationsStore.hasPendingCancelOrMoveModification('service-task-1'),
     ).toBe(true);
 
     expect(
       modificationsStore.hasPendingCancelOrMoveModification(
-        'non-existing-flownode'
-      )
+        'non-existing-flownode',
+      ),
     ).toBe(false);
 
     modificationsStore.addModification({
@@ -621,10 +621,10 @@ describe('stores/modifications', () => {
       },
     });
     expect(
-      modificationsStore.hasPendingCancelOrMoveModification('service-task-2')
+      modificationsStore.hasPendingCancelOrMoveModification('service-task-2'),
     ).toBe(true);
     expect(
-      modificationsStore.hasPendingCancelOrMoveModification('service-task-3')
+      modificationsStore.hasPendingCancelOrMoveModification('service-task-3'),
     ).toBe(false);
   });
 
@@ -632,19 +632,19 @@ describe('stores/modifications', () => {
     mockFetchProcessXML().withSuccess(open('diagramForModifications.bpmn'));
 
     await processInstanceDetailsDiagramStore.fetchProcessXml(
-      'processInstanceId'
+      'processInstanceId',
     );
 
     await processInstanceDetailsStatisticsStore.fetchFlowNodeStatistics(1);
 
     expect(modificationsStore.modificationsByFlowNode).toEqual({});
     expect(
-      modificationsStore.state.sourceFlowNodeIdForMoveOperation
+      modificationsStore.state.sourceFlowNodeIdForMoveOperation,
     ).toBeNull();
 
     modificationsStore.startMovingToken('StartEvent_1');
     expect(modificationsStore.state.sourceFlowNodeIdForMoveOperation).toBe(
-      'StartEvent_1'
+      'StartEvent_1',
     );
 
     modificationsStore.finishMovingToken('end-event');
@@ -667,7 +667,7 @@ describe('stores/modifications', () => {
     });
 
     expect(
-      modificationsStore.state.sourceFlowNodeIdForMoveOperation
+      modificationsStore.state.sourceFlowNodeIdForMoveOperation,
     ).toBeNull();
     expect(modificationsStore.state.status).toBe('enabled');
   });
@@ -676,7 +676,7 @@ describe('stores/modifications', () => {
     mockFetchProcessXML().withSuccess(open('diagramForModifications.bpmn'));
 
     await processInstanceDetailsDiagramStore.fetchProcessXml(
-      'processInstanceId'
+      'processInstanceId',
     );
     await processInstanceDetailsStatisticsStore.fetchFlowNodeStatistics(1);
     modificationsStore.startMovingToken('multi-instance-service-task');
@@ -822,12 +822,12 @@ describe('stores/modifications', () => {
 
   it('should generate parent scope ids', async () => {
     processInstanceDetailsStore.setProcessInstance(
-      createInstance({bpmnProcessId: 'nested_sub_process'})
+      createInstance({bpmnProcessId: 'nested_sub_process'}),
     );
     mockFetchProcessXML().withSuccess(mockNestedSubprocess);
 
     await processInstanceDetailsDiagramStore.fetchProcessXml(
-      'processInstanceId'
+      'processInstanceId',
     );
 
     expect(modificationsStore.generateParentScopeIds('user_task')).toEqual({
@@ -836,24 +836,24 @@ describe('stores/modifications', () => {
     });
 
     expect(
-      modificationsStore.generateParentScopeIds('inner_sub_process')
+      modificationsStore.generateParentScopeIds('inner_sub_process'),
     ).toEqual({
       parent_sub_process: expect.any(String),
     });
 
     expect(
-      modificationsStore.generateParentScopeIds('parent_sub_process')
+      modificationsStore.generateParentScopeIds('parent_sub_process'),
     ).toEqual({});
   });
 
   it('should not generate parent scope id twice', async () => {
     processInstanceDetailsStore.setProcessInstance(
-      createInstance({bpmnProcessId: 'nested_sub_process'})
+      createInstance({bpmnProcessId: 'nested_sub_process'}),
     );
     mockFetchProcessXML().withSuccess(mockNestedSubprocess);
 
     await processInstanceDetailsDiagramStore.fetchProcessXml(
-      'processInstanceId'
+      'processInstanceId',
     );
 
     modificationsStore.addModification({
@@ -903,8 +903,8 @@ describe('stores/modifications', () => {
       modificationsStore.getLastVariableModification(
         FLOW_NODE_INSTANCE_ID,
         'test',
-        'EDIT_VARIABLE'
-      )
+        'EDIT_VARIABLE',
+      ),
     ).toEqual({
       operation: 'EDIT_VARIABLE',
       flowNodeName: 'flow-node-name',
@@ -925,8 +925,8 @@ describe('stores/modifications', () => {
       modificationsStore.getLastVariableModification(
         FLOW_NODE_INSTANCE_ID,
         'test2',
-        'EDIT_VARIABLE'
-      )
+        'EDIT_VARIABLE',
+      ),
     ).toEqual({
       operation: 'EDIT_VARIABLE',
       flowNodeName: 'flow-node-name',
@@ -947,8 +947,8 @@ describe('stores/modifications', () => {
       modificationsStore.getLastVariableModification(
         FLOW_NODE_INSTANCE_ID,
         'test',
-        'EDIT_VARIABLE'
-      )
+        'EDIT_VARIABLE',
+      ),
     ).toEqual({
       operation: 'EDIT_VARIABLE',
       flowNodeName: 'flow-node-name',
@@ -975,8 +975,8 @@ describe('stores/modifications', () => {
       modificationsStore.getLastVariableModification(
         FLOW_NODE_INSTANCE_ID,
         '1',
-        'ADD_VARIABLE'
-      )
+        'ADD_VARIABLE',
+      ),
     ).toEqual({
       operation: 'ADD_VARIABLE',
       scopeId: FLOW_NODE_INSTANCE_ID,
@@ -986,7 +986,7 @@ describe('stores/modifications', () => {
       newValue: '123',
     });
     expect(
-      modificationsStore.getAddVariableModifications(FLOW_NODE_INSTANCE_ID)
+      modificationsStore.getAddVariableModifications(FLOW_NODE_INSTANCE_ID),
     ).toEqual([
       {
         id: '1',
@@ -1006,8 +1006,8 @@ describe('stores/modifications', () => {
       modificationsStore.getLastVariableModification(
         FLOW_NODE_INSTANCE_ID,
         '1',
-        'ADD_VARIABLE'
-      )
+        'ADD_VARIABLE',
+      ),
     ).toEqual({
       operation: 'ADD_VARIABLE',
       scopeId: FLOW_NODE_INSTANCE_ID,
@@ -1017,7 +1017,7 @@ describe('stores/modifications', () => {
       newValue: '1234',
     });
     expect(
-      modificationsStore.getAddVariableModifications(FLOW_NODE_INSTANCE_ID)
+      modificationsStore.getAddVariableModifications(FLOW_NODE_INSTANCE_ID),
     ).toEqual([
       {
         id: '1',
@@ -1037,8 +1037,8 @@ describe('stores/modifications', () => {
       modificationsStore.getLastVariableModification(
         FLOW_NODE_INSTANCE_ID,
         '1',
-        'ADD_VARIABLE'
-      )
+        'ADD_VARIABLE',
+      ),
     ).toEqual({
       operation: 'ADD_VARIABLE',
       scopeId: FLOW_NODE_INSTANCE_ID,
@@ -1048,7 +1048,7 @@ describe('stores/modifications', () => {
       newValue: '1234',
     });
     expect(
-      modificationsStore.getAddVariableModifications(FLOW_NODE_INSTANCE_ID)
+      modificationsStore.getAddVariableModifications(FLOW_NODE_INSTANCE_ID),
     ).toEqual([
       {
         id: '1',
@@ -1068,8 +1068,8 @@ describe('stores/modifications', () => {
       modificationsStore.getLastVariableModification(
         FLOW_NODE_INSTANCE_ID,
         '1',
-        'ADD_VARIABLE'
-      )
+        'ADD_VARIABLE',
+      ),
     ).toEqual({
       operation: 'ADD_VARIABLE',
       scopeId: FLOW_NODE_INSTANCE_ID,
@@ -1082,8 +1082,8 @@ describe('stores/modifications', () => {
       modificationsStore.getLastVariableModification(
         FLOW_NODE_INSTANCE_ID,
         '2',
-        'ADD_VARIABLE'
-      )
+        'ADD_VARIABLE',
+      ),
     ).toEqual({
       operation: 'ADD_VARIABLE',
       scopeId: FLOW_NODE_INSTANCE_ID,
@@ -1093,7 +1093,7 @@ describe('stores/modifications', () => {
       newValue: '987',
     });
     expect(
-      modificationsStore.getAddVariableModifications(FLOW_NODE_INSTANCE_ID)
+      modificationsStore.getAddVariableModifications(FLOW_NODE_INSTANCE_ID),
     ).toEqual([
       {
         id: '1',
@@ -1109,7 +1109,7 @@ describe('stores/modifications', () => {
 
     expect(modificationsStore.getAddVariableModifications(null)).toEqual([]);
     expect(
-      modificationsStore.getAddVariableModifications('non-existing-flow-node')
+      modificationsStore.getAddVariableModifications('non-existing-flow-node'),
     ).toEqual([]);
   });
 
@@ -1394,7 +1394,7 @@ describe('stores/modifications', () => {
   it('should get new scope id for a flow node', async () => {
     expect(modificationsStore.getNewScopeIdForFlowNode()).toBe(null);
     expect(modificationsStore.getNewScopeIdForFlowNode('test-flownode')).toBe(
-      null
+      null,
     );
 
     const uniqueID = generateUniqueID();
@@ -1411,7 +1411,7 @@ describe('stores/modifications', () => {
     });
 
     expect(modificationsStore.getNewScopeIdForFlowNode('test-flownode')).toBe(
-      uniqueID
+      uniqueID,
     );
 
     const uniqueID_2 = generateUniqueID();
@@ -1429,7 +1429,7 @@ describe('stores/modifications', () => {
     });
 
     expect(modificationsStore.getNewScopeIdForFlowNode('test-flownode')).toBe(
-      null
+      null,
     );
     modificationsStore.removeLastModification();
     modificationsStore.removeLastModification();
@@ -1447,10 +1447,10 @@ describe('stores/modifications', () => {
       },
     });
     expect(modificationsStore.getNewScopeIdForFlowNode('test-flownode')).toBe(
-      null
+      null,
     );
     expect(modificationsStore.getNewScopeIdForFlowNode('test-flownode2')).toBe(
-      null
+      null,
     );
 
     modificationsStore.removeLastModification();
@@ -1469,10 +1469,10 @@ describe('stores/modifications', () => {
     });
 
     expect(modificationsStore.getNewScopeIdForFlowNode('test-flownode')).toBe(
-      null
+      null,
     );
     expect(modificationsStore.getNewScopeIdForFlowNode('test-flownode2')).toBe(
-      uniqueID
+      uniqueID,
     );
   });
 
@@ -1498,7 +1498,7 @@ describe('stores/modifications', () => {
     ]);
 
     await processInstanceDetailsDiagramStore.fetchProcessXml(
-      'processInstanceId'
+      'processInstanceId',
     );
     await processInstanceDetailsStatisticsStore.fetchFlowNodeStatistics(1);
 
@@ -1507,12 +1507,12 @@ describe('stores/modifications', () => {
 
     modificationsStore.startAddingToken('subprocess-service-task');
     expect(modificationsStore.state.sourceFlowNodeIdForAddOperation).toBe(
-      'subprocess-service-task'
+      'subprocess-service-task',
     );
 
     modificationsStore.finishAddingToken(
       'multi-instance-subprocess',
-      'some-instance-key'
+      'some-instance-key',
     );
 
     expect(modificationsStore.modificationsByFlowNode).toEqual({
@@ -1526,7 +1526,7 @@ describe('stores/modifications', () => {
     });
 
     expect(
-      modificationsStore.state.sourceFlowNodeIdForMoveOperation
+      modificationsStore.state.sourceFlowNodeIdForMoveOperation,
     ).toBeNull();
     expect(modificationsStore.state.status).toBe('enabled');
   });

@@ -119,7 +119,7 @@ class ProcessInstanceDetails extends NetworkReconnectionHandler {
           this.handleFetchFailure(response.statusCode);
         }
       }
-    }
+    },
   );
 
   setProcessInstance = (processInstance: ProcessInstanceEntity | null) => {
@@ -132,7 +132,7 @@ class ProcessInstanceDetails extends NetworkReconnectionHandler {
     if (this.state.processInstance !== null) {
       this.state.processInstance.hasActiveOperation = true;
       this.state.processInstance.operations.push(
-        createOperation(operationType)
+        createOperation(operationType),
       );
     }
   };
@@ -141,7 +141,7 @@ class ProcessInstanceDetails extends NetworkReconnectionHandler {
     if (this.state.processInstance !== null) {
       this.state.processInstance.operations =
         this.state.processInstance.operations.filter(
-          ({type, id}) => !(type === operationType && id === undefined)
+          ({type, id}) => !(type === operationType && id === undefined),
         );
 
       if (!hasActiveOperations(this.state.processInstance.operations)) {
@@ -157,7 +157,7 @@ class ProcessInstanceDetails extends NetworkReconnectionHandler {
 
     return PAGE_TITLE.INSTANCE(
       this.state.processInstance.id,
-      getProcessName(this.state.processInstance)
+      getProcessName(this.state.processInstance),
     );
   }
 
@@ -185,8 +185,8 @@ class ProcessInstanceDetails extends NetworkReconnectionHandler {
   };
 
   hasPermission = (scopes: ResourceBasedPermissionDto[]) => {
-    return scopes.some((permission) =>
-      this.getPermissions()?.includes(permission)
+    return scopes.some(
+      (permission) => this.getPermissions()?.includes(permission),
     );
   };
 

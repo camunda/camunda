@@ -17,7 +17,7 @@ describe('<Skeleton />', () => {
     render(<Skeleton rowsToDisplay={10} />, {wrapper: ThemeProvider});
 
     expect(
-      screen.getAllByTestId('flow-node-instance-log-skeleton-row')
+      screen.getAllByTestId('flow-node-instance-log-skeleton-row'),
     ).toHaveLength(rowCount);
   });
 });

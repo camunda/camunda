@@ -38,7 +38,7 @@ const Decision: React.FC = observer(() => {
   const version = params.get('version');
   const decisionId = params.get('name');
   const [currentDecisionId, setCurrentDecisionId] = useState<string | null>(
-    null
+    null,
   );
   const isDecisionSelected = decisionId !== null;
   const isVersionSelected = version !== null && version !== 'all';
@@ -86,7 +86,7 @@ const Decision: React.FC = observer(() => {
         if (status === 'fetched') {
           setCurrentDecisionId(decisionId);
         }
-      }
+      },
     );
 
     return () => {
@@ -115,7 +115,7 @@ const Decision: React.FC = observer(() => {
               resourceBasedRestrictions={{
                 scopes: ['DELETE'],
                 permissions: groupedDecisionsStore.getPermissions(
-                  decisionId ?? undefined
+                  decisionId ?? undefined,
                 ),
               }}
             >
@@ -153,7 +153,7 @@ const Decision: React.FC = observer(() => {
           return (
             <EmptyMessage
               message={`There is more than one Version selected for Decision "${getDecisionName(
-                decisionId
+                decisionId,
               )}"
                 To see a Decision Table or a Literal Expression, select a single Version`}
             />

@@ -37,7 +37,7 @@ jest.mock('@camunda-cloud/common-ui-react', () => {
     CmNotificationContainer: React.forwardRef(
       function CmNotificationContainer() {
         return null;
-      }
+      },
     ),
     CmTextfield: MockTextfield,
     CmCheckbox: MockCheckbox,

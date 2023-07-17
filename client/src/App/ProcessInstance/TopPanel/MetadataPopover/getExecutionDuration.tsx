@@ -14,7 +14,7 @@ import {
 
 function getExecutionDuration(
   startDate: string,
-  endDate: string | null
+  endDate: string | null,
 ): string {
   const parsedStartDate = parseISO(startDate);
 

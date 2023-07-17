@@ -27,7 +27,7 @@ const TimeInput: React.FC<Props> = ({type, labelText}) => {
       validate={mergeValidators(
         validateTimeComplete,
         validateTimeCharacters,
-        validateTimeRange
+        validateTimeRange,
       )}
     >
       {({input, onChange, meta}) => {

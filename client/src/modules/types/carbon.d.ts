@@ -16,13 +16,13 @@ type PropsToOmit<C extends React.ElementType, P> = keyof (AsProp<C> & P);
 
 type PolymorphicComponentProp<
   C extends React.ElementType,
-  Props = {}
+  Props = {},
 > = React.PropsWithChildren<Props & AsProp<C>> &
   Omit<React.ComponentPropsWithoutRef<C>, PropsToOmit<C, Props>>;
 
 type PolymorphicComponentPropWithRef<
   C extends React.ElementType,
-  Props = {}
+  Props = {},
 > = PolymorphicComponentProp<C, Props> & {ref?: PolymorphicRef<C>};
 
 declare module '@carbon/react' {
@@ -41,7 +41,7 @@ declare module '@carbon/react' {
     >;
 
   export const Stack: <C extends React.ElementType = 'div'>(
-    props: StackProps<C>
+    props: StackProps<C>,
   ) => React.ReactElement | null;
 
   type LayerProps<C extends React.ElementType> =
@@ -55,7 +55,7 @@ declare module '@carbon/react' {
     >;
 
   export const Layer: <C extends React.ElementType = 'div'>(
-    props: LayerProps<C>
+    props: LayerProps<C>,
   ) => React.ReactElement | null;
 
   export const IconButton: React.FunctionComponent<
@@ -140,7 +140,7 @@ declare module '@carbon/react' {
       warnText?: React.ReactNode;
       onChange?: (
         evt: React.ChangeEvent<HTMLInputElement>,
-        data: {checked: boolean; id: string}
+        data: {checked: boolean; id: string},
       ) => void;
       onClick?: (evt: React.MouseEvent<HTMLInputElement>) => void;
     }
@@ -166,7 +166,7 @@ declare module '@carbon/react' {
         onClick?(
           event:
             | React.MouseEvent<HTMLElement>
-            | React.KeyboardEvent<HTMLElement>
+            | React.KeyboardEvent<HTMLElement>,
         ): void;
         onClose?(): void;
         onOpen?(): void;
@@ -211,7 +211,7 @@ declare module '@carbon/react' {
     label?: React.ReactNode;
     onSelect?: () => void;
     onToggle?: (
-      event: React.MouseEvent<HTMLElement> | React.KeyboardEvent<HTMLElement>
+      event: React.MouseEvent<HTMLElement> | React.KeyboardEvent<HTMLElement>,
     ) => void;
     renderIcon?: () => React.ReactNode;
     selected?: string[] | number[];

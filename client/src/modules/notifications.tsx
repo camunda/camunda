@@ -23,7 +23,7 @@ type Notification = {
 
 type DisplayNotificationFn = (
   appearance: 'success' | 'error' | 'info',
-  options: Options
+  options: Options,
 ) => Promise<Notification | undefined>;
 
 type NotificationContextType = {
@@ -43,7 +43,7 @@ const NotificationProvider: React.FC<ProviderProps> = ({children}) => {
 
   const displayNotification: DisplayNotificationFn = async (
     appearance,
-    {headline, description, isDismissable, navigation, showCreationTime}
+    {headline, description, isDismissable, navigation, showCreationTime},
   ) => {
     return await notificationRef.current?.enqueueNotification({
       headline,

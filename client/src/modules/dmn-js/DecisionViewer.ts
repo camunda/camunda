@@ -17,7 +17,7 @@ class DecisionViewer {
   render = async (
     container: HTMLElement,
     xml: string,
-    decisionViewId: string
+    decisionViewId: string,
   ) => {
     if (this.#viewer === null) {
       this.#viewer = new Viewer('decision', {container});

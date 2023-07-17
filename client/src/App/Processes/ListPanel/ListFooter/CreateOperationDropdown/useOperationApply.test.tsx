@@ -61,19 +61,19 @@ describe('useOperationApply', () => {
     mockApplyBatchOperation().withSuccess(mockOperationCreated);
 
     mockedGetSearchString.mockImplementation(
-      () => '?active=true&running=true&incidents=true'
+      () => '?active=true&running=true&incidents=true',
     );
 
     expect(operationsStore.state.operations).toEqual([]);
     renderUseOperationApply();
 
     await waitFor(() =>
-      expect(operationsStore.state.operations).toEqual([mockOperationCreated])
+      expect(operationsStore.state.operations).toEqual([mockOperationCreated]),
     );
 
     expect(applyBatchOperationSpy).toHaveBeenCalledWith(
       expectedBody.operationType,
-      expectedBody.query
+      expectedBody.query,
     );
   });
 
@@ -85,11 +85,11 @@ describe('useOperationApply', () => {
     mockApplyBatchOperation().withSuccess(mockOperationCreated);
 
     mockedGetSearchString.mockImplementation(
-      () => '?active=true&running=true&incidents=true&ids=1'
+      () => '?active=true&running=true&incidents=true&ids=1',
     );
 
     await waitFor(() =>
-      expect(processInstancesStore.state.status).toBe('fetched')
+      expect(processInstancesStore.state.status).toBe('fetched'),
     );
 
     processInstancesSelectionStore.setAllChecked(true);
@@ -98,11 +98,11 @@ describe('useOperationApply', () => {
     renderUseOperationApply();
 
     await waitFor(() =>
-      expect(operationsStore.state.operations).toEqual([mockOperationCreated])
+      expect(operationsStore.state.operations).toEqual([mockOperationCreated]),
     );
     expect(applyBatchOperationSpy).toHaveBeenCalledWith(
       expectedBody.operationType,
-      expectedBody.query
+      expectedBody.query,
     );
   });
 
@@ -111,13 +111,13 @@ describe('useOperationApply', () => {
     processInstancesStore.init();
     processInstancesStore.fetchProcessInstancesFromFilters();
     mockedGetSearchString.mockImplementation(
-      () => '?active=true&running=true&incidents=true&ids=1'
+      () => '?active=true&running=true&incidents=true&ids=1',
     );
 
     mockApplyBatchOperation().withSuccess(mockOperationCreated);
 
     await waitFor(() =>
-      expect(processInstancesStore.state.status).toBe('fetched')
+      expect(processInstancesStore.state.status).toBe('fetched'),
     );
 
     processInstancesSelectionStore.selectProcessInstance('1');
@@ -126,11 +126,11 @@ describe('useOperationApply', () => {
     renderUseOperationApply();
 
     await waitFor(() =>
-      expect(operationsStore.state.operations).toEqual([mockOperationCreated])
+      expect(operationsStore.state.operations).toEqual([mockOperationCreated]),
     );
     expect(applyBatchOperationSpy).toHaveBeenCalledWith(
       expectedBody.operationType,
-      expectedBody.query
+      expectedBody.query,
     );
   });
 
@@ -140,13 +140,13 @@ describe('useOperationApply', () => {
     processInstancesStore.init();
     processInstancesStore.fetchProcessInstancesFromFilters();
     mockedGetSearchString.mockImplementation(
-      () => '?active=true&running=true&incidents=true&ids=1,2'
+      () => '?active=true&running=true&incidents=true&ids=1,2',
     );
 
     mockApplyBatchOperation().withSuccess(mockOperationCreated);
 
     await waitFor(() =>
-      expect(processInstancesStore.state.status).toBe('fetched')
+      expect(processInstancesStore.state.status).toBe('fetched'),
     );
 
     processInstancesSelectionStore.setMode('EXCLUDE');
@@ -157,11 +157,11 @@ describe('useOperationApply', () => {
     renderUseOperationApply(context);
 
     await waitFor(() =>
-      expect(operationsStore.state.operations).toEqual([mockOperationCreated])
+      expect(operationsStore.state.operations).toEqual([mockOperationCreated]),
     );
     expect(applyBatchOperationSpy).toHaveBeenCalledWith(
       expectedBody.operationType,
-      expectedBody.query
+      expectedBody.query,
     );
   });
 
@@ -172,14 +172,14 @@ describe('useOperationApply', () => {
     processInstancesStore.fetchProcessInstancesFromFilters();
     mockedGetSearchString.mockImplementation(
       () =>
-        '?active=true&running=true&incidents=true&process=demoProcess&version=1&ids=1'
+        '?active=true&running=true&incidents=true&process=demoProcess&version=1&ids=1',
     );
     await processesStore.fetchProcesses();
 
     mockApplyBatchOperation().withSuccess(mockOperationCreated);
 
     await waitFor(() =>
-      expect(processInstancesStore.state.status).toBe('fetched')
+      expect(processInstancesStore.state.status).toBe('fetched'),
     );
 
     processInstancesSelectionStore.selectProcessInstance('1');
@@ -189,11 +189,11 @@ describe('useOperationApply', () => {
     renderUseOperationApply(context);
 
     await waitFor(() =>
-      expect(operationsStore.state.operations).toEqual([mockOperationCreated])
+      expect(operationsStore.state.operations).toEqual([mockOperationCreated]),
     );
     expect(applyBatchOperationSpy).toHaveBeenCalledWith(
       expectedBody.operationType,
-      expectedBody.query
+      expectedBody.query,
     );
   });
 
@@ -206,7 +206,7 @@ describe('useOperationApply', () => {
     processInstancesStore.fetchProcessInstancesFromFilters();
 
     await waitFor(() =>
-      expect(processInstancesStore.state.processInstances).toHaveLength(3)
+      expect(processInstancesStore.state.processInstances).toHaveLength(3),
     );
 
     mockFetchProcessInstances().withSuccess({
@@ -218,7 +218,7 @@ describe('useOperationApply', () => {
     renderUseOperationApply(context);
 
     expect(
-      processInstancesStore.processInstanceIdsWithActiveOperations
+      processInstancesStore.processInstanceIdsWithActiveOperations,
     ).toEqual(['2251799813685594', '2251799813685596', '2251799813685598']);
 
     jest.runOnlyPendingTimers();
@@ -230,10 +230,10 @@ describe('useOperationApply', () => {
 
     await waitFor(() => {
       expect(
-        processInstancesStore.processInstanceIdsWithActiveOperations
+        processInstancesStore.processInstanceIdsWithActiveOperations,
       ).toEqual([]);
       expect(processInstancesStore.state.filteredProcessInstancesCount).toBe(
-        200
+        200,
       ); // TODO: this second validation can be removed after  https://jira.camunda.com/browse/OPE-1169
     });
 
@@ -249,14 +249,14 @@ describe('useOperationApply', () => {
     processInstancesStore.init();
     processInstancesStore.fetchProcessInstancesFromFilters();
     await waitFor(() =>
-      expect(processInstancesStore.state.processInstances).toHaveLength(3)
+      expect(processInstancesStore.state.processInstances).toHaveLength(3),
     );
 
     // @ts-expect-error ts-migrate(2554) FIXME: Expected 0 arguments, but got 1.
     renderUseOperationApply(context);
 
     expect(
-      processInstancesStore.processInstanceIdsWithActiveOperations
+      processInstancesStore.processInstanceIdsWithActiveOperations,
     ).toEqual(['2251799813685594']);
 
     mockFetchProcessInstances().withSuccess({
@@ -273,10 +273,10 @@ describe('useOperationApply', () => {
 
     await waitFor(() => {
       expect(
-        processInstancesStore.processInstanceIdsWithActiveOperations
+        processInstancesStore.processInstanceIdsWithActiveOperations,
       ).toEqual([]);
       expect(processInstancesStore.state.filteredProcessInstancesCount).toBe(
-        200
+        200,
       ); // TODO: this second validation can be removed after  https://jira.camunda.com/browse/OPE-1169
     });
 

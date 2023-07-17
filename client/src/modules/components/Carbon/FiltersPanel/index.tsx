@@ -26,7 +26,7 @@ const FiltersPanel: React.FC<Props> = ({
 }) => {
   const isCollapsed = getStateLocally('panelStates')[localStorageKey] ?? false;
   const [panelState, setPanelState] = useState<'expanded' | 'collapsed'>(
-    isCollapsed ? 'collapsed' : 'expanded'
+    isCollapsed ? 'collapsed' : 'expanded',
   );
 
   useEffect(() => {
@@ -34,7 +34,7 @@ const FiltersPanel: React.FC<Props> = ({
       {
         [localStorageKey]: panelState === 'collapsed',
       },
-      'panelStates'
+      'panelStates',
     );
   }, [panelState, localStorageKey]);
 

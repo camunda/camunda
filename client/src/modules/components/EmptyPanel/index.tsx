@@ -78,7 +78,7 @@ export const WithRowCount = function ({
         child &&
         React.cloneElement(child, {
           rowsToDisplay: rows,
-        })
+        }),
     );
   }
 

@@ -28,8 +28,8 @@ const ModificationIcons: React.FC<Props> = observer(({flowNodeInstance}) => {
     instanceKeyHierarchy.some((instanceKey) =>
       modificationsStore.hasPendingCancelOrMoveModification(
         flowNodeInstance.flowNodeId,
-        instanceKey
-      )
+        instanceKey,
+      ),
     );
 
   return (

@@ -278,7 +278,7 @@ class Tracking {
 
     if (this.#mixpanel === null) {
       console.warn(
-        'Could not track event because mixpanel was not properly loaded.'
+        'Could not track event because mixpanel was not properly loaded.',
       );
     }
 
@@ -328,7 +328,7 @@ class Tracking {
             window.clientConfig?.mixpanelAPIHost ??
             process.env.REACT_MIXPANEL_HOST,
           opt_out_tracking_by_default: true,
-        }
+        },
       );
       mixpanel.register(this.#baseProperties);
       this.#mixpanel = mixpanel;
@@ -340,13 +340,13 @@ class Tracking {
     return new Promise((resolve) => {
       if (STAGE_ENV === 'int') {
         return injectScript(process.env.REACT_APP_OSANO_INT_ENV_URL).then(
-          resolve
+          resolve,
         );
       }
 
       if (STAGE_ENV === 'prod') {
         return injectScript(process.env.REACT_APP_OSANO_PROD_ENV_URL).then(
-          resolve
+          resolve,
         );
       }
 
@@ -383,9 +383,9 @@ class Tracking {
             if (ANALYTICS === 'DENY') {
               this.#mixpanel?.opt_out_tracking();
             }
-          }
+          },
         );
-      })
+      }),
     );
   }
 }

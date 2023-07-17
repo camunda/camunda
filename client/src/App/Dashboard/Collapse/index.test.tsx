@@ -31,12 +31,12 @@ describe('<Collapse />', () => {
 
     render(
       <Collapse content={mockContent} header={mockHeader} title={mockTitle} />,
-      {wrapper: Wrapper}
+      {wrapper: Wrapper},
     );
 
     expect(screen.getByText(mockHeader)).toBeInTheDocument();
     expect(
-      screen.getByRole('button', {description: mockTitle})
+      screen.getByRole('button', {description: mockTitle}),
     ).toBeInTheDocument();
     expect(screen.queryByText(new RegExp(mockContent))).not.toBeInTheDocument();
   });
@@ -48,7 +48,7 @@ describe('<Collapse />', () => {
 
     const {user} = render(
       <Collapse content={mockContent} header={mockHeader} title={mockTitle} />,
-      {wrapper: Wrapper}
+      {wrapper: Wrapper},
     );
 
     await user.click(screen.getByRole('button', {description: mockTitle}));
@@ -67,7 +67,7 @@ describe('<Collapse />', () => {
 
     const {user} = render(
       <Collapse content={mockContent} header={mockHeader} title={mockTitle} />,
-      {wrapper: Wrapper}
+      {wrapper: Wrapper},
     );
 
     await user.click(screen.getByRole('button', {description: mockTitle}));

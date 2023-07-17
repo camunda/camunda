@@ -37,7 +37,7 @@ describe('Restricted', () => {
       <Restricted scopes={['write']}>
         <div>test content</div>
       </Restricted>,
-      {wrapper: Wrapper}
+      {wrapper: Wrapper},
     );
 
     expect(screen.queryByText('test content')).not.toBeInTheDocument();
@@ -58,7 +58,7 @@ describe('Restricted', () => {
       <Restricted scopes={['read', 'write']}>
         <div>test content</div>
       </Restricted>,
-      {wrapper: Wrapper}
+      {wrapper: Wrapper},
     );
 
     expect(screen.getByText('test content')).toBeInTheDocument();
@@ -79,7 +79,7 @@ describe('Restricted', () => {
       <Restricted scopes={['write']}>
         <div>test content</div>
       </Restricted>,
-      {wrapper: Wrapper}
+      {wrapper: Wrapper},
     );
 
     expect(screen.getByText('test content')).toBeInTheDocument();
@@ -100,7 +100,7 @@ describe('Restricted', () => {
       <Restricted scopes={['write']}>
         <div>test content</div>
       </Restricted>,
-      {wrapper: Wrapper}
+      {wrapper: Wrapper},
     );
 
     expect(screen.getByText('test content')).toBeInTheDocument();
@@ -122,7 +122,7 @@ describe('Restricted', () => {
       <Restricted scopes={['write']} fallback={mockFallback}>
         <div>test content</div>
       </Restricted>,
-      {wrapper: Wrapper}
+      {wrapper: Wrapper},
     );
 
     expect(screen.getByText(mockFallback)).toBeInTheDocument();

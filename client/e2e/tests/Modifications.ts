@@ -22,8 +22,8 @@ fixture('Modifications')
     await ClientFunction(() =>
       localStorage.setItem(
         'sharedState',
-        JSON.stringify({hideModificationHelperModal: true})
-      )
+        JSON.stringify({hideModificationHelperModal: true}),
+      ),
     )();
     await t.maximizeWindow();
 
@@ -40,7 +40,7 @@ test('Should apply/remove edit variable modifications', async (t) => {
   await t.click(
     screen.getByRole('button', {
       name: /modify instance/i,
-    })
+    }),
   );
 
   await t
@@ -50,7 +50,7 @@ test('Should apply/remove edit variable modifications', async (t) => {
   await ProcessInstancePage.typeText(
     ProcessInstancePage.getEditVariableFieldSelector('foo'),
     '1',
-    {replace: true}
+    {replace: true},
   );
   await t.pressKey('tab');
 
@@ -63,7 +63,7 @@ test('Should apply/remove edit variable modifications', async (t) => {
   await ProcessInstancePage.typeText(
     ProcessInstancePage.getEditVariableFieldSelector('test'),
     '2',
-    {replace: true}
+    {replace: true},
   );
   await t.pressKey('tab');
 
@@ -76,7 +76,7 @@ test('Should apply/remove edit variable modifications', async (t) => {
   await ProcessInstancePage.typeText(
     ProcessInstancePage.getEditVariableFieldSelector('foo'),
     '3',
-    {replace: true}
+    {replace: true},
   );
   await t.pressKey('tab');
 
@@ -92,7 +92,7 @@ test('Should apply/remove edit variable modifications', async (t) => {
   await t.click(
     screen.getByRole('button', {
       name: /undo/i,
-    })
+    }),
   );
 
   await t
@@ -106,7 +106,7 @@ test('Should apply/remove edit variable modifications', async (t) => {
   // Undo after navigating to another flow node, and see values are correct in the previous scope
 
   await t.click(
-    within(screen.getByTestId('instance-history')).getByText(/never fails/i)
+    within(screen.getByTestId('instance-history')).getByText(/never fails/i),
   );
   await t
     .expect(screen.queryByText(/The Flow Node has no Variables/i).exists)
@@ -116,7 +116,7 @@ test('Should apply/remove edit variable modifications', async (t) => {
     .click(
       screen.getByRole('button', {
         name: /undo/i,
-      })
+      }),
     )
     .expect(screen.queryByText('Last added modification:').exists)
     .ok()
@@ -125,8 +125,8 @@ test('Should apply/remove edit variable modifications', async (t) => {
 
   await t.click(
     within(screen.getByTestId('instance-history')).getByText(
-      /without incidents process/i
-    )
+      /without incidents process/i,
+    ),
   );
   await t
     .expect(screen.queryByTestId('foo').exists)
@@ -142,7 +142,7 @@ test('Should apply/remove edit variable modifications', async (t) => {
     .click(
       screen.getByRole('button', {
         name: /undo/i,
-      })
+      }),
     )
     .expect(screen.queryByText('Last added modification:').exists)
     .notOk()
@@ -156,13 +156,13 @@ test('Should apply/remove edit variable modifications', async (t) => {
   await ProcessInstancePage.typeText(
     ProcessInstancePage.getEditVariableFieldSelector('foo'),
     '1',
-    {replace: true}
+    {replace: true},
   );
 
   await ProcessInstancePage.typeText(
     ProcessInstancePage.getEditVariableFieldSelector('foo'),
     '2',
-    {replace: true}
+    {replace: true},
   );
 
   await t
@@ -171,7 +171,7 @@ test('Should apply/remove edit variable modifications', async (t) => {
 
   await t.expect(screen.queryByText('foo: 2').exists).ok();
   await t.click(
-    screen.getByRole('button', {name: 'Delete variable modification'})
+    screen.getByRole('button', {name: 'Delete variable modification'}),
   );
   await t.click(screen.getByRole('button', {name: 'Cancel'}));
 
@@ -187,7 +187,7 @@ test('Should apply/remove add variable modifications', async (t) => {
   await t.click(
     screen.getByRole('button', {
       name: /modify instance/i,
-    })
+    }),
   );
 
   await t
@@ -200,13 +200,13 @@ test('Should apply/remove add variable modifications', async (t) => {
 
   await ProcessInstancePage.typeText(
     ProcessInstancePage.getNewVariableNameFieldSelector('newVariables[0]'),
-    'test2'
+    'test2',
   );
   await t.pressKey('tab');
 
   await ProcessInstancePage.typeText(
     ProcessInstancePage.getNewVariableValueFieldSelector('newVariables[0]'),
-    '1'
+    '1',
   );
   await t.pressKey('tab');
 
@@ -223,13 +223,13 @@ test('Should apply/remove add variable modifications', async (t) => {
 
   await ProcessInstancePage.typeText(
     ProcessInstancePage.getNewVariableNameFieldSelector('newVariables[1]'),
-    'test3'
+    'test3',
   );
   await t.pressKey('tab');
 
   await ProcessInstancePage.typeText(
     ProcessInstancePage.getNewVariableValueFieldSelector('newVariables[1]'),
-    '2'
+    '2',
   );
   await t.pressKey('tab');
 
@@ -244,7 +244,7 @@ test('Should apply/remove add variable modifications', async (t) => {
   await ProcessInstancePage.typeText(
     ProcessInstancePage.getNewVariableNameFieldSelector('newVariables[0]'),
     'test2-edited',
-    {replace: true}
+    {replace: true},
   );
   await t.pressKey('tab');
 
@@ -266,7 +266,7 @@ test('Should apply/remove add variable modifications', async (t) => {
   await t.click(
     screen.getByRole('button', {
       name: /undo/i,
-    })
+    }),
   );
 
   await t
@@ -280,7 +280,7 @@ test('Should apply/remove add variable modifications', async (t) => {
   // Undo after navigating to another flow node, and see last added variable is removed
 
   await t.click(
-    within(screen.getByTestId('instance-history')).getByText(/never fails/i)
+    within(screen.getByTestId('instance-history')).getByText(/never fails/i),
   );
   await t
     .expect(screen.queryByText(/The Flow Node has no Variables/i).exists)
@@ -290,7 +290,7 @@ test('Should apply/remove add variable modifications', async (t) => {
     .click(
       screen.getByRole('button', {
         name: /undo/i,
-      })
+      }),
     )
     .expect(screen.queryByText('Last added modification:').exists)
     .ok()
@@ -299,8 +299,8 @@ test('Should apply/remove add variable modifications', async (t) => {
 
   await t.click(
     within(screen.getByTestId('instance-history')).getByText(
-      /without incidents process/i
-    )
+      /without incidents process/i,
+    ),
   );
 
   await t
@@ -311,7 +311,7 @@ test('Should apply/remove add variable modifications', async (t) => {
     .expect(ProcessInstancePage.getNewVariableNameFieldValue('newVariables[0]'))
     .eql('test2')
     .expect(
-      ProcessInstancePage.getNewVariableValueFieldValue('newVariables[0]')
+      ProcessInstancePage.getNewVariableValueFieldValue('newVariables[0]'),
     )
     .eql('1');
 
@@ -321,7 +321,7 @@ test('Should apply/remove add variable modifications', async (t) => {
     .click(
       screen.getByRole('button', {
         name: /undo/i,
-      })
+      }),
     )
     .expect(screen.queryByText('Last added modification:').exists)
     .notOk()
@@ -335,19 +335,19 @@ test('Should apply/remove add variable modifications', async (t) => {
 
   await ProcessInstancePage.typeText(
     ProcessInstancePage.getNewVariableNameFieldSelector('newVariables[0]'),
-    'test2'
+    'test2',
   );
   await t.pressKey('tab');
 
   await ProcessInstancePage.typeText(
     ProcessInstancePage.getNewVariableValueFieldSelector('newVariables[0]'),
-    '1'
+    '1',
   );
 
   await t
     .pressKey('tab')
     .click(
-      within(screen.getByTestId('instance-history')).getByText(/never fails/i)
+      within(screen.getByTestId('instance-history')).getByText(/never fails/i),
     );
 
   await t
@@ -359,13 +359,13 @@ test('Should apply/remove add variable modifications', async (t) => {
 
   await ProcessInstancePage.typeText(
     ProcessInstancePage.getNewVariableNameFieldSelector('newVariables[0]'),
-    'test2'
+    'test2',
   );
   await t.pressKey('tab');
 
   await ProcessInstancePage.typeText(
     ProcessInstancePage.getNewVariableValueFieldSelector('newVariables[0]'),
-    '1'
+    '1',
   );
 
   await t
@@ -381,7 +381,7 @@ test('Should apply/remove add variable modifications', async (t) => {
       .getAllByRole('button', {
         name: 'Delete variable modification',
       })
-      .nth(1)
+      .nth(1),
   );
 
   await t.click(withinModal.getByRole('button', {name: 'Cancel'}));
@@ -390,8 +390,8 @@ test('Should apply/remove add variable modifications', async (t) => {
 
   await t.click(
     within(screen.getByTestId('instance-history')).getByText(
-      /without incidents process/i
-    )
+      /without incidents process/i,
+    ),
   );
 
   await t.expect(screen.queryByTestId('newVariables[0]').exists).ok();
@@ -400,7 +400,7 @@ test('Should apply/remove add variable modifications', async (t) => {
 
   await ProcessInstancePage.typeText(
     ProcessInstancePage.getNewVariableValueFieldSelector('newVariables[0]'),
-    '2'
+    '2',
   );
 
   await t
@@ -412,7 +412,7 @@ test('Should apply/remove add variable modifications', async (t) => {
   await t.click(
     screen.getByRole('button', {
       name: 'Delete variable modification',
-    })
+    }),
   );
 
   await t.click(screen.getByRole('button', {name: 'Cancel'}));

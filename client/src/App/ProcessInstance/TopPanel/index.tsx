@@ -78,7 +78,7 @@ const TopPanel: React.FC = observer(() => {
         type: OVERLAY_TYPE_STATE,
         flowNodeId,
         position: overlayPositions[flowNodeState],
-      })
+      }),
     );
 
   const modificationBadgesPerFlowNode = computed(() =>
@@ -102,16 +102,16 @@ const TopPanel: React.FC = observer(() => {
           },
         },
       ];
-    }, [])
+    }, []),
   );
 
   const {items: processedSequenceFlows} = sequenceFlowsStore.state;
   const {processInstance} = processInstanceDetailsStore.state;
   const stateOverlays = diagramOverlaysStore.state.overlays.filter(
-    ({type}) => type === OVERLAY_TYPE_STATE
+    ({type}) => type === OVERLAY_TYPE_STATE,
   );
   const modificationBadgeOverlays = diagramOverlaysStore.state.overlays.filter(
-    ({type}) => type === OVERLAY_TYPE_MODIFICATIONS_BADGE
+    ({type}) => type === OVERLAY_TYPE_MODIFICATIONS_BADGE,
   );
   const {
     state: {status, xml},
@@ -249,7 +249,7 @@ const TopPanel: React.FC = observer(() => {
                       count={payload.count}
                       container={overlay.container}
                       isFaded={modificationsStore.hasPendingCancelOrMoveModification(
-                        overlay.flowNodeId
+                        overlay.flowNodeId,
                       )}
                     />
                   );

@@ -37,7 +37,7 @@ test('Resolve an incident', async (t) => {
     .click(
       screen.queryByRole('button', {
         description: /view 2 incidents in instance/i,
-      })
+      }),
     )
     .expect(screen.queryByText(/incident type:/i).exists)
     .ok()
@@ -56,12 +56,12 @@ test('Resolve an incident', async (t) => {
       {
         paste: true,
         replace: true,
-      }
+      },
     )
     .expect(
       screen
         .queryByRole('button', {name: 'Save variable'})
-        .hasAttribute('disabled')
+        .hasAttribute('disabled'),
     )
     .notOk()
     .click(withinVariablesList.queryByRole('button', {name: 'Save variable'}))
@@ -74,13 +74,13 @@ test('Resolve an incident', async (t) => {
   await t
     .click(
       within(
-        withinIncidentsTable.queryByRole('row', {name: /Condition error/i})
-      ).queryByRole('button', {name: 'Retry Incident'})
+        withinIncidentsTable.queryByRole('row', {name: /Condition error/i}),
+      ).queryByRole('button', {name: 'Retry Incident'}),
     )
     .expect(
       within(
-        withinIncidentsTable.queryByRole('row', {name: /Condition error/i})
-      ).queryByTestId('operation-spinner').exists
+        withinIncidentsTable.queryByRole('row', {name: /Condition error/i}),
+      ).queryByTestId('operation-spinner').exists,
     )
     .ok()
     .expect(withinIncidentsTable.queryByTestId('operation-spinner').exists)
@@ -103,19 +103,19 @@ test('Resolve an incident', async (t) => {
       'isCool',
       {
         paste: true,
-      }
+      },
     )
     .typeText(
       within(ProcessInstancePage.newVariableValueField).queryByRole('textbox'),
       'true',
       {
         paste: true,
-      }
+      },
     )
     .expect(
       screen
         .queryByRole('button', {name: 'Save variable'})
-        .hasAttribute('disabled')
+        .hasAttribute('disabled'),
     )
     .notOk();
 
@@ -130,13 +130,13 @@ test('Resolve an incident', async (t) => {
   await t
     .click(
       within(
-        withinIncidentsTable.queryByRole('row', {name: /Extract value error/i})
-      ).queryByRole('button', {name: 'Retry Incident'})
+        withinIncidentsTable.queryByRole('row', {name: /Extract value error/i}),
+      ).queryByRole('button', {name: 'Retry Incident'}),
     )
     .expect(
       within(
-        withinIncidentsTable.queryByRole('row', {name: /Extract value error/i})
-      ).queryByTestId('operation-spinner').exists
+        withinIncidentsTable.queryByRole('row', {name: /Extract value error/i}),
+      ).queryByTestId('operation-spinner').exists,
     )
     .ok();
 
@@ -148,8 +148,8 @@ test('Resolve an incident', async (t) => {
     .notOk()
     .expect(
       within(screen.queryByTestId('instance-header')).queryByTestId(
-        'COMPLETED-icon'
-      ).exists
+        'COMPLETED-icon',
+      ).exists,
     )
     .ok();
 });
@@ -167,7 +167,7 @@ test('Cancel an instance', async (t) => {
     .expect(
       screen.queryByRole('button', {
         description: `View 3 Incidents in Instance ${instanceId}`,
-      }).exists
+      }).exists,
     )
     .ok();
 
@@ -175,7 +175,7 @@ test('Cancel an instance', async (t) => {
     .click(
       screen.queryByRole('button', {
         description: `Cancel Instance ${instanceId}`,
-      })
+      }),
     )
     .click(screen.getByRole('button', {name: 'Apply'}))
     .expect(ProcessInstancePage.operationSpinner.exists)
@@ -187,22 +187,22 @@ test('Cancel an instance', async (t) => {
     .expect(
       screen.queryByRole('button', {
         description: `View 3 Incidents in Instance ${instanceId}`,
-      }).exists
+      }).exists,
     )
     .notOk();
 
   await t
     .expect(
       within(screen.queryByTestId('instance-header')).queryByTestId(
-        'CANCELED-icon'
-      ).exists
+        'CANCELED-icon',
+      ).exists,
     )
     .ok();
 
   await t
     .expect(
       within(screen.queryByTestId('instance-header')).queryByTestId('end-date')
-        .textContent
+        .textContent,
     )
     .match(DATE_REGEX);
 });

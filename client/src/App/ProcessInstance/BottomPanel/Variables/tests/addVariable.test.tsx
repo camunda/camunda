@@ -103,7 +103,7 @@ describe('Add variable', () => {
     expect(screen.getByTitle(/save variable/i)).toBeDisabled();
     expect(screen.queryByText('Name has to be filled')).not.toBeInTheDocument();
     expect(
-      await screen.findByText('Name has to be filled')
+      await screen.findByText('Name has to be filled'),
     ).toBeInTheDocument();
 
     await user.dblClick(screen.getByTestId('add-variable-value'));
@@ -151,26 +151,26 @@ describe('Add variable', () => {
     expect(screen.getByTitle(/save variable/i)).toBeDisabled();
     await user.type(
       screen.getByTestId('add-variable-name'),
-      mockVariables[0]!.name
+      mockVariables[0]!.name,
     );
 
     expect(screen.getByTitle(/save variable/i)).toBeDisabled();
     expect(screen.queryByText('Name should be unique')).not.toBeInTheDocument();
     expect(
-      screen.queryByText('Value has to be filled')
+      screen.queryByText('Value has to be filled'),
     ).not.toBeInTheDocument();
     expect(
-      await screen.findByText('Name should be unique')
+      await screen.findByText('Name should be unique'),
     ).toBeInTheDocument();
     expect(
-      await screen.findByText('Value has to be filled')
+      await screen.findByText('Value has to be filled'),
     ).toBeInTheDocument();
 
     await user.type(screen.getByTestId('add-variable-value'), '123');
 
     expect(screen.getByTitle(/save variable/i)).toBeDisabled();
     expect(
-      screen.queryByText('Value has to be filled')
+      screen.queryByText('Value has to be filled'),
     ).not.toBeInTheDocument();
 
     expect(screen.getByText('Name should be unique')).toBeInTheDocument();
@@ -179,7 +179,7 @@ describe('Add variable', () => {
     await user.type(screen.getByTestId('add-variable-name'), 'someOtherName');
 
     await waitFor(() =>
-      expect(screen.getByTitle(/save variable/i)).toBeEnabled()
+      expect(screen.getByTitle(/save variable/i)).toBeEnabled(),
     );
 
     expect(screen.queryByText('Name should be unique')).not.toBeInTheDocument();
@@ -216,7 +216,7 @@ describe('Add variable', () => {
     await user.type(screen.getByTestId('add-variable-name'), 'someOtherName');
 
     await waitFor(() =>
-      expect(screen.getByTitle(/save variable/i)).toBeEnabled()
+      expect(screen.getByTitle(/save variable/i)).toBeEnabled(),
     );
 
     expect(screen.queryByText('Name is invalid')).not.toBeInTheDocument();
@@ -239,7 +239,7 @@ describe('Add variable', () => {
     const withinVariable = within(screen.getByTestId('clientNo'));
     await user.click(withinVariable.getByTestId('edit-variable-button'));
     expect(
-      screen.queryByTitle('Name should be unique')
+      screen.queryByTitle('Name should be unique'),
     ).not.toBeInTheDocument();
   });
 
@@ -285,7 +285,7 @@ describe('Add variable', () => {
       processInstanceDetailsStore.setProcessInstance({
         ...instanceMock,
         state: 'CANCELED',
-      })
+      }),
     );
 
     expect(screen.queryByTestId('add-variable-row')).not.toBeInTheDocument();
@@ -309,13 +309,15 @@ describe('Add variable', () => {
     await user.click(screen.getByTitle(/open json editor modal/i));
 
     expect(
-      within(screen.getByTestId('modal')).getByRole('button', {name: /cancel/i})
+      within(screen.getByTestId('modal')).getByRole('button', {
+        name: /cancel/i,
+      }),
     ).toBeEnabled();
     expect(
-      within(screen.getByTestId('modal')).getByRole('button', {name: /apply/i})
+      within(screen.getByTestId('modal')).getByRole('button', {name: /apply/i}),
     ).toBeEnabled();
     expect(
-      within(screen.getByTestId('modal')).getByTestId('json-editor-container')
+      within(screen.getByTestId('modal')).getByTestId('json-editor-container'),
     ).toBeInTheDocument();
   });
 });

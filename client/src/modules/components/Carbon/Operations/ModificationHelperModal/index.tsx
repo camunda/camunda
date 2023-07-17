@@ -109,7 +109,7 @@ const ModificationHelperModal: React.FC<Props> = observer(
         </ModalFooter>
       </ComposedModal>
     );
-  }
+  },
 );
 
 export {ModificationHelperModal};

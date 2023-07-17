@@ -43,7 +43,7 @@ const ComboBox: React.FC<Props> = observer(
         {...props}
       />
     );
-  }
+  },
 );
 
 export {ComboBox};

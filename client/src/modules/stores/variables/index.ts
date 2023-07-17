@@ -122,7 +122,7 @@ class Variables extends NetworkReconnectionHandler {
     this.variablesWithActiveOperationsDisposer = when(
       () =>
         processInstanceDetailsStore.state.processInstance?.state === 'CANCELED',
-      this.removeVariablesWithActiveOperations
+      this.removeVariablesWithActiveOperations,
     );
 
     this.disposer = autorun(() => {
@@ -160,7 +160,7 @@ class Variables extends NetworkReconnectionHandler {
           });
         }
       },
-      {fireImmediately: true}
+      {fireImmediately: true},
     );
 
     this.deleteFullVariablesDisposer = reaction(
@@ -169,7 +169,7 @@ class Variables extends NetworkReconnectionHandler {
         if (!isModification && prevIsModification) {
           this.clearFullVariableValues();
         }
-      }
+      },
     );
   };
 
@@ -294,7 +294,7 @@ class Variables extends NetworkReconnectionHandler {
         const allVariables = [...this.state.items, ...items];
 
         return allVariables.slice(
-          Math.max(allVariables.length - MAX_VARIABLES_STORED, 0)
+          Math.max(allVariables.length - MAX_VARIABLES_STORED, 0),
         );
       case 'prev':
         return [...items, ...this.state.items].slice(0, MAX_VARIABLES_STORED);
@@ -424,7 +424,7 @@ class Variables extends NetworkReconnectionHandler {
   handlePollingOperation = async (
     operationId: string,
     onSuccess: () => void,
-    onError: (statusCode: number) => void
+    onError: (statusCode: number) => void,
   ) => {
     this.isPollOperationRequestRunning = true;
     const response = await getOperation(operationId);
@@ -490,7 +490,7 @@ class Variables extends NetworkReconnectionHandler {
           this.handleFetchFailure();
         }
       }
-    }
+    },
   );
 
   setSingleVariable = (variable: VariableEntity) => {
@@ -615,7 +615,7 @@ class Variables extends NetworkReconnectionHandler {
 
   removeVariablesWithActiveOperations = () => {
     this.state.items = this.state.items.filter(
-      ({hasActiveOperation}) => !hasActiveOperation
+      ({hasActiveOperation}) => !hasActiveOperation,
     );
     this.state.pendingItem = null;
   };
@@ -713,7 +713,7 @@ class Variables extends NetworkReconnectionHandler {
 
   setFullVariableValue = (
     id: VariableEntity['id'],
-    value: VariableEntity['value']
+    value: VariableEntity['value'],
   ) => {
     if (id === undefined) {
       return undefined;

@@ -80,7 +80,7 @@ import {ReactComponent as FlowNodeEventSignalStart} from 'modules/components/Ico
 
 const getSVGComponent = (
   businessObject: BusinessObject,
-  isMultiInstanceBody: boolean
+  isMultiInstanceBody: boolean,
 ) => {
   if (isMultiInstanceBody) {
     switch (getMultiInstanceType(businessObject)) {
@@ -235,14 +235,14 @@ const FlowNodeIcon: React.FC<Props> = ({
 }) => {
   const SVGComponent = getSVGComponent(
     diagramBusinessObject,
-    flowNodeInstanceType === 'MULTI_INSTANCE_BODY'
+    flowNodeInstanceType === 'MULTI_INSTANCE_BODY',
   );
 
   return (
     <SVGIcon
       SVGComponent={SVGComponent}
       $isGateway={['bpmn:ParallelGateway', 'bpmn:ExclusiveGateway'].includes(
-        diagramBusinessObject.$type
+        diagramBusinessObject.$type,
       )}
       className={className}
     />

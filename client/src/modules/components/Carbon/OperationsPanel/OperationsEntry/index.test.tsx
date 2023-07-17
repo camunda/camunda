@@ -62,7 +62,7 @@ describe('OperationsEntry', () => {
 
     expect(screen.getByRole('progressbar')).toBeInTheDocument();
     expect(
-      screen.getByText('b42fd629-73b1-4709-befb-7ccd900fb18d')
+      screen.getByText('b42fd629-73b1-4709-befb-7ccd900fb18d'),
     ).toBeInTheDocument();
     expect(screen.getByText('Retry')).toBeInTheDocument();
     expect(screen.getByTestId('operation-retry-icon')).toBeInTheDocument();
@@ -76,7 +76,7 @@ describe('OperationsEntry', () => {
     expect(screen.queryByRole('progressbar')).not.toBeInTheDocument();
     expect(screen.getByText(MOCK_TIMESTAMP)).toBeInTheDocument();
     expect(
-      screen.getByText('393ad666-d7f0-45c9-a679-ffa0ef82f88a')
+      screen.getByText('393ad666-d7f0-45c9-a679-ffa0ef82f88a'),
     ).toBeInTheDocument();
     expect(screen.getByText('Cancel')).toBeInTheDocument();
     expect(screen.getByTestId('operation-cancel-icon')).toBeInTheDocument();
@@ -90,7 +90,7 @@ describe('OperationsEntry', () => {
     expect(screen.queryByRole('progressbar')).not.toBeInTheDocument();
     expect(screen.getByText(MOCK_TIMESTAMP)).toBeInTheDocument();
     expect(
-      screen.getByText('df325d44-6a4c-4428-b017-24f923f1d052')
+      screen.getByText('df325d44-6a4c-4428-b017-24f923f1d052'),
     ).toBeInTheDocument();
     expect(screen.getByText('Edit')).toBeInTheDocument();
     expect(screen.getByTestId('operation-edit-icon')).toBeInTheDocument();
@@ -104,13 +104,13 @@ describe('OperationsEntry', () => {
       />,
       {
         wrapper: createWrapper(),
-      }
+      },
     );
 
     expect(screen.queryByRole('progressbar')).not.toBeInTheDocument();
     expect(screen.getByText(MOCK_TIMESTAMP)).toBeInTheDocument();
     expect(
-      screen.getByText('df325d44-6a4c-4428-b017-24f923f1d052')
+      screen.getByText('df325d44-6a4c-4428-b017-24f923f1d052'),
     ).toBeInTheDocument();
     expect(screen.getByText('Delete')).toBeInTheDocument();
     expect(screen.getByTestId('operation-delete-icon')).toBeInTheDocument();
@@ -124,7 +124,7 @@ describe('OperationsEntry', () => {
     expect(screen.queryByRole('progressbar')).not.toBeInTheDocument();
     expect(screen.getByText(MOCK_TIMESTAMP)).toBeInTheDocument();
     expect(
-      screen.getByText('df325d44-6a4c-4428-b017-24f923f1d052')
+      screen.getByText('df325d44-6a4c-4428-b017-24f923f1d052'),
     ).toBeInTheDocument();
     expect(screen.getByText('Modify')).toBeInTheDocument();
     expect(screen.getByTestId('operation-modify-icon')).toBeInTheDocument();
@@ -138,16 +138,16 @@ describe('OperationsEntry', () => {
       />,
       {
         wrapper: createWrapper(),
-      }
+      },
     );
 
     expect(screen.queryByRole('progressbar')).not.toBeInTheDocument();
     expect(screen.getByText(MOCK_TIMESTAMP)).toBeInTheDocument();
     expect(
-      screen.getByText('5de66f22-a438-40f8-a89c-904g2dgfjm28')
+      screen.getByText('5de66f22-a438-40f8-a89c-904g2dgfjm28'),
     ).toBeInTheDocument();
     expect(
-      screen.getByText('Delete ProcessDefinitionA - version 1')
+      screen.getByText('Delete ProcessDefinitionA - version 1'),
     ).toBeInTheDocument();
     expect(screen.getByTestId('operation-delete-icon')).toBeInTheDocument();
     expect(screen.getByText('1 instance deleted')).toBeInTheDocument();
@@ -161,16 +161,16 @@ describe('OperationsEntry', () => {
       />,
       {
         wrapper: createWrapper(),
-      }
+      },
     );
 
     expect(screen.getByRole('progressbar')).toBeInTheDocument();
     expect(screen.queryByText(MOCK_TIMESTAMP)).not.toBeInTheDocument();
     expect(
-      screen.getByText('5de66f22-a438-40f8-a89c-fn298fn23988')
+      screen.getByText('5de66f22-a438-40f8-a89c-fn298fn23988'),
     ).toBeInTheDocument();
     expect(
-      screen.getByText('Delete DecisionDefinitionA - version 1')
+      screen.getByText('Delete DecisionDefinitionA - version 1'),
     ).toBeInTheDocument();
     expect(screen.getByTestId('operation-delete-icon')).toBeInTheDocument();
     expect(screen.getByText('10 instances deleted')).toBeInTheDocument();
@@ -193,7 +193,7 @@ describe('OperationsEntry', () => {
           instancesCount: 3,
         }}
       />,
-      {wrapper: createWrapper()}
+      {wrapper: createWrapper()},
     );
 
     expect(screen.getByText('3 Instances')).toBeInTheDocument();
@@ -208,7 +208,7 @@ describe('OperationsEntry', () => {
           instancesCount: 3,
         }}
       />,
-      {wrapper: createWrapper()}
+      {wrapper: createWrapper()},
     );
 
     expect(screen.queryByText('3 Instances')).not.toBeInTheDocument();
@@ -225,14 +225,14 @@ describe('OperationsEntry', () => {
           instancesCount: 3,
         }}
       />,
-      {wrapper: createWrapper()}
+      {wrapper: createWrapper()},
     );
 
     expect(panelStatesStore.state.isFiltersCollapsed).toBe(true);
 
     await user.click(screen.getByText('3 Instances'));
     expect(screen.getByTestId('search')).toHaveTextContent(
-      /^\?active=true&incidents=true&completed=true&canceled=true&operationId=df325d44-6a4c-4428-b017-24f923f1d052$/
+      /^\?active=true&incidents=true&completed=true&canceled=true&operationId=df325d44-6a4c-4428-b017-24f923f1d052$/,
     );
 
     expect(panelStatesStore.state.isFiltersCollapsed).toBe(false);
@@ -250,7 +250,7 @@ describe('OperationsEntry', () => {
         />
         <Filters />
       </>,
-      {wrapper: createWrapper()}
+      {wrapper: createWrapper()},
     );
 
     expect(screen.queryByLabelText(/^operation id$/i)).not.toBeInTheDocument();
@@ -272,19 +272,19 @@ describe('OperationsEntry', () => {
           operationsFinishedCount: 0,
         }}
       />,
-      {wrapper: createWrapper()}
+      {wrapper: createWrapper()},
     );
 
     expect(screen.getByRole('progressbar')).toHaveAttribute(
       'aria-valuenow',
-      '0'
+      '0',
     );
 
     await waitFor(() =>
       expect(screen.getByRole('progressbar')).toHaveAttribute(
         'aria-valuenow',
-        '10'
-      )
+        '10',
+      ),
     );
   });
 
@@ -298,20 +298,20 @@ describe('OperationsEntry', () => {
           operationsFinishedCount: 5,
         }}
       />,
-      {wrapper: createWrapper()}
+      {wrapper: createWrapper()},
     );
 
     await waitFor(() =>
       expect(screen.getByRole('progressbar')).toHaveAttribute(
         'aria-valuenow',
-        '50'
-      )
+        '50',
+      ),
     );
     await waitFor(() =>
       expect(screen.getByRole('progressbar')).toHaveAttribute(
         'aria-valuenow',
-        '55'
-      )
+        '55',
+      ),
     );
     jest.clearAllTimers();
     jest.useRealTimers();
@@ -324,8 +324,8 @@ describe('OperationsEntry', () => {
     await waitFor(() =>
       expect(screen.getByRole('progressbar')).toHaveAttribute(
         'aria-valuenow',
-        '100'
-      )
+        '100',
+      ),
     );
     expect(screen.queryByText(MOCK_TIMESTAMP)).not.toBeInTheDocument();
     await waitForElementToBeRemoved(screen.getByRole('progressbar'));

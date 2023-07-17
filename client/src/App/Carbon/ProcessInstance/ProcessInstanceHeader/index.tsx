@@ -95,7 +95,7 @@ const ProcessInstanceHeader: React.FC = observer(() => {
                 incidents: true,
               })}
               title={`View process ${getProcessName(
-                processInstance
+                processInstance,
               )} version ${processVersion} instances`}
               onClick={() => {
                 tracking.track({

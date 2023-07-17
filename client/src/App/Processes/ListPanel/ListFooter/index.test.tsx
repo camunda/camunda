@@ -88,7 +88,7 @@ describe('ListFooter', () => {
 
     render(<ListFooter />, {wrapper: Wrapper});
     expect(
-      await screen.findByText('Apply Operation on 2 Instances...')
+      await screen.findByText('Apply Operation on 2 Instances...'),
     ).toBeInTheDocument();
 
     const copyrightText = screen.getByText(COPYRIGHT_REGEX);

@@ -22,11 +22,11 @@ describe('FlowNodeIcon', () => {
       />,
       {
         wrapper: ThemeProvider,
-      }
+      },
     );
 
     expect(
-      screen.getByText('flow-node-task-undefined.svg')
+      screen.getByText('flow-node-task-undefined.svg'),
     ).toBeInTheDocument();
   });
 
@@ -47,11 +47,11 @@ describe('FlowNodeIcon', () => {
 
       {
         wrapper: ThemeProvider,
-      }
+      },
     );
 
     expect(
-      screen.getByText('flow-node-multi-instance-sequential.svg')
+      screen.getByText('flow-node-multi-instance-sequential.svg'),
     ).toBeInTheDocument();
   });
 
@@ -71,11 +71,11 @@ describe('FlowNodeIcon', () => {
       />,
       {
         wrapper: ThemeProvider,
-      }
+      },
     );
 
     expect(
-      screen.getByText('flow-node-multi-instance-parallel.svg')
+      screen.getByText('flow-node-multi-instance-parallel.svg'),
     ).toBeInTheDocument();
   });
 
@@ -96,11 +96,11 @@ describe('FlowNodeIcon', () => {
       />,
       {
         wrapper: ThemeProvider,
-      }
+      },
     );
 
     expect(
-      screen.getByText('flow-node-event-timer-interrupting.svg')
+      screen.getByText('flow-node-event-timer-interrupting.svg'),
     ).toBeInTheDocument();
   });
 
@@ -122,11 +122,11 @@ describe('FlowNodeIcon', () => {
       />,
       {
         wrapper: ThemeProvider,
-      }
+      },
     );
 
     expect(
-      screen.getByText('flow-node-event-message-non-interrupting.svg')
+      screen.getByText('flow-node-event-message-non-interrupting.svg'),
     ).toBeInTheDocument();
   });
 
@@ -143,11 +143,11 @@ describe('FlowNodeIcon', () => {
       />,
       {
         wrapper: ThemeProvider,
-      }
+      },
     );
 
     expect(
-      screen.getByText('flow-node-subprocess-event.svg')
+      screen.getByText('flow-node-subprocess-event.svg'),
     ).toBeInTheDocument();
   });
 });

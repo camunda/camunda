@@ -78,7 +78,7 @@ const OPTIONAL_FILTER_FIELDS: Record<
     validate: mergeValidators(
       validateDecisionIdsCharacters,
       validateDecisionIdsLength,
-      validatesDecisionIdsComplete
+      validatesDecisionIdsComplete,
     ),
   },
   processInstanceId: {
@@ -88,7 +88,7 @@ const OPTIONAL_FILTER_FIELDS: Record<
     validate: mergeValidators(
       validateParentInstanceIdComplete,
       validateParentInstanceIdNotTooLong,
-      validateParentInstanceIdCharacters
+      validateParentInstanceIdCharacters,
     ),
   },
   evaluationDateRange: {
@@ -113,7 +113,7 @@ const Filters: React.FC = observer(() => {
   const [visibleFilters, setVisibleFilters] = useState<OptionalFilter[]>([]);
 
   const unselectedOptionalFilters = optionalFilters.filter(
-    (filter) => !visibleFilters.includes(filter)
+    (filter) => !visibleFilters.includes(filter),
   );
 
   useEffect(() => {
@@ -124,9 +124,9 @@ const Filters: React.FC = observer(() => {
 
   useEffect(() => {
     const params = Array.from(
-      new URLSearchParams(location.search).keys()
+      new URLSearchParams(location.search).keys(),
     ).filter((param) =>
-      (optionalFilters as string[]).includes(param)
+      (optionalFilters as string[]).includes(param),
     ) as OptionalFilter[];
 
     const filters = getDecisionInstanceFilters(location.search);
@@ -140,7 +140,7 @@ const Filters: React.FC = observer(() => {
           'evaluationDateBefore' in filters
             ? ['evaluationDateRange']
             : []),
-        ] as OptionalFilter[])
+        ] as OptionalFilter[]),
       );
     });
   }, [location.search]);
@@ -201,8 +201,8 @@ const Filters: React.FC = observer(() => {
                         handler: () => {
                           setVisibleFilters(
                             Array.from(
-                              new Set([...visibleFilters, ...[filter]])
-                            )
+                              new Set([...visibleFilters, ...[filter]]),
+                            ),
                           );
                           tracking.track({
                             eventName: 'optional-filter-selected',
@@ -228,8 +228,8 @@ const Filters: React.FC = observer(() => {
                       onClick={() => {
                         setVisibleFilters(
                           visibleFilters.filter(
-                            (visibleFilter) => visibleFilter !== filter
-                          )
+                            (visibleFilter) => visibleFilter !== filter,
+                          ),
                         );
 
                         OPTIONAL_FILTER_FIELDS[filter].keys.forEach((key) => {

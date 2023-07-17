@@ -47,7 +47,8 @@ const GlobalStyles = createGlobalStyle<GlobalStylesProps>`
         input[aria-invalid='true'],
         textarea[aria-invalid='true'],
         select[aria-invalid='true'] {
-          box-shadow: 0 0 0 1px ${theme.colors.incidentsAndErrors},
+          box-shadow:
+            0 0 0 1px ${theme.colors.incidentsAndErrors},
             0 0 0 4px ${theme.colors.outlineError};
         }
 

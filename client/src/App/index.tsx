@@ -60,14 +60,14 @@ const CarbonProcessInstance = loadable(
   () => import('./Carbon/ProcessInstance/index'),
   {
     resolveComponent: (components) => components.ProcessInstance,
-  }
+  },
 );
 
 const CarbonDecisionInstance = loadable(
   () => import('./Carbon/DecisionInstance/index'),
   {
     resolveComponent: (components) => components.DecisionInstance,
-  }
+  },
 );
 
 const App: React.FC = () => {

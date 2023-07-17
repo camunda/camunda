@@ -40,7 +40,7 @@ async function setup() {
   const instancesForInfiniteScroll = await createInstances(
     'instancesTableProcessForInfiniteScroll',
     1,
-    300
+    300,
   );
 
   return {

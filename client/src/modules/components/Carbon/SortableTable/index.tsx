@@ -186,7 +186,7 @@ const SortableTable: React.FC<Props> = ({
                             <TableCell
                               key={cell.id}
                               $hideCellPadding={columnsWithNoContentPadding?.includes(
-                                cell.info.header
+                                cell.info.header,
                               )}
                             >
                               {cell.value}

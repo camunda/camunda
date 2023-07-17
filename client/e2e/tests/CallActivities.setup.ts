@@ -13,7 +13,7 @@ export async function setup() {
   return {
     callActivityProcessInstance: await createSingleInstance(
       'CallActivityProcess',
-      1
+      1,
     ),
   };
 }

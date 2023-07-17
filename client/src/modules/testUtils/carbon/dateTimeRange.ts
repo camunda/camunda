@@ -55,10 +55,10 @@ const pickDateTimeRange = async ({
     toDay: pad(toDay),
     month: pad(month),
     fromDate: formatISODate(
-      new Date(`${year}-${pad(month)}-${pad(fromDay)} ${fromTimeInput.value}`)
+      new Date(`${year}-${pad(month)}-${pad(fromDay)} ${fromTimeInput.value}`),
     ),
     toDate: formatISODate(
-      new Date(`${year}-${pad(month)}-${pad(toDay)} ${toTimeInput.value}`)
+      new Date(`${year}-${pad(month)}-${pad(toDay)} ${toTimeInput.value}`),
     ),
     year,
   };
@@ -70,7 +70,7 @@ const applyDateRange = async (user: UserEvent, screen: Screen) => {
   await user.click(applyButton);
 
   await waitFor(() =>
-    expect(screen.queryByTestId('date-range-modal')).not.toBeInTheDocument()
+    expect(screen.queryByTestId('date-range-modal')).not.toBeInTheDocument(),
   );
 };
 

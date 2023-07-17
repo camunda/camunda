@@ -36,10 +36,10 @@ describe('IncidentsFilter', () => {
 
     expect(screen.getByText('Incident type:')).toBeInTheDocument();
     expect(
-      screen.getByRole('button', {name: 'Condition error 2'})
+      screen.getByRole('button', {name: 'Condition error 2'}),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole('button', {name: 'Extract value error 1'})
+      screen.getByRole('button', {name: 'Extract value error 1'}),
     ).toBeInTheDocument();
   });
 
@@ -53,16 +53,16 @@ describe('IncidentsFilter', () => {
     });
     expect(screen.getByText('Flow Node:')).toBeInTheDocument();
     expect(
-      screen.getByRole('button', {name: 'flowNodeId_exclusiveGateway 1'})
+      screen.getByRole('button', {name: 'flowNodeId_exclusiveGateway 1'}),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole('button', {name: 'flowNodeId_alwaysFailingTask 2'})
+      screen.getByRole('button', {name: 'flowNodeId_alwaysFailingTask 2'}),
     ).toBeInTheDocument();
   });
 
   it('should show a more button', async () => {
     mockFetchProcessInstanceIncidents().withSuccess(
-      mockIncidentsWithManyErrors
+      mockIncidentsWithManyErrors,
     );
 
     await fetchIncidents('1');
@@ -71,13 +71,13 @@ describe('IncidentsFilter', () => {
       wrapper: Wrapper,
     });
     expect(
-      screen.queryByRole('button', {name: 'error type 6 1'})
+      screen.queryByRole('button', {name: 'error type 6 1'}),
     ).not.toBeInTheDocument();
 
     await user.click(screen.getByRole('button', {name: /^1 more/}));
 
     expect(
-      screen.getByRole('button', {name: 'error type 6 1'})
+      screen.getByRole('button', {name: 'error type 6 1'}),
     ).toBeInTheDocument();
   });
 
@@ -94,7 +94,7 @@ describe('IncidentsFilter', () => {
       screen.getByRole('button', {
         name: 'Condition error 2',
         pressed: false,
-      })
+      }),
     ).toBeInTheDocument();
     expect(screen.getByRole('button', {name: 'Clear All'})).toBeDisabled();
 
@@ -104,7 +104,7 @@ describe('IncidentsFilter', () => {
       screen.getByRole('button', {
         name: 'Condition error 2',
         pressed: true,
-      })
+      }),
     ).toBeInTheDocument();
     expect(screen.getByRole('button', {name: 'Clear All'})).toBeEnabled();
 
@@ -114,7 +114,7 @@ describe('IncidentsFilter', () => {
       screen.getByRole('button', {
         name: 'Condition error 2',
         pressed: false,
-      })
+      }),
     ).toBeInTheDocument();
     expect(screen.getByRole('button', {name: 'Clear All'})).toBeDisabled();
   });

@@ -29,17 +29,19 @@ describe('hasCalledProcessInstances', () => {
         id: '123',
         state: 'ACTIVE',
         processId: '10',
-      })
+      }),
     );
 
     processInstanceDetailsDiagramStore.init();
 
     await waitFor(() =>
-      expect(processInstanceDetailsDiagramStore.state.status).toEqual('fetched')
+      expect(processInstanceDetailsDiagramStore.state.status).toEqual(
+        'fetched',
+      ),
     );
 
     expect(processInstanceDetailsDiagramStore.hasCalledProcessInstances).toBe(
-      true
+      true,
     );
   });
 
@@ -51,17 +53,19 @@ describe('hasCalledProcessInstances', () => {
         id: '123',
         state: 'ACTIVE',
         processId: '10',
-      })
+      }),
     );
 
     processInstanceDetailsDiagramStore.init();
 
     await waitFor(() =>
-      expect(processInstanceDetailsDiagramStore.state.status).toEqual('fetched')
+      expect(processInstanceDetailsDiagramStore.state.status).toEqual(
+        'fetched',
+      ),
     );
 
     expect(processInstanceDetailsDiagramStore.hasCalledProcessInstances).toBe(
-      false
+      false,
     );
   });
 });

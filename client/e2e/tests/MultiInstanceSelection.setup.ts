@@ -27,7 +27,7 @@ export async function setup() {
       i: 0,
       loopCardinality: 5,
       clients: new Array(5),
-    }
+    },
   );
 
   return {

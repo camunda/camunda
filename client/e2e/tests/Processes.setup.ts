@@ -12,14 +12,14 @@ const setup = async () => {
 
   const instanceWithoutAnIncident = await createSingleInstance(
     'orderProcess',
-    1
+    1,
   );
 
   await deployProcess(['processWithAnIncident.bpmn']);
 
   const instanceWithAnIncident = await createSingleInstance(
     'processWithAnIncident',
-    1
+    1,
   );
 
   return {instanceWithoutAnIncident, instanceWithAnIncident};

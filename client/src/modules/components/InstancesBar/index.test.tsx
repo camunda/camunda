@@ -20,15 +20,15 @@ describe('InstancesBar', () => {
         barHeight={5}
         size="small"
       />,
-      {wrapper: ThemeProvider}
+      {wrapper: ThemeProvider},
     );
 
     expect(
-      within(screen.getByTestId('incident-instances-badge')).getByText('10')
+      within(screen.getByTestId('incident-instances-badge')).getByText('10'),
     ).toBeInTheDocument();
     expect(screen.getByText('someLabel')).toBeInTheDocument();
     expect(
-      within(screen.getByTestId('active-instances-badge')).getByText('8')
+      within(screen.getByTestId('active-instances-badge')).getByText('8'),
     ).toBeInTheDocument();
   });
 
@@ -41,11 +41,11 @@ describe('InstancesBar', () => {
         barHeight={5}
         size="small"
       />,
-      {wrapper: ThemeProvider}
+      {wrapper: ThemeProvider},
     );
 
     expect(
-      screen.queryByTestId('active-instances-badge')
+      screen.queryByTestId('active-instances-badge'),
     ).not.toBeInTheDocument();
   });
 });

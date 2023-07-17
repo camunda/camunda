@@ -41,26 +41,26 @@ class ProcessInstancePage {
 
   getNewVariableNameFieldValue = (variableName: string) => {
     return within(
-      this.getNewVariableNameFieldSelector(variableName)
+      this.getNewVariableNameFieldSelector(variableName),
     ).queryByRole('textbox').value;
   };
 
   getNewVariableValueFieldValue = (variableName: string) => {
     return within(
-      this.getNewVariableValueFieldSelector(variableName)
+      this.getNewVariableValueFieldSelector(variableName),
     ).queryByRole('textbox').value;
   };
 
   getEditVariableFieldValue = (variableName: string) => {
     return within(this.getEditVariableFieldSelector(variableName)).queryByRole(
-      'textbox'
+      'textbox',
     ).value;
   };
 
   typeText = async (
     field: Selector | SelectorPromise,
     text: string,
-    options?: TypeActionOptions
+    options?: TypeActionOptions,
   ) => {
     await t.typeText(within(field).queryByRole('textbox'), text, options);
   };

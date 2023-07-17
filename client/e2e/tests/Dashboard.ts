@@ -26,20 +26,20 @@ fixture('Dashboard')
           .queryAllByRole('link', {
             name: /dashboard/i,
           })
-          .nth(0)
+          .nth(0),
       );
   });
 
 test('Statistics', async (t) => {
   const incidentInstancesCount = Number(
     await within(screen.queryByTestId('metric-panel')).queryByTestId(
-      'incident-instances-badge'
-    ).textContent
+      'incident-instances-badge',
+    ).textContent,
   );
   const activeProcessInstancesCount = Number(
     await within(screen.queryByTestId('metric-panel')).queryByTestId(
-      'active-instances-badge'
-    ).textContent
+      'active-instances-badge',
+    ).textContent,
   );
 
   await t
@@ -47,7 +47,7 @@ test('Statistics', async (t) => {
     .eql(
       `${
         incidentInstancesCount + activeProcessInstancesCount
-      } Running Process Instances in total`
+      } Running Process Instances in total`,
     )
     .expect(incidentInstancesCount)
     .eql(1)
@@ -75,7 +75,7 @@ test('Navigation to Processes View', async (t) => {
       .queryAllByRole('link', {
         name: /dashboard/i,
       })
-      .nth(0)
+      .nth(0),
   );
 
   await t.click(screen.queryByTestId('incident-instances-link'));
@@ -89,16 +89,16 @@ test('Select process instances by name', async (t) => {
   await t.expect(screen.queryByTestId('instances-by-process').exists).ok();
 
   const withinInstanceByProcess = within(
-    screen.queryByTestId('incident-byProcess-0')
+    screen.queryByTestId('incident-byProcess-0'),
   );
 
   const incidentCount = Number(
     await withinInstanceByProcess.queryByTestId('incident-instances-badge')
-      .textContent
+      .textContent,
   );
   const runningInstanceCount = Number(
     await withinInstanceByProcess.queryByTestId('active-instances-badge')
-      .textContent
+      .textContent,
   );
 
   const totalInstanceCount = incidentCount + runningInstanceCount;
@@ -114,11 +114,11 @@ test('Select process instances by error message', async (t) => {
   await t.expect(screen.queryByTestId('incidents-by-error').exists).ok();
 
   const withinInstanceByError = within(
-    screen.queryByTestId('incident-byError-0')
+    screen.queryByTestId('incident-byError-0'),
   );
 
   const incidentCount = await withinInstanceByError.queryByTestId(
-    'incident-instances-badge'
+    'incident-instances-badge',
   ).textContent;
 
   await t.click(screen.queryByTestId('incident-byError-0'));
@@ -132,22 +132,22 @@ test('Select process instances by error message (expanded)', async (t) => {
   await t.expect(screen.queryByTestId('incidents-by-error').exists).ok();
 
   const withinInstanceByError = within(
-    screen.queryByTestId('incident-byError-0')
+    screen.queryByTestId('incident-byError-0'),
   );
 
   const incidentCount = await withinInstanceByError.queryByTestId(
-    'incident-instances-badge'
+    'incident-instances-badge',
   ).textContent;
 
   await t.click(
     within(screen.queryByTestId('incident-byError-0')).queryByRole('button', {
       name: /Expand/,
-    })
+    }),
   );
   await t.click(
     within(screen.queryByTestId('incident-byError-0'))
       .getAllByRole('listitem')
-      .nth(0)
+      .nth(0),
   );
 
   await t

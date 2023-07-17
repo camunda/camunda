@@ -22,8 +22,8 @@ const displayOptionalFilter = async (filterName: OptionalFilter) => {
     .click(screen.queryByTestId('more-filters-dropdown').shadowRoot().child())
     .click(
       within(
-        screen.getByTestId('more-filters-dropdown').shadowRoot()
-      ).getByText(filterName)
+        screen.getByTestId('more-filters-dropdown').shadowRoot(),
+      ).getByText(filterName),
     );
 };
 

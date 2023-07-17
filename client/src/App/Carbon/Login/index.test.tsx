@@ -21,7 +21,7 @@ import {mockLogin} from 'modules/mocks/api/login';
 
 function createWrapper(
   initialPath: string = '/carbon/login',
-  referrer: To = {pathname: '/carbon/processes'}
+  referrer: To = {pathname: '/carbon/processes'},
 ) {
   const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
     return (
@@ -62,7 +62,7 @@ describe('<Login />', () => {
     await user.click(screen.getByRole('button', {name: 'Login'}));
 
     await waitFor(() =>
-      expect(screen.getByTestId('pathname')).toHaveTextContent(/^\/carbon$/)
+      expect(screen.getByTestId('pathname')).toHaveTextContent(/^\/carbon$/),
     );
   });
 
@@ -103,8 +103,8 @@ describe('<Login />', () => {
 
     await waitFor(() =>
       expect(screen.getByTestId('pathname')).toHaveTextContent(
-        /^\/carbon\/processes$/
-      )
+        /^\/carbon\/processes$/,
+      ),
     );
   });
 

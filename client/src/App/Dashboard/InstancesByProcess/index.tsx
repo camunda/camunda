@@ -95,7 +95,7 @@ const InstancesByProcess: React.FC = observer(() => {
                 title={getExpandAccordionTitle(
                   name,
                   item.instancesWithActiveIncidentsCount +
-                    item.activeInstancesCount
+                    item.activeInstancesCount,
                 )}
               />
             )}

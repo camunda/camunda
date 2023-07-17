@@ -41,19 +41,19 @@ describe('IncidentsFilter', () => {
     });
 
     const errorFilters = within(
-      await screen.findByTestId(/incidents-by-errortype/i)
+      await screen.findByTestId(/incidents-by-errortype/i),
     );
     const flowNodeFilters = within(
-      screen.getByTestId(/incidents-by-flownode/i)
+      screen.getByTestId(/incidents-by-flownode/i),
     );
 
     expect(errorFilters.getByText(/^condition error/i)).toBeInTheDocument();
     expect(errorFilters.getByText(/^Extract value error/)).toBeInTheDocument();
     expect(
-      flowNodeFilters.getByText(/^flowNodeId_exclusiveGateway/)
+      flowNodeFilters.getByText(/^flowNodeId_exclusiveGateway/),
     ).toBeInTheDocument();
     expect(
-      flowNodeFilters.getByText(/^flowNodeId_alwaysFailingTask/)
+      flowNodeFilters.getByText(/^flowNodeId_alwaysFailingTask/),
     ).toBeInTheDocument();
     expect(screen.getByText(/^Clear All/)).toBeInTheDocument();
   });

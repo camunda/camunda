@@ -55,7 +55,7 @@ const OperationsEntry: React.FC<Props> = ({operation}) => {
         <Title>
           {label}
           {['DELETE_PROCESS_DEFINITION', 'DELETE_DECISION_DEFINITION'].includes(
-            type
+            type,
           )
             ? ` ${name}`
             : ''}
@@ -93,11 +93,11 @@ const OperationsEntry: React.FC<Props> = ({operation}) => {
         )}
 
         {['DELETE_PROCESS_DEFINITION', 'DELETE_DECISION_DEFINITION'].includes(
-          type
+          type,
         ) && (
           <div>{`${pluralSuffix(
             operationsFinishedCount,
-            'instance'
+            'instance',
           )} deleted`}</div>
         )}
 

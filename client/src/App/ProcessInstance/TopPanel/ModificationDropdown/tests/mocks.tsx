@@ -44,7 +44,7 @@ const renderPopover = () => {
     />,
     {
       wrapper: Wrapper,
-    }
+    },
   );
 };
 
@@ -57,7 +57,7 @@ const initializeStores = () => {
       id: PROCESS_INSTANCE_ID,
       state: 'ACTIVE',
       processId: 'processId',
-    })
+    }),
   );
 };
 

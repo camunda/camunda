@@ -82,10 +82,10 @@ class Incidents extends NetworkReconnectionHandler {
       ) {
         if (this.intervalId === null) {
           this.fetchIncidents(
-            processInstanceDetailsStore.state.processInstance.id
+            processInstanceDetailsStore.state.processInstance.id,
           );
           this.startPolling(
-            processInstanceDetailsStore.state.processInstance.id
+            processInstanceDetailsStore.state.processInstance.id,
           );
         }
       } else {
@@ -143,7 +143,7 @@ class Incidents extends NetworkReconnectionHandler {
 
   getIncidentType = (flowNodeInstanceId: string) => {
     const incident = this.incidents.find(
-      (incident) => incident.flowNodeInstanceId === flowNodeInstanceId
+      (incident) => incident.flowNodeInstanceId === flowNodeInstanceId,
     );
 
     return incident?.errorType;
@@ -153,7 +153,7 @@ class Incidents extends NetworkReconnectionHandler {
     const {selectedFlowNodes} = this.state;
     if (selectedFlowNodes.includes(flowNodeId)) {
       this.state.selectedFlowNodes.splice(
-        selectedFlowNodes.indexOf(flowNodeId)
+        selectedFlowNodes.indexOf(flowNodeId),
       );
     } else {
       this.state.selectedFlowNodes.push(flowNodeId);
@@ -226,7 +226,7 @@ class Incidents extends NetworkReconnectionHandler {
     return this.state.response.incidents.map((incident) => ({
       ...incident,
       flowNodeName: processInstanceDetailsDiagramStore.getFlowNodeName(
-        incident.flowNodeId
+        incident.flowNodeId,
       ),
       isSelected: flowNodeSelectionStore.isSelected({
         flowNodeId: incident.flowNodeId,
@@ -238,7 +238,7 @@ class Incidents extends NetworkReconnectionHandler {
 
   isSingleIncidentSelected(flowNodeInstanceId: string) {
     const selectedInstances = this.incidents.filter(
-      (incident) => incident.isSelected
+      (incident) => incident.isSelected,
     );
 
     return (

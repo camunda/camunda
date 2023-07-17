@@ -42,10 +42,10 @@ const Textfield = React.forwardRef<
       readonly = false,
       ...props
     },
-    ref
+    ref,
   ) => {
     const [errorMessage, setErrorMessage] = useState<string | undefined>(
-      undefined
+      undefined,
     );
 
     const inputRef = useRef<HTMLInputElement>(null);
@@ -88,7 +88,7 @@ const Textfield = React.forwardRef<
         )}
       </>
     );
-  }
+  },
 );
 
 export {Textfield};

@@ -22,7 +22,7 @@ describe('MultiRow', () => {
   it('should render 5 rows with child', () => {
     const NUMBER_OF_ROWS = 5;
     render(
-      <MultiRow Component={DummyComponent} rowsToDisplay={NUMBER_OF_ROWS} />
+      <MultiRow Component={DummyComponent} rowsToDisplay={NUMBER_OF_ROWS} />,
     );
 
     expect(screen.queryAllByText(MOCK_CONTENT)).toHaveLength(NUMBER_OF_ROWS);

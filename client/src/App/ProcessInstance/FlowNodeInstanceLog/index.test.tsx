@@ -50,7 +50,7 @@ describe('FlowNodeInstanceLog', () => {
         state: 'ACTIVE',
         processName: 'processName',
         bpmnProcessId: 'processName',
-      })
+      }),
     );
 
     processInstanceDetailsStore.init({id: '1'});
@@ -67,7 +67,7 @@ describe('FlowNodeInstanceLog', () => {
     expect(screen.getByTestId('instance-history-skeleton')).toBeInTheDocument();
 
     await waitForElementToBeRemoved(
-      screen.getByTestId('instance-history-skeleton')
+      screen.getByTestId('instance-history-skeleton'),
     );
   });
 
@@ -80,11 +80,11 @@ describe('FlowNodeInstanceLog', () => {
     render(<FlowNodeInstanceLog />, {wrapper: Wrapper});
 
     expect(
-      await screen.findByTestId('instance-history-skeleton')
+      await screen.findByTestId('instance-history-skeleton'),
     ).toBeInTheDocument();
 
     await waitForElementToBeRemoved(
-      screen.getByTestId('instance-history-skeleton')
+      screen.getByTestId('instance-history-skeleton'),
     );
   });
 
@@ -97,7 +97,7 @@ describe('FlowNodeInstanceLog', () => {
     render(<FlowNodeInstanceLog />, {wrapper: Wrapper});
 
     expect(
-      await screen.findByText('Instance History could not be fetched')
+      await screen.findByText('Instance History could not be fetched'),
     ).toBeInTheDocument();
   });
 
@@ -110,7 +110,7 @@ describe('FlowNodeInstanceLog', () => {
     render(<FlowNodeInstanceLog />, {wrapper: Wrapper});
 
     expect(
-      await screen.findByText('Instance History could not be fetched')
+      await screen.findByText('Instance History could not be fetched'),
     ).toBeInTheDocument();
   });
 
@@ -133,7 +133,7 @@ describe('FlowNodeInstanceLog', () => {
         state: 'ACTIVE',
         processName: 'processName',
         bpmnProcessId: 'processName',
-      })
+      }),
     );
     mockFetchFlowNodeInstances().withServerError();
 
@@ -146,7 +146,7 @@ describe('FlowNodeInstanceLog', () => {
         state: 'ACTIVE',
         processName: 'processName',
         bpmnProcessId: 'processName',
-      })
+      }),
     );
     mockFetchFlowNodeInstances().withSuccess(processInstancesMock.level1Poll);
 
@@ -158,7 +158,7 @@ describe('FlowNodeInstanceLog', () => {
     });
 
     expect(
-      screen.queryByText('Instance History could not be fetched')
+      screen.queryByText('Instance History could not be fetched'),
     ).not.toBeInTheDocument();
 
     jest.clearAllTimers();
@@ -174,7 +174,7 @@ describe('FlowNodeInstanceLog', () => {
     render(<FlowNodeInstanceLog />, {wrapper: Wrapper});
 
     expect((await screen.findAllByText('processName')).length).toBeGreaterThan(
-      0
+      0,
     );
   });
 });

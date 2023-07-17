@@ -21,7 +21,7 @@ describe('OperationItems', () => {
           title="resolve incident"
         />
       </OperationItems>,
-      {wrapper: ThemeProvider}
+      {wrapper: ThemeProvider},
     );
 
     expect(screen.getByRole('listitem')).toBeInTheDocument();

@@ -33,7 +33,7 @@ describe('stores/processInstanceDiagram', () => {
         id: '123',
         state: 'ACTIVE',
         processId: '10',
-      })
+      }),
     );
 
     processInstanceDetailsDiagramStore.init();
@@ -43,7 +43,7 @@ describe('stores/processInstanceDiagram', () => {
     await waitFor(() => {
       expect(processInstanceDetailsDiagramStore.state.status).toBe('fetched');
       expect(
-        processInstanceDetailsDiagramStore.state.diagramModel
+        processInstanceDetailsDiagramStore.state.diagramModel,
       ).not.toBeNull();
     });
   });
@@ -54,7 +54,7 @@ describe('stores/processInstanceDiagram', () => {
     expect(processInstanceDetailsDiagramStore.state.status).toBe('first-fetch');
 
     await waitFor(() =>
-      expect(processInstanceDetailsDiagramStore.state.status).toBe('fetched')
+      expect(processInstanceDetailsDiagramStore.state.status).toBe('fetched'),
     );
 
     mockFetchProcessXML().withSuccess(mockProcessXML);
@@ -63,7 +63,7 @@ describe('stores/processInstanceDiagram', () => {
     expect(processInstanceDetailsDiagramStore.state.status).toBe('fetching');
 
     await waitFor(() =>
-      expect(processInstanceDetailsDiagramStore.state.status).toBe('fetched')
+      expect(processInstanceDetailsDiagramStore.state.status).toBe('fetched'),
     );
   });
 
@@ -71,18 +71,18 @@ describe('stores/processInstanceDiagram', () => {
     await processInstanceDetailsDiagramStore.fetchProcessXml('1');
 
     expect(
-      processInstanceDetailsDiagramStore.businessObjects['invalid_activity_id']
+      processInstanceDetailsDiagramStore.businessObjects['invalid_activity_id'],
     ).toEqual(undefined);
 
     expect(
-      processInstanceDetailsDiagramStore.businessObjects['StartEvent_1']
+      processInstanceDetailsDiagramStore.businessObjects['StartEvent_1'],
     ).toEqual({
       $type: 'bpmn:StartEvent',
       id: 'StartEvent_1',
     });
 
     expect(
-      processInstanceDetailsDiagramStore.businessObjects['ServiceTask_0kt6c5i']
+      processInstanceDetailsDiagramStore.businessObjects['ServiceTask_0kt6c5i'],
     ).toEqual({
       $type: 'bpmn:ServiceTask',
       extensionElements: {
@@ -98,7 +98,7 @@ describe('stores/processInstanceDiagram', () => {
     });
 
     expect(
-      processInstanceDetailsDiagramStore.businessObjects['EndEvent_0crvjrk']
+      processInstanceDetailsDiagramStore.businessObjects['EndEvent_0crvjrk'],
     ).toEqual({
       $type: 'bpmn:EndEvent',
       id: 'EndEvent_0crvjrk',
@@ -107,13 +107,13 @@ describe('stores/processInstanceDiagram', () => {
 
   it('should get areDiagramDefinitionsAvailable', async () => {
     expect(
-      processInstanceDetailsDiagramStore.areDiagramDefinitionsAvailable
+      processInstanceDetailsDiagramStore.areDiagramDefinitionsAvailable,
     ).toBe(false);
 
     await processInstanceDetailsDiagramStore.fetchProcessXml('1');
 
     expect(
-      processInstanceDetailsDiagramStore.areDiagramDefinitionsAvailable
+      processInstanceDetailsDiagramStore.areDiagramDefinitionsAvailable,
     ).toBe(true);
   });
 
@@ -122,7 +122,7 @@ describe('stores/processInstanceDiagram', () => {
 
     expect(processInstanceDetailsDiagramStore.state.status).toBe('fetched');
     expect(processInstanceDetailsDiagramStore.state.diagramModel).not.toEqual(
-      null
+      null,
     );
 
     processInstanceDetailsDiagramStore.reset();
@@ -143,12 +143,14 @@ describe('stores/processInstanceDiagram', () => {
         id: '123',
         state: 'ACTIVE',
         processId: '10',
-      })
+      }),
     );
     processInstanceDetailsDiagramStore.init();
 
     await waitFor(() =>
-      expect(processInstanceDetailsDiagramStore.state.status).toEqual('fetched')
+      expect(processInstanceDetailsDiagramStore.state.status).toEqual(
+        'fetched',
+      ),
     );
 
     mockFetchProcessXML().withSuccess(mockProcessXML);
@@ -158,7 +160,9 @@ describe('stores/processInstanceDiagram', () => {
     expect(processInstanceDetailsDiagramStore.state.status).toEqual('fetching');
 
     await waitFor(() =>
-      expect(processInstanceDetailsDiagramStore.state.status).toEqual('fetched')
+      expect(processInstanceDetailsDiagramStore.state.status).toEqual(
+        'fetched',
+      ),
     );
 
     window.addEventListener = originalEventListener;
@@ -220,10 +224,10 @@ describe('stores/processInstanceDiagram', () => {
     mockFetchProcessXML().withSuccess(open('diagramForModifications.bpmn'));
 
     await processInstanceDetailsDiagramStore.fetchProcessXml(
-      'processInstanceId'
+      'processInstanceId',
     );
     await processInstanceDetailsStatisticsStore.fetchFlowNodeStatistics(
-      'processInstanceId'
+      'processInstanceId',
     );
 
     expect(processInstanceDetailsDiagramStore.appendableFlowNodes).toEqual([
@@ -320,31 +324,35 @@ describe('stores/processInstanceDiagram', () => {
         state: 'ACTIVE',
         processId: '10',
         bpmnProcessId: 'nested_sub_process',
-      })
+      }),
     );
 
     processInstanceDetailsDiagramStore.init();
 
     await waitFor(() =>
-      expect(processInstanceDetailsDiagramStore.state.status).toEqual('fetched')
+      expect(processInstanceDetailsDiagramStore.state.status).toEqual(
+        'fetched',
+      ),
     );
 
     expect(
-      processInstanceDetailsDiagramStore.getFlowNodeParents('user_task')
+      processInstanceDetailsDiagramStore.getFlowNodeParents('user_task'),
     ).toEqual(['inner_sub_process', 'parent_sub_process']);
 
     expect(
-      processInstanceDetailsDiagramStore.getFlowNodeParents('inner_sub_process')
+      processInstanceDetailsDiagramStore.getFlowNodeParents(
+        'inner_sub_process',
+      ),
     ).toEqual(['parent_sub_process']);
 
     expect(
       processInstanceDetailsDiagramStore.getFlowNodeParents(
-        'parent_sub_process'
-      )
+        'parent_sub_process',
+      ),
     ).toEqual([]);
 
     expect(
-      processInstanceDetailsDiagramStore.getFlowNodeParents('non_existing')
+      processInstanceDetailsDiagramStore.getFlowNodeParents('non_existing'),
     ).toEqual([]);
   });
 
@@ -357,55 +365,57 @@ describe('stores/processInstanceDiagram', () => {
         state: 'ACTIVE',
         processId: '10',
         bpmnProcessId: 'nested_sub_process',
-      })
+      }),
     );
 
     processInstanceDetailsDiagramStore.init();
 
     await waitFor(() =>
-      expect(processInstanceDetailsDiagramStore.state.status).toEqual('fetched')
+      expect(processInstanceDetailsDiagramStore.state.status).toEqual(
+        'fetched',
+      ),
     );
 
     expect(
       processInstanceDetailsDiagramStore.getFlowNodesInBetween(
         'user_task',
-        'nested_sub_process'
-      )
+        'nested_sub_process',
+      ),
     ).toEqual(['inner_sub_process', 'parent_sub_process']);
 
     expect(
       processInstanceDetailsDiagramStore.getFlowNodesInBetween(
         'inner_sub_process',
-        'nested_sub_process'
-      )
+        'nested_sub_process',
+      ),
     ).toEqual(['parent_sub_process']);
 
     expect(
       processInstanceDetailsDiagramStore.getFlowNodesInBetween(
         'parent_sub_process',
-        'nested_sub_process'
-      )
+        'nested_sub_process',
+      ),
     ).toEqual([]);
 
     expect(
       processInstanceDetailsDiagramStore.getFlowNodesInBetween(
         'user_task',
-        'parent_sub_process'
-      )
+        'parent_sub_process',
+      ),
     ).toEqual(['inner_sub_process']);
 
     expect(
       processInstanceDetailsDiagramStore.getFlowNodesInBetween(
         'inner_sub_process',
-        'parent_sub_process'
-      )
+        'parent_sub_process',
+      ),
     ).toEqual([]);
 
     expect(
       processInstanceDetailsDiagramStore.getFlowNodesInBetween(
         'user_task',
-        'inner_sub_process'
-      )
+        'inner_sub_process',
+      ),
     ).toEqual([]);
   });
 
@@ -444,10 +454,10 @@ describe('stores/processInstanceDiagram', () => {
     mockFetchProcessXML().withSuccess(open('diagramForModifications.bpmn'));
 
     await processInstanceDetailsDiagramStore.fetchProcessXml(
-      'processInstanceId'
+      'processInstanceId',
     );
     await processInstanceDetailsStatisticsStore.fetchFlowNodeStatistics(
-      'processInstanceId'
+      'processInstanceId',
     );
 
     expect(processInstanceDetailsDiagramStore.hasMultipleScopes()).toBe(false);
@@ -457,7 +467,7 @@ describe('stores/processInstanceDiagram', () => {
         id: 'service-task-1',
         name: 'some-name',
         $type: 'bpmn:ServiceTask',
-      })
+      }),
     ).toBe(true);
 
     expect(
@@ -465,7 +475,7 @@ describe('stores/processInstanceDiagram', () => {
         id: 'service-task-7',
         name: 'some-name',
         $type: 'bpmn:ServiceTask',
-      })
+      }),
     ).toBe(false);
 
     expect(
@@ -473,7 +483,7 @@ describe('stores/processInstanceDiagram', () => {
         id: 'subprocess-service-task',
         name: 'some-name',
         $type: 'bpmn:ServiceTask',
-      })
+      }),
     ).toBe(false);
 
     expect(
@@ -486,7 +496,7 @@ describe('stores/processInstanceDiagram', () => {
           name: 'some-name',
           $type: 'bpmn:SubProcess',
         },
-      })
+      }),
     ).toBe(true);
   });
 
@@ -494,13 +504,13 @@ describe('stores/processInstanceDiagram', () => {
     mockFetchProcessXML().withSuccess(open('diagramForModifications.bpmn'));
 
     await processInstanceDetailsDiagramStore.fetchProcessXml(
-      'processInstanceId'
+      'processInstanceId',
     );
 
     expect(
       processInstanceDetailsDiagramStore.getParentFlowNode(
-        'subprocess-service-task'
-      )
+        'subprocess-service-task',
+      ),
     ).toEqual({
       $type: 'bpmn:SubProcess',
       flowElements: [

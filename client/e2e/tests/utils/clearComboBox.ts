@@ -14,7 +14,7 @@ const clearComboBox = async ({fieldName}: {fieldName: string}) => {
   await t.click(
     within(parentElement).getByRole('button', {
       name: 'Clear selected item',
-    })
+    }),
   );
 };
 

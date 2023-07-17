@@ -72,7 +72,9 @@ describe('Footer', () => {
     await waitForElementToBeRemoved(screen.getByTestId('variables-skeleton'));
 
     await waitFor(() =>
-      expect(screen.getByRole('button', {name: /add variable/i})).toBeDisabled()
+      expect(
+        screen.getByRole('button', {name: /add variable/i}),
+      ).toBeDisabled(),
     );
   });
 
@@ -92,7 +94,7 @@ describe('Footer', () => {
 
     await user.click(screen.getByRole('button', {name: /add variable/i}));
     expect(
-      screen.queryByRole('button', {name: /add variable/i})
+      screen.queryByRole('button', {name: /add variable/i}),
     ).not.toBeInTheDocument();
 
     await user.click(screen.getByRole('button', {name: /exit edit mode/i}));
@@ -155,13 +157,13 @@ describe('Footer', () => {
         flowNodeId: 'start',
         flowNodeInstanceId: '2',
         isMultiInstance: false,
-      })
+      }),
     );
 
     await waitFor(() =>
       expect(
-        flowNodeMetaDataStore.state.metaData?.instanceMetadata?.endDate
-      ).toEqual(null)
+        flowNodeMetaDataStore.state.metaData?.instanceMetadata?.endDate,
+      ).toEqual(null),
     );
 
     expect(screen.getByRole('button', {name: /add variable/i})).toBeEnabled();
@@ -173,13 +175,13 @@ describe('Footer', () => {
         flowNodeId: 'neverFails',
         flowNodeInstanceId: '3',
         isMultiInstance: false,
-      })
+      }),
     );
 
     await waitFor(() =>
       expect(
-        flowNodeMetaDataStore.state.metaData?.instanceMetadata?.endDate
-      ).toEqual(MOCK_TIMESTAMP)
+        flowNodeMetaDataStore.state.metaData?.instanceMetadata?.endDate,
+      ).toEqual(MOCK_TIMESTAMP),
     );
 
     expect(screen.getByRole('button', {name: /add variable/i})).toBeDisabled();

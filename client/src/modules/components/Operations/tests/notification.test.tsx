@@ -34,7 +34,7 @@ describe('Operations - Notification', () => {
       />,
       {
         wrapper: Wrapper,
-      }
+      },
     );
 
     expect(screen.getByTestId('pathname')).toHaveTextContent(/^\/processes$/);
@@ -45,7 +45,7 @@ describe('Operations - Notification', () => {
 
     await user.click(screen.getByTestId('delete-button'));
     await waitForElementToBeRemoved(
-      screen.getByText(/About to delete Instance/)
+      screen.getByText(/About to delete Instance/),
     );
 
     expect(mockDisplayNotification).not.toHaveBeenCalled();

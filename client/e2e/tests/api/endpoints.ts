@@ -11,7 +11,7 @@ const ENDPOINTS = Object.freeze({
   createOperation(id: string) {
     return new URL(
       `/api/process-instances/${id}/operation`,
-      config.endpoint
+      config.endpoint,
     ).toString();
   },
   login() {

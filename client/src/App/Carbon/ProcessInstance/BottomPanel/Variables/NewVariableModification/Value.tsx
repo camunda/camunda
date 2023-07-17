@@ -46,7 +46,7 @@ const Value: React.FC<Props> = ({variableName, scopeId}) => {
         name={valueFieldName}
         validate={mergeValidators(
           validateModifiedValueComplete,
-          validateModifiedValueValid
+          validateModifiedValueValid,
         )}
         parse={(value) => value}
       >

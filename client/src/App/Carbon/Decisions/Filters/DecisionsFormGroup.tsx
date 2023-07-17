@@ -42,7 +42,7 @@ const DecisionsFormGroup: React.FC = observer(() => {
                     'version',
                     decisionId === undefined
                       ? ''
-                      : getDefaultVersion(decisionId)
+                      : getDefaultVersion(decisionId),
                   );
                 }}
                 titleText="Name"

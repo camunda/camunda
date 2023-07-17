@@ -92,8 +92,8 @@ const ModificationDropdown: React.FC<Props> = observer(
                       if (
                         processInstanceDetailsDiagramStore.hasMultipleScopes(
                           processInstanceDetailsDiagramStore.getParentFlowNode(
-                            flowNodeId
-                          )
+                            flowNodeId,
+                          ),
                         )
                       ) {
                         modificationsStore.startAddingToken(flowNodeId);
@@ -110,14 +110,14 @@ const ModificationDropdown: React.FC<Props> = observer(
                             flowNode: {
                               id: flowNodeId,
                               name: processInstanceDetailsDiagramStore.getFlowNodeName(
-                                flowNodeId
+                                flowNodeId,
                               ),
                             },
                             affectedTokenCount: 1,
                             visibleAffectedTokenCount: 1,
                             parentScopeIds:
                               modificationsStore.generateParentScopeIds(
-                                flowNodeId
+                                flowNodeId,
                               ),
                           },
                         });
@@ -142,7 +142,7 @@ const ModificationDropdown: React.FC<Props> = observer(
 
                         modificationsStore.cancelToken(
                           flowNodeId,
-                          flowNodeInstanceId
+                          flowNodeInstanceId,
                         );
                         flowNodeSelectionStore.clearSelection();
                       }}
@@ -176,7 +176,7 @@ const ModificationDropdown: React.FC<Props> = observer(
                       onClick={() => {
                         modificationsStore.startMovingToken(
                           flowNodeId,
-                          flowNodeInstanceId
+                          flowNodeInstanceId,
                         );
                         flowNodeSelectionStore.clearSelection();
                       }}
@@ -203,7 +203,7 @@ const ModificationDropdown: React.FC<Props> = observer(
         </Options>
       </Popover>
     );
-  }
+  },
 );
 
 export {ModificationDropdown};

@@ -72,7 +72,7 @@ describe('Footer', () => {
     await waitForElementToBeRemoved(screen.getByTestId('skeleton-rows'));
 
     await waitFor(() =>
-      expect(screen.getByText(/add variable/i)).toBeDisabled()
+      expect(screen.getByText(/add variable/i)).toBeDisabled(),
     );
   });
 
@@ -97,7 +97,7 @@ describe('Footer', () => {
     expect(screen.getByText(/add variable/i)).toBeEnabled();
 
     const [firstEditVariableButton] = screen.getAllByTestId(
-      'edit-variable-button'
+      'edit-variable-button',
     );
     expect(firstEditVariableButton).toBeInTheDocument();
     await user.click(firstEditVariableButton!);
@@ -153,13 +153,13 @@ describe('Footer', () => {
         flowNodeId: 'start',
         flowNodeInstanceId: '2',
         isMultiInstance: false,
-      })
+      }),
     );
 
     await waitFor(() =>
       expect(
-        flowNodeMetaDataStore.state.metaData?.instanceMetadata?.endDate
-      ).toEqual(null)
+        flowNodeMetaDataStore.state.metaData?.instanceMetadata?.endDate,
+      ).toEqual(null),
     );
 
     expect(screen.getByText(/add variable/i)).toBeEnabled();
@@ -171,13 +171,13 @@ describe('Footer', () => {
         flowNodeId: 'neverFails',
         flowNodeInstanceId: '3',
         isMultiInstance: false,
-      })
+      }),
     );
 
     await waitFor(() =>
       expect(
-        flowNodeMetaDataStore.state.metaData?.instanceMetadata?.endDate
-      ).toEqual(MOCK_TIMESTAMP)
+        flowNodeMetaDataStore.state.metaData?.instanceMetadata?.endDate,
+      ).toEqual(MOCK_TIMESTAMP),
     );
 
     expect(screen.getByText(/add variable/i)).toBeDisabled();

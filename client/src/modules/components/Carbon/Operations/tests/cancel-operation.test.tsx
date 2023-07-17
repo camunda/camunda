@@ -22,11 +22,11 @@ describe('Operations - Cancel Operation', () => {
           state: 'INCIDENT',
         }}
       />,
-      {wrapper: Wrapper}
+      {wrapper: Wrapper},
     );
 
     await user.click(
-      screen.getByRole('button', {name: 'Cancel Instance instance_1'})
+      screen.getByRole('button', {name: 'Cancel Instance instance_1'}),
     );
 
     expect(screen.getByText(modalText)).toBeInTheDocument();
@@ -53,19 +53,19 @@ describe('Operations - Cancel Operation', () => {
         }}
         onOperation={onOperationMock}
       />,
-      {wrapper: Wrapper}
+      {wrapper: Wrapper},
     );
 
     await user.click(
-      screen.getByRole('button', {name: 'Cancel Instance instance_1'})
+      screen.getByRole('button', {name: 'Cancel Instance instance_1'}),
     );
 
     expect(screen.getByText(modalText)).toBeInTheDocument();
     expect(
-      screen.queryByRole('button', {name: 'Cancel'})
+      screen.queryByRole('button', {name: 'Cancel'}),
     ).not.toBeInTheDocument();
     expect(
-      screen.queryByRole('button', {name: 'Apply'})
+      screen.queryByRole('button', {name: 'Apply'}),
     ).not.toBeInTheDocument();
 
     await user.click(screen.getByRole('button', {name: 'close'}));
@@ -86,21 +86,21 @@ describe('Operations - Cancel Operation', () => {
       />,
       {
         wrapper: Wrapper,
-      }
+      },
     );
 
     await user.click(
-      screen.getByRole('button', {name: 'Cancel Instance instance_1'})
+      screen.getByRole('button', {name: 'Cancel Instance instance_1'}),
     );
 
     await user.click(
       screen.getByRole('link', {
         description: `View root instance ${rootInstanceId}`,
-      })
+      }),
     );
 
     expect(screen.getByTestId('pathname').textContent).toBe(
-      `/carbon/processes/${rootInstanceId}`
+      `/carbon/processes/${rootInstanceId}`,
     );
   });
 
@@ -112,29 +112,29 @@ describe('Operations - Cancel Operation', () => {
       />,
       {
         wrapper: Wrapper,
-      }
+      },
     );
 
     await user.click(await screen.findByTitle('Modify Instance instance_1'));
     expect(
-      screen.queryByTestId('apply-modifications-button')
+      screen.queryByTestId('apply-modifications-button'),
     ).not.toBeInTheDocument();
 
     expect(
       screen.getByText(
-        'Process instance modification mode allows you to plan multiple modifications on a process instance.'
-      )
+        'Process instance modification mode allows you to plan multiple modifications on a process instance.',
+      ),
     ).toBeInTheDocument();
 
     await user.click(
-      screen.getByRole('checkbox', {name: 'Do not show this message again'})
+      screen.getByRole('checkbox', {name: 'Do not show this message again'}),
     );
     await user.click(screen.getByRole('button', {name: 'Continue'}));
 
     expect(
       screen.queryByText(
-        'Process instance modification mode allows you to plan multiple modifications on a process instance.'
-      )
+        'Process instance modification mode allows you to plan multiple modifications on a process instance.',
+      ),
     ).not.toBeInTheDocument();
 
     expect(modificationsStore.state.status).toBe('enabled');
@@ -151,8 +151,8 @@ describe('Operations - Cancel Operation', () => {
 
     expect(
       screen.queryByText(
-        'Process instance modification mode allows you to plan multiple modifications on a process instance.'
-      )
+        'Process instance modification mode allows you to plan multiple modifications on a process instance.',
+      ),
     ).not.toBeInTheDocument();
   });
 });

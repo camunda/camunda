@@ -69,23 +69,23 @@ describe('<ModificationIcons />', () => {
       />,
       {
         wrapper: Wrapper,
-      }
+      },
     );
 
     expect(
       screen.getByTitle(
-        'Ensure to add/edit variables if required, input/output mappings are not executed during modification'
-      )
+        'Ensure to add/edit variables if required, input/output mappings are not executed during modification',
+      ),
     ).toBeInTheDocument();
 
     expect(
-      screen.getByTitle('This flow node instance is planned to be added')
+      screen.getByTitle('This flow node instance is planned to be added'),
     ).toBeInTheDocument();
   });
 
   it('should show modification planned to be canceled icon if all the running tokens on the flow node is canceled', async () => {
     await processInstanceDetailsDiagramStore.fetchProcessXml(
-      'processInstanceId'
+      'processInstanceId',
     );
 
     render(
@@ -100,23 +100,23 @@ describe('<ModificationIcons />', () => {
       />,
       {
         wrapper: Wrapper,
-      }
+      },
     );
 
     expect(
-      screen.queryByTitle('This flow node instance is planned to be canceled')
+      screen.queryByTitle('This flow node instance is planned to be canceled'),
     ).not.toBeInTheDocument();
 
     act(() => modificationsStore.cancelAllTokens('user_task'));
 
     expect(
-      screen.getByTitle('This flow node instance is planned to be canceled')
+      screen.getByTitle('This flow node instance is planned to be canceled'),
     ).toBeInTheDocument();
   });
 
   it('should show modification planned to be canceled icon if one of the running tokens on the flow node is canceled', async () => {
     await processInstanceDetailsDiagramStore.fetchProcessXml(
-      'processInstanceId'
+      'processInstanceId',
     );
 
     render(
@@ -131,19 +131,19 @@ describe('<ModificationIcons />', () => {
       />,
       {
         wrapper: Wrapper,
-      }
+      },
     );
 
     act(() => modificationsStore.cancelToken('user_task', 'some-flow-node-id'));
 
     expect(
-      screen.getByTitle('This flow node instance is planned to be canceled')
+      screen.getByTitle('This flow node instance is planned to be canceled'),
     ).toBeInTheDocument();
   });
 
   it('should not show modification planned to be canceled icon if one of the other running tokens on the flow node is canceled', async () => {
     await processInstanceDetailsDiagramStore.fetchProcessXml(
-      'processInstanceId'
+      'processInstanceId',
     );
 
     render(
@@ -158,21 +158,21 @@ describe('<ModificationIcons />', () => {
       />,
       {
         wrapper: Wrapper,
-      }
+      },
     );
 
     act(() =>
-      modificationsStore.cancelToken('user_task', 'some-other-flow-node-id')
+      modificationsStore.cancelToken('user_task', 'some-other-flow-node-id'),
     );
 
     expect(
-      screen.queryByTitle('This flow node instance is planned to be canceled')
+      screen.queryByTitle('This flow node instance is planned to be canceled'),
     ).not.toBeInTheDocument();
   });
 
   it('should show modification planned to be canceled icon if one of the parent running tokens on the flow node is canceled', async () => {
     await processInstanceDetailsDiagramStore.fetchProcessXml(
-      'processInstanceId'
+      'processInstanceId',
     );
 
     render(
@@ -187,21 +187,21 @@ describe('<ModificationIcons />', () => {
       />,
       {
         wrapper: Wrapper,
-      }
+      },
     );
 
     act(() =>
-      modificationsStore.cancelToken('user_task', 'some-parent-flow-node-id')
+      modificationsStore.cancelToken('user_task', 'some-parent-flow-node-id'),
     );
 
     expect(
-      screen.getByTitle('This flow node instance is planned to be canceled')
+      screen.getByTitle('This flow node instance is planned to be canceled'),
     ).toBeInTheDocument();
   });
 
   it('should show modification planned to be canceled icon if one of the other parent running tokens on the flow node is canceled', async () => {
     await processInstanceDetailsDiagramStore.fetchProcessXml(
-      'processInstanceId'
+      'processInstanceId',
     );
 
     render(
@@ -216,18 +216,18 @@ describe('<ModificationIcons />', () => {
       />,
       {
         wrapper: Wrapper,
-      }
+      },
     );
 
     act(() =>
       modificationsStore.cancelToken(
         'user_task',
-        'some-second-parent-flow-node-id'
-      )
+        'some-second-parent-flow-node-id',
+      ),
     );
 
     expect(
-      screen.queryByTitle('This flow node instance is planned to be canceled')
+      screen.queryByTitle('This flow node instance is planned to be canceled'),
     ).not.toBeInTheDocument();
   });
 });

@@ -149,7 +149,7 @@ const BOOLEAN_DECISION_INSTANCE_FILTER_FIELDS: DecisionInstanceFilterField[] = [
 function getFilters<Fields extends string, Filters>(
   searchParams: string,
   fields: Fields[],
-  booleanFields: string[]
+  booleanFields: string[],
 ): Filters {
   return Array.from(new URLSearchParams(searchParams)).reduce(
     (accumulator, [param, value]) => {
@@ -169,27 +169,27 @@ function getFilters<Fields extends string, Filters>(
 
       return accumulator;
     },
-    {}
+    {},
   ) as Filters;
 }
 
 function getProcessInstanceFilters(
-  searchParams: string
+  searchParams: string,
 ): ProcessInstanceFilters {
   return getFilters<ProcessInstanceFilterField, ProcessInstanceFilters>(
     searchParams,
     PROCESS_INSTANCE_FILTER_FIELDS,
-    BOOLEAN_PROCESS_INSTANCE_FILTER_FIELDS
+    BOOLEAN_PROCESS_INSTANCE_FILTER_FIELDS,
   );
 }
 
 function getDecisionInstanceFilters(
-  searchParams: string
+  searchParams: string,
 ): DecisionInstanceFilters {
   return getFilters<DecisionInstanceFilterField, DecisionInstanceFilters>(
     searchParams,
     DECISION_INSTANCE_FILTER_FIELDS,
-    BOOLEAN_DECISION_INSTANCE_FILTER_FIELDS
+    BOOLEAN_DECISION_INSTANCE_FILTER_FIELDS,
   );
 }
 
@@ -361,7 +361,7 @@ function getProcessInstancesRequestFilters(): RequestFilters {
 
       return accumulator;
     },
-    {}
+    {},
   );
 }
 
@@ -422,7 +422,7 @@ function getDecisionInstancesRequestFilters() {
 
       return accumulator;
     },
-    {}
+    {},
   );
 }
 
@@ -430,17 +430,17 @@ function updateFiltersSearchString<Filters extends object>(
   currentSearch: string,
   newFilters: Filters,
   possibleFilters: Array<keyof Filters>,
-  possibleBooleanFilters: Array<keyof Filters>
+  possibleBooleanFilters: Array<keyof Filters>,
 ) {
   const oldParams = Object.fromEntries(new URLSearchParams(currentSearch));
   const fieldsToDelete = possibleFilters.filter(
-    (field) => newFilters[field] === undefined
+    (field) => newFilters[field] === undefined,
   );
   const newParams = new URLSearchParams(
     Object.entries({
       ...oldParams,
       ...newFilters,
-    }).filter(([, value]) => value !== '')
+    }).filter(([, value]) => value !== ''),
   );
 
   fieldsToDelete.forEach((field) => {
@@ -460,25 +460,25 @@ function updateFiltersSearchString<Filters extends object>(
 
 function updateProcessFiltersSearchString(
   currentSearch: string,
-  newFilters: ProcessInstanceFilters
+  newFilters: ProcessInstanceFilters,
 ) {
   return updateFiltersSearchString<ProcessInstanceFilters>(
     currentSearch,
     newFilters,
     PROCESS_INSTANCE_FILTER_FIELDS,
-    BOOLEAN_PROCESS_INSTANCE_FILTER_FIELDS
+    BOOLEAN_PROCESS_INSTANCE_FILTER_FIELDS,
   );
 }
 
 function updateDecisionsFiltersSearchString(
   currentSearch: string,
-  newFilters: DecisionInstanceFilters
+  newFilters: DecisionInstanceFilters,
 ) {
   return updateFiltersSearchString<DecisionInstanceFilters>(
     currentSearch,
     newFilters,
     DECISION_INSTANCE_FILTER_FIELDS,
-    BOOLEAN_DECISION_INSTANCE_FILTER_FIELDS
+    BOOLEAN_DECISION_INSTANCE_FILTER_FIELDS,
   );
 }
 

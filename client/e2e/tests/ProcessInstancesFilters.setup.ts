@@ -30,14 +30,14 @@ const setup = async () => {
 
   const instanceToCancelForOperations = await createSingleInstance(
     'orderProcess',
-    1
+    1,
   );
 
   await deployProcess(['callActivityProcess.bpmn', 'calledProcess.bpmn']);
 
   const callActivityProcessInstance = await createSingleInstance(
     'CallActivityProcess',
-    1
+    1,
   );
 
   return {

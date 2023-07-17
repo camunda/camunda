@@ -39,7 +39,7 @@ import {IS_ADD_TOKEN_WITH_ANCESTOR_KEY_SUPPORTED} from 'modules/feature-flags';
 jest.mock('react-transition-group', () => {
   const FakeTransition = jest.fn(({children}) => children);
   const FakeCSSTransition = jest.fn((props) =>
-    props.in ? <FakeTransition>{props.children}</FakeTransition> : null
+    props.in ? <FakeTransition>{props.children}</FakeTransition> : null,
   );
 
   return {
@@ -86,7 +86,7 @@ describe('TopPanel', () => {
     mockFetchProcessXML().withSuccess(open('diagramForModifications.bpmn'));
 
     mockFetchProcessInstance().withSuccess(
-      createInstance({id: 'instance_id', state: 'INCIDENT'})
+      createInstance({id: 'instance_id', state: 'INCIDENT'}),
     );
     mockFetchProcessInstanceIncidents().withSuccess(mockIncidents);
     mockFetchSequenceFlows().withSuccess(mockSequenceFlows);
@@ -150,7 +150,7 @@ describe('TopPanel', () => {
     processInstanceDetailsDiagramStore.fetchProcessXml('1');
 
     expect(
-      await screen.findByText('Diagram could not be fetched')
+      await screen.findByText('Diagram could not be fetched'),
     ).toBeInTheDocument();
   });
 
@@ -165,7 +165,7 @@ describe('TopPanel', () => {
     processInstanceDetailsDiagramStore.fetchProcessXml('1');
 
     expect(
-      await screen.findByText('Diagram could not be fetched')
+      await screen.findByText('Diagram could not be fetched'),
     ).toBeInTheDocument();
   });
 
@@ -199,14 +199,16 @@ describe('TopPanel', () => {
       createInstance({
         id: PROCESS_INSTANCE_ID,
         state: 'ACTIVE',
-      })
+      }),
     );
     render(<TopPanel />, {
       wrapper: Wrapper,
     });
 
     await waitFor(() =>
-      expect(processInstanceDetailsStatisticsStore.state.status).toBe('fetched')
+      expect(processInstanceDetailsStatisticsStore.state.status).toBe(
+        'fetched',
+      ),
     );
 
     flowNodeSelectionStore.selectFlowNode({
@@ -214,7 +216,7 @@ describe('TopPanel', () => {
     });
 
     expect(
-      await screen.findByText(/Flow Node Instance Key/)
+      await screen.findByText(/Flow Node Instance Key/),
     ).toBeInTheDocument();
 
     expect(screen.getByText(/Execution Duration/)).toBeInTheDocument();
@@ -223,8 +225,8 @@ describe('TopPanel', () => {
 
     await waitFor(() =>
       expect(
-        screen.queryByText(/Flow Node Instance Key/)
-      ).not.toBeInTheDocument()
+        screen.queryByText(/Flow Node Instance Key/),
+      ).not.toBeInTheDocument(),
     );
 
     expect(screen.queryByText(/Start Date/)).not.toBeInTheDocument();
@@ -237,19 +239,19 @@ describe('TopPanel', () => {
     });
 
     expect(
-      await screen.findByText(/Flow Node Modifications/)
+      await screen.findByText(/Flow Node Modifications/),
     ).toBeInTheDocument();
     expect(
-      await screen.findByTitle(/Add single flow node instance/)
+      await screen.findByTitle(/Add single flow node instance/),
     ).toBeInTheDocument();
     expect(
-      screen.getByTitle(/Cancel selected instance in this flow node/)
+      screen.getByTitle(/Cancel selected instance in this flow node/),
     ).toBeInTheDocument();
 
     expect(
       screen.getByTitle(
-        /Move selected instance in this flow node to another target/
-      )
+        /Move selected instance in this flow node to another target/,
+      ),
     ).toBeInTheDocument();
   });
 
@@ -262,7 +264,7 @@ describe('TopPanel', () => {
       createInstance({
         id: PROCESS_INSTANCE_ID,
         state: 'ACTIVE',
-      })
+      }),
     );
 
     const {user} = render(<TopPanel />, {
@@ -276,23 +278,23 @@ describe('TopPanel', () => {
     });
 
     expect(
-      await screen.findByText(/Flow Node Modifications/)
+      await screen.findByText(/Flow Node Modifications/),
     ).toBeInTheDocument();
 
     expect(
-      screen.queryByText(/select the target flow node in the diagram/i)
+      screen.queryByText(/select the target flow node in the diagram/i),
     ).not.toBeInTheDocument();
 
     await user.click(screen.getByRole('button', {name: /move/i}));
 
     expect(
-      await screen.findByText(/select the target flow node in the diagram/i)
+      await screen.findByText(/select the target flow node in the diagram/i),
     ).toBeInTheDocument();
 
     await user.click(screen.getByRole('button', {name: 'Discard'}));
 
     expect(
-      screen.queryByText(/select the target flow node in the diagram/i)
+      screen.queryByText(/select the target flow node in the diagram/i),
     ).not.toBeInTheDocument();
   });
 
@@ -314,8 +316,8 @@ describe('TopPanel', () => {
 
     expect(
       await screen.findByText(
-        /Flow node has multiple instances. To select one, use the instance history tree below./i
-      )
+        /Flow node has multiple instances. To select one, use the instance history tree below./i,
+      ),
     ).toBeInTheDocument();
 
     mockFetchFlowNodeMetadata().withSuccess(incidentFlowNodeMetaData);
@@ -326,8 +328,8 @@ describe('TopPanel', () => {
 
     await waitForElementToBeRemoved(() =>
       screen.queryByText(
-        /Flow node has multiple instances. To select one, use the instance history tree below./i
-      )
+        /Flow node has multiple instances. To select one, use the instance history tree below./i,
+      ),
     );
 
     flowNodeSelectionStore.selectFlowNode({
@@ -336,8 +338,8 @@ describe('TopPanel', () => {
 
     expect(
       await screen.findByText(
-        /Flow node has multiple instances. To select one, use the instance history tree below./i
-      )
+        /Flow node has multiple instances. To select one, use the instance history tree below./i,
+      ),
     ).toBeInTheDocument();
 
     mockFetchFlowNodeMetadata().withSuccess(incidentFlowNodeMetaData);
@@ -349,8 +351,8 @@ describe('TopPanel', () => {
 
     await waitForElementToBeRemoved(() =>
       screen.queryByText(
-        /Flow node has multiple instances. To select one, use the instance history tree below./i
-      )
+        /Flow node has multiple instances. To select one, use the instance history tree below./i,
+      ),
     );
   });
 
@@ -398,22 +400,22 @@ describe('TopPanel', () => {
       });
 
       await user.click(
-        await screen.findByTitle(/Add single flow node instance/)
+        await screen.findByTitle(/Add single flow node instance/),
       );
 
       expect(
         await screen.findByText(
-          /Flow node has multiple parent scopes. Please select parent node from Instance History to Add./i
-        )
+          /Flow node has multiple parent scopes. Please select parent node from Instance History to Add./i,
+        ),
       ).toBeInTheDocument();
 
       await user.click(screen.getByRole('button', {name: 'Discard'}));
 
       expect(
         screen.queryByText(
-          /Flow node has multiple parent scopes. Please select parent node from Instance History to Add./i
-        )
+          /Flow node has multiple parent scopes. Please select parent node from Instance History to Add./i,
+        ),
       ).not.toBeInTheDocument();
-    }
+    },
   );
 });

@@ -45,11 +45,11 @@ describe('<AuthenticationCheck />', () => {
       </AuthenticationCheck>,
       {
         wrapper: createWrapper(PROTECTED_AREA_URL),
-      }
+      },
     );
 
     await waitFor(() =>
-      expect(screen.getByTestId('pathname')).toHaveTextContent(PUBLIC_AREA_URL)
+      expect(screen.getByTestId('pathname')).toHaveTextContent(PUBLIC_AREA_URL),
     );
     expect(screen.queryByText(PROTECTED_CONTENT)).not.toBeInTheDocument();
   });
@@ -63,14 +63,14 @@ describe('<AuthenticationCheck />', () => {
       </AuthenticationCheck>,
       {
         wrapper: createWrapper(PROTECTED_AREA_URL),
-      }
+      },
     );
 
     expect(screen.getByTestId('pathname')).toHaveTextContent(
-      PROTECTED_AREA_URL
+      PROTECTED_AREA_URL,
     );
     await waitFor(() =>
-      expect(authenticationStore.state.status).toBe('user-information-fetched')
+      expect(authenticationStore.state.status).toBe('user-information-fetched'),
     );
   });
 });

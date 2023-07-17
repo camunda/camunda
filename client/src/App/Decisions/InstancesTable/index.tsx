@@ -220,7 +220,7 @@ const InstancesTable: React.FC = observer(() => {
                 },
               ],
             };
-          }
+          },
         )}
       />
     </Container>

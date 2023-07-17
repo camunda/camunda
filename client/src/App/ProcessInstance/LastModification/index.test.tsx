@@ -39,7 +39,7 @@ describe('LastModification', () => {
     render(<LastModification />, {wrapper: Wrapper});
 
     expect(
-      screen.queryByText(/Last added modification/)
+      screen.queryByText(/Last added modification/),
     ).not.toBeInTheDocument();
   });
 
@@ -85,7 +85,7 @@ describe('LastModification', () => {
     mockFetchProcessXML().withSuccess(open('diagramForModifications.bpmn'));
 
     await processInstanceDetailsDiagramStore.fetchProcessXml(
-      'processInstanceId'
+      'processInstanceId',
     );
 
     await processInstanceDetailsStatisticsStore.fetchFlowNodeStatistics(1);
@@ -107,7 +107,7 @@ describe('LastModification', () => {
     });
 
     expect(
-      await screen.findByText(/Last added modification/)
+      await screen.findByText(/Last added modification/),
     ).toBeInTheDocument();
     expect(screen.getByText(/Add "service-task-1"/)).toBeInTheDocument();
 
@@ -116,7 +116,7 @@ describe('LastModification', () => {
     });
 
     expect(
-      await screen.findByText(/Cancel "service-task-2"/)
+      await screen.findByText(/Cancel "service-task-2"/),
     ).toBeInTheDocument();
 
     act(() => {
@@ -135,7 +135,7 @@ describe('LastModification', () => {
     });
 
     expect(
-      await screen.findByText(/Move "service-task-3" to "service-task-4"/)
+      await screen.findByText(/Move "service-task-3" to "service-task-4"/),
     ).toBeInTheDocument();
 
     act(() => {
@@ -149,7 +149,7 @@ describe('LastModification', () => {
     });
 
     expect(
-      await screen.findByText(/Add new variable "variableName1"/)
+      await screen.findByText(/Add new variable "variableName1"/),
     ).toBeInTheDocument();
 
     act(() => {
@@ -163,19 +163,19 @@ describe('LastModification', () => {
     });
 
     expect(
-      await screen.findByText(/Edit variable "variableName2"/)
+      await screen.findByText(/Edit variable "variableName2"/),
     ).toBeInTheDocument();
 
     await user.click(screen.getByRole('button', {name: 'Undo'}));
 
     expect(
-      screen.getByText(/Add new variable "variableName1"/)
+      screen.getByText(/Add new variable "variableName1"/),
     ).toBeInTheDocument();
 
     await user.click(screen.getByRole('button', {name: 'Undo'}));
 
     expect(
-      screen.getByText(/Move "service-task-3" to "service-task-4"/)
+      screen.getByText(/Move "service-task-3" to "service-task-4"/),
     ).toBeInTheDocument();
 
     await user.click(screen.getByRole('button', {name: 'Undo'}));
@@ -189,7 +189,7 @@ describe('LastModification', () => {
     await user.click(screen.getByRole('button', {name: 'Undo'}));
 
     expect(
-      screen.queryByText(/Last added modification/)
+      screen.queryByText(/Last added modification/),
     ).not.toBeInTheDocument();
   });
 });

@@ -31,7 +31,7 @@ describe('stores/processDiagram', () => {
     processDiagramStore.fetchProcessDiagram('1');
     expect(processDiagramStore.state.status).toBe('fetching');
     await waitFor(() =>
-      expect(processDiagramStore.state.status).toBe('fetched')
+      expect(processDiagramStore.state.status).toBe('fetched'),
     );
 
     expect(processDiagramStore.state.statistics).toEqual(mockProcessStatistics);
@@ -45,7 +45,7 @@ describe('stores/processDiagram', () => {
     processDiagramStore.fetchProcessDiagram('1');
 
     await waitFor(() =>
-      expect(processDiagramStore.state.status).toBe('fetched')
+      expect(processDiagramStore.state.status).toBe('fetched'),
     );
 
     expect(processDiagramStore.flowNodeFilterOptions).toEqual([
@@ -62,7 +62,7 @@ describe('stores/processDiagram', () => {
     processDiagramStore.fetchProcessDiagram('1');
 
     await waitFor(() =>
-      expect(processDiagramStore.state.status).toBe('fetched')
+      expect(processDiagramStore.state.status).toBe('fetched'),
     );
 
     expect(processDiagramStore.flowNodeStates).toEqual([
@@ -96,7 +96,7 @@ describe('stores/processDiagram', () => {
     processDiagramStore.fetchProcessDiagram('1');
 
     await waitFor(() =>
-      expect(processDiagramStore.state.status).toBe('fetched')
+      expect(processDiagramStore.state.status).toBe('fetched'),
     );
 
     expect(processDiagramStore.overlaysData).toEqual([
@@ -184,7 +184,7 @@ describe('stores/processDiagram', () => {
     processInstancesStore.fetchProcessInstancesFromFilters();
 
     await waitFor(() =>
-      expect(processInstancesStore.state.status).toBe('fetched')
+      expect(processInstancesStore.state.status).toBe('fetched'),
     );
 
     expect(processDiagramStore.state.statistics).toEqual([]);
@@ -202,8 +202,8 @@ describe('stores/processDiagram', () => {
 
     await waitFor(() =>
       expect(processDiagramStore.state.statistics).toEqual(
-        mockProcessStatistics
-      )
+        mockProcessStatistics,
+      ),
     );
   });
 
@@ -220,7 +220,7 @@ describe('stores/processDiagram', () => {
     processInstancesStore.fetchProcessInstancesFromFilters();
 
     await waitFor(() =>
-      expect(processInstancesStore.state.status).toBe('fetched')
+      expect(processInstancesStore.state.status).toBe('fetched'),
     );
     expect(processDiagramStore.state.statistics).toEqual([]);
 
@@ -232,7 +232,7 @@ describe('stores/processDiagram', () => {
     processInstancesStore.fetchProcessInstancesFromFilters();
 
     await waitFor(() =>
-      expect(processInstancesStore.state.filteredProcessInstancesCount).toBe(2)
+      expect(processInstancesStore.state.filteredProcessInstancesCount).toBe(2),
     );
 
     expect(processDiagramStore.state.statistics).toEqual([]);
@@ -253,8 +253,8 @@ describe('stores/processDiagram', () => {
 
     await waitFor(() =>
       expect(processDiagramStore.state.statistics).toEqual(
-        mockProcessStatistics
-      )
+        mockProcessStatistics,
+      ),
     );
 
     const newStatisticsResponse = [
@@ -275,8 +275,8 @@ describe('stores/processDiagram', () => {
 
     await waitFor(() =>
       expect(processDiagramStore.state.statistics).toEqual(
-        newStatisticsResponse
-      )
+        newStatisticsResponse,
+      ),
     );
 
     window.addEventListener = originalEventListener;

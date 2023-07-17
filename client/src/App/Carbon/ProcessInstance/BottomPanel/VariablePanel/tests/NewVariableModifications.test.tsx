@@ -42,7 +42,7 @@ const editNameFromTextfieldAndBlur = async (user: UserEvent, value: string) => {
 
 const editValueFromTextfieldAndBlur = async (
   user: UserEvent,
-  value: string
+  value: string,
 ) => {
   const [valueField] = screen.getAllByTestId('new-variable-value');
 
@@ -121,10 +121,10 @@ describe('New Variable Modifications', () => {
       createInstance({
         id: 'instance_id',
         state: 'ACTIVE',
-      })
+      }),
     );
     processInstanceDetailsStatisticsStore.fetchFlowNodeStatistics(
-      'instance_id'
+      'instance_id',
     );
   });
 
@@ -134,7 +134,7 @@ describe('New Variable Modifications', () => {
 
     const {user} = render(<VariablePanel />, {wrapper: Wrapper});
     await waitForElementToBeRemoved(() =>
-      screen.getByTestId('variables-skeleton')
+      screen.getByTestId('variables-skeleton'),
     );
     await waitFor(() => {
       expect(screen.getByRole('button', {name: /add variable/i})).toBeEnabled();
@@ -165,28 +165,28 @@ describe('New Variable Modifications', () => {
 
       await waitFor(() => {
         expect(
-          screen.getByRole('button', {name: /add variable/i})
+          screen.getByRole('button', {name: /add variable/i}),
         ).toBeEnabled();
       });
 
       await user.click(screen.getByRole('button', {name: /add variable/i}));
       expect(
-        await screen.findByTestId('new-variable-name')
+        await screen.findByTestId('new-variable-name'),
       ).toBeInTheDocument();
       await user.click(screen.getByTestId('new-variable-name'));
       await user.tab();
       await editValue(type, user, '123');
       expect(
-        screen.getByRole('button', {name: /add variable/i})
+        screen.getByRole('button', {name: /add variable/i}),
       ).toBeDisabled();
       expect(
-        await screen.findByText(/Name has to be filled/i)
+        await screen.findByText(/Name has to be filled/i),
       ).toBeInTheDocument();
       expect(modificationsStore.state.modifications.length).toBe(0);
 
       jest.clearAllTimers();
       jest.useRealTimers();
-    }
+    },
   );
 
   it.each(['textfield', 'jsoneditor'])(
@@ -200,21 +200,21 @@ describe('New Variable Modifications', () => {
 
       await waitFor(() => {
         expect(
-          screen.getByRole('button', {name: /add variable/i})
+          screen.getByRole('button', {name: /add variable/i}),
         ).toBeEnabled();
       });
 
       await user.click(screen.getByRole('button', {name: /add variable/i}));
       expect(
-        await screen.findByTestId('new-variable-name')
+        await screen.findByTestId('new-variable-name'),
       ).toBeInTheDocument();
       await editNameFromTextfieldAndBlur(user, 'testVariableName');
       await editValue(type, user, '123');
       expect(
-        screen.getByRole('button', {name: /add variable/i})
+        screen.getByRole('button', {name: /add variable/i}),
       ).toBeDisabled();
       expect(
-        await screen.findByText(/Name should be unique/i)
+        await screen.findByText(/Name should be unique/i),
       ).toBeInTheDocument();
       expect(modificationsStore.state.modifications.length).toBe(0);
 
@@ -239,7 +239,7 @@ describe('New Variable Modifications', () => {
       await editNameFromTextfieldAndBlur(user, 'test2');
       await editValue(type, user, '1234');
       expect(
-        await screen.findByText(/Name should be unique/i)
+        await screen.findByText(/Name should be unique/i),
       ).toBeInTheDocument();
       expect(modificationsStore.state.modifications).toEqual([
         {
@@ -257,7 +257,7 @@ describe('New Variable Modifications', () => {
 
       jest.clearAllTimers();
       jest.useRealTimers();
-    }
+    },
   );
 
   it('should not create add variable modification if value field is empty or invalid', async () => {
@@ -279,12 +279,12 @@ describe('New Variable Modifications', () => {
     await user.tab();
     expect(screen.getByRole('button', {name: /add variable/i})).toBeDisabled();
     expect(
-      await screen.findByText(/Value has to be filled/i)
+      await screen.findByText(/Value has to be filled/i),
     ).toBeInTheDocument();
     expect(modificationsStore.state.modifications.length).toBe(0);
     await editValueFromTextfieldAndBlur(user, 'invalid value');
     expect(
-      await screen.findByText(/Value has to be JSON/i)
+      await screen.findByText(/Value has to be JSON/i),
     ).toBeInTheDocument();
     expect(modificationsStore.state.modifications.length).toBe(0);
 
@@ -304,19 +304,19 @@ describe('New Variable Modifications', () => {
           <VariablePanel />
           <LastModification />
         </>,
-        {wrapper: Wrapper}
+        {wrapper: Wrapper},
       );
       await waitForElementToBeRemoved(screen.getByTestId('variables-skeleton'));
 
       await waitFor(() => {
         expect(
-          screen.getByRole('button', {name: /add variable/i})
+          screen.getByRole('button', {name: /add variable/i}),
         ).toBeEnabled();
       });
 
       await user.click(screen.getByRole('button', {name: /add variable/i}));
       expect(
-        await screen.findByTestId('new-variable-name')
+        await screen.findByTestId('new-variable-name'),
       ).toBeInTheDocument();
 
       await editNameFromTextfieldAndBlur(user, 'test2');
@@ -384,7 +384,7 @@ describe('New Variable Modifications', () => {
       ]);
 
       expect(
-        modificationsStore.getAddVariableModifications('instance_id')
+        modificationsStore.getAddVariableModifications('instance_id'),
       ).toEqual([
         {
           id: expect.any(String),
@@ -431,7 +431,7 @@ describe('New Variable Modifications', () => {
       ]);
 
       expect(
-        modificationsStore.getAddVariableModifications('instance_id')
+        modificationsStore.getAddVariableModifications('instance_id'),
       ).toEqual([
         {
           id: expect.any(String),
@@ -468,7 +468,7 @@ describe('New Variable Modifications', () => {
       ]);
 
       expect(
-        modificationsStore.getAddVariableModifications('instance_id')
+        modificationsStore.getAddVariableModifications('instance_id'),
       ).toEqual([
         {
           id: expect.any(String),
@@ -479,7 +479,7 @@ describe('New Variable Modifications', () => {
 
       jest.clearAllTimers();
       jest.useRealTimers();
-    }
+    },
   );
 
   it.each(['textfield', 'jsoneditor'])(
@@ -493,13 +493,13 @@ describe('New Variable Modifications', () => {
 
       await waitFor(() => {
         expect(
-          screen.getByRole('button', {name: /add variable/i})
+          screen.getByRole('button', {name: /add variable/i}),
         ).toBeEnabled();
       });
 
       await user.click(screen.getByRole('button', {name: /add variable/i}));
       expect(
-        await screen.findByTestId('new-variable-name')
+        await screen.findByTestId('new-variable-name'),
       ).toBeInTheDocument();
 
       await user.click(screen.getByTestId('new-variable-name'));
@@ -528,7 +528,7 @@ describe('New Variable Modifications', () => {
       ]);
 
       expect(
-        modificationsStore.getAddVariableModifications('instance_id')
+        modificationsStore.getAddVariableModifications('instance_id'),
       ).toEqual([
         {
           id: expect.any(String),
@@ -539,7 +539,7 @@ describe('New Variable Modifications', () => {
 
       jest.clearAllTimers();
       jest.useRealTimers();
-    }
+    },
   );
 
   it('should be able to remove the first added variable modification after switching between flow node instances', async () => {
@@ -638,11 +638,13 @@ describe('New Variable Modifications', () => {
 
     const {user} = render(<VariablePanel />, {wrapper: Wrapper});
     expect(
-      await screen.findByText('The Flow Node has no Variables')
+      await screen.findByText('The Flow Node has no Variables'),
     ).toBeInTheDocument();
 
     await waitFor(() =>
-      expect(processInstanceDetailsStatisticsStore.state.status).toBe('fetched')
+      expect(processInstanceDetailsStatisticsStore.state.status).toBe(
+        'fetched',
+      ),
     );
     await waitFor(() => {
       expect(screen.getByRole('button', {name: /add variable/i})).toBeEnabled();

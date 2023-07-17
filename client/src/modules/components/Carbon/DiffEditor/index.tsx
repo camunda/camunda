@@ -34,7 +34,7 @@ const DiffEditor: React.FC<Props> = observer(
         />
       </>
     );
-  }
+  },
 );
 
 export {DiffEditor, useMonaco};

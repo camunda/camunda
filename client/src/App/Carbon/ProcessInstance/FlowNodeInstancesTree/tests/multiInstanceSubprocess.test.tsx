@@ -50,13 +50,13 @@ describe('FlowNodeInstancesTree - Multi Instance Subprocess', () => {
       />,
       {
         wrapper: Wrapper,
-      }
+      },
     );
 
     expect(screen.getByText('Multi-Instance Process')).toBeInTheDocument();
     expect(screen.getByText('Peter Fork')).toBeInTheDocument();
     expect(
-      screen.getByText('Filter-Map Sub Process (Multi Instance)')
+      screen.getByText('Filter-Map Sub Process (Multi Instance)'),
     ).toBeInTheDocument();
   });
 
@@ -78,13 +78,13 @@ describe('FlowNodeInstancesTree - Multi Instance Subprocess', () => {
       />,
       {
         wrapper: Wrapper,
-      }
+      },
     );
 
     expect(
       screen.queryByLabelText('Filter-Map Sub Process', {
         selector: "[aria-expanded='false']",
-      })
+      }),
     ).not.toBeInTheDocument();
     expect(screen.queryByText('Start Filter-Map')).not.toBeInTheDocument();
 
@@ -94,13 +94,13 @@ describe('FlowNodeInstancesTree - Multi Instance Subprocess', () => {
       screen.getByLabelText('Filter-Map Sub Process (Multi Instance)', {
         selector: "[aria-expanded='false']",
       }),
-      '{arrowright}'
+      '{arrowright}',
     );
 
     expect(
       await screen.findByLabelText('Filter-Map Sub Process (Multi Instance)', {
         selector: "[aria-expanded='true']",
-      })
+      }),
     ).toBeInTheDocument();
 
     expect(screen.queryByText('Start Filter-Map')).not.toBeInTheDocument();
@@ -111,26 +111,26 @@ describe('FlowNodeInstancesTree - Multi Instance Subprocess', () => {
       await screen.findByLabelText('Filter-Map Sub Process', {
         selector: "[aria-expanded='false']",
       }),
-      '{arrowRight}'
+      '{arrowRight}',
     );
 
     expect(await screen.findByText('Start Filter-Map')).toBeInTheDocument();
     expect(
       screen.getByLabelText('Filter-Map Sub Process (Multi Instance)', {
         selector: "[aria-expanded='true']",
-      })
+      }),
     ).toBeInTheDocument();
     expect(
       screen.getByLabelText('Filter-Map Sub Process', {
         selector: "[aria-expanded='true']",
-      })
+      }),
     ).toBeInTheDocument();
 
     await user.type(
       screen.getByLabelText('Filter-Map Sub Process', {
         selector: "[aria-expanded='true']",
       }),
-      '{arrowleft}'
+      '{arrowleft}',
     );
 
     expect(screen.queryByText('Start Filter-Map')).not.toBeInTheDocument();
@@ -156,22 +156,22 @@ describe('FlowNodeInstancesTree - Multi Instance Subprocess', () => {
       />,
       {
         wrapper: Wrapper,
-      }
+      },
     );
 
     const withinMultiInstanceFlowNode = within(
       screen.getByTestId(
         `tree-node-${
           flowNodeInstances.level1Poll[processInstanceId]!.children[1]!.id
-        }`
-      )
+        }`,
+      ),
     );
 
     expect(
-      await withinMultiInstanceFlowNode.findByTestId('INCIDENT-icon')
+      await withinMultiInstanceFlowNode.findByTestId('INCIDENT-icon'),
     ).toBeInTheDocument();
     expect(
-      withinMultiInstanceFlowNode.queryByTestId('COMPLETED-icon')
+      withinMultiInstanceFlowNode.queryByTestId('COMPLETED-icon'),
     ).not.toBeInTheDocument();
 
     // poll request
@@ -181,10 +181,10 @@ describe('FlowNodeInstancesTree - Multi Instance Subprocess', () => {
     jest.runOnlyPendingTimers();
 
     expect(
-      await withinMultiInstanceFlowNode.findByTestId('COMPLETED-icon')
+      await withinMultiInstanceFlowNode.findByTestId('COMPLETED-icon'),
     ).toBeInTheDocument();
     expect(
-      withinMultiInstanceFlowNode.queryByTestId('INCIDENT-icon')
+      withinMultiInstanceFlowNode.queryByTestId('INCIDENT-icon'),
     ).not.toBeInTheDocument();
 
     jest.clearAllTimers();

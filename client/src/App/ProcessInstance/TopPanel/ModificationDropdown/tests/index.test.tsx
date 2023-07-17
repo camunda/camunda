@@ -93,25 +93,25 @@ describe('Modification Dropdown', () => {
 
     await waitFor(() =>
       expect(
-        processInstanceDetailsDiagramStore.state.diagramModel
-      ).not.toBeNull()
+        processInstanceDetailsDiagramStore.state.diagramModel,
+      ).not.toBeNull(),
     );
 
     expect(
-      screen.queryByText(/Flow Node Modifications/)
+      screen.queryByText(/Flow Node Modifications/),
     ).not.toBeInTheDocument();
     expect(
-      screen.queryByTitle(/Add single flow node instance/)
-    ).not.toBeInTheDocument();
-    expect(
-      screen.queryByTitle(
-        /Cancel all running flow node instances in this flow node/
-      )
+      screen.queryByTitle(/Add single flow node instance/),
     ).not.toBeInTheDocument();
     expect(
       screen.queryByTitle(
-        /Move all running instances in this flow node to another target/
-      )
+        /Cancel all running flow node instances in this flow node/,
+      ),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByTitle(
+        /Move all running instances in this flow node to another target/,
+      ),
     ).not.toBeInTheDocument();
 
     act(() => {
@@ -121,20 +121,20 @@ describe('Modification Dropdown', () => {
     });
 
     expect(
-      await screen.findByText(/Flow Node Modifications/)
+      await screen.findByText(/Flow Node Modifications/),
     ).toBeInTheDocument();
     expect(
-      screen.getByTitle(/Add single flow node instance/)
+      screen.getByTitle(/Add single flow node instance/),
     ).toHaveTextContent(/Add/);
     expect(
       screen.getByTitle(
-        /Cancel all running flow node instances in this flow node/
-      )
+        /Cancel all running flow node instances in this flow node/,
+      ),
     ).toHaveTextContent(/Cancel/);
     expect(
       screen.getByTitle(
-        /Move all running instances in this flow node to another target/
-      )
+        /Move all running instances in this flow node to another target/,
+      ),
     ).toHaveTextContent(/Move/);
   });
 
@@ -143,8 +143,8 @@ describe('Modification Dropdown', () => {
 
     await waitFor(() =>
       expect(
-        processInstanceDetailsDiagramStore.state.diagramModel
-      ).not.toBeNull()
+        processInstanceDetailsDiagramStore.state.diagramModel,
+      ).not.toBeNull(),
     );
 
     act(() => {
@@ -154,13 +154,13 @@ describe('Modification Dropdown', () => {
     });
 
     expect(
-      await screen.findByText(/Flow Node Modifications/)
+      await screen.findByText(/Flow Node Modifications/),
     ).toBeInTheDocument();
 
     await user.click(await screen.findByText(/Move all/));
 
     expect(
-      screen.queryByText(/Flow Node Modifications/)
+      screen.queryByText(/Flow Node Modifications/),
     ).not.toBeInTheDocument();
   });
 
@@ -169,8 +169,8 @@ describe('Modification Dropdown', () => {
 
     await waitFor(() =>
       expect(
-        processInstanceDetailsDiagramStore.state.diagramModel
-      ).not.toBeNull()
+        processInstanceDetailsDiagramStore.state.diagramModel,
+      ).not.toBeNull(),
     );
 
     act(() => {
@@ -180,7 +180,7 @@ describe('Modification Dropdown', () => {
     });
 
     expect(
-      await screen.findByText(/Flow Node Modifications/)
+      await screen.findByText(/Flow Node Modifications/),
     ).toBeInTheDocument();
     expect(screen.getByText(/Add/)).toBeInTheDocument();
     expect(screen.queryByText(/Cancel/)).not.toBeInTheDocument();
@@ -192,8 +192,8 @@ describe('Modification Dropdown', () => {
 
     await waitFor(() =>
       expect(
-        processInstanceDetailsDiagramStore.state.diagramModel
-      ).not.toBeNull()
+        processInstanceDetailsDiagramStore.state.diagramModel,
+      ).not.toBeNull(),
     );
 
     act(() => {
@@ -203,7 +203,7 @@ describe('Modification Dropdown', () => {
     });
 
     expect(
-      await screen.findByText(/Flow Node Modifications/)
+      await screen.findByText(/Flow Node Modifications/),
     ).toBeInTheDocument();
     expect(screen.getByText(/Cancel/)).toBeInTheDocument();
     expect(screen.getByText(/Move/)).toBeInTheDocument();
@@ -215,8 +215,8 @@ describe('Modification Dropdown', () => {
 
     await waitFor(() =>
       expect(
-        processInstanceDetailsDiagramStore.state.diagramModel
-      ).not.toBeNull()
+        processInstanceDetailsDiagramStore.state.diagramModel,
+      ).not.toBeNull(),
     );
 
     act(() => {
@@ -226,7 +226,7 @@ describe('Modification Dropdown', () => {
     });
 
     expect(
-      await screen.findByText(/Flow Node Modifications/)
+      await screen.findByText(/Flow Node Modifications/),
     ).toBeInTheDocument();
     expect(screen.getByText(/Unsupported flow node type/)).toBeInTheDocument();
     expect(screen.queryByText(/Add/)).not.toBeInTheDocument();
@@ -279,8 +279,8 @@ describe('Modification Dropdown', () => {
 
     await waitFor(() =>
       expect(
-        processInstanceDetailsDiagramStore.state.diagramModel
-      ).not.toBeNull()
+        processInstanceDetailsDiagramStore.state.diagramModel,
+      ).not.toBeNull(),
     );
 
     act(() => {
@@ -290,7 +290,7 @@ describe('Modification Dropdown', () => {
     });
 
     expect(
-      await screen.findByText(/Flow Node Modifications/)
+      await screen.findByText(/Flow Node Modifications/),
     ).toBeInTheDocument();
     expect(screen.getByText(/Cancel/)).toBeInTheDocument();
     expect(screen.getByText(/Move/)).toBeInTheDocument();
@@ -358,8 +358,8 @@ describe('Modification Dropdown', () => {
 
     await waitFor(() =>
       expect(
-        processInstanceDetailsDiagramStore.state.diagramModel
-      ).not.toBeNull()
+        processInstanceDetailsDiagramStore.state.diagramModel,
+      ).not.toBeNull(),
     );
 
     act(() => {
@@ -370,7 +370,7 @@ describe('Modification Dropdown', () => {
     });
 
     expect(
-      await screen.findByText(/Flow Node Modifications/)
+      await screen.findByText(/Flow Node Modifications/),
     ).toBeInTheDocument();
     expect(screen.getByText(/Add/)).toBeInTheDocument();
     expect(screen.queryByText(/Move/)).not.toBeInTheDocument();
@@ -395,8 +395,8 @@ describe('Modification Dropdown', () => {
 
     await waitFor(() =>
       expect(
-        processInstanceDetailsDiagramStore.state.diagramModel
-      ).not.toBeNull()
+        processInstanceDetailsDiagramStore.state.diagramModel,
+      ).not.toBeNull(),
     );
 
     mockFetchFlowNodeMetadata().withSuccess(incidentFlowNodeMetaData);
@@ -410,7 +410,7 @@ describe('Modification Dropdown', () => {
 
     expect(await screen.findByTestId('dropdown-spinner')).toBeInTheDocument();
     await waitForElementToBeRemoved(() =>
-      screen.getByTestId('dropdown-spinner')
+      screen.getByTestId('dropdown-spinner'),
     );
     expect(screen.queryByText(/Add/)).not.toBeInTheDocument();
     expect(screen.getByText(/Move instance/)).toBeInTheDocument();
@@ -422,8 +422,8 @@ describe('Modification Dropdown', () => {
 
     await waitFor(() =>
       expect(
-        processInstanceDetailsDiagramStore.state.diagramModel
-      ).not.toBeNull()
+        processInstanceDetailsDiagramStore.state.diagramModel,
+      ).not.toBeNull(),
     );
 
     // select a flow node that has 1 running instance
@@ -441,7 +441,7 @@ describe('Modification Dropdown', () => {
     });
 
     expect(
-      await screen.findByText(/Flow Node Modifications/)
+      await screen.findByText(/Flow Node Modifications/),
     ).toBeInTheDocument();
     expect(await screen.findByText(/Cancel instance/)).toBeInTheDocument();
     expect(screen.getByText(/Move/)).toBeInTheDocument();
@@ -455,7 +455,7 @@ describe('Modification Dropdown', () => {
     });
 
     expect(
-      await screen.findByText(/Flow Node Modifications/)
+      await screen.findByText(/Flow Node Modifications/),
     ).toBeInTheDocument();
     expect(await screen.findByText(/Cancel all/)).toBeInTheDocument();
     expect(screen.getByText(/Move/)).toBeInTheDocument();

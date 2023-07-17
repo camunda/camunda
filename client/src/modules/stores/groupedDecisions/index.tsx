@@ -117,7 +117,7 @@ class GroupedDecisions extends NetworkReconnectionHandler {
       return {
         ...decisions,
         [decision.decisionId]: [...decision.decisions].sort(
-          (decisionA, decisionB) => decisionA.version - decisionB.version
+          (decisionA, decisionB) => decisionA.version - decisionB.version,
         ),
       };
     }, {});
@@ -132,7 +132,7 @@ class GroupedDecisions extends NetworkReconnectionHandler {
 
   getDecisionName = (decisionId: string | null) => {
     const decision = this.state.decisions.find(
-      (decision) => decision.decisionId === decisionId
+      (decision) => decision.decisionId === decisionId,
     );
 
     return decision?.name ?? decision?.decisionId;
@@ -147,7 +147,7 @@ class GroupedDecisions extends NetworkReconnectionHandler {
   }) => {
     return (
       this.decisionVersionsById[decisionId]?.find(
-        (decision) => decision.version === version
+        (decision) => decision.version === version,
       )?.id ?? null
     );
   };
@@ -185,7 +185,7 @@ class GroupedDecisions extends NetworkReconnectionHandler {
     }
 
     return this.state.decisions.find(
-      (decision) => decision.decisionId === decisionId
+      (decision) => decision.decisionId === decisionId,
     )?.permissions;
   };
 

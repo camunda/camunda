@@ -15,7 +15,7 @@ test.beforeEach(async ({loginPage}) => {
 test.describe('login page', () => {
   test('Log in with invalid user account', async ({loginPage, page}) => {
     expect(await loginPage.passwordInput.getAttribute('type')).toEqual(
-      'password'
+      'password',
     );
 
     await loginPage.login({
@@ -24,7 +24,7 @@ test.describe('login page', () => {
     });
 
     await expect(
-      page.getByRole('alert').getByText('Username and password do not match')
+      page.getByRole('alert').getByText('Username and password do not match'),
     ).toBeVisible();
     await expect(page).toHaveURL('/carbon/login');
   });
@@ -60,7 +60,7 @@ test.describe('login page', () => {
     });
 
     await expect(page).toHaveURL(
-      '/carbon/processes?active=true&incidents=true'
+      '/carbon/processes?active=true&incidents=true',
     );
   });
 });

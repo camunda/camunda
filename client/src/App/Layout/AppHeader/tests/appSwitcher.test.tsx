@@ -40,7 +40,7 @@ describe('App switcher', () => {
           console: 'https://link-to-console',
           optimize: 'https://link-to-optimize',
         },
-      })
+      }),
     );
 
     await authenticationStore.authenticate();
@@ -51,31 +51,31 @@ describe('App switcher', () => {
     await user.click(
       await screen.findByRole('button', {
         name: /camunda apps/i,
-      })
+      }),
     );
 
     const withinAppPanel = within(
       screen.getByRole('navigation', {
         name: /app panel/i,
-      })
+      }),
     );
 
     expect(
-      await withinAppPanel.findByRole('link', {name: 'Console'})
+      await withinAppPanel.findByRole('link', {name: 'Console'}),
     ).toHaveAttribute('href', 'https://link-to-console');
     expect(withinAppPanel.getByRole('link', {name: 'Modeler'})).toHaveAttribute(
       'href',
-      'https://link-to-modeler'
+      'https://link-to-modeler',
     );
     expect(
-      withinAppPanel.getByRole('link', {name: 'Tasklist'})
+      withinAppPanel.getByRole('link', {name: 'Tasklist'}),
     ).toHaveAttribute('href', 'https://link-to-tasklist');
     expect(withinAppPanel.getByRole('link', {name: 'Operate'})).toHaveAttribute(
       'href',
-      '/'
+      '/',
     );
     expect(
-      withinAppPanel.getByRole('link', {name: 'Optimize'})
+      withinAppPanel.getByRole('link', {name: 'Optimize'}),
     ).toHaveAttribute('href', 'https://link-to-optimize');
   });
 
@@ -94,7 +94,7 @@ describe('App switcher', () => {
           console: 'https://link-to-console',
           optimize: 'https://link-to-optimize',
         },
-      })
+      }),
     );
 
     await authenticationStore.authenticate();
@@ -105,29 +105,29 @@ describe('App switcher', () => {
     await user.click(
       await screen.findByRole('button', {
         name: /camunda apps/i,
-      })
+      }),
     );
 
     const withinAppPanel = within(
       screen.getByRole('navigation', {
         name: /app panel/i,
-      })
+      }),
     );
 
     expect(
-      withinAppPanel.queryByRole('link', {name: 'Console'})
+      withinAppPanel.queryByRole('link', {name: 'Console'}),
     ).not.toBeInTheDocument();
 
     expect(
-      withinAppPanel.queryByRole('link', {name: 'Modeler'})
+      withinAppPanel.queryByRole('link', {name: 'Modeler'}),
     ).not.toBeInTheDocument();
 
     expect(
-      withinAppPanel.queryByRole('link', {name: 'Tasklist'})
+      withinAppPanel.queryByRole('link', {name: 'Tasklist'}),
     ).not.toBeInTheDocument();
 
     expect(
-      withinAppPanel.queryByRole('link', {name: 'Optimize'})
+      withinAppPanel.queryByRole('link', {name: 'Optimize'}),
     ).not.toBeInTheDocument();
   });
 });

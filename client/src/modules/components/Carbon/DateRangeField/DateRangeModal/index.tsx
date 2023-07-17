@@ -152,7 +152,7 @@ const DateRangeModal: React.FC<Props> = ({
                       short
                       onOpen={() => {
                         setCalendarRef(
-                          document.querySelector('.flatpickr-calendar')
+                          document.querySelector('.flatpickr-calendar'),
                         );
                       }}
                       onClose={() => setCalendarRef(null)}
@@ -205,7 +205,7 @@ const DateRangeModal: React.FC<Props> = ({
                   </TimeInputStack>
                 </Stack>
               </Modal>,
-              document.body
+              document.body,
             )}
           </>
         </Layer>

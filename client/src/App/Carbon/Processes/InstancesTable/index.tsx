@@ -91,7 +91,7 @@ const InstancesTable: React.FC = observer(() => {
         }
         onSelect={(rowId) => {
           return processInstancesSelectionStore.selectProcessInstanceCarbon(
-            rowId
+            rowId,
           );
         }}
         checkIsAllSelected={() =>
@@ -121,7 +121,7 @@ const InstancesTable: React.FC = observer(() => {
           ) {
             scrollDown(
               processInstancesStore.state.latestFetch.processInstancesCount *
-                ROW_HEIGHT
+                ROW_HEIGHT,
             );
           }
         }}
@@ -191,7 +191,7 @@ const InstancesTable: React.FC = observer(() => {
                     {
                       ids: [instance.id],
                       operationType,
-                    }
+                    },
                   )
                 }
                 onError={({operationType, statusCode}) => {
@@ -199,7 +199,7 @@ const InstancesTable: React.FC = observer(() => {
                     {
                       instanceIds: [instance.id],
                       operationType,
-                    }
+                    },
                   );
                   notificationsStore.displayNotification({
                     kind: 'error',
@@ -219,7 +219,7 @@ const InstancesTable: React.FC = observer(() => {
                   });
                 }}
                 permissions={processesStore.getPermissions(
-                  instance.bpmnProcessId
+                  instance.bpmnProcessId,
                 )}
               />
             ) : undefined,

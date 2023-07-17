@@ -29,7 +29,7 @@ type Props = {
 const InputOutputMappings: React.FC<Props> = observer(({type}) => {
   const flowNodeId = flowNodeSelectionStore.state.selection?.flowNodeId;
   const [isInfoBannerVisible, setIsInfoBannerVisible] = useState(
-    !getStateLocally()?.[`hide${type}MappingsHelperBanner`]
+    !getStateLocally()?.[`hide${type}MappingsHelperBanner`],
   );
 
   if (flowNodeId === undefined) {

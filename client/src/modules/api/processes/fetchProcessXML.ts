@@ -8,7 +8,7 @@
 import {requestAndParse} from 'modules/request';
 
 const fetchProcessXML = async (
-  processId: ProcessInstanceEntity['processId']
+  processId: ProcessInstanceEntity['processId'],
 ) => {
   return requestAndParse<string>({url: `/api/processes/${processId}/xml`});
 };

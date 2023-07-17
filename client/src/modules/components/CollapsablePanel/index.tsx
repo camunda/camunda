@@ -52,7 +52,7 @@ const CollapsablePanel = forwardRef<HTMLDivElement, Props>(
       collapsablePanelRef,
       ...props
     },
-    ref
+    ref,
   ) => {
     const expandButtonRef = useRef<HTMLButtonElement>(null);
     const collapseButtonRef = useRef<HTMLButtonElement>(null);
@@ -63,12 +63,12 @@ const CollapsablePanel = forwardRef<HTMLDivElement, Props>(
         if (isCollapsed) {
           setTimeout(
             () => expandButtonRef.current?.focus(),
-            TRANSITION_TIMEOUT
+            TRANSITION_TIMEOUT,
           );
         } else {
           setTimeout(
             () => collapseButtonRef.current?.focus(),
-            TRANSITION_TIMEOUT
+            TRANSITION_TIMEOUT,
           );
         }
       }
@@ -122,7 +122,7 @@ const CollapsablePanel = forwardRef<HTMLDivElement, Props>(
         )}
       </Collapsable>
     );
-  }
+  },
 );
 
 export {CollapsablePanel};

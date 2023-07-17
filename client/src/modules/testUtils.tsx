@@ -39,7 +39,7 @@ const randomFlowNodeInstanceIdIterator = createRandomId('flowNodeInstance');
  * @param {*} customProps Obj with any type of custom property
  */
 export const createIncident = (
-  options: Partial<IncidentDto> = {}
+  options: Partial<IncidentDto> = {},
 ): IncidentDto => {
   return {
     errorMessage: 'Some Condition error has occurred',
@@ -64,7 +64,7 @@ export const createIncident = (
  * @param {*} customProps Obj with any type of custom property
  */
 export const createOperation = (
-  options: Partial<InstanceOperationEntity> = {}
+  options: Partial<InstanceOperationEntity> = {},
 ): InstanceOperationEntity => {
   return {
     id: randomIdIterator.next().value,
@@ -77,7 +77,7 @@ export const createOperation = (
 };
 
 const createBatchOperation = (
-  options: Partial<BatchOperationDto> = {}
+  options: Partial<BatchOperationDto> = {},
 ): BatchOperationDto => {
   return {
     id: randomIdIterator.next().value,
@@ -98,7 +98,7 @@ const createBatchOperation = (
  * @param {*} customProps Obj with any type of custom property
  */
 export const createInstance = (
-  options: Partial<ProcessInstanceEntity> = {}
+  options: Partial<ProcessInstanceEntity> = {},
 ): ProcessInstanceEntity => {
   return {
     id: randomIdIterator.next().value,
@@ -120,7 +120,7 @@ export const createInstance = (
 };
 
 const createVariable = (
-  options: Partial<VariableEntity> = {}
+  options: Partial<VariableEntity> = {},
 ): VariableEntity => {
   const name = options.name ?? 'testVariableName';
   return {
@@ -236,7 +236,7 @@ export const createProcess = (options = {}) => {
  * @param {*} customProps Obj with any type of custom property
  */
 export const createInstanceByProcess = (
-  options: Partial<ProcessInstanceByNameDto> = {}
+  options: Partial<ProcessInstanceByNameDto> = {},
 ): ProcessInstanceByNameDto => {
   return {
     bpmnProcessId: 'loanProcess',
@@ -260,7 +260,7 @@ export const createInstanceByProcess = (
  * @param {*} customProps Obj with any type of custom property
  */
 export const createIncidentByError = (
-  options: Partial<IncidentByErrorDto> = {}
+  options: Partial<IncidentByErrorDto> = {},
 ): IncidentByErrorDto => {
   return {
     errorMessage: "JSON path '$.paid' has no result.",
@@ -884,7 +884,7 @@ export const eventSubProcess = `<?xml version="1.0" encoding="UTF-8"?>
 `;
 
 export const createMultiInstanceFlowNodeInstances = (
-  processInstanceId: string
+  processInstanceId: string,
 ): {
   level1: FlowNodeInstances;
   level1Next: FlowNodeInstances;
@@ -1020,7 +1020,7 @@ export const createMultiInstanceFlowNodeInstances = (
 };
 
 export const createEventSubProcessFlowNodeInstances = (
-  processInstanceId: string
+  processInstanceId: string,
 ): {
   level1: FlowNodeInstances;
   level2: FlowNodeInstances;

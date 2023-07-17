@@ -15,18 +15,18 @@ describe('SortableTable', () => {
       <SortableTable {...mockProps} {...mockSelectableProps} state="content" />,
       {
         wrapper: Wrapper,
-      }
+      },
     );
 
     expect(
-      screen.getByRole('checkbox', {name: 'Select all instances'})
+      screen.getByRole('checkbox', {name: 'Select all instances'}),
     ).not.toBeChecked();
     await user.click(
-      screen.getByRole('checkbox', {name: 'Select all instances'})
+      screen.getByRole('checkbox', {name: 'Select all instances'}),
     );
 
     expect(
-      screen.getByRole('checkbox', {name: 'Select all instances'})
+      screen.getByRole('checkbox', {name: 'Select all instances'}),
     ).toBeChecked();
     expect(mockSelectableProps.onSelectAll).toHaveBeenCalledTimes(1);
   });
@@ -36,7 +36,7 @@ describe('SortableTable', () => {
       <SortableTable {...mockProps} {...mockSelectableProps} state="content" />,
       {
         wrapper: Wrapper,
-      }
+      },
     );
 
     const [firstRow, secondRow] = mockProps.rows;

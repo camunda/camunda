@@ -35,23 +35,23 @@ describe('IncidentsFilter', () => {
     });
 
     await user.click(
-      screen.getByRole('button', {name: /filter by incident type/i})
+      screen.getByRole('button', {name: /filter by incident type/i}),
     );
     expect(
-      screen.getByRole('option', {name: 'Condition error'})
+      screen.getByRole('option', {name: 'Condition error'}),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole('option', {name: 'Extract value error'})
+      screen.getByRole('option', {name: 'Extract value error'}),
     ).toBeInTheDocument();
 
     await user.click(
-      screen.getByRole('button', {name: /filter by flow node/i})
+      screen.getByRole('button', {name: /filter by flow node/i}),
     );
     expect(
-      screen.getByRole('option', {name: 'flowNodeId_exclusiveGateway'})
+      screen.getByRole('option', {name: 'flowNodeId_exclusiveGateway'}),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole('option', {name: 'flowNodeId_alwaysFailingTask'})
+      screen.getByRole('option', {name: 'flowNodeId_alwaysFailingTask'}),
     ).toBeInTheDocument();
   });
 
@@ -67,13 +67,13 @@ describe('IncidentsFilter', () => {
     expect(screen.getByRole('button', {name: 'Reset Filters'})).toBeDisabled();
 
     await user.click(
-      screen.getByRole('button', {name: /filter by incident type/i})
+      screen.getByRole('button', {name: /filter by incident type/i}),
     );
 
     await user.click(
       screen.getByRole('option', {
         name: 'Condition error',
-      })
+      }),
     );
     expect(screen.getByRole('button', {name: 'Reset Filters'})).toBeEnabled();
 
@@ -81,7 +81,7 @@ describe('IncidentsFilter', () => {
       screen.getByRole('option', {
         name: 'Condition error',
         selected: true,
-      })
+      }),
     ).toBeInTheDocument();
 
     await user.click(screen.getByRole('button', {name: 'Reset Filters'}));

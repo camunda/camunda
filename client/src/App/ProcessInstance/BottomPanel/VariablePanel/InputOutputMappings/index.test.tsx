@@ -27,7 +27,7 @@ const Wrapper = ({children}: {children?: React.ReactNode}) => {
 
 describe('Input Mappings', () => {
   beforeEach(() =>
-    mockFetchProcessXML().withSuccess(mockProcessWithInputOutputMappingsXML)
+    mockFetchProcessXML().withSuccess(mockProcessWithInputOutputMappingsXML),
   );
 
   it('should display empty message', async () => {
@@ -53,7 +53,7 @@ describe('Input Mappings', () => {
 
     render(<InputOutputMappings type="Input" />, {wrapper: Wrapper});
     await waitFor(() =>
-      expect(processInstanceDetailsDiagramStore.state.status).toBe('fetched')
+      expect(processInstanceDetailsDiagramStore.state.status).toBe('fetched'),
     );
 
     expect(screen.getByText(/local variable name/i)).toBeInTheDocument();
@@ -72,7 +72,7 @@ describe('Input Mappings', () => {
 
     render(<InputOutputMappings type="Output" />, {wrapper: Wrapper});
     await waitFor(() =>
-      expect(processInstanceDetailsDiagramStore.state.status).toBe('fetched')
+      expect(processInstanceDetailsDiagramStore.state.status).toBe('fetched'),
     );
 
     expect(screen.getByText(/process variable name/i)).toBeInTheDocument();
@@ -104,7 +104,7 @@ describe('Input Mappings', () => {
         <InputOutputMappings type={type as 'Input' | 'Output'} />,
         {
           wrapper: Wrapper,
-        }
+        },
       );
       expect(screen.getByText(message)).toBeInTheDocument();
 
@@ -114,6 +114,6 @@ describe('Input Mappings', () => {
 
       rerender(<InputOutputMappings type={type as 'Input' | 'Output'} />);
       expect(screen.queryByText(message)).not.toBeInTheDocument();
-    }
+    },
   );
 });

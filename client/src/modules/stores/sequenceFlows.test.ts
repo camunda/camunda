@@ -25,7 +25,7 @@ describe('stores/sequenceFlows', () => {
 
   it('should fetch sequence flows when current instance is available', async () => {
     processInstanceDetailsStore.setProcessInstance(
-      createInstance({id: '123', state: 'CANCELED'})
+      createInstance({id: '123', state: 'CANCELED'}),
     );
 
     sequenceFlowsStore.init();
@@ -36,13 +36,13 @@ describe('stores/sequenceFlows', () => {
         'SequenceFlow_0j6tsnn',
         'SequenceFlow_1dwqvrt',
         'SequenceFlow_1fgekwd',
-      ])
+      ]),
     );
   });
 
   it('should poll when current instance is running', async () => {
     processInstanceDetailsStore.setProcessInstance(
-      createInstance({id: '123', state: 'ACTIVE'})
+      createInstance({id: '123', state: 'ACTIVE'}),
     );
 
     jest.useFakeTimers();
@@ -54,7 +54,7 @@ describe('stores/sequenceFlows', () => {
         'SequenceFlow_0j6tsnn',
         'SequenceFlow_1dwqvrt',
         'SequenceFlow_1fgekwd',
-      ])
+      ]),
     );
 
     mockFetchSequenceFlows().withSuccess([
@@ -74,7 +74,7 @@ describe('stores/sequenceFlows', () => {
         'SequenceFlow_1dwqvrt',
         'SequenceFlow_1fgekwd',
         'SequenceFlow_1sz6737',
-      ])
+      ]),
     );
 
     mockFetchSequenceFlows().withSuccess([
@@ -94,12 +94,12 @@ describe('stores/sequenceFlows', () => {
         'SequenceFlow_1dwqvrt',
         'SequenceFlow_1fgekwd',
         'SequenceFlow_1sz6737',
-      ])
+      ]),
     );
 
     // stop polling when current instance is no longer running
     processInstanceDetailsStore.setProcessInstance(
-      createInstance({id: '123', state: 'CANCELED'})
+      createInstance({id: '123', state: 'CANCELED'}),
     );
 
     jest.runOnlyPendingTimers();
@@ -112,7 +112,7 @@ describe('stores/sequenceFlows', () => {
         'SequenceFlow_1dwqvrt',
         'SequenceFlow_1fgekwd',
         'SequenceFlow_1sz6737',
-      ])
+      ]),
     );
 
     jest.clearAllTimers();
@@ -128,7 +128,7 @@ describe('stores/sequenceFlows', () => {
         'SequenceFlow_0j6tsnn',
         'SequenceFlow_1dwqvrt',
         'SequenceFlow_1fgekwd',
-      ])
+      ]),
     );
 
     sequenceFlowsStore.reset();
@@ -148,7 +148,7 @@ describe('stores/sequenceFlows', () => {
         id: '123',
         state: 'ACTIVE',
         processId: '10',
-      })
+      }),
     );
     sequenceFlowsStore.init();
 
@@ -158,7 +158,7 @@ describe('stores/sequenceFlows', () => {
         'SequenceFlow_0j6tsnn',
         'SequenceFlow_1dwqvrt',
         'SequenceFlow_1fgekwd',
-      ])
+      ]),
     );
 
     mockFetchSequenceFlows().withSuccess([
@@ -178,7 +178,7 @@ describe('stores/sequenceFlows', () => {
         'SequenceFlow_1dwqvrt',
         'SequenceFlow_1fgekwd',
         'SequenceFlow_1sz6737',
-      ])
+      ]),
     );
 
     window.addEventListener = originalEventListener;

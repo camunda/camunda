@@ -42,7 +42,7 @@ const Name: React.FC<Props> = ({variableName, scopeId}) => {
         validate={mergeValidators(
           validateNameCharacters,
           validateModifiedNameComplete,
-          validateModifiedNameNotDuplicate
+          validateModifiedNameNotDuplicate,
         )}
         allowNull={false}
         parse={(value) => value}
@@ -60,7 +60,7 @@ const Name: React.FC<Props> = ({variableName, scopeId}) => {
             labelText=""
             onBlur={() => {
               form.mutators?.triggerValidation?.(
-                createNewVariableFieldName(variableName, 'name')
+                createNewVariableFieldName(variableName, 'name'),
               );
 
               input.onBlur();

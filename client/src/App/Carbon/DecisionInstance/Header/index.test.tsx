@@ -34,7 +34,7 @@ describe('<Header />', () => {
     mockFetchDecisionInstance().withSuccess(invoiceClassification);
 
     decisionInstanceDetailsStore.fetchDecisionInstance(
-      MOCK_DECISION_INSTANCE_ID
+      MOCK_DECISION_INSTANCE_ID,
     );
 
     render(<Header />, {wrapper: Wrapper});
@@ -42,7 +42,7 @@ describe('<Header />', () => {
     expect(screen.getByTestId('instance-header-skeleton')).toBeInTheDocument();
 
     await waitForElementToBeRemoved(() =>
-      screen.getByTestId('instance-header-skeleton')
+      screen.getByTestId('instance-header-skeleton'),
     );
   });
 
@@ -50,7 +50,7 @@ describe('<Header />', () => {
     mockFetchDecisionInstance().withSuccess(invoiceClassification);
 
     decisionInstanceDetailsStore.fetchDecisionInstance(
-      MOCK_DECISION_INSTANCE_ID
+      MOCK_DECISION_INSTANCE_ID,
     );
 
     render(<Header />, {wrapper: Wrapper});
@@ -58,42 +58,42 @@ describe('<Header />', () => {
     expect(screen.getByTestId('EVALUATED-icon')).toBeInTheDocument();
     expect(screen.getByRole('button', {name: /open drd/i})).toBeInTheDocument();
     expect(
-      screen.getByRole('columnheader', {name: /^decision name$/i})
+      screen.getByRole('columnheader', {name: /^decision name$/i}),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole('columnheader', {name: /decision instance key/i})
+      screen.getByRole('columnheader', {name: /decision instance key/i}),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole('columnheader', {name: /version/i})
+      screen.getByRole('columnheader', {name: /version/i}),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole('columnheader', {name: /evaluation date/i})
+      screen.getByRole('columnheader', {name: /evaluation date/i}),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole('columnheader', {name: /process instance key/i})
+      screen.getByRole('columnheader', {name: /process instance key/i}),
     ).toBeInTheDocument();
     expect(
       await screen.findByRole('cell', {
         name: invoiceClassification.decisionName,
-      })
+      }),
     ).toBeInTheDocument();
     expect(
-      await screen.findByRole('cell', {name: MOCK_DECISION_INSTANCE_ID})
+      await screen.findByRole('cell', {name: MOCK_DECISION_INSTANCE_ID}),
     ).toBeInTheDocument();
     expect(
       await screen.findByRole('link', {
         description: `View decision ${invoiceClassification.decisionName} version ${invoiceClassification.decisionVersion} instances`,
-      })
+      }),
     ).toHaveTextContent(invoiceClassification.decisionVersion.toString());
     expect(
       await screen.findByRole('cell', {
         name: '2018-12-12 00:00:00',
-      })
+      }),
     ).toBeInTheDocument();
     expect(
       await screen.findByRole('link', {
         description: `View process instance ${invoiceClassification.processInstanceId}`,
-      })
+      }),
     ).toBeInTheDocument();
   });
 });

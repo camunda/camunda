@@ -33,21 +33,21 @@ describe('should validate time range', () => {
 
   it('with one of the date/time fields undefined', () => {
     expect(
-      validateTimeRange('12:00:00', {fromTime: '12:00:00'}, FROM_TIME_META)
+      validateTimeRange('12:00:00', {fromTime: '12:00:00'}, FROM_TIME_META),
     ).toBe(undefined);
     expect(
       validateTimeRange(
         '12:00:00',
         {fromTime: '12:00:00', toTime: '10:00:00'},
-        FROM_TIME_META
-      )
+        FROM_TIME_META,
+      ),
     ).toBe(undefined);
     expect(
       validateTimeRange(
         '12:00:00',
         {fromTime: '12:00:00', toTime: '10:00:00', fromDate: '2023-03-29'},
-        FROM_TIME_META
-      )
+        FROM_TIME_META,
+      ),
     ).toBe(undefined);
   });
 
@@ -61,8 +61,8 @@ describe('should validate time range', () => {
           fromTime: '12:12:12',
           toTime: '11:11:11',
         },
-        FROM_TIME_META
-      )
+        FROM_TIME_META,
+      ),
     ).toBe(undefined);
     expect(
       validateTimeRange(
@@ -73,8 +73,8 @@ describe('should validate time range', () => {
           fromTime: '12:12:12',
           toTime: '11:11:11',
         },
-        TO_TIME_META
-      )
+        TO_TIME_META,
+      ),
     ).toBe(undefined);
   });
 
@@ -88,8 +88,8 @@ describe('should validate time range', () => {
           fromTime: '12:12:12',
           toTime: '11:11:11',
         },
-        FROM_TIME_META
-      )
+        FROM_TIME_META,
+      ),
     ).resolves.toBe(TIME_RANGE_ERROR);
 
     expect(
@@ -101,8 +101,8 @@ describe('should validate time range', () => {
           fromTime: '12:12:12',
           toTime: '11:11:11',
         },
-        TO_TIME_META
-      )
+        TO_TIME_META,
+      ),
     ).resolves.toBe(' ');
   });
   it('with same day and valid time range', () => {
@@ -115,8 +115,8 @@ describe('should validate time range', () => {
           fromTime: '11:11:11',
           toTime: '12:12:12',
         },
-        FROM_TIME_META
-      )
+        FROM_TIME_META,
+      ),
     ).toBe(undefined);
 
     expect(
@@ -128,8 +128,8 @@ describe('should validate time range', () => {
           fromTime: '11:11:11',
           toTime: '12:12:12',
         },
-        TO_TIME_META
-      )
+        TO_TIME_META,
+      ),
     ).toBe(undefined);
   });
 });

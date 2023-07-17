@@ -70,7 +70,7 @@ const JSONEditor: React.FC<Props> = observer(
         />
       </>
     );
-  }
+  },
 );
 
 export {JSONEditor, useMonaco};

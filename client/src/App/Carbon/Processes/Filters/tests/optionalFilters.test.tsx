@@ -44,19 +44,19 @@ describe('Optional Filters', () => {
       wrapper: getWrapper(),
     });
     expect(
-      screen.queryByTestId('optional-filter-variable-name')
+      screen.queryByTestId('optional-filter-variable-name'),
     ).not.toBeInTheDocument();
     expect(screen.queryByLabelText(/value/i)).not.toBeInTheDocument();
     expect(
-      screen.queryByLabelText(/process instance key\(s\)/i)
+      screen.queryByLabelText(/process instance key\(s\)/i),
     ).not.toBeInTheDocument();
     expect(screen.queryByLabelText(/operation id/i)).not.toBeInTheDocument();
     expect(
-      screen.queryByLabelText(/Parent Process Instance Key/i)
+      screen.queryByLabelText(/Parent Process Instance Key/i),
     ).not.toBeInTheDocument();
     expect(screen.queryByLabelText(/error message/i)).not.toBeInTheDocument();
     expect(
-      screen.queryByLabelText(/start date range/i)
+      screen.queryByLabelText(/start date range/i),
     ).not.toBeInTheDocument();
     expect(screen.queryByLabelText(/end date range/i)).not.toBeInTheDocument();
   });
@@ -70,12 +70,12 @@ describe('Optional Filters', () => {
 
     await user.click(screen.getByTestId('optional-filter-menuitem-variable'));
     expect(
-      screen.getByTestId('optional-filter-variable-name')
+      screen.getByTestId('optional-filter-variable-name'),
     ).toBeInTheDocument();
     expect(screen.getByLabelText(/value/i)).toBeInTheDocument();
     await user.click(screen.getByRole('button', {name: /^more filters$/i}));
     expect(
-      screen.queryByTestId('optional-filter-menuitem-variable')
+      screen.queryByTestId('optional-filter-menuitem-variable'),
     ).not.toBeInTheDocument();
   });
 
@@ -89,10 +89,10 @@ describe('Optional Filters', () => {
     await user.click(screen.getByRole('button', {name: /^more filters$/i}));
 
     expect(
-      screen.getByLabelText(/^process instance key\(s\)$/i)
+      screen.getByLabelText(/^process instance key\(s\)$/i),
     ).toBeInTheDocument();
     expect(
-      screen.queryByTestId('optional-filter-menuitem-ids')
+      screen.queryByTestId('optional-filter-menuitem-ids'),
     ).not.toBeInTheDocument();
   });
 
@@ -103,13 +103,13 @@ describe('Optional Filters', () => {
 
     await user.click(screen.getByRole('button', {name: /^more filters$/i}));
     await user.click(
-      screen.getByTestId('optional-filter-menuitem-operationId')
+      screen.getByTestId('optional-filter-menuitem-operationId'),
     );
     await user.click(screen.getByRole('button', {name: /^more filters$/i}));
 
     expect(screen.getByLabelText(/^operation id$/i)).toBeInTheDocument();
     expect(
-      screen.queryByTestId('optional-filter-menuitem-operationId')
+      screen.queryByTestId('optional-filter-menuitem-operationId'),
     ).not.toBeInTheDocument();
   });
 
@@ -120,15 +120,15 @@ describe('Optional Filters', () => {
 
     await user.click(screen.getByRole('button', {name: /^more filters$/i}));
     await user.click(
-      screen.getByTestId('optional-filter-menuitem-parentInstanceId')
+      screen.getByTestId('optional-filter-menuitem-parentInstanceId'),
     );
     await user.click(screen.getByRole('button', {name: /^more filters$/i}));
 
     expect(
-      screen.getByLabelText(/^Parent Process Instance Key$/i)
+      screen.getByLabelText(/^Parent Process Instance Key$/i),
     ).toBeInTheDocument();
     expect(
-      screen.queryByTestId('optional-filter-menuitem-parentInstanceId')
+      screen.queryByTestId('optional-filter-menuitem-parentInstanceId'),
     ).not.toBeInTheDocument();
   });
 
@@ -139,13 +139,13 @@ describe('Optional Filters', () => {
 
     await user.click(screen.getByRole('button', {name: /^more filters$/i}));
     await user.click(
-      screen.getByTestId('optional-filter-menuitem-errorMessage')
+      screen.getByTestId('optional-filter-menuitem-errorMessage'),
     );
     await user.click(screen.getByRole('button', {name: /^more filters$/i}));
 
     expect(screen.getByLabelText(/^error message$/i)).toBeInTheDocument();
     expect(
-      screen.queryByTestId('optional-filter-menuitem-errorMessage')
+      screen.queryByTestId('optional-filter-menuitem-errorMessage'),
     ).not.toBeInTheDocument();
   });
 
@@ -156,7 +156,7 @@ describe('Optional Filters', () => {
 
     await user.click(screen.getByRole('button', {name: /^more filters$/i}));
     await user.click(
-      screen.getByTestId('optional-filter-menuitem-startDateRange')
+      screen.getByTestId('optional-filter-menuitem-startDateRange'),
     );
 
     expect(screen.getByLabelText(/^start date range$/i)).toBeInTheDocument();
@@ -164,7 +164,7 @@ describe('Optional Filters', () => {
     await user.click(screen.getByRole('button', {name: /^more filters$/i}));
 
     expect(
-      screen.queryByTestId('optional-filter-menuitem-startDateRange')
+      screen.queryByTestId('optional-filter-menuitem-startDateRange'),
     ).not.toBeInTheDocument();
   });
 
@@ -175,13 +175,13 @@ describe('Optional Filters', () => {
 
     await user.click(screen.getByRole('button', {name: /^more filters$/i}));
     await user.click(
-      screen.getByTestId('optional-filter-menuitem-endDateRange')
+      screen.getByTestId('optional-filter-menuitem-endDateRange'),
     );
     await user.click(screen.getByRole('button', {name: /^more filters$/i}));
 
     expect(screen.getByLabelText(/^end date range$/i)).toBeInTheDocument();
     expect(
-      screen.queryByTestId('optional-filter-menuitem-endDateRange')
+      screen.queryByTestId('optional-filter-menuitem-endDateRange'),
     ).not.toBeInTheDocument();
   });
 
@@ -196,34 +196,34 @@ describe('Optional Filters', () => {
     await user.click(screen.getByTestId('optional-filter-menuitem-ids'));
     await user.click(screen.getByRole('button', {name: /^more filters$/i}));
     await user.click(
-      screen.getByTestId('optional-filter-menuitem-operationId')
+      screen.getByTestId('optional-filter-menuitem-operationId'),
     );
     await user.click(screen.getByRole('button', {name: /^more filters$/i}));
     await user.click(
-      screen.getByTestId('optional-filter-menuitem-parentInstanceId')
+      screen.getByTestId('optional-filter-menuitem-parentInstanceId'),
     );
     await user.click(screen.getByRole('button', {name: /^more filters$/i}));
     await user.click(
-      screen.getByTestId('optional-filter-menuitem-errorMessage')
+      screen.getByTestId('optional-filter-menuitem-errorMessage'),
     );
     await user.click(screen.getByRole('button', {name: /^more filters$/i}));
     await user.click(
-      screen.getByTestId('optional-filter-menuitem-startDateRange')
+      screen.getByTestId('optional-filter-menuitem-startDateRange'),
     );
     await user.click(screen.getByRole('button', {name: /^more filters$/i}));
     await user.click(
-      screen.getByTestId('optional-filter-menuitem-endDateRange')
+      screen.getByTestId('optional-filter-menuitem-endDateRange'),
     );
 
     expect(
-      screen.queryByTestId('more-filters-dropdown')
+      screen.queryByTestId('more-filters-dropdown'),
     ).not.toBeInTheDocument();
 
     await user.hover(screen.getByTestId('optional-filter-variable-name'));
     await user.click(screen.getByLabelText(`Remove Variable Filter`));
 
     expect(
-      screen.getByRole('button', {name: /^more filters$/i})
+      screen.getByRole('button', {name: /^more filters$/i}),
     ).toBeInTheDocument();
   });
 
@@ -250,19 +250,19 @@ describe('Optional Filters', () => {
 
     const {user} = render(<Filters />, {
       wrapper: getWrapper(
-        `/?${new URLSearchParams(Object.entries(MOCK_PARAMS)).toString()}`
+        `/?${new URLSearchParams(Object.entries(MOCK_PARAMS)).toString()}`,
       ),
     });
 
     expect(screen.getByTestId('search').textContent).toBe(
-      `?${new URLSearchParams(Object.entries(MOCK_PARAMS)).toString()}`
+      `?${new URLSearchParams(Object.entries(MOCK_PARAMS)).toString()}`,
     );
 
     expect(
-      screen.getByLabelText(/^process instance key\(s\)$/i)
+      screen.getByLabelText(/^process instance key\(s\)$/i),
     ).toBeInTheDocument();
     expect(
-      screen.getByLabelText(/^Parent Process Instance Key$/i)
+      screen.getByLabelText(/^Parent Process Instance Key$/i),
     ).toBeInTheDocument();
     expect(screen.getByLabelText(/^error message$/i)).toBeInTheDocument();
 
@@ -270,7 +270,7 @@ describe('Optional Filters', () => {
     expect(screen.getByLabelText(/^end date range$/i)).toBeInTheDocument();
 
     expect(
-      screen.getByTestId('optional-filter-variable-name')
+      screen.getByTestId('optional-filter-variable-name'),
     ).toBeInTheDocument();
     expect(screen.getByLabelText(/^value$/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/^operation id$/i)).toBeInTheDocument();
@@ -301,13 +301,13 @@ describe('Optional Filters', () => {
             incidents: 'true',
             completed: 'true',
             canceled: 'true',
-          })
-        ).toString()}`
-      )
+          }),
+        ).toString()}`,
+      ),
     );
 
     expect(
-      screen.queryByLabelText('Process Instance Key(s)')
+      screen.queryByLabelText('Process Instance Key(s)'),
     ).not.toBeInTheDocument();
 
     await removeOptionalFilter({
@@ -335,12 +335,12 @@ describe('Optional Filters', () => {
             incidents: 'true',
             completed: 'true',
             canceled: 'true',
-          })
-        ).toString()}`
-      )
+          }),
+        ).toString()}`,
+      ),
     );
     expect(
-      screen.queryByLabelText('Parent Process Instance Key')
+      screen.queryByLabelText('Parent Process Instance Key'),
     ).not.toBeInTheDocument();
 
     await removeOptionalFilter({user, screen, label: 'Error Message'});
@@ -363,9 +363,9 @@ describe('Optional Filters', () => {
             incidents: 'true',
             completed: 'true',
             canceled: 'true',
-          })
-        ).toString()}`
-      )
+          }),
+        ).toString()}`,
+      ),
     );
     expect(screen.queryByLabelText('Error Message')).not.toBeInTheDocument();
 
@@ -387,9 +387,9 @@ describe('Optional Filters', () => {
             incidents: 'true',
             completed: 'true',
             canceled: 'true',
-          })
-        ).toString()}`
-      )
+          }),
+        ).toString()}`,
+      ),
     );
     expect(screen.queryByLabelText('Start Date Range')).not.toBeInTheDocument();
 
@@ -409,9 +409,9 @@ describe('Optional Filters', () => {
             incidents: 'true',
             completed: 'true',
             canceled: 'true',
-          })
-        ).toString()}`
-      )
+          }),
+        ).toString()}`,
+      ),
     );
     expect(screen.queryByLabelText('End Date Range')).not.toBeInTheDocument();
 
@@ -430,12 +430,12 @@ describe('Optional Filters', () => {
             incidents: 'true',
             completed: 'true',
             canceled: 'true',
-          })
-        ).toString()}`
-      )
+          }),
+        ).toString()}`,
+      ),
     );
     expect(
-      screen.queryByTestId('optional-filter-variable-name')
+      screen.queryByTestId('optional-filter-variable-name'),
     ).not.toBeInTheDocument();
     expect(screen.queryByLabelText(/value/i)).not.toBeInTheDocument();
 
@@ -452,9 +452,9 @@ describe('Optional Filters', () => {
             incidents: 'true',
             completed: 'true',
             canceled: 'true',
-          })
-        ).toString()}`
-      )
+          }),
+        ).toString()}`,
+      ),
     );
     expect(screen.queryByLabelText('Operation Id')).not.toBeInTheDocument();
   });
@@ -482,25 +482,25 @@ describe('Optional Filters', () => {
 
     const {user} = render(<Filters />, {
       wrapper: getWrapper(
-        `/?${new URLSearchParams(Object.entries(MOCK_PARAMS)).toString()}`
+        `/?${new URLSearchParams(Object.entries(MOCK_PARAMS)).toString()}`,
       ),
     });
 
     expect(screen.getByTestId('search').textContent).toBe(
-      `?${new URLSearchParams(Object.entries(MOCK_PARAMS)).toString()}`
+      `?${new URLSearchParams(Object.entries(MOCK_PARAMS)).toString()}`,
     );
 
     expect(
-      screen.getByLabelText(/^process instance key\(s\)$/i)
+      screen.getByLabelText(/^process instance key\(s\)$/i),
     ).toBeInTheDocument();
     expect(
-      screen.getByLabelText(/^Parent Process Instance Key$/i)
+      screen.getByLabelText(/^Parent Process Instance Key$/i),
     ).toBeInTheDocument();
     expect(screen.getByLabelText(/^error message$/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/^start date range$/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/^end date range$/i)).toBeInTheDocument();
     expect(
-      screen.getByTestId('optional-filter-variable-name')
+      screen.getByTestId('optional-filter-variable-name'),
     ).toBeInTheDocument();
     expect(screen.getByLabelText(/^value$/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/^operation id$/i)).toBeInTheDocument();
@@ -509,25 +509,25 @@ describe('Optional Filters', () => {
 
     await waitFor(() =>
       expect(screen.getByTestId('search')).toHaveTextContent(
-        /\?active=true&incidents=true$/
-      )
+        /\?active=true&incidents=true$/,
+      ),
     );
 
     expect(
-      screen.queryByLabelText(/^process instance key\(s\)$/i)
+      screen.queryByLabelText(/^process instance key\(s\)$/i),
     ).not.toBeInTheDocument();
     expect(
-      screen.queryByLabelText(/^Parent Process Instance Key$/i)
+      screen.queryByLabelText(/^Parent Process Instance Key$/i),
     ).not.toBeInTheDocument();
     expect(screen.queryByLabelText(/^error message$/i)).not.toBeInTheDocument();
     expect(
-      screen.queryByLabelText(/^start date range$/i)
+      screen.queryByLabelText(/^start date range$/i),
     ).not.toBeInTheDocument();
     expect(
-      screen.queryByLabelText(/^end date range$/i)
+      screen.queryByLabelText(/^end date range$/i),
     ).not.toBeInTheDocument();
     expect(
-      screen.queryByTestId('optional-filter-variable-name')
+      screen.queryByTestId('optional-filter-variable-name'),
     ).not.toBeInTheDocument();
     expect(screen.queryByLabelText(/^value$/i)).not.toBeInTheDocument();
     expect(screen.queryByLabelText(/^operation id$/i)).not.toBeInTheDocument();

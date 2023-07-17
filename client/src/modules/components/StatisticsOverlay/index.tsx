@@ -34,7 +34,7 @@ const StatisticsOverlay: React.FC<Props> = ({
       {flowNodeState === 'canceled' && <CanceledIcon />}
       <StatisticSpan>{count}</StatisticSpan>
     </Statistic>,
-    container
+    container,
   );
 };
 

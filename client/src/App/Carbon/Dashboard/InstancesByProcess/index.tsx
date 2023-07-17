@@ -48,7 +48,7 @@ const InstancesByProcess: React.FC = observer(() => {
             [bpmnProcessId]: <div>{processName || bpmnProcessId}</div>,
           };
         },
-        {}
+        {},
       )}
     />
   );

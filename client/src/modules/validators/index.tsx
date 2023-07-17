@@ -59,7 +59,7 @@ const areDecisionIdsComplete = (value: string) => {
 };
 
 const validateIdsCharacters: FieldValidator<ProcessInstanceFilters['ids']> = (
-  value = ''
+  value = '',
 ) => {
   if (
     value !== '' &&
@@ -81,7 +81,7 @@ const validateDecisionIdsCharacters: FieldValidator<
 };
 
 const validateIdsLength: FieldValidator<ProcessInstanceFilters['ids']> = (
-  value = ''
+  value = '',
 ) => {
   if (areIdsTooLong(value)) {
     return ERRORS.ids;
@@ -150,7 +150,7 @@ const validateTimeRange = promisifyValidator(
       fromTime?: string;
       toTime?: string;
     },
-    meta
+    meta,
   ) => {
     const {fromDate, toDate, fromTime, toTime} = allValues;
 
@@ -173,7 +173,7 @@ const validateTimeRange = promisifyValidator(
       return meta?.name === 'fromTime' ? ERRORS.timeRange : ' ';
     }
   },
-  VALIDATION_TIMEOUT
+  VALIDATION_TIMEOUT,
 );
 
 const validateTimeCharacters = (value = '') => {
@@ -183,7 +183,7 @@ const validateTimeCharacters = (value = '') => {
 };
 
 const validateVariableNameCharacters: FieldValidator<string | undefined> = (
-  variableName = ''
+  variableName = '',
 ) => {
   if (variableName.includes('"') || variableName.match(new RegExp('[\\s]+'))) {
     return 'Name is invalid';
@@ -204,7 +204,7 @@ const validateVariableNameComplete: FieldValidator<
 
     return ERRORS.variables.nameUnfilled;
   },
-  VALIDATION_TIMEOUT
+  VALIDATION_TIMEOUT,
 );
 
 const validateVariableValueComplete: FieldValidator<
@@ -219,7 +219,7 @@ const validateVariableValueComplete: FieldValidator<
 
     return ERRORS.variables.valueUnfilled;
   },
-  VALIDATION_TIMEOUT
+  VALIDATION_TIMEOUT,
 );
 
 const validateVariableValueValid: FieldValidator<
@@ -246,7 +246,7 @@ const validateOperationIdComplete: FieldValidator<
   if (
     value !== '' &&
     !/^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89aAbB][a-f0-9]{3}-[a-f0-9]{12}$/.test(
-      value
+      value,
     )
   ) {
     return ERRORS.operationId;

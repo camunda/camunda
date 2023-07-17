@@ -64,7 +64,7 @@ const DataTable = React.forwardRef<HTMLDivElement, Props>(
         </Table>
       </Container>
     );
-  }
+  },
 );
 
 export {DataTable};

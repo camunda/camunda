@@ -42,8 +42,8 @@ test('Scrolling behavior - root level', async (t) => {
     .ok()
     .expect(
       within(
-        screen.queryByTestId(`node-details-${processInstanceKey}`)
-      ).queryByTestId('COMPLETED-icon').exists
+        screen.queryByTestId(`node-details-${processInstanceKey}`),
+      ).queryByTestId('COMPLETED-icon').exists,
     )
     .ok();
 
@@ -59,7 +59,7 @@ test('Scrolling behavior - root level', async (t) => {
 
   await t
     .scrollIntoView(
-      screen.queryByTestId(`tree-node-${flowNodeInstanceIds[49]}`)
+      screen.queryByTestId(`tree-node-${flowNodeInstanceIds[49]}`),
     )
     .expect(getNthTreeNodeTestId(1))
     .eql(`tree-node-${flowNodeInstanceIds[0]}`)
@@ -68,7 +68,7 @@ test('Scrolling behavior - root level', async (t) => {
 
   await t
     .scrollIntoView(
-      screen.queryByTestId(`tree-node-${flowNodeInstanceIds[99]}`)
+      screen.queryByTestId(`tree-node-${flowNodeInstanceIds[99]}`),
     )
     .expect(getNthTreeNodeTestId(1))
     .eql(`tree-node-${flowNodeInstanceIds[0]}`)
@@ -77,7 +77,7 @@ test('Scrolling behavior - root level', async (t) => {
 
   await t
     .scrollIntoView(
-      screen.queryByTestId(`tree-node-${flowNodeInstanceIds[149]}`)
+      screen.queryByTestId(`tree-node-${flowNodeInstanceIds[149]}`),
     )
     .expect(getNthTreeNodeTestId(1))
     .eql(`tree-node-${flowNodeInstanceIds[0]}`)
@@ -86,7 +86,7 @@ test('Scrolling behavior - root level', async (t) => {
 
   await t
     .scrollIntoView(
-      screen.queryByTestId(`tree-node-${flowNodeInstanceIds[199]}`)
+      screen.queryByTestId(`tree-node-${flowNodeInstanceIds[199]}`),
     )
     .expect(getNthTreeNodeTestId(1))
     .eql(`tree-node-${flowNodeInstanceIds[50]}`)
@@ -111,13 +111,13 @@ test('Scrolling behaviour - tree level', async (t) => {
   await t.navigateTo(`/processes/${processInstanceKey}`);
 
   const withinFirstSubtree = within(
-    screen.queryAllByTestId(/^tree-node-/).nth(4)
+    screen.queryAllByTestId(/^tree-node-/).nth(4),
   );
 
   await t.click(
     withinFirstSubtree.queryByRole('button', {
       name: 'Unfold Task B (Multi Instance)',
-    })
+    }),
   );
 
   /**
@@ -159,7 +159,7 @@ test('Scrolling behaviour - tree level', async (t) => {
       withinFirstSubtree
         .queryAllByTestId(/^tree-node-/)
         .nth(149)
-        .getAttribute('data-testid')
+        .getAttribute('data-testid'),
     )
     .eql(lastItemId)
     .expect(withinFirstSubtree.queryAllByTestId(/^tree-node-/).count)
@@ -189,7 +189,7 @@ test('Scrolling behaviour - tree level', async (t) => {
       withinFirstSubtree
         .queryAllByTestId(/^tree-node-/)
         .nth(50)
-        .getAttribute('data-testid')
+        .getAttribute('data-testid'),
     )
     .eql(firstItemId)
     .expect(withinFirstSubtree.queryAllByTestId(/^tree-node-/).count)

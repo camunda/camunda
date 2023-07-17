@@ -40,7 +40,7 @@ class ModificationRules {
     }
 
     return !processInstanceDetailsDiagramStore.nonModifiableFlowNodes.includes(
-      this.selectedFlowNodeId
+      this.selectedFlowNodeId,
     );
   }
 
@@ -54,7 +54,7 @@ class ModificationRules {
 
     return (
       processInstanceDetailsDiagramStore.cancellableFlowNodes.includes(
-        this.selectedFlowNodeId
+        this.selectedFlowNodeId,
       ) &&
       !hasPendingCancelOrMoveModification &&
       selectedRunningInstanceCount > 0
@@ -74,11 +74,11 @@ class ModificationRules {
 
     if (
       processInstanceDetailsDiagramStore.appendableFlowNodes.includes(
-        this.selectedFlowNodeId
+        this.selectedFlowNodeId,
       ) &&
       !(
         processInstanceDetailsDiagramStore.isMultiInstance(
-          this.selectedFlowNodeId
+          this.selectedFlowNodeId,
         ) && !selection?.isMultiInstance
       ) &&
       selection?.flowNodeInstanceId === undefined

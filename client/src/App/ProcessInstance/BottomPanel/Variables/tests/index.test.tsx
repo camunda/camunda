@@ -76,25 +76,25 @@ describe('Variables', () => {
       await waitForElementToBeRemoved(screen.getByTestId('skeleton-rows'));
       const {items} = variablesStore.state;
       const [activeOperationVariable] = items.filter(
-        ({hasActiveOperation}) => hasActiveOperation
+        ({hasActiveOperation}) => hasActiveOperation,
       );
 
       expect(activeOperationVariable).toBeDefined();
       expect(
         within(screen.getByTestId(activeOperationVariable!.name)).getByTestId(
-          'edit-variable-spinner'
-        )
+          'edit-variable-spinner',
+        ),
       ).toBeInTheDocument();
 
       const [inactiveOperationVariable] = items.filter(
-        ({hasActiveOperation}) => !hasActiveOperation
+        ({hasActiveOperation}) => !hasActiveOperation,
       );
 
       expect(
         within(
           // eslint-disable-next-line testing-library/prefer-presence-queries
-          screen.getByTestId(inactiveOperationVariable!.name!)
-        ).queryByTestId('edit-variable-spinner')
+          screen.getByTestId(inactiveOperationVariable!.name!),
+        ).queryByTestId('edit-variable-spinner'),
       ).not.toBeInTheDocument();
     });
 
@@ -115,11 +115,11 @@ describe('Variables', () => {
       render(<Variables />, {wrapper: Wrapper});
 
       await waitForElementToBeRemoved(() =>
-        screen.getByTestId('skeleton-rows')
+        screen.getByTestId('skeleton-rows'),
       );
 
       expect(
-        screen.getByTitle('View full value of testVariableName')
+        screen.getByTitle('View full value of testVariableName'),
       ).toBeInTheDocument();
     });
   });

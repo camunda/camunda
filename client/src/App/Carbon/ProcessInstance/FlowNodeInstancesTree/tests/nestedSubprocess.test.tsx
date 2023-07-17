@@ -31,7 +31,7 @@ describe('FlowNodeInstancesTree - Nested Subprocesses', () => {
     mockFetchProcessXML().withSuccess(open('NestedSubProcesses.bpmn'));
 
     await processInstanceDetailsDiagramStore.fetchProcessXml(
-      nestedSubProcessesInstance.bpmnProcessId
+      nestedSubProcessesInstance.bpmnProcessId,
     );
 
     processInstanceDetailsStore.init({id: nestedSubProcessesInstance.id});
@@ -53,7 +53,7 @@ describe('FlowNodeInstancesTree - Nested Subprocesses', () => {
       />,
       {
         wrapper: Wrapper,
-      }
+      },
     );
 
     expect(screen.getByText('Nested Sub Processes')).toBeInTheDocument();
@@ -86,7 +86,7 @@ describe('FlowNodeInstancesTree - Nested Subprocesses', () => {
       screen.getByLabelText('Sub Process 1', {
         selector: "[aria-expanded='false']",
       }),
-      '{arrowright}'
+      '{arrowright}',
     );
     expect(await screen.findByText('Sub Process 2')).toBeInTheDocument();
 
@@ -94,7 +94,7 @@ describe('FlowNodeInstancesTree - Nested Subprocesses', () => {
       screen.getByLabelText('Sub Process 2', {
         selector: "[aria-expanded='false']",
       }),
-      '{arrowright}'
+      '{arrowright}',
     );
     expect(screen.getByText('User Task')).toBeInTheDocument();
 
@@ -116,7 +116,7 @@ describe('FlowNodeInstancesTree - Nested Subprocesses', () => {
       />,
       {
         wrapper: Wrapper,
-      }
+      },
     );
 
     expect(screen.getByText('Nested Sub Processes')).toBeInTheDocument();
@@ -150,7 +150,7 @@ describe('FlowNodeInstancesTree - Nested Subprocesses', () => {
       screen.getByLabelText('Sub Process 1', {
         selector: "[aria-expanded='false']",
       }),
-      '{arrowright}'
+      '{arrowright}',
     );
     expect(await screen.findByText('Sub Process 2')).toBeInTheDocument();
 
@@ -158,7 +158,7 @@ describe('FlowNodeInstancesTree - Nested Subprocesses', () => {
       screen.getByLabelText('Sub Process 2', {
         selector: "[aria-expanded='false']",
       }),
-      '{arrowright}'
+      '{arrowright}',
     );
     expect(screen.getAllByText('User Task')).toHaveLength(2);
 

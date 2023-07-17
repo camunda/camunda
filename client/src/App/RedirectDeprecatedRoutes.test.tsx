@@ -16,7 +16,7 @@ describe('<RedirectDeprecatedRoutes />', () => {
       <MemoryRouter initialEntries={['/instances?foo=bar']}>
         <RedirectDeprecatedRoutes />
         <LocationLog />
-      </MemoryRouter>
+      </MemoryRouter>,
     );
 
     expect(screen.getByTestId('pathname')).toHaveTextContent(/^\/processes$/);
@@ -28,11 +28,11 @@ describe('<RedirectDeprecatedRoutes />', () => {
       <MemoryRouter initialEntries={['/instances/1?foo=bar']}>
         <RedirectDeprecatedRoutes />
         <LocationLog />
-      </MemoryRouter>
+      </MemoryRouter>,
     );
 
     expect(screen.getByTestId('pathname')).toHaveTextContent(
-      /^\/processes\/1$/
+      /^\/processes\/1$/,
     );
     expect(screen.getByTestId('search')).toHaveTextContent(/^\?foo=bar$/);
   });

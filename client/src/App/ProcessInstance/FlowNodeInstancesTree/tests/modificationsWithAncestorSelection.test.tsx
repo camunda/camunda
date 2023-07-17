@@ -62,13 +62,13 @@ describe('FlowNodeInstancesTree - modifications with ancestor selection', () => 
     ]);
 
     mockFetchFlowNodeInstances().withSuccess(
-      multipleSubprocessesWithTwoRunningScopesMock.firstLevel
+      multipleSubprocessesWithTwoRunningScopesMock.firstLevel,
     );
 
     mockFetchProcessXML().withSuccess(mockNestedSubprocess);
 
     await processInstanceDetailsDiagramStore.fetchProcessXml(
-      'nested_sub_process'
+      'nested_sub_process',
     );
 
     processInstanceDetailsStore.init({id: processInstanceId});
@@ -80,7 +80,7 @@ describe('FlowNodeInstancesTree - modifications with ancestor selection', () => 
     });
 
     await processInstanceDetailsStatisticsStore.fetchFlowNodeStatistics(
-      processInstanceId
+      processInstanceId,
     );
 
     modificationsStore.enableModificationMode();
@@ -96,11 +96,11 @@ describe('FlowNodeInstancesTree - modifications with ancestor selection', () => 
       />,
       {
         wrapper: Wrapper,
-      }
+      },
     );
 
     expect(
-      screen.getAllByRole('button', {name: 'Unfold parent_sub_process'})
+      screen.getAllByRole('button', {name: 'Unfold parent_sub_process'}),
     ).toHaveLength(2);
 
     act(() => {
@@ -112,11 +112,11 @@ describe('FlowNodeInstancesTree - modifications with ancestor selection', () => 
     });
 
     mockFetchFlowNodeInstances().withSuccess(
-      multipleSubprocessesWithTwoRunningScopesMock.secondLevel1
+      multipleSubprocessesWithTwoRunningScopesMock.secondLevel1,
     );
 
     const [expandFirstScope] = screen.getAllByLabelText(
-      'Unfold parent_sub_process'
+      'Unfold parent_sub_process',
     );
 
     await user.click(expandFirstScope!);
@@ -124,7 +124,7 @@ describe('FlowNodeInstancesTree - modifications with ancestor selection', () => 
     expect(await screen.findByText('inner_sub_process')).toBeInTheDocument();
 
     mockFetchFlowNodeInstances().withSuccess(
-      multipleSubprocessesWithTwoRunningScopesMock.thirdLevel1
+      multipleSubprocessesWithTwoRunningScopesMock.thirdLevel1,
     );
 
     await user.click(screen.getByLabelText('Unfold inner_sub_process'));
@@ -133,15 +133,15 @@ describe('FlowNodeInstancesTree - modifications with ancestor selection', () => 
     await user.click(screen.getByLabelText('Fold parent_sub_process'));
 
     expect(
-      screen.getAllByRole('button', {name: 'Unfold parent_sub_process'})
+      screen.getAllByRole('button', {name: 'Unfold parent_sub_process'}),
     ).toHaveLength(2);
 
     mockFetchFlowNodeInstances().withSuccess(
-      multipleSubprocessesWithTwoRunningScopesMock.secondLevel2
+      multipleSubprocessesWithTwoRunningScopesMock.secondLevel2,
     );
 
     const [, expandSecondScope] = screen.getAllByLabelText(
-      'Unfold parent_sub_process'
+      'Unfold parent_sub_process',
     );
 
     await user.click(expandSecondScope!);
@@ -149,13 +149,13 @@ describe('FlowNodeInstancesTree - modifications with ancestor selection', () => 
     expect(await screen.findByText('inner_sub_process')).toBeInTheDocument();
 
     mockFetchFlowNodeInstances().withSuccess(
-      multipleSubprocessesWithTwoRunningScopesMock.thirdLevel2
+      multipleSubprocessesWithTwoRunningScopesMock.thirdLevel2,
     );
 
     await user.click(screen.getByLabelText('Unfold inner_sub_process'));
 
     await waitFor(() =>
-      expect(screen.getAllByText('user_task')).toHaveLength(3)
+      expect(screen.getAllByText('user_task')).toHaveLength(3),
     );
   });
 
@@ -169,11 +169,11 @@ describe('FlowNodeInstancesTree - modifications with ancestor selection', () => 
       />,
       {
         wrapper: Wrapper,
-      }
+      },
     );
 
     expect(
-      screen.getAllByRole('button', {name: 'Unfold parent_sub_process'})
+      screen.getAllByRole('button', {name: 'Unfold parent_sub_process'}),
     ).toHaveLength(2);
 
     act(() => {
@@ -185,11 +185,11 @@ describe('FlowNodeInstancesTree - modifications with ancestor selection', () => 
     });
 
     mockFetchFlowNodeInstances().withSuccess(
-      multipleSubprocessesWithTwoRunningScopesMock.secondLevel1
+      multipleSubprocessesWithTwoRunningScopesMock.secondLevel1,
     );
 
     const [expandFirstScope] = screen.getAllByLabelText(
-      'Unfold parent_sub_process'
+      'Unfold parent_sub_process',
     );
 
     await user.click(expandFirstScope!);
@@ -197,7 +197,7 @@ describe('FlowNodeInstancesTree - modifications with ancestor selection', () => 
     expect(await screen.findByText('inner_sub_process')).toBeInTheDocument();
 
     mockFetchFlowNodeInstances().withSuccess(
-      multipleSubprocessesWithTwoRunningScopesMock.thirdLevel1
+      multipleSubprocessesWithTwoRunningScopesMock.thirdLevel1,
     );
 
     await user.click(screen.getByLabelText('Unfold inner_sub_process'));
@@ -206,76 +206,76 @@ describe('FlowNodeInstancesTree - modifications with ancestor selection', () => 
     await user.click(screen.getByLabelText('Fold parent_sub_process'));
 
     expect(
-      screen.getAllByRole('button', {name: 'Unfold parent_sub_process'})
+      screen.getAllByRole('button', {name: 'Unfold parent_sub_process'}),
     ).toHaveLength(2);
 
     mockFetchFlowNodeInstances().withSuccess(
-      multipleSubprocessesWithTwoRunningScopesMock.secondLevel2
+      multipleSubprocessesWithTwoRunningScopesMock.secondLevel2,
     );
 
     const [, expandSecondScope] = screen.getAllByLabelText(
-      'Unfold parent_sub_process'
+      'Unfold parent_sub_process',
     );
 
     await user.click(expandSecondScope!);
 
     await waitFor(() =>
-      expect(screen.getAllByText('inner_sub_process')).toHaveLength(3)
+      expect(screen.getAllByText('inner_sub_process')).toHaveLength(3),
     );
 
     mockFetchFlowNodeInstances().withSuccess(
-      multipleSubprocessesWithTwoRunningScopesMock.thirdLevel2
+      multipleSubprocessesWithTwoRunningScopesMock.thirdLevel2,
     );
 
     const [expandFirstInnerSubprocess, ,] = screen.getAllByLabelText(
-      'Unfold inner_sub_process'
+      'Unfold inner_sub_process',
     );
 
     await user.click(expandFirstInnerSubprocess!);
     await waitFor(() =>
-      expect(screen.getAllByText('user_task')).toHaveLength(1)
+      expect(screen.getAllByText('user_task')).toHaveLength(1),
     );
 
     await user.click(screen.getByLabelText('Fold inner_sub_process'));
 
     await waitFor(() =>
       expect(
-        screen.getAllByRole('button', {name: 'Unfold inner_sub_process'})
-      ).toHaveLength(3)
+        screen.getAllByRole('button', {name: 'Unfold inner_sub_process'}),
+      ).toHaveLength(3),
     );
 
     const [, expandSecondInnerSubprocess] = screen.getAllByLabelText(
-      'Unfold inner_sub_process'
+      'Unfold inner_sub_process',
     );
 
     await user.click(expandSecondInnerSubprocess!);
     await waitFor(() =>
-      expect(screen.getAllByText('user_task')).toHaveLength(1)
+      expect(screen.getAllByText('user_task')).toHaveLength(1),
     );
 
     await user.click(screen.getByLabelText('Fold inner_sub_process'));
 
     await waitFor(() =>
       expect(
-        screen.getAllByRole('button', {name: 'Unfold inner_sub_process'})
-      ).toHaveLength(3)
+        screen.getAllByRole('button', {name: 'Unfold inner_sub_process'}),
+      ).toHaveLength(3),
     );
 
     const [, , expandThirdInnerSubprocess] = screen.getAllByLabelText(
-      'Unfold inner_sub_process'
+      'Unfold inner_sub_process',
     );
 
     await user.click(expandThirdInnerSubprocess!);
     await waitFor(() =>
-      expect(screen.getAllByText('user_task')).toHaveLength(1)
+      expect(screen.getAllByText('user_task')).toHaveLength(1),
     );
 
     await user.click(screen.getByLabelText('Fold inner_sub_process'));
 
     await waitFor(() =>
       expect(
-        screen.getAllByRole('button', {name: 'Unfold inner_sub_process'})
-      ).toHaveLength(3)
+        screen.getAllByRole('button', {name: 'Unfold inner_sub_process'}),
+      ).toHaveLength(3),
     );
   });
 
@@ -289,39 +289,39 @@ describe('FlowNodeInstancesTree - modifications with ancestor selection', () => 
       />,
       {
         wrapper: Wrapper,
-      }
+      },
     );
 
     expect(
-      screen.getAllByRole('button', {name: 'Unfold parent_sub_process'})
+      screen.getAllByRole('button', {name: 'Unfold parent_sub_process'}),
     ).toHaveLength(2);
 
     act(() => {
       modificationsStore.startAddingToken('user_task');
       modificationsStore.finishAddingToken(
         'nested_sub_process',
-        processInstanceId
+        processInstanceId,
       );
 
       modificationsStore.startAddingToken('user_task');
       modificationsStore.finishAddingToken(
         'nested_sub_process',
-        processInstanceId
+        processInstanceId,
       );
     });
 
     mockFetchFlowNodeInstances().withSuccess(
-      multipleSubprocessesWithTwoRunningScopesMock.secondLevel1
+      multipleSubprocessesWithTwoRunningScopesMock.secondLevel1,
     );
 
     await waitFor(() =>
       expect(
-        screen.getAllByRole('button', {name: 'Unfold parent_sub_process'})
-      ).toHaveLength(4)
+        screen.getAllByRole('button', {name: 'Unfold parent_sub_process'}),
+      ).toHaveLength(4),
     );
 
     const [expandFirstScope, ,] = screen.getAllByLabelText(
-      'Unfold parent_sub_process'
+      'Unfold parent_sub_process',
     );
 
     await user.click(expandFirstScope!);
@@ -329,7 +329,7 @@ describe('FlowNodeInstancesTree - modifications with ancestor selection', () => 
     expect(await screen.findByText('inner_sub_process')).toBeInTheDocument();
 
     mockFetchFlowNodeInstances().withSuccess(
-      multipleSubprocessesWithTwoRunningScopesMock.thirdLevel1
+      multipleSubprocessesWithTwoRunningScopesMock.thirdLevel1,
     );
 
     await user.click(screen.getByLabelText('Unfold inner_sub_process'));
@@ -338,15 +338,15 @@ describe('FlowNodeInstancesTree - modifications with ancestor selection', () => 
     await user.click(screen.getByLabelText('Fold parent_sub_process'));
 
     expect(
-      screen.getAllByRole('button', {name: 'Unfold parent_sub_process'})
+      screen.getAllByRole('button', {name: 'Unfold parent_sub_process'}),
     ).toHaveLength(4);
 
     mockFetchFlowNodeInstances().withSuccess(
-      multipleSubprocessesWithTwoRunningScopesMock.secondLevel2
+      multipleSubprocessesWithTwoRunningScopesMock.secondLevel2,
     );
 
     const [, expandSecondScope, ,] = screen.getAllByLabelText(
-      'Unfold parent_sub_process'
+      'Unfold parent_sub_process',
     );
 
     await user.click(expandSecondScope!);
@@ -354,7 +354,7 @@ describe('FlowNodeInstancesTree - modifications with ancestor selection', () => 
     expect(await screen.findByText('inner_sub_process')).toBeInTheDocument();
 
     mockFetchFlowNodeInstances().withSuccess(
-      multipleSubprocessesWithTwoRunningScopesMock.thirdLevel2
+      multipleSubprocessesWithTwoRunningScopesMock.thirdLevel2,
     );
 
     await user.click(screen.getByLabelText('Unfold inner_sub_process'));
@@ -363,11 +363,11 @@ describe('FlowNodeInstancesTree - modifications with ancestor selection', () => 
     await user.click(screen.getByLabelText('Fold parent_sub_process'));
 
     expect(
-      screen.getAllByRole('button', {name: 'Unfold parent_sub_process'})
+      screen.getAllByRole('button', {name: 'Unfold parent_sub_process'}),
     ).toHaveLength(4);
 
     const [, , expandThirdScope] = screen.getAllByLabelText(
-      'Unfold parent_sub_process'
+      'Unfold parent_sub_process',
     );
 
     await user.click(expandThirdScope!);
@@ -378,11 +378,11 @@ describe('FlowNodeInstancesTree - modifications with ancestor selection', () => 
     await user.click(screen.getByLabelText('Fold parent_sub_process'));
 
     expect(
-      screen.getAllByRole('button', {name: 'Unfold parent_sub_process'})
+      screen.getAllByRole('button', {name: 'Unfold parent_sub_process'}),
     ).toHaveLength(4);
 
     const [, , , expandFourthScope] = screen.getAllByLabelText(
-      'Unfold parent_sub_process'
+      'Unfold parent_sub_process',
     );
 
     await user.click(expandFourthScope!);
@@ -393,7 +393,7 @@ describe('FlowNodeInstancesTree - modifications with ancestor selection', () => 
     await user.click(screen.getByLabelText('Fold parent_sub_process'));
 
     expect(
-      screen.getAllByRole('button', {name: 'Unfold parent_sub_process'})
+      screen.getAllByRole('button', {name: 'Unfold parent_sub_process'}),
     ).toHaveLength(4);
   });
 
@@ -407,18 +407,18 @@ describe('FlowNodeInstancesTree - modifications with ancestor selection', () => 
       />,
       {
         wrapper: Wrapper,
-      }
+      },
     );
 
     expect(
-      screen.getAllByRole('button', {name: 'Unfold parent_sub_process'})
+      screen.getAllByRole('button', {name: 'Unfold parent_sub_process'}),
     ).toHaveLength(2);
 
     act(() => {
       modificationsStore.startAddingToken('user_task');
       modificationsStore.finishAddingToken(
         'nested_sub_process',
-        processInstanceId
+        processInstanceId,
       );
 
       modificationsStore.addModification({
@@ -435,11 +435,11 @@ describe('FlowNodeInstancesTree - modifications with ancestor selection', () => 
     });
 
     await waitFor(() =>
-      expect(screen.getAllByText('parent_sub_process')).toHaveLength(4)
+      expect(screen.getAllByText('parent_sub_process')).toHaveLength(4),
     );
 
     expect(
-      screen.getAllByRole('button', {name: 'Unfold parent_sub_process'})
+      screen.getAllByRole('button', {name: 'Unfold parent_sub_process'}),
     ).toHaveLength(3);
   });
 });

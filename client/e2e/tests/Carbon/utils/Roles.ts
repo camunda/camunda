@@ -17,7 +17,7 @@ const demoUser = Role(
       .typeText(screen.queryByLabelText('Password'), 'demo')
       .click(screen.queryByRole('button', {name: 'Log in'}));
   },
-  {preserveUrl: true}
+  {preserveUrl: true},
 );
 
 export {demoUser};

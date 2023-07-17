@@ -67,10 +67,10 @@ class Drd extends NetworkReconnectionHandler {
       (decisionDefinitionId) => {
         if (decisionDefinitionId !== undefined) {
           this.fetchDrdData(
-            decisionInstanceDetailsStore.state.decisionInstanceId
+            decisionInstanceDetailsStore.state.decisionInstanceId,
           );
         }
-      }
+      },
     );
   };
 
@@ -83,7 +83,7 @@ class Drd extends NetworkReconnectionHandler {
       } else {
         this.handleFetchFailure();
       }
-    }
+    },
   );
 
   handleFetchSuccess = (drdData: DrdDataDto) => {
@@ -111,13 +111,14 @@ class Drd extends NetworkReconnectionHandler {
     }
 
     return (
-      Object.keys(drdData).find((decisionId) =>
-        drdData[decisionId]?.some((drdData) => {
-          return (
-            drdData.decisionInstanceId ===
-            decisionInstanceDetailsStore.state.decisionInstanceId
-          );
-        })
+      Object.keys(drdData).find(
+        (decisionId) =>
+          drdData[decisionId]?.some((drdData) => {
+            return (
+              drdData.decisionInstanceId ===
+              decisionInstanceDetailsStore.state.decisionInstanceId
+            );
+          }),
       ) ?? null
     );
   }
@@ -141,7 +142,7 @@ class Drd extends NetworkReconnectionHandler {
           decisionId,
           state: decisionInstances[decisionInstances.length - 1]!.state,
         };
-      }
+      },
     );
   }
 

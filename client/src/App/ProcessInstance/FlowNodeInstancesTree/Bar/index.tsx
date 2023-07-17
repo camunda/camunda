@@ -55,7 +55,7 @@ const Bar: React.FC<Props> = observer(
         <ModificationIcons flowNodeInstance={flowNodeInstance} />
       </Container>
     );
-  }
+  },
 );
 
 export {Bar};

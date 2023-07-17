@@ -32,7 +32,7 @@ describe('<ComboBox />', () => {
         items={[]}
         value=""
         onChange={() => {}}
-      />
+      />,
     );
 
     expect(screen.getByLabelText('Name')).toBeDisabled();
@@ -46,7 +46,7 @@ describe('<ComboBox />', () => {
         items={items}
         value="process2"
         onChange={() => {}}
-      />
+      />,
     );
 
     expect(screen.getByLabelText('Name')).toHaveValue('Process Two');
@@ -60,13 +60,13 @@ describe('<ComboBox />', () => {
         items={items}
         value=""
         onChange={() => {}}
-      />
+      />,
     );
 
     await user.type(screen.getByLabelText('Name'), 'ONE');
     expect(screen.getAllByRole('option')).toHaveLength(1);
     expect(screen.getAllByRole('option')[0]?.textContent).toEqual(
-      'Process One'
+      'Process One',
     );
 
     await user.click(screen.getByRole('button', {name: 'Clear selected item'}));
@@ -74,10 +74,10 @@ describe('<ComboBox />', () => {
     await user.type(screen.getByLabelText('Name'), 'process t');
     expect(screen.getAllByRole('option')).toHaveLength(2);
     expect(screen.getAllByRole('option')[0]?.textContent).toEqual(
-      'Process Two'
+      'Process Two',
     );
     expect(screen.getAllByRole('option')[1]?.textContent).toEqual(
-      'Process Three'
+      'Process Three',
     );
 
     await user.click(screen.getByRole('button', {name: 'Clear selected item'}));

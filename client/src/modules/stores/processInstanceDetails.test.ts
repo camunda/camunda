@@ -26,8 +26,8 @@ describe('stores/currentInstance', () => {
     processInstanceDetailsStore.init({id: '1'});
     await waitFor(() =>
       expect(processInstanceDetailsStore.state.processInstance).toEqual(
-        currentInstanceMock
-      )
+        currentInstanceMock,
+      ),
     );
   });
 
@@ -36,8 +36,8 @@ describe('stores/currentInstance', () => {
     processInstanceDetailsStore.init({id: '1'});
     await waitFor(() =>
       expect(processInstanceDetailsStore.state.processInstance).toEqual(
-        currentInstanceMock
-      )
+        currentInstanceMock,
+      ),
     );
 
     const secondCurrentInstanceMock = createInstance();
@@ -48,8 +48,8 @@ describe('stores/currentInstance', () => {
 
     await waitFor(() =>
       expect(processInstanceDetailsStore.state.processInstance).toEqual(
-        secondCurrentInstanceMock
-      )
+        secondCurrentInstanceMock,
+      ),
     );
 
     const thirdCurrentInstanceMock = createInstance();
@@ -60,8 +60,8 @@ describe('stores/currentInstance', () => {
 
     await waitFor(() =>
       expect(processInstanceDetailsStore.state.processInstance).toEqual(
-        thirdCurrentInstanceMock
-      )
+        thirdCurrentInstanceMock,
+      ),
     );
 
     const finishedCurrentInstanceMock = createInstance({state: 'CANCELED'});
@@ -72,16 +72,16 @@ describe('stores/currentInstance', () => {
 
     await waitFor(() =>
       expect(processInstanceDetailsStore.state.processInstance).toEqual(
-        finishedCurrentInstanceMock
-      )
+        finishedCurrentInstanceMock,
+      ),
     );
 
     // do not poll since instance is not running anymore
     jest.runOnlyPendingTimers();
     await waitFor(() =>
       expect(processInstanceDetailsStore.state.processInstance).toEqual(
-        finishedCurrentInstanceMock
-      )
+        finishedCurrentInstanceMock,
+      ),
     );
 
     jest.clearAllTimers();
@@ -93,7 +93,7 @@ describe('stores/currentInstance', () => {
     expect(processInstanceDetailsStore.state.processInstance).toEqual(null);
     processInstanceDetailsStore.setProcessInstance(mockInstance);
     expect(processInstanceDetailsStore.state.processInstance).toEqual(
-      mockInstance
+      mockInstance,
     );
   });
 
@@ -104,10 +104,10 @@ describe('stores/currentInstance', () => {
         id: '123',
         state: 'ACTIVE',
         processName: 'processName',
-      })
+      }),
     );
     expect(processInstanceDetailsStore.processTitle).toBe(
-      'Operate: Process Instance 123 of processName'
+      'Operate: Process Instance 123 of processName',
     );
   });
 
@@ -121,7 +121,7 @@ describe('stores/currentInstance', () => {
     expect(processInstanceDetailsStore.processTitle).toBe(null);
     processInstanceDetailsStore.setProcessInstance(mockInstance);
     expect(processInstanceDetailsStore.state.processInstance).toEqual(
-      mockInstance
+      mockInstance,
     );
     processInstanceDetailsStore.reset();
     expect(processInstanceDetailsStore.processTitle).toBe(null);
@@ -133,28 +133,28 @@ describe('stores/currentInstance', () => {
         id: '123',
         hasActiveOperation: false,
         operations: [],
-      })
+      }),
     );
 
     expect(
-      processInstanceDetailsStore.state.processInstance?.hasActiveOperation
+      processInstanceDetailsStore.state.processInstance?.hasActiveOperation,
     ).toBe(false);
     processInstanceDetailsStore.activateOperation('CANCEL_PROCESS_INSTANCE');
 
     expect(
-      processInstanceDetailsStore.state.processInstance?.hasActiveOperation
+      processInstanceDetailsStore.state.processInstance?.hasActiveOperation,
     ).toBe(true);
     expect(
-      processInstanceDetailsStore.state.processInstance?.operations
+      processInstanceDetailsStore.state.processInstance?.operations,
     ).toEqual([createOperation('CANCEL_PROCESS_INSTANCE')]);
 
     processInstanceDetailsStore.deactivateOperation('CANCEL_PROCESS_INSTANCE');
 
     expect(
-      processInstanceDetailsStore.state.processInstance?.hasActiveOperation
+      processInstanceDetailsStore.state.processInstance?.hasActiveOperation,
     ).toBe(false);
     expect(
-      processInstanceDetailsStore.state.processInstance?.operations
+      processInstanceDetailsStore.state.processInstance?.operations,
     ).toEqual([]);
   });
 
@@ -163,19 +163,19 @@ describe('stores/currentInstance', () => {
       createInstance({
         id: '123',
         hasActiveOperation: false,
-      })
+      }),
     );
 
     expect(
-      processInstanceDetailsStore.state.processInstance?.hasActiveOperation
+      processInstanceDetailsStore.state.processInstance?.hasActiveOperation,
     ).toBe(false);
     processInstanceDetailsStore.activateOperation('CANCEL_PROCESS_INSTANCE');
 
     expect(
-      processInstanceDetailsStore.state.processInstance?.hasActiveOperation
+      processInstanceDetailsStore.state.processInstance?.hasActiveOperation,
     ).toBe(true);
     expect(
-      processInstanceDetailsStore.state.processInstance?.operations
+      processInstanceDetailsStore.state.processInstance?.operations,
     ).toEqual([
       {
         batchOperationId: 'fe19ed17-a213-4b8d-ad10-2fb6d2bd89e5',
@@ -190,10 +190,10 @@ describe('stores/currentInstance', () => {
     processInstanceDetailsStore.deactivateOperation('CANCEL_PROCESS_INSTANCE');
 
     expect(
-      processInstanceDetailsStore.state.processInstance?.hasActiveOperation
+      processInstanceDetailsStore.state.processInstance?.hasActiveOperation,
     ).toBe(true);
     expect(
-      processInstanceDetailsStore.state.processInstance?.operations
+      processInstanceDetailsStore.state.processInstance?.operations,
     ).toEqual([
       {
         batchOperationId: 'fe19ed17-a213-4b8d-ad10-2fb6d2bd89e5',
@@ -216,8 +216,8 @@ describe('stores/currentInstance', () => {
 
     await waitFor(() =>
       expect(processInstanceDetailsStore.state.processInstance).toEqual(
-        currentInstanceMock
-      )
+        currentInstanceMock,
+      ),
     );
 
     mockFetchProcessInstance().withSuccess({
@@ -231,7 +231,7 @@ describe('stores/currentInstance', () => {
       expect(processInstanceDetailsStore.state.processInstance).toEqual({
         ...currentInstanceMock,
         state: 'INCIDENT',
-      })
+      }),
     );
 
     window.addEventListener = originalEventListener;

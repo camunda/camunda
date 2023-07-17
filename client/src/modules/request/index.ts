@@ -30,7 +30,7 @@ async function request({url, method, body, headers, signal}: RequestParams) {
       },
       mode: 'cors',
       signal,
-    }
+    },
   );
 
   if (response.status === 401) {
@@ -46,7 +46,7 @@ async function request({url, method, body, headers, signal}: RequestParams) {
 
 async function requestAndParse<T>(
   params: RequestParams,
-  options?: {onFailure?: () => void; onException?: () => void}
+  options?: {onFailure?: () => void; onException?: () => void},
 ) {
   const {url} = params;
 

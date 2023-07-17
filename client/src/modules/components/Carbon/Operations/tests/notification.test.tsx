@@ -30,11 +30,11 @@ describe('Operations - Notification', () => {
       />,
       {
         wrapper: Wrapper,
-      }
+      },
     );
 
     expect(screen.getByTestId('pathname')).toHaveTextContent(
-      /^\/carbon\/processes$/
+      /^\/carbon\/processes$/,
     );
     await user.click(screen.getByRole('button', {name: /Delete Instance/}));
     expect(screen.getByText(/About to delete Instance/)).toBeInTheDocument();
@@ -46,16 +46,16 @@ describe('Operations - Notification', () => {
     const withinConfirmDeletionModal = within(confirmDeletionModal);
 
     await user.click(
-      withinConfirmDeletionModal.getByRole('button', {name: /delete/i})
+      withinConfirmDeletionModal.getByRole('button', {name: /delete/i}),
     );
 
     expect(
-      screen.queryByText(/About to delete Instance/)
+      screen.queryByText(/About to delete Instance/),
     ).not.toBeInTheDocument();
 
     expect(mockDisplayNotification).not.toHaveBeenCalled();
     expect(screen.getByTestId('pathname')).toHaveTextContent(
-      /^\/carbon\/processes$/
+      /^\/carbon\/processes$/,
     );
   });
 });

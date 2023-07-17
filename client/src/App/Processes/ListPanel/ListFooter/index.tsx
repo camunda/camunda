@@ -26,7 +26,7 @@ const ListFooter: React.FC = observer(() => {
             <CreateOperationDropdown
               label={`Apply Operation on ${pluralSuffix(
                 selectedCount,
-                'Instance'
+                'Instance',
               )}...`}
               selectedCount={selectedCount}
             />

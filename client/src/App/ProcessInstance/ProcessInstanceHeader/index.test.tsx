@@ -101,7 +101,7 @@ describe('InstanceHeader', () => {
     });
 
     await waitForElementToBeRemoved(
-      screen.getByTestId('instance-header-skeleton')
+      screen.getByTestId('instance-header-skeleton'),
     );
   });
 
@@ -116,28 +116,28 @@ describe('InstanceHeader', () => {
       id: mockInstanceWithActiveOperation.id,
     });
     await waitForElementToBeRemoved(
-      screen.getByTestId('instance-header-skeleton')
+      screen.getByTestId('instance-header-skeleton'),
     );
 
     const processName = getProcessName(mockInstanceWithActiveOperation);
 
     expect(screen.getByText(processName)).toBeInTheDocument();
     expect(
-      screen.getByText(mockInstanceWithActiveOperation.id)
+      screen.getByText(mockInstanceWithActiveOperation.id),
     ).toBeInTheDocument();
     expect(
       screen.getByRole('link', {
         description: `View process ${getProcessName(
-          mockInstanceWithActiveOperation
+          mockInstanceWithActiveOperation,
         )} version ${mockInstanceWithActiveOperation.processVersion} instances`,
-      })
+      }),
     ).toHaveTextContent(
-      mockInstanceWithActiveOperation.processVersion.toString()
+      mockInstanceWithActiveOperation.processVersion.toString(),
     );
     expect(screen.getByText(MOCK_TIMESTAMP)).toBeInTheDocument();
     expect(screen.getByText('--')).toBeInTheDocument();
     expect(
-      screen.getByTestId(`${mockInstanceWithActiveOperation.state}-icon`)
+      screen.getByTestId(`${mockInstanceWithActiveOperation.state}-icon`),
     ).toBeInTheDocument();
     expect(screen.getByText('Process Name')).toBeInTheDocument();
     expect(screen.getByText('Process Instance Key')).toBeInTheDocument();
@@ -148,7 +148,7 @@ describe('InstanceHeader', () => {
     expect(screen.getByText('Called Process Instances')).toBeInTheDocument();
     expect(screen.getAllByText('None').length).toBe(2);
     expect(
-      screen.queryByRole('link', {name: /view all/i})
+      screen.queryByRole('link', {name: /view all/i}),
     ).not.toBeInTheDocument();
   });
 
@@ -163,10 +163,10 @@ describe('InstanceHeader', () => {
       id: mockInstanceWithActiveOperation.id,
     });
     await waitForElementToBeRemoved(
-      screen.getByTestId('instance-header-skeleton')
+      screen.getByTestId('instance-header-skeleton'),
     );
     expect(
-      await screen.findByRole('link', {name: /view all/i})
+      await screen.findByRole('link', {name: /view all/i}),
     ).toBeInTheDocument();
   });
 
@@ -184,11 +184,11 @@ describe('InstanceHeader', () => {
       id: mockInstanceWithActiveOperation.id,
     });
     await waitForElementToBeRemoved(
-      screen.getByTestId('instance-header-skeleton')
+      screen.getByTestId('instance-header-skeleton'),
     );
 
     expect(screen.getByTestId('pathname')).toHaveTextContent(
-      /^\/processes\/1$/
+      /^\/processes\/1$/,
     );
     expect(panelStatesStore.state.isFiltersCollapsed).toBe(true);
 
@@ -210,13 +210,13 @@ describe('InstanceHeader', () => {
     processInstanceDetailsDiagramStore.init();
     processInstanceDetailsStore.init({id: mockInstanceWithParentInstance.id});
     await waitForElementToBeRemoved(
-      screen.getByTestId('instance-header-skeleton')
+      screen.getByTestId('instance-header-skeleton'),
     );
 
     expect(
       screen.getByRole('link', {
         description: `View parent instance ${mockInstanceWithParentInstance.parentInstanceId}`,
-      })
+      }),
     ).toBeInTheDocument();
   });
 
@@ -230,7 +230,7 @@ describe('InstanceHeader', () => {
     processInstanceDetailsDiagramStore.init();
     processInstanceDetailsStore.init({id: mockInstanceWithoutOperations.id});
     await waitForElementToBeRemoved(
-      screen.getByTestId('instance-header-skeleton')
+      screen.getByTestId('instance-header-skeleton'),
     );
 
     expect(screen.queryByTestId('operation-spinner')).not.toBeInTheDocument();
@@ -255,7 +255,7 @@ describe('InstanceHeader', () => {
     processInstanceDetailsDiagramStore.init();
     processInstanceDetailsStore.init({id: mockInstanceWithoutOperations.id});
     await waitForElementToBeRemoved(
-      screen.getByTestId('instance-header-skeleton')
+      screen.getByTestId('instance-header-skeleton'),
     );
 
     expect(screen.queryByTestId('operation-spinner')).not.toBeInTheDocument();
@@ -275,7 +275,7 @@ describe('InstanceHeader', () => {
     mockFetchProcessXML().withSuccess(mockProcessXML);
 
     mockApplyOperation().withSuccess(
-      createBatchOperation({id: 'batch-operation-id', type: 'ADD_VARIABLE'})
+      createBatchOperation({id: 'batch-operation-id', type: 'ADD_VARIABLE'}),
     );
 
     render(<ProcessInstanceHeader />, {wrapper: Wrapper});
@@ -284,7 +284,7 @@ describe('InstanceHeader', () => {
       id: mockInstanceWithActiveOperation.id,
     });
     await waitForElementToBeRemoved(
-      screen.getByTestId('instance-header-skeleton')
+      screen.getByTestId('instance-header-skeleton'),
     );
 
     expect(screen.queryByTestId('operation-spinner')).not.toBeInTheDocument();
@@ -310,7 +310,7 @@ describe('InstanceHeader', () => {
     mockFetchProcessInstance().withSuccess(mockInstanceWithoutOperations);
 
     await waitForElementToBeRemoved(() =>
-      screen.queryByTestId('operation-spinner')
+      screen.queryByTestId('operation-spinner'),
     );
 
     expect(getOperationSpy).toHaveBeenCalledWith('batch-operation-id');
@@ -328,7 +328,7 @@ describe('InstanceHeader', () => {
     processInstanceDetailsDiagramStore.init();
     processInstanceDetailsStore.init({id: mockInstanceWithoutOperations.id});
     await waitForElementToBeRemoved(
-      screen.getByTestId('instance-header-skeleton')
+      screen.getByTestId('instance-header-skeleton'),
     );
 
     expect(screen.queryByTestId('operation-spinner')).not.toBeInTheDocument();
@@ -349,7 +349,7 @@ describe('InstanceHeader', () => {
     processInstanceDetailsDiagramStore.init();
     processInstanceDetailsStore.init({id: mockInstanceWithoutOperations.id});
     await waitForElementToBeRemoved(
-      screen.getByTestId('instance-header-skeleton')
+      screen.getByTestId('instance-header-skeleton'),
     );
 
     await user.click(screen.getByRole('button', {name: /Cancel Instance/}));
@@ -358,7 +358,7 @@ describe('InstanceHeader', () => {
     await waitFor(() =>
       expect(mockDisplayNotification).toHaveBeenCalledWith('error', {
         headline: 'Operation could not be created',
-      })
+      }),
     );
   });
 
@@ -371,7 +371,7 @@ describe('InstanceHeader', () => {
     processInstanceDetailsDiagramStore.init();
     processInstanceDetailsStore.init({id: mockInstanceWithoutOperations.id});
     await waitForElementToBeRemoved(
-      screen.getByTestId('instance-header-skeleton')
+      screen.getByTestId('instance-header-skeleton'),
     );
 
     await user.click(screen.getByRole('button', {name: /Cancel Instance/}));
@@ -381,7 +381,7 @@ describe('InstanceHeader', () => {
       expect(mockDisplayNotification).toHaveBeenCalledWith('error', {
         headline: 'Operation could not be created',
         description: 'You do not have permission',
-      })
+      }),
     );
   });
 
@@ -409,15 +409,15 @@ describe('InstanceHeader', () => {
     });
 
     await waitForElementToBeRemoved(
-      screen.getByTestId('instance-header-skeleton')
+      screen.getByTestId('instance-header-skeleton'),
     );
 
     expect(
-      screen.getByRole('button', {name: /Cancel Instance/})
+      screen.getByRole('button', {name: /Cancel Instance/}),
     ).toBeInTheDocument();
 
     expect(
-      screen.getByRole('button', {name: /Modify Instance/})
+      screen.getByRole('button', {name: /Modify Instance/}),
     ).toBeInTheDocument();
   });
 
@@ -445,11 +445,11 @@ describe('InstanceHeader', () => {
     });
 
     await waitForElementToBeRemoved(
-      screen.getByTestId('instance-header-skeleton')
+      screen.getByTestId('instance-header-skeleton'),
     );
 
     expect(
-      screen.getByRole('button', {name: /Delete Instance/})
+      screen.getByRole('button', {name: /Delete Instance/}),
     ).toBeInTheDocument();
   });
 
@@ -481,11 +481,11 @@ describe('InstanceHeader', () => {
     });
 
     await waitForElementToBeRemoved(
-      screen.getByTestId('instance-header-skeleton')
+      screen.getByTestId('instance-header-skeleton'),
     );
 
     expect(
-      screen.queryByRole('button', {name: /Delete Instance/})
+      screen.queryByRole('button', {name: /Delete Instance/}),
     ).not.toBeInTheDocument();
   });
 
@@ -517,15 +517,15 @@ describe('InstanceHeader', () => {
     });
 
     await waitForElementToBeRemoved(
-      screen.getByTestId('instance-header-skeleton')
+      screen.getByTestId('instance-header-skeleton'),
     );
 
     expect(
-      screen.queryByRole('button', {name: /Cancel Instance/})
+      screen.queryByRole('button', {name: /Cancel Instance/}),
     ).not.toBeInTheDocument();
 
     expect(
-      screen.queryByRole('button', {name: /Modify Instance/})
+      screen.queryByRole('button', {name: /Modify Instance/}),
     ).not.toBeInTheDocument();
   });
 
@@ -553,15 +553,15 @@ describe('InstanceHeader', () => {
     });
 
     await waitForElementToBeRemoved(
-      screen.getByTestId('instance-header-skeleton')
+      screen.getByTestId('instance-header-skeleton'),
     );
 
     expect(
-      screen.queryByRole('button', {name: /Cancel Instance/})
+      screen.queryByRole('button', {name: /Cancel Instance/}),
     ).not.toBeInTheDocument();
 
     expect(
-      screen.queryByRole('button', {name: /Modify Instance/})
+      screen.queryByRole('button', {name: /Modify Instance/}),
     ).not.toBeInTheDocument();
   });
 
@@ -582,23 +582,23 @@ describe('InstanceHeader', () => {
       onPollingFailure,
     });
     await waitForElementToBeRemoved(
-      screen.getByTestId('instance-header-skeleton')
+      screen.getByTestId('instance-header-skeleton'),
     );
 
     expect(screen.getByTestId('pathname')).toHaveTextContent(
-      /^\/processes\/1$/
+      /^\/processes\/1$/,
     );
 
     await user.click(screen.getByRole('button', {name: /Delete Instance/i}));
     expect(
-      await screen.findByText(/About to delete Instance/)
+      await screen.findByText(/About to delete Instance/),
     ).toBeInTheDocument();
 
     mockApplyOperation().withSuccess(mockOperationCreated);
 
     await user.click(screen.getByTestId('delete-button'));
     await waitForElementToBeRemoved(
-      screen.getByText(/About to delete Instance/)
+      screen.getByText(/About to delete Instance/),
     );
 
     mockFetchProcessInstance().withServerError(404);

@@ -78,7 +78,7 @@ class ProcessInstanceDetailsDiagram extends NetworkReconnectionHandler {
         if (processId !== undefined) {
           this.fetchProcessXml(processId);
         }
-      }
+      },
     );
   }
 
@@ -95,7 +95,7 @@ class ProcessInstanceDetailsDiagram extends NetworkReconnectionHandler {
           return flowNodes;
         }
       },
-      {}
+      {},
     );
   }
 
@@ -121,7 +121,7 @@ class ProcessInstanceDetailsDiagram extends NetworkReconnectionHandler {
       } else {
         this.handleFetchFailure();
       }
-    }
+    },
   );
 
   startFetch = () => {
@@ -155,7 +155,7 @@ class ProcessInstanceDetailsDiagram extends NetworkReconnectionHandler {
 
   getFlowNodesInBetween = (
     fromFlowNodeId: string,
-    toFlowNodeId: string
+    toFlowNodeId: string,
   ): string[] => {
     const fromFlowNode =
       processInstanceDetailsDiagramStore.businessObjects[fromFlowNodeId];
@@ -180,7 +180,7 @@ class ProcessInstanceDetailsDiagram extends NetworkReconnectionHandler {
 
     const scopeCount =
       processInstanceDetailsStatisticsStore.getTotalRunningInstancesForFlowNode(
-        parentFlowNode.id
+        parentFlowNode.id,
       );
 
     if (scopeCount > 1) {
@@ -198,7 +198,7 @@ class ProcessInstanceDetailsDiagram extends NetworkReconnectionHandler {
     return Object.values(this.businessObjects).map((flowNode) => {
       const flowNodeState =
         processInstanceDetailsStatisticsStore.state.statistics.find(
-          ({activityId}) => activityId === flowNode.id
+          ({activityId}) => activityId === flowNode.id,
         );
 
       return {
@@ -224,7 +224,7 @@ class ProcessInstanceDetailsDiagram extends NetworkReconnectionHandler {
           flowNode.isAppendable &&
           ((IS_ADD_TOKEN_WITH_ANCESTOR_KEY_SUPPORTED &&
             modificationsStore.state.status !== 'moving-token') ||
-            !flowNode.hasMultipleScopes)
+            !flowNode.hasMultipleScopes),
       )
       .map(({id}) => id);
   }
@@ -240,11 +240,11 @@ class ProcessInstanceDetailsDiagram extends NetworkReconnectionHandler {
       return this.appendableFlowNodes.filter(
         (flowNodeId) =>
           flowNodeId !==
-          modificationsStore.state.sourceFlowNodeIdForMoveOperation
+          modificationsStore.state.sourceFlowNodeIdForMoveOperation,
       );
     } else {
       return Array.from(
-        new Set([...this.appendableFlowNodes, ...this.cancellableFlowNodes])
+        new Set([...this.appendableFlowNodes, ...this.cancellableFlowNodes]),
       );
     }
   }
@@ -262,7 +262,7 @@ class ProcessInstanceDetailsDiagram extends NetworkReconnectionHandler {
 
   get hasCalledProcessInstances() {
     return Object.values(this.businessObjects).some(
-      ({$type}) => $type === 'bpmn:CallActivity'
+      ({$type}) => $type === 'bpmn:CallActivity',
     );
   }
 

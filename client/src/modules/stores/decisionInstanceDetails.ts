@@ -47,12 +47,12 @@ class DecisionInstanceDetails extends NetworkReconnectionHandler {
       } else {
         this.handleFetchFailure(response.statusCode);
       }
-    }
+    },
   );
 
   handleFetchSuccess = (
     decisionInstance: DecisionInstanceDto,
-    decisionInstanceId: string
+    decisionInstanceId: string,
   ) => {
     this.state.decisionInstance = decisionInstance;
     this.state.decisionInstanceId = decisionInstanceId;

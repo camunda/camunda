@@ -44,14 +44,14 @@ describe('Dashboard', () => {
     render(<Dashboard />, {wrapper: Wrapper});
 
     expect(
-      await screen.findByText('1087 Running Process Instances in total')
+      await screen.findByText('1087 Running Process Instances in total'),
     ).toBeInTheDocument();
 
     expect(document.title).toBe(PAGE_TITLE.DASHBOARD);
     expect(screen.getByText('Operate Dashboard')).toBeInTheDocument();
     expect(screen.getByText('Process Instances by Name')).toBeInTheDocument();
     expect(
-      screen.getByText('Process Incidents by Error Message')
+      screen.getByText('Process Incidents by Error Message'),
     ).toBeInTheDocument();
   });
 
@@ -63,10 +63,10 @@ describe('Dashboard', () => {
     render(<Dashboard />, {wrapper: Wrapper});
 
     expect(
-      await screen.findByText('Start by deploying a process')
+      await screen.findByText('Start by deploying a process'),
     ).toBeInTheDocument();
     expect(
-      screen.queryByText('Process Incidents by Error Message')
+      screen.queryByText('Process Incidents by Error Message'),
     ).not.toBeInTheDocument();
   });
 
@@ -78,11 +78,11 @@ describe('Dashboard', () => {
     render(<Dashboard />, {wrapper: Wrapper});
 
     expect(
-      await screen.findByText('Your processes are healthy')
+      await screen.findByText('Your processes are healthy'),
     ).toBeInTheDocument();
     expect(screen.getByText('Process Instances by Name')).toBeInTheDocument();
     expect(
-      screen.getByText('Process Incidents by Error Message')
+      screen.getByText('Process Incidents by Error Message'),
     ).toBeInTheDocument();
   });
 });

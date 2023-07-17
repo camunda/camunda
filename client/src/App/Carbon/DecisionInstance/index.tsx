@@ -48,7 +48,7 @@ const DecisionInstance: React.FC = observer(() => {
     if (decisionInstanceId !== '' && decisionName !== undefined)
       document.title = PAGE_TITLE.DECISION_INSTANCE(
         decisionInstanceId,
-        decisionName
+        decisionName,
       );
   }, [decisionInstanceId, decisionName]);
 

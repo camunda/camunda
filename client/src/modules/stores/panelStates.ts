@@ -43,7 +43,7 @@ class PanelStates {
       {
         isFiltersCollapsed: !this.state.isFiltersCollapsed,
       },
-      'panelStates'
+      'panelStates',
     );
 
     this.state.isFiltersCollapsed = !this.state.isFiltersCollapsed;
@@ -54,7 +54,7 @@ class PanelStates {
       {
         isOperationsCollapsed: !this.state.isOperationsCollapsed,
       },
-      'panelStates'
+      'panelStates',
     );
 
     this.state.isOperationsCollapsed = !this.state.isOperationsCollapsed;

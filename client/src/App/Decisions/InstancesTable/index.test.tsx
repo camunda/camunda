@@ -89,12 +89,12 @@ describe('<InstancesTable />', () => {
     await waitForElementToBeRemoved(screen.getByTestId('table-skeleton'));
 
     expect(
-      screen.getByText('There are no Instances matching this filter set')
+      screen.getByText('There are no Instances matching this filter set'),
     ).toBeInTheDocument();
     expect(
       screen.getByText(
-        'To see some results, select at least one Instance state'
-      )
+        'To see some results, select at least one Instance state',
+      ),
     ).toBeInTheDocument();
 
     expect(screen.queryByText(/results found/)).not.toBeInTheDocument();
@@ -113,12 +113,12 @@ describe('<InstancesTable />', () => {
     await waitForElementToBeRemoved(screen.getByTestId('table-skeleton'));
 
     expect(
-      screen.getByText('There are no Instances matching this filter set')
+      screen.getByText('There are no Instances matching this filter set'),
     ).toBeInTheDocument();
     expect(
       screen.queryByText(
-        'To see some results, select at least one Instance state'
-      )
+        'To see some results, select at least one Instance state',
+      ),
     ).not.toBeInTheDocument();
 
     expect(screen.queryByText(/results found/)).not.toBeInTheDocument();
@@ -135,31 +135,31 @@ describe('<InstancesTable />', () => {
     expect(
       screen.getByRole('columnheader', {
         name: 'Name',
-      })
+      }),
     ).toBeInTheDocument();
 
     expect(
       screen.getByRole('columnheader', {
         name: 'Decision Instance Key',
-      })
+      }),
     ).toBeInTheDocument();
 
     expect(
       screen.getByRole('columnheader', {
         name: 'Version',
-      })
+      }),
     ).toBeInTheDocument();
 
     expect(
       screen.getByRole('columnheader', {
         name: /Evaluation Date/,
-      })
+      }),
     ).toBeInTheDocument();
 
     expect(
       screen.getByRole('columnheader', {
         name: 'Process Instance Key',
-      })
+      }),
     ).toBeInTheDocument();
 
     const rows = screen.getAllByRole('row');
@@ -167,21 +167,21 @@ describe('<InstancesTable />', () => {
 
     const [, firstDecisionInstance, secondDecisionInstance] = rows;
     expect(
-      within(firstDecisionInstance!).getByText('test decision instance 1')
+      within(firstDecisionInstance!).getByText('test decision instance 1'),
     ).toBeInTheDocument();
     expect(
       within(firstDecisionInstance!).getByTestId(
-        'EVALUATED-icon-2251799813689541'
-      )
+        'EVALUATED-icon-2251799813689541',
+      ),
     ).toBeInTheDocument();
 
     expect(
-      within(secondDecisionInstance!).getByText('test decision instance 2')
+      within(secondDecisionInstance!).getByText('test decision instance 2'),
     ).toBeInTheDocument();
     expect(
       within(secondDecisionInstance!).getByTestId(
-        'FAILED-icon-2251799813689542'
-      )
+        'FAILED-icon-2251799813689542',
+      ),
     ).toBeInTheDocument();
     expect(screen.getByText('2 results found')).toBeInTheDocument();
   });
@@ -202,13 +202,13 @@ describe('<InstancesTable />', () => {
     await user.click(
       screen.getByRole('link', {
         description: /view decision instance 2251799813689541/i,
-      })
+      }),
     );
 
     await waitFor(() =>
       expect(screen.getByTestId('pathname')).toHaveTextContent(
-        /^\/decisions\/2251799813689541$/
-      )
+        /^\/decisions\/2251799813689541$/,
+      ),
     );
 
     jest.clearAllTimers();
@@ -244,13 +244,13 @@ describe('<InstancesTable />', () => {
     await user.click(
       screen.getByRole('link', {
         description: /view process instance 2251799813689544/i,
-      })
+      }),
     );
 
     await waitFor(() =>
       expect(screen.getByTestId('pathname')).toHaveTextContent(
-        /^\/processes\/2251799813689544$/
-      )
+        /^\/processes\/2251799813689544$/,
+      ),
     );
 
     jest.clearAllTimers();
@@ -284,7 +284,7 @@ describe('<InstancesTable />', () => {
         <AppHeader />
         <InstancesTable />
       </>,
-      {wrapper: createWrapper()}
+      {wrapper: createWrapper()},
     );
 
     await waitForElementToBeRemoved(screen.getByTestId('table-skeleton'));
@@ -295,16 +295,16 @@ describe('<InstancesTable />', () => {
       within(
         screen.getByRole('navigation', {
           name: /camunda operate/i,
-        })
+        }),
       ).getByRole('link', {
         name: /decisions/i,
-      })
+      }),
     );
 
     expect(await screen.findByTestId('instances-loader')).toBeInTheDocument();
 
     await waitFor(() =>
-      expect(screen.queryByTestId('instances-loader')).not.toBeInTheDocument()
+      expect(screen.queryByTestId('instances-loader')).not.toBeInTheDocument(),
     );
   });
 });

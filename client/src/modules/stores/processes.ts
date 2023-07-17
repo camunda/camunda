@@ -116,10 +116,10 @@ class Processes extends NetworkReconnectionHandler {
         [bpmnProcessId]: processes
           .slice()
           .sort(
-            (process, nextProcess) => process.version - nextProcess.version
+            (process, nextProcess) => process.version - nextProcess.version,
           ),
       }),
-      {}
+      {},
     );
   }
 
@@ -131,7 +131,7 @@ class Processes extends NetworkReconnectionHandler {
     const processVersions = this.versionsByProcess[process] ?? [];
 
     return processVersions.find(
-      (processVersion) => processVersion.version === parseInt(version)
+      (processVersion) => processVersion.version === parseInt(version),
     )?.id;
   };
 
@@ -153,7 +153,7 @@ class Processes extends NetworkReconnectionHandler {
     }
 
     return this.state.processes.find(
-      (process) => process.bpmnProcessId === processId
+      (process) => process.bpmnProcessId === processId,
     )?.permissions;
   };
 

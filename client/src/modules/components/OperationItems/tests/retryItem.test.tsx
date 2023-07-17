@@ -17,7 +17,7 @@ describe('Retry Item', () => {
       <OperationItems>
         <OperationItem type="RESOLVE_INCIDENT" onClick={noop} />
       </OperationItems>,
-      {wrapper: ThemeProvider}
+      {wrapper: ThemeProvider},
     );
 
     expect(screen.getByTestId('retry-operation-icon')).toBeInTheDocument();
@@ -33,11 +33,11 @@ describe('Retry Item', () => {
           title={BUTTON_TITLE}
         />
       </OperationItems>,
-      {wrapper: ThemeProvider}
+      {wrapper: ThemeProvider},
     );
 
     expect(
-      screen.getByRole('button', {name: BUTTON_TITLE})
+      screen.getByRole('button', {name: BUTTON_TITLE}),
     ).toBeInTheDocument();
   });
 
@@ -52,7 +52,7 @@ describe('Retry Item', () => {
           title={BUTTON_TITLE}
         />
       </OperationItems>,
-      {wrapper: ThemeProvider}
+      {wrapper: ThemeProvider},
     );
 
     await user.click(screen.getByRole('button', {name: BUTTON_TITLE}));

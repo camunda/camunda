@@ -85,7 +85,7 @@ describe('Restricted user', () => {
     await waitForElementToBeRemoved(() => screen.getByTestId('skeleton-rows'));
 
     expect(
-      screen.getByTitle('View full value of testVariableName')
+      screen.getByTitle('View full value of testVariableName'),
     ).toBeInTheDocument();
   });
 });

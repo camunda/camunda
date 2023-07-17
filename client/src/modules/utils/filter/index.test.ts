@@ -18,13 +18,13 @@ describe('utils/filter', () => {
     } as const;
 
     expect(deleteSearchParams(locationMock, ['test2', 'test3']).search).toBe(
-      'test=1'
+      'test=1',
     );
     expect(deleteSearchParams(locationMock, ['test2']).search).toBe(
-      'test=1&test3=3'
+      'test=1&test3=3',
     );
     expect(deleteSearchParams(locationMock, ['test4']).search).toBe(
-      'test=1&test2=2&test3=3'
+      'test=1&test2=2&test3=3',
     );
   });
 

@@ -31,7 +31,7 @@ const multiInstanceProcessInstance: ProcessInstanceEntity = Object.freeze(
     processName: 'Multi-Instance Process',
     state: 'INCIDENT',
     bpmnProcessId: 'multiInstanceProcess',
-  })
+  }),
 );
 
 const eventSubprocessProcessInstance: ProcessInstanceEntity = Object.freeze(
@@ -41,7 +41,7 @@ const eventSubprocessProcessInstance: ProcessInstanceEntity = Object.freeze(
     processName: 'Event subprocess Process',
     state: 'INCIDENT',
     bpmnProcessId: 'eventSubprocessProcess',
-  })
+  }),
 );
 
 const nestedSubProcessesInstance = Object.freeze(
@@ -51,7 +51,7 @@ const nestedSubProcessesInstance = Object.freeze(
     processName: 'Nested Sub Processes',
     state: 'ACTIVE',
     bpmnProcessId: 'NestedSubProcesses',
-  })
+  }),
 );
 
 const nestedSubProcessFlowNodeInstances: FlowNodeInstances = {

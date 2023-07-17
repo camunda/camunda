@@ -65,10 +65,10 @@ describe('Restricted user with resource based permissions', () => {
     await waitForElementToBeRemoved(screen.getByTestId('variables-skeleton'));
 
     expect(
-      screen.getByRole('button', {name: /edit variable/i})
+      screen.getByRole('button', {name: /edit variable/i}),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole('button', {name: /add variable/i})
+      screen.getByRole('button', {name: /add variable/i}),
     ).toBeInTheDocument();
   });
 
@@ -87,10 +87,10 @@ describe('Restricted user with resource based permissions', () => {
     await waitForElementToBeRemoved(screen.getByTestId('variables-skeleton'));
 
     expect(
-      screen.queryByRole('button', {name: /add variable/i})
+      screen.queryByRole('button', {name: /add variable/i}),
     ).not.toBeInTheDocument();
     expect(
-      screen.queryByRole('button', {name: /edit variable/i})
+      screen.queryByRole('button', {name: /edit variable/i}),
     ).not.toBeInTheDocument();
   });
 
@@ -108,11 +108,11 @@ describe('Restricted user with resource based permissions', () => {
     render(<Variables />, {wrapper: Wrapper});
 
     await waitForElementToBeRemoved(() =>
-      screen.getByTestId('variables-skeleton')
+      screen.getByTestId('variables-skeleton'),
     );
 
     expect(
-      screen.getByRole('button', {name: 'View full value of testVariableName'})
+      screen.getByRole('button', {name: 'View full value of testVariableName'}),
     ).toBeInTheDocument();
   });
 });

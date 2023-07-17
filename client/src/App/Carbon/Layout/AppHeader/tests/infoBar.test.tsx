@@ -34,39 +34,39 @@ describe('Info bar', () => {
     await user.click(
       await screen.findByRole('button', {
         name: /info/i,
-      })
+      }),
     );
 
     await user.click(
-      await screen.findByRole('button', {name: 'Documentation'})
+      await screen.findByRole('button', {name: 'Documentation'}),
     );
     expect(mockOpenFn).toHaveBeenLastCalledWith(
       'https://docs.camunda.io/',
-      '_blank'
+      '_blank',
     );
 
     await user.click(
       await screen.findByRole('button', {
         name: /info/i,
-      })
+      }),
     );
     await user.click(screen.getByRole('button', {name: 'Camunda Academy'}));
     expect(mockOpenFn).toHaveBeenLastCalledWith(
       'https://academy.camunda.com/',
-      '_blank'
+      '_blank',
     );
 
     await user.click(
       await screen.findByRole('button', {
         name: /info/i,
-      })
+      }),
     );
     await user.click(
-      screen.getByRole('button', {name: 'Slack Community Channel'})
+      screen.getByRole('button', {name: 'Slack Community Channel'}),
     );
     expect(mockOpenFn).toHaveBeenLastCalledWith(
       'https://camunda.com/slack',
-      '_blank'
+      '_blank',
     );
 
     window.open = originalWindowOpen;
@@ -93,15 +93,15 @@ describe('Info bar', () => {
       await user.click(
         await screen.findByRole('button', {
           name: /info/i,
-        })
+        }),
       );
 
       await user.click(
-        screen.getByRole('button', {name: 'Feedback and Support'})
+        screen.getByRole('button', {name: 'Feedback and Support'}),
       );
       expect(mockOpenFn).toHaveBeenLastCalledWith(link, '_blank');
 
       window.open = originalWindowOpen;
-    }
+    },
   );
 });

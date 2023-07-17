@@ -13,15 +13,15 @@ import {
 describe('createVariableFieldName', () => {
   it('should create variable field name', () => {
     expect(createVariableFieldName('someVariableName')).toBe(
-      '#someVariableName'
+      '#someVariableName',
     );
   });
   it('should create new variable field name', () => {
     expect(createNewVariableFieldName('newVariables[0]', 'name')).toBe(
-      'newVariables[0].name'
+      'newVariables[0].name',
     );
     expect(createNewVariableFieldName('newVariables[0]', 'value')).toBe(
-      'newVariables[0].value'
+      'newVariables[0].value',
     );
   });
 });

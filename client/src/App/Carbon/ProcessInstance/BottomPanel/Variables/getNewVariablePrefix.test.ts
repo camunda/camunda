@@ -10,10 +10,10 @@ import {getNewVariablePrefix} from './getNewVariablePrefix';
 describe('getVariableFieldName', () => {
   it('should get new variable prefix', () => {
     expect(getNewVariablePrefix('newVariables[0].name')).toBe(
-      'newVariables[0]'
+      'newVariables[0]',
     );
     expect(getNewVariablePrefix('newVariables[0].value')).toBe(
-      'newVariables[0]'
+      'newVariables[0]',
     );
   });
 });

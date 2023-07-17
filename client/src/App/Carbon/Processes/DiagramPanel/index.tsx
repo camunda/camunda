@@ -27,7 +27,7 @@ import {processDiagramStore} from 'modules/stores/processDiagram';
 
 function setSearchParam(
   location: Location,
-  [key, value]: [key: string, value: string]
+  [key, value]: [key: string, value: string],
 ) {
   const params = new URLSearchParams(location.search);
 
@@ -43,13 +43,13 @@ const DiagramPanel: React.FC = observer(() => {
   const navigate = useNavigate();
   const location = useLocation();
   const {process, version, flowNodeId} = getProcessInstanceFilters(
-    location.search
+    location.search,
   );
 
   const isVersionSelected = version !== undefined && version !== 'all';
 
   const selectedProcess = processesStore.state.processes.find(
-    ({bpmnProcessId}) => bpmnProcessId === process
+    ({bpmnProcessId}) => bpmnProcessId === process,
   );
 
   const bpmnProcessId = selectedProcess?.bpmnProcessId;
@@ -60,7 +60,7 @@ const DiagramPanel: React.FC = observer(() => {
     processesStore.state.status === 'fetching';
 
   const statisticsOverlays = diagramOverlaysStore.state.overlays.filter(
-    ({type}) => type.match(/^statistics/) !== null
+    ({type}) => type.match(/^statistics/) !== null,
   );
 
   const processId = processesStore.getProcessId(process, version);

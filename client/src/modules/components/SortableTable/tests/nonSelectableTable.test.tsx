@@ -20,10 +20,10 @@ describe('non selectable table', () => {
     expect(screen.getByTestId('instances-loader')).toBeInTheDocument();
     expect(screen.queryByText('List is empty')).not.toBeInTheDocument();
     expect(
-      screen.queryByText('Data could not be fetched')
+      screen.queryByText('Data could not be fetched'),
     ).not.toBeInTheDocument();
     expect(
-      screen.queryByRole('checkbox', {name: 'Select all instances'})
+      screen.queryByRole('checkbox', {name: 'Select all instances'}),
     ).not.toBeInTheDocument();
   });
 
@@ -38,10 +38,10 @@ describe('non selectable table', () => {
     expect(screen.queryByTestId('table-skeleton')).not.toBeInTheDocument();
     expect(screen.getByText('List is empty')).toBeInTheDocument();
     expect(
-      screen.queryByText('Data could not be fetched')
+      screen.queryByText('Data could not be fetched'),
     ).not.toBeInTheDocument();
     expect(
-      screen.queryByRole('checkbox', {name: 'Select all instances'})
+      screen.queryByRole('checkbox', {name: 'Select all instances'}),
     ).not.toBeInTheDocument();
   });
 
@@ -57,7 +57,7 @@ describe('non selectable table', () => {
     expect(screen.queryByText('List is empty')).not.toBeInTheDocument();
     expect(screen.getByText('Data could not be fetched')).toBeInTheDocument();
     expect(
-      screen.queryByRole('checkbox', {name: 'Select all instances'})
+      screen.queryByRole('checkbox', {name: 'Select all instances'}),
     ).not.toBeInTheDocument();
   });
 
@@ -72,10 +72,10 @@ describe('non selectable table', () => {
     expect(screen.getByTestId('table-skeleton')).toBeInTheDocument();
     expect(screen.queryByText('List is empty')).not.toBeInTheDocument();
     expect(
-      screen.queryByText('Data could not be fetched')
+      screen.queryByText('Data could not be fetched'),
     ).not.toBeInTheDocument();
     expect(
-      screen.queryByRole('checkbox', {name: 'Select all instances'})
+      screen.queryByRole('checkbox', {name: 'Select all instances'}),
     ).not.toBeInTheDocument();
   });
 
@@ -91,13 +91,13 @@ describe('non selectable table', () => {
     expect(screen.queryByTestId('instances-loader')).not.toBeInTheDocument();
     expect(screen.queryByText('List is empty')).not.toBeInTheDocument();
     expect(
-      screen.queryByText('Data could not be fetched')
+      screen.queryByText('Data could not be fetched'),
     ).not.toBeInTheDocument();
     expect(
-      screen.queryByRole('checkbox', {name: 'Select all instances'})
+      screen.queryByRole('checkbox', {name: 'Select all instances'}),
     ).not.toBeInTheDocument();
     expect(
-      screen.queryByRole('checkbox', {name: /Select instance/})
+      screen.queryByRole('checkbox', {name: /Select instance/}),
     ).not.toBeInTheDocument();
   });
 });

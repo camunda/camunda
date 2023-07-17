@@ -37,7 +37,7 @@ const DecisionViewer: React.FC<Props> = observer(
       decisionViewer.current!.render(
         decisionViewerRef.current,
         xml,
-        decisionViewId
+        decisionViewId,
       );
     }, [decisionViewId, xml]);
 
@@ -55,7 +55,7 @@ const DecisionViewer: React.FC<Props> = observer(
         <ViewerCanvas ref={decisionViewerRef} />
       </Container>
     );
-  }
+  },
 );
 
 export {DecisionViewer};

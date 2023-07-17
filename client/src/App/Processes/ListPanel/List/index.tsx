@@ -149,7 +149,7 @@ const List: React.FC = observer(() => {
           : []),
       ]}
       skeletonColumns={getSkeletonColumns(
-        authenticationStore.hasPermission(['write'])
+        authenticationStore.hasPermission(['write']),
       )}
       emptyMessage={getEmptyListMessage()}
       onVerticalScrollStartReach={async (scrollDown) => {
@@ -168,7 +168,7 @@ const List: React.FC = observer(() => {
         ) {
           scrollDown(
             processInstancesStore.state.latestFetch.processInstancesCount *
-              ROW_HEIGHT
+              ROW_HEIGHT,
           );
         }
       }}
@@ -251,7 +251,7 @@ const List: React.FC = observer(() => {
                             {
                               ids: [instance.id],
                               operationType,
-                            }
+                            },
                           )
                         }
                         onError={({operationType, statusCode}) => {
@@ -259,7 +259,7 @@ const List: React.FC = observer(() => {
                             {
                               instanceIds: [instance.id],
                               operationType,
-                            }
+                            },
                           );
                           notifications.displayNotification('error', {
                             headline: 'Operation could not be created',
@@ -277,7 +277,7 @@ const List: React.FC = observer(() => {
                           });
                         }}
                         permissions={processesStore.getPermissions(
-                          instance.bpmnProcessId
+                          instance.bpmnProcessId,
                         )}
                       />
                     ),
@@ -287,12 +287,12 @@ const List: React.FC = observer(() => {
           ],
           checkIsSelected: () => {
             return processInstancesSelectionStore.isProcessInstanceChecked(
-              instance.id
+              instance.id,
             );
           },
           onSelect: () => {
             return processInstancesSelectionStore.selectProcessInstance(
-              instance.id
+              instance.id,
             );
           },
         };

@@ -11,7 +11,7 @@ import {Anchor} from 'modules/components/Anchor/styled';
 import {ErrorMessage} from 'modules/components/Messages/ErrorMessage';
 
 function getParentAndRootProcessInformation(
-  processInstance: null | ProcessInstanceEntity
+  processInstance: null | ProcessInstanceEntity,
 ): {
   parentProcessName?: string;
   parentProcessId?: string;
@@ -33,7 +33,7 @@ function getParentAndRootProcessInformation(
 const Error: React.FC = () => {
   const {parentProcessId, parentProcessName, rootProcessId, rootProcessName} =
     getParentAndRootProcessInformation(
-      processInstanceDetailsStore.state.processInstance
+      processInstanceDetailsStore.state.processInstance,
     );
 
   if (parentProcessId === undefined || rootProcessId === undefined) {

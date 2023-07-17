@@ -10,7 +10,7 @@ import {mockPostRequest} from '../mockRequest';
 
 const mockFetchFlowNodeMetadata = (contextPath = '') =>
   mockPostRequest<MetaDataDto>(
-    `${contextPath}/api/process-instances/:instanceId/flow-node-metadata`
+    `${contextPath}/api/process-instances/:instanceId/flow-node-metadata`,
   );
 
 export {mockFetchFlowNodeMetadata};

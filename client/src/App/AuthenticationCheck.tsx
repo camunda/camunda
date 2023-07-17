@@ -52,7 +52,7 @@ const AuthenticationCheck: React.FC<Props> = observer(
         replace={true}
       />
     );
-  }
+  },
 );
 
 export {AuthenticationCheck};

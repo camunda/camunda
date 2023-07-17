@@ -31,12 +31,12 @@ describe('messages', () => {
     await waitForElementToBeRemoved(screen.getByTestId('table-skeleton'));
 
     expect(
-      screen.getByText('There are no Instances matching this filter set')
+      screen.getByText('There are no Instances matching this filter set'),
     ).toBeInTheDocument();
     expect(
       screen.getByText(
-        'To see some results, select at least one Instance state'
-      )
+        'To see some results, select at least one Instance state',
+      ),
     ).toBeInTheDocument();
   });
 
@@ -55,12 +55,12 @@ describe('messages', () => {
     await waitForElementToBeRemoved(screen.getByTestId('table-skeleton'));
 
     expect(
-      screen.getByText('There are no Instances matching this filter set')
+      screen.getByText('There are no Instances matching this filter set'),
     ).toBeInTheDocument();
     expect(
       screen.queryByText(
-        'To see some results, select at least one Instance state'
-      )
+        'To see some results, select at least one Instance state',
+      ),
     ).not.toBeInTheDocument();
   });
 });

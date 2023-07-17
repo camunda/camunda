@@ -137,7 +137,7 @@ describe('Display operation buttons depending on resource based permissions', ()
   it('should render operation button when update permission is available for the process', async () => {
     render(<ListPanel />, {
       wrapper: createWrapper(
-        '/processes?incidents=true&active=true&completed=true&canceled=true'
+        '/processes?incidents=true&active=true&completed=true&canceled=true',
       ),
     });
 
@@ -148,17 +148,17 @@ describe('Display operation buttons depending on resource based permissions', ()
       within(
         screen.getByRole('row', {
           name: `Instance ${runningInstanceWithUpdatePermissions.id}`,
-        })
+        }),
       ).getByRole('button', {
         name: `Cancel Instance ${runningInstanceWithUpdatePermissions.id}`,
-      })
+      }),
     ).toBeInTheDocument();
   });
 
   it('should render operation button when update permission is not available for the process', async () => {
     render(<ListPanel />, {
       wrapper: createWrapper(
-        '/processes?incidents=true&active=true&completed=true&canceled=true'
+        '/processes?incidents=true&active=true&completed=true&canceled=true',
       ),
     });
 
@@ -169,17 +169,17 @@ describe('Display operation buttons depending on resource based permissions', ()
       within(
         screen.queryByRole('row', {
           name: `Instance ${runningInstanceWithoutUpdatePermissions.id}`,
-        })!
+        })!,
       ).queryByRole('button', {
         name: `Cancel Instance ${runningInstanceWithoutUpdatePermissions.id}`,
-      })
+      }),
     ).not.toBeInTheDocument();
   });
 
   it('should render operation button when delete process instance permission is available for the process', async () => {
     render(<ListPanel />, {
       wrapper: createWrapper(
-        '/processes?incidents=true&active=true&completed=true&canceled=true'
+        '/processes?incidents=true&active=true&completed=true&canceled=true',
       ),
     });
 
@@ -189,17 +189,17 @@ describe('Display operation buttons depending on resource based permissions', ()
       within(
         screen.getByRole('row', {
           name: `Instance ${finishedInstanceWithDeletePermissions.id}`,
-        })
+        }),
       ).getByRole('button', {
         name: `Delete Instance ${finishedInstanceWithDeletePermissions.id}`,
-      })
+      }),
     ).toBeInTheDocument();
   });
 
   it('should render operation button when delete process instance permission is not available for the process', async () => {
     render(<ListPanel />, {
       wrapper: createWrapper(
-        '/processes?incidents=true&active=true&completed=true&canceled=true'
+        '/processes?incidents=true&active=true&completed=true&canceled=true',
       ),
     });
 
@@ -210,10 +210,10 @@ describe('Display operation buttons depending on resource based permissions', ()
       within(
         screen.queryByRole('row', {
           name: `Instance ${finishedInstanceWithoutDeletePermissions.id}`,
-        })!
+        })!,
       ).queryByRole('button', {
         name: `Delete Instance ${finishedInstanceWithoutDeletePermissions.id}`,
-      })
+      }),
     ).not.toBeInTheDocument();
   });
 });

@@ -10,7 +10,7 @@ import {SequenceFlowsDto} from 'modules/api/processInstances/sequenceFlows';
 
 const mockFetchSequenceFlows = (contextPath = '') =>
   mockGetRequest<SequenceFlowsDto>(
-    `${contextPath}/api/process-instances/:processInstanceId/sequence-flows`
+    `${contextPath}/api/process-instances/:processInstanceId/sequence-flows`,
   );
 
 export {mockFetchSequenceFlows};

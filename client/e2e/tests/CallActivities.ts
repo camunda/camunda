@@ -27,7 +27,7 @@ test('Navigate to called and parent process instances', async (t) => {
   } = t.fixtureCtx;
 
   await t.navigateTo(
-    `/processes/${callActivityProcessInstance.processInstanceKey}`
+    `/processes/${callActivityProcessInstance.processInstanceKey}`,
   );
 
   await t
@@ -39,14 +39,14 @@ test('Navigate to called and parent process instances', async (t) => {
   await t
     .expect(
       withinInstanceHeader.queryByText(
-        callActivityProcessInstance.processInstanceKey
-      ).exists
+        callActivityProcessInstance.processInstanceKey,
+      ).exists,
     )
     .ok()
     .expect(withinInstanceHeader.getByText('Call Activity Process').exists)
     .ok()
     .click(
-      screen.queryByRole('link', {description: /view all called instances/i})
+      screen.queryByRole('link', {description: /view all called instances/i}),
     );
 
   const withinInstancesList = within(screen.queryByTestId('data-list'));
@@ -58,7 +58,7 @@ test('Navigate to called and parent process instances', async (t) => {
     .ok();
 
   const calledProcessInstanceId = await within(
-    withinInstancesList.getAllByRole('row').nth(0)
+    withinInstancesList.getAllByRole('row').nth(0),
   )
     .getAllByRole('cell')
     .nth(1).textContent;
@@ -67,15 +67,15 @@ test('Navigate to called and parent process instances', async (t) => {
   await t.click(
     withinInstancesList.getByRole('link', {
       description: /view parent instance/i,
-    })
+    }),
   );
 
   // Expect correct header
   await t
     .expect(
       withinInstanceHeader.queryByText(
-        callActivityProcessInstance.processInstanceKey
-      ).exists
+        callActivityProcessInstance.processInstanceKey,
+      ).exists,
     )
     .ok()
     .expect(withinInstanceHeader.getByText('Call Activity Process').exists)
@@ -97,13 +97,13 @@ test('Navigate to called and parent process instances', async (t) => {
   // Expect correct diagram
   await t
     .expect(
-      within(screen.queryByTestId('diagram')).getByText('Call Activity').exists
+      within(screen.queryByTestId('diagram')).getByText('Call Activity').exists,
     )
     .ok();
 
   // Navigate to called process instance
   await t.click(
-    within(screen.queryByTestId('diagram')).getByText('Call Activity')
+    within(screen.queryByTestId('diagram')).getByText('Call Activity'),
   );
   const withinPopover = within(screen.queryByTestId('popover'));
   await t
@@ -112,7 +112,7 @@ test('Navigate to called and parent process instances', async (t) => {
     .click(
       withinPopover.getByRole('link', {
         description: /view called process instance/i,
-      })
+      }),
     );
 
   // Expect correct header
@@ -135,7 +135,7 @@ test('Navigate to called and parent process instances', async (t) => {
   await t
     .expect(
       within(screen.queryByTestId('diagram')).getByText('Process started')
-        .exists
+        .exists,
     )
     .ok();
 
@@ -143,15 +143,15 @@ test('Navigate to called and parent process instances', async (t) => {
   await t.click(
     withinInstanceHeader.getByRole('link', {
       description: /view parent instance/i,
-    })
+    }),
   );
 
   // Expect correct header
   await t
     .expect(
       withinInstanceHeader.queryByText(
-        callActivityProcessInstance.processInstanceKey
-      ).exists
+        callActivityProcessInstance.processInstanceKey,
+      ).exists,
     )
     .ok()
     .expect(withinInstanceHeader.getByText('Call Activity Process').exists)
@@ -170,7 +170,7 @@ test('Navigate to called and parent process instances', async (t) => {
 
   await t
     .expect(
-      within(screen.queryByTestId('diagram')).getByText('Call Activity').exists
+      within(screen.queryByTestId('diagram')).getByText('Call Activity').exists,
     )
     .ok();
 });

@@ -42,7 +42,7 @@ describe('<Processes /> - operations', () => {
     expect(
       await screen.findByRole('button', {
         name: /^delete process definition "new demo process - version 1"$/i,
-      })
+      }),
     ).toBeInTheDocument();
   });
 
@@ -54,7 +54,7 @@ describe('<Processes /> - operations', () => {
     expect(
       screen.queryByRole('button', {
         name: /delete process definition/i,
-      })
+      }),
     ).not.toBeInTheDocument();
   });
 
@@ -66,7 +66,7 @@ describe('<Processes /> - operations', () => {
     expect(
       screen.queryByRole('button', {
         name: /delete process definition/i,
-      })
+      }),
     ).not.toBeInTheDocument();
   });
 
@@ -88,7 +88,7 @@ describe('<Processes /> - operations', () => {
     expect(
       screen.queryByRole('button', {
         name: /delete process definition/i,
-      })
+      }),
     ).not.toBeInTheDocument();
   });
 
@@ -110,7 +110,7 @@ describe('<Processes /> - operations', () => {
     expect(
       await screen.findByRole('button', {
         name: /delete process definition/i,
-      })
+      }),
     ).toBeInTheDocument();
     expect(await screen.findByRole('button', {name: 'Zoom in diagram'}));
 
@@ -123,7 +123,7 @@ describe('<Processes /> - operations', () => {
     expect(
       screen.queryByRole('button', {
         name: /delete process definition/i,
-      })
+      }),
     ).not.toBeInTheDocument();
 
     window.clientConfig = undefined;

@@ -13,7 +13,7 @@ const mockApplyBatchOperation = () =>
 
 const mockApplyOperation = () =>
   mockPostRequest<BatchOperationDto>(
-    '/api/process-instances/:instanceId/operation'
+    '/api/process-instances/:instanceId/operation',
   );
 
 export {mockApplyBatchOperation, mockApplyOperation};

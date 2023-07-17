@@ -44,7 +44,7 @@ const compareByErrorType = (incidentA: Incident, incidentB: Incident) => {
 const compareByCreationTime = (incidentA: Incident, incidentB: Incident) => {
   return compareAsc(
     new Date(incidentA.creationTime),
-    new Date(incidentB.creationTime)
+    new Date(incidentB.creationTime),
   );
 };
 

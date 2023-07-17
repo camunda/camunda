@@ -66,7 +66,7 @@ const InstanceDetail: React.FC<Props> = observer(
         {frameFooter}
       </Container>
     );
-  }
+  },
 );
 
 export {InstanceDetail};

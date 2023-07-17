@@ -104,7 +104,7 @@ const InputsAndOutputs: React.FC = observer(() => {
                           <TD>{value}</TD>
                         </TR>
                       );
-                    }
+                    },
                   )}
                 </tbody>
               </Table>
@@ -144,7 +144,7 @@ const InputsAndOutputs: React.FC = observer(() => {
                         <TD>{value}</TD>
                       </TR>
                     );
-                  }
+                  },
                 )}
               </tbody>
             </Table>

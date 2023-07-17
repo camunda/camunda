@@ -25,7 +25,7 @@ describe('stores/flowNodeInstance', () => {
       createInstance({
         id: PROCESS_INSTANCE_ID,
         state: 'ACTIVE',
-      })
+      }),
     );
 
     flowNodeInstanceStore.init();
@@ -35,7 +35,7 @@ describe('stores/flowNodeInstance', () => {
     });
 
     expect(flowNodeInstanceStore.state.flowNodeInstances).toEqual(
-      mockFlowNodeInstances.level1
+      mockFlowNodeInstances.level1,
     );
 
     mockFetchFlowNodeInstances().withSuccess(mockFlowNodeInstances.level2);
@@ -66,7 +66,7 @@ describe('stores/flowNodeInstance', () => {
     });
 
     expect(flowNodeInstanceStore.state.flowNodeInstances).toEqual(
-      mockFlowNodeInstances.level1
+      mockFlowNodeInstances.level1,
     );
   });
 
@@ -77,7 +77,7 @@ describe('stores/flowNodeInstance', () => {
       createInstance({
         id: PROCESS_INSTANCE_ID,
         state: 'ACTIVE',
-      })
+      }),
     );
 
     flowNodeInstanceStore.init();
@@ -87,8 +87,8 @@ describe('stores/flowNodeInstance', () => {
 
     await waitFor(() =>
       expect(flowNodeInstanceStore.state.flowNodeInstances).toEqual(
-        mockFlowNodeInstances.level1
-      )
+        mockFlowNodeInstances.level1,
+      ),
     );
 
     mockFetchFlowNodeInstances().withSuccess(mockFlowNodeInstances.level1Next);
@@ -115,7 +115,7 @@ describe('stores/flowNodeInstance', () => {
       createInstance({
         id: PROCESS_INSTANCE_ID,
         state: 'ACTIVE',
-      })
+      }),
     );
 
     flowNodeInstanceStore.init();
@@ -125,8 +125,8 @@ describe('stores/flowNodeInstance', () => {
 
     await waitFor(() =>
       expect(flowNodeInstanceStore.state.flowNodeInstances).toEqual(
-        mockFlowNodeInstances.level1
-      )
+        mockFlowNodeInstances.level1,
+      ),
     );
 
     mockFetchFlowNodeInstances().withSuccess(mockFlowNodeInstances.level1Prev);
@@ -159,14 +159,14 @@ describe('stores/flowNodeInstance', () => {
       createInstance({
         id: PROCESS_INSTANCE_ID,
         state: 'ACTIVE',
-      })
+      }),
     );
     flowNodeInstanceStore.init();
 
     await waitFor(() =>
       expect(flowNodeInstanceStore.state.flowNodeInstances).toEqual(
-        mockFlowNodeInstances.level1
-      )
+        mockFlowNodeInstances.level1,
+      ),
     );
 
     mockFetchFlowNodeInstances().withSuccess(mockFlowNodeInstances.level2);
@@ -177,7 +177,7 @@ describe('stores/flowNodeInstance', () => {
       expect(flowNodeInstanceStore.state.flowNodeInstances).toEqual({
         ...mockFlowNodeInstances.level1,
         ...mockFlowNodeInstances.level2,
-      })
+      }),
     );
 
     window.addEventListener = originalEventListener;

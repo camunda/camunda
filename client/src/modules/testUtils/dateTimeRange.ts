@@ -55,10 +55,10 @@ const pickDateTimeRange = async ({
     toDay: pad(toDay),
     month: pad(month),
     fromDate: formatISODate(
-      new Date(`${year}-${pad(month)}-${pad(fromDay)} ${fromTimeInput.value}`)
+      new Date(`${year}-${pad(month)}-${pad(fromDay)} ${fromTimeInput.value}`),
     ),
     toDate: formatISODate(
-      new Date(`${year}-${pad(month)}-${pad(toDay)} ${toTimeInput.value}`)
+      new Date(`${year}-${pad(month)}-${pad(toDay)} ${toTimeInput.value}`),
     ),
     year,
   };

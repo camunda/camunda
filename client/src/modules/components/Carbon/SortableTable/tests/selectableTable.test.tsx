@@ -15,7 +15,7 @@ describe('selectable table', () => {
       <SortableTable {...mockProps} {...mockSelectableProps} state="loading" />,
       {
         wrapper: Wrapper,
-      }
+      },
     );
     expect(screen.getByTestId('data-table-loader')).toBeInTheDocument();
     expect(screen.getByText('Column Header 1')).toBeInTheDocument();
@@ -24,7 +24,7 @@ describe('selectable table', () => {
     expect(screen.queryByTestId('data-table-skeleton')).not.toBeInTheDocument();
     expect(screen.queryByText('List is empty')).not.toBeInTheDocument();
     expect(
-      screen.queryByText('Data could not be fetched')
+      screen.queryByText('Data could not be fetched'),
     ).not.toBeInTheDocument();
   });
 
@@ -38,7 +38,7 @@ describe('selectable table', () => {
       />,
       {
         wrapper: Wrapper,
-      }
+      },
     );
     expect(screen.queryByTestId('data-table-loader')).not.toBeInTheDocument();
     expect(screen.queryByText('Column Header 1')).not.toBeInTheDocument();
@@ -47,10 +47,10 @@ describe('selectable table', () => {
     expect(screen.queryByTestId('data-table-skeleton')).not.toBeInTheDocument();
     expect(screen.getByText('List is empty')).toBeInTheDocument();
     expect(
-      screen.queryByText('Data could not be fetched')
+      screen.queryByText('Data could not be fetched'),
     ).not.toBeInTheDocument();
     expect(
-      screen.queryByRole('checkbox', {name: 'Select all rows'})
+      screen.queryByRole('checkbox', {name: 'Select all rows'}),
     ).not.toBeInTheDocument();
   });
 
@@ -64,7 +64,7 @@ describe('selectable table', () => {
       />,
       {
         wrapper: Wrapper,
-      }
+      },
     );
     expect(screen.queryByTestId('data-table-loader')).not.toBeInTheDocument();
     expect(screen.queryByText('Column Header 1')).not.toBeInTheDocument();
@@ -74,7 +74,7 @@ describe('selectable table', () => {
     expect(screen.queryByText('List is empty')).not.toBeInTheDocument();
     expect(screen.getByText('Data could not be fetched')).toBeInTheDocument();
     expect(
-      screen.queryByRole('checkbox', {name: 'Select all rows'})
+      screen.queryByRole('checkbox', {name: 'Select all rows'}),
     ).not.toBeInTheDocument();
   });
 
@@ -88,7 +88,7 @@ describe('selectable table', () => {
       />,
       {
         wrapper: Wrapper,
-      }
+      },
     );
     expect(screen.queryByTestId('data-table-loader')).not.toBeInTheDocument();
     expect(screen.getByText('Column Header 1')).toBeInTheDocument();
@@ -96,10 +96,10 @@ describe('selectable table', () => {
     expect(screen.getByTestId('data-table-skeleton')).toBeInTheDocument();
     expect(screen.queryByText('List is empty')).not.toBeInTheDocument();
     expect(
-      screen.queryByText('Data could not be fetched')
+      screen.queryByText('Data could not be fetched'),
     ).not.toBeInTheDocument();
     expect(
-      screen.queryByRole('checkbox', {name: 'Select all rows'})
+      screen.queryByRole('checkbox', {name: 'Select all rows'}),
     ).not.toBeInTheDocument();
   });
 
@@ -108,7 +108,7 @@ describe('selectable table', () => {
       <SortableTable {...mockProps} {...mockSelectableProps} state="content" />,
       {
         wrapper: Wrapper,
-      }
+      },
     );
 
     expect(screen.queryByTestId('data-table-loader')).not.toBeInTheDocument();
@@ -118,13 +118,13 @@ describe('selectable table', () => {
     expect(screen.queryByTestId('data-table-loader')).not.toBeInTheDocument();
     expect(screen.queryByText('List is empty')).not.toBeInTheDocument();
     expect(
-      screen.queryByText('Data could not be fetched')
+      screen.queryByText('Data could not be fetched'),
     ).not.toBeInTheDocument();
     expect(
-      screen.getByRole('checkbox', {name: 'Select all rows'})
+      screen.getByRole('checkbox', {name: 'Select all rows'}),
     ).toBeEnabled();
     expect(screen.getAllByRole('checkbox', {name: /Select row/})).toHaveLength(
-      4
+      4,
     );
   });
 });

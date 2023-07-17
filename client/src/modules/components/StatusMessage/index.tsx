@@ -23,7 +23,7 @@ const StatusMessage = styled<React.FC<Props>>(
         {children}
       </Container>
     );
-  }
+  },
 )``;
 
 export {StatusMessage};

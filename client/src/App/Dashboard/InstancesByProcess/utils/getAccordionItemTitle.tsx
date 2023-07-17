@@ -10,11 +10,11 @@ import pluralSuffix from 'modules/utils/pluralSuffix';
 function getAccordionItemTitle(
   processName: string,
   instancesCount: number,
-  version: number
+  version: number,
 ) {
   return `View ${pluralSuffix(
     instancesCount,
-    'Instance'
+    'Instance',
   )} in Version ${version} of Process ${processName}`;
 }
 

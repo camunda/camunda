@@ -32,12 +32,12 @@ describe('<Bar />', () => {
       />,
       {
         wrapper: Wrapper,
-      }
+      },
     );
 
     expect(screen.getByText('flow-node-event-start.svg')).toBeInTheDocument();
     expect(
-      screen.getByText(mockStartEventBusinessObject.name)
+      screen.getByText(mockStartEventBusinessObject.name),
     ).toBeInTheDocument();
   });
 
@@ -53,7 +53,7 @@ describe('<Bar />', () => {
       />,
       {
         wrapper: Wrapper,
-      }
+      },
     );
 
     expect(screen.queryByText(MOCK_TIMESTAMP)).not.toBeInTheDocument();

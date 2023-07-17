@@ -50,69 +50,69 @@ describe('validators', () => {
     expect(validateIdsCharacters('2251799813685543000', {})).toBeUndefined();
 
     expect(validateIdsCharacters('2251799813685543a', {})).toBe(
-      'Key has to be a 16 to 19 digit number, separated by space or comma'
+      'Key has to be a 16 to 19 digit number, separated by space or comma',
     );
     expect(validateIdsCharacters('a', {})).toBe(
-      'Key has to be a 16 to 19 digit number, separated by space or comma'
+      'Key has to be a 16 to 19 digit number, separated by space or comma',
     );
 
     expect(validateIdsCharacters('-', {})).toBe(
-      'Key has to be a 16 to 19 digit number, separated by space or comma'
+      'Key has to be a 16 to 19 digit number, separated by space or comma',
     );
 
     expect(
-      validateIdsCharacters('2251799813685543 2251799813685543', {})
+      validateIdsCharacters('2251799813685543 2251799813685543', {}),
     ).toBeUndefined();
 
     expect(
-      validateIdsCharacters('2251799813685543,2251799813685543', {})
+      validateIdsCharacters('2251799813685543,2251799813685543', {}),
     ).toBeUndefined();
 
     expect(
-      validateIdsCharacters('2251799813685543, 2251799813685543', {})
+      validateIdsCharacters('2251799813685543, 2251799813685543', {}),
     ).toBeUndefined();
 
     expect(
       validateIdsCharacters(
         '2251799813685543 22517998136855430 225179981368554300 2251799813685543000',
-        {}
-      )
+        {},
+      ),
     ).toBeUndefined();
 
     expect(
-      validateIdsCharacters('2251799813685543 a 2251799813685543 ', {})
+      validateIdsCharacters('2251799813685543 a 2251799813685543 ', {}),
     ).toBe(
-      'Key has to be a 16 to 19 digit number, separated by space or comma'
+      'Key has to be a 16 to 19 digit number, separated by space or comma',
     );
 
     expect(
-      validateIdsCharacters('225179a9813685543 2251799813685543 ', {})
+      validateIdsCharacters('225179a9813685543 2251799813685543 ', {}),
     ).toBe(
-      'Key has to be a 16 to 19 digit number, separated by space or comma'
+      'Key has to be a 16 to 19 digit number, separated by space or comma',
     );
 
     expect(
-      validateIdsCharacters('225179$9813685543 2251799813685543 ', {})
+      validateIdsCharacters('225179$9813685543 2251799813685543 ', {}),
     ).toBe(
-      'Key has to be a 16 to 19 digit number, separated by space or comma'
+      'Key has to be a 16 to 19 digit number, separated by space or comma',
     );
 
     expect(
       validateIdsLength(
         '2251799813685543 2251799813685543 11111111111111111111',
-        {}
-      )
+        {},
+      ),
     ).toBe(
-      'Key has to be a 16 to 19 digit number, separated by space or comma'
+      'Key has to be a 16 to 19 digit number, separated by space or comma',
     );
 
     expect(
       validateIdsLength(
         '2251799813685543, 2251799813685543, 11111111111111111111',
-        {}
-      )
+        {},
+      ),
     ).toBe(
-      'Key has to be a 16 to 19 digit number, separated by space or comma'
+      'Key has to be a 16 to 19 digit number, separated by space or comma',
     );
 
     expect(setTimeoutSpy).toHaveBeenCalledTimes(0);
@@ -122,26 +122,26 @@ describe('validators', () => {
     expect(
       validatesIdsComplete(
         '2251799813685543 22517998136855430 225179981368554300 2251799813685543000 22517998136855430000 22517998136855430000',
-        {}
-      )
+        {},
+      ),
     ).resolves.toBe(
-      'Key has to be a 16 to 19 digit number, separated by space or comma'
+      'Key has to be a 16 to 19 digit number, separated by space or comma',
     );
 
     expect(validatesIdsComplete('1', {})).resolves.toBe(
-      'Key has to be a 16 to 19 digit number, separated by space or comma'
+      'Key has to be a 16 to 19 digit number, separated by space or comma',
     );
 
     expect(validatesIdsComplete('1 1 1 ', {})).resolves.toBe(
-      'Key has to be a 16 to 19 digit number, separated by space or comma'
+      'Key has to be a 16 to 19 digit number, separated by space or comma',
     );
 
     expect(validatesIdsComplete('1', {})).resolves.toBe(
-      'Key has to be a 16 to 19 digit number, separated by space or comma'
+      'Key has to be a 16 to 19 digit number, separated by space or comma',
     );
 
     expect(validatesIdsComplete('225179981368554', {})).resolves.toBe(
-      'Key has to be a 16 to 19 digit number, separated by space or comma'
+      'Key has to be a 16 to 19 digit number, separated by space or comma',
     );
 
     expect(setTimeoutSpy).toHaveBeenCalledTimes(5);
@@ -151,45 +151,45 @@ describe('validators', () => {
     expect(validateParentInstanceIdCharacters('', {})).toBeUndefined();
 
     expect(
-      validateParentInstanceIdCharacters('2251799813685543', {})
+      validateParentInstanceIdCharacters('2251799813685543', {}),
     ).toBeUndefined();
     expect(
-      validateParentInstanceIdCharacters('22517998136855430', {})
+      validateParentInstanceIdCharacters('22517998136855430', {}),
     ).toBeUndefined();
     expect(
-      validateParentInstanceIdCharacters('225179981368554300', {})
+      validateParentInstanceIdCharacters('225179981368554300', {}),
     ).toBeUndefined();
     expect(
-      validateParentInstanceIdCharacters('2251799813685543000', {})
+      validateParentInstanceIdCharacters('2251799813685543000', {}),
     ).toBeUndefined();
 
     expect(validateParentInstanceIdCharacters('2251799813685543a', {})).toBe(
-      'Key has to be a 16 to 19 digit number'
+      'Key has to be a 16 to 19 digit number',
     );
     expect(validateParentInstanceIdCharacters('a', {})).toBe(
-      'Key has to be a 16 to 19 digit number'
+      'Key has to be a 16 to 19 digit number',
     );
 
     expect(validateParentInstanceIdCharacters('-', {})).toBe(
-      'Key has to be a 16 to 19 digit number'
+      'Key has to be a 16 to 19 digit number',
     );
 
     expect(
       validateParentInstanceIdCharacters(
         '2251799813685543 2251799813685543',
-        {}
-      )
+        {},
+      ),
     ).toBe('Key has to be a 16 to 19 digit number');
 
     expect(
       validateParentInstanceIdCharacters(
         '2251799813685543,2251799813685543',
-        {}
-      )
+        {},
+      ),
     ).toBe('Key has to be a 16 to 19 digit number');
 
     expect(validateParentInstanceIdNotTooLong('11111111111111111111', {})).toBe(
-      'Key has to be a 16 to 19 digit number'
+      'Key has to be a 16 to 19 digit number',
     );
 
     expect(setTimeoutSpy).toHaveBeenCalledTimes(0);
@@ -197,11 +197,11 @@ describe('validators', () => {
 
   it('should validate parent instance id with delay', async () => {
     expect(validateParentInstanceIdComplete('1', {})).resolves.toBe(
-      'Key has to be a 16 to 19 digit number'
+      'Key has to be a 16 to 19 digit number',
     );
 
     expect(
-      validateParentInstanceIdComplete('225179981368554', {})
+      validateParentInstanceIdComplete('225179981368554', {}),
     ).resolves.toBe('Key has to be a 16 to 19 digit number');
 
     expect(setTimeoutSpy).toHaveBeenCalledTimes(2);
@@ -210,7 +210,7 @@ describe('validators', () => {
   it('should validate operationId without delay', () => {
     expect(validateOperationIdCharacters('', {})).toBeUndefined();
     expect(
-      validateOperationIdCharacters('1f4d40c3-7cce-4e51-8abe-0cda8d42f04f', {})
+      validateOperationIdCharacters('1f4d40c3-7cce-4e51-8abe-0cda8d42f04f', {}),
     ).toBeUndefined();
 
     expect(validateOperationIdCharacters('&', {})).toBe('Id has to be a UUID');
@@ -222,20 +222,20 @@ describe('validators', () => {
 
   it('should validate operationId with delay', () => {
     expect(
-      validateOperationIdComplete('1f4d40c3-7cce-4e51-', {})
+      validateOperationIdComplete('1f4d40c3-7cce-4e51-', {}),
     ).resolves.toBe('Id has to be a UUID');
     expect(
-      validateOperationIdComplete('0e8481e6-b652-41c9-a72a-f531c783122', {})
+      validateOperationIdComplete('0e8481e6-b652-41c9-a72a-f531c783122', {}),
     ).resolves.toBe('Id has to be a UUID');
     expect(
-      validateOperationIdComplete('0e8-481e6-b652-41c9-a72a-f531c7831220', {})
+      validateOperationIdComplete('0e8-481e6-b652-41c9-a72a-f531c7831220', {}),
     ).resolves.toBe('Id has to be a UUID');
     expect(validateOperationIdComplete('a', {})).resolves.toBe(
-      'Id has to be a UUID'
+      'Id has to be a UUID',
     );
 
     expect(validateOperationIdComplete('0', {})).resolves.toBe(
-      'Id has to be a UUID'
+      'Id has to be a UUID',
     );
 
     expect(setTimeoutSpy).toHaveBeenCalledTimes(5);
@@ -250,8 +250,8 @@ describe('validators', () => {
           {
             ...mockMeta,
             name: 'newVariables[0].name',
-          }
-        )
+          },
+        ),
       ).toBeUndefined();
 
       [
@@ -271,8 +271,8 @@ describe('validators', () => {
             {
               ...mockMeta,
               name: 'newVariables[0].name',
-            }
-          )
+            },
+          ),
         ).toBe('Name is invalid');
       });
     });
@@ -284,12 +284,12 @@ describe('validators', () => {
     expect(
       validateVariableNameComplete('test', {
         variableValue: 'somethingInvalid',
-      })
+      }),
     ).toBeUndefined();
     expect(
       validateVariableNameComplete('test', {
         variableValue: '"somethingValid"',
-      })
+      }),
     ).toBeUndefined();
 
     expect(setTimeoutSpy).toHaveBeenCalledTimes(0);
@@ -297,16 +297,16 @@ describe('validators', () => {
 
   it('should validate variable name with delay', () => {
     expect(
-      validateVariableNameComplete('', {variableValue: '"somethingValid"'})
+      validateVariableNameComplete('', {variableValue: '"somethingValid"'}),
     ).resolves.toBe('Name has to be filled');
     expect(
-      validateVariableNameComplete('', {variableValue: '123'})
+      validateVariableNameComplete('', {variableValue: '123'}),
     ).resolves.toBe('Name has to be filled');
     expect(
-      validateVariableNameComplete('', {variableValue: true})
+      validateVariableNameComplete('', {variableValue: true}),
     ).resolves.toBe('Name has to be filled');
     expect(
-      validateVariableNameComplete('', {variableValue: 'somethingInvalid'})
+      validateVariableNameComplete('', {variableValue: 'somethingInvalid'}),
     ).resolves.toBe('Name has to be filled and Value has to be JSON');
 
     expect(setTimeoutSpy).toHaveBeenCalledTimes(4);
@@ -315,17 +315,17 @@ describe('validators', () => {
   it('should validate variable value without delay', () => {
     expect(validateVariableValueComplete('', {})).toBeUndefined();
     expect(
-      validateVariableValueComplete('{"test":123}', {variableName: 'test'})
+      validateVariableValueComplete('{"test":123}', {variableName: 'test'}),
     ).toBeUndefined();
     expect(
-      validateVariableValueComplete('123', {variableName: 'test'})
+      validateVariableValueComplete('123', {variableName: 'test'}),
     ).toBeUndefined();
     expect(
-      validateVariableValueComplete('"test"', {variableName: 'test'})
+      validateVariableValueComplete('"test"', {variableName: 'test'}),
     ).toBeUndefined();
 
     expect(
-      validateVariableValueValid('', {variableName: 'test'})
+      validateVariableValueValid('', {variableName: 'test'}),
     ).toBeUndefined();
     expect(validateVariableValueComplete('a', {})).toBeUndefined();
 
@@ -339,15 +339,15 @@ describe('validators', () => {
     expect(validateVariableValueComplete('{"test": true}', {})).toBeUndefined();
 
     expect(
-      validateVariableValueValid('{"tes}', {variableName: 'test'})
+      validateVariableValueValid('{"tes}', {variableName: 'test'}),
     ).resolves.toBe('Value has to be JSON');
 
     expect(
-      validateVariableValueComplete('', {variableName: 'test'})
+      validateVariableValueComplete('', {variableName: 'test'}),
     ).resolves.toBe('Value has to be filled');
 
     expect(validateVariableValueValid('a', {})).resolves.toBe(
-      'Value has to be JSON'
+      'Value has to be JSON',
     );
 
     expect(setTimeoutSpy).toHaveBeenCalledTimes(3);
@@ -365,7 +365,7 @@ describe('validators', () => {
 
     ['2251799813685543a', 'a', '!', ' '].forEach((decisionId) => {
       expect(validateDecisionIdsCharacters(decisionId, {})).toBe(
-        'Key has to be a 16 to 20 digit number with an index, e.g. 2251799813702856-1'
+        'Key has to be a 16 to 20 digit number with an index, e.g. 2251799813702856-1',
       );
     });
 
@@ -383,9 +383,9 @@ describe('validators', () => {
     ['225179981368554332130-1', '225179981368554332130-999'].forEach(
       (decisionId) => {
         expect(validateDecisionIdsLength(decisionId, {})).toBe(
-          'Key has to be a 16 to 20 digit number with an index, e.g. 2251799813702856-1'
+          'Key has to be a 16 to 20 digit number with an index, e.g. 2251799813702856-1',
         );
-      }
+      },
     );
   });
 
@@ -410,7 +410,7 @@ describe('validators', () => {
       '2251799813685542-1 225179981368554212',
     ].forEach((decisionId) => {
       expect(validatesDecisionIdsComplete(decisionId, {})).resolves.toBe(
-        'Key has to be a 16 to 20 digit number with an index, e.g. 2251799813702856-1'
+        'Key has to be a 16 to 20 digit number with an index, e.g. 2251799813702856-1',
       );
     });
 

@@ -53,14 +53,14 @@ describe('<MetricPanel />', () => {
 
     expect(screen.getByTestId('instances-bar-skeleton')).toBeInTheDocument();
     expect(screen.getByTestId('total-instances-link')).toHaveTextContent(
-      'Running Process Instances in total'
+      'Running Process Instances in total',
     );
 
     await waitForElementToBeRemoved(() =>
-      screen.getByTestId('instances-bar-skeleton')
+      screen.getByTestId('instances-bar-skeleton'),
     );
     expect(
-      screen.getByText('1087 Running Process Instances in total')
+      screen.getByText('1087 Running Process Instances in total'),
     ).toBeInTheDocument();
   });
 
@@ -70,14 +70,14 @@ describe('<MetricPanel />', () => {
     });
 
     expect(
-      screen.getByText('Process Instances with Incident')
+      screen.getByText('Process Instances with Incident'),
     ).toBeInTheDocument();
     expect(screen.getByText('Active Process Instances')).toBeInTheDocument();
     expect(
-      await screen.findByTestId('incident-instances-badge')
+      await screen.findByTestId('incident-instances-badge'),
     ).toHaveTextContent('877');
     expect(
-      await screen.findByTestId('active-instances-badge')
+      await screen.findByTestId('active-instances-badge'),
     ).toHaveTextContent('210');
   });
 
@@ -87,17 +87,17 @@ describe('<MetricPanel />', () => {
     });
 
     await waitForElementToBeRemoved(() =>
-      screen.getByTestId('instances-bar-skeleton')
+      screen.getByTestId('instances-bar-skeleton'),
     );
 
     expect(panelStatesStore.state.isFiltersCollapsed).toBe(true);
     await user.click(screen.getByText('Process Instances with Incident'));
 
     expect(screen.getByTestId('pathname')).toHaveTextContent(
-      /^\/carbon\/processes$/
+      /^\/carbon\/processes$/,
     );
     expect(screen.getByTestId('search')).toHaveTextContent(
-      /^\?incidents=true$/
+      /^\?incidents=true$/,
     );
 
     expect(panelStatesStore.state.isFiltersCollapsed).toBe(false);
@@ -109,7 +109,7 @@ describe('<MetricPanel />', () => {
     });
 
     await waitForElementToBeRemoved(() =>
-      screen.getByTestId('instances-bar-skeleton')
+      screen.getByTestId('instances-bar-skeleton'),
     );
 
     expect(panelStatesStore.state.isFiltersCollapsed).toBe(true);
@@ -117,7 +117,7 @@ describe('<MetricPanel />', () => {
     await user.click(screen.getByText('Active Process Instances'));
 
     expect(screen.getByTestId('pathname')).toHaveTextContent(
-      /^\/carbon\/processes$/
+      /^\/carbon\/processes$/,
     );
     expect(screen.getByTestId('search')).toHaveTextContent(/^\?active=true$/);
 
@@ -132,14 +132,14 @@ describe('<MetricPanel />', () => {
     expect(panelStatesStore.state.isFiltersCollapsed).toBe(true);
 
     await user.click(
-      await screen.findByText('1087 Running Process Instances in total')
+      await screen.findByText('1087 Running Process Instances in total'),
     );
 
     expect(screen.getByTestId('pathname')).toHaveTextContent(
-      /^\/carbon\/processes$/
+      /^\/carbon\/processes$/,
     );
     expect(screen.getByTestId('search')).toHaveTextContent(
-      /^\?incidents=true&active=true$/
+      /^\?incidents=true&active=true$/,
     );
 
     expect(panelStatesStore.state.isFiltersCollapsed).toBe(false);
@@ -153,7 +153,7 @@ describe('<MetricPanel />', () => {
     });
 
     expect(
-      await screen.findByText('Process statistics could not be fetched')
+      await screen.findByText('Process statistics could not be fetched'),
     ).toBeInTheDocument();
   });
 
@@ -165,7 +165,7 @@ describe('<MetricPanel />', () => {
     });
 
     expect(
-      await screen.findByText('Process statistics could not be fetched')
+      await screen.findByText('Process statistics could not be fetched'),
     ).toBeInTheDocument();
   });
 });

@@ -45,7 +45,7 @@ describe('validators', () => {
     expect(validateNameCharacters('test', {})).toBeUndefined();
     expect(validateNameCharacters('"test"', {})).toBe('Name is invalid');
     expect(validateNameCharacters('test with space', {})).toBe(
-      'Name is invalid'
+      'Name is invalid',
     );
 
     expect(setTimeoutSpy).toHaveBeenCalledTimes(0);
@@ -65,27 +65,27 @@ describe('validators', () => {
     ]);
 
     expect(validateNameComplete('', {value: '"something"'})).resolves.toBe(
-      'Name has to be filled'
+      'Name has to be filled',
     );
 
     expect(
       validateNameComplete(
         'clientNo',
         {value: '"something"'},
-        {...MOCK_FIELD_META_STATE, dirty: true}
-      )
+        {...MOCK_FIELD_META_STATE, dirty: true},
+      ),
     ).resolves.toBe('Name should be unique');
 
     expect(
       validateNameComplete(
         'clientNo',
         {value: '"something"'},
-        {...MOCK_FIELD_META_STATE, dirty: false}
-      )
+        {...MOCK_FIELD_META_STATE, dirty: false},
+      ),
     ).toBeUndefined();
 
     expect(
-      validateNameComplete('anotherName', {value: '"something"'})
+      validateNameComplete('anotherName', {value: '"something"'}),
     ).toBeUndefined();
 
     expect(setTimeoutSpy).toHaveBeenCalledTimes(2);
@@ -97,11 +97,11 @@ describe('validators', () => {
     expect(validateValueComplete('123', {name: 'name'})).toBeUndefined();
 
     expect(
-      validateValueComplete('"test value"', {name: 'name'})
+      validateValueComplete('"test value"', {name: 'name'}),
     ).toBeUndefined();
 
     expect(
-      validateValueComplete('{"foo":"bar"}', {name: 'name'})
+      validateValueComplete('{"foo":"bar"}', {name: 'name'}),
     ).toBeUndefined();
 
     expect(validateValueComplete('true', {name: 'name'})).toBeUndefined();
@@ -109,15 +109,15 @@ describe('validators', () => {
     expect(validateValueComplete('false', {name: 'name'})).toBeUndefined();
 
     expect(
-      validateValueComplete('invalid json', {name: 'name'})
+      validateValueComplete('invalid json', {name: 'name'}),
     ).toBeUndefined();
 
     expect(validateValueValid('invalid json', {name: 'name'})).resolves.toBe(
-      'Value has to be JSON'
+      'Value has to be JSON',
     );
 
     expect(validateValueComplete('', {name: 'name'})).resolves.toBe(
-      'Name has to be filled'
+      'Name has to be filled',
     );
 
     expect(setTimeoutSpy).toHaveBeenCalledTimes(2);
@@ -128,16 +128,16 @@ describe('validators', () => {
       validateModifiedNameComplete(
         undefined,
         {newVariables: [{}]},
-        {...MOCK_FIELD_META_STATE, name: 'newVariables[0]'}
-      )
+        {...MOCK_FIELD_META_STATE, name: 'newVariables[0]'},
+      ),
     ).toBeUndefined();
 
     expect(
       validateModifiedNameComplete(
         undefined,
         {newVariables: [{value: '123'}]},
-        {...MOCK_FIELD_META_STATE, name: 'newVariables[0]'}
-      )
+        {...MOCK_FIELD_META_STATE, name: 'newVariables[0]'},
+      ),
     ).toBe('Name has to be filled');
   });
 
@@ -158,56 +158,56 @@ describe('validators', () => {
       validateModifiedNameNotDuplicate(
         'clientNo',
         {newVariables: undefined},
-        {...MOCK_FIELD_META_STATE, dirty: true}
-      )
+        {...MOCK_FIELD_META_STATE, dirty: true},
+      ),
     ).toBeUndefined();
 
     expect(
       validateModifiedNameNotDuplicate(
         'clientNo',
         {newVariables: [{name: 'clientNo'}]},
-        {...MOCK_FIELD_META_STATE, dirty: true}
-      )
+        {...MOCK_FIELD_META_STATE, dirty: true},
+      ),
     ).toBe('Name should be unique');
 
     expect(
       validateModifiedNameNotDuplicate(
         'test',
         {newVariables: [{name: 'test'}, {name: 'test'}]},
-        {...MOCK_FIELD_META_STATE, active: true}
-      )
+        {...MOCK_FIELD_META_STATE, active: true},
+      ),
     ).toBe('Name should be unique');
 
     expect(
       validateModifiedNameNotDuplicate(
         'test',
         {newVariables: [{name: 'test'}, {name: 'test'}]},
-        {...MOCK_FIELD_META_STATE, error: 'Name should be unique'}
-      )
+        {...MOCK_FIELD_META_STATE, error: 'Name should be unique'},
+      ),
     ).toBe('Name should be unique');
 
     expect(
       validateModifiedNameNotDuplicate(
         'test',
         {newVariables: [{name: 'test'}, {name: 'test'}]},
-        {...MOCK_FIELD_META_STATE, validating: true}
-      )
+        {...MOCK_FIELD_META_STATE, validating: true},
+      ),
     ).toBe('Name should be unique');
 
     expect(
       validateModifiedNameNotDuplicate(
         'test',
         {newVariables: [{name: 'test'}, {name: 'test'}]},
-        {...MOCK_FIELD_META_STATE}
-      )
+        {...MOCK_FIELD_META_STATE},
+      ),
     ).toBeUndefined();
 
     expect(
       validateModifiedNameNotDuplicate(
         'test',
         {newVariables: [{name: 'test'}]},
-        {...MOCK_FIELD_META_STATE, active: true}
-      )
+        {...MOCK_FIELD_META_STATE, active: true},
+      ),
     ).toBeUndefined();
   });
 
@@ -216,32 +216,32 @@ describe('validators', () => {
       validateModifiedValueComplete(
         undefined,
         {newVariables: [{}]},
-        {...MOCK_FIELD_META_STATE, visited: true, name: 'newVariables[0]'}
-      )
+        {...MOCK_FIELD_META_STATE, visited: true, name: 'newVariables[0]'},
+      ),
     ).toBeUndefined();
 
     expect(
       validateModifiedValueComplete(
         undefined,
         {newVariables: [{value: '123'}]},
-        {...MOCK_FIELD_META_STATE, visited: true, name: 'newVariables[0]'}
-      )
+        {...MOCK_FIELD_META_STATE, visited: true, name: 'newVariables[0]'},
+      ),
     ).toBeUndefined();
 
     expect(
       validateModifiedValueComplete(
         undefined,
         {newVariables: [{name: 'test'}]},
-        {...MOCK_FIELD_META_STATE, visited: true, name: 'newVariables[0]'}
-      )
+        {...MOCK_FIELD_META_STATE, visited: true, name: 'newVariables[0]'},
+      ),
     ).toBe('Value has to be filled');
 
     expect(
       validateModifiedValueComplete(
         undefined,
         {newVariables: [{name: 'test'}]},
-        {...MOCK_FIELD_META_STATE, name: 'newVariables[0]'}
-      )
+        {...MOCK_FIELD_META_STATE, name: 'newVariables[0]'},
+      ),
     ).toBeUndefined();
   });
 
@@ -250,24 +250,24 @@ describe('validators', () => {
       validateModifiedValueValid(
         undefined,
         {newVariables: [{}]},
-        MOCK_FIELD_META_STATE
-      )
+        MOCK_FIELD_META_STATE,
+      ),
     ).toBeUndefined();
 
     expect(
       validateModifiedValueValid(
         '{"key": "value"}',
         {newVariables: [{value: {key: 'value'}}]},
-        MOCK_FIELD_META_STATE
-      )
+        MOCK_FIELD_META_STATE,
+      ),
     ).toBeUndefined();
 
     expect(
       validateModifiedValueValid(
         '{invalidKey": "value"}',
         {newVariables: [{value: '{invalidKey": "value"}'}]},
-        MOCK_FIELD_META_STATE
-      )
+        MOCK_FIELD_META_STATE,
+      ),
     ).toBe('Value has to be JSON');
   });
 });

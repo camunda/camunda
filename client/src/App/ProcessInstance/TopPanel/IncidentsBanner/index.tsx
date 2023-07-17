@@ -24,7 +24,7 @@ const IncidentsBanner: React.FC<Props> = observer(({onClick, isOpen}) => {
   const errorMessage = `${pluralSuffix(incidentsCount, 'Incident')} occurred`;
   const title = `View ${pluralSuffix(
     incidentsCount,
-    'Incident'
+    'Incident',
   )} in Instance ${processInstanceId}`;
 
   return (

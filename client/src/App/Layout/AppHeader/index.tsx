@@ -204,7 +204,7 @@ const AppHeader: React.FC = observer(() => {
               ) {
                 window.open(
                   'https://jira.camunda.com/projects/SUPPORT/queues',
-                  '_blank'
+                  '_blank',
                 );
               } else {
                 window.open('https://forum.camunda.io/', '_blank');
@@ -255,7 +255,7 @@ const AppHeader: React.FC = observer(() => {
                     });
 
                     window.Osano?.cm?.showDrawer(
-                      'osano-cm-dom-info-dialog-open'
+                      'osano-cm-dom-info-dialog-open',
                     );
                   },
                 },
@@ -272,7 +272,7 @@ const AppHeader: React.FC = observer(() => {
 
               window.open(
                 'https://camunda.com/legal/terms/camunda-platform/camunda-platform-8-saas-trial/',
-                '_blank'
+                '_blank',
               );
             },
           },

@@ -70,7 +70,7 @@ class ProcessInstancesSelection {
 
   removeFromselectedProcessInstanceIds = (id: string) => {
     this.setselectedProcessInstanceIds(
-      this.state.selectedProcessInstanceIds.filter((prevId) => prevId !== id)
+      this.state.selectedProcessInstanceIds.filter((prevId) => prevId !== id),
     );
   };
 

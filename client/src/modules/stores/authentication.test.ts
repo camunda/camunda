@@ -69,8 +69,8 @@ describe('stores/authentication', () => {
 
       await waitFor(() =>
         expect(authenticationStore.state.status).toBe(
-          'user-information-fetched'
-        )
+          'user-information-fetched',
+        ),
       );
 
       mockGetUser().withServerError(401);
@@ -79,8 +79,8 @@ describe('stores/authentication', () => {
 
       await waitFor(() =>
         expect(authenticationStore.state.status).toBe(
-          'invalid-third-party-session'
-        )
+          'invalid-third-party-session',
+        ),
       );
       expect(mockReload).toHaveBeenCalledTimes(1);
       expect(getStateLocally()?.wasReloaded).toBe(true);
@@ -91,13 +91,13 @@ describe('stores/authentication', () => {
 
       await waitFor(() =>
         expect(authenticationStore.state.status).toBe(
-          'user-information-fetched'
-        )
+          'user-information-fetched',
+        ),
       );
       expect(mockReload).toHaveBeenCalledTimes(1);
       expect(getStateLocally()?.wasReloaded).toBe(false);
 
       windowSpy.mockRestore();
-    }
+    },
   );
 });

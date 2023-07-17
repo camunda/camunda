@@ -165,7 +165,7 @@ const SortableTable: React.FC<Props> = observer(
                         isSelected={isSelected}
                       />
                     );
-                  }
+                  },
                 )}
               </tbody>
             </InfiniteScroller>
@@ -173,6 +173,6 @@ const SortableTable: React.FC<Props> = observer(
         </ScrollableContent>
       </List>
     );
-  }
+  },
 );
 export {SortableTable};

@@ -9,7 +9,7 @@ import {mockGetRequest} from '../mockRequest';
 
 const mockFetchProcessInstance = (contextPath = '') =>
   mockGetRequest<ProcessInstanceEntity>(
-    `${contextPath}/api/process-instances/:id`
+    `${contextPath}/api/process-instances/:id`,
   );
 
 export {mockFetchProcessInstance};

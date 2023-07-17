@@ -34,17 +34,16 @@ type TitleProps = {
 };
 
 const Title = styled.h2<TitleProps>`
-  ${({theme, $variant = 'default'}) =>
-    css`
-      margin: 0;
-      ${styles.productiveHeading01}
-      height: 17px;
-      ${$variant === 'incident'
-        ? css`
-            color: ${theme.colors.incidentsAndErrors};
-          `
-        : null}
-    `}
+  ${({theme, $variant = 'default'}) => css`
+    margin: 0;
+    ${styles.productiveHeading01}
+    height: 17px;
+    ${$variant === 'incident'
+      ? css`
+          color: ${theme.colors.incidentsAndErrors};
+        `
+      : null}
+  `}
 `;
 
 const Divider = styled.hr`

@@ -24,8 +24,8 @@ const selectComboBoxOption = async ({
   await t.click(
     within(screen.getByRole('listbox', {name: listBoxLabel})).getByRole(
       'option',
-      {name: option}
-    )
+      {name: option},
+    ),
   );
 };
 

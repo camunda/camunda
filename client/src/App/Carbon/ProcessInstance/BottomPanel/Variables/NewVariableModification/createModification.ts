@@ -28,7 +28,7 @@ const createModification = ({
   const lastAddModification = modificationsStore.getLastVariableModification(
     scopeId,
     id,
-    'ADD_VARIABLE'
+    'ADD_VARIABLE',
   );
 
   if (

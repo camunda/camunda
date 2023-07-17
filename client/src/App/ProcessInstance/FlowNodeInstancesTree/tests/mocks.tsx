@@ -30,7 +30,7 @@ const multiInstanceProcessInstance: ProcessInstanceEntity = Object.freeze(
     processName: 'Multi-Instance Process',
     state: 'INCIDENT',
     bpmnProcessId: 'multiInstanceProcess',
-  })
+  }),
 );
 
 const nestedSubProcessesInstance = Object.freeze(
@@ -40,7 +40,7 @@ const nestedSubProcessesInstance = Object.freeze(
     processName: 'Nested Sub Processes',
     state: 'ACTIVE',
     bpmnProcessId: 'NestedSubProcesses',
-  })
+  }),
 );
 
 const nestedSubProcessFlowNodeInstances: FlowNodeInstances = {

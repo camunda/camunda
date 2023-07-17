@@ -40,7 +40,7 @@ const LastModification: React.FC = observer(() => {
               payload.operation === 'MOVE_TOKEN' &&
               TOKEN_TEMPLATES[payload.operation](
                 payload.flowNode.name,
-                payload.targetFlowNode.name
+                payload.targetFlowNode.name,
               )}
             {type === 'token' &&
               (payload.operation === 'ADD_TOKEN' ||

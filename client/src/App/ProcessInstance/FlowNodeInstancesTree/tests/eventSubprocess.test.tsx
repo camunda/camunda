@@ -38,7 +38,7 @@ describe('FlowNodeInstancesTree - Event Subprocess', () => {
 
   it('should be able to unfold and fold event subprocesses', async () => {
     mockFetchFlowNodeInstances().withSuccess(
-      eventSubProcessFlowNodeInstances.level1
+      eventSubProcessFlowNodeInstances.level1,
     );
 
     await waitFor(() => {
@@ -54,22 +54,22 @@ describe('FlowNodeInstancesTree - Event Subprocess', () => {
       />,
       {
         wrapper: Wrapper,
-      }
+      },
     );
 
     expect(
-      screen.queryByLabelText('Fold Event Subprocess')
+      screen.queryByLabelText('Fold Event Subprocess'),
     ).not.toBeInTheDocument();
     expect(screen.queryByText('Interrupting timer')).not.toBeInTheDocument();
 
     mockFetchFlowNodeInstances().withSuccess(
-      eventSubProcessFlowNodeInstances.level2
+      eventSubProcessFlowNodeInstances.level2,
     );
 
     await user.click(screen.getByLabelText('Unfold Event Subprocess'));
 
     expect(
-      await screen.findByLabelText('Fold Event Subprocess')
+      await screen.findByLabelText('Fold Event Subprocess'),
     ).toBeInTheDocument();
 
     expect(screen.getByText('Interrupting timer')).toBeInTheDocument();

@@ -33,17 +33,17 @@ describe('Dropdown', () => {
           label="Create New Selection"
         />
       </Dropdown>,
-      {wrapper: ThemeProvider}
+      {wrapper: ThemeProvider},
     );
 
     expect(
-      screen.queryByRole('button', {name: 'Create New Selection'})
+      screen.queryByRole('button', {name: 'Create New Selection'}),
     ).not.toBeInTheDocument();
     await user.click(screen.getByTestId('dropdown-toggle'));
     expect(mockOnOpen).toHaveBeenCalledTimes(1);
 
     expect(
-      screen.getByRole('button', {name: 'Create New Selection'})
+      screen.getByRole('button', {name: 'Create New Selection'}),
     ).toBeInTheDocument();
   });
 
@@ -56,7 +56,7 @@ describe('Dropdown', () => {
           label="Create New Selection"
         />
       </Dropdown>,
-      {wrapper: ThemeProvider}
+      {wrapper: ThemeProvider},
     );
 
     expect(screen.getByText(stringLabel)).toBeInTheDocument();
@@ -72,7 +72,7 @@ describe('Dropdown', () => {
           onClick={mockOnClick}
           label="Create New Selection"
         />
-      </Dropdown>
+      </Dropdown>,
     );
 
     expect(screen.getByText('some other label')).toBeInTheDocument();
@@ -90,19 +90,19 @@ describe('Dropdown', () => {
         </Dropdown>
         <div>somewhere else</div>
       </>,
-      {wrapper: ThemeProvider}
+      {wrapper: ThemeProvider},
     );
 
     await user.click(screen.getByTestId('dropdown-toggle'));
 
     expect(
-      screen.getByRole('button', {name: 'Create New Selection'})
+      screen.getByRole('button', {name: 'Create New Selection'}),
     ).toBeInTheDocument();
 
     await user.click(screen.getByText('somewhere else'));
 
     await waitForElementToBeRemoved(
-      screen.queryByRole('button', {name: 'Create New Selection'})
+      screen.queryByRole('button', {name: 'Create New Selection'}),
     );
   });
 });

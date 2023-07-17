@@ -31,7 +31,7 @@ type OverlayData = {
 
 type OnFlowNodeSelection = (
   elementId?: string,
-  isMultiInstance?: boolean
+  isMultiInstance?: boolean,
 ) => void;
 
 type RenderOptions = {
@@ -116,7 +116,7 @@ class BpmnJS {
       () => {
         this.#createViewer(container);
         this.render(options);
-      }
+      },
     );
 
     if (!isEqual(this.#selectableFlowNodes, selectableFlowNodes)) {
@@ -136,7 +136,7 @@ class BpmnJS {
         this.#removeTooltip(flowNodeId);
       });
       const nonSelectableFlowNodes = elementRegistry?.filter((element) =>
-        isNonSelectableFlowNode(element, selectableFlowNodes)
+        isNonSelectableFlowNode(element, selectableFlowNodes),
       );
       nonSelectableFlowNodes?.forEach(({id}) => {
         this.#addMarker(id, 'op-non-selectable');
@@ -207,7 +207,7 @@ class BpmnJS {
             flowNodeId,
             type,
           });
-        }
+        },
       );
     }
 
@@ -241,13 +241,13 @@ class BpmnJS {
 
   #addTooltip = (flowNodeId: string, tooltipText: string) => {
     const titleElement = document.querySelector(
-      `[data-element-id="${flowNodeId}"] title`
+      `[data-element-id="${flowNodeId}"] title`,
     );
 
     if (titleElement === null) {
       const tooltip = document.createElementNS(
         'http://www.w3.org/2000/svg',
-        'title'
+        'title',
       );
 
       tooltip.textContent = tooltipText;
@@ -259,7 +259,7 @@ class BpmnJS {
 
   #removeTooltip = (flowNodeId: string) => {
     const titleElement = document.querySelector(
-      `[data-element-id="${flowNodeId}"] title`
+      `[data-element-id="${flowNodeId}"] title`,
     );
     if (titleElement !== null) {
       document
@@ -336,7 +336,7 @@ class BpmnJS {
     ) {
       this.onFlowNodeSelection?.(
         flowNode.id,
-        isMultiInstance(flowNode.businessObject)
+        isMultiInstance(flowNode.businessObject),
       );
     } else if (this.#selectedFlowNodeId !== undefined) {
       this.onFlowNodeSelection?.(undefined);

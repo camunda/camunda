@@ -37,7 +37,7 @@ const Variables: React.FC<Props> = observer(
     const scopeId =
       variablesStore.scopeId ??
       modificationsStore.getNewScopeIdForFlowNode(
-        flowNodeSelectionStore.state.selection?.flowNodeId
+        flowNodeSelectionStore.state.selection?.flowNodeId,
       );
 
     const {isModificationModeEnabled} = modificationsStore;
@@ -51,7 +51,7 @@ const Variables: React.FC<Props> = observer(
           if (!isModificationModeEnabled) {
             form.reset({});
           }
-        }
+        },
       );
 
       return disposer;
@@ -125,7 +125,7 @@ const Variables: React.FC<Props> = observer(
         )}
       </VariablesContent>
     );
-  }
+  },
 );
 
 export default Variables;

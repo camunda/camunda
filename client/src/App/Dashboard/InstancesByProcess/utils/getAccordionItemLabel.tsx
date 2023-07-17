@@ -10,11 +10,11 @@ import pluralSuffix from 'modules/utils/pluralSuffix';
 function getAccordionItemLabel(
   name: string,
   instancesCount: number,
-  version: number
+  version: number,
 ) {
   return `${name} – ${pluralSuffix(
     instancesCount,
-    'Instance'
+    'Instance',
   )} in Version ${version}`;
 }
 

@@ -15,7 +15,7 @@ describe('<DecisionState />', () => {
     render(<DecisionState state="EVALUATED" container={container} />);
 
     expect(
-      screen.getByText('diagram-badge-single-instance-completed.svg')
+      screen.getByText('diagram-badge-single-instance-completed.svg'),
     ).toBeInTheDocument();
   });
 
@@ -25,7 +25,7 @@ describe('<DecisionState />', () => {
     render(<DecisionState state="FAILED" container={container} />);
 
     expect(
-      screen.getByText('diagram-badge-dmn-incident.svg')
+      screen.getByText('diagram-badge-dmn-incident.svg'),
     ).toBeInTheDocument();
   });
 });

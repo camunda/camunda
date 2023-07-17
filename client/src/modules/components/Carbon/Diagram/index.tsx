@@ -128,7 +128,7 @@ const Diagram: React.FC<Props> = observer(
           })}
       </StyledDiagram>
     );
-  }
+  },
 );
 
 export {Diagram};

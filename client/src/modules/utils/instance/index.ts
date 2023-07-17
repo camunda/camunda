@@ -43,7 +43,7 @@ const formatGroupedProcesses = (processes = []) => {
 };
 
 const createOperation = (
-  operationType: OperationEntityType
+  operationType: OperationEntityType,
 ): InstanceOperationEntity => {
   return {
     type: operationType,

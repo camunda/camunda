@@ -19,13 +19,13 @@ describe('Operations - Buttons', () => {
       />,
       {
         wrapper: Wrapper,
-      }
+      },
     );
 
     expect(screen.getByTitle('Retry Instance instance_1')).toBeInTheDocument();
     expect(screen.getByTitle('Cancel Instance instance_1')).toBeInTheDocument();
     expect(
-      screen.queryByTitle('Delete Instance instance_1')
+      screen.queryByTitle('Delete Instance instance_1'),
     ).not.toBeInTheDocument();
     expect(screen.getByTitle('Modify Instance instance_1')).toBeInTheDocument();
   });
@@ -38,15 +38,15 @@ describe('Operations - Buttons', () => {
       />,
       {
         wrapper: Wrapper,
-      }
+      },
     );
 
     expect(
-      screen.queryByTitle('Retry Instance instance_1')
+      screen.queryByTitle('Retry Instance instance_1'),
     ).not.toBeInTheDocument();
     expect(screen.getByTitle('Cancel Instance instance_1')).toBeInTheDocument();
     expect(
-      screen.queryByTitle('Delete Instance instance_1')
+      screen.queryByTitle('Delete Instance instance_1'),
     ).not.toBeInTheDocument();
     expect(screen.getByTitle('Modify Instance instance_1')).toBeInTheDocument();
   });
@@ -60,19 +60,19 @@ describe('Operations - Buttons', () => {
         }}
         isInstanceModificationVisible
       />,
-      {wrapper: Wrapper}
+      {wrapper: Wrapper},
     );
 
     expect(
-      screen.queryByTitle('Retry Instance instance_1')
+      screen.queryByTitle('Retry Instance instance_1'),
     ).not.toBeInTheDocument();
     expect(
-      screen.queryByTitle('Cancel Instance instance_1')
+      screen.queryByTitle('Cancel Instance instance_1'),
     ).not.toBeInTheDocument();
     expect(screen.getByTitle('Delete Instance instance_1')).toBeInTheDocument();
 
     expect(
-      screen.queryByTitle('Modify Instance instance_1')
+      screen.queryByTitle('Modify Instance instance_1'),
     ).not.toBeInTheDocument();
   });
 
@@ -85,18 +85,18 @@ describe('Operations - Buttons', () => {
         }}
         isInstanceModificationVisible
       />,
-      {wrapper: Wrapper}
+      {wrapper: Wrapper},
     );
 
     expect(
-      screen.queryByTitle('Retry Instance instance_1')
+      screen.queryByTitle('Retry Instance instance_1'),
     ).not.toBeInTheDocument();
     expect(
-      screen.queryByTitle('Cancel Instance instance_1')
+      screen.queryByTitle('Cancel Instance instance_1'),
     ).not.toBeInTheDocument();
     expect(screen.getByTitle('Delete Instance instance_1')).toBeInTheDocument();
     expect(
-      screen.queryByTitle('Modify Instance instance_1')
+      screen.queryByTitle('Modify Instance instance_1'),
     ).not.toBeInTheDocument();
   });
 
@@ -108,13 +108,13 @@ describe('Operations - Buttons', () => {
       />,
       {
         wrapper: Wrapper,
-      }
+      },
     );
 
     expect(screen.getByTitle('Retry Instance instance_1')).toBeInTheDocument();
     expect(screen.getByTitle('Cancel Instance instance_1')).toBeInTheDocument();
     expect(
-      screen.queryByTitle('Delete Instance instance_1')
+      screen.queryByTitle('Delete Instance instance_1'),
     ).not.toBeInTheDocument();
 
     expect(screen.getByTitle('Modify Instance instance_1')).toBeInTheDocument();
@@ -125,17 +125,17 @@ describe('Operations - Buttons', () => {
     await user.click(await screen.findByTitle('Modify Instance instance_1'));
 
     expect(
-      screen.queryByTitle('Retry Instance instance_1')
+      screen.queryByTitle('Retry Instance instance_1'),
     ).not.toBeInTheDocument();
     expect(
-      screen.queryByTitle('Cancel Instance instance_1')
+      screen.queryByTitle('Cancel Instance instance_1'),
     ).not.toBeInTheDocument();
     expect(
-      screen.queryByTitle('Delete Instance instance_1')
+      screen.queryByTitle('Delete Instance instance_1'),
     ).not.toBeInTheDocument();
 
     expect(
-      screen.queryByTitle('Modify Instance instance_1')
+      screen.queryByTitle('Modify Instance instance_1'),
     ).not.toBeInTheDocument();
   });
 
@@ -147,11 +147,11 @@ describe('Operations - Buttons', () => {
     expect(screen.getByTitle('Retry Instance instance_1')).toBeInTheDocument();
     expect(screen.getByTitle('Cancel Instance instance_1')).toBeInTheDocument();
     expect(
-      screen.queryByTitle('Delete Instance instance_1')
+      screen.queryByTitle('Delete Instance instance_1'),
     ).not.toBeInTheDocument();
 
     expect(
-      screen.queryByTitle('Modify Instance instance_1')
+      screen.queryByTitle('Modify Instance instance_1'),
     ).not.toBeInTheDocument();
   });
 });

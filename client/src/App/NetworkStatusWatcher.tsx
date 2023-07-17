@@ -18,7 +18,7 @@ const NetworkStatusWatcher: React.FC = () => {
         await displayNotification('info', {
           headline: 'Internet connection lost',
           isDismissable: false,
-        })
+        }),
       );
     }
 

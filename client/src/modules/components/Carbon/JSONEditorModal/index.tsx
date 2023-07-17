@@ -80,7 +80,7 @@ const JSONEditorModal: React.FC<Props> = observer(
         />
       </Modal>
     );
-  }
+  },
 );
 
 export {JSONEditorModal};

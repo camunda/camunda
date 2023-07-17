@@ -71,7 +71,7 @@ describe('stores/processInstancesByName', () => {
     expect(processInstancesByNameStore.state.status).toBe('first-fetch');
     await waitFor(() => {
       expect(processInstancesByNameStore.state.processInstances).toEqual(
-        mockInstancesByProcess
+        mockInstancesByProcess,
       );
     });
   });
@@ -80,11 +80,11 @@ describe('stores/processInstancesByName', () => {
     jest.useFakeTimers();
     processInstancesByNameStore.init();
     await waitFor(() =>
-      expect(processInstancesByNameStore.state.status).toBe('fetched')
+      expect(processInstancesByNameStore.state.status).toBe('fetched'),
     );
 
     expect(processInstancesByNameStore.state.processInstances).toEqual(
-      mockInstancesByProcess
+      mockInstancesByProcess,
     );
 
     mockFetchProcessInstancesByName().withSuccess([]);
@@ -111,7 +111,7 @@ describe('stores/processInstancesByName', () => {
     await processInstancesByNameStore.getProcessInstancesByName();
     expect(processInstancesByNameStore.state.status).toBe('fetched');
     expect(processInstancesByNameStore.state.processInstances).toEqual(
-      mockInstancesByProcess
+      mockInstancesByProcess,
     );
 
     processInstancesByNameStore.reset();
@@ -130,8 +130,8 @@ describe('stores/processInstancesByName', () => {
 
     await waitFor(() =>
       expect(processInstancesByNameStore.state.processInstances).toEqual(
-        mockInstancesByProcess
-      )
+        mockInstancesByProcess,
+      ),
     );
 
     const newMockInstancesByProcess = [
@@ -150,8 +150,8 @@ describe('stores/processInstancesByName', () => {
 
     await waitFor(() =>
       expect(processInstancesByNameStore.state.processInstances).toEqual(
-        newMockInstancesByProcess
-      )
+        newMockInstancesByProcess,
+      ),
     );
 
     window.addEventListener = originalEventListener;

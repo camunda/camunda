@@ -42,14 +42,14 @@ describe('Filtering', () => {
 
     await user.click(
       within(screen.getByTestId(/incidents-by-errortype/i)).getByText(
-        /^Condition errortype/
-      )
+        /^Condition errortype/,
+      ),
     );
 
     expect(screen.getAllByLabelText(/^incident/i)).toHaveLength(1);
     expect(table.getByText(/Condition errortype/)).toBeInTheDocument();
     expect(
-      table.queryByText(/Extract value errortype/)
+      table.queryByText(/Extract value errortype/),
     ).not.toBeInTheDocument();
   });
 
@@ -66,14 +66,14 @@ describe('Filtering', () => {
 
     await user.click(
       within(screen.getByTestId(/incidents-by-flownode/i)).getByText(
-        /^flowNodeId_exclusiveGateway/
-      )
+        /^flowNodeId_exclusiveGateway/,
+      ),
     );
 
     expect(screen.getAllByLabelText(/^incident/i)).toHaveLength(1);
     expect(table.getByText(/flowNodeId_exclusiveGateway/)).toBeInTheDocument();
     expect(
-      table.queryByText(/flowNodeId_alwaysFailingTask/)
+      table.queryByText(/flowNodeId_alwaysFailingTask/),
     ).not.toBeInTheDocument();
   });
 
@@ -85,21 +85,21 @@ describe('Filtering', () => {
     expect(screen.getAllByLabelText(/^incident/i)).toHaveLength(2);
     await user.click(
       within(screen.getByTestId(/incidents-by-errortype/i)).getByText(
-        /^Condition errortype/
-      )
+        /^Condition errortype/,
+      ),
     );
     expect(screen.getAllByLabelText(/^incident/i)).toHaveLength(1);
 
     const flowNodeFilters = within(
-      screen.getByTestId(/incidents-by-flownode/i)
+      screen.getByTestId(/incidents-by-flownode/i),
     );
 
     await user.click(
-      flowNodeFilters.getByText(/^flowNodeId_alwaysFailingTask/)
+      flowNodeFilters.getByText(/^flowNodeId_alwaysFailingTask/),
     );
     expect(screen.queryAllByLabelText(/^incident/i)).toHaveLength(0);
     await user.click(
-      flowNodeFilters.getByText(/^flowNodeId_alwaysFailingTask/)
+      flowNodeFilters.getByText(/^flowNodeId_alwaysFailingTask/),
     );
     expect(screen.getAllByLabelText(/^incident/i)).toHaveLength(1);
   });
@@ -109,18 +109,18 @@ describe('Filtering', () => {
       <IncidentsWrapper setIsInTransition={jest.fn()} />,
       {
         wrapper: Wrapper,
-      }
+      },
     );
 
     expect(screen.getAllByLabelText(/^incident/i)).toHaveLength(2);
 
     const flowNodeFilters = within(
-      screen.getByTestId(/incidents-by-flownode/i)
+      screen.getByTestId(/incidents-by-flownode/i),
     );
 
     await user.click(flowNodeFilters.getByText(/^flowNodeId_exclusiveGateway/));
     await user.click(
-      flowNodeFilters.getByText(/^flowNodeId_alwaysFailingTask/)
+      flowNodeFilters.getByText(/^flowNodeId_alwaysFailingTask/),
     );
     expect(screen.getAllByLabelText(/^incident/i)).toHaveLength(2);
 
@@ -132,10 +132,10 @@ describe('Filtering', () => {
     rerender(<IncidentsWrapper setIsInTransition={jest.fn()} />);
 
     expect(
-      flowNodeFilters.queryByText(/^flowNodeId_exclusiveGateway/)
+      flowNodeFilters.queryByText(/^flowNodeId_exclusiveGateway/),
     ).not.toBeInTheDocument();
     expect(
-      flowNodeFilters.getByText(/^flowNodeId_alwaysFailingTask/)
+      flowNodeFilters.getByText(/^flowNodeId_alwaysFailingTask/),
     ).toBeInTheDocument();
     expect(screen.getAllByLabelText(/^incident/i)).toHaveLength(1);
   });
@@ -149,13 +149,13 @@ describe('Filtering', () => {
 
     await user.click(
       within(screen.getByTestId(/incidents-by-flownode/i)).getByText(
-        /^flowNodeId_exclusiveGateway/
-      )
+        /^flowNodeId_exclusiveGateway/,
+      ),
     );
     await user.click(
       within(screen.getByTestId(/incidents-by-errortype/i)).getByText(
-        /^Condition errortype/
-      )
+        /^Condition errortype/,
+      ),
     );
     expect(screen.getAllByLabelText(/^incident/i)).toHaveLength(1);
 

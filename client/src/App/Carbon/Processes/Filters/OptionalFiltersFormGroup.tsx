@@ -81,7 +81,7 @@ const OPTIONAL_FILTER_FIELDS: Record<
     validate: mergeValidators(
       validateIdsCharacters,
       validateIdsLength,
-      validatesIdsComplete
+      validatesIdsComplete,
     ),
   },
   operationId: {
@@ -90,7 +90,7 @@ const OPTIONAL_FILTER_FIELDS: Record<
     type: 'text',
     validate: mergeValidators(
       validateOperationIdCharacters,
-      validateOperationIdComplete
+      validateOperationIdComplete,
     ),
   },
   parentInstanceId: {
@@ -100,7 +100,7 @@ const OPTIONAL_FILTER_FIELDS: Record<
     validate: mergeValidators(
       validateParentInstanceIdComplete,
       validateParentInstanceIdNotTooLong,
-      validateParentInstanceIdCharacters
+      validateParentInstanceIdCharacters,
     ),
   },
   errorMessage: {
@@ -153,7 +153,7 @@ const OptionalFiltersFormGroup: React.FC<Props> = observer(
                 ? ['endDateRange']
                 : []),
             ] as OptionalFilter[]),
-          ])
+          ]),
         );
       });
     }, [location.state, location.search, onVisibleFilterChange]);
@@ -173,7 +173,7 @@ const OptionalFiltersFormGroup: React.FC<Props> = observer(
           }))}
           onFilterSelect={(filter) => {
             onVisibleFilterChange(
-              Array.from(new Set([...visibleFilters, ...[filter]]))
+              Array.from(new Set([...visibleFilters, ...[filter]])),
             );
             tracking.track({
               eventName: 'optional-filter-selected',
@@ -267,8 +267,8 @@ const OptionalFiltersFormGroup: React.FC<Props> = observer(
                   onClick={() => {
                     onVisibleFilterChange(
                       visibleFilters.filter(
-                        (visibleFilter) => visibleFilter !== filter
-                      )
+                        (visibleFilter) => visibleFilter !== filter,
+                      ),
                     );
 
                     OPTIONAL_FILTER_FIELDS[filter].keys.forEach((key) => {
@@ -285,7 +285,7 @@ const OptionalFiltersFormGroup: React.FC<Props> = observer(
         </Stack>
       </Stack>
     );
-  }
+  },
 );
 
 export {OptionalFiltersFormGroup};

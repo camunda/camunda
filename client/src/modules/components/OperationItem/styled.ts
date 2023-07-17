@@ -39,7 +39,7 @@ const ModifyIcon = styled(Modify)`
 
 const dynamicBorderStyles = (
   backgroundColor: string,
-  borderColor: string
+  borderColor: string,
 ) => css`
   /* change color around right border*/
   &:after {
@@ -140,7 +140,7 @@ const Li = styled.li<LiProps>`
           &:active {
             ${dynamicBorderStyles(
               colors.active.background,
-              colors.active.border
+              colors.active.border,
             )}
           }
         `}

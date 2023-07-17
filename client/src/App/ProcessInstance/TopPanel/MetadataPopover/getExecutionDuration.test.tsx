@@ -19,13 +19,13 @@ jest.mock('date-fns', () => ({
 describe('getExecutionDuration', () => {
   it('should return a duration for open periods', () => {
     expect(getExecutionDuration(MOCK_START_DATE, null)).toBe(
-      `${MOCK_EXECUTION_DATE} (running)`
+      `${MOCK_EXECUTION_DATE} (running)`,
     );
   });
 
   it('should return a duration for periods of less than 1 second', () => {
     expect(getExecutionDuration(MOCK_START_DATE, MOCK_START_DATE)).toBe(
-      'Less than 1 second'
+      'Less than 1 second',
     );
   });
 

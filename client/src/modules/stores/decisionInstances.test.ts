@@ -23,10 +23,10 @@ describe('decisionInstancesStore', () => {
     decisionInstancesStore.fetchDecisionInstancesFromFilters();
 
     await waitFor(() =>
-      expect(decisionInstancesStore.state.status).toBe('fetched')
+      expect(decisionInstancesStore.state.status).toBe('fetched'),
     );
     expect(decisionInstancesStore.state.decisionInstances).toEqual(
-      mockDecisionInstances.decisionInstances
+      mockDecisionInstances.decisionInstances,
     );
   });
 
@@ -38,7 +38,7 @@ describe('decisionInstancesStore', () => {
     decisionInstancesStore.fetchDecisionInstancesFromFilters();
 
     await waitFor(() =>
-      expect(decisionInstancesStore.state.status).toBe('error')
+      expect(decisionInstancesStore.state.status).toBe('error'),
     );
   });
 });

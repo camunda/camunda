@@ -43,10 +43,10 @@ describe('Sorting', () => {
 
     render(<IncidentsTable />, {wrapper: Wrapper});
     expect(
-      screen.getByRole('button', {name: 'Sort by Creation Date'})
+      screen.getByRole('button', {name: 'Sort by Creation Date'}),
     ).toBeInTheDocument();
     expect(
-      screen.queryByRole('button', {name: 'Sort by Job Id'})
+      screen.queryByRole('button', {name: 'Sort by Job Id'}),
     ).not.toBeInTheDocument();
   });
 });

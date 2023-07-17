@@ -37,7 +37,7 @@ const NewVariable: React.FC = () => {
         validate={mergeValidators(
           validateNameCharacters,
           validateNameComplete,
-          validateNameNotDuplicate
+          validateNameNotDuplicate,
         )}
         allowNull={false}
         parse={(value) => value}

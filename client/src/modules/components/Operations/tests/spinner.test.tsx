@@ -27,7 +27,7 @@ describe('Operations - Spinner', () => {
           state: 'INCIDENT',
         }}
       />,
-      {wrapper: Wrapper}
+      {wrapper: Wrapper},
     );
 
     expect(screen.queryByTestId('operation-spinner')).not.toBeInTheDocument();
@@ -42,7 +42,7 @@ describe('Operations - Spinner', () => {
         }}
         forceSpinner={true}
       />,
-      {wrapper: Wrapper}
+      {wrapper: Wrapper},
     );
 
     expect(screen.getByTestId('operation-spinner')).toBeInTheDocument();
@@ -68,13 +68,13 @@ describe('Operations - Spinner', () => {
           state: 'INCIDENT',
         }}
       />,
-      {wrapper: Wrapper}
+      {wrapper: Wrapper},
     );
 
     expect(screen.queryByTestId('operation-spinner')).not.toBeInTheDocument();
 
     await waitFor(() =>
-      expect(processInstancesStore.state.status).toBe('fetched')
+      expect(processInstancesStore.state.status).toBe('fetched'),
     );
     expect(await screen.findByTestId('operation-spinner')).toBeInTheDocument();
 

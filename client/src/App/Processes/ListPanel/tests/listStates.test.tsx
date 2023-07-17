@@ -47,11 +47,11 @@ describe('display instances List', () => {
 
     expect(screen.getByLabelText('Select all instances')).toBeInTheDocument();
     expect(
-      screen.getAllByRole('checkbox', {name: /select instance/i}).length
+      screen.getAllByRole('checkbox', {name: /select instance/i}).length,
     ).toBe(2);
     expect(screen.getByText('Operations')).toBeInTheDocument();
     expect(
-      screen.getByText(/^© Camunda Services GmbH \d{4}. All rights reserved./)
+      screen.getByText(/^© Camunda Services GmbH \d{4}. All rights reserved./),
     ).toBeInTheDocument();
     expect(screen.getByText('2 results found')).toBeInTheDocument();
   });
@@ -71,7 +71,7 @@ describe('display instances List', () => {
     await waitForElementToBeRemoved(screen.getByTestId('table-skeleton'));
 
     expect(
-      screen.getByText(/^© Camunda Services GmbH \d{4}. All rights reserved./)
+      screen.getByText(/^© Camunda Services GmbH \d{4}. All rights reserved./),
     ).toBeInTheDocument();
     expect(screen.queryByText(/results found/)).not.toBeInTheDocument();
   });
@@ -99,7 +99,7 @@ describe('display instances List', () => {
 
     expect(screen.queryByTitle('Select all instances')).not.toBeInTheDocument();
     expect(
-      screen.queryByRole('checkbox', {name: /select instance/i})
+      screen.queryByRole('checkbox', {name: /select instance/i}),
     ).not.toBeInTheDocument();
     expect(screen.queryByText('Operations')).not.toBeInTheDocument();
   });
@@ -116,10 +116,10 @@ describe('display instances List', () => {
     });
 
     expect(
-      await screen.findByText('Data could not be fetched')
+      await screen.findByText('Data could not be fetched'),
     ).toBeInTheDocument();
     expect(
-      screen.queryByText('There are no Instances matching this filter set')
+      screen.queryByText('There are no Instances matching this filter set'),
     ).not.toBeInTheDocument();
 
     unmount();
@@ -136,10 +136,10 @@ describe('display instances List', () => {
     });
 
     expect(
-      await screen.findByText('Data could not be fetched')
+      await screen.findByText('Data could not be fetched'),
     ).toBeInTheDocument();
     expect(
-      screen.queryByText('There are no Instances matching this filter set')
+      screen.queryByText('There are no Instances matching this filter set'),
     ).not.toBeInTheDocument();
     expect(screen.queryByText(/results found/)).not.toBeInTheDocument();
   });

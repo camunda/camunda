@@ -77,7 +77,7 @@ describe('<Decisions />', () => {
 
     await waitForElementToBeRemoved(() => screen.getByTestId('table-skeleton'));
     await waitFor(() =>
-      expect(groupedDecisionsStore.state.status).toBe('fetched')
+      expect(groupedDecisionsStore.state.status).toBe('fetched'),
     );
   });
 
@@ -135,7 +135,7 @@ describe('<Decisions />', () => {
       expect(groupedDecisionsStore.decisions.length).toBe(3);
       expect(screen.getByTestId('pathname')).toHaveTextContent(/^\/decisions/);
       expect(screen.getByTestId('search').textContent).toBe(
-        '?evaluated=true&failed=true'
+        '?evaluated=true&failed=true',
       );
     });
 
@@ -143,7 +143,7 @@ describe('<Decisions />', () => {
       'error',
       {
         headline: 'Decision could not be found',
-      }
+      },
     );
 
     jest.clearAllTimers();

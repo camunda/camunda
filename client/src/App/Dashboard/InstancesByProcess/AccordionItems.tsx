@@ -52,7 +52,7 @@ const AccordionItems: React.FC<Props> = ({processName, processes}) => {
               title={getAccordionItemTitle(
                 process.name || processName,
                 totalInstancesCount,
-                process.version
+                process.version,
               )}
               $boxSize="small"
             >
@@ -60,7 +60,7 @@ const AccordionItems: React.FC<Props> = ({processName, processes}) => {
                 label={getAccordionItemLabel(
                   process.name || processName,
                   totalInstancesCount,
-                  process.version
+                  process.version,
                 )}
                 incidentsCount={process.instancesWithActiveIncidentsCount}
                 activeCount={process.activeInstancesCount}

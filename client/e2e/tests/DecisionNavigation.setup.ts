@@ -17,7 +17,7 @@ const setup = async () => {
 
   const processInstanceWithFailedDecision = await createSingleInstance(
     'invoice',
-    1
+    1,
   );
 
   return {

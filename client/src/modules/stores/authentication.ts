@@ -118,7 +118,7 @@ class Authentication {
     if (!response.isSuccess) {
       return new NetworkError(
         'Could not login credentials',
-        response.statusCode
+        response.statusCode,
       );
     }
 
@@ -189,7 +189,7 @@ class Authentication {
 
   hasPermission = (scopes: Permissions) => {
     return this.state.permissions.some((permission) =>
-      scopes.includes(permission)
+      scopes.includes(permission),
     );
   };
 

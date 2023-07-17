@@ -16,7 +16,7 @@ export async function setup() {
     {
       test: 123,
       foo: 'bar',
-    }
+    },
   );
 
   return {

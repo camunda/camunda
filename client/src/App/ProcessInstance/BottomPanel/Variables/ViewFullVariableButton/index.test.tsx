@@ -30,29 +30,29 @@ describe('<ViewFullVariableButton />', () => {
       />,
       {
         wrapper: ThemeProvider,
-      }
+      },
     );
 
     await user.click(
       screen.getByRole('button', {
         name: /view full value of foo-variable/i,
-      })
+      }),
     );
 
     expect(
-      screen.getByTestId('view-full-variable-spinner')
+      screen.getByTestId('view-full-variable-spinner'),
     ).toBeInTheDocument();
 
     jest.runOnlyPendingTimers();
 
     await waitForElementToBeRemoved(() =>
-      screen.getByTestId('view-full-variable-spinner')
+      screen.getByTestId('view-full-variable-spinner'),
     );
 
     expect(mockOnClick).toHaveBeenCalled();
     expect(screen.getByRole('dialog')).toBeInTheDocument();
     expect(
-      screen.getByRole('heading', {name: `Full value of ${mockVariableName}`})
+      screen.getByRole('heading', {name: `Full value of ${mockVariableName}`}),
     ).toBeInTheDocument();
     jest.useRealTimers();
   });

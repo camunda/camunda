@@ -29,7 +29,7 @@ describe('Filtering', () => {
     expect(
       screen.queryByRole('button', {
         name: /clear all selected items/i,
-      })
+      }),
     ).not.toBeInTheDocument();
   });
 
@@ -45,19 +45,19 @@ describe('Filtering', () => {
     expect(table.getByText(/Extract value errortype/)).toBeInTheDocument();
 
     await user.click(
-      await screen.findByRole('button', {name: /filter by incident type/i})
+      await screen.findByRole('button', {name: /filter by incident type/i}),
     );
 
     await user.click(
       screen.getByRole('option', {
         name: /^Condition errortype/,
-      })
+      }),
     );
 
     expect(screen.getAllByRole('row')).toHaveLength(2);
     expect(table.getByText(/Condition errortype/)).toBeInTheDocument();
     expect(
-      table.queryByText(/Extract value errortype/)
+      table.queryByText(/Extract value errortype/),
     ).not.toBeInTheDocument();
   });
 
@@ -73,19 +73,19 @@ describe('Filtering', () => {
     expect(table.getByText(/flowNodeId_alwaysFailingTask/)).toBeInTheDocument();
 
     await user.click(
-      await screen.findByRole('button', {name: /filter by flow node/i})
+      await screen.findByRole('button', {name: /filter by flow node/i}),
     );
 
     await user.click(
       screen.getByRole('option', {
         name: /^flowNodeId_exclusiveGateway/,
-      })
+      }),
     );
 
     expect(screen.getAllByRole('row')).toHaveLength(2);
     expect(table.getByText(/flowNodeId_exclusiveGateway/)).toBeInTheDocument();
     expect(
-      table.queryByText(/flowNodeId_alwaysFailingTask/)
+      table.queryByText(/flowNodeId_alwaysFailingTask/),
     ).not.toBeInTheDocument();
   });
 
@@ -96,31 +96,31 @@ describe('Filtering', () => {
 
     expect(screen.getAllByRole('row')).toHaveLength(3);
     await user.click(
-      await screen.findByRole('button', {name: /filter by incident type/i})
+      await screen.findByRole('button', {name: /filter by incident type/i}),
     );
 
     await user.click(
       screen.getByRole('option', {
         name: /^Condition errortype/,
-      })
+      }),
     );
 
     expect(screen.getAllByRole('row')).toHaveLength(2);
 
     await user.click(
-      await screen.findByRole('button', {name: /filter by flow node/i})
+      await screen.findByRole('button', {name: /filter by flow node/i}),
     );
 
     await user.click(
       screen.getByRole('option', {
         name: /^flowNodeId_alwaysFailingTask/,
-      })
+      }),
     );
     expect(screen.getAllByRole('row')).toHaveLength(1);
     await user.click(
       screen.getByRole('option', {
         name: /^flowNodeId_alwaysFailingTask/,
-      })
+      }),
     );
     expect(screen.getAllByRole('row')).toHaveLength(2);
   });
@@ -130,25 +130,25 @@ describe('Filtering', () => {
       <IncidentsWrapper setIsInTransition={jest.fn()} />,
       {
         wrapper: Wrapper,
-      }
+      },
     );
 
     expect(screen.getAllByRole('row')).toHaveLength(3);
 
     await user.click(
-      await screen.findByRole('button', {name: /filter by flow node/i})
+      await screen.findByRole('button', {name: /filter by flow node/i}),
     );
 
     await user.click(
       screen.getByRole('option', {
         name: /^flowNodeId_exclusiveGateway/,
-      })
+      }),
     );
 
     await user.click(
       screen.getByRole('option', {
         name: /^flowNodeId_alwaysFailingTask/,
-      })
+      }),
     );
 
     expect(screen.getAllByRole('row')).toHaveLength(3);
@@ -163,13 +163,13 @@ describe('Filtering', () => {
     expect(
       screen.queryByRole('option', {
         name: /^flowNodeId_exclusiveGateway/,
-      })
+      }),
     ).not.toBeInTheDocument();
 
     expect(
       screen.getByRole('option', {
         name: /^flowNodeId_alwaysFailingTask/,
-      })
+      }),
     ).toBeInTheDocument();
 
     expect(screen.getAllByRole('row')).toHaveLength(2);
@@ -183,23 +183,23 @@ describe('Filtering', () => {
     expect(screen.getAllByRole('row')).toHaveLength(3);
 
     await user.click(
-      await screen.findByRole('button', {name: /filter by flow node/i})
+      await screen.findByRole('button', {name: /filter by flow node/i}),
     );
 
     await user.click(
       screen.getByRole('option', {
         name: /^flowNodeId_exclusiveGateway/,
-      })
+      }),
     );
 
     await user.click(
-      await screen.findByRole('button', {name: /filter by incident type/i})
+      await screen.findByRole('button', {name: /filter by incident type/i}),
     );
 
     await user.click(
       screen.getByRole('option', {
         name: /^Condition errortype/,
-      })
+      }),
     );
 
     expect(screen.getAllByRole('row')).toHaveLength(2);

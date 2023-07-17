@@ -62,7 +62,7 @@ describe('IncidentOperation', () => {
       />,
       {
         wrapper: Wrapper,
-      }
+      },
     );
     expect(screen.queryByTestId('operation-spinner')).not.toBeInTheDocument();
 
@@ -79,7 +79,7 @@ describe('IncidentOperation', () => {
       <IncidentOperation incident={createIncident()} instanceId="instance_1" />,
       {
         wrapper: Wrapper,
-      }
+      },
     );
     expect(screen.queryByTestId('operation-spinner')).not.toBeInTheDocument();
 
@@ -100,7 +100,7 @@ describe('IncidentOperation', () => {
       <IncidentOperation incident={createIncident()} instanceId="instance_1" />,
       {
         wrapper: Wrapper,
-      }
+      },
     );
     expect(screen.queryByTestId('operation-spinner')).not.toBeInTheDocument();
 
@@ -121,7 +121,7 @@ describe('IncidentOperation', () => {
       <IncidentOperation incident={createIncident()} instanceId="instance_1" />,
       {
         wrapper: Wrapper,
-      }
+      },
     );
     expect(screen.queryByTestId('operation-spinner')).not.toBeInTheDocument();
 
@@ -141,7 +141,7 @@ describe('IncidentOperation', () => {
       <IncidentOperation incident={createIncident()} instanceId="instance_1" />,
       {
         wrapper: Wrapper,
-      }
+      },
     );
     expect(screen.queryByTestId('operation-spinner')).not.toBeInTheDocument();
 

@@ -47,12 +47,12 @@ describe('Add variable', () => {
     expect(
       screen.queryByRole('textbox', {
         name: /name/i,
-      })
+      }),
     ).not.toBeInTheDocument();
     expect(
       screen.queryByRole('textbox', {
         name: /value/i,
-      })
+      }),
     ).not.toBeInTheDocument();
 
     await user.click(screen.getByRole('button', {name: /add variable/i}));
@@ -60,24 +60,24 @@ describe('Add variable', () => {
     expect(
       screen.getByRole('textbox', {
         name: /name/i,
-      })
+      }),
     ).toBeInTheDocument();
     expect(
       screen.getByRole('textbox', {
         name: /value/i,
-      })
+      }),
     ).toBeInTheDocument();
     await user.click(screen.getByRole('button', {name: /exit edit mode/i}));
 
     expect(
       screen.queryByRole('textbox', {
         name: /name/i,
-      })
+      }),
     ).not.toBeInTheDocument();
     expect(
       screen.queryByRole('textbox', {
         name: /value/i,
-      })
+      }),
     ).not.toBeInTheDocument();
   });
 
@@ -103,7 +103,7 @@ describe('Add variable', () => {
       screen.getByRole('textbox', {
         name: /name/i,
       }),
-      'test'
+      'test',
     );
     expect(screen.getByRole('button', {name: /save variable/i})).toBeDisabled();
 
@@ -111,7 +111,7 @@ describe('Add variable', () => {
       screen.getByRole('textbox', {
         name: /value/i,
       }),
-      '    '
+      '    ',
     );
 
     expect(screen.getByRole('button', {name: /save variable/i})).toBeDisabled();
@@ -139,42 +139,42 @@ describe('Add variable', () => {
     expect(
       screen.getByRole('button', {
         name: /save variable/i,
-      })
+      }),
     ).toBeDisabled();
 
     await user.type(
       screen.getByRole('textbox', {
         name: /value/i,
       }),
-      '123'
+      '123',
     );
 
     expect(
       screen.getByRole('button', {
         name: /save variable/i,
-      })
+      }),
     ).toBeDisabled();
     expect(screen.queryByText('Name has to be filled')).not.toBeInTheDocument();
     expect(
-      await screen.findByText('Name has to be filled')
+      await screen.findByText('Name has to be filled'),
     ).toBeInTheDocument();
 
     await user.dblClick(
       screen.getByRole('textbox', {
         name: /value/i,
-      })
+      }),
     );
     await user.type(
       screen.getByRole('textbox', {
         name: /value/i,
       }),
-      'test'
+      'test',
     );
 
     expect(
       screen.getByRole('button', {
         name: /save variable/i,
-      })
+      }),
     ).toBeDisabled();
 
     expect(screen.getByText('Name has to be filled')).toBeInTheDocument();
@@ -185,7 +185,7 @@ describe('Add variable', () => {
       screen.getByRole('textbox', {
         name: /name/i,
       }),
-      '   '
+      '   ',
     );
 
     expect(screen.getByText('Value has to be JSON')).toBeInTheDocument();
@@ -195,7 +195,7 @@ describe('Add variable', () => {
       screen.getByRole('textbox', {
         name: /name/i,
       }),
-      ' test'
+      ' test',
     );
 
     expect(screen.getByText('Value has to be JSON')).toBeInTheDocument();
@@ -204,13 +204,13 @@ describe('Add variable', () => {
     await user.dblClick(
       screen.getByRole('textbox', {
         name: /value/i,
-      })
+      }),
     );
     await user.type(
       screen.getByRole('textbox', {
         name: /value/i,
       }),
-      '"valid value"'
+      '"valid value"',
     );
 
     expect(screen.queryByText('Value has to be JSON')).not.toBeInTheDocument();
@@ -236,45 +236,45 @@ describe('Add variable', () => {
     expect(
       screen.getByRole('button', {
         name: /save variable/i,
-      })
+      }),
     ).toBeDisabled();
     await user.type(
       screen.getByRole('textbox', {
         name: /name/i,
       }),
-      mockVariables[0]!.name
+      mockVariables[0]!.name,
     );
 
     expect(
       screen.getByRole('button', {
         name: /save variable/i,
-      })
+      }),
     ).toBeDisabled();
     expect(screen.queryByText('Name should be unique')).not.toBeInTheDocument();
     expect(
-      screen.queryByText('Value has to be filled')
+      screen.queryByText('Value has to be filled'),
     ).not.toBeInTheDocument();
     expect(
-      await screen.findByText('Name should be unique')
+      await screen.findByText('Name should be unique'),
     ).toBeInTheDocument();
     expect(
-      await screen.findByText('Value has to be filled')
+      await screen.findByText('Value has to be filled'),
     ).toBeInTheDocument();
 
     await user.type(
       screen.getByRole('textbox', {
         name: /value/i,
       }),
-      '123'
+      '123',
     );
 
     expect(
       screen.getByRole('button', {
         name: /save variable/i,
-      })
+      }),
     ).toBeDisabled();
     expect(
-      screen.queryByText('Value has to be filled')
+      screen.queryByText('Value has to be filled'),
     ).not.toBeInTheDocument();
 
     expect(screen.getByText('Name should be unique')).toBeInTheDocument();
@@ -282,21 +282,21 @@ describe('Add variable', () => {
     await user.dblClick(
       screen.getByRole('textbox', {
         name: /name/i,
-      })
+      }),
     );
     await user.type(
       screen.getByRole('textbox', {
         name: /name/i,
       }),
-      'someOtherName'
+      'someOtherName',
     );
 
     await waitFor(() =>
       expect(
         screen.getByRole('button', {
           name: /save variable/i,
-        })
-      ).toBeEnabled()
+        }),
+      ).toBeEnabled(),
     );
 
     expect(screen.queryByText('Name should be unique')).not.toBeInTheDocument();
@@ -325,46 +325,46 @@ describe('Add variable', () => {
     expect(
       screen.getByRole('button', {
         name: /save variable/i,
-      })
+      }),
     ).toBeDisabled();
     await user.type(
       screen.getByRole('textbox', {
         name: /name/i,
       }),
-      '"invalid"'
+      '"invalid"',
     );
     await user.type(
       screen.getByRole('textbox', {
         name: /value/i,
       }),
-      '123'
+      '123',
     );
 
     expect(await screen.findByText('Name is invalid')).toBeInTheDocument();
     expect(
       screen.getByRole('button', {
         name: /save variable/i,
-      })
+      }),
     ).toBeDisabled();
 
     await user.clear(
       screen.getByRole('textbox', {
         name: /name/i,
-      })
+      }),
     );
     await user.type(
       screen.getByRole('textbox', {
         name: /name/i,
       }),
-      'someOtherName'
+      'someOtherName',
     );
 
     await waitFor(() =>
       expect(
         screen.getByRole('button', {
           name: /save variable/i,
-        })
-      ).toBeEnabled()
+        }),
+      ).toBeEnabled(),
     );
 
     expect(screen.queryByText('Name is invalid')).not.toBeInTheDocument();
@@ -386,10 +386,10 @@ describe('Add variable', () => {
 
     const withinVariable = within(screen.getByTestId('variable-clientNo'));
     await user.click(
-      withinVariable.getByRole('button', {name: /edit variable/i})
+      withinVariable.getByRole('button', {name: /edit variable/i}),
     );
     expect(
-      screen.queryByTitle('Name should be unique')
+      screen.queryByTitle('Name should be unique'),
     ).not.toBeInTheDocument();
   });
 
@@ -410,24 +410,24 @@ describe('Add variable', () => {
     expect(
       screen.queryByRole('textbox', {
         name: /name/i,
-      })
+      }),
     ).not.toBeInTheDocument();
     expect(
       screen.queryByRole('textbox', {
         name: /value/i,
-      })
+      }),
     ).not.toBeInTheDocument();
     await user.click(screen.getByRole('button', {name: /add variable/i}));
 
     expect(
       screen.getByRole('textbox', {
         name: /name/i,
-      })
+      }),
     ).toBeInTheDocument();
     expect(
       screen.getByRole('textbox', {
         name: /value/i,
-      })
+      }),
     ).toBeInTheDocument();
 
     await user.keyboard('{Enter}');
@@ -435,12 +435,12 @@ describe('Add variable', () => {
     expect(
       screen.getByRole('textbox', {
         name: /name/i,
-      })
+      }),
     ).toBeInTheDocument();
     expect(
       screen.getByRole('textbox', {
         name: /value/i,
-      })
+      }),
     ).toBeInTheDocument();
   });
 
@@ -461,30 +461,30 @@ describe('Add variable', () => {
     expect(
       screen.getByRole('textbox', {
         name: /name/i,
-      })
+      }),
     ).toBeInTheDocument();
     expect(
       screen.getByRole('textbox', {
         name: /value/i,
-      })
+      }),
     ).toBeInTheDocument();
 
     act(() =>
       processInstanceDetailsStore.setProcessInstance({
         ...instanceMock,
         state: 'CANCELED',
-      })
+      }),
     );
 
     expect(
       screen.queryByRole('textbox', {
         name: /name/i,
-      })
+      }),
     ).not.toBeInTheDocument();
     expect(
       screen.queryByRole('textbox', {
         name: /value/i,
-      })
+      }),
     ).not.toBeInTheDocument();
   });
 
@@ -504,17 +504,17 @@ describe('Add variable', () => {
 
     await user.click(screen.getByRole('button', {name: /add variable/i}));
     await user.click(
-      screen.getByRole('button', {name: /open json editor modal/i})
+      screen.getByRole('button', {name: /open json editor modal/i}),
     );
 
     expect(
-      within(screen.getByRole('dialog')).getByRole('button', {name: /cancel/i})
+      within(screen.getByRole('dialog')).getByRole('button', {name: /cancel/i}),
     ).toBeEnabled();
     expect(
-      within(screen.getByRole('dialog')).getByRole('button', {name: /apply/i})
+      within(screen.getByRole('dialog')).getByRole('button', {name: /apply/i}),
     ).toBeEnabled();
     expect(
-      within(screen.getByRole('dialog')).getByTestId('monaco-editor')
+      within(screen.getByRole('dialog')).getByTestId('monaco-editor'),
     ).toBeInTheDocument();
   });
 });

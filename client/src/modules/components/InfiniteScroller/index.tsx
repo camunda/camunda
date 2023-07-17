@@ -56,14 +56,14 @@ const InfiniteScroller: React.FC<Props> = ({
     const scrollDown = (distance: number) => {
       scrollableContainerRef.current?.scrollTo(
         0,
-        scrollableContainerRef.current.scrollTop + distance
+        scrollableContainerRef.current.scrollTop + distance,
       );
     };
 
     const scrollUp = (distance: number) => {
       scrollableContainerRef.current?.scrollTo(
         0,
-        scrollableContainerRef.current.scrollTop - distance
+        scrollableContainerRef.current.scrollTop - distance,
       );
     };
 
@@ -92,7 +92,7 @@ const InfiniteScroller: React.FC<Props> = ({
           });
         prevScrollTop = scrollTop;
       },
-      {root: scrollableContainerRef.current, threshold: 0.5}
+      {root: scrollableContainerRef.current, threshold: 0.5},
     );
   }, [
     onVerticalScrollStartReach,
@@ -111,7 +111,7 @@ const InfiniteScroller: React.FC<Props> = ({
         observeIntersections(node);
       }
     },
-    [createIntersectionObserver, createMutationObserver]
+    [createIntersectionObserver, createMutationObserver],
   );
 
   if (React.isValidElement(children)) {

@@ -101,7 +101,7 @@ const InputsAndOutputs: React.FC = observer(() => {
                         {cellContent: value},
                       ],
                     };
-                  }
+                  },
                 )}
               />
             )}
@@ -136,7 +136,7 @@ const InputsAndOutputs: React.FC = observer(() => {
                         {cellContent: value},
                       ],
                     };
-                  }
+                  },
                 ) ?? []
               }
             />

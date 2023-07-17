@@ -47,7 +47,7 @@ const CollapsablePanel = forwardRef<HTMLDivElement, Props>(
       collapsablePanelRef,
       ...props
     },
-    ref
+    ref,
   ) => {
     const tooltipAlignment = panelPosition === 'RIGHT' ? 'left' : 'right';
 
@@ -99,7 +99,7 @@ const CollapsablePanel = forwardRef<HTMLDivElement, Props>(
         )}
       </Collapsable>
     );
-  }
+  },
 );
 
 export {CollapsablePanel};

@@ -25,7 +25,7 @@ describe('<DiffEditorModal />', () => {
       />,
       {
         wrapper: ThemeProvider,
-      }
+      },
     );
 
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
@@ -46,7 +46,7 @@ describe('<DiffEditorModal />', () => {
       />,
       {
         wrapper: ThemeProvider,
-      }
+      },
     );
 
     expect(screen.getByRole('dialog')).toBeInTheDocument();
@@ -54,10 +54,10 @@ describe('<DiffEditorModal />', () => {
     expect(
       screen.getByRole('heading', {
         name: mockTitle,
-      })
+      }),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole('button', {name: /exit modal/i})
+      screen.getByRole('button', {name: /exit modal/i}),
     ).toBeInTheDocument();
     expect(screen.getByDisplayValue(mockOriginalValue)).toBeInTheDocument();
     expect(screen.getByDisplayValue(mockModifiedValue)).toBeInTheDocument();
@@ -77,7 +77,7 @@ describe('<DiffEditorModal />', () => {
       />,
       {
         wrapper: ThemeProvider,
-      }
+      },
     );
 
     await user.click(screen.getByRole('button', {name: /exit modal/i}));

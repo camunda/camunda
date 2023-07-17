@@ -59,7 +59,7 @@ const processInstancesMock = createMultiInstanceFlowNodeInstances('4294980768');
 
 function getWrapper(
   initialPath: string = '/carbon/processes/4294980768',
-  contextPath?: string
+  contextPath?: string,
 ) {
   const Wrapper: React.FC<Props> = ({children}) => {
     return (
@@ -89,12 +89,12 @@ function getWrapper(
 
 const mockRequests = (contextPath: string = '') => {
   mockFetchProcessInstance(contextPath).withSuccess(
-    testData.fetch.onPageLoad.processInstanceWithIncident
+    testData.fetch.onPageLoad.processInstanceWithIncident,
   );
   mockFetchProcessXML(contextPath).withSuccess('');
   mockFetchSequenceFlows(contextPath).withSuccess(mockSequenceFlows);
   mockFetchFlowNodeInstances(contextPath).withSuccess(
-    processInstancesMock.level1
+    processInstancesMock.level1,
   );
   mockFetchProcessInstanceDetailStatistics(contextPath).withSuccess([
     {
@@ -135,7 +135,7 @@ describe('Instance', () => {
   it('should block navigation when modification mode is enabled', async () => {
     const {user} = render(<ProcessInstance />, {wrapper: getWrapper()});
     await waitForElementToBeRemoved(
-      screen.getByTestId('instance-header-skeleton')
+      screen.getByTestId('instance-header-skeleton'),
     );
 
     storeStateLocally({
@@ -145,38 +145,38 @@ describe('Instance', () => {
     await user.click(
       screen.getByRole('button', {
         name: /modify instance/i,
-      })
+      }),
     );
 
     await user.click(
       screen.getByRole('link', {
         description: /View process someProcessName version 1 instances/,
-      })
+      }),
     );
 
     expect(
       await screen.findByText(
-        'By leaving this page, all planned modification/s will be discarded.'
-      )
+        'By leaving this page, all planned modification/s will be discarded.',
+      ),
     ).toBeInTheDocument();
     await user.click(screen.getByRole('button', {name: 'Stay'}));
 
     expect(
       screen.queryByText(
-        'By leaving this page, all planned modification/s will be discarded.'
-      )
+        'By leaving this page, all planned modification/s will be discarded.',
+      ),
     ).not.toBeInTheDocument();
 
     await user.click(
       screen.getByRole('link', {
         description: /View process someProcessName version 1 instances/,
-      })
+      }),
     );
 
     expect(
       await screen.findByText(
-        'By leaving this page, all planned modification/s will be discarded.'
-      )
+        'By leaving this page, all planned modification/s will be discarded.',
+      ),
     ).toBeInTheDocument();
 
     await user.click(screen.getByRole('button', {name: 'Leave'}));
@@ -195,11 +195,11 @@ describe('Instance', () => {
     const {user} = render(<ProcessInstance />, {
       wrapper: getWrapper(
         `${contextPath}/carbon/processes/4294980768`,
-        contextPath
+        contextPath,
       ),
     });
     await waitForElementToBeRemoved(
-      screen.getByTestId('instance-header-skeleton')
+      screen.getByTestId('instance-header-skeleton'),
     );
 
     storeStateLocally({
@@ -209,38 +209,38 @@ describe('Instance', () => {
     await user.click(
       screen.getByRole('button', {
         name: /modify instance/i,
-      })
+      }),
     );
 
     await user.click(
       screen.getByRole('link', {
         description: /View process someProcessName version 1 instances/,
-      })
+      }),
     );
 
     expect(
       await screen.findByText(
-        'By leaving this page, all planned modification/s will be discarded.'
-      )
+        'By leaving this page, all planned modification/s will be discarded.',
+      ),
     ).toBeInTheDocument();
     await user.click(screen.getByRole('button', {name: 'Stay'}));
 
     expect(
       screen.queryByText(
-        'By leaving this page, all planned modification/s will be discarded.'
-      )
+        'By leaving this page, all planned modification/s will be discarded.',
+      ),
     ).not.toBeInTheDocument();
 
     await user.click(
       screen.getByRole('link', {
         description: /View process someProcessName version 1 instances/,
-      })
+      }),
     );
 
     expect(
       await screen.findByText(
-        'By leaving this page, all planned modification/s will be discarded.'
-      )
+        'By leaving this page, all planned modification/s will be discarded.',
+      ),
     ).toBeInTheDocument();
 
     await user.click(screen.getByRole('button', {name: 'Leave'}));
@@ -264,12 +264,12 @@ describe('Instance', () => {
       {
         wrapper: getWrapper(
           `${contextPath}/carbon/processes/4294980768`,
-          contextPath
+          contextPath,
         ),
-      }
+      },
     );
     await waitForElementToBeRemoved(
-      screen.getByTestId('instance-header-skeleton')
+      screen.getByTestId('instance-header-skeleton'),
     );
 
     storeStateLocally({
@@ -279,30 +279,30 @@ describe('Instance', () => {
     await user.click(
       screen.getByRole('button', {
         name: /modify instance/i,
-      })
+      }),
     );
 
     await user.click(screen.getByText(/go to dashboard/));
 
     expect(
       await screen.findByText(
-        'By leaving this page, all planned modification/s will be discarded.'
-      )
+        'By leaving this page, all planned modification/s will be discarded.',
+      ),
     ).toBeInTheDocument();
     await user.click(screen.getByRole('button', {name: 'Stay'}));
 
     expect(
       screen.queryByText(
-        'By leaving this page, all planned modification/s will be discarded.'
-      )
+        'By leaving this page, all planned modification/s will be discarded.',
+      ),
     ).not.toBeInTheDocument();
 
     await user.click(screen.getByText(/go to dashboard/));
 
     expect(
       await screen.findByText(
-        'By leaving this page, all planned modification/s will be discarded.'
-      )
+        'By leaving this page, all planned modification/s will be discarded.',
+      ),
     ).toBeInTheDocument();
 
     await user.click(screen.getByRole('button', {name: 'Leave'}));

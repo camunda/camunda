@@ -83,12 +83,12 @@ class FlowNodeInstance extends NetworkReconnectionHandler {
           this.fetchInstanceExecutionHistory(instanceId);
           this.startPolling();
         }
-      }
+      },
     );
 
     this.instanceFinishedDisposer = when(
       () => processInstanceDetailsStore.isRunning === false,
-      () => this.stopPolling()
+      () => this.stopPolling(),
     );
   }
 
@@ -111,7 +111,7 @@ class FlowNodeInstance extends NetworkReconnectionHandler {
           pageSize:
             // round up to a multiple of MAX_INSTANCES_PER_REQUEST
             Math.ceil(
-              flowNodeInstance.children.length / MAX_INSTANCES_PER_REQUEST
+              flowNodeInstance.children.length / MAX_INSTANCES_PER_REQUEST,
             ) * MAX_INSTANCES_PER_REQUEST,
           searchAfterOrEqual: flowNodeInstance.children[0]?.sortValues,
         };
@@ -314,7 +314,7 @@ class FlowNodeInstance extends NetworkReconnectionHandler {
       if (flowNodeInstances !== undefined) {
         this.handleFetchSuccess(flowNodeInstances);
       }
-    }
+    },
   );
 
   getVisibleChildNodes = (flowNodeInstance: FlowNodeInstanceType) => {
@@ -356,7 +356,7 @@ class FlowNodeInstance extends NetworkReconnectionHandler {
         ) {
           this.state.flowNodeInstances[treePath] = flowNodeInstance;
         }
-      }
+      },
     );
 
     this.state.status = 'fetched';
@@ -376,7 +376,7 @@ class FlowNodeInstance extends NetworkReconnectionHandler {
         ) {
           this.state.flowNodeInstances[treePath] = flowNodeInstance;
         }
-      }
+      },
     );
   };
 

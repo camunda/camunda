@@ -53,7 +53,7 @@ class Statistics extends NetworkReconnectionHandler {
     }
 
     processInstancesStore.addCompletedOperationsHandler(() =>
-      this.fetchStatistics()
+      this.fetchStatistics(),
     );
   }
 

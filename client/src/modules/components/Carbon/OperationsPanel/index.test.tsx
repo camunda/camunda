@@ -39,7 +39,7 @@ describe('OperationsPanel', () => {
     render(<OperationsPanel />, {wrapper: Wrapper});
 
     expect(
-      await screen.findByText(CONSTANTS.EMPTY_MESSAGE)
+      await screen.findByText(CONSTANTS.EMPTY_MESSAGE),
     ).toBeInTheDocument();
   });
 
@@ -72,19 +72,19 @@ describe('OperationsPanel', () => {
     const withinSecondOperation = within(secondOperation!);
 
     expect(
-      withinFirstOperation.getByText(mockOperationRunning.id)
+      withinFirstOperation.getByText(mockOperationRunning.id),
     ).toBeInTheDocument();
     expect(withinFirstOperation.getByText('Retry')).toBeInTheDocument();
     expect(
-      withinFirstOperation.getByTestId('operation-retry-icon')
+      withinFirstOperation.getByTestId('operation-retry-icon'),
     ).toBeInTheDocument();
 
     expect(
-      withinSecondOperation.getByText(mockOperationFinished.id)
+      withinSecondOperation.getByText(mockOperationFinished.id),
     ).toBeInTheDocument();
     expect(withinSecondOperation.getByText('Cancel')).toBeInTheDocument();
     expect(
-      withinSecondOperation.getByTestId('operation-cancel-icon')
+      withinSecondOperation.getByTestId('operation-cancel-icon'),
     ).toBeInTheDocument();
   });
 
@@ -93,7 +93,7 @@ describe('OperationsPanel', () => {
     const {unmount} = render(<OperationsPanel />, {wrapper: Wrapper});
 
     expect(
-      await screen.findByText('Operations could not be fetched')
+      await screen.findByText('Operations could not be fetched'),
     ).toBeInTheDocument();
 
     unmount();
@@ -103,7 +103,7 @@ describe('OperationsPanel', () => {
     render(<OperationsPanel />, {wrapper: Wrapper});
 
     expect(
-      await screen.findByText('Operations could not be fetched')
+      await screen.findByText('Operations could not be fetched'),
     ).toBeInTheDocument();
   });
 });

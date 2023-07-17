@@ -24,7 +24,7 @@ const EditButtons: React.FC<Props> = ({onExitEditMode}) => {
   const valueError = useFieldError('value');
   const errorMessage = getError(
     initialValues.name === '' ? nameError : undefined,
-    valueError
+    valueError,
   );
 
   return (

@@ -24,21 +24,21 @@ describe('InstancesBar', () => {
           activeInstancesCount={activeInstancesCount}
           size="small"
         />,
-        {wrapper: ThemeProvider}
+        {wrapper: ThemeProvider},
       );
 
       expect(
         within(screen.getByTestId('incident-instances-badge')).getByText(
-          incidentsCount
-        )
+          incidentsCount,
+        ),
       ).toBeInTheDocument();
       expect(screen.getByText('someLabel')).toBeInTheDocument();
       expect(
         within(screen.getByTestId('active-instances-badge')).getByText(
-          activeInstancesCount
-        )
+          activeInstancesCount,
+        ),
       ).toBeInTheDocument();
-    }
+    },
   );
 
   it.each([-1, undefined])(
@@ -51,17 +51,17 @@ describe('InstancesBar', () => {
           size="small"
           activeInstancesCount={activeInstancesCount}
         />,
-        {wrapper: ThemeProvider}
+        {wrapper: ThemeProvider},
       );
 
       expect(
-        within(screen.getByTestId('incident-instances-badge')).getByText('10')
+        within(screen.getByTestId('incident-instances-badge')).getByText('10'),
       ).toBeInTheDocument();
       expect(screen.getByText('someLabel')).toBeInTheDocument();
       expect(
-        screen.queryByTestId('active-instances-badge')
+        screen.queryByTestId('active-instances-badge'),
       ).not.toBeInTheDocument();
-    }
+    },
   );
 
   it('should not display active process instance count if has invalid active process instances count', () => {
@@ -72,11 +72,11 @@ describe('InstancesBar', () => {
         activeInstancesCount={-1}
         size="small"
       />,
-      {wrapper: ThemeProvider}
+      {wrapper: ThemeProvider},
     );
 
     expect(
-      screen.queryByTestId('active-instances-badge')
+      screen.queryByTestId('active-instances-badge'),
     ).not.toBeInTheDocument();
   });
 });

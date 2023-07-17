@@ -75,7 +75,7 @@ const IncidentsByError: React.FC = observer(() => {
               }
               title={getExpandAccordionTitle(
                 item.instancesWithErrorCount,
-                item.errorMessage
+                item.errorMessage,
               )}
             />
           </Li>

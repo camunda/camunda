@@ -59,8 +59,8 @@ function getWrapper(initialPath: string = '/decisions') {
 const expectVersion = (version: string) => {
   expect(
     within(screen.getByLabelText('Version', {selector: 'button'})).getByText(
-      version
-    )
+      version,
+    ),
   ).toBeInTheDocument();
 };
 
@@ -91,20 +91,20 @@ describe('<Filters />', () => {
     expect(screen.getByText(/^decision$/i)).toBeInTheDocument();
     expect(screen.getByLabelText('Name')).toBeInTheDocument();
     expect(
-      screen.getByLabelText('Version', {selector: 'button'})
+      screen.getByLabelText('Version', {selector: 'button'}),
     ).toBeInTheDocument();
     expect(screen.getByText(/^instance states$/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/evaluated/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/failed/i)).toBeInTheDocument();
     expect(screen.getByText(/^more filters$/i)).toBeInTheDocument();
     expect(
-      screen.queryByLabelText(/decision instance key\(s\)/i)
+      screen.queryByLabelText(/decision instance key\(s\)/i),
     ).not.toBeInTheDocument();
     expect(
-      screen.queryByLabelText(/process instance key/i)
+      screen.queryByLabelText(/process instance key/i),
     ).not.toBeInTheDocument();
     expect(
-      screen.queryByLabelText(/evaluation date range/i)
+      screen.queryByLabelText(/evaluation date range/i),
     ).not.toBeInTheDocument();
   });
 
@@ -126,14 +126,14 @@ describe('<Filters />', () => {
     await user.click(screen.getByText(/decision instance key\(s\)/i));
     await user.type(
       screen.getByText(/decision instance key\(s\)/i),
-      '2251799813689540-1'
+      '2251799813689540-1',
     );
 
     await user.click(screen.getByText(/^more filters$/i));
     await user.click(screen.getByText(/process instance key/i));
     await user.type(
       screen.getByText(/process instance key/i),
-      '2251799813689549'
+      '2251799813689549',
     );
 
     await user.click(screen.getByText(/^more filters$/i));
@@ -143,17 +143,17 @@ describe('<Filters />', () => {
       expect(
         Object.fromEntries(
           new URLSearchParams(
-            screen.getByTestId('search').textContent ?? ''
-          ).entries()
-        )
-      ).toEqual(MOCK_FILTERS_PARAMS)
+            screen.getByTestId('search').textContent ?? '',
+          ).entries(),
+        ),
+      ).toEqual(MOCK_FILTERS_PARAMS),
     );
 
     await user.click(screen.getByRole('button', {name: /reset/i}));
 
     expect(screen.getByTestId('pathname')).toHaveTextContent(/^\/decisions$/);
     expect(screen.getByTestId('search')).toHaveTextContent(
-      /^\?evaluated=true&failed=true$/
+      /^\?evaluated=true&failed=true$/,
     );
   });
 
@@ -182,20 +182,20 @@ describe('<Filters />', () => {
       expect(
         Object.fromEntries(
           new URLSearchParams(
-            screen.getByTestId('search').textContent ?? ''
-          ).entries()
-        )
+            screen.getByTestId('search').textContent ?? '',
+          ).entries(),
+        ),
       ).toEqual({
         evaluationDateAfter: evaluationDate.fromDate,
         evaluationDateBefore: evaluationDate.toDate,
-      })
+      }),
     );
 
     await user.click(screen.getByRole('button', {name: /reset/i}));
 
     expect(screen.getByTestId('pathname')).toHaveTextContent(/^\/decisions$/);
     expect(screen.getByTestId('search')).toHaveTextContent(
-      /^\?evaluated=true&failed=true$/
+      /^\?evaluated=true&failed=true$/,
     );
   });
 
@@ -225,8 +225,8 @@ describe('<Filters />', () => {
 
     expect(
       await screen.findByDisplayValue(
-        '2021-02-21 09:00:00 - 2021-02-22 10:00:00'
-      )
+        '2021-02-21 09:00:00 - 2021-02-22 10:00:00',
+      ),
     ).toBeInTheDocument();
   });
 
@@ -236,13 +236,13 @@ describe('<Filters />', () => {
     });
 
     expect(
-      screen.queryByLabelText(/decision instance key\(s\)/i)
+      screen.queryByLabelText(/decision instance key\(s\)/i),
     ).not.toBeInTheDocument();
     expect(
-      screen.queryByLabelText(/process instance key/i)
+      screen.queryByLabelText(/process instance key/i),
     ).not.toBeInTheDocument();
     expect(
-      screen.queryByLabelText(/evaluation date range/i)
+      screen.queryByLabelText(/evaluation date range/i),
     ).not.toBeInTheDocument();
 
     await user.click(screen.getByText(/^more filters$/i));
@@ -255,7 +255,7 @@ describe('<Filters />', () => {
     await user.click(screen.getByText(/evaluation date range/i));
 
     expect(
-      screen.getByLabelText(/decision instance key\(s\)/i)
+      screen.getByLabelText(/decision instance key\(s\)/i),
     ).toBeInTheDocument();
     expect(screen.getByLabelText(/process instance key/i)).toBeInTheDocument();
 
@@ -266,13 +266,13 @@ describe('<Filters />', () => {
     });
 
     expect(
-      screen.queryByLabelText(/decision instance key\(s\)/i)
+      screen.queryByLabelText(/decision instance key\(s\)/i),
     ).not.toBeInTheDocument();
     expect(
-      screen.queryByLabelText(/process instance key/i)
+      screen.queryByLabelText(/process instance key/i),
     ).not.toBeInTheDocument();
     expect(
-      screen.queryByLabelText(/evaluation date range/i)
+      screen.queryByLabelText(/evaluation date range/i),
     ).not.toBeInTheDocument();
   });
 
@@ -291,7 +291,7 @@ describe('<Filters />', () => {
     await user.click(screen.getByText(/evaluation date range/i));
 
     expect(
-      screen.getByLabelText(/decision instance key\(s\)/i)
+      screen.getByLabelText(/decision instance key\(s\)/i),
     ).toBeInTheDocument();
     expect(screen.getByLabelText(/process instance key/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/evaluation date range/i)).toBeInTheDocument();
@@ -301,13 +301,13 @@ describe('<Filters />', () => {
     await user.click(screen.getByTestId('delete-evaluationDateRange'));
 
     expect(
-      screen.queryByLabelText(/decision instance key\(s\)/i)
+      screen.queryByLabelText(/decision instance key\(s\)/i),
     ).not.toBeInTheDocument();
     expect(
-      screen.queryByLabelText(/process instance key/i)
+      screen.queryByLabelText(/process instance key/i),
     ).not.toBeInTheDocument();
     expect(
-      screen.queryByLabelText(/evaluation date range/i)
+      screen.queryByLabelText(/evaluation date range/i),
     ).not.toBeInTheDocument();
   });
 
@@ -317,25 +317,25 @@ describe('<Filters />', () => {
     });
 
     expect(
-      screen.getByLabelText('Version', {selector: 'button'})
+      screen.getByLabelText('Version', {selector: 'button'}),
     ).toBeDisabled();
 
     await selectDecision({user, option: 'Assign Approver Group'});
     await waitFor(() => expectVersion('2'));
 
     expect(
-      screen.getByLabelText('Version', {selector: 'button'})
+      screen.getByLabelText('Version', {selector: 'button'}),
     ).toBeEnabled();
 
     await selectDecisionVersion({user, option: '1'});
     await waitFor(() => expectVersion('1'));
     expect(
-      screen.getByLabelText('Version', {selector: 'button'})
+      screen.getByLabelText('Version', {selector: 'button'}),
     ).toBeEnabled();
 
     await clearComboBox({user, fieldName: 'Name'});
     expect(
-      screen.getByLabelText('Version', {selector: 'button'})
+      screen.getByLabelText('Version', {selector: 'button'}),
     ).toBeDisabled();
   });
 
@@ -352,8 +352,8 @@ describe('<Filters />', () => {
 
     expect(
       await screen.findByText(
-        'Key has to be a 16 to 20 digit number with an index, e.g. 2251799813702856-1'
-      )
+        'Key has to be a 16 to 20 digit number with an index, e.g. 2251799813702856-1',
+      ),
     ).toBeInTheDocument();
     expect(screen.getByTestId('search')).toBeEmptyDOMElement();
 
@@ -361,43 +361,43 @@ describe('<Filters />', () => {
 
     await waitForElementToBeRemoved(() =>
       screen.queryByText(
-        'Key has to be a 16 to 20 digit number with an index, e.g. 2251799813702856-1'
-      )
+        'Key has to be a 16 to 20 digit number with an index, e.g. 2251799813702856-1',
+      ),
     );
 
     await user.type(screen.getByLabelText(/decision instance key\(s\)/i), '1');
 
     expect(
       await screen.findByText(
-        'Key has to be a 16 to 20 digit number with an index, e.g. 2251799813702856-1'
-      )
+        'Key has to be a 16 to 20 digit number with an index, e.g. 2251799813702856-1',
+      ),
     ).toBeInTheDocument();
 
     await user.clear(screen.getByLabelText(/decision instance key\(s\)/i));
 
     await waitForElementToBeRemoved(() =>
       screen.queryByText(
-        'Key has to be a 16 to 20 digit number with an index, e.g. 2251799813702856-1'
-      )
+        'Key has to be a 16 to 20 digit number with an index, e.g. 2251799813702856-1',
+      ),
     );
 
     await user.type(
       screen.getByLabelText(/decision instance key/i),
-      '2251799813689549'
+      '2251799813689549',
     );
 
     expect(
       await screen.findByText(
-        'Key has to be a 16 to 20 digit number with an index, e.g. 2251799813702856-1'
-      )
+        'Key has to be a 16 to 20 digit number with an index, e.g. 2251799813702856-1',
+      ),
     ).toBeInTheDocument();
 
     await user.clear(screen.getByLabelText(/decision instance key\(s\)/i));
 
     await waitForElementToBeRemoved(() =>
       screen.queryByText(
-        'Key has to be a 16 to 20 digit number with an index, e.g. 2251799813702856-1'
-      )
+        'Key has to be a 16 to 20 digit number with an index, e.g. 2251799813702856-1',
+      ),
     );
   });
 
@@ -412,41 +412,41 @@ describe('<Filters />', () => {
     await user.type(screen.getByLabelText(/process instance key/i), 'a');
 
     expect(
-      await screen.findByText('Key has to be a 16 to 19 digit number')
+      await screen.findByText('Key has to be a 16 to 19 digit number'),
     ).toBeInTheDocument();
     expect(screen.getByTestId('search')).toBeEmptyDOMElement();
 
     await user.clear(screen.getByLabelText(/process instance key/i));
 
     await waitForElementToBeRemoved(() =>
-      screen.queryByText('Key has to be a 16 to 19 digit number')
+      screen.queryByText('Key has to be a 16 to 19 digit number'),
     );
 
     await user.type(screen.getByLabelText(/process instance key/i), '1');
 
     expect(
-      await screen.findByText('Key has to be a 16 to 19 digit number')
+      await screen.findByText('Key has to be a 16 to 19 digit number'),
     ).toBeInTheDocument();
 
     await user.clear(screen.getByLabelText(/process instance key/i));
 
     await waitForElementToBeRemoved(() =>
-      screen.queryByText('Key has to be a 16 to 19 digit number')
+      screen.queryByText('Key has to be a 16 to 19 digit number'),
     );
 
     await user.type(
       screen.getByLabelText(/process instance key/i),
-      '1111111111111111, 2222222222222222'
+      '1111111111111111, 2222222222222222',
     );
 
     expect(
-      await screen.findByText('Key has to be a 16 to 19 digit number')
+      await screen.findByText('Key has to be a 16 to 19 digit number'),
     ).toBeInTheDocument();
 
     await user.clear(screen.getByLabelText(/process instance key/i));
 
     await waitForElementToBeRemoved(() =>
-      screen.queryByText('Key has to be a 16 to 19 digit number')
+      screen.queryByText('Key has to be a 16 to 19 digit number'),
     );
   });
 
@@ -462,23 +462,23 @@ describe('<Filters />', () => {
     await user.click(screen.getByText(/process instance key/i));
     await user.type(
       screen.getByLabelText(/process instance key/i),
-      '2251799813729387'
+      '2251799813729387',
     );
 
     await waitFor(() =>
       expect(screen.getByTestId('search')).toHaveTextContent(
-        /^\?processInstanceId=2251799813729387$/
-      )
+        /^\?processInstanceId=2251799813729387$/,
+      ),
     );
 
     await user.click(
       within(
         screen.getByRole('navigation', {
           name: /camunda operate/i,
-        })
+        }),
       ).getByRole('link', {
         name: /dashboard/i,
-      })
+      }),
     );
     expect(screen.getByTestId('pathname')).toHaveTextContent(/^\/$/);
     expect(screen.getByTestId('search')).toBeEmptyDOMElement();
@@ -487,14 +487,14 @@ describe('<Filters />', () => {
       within(
         screen.getByRole('navigation', {
           name: /camunda operate/i,
-        })
+        }),
       ).getByRole('link', {
         name: /decisions/i,
-      })
+      }),
     );
     expect(screen.getByTestId('pathname')).toHaveTextContent(/^\/decisions$/);
     expect(screen.getByTestId('search')).toHaveTextContent(
-      /^\?evaluated=true&failed=true$/
+      /^\?evaluated=true&failed=true$/,
     );
   });
 
@@ -514,7 +514,7 @@ describe('<Filters />', () => {
 
     const {user} = render(<Filters />, {
       wrapper: getWrapper(
-        `/decisions?name=${firstDecision.decisionId}&version=${firstVersion}`
+        `/decisions?name=${firstDecision.decisionId}&version=${firstVersion}`,
       ),
     });
 
@@ -523,7 +523,7 @@ describe('<Filters />', () => {
     expect(
       within(screen.queryByLabelText(/version/i)!).queryByRole('option', {
         name: /all/i,
-      })
+      }),
     ).not.toBeInTheDocument();
   });
 });

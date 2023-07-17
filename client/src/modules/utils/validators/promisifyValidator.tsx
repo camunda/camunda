@@ -9,7 +9,7 @@ import {FieldValidator} from 'final-form';
 
 const promisifyValidator = (
   validator: FieldValidator<string | undefined>,
-  debounceTimeout: number
+  debounceTimeout: number,
 ) => {
   return (...params: Parameters<FieldValidator<string | undefined>>) => {
     const errorMessage = validator(...params);

@@ -169,7 +169,7 @@ const InstancesTable: React.FC = observer(() => {
                 </>
               ),
             };
-          }
+          },
         )}
         headerColumns={[
           {

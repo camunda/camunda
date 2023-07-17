@@ -44,7 +44,7 @@ const VariablesTable: React.FC<Props> = observer(
 
     const addVariableModifications = useMemo(
       () => modificationsStore.getAddVariableModifications(scopeId),
-      [scopeId]
+      [scopeId],
     );
 
     const {processInstanceId = ''} = useProcessInstancePageParams();
@@ -104,7 +104,7 @@ const VariablesTable: React.FC<Props> = observer(
             scrollDown(
               variablesStore.state.latestFetch.itemsCount *
                 (variableNameRef.current?.closest<HTMLElement>('[role=row]')
-                  ?.offsetHeight ?? 0)
+                  ?.offsetHeight ?? 0),
             );
           }
         }}
@@ -215,7 +215,7 @@ const VariablesTable: React.FC<Props> = observer(
                           onSuccess: (variable: VariableEntity) => {
                             variablesStore.setFullVariableValue(
                               id,
-                              variable.value
+                              variable.value,
                             );
                           },
                           onError: () => {
@@ -329,7 +329,7 @@ const VariablesTable: React.FC<Props> = observer(
 
                                   variablesStore.setFullVariableValue(
                                     id,
-                                    variable.value
+                                    variable.value,
                                   );
 
                                   value = variable.value;
@@ -354,11 +354,11 @@ const VariablesTable: React.FC<Props> = observer(
                 width: '10%',
               },
             ],
-          })
+          }),
         )}
       />
     );
-  }
+  },
 );
 
 export {VariablesTable};
