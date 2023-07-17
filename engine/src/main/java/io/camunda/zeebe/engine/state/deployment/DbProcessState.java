@@ -21,6 +21,7 @@ import io.camunda.zeebe.engine.processing.deployment.model.BpmnFactory;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowElement;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableProcess;
 import io.camunda.zeebe.engine.processing.deployment.model.transformation.BpmnTransformer;
+import io.camunda.zeebe.engine.state.deployment.PersistedProcess.PersistedProcessState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessState;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
@@ -132,6 +133,16 @@ public final class DbProcessState implements MutableProcessState {
     updateLatestVersion(processRecord);
     putLatestVersionDigest(
         processRecord.getBpmnProcessIdBuffer(), processRecord.getChecksumBuffer());
+  }
+
+  @Override
+  public void updateProcessState(
+      final long processDefinitionKey, final PersistedProcessState state) {
+    this.processDefinitionKey.wrapLong(processDefinitionKey);
+    final var process = processColumnFamily.get(this.processDefinitionKey);
+    process.setState(state);
+    processColumnFamily.update(this.processDefinitionKey, process);
+    updateInMemoryState(process);
   }
 
   private void persistProcess(final long processDefinitionKey, final ProcessRecord processRecord) {

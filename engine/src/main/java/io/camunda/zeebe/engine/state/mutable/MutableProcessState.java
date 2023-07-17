@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.state.mutable;
 
+import io.camunda.zeebe.engine.state.deployment.PersistedProcess.PersistedProcessState;
 import io.camunda.zeebe.engine.state.immutable.ProcessState;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.ProcessRecord;
@@ -19,4 +20,13 @@ public interface MutableProcessState extends ProcessState {
   void putLatestVersionDigest(DirectBuffer processId, DirectBuffer digest);
 
   void putProcess(long key, ProcessRecord value);
+
+  /**
+   * Updates the state of a process. This method updates both the ColumnFamily and the in memory
+   * cache.
+   *
+   * @param processDefinitionKey the key of the process definition
+   * @param state the new state
+   */
+  void updateProcessState(final long processDefinitionKey, final PersistedProcessState state);
 }
