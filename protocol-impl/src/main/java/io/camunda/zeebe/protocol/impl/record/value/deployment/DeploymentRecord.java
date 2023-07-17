@@ -114,4 +114,8 @@ public final class DeploymentRecord extends UnifiedRecordValue implements Deploy
 
     return metadataList;
   }
+
+  public void resetResources() {
+    resourcesProp.reset();
+  }
 }
