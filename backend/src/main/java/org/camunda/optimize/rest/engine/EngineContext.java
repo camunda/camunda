@@ -7,6 +7,7 @@ package org.camunda.optimize.rest.engine;
 
 import com.google.common.collect.ImmutableSet;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.camunda.optimize.dto.engine.AuthorizationDto;
 import org.camunda.optimize.dto.engine.CountDto;
 import org.camunda.optimize.dto.engine.EngineGroupDto;
@@ -145,25 +146,25 @@ public class EngineContext {
           // as revokes win over grants we have them last (AUTHORIZATION_TYPE_GRANT=1 < AUTHORIZATION_TYPE_REVOKE=2)
           .thenComparing(AuthorizationDto::getType)
       ).forEach(authorizationDto -> {
-      switch (authorizationDto.getType()) {
-        case AUTHORIZATION_TYPE_GRANT:
-          if (authorizationDto.getGroupId() != null) {
-            authorizedIdentitiesResult.getGrantedGroupIds().add(authorizationDto.getGroupId());
-          } else {
-            authorizedIdentitiesResult.getGrantedUserIds().add(authorizationDto.getUserId());
-          }
-          break;
-        case AUTHORIZATION_TYPE_REVOKE:
-          if (authorizationDto.getGroupId() != null) {
-            authorizedIdentitiesResult.getRevokedGroupIds().add(authorizationDto.getGroupId());
-          } else {
-            authorizedIdentitiesResult.getRevokedUserIds().add(authorizationDto.getUserId());
-          }
-          break;
-        default:
-          throw new OptimizeRuntimeException("Unexpected authorization type:" + authorizationDto.getType());
-      }
-    });
+        switch (authorizationDto.getType()) {
+          case AUTHORIZATION_TYPE_GRANT:
+            if (StringUtils.isNotEmpty(authorizationDto.getGroupId())) {
+              authorizedIdentitiesResult.getGrantedGroupIds().add(authorizationDto.getGroupId());
+            } else if (StringUtils.isNotEmpty(authorizationDto.getUserId())) {
+              authorizedIdentitiesResult.getGrantedUserIds().add(authorizationDto.getUserId());
+            }
+            break;
+          case AUTHORIZATION_TYPE_REVOKE:
+            if (StringUtils.isNotEmpty(authorizationDto.getGroupId())) {
+              authorizedIdentitiesResult.getRevokedGroupIds().add(authorizationDto.getGroupId());
+            } else if (StringUtils.isNotEmpty(authorizationDto.getUserId())) {
+              authorizedIdentitiesResult.getRevokedUserIds().add(authorizationDto.getUserId());
+            }
+            break;
+          default:
+            throw new OptimizeRuntimeException("Unexpected authorization type:" + authorizationDto.getType());
+        }
+      });
     return authorizedIdentitiesResult;
   }
 
@@ -365,6 +366,9 @@ public class EngineContext {
   }
 
   public Optional<GroupDto> getGroupById(final String groupId) {
+    if (StringUtils.isEmpty(groupId)) {
+      return Optional.empty();
+    }
     EngineGroupDto groupDto = null;
     try {
       Response response = getEngineClient()
