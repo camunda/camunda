@@ -124,16 +124,13 @@ public final class DbJobState implements JobState, MutableJobState {
 
     makeJobNotActivatable(type);
 
-    deadlineKey.wrapLong(deadline);
-    deadlinesColumnFamily.insert(deadlineJobKey, DbNil.INSTANCE);
+    addJobDeadline(key, deadline);
   }
 
   @Override
   public void recurAfterBackoff(final long key, final JobRecord record) {
     updateJob(key, record, State.ACTIVATABLE);
-    jobKey.wrapLong(key);
-    backoffKey.wrapLong(record.getRecurringTime());
-    backoffColumnFamily.deleteExisting(backoffJobKey);
+    removeJobBackoff(key, record.getRecurringTime());
   }
 
   @Override
@@ -145,7 +142,6 @@ public final class DbJobState implements JobState, MutableJobState {
     EnsureUtil.ensureGreaterThan("deadline", deadline, 0);
 
     updateJob(key, record, State.ACTIVATABLE);
-    removeJobDeadline(deadline);
   }
 
   @Override
@@ -173,7 +169,6 @@ public final class DbJobState implements JobState, MutableJobState {
   @Override
   public void delete(final long key, final JobRecord record) {
     final DirectBuffer type = record.getTypeBuffer();
-    final long deadline = record.getDeadline();
 
     jobKey.wrapLong(key);
     jobsColumnFamily.deleteExisting(jobKey);
@@ -182,16 +177,15 @@ public final class DbJobState implements JobState, MutableJobState {
 
     makeJobNotActivatable(type);
 
-    removeJobDeadline(deadline);
+    removeJobDeadline(key, record.getDeadline());
+    removeJobBackoff(key, record.getRecurringTime());
   }
 
   @Override
   public void fail(final long key, final JobRecord updatedValue) {
     if (updatedValue.getRetries() > 0) {
       if (updatedValue.getRetryBackoff() > 0) {
-        jobKey.wrapLong(key);
-        backoffKey.wrapLong(updatedValue.getRecurringTime());
-        backoffColumnFamily.insert(backoffJobKey, DbNil.INSTANCE);
+        addJobBackoff(key, updatedValue.getRecurringTime());
         updateJob(key, updatedValue, State.FAILED);
       } else {
         updateJob(key, updatedValue, State.ACTIVATABLE);
@@ -225,7 +219,6 @@ public final class DbJobState implements JobState, MutableJobState {
 
   private void updateJob(final long key, final JobRecord updatedValue, final State newState) {
     final DirectBuffer type = updatedValue.getTypeBuffer();
-    final long deadline = updatedValue.getDeadline();
 
     validateParameters(type);
 
@@ -237,8 +230,12 @@ public final class DbJobState implements JobState, MutableJobState {
       makeJobActivatable(type, key);
     }
 
-    if (deadline > 0) {
-      removeJobDeadline(deadline);
+    if (newState != State.ACTIVATED) {
+      // This only works because none of the events actually remove the deadline from the job
+      // record.
+      // If, say on job failure, the deadline is removed or reset to 0, then we would need to look
+      // at the current state of the job to determine what deadline to remove.
+      removeJobDeadline(key, updatedValue.getDeadline());
     }
   }
 
@@ -248,15 +245,14 @@ public final class DbJobState implements JobState, MutableJobState {
 
   @Override
   public void forEachTimedOutEntry(
-      final long upperBound, final BiFunction<Long, JobRecord, Boolean> callback) {
+      final long upperBound, final BiPredicate<Long, JobRecord> callback) {
     deadlinesColumnFamily.whileTrue(
         (key, value) -> {
           final long deadline = key.first().getValue();
           final boolean isDue = deadline < upperBound;
           if (isDue) {
             final long jobKey1 = key.second().inner().getValue();
-            return visitJob(
-                jobKey1, callback::apply, () -> deadlinesColumnFamily.deleteExisting(key));
+            return visitJob(jobKey1, callback);
           }
           return false;
         });
@@ -295,8 +291,7 @@ public final class DbJobState implements JobState, MutableJobState {
         jobTypeKey,
         ((compositeKey, zbNil) -> {
           final long jobKey = compositeKey.second().inner().getValue();
-          // TODO #6521 reconsider race condition and whether or not the cleanup task is needed
-          return visitJob(jobKey, callback::apply, () -> {});
+          return visitJob(jobKey, callback::apply);
         }));
   }
 
@@ -321,7 +316,7 @@ public final class DbJobState implements JobState, MutableJobState {
           boolean consumed = false;
           if (deadline <= timestamp) {
             final long jobKey = key.second().inner().getValue();
-            consumed = visitJob(jobKey, callback, () -> backoffColumnFamily.deleteExisting(key));
+            consumed = visitJob(jobKey, callback);
           }
           if (!consumed) {
             nextBackOffDueDate = deadline;
@@ -331,14 +326,10 @@ public final class DbJobState implements JobState, MutableJobState {
     return nextBackOffDueDate;
   }
 
-  boolean visitJob(
-      final long jobKey,
-      final BiPredicate<Long, JobRecord> callback,
-      final Runnable cleanupRunnable) {
+  boolean visitJob(final long jobKey, final BiPredicate<Long, JobRecord> callback) {
     final JobRecord job = getJob(jobKey);
     if (job == null) {
       LOG.error("Expected to find job with key {}, but no job found", jobKey);
-      cleanupRunnable.run();
       return true; // we want to continue with the iteration
     }
     return callback.test(jobKey, job);
@@ -396,8 +387,35 @@ public final class DbJobState implements JobState, MutableJobState {
     activatableColumnFamily.deleteIfExists(typeJobKey);
   }
 
-  private void removeJobDeadline(final long deadline) {
-    deadlineKey.wrapLong(deadline);
-    deadlinesColumnFamily.deleteIfExists(deadlineJobKey);
+  private void addJobDeadline(final long job, final long deadline) {
+    if (deadline > 0) {
+      jobKey.wrapLong(job);
+      deadlineKey.wrapLong(deadline);
+      deadlinesColumnFamily.insert(deadlineJobKey, DbNil.INSTANCE);
+    }
+  }
+
+  private void removeJobDeadline(final long job, final long deadline) {
+    if (deadline > 0) {
+      jobKey.wrapLong(job);
+      deadlineKey.wrapLong(deadline);
+      deadlinesColumnFamily.deleteIfExists(deadlineJobKey);
+    }
+  }
+
+  private void addJobBackoff(final long job, final long backoff) {
+    if (backoff > 0) {
+      jobKey.wrapLong(job);
+      backoffKey.wrapLong(backoff);
+      backoffColumnFamily.insert(backoffJobKey, DbNil.INSTANCE);
+    }
+  }
+
+  private void removeJobBackoff(final long job, final long backoff) {
+    if (backoff > 0) {
+      jobKey.wrapLong(job);
+      backoffKey.wrapLong(backoff);
+      backoffColumnFamily.deleteIfExists(backoffJobKey);
+    }
   }
 }

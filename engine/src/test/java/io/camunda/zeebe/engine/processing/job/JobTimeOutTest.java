@@ -13,8 +13,11 @@ import static io.camunda.zeebe.test.util.record.RecordingExporter.jobRecords;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.engine.util.EngineRule;
+import io.camunda.zeebe.engine.util.RecordToWrite;
 import io.camunda.zeebe.model.bpmn.Bpmn;
+import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.intent.JobBatchIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
@@ -22,6 +25,7 @@ import io.camunda.zeebe.test.util.Strings;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.List;
 import java.util.stream.Collectors;
+import org.awaitility.Awaitility;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Rule;
@@ -203,6 +207,32 @@ public final class JobTimeOutTest {
 
     // then
     assertThat(timedOutRecord.getSourceRecordPosition()).isLessThan(0);
+  }
+
+  @Test
+  public void shouldRejectIfJobDoesNotExist() {
+    // given
+    final var job = ENGINE.createJob(jobType, PROCESS_ID);
+    final var partitionId = Protocol.decodePartitionId(job.getKey());
+
+    // when
+    ENGINE.pauseProcessing(partitionId);
+    ENGINE.writeRecords(
+        RecordToWrite.command().key(job.getKey()).job(JobIntent.COMPLETE, job.getValue()),
+        RecordToWrite.command().key(job.getKey()).job(JobIntent.TIME_OUT, job.getValue()));
+
+    ENGINE.resumeProcessing(partitionId);
+    Awaitility.await("until everything processed").until(ENGINE::hasReachedEnd);
+
+    // then activated again
+    final List<Record<JobRecordValue>> jobEvents =
+        jobRecords()
+            .withRecordKey(job.getKey())
+            .withIntent(JobIntent.TIME_OUT)
+            .withRecordType(RecordType.COMMAND_REJECTION)
+            .limit(1)
+            .toList();
+    assertThat(jobEvents).isNotEmpty();
   }
 
   private long createInstance() {
