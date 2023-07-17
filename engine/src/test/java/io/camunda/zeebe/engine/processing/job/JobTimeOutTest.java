@@ -212,22 +212,22 @@ public final class JobTimeOutTest {
   @Test
   public void shouldRejectIfJobDoesNotExist() {
     // given
-    final var jobKey = ENGINE.createJob(jobType, PROCESS_ID).getKey();
-    final var job = ENGINE.getProcessingState().getJobState().getJob(jobKey);
-    final var partitionId = Protocol.decodePartitionId(jobKey);
+    final var job = ENGINE.createJob(jobType, PROCESS_ID);
+    final var partitionId = Protocol.decodePartitionId(job.getKey());
 
     // when
     ENGINE.pauseProcessing(partitionId);
     ENGINE.writeRecords(
-        RecordToWrite.command().key(jobKey).job(JobIntent.COMPLETE, job),
-        RecordToWrite.command().key(jobKey).job(JobIntent.TIME_OUT, job));
+        RecordToWrite.command().key(job.getKey()).job(JobIntent.COMPLETE, job.getValue()),
+        RecordToWrite.command().key(job.getKey()).job(JobIntent.TIME_OUT, job.getValue()));
+
     ENGINE.resumeProcessing(partitionId);
     Awaitility.await("until everything processed").until(ENGINE::hasReachedEnd);
 
     // then activated again
     final List<Record<JobRecordValue>> jobEvents =
         jobRecords()
-            .withRecordKey(jobKey)
+            .withRecordKey(job.getKey())
             .withIntent(JobIntent.TIME_OUT)
             .withRecordType(RecordType.COMMAND_REJECTION)
             .limit(1)
