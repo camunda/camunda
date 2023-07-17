@@ -25,7 +25,6 @@ import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
 import io.camunda.zeebe.protocol.record.value.DeploymentRecordValue;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
-import io.camunda.zeebe.util.ByteValue;
 import java.util.stream.Collectors;
 import org.junit.ClassRule;
 import org.junit.Rule;
@@ -201,27 +200,6 @@ public class DeploymentRejectionTest {
                 """);
   }
 
-  @Test
-  public void shouldRejectDeploymentIfResourceIsTooLarge() {
-    // when
-    final Record<DeploymentRecordValue> deploymentRejection =
-        ENGINE
-            .deployment()
-            .withXmlResource(
-                Bpmn.createExecutableProcess("PROCESS")
-                    .startEvent()
-                    .documentation(
-                        "x".repeat((int) (ByteValue.ofMegabytes(4) - ByteValue.ofKilobytes(2))))
-                    .done())
-            .expectRejection()
-            .deploy();
-
-    // then
-    Assertions.assertThat(deploymentRejection)
-        .hasRejectionType(RejectionType.EXCEEDED_BATCH_RECORD_SIZE)
-        .hasRejectionReason("");
-  }
-
   // https://github.com/camunda/zeebe/issues/8026
   @Test
   public void shouldRejectDeploymentOfSAXException() {
@@ -293,38 +271,5 @@ public class DeploymentRejectionTest {
             tuple(ProcessIntent.CREATED, RecordType.EVENT),
             tuple(DeploymentIntent.CREATED, RecordType.EVENT),
             tuple(CommandDistributionIntent.STARTED, RecordType.EVENT));
-  }
-
-  @Test // Regression of https://github.com/camunda/zeebe/issues/13254
-  public void shouldNotBeAbleToCreateInstanceWhenDeploymentIsRejected() {
-    // given
-    final BpmnModelInstance invalidProcess =
-        Bpmn.createExecutableProcess("too_large_process")
-            .startEvent()
-            // In order to cause BATCH SIZE EXCEEDING we add a big comment
-            .documentation("x".repeat((int) ByteValue.ofMegabytes(3)))
-            .done();
-    final BpmnModelInstance validProcess =
-        Bpmn.createExecutableProcess("valid_process").startEvent().task().endEvent().done();
-
-    // when
-    ENGINE
-        .deployment()
-        .withXmlResource(invalidProcess)
-        .withXmlResource(validProcess)
-        .expectRejection()
-        .deploy();
-
-    // then
-    assertThat(
-            RecordingExporter.records()
-                .limit(r -> r.getRecordType() == RecordType.COMMAND_REJECTION)
-                .collect(Collectors.toList()))
-        .extracting(Record::getIntent, Record::getRecordType)
-        .doesNotContain(
-            tuple(ProcessIntent.CREATED, RecordType.EVENT),
-            tuple(DeploymentIntent.CREATED, RecordType.EVENT));
-
-    ENGINE.processInstance().ofBpmnProcessId("valid_process").expectRejection().create();
   }
 }

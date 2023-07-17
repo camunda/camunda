@@ -23,7 +23,6 @@ import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
 import io.camunda.zeebe.protocol.record.value.DeploymentRecordValue;
-import io.camunda.zeebe.protocol.record.value.deployment.DeploymentResource;
 import io.camunda.zeebe.protocol.record.value.deployment.ProcessMetadataValue;
 import io.camunda.zeebe.test.util.Strings;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
@@ -211,14 +210,9 @@ public final class CreateDeploymentTest {
         .extracting(ProcessMetadataValue::getBpmnProcessId)
         .contains(processId, processId2);
 
-    assertThat(deployment.getValue().getResources())
-        .extracting(DeploymentResource::getResourceName)
+    assertThat(deployment.getValue().getProcessesMetadata())
+        .extracting(ProcessMetadataValue::getResourceName)
         .contains("process.bpmn", "process2.bpmn");
-
-    assertThat(deployment.getValue().getResources())
-        .extracting(DeploymentResource::getResource)
-        .contains(
-            Bpmn.convertToString(process).getBytes(), Bpmn.convertToString(process2).getBytes());
   }
 
   @Test
