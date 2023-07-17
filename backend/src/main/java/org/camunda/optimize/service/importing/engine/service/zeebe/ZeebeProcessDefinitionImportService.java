@@ -108,6 +108,7 @@ public class ZeebeProcessDefinitionImportService implements ImportService<ZeebeP
       .tenantId(null)
       .deleted(false)
       .flowNodeData(BpmnModelUtil.extractFlowNodeData(bpmn))
+      .userTaskNames(BpmnModelUtil.extractUserTaskNames(bpmn))
       .build();
   }
 

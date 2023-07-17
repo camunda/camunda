@@ -17,7 +17,6 @@ public class ZeebeBpmnModels {
 
   public static final String START_EVENT = "start";
   public static final String SERVICE_TASK = "service_task";
-  public static final String SERVICE_TASK_2 = "service_task2";
   public static final String SEND_TASK = "send_task";
   public static final String USER_TASK = "user_task";
   public static final String END_EVENT = "end";

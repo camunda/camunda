@@ -52,6 +52,10 @@ public class BpmnModelUtil {
     return extractFlowNodeData(parseBpmnModel(bpmn20Xml));
   }
 
+  public static Map<String, String> extractUserTaskNames(final String bpmn20Xml) {
+    return extractUserTaskNames(parseBpmnModel(bpmn20Xml));
+  }
+
   public static Optional<String> extractProcessDefinitionName(final String definitionKey, final String xml) {
     try {
       final BpmnModelInstance bpmnModelInstance = parseBpmnModel(xml);

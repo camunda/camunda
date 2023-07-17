@@ -25,9 +25,10 @@ import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.util.ZeebeBpmnModels.END_EVENT;
-import static org.camunda.optimize.util.ZeebeBpmnModels.SERVICE_TASK;
 import static org.camunda.optimize.util.ZeebeBpmnModels.START_EVENT;
+import static org.camunda.optimize.util.ZeebeBpmnModels.USER_TASK;
 import static org.camunda.optimize.util.ZeebeBpmnModels.createSimpleServiceTaskProcess;
+import static org.camunda.optimize.util.ZeebeBpmnModels.createSimpleUserTaskProcess;
 import static org.camunda.optimize.util.ZeebeBpmnModels.createStartEndProcess;
 
 public class ZeebeProcessDefinitionImportIT extends AbstractZeebeIT {
@@ -36,7 +37,7 @@ public class ZeebeProcessDefinitionImportIT extends AbstractZeebeIT {
   public void importZeebeProcess_allDataSavedToDefinition() {
     // given
     final String processName = "someProcess";
-    final BpmnModelInstance simpleProcess = createSimpleServiceTaskProcess(processName);
+    final BpmnModelInstance simpleProcess = createSimpleUserTaskProcess(processName);
     final Process deployedProcess = deployProcessAndStartInstance(simpleProcess);
     waitUntilNumberOfDefinitionsExported(1);
 
@@ -59,10 +60,10 @@ public class ZeebeProcessDefinitionImportIT extends AbstractZeebeIT {
         assertThat(importedDef.getDataSource().getName()).isEqualTo(getConfiguredZeebeName());
         assertThat(importedDef.getTenantId()).isNull();
         assertThat(importedDef.isDeleted()).isFalse();
-        assertThat(importedDef.getUserTaskNames()).isEmpty();
+        assertThat(importedDef.getUserTaskNames()).containsEntry(USER_TASK, USER_TASK);
         assertThat(importedDef.getFlowNodeData()).containsExactlyInAnyOrder(
           new FlowNodeDataDto(START_EVENT, START_EVENT, "startEvent"),
-          new FlowNodeDataDto(SERVICE_TASK, SERVICE_TASK, "serviceTask"),
+          new FlowNodeDataDto(USER_TASK, USER_TASK, "userTask"),
           new FlowNodeDataDto(END_EVENT, null, "endEvent")
         );
       });
