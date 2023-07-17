@@ -145,8 +145,11 @@ public final class DeploymentCreateProcessor
     }
 
     final long key = keyGenerator.nextKey();
-    responseWriter.writeEventOnCommand(key, DeploymentIntent.CREATED, deploymentEvent, command);
-    createDeploymentWithoutResources(command, deploymentEvent);
+    final var recordWithoutResource = createDeploymentWithoutResources(deploymentEvent);
+    responseWriter.writeEventOnCommand(
+        key, DeploymentIntent.CREATED, recordWithoutResource, command);
+    stateWriter.appendFollowUpEvent(
+        command.getKey(), DeploymentIntent.CREATED, recordWithoutResource);
 
     distributionBehavior.distributeCommand(key, command);
   }
@@ -155,7 +158,9 @@ public final class DeploymentCreateProcessor
     final var deploymentEvent = command.getValue();
     createBpmnResources(deploymentEvent);
     createDmnResources(command, deploymentEvent);
-    createDeploymentWithoutResources(command, deploymentEvent);
+    final var recordWithoutResource = createDeploymentWithoutResources(deploymentEvent);
+    stateWriter.appendFollowUpEvent(
+        command.getKey(), DeploymentIntent.CREATED, recordWithoutResource);
     distributionBehavior.acknowledgeCommand(command.getKey(), command);
   }
 
@@ -194,18 +199,16 @@ public final class DeploymentCreateProcessor
   }
 
   /**
-   * Create a copy of the provided deployment record and write the Deployment:CREATED event with
-   * that copy
+   * Create a copy of the provided deployment record without resource
    *
-   * @param command the already distributed command to process
    * @param deploymentEvent the record to clone and modify
    */
-  private void createDeploymentWithoutResources(
-      final TypedRecord<DeploymentRecord> command, final DeploymentRecord deploymentEvent) {
+  private DeploymentRecord createDeploymentWithoutResources(
+      final DeploymentRecord deploymentEvent) {
     final var copyRecord = new DeploymentRecord();
     copyRecord.wrap(BufferUtil.createCopy(deploymentEvent));
     copyRecord.resetResources();
-    stateWriter.appendFollowUpEvent(command.getKey(), DeploymentIntent.CREATED, copyRecord);
+    return copyRecord;
   }
 
   private void createTimerIfTimerStartEvent(final TypedRecord<DeploymentRecord> record) {
