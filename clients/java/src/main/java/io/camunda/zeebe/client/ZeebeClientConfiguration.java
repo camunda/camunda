@@ -19,6 +19,7 @@ import io.camunda.zeebe.client.api.JsonMapper;
 import io.grpc.ClientInterceptor;
 import java.time.Duration;
 import java.util.List;
+import java.util.concurrent.ScheduledExecutorService;
 
 public interface ZeebeClientConfiguration {
   /**
@@ -97,4 +98,14 @@ public interface ZeebeClientConfiguration {
    * @see ZeebeClientBuilder#maxMessageSize(int)
    */
   int getMaxMessageSize();
+
+  /**
+   * @see ZeebeClientBuilder#jobWorkerExecutor(ScheduledExecutorService)
+   */
+  ScheduledExecutorService jobWorkerExecutor();
+
+  /**
+   * @see ZeebeClientBuilder#jobWorkerExecutor(ScheduledExecutorService, boolean)
+   */
+  boolean ownsJobWorkerExecutor();
 }

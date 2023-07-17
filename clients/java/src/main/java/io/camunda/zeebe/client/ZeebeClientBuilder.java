@@ -20,6 +20,7 @@ import io.camunda.zeebe.client.api.worker.JobWorkerBuilderStep1.JobWorkerBuilder
 import io.grpc.ClientInterceptor;
 import java.time.Duration;
 import java.util.Properties;
+import java.util.concurrent.ScheduledExecutorService;
 
 public interface ZeebeClientBuilder {
 
@@ -59,6 +60,34 @@ public interface ZeebeClientBuilder {
    *     effectively disables subscriptions and workers. Default value is 1.
    */
   ZeebeClientBuilder numJobWorkerExecutionThreads(int numThreads);
+
+  /**
+   * Identical behavior as {@link #jobWorkerExecutor(ScheduledExecutorService,boolean)}, but taking
+   * ownership of the executor by default. This means the given executor is closed when the client
+   * is closed.
+   *
+   * @param executor an executor service to use when invoking job workers
+   * @see #jobWorkerExecutor(ScheduledExecutorService, boolean)
+   */
+  default ZeebeClientBuilder jobWorkerExecutor(final ScheduledExecutorService executor) {
+    return jobWorkerExecutor(executor, true);
+  }
+
+  /**
+   * Allows passing a custom executor service that will be shared by all job workers created via
+   * this client.
+   *
+   * <p>Polling and handling jobs (e.g. via {@link io.camunda.zeebe.client.api.worker.JobHandler}
+   * will all be invoked on this executor.
+   *
+   * <p>When non-null, this setting override {@link #numJobWorkerExecutionThreads(int)}.
+   *
+   * @param executor an executor service to use when invoking job workers
+   * @param takeOwnership if true, the executor will be closed when the client is closed. otherwise,
+   *     it's up to the caller to manage its lifecycle
+   */
+  ZeebeClientBuilder jobWorkerExecutor(
+      final ScheduledExecutorService executor, final boolean takeOwnership);
 
   /**
    * The name of the worker which is used when none is set for a job worker. Default is 'default'.

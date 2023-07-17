@@ -32,6 +32,7 @@ import io.grpc.ClientInterceptor;
 import java.time.Duration;
 import java.util.Objects;
 import java.util.Properties;
+import java.util.concurrent.ScheduledExecutorService;
 
 public class ZeebeClientCloudBuilderImpl
     implements ZeebeClientCloudBuilderStep1,
@@ -95,7 +96,7 @@ public class ZeebeClientCloudBuilderImpl
 
   @Override
   public ZeebeClientBuilder applyEnvironmentVariableOverrides(
-      boolean applyEnvironmentVariableOverrides) {
+      final boolean applyEnvironmentVariableOverrides) {
     innerBuilder.applyEnvironmentVariableOverrides(applyEnvironmentVariableOverrides);
     return this;
   }
@@ -115,6 +116,13 @@ public class ZeebeClientCloudBuilderImpl
   @Override
   public ZeebeClientCloudBuilderStep4 numJobWorkerExecutionThreads(final int numThreads) {
     innerBuilder.numJobWorkerExecutionThreads(numThreads);
+    return this;
+  }
+
+  @Override
+  public ZeebeClientCloudBuilderStep4 jobWorkerExecutor(
+      final ScheduledExecutorService executor, final boolean takeOwnership) {
+    innerBuilder.jobWorkerExecutor(executor, takeOwnership);
     return this;
   }
 
