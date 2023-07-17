@@ -100,7 +100,7 @@
     "testcafe": "2.6.2",
     "ts-toolbelt": "9.6.0",
     "typescript": "5.1.6",
-    "zeebe-node": "8.1.2",
+    "zeebe-node": "8.2.5",
     "event-source-polyfill": "1.0.31"
   },
   "lint-staged": {

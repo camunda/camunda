@@ -10,6 +10,7 @@ import {
   IProcessVariables,
   ZBWorkerTaskHandler,
   CreateProcessInstanceResponse,
+  JSONDoc,
 } from 'zeebe-node';
 import * as path from 'path';
 import {config} from './config';
@@ -35,7 +36,7 @@ function deployProcess(filenames: string[]) {
   return zbc.deployProcess(filenames.map(getFullFilePath));
 }
 
-async function createInstances<Variables = IProcessVariables>(
+async function createInstances<Variables extends JSONDoc = IProcessVariables>(
   bpmnProcessId: string,
   version: number,
   numberOfInstances: number,
@@ -45,10 +46,10 @@ async function createInstances<Variables = IProcessVariables>(
 
   const responses = await Promise.all(
     [...new Array(batchSize)].map(() =>
-      zbc.createProcessInstance<typeof variables>({
+      zbc.createProcessInstance<Variables>({
         bpmnProcessId,
         version,
-        variables,
+        variables: variables || ({} as Variables),
       }),
     ),
   );
@@ -68,15 +69,15 @@ async function createInstances<Variables = IProcessVariables>(
   ];
 }
 
-function createSingleInstance<Variables = IProcessVariables>(
+function createSingleInstance<Variables extends JSONDoc = IProcessVariables>(
   bpmnProcessId: string,
   version: number,
   variables?: Variables,
 ) {
-  return zbc.createProcessInstance<typeof variables>({
+  return zbc.createProcessInstance<Variables>({
     bpmnProcessId,
     version,
-    variables,
+    variables: variables || ({} as Variables),
   });
 }
 
