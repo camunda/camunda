@@ -84,26 +84,20 @@ public class InstantPreviewDashboardService {
     String emptySafeDashboardTemplate = StringUtils.isEmpty(dashboardJsonTemplate)
       ? INSTANT_DASHBOARD_DEFAULT_TEMPLATE : dashboardJsonTemplate;
     String processedTemplateName = emptySafeDashboardTemplate.replace(".", "");
-    Optional<String> dashboardIdMaybe = instantDashboardMetadataReader.getInstantDashboardIdFor(
+    Optional<String> dashboardId = instantDashboardMetadataReader.getInstantDashboardIdFor(
       processDefinitionKey,
       processedTemplateName
     );
-    if (dashboardIdMaybe.isPresent()) {
-      return dashboardService.getDashboardDefinition(dashboardIdMaybe.get(), userId);
+    if (dashboardId.isPresent()) {
+      return dashboardService.getDashboardDefinition(dashboardId.get(), userId);
     } else {
       log.info("Instant preview dashboard for process definition [{}] and template [{}} does not exist yet, creating " +
                  "it!", processDefinitionKey, emptySafeDashboardTemplate);
-      final Optional<InstantDashboardDataDto> newDashboard = createInstantPreviewDashboard(
-        processDefinitionKey,
-        emptySafeDashboardTemplate
-      );
-      if (newDashboard.isPresent()) {
-        return dashboardService.getDashboardDefinition(newDashboard.get().getDashboardId(), userId);
-      } else {
-        throw new NotFoundException(
+      return createInstantPreviewDashboard(processDefinitionKey, emptySafeDashboardTemplate)
+        .map(dashboard -> dashboardService.getDashboardDefinition(dashboard.getDashboardId(), userId))
+        .orElseThrow(() -> new NotFoundException(
           String.format("Dashboard does not exist! Either the process definition [%s]" +
-                          " or the template [%s] does not exist", processDefinitionKey, emptySafeDashboardTemplate));
-      }
+                          " or the template [%s] does not exist", processDefinitionKey, emptySafeDashboardTemplate)));
     }
   }
 
@@ -231,18 +225,26 @@ public class InstantPreviewDashboardService {
     // cloud mode, the relative URL needs to include the cluster ID for it to work properly, since the instant preview
     // dashboard image urls from the template are static and need to be transformed into a relative path that
     // includes the current cluster ID so that e.g. https://www.anyOldUrl.com/MyImage.png becomes
-    // /<CLUSTER_ID>/external/static/instant_preview_dashboards/MyImage.png
+    // /<CLUSTER_ID>/external/static/instant_preview_dashboards/MyImage.png.
+    // If a custom context path is specified, we also need to include this in the created URL. If the context path is later
+    // changed, these tiles may not work.
     String srcValueFileName = srcValue.substring((srcValue).lastIndexOf('/') + 1);
-    textTileConfigElement.put(SRC_FIELD, clusterId + EXTERNAL_STATIC_RESOURCES_SUBPATH + srcValueFileName);
+    textTileConfigElement.put(
+      SRC_FIELD,
+      createContextPathAwarePath(clusterId + EXTERNAL_STATIC_RESOURCES_SUBPATH + srcValueFileName)
+    );
     String altTextValueFileName = altTextValue.substring((altTextValue).lastIndexOf('/') + 1);
-    textTileConfigElement.put(ALTTEXT_FIELD, clusterId + EXTERNAL_STATIC_RESOURCES_SUBPATH + altTextValueFileName);
+    textTileConfigElement.put(
+      ALTTEXT_FIELD,
+      createContextPathAwarePath(clusterId + EXTERNAL_STATIC_RESOURCES_SUBPATH + altTextValueFileName)
+    );
   }
 
-  private Optional<Set<OptimizeEntityExportDto>> readAndProcessDashboardTemplate(
-    final String dashboardJsonTemplateFilename) {
+  private Optional<Set<OptimizeEntityExportDto>> readAndProcessDashboardTemplate(final String dashboardJsonTemplateFilename) {
+    final String fullyQualifiedPath = INSTANT_PREVIEW_DASHBOARD_TEMPLATES_PATH + dashboardJsonTemplateFilename;
     try (InputStream dashboardTemplate = this.getClass()
       .getClassLoader()
-      .getResourceAsStream(INSTANT_PREVIEW_DASHBOARD_TEMPLATES_PATH + dashboardJsonTemplateFilename)) {
+      .getResourceAsStream(fullyQualifiedPath)) {
       if (dashboardTemplate != null) {
         String exportedDtoJson = new String(dashboardTemplate.readAllBytes(), StandardCharsets.UTF_8);
         Long checksum = getChecksumCRC32(exportedDtoJson);
@@ -251,11 +253,11 @@ public class InstantPreviewDashboardService {
         templateChecksums.put(dashboardJsonTemplateFilename, checksum);
         return Optional.of(valueToBeReturned);
       } else {
-        log.error("Could not read dashboard template from " + INSTANT_PREVIEW_DASHBOARD_TEMPLATES_PATH + dashboardJsonTemplateFilename);
+        log.error("Could not read dashboard template from " + fullyQualifiedPath);
       }
     } catch (IOException e) {
       log.error(
-        "Could not read dashboard template from " + INSTANT_PREVIEW_DASHBOARD_TEMPLATES_PATH + dashboardJsonTemplateFilename,
+        "Could not read dashboard template from " + fullyQualifiedPath,
         e
       );
     }
@@ -338,4 +340,11 @@ public class InstantPreviewDashboardService {
       return fileNameWithoutExtension + "1" + fileExtension;
     }
   }
+
+  private String createContextPathAwarePath(final String subPath) {
+    return configurationService.getContextPath()
+      .map(contextPath -> contextPath + subPath)
+      .orElse(subPath);
+  }
+
 }
