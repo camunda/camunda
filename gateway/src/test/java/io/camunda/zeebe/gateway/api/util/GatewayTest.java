@@ -7,8 +7,10 @@
  */
 package io.camunda.zeebe.gateway.api.util;
 
+import io.camunda.zeebe.gateway.api.util.StubbedGateway.StubbedJobStreamer;
 import io.camunda.zeebe.gateway.impl.configuration.GatewayCfg;
 import io.camunda.zeebe.gateway.protocol.GatewayGrpc.GatewayBlockingStub;
+import io.camunda.zeebe.gateway.protocol.GatewayGrpc.GatewayStub;
 import io.camunda.zeebe.scheduler.clock.ControlledActorClock;
 import io.camunda.zeebe.scheduler.testing.ActorSchedulerRule;
 import org.junit.After;
@@ -24,7 +26,9 @@ public abstract class GatewayTest {
   @Rule public RuleChain ruleChain;
   protected StubbedGateway gateway;
   protected GatewayBlockingStub client;
+  protected GatewayStub asyncClient;
   protected StubbedBrokerClient brokerClient;
+  protected StubbedJobStreamer jobStreamer;
 
   public GatewayTest() {
     this(new GatewayCfg());
@@ -41,7 +45,9 @@ public abstract class GatewayTest {
   public void setUp() {
     gateway = gatewayRule.getGateway();
     client = gatewayRule.getClient();
+    asyncClient = gatewayRule.getAsyncClient();
     brokerClient = gatewayRule.getBrokerClient();
+    jobStreamer = gatewayRule.getJobStreamer();
   }
 
   @After

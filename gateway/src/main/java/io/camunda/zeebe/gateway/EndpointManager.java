@@ -16,8 +16,10 @@ import io.camunda.zeebe.gateway.impl.broker.cluster.BrokerClusterState;
 import io.camunda.zeebe.gateway.impl.broker.cluster.BrokerTopologyManager;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerRequest;
 import io.camunda.zeebe.gateway.impl.job.ActivateJobsHandler;
+import io.camunda.zeebe.gateway.impl.stream.ClientStreamAdapter;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsResponse;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivatedJob;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.BroadcastSignalRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.BroadcastSignalResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.BrokerInfo;
@@ -51,6 +53,7 @@ import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ResolveIncidentReques
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ResolveIncidentResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.SetVariablesRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.SetVariablesResponse;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.StreamActivatedJobsRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ThrowErrorRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ThrowErrorResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.TopologyResponse;
@@ -59,6 +62,7 @@ import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.UpdateJobRetriesRespo
 import io.camunda.zeebe.protocol.impl.stream.job.JobActivationProperties;
 import io.camunda.zeebe.transport.stream.api.ClientStreamer;
 import io.camunda.zeebe.util.VersionUtil;
+import io.grpc.stub.ServerCallStreamObserver;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Set;
@@ -70,10 +74,7 @@ public final class EndpointManager {
   private final BrokerTopologyManager topologyManager;
   private final ActivateJobsHandler activateJobsHandler;
   private final RequestRetryHandler requestRetryHandler;
-
-  // TODO: actually make use of it
-  @SuppressWarnings({"FieldCanBeLocal", "unused"})
-  private final ClientStreamer<JobActivationProperties> jobStreamer;
+  private final ClientStreamAdapter clientStreamAdapter;
 
   public EndpointManager(
       final BrokerClient brokerClient,
@@ -81,8 +82,8 @@ public final class EndpointManager {
       final ClientStreamer<JobActivationProperties> jobStreamer) {
     this.brokerClient = brokerClient;
     this.activateJobsHandler = activateJobsHandler;
-    this.jobStreamer = jobStreamer;
 
+    clientStreamAdapter = new ClientStreamAdapter(jobStreamer);
     topologyManager = brokerClient.getTopologyManager();
     requestRetryHandler = new RequestRetryHandler(brokerClient, topologyManager);
   }
@@ -159,6 +160,12 @@ public final class EndpointManager {
     }
 
     return true;
+  }
+
+  public void streamActivatedJobs(
+      final StreamActivatedJobsRequest request,
+      final ServerCallStreamObserver<ActivatedJob> responseObserver) {
+    clientStreamAdapter.handle(request, responseObserver);
   }
 
   public void activateJobs(
