@@ -30,7 +30,9 @@ public class DecisionInstanceTemplate extends AbstractTemplateDescriptor impleme
   public static final String DECISION_ID = "decisionId";
   public static final String DECISION_NAME = "decisionName";
   public static final String DECISION_VERSION = "decisionVersion";
+  public static final String DECISION_TYPE = "decisionType";
   public static final String EVALUATION_DATE = "evaluationDate";
+  public static final String EVALUATION_FAILURE = "evaluationFailure";
   public static final String RESULT = "result";
   public static final String EVALUATED_INPUTS = "evaluatedInputs";
   public static final String EVALUATED_OUTPUTS = "evaluatedOutputs";

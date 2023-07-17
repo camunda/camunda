@@ -8,23 +8,40 @@ package io.camunda.operate.webapp.api.v1.entities;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import io.camunda.operate.entities.dmn.DecisionType;
+import io.camunda.operate.schema.templates.DecisionInstanceTemplate;
+
 import java.util.List;
 import java.util.Objects;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class DecisionInstance {
 
+  // Used for index field search and sorting
+  public static final String
+      ID = DecisionInstanceTemplate.ID,
+      KEY = DecisionInstanceTemplate.KEY,
+      STATE = DecisionInstanceTemplate.STATE,
+      EVALUATION_DATE = DecisionInstanceTemplate.EVALUATION_DATE,
+      EVALUATION_FAILURE = DecisionInstanceTemplate.EVALUATION_FAILURE,
+      PROCESS_DEFINITION_KEY = DecisionInstanceTemplate.PROCESS_DEFINITION_KEY,
+      PROCESS_INSTANCE_KEY = DecisionInstanceTemplate.PROCESS_INSTANCE_KEY,
+      DECISION_ID = DecisionInstanceTemplate.DECISION_ID,
+      DECISION_DEFINITION_ID = DecisionInstanceTemplate.DECISION_DEFINITION_ID,
+      DECISION_NAME = DecisionInstanceTemplate.DECISION_NAME,
+      DECISION_VERSION = DecisionInstanceTemplate.DECISION_VERSION,
+      DECISION_TYPE = DecisionInstanceTemplate.DECISION_TYPE;
+
   private String id;
   private Long key;
   private DecisionInstanceState state;
   private String evaluationDate;
-  private String errorMessage;
+  private String evaluationFailure;
   private Long processDefinitionKey;
   private Long processInstanceKey;
   private String decisionId;
   private String decisionDefinitionId;
   private String decisionName;
-  private int decisionVersion;
+  private Integer decisionVersion;
   private DecisionType decisionType;
   private String result;
   private List<DecisionInstanceInput> evaluatedInputs;
@@ -66,12 +83,12 @@ public class DecisionInstance {
     return this;
   }
 
-  public String getErrorMessage() {
-    return errorMessage;
+  public String getEvaluationFailure() {
+    return evaluationFailure;
   }
 
-  public DecisionInstance setErrorMessage(String errorMessage) {
-    this.errorMessage = errorMessage;
+  public DecisionInstance setEvaluationFailure(String evaluationFailure) {
+    this.evaluationFailure = evaluationFailure;
     return this;
   }
 
@@ -120,7 +137,7 @@ public class DecisionInstance {
     return this;
   }
 
-  public int getDecisionVersion() {
+  public Integer getDecisionVersion() {
     return decisionVersion;
   }
 
@@ -170,17 +187,18 @@ public class DecisionInstance {
     if (this == o) return true;
     if (o == null || getClass() != o.getClass()) return false;
     DecisionInstance that = (DecisionInstance) o;
-    return decisionVersion == that.decisionVersion && Objects.equals(id, that.id) && Objects.equals(key, that.key) &&
-        state == that.state && Objects.equals(evaluationDate, that.evaluationDate) && Objects.equals(errorMessage, that.errorMessage) &&
+    return Objects.equals(id, that.id) && Objects.equals(key, that.key) && state == that.state
+        && Objects.equals(evaluationDate, that.evaluationDate) && Objects.equals(evaluationFailure, that.evaluationFailure) &&
         Objects.equals(processDefinitionKey, that.processDefinitionKey) && Objects.equals(processInstanceKey, that.processInstanceKey) &&
         Objects.equals(decisionId, that.decisionId) && Objects.equals(decisionDefinitionId, that.decisionDefinitionId) &&
-        Objects.equals(decisionName, that.decisionName) && decisionType == that.decisionType && Objects.equals(result, that.result) &&
-        Objects.equals(evaluatedInputs, that.evaluatedInputs) && Objects.equals(evaluatedOutputs, that.evaluatedOutputs);
+        Objects.equals(decisionName, that.decisionName) && Objects.equals(decisionVersion, that.decisionVersion) &&
+        decisionType == that.decisionType && Objects.equals(result, that.result) && Objects.equals(evaluatedInputs, that.evaluatedInputs) &&
+        Objects.equals(evaluatedOutputs, that.evaluatedOutputs);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(id, key, state, evaluationDate, errorMessage, processDefinitionKey, processInstanceKey, decisionId,
+    return Objects.hash(id, key, state, evaluationDate, evaluationFailure, processDefinitionKey, processInstanceKey, decisionId,
         decisionDefinitionId, decisionName, decisionVersion, decisionType, result, evaluatedInputs, evaluatedOutputs);
   }
 
@@ -191,7 +209,7 @@ public class DecisionInstance {
         ", key=" + key +
         ", state=" + state +
         ", evaluationDate='" + evaluationDate + '\'' +
-        ", errorMessage='" + errorMessage + '\'' +
+        ", evaluationFailure='" + evaluationFailure + '\'' +
         ", processDefinitionKey=" + processDefinitionKey +
         ", processInstanceKey=" + processInstanceKey +
         ", decisionId='" + decisionId + '\'' +
