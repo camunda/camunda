@@ -14,6 +14,7 @@ import io.camunda.zeebe.broker.protocol.InterPartitionMessageDecoder;
 import io.camunda.zeebe.broker.protocol.MessageHeaderDecoder;
 import io.camunda.zeebe.logstreams.log.LogAppendEntry;
 import io.camunda.zeebe.logstreams.log.LogStreamWriter;
+import io.camunda.zeebe.logstreams.log.LogStreamWriter.WriteFailure;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.impl.record.value.management.CheckpointRecord;
@@ -22,6 +23,7 @@ import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.intent.management.CheckpointIntent;
 import io.camunda.zeebe.stream.impl.TypedEventRegistry;
+import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.ReflectUtil;
 import java.util.Optional;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -53,32 +55,46 @@ final class InterPartitionCommandReceiverImpl {
       return;
     }
 
-    if (!writeCheckpoint(decoded)) {
-      LOG.warn(
-          "Failed to write new command for checkpoint {} (currently at {}), ignoring command {} {} from {}",
-          decoded.checkpointId,
-          checkpointId,
-          decoded.metadata.getValueType(),
-          decoded.metadata.getIntent(),
-          memberId);
+    final var checkpointWritten = writeCheckpoint(decoded);
+    if (checkpointWritten.isLeft()) {
       // It's unsafe to write this record without first writing the checkpoint, bail out early.
+      logCheckpointFailure(memberId, decoded, checkpointWritten);
       return;
     }
 
-    if (!writeCommand(decoded)) {
-      LOG.warn(
-          "Failed to write command {} {} from {} to logstream",
-          decoded.metadata.getValueType(),
-          decoded.metadata.getIntent(),
-          memberId);
-    }
+    writeCommand(decoded).ifLeft(failure -> logWriteFailure(memberId, decoded, failure));
   }
 
-  private boolean writeCheckpoint(final DecodedMessage decoded) {
+  private void logCheckpointFailure(
+      final MemberId memberId,
+      final DecodedMessage decoded,
+      final Either<WriteFailure, Long> checkpointWritten) {
+    LOG.warn(
+        "Failed to write new command for checkpoint {} (currently at {}), ignoring command {} {} from {} (error = {})",
+        decoded.checkpointId,
+        checkpointId,
+        decoded.metadata.getValueType(),
+        decoded.metadata.getIntent(),
+        memberId,
+        checkpointWritten.getLeft());
+  }
+
+  private void logWriteFailure(
+      final MemberId memberId, final DecodedMessage decoded, final WriteFailure failure) {
+    LOG.warn(
+        "Failed to write command {} {} from {} to logstream (error = {})",
+        decoded.metadata.getValueType(),
+        decoded.metadata.getIntent(),
+        memberId,
+        failure);
+  }
+
+  private Either<WriteFailure, Long> writeCheckpoint(final DecodedMessage decoded) {
     if (decoded.checkpointId <= checkpointId) {
       // No need to write a new checkpoint create record
-      return true;
+      return Either.right(checkpointId);
     }
+
     LOG.debug(
         "Received command with checkpoint {}, current checkpoint is {}",
         decoded.checkpointId,
@@ -89,17 +105,17 @@ final class InterPartitionCommandReceiverImpl {
             .intent(CheckpointIntent.CREATE)
             .valueType(ValueType.CHECKPOINT);
     final var checkpointRecord = new CheckpointRecord().setCheckpointId(decoded.checkpointId);
-    return logStreamWriter.tryWrite(LogAppendEntry.of(metadata, checkpointRecord)).isRight();
+    return logStreamWriter.tryWrite(LogAppendEntry.of(metadata, checkpointRecord));
   }
 
-  private boolean writeCommand(final DecodedMessage decoded) {
+  private Either<WriteFailure, Long> writeCommand(final DecodedMessage decoded) {
     final var appendEntry =
         decoded
             .recordKey()
             .map(key -> LogAppendEntry.of(key, decoded.metadata(), decoded.command()))
             .orElseGet(() -> LogAppendEntry.of(decoded.metadata(), decoded.command()));
 
-    return logStreamWriter.tryWrite(appendEntry).isRight();
+    return logStreamWriter.tryWrite(appendEntry);
   }
 
   void setDiskSpaceAvailable(final boolean available) {
