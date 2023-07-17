@@ -420,10 +420,8 @@ public final class ZeebeClientTest extends ClientTest {
                 .handler((c, j) -> {})
                 .pollInterval(Duration.ZERO)
                 .open()) {
-      // when - then - polling should be scheduled immediately on open, but may fail faster than
-      // we assert here, so we need to check both the scheduled count and the completed task count
-      // to see if anything has happened
-      assertThat(executor.getActiveCount() + executor.getCompletedTaskCount()).isPositive();
+      // when - then
+      assertThat(executor.getTaskCount()).isPositive();
     }
   }
 }
