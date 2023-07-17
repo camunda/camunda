@@ -120,6 +120,11 @@ public final class CreateDeploymentMultiplePartitionsTest {
         .forEach(
             partitionId -> {
               if (DEPLOYMENT_PARTITION == partitionId) {
+                assertDeploymentEventResources(
+                    partitionId,
+                    DeploymentIntent.CREATED,
+                    deployment.getKey(),
+                    (createdDeployment) -> assertDeploymentRecord(deployment, createdDeployment));
                 return;
               }
 
@@ -127,26 +132,9 @@ public final class CreateDeploymentMultiplePartitionsTest {
                   partitionId,
                   DeploymentIntent.CREATED,
                   deployment.getKey(),
-                  (createdDeployment) -> assertDeploymentRecord(deployment, createdDeployment));
+                  (createdDeployment) ->
+                      assertDeploymentRecordWithoutResources(deployment, createdDeployment));
             });
-  }
-
-  private void assertDeploymentRecord(
-      final Record<DeploymentRecordValue> deployment,
-      final Record<DeploymentRecordValue> createdDeployment) {
-    final DeploymentResource resource = createdDeployment.getValue().getResources().get(0);
-
-    Assertions.assertThat(resource).hasResource(bpmnXml(PROCESS));
-
-    final List<ProcessMetadataValue> deployedProcesses =
-        createdDeployment.getValue().getProcessesMetadata();
-
-    assertThat(deployedProcesses).hasSize(1);
-    Assertions.assertThat(deployedProcesses.get(0))
-        .hasBpmnProcessId("shouldCreateDeploymentOnAllPartitions")
-        .hasVersion(1)
-        .hasProcessDefinitionKey(getDeployedProcess(deployment, 0).getProcessDefinitionKey())
-        .hasResourceName("process.bpmn");
   }
 
   @Test
@@ -428,6 +416,41 @@ public final class CreateDeploymentMultiplePartitionsTest {
 
     assertThat(repeatedDrgs.size()).isEqualTo(PARTITION_COUNT - 1);
     repeatedDrgs.forEach(r -> assertDifferentDrg(originalDrg.get(0), r));
+  }
+
+  private void assertDeploymentRecord(
+      final Record<DeploymentRecordValue> deployment,
+      final Record<DeploymentRecordValue> createdDeployment) {
+    final DeploymentResource resource = createdDeployment.getValue().getResources().get(0);
+
+    Assertions.assertThat(resource).hasResource(bpmnXml(PROCESS));
+
+    final List<ProcessMetadataValue> deployedProcesses =
+        createdDeployment.getValue().getProcessesMetadata();
+
+    assertThat(deployedProcesses).hasSize(1);
+    Assertions.assertThat(deployedProcesses.get(0))
+        .hasBpmnProcessId("shouldCreateDeploymentOnAllPartitions")
+        .hasVersion(1)
+        .hasProcessDefinitionKey(getDeployedProcess(deployment, 0).getProcessDefinitionKey())
+        .hasResourceName("process.bpmn");
+  }
+
+  private void assertDeploymentRecordWithoutResources(
+      final Record<DeploymentRecordValue> deployment,
+      final Record<DeploymentRecordValue> createdDeployment) {
+
+    assertThat(createdDeployment.getValue().getResources()).isEmpty();
+
+    final List<ProcessMetadataValue> deployedProcesses =
+        createdDeployment.getValue().getProcessesMetadata();
+
+    assertThat(deployedProcesses).hasSize(1);
+    Assertions.assertThat(deployedProcesses.get(0))
+        .hasBpmnProcessId("shouldCreateDeploymentOnAllPartitions")
+        .hasVersion(1)
+        .hasProcessDefinitionKey(getDeployedProcess(deployment, 0).getProcessDefinitionKey())
+        .hasResourceName("process.bpmn");
   }
 
   private void assertSameProcess(

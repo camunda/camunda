@@ -32,7 +32,6 @@ import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import io.camunda.zeebe.util.ByteValue;
 import java.util.stream.Collectors;
 import org.awaitility.Awaitility;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -219,7 +218,6 @@ public class MultiPartitionDeploymentLifecycleTest {
             RecordType.COMMAND, RecordType.COMMAND, RecordType.COMMAND_REJECTION);
   }
 
-  @Ignore("Regression https://github.com/camunda/zeebe/issues/13233")
   @Test
   public void shouldDeployIfResourceIsLargeButNotTooMuch() {
     // when
@@ -230,7 +228,7 @@ public class MultiPartitionDeploymentLifecycleTest {
                 Bpmn.createExecutableProcess("PROCESS")
                     .startEvent()
                     .documentation(
-                        "x".repeat((int) (ByteValue.ofMegabytes(4) / 2 - ByteValue.ofKilobytes(2))))
+                        "x".repeat((int) (ByteValue.ofMegabytes(2) - ByteValue.ofKilobytes(2))))
                     .done())
             .deploy();
 
