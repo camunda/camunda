@@ -12,6 +12,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.engine.processing.deployment.model.element.AbstractFlowElement;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableProcess;
+import io.camunda.zeebe.engine.state.deployment.PersistedProcess.PersistedProcessState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.util.ProcessingStateRule;
@@ -505,6 +506,23 @@ public final class ProcessStateTest {
 
     // then
     Assertions.assertThat(latestProcess.getVersion()).isEqualTo(2);
+  }
+
+  @Test
+  public void shouldUpdateProcessState() {
+    // given
+    final long processDefinitionKey = 100L;
+    final var processRecord = creatingProcessRecord(processingState);
+    processState.putProcess(processDefinitionKey, processRecord);
+    final var initialProcess = processState.getProcessByKey(processDefinitionKey);
+
+    // when
+    processState.updateProcessState(processDefinitionKey, PersistedProcessState.PENDING_DELETION);
+
+    // then
+    assertThat(initialProcess.getState()).isEqualTo(PersistedProcessState.ACTIVE);
+    final var updatedProcess = processState.getProcessByKey(processDefinitionKey);
+    assertThat(updatedProcess.getState()).isEqualTo(PersistedProcessState.PENDING_DELETION);
   }
 
   public static DeploymentRecord creatingDeploymentRecord(
