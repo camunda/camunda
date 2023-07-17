@@ -97,7 +97,7 @@
     "react-scripts": "5.0.1",
     "react-test-renderer": "18.2.0",
     "source-map-explorer": "2.5.3",
-    "testcafe": "2.6.2",
+    "testcafe": "3.0.1",
     "ts-toolbelt": "9.6.0",
     "typescript": "5.1.6",
     "zeebe-node": "8.2.5",
