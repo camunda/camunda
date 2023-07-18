@@ -18,6 +18,7 @@ import static org.mockito.Mockito.when;
 
 import io.atomix.raft.RaftServer;
 import io.atomix.raft.RaftServer.Role;
+import io.camunda.zeebe.broker.system.partitions.PartitionTransition.CancelledPartitionTransition;
 import io.camunda.zeebe.broker.system.partitions.PartitionTransitionContext;
 import io.camunda.zeebe.broker.system.partitions.PartitionTransitionStep;
 import io.camunda.zeebe.broker.system.partitions.StateController;
@@ -179,9 +180,7 @@ public class RandomizedPartitionTransitionTest {
     for (int index = 0; index < operations.size(); index++) {
       final var operation = operations.get(index);
 
-      if (operation instanceof RequestTransition) {
-        final var requestTransition = (RequestTransition) operation;
-
+      if (operation instanceof final RequestTransition requestTransition) {
         latestTransitionFuture = sut.transitionTo(index, requestTransition.getRole());
         transitionFutures.add(latestTransitionFuture);
         if (requestTransition.isPause()) {
@@ -195,7 +194,15 @@ public class RandomizedPartitionTransitionTest {
     }
 
     // join all transition future to capture any exceptions
-    transitionFutures.forEach(caf -> caf.join());
+    transitionFutures.forEach(
+        caf -> {
+          if (caf.isCompletedExceptionally()) {
+            final var exception = caf.getException();
+            if (!(exception instanceof CancelledPartitionTransition)) {
+              throw new RuntimeException("Transition future completed exceptionally", exception);
+            }
+          }
+        });
   }
 
   private void catchUp(

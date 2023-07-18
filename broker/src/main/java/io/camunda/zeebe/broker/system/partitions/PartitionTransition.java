@@ -18,7 +18,8 @@ public interface PartitionTransition {
    * opening a follower partition.
    *
    * @param currentTerm the current term on which the transition happens
-   * @return an ActorFuture to be completed when the transition is complete
+   * @return an ActorFuture to be completed when the transition is complete. Completed exceptionally
+   *     with {@link CancelledPartitionTransition} if the partition was cancelled.
    */
   ActorFuture<Void> toFollower(final long currentTerm);
 
@@ -27,14 +28,16 @@ public interface PartitionTransition {
    * a leader partition.
    *
    * @param currentTerm the current term on which the transition happens
-   * @return an ActorFuture to be completed when the transition is complete
+   * @return an ActorFuture to be completed when the transition is complete. Completed exceptionally
+   *     * with {@link CancelledPartitionTransition} if the partition was cancelled.
    */
   ActorFuture<Void> toLeader(final long currentTerm);
 
   /**
    * Closes the current partition's components asynchronously.
    *
-   * @return an ActorFuture completed when the transition is complete
+   * @return an ActorFuture completed when the transition is complete. Completed exceptionally *
+   *     with {@link CancelledPartitionTransition} if the partition was cancelled.
    * @param term
    */
   ActorFuture<Void> toInactive(final long term);
@@ -57,4 +60,7 @@ public interface PartitionTransition {
    * @return null if transition is healthy or a {@link HealthIssue} if not.
    */
   HealthIssue getHealthIssue();
+
+  /** Used to exceptionally complete transition futures when the transition was cancelled. */
+  final class CancelledPartitionTransition extends RuntimeException {}
 }
