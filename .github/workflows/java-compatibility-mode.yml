@@ -10,7 +10,7 @@ on:
 jobs:
   unit-tests-backend:
     name: Unit Tests - Backend
-    runs-on: n1-standard-8-netssd-preempt
+    runs-on: gcp-core-8-default
     strategy:
       fail-fast: false
       matrix:
@@ -38,7 +38,7 @@ jobs:
           if-no-files-found: ignore
 
   integration-tests:
-    runs-on: n1-standard-32-netssd-preempt
+    runs-on: gcp-core-32-default
     timeout-minutes: 60
     strategy:
       fail-fast: false
@@ -108,7 +108,7 @@ jobs:
 
   data-upgrade-test:
     name: Data Upgrade Test
-    runs-on: n1-standard-8-netssd-preempt
+    runs-on: gcp-core-8-default
     timeout-minutes: 30
     strategy:
       fail-fast: false

@@ -7,7 +7,7 @@ on:
 
 jobs:
   optimize-cluster-test:
-    runs-on: n1-standard-8-netssd-preempt
+    runs-on: gcp-core-8-default
     timeout-minutes: 60
     env:
       NAMESPACE: optimize-cluster-test-${{ github.run_id }}
@@ -24,7 +24,7 @@ jobs:
         method: approle
         roleId: ${{ secrets.VAULT_ROLE_ID }}
         secretId: ${{ secrets.VAULT_SECRET_ID }}
-        secrets: | 
+        secrets: |
           secret/data/products/optimize/ci/camunda-optimize CI_SERVICE_ACCOUNT | GCP_CREDENTIALS;
           secret/data/products/optimize/ci/camunda-optimize SLACK_BOT_URL;
 
@@ -34,7 +34,7 @@ jobs:
           secrets: ${{ toJSON(secrets) }}
           java-version: 11
           distribution: zulu
-    
+
     - name: Authenticate to Google Cloud
       uses: google-github-actions/auth@v1
       with:
@@ -72,9 +72,9 @@ jobs:
       run: kubectl -n $NAMESPACE logs elasticsearch-0 -c elasticsearch > elasticsearch.log
 
     - name: Cluster cleanup
-      if: always() 
+      if: always()
       run: .github/podSpecs/clusterTests/kill.sh $NAMESPACE
-    
+
     - uses: actions/upload-artifact@v3
       if: always()
       with:
