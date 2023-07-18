@@ -12,6 +12,10 @@ camunda-platform:
         effect: NoSchedule
         value: 'false'
 
+    # needed till https://github.com/camunda/camunda-platform-helm/pull/778 is merged upstream
+    podSecurityContext:
+      fsGroup: 1000
+
   zeebe-gateway:
     # Prefer scheduling on any non-spot VM
     # GKE does not let us add the cloud.google.com/gke-spot label manually, so when an instance is
