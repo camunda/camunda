@@ -77,7 +77,6 @@ public class ProcessingDbState implements MutableProcessingState {
   private final MutableDecisionState decisionState;
   private final MutableSignalSubscriptionState signalSubscriptionState;
   private final MutableDistributionState distributionState;
-
   private final int partitionId;
 
   public ProcessingDbState(
@@ -97,7 +96,7 @@ public class ProcessingDbState implements MutableProcessingState {
 
     deploymentState = new DbDeploymentState(zeebeDb, transactionContext);
     jobState = new DbJobState(zeebeDb, transactionContext, partitionId);
-    messageState = new DbMessageState(zeebeDb, transactionContext);
+    messageState = new DbMessageState(zeebeDb, transactionContext, partitionId);
     messageSubscriptionState = new DbMessageSubscriptionState(zeebeDb, transactionContext);
     messageStartEventSubscriptionState =
         new DbMessageStartEventSubscriptionState(zeebeDb, transactionContext);
@@ -117,6 +116,7 @@ public class ProcessingDbState implements MutableProcessingState {
     messageSubscriptionState.onRecovered(context);
     processMessageSubscriptionState.onRecovered(context);
     bannedInstanceState.onRecovered(context);
+    messageState.onRecovered(context);
   }
 
   @Override
@@ -205,6 +205,11 @@ public class ProcessingDbState implements MutableProcessingState {
   }
 
   @Override
+  public KeyGenerator getKeyGenerator() {
+    return keyGenerator;
+  }
+
+  @Override
   public MutablePendingMessageSubscriptionState getPendingMessageSubscriptionState() {
     return messageSubscriptionState;
   }
@@ -212,11 +217,6 @@ public class ProcessingDbState implements MutableProcessingState {
   @Override
   public MutablePendingProcessMessageSubscriptionState getPendingProcessMessageSubscriptionState() {
     return processMessageSubscriptionState;
-  }
-
-  @Override
-  public KeyGenerator getKeyGenerator() {
-    return keyGenerator;
   }
 
   @Override

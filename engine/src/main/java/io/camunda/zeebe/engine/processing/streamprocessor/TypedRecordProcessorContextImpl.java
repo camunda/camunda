@@ -72,7 +72,7 @@ public class TypedRecordProcessorContextImpl implements TypedRecordProcessorCont
 
   @Override
   public Supplier<ScheduledTaskState> getScheduledTaskStateFactory() {
-    return () -> new ScheduledTaskDbState(zeebeDb, zeebeDb.createContext());
+    return () -> new ScheduledTaskDbState(zeebeDb, zeebeDb.createContext(), partitionId);
   }
 
   @Override
