@@ -145,6 +145,9 @@ public final class DbProcessState implements MutableProcessState {
     updateInMemoryState(process);
   }
 
+  @Override
+  public void deleteProcess(final ProcessRecord processRecord) {}
+
   private void persistProcess(final long processDefinitionKey, final ProcessRecord processRecord) {
     persistedProcess.wrap(processRecord, processDefinitionKey);
     this.processDefinitionKey.wrapLong(processDefinitionKey);
