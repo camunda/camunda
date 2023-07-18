@@ -9,13 +9,12 @@ import React from 'react';
 import {
   DataTable,
   TableBody,
-  TableCell,
   TableContainer,
-  TableExpandRow,
   TableExpandedRow,
-  Table,
   TableRow,
+  TableCell as BaseTableCell,
 } from '@carbon/react';
+import {Table, TableExpandRow, TableCell} from './styled';
 
 type Props = {
   headers: {key: string; header: string; width?: string}[];
@@ -57,7 +56,9 @@ const PartiallyExpandableDataTable: React.FC<Props> = ({
                     <React.Fragment key={row.id}>
                       <TableExpandRow {...getRowProps({row})}>
                         {row.cells.map((cell) => (
-                          <TableCell key={cell.id}>{cell.value}</TableCell>
+                          <BaseTableCell key={cell.id}>
+                            {cell.value}
+                          </BaseTableCell>
                         ))}
                       </TableExpandRow>
                       <TableExpandedRow colSpan={headers.length + 1}>

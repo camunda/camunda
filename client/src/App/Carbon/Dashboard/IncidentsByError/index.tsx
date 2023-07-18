@@ -10,6 +10,13 @@ import {incidentsByErrorStore} from 'modules/stores/incidentsByError';
 import {observer} from 'mobx-react';
 import {useLocation} from 'react-router-dom';
 import {PartiallyExpandableDataTable} from '../PartiallyExpandableDataTable';
+import {CarbonLocations} from 'modules/carbonRoutes';
+import {panelStatesStore} from 'modules/stores/panelStates';
+import {tracking} from 'modules/tracking';
+import {getAccordionTitle} from './utils/getAccordionTitle';
+import {InstancesBar} from 'modules/components/Carbon/InstancesBar';
+import {truncateErrorMessage} from './utils/truncateErrorMessage';
+import {LinkWrapper} from '../styled';
 
 const IncidentsByError: React.FC = observer(() => {
   const location = useLocation();
@@ -42,10 +49,31 @@ const IncidentsByError: React.FC = observer(() => {
   return (
     <PartiallyExpandableDataTable
       headers={[{key: 'incident', header: 'incident'}]}
-      rows={incidents.map(({errorMessage}) => {
+      rows={incidents.map(({errorMessage, instancesWithErrorCount}) => {
         return {
           id: errorMessage,
-          incident: errorMessage,
+          incident: (
+            <LinkWrapper
+              to={CarbonLocations.processes({
+                errorMessage: truncateErrorMessage(errorMessage),
+                incidents: true,
+              })}
+              onClick={() => {
+                panelStatesStore.expandFiltersPanel();
+                tracking.track({
+                  eventName: 'navigation',
+                  link: 'dashboard-process-incidents-by-error-message-all-processes',
+                });
+              }}
+              title={getAccordionTitle(instancesWithErrorCount, errorMessage)}
+            >
+              <InstancesBar
+                label={{type: 'incident', size: 'small', text: errorMessage}}
+                incidentsCount={instancesWithErrorCount}
+                size="medium"
+              />
+            </LinkWrapper>
+          ),
         };
       })}
       expandedContents={incidents.reduce(

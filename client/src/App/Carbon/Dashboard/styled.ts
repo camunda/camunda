@@ -8,6 +8,7 @@
 import styled, {css} from 'styled-components';
 import {Tile as BaseTitle} from '@carbon/react';
 import {styles} from '@carbon/elements';
+import {Link} from 'modules/components/Carbon/Link';
 
 type GridProps = {
   $numberOfColumns: 1 | 2;
@@ -53,4 +54,9 @@ const TileTitle = styled.h2`
   margin-bottom: var(--cds-spacing-06);
 `;
 
-export {Grid, ScrollableContent, Tile, TileTitle};
+const LinkWrapper = styled(Link)`
+  display: block;
+  text-decoration: none !important;
+`;
+
+export {Grid, ScrollableContent, Tile, TileTitle, LinkWrapper};

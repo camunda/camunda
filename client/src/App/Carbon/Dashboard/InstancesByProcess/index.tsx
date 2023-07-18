@@ -9,6 +9,13 @@ import React from 'react';
 import {processInstancesByNameStore} from 'modules/stores/processInstancesByName';
 import {observer} from 'mobx-react';
 import {PartiallyExpandableDataTable} from '../PartiallyExpandableDataTable';
+import {CarbonLocations} from 'modules/carbonRoutes';
+import {panelStatesStore} from 'modules/stores/panelStates';
+import {tracking} from 'modules/tracking';
+import {getAccordionTitle} from './utils/getAccordionTitle';
+import {getAccordionLabel} from './utils/getAccordionLabel';
+import {InstancesBar} from 'modules/components/Carbon/InstancesBar';
+import {LinkWrapper} from '../styled';
 
 const InstancesByProcess: React.FC = observer(() => {
   const {
@@ -31,10 +38,64 @@ const InstancesByProcess: React.FC = observer(() => {
   return (
     <PartiallyExpandableDataTable
       headers={[{key: 'instance', header: 'instance'}]}
-      rows={processInstances.map(({bpmnProcessId}) => {
+      rows={processInstances.map((item) => {
+        const {
+          instancesWithActiveIncidentsCount,
+          activeInstancesCount,
+          processName,
+          bpmnProcessId,
+          processes,
+        } = item;
+        const name = processName || bpmnProcessId;
+        const version = processes[0]!.version;
+        const totalInstancesCount =
+          instancesWithActiveIncidentsCount + activeInstancesCount;
+
         return {
           id: bpmnProcessId,
-          instance: bpmnProcessId,
+          instance: (
+            <LinkWrapper
+              to={CarbonLocations.processes({
+                process: bpmnProcessId,
+                version: version.toString(),
+                active: true,
+                incidents: true,
+                ...(totalInstancesCount === 0
+                  ? {
+                      completed: true,
+                      canceled: true,
+                    }
+                  : {}),
+              })}
+              onClick={() => {
+                panelStatesStore.expandFiltersPanel();
+                tracking.track({
+                  eventName: 'navigation',
+                  link: 'dashboard-process-instances-by-name-all-versions',
+                });
+              }}
+              title={getAccordionTitle(
+                name,
+                totalInstancesCount,
+                processes.length,
+              )}
+            >
+              <InstancesBar
+                label={{
+                  type: 'process',
+                  size: 'medium',
+                  text: getAccordionLabel(
+                    name,
+                    totalInstancesCount,
+                    processes.length,
+                  ),
+                }}
+                incidentsCount={instancesWithActiveIncidentsCount}
+                activeInstancesCount={activeInstancesCount}
+                size="medium"
+              />
+            </LinkWrapper>
+          ),
         };
       })}
       expandedContents={processInstances.reduce(
