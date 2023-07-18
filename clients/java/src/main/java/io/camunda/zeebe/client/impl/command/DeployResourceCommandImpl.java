@@ -167,6 +167,12 @@ public final class DeployResourceCommandImpl
     return future;
   }
 
+  @Override
+  public DeployResourceCommandStep2 tenantId(final String tenantId) {
+    // todo(#13321): replace dummy implementation
+    return this;
+  }
+
   private void send(final DeployResourceRequest request, final StreamObserver streamObserver) {
     asyncStub
         .withDeadlineAfter(requestTimeout.toMillis(), TimeUnit.MILLISECONDS)

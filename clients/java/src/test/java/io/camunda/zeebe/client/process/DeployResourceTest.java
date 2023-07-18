@@ -23,6 +23,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.zeebe.client.api.command.ClientException;
+import io.camunda.zeebe.client.api.command.DeployResourceCommandStep1.DeployResourceCommandStep2;
 import io.camunda.zeebe.client.api.response.DeploymentEvent;
 import io.camunda.zeebe.client.impl.command.StreamUtil;
 import io.camunda.zeebe.client.impl.response.DecisionImpl;
@@ -361,6 +362,22 @@ public final class DeployResourceTest extends ClientTest {
 
     // then
     rule.verifyRequestTimeout(requestTimeout);
+  }
+
+  @Test
+  public void shouldAllowSpecifyingTenantId() {
+    // given
+    final DeployResourceCommandStep2 builder =
+        client.newDeployResourceCommand().addResourceStringUtf8("", "test.bpmn");
+
+    // when
+    final DeployResourceCommandStep2 builderWithTenantId = builder.tenantId("custom tenant");
+
+    // then
+    // todo(#13321): verify that tenant id is set in the request
+    assertThat(builderWithTenantId)
+        .describedAs("This method has no effect on the command builder while under development")
+        .isEqualTo(builder);
   }
 
   private byte[] getBytes(final String filename) {
