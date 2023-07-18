@@ -16,8 +16,6 @@
 package io.camunda.zeebe.client.api.command;
 
 import io.camunda.zeebe.client.api.response.EvaluateDecisionResponse;
-import java.io.InputStream;
-import java.util.Map;
 
 public interface EvaluateDecisionCommandStep1 {
 
@@ -39,52 +37,7 @@ public interface EvaluateDecisionCommandStep1 {
    */
   EvaluateDecisionCommandStep2 decisionKey(long decisionKey);
 
-  interface EvaluateDecisionCommandStep2 extends FinalCommandStep<EvaluateDecisionResponse> {
-
-    /**
-     * Set the variables for the decision evaluation.
-     *
-     * @param variables the variables JSON document as stream
-     * @return the builder for this command. Call {@link #send()} to complete the command and send
-     *     it to the broker.
-     */
-    EvaluateDecisionCommandStep2 variables(InputStream variables);
-
-    /**
-     * Set the variables for the decision evaluation.
-     *
-     * @param variables the variables JSON document as String
-     * @return the builder for this command. Call {@link #send()} to complete the command and send
-     *     it to the broker.
-     */
-    EvaluateDecisionCommandStep2 variables(String variables);
-
-    /**
-     * Set the variables for the decision evaluation.
-     *
-     * @param variables the variables document as map
-     * @return the builder for this command. Call {@link #send()} to complete the command and send
-     *     it to the broker.
-     */
-    EvaluateDecisionCommandStep2 variables(Map<String, Object> variables);
-
-    /**
-     * Set the variables for the decision evaluation.
-     *
-     * @param variables the variables document as object to be serialized to JSON
-     * @return the builder for this command. Call {@link #send()} to complete the command and send
-     *     it to the broker.
-     */
-    EvaluateDecisionCommandStep2 variables(Object variables);
-
-    /**
-     * Set a single variable for the decision evaluation.
-     *
-     * @param key the key of the variable as string
-     * @param value the value of the variable as object
-     * @return the builder for this command. Call {@link #send()} to complete the command and send
-     *     it to the broker.
-     */
-    EvaluateDecisionCommandStep2 variable(String key, Object value);
-  }
+  interface EvaluateDecisionCommandStep2
+      extends FinalCommandStep<EvaluateDecisionResponse>,
+          CommandWithVariablesCommandStep<EvaluateDecisionCommandStep2> {}
 }

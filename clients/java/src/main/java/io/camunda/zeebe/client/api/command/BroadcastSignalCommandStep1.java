@@ -16,8 +16,6 @@
 package io.camunda.zeebe.client.api.command;
 
 import io.camunda.zeebe.client.api.response.BroadcastSignalResponse;
-import java.io.InputStream;
-import java.util.Map;
 
 public interface BroadcastSignalCommandStep1 {
 
@@ -29,51 +27,7 @@ public interface BroadcastSignalCommandStep1 {
    */
   BroadcastSignalCommandStep2 signalName(String signalName);
 
-  interface BroadcastSignalCommandStep2 extends FinalCommandStep<BroadcastSignalResponse> {
-    /**
-     * Set the variables of the signal.
-     *
-     * @param variables the variables (JSON) as stream
-     * @return the builder for this command. Call {@link #send()} to complete the command and send
-     *     it to the broker.
-     */
-    BroadcastSignalCommandStep2 variables(InputStream variables);
-
-    /**
-     * Set the variables of the signal.
-     *
-     * @param variables the variables (JSON) as String
-     * @return the builder for this command. Call {@link #send()} to complete the command and send
-     *     it to the broker.
-     */
-    BroadcastSignalCommandStep2 variables(String variables);
-
-    /**
-     * Set the variables of the signal.
-     *
-     * @param variables the variables as map
-     * @return the builder for this command. Call {@link #send()} to complete the command and send
-     *     it to the broker.
-     */
-    BroadcastSignalCommandStep2 variables(Map<String, Object> variables);
-
-    /**
-     * Set the variables of the signal.
-     *
-     * @param variables the variables as object
-     * @return the builder for this command. Call {@link #send()} to complete the command and send
-     *     it to the broker.
-     */
-    BroadcastSignalCommandStep2 variables(Object variables);
-
-    /**
-     * Set a single variable of the signal.
-     *
-     * @param key the key of the variable as string
-     * @param value the value of the variable as object
-     * @return the builder for this command. Call {@link #send()} to complete the command and send
-     *     it to the broker.
-     */
-    BroadcastSignalCommandStep2 variable(String key, Object value);
-  }
+  interface BroadcastSignalCommandStep2
+      extends FinalCommandStep<BroadcastSignalResponse>,
+          CommandWithVariablesCommandStep<BroadcastSignalCommandStep2> {}
 }

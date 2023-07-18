@@ -17,9 +17,7 @@ package io.camunda.zeebe.client.api.command;
 
 import io.camunda.zeebe.client.api.response.ProcessInstanceEvent;
 import io.camunda.zeebe.client.api.response.ProcessInstanceResult;
-import java.io.InputStream;
 import java.util.List;
-import java.util.Map;
 
 public interface CreateProcessInstanceCommandStep1 {
   /** Use the latest version of the process (without guarantee). */
@@ -64,52 +62,9 @@ public interface CreateProcessInstanceCommandStep1 {
     CreateProcessInstanceCommandStep3 latestVersion();
   }
 
-  interface CreateProcessInstanceCommandStep3 extends FinalCommandStep<ProcessInstanceEvent> {
-    /**
-     * Set the initial variables of the process instance.
-     *
-     * @param variables the variables JSON document as stream
-     * @return the builder for this command. Call {@link #send()} to complete the command and send
-     *     it to the broker.
-     */
-    CreateProcessInstanceCommandStep3 variables(InputStream variables);
-
-    /**
-     * Set the initial variables of the process instance.
-     *
-     * @param variables the variables JSON document as String
-     * @return the builder for this command. Call {@link #send()} to complete the command and send
-     *     it to the broker.
-     */
-    CreateProcessInstanceCommandStep3 variables(String variables);
-
-    /**
-     * Set the initial variables of the process instance.
-     *
-     * @param variables the variables document as map
-     * @return the builder for this command. Call {@link #send()} to complete the command and send
-     *     it to the broker.
-     */
-    CreateProcessInstanceCommandStep3 variables(Map<String, Object> variables);
-
-    /**
-     * Set the initial variables of the process instance.
-     *
-     * @param variables the variables document as object to be serialized to JSON
-     * @return the builder for this command. Call {@link #send()} to complete the command and send
-     *     it to the broker.
-     */
-    CreateProcessInstanceCommandStep3 variables(Object variables);
-
-    /**
-     * Set a single initial variable of the process instance.
-     *
-     * @param key the key of the variable as string
-     * @param value the value of the variable as object
-     * @return the builder for this command. Call {@link #send()} to complete the command and send
-     *     it to the broker.
-     */
-    CreateProcessInstanceCommandStep3 variable(String key, Object value);
+  interface CreateProcessInstanceCommandStep3
+      extends FinalCommandStep<ProcessInstanceEvent>,
+          CommandWithVariablesCommandStep<CreateProcessInstanceCommandStep3> {
 
     /**
      * Overrides the default start position of the process. Calling this method will make the

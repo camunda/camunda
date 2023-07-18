@@ -15,9 +15,6 @@
  */
 package io.camunda.zeebe.client.api.command;
 
-import java.io.InputStream;
-import java.util.Map;
-
 public interface ThrowErrorCommandStep1 {
   /**
    * Set the errorCode for the error.
@@ -31,7 +28,8 @@ public interface ThrowErrorCommandStep1 {
    */
   ThrowErrorCommandStep2 errorCode(String errorCode);
 
-  interface ThrowErrorCommandStep2 extends FinalCommandStep<Void> {
+  interface ThrowErrorCommandStep2
+      extends FinalCommandStep<Void>, CommandWithVariablesCommandStep<ThrowErrorCommandStep2> {
     /**
      * Provide an error message describing the reason for the non-technical error. If the error is
      * not caught by an error catch event, this message will be a part of the raised incident.
@@ -41,51 +39,5 @@ public interface ThrowErrorCommandStep1 {
      *     it to the broker.
      */
     ThrowErrorCommandStep2 errorMessage(String errorMsg);
-
-    /**
-     * Set the variables of this job.
-     *
-     * @param variables the variables (JSON) as stream
-     * @return the builder for this command. Call {@link #send()} to complete the command and send
-     *     it to the broker.
-     */
-    ThrowErrorCommandStep2 variables(InputStream variables);
-
-    /**
-     * Set the variables of this job.
-     *
-     * @param variables the variables (JSON) as String
-     * @return the builder for this command. Call {@link #send()} to complete the command and send
-     *     it to the broker.
-     */
-    ThrowErrorCommandStep2 variables(String variables);
-
-    /**
-     * Set the variables of this job.
-     *
-     * @param variables the variables as map
-     * @return the builder for this command. Call {@link #send()} to complete the command and send
-     *     it to the broker.
-     */
-    ThrowErrorCommandStep2 variables(Map<String, Object> variables);
-
-    /**
-     * Set the variables of this job.
-     *
-     * @param variables the variables as object
-     * @return the builder for this command. Call {@link #send()} to complete the command and send
-     *     it to the broker.
-     */
-    ThrowErrorCommandStep2 variables(Object variables);
-
-    /**
-     * Set a single variable of this job.
-     *
-     * @param key the key of the variable as string
-     * @param value the value of the variable as object
-     * @return the builder for this command. Call {@link #send()} to complete the command and send
-     *     it to the broker.
-     */
-    ThrowErrorCommandStep2 variable(String key, Object value);
   }
 }

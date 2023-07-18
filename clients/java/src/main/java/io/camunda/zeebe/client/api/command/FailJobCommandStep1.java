@@ -16,9 +16,7 @@
 package io.camunda.zeebe.client.api.command;
 
 import io.camunda.zeebe.client.api.response.FailJobResponse;
-import java.io.InputStream;
 import java.time.Duration;
-import java.util.Map;
 
 public interface FailJobCommandStep1 {
 
@@ -34,7 +32,9 @@ public interface FailJobCommandStep1 {
    */
   FailJobCommandStep2 retries(int remainingRetries);
 
-  interface FailJobCommandStep2 extends FinalCommandStep<FailJobResponse> {
+  interface FailJobCommandStep2
+      extends FinalCommandStep<FailJobResponse>,
+          CommandWithVariablesCommandStep<FailJobCommandStep2> {
     // the place for new optional parameters
 
     /**
@@ -58,51 +58,5 @@ public interface FailJobCommandStep1 {
      *     it to the broker.
      */
     FailJobCommandStep2 errorMessage(String errorMsg);
-
-    /**
-     * Set the variables of this job.
-     *
-     * @param variables the variables (JSON) as stream
-     * @return the builder for this command. Call {@link #send()} to complete the command and send
-     *     it to the broker.
-     */
-    FailJobCommandStep2 variables(InputStream variables);
-
-    /**
-     * Set the variables of this job.
-     *
-     * @param variables the variables (JSON) as String
-     * @return the builder for this command. Call {@link #send()} to complete the command and send
-     *     it to the broker.
-     */
-    FailJobCommandStep2 variables(String variables);
-
-    /**
-     * Set the variables of this job.
-     *
-     * @param variables the variables as map
-     * @return the builder for this command. Call {@link #send()} to complete the command and send
-     *     it to the broker.
-     */
-    FailJobCommandStep2 variables(Map<String, Object> variables);
-
-    /**
-     * Set the variables of this job.
-     *
-     * @param variables the variables as object
-     * @return the builder for this command. Call {@link #send()} to complete the command and send
-     *     it to the broker.
-     */
-    FailJobCommandStep2 variables(Object variables);
-
-    /**
-     * Set a single variable of this job.
-     *
-     * @param key the key of the variable as string
-     * @param value the value of the variable as object
-     * @return the builder for this command. Call {@link #send()} to complete the command and send
-     *     it to the broker.
-     */
-    FailJobCommandStep2 variable(String key, Object value);
   }
 }

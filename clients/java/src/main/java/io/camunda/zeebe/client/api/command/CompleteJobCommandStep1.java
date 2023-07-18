@@ -16,54 +16,7 @@
 package io.camunda.zeebe.client.api.command;
 
 import io.camunda.zeebe.client.api.response.CompleteJobResponse;
-import java.io.InputStream;
-import java.util.Map;
 
-public interface CompleteJobCommandStep1 extends FinalCommandStep<CompleteJobResponse> {
-
-  /**
-   * Set the variables to complete the job with.
-   *
-   * @param variables the variables (JSON) as stream
-   * @return the builder for this command. Call {@link #send()} to complete the command and send it
-   *     to the broker.
-   */
-  CompleteJobCommandStep1 variables(InputStream variables);
-
-  /**
-   * Set the variables to complete the job with.
-   *
-   * @param variables the variables (JSON) as String
-   * @return the builder for this command. Call {@link #send()} to complete the command and send it
-   *     to the broker.
-   */
-  CompleteJobCommandStep1 variables(String variables);
-
-  /**
-   * Set the variables to complete the job with.
-   *
-   * @param variables the variables as map
-   * @return the builder for this command. Call {@link #send()} to complete the command and send it
-   *     to the broker.
-   */
-  CompleteJobCommandStep1 variables(Map<String, Object> variables);
-
-  /**
-   * Set the variables to complete the job with.
-   *
-   * @param variables the variables as object
-   * @return the builder for this command. Call {@link #send()} to complete the command and send it
-   *     to the broker.
-   */
-  CompleteJobCommandStep1 variables(Object variables);
-
-  /**
-   * Set a single variable to complete the job with.
-   *
-   * @param key the key of the variable as string
-   * @param value the value of the variable as object
-   * @return the builder for this command. Call {@link #send()} to complete the command and send it
-   *     to the broker.
-   */
-  CompleteJobCommandStep1 variable(String key, Object value);
-}
+public interface CompleteJobCommandStep1
+    extends FinalCommandStep<CompleteJobResponse>,
+        CommandWithVariablesCommandStep<CompleteJobCommandStep1> {}

@@ -16,9 +16,7 @@
 package io.camunda.zeebe.client.api.command;
 
 import io.camunda.zeebe.client.api.response.PublishMessageResponse;
-import java.io.InputStream;
 import java.time.Duration;
-import java.util.Map;
 
 public interface PublishMessageCommandStep1 {
 
@@ -43,7 +41,9 @@ public interface PublishMessageCommandStep1 {
     PublishMessageCommandStep3 correlationKey(String correlationKey);
   }
 
-  interface PublishMessageCommandStep3 extends FinalCommandStep<PublishMessageResponse> {
+  interface PublishMessageCommandStep3
+      extends FinalCommandStep<PublishMessageResponse>,
+          CommandWithVariablesCommandStep<PublishMessageCommandStep3> {
     /**
      * Set the id of the message. The message is rejected if another message is already published
      * with the same id, name and correlation-key.
@@ -68,51 +68,5 @@ public interface PublishMessageCommandStep1 {
      *     it to the broker.
      */
     PublishMessageCommandStep3 timeToLive(Duration timeToLive);
-
-    /**
-     * Set the variables of the message.
-     *
-     * @param variables the variables (JSON) as stream
-     * @return the builder for this command. Call {@link #send()} to complete the command and send
-     *     it to the broker.
-     */
-    PublishMessageCommandStep3 variables(InputStream variables);
-
-    /**
-     * Set the variables of the message.
-     *
-     * @param variables the variables (JSON) as String
-     * @return the builder for this command. Call {@link #send()} to complete the command and send
-     *     it to the broker.
-     */
-    PublishMessageCommandStep3 variables(String variables);
-
-    /**
-     * Set the variables of the message.
-     *
-     * @param variables the variables as map
-     * @return the builder for this command. Call {@link #send()} to complete the command and send
-     *     it to the broker.
-     */
-    PublishMessageCommandStep3 variables(Map<String, Object> variables);
-
-    /**
-     * Set the variables of the message.
-     *
-     * @param variables the variables as object
-     * @return the builder for this command. Call {@link #send()} to complete the command and send
-     *     it to the broker.
-     */
-    PublishMessageCommandStep3 variables(Object variables);
-
-    /**
-     * Set a single variable of the message.
-     *
-     * @param key the key of the variable as string
-     * @param value the value of the variable as object
-     * @return the builder for this command. Call {@link #send()} to complete the command and send
-     *     it to the broker.
-     */
-    PublishMessageCommandStep3 variable(String key, Object value);
   }
 }
