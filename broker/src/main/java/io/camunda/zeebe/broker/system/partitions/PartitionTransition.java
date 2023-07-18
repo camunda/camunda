@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.broker.system.partitions;
 
+import io.camunda.zeebe.broker.system.partitions.impl.RecoverablePartitionTransitionException;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.util.health.HealthIssue;
@@ -62,5 +63,10 @@ public interface PartitionTransition {
   HealthIssue getHealthIssue();
 
   /** Used to exceptionally complete transition futures when the transition was cancelled. */
-  final class CancelledPartitionTransition extends RuntimeException {}
+  final class CancelledPartitionTransition extends RecoverablePartitionTransitionException {
+
+    public CancelledPartitionTransition() {
+      super("Partition transition was cancelled");
+    }
+  }
 }
