@@ -10,6 +10,7 @@ import {
   TableCell as BaseTableCell,
   Table as BaseTable,
   TableExpandRow as BaseTableExpandRow,
+  DataTableSkeleton as BaseDataTableSkeleton,
 } from '@carbon/react';
 import {ARROW_ICON_WIDTH} from 'modules/constants';
 
@@ -34,4 +35,14 @@ const TableCell = styled(BaseTableCell)`
   ) !important;
 `;
 
-export {TableCell, Table, TableExpandRow};
+const DataTableSkeleton = styled(BaseDataTableSkeleton)`
+  thead {
+    display: none;
+  }
+
+  span {
+    width: auto !important;
+  }
+`;
+
+export {TableCell, Table, TableExpandRow, DataTableSkeleton};

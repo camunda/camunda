@@ -17,6 +17,7 @@ import {getAccordionTitle} from './utils/getAccordionTitle';
 import {InstancesBar} from 'modules/components/Carbon/InstancesBar';
 import {truncateErrorMessage} from './utils/truncateErrorMessage';
 import {LinkWrapper} from '../styled';
+import {Skeleton} from '../PartiallyExpandableDataTable/Skeleton';
 
 const IncidentsByError: React.FC = observer(() => {
   const location = useLocation();
@@ -35,7 +36,7 @@ const IncidentsByError: React.FC = observer(() => {
   const {incidents, status} = incidentsByErrorStore.state;
 
   if (['initial', 'first-fetch'].includes(status)) {
-    return <div>skeleton</div>;
+    return <Skeleton />;
   }
 
   if (status === 'fetched' && incidents.length === 0) {

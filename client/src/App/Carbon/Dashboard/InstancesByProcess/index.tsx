@@ -16,6 +16,7 @@ import {getAccordionTitle} from './utils/getAccordionTitle';
 import {getAccordionLabel} from './utils/getAccordionLabel';
 import {InstancesBar} from 'modules/components/Carbon/InstancesBar';
 import {LinkWrapper} from '../styled';
+import {Skeleton} from '../PartiallyExpandableDataTable/Skeleton';
 
 const InstancesByProcess: React.FC = observer(() => {
   const {
@@ -24,7 +25,7 @@ const InstancesByProcess: React.FC = observer(() => {
   } = processInstancesByNameStore;
 
   if (['initial', 'first-fetch'].includes(status)) {
-    return <div>skeleton</div>;
+    return <Skeleton />;
   }
 
   if (hasNoInstances) {
