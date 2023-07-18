@@ -20,7 +20,6 @@ import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.transport.RequestType;
 import io.camunda.zeebe.transport.impl.AtomixServerTransport;
 import io.camunda.zeebe.util.Either;
-import java.util.Optional;
 
 public class AdminApiRequestHandler
     extends AsyncApiRequestHandler<ApiRequestReader, ApiResponseWriter> {
@@ -67,24 +66,8 @@ public class AdminApiRequestHandler
       final ErrorResponseWriter errorWriter) {
     final long key = requestReader.key();
 
-    final Optional<PartitionAdminAccess> partitionAdminAccess =
-        adminAccess.forPartition(partitionId);
-
-    if (partitionAdminAccess.isEmpty()) {
-      LOG.warn(
-          "Failed to ban instance {} on partition {}. Could not find the partition.",
-          key,
-          partitionId);
-      return CompletableActorFuture.completed(
-          Either.left(
-              errorWriter.internalError(
-                  "Failed to ban instance %s on partition %s. Could not find the partition.",
-                  key, partitionId)));
-    }
-
     final ActorFuture<Either<ErrorResponseWriter, ApiResponseWriter>> result = actor.createFuture();
-    partitionAdminAccess
-        .orElseThrow()
+    adminAccess
         .banInstance(requestReader.key())
         .onComplete(
             (r, t) -> {
@@ -179,7 +162,7 @@ public class AdminApiRequestHandler
       final int partitionId,
       final ErrorResponseWriter errorWriter) {
     final var partition = partitionManager.getPartitionGroup().getPartition(partitionId);
-    if (partition instanceof RaftPartition raftPartition) {
+    if (partition instanceof final RaftPartition raftPartition) {
       if (raftPartition.getRole() == Role.LEADER) {
         raftPartition.stepDownIfNotPrimary();
       } else {
