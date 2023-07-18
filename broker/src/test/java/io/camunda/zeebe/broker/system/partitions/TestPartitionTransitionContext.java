@@ -258,9 +258,10 @@ public class TestPartitionTransitionContext implements PartitionTransitionContex
   }
 
   @Override
-  public TransitionStepContext getTransitionStepContext(){
+  public TransitionStepContext getTransitionStepContext() {
     return new TransitionStepContext();
   }
+
   public void setGatewayBrokerTransport(final AtomixServerTransport gatewayBrokerTransport) {
     this.gatewayBrokerTransport = gatewayBrokerTransport;
   }

@@ -15,9 +15,12 @@ import io.camunda.zeebe.broker.system.partitions.PartitionTransition;
 import io.camunda.zeebe.broker.system.partitions.PartitionTransitionContext;
 import io.camunda.zeebe.broker.system.partitions.PartitionTransitionStep;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
+import io.camunda.zeebe.scheduler.clock.ActorClock;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import org.slf4j.Logger;
 
 public final class PartitionTransitionImpl implements PartitionTransition {
@@ -31,6 +34,7 @@ public final class PartitionTransitionImpl implements PartitionTransition {
   // transient state - to keep track of the current transitions
   private PartitionTransitionProcess currentTransition;
   private ActorFuture<Void> currentTransitionFuture;
+  private final Duration transitionStepTimeout = Duration.ofSeconds(60);
 
   public PartitionTransitionImpl(final List<PartitionTransitionStep> steps) {
     this.steps = new ArrayList<>(requireNonNull(steps));
@@ -61,6 +65,29 @@ public final class PartitionTransitionImpl implements PartitionTransition {
     context = transitionContext;
   }
 
+  @Override
+  public boolean hasPartitionTransitionStepTimedOut() {
+    final TransitionStepContext transitionStepContext = context.getTransitionStepContext();
+
+    if (!Objects.isNull(transitionStepContext.getTimeOfLastTransitionStep())
+        && ActorClock.currentTimeMillis()
+            > transitionStepContext.getTimeOfLastTransitionStep() + transitionStepTimeout.toMillis()
+        && transitionStepContext.getIsPartitionInTransition()) {
+      // we check if the time since last transition step is larger than timeout
+      // while if we're still in transition
+      LOG.error(
+          "Transition from {} on term {}, on transition step {} seems to be blocked."
+              + " Timeout configured is {}s.",
+          context.getCurrentRole(),
+          context.getCurrentTerm(),
+          transitionStepContext.getCurrentStepTransition(),
+          transitionStepTimeout.toSeconds()); // display timeout in seconds
+      return true;
+    } else {
+      return false;
+    }
+  }
+
   public ActorFuture<Void> transitionTo(final long term, final Role role) {
     LOG.info("Transition to {} on term {} requested.", role, term);
 
@@ -69,8 +96,10 @@ public final class PartitionTransitionImpl implements PartitionTransition {
     steps.forEach(step -> step.onNewRaftRole(context, role));
 
     // setup transition step monitor
-    context.setIsPartitionInTransition(true);
-    context.setTimeOfLastTransitionStep(System.currentTimeMillis());
+    context.getTransitionStepContext().setIsPartitionInTransition(true);
+    context
+        .getTransitionStepContext()
+        .setTimeOfLastCompleteStepTransition(ActorClock.currentTimeMillis());
 
     final ActorFuture<Void> nextTransitionFuture = concurrencyControl.createFuture();
     concurrencyControl.run(
@@ -86,7 +115,7 @@ public final class PartitionTransitionImpl implements PartitionTransition {
                   context.setCurrentRole(role);
                 }
                 lastTransition = nextTransition;
-                context.setIsPartitionInTransition(false);
+                context.getTransitionStepContext().setIsPartitionInTransition(false);
               });
 
           enqueueNextTransition(term, role, nextTransitionFuture, nextTransition);

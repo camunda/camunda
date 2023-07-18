@@ -82,7 +82,7 @@ public final class ZeebePartition extends Actor
             "Partition-" + transitionContext.getPartitionId(), actor, LOG));
     zeebePartitionHealth =
         new ZeebePartitionHealth(
-            transitionContext.getPartitionId(), (PartitionTransitionContext) context);
+            transitionContext.getPartitionId(), (PartitionTransitionContext) context, transition);
     healthMetrics = new HealthMetrics(transitionContext.getPartitionId());
     healthMetrics.setUnhealthy();
     failureListeners = new ArrayList<>();
