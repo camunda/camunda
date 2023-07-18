@@ -119,7 +119,7 @@ runs:
         -D maven.artifact.threads=32
         EOF
     - name: Cache local Maven repository
-      if: inputs.java == 'true' && startsWith(runner.name, 'actions-runner-')
+      if: inputs.java == 'true' && (startsWith(runner.name, 'actions-runner-') || startsWith(runner.name, 'aws-') || startsWith(runner.name, 'gcp-'))
       uses: actions/cache@v3
       with:
         # This is the path used by the `enhancedLocalRepository` set up in the 'Configure Maven' step.
@@ -130,7 +130,7 @@ runs:
         restore-keys: |
           self-hosted-${{ runner.os }}-mvn-${{ inputs.maven-cache-key-modifier }}
     - name: Cache local Maven repository
-      if: inputs.java == 'true' && !startsWith(runner.name, 'actions-runner-')
+      if: inputs.java == 'true' && !(startsWith(runner.name, 'actions-runner-') || startsWith(runner.name, 'aws-') || startsWith(runner.name, 'gcp-'))
       uses: actions/cache@v3
       with:
         # This is the path used by the `enhancedLocalRepository` set up in the 'Configure Maven' step.
