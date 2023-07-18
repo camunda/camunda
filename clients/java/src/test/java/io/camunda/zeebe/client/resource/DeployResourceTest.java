@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda.zeebe.client.process;
+package io.camunda.zeebe.client.resource;
 
 import static io.camunda.zeebe.client.util.RecordingGatewayService.deployedDecision;
 import static io.camunda.zeebe.client.util.RecordingGatewayService.deployedDecisionRequirements;
