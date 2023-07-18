@@ -19,6 +19,7 @@ import io.camunda.zeebe.broker.logstreams.AtomixLogStorage;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageMonitor;
 import io.camunda.zeebe.broker.system.partitions.impl.AsyncSnapshotDirector;
+import io.camunda.zeebe.broker.system.partitions.impl.TransitionStepContext;
 import io.camunda.zeebe.broker.transport.backupapi.BackupApiRequestHandler;
 import io.camunda.zeebe.broker.transport.partitionapi.InterPartitionCommandReceiverActor;
 import io.camunda.zeebe.broker.transport.partitionapi.InterPartitionCommandSenderService;
@@ -129,15 +130,5 @@ public interface PartitionTransitionContext extends PartitionContext {
 
   void setBackupStore(BackupStore backupStore);
 
-  Long getTimeOfLastTransitionStep();
-
-  void setTimeOfLastTransitionStep(long timeOfLastTransitionStep);
-
-  String getCurrentStepTransition();
-
-  void setCurrentStepTransition(String lastTransitionStep);
-
-  boolean getIsPartitionInTransition();
-
-  void setIsPartitionInTransition(boolean isPartitionInTransition);
+  TransitionStepContext getTransitionStepContext();
 }

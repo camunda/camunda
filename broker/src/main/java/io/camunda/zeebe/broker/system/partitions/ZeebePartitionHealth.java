@@ -7,14 +7,11 @@
  */
 package io.camunda.zeebe.broker.system.partitions;
 
-import static io.camunda.zeebe.broker.Broker.LOG;
-
 import io.camunda.zeebe.util.health.FailureListener;
 import io.camunda.zeebe.util.health.HealthMonitorable;
 import io.camunda.zeebe.util.health.HealthReport;
 import io.camunda.zeebe.util.health.HealthStatus;
 import java.util.HashSet;
-import java.util.Objects;
 import java.util.Set;
 
 /**
@@ -27,6 +24,7 @@ class ZeebePartitionHealth implements HealthMonitorable {
   private final Set<FailureListener> failureListeners = new HashSet<>();
   private HealthReport healthReport = HealthReport.unhealthy(this).withMessage("Initial state");
   private final PartitionTransitionContext partitionContext;
+  private final PartitionTransition partitionTransition;
   /*
   Multiple factors determine ZeebePartition's health :
   * - servicesInstalled: indicates if role transition was successful and all services are installed
@@ -36,12 +34,14 @@ class ZeebePartitionHealth implements HealthMonitorable {
   private boolean servicesInstalled;
   // We assume disk space is available until otherwise notified
   private boolean diskSpaceAvailable = true;
-  private final long timeoutInMilliseconds = 60_000L;
 
   public ZeebePartitionHealth(
-      final int partitionId, final PartitionTransitionContext partitionContext) {
+      final int partitionId,
+      final PartitionTransitionContext partitionContext,
+      final PartitionTransition partitionTransition) {
     name = "ZeebePartition-" + partitionId;
     this.partitionContext = partitionContext;
+    this.partitionTransition = partitionTransition;
   }
 
   private void updateHealthStatus() {
@@ -54,25 +54,13 @@ class ZeebePartitionHealth implements HealthMonitorable {
       healthReport = HealthReport.unhealthy(this).withMessage("Not enough disk space available");
     } else if (!servicesInstalled) {
       healthReport = HealthReport.unhealthy(this).withMessage("Services not installed");
-    } else if (!Objects.isNull(partitionContext.getTimeOfLastTransitionStep())
-        && System.currentTimeMillis()
-            > partitionContext.getTimeOfLastTransitionStep() + timeoutInMilliseconds
-        && partitionContext.getIsPartitionInTransition()) {
-      // we check if the time since last transition step is larger than timeout
-      // while if we're still in transition
-      LOG.error(
-          "Transition from {} on term {}, on transition step {} seems to be blocked."
-              + " Timeout configured is {}s.",
-          partitionContext.getCurrentRole(),
-          partitionContext.getCurrentTerm(),
-          partitionContext.getCurrentStepTransition(),
-          timeoutInMilliseconds / 1000); // display timeout in seconds
-
+    } else if (partitionTransition.hasPartitionTransitionStepTimedOut()) {
       healthReport =
           HealthReport.unhealthy(this)
               .withMessage(
                   "Partition is blocked in Transition Step %s"
-                      .formatted(partitionContext.getCurrentStepTransition()));
+                      .formatted(
+                          partitionContext.getTransitionStepContext().getCurrentStepTransition()));
     } else {
       healthReport = HealthReport.healthy(this);
     }

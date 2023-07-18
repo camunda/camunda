@@ -340,33 +340,8 @@ public class PartitionStartupAndTransitionContextImpl
   }
 
   @Override
-  public Long getTimeOfLastTransitionStep() {
-    return transitionStepContext.getTimeOfLastTransitionStep();
-  }
-
-  @Override
-  public void setTimeOfLastTransitionStep(final long timeOfLastTransitionStep) {
-    transitionStepContext.setTimeOfLastCompleteStepTransition(timeOfLastTransitionStep);
-  }
-
-  @Override
-  public String getCurrentStepTransition() {
-    return transitionStepContext.getCurrentStepTransition();
-  }
-
-  @Override
-  public void setCurrentStepTransition(final String currentStepTransition) {
-    transitionStepContext.setCurrentStepTransition(currentStepTransition);
-  }
-
-  @Override
-  public boolean getIsPartitionInTransition() {
-    return transitionStepContext.getIsPartitionInTransition();
-  }
-
-  @Override
-  public void setIsPartitionInTransition(final boolean isPartitionInTransition) {
-    transitionStepContext.setIsPartitionInTransition(isPartitionInTransition);
+  public TransitionStepContext getTransitionStepContext() {
+    return transitionStepContext;
   }
 
   @Override
