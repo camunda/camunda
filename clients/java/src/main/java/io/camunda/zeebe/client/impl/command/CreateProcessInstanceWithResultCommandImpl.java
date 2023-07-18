@@ -107,4 +107,10 @@ public final class CreateProcessInstanceWithResultCommandImpl
     builder.addAllFetchVariables(Arrays.asList(fetchVariables));
     return this;
   }
+
+  @Override
+  public CreateProcessInstanceWithResultCommandStep1 tenantId(final String tenantId) {
+    // todo(#13536): replace dummy implementation
+    return this;
+  }
 }

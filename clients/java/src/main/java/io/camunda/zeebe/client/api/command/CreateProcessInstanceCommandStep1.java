@@ -135,7 +135,8 @@ public interface CreateProcessInstanceCommandStep1 {
   }
 
   interface CreateProcessInstanceWithResultCommandStep1
-      extends FinalCommandStep<ProcessInstanceResult> {
+      extends CommandWithTenantStep<CreateProcessInstanceWithResultCommandStep1>,
+          FinalCommandStep<ProcessInstanceResult> {
 
     /**
      * Set a list of variables names which should be fetched in the response.
