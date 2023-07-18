@@ -51,4 +51,12 @@ public interface PartitionTransition {
    * @param transitionContext the context to be used
    */
   void updateTransitionContext(PartitionTransitionContext transitionContext);
+
+  /**
+   * Check is transition step has timeout and logs warning to the user if it's the case (current
+   * timeout is 60 seconds).
+   *
+   * @return a boolean to indicate if transition step has timed out
+   */
+  boolean hasPartitionTransitionStepTimedOut();
 }
