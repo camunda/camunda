@@ -16,9 +16,11 @@ import io.camunda.zeebe.gateway.impl.stream.JobStreamClient;
 import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.shared.Profile;
+import io.camunda.zeebe.shared.management.WebFluxForwarder;
 import io.camunda.zeebe.util.CloseableSilently;
 import io.camunda.zeebe.util.VersionUtil;
 import io.camunda.zeebe.util.error.FatalErrorHandler;
+import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import org.apache.logging.log4j.LogManager;
@@ -30,7 +32,9 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.builder.SpringApplicationBuilder;
 import org.springframework.boot.context.properties.ConfigurationPropertiesScan;
 import org.springframework.context.ApplicationListener;
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.event.ContextClosedEvent;
+import org.springframework.web.server.WebFilter;
 
 /**
  * Entry point for the standalone gateway application. By default, it enables the {@link
@@ -82,7 +86,7 @@ public class StandaloneGateway
     System.setProperty("spring.banner.location", "classpath:/assets/zeebe_gateway_banner.txt");
     final var application =
         new SpringApplicationBuilder(StandaloneGateway.class)
-            .web(WebApplicationType.SERVLET)
+            .web(WebApplicationType.REACTIVE)
             .logStartupInfo(true)
             .profiles(Profile.GATEWAY.getId())
             .build(args);
@@ -136,5 +140,20 @@ public class StandaloneGateway
     }
 
     LogManager.shutdown();
+  }
+
+  @Bean
+  public WebFilter forwardedRoutes() {
+    final var routes =
+        Map.of(
+            "/metrics",
+            "/actuator/prometheus",
+            "/health",
+            "/actuator/health",
+            "/live",
+            "/actuator/health/liveness",
+            "/startup",
+            "/actuator/health/startup");
+    return new WebFluxForwarder(routes);
   }
 }
