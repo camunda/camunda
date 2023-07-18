@@ -7,11 +7,9 @@
 
 import React from 'react';
 import {shallow} from 'enzyme';
-import {track} from 'tracking';
 
 import TextReport from './TextReport';
 
-jest.mock('tracking', () => ({track: jest.fn()}));
 jest.mock('notifications', () => ({addNotification: jest.fn()}));
 
 const editorValue = {
@@ -80,7 +78,6 @@ it('should open edit modal and sent mixpanel event on edit', () => {
   node.find('.EditTextReport').simulate('click');
 
   expect(node.find('TextReportEditModal')).toExist();
-  expect(track).toHaveBeenCalledWith('editTextReport');
 });
 
 it('should close modal when modal invokes onClose', () => {

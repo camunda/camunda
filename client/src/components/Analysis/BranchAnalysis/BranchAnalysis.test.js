@@ -13,6 +13,7 @@ import BranchControlPanel from './BranchControlPanel';
 import {loadFrequencyData} from './service';
 
 import {incompatibleFilters, loadProcessDefinitionXml} from 'services';
+import {track} from 'tracking';
 
 jest.mock('./service', () => {
   return {
@@ -28,14 +29,20 @@ jest.mock('services', () => {
   };
 });
 
+jest.mock('tracking', () => ({track: jest.fn()}));
+
+const props = {
+  mightFail: jest.fn().mockImplementation((data, cb) => cb(data)),
+};
+
 it('should contain a control panel', () => {
-  const node = shallow(<BranchAnalysis />);
+  const node = shallow(<BranchAnalysis {...props} />);
 
   expect(node.find(BranchControlPanel)).toExist();
 });
 
 it('should load the process definition xml when the process definition id is updated', () => {
-  const node = shallow(<BranchAnalysis />);
+  const node = shallow(<BranchAnalysis {...props} />);
 
   loadProcessDefinitionXml.mockClear();
   node.instance().updateConfig({
@@ -45,10 +52,11 @@ it('should load the process definition xml when the process definition id is upd
   });
 
   expect(loadProcessDefinitionXml).toHaveBeenCalledWith('someKey', 'someVersion', 'a');
+  expect(track).toHaveBeenCalledWith('startBranchAnalysis', {processDefinitionKey: 'someKey'});
 });
 
 it('should load frequency data when the process definition key changes', async () => {
-  const node = shallow(<BranchAnalysis />);
+  const node = shallow(<BranchAnalysis {...props} />);
 
   node
     .instance()
@@ -60,7 +68,7 @@ it('should load frequency data when the process definition key changes', async (
 });
 
 it('should load frequency data when the process definition version changes', async () => {
-  const node = shallow(<BranchAnalysis />);
+  const node = shallow(<BranchAnalysis {...props} />);
 
   await node
     .instance()
@@ -72,7 +80,7 @@ it('should load frequency data when the process definition version changes', asy
 });
 
 it('should load updated frequency data when the filter changed', async () => {
-  const node = shallow(<BranchAnalysis />);
+  const node = shallow(<BranchAnalysis {...props} />);
 
   await node.instance().updateConfig({
     processDefinitionKey: 'someKey',
@@ -86,7 +94,7 @@ it('should load updated frequency data when the filter changed', async () => {
 });
 
 it('should not try to load frequency data if no process definition is selected', () => {
-  const node = shallow(<BranchAnalysis />);
+  const node = shallow(<BranchAnalysis {...props} />);
 
   loadFrequencyData.mockClear();
   node.instance().updateConfig({filter: ['someFilter']});
@@ -95,7 +103,7 @@ it('should not try to load frequency data if no process definition is selected',
 });
 
 it('should contain a statistics section if gateway and endEvent is selected', () => {
-  const node = shallow(<BranchAnalysis />);
+  const node = shallow(<BranchAnalysis {...props} />);
 
   node.instance().setState({
     gateway: 'g',
@@ -106,7 +114,7 @@ it('should contain a statistics section if gateway and endEvent is selected', ()
 });
 
 it('should clear the selection when another process definition is selected', async () => {
-  const node = shallow(<BranchAnalysis />);
+  const node = shallow(<BranchAnalysis {...props} />);
 
   await node.instance().setState({gateway: 'g', endEvent: 'e'});
   await node.instance().updateConfig({
@@ -121,7 +129,7 @@ it('should clear the selection when another process definition is selected', asy
 });
 
 it('should not clear the selection when the xml stays the same', async () => {
-  const node = shallow(<BranchAnalysis />);
+  const node = shallow(<BranchAnalysis {...props} />);
 
   loadProcessDefinitionXml.mockReturnValue('some xml');
 
@@ -143,13 +151,13 @@ it('should not clear the selection when the xml stays the same', async () => {
 
 it('should show a warning message when there are incompatible filters', async () => {
   incompatibleFilters.mockReturnValue(true);
-  const node = await shallow(<BranchAnalysis />);
+  const node = await shallow(<BranchAnalysis {...props} />);
   await node.update();
   expect(node.find('MessageBox')).toExist();
 });
 
 it('should not reset the xml when adding a filter', async () => {
-  const node = shallow(<BranchAnalysis />);
+  const node = shallow(<BranchAnalysis {...props} />);
 
   await node.instance().updateConfig({
     processDefinitionKey: 'someKey',

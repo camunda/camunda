@@ -10,6 +10,7 @@ import {shallow} from 'enzyme';
 
 import {DefinitionSelection, Button, BPMNDiagram, Modal} from 'components';
 import {loadProcessDefinitionXml} from 'services';
+import {track} from 'tracking';
 
 import {TemplateModal} from './TemplateModal';
 
@@ -19,6 +20,8 @@ jest.mock('services', () => {
     loadProcessDefinitionXml: jest.fn().mockReturnValue('processXML'),
   };
 });
+
+jest.mock('tracking', () => ({track: jest.fn()}));
 
 beforeEach(() => {
   Object.defineProperty(global, 'ResizeObserver', {
@@ -117,6 +120,10 @@ it('should include the selected parameters in the link state when creating a rep
 
   expect(confirmButton.prop('disabled')).toBe(false);
   expect(confirmButton.prop('to')).toMatchSnapshot();
+  confirmButton.simulate('click');
+  expect(track).toHaveBeenCalledWith('useReportTemplate', {
+    templateName: 'Locate bottlenecks on a Heatmap',
+  });
 });
 
 it('should call the templateToState prop to determine link state', async () => {
@@ -211,5 +218,8 @@ it('should invoke the onConfirm when when clicking the create button', async () 
   node.find('.confirm').simulate('click');
 
   expect(spy).toHaveBeenCalled();
+  expect(track).toHaveBeenCalledWith('useReportTemplate', {
+    templateName: 'Locate bottlenecks on a Heatmap',
+  });
   expect(node.find('.confirm')).not.toBeDisabled();
 });

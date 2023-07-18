@@ -180,11 +180,35 @@ it('should save basic dashboard info', async () => {
   );
 });
 
+it('should add report', () => {
+  jest.spyOn(document, 'querySelector').mockReturnValue({
+    lastChild: {
+      getBoundingClientRect: () => ({}),
+      dispatchEvent: jest.fn(),
+      addEventListener: jest.fn(),
+    },
+  });
+
+  const newReport = {
+    position: {x: 0, y: 0},
+    id: '',
+    configuration: {text: 'text'},
+    type: 'optimize_report',
+  };
+  const node = shallow(<DashboardEdit initialTiles={[]} />);
+
+  node.find('AddButton').prop('addReport')(newReport);
+
+  expect(node.state('tiles')[0]).toEqual(newReport);
+  expect(track).toHaveBeenCalledWith('createOptimizeReportTile', {entityId: ''});
+});
+
 it('should update report', () => {
   const report = {
     position: {x: 0, y: 0},
     id: '',
     configuration: {text: 'text'},
+    type: 'optimize_report',
   };
   const node = shallow(<DashboardEdit initialTiles={[report]} />);
 
@@ -195,6 +219,24 @@ it('should update report', () => {
   node.find('DashboardRenderer').prop('onReportUpdate')(newReport);
 
   expect(node.state('tiles')[0]).toEqual(newReport);
+  expect(track).toHaveBeenCalledWith('updateOptimizeReportTile', {entityId: ''});
+});
+
+it('should delete report', () => {
+  const report = {
+    position: {x: 0, y: 0},
+    id: '',
+    configuration: {text: 'text'},
+    type: 'optimize_report',
+  };
+  const node = shallow(<DashboardEdit initialTiles={[report]} />);
+
+  const deleteButton = shallow(node.find('DashboardRenderer').prop('addons')[1]);
+  deleteButton.setProps({report});
+  deleteButton.simulate('click', report);
+
+  expect(node.state('tiles')).toEqual([]);
+  expect(track).toHaveBeenCalledWith('deleteOptimizeReportTile', {entityId: ''});
 });
 
 it('should update description', () => {

@@ -9,7 +9,6 @@ import React, {useState} from 'react';
 import update from 'immutability-helper';
 
 import {Button, Icon, TextEditor} from 'components';
-import {track} from 'tracking';
 
 import TextReportEditModal from './TextReportEditModal';
 
@@ -25,7 +24,6 @@ export default function TextReport({report, children = () => {}, onReportUpdate}
 
   const handleEdit = () => {
     setIsModalOpen(!isModalOpen);
-    track('editTextReport');
   };
 
   const onConfirm = (text) => {

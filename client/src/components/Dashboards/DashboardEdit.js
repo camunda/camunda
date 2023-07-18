@@ -160,6 +160,8 @@ export class DashboardEdit extends React.Component {
         node.dispatchEvent(createEvent('mousemove', this.mousePosition));
       });
     });
+
+    track(getEventName('create', newReport.type), {entityId: newReport.id});
   };
 
   updateReport = (report) => {
@@ -171,6 +173,7 @@ export class DashboardEdit extends React.Component {
         return oldTile;
       });
 
+      track(getEventName('update', report.type), {entityId: report.id});
       return {tiles: newReports};
     });
   };
@@ -179,6 +182,7 @@ export class DashboardEdit extends React.Component {
     this.setState({
       tiles: this.state.tiles.filter((tile) => tile !== reportToRemove),
     });
+    track(getEventName('delete', reportToRemove.type), {entityId: reportToRemove.id});
   };
 
   componentDidUpdate(prevProps) {
@@ -347,4 +351,12 @@ function createEvent(type, position) {
     clientX: position.x,
     clientY: position.y,
   });
+}
+
+function getEventName(action, eventType) {
+  const eventNameTokens = eventType.split('_');
+  const eventName = eventNameTokens
+    .map((token) => token.charAt(0).toUpperCase() + token.slice(1))
+    .join('');
+  return action + eventName + 'Tile';
 }

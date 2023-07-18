@@ -23,6 +23,7 @@ import {loadProcessDefinitionXml} from 'services';
 import {t} from 'translation';
 import {withErrorHandling} from 'HOC';
 import {showError} from 'notifications';
+import {track} from 'tracking';
 
 import './TemplateModal.scss';
 
@@ -246,7 +247,10 @@ export function TemplateModal({
           <Button
             disabled={!validSelection}
             className="confirm"
-            onClick={() => onConfirm(newEntityState)}
+            onClick={() => {
+              onConfirm(newEntityState);
+              track(createEventName(entity), {templateName: name});
+            }}
           >
             {t(entity + '.create')}
           </Button>
@@ -258,6 +262,7 @@ export function TemplateModal({
               pathname: entity + '/new/edit',
               state: newEntityState,
             }}
+            onClick={() => track(createEventName(entity), {templateName: name})}
           >
             {t(entity + '.create')}
           </Button>
@@ -301,4 +306,8 @@ export default withErrorHandling(TemplateModal);
 
 function getDescription(entity, name, disableDescription) {
   return !disableDescription ? t(entity + '.templates.' + name + '-description') : null;
+}
+
+function createEventName(entityType) {
+  return 'use' + entityType.charAt(0).toUpperCase() + entityType.slice(1) + 'Template';
 }

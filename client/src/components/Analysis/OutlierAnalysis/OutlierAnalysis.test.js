@@ -9,6 +9,7 @@ import React from 'react';
 import {shallow} from 'enzyme';
 
 import {loadProcessDefinitionXml, getFlowNodeNames} from 'services';
+import {track} from 'tracking';
 
 import {loadNodesOutliers, loadDurationData} from './service';
 import {OutlierAnalysis} from './OutlierAnalysis';
@@ -31,6 +32,8 @@ jest.mock('services', () => {
     getFlowNodeNames: jest.fn().mockReturnValue({nodeKey: 'nodeName'}),
   };
 });
+
+jest.mock('tracking', () => ({track: jest.fn()}));
 
 const props = {
   mightFail: jest.fn().mockImplementation((data, cb, err, final) => {
@@ -56,6 +59,7 @@ it('should load the process definition xml when the process definition id is upd
   });
 
   expect(loadProcessDefinitionXml).toHaveBeenCalledWith('someKey', 'someVersion', 'a');
+  expect(track).toHaveBeenCalledWith('startOutlierAnalysis', {processDefinitionKey: 'someKey'});
 });
 
 it('should load outlier data and flownode names when the process definition version changes', async () => {

@@ -14,6 +14,7 @@ import {showError} from 'notifications';
 import {BPMNDiagram, HeatmapOverlay, Button, PageTitle} from 'components';
 import {loadProcessDefinitionXml, getFlowNodeNames} from 'services';
 import {withErrorHandling, withUser} from 'HOC';
+import {track} from 'tracking';
 
 import OutlierControlPanel from './OutlierControlPanel';
 import OutlierDetailsModal from './OutlierDetailsModal';
@@ -50,15 +51,15 @@ export class OutlierAnalysis extends React.Component {
 
   updateConfig = async (updates) => {
     const newConfig = {...this.state.config, ...updates};
+    const {processDefinitionKey, processDefinitionVersions, tenantIds} = updates;
 
-    if (updates.processDefinitionKey && updates.processDefinitionVersions && updates.tenantIds) {
+    if (processDefinitionKey && processDefinitionVersions && tenantIds) {
       await this.props.mightFail(
-        loadProcessDefinitionXml(
-          updates.processDefinitionKey,
-          updates.processDefinitionVersions[0],
-          updates.tenantIds[0]
-        ),
-        (xml) => this.setState({config: newConfig, xml}),
+        loadProcessDefinitionXml(processDefinitionKey, processDefinitionVersions[0], tenantIds[0]),
+        (xml) => {
+          this.setState({config: newConfig, xml});
+          track('startOutlierAnalysis', {processDefinitionKey});
+        },
         showError
       );
     } else if (

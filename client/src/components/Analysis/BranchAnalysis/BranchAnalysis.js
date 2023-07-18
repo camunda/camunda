@@ -11,7 +11,9 @@ import equal from 'fast-deep-equal';
 import {BPMNDiagram, MessageBox, PageTitle} from 'components';
 import {incompatibleFilters, loadProcessDefinitionXml} from 'services';
 import {t} from 'translation';
-import {withDocs} from 'HOC';
+import {withDocs, withErrorHandling} from 'HOC';
+import {showError} from 'notifications';
+import {track} from 'tracking';
 
 import DiagramBehavior from './DiagramBehavior';
 import Statistics from './Statistics';
@@ -126,16 +128,20 @@ export class BranchAnalysis extends React.Component {
 
   updateConfig = async (updates) => {
     const newConfig = {...this.state.config, ...updates};
+    const {processDefinitionKey, processDefinitionVersions, tenantIds} = updates;
 
     const changes = {
       config: newConfig,
     };
 
-    if (updates.processDefinitionKey && updates.processDefinitionVersions && updates.tenantIds) {
-      changes.xml = await loadProcessDefinitionXml(
-        updates.processDefinitionKey,
-        updates.processDefinitionVersions[0],
-        updates.tenantIds[0]
+    if (processDefinitionKey && processDefinitionVersions && tenantIds) {
+      await this.props.mightFail(
+        loadProcessDefinitionXml(processDefinitionKey, processDefinitionVersions[0], tenantIds[0]),
+        (xml) => {
+          changes.xml = xml;
+          track('startBranchAnalysis', {processDefinitionKey});
+        },
+        showError
       );
 
       if (changes.xml !== this.state.xml) {
@@ -156,4 +162,4 @@ export class BranchAnalysis extends React.Component {
   };
 }
 
-export default withDocs(BranchAnalysis);
+export default withErrorHandling(withDocs(BranchAnalysis));

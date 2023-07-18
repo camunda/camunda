@@ -10,8 +10,12 @@ import {track} from 'tracking';
 
 export async function loadEntity(type, id, query) {
   const response = await get(`api/${type}/` + id, query);
+  const json = await response.json();
+  track(createEventName('view', type), {
+    entityId: id,
+  });
 
-  return await response.json();
+  return await json;
 }
 
 export async function createEntity(type, initialValues = {}, context) {
@@ -49,5 +53,10 @@ export async function loadReports(collection) {
 }
 
 function createEventName(action, entityType) {
-  return action + entityType.charAt(0).toUpperCase() + entityType.slice(1);
+  const type = getEntityType(entityType);
+  return action + type.charAt(0).toUpperCase() + type.slice(1);
+}
+
+function getEntityType(entityType) {
+  return entityType === 'dashboard/instant' ? 'instantPreviewDashboard' : entityType;
 }

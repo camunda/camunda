@@ -24,6 +24,7 @@ const props = {
   match: {
     params: {
       id: 123,
+      type: 'dashboard',
     },
   },
   location: {search: ''},

@@ -12,6 +12,7 @@ import {Switch, LabeledInput} from 'components';
 import CountTargetInput from './subComponents/CountTargetInput';
 import DurationTargetInput from './subComponents/DurationTargetInput';
 import {t} from 'translation';
+import {track} from 'tracking';
 
 export default function NumberConfig({report, onChange}) {
   const {configuration, view, definitions} = report.data;
@@ -71,7 +72,10 @@ export default function NumberConfig({report, onChange}) {
                   disabled={!targetValue.active}
                   type="checkbox"
                   checked={!targetValue.active || targetValue.isKpi}
-                  onChange={(evt) => onChange({targetValue: {isKpi: {$set: evt.target.checked}}})}
+                  onChange={(evt) => {
+                    onChange({targetValue: {isKpi: {$set: evt.target.checked}}});
+                    trackKpiState(evt.target.checked, report.id);
+                  }}
                   label={t('report.config.goal.setKpi')}
                 />
                 <p>{t('report.config.goal.kpiDescription')}</p>
@@ -81,4 +85,10 @@ export default function NumberConfig({report, onChange}) {
       )}
     </div>
   );
+}
+
+function trackKpiState(isEnabled, reportId) {
+  track('displayAsProcessKpi' + (isEnabled ? 'Enabled' : 'Disabled'), {
+    entityId: reportId,
+  });
 }

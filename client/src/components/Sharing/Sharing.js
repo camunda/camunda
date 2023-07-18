@@ -24,6 +24,7 @@ import {
 } from 'components';
 import {withErrorHandling} from 'HOC';
 import {t} from 'translation';
+import {track} from 'tracking';
 
 import {evaluateEntity, createLoadReportCallback} from './service';
 
@@ -42,6 +43,7 @@ export class Sharing extends React.Component {
 
   componentDidMount() {
     this.performEvaluation();
+    trackSharedEntity(this.getType(), this.getId());
   }
 
   getId = () => {
@@ -186,3 +188,11 @@ export class Sharing extends React.Component {
 }
 
 export default withErrorHandling(withRouter(Sharing));
+
+function trackSharedEntity(entityType, entityId) {
+  track(createEventName(entityType), {entityId});
+}
+
+function createEventName(entityType) {
+  return 'viewShared' + entityType.charAt(0).toUpperCase() + entityType.slice(1);
+}
