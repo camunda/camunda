@@ -126,4 +126,6 @@ COPY --from=init --chown=1000:0 /zeebe/tini ${ZB_HOME}/bin/
 COPY --from=init --chown=1000:0 /zeebe/startup.sh /usr/local/bin/startup.sh
 COPY --from=dist --chown=1000:0 /zeebe/camunda-zeebe ${ZB_HOME}
 
+USER zeebe:zeebe
+
 ENTRYPOINT ["tini", "--", "/usr/local/bin/startup.sh"]
