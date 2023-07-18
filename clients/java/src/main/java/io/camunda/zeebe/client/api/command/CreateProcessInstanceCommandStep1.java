@@ -64,7 +64,9 @@ public interface CreateProcessInstanceCommandStep1 {
     CreateProcessInstanceCommandStep3 latestVersion();
   }
 
-  interface CreateProcessInstanceCommandStep3 extends FinalCommandStep<ProcessInstanceEvent> {
+  interface CreateProcessInstanceCommandStep3
+      extends CommandWithTenantStep<CreateProcessInstanceCommandStep3>,
+          FinalCommandStep<ProcessInstanceEvent> {
     /**
      * Set the initial variables of the process instance.
      *
