@@ -148,8 +148,7 @@ public final class DeploymentCreateProcessor
     final var recordWithoutResource = createDeploymentWithoutResources(deploymentEvent);
     responseWriter.writeEventOnCommand(
         key, DeploymentIntent.CREATED, recordWithoutResource, command);
-    stateWriter.appendFollowUpEvent(
-        command.getKey(), DeploymentIntent.CREATED, recordWithoutResource);
+    stateWriter.appendFollowUpEvent(key, DeploymentIntent.CREATED, recordWithoutResource);
 
     distributionBehavior.distributeCommand(key, command);
   }
