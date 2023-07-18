@@ -6,10 +6,11 @@
  */
 
 import React, {useState, useEffect, useMemo} from 'react';
+import {TableSelectRow} from '@carbon/react';
 import debounce from 'debounce';
 import classnames from 'classnames';
 
-import {Button, Checklist, DocsLink, LabeledInput} from 'components';
+import {Button, CarbonChecklist, DocsLink} from 'components';
 import {t} from 'translation';
 import debouncePromise from 'debouncePromise';
 import {withErrorHandling} from 'HOC';
@@ -85,20 +86,27 @@ export function ExternalSource({
 
   return (
     <div className="ExternalSource">
-      <Checklist
+      <CarbonChecklist
         customHeader={t('events.sources.eventGroups')}
         preItems={
           !loading &&
-          !query && (
-            <LabeledInput
-              className={classnames({highlight: selectAll && !selectAllExists})}
-              checked={selectAll}
-              disabled={selectAllExists}
-              type="checkbox"
-              label={t('events.sources.allInOne')}
-              onChange={toggleAllEventsGroup}
-            />
-          )
+          !query && {
+            content: [
+              <TableSelectRow
+                id="selectAll"
+                name="selectAll"
+                ariaLabel={t('events.sources.allInOne').toString()}
+                className={classnames({highlight: selectAll && !selectAllExists})}
+                checked={selectAll}
+                disabled={selectAllExists}
+                onSelect={toggleAllEventsGroup}
+              />,
+              t('events.sources.allInOne'),
+            ],
+            props: {
+              onClick: () => toggleAllEventsGroup({target: {checked: !selectAll}}),
+            },
+          }
         }
         selectedItems={selectedGroups}
         allItems={availableValues}

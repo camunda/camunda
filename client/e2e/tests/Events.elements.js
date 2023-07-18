@@ -47,4 +47,4 @@ export const eventCheckbox = (index) =>
 export const selectionDropdown = Selector('.selectionActions button');
 export const externalEventsTable = Selector('.Table');
 export const externalEventgroup = (index) =>
-  Selector('.ExternalSource .itemsList .LabeledInput').nth(index);
+  Selector('.ExternalSource tr .cds--table-column-checkbox').nth(index);

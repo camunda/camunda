@@ -5,7 +5,7 @@
  * except in compliance with the proprietary license.
  */
 
-import {ReactNode, useState} from 'react';
+import {useState} from 'react';
 import classnames from 'classnames';
 import {
   TableSelectAll,
@@ -38,7 +38,7 @@ interface CarbonChecklistProps<T> {
   labels?: Record<string, string | JSX.Element[]>;
   headerHidden?: boolean;
   preItems?: TableBody;
-  customHeader?: ReactNode;
+  customHeader?: string | JSX.Element[];
   title?: string | JSX.Element[];
   columnLabel?: string | JSX.Element[];
 }
@@ -124,7 +124,7 @@ export default function CarbonChecklist<
       sortable: false,
       width: 30,
     },
-    {label: columnLabel || '', id: 'name', sortable: false},
+    {label: customHeader || columnLabel || '', id: 'name', sortable: false},
   ];
 
   let body: TableBody[] = searchFilteredData.map(({id, label, checked, disabled}) => {
@@ -177,7 +177,8 @@ export default function CarbonChecklist<
     <Table
       useZebraStyles={false}
       className={classnames('CarbonChecklist', {
-        headerHidden: formattedData.length <= 1 || customHeader || headerHidden,
+        headerHidden: formattedData.length <= 1 || headerHidden,
+        customHeader,
       })}
       head={head}
       body={body}
@@ -188,7 +189,6 @@ export default function CarbonChecklist<
         !headerHidden && (
           <TableToolbar>
             <TableToolbarContent>
-              {customHeader && <div className="customHeader">{customHeader}</div>}
               <TableToolbarSearch
                 value={query}
                 placeholder={labels.search?.toString()}

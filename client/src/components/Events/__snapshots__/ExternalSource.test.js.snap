@@ -18,7 +18,7 @@ exports[`should match snapshot 1`] = `
 <div
   className="ExternalSource"
 >
-  <Checklist
+  <CarbonChecklist
     allItems={
       Array [
         null,
@@ -37,14 +37,23 @@ exports[`should match snapshot 1`] = `
     onChange={[Function]}
     onSearch={[Function]}
     preItems={
-      <ForwardRef(LabeledInput)
-        checked={false}
-        className=""
-        disabled={false}
-        label="Combine all events in a single group"
-        onChange={[Function]}
-        type="checkbox"
-      />
+      Object {
+        "content": Array [
+          <TableSelectRow
+            ariaLabel="Combine all events in a single group"
+            checked={false}
+            className=""
+            disabled={false}
+            id="selectAll"
+            name="selectAll"
+            onSelect={[Function]}
+          />,
+          "Combine all events in a single group",
+        ],
+        "props": Object {
+          "onClick": [Function],
+        },
+      }
     }
     selectedItems={
       Array [

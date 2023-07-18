@@ -150,8 +150,8 @@ it('should allow overwriting the selectAll button with a custom header', () => {
   const node = shallow(<CarbonChecklist {...props} customHeader="Custom Header Content" />);
   const dataTable = node.find('Table').dive().find('DataTable').dive();
   const selectAll = dataTable.find('TableHeader').at(0).dive().find('TableSelectAll');
-  const toolbar = shallow(node.find('Table').prop<ReactElement>('toolbar'));
+  const customHeader = dataTable.find('TableHeader').at(1).dive().find('span');
 
   expect(selectAll).not.toExist();
-  expect(toolbar.find('.customHeader')).toIncludeText('Custom Header Content');
+  expect(customHeader).toIncludeText('Custom Header Content');
 });
