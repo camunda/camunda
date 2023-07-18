@@ -213,6 +213,17 @@ public final class CreateDeploymentTest {
     assertThat(deployment.getValue().getProcessesMetadata())
         .extracting(ProcessMetadataValue::getResourceName)
         .contains("process.bpmn", "process2.bpmn");
+
+    final var deploymentPartitionRecords =
+        RecordingExporter.records().limit(r -> r.getIntent() == DeploymentIntent.CREATED).toList();
+
+    assertThat(deploymentPartitionRecords)
+        .extracting(Record::getIntent, Record::getRecordType)
+        .containsExactly(
+            tuple(DeploymentIntent.CREATE, RecordType.COMMAND),
+            tuple(ProcessIntent.CREATED, RecordType.EVENT),
+            tuple(ProcessIntent.CREATED, RecordType.EVENT),
+            tuple(DeploymentIntent.CREATED, RecordType.EVENT));
   }
 
   @Test
