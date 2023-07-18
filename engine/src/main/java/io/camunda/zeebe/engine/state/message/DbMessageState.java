@@ -324,7 +324,7 @@ public final class DbMessageState implements MutableMessageState {
 
     localMessageDeadlineCount -= 1L;
     messagesDeadlineCount.wrapLong(localMessageDeadlineCount);
-    messagesDeadlineCountColumnFamily.update(messagesDeadlineCountKey, messagesDeadlineCount);
+    messagesDeadlineCountColumnFamily.upsert(messagesDeadlineCountKey, messagesDeadlineCount);
     bufferedMessagesMetrics.setBufferedMessagesCounter(localMessageDeadlineCount);
 
     correlatedMessageColumnFamily.whileEqualPrefix(
