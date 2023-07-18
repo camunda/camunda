@@ -21,8 +21,10 @@ public final class ScheduledTaskDbState implements ScheduledTaskState {
   private final TimerInstanceState timerInstanceState;
 
   public ScheduledTaskDbState(
-      final ZeebeDb<ZbColumnFamilies> zeebeDb, final TransactionContext transactionContext) {
-    messageState = new DbMessageState(zeebeDb, transactionContext);
+      final ZeebeDb<ZbColumnFamilies> zeebeDb,
+      final TransactionContext transactionContext,
+      final int partitionId) {
+    messageState = new DbMessageState(zeebeDb, transactionContext, partitionId);
     timerInstanceState = new DbTimerInstanceState(zeebeDb, transactionContext);
   }
 

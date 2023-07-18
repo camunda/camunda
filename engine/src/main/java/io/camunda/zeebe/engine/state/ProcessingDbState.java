@@ -68,7 +68,6 @@ public class ProcessingDbState implements MutableProcessingState {
   private final MutableBannedInstanceState bannedInstanceState;
   private final MutableMigrationState mutableMigrationState;
   private final MutableDecisionState decisionState;
-
   private final int partitionId;
 
   public ProcessingDbState(
@@ -88,7 +87,7 @@ public class ProcessingDbState implements MutableProcessingState {
 
     deploymentState = new DbDeploymentState(zeebeDb, transactionContext);
     jobState = new DbJobState(zeebeDb, transactionContext, partitionId);
-    messageState = new DbMessageState(zeebeDb, transactionContext);
+    messageState = new DbMessageState(zeebeDb, transactionContext, partitionId);
     messageSubscriptionState = new DbMessageSubscriptionState(zeebeDb, transactionContext);
     messageStartEventSubscriptionState =
         new DbMessageStartEventSubscriptionState(zeebeDb, transactionContext);
@@ -97,7 +96,6 @@ public class ProcessingDbState implements MutableProcessingState {
     incidentState = new DbIncidentState(zeebeDb, transactionContext, partitionId);
     bannedInstanceState = new DbBannedInstanceState(zeebeDb, transactionContext, partitionId);
     decisionState = new DbDecisionState(zeebeDb, transactionContext);
-
     mutableMigrationState = new DbMigrationState(zeebeDb, transactionContext);
   }
 
@@ -106,6 +104,7 @@ public class ProcessingDbState implements MutableProcessingState {
     messageSubscriptionState.onRecovered(context);
     processMessageSubscriptionState.onRecovered(context);
     bannedInstanceState.onRecovered(context);
+    messageState.onRecovered(context);
   }
 
   @Override

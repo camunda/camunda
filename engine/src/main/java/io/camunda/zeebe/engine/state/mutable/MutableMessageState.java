@@ -7,11 +7,16 @@
  */
 package io.camunda.zeebe.engine.state.mutable;
 
+import io.camunda.zeebe.engine.api.ReadonlyStreamProcessorContext;
+import io.camunda.zeebe.engine.api.StreamProcessorLifecycleAware;
 import io.camunda.zeebe.engine.state.immutable.MessageState;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageRecord;
 import org.agrona.DirectBuffer;
 
-public interface MutableMessageState extends MessageState {
+public interface MutableMessageState extends MessageState, StreamProcessorLifecycleAware {
+
+  @Override
+  void onRecovered(ReadonlyStreamProcessorContext context);
 
   void put(long messageKey, MessageRecord message);
 

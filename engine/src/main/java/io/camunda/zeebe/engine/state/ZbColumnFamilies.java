@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.engine.state;
 
+// New Column families should be added at the bottom as ColumnFamilyContext uses
+// this class as ordinal()
 public enum ZbColumnFamilies {
   DEFAULT,
 
@@ -96,4 +98,5 @@ public enum ZbColumnFamilies {
   DMN_LATEST_DECISION_BY_ID,
   DMN_LATEST_DECISION_REQUIREMENTS_BY_ID,
   DMN_DECISION_KEY_BY_DECISION_REQUIREMENTS_KEY,
+  MESSAGE_STATS,
 }
