@@ -16,8 +16,10 @@ import {tracking} from 'modules/tracking';
 import {getAccordionTitle} from './utils/getAccordionTitle';
 import {InstancesBar} from 'modules/components/Carbon/InstancesBar';
 import {truncateErrorMessage} from './utils/truncateErrorMessage';
-import {LinkWrapper} from '../styled';
 import {Skeleton} from '../PartiallyExpandableDataTable/Skeleton';
+import {LinkWrapper, ErrorMessage} from '../styled';
+import {EmptyState} from 'modules/components/Carbon/EmptyState';
+import {ReactComponent as EmptyStateProcessIncidents} from 'modules/components/Icon/empty-state-process-incidents.svg';
 
 const IncidentsByError: React.FC = observer(() => {
   const location = useLocation();
@@ -40,11 +42,17 @@ const IncidentsByError: React.FC = observer(() => {
   }
 
   if (status === 'fetched' && incidents.length === 0) {
-    return <div>empty state</div>;
+    return (
+      <EmptyState
+        icon={<EmptyStateProcessIncidents title="Your processes are healthy" />}
+        heading="Your processes are healthy"
+        description="There are no incidents on any instances."
+      />
+    );
   }
 
   if (status === 'error') {
-    return <div>error state</div>;
+    return <ErrorMessage />;
   }
 
   return (

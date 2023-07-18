@@ -9,6 +9,7 @@ import styled, {css} from 'styled-components';
 import {Tile as BaseTitle} from '@carbon/react';
 import {styles} from '@carbon/elements';
 import {Link} from 'modules/components/Carbon/Link';
+import {ErrorMessage as BaseErrorMessage} from 'modules/components/Carbon/ErrorMessage';
 
 type GridProps = {
   $numberOfColumns: 1 | 2;
@@ -40,6 +41,9 @@ const Grid = styled.div<GridProps>`
 
 const ScrollableContent = styled.div`
   overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
 `;
 
 const Tile = styled(BaseTitle)`
@@ -59,4 +63,8 @@ const LinkWrapper = styled(Link)`
   text-decoration: none !important;
 `;
 
-export {Grid, ScrollableContent, Tile, TileTitle, LinkWrapper};
+const ErrorMessage = styled(BaseErrorMessage)`
+  margin: auto;
+`;
+
+export {Grid, ScrollableContent, Tile, TileTitle, LinkWrapper, ErrorMessage};

@@ -15,8 +15,11 @@ import {tracking} from 'modules/tracking';
 import {getAccordionTitle} from './utils/getAccordionTitle';
 import {getAccordionLabel} from './utils/getAccordionLabel';
 import {InstancesBar} from 'modules/components/Carbon/InstancesBar';
-import {LinkWrapper} from '../styled';
+import {LinkWrapper, ErrorMessage} from '../styled';
 import {Skeleton} from '../PartiallyExpandableDataTable/Skeleton';
+import {EmptyState} from 'modules/components/Carbon/EmptyState';
+import {ReactComponent as EmptyStateProcessInstancesByName} from 'modules/components/Icon/empty-state-process-instances-by-name.svg';
+import {authenticationStore} from 'modules/stores/authentication';
 
 const InstancesByProcess: React.FC = observer(() => {
   const {
@@ -24,16 +27,48 @@ const InstancesByProcess: React.FC = observer(() => {
     hasNoInstances,
   } = processInstancesByNameStore;
 
+  const modelerLink = authenticationStore.state.c8Links.modeler;
+
   if (['initial', 'first-fetch'].includes(status)) {
     return <Skeleton />;
   }
 
   if (hasNoInstances) {
-    return <div>empty state</div>;
+    return (
+      <EmptyState
+        icon={
+          <EmptyStateProcessInstancesByName title="Start by deploying a process" />
+        }
+        heading="Start by deploying a process"
+        description="There are no processes deployed. Deploy and start a process from our Modeler, then come back here to track its progress."
+        link={{
+          label: 'Learn more about Operate',
+          href: 'https://docs.camunda.io/docs/components/operate/operate-introduction/',
+          onClick: () =>
+            tracking.track({
+              eventName: 'dashboard-link-clicked',
+              link: 'operate-docs',
+            }),
+        }}
+        button={
+          modelerLink !== undefined
+            ? {
+                label: 'Go to Modeler',
+                href: modelerLink,
+                onClick: () =>
+                  tracking.track({
+                    eventName: 'dashboard-link-clicked',
+                    link: 'modeler',
+                  }),
+              }
+            : undefined
+        }
+      />
+    );
   }
 
   if (status === 'error') {
-    return <div>error state</div>;
+    return <ErrorMessage />;
   }
 
   return (
