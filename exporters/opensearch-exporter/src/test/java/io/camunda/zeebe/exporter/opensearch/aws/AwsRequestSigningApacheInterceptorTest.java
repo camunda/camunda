@@ -14,6 +14,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import io.github.acm19.aws.interceptor.http.AwsRequestSigningApacheInterceptor;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.time.LocalDate;
@@ -39,13 +40,13 @@ import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 import software.amazon.awssdk.auth.signer.Aws4Signer;
 import software.amazon.awssdk.regions.Region;
 
-class AwsSignHttpRequestInterceptorTest {
+class AwsRequestSigningApacheInterceptorTest {
   private static final String AWS_SERVICE_NAME = "servicename";
   private static final Region AWS_REGION = Region.EU_WEST_1;
   private static final String AWS_SECRET_ACCESS_KEY = "awsSecretAcessKey";
   private static final String AWS_ACCESS_KEY_ID = "awsAccessKeyId";
   private static final HttpCoreContext CONTEXT = new HttpCoreContext();
-  private static AwsSignHttpRequestInterceptor interceptor;
+  private static AwsRequestSigningApacheInterceptor interceptor;
 
   @BeforeAll
   static void beforeAll() {
@@ -57,7 +58,7 @@ class AwsSignHttpRequestInterceptorTest {
     StaticCredentialsProvider.create(AnonymousCredentialsProvider.create().resolveCredentials());
     final var signer = Aws4Signer.create();
     interceptor =
-        new AwsSignHttpRequestInterceptor(
+        new AwsRequestSigningApacheInterceptor(
             AWS_SERVICE_NAME, signer, mockCredentialsProvider, AWS_REGION);
     CONTEXT.setTargetHost(HttpHost.create("localhost"));
   }
@@ -144,7 +145,8 @@ class AwsSignHttpRequestInterceptorTest {
         .describedAs("Contains Credentials")
         .contains(credentialsString)
         .describedAs("Contains SignedHeaders")
-        .contains("SignedHeaders=host;x-amz-date")
+        .contains("SignedHeaders=host;")
+        .contains("x-amz-date")
         .describedAs("Contains Signature")
         // As the signature is a random hash we can't verify the value
         .contains("Signature=");
