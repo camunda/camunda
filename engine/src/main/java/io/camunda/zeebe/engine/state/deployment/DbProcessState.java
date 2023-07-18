@@ -146,7 +146,20 @@ public final class DbProcessState implements MutableProcessState {
   }
 
   @Override
-  public void deleteProcess(final ProcessRecord processRecord) {}
+  public void deleteProcess(final ProcessRecord processRecord) {
+    processDefinitionKey.wrapLong(processRecord.getProcessDefinitionKey());
+    processId.wrapString(processRecord.getBpmnProcessId());
+    processVersion.wrapLong(processRecord.getVersion());
+
+    processColumnFamily.deleteExisting(processDefinitionKey);
+    processByIdAndVersionColumnFamily.deleteExisting(idAndVersionKey);
+    digestByIdColumnFamily.deleteExisting(fkProcessId);
+
+    processesByProcessIdAndVersion.remove(processRecord.getBpmnProcessIdBuffer());
+    processesByKey.remove(processRecord.getProcessDefinitionKey());
+    versionManager.deleteProcessVersion(
+        processRecord.getBpmnProcessId(), processRecord.getVersion());
+  }
 
   private void persistProcess(final long processDefinitionKey, final ProcessRecord processRecord) {
     persistedProcess.wrap(processRecord, processDefinitionKey);

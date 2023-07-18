@@ -70,6 +70,21 @@ public final class ProcessVersionManager {
     return currentValue;
   }
 
+  public void deleteProcessVersion(final String processId, final long version) {
+    if (getCurrentProcessVersion(processId) != version) {
+      // If the deleted version is not the latest version we don't have to do anything.
+      return;
+    }
+
+    processIdKey.wrapString(processId);
+    if (version == 1) {
+      nextValueColumnFamily.deleteExisting(processIdKey);
+      versionCache.remove(processId);
+    } else {
+      setProcessVersion(processId, version - 1);
+    }
+  }
+
   public void clear() {
     versionCache.clear();
   }
