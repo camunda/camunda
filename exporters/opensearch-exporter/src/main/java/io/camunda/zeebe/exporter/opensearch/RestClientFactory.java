@@ -8,7 +8,7 @@
 package io.camunda.zeebe.exporter.opensearch;
 
 import io.camunda.zeebe.exporter.opensearch.OpensearchExporterConfiguration.AwsConfiguration;
-import io.camunda.zeebe.exporter.opensearch.aws.AwsSignHttpRequestInterceptor;
+import io.github.acm19.aws.interceptor.http.AwsRequestSigningApacheInterceptor;
 import java.security.KeyManagementException;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
@@ -133,7 +133,7 @@ final class RestClientFactory {
     final Aws4Signer signer = Aws4Signer.create();
 
     final HttpRequestInterceptor signInterceptor =
-        new AwsSignHttpRequestInterceptor(
+        new AwsRequestSigningApacheInterceptor(
             awsConfiguration.serviceName, signer, credentialsProvider, awsConfiguration.region);
     builder.addInterceptorLast(signInterceptor);
   }
