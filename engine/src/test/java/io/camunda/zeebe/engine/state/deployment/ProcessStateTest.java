@@ -22,6 +22,7 @@ import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.ProcessRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
+import io.camunda.zeebe.test.util.Strings;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.Collection;
 import org.assertj.core.api.Assertions;
@@ -523,6 +524,30 @@ public final class ProcessStateTest {
     assertThat(initialProcess.getState()).isEqualTo(PersistedProcessState.ACTIVE);
     final var updatedProcess = processState.getProcessByKey(processDefinitionKey);
     assertThat(updatedProcess.getState()).isEqualTo(PersistedProcessState.PENDING_DELETION);
+  }
+
+  @Test
+  public void shouldDeleteProcess() {
+    // given
+    final String processId = Strings.newRandomValidBpmnId();
+    final var processRecord = creatingProcessRecord(processingState, processId, 1);
+    final var processDefinitionKey = processRecord.getProcessDefinitionKey();
+    processState.putProcess(processDefinitionKey, processRecord);
+
+    // when
+    processState.deleteProcess(processRecord);
+
+    // then
+    assertThat(processState.getProcessByKey(processDefinitionKey)).isNull();
+    assertThat(processState.getProcesses()).isEmpty();
+    assertThat(processState.getProcessesByBpmnProcessId(BufferUtil.wrapString(processId)))
+        .isEmpty();
+    assertThat(processState.getLatestProcessVersionByProcessId(BufferUtil.wrapString(processId)))
+        .isNull();
+    assertThat(processState.getProcessByProcessIdAndVersion(BufferUtil.wrapString(processId), 1))
+        .isNull();
+    assertThat(processState.getLatestVersionDigest(BufferUtil.wrapString(processId))).isNull();
+    assertThat(processState.getProcessVersion(processId)).isEqualTo(0);
   }
 
   public static DeploymentRecord creatingDeploymentRecord(
