@@ -29,16 +29,24 @@ operate-up:
 
 .PHONY: env-identity-up
 env-identity-up:
-	@docker-compose -f ./config/docker-compose.identity.yml up -d  identity elasticsearch zeebe \
-	&& mvn install -DskipTests=true -Dskip.fe.build=false \
-	&& CAMUNDA_TASKLIST_IDENTITY_ISSUERURL=http://localhost:18080/auth/realms/camunda-platform \
-	   CAMUNDA_TASKLIST_IDENTITY_ISSUERBACKENDURL=http://localhost:18080/auth/realms/camunda-platform \
-       CAMUNDA_TASKLIST_IDENTITY_CLIENT_ID=tasklist \
-       CAMUNDA_TASKLIST_IDENTITY_CLIENT_SECRET=the-cake-is-alive \
-       CAMUNDA_TASKLIST_IDENTITY_AUDIENCE=tasklist-api \
-       CAMUNDA_TASKLIST_PERSISTENTSESSIONSENABLED=true \
-       SERVER_PORT=8082 \
-	   mvn -f webapp/pom.xml exec:java -Dexec.mainClass="io.camunda.tasklist.Application" -Dspring.profiles.active=dev,dev-data,identity-auth
+	@docker-compose -f ./config/docker-compose.identity.yml up -d keycloak
+	@echo "Waiting for Keycloak to start..."
+	@sleep 1
+	@docker-compose -f ./config/docker-compose.identity.yml up -d postgres
+	@echo "Waiting for Postgres to start..."
+	@sleep 1
+	@docker-compose -f ./config/docker-compose.identity.yml up -d identity elasticsearch zeebe
+	@mvn install -DskipTests=true -Dskip.fe.build=false
+	@CAMUNDA_TASKLIST_IDENTITY_ISSUERURL=http://localhost:18080/auth/realms/camunda-platform \
+		CAMUNDA_TASKLIST_IDENTITY_ISSUERBACKENDURL=http://localhost:18080/auth/realms/camunda-platform \
+		CAMUNDA_TASKLIST_IDENTITY_BASEURL=http://localhost:8084 \
+		CAMUNDA_TASKLIST_IDENTITY_CLIENT_ID=tasklist \
+		CAMUNDA_TASKLIST_IDENTITY_CLIENT_SECRET=the-cake-is-alive \
+		CAMUNDA_TASKLIST_IDENTITY_AUDIENCE=tasklist-api \
+		CAMUNDA_TASKLIST_PERSISTENTSESSIONSENABLED=true \
+		CAMUNDA_TASKLIST_IDENTITY_RESOURCE_PERMISSIONS_ENABLED=true \
+		SERVER_PORT=8082 \
+		mvn -f webapp/pom.xml exec:java -Dexec.mainClass="io.camunda.tasklist.Application" -Dspring.profiles.active=identity-auth
 
 .PHONY: env-down
 env-down:

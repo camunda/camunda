@@ -12,6 +12,14 @@ make env-up
 
 The above command will generate docker containers for all the dependencies and make the web application available in http://localhost:8080/.
 
+Additionally, if you want to bring up the environment with the identity, you can use the command:
+
+```sh
+make env-identity-up
+```
+
+This command will bring up the environment while ensuring the specific identity configuration is applied.
+
 In case you want to clean everything to build again, run the below command:
 
 ```sh
