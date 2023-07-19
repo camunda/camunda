@@ -67,7 +67,7 @@ public class ProcessInstance {
   }
 
   @JsonProperty("parentProcessInstanceKey")
-  public ProcessInstance setParentKey(final long parentKey) {
+  public ProcessInstance setParentKey(final Long parentKey) {
     this.parentKey = parentKey;
     return this;
   }
