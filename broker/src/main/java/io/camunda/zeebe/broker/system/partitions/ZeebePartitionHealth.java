@@ -23,7 +23,6 @@ class ZeebePartitionHealth implements HealthMonitorable {
   private final String name;
   private final Set<FailureListener> failureListeners = new HashSet<>();
   private HealthReport healthReport = HealthReport.unhealthy(this).withMessage("Initial state");
-  private final PartitionTransitionContext partitionContext;
   private final PartitionTransition partitionTransition;
   /*
   Multiple factors determine ZeebePartition's health :
@@ -36,11 +35,8 @@ class ZeebePartitionHealth implements HealthMonitorable {
   private boolean diskSpaceAvailable = true;
 
   public ZeebePartitionHealth(
-      final int partitionId,
-      final PartitionTransitionContext partitionContext,
-      final PartitionTransition partitionTransition) {
+      final int partitionId, final PartitionTransition partitionTransition) {
     name = "ZeebePartition-" + partitionId;
-    this.partitionContext = partitionContext;
     this.partitionTransition = partitionTransition;
   }
 
@@ -50,17 +46,13 @@ class ZeebePartitionHealth implements HealthMonitorable {
       return;
     }
 
+    final var partitionTransitionHealthIssue = partitionTransition.getHealthIssue();
     if (!diskSpaceAvailable) {
       healthReport = HealthReport.unhealthy(this).withMessage("Not enough disk space available");
+    } else if (partitionTransitionHealthIssue != null) {
+      healthReport = HealthReport.unhealthy(this).withIssue(partitionTransitionHealthIssue);
     } else if (!servicesInstalled) {
       healthReport = HealthReport.unhealthy(this).withMessage("Services not installed");
-    } else if (partitionTransition.hasPartitionTransitionStepTimedOut()) {
-      healthReport =
-          HealthReport.unhealthy(this)
-              .withMessage(
-                  "Partition is blocked in Transition Step %s"
-                      .formatted(
-                          partitionContext.getTransitionStepContext().getCurrentStepTransition()));
     } else {
       healthReport = HealthReport.healthy(this);
     }
