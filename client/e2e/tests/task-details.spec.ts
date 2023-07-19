@@ -20,6 +20,14 @@ test.beforeAll(async () => {
     './e2e/resources/user_task_with_form_and_vars.bpmn',
     './e2e/resources/user_task_with_form_rerender_1.bpmn',
     './e2e/resources/user_task_with_form_rerender_2.bpmn',
+    './e2e/resources/checkbox_task_with_form.bpmn',
+    './e2e/resources/checklist_task_with_form.bpmn',
+    './e2e/resources/date_and_time_task_with_form.bpmn',
+    './e2e/resources/number_task_with_form.bpmn',
+    './e2e/resources/radio_button_task_with_form.bpmn',
+    './e2e/resources/select_task_with_form.bpmn',
+    './e2e/resources/tag_list_task_with_form.bpmn',
+    './e2e/resources/text-templating-form-task.bpmn',
   ]);
   await Promise.all([
     createInstances('usertask_to_be_completed', 1, 1),
@@ -35,6 +43,17 @@ test.beforeAll(async () => {
     createInstances('user_task_with_form_rerender_2', 1, 1, {
       name: 'Stuart',
       age: '30',
+    }),
+    createInstances('Checkbox_User_Task', 1, 1),
+    createInstances('Checklist_Task', 1, 1),
+    createInstances('Date_and_Time_Task', 1, 1),
+    createInstances('Number_Task', 1, 1),
+    createInstances('Radio_Button_User_Task', 1, 1),
+    createInstances('Select', 1, 1),
+    createInstances('Tag_List_Task', 1, 1),
+    createInstances('Text_Templating_Form_Task', 1, 1, {
+      name: 'Jane',
+      age: '50',
     }),
   ]);
 });
@@ -216,5 +235,190 @@ test.describe('task details page', () => {
 
     await taskPanelPage.openTask('User Task with form rerender 2');
     await expect(taskDetailsPage.nameInput).toHaveValue('Stuart');
+  });
+
+  test('task completion with number form by input', async ({
+    taskPanelPage,
+    taskDetailsPage,
+    page,
+  }) => {
+    await taskPanelPage.filterBy('Unassigned');
+    await taskPanelPage.openTask('UserTask_Number');
+    await taskDetailsPage.clickAssignToMeButton();
+
+    await taskDetailsPage.fillNumber('4');
+    await taskDetailsPage.clickCompleteTaskButton();
+    await expect(page.getByText('Task completed')).toBeVisible();
+
+    await taskPanelPage.filterBy('Completed');
+    await taskPanelPage.openTask('UserTask_Number');
+
+    await expect(taskDetailsPage.numberInput).toHaveValue('4');
+  });
+
+  test('task completion with number form by buttons', async ({
+    taskPanelPage,
+    taskDetailsPage,
+    page,
+  }) => {
+    await taskPanelPage.filterBy('Unassigned');
+    await taskPanelPage.openTask('UserTask_Number');
+    await taskDetailsPage.clickAssignToMeButton();
+
+    await taskDetailsPage.clickIncrementButton();
+    await expect(taskDetailsPage.numberInput).toHaveValue('1');
+    await taskDetailsPage.clickIncrementButton();
+    await expect(taskDetailsPage.numberInput).toHaveValue('2');
+    await taskDetailsPage.clickDecrementButton();
+    await expect(taskDetailsPage.numberInput).toHaveValue('1');
+    await taskDetailsPage.clickCompleteTaskButton();
+    await expect(page.getByText('Task completed')).toBeVisible();
+
+    await taskPanelPage.filterBy('Completed');
+    await taskPanelPage.openTask('UserTask_Number');
+    await expect(taskDetailsPage.numberInput).toHaveValue('1');
+  });
+
+  test('task completion with date and time form', async ({
+    taskPanelPage,
+    taskDetailsPage,
+    page,
+  }) => {
+    await taskPanelPage.filterBy('Unassigned');
+    await taskPanelPage.openTask('Date and Time Task');
+    await taskDetailsPage.clickAssignToMeButton();
+
+    await taskDetailsPage.fillDate('01/01/3000');
+    await taskDetailsPage.enterTime('12:00 PM');
+    await taskDetailsPage.clickCompleteTaskButton();
+    await expect(page.getByText('Task completed')).toBeVisible();
+
+    await taskPanelPage.filterBy('Completed');
+    await taskPanelPage.openTask('Date and Time Task');
+
+    await expect(taskDetailsPage.dateInput).toHaveValue('01/01/3000');
+    await expect(taskDetailsPage.timeInput).toHaveValue('12:00 PM');
+  });
+
+  test('task completion with checkbox form', async ({
+    taskPanelPage,
+    taskDetailsPage,
+    page,
+  }) => {
+    await taskPanelPage.filterBy('Unassigned');
+    await taskPanelPage.openTask('Checkbox Task');
+    await taskDetailsPage.clickAssignToMeButton();
+
+    await taskDetailsPage.checkCheckbox();
+    await taskDetailsPage.clickCompleteTaskButton();
+    await expect(page.getByText('Task completed')).toBeVisible();
+
+    await taskPanelPage.filterBy('Completed');
+    await taskPanelPage.openTask('Checkbox Task');
+
+    await expect(taskDetailsPage.checkbox.isChecked()).toBeTruthy();
+  });
+
+  test('task completion with select form', async ({
+    taskPanelPage,
+    taskDetailsPage,
+    page,
+  }) => {
+    await taskPanelPage.filterBy('Unassigned');
+    await taskPanelPage.openTask('Select User Task');
+    await taskDetailsPage.clickAssignToMeButton();
+
+    await expect(taskDetailsPage.unassignButton).toBeVisible();
+    await taskDetailsPage.selectDropdownValue('Value');
+    await taskDetailsPage.clickCompleteTaskButton();
+    await expect(page.getByText('Task completed')).toBeVisible();
+
+    await taskPanelPage.filterBy('Completed');
+    await taskPanelPage.openTask('Select User Task');
+
+    await expect(taskDetailsPage.form.getByText('Value')).toBeVisible();
+  });
+
+  test('task completion with radio button form', async ({
+    taskPanelPage,
+    taskDetailsPage,
+    page,
+  }) => {
+    await taskPanelPage.filterBy('Unassigned');
+    await taskPanelPage.openTask('Radio Button Task');
+    await taskDetailsPage.clickAssignToMeButton();
+
+    await taskDetailsPage.clickRadioButton('Value');
+    await taskDetailsPage.clickCompleteTaskButton();
+    await expect(page.getByText('Task completed')).toBeVisible();
+
+    await taskPanelPage.filterBy('Completed');
+    await taskPanelPage.openTask('Radio Button Task');
+
+    await expect(page.getByText('Value').isChecked()).toBeTruthy();
+  });
+
+  test('task completion with checklist form', async ({
+    taskPanelPage,
+    taskDetailsPage,
+    page,
+  }) => {
+    await taskPanelPage.filterBy('Unassigned');
+    await taskPanelPage.openTask('Checklist User Task');
+    await taskDetailsPage.clickAssignToMeButton();
+
+    await taskDetailsPage.checkChecklistBox('Value1');
+    await taskDetailsPage.checkChecklistBox('Value2');
+    await taskDetailsPage.clickCompleteTaskButton();
+    await expect(page.getByText('Task completed')).toBeVisible();
+
+    await taskPanelPage.filterBy('Completed');
+    await taskPanelPage.openTask('Checklist User Task');
+
+    await expect(page.getByLabel('Value1').isChecked()).toBeTruthy();
+    await expect(page.getByLabel('Value2').isChecked()).toBeTruthy();
+  });
+
+  test('task completion with tag list form', async ({
+    taskPanelPage,
+    taskDetailsPage,
+    page,
+  }) => {
+    await taskPanelPage.filterBy('Unassigned');
+    await taskPanelPage.openTask('Tag list Task');
+    await taskDetailsPage.clickAssignToMeButton();
+
+    await taskDetailsPage.enterTwoValuesInTagList('Value 2', 'Value');
+    await taskDetailsPage.clickCompleteTaskButton();
+    await expect(page.getByText('Task completed')).toBeVisible();
+
+    await taskPanelPage.filterBy('Completed');
+    await taskPanelPage.openTask('Tag list Task');
+
+    await expect(
+      taskDetailsPage.form.getByText('Value', {exact: true}),
+    ).toBeVisible();
+    await expect(taskDetailsPage.form.getByText('Value 2')).toBeVisible();
+  });
+
+  test('task completion with text template form', async ({
+    taskPanelPage,
+    taskDetailsPage,
+    page,
+  }) => {
+    await taskPanelPage.filterBy('Unassigned');
+    await taskPanelPage.openTask('Text_Templating_Form_Task');
+    await taskDetailsPage.clickAssignToMeButton();
+
+    await expect(taskDetailsPage.form).toContainText('Hello Jane');
+    await expect(taskDetailsPage.form).toContainText('You are 50 years old');
+    await taskDetailsPage.clickCompleteTaskButton();
+    await expect(page.getByText('Task completed')).toBeVisible();
+
+    await taskPanelPage.filterBy('Completed');
+    await taskPanelPage.openTask('Text_Templating_Form_Task');
+
+    await expect(taskDetailsPage.form).toContainText('Hello Jane');
+    await expect(taskDetailsPage.form).toContainText('You are 50 years old');
   });
 });

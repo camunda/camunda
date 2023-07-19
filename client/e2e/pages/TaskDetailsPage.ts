@@ -45,6 +45,15 @@ class TaskDetailsPage {
   readonly variablesTable: Locator;
   readonly nameColumnHeader: Locator;
   readonly valueColumnHeader: Locator;
+  readonly form: Locator;
+  readonly numberInput: Locator;
+  readonly incrementButton: Locator;
+  readonly decrementButton: Locator;
+  readonly dateInput: Locator;
+  readonly timeInput: Locator;
+  readonly checkbox: Locator;
+  readonly selectDropdown: Locator;
+  readonly tagList: Locator;
 
   constructor(page: Page) {
     this.page = page;
@@ -75,6 +84,15 @@ class TaskDetailsPage {
     this.valueColumnHeader = this.variablesTable.getByRole('columnheader', {
       name: 'Value',
     });
+    this.form = page.getByTestId('embedded-form');
+    this.numberInput = this.form.getByLabel('Number');
+    this.incrementButton = page.getByRole('button', {name: 'Increment'});
+    this.decrementButton = page.getByRole('button', {name: 'Decrement'});
+    this.dateInput = page.getByPlaceholder('mm/dd/yyyy');
+    this.timeInput = page.getByPlaceholder('hh:mm ?m');
+    this.checkbox = this.form.getByLabel('Checkbox');
+    this.selectDropdown = this.form.getByText('Select').last();
+    this.tagList = page.getByPlaceholder('Search');
   }
 
   async clickAssignToMeButton() {
@@ -117,6 +135,52 @@ class TaskDetailsPage {
     this.clickAddVariableButton();
     await this.getNthVariableNameInput(1).fill(name);
     await this.getNthVariableValueInput(1).fill(value);
+  }
+
+  async fillNumber(number: string): Promise<void> {
+    await this.numberInput.fill(number);
+  }
+
+  async clickIncrementButton(): Promise<void> {
+    await this.incrementButton.click();
+  }
+
+  async clickDecrementButton(): Promise<void> {
+    await this.decrementButton.click();
+  }
+
+  async fillDate(date: string): Promise<void> {
+    await this.dateInput.click();
+    await this.dateInput.fill(date);
+    await this.dateInput.press('Enter');
+  }
+
+  async enterTime(time: string): Promise<void> {
+    await this.timeInput.click();
+    await this.page.getByText(time).click();
+  }
+
+  async checkCheckbox(): Promise<void> {
+    await this.checkbox.check();
+  }
+
+  async selectDropdownValue(value: string): Promise<void> {
+    await this.selectDropdown.click();
+    await this.page.getByText(value).click();
+  }
+
+  async clickRadioButton(radioBtnLabel: string): Promise<void> {
+    await this.page.getByText(radioBtnLabel).click();
+  }
+
+  async checkChecklistBox(label: string): Promise<void> {
+    await this.page.getByLabel(label).check();
+  }
+
+  async enterTwoValuesInTagList(value1: string, value2: string): Promise<void> {
+    await this.tagList.click();
+    await this.page.getByText(value1).click();
+    await this.page.getByText(value2, {exact: true}).click();
   }
 }
 export {TaskDetailsPage};
