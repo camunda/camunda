@@ -45,9 +45,12 @@ public final class MessageBatchExpireProcessorTest {
 
     doNothing().when(stateWriter).appendFollowUpEvent(eq(1L), any(), any());
     doNothing().when(stateWriter).appendFollowUpEvent(eq(2L), any(), any());
-    doThrow(new ExceededBatchRecordSizeException(mock(RecordBatchEntry.class), 10, 1, 1))
+
+    final var exceededBatchRecordSizeException =
+        new ExceededBatchRecordSizeException(mock(RecordBatchEntry.class), 10, 1, 1);
+    doThrow(exceededBatchRecordSizeException)
         .when(stateWriter)
-        .appendFollowUpEvent(eq(3l), any(), any());
+        .appendFollowUpEvent(eq(3L), any(), any());
 
     // when
     messageBatchExpireProcessor.processRecord(
