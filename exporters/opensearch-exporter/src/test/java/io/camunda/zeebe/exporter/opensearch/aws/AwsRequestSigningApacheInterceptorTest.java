@@ -145,8 +145,7 @@ class AwsRequestSigningApacheInterceptorTest {
         .describedAs("Contains Credentials")
         .contains(credentialsString)
         .describedAs("Contains SignedHeaders")
-        .contains("SignedHeaders=host;")
-        .contains("x-amz-date")
+        .contains("SignedHeaders=host;x-amz-content-sha256;x-amz-date")
         .describedAs("Contains Signature")
         // As the signature is a random hash we can't verify the value
         .contains("Signature=");
