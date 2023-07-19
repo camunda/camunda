@@ -15,7 +15,6 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.doAnswer;
-import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -53,21 +52,16 @@ class PartitionTransitionImplTest {
   private PartitionTransitionStep mockStep2;
 
   private PartitionTransitionContext mockContext;
-  private TransitionStepContext transitionStepContext;
 
   @BeforeEach
   void setUp() {
     mockStep1 = mock(PartitionTransitionStep.class);
     mockStep2 = mock(PartitionTransitionStep.class);
-    transitionStepContext = mock(TransitionStepContext.class);
 
     when(mockStep1.getName()).thenReturn("Step 1");
     when(mockStep2.getName()).thenReturn("Step 2");
 
     mockContext = mock(PartitionTransitionContext.class);
-
-    when(mockContext.getTransitionStepContext()).thenReturn(transitionStepContext);
-    doNothing().when(transitionStepContext).setIsPartitionInTransition(any(boolean.class));
   }
 
   @Test

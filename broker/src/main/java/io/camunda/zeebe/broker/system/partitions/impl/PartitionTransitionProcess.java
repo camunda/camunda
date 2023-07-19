@@ -14,7 +14,10 @@ import io.camunda.zeebe.broker.Loggers;
 import io.camunda.zeebe.broker.system.partitions.PartitionTransitionContext;
 import io.camunda.zeebe.broker.system.partitions.PartitionTransitionStep;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
+import io.camunda.zeebe.scheduler.clock.ActorClock;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
+import io.camunda.zeebe.util.health.HealthIssue;
+import java.time.Duration;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Deque;
@@ -25,7 +28,9 @@ import org.slf4j.Logger;
 final class PartitionTransitionProcess {
 
   private static final Logger LOG = Loggers.SYSTEM_LOGGER;
+  private static final long STEP_TIMEOUT_MS = Duration.ofSeconds(60).toMillis();
 
+  private PartitionTransitionStep currentStep;
   private final List<PartitionTransitionStep> pendingSteps;
   private final Deque<PartitionTransitionStep> stepsToPrepare = new ArrayDeque<>();
   private final ConcurrencyControl concurrencyControl;
@@ -34,6 +39,8 @@ final class PartitionTransitionProcess {
   private final Role role;
   private boolean cancelRequested = false;
   private boolean completed = false;
+
+  private long stepStartedAtMs = -1;
 
   PartitionTransitionProcess(
       final List<PartitionTransitionStep> pendingSteps,
@@ -73,19 +80,13 @@ final class PartitionTransitionProcess {
     concurrencyControl.run(
         () -> {
           final var nextStep = pendingSteps.remove(0);
-          context.getTransitionStepContext().setCurrentStepTransition(nextStep.getName());
+          currentStep = nextStep;
+          stepStartedAtMs = ActorClock.currentTimeMillis();
           LOG.info(
               "Transition to {} on term {} - transitioning {}", role, term, nextStep.getName());
-
           nextStep
               .transitionTo(context, term, role)
-              .onComplete(
-                  (ok, error) -> {
-                    context
-                        .getTransitionStepContext()
-                        .setTimeOfLastCompleteStepTransition(System.currentTimeMillis());
-                    onStepCompletion(future, error);
-                  });
+              .onComplete((ok, error) -> onStepCompletion(future, error));
         });
   }
 
@@ -99,6 +100,8 @@ final class PartitionTransitionProcess {
       LOG.info("Transition to {} on term {} completed", role, term);
       future.complete(null);
       completed = true;
+      currentStep = null;
+      stepStartedAtMs = -1;
       return;
     }
 
@@ -197,5 +200,18 @@ final class PartitionTransitionProcess {
             .map(PartitionTransitionStep::getName)
             .collect(Collectors.joining(", "))
         + "]}";
+  }
+
+  public HealthIssue getHealthIssue() {
+    if (currentStep != null && stepStartedAtMs + STEP_TIMEOUT_MS > ActorClock.currentTimeMillis()) {
+      return HealthIssue.of(
+          "Transition from %s on term %s appears blocked, step %s has been running for %s"
+              .formatted(
+                  context.getCurrentRole(),
+                  context.getCurrentTerm(),
+                  currentStep.getName(),
+                  Duration.ofMillis(ActorClock.currentTimeMillis() - stepStartedAtMs)));
+    }
+    return null;
   }
 }

@@ -27,8 +27,6 @@ import io.atomix.raft.partition.RaftPartition;
 import io.atomix.raft.partition.impl.RaftPartitionServer;
 import io.camunda.zeebe.broker.system.partitions.impl.PartitionTransitionImpl;
 import io.camunda.zeebe.broker.system.partitions.impl.RecoverablePartitionTransitionException;
-import io.camunda.zeebe.broker.system.partitions.impl.TransitionStepContext;
-import io.camunda.zeebe.scheduler.clock.ActorClock;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.scheduler.health.CriticalComponentsHealthMonitor;
@@ -37,6 +35,7 @@ import io.camunda.zeebe.util.exception.UnrecoverableException;
 import io.camunda.zeebe.util.health.FailureListener;
 import io.camunda.zeebe.util.health.HealthReport;
 import io.camunda.zeebe.util.health.HealthStatus;
+import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
@@ -57,14 +56,12 @@ public class ZeebePartitionTest {
   private CriticalComponentsHealthMonitor healthMonitor;
   private RaftPartition raft;
   private ZeebePartition partition;
-  private TransitionStepContext transitionStepContext;
 
   @Before
   public void setup() {
     ctx = mock(PartitionStartupAndTransitionContextImpl.class);
     transition = spy(new PartitionTransitionImpl(List.of(new NoopTransitionStep())));
     transition.updateTransitionContext(ctx);
-    transitionStepContext = mock(TransitionStepContext.class);
 
     raft = mock(RaftPartition.class);
     when(raft.id()).thenReturn(new PartitionId("", 0));
@@ -77,9 +74,6 @@ public class ZeebePartitionTest {
     when(ctx.getPartitionContext()).thenReturn(ctx);
     when(ctx.getComponentHealthMonitor()).thenReturn(healthMonitor);
     when(ctx.createTransitionContext()).thenReturn(ctx);
-    when(ctx.getTransitionStepContext()).thenReturn(transitionStepContext);
-
-    doNothing().when(transitionStepContext).setIsPartitionInTransition(any(boolean.class));
 
     partition = new ZeebePartition(ctx, transition, List.of(new NoopStartupStep()));
   }
@@ -363,15 +357,17 @@ public class ZeebePartitionTest {
   @Test
   public void shouldReportUnhealthyIfTransitionStepIsStuck() {
     // given
+    final var transition = new PartitionTransitionImpl(List.of(new BlockingTransitionStep()));
+    final var partition = new ZeebePartition(ctx, transition, List.of(new NoopStartupStep()));
+
     final var captor = ArgumentCaptor.forClass(ZeebePartitionHealth.class);
-    when(ctx.getTransitionStepContext().getIsPartitionInTransition()).thenReturn(true);
-    // threshold is 60 seconds for timeout
-    when(ctx.getTransitionStepContext().getTimeOfLastTransitionStep())
-        .thenReturn(ActorClock.currentTimeMillis() - 61000L);
+
+    when(ctx.getCurrentRole()).thenReturn(Role.LEADER);
     schedulerRule.submitActor(partition);
 
     // when
     partition.onNewRole(Role.LEADER, 1);
+    schedulerRule.getClock().addTime(Duration.ofMinutes(2));
     schedulerRule.workUntilDone();
 
     // then
@@ -382,7 +378,7 @@ public class ZeebePartitionTest {
     final HealthReport healthReport = zeebePartitionHealth.getHealthReport();
     assertThat(healthReport.getStatus()).isEqualTo(HealthStatus.UNHEALTHY);
     assertThat(healthReport.getIssue().message())
-        .contains("Partition is blocked in Transition Step");
+        .contains("Transition from LEADER on term 0 appears blocked");
   }
 
   @Test
@@ -503,6 +499,26 @@ public class ZeebePartitionTest {
     @Override
     public String getName() {
       return "noop-transition-step";
+    }
+  }
+
+  private static class BlockingTransitionStep implements PartitionTransitionStep {
+
+    @Override
+    public ActorFuture<Void> prepareTransition(
+        final PartitionTransitionContext context, final long term, final Role targetRole) {
+      return CompletableActorFuture.completed(null);
+    }
+
+    @Override
+    public ActorFuture<Void> transitionTo(
+        final PartitionTransitionContext context, final long term, final Role targetRole) {
+      return new CompletableActorFuture<>();
+    }
+
+    @Override
+    public String getName() {
+      return "BlockingTransitionStep";
     }
   }
 }

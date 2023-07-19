@@ -22,7 +22,6 @@ import io.camunda.zeebe.broker.partitioning.topology.TopologyManager;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageMonitor;
 import io.camunda.zeebe.broker.system.partitions.impl.AsyncSnapshotDirector;
-import io.camunda.zeebe.broker.system.partitions.impl.TransitionStepContext;
 import io.camunda.zeebe.broker.transport.backupapi.BackupApiRequestHandler;
 import io.camunda.zeebe.broker.transport.partitionapi.InterPartitionCommandReceiverActor;
 import io.camunda.zeebe.broker.transport.partitionapi.InterPartitionCommandSenderService;
@@ -71,7 +70,6 @@ public class TestPartitionTransitionContext implements PartitionTransitionContex
   private BackupManager backupManager;
   private CheckpointRecordsProcessor checkpointRecordsProcessor;
   private BackupStore backupStore;
-  private final TransitionStepContext transitionStepContext = new TransitionStepContext();
 
   @Override
   public int getPartitionId() {
@@ -255,11 +253,6 @@ public class TestPartitionTransitionContext implements PartitionTransitionContex
   @Override
   public void setBackupStore(final BackupStore backupStore) {
     this.backupStore = backupStore;
-  }
-
-  @Override
-  public TransitionStepContext getTransitionStepContext() {
-    return new TransitionStepContext();
   }
 
   public void setGatewayBrokerTransport(final AtomixServerTransport gatewayBrokerTransport) {
