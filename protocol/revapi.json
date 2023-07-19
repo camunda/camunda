@@ -3,6 +3,15 @@
     "extension": "revapi.filter",
     "id": "filter",
     "configuration": {
+      "elements": {
+        "exclude": [
+          {
+            "justification": "The management protocol is not public and is allowed to break",
+            "matcher": "java-package",
+            "match": "io.camunda.zeebe.protocol.management"
+          }
+        ]
+      },
       "archives": {
         "justification": "Ignore everything not included in the module itself",
         "include": ["io\\.camunda:zeebe-protocol:.*"]
@@ -264,13 +273,6 @@
           "code": "java.method.removed",
           "old": "method boolean io.camunda.zeebe.protocol.record.intent.ProcessInstanceBatchIntent::shouldBlacklistInstanceOnError()",
           "justification": "This method had a racial loaded term. It was replaced with a better name, this shouldn't been an issue as it was for internally use only."
-        }
-      ,{
-          "ignore": true,
-          "code": "java.field.constantValueChanged",
-          "old": "field io.camunda.zeebe.protocol.management.AdminRequestDecoder.BLOCK_LENGTH",
-          "new": "field io.camunda.zeebe.protocol.management.AdminRequestDecoder.BLOCK_LENGTH",
-          "justification": "Added a new type to ban an instance"
         }
       ]
     }
