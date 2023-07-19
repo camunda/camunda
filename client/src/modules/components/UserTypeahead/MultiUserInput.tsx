@@ -5,30 +5,42 @@
  * except in compliance with the proprietary license.
  */
 
-import {useState} from 'react';
+import {ReactNode, useCallback, useEffect, useMemo, useRef, useState} from 'react';
+import {FilterableMultiSelect} from '@carbon/react';
 
-import {MultiSelect} from 'components';
 import {t} from 'translation';
 import debouncePromise from 'debouncePromise';
+import {formatters, getRandomId} from 'services';
 
-import {UserTypeaheadProps} from './UserTypeahead';
 import {searchIdentities, User} from './service';
 
 import './MultiUserInput.scss';
 
 const debounceRequest = debouncePromise();
 
-interface MultiUserInputProps {
+export interface MultiUserInputProps {
+  titleText?: ReactNode;
   users: User[];
   collectionUsers?: User[];
   onAdd: (value: {id: string} | User['identity']) => void;
-  fetchUsers?: UserTypeaheadProps['fetchUsers'];
+  fetchUsers?: (
+    query: string,
+    excludeGroups?: boolean
+  ) => Promise<{total: number; result: User['identity'][]}>;
   optionsOnly?: boolean;
   onRemove: (id: string) => void;
   onClear: () => void;
   excludeGroups?: boolean;
   persistMenu?: boolean;
 }
+
+type Item = {
+  id: string;
+  label: string;
+  tag?: string | null;
+  subTexts?: (string | null)[];
+  disabled?: boolean;
+};
 
 export default function MultiUserInput({
   users = [],
@@ -40,28 +52,66 @@ export default function MultiUserInput({
   onClear,
   excludeGroups = false,
   persistMenu,
+  titleText,
 }: MultiUserInputProps): JSX.Element {
   const [loading, setLoading] = useState(true);
-  const [hasMore, setHasMore] = useState(false);
   const [identities, setIdentities] = useState<User['identity'][]>([]);
+  const [textValue, setTextValue] = useState('');
+  const multiSelectRef = useRef<HTMLElement>(null);
+  const selectedUsers = useMemo(() => users.map((user) => formatIdentity(user.identity)), [users]);
 
-  const loadNewValues = async (query: string, delay = 0) => {
-    setLoading(true);
+  const loadNewValues = useCallback(
+    async (query: string, delay = 0) => {
+      setLoading(true);
 
-    const {total, result} = await debounceRequest(async () => {
-      return await (fetchUsers || searchIdentities)(query, excludeGroups);
-    }, delay);
+      const {result} = await debounceRequest(async () => {
+        return await (fetchUsers || searchIdentities)(query, excludeGroups);
+      }, delay);
 
-    setIdentities(result);
-    setLoading(false);
-    setHasMore(total > result.length);
-  };
+      setIdentities(result);
+      setLoading(false);
+    },
+    [fetchUsers, excludeGroups]
+  );
 
-  function add(id: string) {
+  useEffect(() => {
+    loadNewValues('');
+
+    function handleInputChange(evt: KeyboardEvent) {
+      const excludedKeys = [' ', 'Enter', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'];
+
+      if (!excludedKeys.includes(evt.key)) {
+        const text = (evt?.target as HTMLInputElement)?.value;
+        setTextValue(text);
+        loadNewValues(text, 800);
+      }
+    }
+
+    function handleBlur() {
+      setTextValue('');
+      loadNewValues('');
+    }
+
+    const input = multiSelectRef.current?.querySelector('input');
+
+    if (input) {
+      input.addEventListener('keyup', handleInputChange);
+      input.addEventListener('blur', handleBlur);
+    }
+
+    return () => {
+      if (input) {
+        input.removeEventListener('keyup', handleInputChange);
+        input.removeEventListener('blur', handleBlur);
+      }
+    };
+  }, [loadNewValues]);
+
+  function addIdentity(id: string) {
     if (id || id === null) {
       const selectedIdentity = identities
         .filter(filterSelected)
-        .find((identity) => identity.id === id);
+        .find((identity) => getUserId(identity) === id);
       if (selectedIdentity) {
         onAdd(selectedIdentity);
       } else {
@@ -77,31 +127,68 @@ export default function MultiUserInput({
     return !exists(users) && !exists(collectionUsers);
   };
 
+  function getItems(): Item[] {
+    if (loading) {
+      return [{id: 'loading', label: textValue, disabled: true}];
+    }
+
+    const items = identities.filter(filterSelected).map(formatIdentity);
+    items.unshift(...selectedUsers);
+
+    if (!optionsOnly && textValue && !identities.some((item) => item.id === textValue)) {
+      items.unshift({id: textValue, label: textValue});
+    }
+
+    return items;
+  }
+
   return (
-    <MultiSelect
-      values={users.map((user) => ({
-        value: user.id,
-        label: formatTypeaheadOption(user.identity).text,
-      }))}
+    <FilterableMultiSelect
+      titleText={titleText}
+      id={getRandomId()}
       className="MultiUserInput"
-      onSearch={(query) => loadNewValues(query, 800)}
-      loading={loading}
-      hasMore={!loading && hasMore}
-      onOpen={loadNewValues}
-      onClose={() => setLoading(true)}
       placeholder={t('common.collection.addUserModal.searchPlaceholder')}
-      onAdd={add}
-      onRemove={onRemove}
-      onClear={onClear}
-      async
-      typedOption={!optionsOnly}
-      persistMenu={persistMenu}
-    >
-      {identities.filter(filterSelected).map((identity) => {
-        const {text, tag, subTexts} = formatTypeaheadOption(identity);
+      ref={multiSelectRef}
+      // disable the internal sorting since we have the data sorted by default
+      sortItems={(items) => items}
+      initialSelectedItems={selectedUsers}
+      downshiftProps={{
+        onSelect: (item) => {
+          if (!item) {
+            return;
+          }
+
+          const userToRemove = users.find((user) => user.id === item.id);
+
+          if (userToRemove) {
+            onRemove(userToRemove.id);
+          } else {
+            addIdentity(item.id);
+            if (persistMenu === false) {
+              multiSelectRef.current?.querySelector<HTMLElement>('[data-toggle="true"]')?.click();
+            }
+          }
+        },
+      }}
+      onChange={({selectedItems}) => {
+        if (selectedItems.length === 0) {
+          onClear();
+        }
+      }}
+      items={getItems()}
+      itemToString={(item) => {
+        const {label, tag, subTexts} = item;
+        return label + (tag || '') + subTexts?.filter((subText) => !!subText).join(',');
+      }}
+      itemToElement={(item) => {
+        if (item.id === 'loading') {
+          return <p className="cds--checkbox-label-text cds--skeleton" />;
+        }
+
+        const {label, tag, subTexts} = item;
         return (
-          <MultiSelect.Option key={identity.id} value={identity.id} label={text}>
-            <MultiSelect.Highlight>{text}</MultiSelect.Highlight>
+          <>
+            {formatters.getHighlightedText(label, textValue)}
             {tag}
             {subTexts && (
               <span className="subTexts">
@@ -109,20 +196,20 @@ export default function MultiUserInput({
                   .filter((subText): subText is string => !!subText)
                   .map((subText, i) => (
                     <span className="subText" key={i}>
-                      <MultiSelect.Highlight matchFromStart>{subText}</MultiSelect.Highlight>
+                      {formatters.getHighlightedText(subText, textValue, true)}
                     </span>
                   ))}
               </span>
             )}
-          </MultiSelect.Option>
+          </>
         );
-      })}
-    </MultiSelect>
+      }}
+    />
   );
 }
 
 function formatTypeaheadOption({name, email, id, type}: User['identity']): {
-  text: string;
+  label: string;
   tag: string | null;
   subTexts: (string | null)[];
 } {
@@ -136,8 +223,23 @@ function formatTypeaheadOption({name, email, id, type}: User['identity']): {
   }
 
   return {
-    text: name || email || id || '',
+    label: name || email || id || '',
     tag: type === 'group' ? ` (${t('common.user-group.label')})` : null,
     subTexts,
   };
+}
+
+function formatIdentity(identity: User['identity']): Item {
+  const {label, tag, subTexts} = formatTypeaheadOption(identity);
+
+  return {
+    id: getUserId(identity),
+    label,
+    tag,
+    subTexts,
+  };
+}
+
+function getUserId(identity: User['identity']) {
+  return `${identity.type.toUpperCase()}:${identity.id}`;
 }

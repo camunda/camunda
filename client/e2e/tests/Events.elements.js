@@ -36,7 +36,6 @@ export const endEvent = Selector('.invoiceProcessed .cds--table-column-checkbox 
 export const eventsTable = Selector('.EventTable');
 export const publishButton = Selector('.publish-button');
 export const permissionButton = Selector('.permission button');
-export const usersTypeahead = Selector('.MultiUserInput');
 export const addEventSourceBtn = Selector('.GenerationModal button').withText('Add Event Source');
 export const zoomButton = Selector('.zoomIn');
 export const diagram = Selector('.ProcessView .BPMNDiagram');

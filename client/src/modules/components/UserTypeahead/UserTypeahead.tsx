@@ -10,22 +10,18 @@ import update from 'immutability-helper';
 import {withErrorHandling, WithErrorHandlingProps} from 'HOC';
 import {t} from 'translation';
 import {showError} from 'notifications';
-import {LoadingIndicator} from 'components';
 
-import MultiUserInput from './MultiUserInput';
+import MultiUserInput, {MultiUserInputProps} from './MultiUserInput';
 import {getUser, User} from './service';
+import {DropdownSkeleton} from '@carbon/react';
 
-export interface UserTypeaheadProps extends WithErrorHandlingProps {
+interface UserTypeaheadProps
+  extends WithErrorHandlingProps,
+    Partial<Omit<MultiUserInputProps, 'users' | 'collectionUsers' | 'onChange'>> {
+  collectionUsers?: User[] | null;
   users: User[] | null;
-  collectionUsers?: User[];
   onChange: (users: User[]) => void;
-  fetchUsers?: (
-    query: string,
-    excludeGroups?: boolean
-  ) => Promise<{total: number; result: User['identity'][]}>;
-  optionsOnly?: boolean;
-  excludeGroups?: boolean;
-  persistMenu?: boolean;
+  loading?: boolean;
 }
 
 export function UserTypeahead({
@@ -33,13 +29,11 @@ export function UserTypeahead({
   collectionUsers = [],
   onChange,
   mightFail,
-  fetchUsers,
-  optionsOnly,
-  excludeGroups = false,
-  persistMenu,
+  loading,
+  ...props
 }: UserTypeaheadProps) {
-  if (!users || !collectionUsers) {
-    return <LoadingIndicator />;
+  if (!users || !collectionUsers || loading) {
+    return <DropdownSkeleton />;
   }
 
   const getSelectedUser = (
@@ -85,15 +79,12 @@ export function UserTypeahead({
 
   return (
     <MultiUserInput
+      {...props}
       users={users}
       collectionUsers={collectionUsers}
-      fetchUsers={fetchUsers}
       onAdd={addUser}
       onRemove={removeUser}
       onClear={() => onChange([])}
-      optionsOnly={optionsOnly}
-      excludeGroups={excludeGroups}
-      persistMenu={persistMenu}
     />
   );
 }

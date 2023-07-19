@@ -8,7 +8,7 @@
 import {useState, useEffect} from 'react';
 import {Button} from '@carbon/react';
 
-import {Modal, UserTypeahead, Labeled, User} from 'components';
+import {Modal, UserTypeahead, User} from 'components';
 import {showError} from 'notifications';
 import {WithErrorHandlingProps, withErrorHandling} from 'HOC';
 import {getOptimizeProfile} from 'config';
@@ -61,15 +61,12 @@ export function UsersModal({id, mightFail, onClose}: UsersModalProps): JSX.Eleme
       <Modal.Header>{t('common.editAccess')}</Modal.Header>
       <Modal.Content>
         <p className="description">{t('events.permissions.description')}</p>
-        <Labeled className="userTypeahead" label={t('home.userTitle')}>
-          {users && (
-            <UserTypeahead
-              users={users}
-              onChange={setUsers}
-              optionsOnly={optimizeProfile === 'cloud'}
-            />
-          )}
-        </Labeled>
+        <UserTypeahead
+          titleText={t('home.userTitle')}
+          users={users}
+          onChange={setUsers}
+          optionsOnly={optimizeProfile === 'cloud'}
+        />
       </Modal.Content>
       <Modal.Footer>
         <Button kind="secondary" disabled={loading} onClick={close}>

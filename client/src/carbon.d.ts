@@ -632,6 +632,24 @@ declare module '@carbon/react' {
   }
 
   declare function TabPanels({children}: TabPanelsProps): JSX.Element;
-}
 
-// export {};
+  interface FilterableMultiSelectProps<T> {
+    id: string;
+    items: T[];
+    className?: string;
+    placeholder?: ReactNode;
+    initialSelectedItems?: T[];
+    itemToElement?: (item: T) => ReactNode;
+    itemToString?: (item: T) => string;
+    sortItems?: (items: T[]) => T[];
+    downshiftProps?: {
+      onSelect: (el: T) => void;
+    };
+    onChange?: ({selectedItems}: {selectedItems: T[]}) => void;
+    titleText?: ReactNode;
+  }
+
+  declare function FilterableMultiSelect<T>(
+    props: ForwardRefProps<HTMLElement, FilterableMultiSelectProps<T>>
+  ): JSX.Element;
+}

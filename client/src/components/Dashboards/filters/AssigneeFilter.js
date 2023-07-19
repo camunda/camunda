@@ -111,6 +111,29 @@ export function AssigneeFilter({
     previewFilter = {operator: filter.operator, values: [t('dashboard.filter.multiple')]};
   }
 
+  async function fetchUsers(query) {
+    const result = await mightFail(
+      loadUsersByReportIds(type, {
+        reportIds: reports.map(({id}) => id).filter((id) => !!id),
+        terms: query,
+      }),
+      (result) => result
+    );
+
+    result.result = result.result.filter((user) => !values.includes(user.id));
+
+    if ('unassigned'.indexOf(query.toLowerCase()) !== -1 && !values.includes(null)) {
+      result.total++;
+      result.result.unshift({
+        id: null,
+        name: t('common.filter.assigneeModal.unassigned'),
+        type: 'user',
+      });
+    }
+
+    return result;
+  }
+
   return (
     <div className="AssigneeFilter__Dashboard">
       <div className="title">
@@ -183,31 +206,7 @@ export function AssigneeFilter({
                       removeCustomValues();
                     }
                   }}
-                  fetchUsers={async (query) => {
-                    const result = await mightFail(
-                      loadUsersByReportIds(type, {
-                        reportIds: reports.map(({id}) => id).filter((id) => !!id),
-                        terms: query,
-                      }),
-                      (result) => result
-                    );
-
-                    result.result = result.result.filter((user) => !values.includes(user.id));
-
-                    if (
-                      'unassigned'.indexOf(query.toLowerCase()) !== -1 &&
-                      !values.includes(null)
-                    ) {
-                      result.total++;
-                      result.result.unshift({
-                        id: null,
-                        name: t('common.filter.assigneeModal.unassigned'),
-                        type: 'user',
-                      });
-                    }
-
-                    return result;
-                  }}
+                  fetchUsers={fetchUsers}
                   optionsOnly
                 />
               </div>

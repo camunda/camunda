@@ -6,6 +6,7 @@
  */
 
 import {shallow} from 'enzyme';
+import {DropdownSkeleton} from '@carbon/react';
 
 import {showError} from 'notifications';
 
@@ -101,11 +102,25 @@ it('should handle users and collectionUsers null values', () => {
       onChange={jest.fn()}
     />
   );
-  expect(node.find('LoadingIndicator').exists()).toBe(true);
+  expect(node.find(DropdownSkeleton)).toExist();
 
   node.setProps({users: [], collectionUsers: null});
-  expect(node.find('LoadingIndicator').exists()).toBe(true);
+  expect(node.find(DropdownSkeleton)).toExist();
 
   node.setProps({users: [], collectionUsers: []});
-  expect(node.find('LoadingIndicator').exists()).toBe(false);
+  expect(node.find(DropdownSkeleton)).not.toExist();
+});
+
+it('should display dropdown skeleton if loading prop is true', () => {
+  const node = shallow(
+    <UserTypeahead
+      {...props}
+      users={[]}
+      mightFail={jest.fn().mockImplementation((data, cb) => cb(data))}
+      onChange={jest.fn()}
+      loading
+    />
+  );
+
+  expect(node.find(DropdownSkeleton)).toExist();
 });

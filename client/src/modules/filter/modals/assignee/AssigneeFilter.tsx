@@ -5,7 +5,7 @@
  * except in compliance with the proprietary license.
  */
 
-import {ReactNode, useEffect, useState} from 'react';
+import {ReactNode, useCallback, useEffect, useState} from 'react';
 import classnames from 'classnames';
 import {Button} from '@carbon/react';
 
@@ -66,10 +66,12 @@ export function AssigneeFilter(props: AssigneeFilterProps) {
     validDefinitions?.find(({identifier}) => filterData?.appliedTo[0] === identifier) ||
       validDefinitions?.[0]
   );
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     (async () => {
       if (filterData) {
+        setLoading(true);
         setOperator(filterData.data.operator);
 
         const hasUnassigned = filterData.data.values?.includes(null);
@@ -100,6 +102,7 @@ export function AssigneeFilter(props: AssigneeFilterProps) {
         }
 
         setUsers(combined);
+        setLoading(false);
       }
     })();
   }, [filterData, filterType, mightFail]);
@@ -111,6 +114,37 @@ export function AssigneeFilter(props: AssigneeFilterProps) {
       appliedTo: [applyTo?.identifier].filter((definition): definition is string => !!definition),
     });
   };
+
+  const fetchUsers = useCallback(
+    async (query: string) => {
+      let dataPromise;
+      if (reportIds) {
+        dataPromise = loadUsersByReportIds(filterType, {
+          reportIds,
+          terms: query,
+        });
+      } else {
+        dataPromise = loadUsersByDefinition(filterType, {
+          processDefinitionKey: applyTo?.key,
+          tenantIds: applyTo?.tenantIds,
+          terms: query,
+        });
+      }
+      const result = await mightFail(dataPromise, (result) => result, showError);
+
+      if ('unassigned'.indexOf(query.toLowerCase()) !== -1) {
+        result.total++;
+        result.result.unshift({
+          id: null,
+          name: t('common.filter.assigneeModal.unassigned'),
+          type: 'user',
+        });
+      }
+
+      return result;
+    },
+    [applyTo?.key, applyTo?.tenantIds, filterType, mightFail, reportIds]
+  );
 
   return (
     <Modal
@@ -150,33 +184,8 @@ export function AssigneeFilter(props: AssigneeFilterProps) {
               <UserTypeahead
                 users={users}
                 onChange={setUsers}
-                fetchUsers={async (query) => {
-                  let dataPromise;
-                  if (reportIds) {
-                    dataPromise = loadUsersByReportIds(filterType, {
-                      reportIds,
-                      terms: query,
-                    });
-                  } else {
-                    dataPromise = loadUsersByDefinition(filterType, {
-                      processDefinitionKey: applyTo?.key,
-                      tenantIds: applyTo?.tenantIds,
-                      terms: query,
-                    });
-                  }
-                  const result = await mightFail(dataPromise, (result) => result, showError);
-
-                  if ('unassigned'.indexOf(query.toLowerCase()) !== -1) {
-                    result.total++;
-                    result.result.unshift({
-                      id: null,
-                      name: t('common.filter.assigneeModal.unassigned'),
-                      type: 'user',
-                    });
-                  }
-
-                  return result;
-                }}
+                fetchUsers={fetchUsers}
+                loading={loading}
                 optionsOnly
               />
             </Labeled>

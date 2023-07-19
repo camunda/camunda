@@ -95,9 +95,9 @@ test('user permissions', async (t) => {
   await t.click(e.userTab);
 
   await t.click(e.addButton);
-  await t.click(e.usersTypeahead);
-  await t.typeText(e.usersTypeahead, 'sales', {replace: true});
-  await t.click(Common.option('sales'));
+  await t.click(Common.usersTypeahead);
+  await t.typeText(Common.usersTypeahead, 'sales', {replace: true});
+  await t.click(Common.carbonOption('sales'));
   await t.click(Common.modalConfirmButton);
 
   await t.expect(e.groupItem.visible).ok();
@@ -106,10 +106,10 @@ test('user permissions', async (t) => {
   await t.expect(e.groupItem.textContent).contains('Viewer');
 
   await t.click(e.addButton);
-  await t.typeText(e.usersTypeahead, 'mary', {replace: true});
-  await t.click(Common.option('mary'));
-  await t.typeText(e.usersTypeahead, 'peter', {replace: true});
-  await t.click(Common.option('peter')).pressKey('tab');
+  await t.typeText(Common.usersTypeahead, 'mary', {replace: true});
+  await t.click(Common.carbonOption('mary'));
+  await t.typeText(Common.usersTypeahead, 'peter', {replace: true});
+  await t.click(Common.carbonOption('peter')).pressKey('tab');
   await t.click(e.roleOption('Editor'));
   await t.takeElementScreenshot(e.addUserModal, 'img/addUser.png');
   await t.click(Common.modalConfirmButton);
@@ -130,8 +130,8 @@ test('user permissions', async (t) => {
   const {username} = getUser(t, 'user2');
 
   await t.click(e.addButton);
-  await t.typeText(e.usersTypeahead, username, {replace: true});
-  await t.click(Common.option(username));
+  await t.typeText(Common.usersTypeahead, username, {replace: true});
+  await t.click(Common.carbonOption(username));
   await t.click(e.roleOption('Manager'));
   await t.click(Common.modalConfirmButton);
 

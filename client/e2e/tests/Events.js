@@ -100,12 +100,12 @@ test('add sources, map and publish a process', async (t) => {
 
   await t.click(e.permissionButton);
 
-  await t.click(e.optionsButton(e.usersTypeahead));
+  await t.click(Common.usersTypeahead);
   // Using exact userId in the search to eliminate potential race condition on the identity being available in
   // the search cache. Id usage will always work regardless of the search cache state.
-  await t.typeText(e.typeaheadInput(e.usersTypeahead), 'john', {replace: true});
-  await t.click(e.typeaheadOption(e.usersTypeahead, 'john'));
-  await t.typeText(e.typeaheadInput(e.usersTypeahead), 'john', {replace: true});
+  await t.typeText(Common.usersTypeahead, 'john', {replace: true});
+  await t.click(Common.carbonOption('john'));
+  await t.typeText(Common.usersTypeahead, 'john', {replace: true});
 
   await t.takeElementScreenshot(
     Common.modalContainer.nth(1),

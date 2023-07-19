@@ -43,7 +43,6 @@ export const addUserModal = Selector('.AddUserModal');
 export const addSourceModal = Selector('.SourcesModal');
 export const logoutButton = Selector('header button').withText('Logout');
 export const usernameDropdown = Selector('header button').withAttribute('aria-label', 'Open User');
-export const usersTypeahead = Selector('.MultiUserInput .Input');
 export const searchField = Selector('.cds--search-input');
 export const selectAllCheckbox = Selector('.Table thead .cds--table-column-checkbox label');
 export const itemCheckbox = (idx) =>

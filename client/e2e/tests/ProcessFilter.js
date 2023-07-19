@@ -281,9 +281,9 @@ test('add assignee filter', async (t) => {
   await t.click(Report.flowNodeFilterButton);
   await t.click(Report.filterOption('Assignee'));
 
-  await t.click(Filter.multiSelect);
-  await t.typeText(Filter.multiSelect, 'er', {replace: true});
-  await t.click(Filter.multiSelectOptionNumber(0));
+  await t.click(Common.usersTypeahead);
+  await t.typeText(Common.usersTypeahead, 'er', {replace: true});
+  await t.click(Common.carbonOption('Andrea Wagner'));
 
   await t.takeElementScreenshot(Common.modalContainer, 'process-analysis/img/assignee-filter.png');
 
