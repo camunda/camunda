@@ -1121,6 +1121,12 @@
         <version>2.8</version>
       </dependency>
 
+      <dependency>
+        <groupId>io.github.acm19</groupId>
+        <artifactId>aws-request-signing-apache-interceptor</artifactId>
+        <version>2.3.1</version>
+      </dependency>
+
       <!--      JMH Tests   -->
       <dependency>
         <groupId>org.openjdk.jmh</groupId>
