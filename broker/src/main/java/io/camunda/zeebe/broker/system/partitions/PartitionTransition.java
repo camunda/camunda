@@ -9,6 +9,7 @@ package io.camunda.zeebe.broker.system.partitions;
 
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
+import io.camunda.zeebe.util.health.HealthIssue;
 
 public interface PartitionTransition {
 
@@ -53,10 +54,7 @@ public interface PartitionTransition {
   void updateTransitionContext(PartitionTransitionContext transitionContext);
 
   /**
-   * Check is transition step has timeout and logs warning to the user if it's the case (current
-   * timeout is 60 seconds).
-   *
-   * @return a boolean to indicate if transition step has timed out
+   * @return null if transition is healthy or a {@link HealthIssue} if not.
    */
-  boolean hasPartitionTransitionStepTimedOut();
+  HealthIssue getHealthIssue();
 }
