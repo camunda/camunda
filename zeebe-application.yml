@@ -17,7 +17,13 @@ zeebe:
             prefix: zeebe-record
             createTemplate: true
             command: false
+            commandDistribution: false
+            decision: false
+            decisionEvaluation: false
+            decisionRequirements: false
+            deploymentDistribution: false
             event: true
+            escalation: false
             rejection: false
             deployment: false
             process: true
@@ -27,8 +33,12 @@ zeebe:
             jobBatch: false
             message: false
             messageSubscription: false
+            signal: false
+            signalSubscription: false
+            timer: false
             variable: true
             variableDocument: false
             processInstance: true
             processInstanceCreation: false
             processMessageSubscription: false
+            processInstanceModification: false
