@@ -18,13 +18,13 @@ import io.zeebe.containers.cluster.ZeebeCluster;
 import io.zeebe.containers.exporter.DebugReceiver;
 import java.util.concurrent.CopyOnWriteArrayList;
 import org.assertj.core.api.Assertions;
+import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
-import org.testcontainers.shaded.org.awaitility.Awaitility;
 
 @Testcontainers
 public class BanningEndpointIT {
