@@ -15,6 +15,30 @@ mvn clean install
 This command runs also all the test suite, that you can skip using the
 option `-DskipTests=true`.
 
+## Environment variables 
+
+In order to Setup the Webapp locally, after to start the docker images (See Tasklist READ.ME), it is necessary configurate the env. variables over the Spring Profile, this is the minimum requirement: 
+
+* `CAMUNDA_TASKLIST_BACKUP_REPOSITORYNAME=test;`
+* `CAMUNDA_TASKLIST_ELASTICSEARCH_URL=http://localhost:9200;`
+* `CAMUNDA_TASKLIST_ZEEBE_GATEWAYADDRESS=localhost:26500;`
+* `CAMUNDA_TASKLIST_ZEEBEELASTICSEARCH_URL=http://localhost:9200;`
+* `SERVER_PORT=8082;SPRING_PROFILES_ACTIVE=identity-auth;`
+* `SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUERURI=http://localhost:18080/auth/realms/camunda-platform;`
+* `SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWKSETURI=http://localhost:18080/auth/realms/camunda-platform/protocol/openid-connect/certs`
+
+This is the minimum requirement, in case to setup the identity:
+
+* `CAMUNDA_TASKLIST_IDENTITY_AUDIENCE=tasklist-api;`
+* `CAMUNDA_TASKLIST_IDENTITY_BASEURL=http://localhost:8084;`
+* `CAMUNDA_TASKLIST_IDENTITY_CLIENT_ID=tasklist;`
+* `CAMUNDA_TASKLIST_IDENTITY_CLIENT_SECRET=the-cake-is-alive;`
+* `CAMUNDA_TASKLIST_IDENTITY_ISSUERBACKENDURL=http://localhost:18080/auth/realms/camunda-platform;`
+* `CAMUNDA_TASKLIST_IDENTITY_ISSUERURL=http://localhost:18080/auth/realms/camunda-platform;`
+* `CAMUNDA_TASKLIST_IDENTITY_RESOURCE_PERMISSIONS_ENABLED=true;`
+
+Do not forget to make sure that all services are up on Docker. 
+
 ## Run modules separately
 
 In case of high load you may need to scale importing of data from Zeebe and archiving of finished instances (this can influence UI performance).
