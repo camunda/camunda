@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/bash -eux
 
 # Login to the registries happens separately from the script as a GHA step
 
@@ -12,7 +12,6 @@ if [ "${IS_MAIN}" = "true" ]; then
     tags+=("${DOCKER_IMAGE_DOCKER_HUB}:SNAPSHOT")
 fi
 
-echo $tags
 printf -v tag_arguments -- "-t %s " "${tags[@]}"
 docker buildx create --use
 
@@ -25,7 +24,7 @@ export BASE_IMAGE=docker.io/library/alpine:3
 # able to perform the checks before pushing
 # First arm64
 docker buildx build \
-    "${tag_arguments}" \
+    ${tag_arguments} \
     --build-arg VERSION="${VERSION}" \
     --build-arg DATE="${DATE}" \
     --build-arg REVISION="${REVISION}" \
@@ -37,7 +36,7 @@ export ARCHITECTURE=arm64
 
 # Now amd64
 docker buildx build \
-    "${tag_arguments}" \
+    ${tag_arguments} \
     --build-arg VERSION="${VERSION}" \
     --build-arg DATE="${DATE}" \
     --build-arg REVISION="${REVISION}" \
