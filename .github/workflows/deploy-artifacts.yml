@@ -1,0 +1,103 @@
+
+name: Deploy Artifacts
+on:
+  workflow_call:
+
+jobs:
+  deploy-artifacts:
+    name: Deploy Artifacts
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      DOCKER_IMAGE_TEAM: registry.camunda.cloud/team-optimize/optimize
+      DOCKER_IMAGE_DOCKER_HUB: camunda/optimize
+    steps:
+    - uses: actions/checkout@v3
+    - name: Define common variables
+      id: define-values
+      uses: ./.github/actions/git-environment
+    - name: "Read Java / Version Info"
+      id: "pom-info"
+      uses: YunaBraska/java-info-action@main
+    - name: Expose common variables as Env
+      run: |
+        {
+          echo "DOCKER_BRANCH_TAG=${{ steps.define-values.outputs.branch_slug }}"
+          echo "DOCKER_LATEST_TAG=${{ steps.define-values.outputs.latest_tag }}"
+          echo "DOCKER_TAG=${{ steps.define-values.outputs.image_tag }}"
+          echo "VERSION=${{ steps.pom-info.outputs.project_version }}"
+          echo "PUSH_LATEST_TAG=${{ steps.define-values.outputs.is_main_or_maintenance_branch }}"
+          echo "IS_MAIN=${{ steps.define-values.outputs.is_main_branch }}"
+          echo "REVISION=${{ steps.define-values.outputs.git_commit_hash }}"
+        } >> "$GITHUB_ENV"
+    - name: Login to Harbor registry
+      uses: ./.github/actions/login-registry
+      with:
+        secrets: ${{ toJSON(secrets) }}
+    - name: Import secrets
+      id: secrets
+      uses: hashicorp/vault-action@130d1f5f4fe645bb6c83e4225c04d64cfb62de6e
+      with:
+        url: ${{ secrets.VAULT_ADDR }}
+        method: approle
+        roleId: ${{ secrets.VAULT_ROLE_ID }}
+        secretId: ${{ secrets.VAULT_SECRET_ID }}
+        secrets: |
+          secret/data/products/optimize/ci/camunda-optimize REGISTRY_HUB_DOCKER_COM_USR;
+          secret/data/products/optimize/ci/camunda-optimize REGISTRY_HUB_DOCKER_COM_PSW;
+    - name: Login to Harbor docker registery
+      uses: docker/login-action@v2
+      with:
+        username: ${{ steps.secrets.outputs.REGISTRY_HUB_DOCKER_COM_USR }}
+        password: ${{ steps.secrets.outputs.REGISTRY_HUB_DOCKER_COM_PSW }}
+    # Generating a production build
+    - name: Setup Maven
+      uses: ./.github/actions/setup-maven
+      with:
+        secrets: ${{ toJSON(secrets) }}
+    - name: Generate production .tar.gz
+      uses: ./.github/actions/run-maven
+      with:
+        parameters: install -DskipTests -Dskip.docker
+    - name: Build Docker Image
+      run: ./.github/scripts/build-docker-images.sh
+    # The SmokeTest is running as part of the "deploy-artifact" job to ensure we only push the artifacts on success
+    # It uses the previously created docker image before it was pushed
+    - name: Start Smoketest
+      uses: ./.github/actions/compose
+      with:
+        compose_file: ${{ github.workspace }}/.github/actions/compose/docker-compose.smoketest.yml
+        project_name: smoketest
+      env:
+        OPTIMIZE_IMAGE_TAG: ${{ env.DOCKER_TAG }}
+        ELASTIC_VERSION: ${{ steps.pom-info.outputs.x_elasticsearch8_test_version }}
+    # This is partly done already by the healthcheck in the compose file
+    - name: Check that Optimize is running and available
+      run: |
+        echo "Smoke testing if Optimize is ready"
+        curl -q -f -I http://localhost:8090/api/readyz | grep -q "200 OK"
+        echo "Smoke testing if Optimize Frontend resources are accessible"
+        curl -q -f http://localhost:8090/index.html | grep -q html
+    # If we made it to here, all checks were successful. So let's build it to push. This is not as
+    # inefficient as it looks, since docker retrieves the previously generated images from the build cache
+    - name: Deploy to Docker Hub / Harbor
+      run: |
+        docker buildx build \
+          "${tag_arguments}" \
+          --build-arg VERSION="${VERSION}" \
+          --build-arg DATE="${DATE}" \
+          --build-arg REVISION="${REVISION}" \
+          --platform linux/amd64,linux/arm64 \
+          --push \
+          .
+    # We're running under the same condition of main / maintenance
+    # We have all dependencies presents, therefore doesn't justify another job
+    - name: Deploy to Artifactory
+      uses: ./.github/actions/run-maven
+      with:
+        parameters: deploy -Dskip.fe.build -DskipTests -Dskip.docker
+    - name: Docker log dump
+      uses: ./.github/actions/docker-logs
+      if: always()
+      with:
+        archive_name: deploy-artifacts-docker

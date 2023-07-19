@@ -1,0 +1,12 @@
+self-hosted-runner:
+  # Labels of self-hosted runner in array of strings.
+  labels:
+  - gcp-core-2-default
+  - gcp-core-4-default
+  - gcp-core-8-default
+  - gcp-core-16-default
+  - gcp-core-32-default
+# Configuration variables in array of strings defined in your repository or
+# organization. `null` means disabling configuration variables check.
+# Empty array means no configuration variable is allowed.
+config-variables: null
