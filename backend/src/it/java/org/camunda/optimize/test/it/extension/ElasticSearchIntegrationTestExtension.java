@@ -185,7 +185,11 @@ public class ElasticSearchIntegrationTestExtension implements BeforeEachCallback
 
   @Override
   public void beforeEach(final ExtensionContext extensionContext) {
-    before();
+    if (haveToClean) {
+      log.info("Cleaning elasticsearch...");
+      this.cleanAndVerify();
+      log.info("All documents have been wiped out! Elasticsearch has successfully been cleaned!");
+    }
   }
 
   @Override
@@ -196,14 +200,6 @@ public class ElasticSearchIntegrationTestExtension implements BeforeEachCallback
       mockServerClient.reset();
       log.info("No longer using ES MockServer");
       initEsClient();
-    }
-  }
-
-  private void before() {
-    if (haveToClean) {
-      log.info("Cleaning elasticsearch...");
-      this.cleanAndVerify();
-      log.info("All documents have been wiped out! Elasticsearch has successfully been cleaned!");
     }
   }
 
