@@ -17,6 +17,8 @@ import java.util.stream.Collectors;
 
 public class QueryValidator<T> {
 
+  public static final int MAX_QUERY_SIZE = 1000;
+
   public interface CustomQueryValidator<T> {
     void validate(Query<T> query) throws ValidationException;
   }
@@ -47,8 +49,8 @@ public class QueryValidator<T> {
 
   protected void validatePaging(final Query<T> query) {
     final int size = query.getSize();
-    if (size <= 0 || size > 1_000) {
-      throw new ClientException("size should be greater than zero and lesser than 1_000");
+    if (size <= 0 || size > MAX_QUERY_SIZE) {
+      throw new ClientException("size should be greater than zero and less than " + MAX_QUERY_SIZE);
     }
     final Object[] searchAfter = query.getSearchAfter();
     if (searchAfter != null && searchAfter.length == 0) {

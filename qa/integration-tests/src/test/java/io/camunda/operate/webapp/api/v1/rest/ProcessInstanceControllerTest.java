@@ -22,14 +22,9 @@ import io.camunda.operate.util.apps.nobeans.TestApplicationWithNoBeans;
 import io.camunda.operate.webapp.api.v1.dao.FlowNodeStatisticsDao;
 import io.camunda.operate.webapp.api.v1.dao.ProcessInstanceDao;
 import io.camunda.operate.webapp.api.v1.dao.SequenceFlowDao;
-import io.camunda.operate.webapp.api.v1.entities.ChangeStatus;
-import io.camunda.operate.webapp.api.v1.entities.FlowNodeStatistics;
-import io.camunda.operate.webapp.api.v1.entities.ProcessInstance;
-import io.camunda.operate.webapp.api.v1.entities.Query;
+import io.camunda.operate.webapp.api.v1.entities.*;
 import io.camunda.operate.webapp.api.v1.entities.Query.Sort;
 import io.camunda.operate.webapp.api.v1.entities.Query.Sort.Order;
-import io.camunda.operate.webapp.api.v1.entities.Results;
-import io.camunda.operate.webapp.api.v1.entities.SequenceFlow;
 import io.camunda.operate.webapp.api.v1.exceptions.ResourceNotFoundException;
 import io.camunda.operate.webapp.api.v1.exceptions.ServerException;
 import org.junit.Before;
@@ -186,7 +181,8 @@ public class ProcessInstanceControllerTest {
     final Long processInstanceKey = 123L;
     // given
     Results<SequenceFlow> results = new Results<>();
-    when(sequenceFlowDao.search(new Query<SequenceFlow>().setFilter(new SequenceFlow().setProcessInstanceKey(processInstanceKey)))).thenReturn(results);
+    when(sequenceFlowDao.search(new Query<SequenceFlow>().setFilter(new SequenceFlow().setProcessInstanceKey(processInstanceKey)).setSize(QueryValidator.MAX_QUERY_SIZE)))
+        .thenReturn(results);
     // then
     assertGetWithSucceed(String.format("%s/%s/sequence-flows", URI, processInstanceKey)).andExpect(content().string(expectedJSONContent));
   }
@@ -198,7 +194,8 @@ public class ProcessInstanceControllerTest {
     // given
     Results<SequenceFlow> results = new Results<>();
     results.getItems().addAll(Arrays.asList(new SequenceFlow().setActivityId("SF1"), new SequenceFlow().setActivityId("SF2")));
-    when(sequenceFlowDao.search(new Query<SequenceFlow>().setFilter(new SequenceFlow().setProcessInstanceKey(processInstanceKey)))).thenReturn(results);
+    when(sequenceFlowDao.search(new Query<SequenceFlow>().setFilter(new SequenceFlow().setProcessInstanceKey(processInstanceKey)).setSize(QueryValidator.MAX_QUERY_SIZE)))
+        .thenReturn(results);
     // then
     assertGetWithSucceed(String.format("%s/%s/sequence-flows", URI, processInstanceKey)).andExpect(content().string(expectedJSONContent));
   }
