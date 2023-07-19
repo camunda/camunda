@@ -14,8 +14,6 @@ def static CAMBPM_DOCKER_IMAGE(String cambpmVersion) {
   return "registry.camunda.cloud/cambpm-ee/camunda-bpm-platform-ee:${cambpmVersion}"
 }
 
-CAMBPM_LATEST_VERSION_POM_PROPERTY = "camunda.engine.version"
-
 static String dataGenerationAgent(postgresVersion = '9.6-alpine', cambpmVersion) {
   return """
 metadata:
