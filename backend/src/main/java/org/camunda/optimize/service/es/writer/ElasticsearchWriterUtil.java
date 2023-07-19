@@ -317,13 +317,13 @@ public class ElasticsearchWriterUtil {
         BulkResponse bulkResponse = esClient.bulk(bulkRequest);
         if (bulkResponse.hasFailures()) {
           if (containsNestedDocumentLimitErrorMessage(bulkResponse)) {
-            log.warn("There were failures while performing bulk on {} due to the nested document limit being reached." +
-                       " Removing failed items and retrying", itemName);
             final Set<String> failedItemIds = Arrays.stream(bulkResponse.getItems())
               .filter(BulkItemResponse::isFailed)
               .filter(responseItem -> responseItem.getFailureMessage().contains(NESTED_DOC_LIMIT_MESSAGE))
               .map(BulkItemResponse::getId)
               .collect(Collectors.toSet());
+            log.warn("There were failures while performing bulk on {} due to the nested document limit being reached." +
+                       " Removing {} failed items and retrying", itemName, failedItemIds.size());
             bulkRequest.requests().removeIf(request -> failedItemIds.contains(request.id()));
             if (!bulkRequest.requests().isEmpty()) {
               doBulkRequestWithNestedDocHandling(esClient, bulkRequest, itemName);
