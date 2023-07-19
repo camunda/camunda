@@ -117,7 +117,7 @@ public abstract class AbstractImportEndpointFailureIT {
     final HttpRequest importFetcherEndpointMatcher = request()
       .withPath(".*" + endpoint)
       .withMethod(GET);
-    final ClientAndServer engineMockServer = useAndGetEngineMockServer();
+    final ClientAndServer engineMockServer = useAndGetMockServerForEngine(engineIntegrationExtension.getEngineName());
 
     mockResp.mock(importFetcherEndpointMatcher, Times.unlimited(), engineMockServer);
 
@@ -158,7 +158,7 @@ public abstract class AbstractImportEndpointFailureIT {
       });
   }
 
-  protected static ProcessInstanceEngineDto deployAndStartSimpleTwoUserTaskProcessWithVariables(
+  private static ProcessInstanceEngineDto deployAndStartSimpleTwoUserTaskProcessWithVariables(
     final Map<String, Object> variables) {
     // @formatter:off
     BpmnModelInstance processModel = Bpmn.createExecutableProcess("aProcess")
@@ -173,32 +173,17 @@ public abstract class AbstractImportEndpointFailureIT {
     return engineIntegrationExtension.deployAndStartProcessWithVariables(processModel, variables);
   }
 
-  protected ClientAndServer getAndUseEngineMockServer() {
-    return getAndUseMockServerForEngine(engineIntegrationExtension.getEngineName());
-  }
-
-  protected ClientAndServer getAndUseMockServerForEngine(String engineName) {
-    String mockServerUrl = "http://" + MOCKSERVER_HOST + ":" +
-      IntegrationTestConfigurationUtil.getEngineMockServerPort() + "/engine-rest";
-    embeddedOptimizeExtension.configureEngineRestEndpointForEngineWithName(engineName, mockServerUrl);
-    return engineIntegrationExtension.useEngineMockServer();
-  }
-
   protected static Stream<ErrorResponseMock> engineErrors() {
     return MockServerUtil.engineMockedErrorResponses();
   }
 
-  protected static void assertDocumentCountInES(final String elasticsearchIndex,
-                                                final long count) {
+  private static void assertDocumentCountInES(final String elasticsearchIndex,
+                                              final long count) {
     final Integer docCount = elasticSearchIntegrationTestExtension.getDocumentCountOf(elasticsearchIndex);
     assertThat(docCount.longValue()).isEqualTo(count);
   }
 
-  protected ClientAndServer useAndGetEngineMockServer() {
-    return useAndGetMockServerForEngine(engineIntegrationExtension.getEngineName());
-  }
-
-  protected ClientAndServer useAndGetMockServerForEngine(String engineName) {
+  private ClientAndServer useAndGetMockServerForEngine(String engineName) {
     String mockServerUrl = "http://" + MOCKSERVER_HOST + ":" +
       IntegrationTestConfigurationUtil.getEngineMockServerPort() + "/engine-rest";
     embeddedOptimizeExtension.configureEngineRestEndpointForEngineWithName(engineName, mockServerUrl);
