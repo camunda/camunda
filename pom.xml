@@ -139,13 +139,6 @@
     </profile>
 
     <profile>
-      <id>engine-7.17</id>
-      <properties>
-        <camunda.engine.version>7.17.0</camunda.engine.version>
-      </properties>
-    </profile>
-
-    <profile>
       <id>release</id>
       <properties>
         <skip.docker>true</skip.docker>

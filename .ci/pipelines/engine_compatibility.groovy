@@ -192,7 +192,6 @@ pipeline {
         setBuildEnvVars()
         setCamBpmSnapshotVersion()
         script {
-          env.CAMBPM_7_17_VERSION = getCamBpmVersion('engine-7.17')
           env.CAMBPM_7_18_VERSION = getCamBpmVersion('engine-7.18')
           env.CAMBPM_7_19_VERSION = getCamBpmVersion('engine-7.19')
           env.ES8_VERSION = '8.7.0'
@@ -286,7 +285,7 @@ pipeline {
               cloud 'optimize-ci'
               label "optimize-ci-build_719ebpimp_${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(10)}-${env.BUILD_ID}"
               defaultContainer 'jnlp'
-              yaml integrationTestPodSpec(env.CAMBPM_7_18_VERSION, env.ES8_VERSION)
+              yaml integrationTestPodSpec(env.CAMBPM_7_19_VERSION, env.ES8_VERSION)
             }
           }
           environment {
@@ -312,7 +311,7 @@ pipeline {
               cloud 'optimize-ci'
               label "optimize-ci-build_719repev_${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(10)}-${env.BUILD_ID}"
               defaultContainer 'jnlp'
-              yaml integrationTestPodSpec(env.CAMBPM_7_18_VERSION, env.ES8_VERSION)
+              yaml integrationTestPodSpec(env.CAMBPM_7_19_VERSION, env.ES8_VERSION)
             }
           }
           environment {
@@ -338,7 +337,7 @@ pipeline {
               cloud 'optimize-ci'
               label "optimize-ci-build_719it_${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(10)}-${env.BUILD_ID}"
               defaultContainer 'jnlp'
-              yaml integrationTestPodSpec(env.CAMBPM_7_18_VERSION,  env.ES8_VERSION)
+              yaml integrationTestPodSpec(env.CAMBPM_7_19_VERSION,  env.ES8_VERSION)
             }
           }
           environment {
@@ -364,7 +363,7 @@ pipeline {
               cloud 'optimize-ci'
               label "optimize-ci-build_snapebpimport_${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(10)}-${env.BUILD_ID}"
               defaultContainer 'jnlp'
-              yaml integrationTestPodSpec(env.CAMBPM_7_18_VERSION, env.ES8_VERSION)
+              yaml integrationTestPodSpec(env.CAMBPM_SNAPSHOT_VERSION, env.ES8_VERSION)
             }
           }
           environment {
@@ -390,7 +389,7 @@ pipeline {
               cloud 'optimize-ci'
               label "optimize-ci-build_snaprepev_${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(10)}-${env.BUILD_ID}"
               defaultContainer 'jnlp'
-              yaml integrationTestPodSpec(env.CAMBPM_7_18_VERSION, env.ES8_VERSION)
+              yaml integrationTestPodSpec(env.CAMBPM_SNAPSHOT_VERSION, env.ES8_VERSION)
             }
           }
           environment {
@@ -416,7 +415,7 @@ pipeline {
               cloud 'optimize-ci'
               label "optimize-ci-build_snapit_${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(10)}-${env.BUILD_ID}"
               defaultContainer 'jnlp'
-              yaml integrationTestPodSpec(env.CAMBPM_7_18_VERSION, env.ES8_VERSION)
+              yaml integrationTestPodSpec(env.CAMBPM_SNAPSHOT_VERSION, env.ES8_VERSION)
             }
           }
           environment {
