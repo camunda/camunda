@@ -97,7 +97,7 @@ public class DecisionInstanceFetcher extends RetryBackoffEngineEntityFetcher {
       .queryParam(MAX_RESULTS_TO_RETURN, pageSize)
       .request(MediaType.APPLICATION_JSON)
       .acceptEncoding(UTF8)
-      .get(new GenericType<List<HistoricDecisionInstanceDto>>() {});
+      .get(new GenericType<>() {});
     // @formatter:on
   }
 
@@ -110,7 +110,7 @@ public class DecisionInstanceFetcher extends RetryBackoffEngineEntityFetcher {
       .queryParam(EVALUATED_AT, dateTimeFormatter.format(endTimeOfLastInstance))
       .request(MediaType.APPLICATION_JSON)
       .acceptEncoding(UTF8)
-      .get(new GenericType<List<HistoricDecisionInstanceDto>>() {});
+      .get(new GenericType<>() {});
     // @formatter:on
   }
 }

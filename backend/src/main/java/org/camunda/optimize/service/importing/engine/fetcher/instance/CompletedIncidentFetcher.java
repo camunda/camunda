@@ -87,7 +87,7 @@ public class CompletedIncidentFetcher
       .queryParam(MAX_RESULTS_TO_RETURN, pageSize)
       .request(MediaType.APPLICATION_JSON)
       .acceptEncoding(UTF8)
-      .get(new GenericType<List<HistoricIncidentEngineDto>>() {
+      .get(new GenericType<>() {
       });
   }
 
@@ -99,7 +99,7 @@ public class CompletedIncidentFetcher
       .queryParam(MAX_RESULTS_TO_RETURN, configurationService.getEngineImportIncidentMaxPageSize())
       .request(MediaType.APPLICATION_JSON)
       .acceptEncoding(UTF8)
-      .get(new GenericType<List<HistoricIncidentEngineDto>>() {
+      .get(new GenericType<>() {
       });
   }
 

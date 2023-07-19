@@ -87,7 +87,7 @@ public class RunningActivityInstanceFetcher extends RetryBackoffEngineEntityFetc
       .queryParam(MAX_RESULTS_TO_RETURN, pageSize)
       .request(MediaType.APPLICATION_JSON)
       .acceptEncoding(UTF8)
-      .get(new GenericType<List<HistoricActivityInstanceEngineDto>>() {
+      .get(new GenericType<>() {
       });
   }
 
@@ -99,7 +99,7 @@ public class RunningActivityInstanceFetcher extends RetryBackoffEngineEntityFetc
       .queryParam(MAX_RESULTS_TO_RETURN, configurationService.getEngineImportActivityInstanceMaxPageSize())
       .request(MediaType.APPLICATION_JSON)
       .acceptEncoding(UTF8)
-      .get(new GenericType<List<HistoricActivityInstanceEngineDto>>() {
+      .get(new GenericType<>() {
       });
   }
 

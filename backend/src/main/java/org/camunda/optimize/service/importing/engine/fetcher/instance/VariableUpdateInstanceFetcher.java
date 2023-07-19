@@ -31,7 +31,7 @@ public class VariableUpdateInstanceFetcher extends RetryBackoffEngineEntityFetch
   private static final String PARAM_EXCLUDE_OBJECT_VALUES = "excludeObjectValues";
   // @formatter:off
   private static final GenericType<List<HistoricVariableUpdateInstanceDto>> RESULT_TYPE_VARIABLE_LIST =
-    new GenericType<List<HistoricVariableUpdateInstanceDto>>() {};
+    new GenericType<>() {};
   // @formatter:on
 
   private DateTimeFormatter dateTimeFormatter;

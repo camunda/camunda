@@ -87,7 +87,7 @@ public class OpenIncidentFetcher extends RetryBackoffEngineEntityFetcher {
       .queryParam(MAX_RESULTS_TO_RETURN, pageSize)
       .request(MediaType.APPLICATION_JSON)
       .acceptEncoding(UTF8)
-      .get(new GenericType<List<HistoricIncidentEngineDto>>() {
+      .get(new GenericType<>() {
       });
   }
 
@@ -98,7 +98,7 @@ public class OpenIncidentFetcher extends RetryBackoffEngineEntityFetcher {
       .queryParam(CREATED_AT, dateTimeFormatter.format(createdAtTimestamp))
       .request(MediaType.APPLICATION_JSON)
       .acceptEncoding(UTF8)
-      .get(new GenericType<List<HistoricIncidentEngineDto>>() {
+      .get(new GenericType<>() {
       });
   }
 

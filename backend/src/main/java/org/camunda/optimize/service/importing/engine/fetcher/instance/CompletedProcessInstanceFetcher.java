@@ -87,7 +87,7 @@ public class CompletedProcessInstanceFetcher extends
       .queryParam(MAX_RESULTS_TO_RETURN, pageSize)
       .request(MediaType.APPLICATION_JSON)
       .acceptEncoding(UTF8)
-      .get(new GenericType<List<HistoricProcessInstanceDto>>() {
+      .get(new GenericType<>() {
       });
   }
 
@@ -99,7 +99,7 @@ public class CompletedProcessInstanceFetcher extends
       .queryParam(MAX_RESULTS_TO_RETURN, configurationService.getEngineImportProcessInstanceMaxPageSize())
       .request(MediaType.APPLICATION_JSON)
       .acceptEncoding(UTF8)
-      .get(new GenericType<List<HistoricProcessInstanceDto>>() {
+      .get(new GenericType<>() {
       });
   }
 }

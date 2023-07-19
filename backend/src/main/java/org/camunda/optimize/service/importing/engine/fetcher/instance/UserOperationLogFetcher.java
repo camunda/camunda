@@ -92,7 +92,7 @@ public class UserOperationLogFetcher extends RetryBackoffEngineEntityFetcher {
       .queryParam(MAX_RESULTS_TO_RETURN, pageSize)
       .request(MediaType.APPLICATION_JSON)
       .acceptEncoding(UTF8)
-      .get(new GenericType<List<HistoricUserOperationLogDto>>() {});
+      .get(new GenericType<>() {});
     // @formatter:on
   }
 
@@ -104,7 +104,7 @@ public class UserOperationLogFetcher extends RetryBackoffEngineEntityFetcher {
       .queryParam(MAX_RESULTS_TO_RETURN, configurationService.getEngineImportUserOperationLogsMaxPageSize())
       .request(MediaType.APPLICATION_JSON)
       .acceptEncoding(UTF8)
-      .get(new GenericType<List<HistoricUserOperationLogDto>>() {});
+      .get(new GenericType<>() {});
     // @formatter:on
   }
 

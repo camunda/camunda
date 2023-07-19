@@ -93,7 +93,7 @@ public class CompletedUserTaskInstanceFetcher extends RetryBackoffEngineEntityFe
       .queryParam(MAX_RESULTS_TO_RETURN, pageSize)
       .request(MediaType.APPLICATION_JSON)
       .acceptEncoding(UTF8)
-      .get(new GenericType<List<HistoricUserTaskInstanceDto>>() {});
+      .get(new GenericType<>() {});
     // @formatter:on
   }
 
@@ -105,7 +105,7 @@ public class CompletedUserTaskInstanceFetcher extends RetryBackoffEngineEntityFe
       .queryParam(MAX_RESULTS_TO_RETURN, configurationService.getEngineImportUserTaskInstanceMaxPageSize())
       .request(MediaType.APPLICATION_JSON)
       .acceptEncoding(UTF8)
-      .get(new GenericType<List<HistoricUserTaskInstanceDto>>() {});
+      .get(new GenericType<>() {});
     // @formatter:on
   }
 
