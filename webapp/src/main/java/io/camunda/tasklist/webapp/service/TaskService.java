@@ -14,6 +14,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.tasklist.Metrics;
 import io.camunda.tasklist.entities.TaskEntity;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
+import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.webapp.es.TaskReaderWriter;
 import io.camunda.tasklist.webapp.es.TaskValidator;
 import io.camunda.tasklist.webapp.es.contract.UsageMetricsContract;
@@ -52,6 +53,7 @@ public class TaskService {
   @Autowired private UsageMetricsContract metricsContract;
   @Autowired private AssigneeMigrator assigneeMigrator;
   @Autowired private TaskValidator taskValidator;
+  @Autowired private TasklistProperties tasklistProperties;
 
   public List<TaskDTO> getTasks(TaskQueryDTO query, List<String> fieldNames) {
     if (countNonNullObjects(
@@ -168,10 +170,22 @@ public class TaskService {
   }
 
   private String[] getTaskMetricLabels(final TaskEntity task) {
+    final String keyUserId;
+
+    if (getCurrentUser().isApiUser()) {
+      if (task.getAssignee() != null) {
+        keyUserId = task.getAssignee();
+      } else {
+        keyUserId = UserReader.DEFAULT_USER;
+      }
+    } else {
+      keyUserId = userReader.getCurrentUserId();
+    }
+
     return new String[] {
       TAG_KEY_BPMN_PROCESS_ID, task.getBpmnProcessId(),
       TAG_KEY_FLOW_NODE_ID, task.getFlowNodeBpmnId(),
-      TAG_KEY_USER_ID, userReader.getCurrentUserId(),
+      TAG_KEY_USER_ID, keyUserId,
       TAG_KEY_ORGANIZATION_ID, userReader.getCurrentOrganizationId()
     };
   }
