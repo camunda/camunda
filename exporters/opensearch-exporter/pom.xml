@@ -174,12 +174,6 @@
       <artifactId>agrona</artifactId>
       <scope>test</scope>
     </dependency>
-
-    <dependency>
-      <groupId>software.amazon.awssdk</groupId>
-      <artifactId>regions</artifactId>
-      <scope>test</scope>
-    </dependency>
   </dependencies>
 
   <build>

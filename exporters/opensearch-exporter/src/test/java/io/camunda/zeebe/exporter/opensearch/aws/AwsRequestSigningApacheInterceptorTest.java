@@ -38,11 +38,10 @@ import software.amazon.awssdk.auth.credentials.AwsCredentials;
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 import software.amazon.awssdk.auth.signer.Aws4Signer;
-import software.amazon.awssdk.regions.Region;
 
 class AwsRequestSigningApacheInterceptorTest {
   private static final String AWS_SERVICE_NAME = "servicename";
-  private static final Region AWS_REGION = Region.EU_WEST_1;
+  private static final String AWS_REGION = "eu-west-1";
   private static final String AWS_SECRET_ACCESS_KEY = "awsSecretAcessKey";
   private static final String AWS_ACCESS_KEY_ID = "awsAccessKeyId";
   private static final HttpCoreContext CONTEXT = new HttpCoreContext();
@@ -134,7 +133,7 @@ class AwsRequestSigningApacheInterceptorTest {
             + "/"
             + currentDate
             + "/"
-            + AWS_REGION.id()
+            + AWS_REGION
             + "/"
             + AWS_SERVICE_NAME
             + "/aws4_request";
