@@ -3,6 +3,15 @@
     "extension": "revapi.filter",
     "id": "filter",
     "configuration": {
+      "elements": {
+        "exclude": [
+          {
+            "justification": "The management protocol is not public and is allowed to break",
+            "matcher": "java-package",
+            "match": "io.camunda.zeebe.protocol.management"
+          }
+        ]
+      },
       "archives": {
         "justification": "Ignore everything not included in the module itself",
         "include": [
@@ -280,13 +289,6 @@
           "old": "method io.camunda.zeebe.protocol.record.RecordValue io.camunda.zeebe.protocol.record.value.ImmutableCommandDistributionRecordValue::getCommandValue()",
           "new": "method io.camunda.zeebe.protocol.record.ImmutableRecordValue io.camunda.zeebe.protocol.record.value.ImmutableCommandDistributionRecordValue::getCommandValue()",
           "justification": "This is a result of adding the Immutable annotation on RecordValue. This doesn't break any backwards compatibility."
-        }
-      ,{
-          "ignore": true,
-          "code": "java.field.constantValueChanged",
-          "old": "field io.camunda.zeebe.protocol.management.AdminRequestDecoder.BLOCK_LENGTH",
-          "new": "field io.camunda.zeebe.protocol.management.AdminRequestDecoder.BLOCK_LENGTH",
-          "justification": "Added a new type to ban an instance"
         }
       ]
     }
