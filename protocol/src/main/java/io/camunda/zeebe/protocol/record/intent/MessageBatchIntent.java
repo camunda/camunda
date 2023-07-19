@@ -16,8 +16,7 @@
 package io.camunda.zeebe.protocol.record.intent;
 
 public enum MessageBatchIntent implements Intent {
-  EXPIRE((short) 0),
-  EXPIRED((short) 1);
+  EXPIRE((short) 0);
   private final short value;
 
   MessageBatchIntent(final short value) {
@@ -33,8 +32,6 @@ public enum MessageBatchIntent implements Intent {
     switch (value) {
       case 0:
         return EXPIRE;
-      case 1:
-        return EXPIRED;
       default:
         return Intent.UNKNOWN;
     }
