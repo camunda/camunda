@@ -27,7 +27,7 @@ import {
 } from './OptionalFiltersFormGroup';
 import {isEqual} from 'lodash';
 import {useState} from 'react';
-import {CarbonLocations} from 'modules/carbonRoutes';
+import {Locations} from 'modules/Routes';
 import {FiltersPanel} from 'modules/components/Carbon/FiltersPanel';
 
 const initialValues: DecisionInstanceFilters = {
@@ -59,7 +59,7 @@ const Filters: React.FC = observer(() => {
             localStorageKey="isDecisionsFiltersCollapsed"
             onResetClick={() => {
               form.reset();
-              navigate(CarbonLocations.decisions(initialValues));
+              navigate(Locations.decisions(initialValues));
               setVisibleFilters([]);
             }}
             isResetButtonDisabled={

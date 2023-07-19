@@ -9,15 +9,15 @@ import {Outlet, useMatch} from 'react-router-dom';
 import {AppHeader} from './AppHeader';
 import {Footer, Grid, PageContent} from './styled';
 import {Copyright} from 'modules/components/Copyright';
-import {Paths} from 'modules/routes';
+import {LegacyPaths} from 'modules/legacyRoutes';
 import {modificationsStore} from 'modules/stores/modifications';
 import {observer} from 'mobx-react';
 import {OperationsPanel} from 'modules/components/OperationsPanel';
 
 const Layout: React.FC = observer(() => {
-  const instancesMatch = useMatch(Paths.processes());
-  const decisionsMatch = useMatch(Paths.decisions());
-  const dashboardMatch = useMatch(Paths.dashboard());
+  const instancesMatch = useMatch(LegacyPaths.processes());
+  const decisionsMatch = useMatch(LegacyPaths.decisions());
+  const dashboardMatch = useMatch(LegacyPaths.dashboard());
   const showFooter =
     instancesMatch === null &&
     decisionsMatch === null &&

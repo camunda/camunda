@@ -9,7 +9,7 @@ import React from 'react';
 import {processInstancesByNameStore} from 'modules/stores/processInstancesByName';
 import {observer} from 'mobx-react';
 import {PartiallyExpandableDataTable} from '../PartiallyExpandableDataTable';
-import {CarbonLocations} from 'modules/carbonRoutes';
+import {Locations} from 'modules/Routes';
 import {panelStatesStore} from 'modules/stores/panelStates';
 import {tracking} from 'modules/tracking';
 import {getAccordionTitle} from './utils/getAccordionTitle';
@@ -91,7 +91,7 @@ const InstancesByProcess: React.FC = observer(() => {
           id: bpmnProcessId,
           instance: (
             <LinkWrapper
-              to={CarbonLocations.processes({
+              to={Locations.processes({
                 process: bpmnProcessId,
                 version: version.toString(),
                 active: true,

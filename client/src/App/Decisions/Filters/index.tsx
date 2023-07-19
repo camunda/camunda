@@ -6,7 +6,7 @@
  */
 
 import {useEffect, useState} from 'react';
-import {Locations} from 'modules/routes';
+import {LegacyLocations} from 'modules/legacyRoutes';
 import {
   DecisionInstanceFilterField,
   DecisionInstanceFilters,
@@ -280,7 +280,7 @@ const Filters: React.FC = observer(() => {
                 type="reset"
                 onClick={() => {
                   form.reset();
-                  navigate(Locations.decisions(initialValues));
+                  navigate(LegacyLocations.decisions(initialValues));
                   setVisibleFilters([]);
                 }}
               >

@@ -19,7 +19,7 @@ import {validateCheckedState} from './utils/validateCheckedState';
 import {processesPage as ProcessesPage} from './PageModels/Processes';
 
 fixture('Processes')
-  .page(config.endpoint)
+  .page(config.legacyEndpoint)
   .before(async (ctx) => {
     ctx.initialData = await setup();
     await wait();
@@ -139,7 +139,7 @@ test('Select flow node in diagram', async (t) => {
     )
     .ok()
     .expect(await getPathname())
-    .eql('/processes')
+    .eql('/legacy/processes')
     .expect(await getSearch())
     .eql(
       convertToQueryString({
@@ -166,7 +166,7 @@ test('Select flow node in diagram', async (t) => {
     .expect(within(screen.queryByTestId('data-list')).getAllByRole('row').count)
     .eql(1)
     .expect(await getPathname())
-    .eql('/processes')
+    .eql('/legacy/processes')
     .expect(await getSearch())
     .eql(
       convertToQueryString({
@@ -182,7 +182,7 @@ test('Select flow node in diagram', async (t) => {
 
 test('Wait for process creation', async (t) => {
   await t.navigateTo(
-    '/processes?active=true&incidents=true&process=testProcess&version=1',
+    '/legacy/processes?active=true&incidents=true&process=testProcess&version=1',
   );
 
   await t.expect(screen.queryByTestId('table-skeleton').exists).ok();

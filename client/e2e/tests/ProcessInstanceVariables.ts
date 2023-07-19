@@ -16,7 +16,7 @@ import {processesPage as ProcessesPage} from './PageModels/Processes';
 import {processInstancePage as ProcessInstancePage} from './PageModels/ProcessInstance';
 
 fixture('Process Instance Variables')
-  .page(config.endpoint)
+  .page(config.legacyEndpoint)
   .before(async (ctx) => {
     ctx.initialData = await setup();
     await wait();
@@ -31,7 +31,7 @@ test('Edit variables', async (t) => {
     initialData: {instance},
   } = t.fixtureCtx;
 
-  await t.navigateTo(`/processes/${instance.processInstanceKey}`);
+  await t.navigateTo(`/legacy/processes/${instance.processInstanceKey}`);
 
   await t
     .expect(ProcessInstancePage.addVariableButton.hasAttribute('disabled'))
@@ -69,7 +69,7 @@ test('Edit variables', async (t) => {
 
   // refresh the page and see the variable is still there.
   await t
-    .navigateTo(`/processes/${instance.processInstanceKey}`)
+    .navigateTo(`/legacy/processes/${instance.processInstanceKey}`)
     .expect(Selector('[data-testid="testData"]').exists)
     .ok();
 });
@@ -79,7 +79,7 @@ test('Add variables', async (t) => {
     initialData: {instance},
   } = t.fixtureCtx;
 
-  await t.navigateTo(`/processes/${instance.processInstanceKey}`);
+  await t.navigateTo(`/legacy/processes/${instance.processInstanceKey}`);
 
   await t
     .expect(ProcessInstancePage.addVariableButton.hasAttribute('disabled'))
@@ -116,7 +116,7 @@ test('Add variables', async (t) => {
 
   // refresh the page and see the variable is still there.
   await t
-    .navigateTo(`/processes/${instance.processInstanceKey}`)
+    .navigateTo(`legacy/processes/${instance.processInstanceKey}`)
     .expect(screen.queryByRole('cell', {name: 'secondTestKey'}).exists)
     .ok()
     .expect(screen.queryByRole('cell', {name: '"secondTestValue"'}).exists)
@@ -164,7 +164,7 @@ test('Infinite scrolling', async (t) => {
   } = t.fixtureCtx;
 
   await t.navigateTo(
-    `/processes/${instanceWithManyVariables.processInstanceKey}`,
+    `legacy/processes/${instanceWithManyVariables.processInstanceKey}`,
   );
 
   await t.expect(screen.queryByTestId('variables-list').exists).ok();

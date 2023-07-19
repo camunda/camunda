@@ -46,12 +46,12 @@ const test = base.extend<{}, {workerStorageState: string}>({
       }
       // Important: make sure we authenticate in a clean environment by unsetting storage state.
       const page = await browser.newPage({storageState: undefined});
-      await page.goto(`${baseURL}/carbon/login`);
+      await page.goto(`${baseURL}/login`);
       await page.getByLabel('Username').fill('demo');
       await page.getByLabel('Password').fill('demo');
       await page.getByRole('button', {name: 'Login'}).click();
 
-      await page.waitForURL(`${baseURL}/carbon`);
+      await page.waitForURL(`${baseURL}`);
 
       await page.context().storageState({path: authFile});
       await page.close();

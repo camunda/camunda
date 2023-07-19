@@ -12,6 +12,7 @@ import {modificationsStore} from 'modules/stores/modifications';
 import {processInstancesStore} from 'modules/stores/processInstances';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {LocationLog} from 'modules/utils/LocationLog';
+import {LegacyPaths} from 'modules/legacyRoutes';
 
 const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
   useEffect(() => {
@@ -23,10 +24,10 @@ const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
 
   return (
     <ThemeProvider>
-      <MemoryRouter initialEntries={['/processes']}>
+      <MemoryRouter initialEntries={[LegacyPaths.processes()]}>
         <Routes>
-          <Route path="/processes/:processInstanceId" element={children} />
-          <Route path="/processes" element={children} />
+          <Route path={LegacyPaths.processInstance()} element={children} />
+          <Route path={LegacyPaths.processes()} element={children} />
         </Routes>
         <LocationLog />
       </MemoryRouter>

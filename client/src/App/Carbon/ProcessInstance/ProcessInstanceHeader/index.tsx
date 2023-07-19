@@ -14,7 +14,7 @@ import {processInstanceDetailsDiagramStore} from 'modules/stores/processInstance
 import {variablesStore} from 'modules/stores/variables';
 import {useNotifications} from 'modules/notifications';
 import {Link} from 'modules/components/Carbon/Link';
-import {CarbonLocations, CarbonPaths} from 'modules/carbonRoutes';
+import {Locations, Paths} from 'modules/Routes';
 import {Restricted} from 'modules/components/Restricted';
 import {panelStatesStore} from 'modules/stores/panelStates';
 import {modificationsStore} from 'modules/stores/modifications';
@@ -88,7 +88,7 @@ const ProcessInstanceHeader: React.FC = observer(() => {
         {
           content: (
             <Link
-              to={CarbonLocations.processes({
+              to={Locations.processes({
                 version: processVersion?.toString(),
                 process: bpmnProcessId,
                 active: true,
@@ -124,7 +124,7 @@ const ProcessInstanceHeader: React.FC = observer(() => {
             <>
               {parentInstanceId !== null ? (
                 <Link
-                  to={CarbonPaths.processInstance(parentInstanceId)}
+                  to={Paths.processInstance(parentInstanceId)}
                   title={`View parent instance ${parentInstanceId}`}
                   onClick={() => {
                     tracking.track({
@@ -146,7 +146,7 @@ const ProcessInstanceHeader: React.FC = observer(() => {
             <>
               {processInstanceDetailsDiagramStore.hasCalledProcessInstances ? (
                 <Link
-                  to={CarbonLocations.processes({
+                  to={Locations.processes({
                     parentInstanceId: id,
                     active: true,
                     incidents: true,

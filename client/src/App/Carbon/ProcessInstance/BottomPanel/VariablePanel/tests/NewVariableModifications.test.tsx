@@ -31,6 +31,7 @@ import {singleInstanceMetadata} from 'modules/mocks/metadata';
 import {mockFetchFlowNodeMetadata} from 'modules/mocks/api/processInstances/fetchFlowNodeMetaData';
 import {useEffect} from 'react';
 import {act} from 'react-dom/test-utils';
+import {Paths} from 'modules/Routes';
 
 const editNameFromTextfieldAndBlur = async (user: UserEvent, value: string) => {
   const [nameField] = screen.getAllByTestId('new-variable-name');
@@ -84,9 +85,9 @@ const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
 
   return (
     <ThemeProvider>
-      <MemoryRouter initialEntries={['/processes/1']}>
+      <MemoryRouter initialEntries={[Paths.processInstance('1')]}>
         <Routes>
-          <Route path="/processes/:processInstanceId" element={children} />
+          <Route path={Paths.processInstance()} element={children} />
         </Routes>
       </MemoryRouter>
     </ThemeProvider>

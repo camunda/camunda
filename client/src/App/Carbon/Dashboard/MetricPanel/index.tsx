@@ -9,7 +9,7 @@ import {useEffect} from 'react';
 import {observer} from 'mobx-react';
 import {Title, LabelContainer, Label, ErrorMessage} from './styled';
 import {statisticsStore} from 'modules/stores/statistics';
-import {CarbonLocations} from 'modules/carbonRoutes';
+import {Locations} from 'modules/Routes';
 import {panelStatesStore} from 'modules/stores/panelStates';
 import {tracking} from 'modules/tracking';
 import {useLocation} from 'react-router-dom';
@@ -47,7 +47,7 @@ const MetricPanel = observer(() => {
             link: 'dashboard-running-processes',
           });
         }}
-        to={CarbonLocations.processes(
+        to={Locations.processes(
           running === 0
             ? {
                 completed: true,
@@ -86,7 +86,7 @@ const MetricPanel = observer(() => {
               link: 'dashboard-processes-with-incidents',
             });
           }}
-          to={CarbonLocations.processes({
+          to={Locations.processes({
             incidents: true,
           })}
         >
@@ -101,7 +101,7 @@ const MetricPanel = observer(() => {
               link: 'dashboard-active-processes',
             });
           }}
-          to={CarbonLocations.processes({
+          to={Locations.processes({
             active: true,
           })}
         >

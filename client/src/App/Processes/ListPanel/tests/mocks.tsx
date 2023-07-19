@@ -14,8 +14,9 @@ import {processInstancesStore} from 'modules/stores/processInstances';
 import {panelStatesStore} from 'modules/stores/panelStates';
 import {authenticationStore} from 'modules/stores/authentication';
 import {processesStore} from 'modules/stores/processes';
+import {LegacyPaths} from 'modules/legacyRoutes';
 
-function createWrapper(initialPath: string = '/') {
+function createWrapper(initialPath: string = LegacyPaths.dashboard()) {
   const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
     useEffect(() => {
       return () => {
@@ -30,7 +31,9 @@ function createWrapper(initialPath: string = '/') {
         <MemoryRouter initialEntries={[initialPath]}>
           {children}
           <ListFooter />
-          <Link to="/processes?incidents=true&active=true&process=bigVarProcess">
+          <Link
+            to={`${LegacyPaths.processes()}?incidents=true&active=true&process=bigVarProcess`}
+          >
             go to big var
           </Link>
         </MemoryRouter>

@@ -12,6 +12,7 @@ import {mockGetUser} from 'modules/mocks/api/getUser';
 import {createUser} from 'modules/testUtils';
 import {Wrapper as BaseWrapper} from './mocks';
 import {useEffect} from 'react';
+import {LegacyPaths} from 'modules/legacyRoutes';
 
 const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
   useEffect(() => {
@@ -72,7 +73,7 @@ describe('App switcher', () => {
     ).toHaveAttribute('href', 'https://link-to-tasklist');
     expect(withinAppPanel.getByRole('link', {name: 'Operate'})).toHaveAttribute(
       'href',
-      '/',
+      LegacyPaths.dashboard(),
     );
     expect(
       withinAppPanel.getByRole('link', {name: 'Optimize'}),

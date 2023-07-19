@@ -23,15 +23,19 @@ import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {panelStatesStore} from 'modules/stores/panelStates';
 import {LocationLog} from 'modules/utils/LocationLog';
 import {mockFetchIncidentsByError} from 'modules/mocks/api/incidents/fetchIncidentsByError';
+import {LegacyPaths} from 'modules/legacyRoutes';
 
-function createWrapper(initialPath: string = '/') {
+function createWrapper(initialPath: string = LegacyPaths.dashboard()) {
   const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
     return (
       <ThemeProvider>
         <MemoryRouter initialEntries={[initialPath]}>
           <Routes>
-            <Route path="/processes" element={<div>Processes</div>} />
-            <Route path="/" element={children} />
+            <Route
+              path={LegacyPaths.processes()}
+              element={<div>Processes</div>}
+            />
+            <Route path={LegacyPaths.dashboard()} element={children} />
           </Routes>
           <LocationLog />
         </MemoryRouter>

@@ -23,5 +23,5 @@ fixture('Multi Instance Flow Node Selection')
     } = t.fixtureCtx;
 
     const processInstanceId = multiInstanceProcessInstance.processInstanceKey;
-    await t.navigateTo(`/processes/${processInstanceId}`);
+    await t.navigateTo(`/legacy/processes/${processInstanceId}`);
   });

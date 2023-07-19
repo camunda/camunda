@@ -18,10 +18,11 @@ import {LOGIN_ERROR, GENERIC_ERROR} from './constants';
 import {LocationLog} from 'modules/utils/LocationLog';
 import {authenticationStore} from 'modules/stores/authentication';
 import {mockLogin} from 'modules/mocks/api/login';
+import {Paths} from 'modules/Routes';
 
 function createWrapper(
-  initialPath: string = '/carbon/login',
-  referrer: To = {pathname: '/carbon/processes'},
+  initialPath: string = Paths.login(),
+  referrer: To = {pathname: Paths.processes()},
 ) {
   const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
     return (
@@ -29,7 +30,7 @@ function createWrapper(
         <MemoryRouter initialEntries={[initialPath]}>
           {children}
           <Link
-            to="/carbon/login"
+            to={Paths.login()}
             state={{
               referrer,
             }}
@@ -54,7 +55,7 @@ describe('<Login />', () => {
     mockLogin().withSuccess(null);
 
     const {user} = render(<Login />, {
-      wrapper: createWrapper('/carbon/login'),
+      wrapper: createWrapper(Paths.login()),
     });
 
     await user.type(screen.getByLabelText(/username/i), 'demo');
@@ -62,7 +63,7 @@ describe('<Login />', () => {
     await user.click(screen.getByRole('button', {name: 'Login'}));
 
     await waitFor(() =>
-      expect(screen.getByTestId('pathname')).toHaveTextContent(/^\/carbon$/),
+      expect(screen.getByTestId('pathname')).toHaveTextContent(/^\/$/),
     );
   });
 
@@ -92,7 +93,7 @@ describe('<Login />', () => {
     mockLogin().withSuccess(null);
 
     const {user} = render(<Login />, {
-      wrapper: createWrapper('/carbon/login'),
+      wrapper: createWrapper(Paths.login()),
     });
 
     await user.click(screen.getByText(/emulate auth check/i));
@@ -102,9 +103,7 @@ describe('<Login />', () => {
     await user.click(screen.getByRole('button', {name: 'Login'}));
 
     await waitFor(() =>
-      expect(screen.getByTestId('pathname')).toHaveTextContent(
-        /^\/carbon\/processes$/,
-      ),
+      expect(screen.getByTestId('pathname')).toHaveTextContent(/^\/processes$/),
     );
   });
 

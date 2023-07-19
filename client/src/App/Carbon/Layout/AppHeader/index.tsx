@@ -5,7 +5,7 @@
  * except in compliance with the proprietary license.
  */
 
-import {CarbonLocations, CarbonPaths} from 'modules/carbonRoutes';
+import {Locations, Paths} from 'modules/Routes';
 import {C3Navigation} from '@camunda/camunda-composite-components';
 import {Link} from 'react-router-dom';
 import {useCurrentPage} from '../useCurrentPage';
@@ -44,7 +44,7 @@ const AppHeader: React.FC = observer(() => {
         name: 'Operate',
         prefix: 'Camunda',
         routeProps: {
-          to: CarbonPaths.dashboard(),
+          to: Paths.dashboard(),
           onClick: () => {
             tracking.track({
               eventName: 'navigation',
@@ -62,7 +62,7 @@ const AppHeader: React.FC = observer(() => {
             label: 'Dashboard',
             isCurrentPage: currentPage === 'dashboard',
             routeProps: {
-              to: CarbonPaths.dashboard(),
+              to: Paths.dashboard(),
               onClick: () => {
                 tracking.track({
                   eventName: 'navigation',
@@ -77,7 +77,7 @@ const AppHeader: React.FC = observer(() => {
             label: 'Processes',
             isCurrentPage: currentPage === 'processes',
             routeProps: {
-              to: CarbonLocations.processes(),
+              to: Locations.processes(),
               state: {refreshContent: true, hideOptionalFilters: true},
               onClick: () => {
                 tracking.track({
@@ -93,7 +93,7 @@ const AppHeader: React.FC = observer(() => {
             label: 'Decisions',
             isCurrentPage: currentPage === 'decisions',
             routeProps: {
-              to: CarbonLocations.decisions(),
+              to: Locations.decisions(),
               state: {refreshContent: true, hideOptionalFilters: true},
               onClick: () => {
                 tracking.track({
@@ -151,9 +151,7 @@ const AppHeader: React.FC = observer(() => {
               target: '_blank',
               active: appName === 'operate',
               routeProps:
-                appName === 'operate'
-                  ? {to: CarbonPaths.dashboard()}
-                  : undefined,
+                appName === 'operate' ? {to: Paths.dashboard()} : undefined,
             }))
           : [],
         elementClicked: (app) => {

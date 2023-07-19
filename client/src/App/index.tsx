@@ -22,8 +22,8 @@ import {DecisionInstance} from './DecisionInstance';
 import GlobalStyles from './GlobalStyles';
 import {NetworkStatusWatcher} from './NetworkStatusWatcher';
 import {CommonUiContext} from 'modules/CommonUiContext';
-import {Paths} from 'modules/routes';
-import {CarbonPaths} from 'modules/carbonRoutes';
+import {LegacyPaths} from 'modules/legacyRoutes';
+import {Paths} from 'modules/Routes';
 import {RedirectDeprecatedRoutes} from './RedirectDeprecatedRoutes';
 import {AuthenticationCheck} from './AuthenticationCheck';
 import {SessionWatcher} from './SessionWatcher';
@@ -94,7 +94,7 @@ const App: React.FC = () => {
           <TrackPagination />
           <Routes>
             <Route
-              path={Paths.login()}
+              path={LegacyPaths.login()}
               element={
                 <>
                   <GlobalStyles />
@@ -102,51 +102,45 @@ const App: React.FC = () => {
                 </>
               }
             />
-            <Route path={CarbonPaths.login()} element={<CarbonLogin />} />
+            <Route path={Paths.login()} element={<CarbonLogin />} />
             <Route
-              path={Paths.dashboard()}
+              path={LegacyPaths.dashboard()}
               element={
-                <AuthenticationCheck redirectPath={Paths.login()}>
+                <AuthenticationCheck redirectPath={LegacyPaths.login()}>
                   <GlobalStyles />
                   <Layout />
                 </AuthenticationCheck>
               }
             >
               <Route index element={<Dashboard />} />
-              <Route path={Paths.processes()} element={<Processes />} />
+              <Route path={LegacyPaths.processes()} element={<Processes />} />
               <Route
-                path={Paths.processInstance()}
+                path={LegacyPaths.processInstance()}
                 element={<ProcessInstance />}
               />
-              <Route path={Paths.decisions()} element={<Decisions />} />
+              <Route path={LegacyPaths.decisions()} element={<Decisions />} />
               <Route
-                path={Paths.decisionInstance()}
+                path={LegacyPaths.decisionInstance()}
                 element={<DecisionInstance />}
               />
             </Route>
             <Route
-              path={CarbonPaths.dashboard()}
+              path={Paths.dashboard()}
               element={
-                <AuthenticationCheck redirectPath={CarbonPaths.login()}>
+                <AuthenticationCheck redirectPath={Paths.login()}>
                   <CarbonLayout />
                 </AuthenticationCheck>
               }
             >
               <Route index element={<CarbonDashboard />} />
+              <Route path={Paths.processes()} element={<CarbonProcesses />} />
               <Route
-                path={CarbonPaths.processes()}
-                element={<CarbonProcesses />}
-              />
-              <Route
-                path={CarbonPaths.processInstance()}
+                path={Paths.processInstance()}
                 element={<CarbonProcessInstance />}
               />
+              <Route path={Paths.decisions()} element={<CarbonDecisions />} />
               <Route
-                path={CarbonPaths.decisions()}
-                element={<CarbonDecisions />}
-              />
-              <Route
-                path={CarbonPaths.decisionInstance()}
+                path={Paths.decisionInstance()}
                 element={<CarbonDecisionInstance />}
               />
             </Route>

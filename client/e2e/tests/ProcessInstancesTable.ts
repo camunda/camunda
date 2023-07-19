@@ -14,7 +14,7 @@ import {displayOptionalFilter} from './utils/displayOptionalFilter';
 import {processesPage as ProcessesPage} from './PageModels/Processes';
 
 fixture('Process Instances Table')
-  .page(config.endpoint)
+  .page(config.legacyEndpoint)
   .before(async (ctx) => {
     ctx.initialData = await setup();
     await wait();

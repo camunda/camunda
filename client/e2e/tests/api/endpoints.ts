@@ -11,14 +11,17 @@ const ENDPOINTS = Object.freeze({
   createOperation(id: string) {
     return new URL(
       `/api/process-instances/${id}/operation`,
-      config.endpoint,
+      config.legacyEndpoint,
     ).toString();
   },
   login() {
-    return new URL('/api/login', config.endpoint).toString();
+    return new URL('/api/login', config.legacyEndpoint).toString();
   },
   getFlowNodeInstances() {
-    return new URL('/api/flow-node-instances', config.endpoint).toString();
+    return new URL(
+      '/api/flow-node-instances',
+      config.legacyEndpoint,
+    ).toString();
   },
 });
 

@@ -32,7 +32,7 @@ fixture('Modifications')
     } = t.fixtureCtx;
 
     const processInstanceId = instanceWithoutAnIncident.processInstanceKey;
-    await t.navigateTo(`/processes/${processInstanceId}`);
+    await t.navigateTo(`legacy/processes/${processInstanceId}`);
   });
 
 test('Should apply/remove edit variable modifications', async (t) => {

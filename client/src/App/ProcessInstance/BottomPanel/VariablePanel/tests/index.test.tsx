@@ -39,6 +39,7 @@ import {mockGetOperation} from 'modules/mocks/api/getOperation';
 import * as operationApi from 'modules/api/getOperation';
 import {useEffect} from 'react';
 import {act} from 'react-dom/test-utils';
+import {LegacyPaths} from 'modules/legacyRoutes';
 
 const getOperationSpy = jest.spyOn(operationApi, 'getOperation');
 
@@ -63,9 +64,9 @@ const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
 
   return (
     <ThemeProvider>
-      <MemoryRouter initialEntries={['/processes/1']}>
+      <MemoryRouter initialEntries={[LegacyPaths.processInstance('1')]}>
         <Routes>
-          <Route path="/processes/:processInstanceId" element={children} />
+          <Route path={LegacyPaths.processInstance()} element={children} />
         </Routes>
       </MemoryRouter>
     </ThemeProvider>

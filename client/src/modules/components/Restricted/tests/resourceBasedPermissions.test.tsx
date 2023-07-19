@@ -13,8 +13,9 @@ import {MemoryRouter, Route, Routes} from 'react-router-dom';
 import {mockFetchGroupedProcesses} from 'modules/mocks/api/processes/fetchGroupedProcesses';
 import {groupedProcessesMock} from 'modules/testUtils';
 import {processesStore} from 'modules/stores/processes';
+import {LegacyPaths} from 'modules/legacyRoutes';
 
-const createWrapper = (initialPath: string = '/processes') => {
+const createWrapper = (initialPath: string = LegacyPaths.processes()) => {
   const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
     useEffect(() => {
       return () => {
@@ -26,7 +27,7 @@ const createWrapper = (initialPath: string = '/processes') => {
     return (
       <MemoryRouter initialEntries={[initialPath]}>
         <Routes>
-          <Route path="/processes" element={children} />
+          <Route path={LegacyPaths.processes()} element={children} />
         </Routes>
       </MemoryRouter>
     );

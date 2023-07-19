@@ -26,10 +26,11 @@ import {mockFetchProcessInstancesStatistics} from 'modules/mocks/api/processInst
 import {mockFetchProcessXML} from 'modules/mocks/api/processes/fetchProcessXML';
 import {useEffect} from 'react';
 import {act} from 'react-dom/test-utils';
+import {LegacyPaths} from 'modules/legacyRoutes';
 
 jest.mock('modules/utils/bpmn');
 
-function getWrapper(initialPath: string = '/') {
+function getWrapper(initialPath: string = LegacyPaths.dashboard()) {
   const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
     useEffect(() => {
       return () => {
@@ -60,7 +61,9 @@ describe('DiagramPanel', () => {
 
   it('should render header', async () => {
     render(<DiagramPanel />, {
-      wrapper: getWrapper('/processes?process=bigVarProcess&version=1'),
+      wrapper: getWrapper(
+        `${LegacyPaths.processes()}?process=bigVarProcess&version=1`,
+      ),
     });
 
     expect(await screen.findByText('Big variable process')).toBeInTheDocument();
@@ -69,7 +72,9 @@ describe('DiagramPanel', () => {
 
   it('should show the loading indicator, when diagram is loading', async () => {
     render(<DiagramPanel />, {
-      wrapper: getWrapper('/processes?process=bigVarProcess&version=1'),
+      wrapper: getWrapper(
+        `${LegacyPaths.processes()}?process=bigVarProcess&version=1`,
+      ),
     });
 
     expect(screen.getByTestId('diagram-spinner')).toBeInTheDocument();
@@ -97,7 +102,9 @@ describe('DiagramPanel', () => {
 
   it('should show a message when no process version is selected', async () => {
     render(<DiagramPanel />, {
-      wrapper: getWrapper('/processes?process=bigVarProcess&version=all'),
+      wrapper: getWrapper(
+        `${LegacyPaths.processes()}?process=bigVarProcess&version=all`,
+      ),
     });
 
     expect(
@@ -115,7 +122,7 @@ describe('DiagramPanel', () => {
   it('should display bpmnProcessId as process name in the message when no process version is selected', async () => {
     render(<DiagramPanel />, {
       wrapper: getWrapper(
-        '/processes?process=eventBasedGatewayProcess&version=all',
+        `${LegacyPaths.processes()}?process=eventBasedGatewayProcess&version=all`,
       ),
     });
 

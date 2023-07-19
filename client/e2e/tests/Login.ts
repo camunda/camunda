@@ -12,7 +12,7 @@ import {getPathname} from './utils/getPathname';
 import {getSearch} from './utils/getSearch';
 
 fixture('Login')
-  .page(config.endpoint)
+  .page(config.legacyEndpoint)
   .beforeEach(async (t) => {
     await t.maximizeWindow();
   });
@@ -29,7 +29,7 @@ test('Log in with invalid user account', async (t) => {
   await t
     .expect(screen.queryByText('Username and Password do not match').exists)
     .ok();
-  await t.expect(await getPathname()).eql('/login');
+  await t.expect(await getPathname()).eql('/legacy/login');
 });
 
 test('Log in with valid user account', async (t) => {
@@ -38,7 +38,7 @@ test('Log in with valid user account', async (t) => {
     .typeText(screen.queryByLabelText('Password'), 'demo')
     .click(screen.queryByRole('button', {name: 'Log in'}));
 
-  await t.expect(await getPathname()).eql('/');
+  await t.expect(await getPathname()).eql('/legacy');
 });
 
 test('Log out', async (t) => {
@@ -51,13 +51,13 @@ test('Log out', async (t) => {
     .click(screen.queryByLabelText('Open Settings', {selector: 'button'}))
     .click(screen.queryByRole('button', {name: 'Log out'}));
 
-  await t.expect(await getPathname()).eql('/login');
+  await t.expect(await getPathname()).eql('/legacy/login');
 });
 
 test('Redirect to initial page after login', async (t) => {
-  await t.expect(await getPathname()).eql('/login');
-  await t.navigateTo('/processes?active=true&incidents=true');
-  await t.expect(await getPathname()).eql('/login');
+  await t.expect(await getPathname()).eql('/legacy/login');
+  await t.navigateTo(`/legacy/processes?active=true&incidents=true`);
+  await t.expect(await getPathname()).eql('/legacy/login');
 
   await t
     .typeText(screen.queryByLabelText('Username'), 'demo')
@@ -66,7 +66,7 @@ test('Redirect to initial page after login', async (t) => {
 
   await t
     .expect(await getPathname())
-    .eql('/processes')
+    .eql('/legacy/processes')
     .expect(await getSearch())
     .eql(
       convertToQueryString({

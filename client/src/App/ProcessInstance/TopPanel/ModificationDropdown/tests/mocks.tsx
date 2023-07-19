@@ -18,6 +18,7 @@ import {ModificationDropdown} from '..';
 import {processInstanceDetailsStatisticsStore} from 'modules/stores/processInstanceDetailsStatistics';
 import {modificationsStore} from 'modules/stores/modifications';
 import {flowNodeMetaDataStore} from 'modules/stores/flowNodeMetaData';
+import {LegacyPaths} from 'modules/legacyRoutes';
 
 const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
   useEffect(() => {
@@ -28,7 +29,9 @@ const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
 
   return (
     <ThemeProvider>
-      <MemoryRouter initialEntries={['/processes/1']}>{children}</MemoryRouter>
+      <MemoryRouter initialEntries={[LegacyPaths.processInstance('1')]}>
+        {children}
+      </MemoryRouter>
     </ThemeProvider>
   );
 };

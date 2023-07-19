@@ -22,7 +22,7 @@ import {incidentsStore} from 'modules/stores/incidents';
 import {processInstanceDetailsStatisticsStore} from 'modules/stores/processInstanceDetailsStatistics';
 import {flowNodeInstanceStore} from 'modules/stores/flowNodeInstance';
 import {instanceHistoryModificationStore} from 'modules/stores/instanceHistoryModification';
-import {CarbonLocations} from 'modules/carbonRoutes';
+import {Locations} from 'modules/Routes';
 import {processInstanceDetailsDiagramStore} from 'modules/stores/processInstanceDetailsDiagram';
 import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
 import {flowNodeTimeStampStore} from 'modules/stores/flowNodeTimeStamp';
@@ -91,7 +91,7 @@ const ProcessInstance: React.FC = observer(() => {
         id: processInstanceId,
         onRefetchFailure: () => {
           navigate(
-            CarbonLocations.processes({
+            Locations.processes({
               active: true,
               incidents: true,
             }),
@@ -101,7 +101,7 @@ const ProcessInstance: React.FC = observer(() => {
           });
         },
         onPollingFailure: () => {
-          navigate(CarbonLocations.processes());
+          navigate(Locations.processes());
           notifications?.displayNotification('success', {
             headline: 'Instance deleted',
           });

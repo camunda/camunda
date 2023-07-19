@@ -32,7 +32,7 @@ import {
   Stack,
   TextInput,
 } from '@carbon/react';
-import {CarbonPaths} from 'modules/carbonRoutes';
+import {Paths} from 'modules/Routes';
 import {LoadingSpinner} from './LoadingSpinner';
 import 'index-carbon.scss';
 
@@ -70,7 +70,7 @@ const Login: React.FC = () => {
                   ? location.state.referrer
                   : {
                       ...location,
-                      pathname: CarbonPaths.dashboard(),
+                      pathname: Paths.dashboard(),
                     },
                 {replace: true},
               );

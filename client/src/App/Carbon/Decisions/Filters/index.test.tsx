@@ -21,6 +21,7 @@ import {
   selectDecision,
   selectDecisionVersion,
 } from 'modules/testUtils/selectComboBoxOption';
+import {Paths} from 'modules/Routes';
 
 jest.unmock('modules/utils/date/formatDate');
 
@@ -30,7 +31,7 @@ function reset() {
   localStorage.clear();
 }
 
-function getWrapper(initialPath: string = '/carbon/decisions') {
+function getWrapper(initialPath: string = Paths.decisions()) {
   const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
     useEffect(() => {
       return groupedDecisionsStore.reset;
@@ -109,9 +110,7 @@ describe('<Filters />', () => {
       wrapper: getWrapper(),
     });
 
-    expect(screen.getByTestId('pathname')).toHaveTextContent(
-      /^\/carbon\/decisions$/,
-    );
+    expect(screen.getByTestId('pathname')).toHaveTextContent(/^\/decisions$/);
     expect(screen.getByTestId('search')).toBeEmptyDOMElement();
 
     await selectDecision({user, option: 'Assign Approver Group'});
@@ -136,9 +135,7 @@ describe('<Filters />', () => {
 
     await user.click(screen.getByRole('button', {name: 'More Filters'}));
 
-    expect(screen.getByTestId('pathname')).toHaveTextContent(
-      /^\/carbon\/decisions$/,
-    );
+    expect(screen.getByTestId('pathname')).toHaveTextContent(/^\/decisions$/);
     await waitFor(() =>
       expect(
         Object.fromEntries(
@@ -151,9 +148,7 @@ describe('<Filters />', () => {
 
     await user.click(screen.getByRole('button', {name: /reset/i}));
 
-    expect(screen.getByTestId('pathname')).toHaveTextContent(
-      /^\/carbon\/decisions$/,
-    );
+    expect(screen.getByTestId('pathname')).toHaveTextContent(/^\/decisions$/);
     expect(screen.getByTestId('search')).toHaveTextContent(
       /^\?evaluated=true&failed=true$/,
     );
@@ -164,9 +159,7 @@ describe('<Filters />', () => {
       wrapper: getWrapper(),
     });
 
-    expect(screen.getByTestId('pathname')).toHaveTextContent(
-      /^\/carbon\/decisions$/,
-    );
+    expect(screen.getByTestId('pathname')).toHaveTextContent(/^\/decisions$/);
     expect(screen.getByTestId('search')).toBeEmptyDOMElement();
 
     await user.click(screen.getByRole('button', {name: 'More Filters'}));
@@ -197,9 +190,7 @@ describe('<Filters />', () => {
 
     await user.click(screen.getByRole('button', {name: /reset/i}));
 
-    expect(screen.getByTestId('pathname')).toHaveTextContent(
-      /^\/carbon\/decisions$/,
-    );
+    expect(screen.getByTestId('pathname')).toHaveTextContent(/^\/decisions$/);
     expect(screen.getByTestId('search')).toHaveTextContent(
       /^\?evaluated=true&failed=true$/,
     );
@@ -472,9 +463,7 @@ describe('<Filters />', () => {
       wrapper: getWrapper(),
     });
 
-    expect(screen.getByTestId('pathname')).toHaveTextContent(
-      /^\/carbon\/decisions$/,
-    );
+    expect(screen.getByTestId('pathname')).toHaveTextContent(/^\/decisions$/);
     expect(screen.getByTestId('search')).toBeEmptyDOMElement();
 
     await user.click(screen.getByRole('button', {name: 'More Filters'}));
@@ -499,7 +488,7 @@ describe('<Filters />', () => {
         name: /dashboard/i,
       }),
     );
-    expect(screen.getByTestId('pathname')).toHaveTextContent(/^\/carbon$/);
+    expect(screen.getByTestId('pathname')).toHaveTextContent(/^\/$/);
     expect(screen.getByTestId('search')).toBeEmptyDOMElement();
 
     await user.click(
@@ -511,9 +500,7 @@ describe('<Filters />', () => {
         name: /decisions/i,
       }),
     );
-    expect(screen.getByTestId('pathname')).toHaveTextContent(
-      /^\/carbon\/decisions$/,
-    );
+    expect(screen.getByTestId('pathname')).toHaveTextContent(/^\/decisions$/);
     expect(screen.getByTestId('search')).toHaveTextContent(
       /^\?evaluated=true&failed=true$/,
     );

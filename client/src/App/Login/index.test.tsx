@@ -18,10 +18,11 @@ import {LOGIN_ERROR, GENERIC_ERROR} from './constants';
 import {LocationLog} from 'modules/utils/LocationLog';
 import {authenticationStore} from 'modules/stores/authentication';
 import {mockLogin} from 'modules/mocks/api/login';
+import {LegacyPaths} from 'modules/legacyRoutes';
 
 function createWrapper(
-  initialPath: string = '/',
-  referrer: To = {pathname: '/processes'},
+  initialPath: string = LegacyPaths.dashboard(),
+  referrer: To = {pathname: LegacyPaths.processes()},
 ) {
   const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
     return (
@@ -29,7 +30,7 @@ function createWrapper(
         <MemoryRouter initialEntries={[initialPath]}>
           {children}
           <Link
-            to="/login"
+            to={LegacyPaths.login()}
             state={{
               referrer,
             }}
@@ -62,7 +63,7 @@ describe('<Login />', () => {
     await user.click(screen.getByRole('button', {name: /log in/i}));
 
     await waitFor(() =>
-      expect(screen.getByTestId('pathname')).toHaveTextContent(/^\/$/),
+      expect(screen.getByTestId('pathname')).toHaveTextContent(/^\/legacy\/$/),
     );
   });
 
@@ -102,7 +103,9 @@ describe('<Login />', () => {
     await user.click(screen.getByRole('button', {name: /log in/i}));
 
     await waitFor(() =>
-      expect(screen.getByTestId('pathname')).toHaveTextContent(/^\/processes$/),
+      expect(screen.getByTestId('pathname')).toHaveTextContent(
+        /^\/legacy\/processes$/,
+      ),
     );
   });
 

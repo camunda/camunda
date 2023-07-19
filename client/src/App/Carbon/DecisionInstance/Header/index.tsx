@@ -14,7 +14,7 @@ import {InstanceHeader} from 'modules/components/Carbon/InstanceHeader';
 import {Skeleton} from 'modules/components/Carbon/InstanceHeader/Skeleton';
 import {useParams} from 'react-router-dom';
 import {Link} from 'modules/components/Carbon/Link';
-import {CarbonLocations, CarbonPaths} from 'modules/carbonRoutes';
+import {Locations, Paths} from 'modules/Routes';
 import {formatDate} from 'modules/utils/date';
 
 const headerColumns = [
@@ -67,7 +67,7 @@ const Header: React.FC = observer(() => {
           {
             content: (
               <Link
-                to={CarbonLocations.decisions({
+                to={Locations.decisions({
                   version: decisionInstance.decisionVersion.toString(),
                   name: decisionInstance.decisionId,
                   evaluated: true,
@@ -95,7 +95,7 @@ const Header: React.FC = observer(() => {
               <>
                 {decisionInstance.processInstanceId ? (
                   <Link
-                    to={CarbonPaths.processInstance(
+                    to={Paths.processInstance(
                       decisionInstance.processInstanceId,
                     )}
                     title={`View process instance ${decisionInstance.processInstanceId}`}

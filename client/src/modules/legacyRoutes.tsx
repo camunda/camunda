@@ -15,28 +15,28 @@ type RouterState = {
   referrer?: string;
 };
 
-const CarbonPaths = {
+const LegacyPaths = {
   login() {
-    return '/carbon/login';
+    return '/legacy/login';
   },
   dashboard() {
-    return '/carbon';
+    return '/legacy/';
   },
   processes() {
-    return '/carbon/processes';
+    return '/legacy/processes';
   },
   processInstance(processInstanceId: string = ':processInstanceId') {
-    return `/carbon/processes/${processInstanceId}`;
+    return `/legacy/processes/${processInstanceId}`;
   },
   decisions() {
-    return '/carbon/decisions';
+    return '/legacy/decisions';
   },
   decisionInstance(decisionInstanceId: string = ':decisionInstanceId') {
-    return `/carbon/decisions/${decisionInstanceId}`;
+    return `/legacy/decisions/${decisionInstanceId}`;
   },
 } as const;
 
-const CarbonLocations = {
+const LegacyLocations = {
   processes(filters?: ProcessInstanceFilters): To {
     const params = new URLSearchParams();
 
@@ -50,7 +50,7 @@ const CarbonLocations = {
     }
 
     return {
-      pathname: CarbonPaths.processes(),
+      pathname: LegacyPaths.processes(),
       search: params.toString(),
     };
   },
@@ -67,11 +67,11 @@ const CarbonLocations = {
     }
 
     return {
-      pathname: CarbonPaths.decisions(),
+      pathname: LegacyPaths.decisions(),
       search: params.toString(),
     };
   },
 } as const;
 
-export {CarbonPaths, CarbonLocations};
+export {LegacyPaths, LegacyLocations};
 export type {RouterState};

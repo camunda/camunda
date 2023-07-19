@@ -17,8 +17,9 @@ import {processInstancesByNameStore} from 'modules/stores/processInstancesByName
 import {createUser} from 'modules/testUtils';
 import {authenticationStore} from 'modules/stores/authentication';
 import {useEffect} from 'react';
+import {LegacyPaths} from 'modules/legacyRoutes';
 
-function createWrapper(initialPath: string = '/') {
+function createWrapper(initialPath: string = LegacyPaths.dashboard()) {
   const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
     useEffect(() => {
       return () => {
@@ -31,8 +32,11 @@ function createWrapper(initialPath: string = '/') {
       <ThemeProvider>
         <MemoryRouter initialEntries={[initialPath]}>
           <Routes>
-            <Route path="/processes" element={<div>Processes</div>} />
-            <Route path="/" element={children} />
+            <Route
+              path={LegacyPaths.processes()}
+              element={<div>Processes</div>}
+            />
+            <Route path={LegacyPaths.dashboard()} element={children} />
           </Routes>
           <LocationLog />
         </MemoryRouter>
@@ -127,7 +131,7 @@ describe('InstancesByProcess', () => {
 
     expect(processLink).toHaveAttribute(
       'href',
-      '/processes?process=orderProcess&version=all&active=true&incidents=true',
+      `${LegacyPaths.processes()}?process=orderProcess&version=all&active=true&incidents=true`,
     );
 
     expect(screen.getByTestId('incident-instances-badge')).toHaveTextContent(
@@ -161,7 +165,7 @@ describe('InstancesByProcess', () => {
     ).toBeInTheDocument();
     expect(firstVersion).toHaveAttribute(
       'href',
-      '/processes?process=mockProcess&version=1&active=true&incidents=true',
+      `${LegacyPaths.processes()}?process=mockProcess&version=1&active=true&incidents=true`,
     );
 
     const secondVersion = screen.getByRole('link', {
@@ -181,7 +185,7 @@ describe('InstancesByProcess', () => {
     ).toBeInTheDocument();
     expect(secondVersion).toHaveAttribute(
       'href',
-      '/processes?process=mockProcess&version=2&active=true&incidents=true',
+      `${LegacyPaths.processes()}?process=mockProcess&version=2&active=true&incidents=true`,
     );
   });
 
@@ -211,7 +215,7 @@ describe('InstancesByProcess', () => {
 
     expect(processLink).toHaveAttribute(
       'href',
-      '/processes?process=loanProcess&version=1&active=true&incidents=true',
+      `${LegacyPaths.processes()}?process=loanProcess&version=1&active=true&incidents=true`,
     );
 
     expect(screen.getByTestId('incident-instances-badge')).toHaveTextContent(

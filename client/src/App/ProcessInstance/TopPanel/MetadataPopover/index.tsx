@@ -28,7 +28,7 @@ import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails
 import {incidentsStore} from 'modules/stores/incidents';
 import {observer} from 'mobx-react';
 import {buildMetadata} from './buildMetadata';
-import {Paths} from 'modules/routes';
+import {LegacyPaths} from 'modules/legacyRoutes';
 import {Link} from 'modules/components/Link';
 import {tracking} from 'modules/tracking';
 import {getExecutionDuration} from './getExecutionDuration';
@@ -144,7 +144,7 @@ const MetadataPopover = observer(({selectedFlowNodeRef}: Props) => {
                 <SummaryDataValue data-testid="called-process-instance">
                   {calledProcessInstanceId ? (
                     <Link
-                      to={Paths.processInstance(calledProcessInstanceId)}
+                      to={LegacyPaths.processInstance(calledProcessInstanceId)}
                       title={`View ${calledProcessDefinitionName} instance ${calledProcessInstanceId}`}
                     >
                       <CalledProcessValue>
@@ -166,7 +166,7 @@ const MetadataPopover = observer(({selectedFlowNodeRef}: Props) => {
               <SummaryDataValue>
                 {calledDecisionInstanceId ? (
                   <Link
-                    to={Paths.decisionInstance(calledDecisionInstanceId)}
+                    to={LegacyPaths.decisionInstance(calledDecisionInstanceId)}
                     title={`View ${calledDecisionDefinitionName} instance ${calledDecisionInstanceId}`}
                   >
                     {`${calledDecisionDefinitionName} - ${calledDecisionInstanceId}`}
@@ -215,7 +215,9 @@ const MetadataPopover = observer(({selectedFlowNodeRef}: Props) => {
                       'Current Instance'
                     ) : (
                       <Link
-                        to={Paths.processInstance(rootCauseInstance.instanceId)}
+                        to={LegacyPaths.processInstance(
+                          rootCauseInstance.instanceId,
+                        )}
                         title={`View root cause instance ${rootCauseInstance.processDefinitionName} - ${rootCauseInstance.instanceId}`}
                       >
                         {`${rootCauseInstance.processDefinitionName} - ${rootCauseInstance.instanceId}`}
@@ -229,7 +231,9 @@ const MetadataPopover = observer(({selectedFlowNodeRef}: Props) => {
                   <SummaryDataKey>Root Cause Decision Instance</SummaryDataKey>
                   <SummaryDataValue>
                     <Link
-                      to={Paths.decisionInstance(rootCauseDecision.instanceId)}
+                      to={LegacyPaths.decisionInstance(
+                        rootCauseDecision.instanceId,
+                      )}
                       title={`View root cause decision ${rootCauseDecision.decisionName} - ${rootCauseDecision.instanceId}`}
                     >
                       {`${rootCauseDecision.decisionName} - ${rootCauseDecision.instanceId}`}

@@ -24,8 +24,9 @@ import {AppHeader} from 'App/Layout/AppHeader';
 import {mockFetchGroupedDecisions} from 'modules/mocks/api/decisions/fetchGroupedDecisions';
 import {mockFetchDecisionInstances} from 'modules/mocks/api/decisionInstances/fetchDecisionInstances';
 import {useEffect} from 'react';
+import {LegacyPaths} from 'modules/legacyRoutes';
 
-const createWrapper = (initialPath: string = '/decisions') => {
+const createWrapper = (initialPath: string = LegacyPaths.decisions()) => {
   const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
     useEffect(() => {
       groupedDecisionsStore.fetchDecisions();
@@ -39,9 +40,9 @@ const createWrapper = (initialPath: string = '/decisions') => {
       <ThemeProvider>
         <MemoryRouter initialEntries={[initialPath]}>
           <Routes>
-            <Route path="/decisions" element={children} />
-            <Route path="/processes/:processInstanceId" element={<></>} />
-            <Route path="/decisions/:decisionInstanceId" element={<></>} />
+            <Route path={LegacyPaths.decisions()} element={children} />
+            <Route path={LegacyPaths.processInstance()} element={<></>} />
+            <Route path={LegacyPaths.decisionInstance()} element={<></>} />
           </Routes>
           <LocationLog />
         </MemoryRouter>
@@ -107,7 +108,9 @@ describe('<InstancesTable />', () => {
     });
 
     render(<InstancesTable />, {
-      wrapper: createWrapper('/decisions?evaluated=true&failed=true'),
+      wrapper: createWrapper(
+        `${LegacyPaths.decisions()}?evaluated=true&failed=true`,
+      ),
     });
 
     await waitForElementToBeRemoved(screen.getByTestId('table-skeleton'));
@@ -192,12 +195,14 @@ describe('<InstancesTable />', () => {
     mockFetchDecisionInstances().withSuccess(mockDecisionInstances);
 
     const {user} = render(<InstancesTable />, {
-      wrapper: createWrapper('/decisions'),
+      wrapper: createWrapper(LegacyPaths.decisions()),
     });
 
     await waitForElementToBeRemoved(screen.getByTestId('table-skeleton'));
 
-    expect(screen.getByTestId('pathname')).toHaveTextContent(/^\/decisions$/);
+    expect(screen.getByTestId('pathname')).toHaveTextContent(
+      /^\/legacy\/decisions$/,
+    );
 
     await user.click(
       screen.getByRole('link', {
@@ -207,7 +212,7 @@ describe('<InstancesTable />', () => {
 
     await waitFor(() =>
       expect(screen.getByTestId('pathname')).toHaveTextContent(
-        /^\/decisions\/2251799813689541$/,
+        /^\/legacy\/decisions\/2251799813689541$/,
       ),
     );
 
@@ -234,12 +239,14 @@ describe('<InstancesTable />', () => {
     });
 
     const {user} = render(<InstancesTable />, {
-      wrapper: createWrapper('/decisions'),
+      wrapper: createWrapper(LegacyPaths.decisions()),
     });
 
     await waitForElementToBeRemoved(screen.getByTestId('table-skeleton'));
 
-    expect(screen.getByTestId('pathname')).toHaveTextContent(/^\/decisions$/);
+    expect(screen.getByTestId('pathname')).toHaveTextContent(
+      /^\/legacy\/decisions$/,
+    );
 
     await user.click(
       screen.getByRole('link', {
@@ -249,7 +256,7 @@ describe('<InstancesTable />', () => {
 
     await waitFor(() =>
       expect(screen.getByTestId('pathname')).toHaveTextContent(
-        /^\/processes\/2251799813689544$/,
+        /^\/legacy\/processes\/2251799813689544$/,
       ),
     );
 

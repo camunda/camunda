@@ -11,8 +11,9 @@ import {groupedDecisionsStore} from 'modules/stores/groupedDecisions';
 import {MemoryRouter} from 'react-router-dom';
 import {useEffect} from 'react';
 import {authenticationStore} from 'modules/stores/authentication';
+import {LegacyPaths} from 'modules/legacyRoutes';
 
-function createWrapper(initialPath: string = '/') {
+function createWrapper(initialPath: string = LegacyPaths.dashboard()) {
   const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
     useEffect(() => {
       decisionXmlStore.init();

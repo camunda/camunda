@@ -105,7 +105,7 @@ describe('Operations - Cancel Operation', () => {
     );
 
     expect(screen.getByTestId('pathname').textContent).toBe(
-      `/processes/${rootInstanceId}`,
+      `/legacy/processes/${rootInstanceId}`,
     );
   });
 

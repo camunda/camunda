@@ -11,13 +11,16 @@ import {Breadcrumb} from './index';
 import {createInstance} from 'modules/testUtils';
 import {Route, MemoryRouter, Routes} from 'react-router-dom';
 import {LocationLog} from 'modules/utils/LocationLog';
+import {LegacyPaths} from 'modules/legacyRoutes';
 
-const createWrapper = (initialPath: string = '/processes/123') => {
+const createWrapper = (
+  initialPath: string = LegacyPaths.processInstance('123'),
+) => {
   const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => (
     <ThemeProvider>
       <MemoryRouter initialEntries={[initialPath]}>
         <Routes>
-          <Route path="/processes/:processInstanceId" element={children} />
+          <Route path={LegacyPaths.processInstance()} element={children} />
         </Routes>
         <LocationLog />
       </MemoryRouter>
@@ -64,11 +67,11 @@ describe('User', () => {
 
   it('should navigate to instance detail on click', async () => {
     const {user} = render(<Breadcrumb processInstance={processInstance} />, {
-      wrapper: createWrapper('/processes/123'),
+      wrapper: createWrapper(LegacyPaths.processInstance('123')),
     });
 
     expect(screen.getByTestId('pathname')).toHaveTextContent(
-      /^\/processes\/123$/,
+      /^\/legacy\/processes\/123$/,
     );
 
     await user.click(
@@ -77,7 +80,7 @@ describe('User', () => {
       }),
     );
     expect(screen.getByTestId('pathname')).toHaveTextContent(
-      /^\/processes\/546546543276$/,
+      /^\/legacy\/processes\/546546543276$/,
     );
 
     await user.click(
@@ -87,7 +90,7 @@ describe('User', () => {
       }),
     );
     expect(screen.getByTestId('pathname')).toHaveTextContent(
-      /^\/processes\/968765314354$/,
+      /^\/legacy\/processes\/968765314354$/,
     );
 
     await user.click(
@@ -97,7 +100,7 @@ describe('User', () => {
       }),
     );
     expect(screen.getByTestId('pathname')).toHaveTextContent(
-      /^\/processes\/2251799813685447$/,
+      /^\/legacy\/processes\/2251799813685447$/,
     );
   });
 });

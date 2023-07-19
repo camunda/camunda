@@ -9,6 +9,7 @@ import {render, screen, act} from 'modules/testing-library';
 import {modificationsStore} from 'modules/stores/modifications';
 import {Operations} from '../index';
 import {INSTANCE, Wrapper} from './mocks';
+import {Paths} from 'modules/Routes';
 
 describe('Operations - Cancel Operation', () => {
   it('should show cancel confirmation modal', async () => {
@@ -100,7 +101,7 @@ describe('Operations - Cancel Operation', () => {
     );
 
     expect(screen.getByTestId('pathname').textContent).toBe(
-      `/carbon/processes/${rootInstanceId}`,
+      Paths.processInstance(rootInstanceId),
     );
   });
 

@@ -44,6 +44,7 @@ import {mockFetchProcessInstanceIncidents} from 'modules/mocks/api/processInstan
 import {mockFetchFlowNodeMetadata} from 'modules/mocks/api/processInstances/fetchFlowNodeMetaData';
 import {mockFetchProcessXML} from 'modules/mocks/api/processes/fetchProcessXML';
 import {useEffect} from 'react';
+import {LegacyPaths} from 'modules/legacyRoutes';
 
 const MOCK_EXECUTION_DATE = '21 seconds';
 
@@ -65,10 +66,10 @@ const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
 
   return (
     <ThemeProvider>
-      <MemoryRouter initialEntries={['/processes/1']}>
+      <MemoryRouter initialEntries={[LegacyPaths.processInstance('1')]}>
         <Routes>
-          <Route path="/processes/:processInstanceId" element={children} />
-          <Route path="/decisions/:decisionInstanceId" element={<></>} />
+          <Route path={LegacyPaths.processInstance()} element={children} />
+          <Route path={LegacyPaths.decisionInstance()} element={<></>} />
         </Routes>
         <LocationLog />
       </MemoryRouter>

@@ -9,7 +9,7 @@ import {test, expect} from '@playwright/test';
 
 test.describe('login page', () => {
   test('empty page', async ({page}) => {
-    await page.goto('/carbon/login', {
+    await page.goto('/login', {
       waitUntil: 'networkidle',
     });
 

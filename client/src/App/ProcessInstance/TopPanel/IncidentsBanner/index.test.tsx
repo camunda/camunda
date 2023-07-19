@@ -12,6 +12,7 @@ import {render, screen} from 'modules/testing-library';
 import {incidentsStore} from 'modules/stores/incidents';
 import {mockIncidents} from 'modules/mocks/incidents';
 import {mockFetchProcessInstanceIncidents} from 'modules/mocks/api/processInstances/fetchProcessInstanceIncidents';
+import {LegacyPaths} from 'modules/legacyRoutes';
 
 const mockProps = {
   onClick: jest.fn(),
@@ -28,9 +29,9 @@ const {fetchIncidents} = incidentsStore;
 const Wrapper: React.FC<Props> = ({children}) => {
   return (
     <ThemeProvider>
-      <MemoryRouter initialEntries={['/processes/1']}>
+      <MemoryRouter initialEntries={[LegacyPaths.processInstance('1')]}>
         <Routes>
-          <Route path="/processes/:processInstanceId" element={children} />
+          <Route path={LegacyPaths.processInstance()} element={children} />
         </Routes>
       </MemoryRouter>
     </ThemeProvider>

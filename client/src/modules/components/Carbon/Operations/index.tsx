@@ -19,7 +19,7 @@ import {DangerButton} from 'modules/components/Carbon/OperationItem/DangerButton
 import {modificationsStore} from 'modules/stores/modifications';
 import {Restricted} from 'modules/components/Restricted';
 import {Modal, InlineLoading} from '@carbon/react';
-import {CarbonPaths} from 'modules/carbonRoutes';
+import {Paths} from 'modules/Routes';
 import {Link} from 'modules/components/Carbon/Link';
 import {OperationsContainer} from './styled';
 import {processInstancesStore} from 'modules/stores/processInstances';
@@ -202,7 +202,7 @@ const Operations: React.FC<Props> = observer(
                 <p>
                   To cancel this instance, the root instance{' '}
                   <Link
-                    to={CarbonPaths.processInstance(instance.rootInstanceId)}
+                    to={Paths.processInstance(instance.rootInstanceId)}
                     title={`View root instance ${instance.rootInstanceId}`}
                   >
                     {instance.rootInstanceId}

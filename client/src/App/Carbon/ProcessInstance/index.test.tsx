@@ -36,6 +36,7 @@ import {mockFetchSequenceFlows} from 'modules/mocks/api/processInstances/sequenc
 import {mockFetchFlowNodeInstances} from 'modules/mocks/api/fetchFlowNodeInstances';
 import {mockFetchProcessXML} from 'modules/mocks/api/processes/fetchProcessXML';
 import {mockIncidents} from 'modules/mocks/incidents';
+import {Paths} from 'modules/Routes';
 
 jest.mock('modules/notifications', () => {
   const mockUseNotifications = {
@@ -58,7 +59,7 @@ type Props = {
 const processInstancesMock = createMultiInstanceFlowNodeInstances('4294980768');
 
 function getWrapper(
-  initialPath: string = '/carbon/processes/4294980768',
+  initialPath: string = Paths.processInstance('4294980768'),
   contextPath?: string,
 ) {
   const Wrapper: React.FC<Props> = ({children}) => {
@@ -71,12 +72,9 @@ function getWrapper(
           basename={contextPath ?? ''}
         >
           <Routes>
-            <Route
-              path="/carbon/processes/:processInstanceId"
-              element={children}
-            />
-            <Route path="/carbon/processes" element={<>instances page</>} />
-            <Route path="/carbon" element={<>dashboard page</>} />
+            <Route path={Paths.processInstance()} element={children} />
+            <Route path={Paths.processes()} element={<>instances page</>} />
+            <Route path={Paths.dashboard()} element={<>dashboard page</>} />
           </Routes>
           <LocationLog />
         </HistoryRouter>
@@ -193,10 +191,7 @@ describe('Instance', () => {
     mockRequests(contextPath);
 
     const {user} = render(<ProcessInstance />, {
-      wrapper: getWrapper(
-        `${contextPath}/carbon/processes/4294980768`,
-        contextPath,
-      ),
+      wrapper: getWrapper(`${contextPath}/processes/4294980768`, contextPath),
     });
     await waitForElementToBeRemoved(
       screen.getByTestId('instance-header-skeleton'),
@@ -258,14 +253,11 @@ describe('Instance', () => {
 
     const {user} = render(
       <>
-        <Link to="/carbon">go to dashboard</Link>
+        <Link to={Paths.dashboard()}>go to dashboard</Link>
         <ProcessInstance />
       </>,
       {
-        wrapper: getWrapper(
-          `${contextPath}/carbon/processes/4294980768`,
-          contextPath,
-        ),
+        wrapper: getWrapper(`${contextPath}/processes/4294980768`, contextPath),
       },
     );
     await waitForElementToBeRemoved(

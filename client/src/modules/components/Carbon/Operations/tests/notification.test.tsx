@@ -33,9 +33,7 @@ describe('Operations - Notification', () => {
       },
     );
 
-    expect(screen.getByTestId('pathname')).toHaveTextContent(
-      /^\/carbon\/processes$/,
-    );
+    expect(screen.getByTestId('pathname')).toHaveTextContent(/^\/processes$/);
     await user.click(screen.getByRole('button', {name: /Delete Instance/}));
     expect(screen.getByText(/About to delete Instance/)).toBeInTheDocument();
 
@@ -54,8 +52,6 @@ describe('Operations - Notification', () => {
     ).not.toBeInTheDocument();
 
     expect(mockDisplayNotification).not.toHaveBeenCalled();
-    expect(screen.getByTestId('pathname')).toHaveTextContent(
-      /^\/carbon\/processes$/,
-    );
+    expect(screen.getByTestId('pathname')).toHaveTextContent(/^\/processes$/);
   });
 });

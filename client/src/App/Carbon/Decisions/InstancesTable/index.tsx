@@ -15,7 +15,7 @@ import {useEffect} from 'react';
 import {useLocation} from 'react-router-dom';
 import {Container, DecisionName} from './styled';
 import {observer} from 'mobx-react';
-import {CarbonPaths} from 'modules/carbonRoutes';
+import {Paths} from 'modules/Routes';
 import {tracking} from 'modules/tracking';
 import {Link} from 'modules/components/Carbon/Link';
 import {useFilters} from 'modules/hooks/useFilters';
@@ -134,7 +134,7 @@ const InstancesTable: React.FC = observer(() => {
               ),
               decisionInstanceKey: (
                 <Link
-                  to={CarbonPaths.decisionInstance(id)}
+                  to={Paths.decisionInstance(id)}
                   onClick={() => {
                     tracking.track({
                       eventName: 'navigation',
@@ -152,7 +152,7 @@ const InstancesTable: React.FC = observer(() => {
                 <>
                   {processInstanceId !== null ? (
                     <Link
-                      to={CarbonPaths.processInstance(processInstanceId)}
+                      to={Paths.processInstance(processInstanceId)}
                       title={`View process instance ${processInstanceId}`}
                       onClick={() => {
                         tracking.track({

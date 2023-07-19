@@ -12,7 +12,7 @@ import {wait} from './utils/wait';
 import {screen, within} from '@testing-library/testcafe';
 
 fixture('Call Activities')
-  .page(config.endpoint)
+  .page(config.legacyEndpoint)
   .before(async (ctx) => {
     ctx.initialData = await setup();
     await wait();
@@ -27,7 +27,7 @@ test('Navigate to called and parent process instances', async (t) => {
   } = t.fixtureCtx;
 
   await t.navigateTo(
-    `/processes/${callActivityProcessInstance.processInstanceKey}`,
+    `/legacy/processes/${callActivityProcessInstance.processInstanceKey}`,
   );
 
   await t

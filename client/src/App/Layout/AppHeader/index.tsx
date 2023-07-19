@@ -5,7 +5,7 @@
  * except in compliance with the proprietary license.
  */
 
-import {Locations, Paths} from 'modules/routes';
+import {LegacyLocations, LegacyPaths} from 'modules/legacyRoutes';
 import {C3Navigation} from '@camunda/camunda-composite-components';
 import {Link} from 'react-router-dom';
 import {useCurrentPage} from '../useCurrentPage';
@@ -44,7 +44,7 @@ const AppHeader: React.FC = observer(() => {
         name: 'Operate',
         prefix: 'Camunda',
         routeProps: {
-          to: Paths.dashboard(),
+          to: LegacyPaths.dashboard(),
           onClick: () => {
             tracking.track({
               eventName: 'navigation',
@@ -62,7 +62,7 @@ const AppHeader: React.FC = observer(() => {
             label: 'Dashboard',
             isCurrentPage: currentPage === 'dashboard',
             routeProps: {
-              to: Paths.dashboard(),
+              to: LegacyPaths.dashboard(),
               onClick: () => {
                 tracking.track({
                   eventName: 'navigation',
@@ -77,7 +77,7 @@ const AppHeader: React.FC = observer(() => {
             label: 'Processes',
             isCurrentPage: currentPage === 'processes',
             routeProps: {
-              to: Locations.processes(),
+              to: LegacyLocations.processes(),
               state: {refreshContent: true, hideOptionalFilters: true},
               onClick: () => {
                 tracking.track({
@@ -93,7 +93,7 @@ const AppHeader: React.FC = observer(() => {
             label: 'Decisions',
             isCurrentPage: currentPage === 'decisions',
             routeProps: {
-              to: Locations.decisions(),
+              to: LegacyLocations.decisions(),
               state: {refreshContent: true, hideOptionalFilters: true},
               onClick: () => {
                 tracking.track({
@@ -151,7 +151,9 @@ const AppHeader: React.FC = observer(() => {
               target: '_blank',
               active: appName === 'operate',
               routeProps:
-                appName === 'operate' ? {to: Paths.dashboard()} : undefined,
+                appName === 'operate'
+                  ? {to: LegacyPaths.dashboard()}
+                  : undefined,
             }))
           : [],
         elementClicked: (app) => {

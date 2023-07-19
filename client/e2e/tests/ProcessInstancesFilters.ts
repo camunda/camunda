@@ -15,7 +15,7 @@ import {processesPage as ProcessesPage} from './PageModels/Processes';
 import {pickDateTimeRange} from './utils/pickDateTimeRange';
 
 fixture('Process Instances Filters')
-  .page(config.endpoint)
+  .page(config.legacyEndpoint)
   .before(async (ctx) => {
     ctx.initialData = await setup();
     await wait();

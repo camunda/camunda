@@ -14,7 +14,7 @@ import {decisionsPage} from '../PageModels/Decisions';
 import {clearComboBox} from '../utils/clearComboBox';
 
 fixture('Decision Instances')
-  .page(config.carbonEndpoint)
+  .page(config.endpoint)
   .before(async (ctx) => {
     await setup();
     await wait();

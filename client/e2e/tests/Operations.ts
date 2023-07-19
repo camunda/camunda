@@ -15,7 +15,7 @@ import {processesPage as ProcessesPage} from './PageModels/Processes';
 import {processInstancePage as ProcessInstancePage} from './PageModels/ProcessInstance';
 
 fixture('Operations')
-  .page(config.endpoint)
+  .page(config.legacyEndpoint)
   .before(async (ctx) => {
     ctx.initialData = await setup();
   })

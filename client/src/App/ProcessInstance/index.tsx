@@ -29,7 +29,7 @@ import {
   Button,
   Buttons,
 } from './styled';
-import {Locations} from 'modules/routes';
+import {LegacyLocations} from 'modules/legacyRoutes';
 import {
   ResizablePanel,
   SplitDirection,
@@ -117,7 +117,7 @@ const ProcessInstance: React.FC = observer(() => {
         id: processInstanceId,
         onRefetchFailure: () => {
           navigate(
-            Locations.processes({
+            LegacyLocations.processes({
               active: true,
               incidents: true,
             }),
@@ -127,7 +127,7 @@ const ProcessInstance: React.FC = observer(() => {
           });
         },
         onPollingFailure: () => {
-          navigate(Locations.processes());
+          navigate(LegacyLocations.processes());
           notifications?.displayNotification('success', {
             headline: 'Instance deleted',
           });

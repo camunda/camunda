@@ -25,6 +25,7 @@ import {mockFetchDecisionXML} from 'modules/mocks/api/decisions/fetchDecisionXML
 import {mockFetchGroupedDecisions} from 'modules/mocks/api/decisions/fetchGroupedDecisions';
 import {mockFetchDecisionInstances} from 'modules/mocks/api/decisionInstances/fetchDecisionInstances';
 import {useEffect} from 'react';
+import {LegacyPaths} from 'modules/legacyRoutes';
 
 const handleRefetchSpy = jest.spyOn(groupedDecisionsStore, 'handleRefetch');
 
@@ -40,7 +41,7 @@ jest.mock('modules/notifications', () => {
   };
 });
 
-function createWrapper(initialPath: string = '/decisions') {
+function createWrapper(initialPath: string = LegacyPaths.decisions()) {
   const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
     useEffect(() => {
       return () => {
@@ -104,7 +105,7 @@ describe('<Decisions />', () => {
     mockFetchDecisionXML().withSuccess(mockDmnXml);
 
     render(<Decisions />, {
-      wrapper: createWrapper(`/decisions${queryString}`),
+      wrapper: createWrapper(`${LegacyPaths.decisions()}${queryString}`),
     });
 
     expect(screen.getByTestId('table-skeleton')).toBeInTheDocument();
@@ -133,7 +134,9 @@ describe('<Decisions />', () => {
 
     await waitFor(() => {
       expect(groupedDecisionsStore.decisions.length).toBe(3);
-      expect(screen.getByTestId('pathname')).toHaveTextContent(/^\/decisions/);
+      expect(screen.getByTestId('pathname')).toHaveTextContent(
+        /^\/legacy\/decisions/,
+      );
       expect(screen.getByTestId('search').textContent).toBe(
         '?evaluated=true&failed=true',
       );

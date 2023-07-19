@@ -12,7 +12,7 @@ import {wait} from './utils/wait';
 import {screen, within} from '@testing-library/testcafe';
 
 fixture('Dashboard')
-  .page(config.endpoint)
+  .page(config.legacyEndpoint)
   .before(async () => {
     await setup();
     await wait();

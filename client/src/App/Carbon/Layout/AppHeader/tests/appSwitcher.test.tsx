@@ -72,7 +72,7 @@ describe('App switcher', () => {
     ).toHaveAttribute('href', 'https://link-to-tasklist');
     expect(withinAppPanel.getByRole('link', {name: 'Operate'})).toHaveAttribute(
       'href',
-      '/carbon',
+      '/',
     );
     expect(
       withinAppPanel.getByRole('link', {name: 'Optimize'}),

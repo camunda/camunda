@@ -12,7 +12,7 @@ import {setup} from './DecisionNavigation.setup';
 import {wait} from './utils/wait';
 
 fixture('Decision Navigation')
-  .page(config.endpoint)
+  .page(config.legacyEndpoint)
   .before(async (ctx) => {
     ctx.initialData = await setup();
     await wait();

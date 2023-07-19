@@ -27,6 +27,7 @@ import {
   selectDecision,
   selectDecisionVersion,
 } from 'modules/testUtils/selectComboBoxOption';
+import {LegacyPaths} from 'modules/legacyRoutes';
 
 jest.unmock('modules/utils/date/formatDate');
 
@@ -36,7 +37,7 @@ function reset() {
   localStorage.clear();
 }
 
-function getWrapper(initialPath: string = '/decisions') {
+function getWrapper(initialPath: string = LegacyPaths.decisions()) {
   const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
     useEffect(() => {
       return groupedDecisionsStore.reset;
@@ -113,7 +114,9 @@ describe('<Filters />', () => {
       wrapper: getWrapper(),
     });
 
-    expect(screen.getByTestId('pathname')).toHaveTextContent(/^\/decisions$/);
+    expect(screen.getByTestId('pathname')).toHaveTextContent(
+      /^\/legacy\/decisions$/,
+    );
     expect(screen.getByTestId('search')).toBeEmptyDOMElement();
 
     await selectDecision({user, option: 'Assign Approver Group'});
@@ -138,7 +141,9 @@ describe('<Filters />', () => {
 
     await user.click(screen.getByText(/^more filters$/i));
 
-    expect(screen.getByTestId('pathname')).toHaveTextContent(/^\/decisions$/);
+    expect(screen.getByTestId('pathname')).toHaveTextContent(
+      /^\/legacy\/decisions$/,
+    );
     await waitFor(() =>
       expect(
         Object.fromEntries(
@@ -151,7 +156,9 @@ describe('<Filters />', () => {
 
     await user.click(screen.getByRole('button', {name: /reset/i}));
 
-    expect(screen.getByTestId('pathname')).toHaveTextContent(/^\/decisions$/);
+    expect(screen.getByTestId('pathname')).toHaveTextContent(
+      /^\/legacy\/decisions$/,
+    );
     expect(screen.getByTestId('search')).toHaveTextContent(
       /^\?evaluated=true&failed=true$/,
     );
@@ -162,7 +169,9 @@ describe('<Filters />', () => {
       wrapper: getWrapper(),
     });
 
-    expect(screen.getByTestId('pathname')).toHaveTextContent(/^\/decisions$/);
+    expect(screen.getByTestId('pathname')).toHaveTextContent(
+      /^\/legacy\/decisions$/,
+    );
     expect(screen.getByTestId('search')).toBeEmptyDOMElement();
 
     await user.click(screen.getByText(/^more filters$/i));
@@ -193,7 +202,9 @@ describe('<Filters />', () => {
 
     await user.click(screen.getByRole('button', {name: /reset/i}));
 
-    expect(screen.getByTestId('pathname')).toHaveTextContent(/^\/decisions$/);
+    expect(screen.getByTestId('pathname')).toHaveTextContent(
+      /^\/legacy\/decisions$/,
+    );
     expect(screen.getByTestId('search')).toHaveTextContent(
       /^\?evaluated=true&failed=true$/,
     );
@@ -455,7 +466,9 @@ describe('<Filters />', () => {
       wrapper: getWrapper(),
     });
 
-    expect(screen.getByTestId('pathname')).toHaveTextContent(/^\/decisions$/);
+    expect(screen.getByTestId('pathname')).toHaveTextContent(
+      /^\/legacy\/decisions$/,
+    );
     expect(screen.getByTestId('search')).toBeEmptyDOMElement();
 
     await user.click(screen.getByText(/^more filters$/i));
@@ -480,7 +493,7 @@ describe('<Filters />', () => {
         name: /dashboard/i,
       }),
     );
-    expect(screen.getByTestId('pathname')).toHaveTextContent(/^\/$/);
+    expect(screen.getByTestId('pathname')).toHaveTextContent(/^\/legacy\/$/);
     expect(screen.getByTestId('search')).toBeEmptyDOMElement();
 
     await user.click(
@@ -492,7 +505,9 @@ describe('<Filters />', () => {
         name: /decisions/i,
       }),
     );
-    expect(screen.getByTestId('pathname')).toHaveTextContent(/^\/decisions$/);
+    expect(screen.getByTestId('pathname')).toHaveTextContent(
+      /^\/legacy\/decisions$/,
+    );
     expect(screen.getByTestId('search')).toHaveTextContent(
       /^\?evaluated=true&failed=true$/,
     );
@@ -514,7 +529,9 @@ describe('<Filters />', () => {
 
     const {user} = render(<Filters />, {
       wrapper: getWrapper(
-        `/decisions?name=${firstDecision.decisionId}&version=${firstVersion}`,
+        `${LegacyPaths.decisions()}?name=${
+          firstDecision.decisionId
+        }&version=${firstVersion}`,
       ),
     });
 

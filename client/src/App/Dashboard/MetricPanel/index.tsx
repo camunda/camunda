@@ -17,7 +17,7 @@ import {
 } from './styled';
 import {statisticsStore} from 'modules/stores/statistics';
 import {StatusMessage} from 'modules/components/StatusMessage';
-import {Locations} from 'modules/routes';
+import {LegacyLocations} from 'modules/legacyRoutes';
 import {panelStatesStore} from 'modules/stores/panelStates';
 import {tracking} from 'modules/tracking';
 import {useLocation} from 'react-router-dom';
@@ -58,7 +58,7 @@ const MetricPanel = observer(() => {
             link: 'dashboard-running-processes',
           });
         }}
-        to={Locations.processes(
+        to={LegacyLocations.processes(
           running === 0
             ? {
                 completed: true,
@@ -98,7 +98,7 @@ const MetricPanel = observer(() => {
               link: 'dashboard-processes-with-incidents',
             });
           }}
-          to={Locations.processes({
+          to={LegacyLocations.processes({
             incidents: true,
           })}
         >
@@ -113,7 +113,7 @@ const MetricPanel = observer(() => {
               link: 'dashboard-active-processes',
             });
           }}
-          to={Locations.processes({
+          to={LegacyLocations.processes({
             active: true,
           })}
         >

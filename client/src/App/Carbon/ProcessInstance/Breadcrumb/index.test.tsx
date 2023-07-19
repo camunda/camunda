@@ -11,16 +11,14 @@ import {Breadcrumb} from './index';
 import {createInstance} from 'modules/testUtils';
 import {Route, MemoryRouter, Routes} from 'react-router-dom';
 import {LocationLog} from 'modules/utils/LocationLog';
+import {Paths} from 'modules/Routes';
 
-const createWrapper = (initialPath: string = '/carbon/processes/123') => {
+const createWrapper = (initialPath: string = Paths.processInstance('123')) => {
   const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => (
     <ThemeProvider>
       <MemoryRouter initialEntries={[initialPath]}>
         <Routes>
-          <Route
-            path="/carbon/processes/:processInstanceId"
-            element={children}
-          />
+          <Route path={Paths.processInstance()} element={children} />
         </Routes>
         <LocationLog />
       </MemoryRouter>
@@ -67,11 +65,11 @@ describe('User', () => {
 
   it('should navigate to instance detail on click', async () => {
     const {user} = render(<Breadcrumb processInstance={processInstance} />, {
-      wrapper: createWrapper('/carbon/processes/123'),
+      wrapper: createWrapper(Paths.processInstance('123')),
     });
 
     expect(screen.getByTestId('pathname')).toHaveTextContent(
-      /^\/carbon\/processes\/123$/,
+      /^\/processes\/123$/,
     );
 
     await user.click(
@@ -80,7 +78,7 @@ describe('User', () => {
       }),
     );
     expect(screen.getByTestId('pathname')).toHaveTextContent(
-      /^\/carbon\/processes\/546546543276$/,
+      /^\/processes\/546546543276$/,
     );
 
     await user.click(
@@ -90,7 +88,7 @@ describe('User', () => {
       }),
     );
     expect(screen.getByTestId('pathname')).toHaveTextContent(
-      /^\/carbon\/processes\/968765314354$/,
+      /^\/processes\/968765314354$/,
     );
 
     await user.click(
@@ -100,7 +98,7 @@ describe('User', () => {
       }),
     );
     expect(screen.getByTestId('pathname')).toHaveTextContent(
-      /^\/carbon\/processes\/2251799813685447$/,
+      /^\/processes\/2251799813685447$/,
     );
   });
 });

@@ -8,10 +8,11 @@
 import {MemoryRouter} from 'react-router-dom';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {LocationLog} from 'modules/utils/LocationLog';
+import {LegacyPaths} from 'modules/legacyRoutes';
 
 const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => (
   <ThemeProvider>
-    <MemoryRouter>
+    <MemoryRouter initialEntries={[LegacyPaths.dashboard()]}>
       {children}
       <LocationLog />
     </MemoryRouter>

@@ -10,7 +10,7 @@ import {getAccordionItemLabel} from '../utils/getAccordionItemLabel';
 import {truncateErrorMessage} from '../utils/truncateErrorMessage';
 import {Ul, Li, InstancesBar} from './styled';
 import {PanelListItem} from 'modules/components/PanelListItem';
-import {Locations} from 'modules/routes';
+import {LegacyLocations} from 'modules/legacyRoutes';
 import {panelStatesStore} from 'modules/stores/panelStates';
 import {tracking} from 'modules/tracking';
 import {ProcessDto} from 'modules/api/incidents/fetchIncidentsByError';
@@ -29,7 +29,7 @@ const AccordionItems: React.FC<Props> = ({errorMessage, processes}) => {
         return (
           <Li key={item.processId}>
             <PanelListItem
-              to={Locations.processes({
+              to={LegacyLocations.processes({
                 process: item.bpmnProcessId,
                 version: item.version.toString(),
                 errorMessage: truncateErrorMessage(errorMessage),

@@ -24,7 +24,7 @@ import {
   Password,
   Copyright,
 } from './styled';
-import {Paths} from 'modules/routes';
+import {LegacyPaths} from 'modules/legacyRoutes';
 import {SpinnerSkeleton} from 'modules/components/SpinnerSkeleton';
 import {authenticationStore} from 'modules/stores/authentication';
 import {NetworkError} from 'modules/networkError';
@@ -66,7 +66,7 @@ const Login: React.FC = () => {
               ? location.state.referrer
               : {
                   ...location,
-                  pathname: Paths.dashboard(),
+                  pathname: LegacyPaths.dashboard(),
                 },
             {replace: true},
           );

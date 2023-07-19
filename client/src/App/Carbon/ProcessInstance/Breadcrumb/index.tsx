@@ -10,7 +10,7 @@ import {CarbonBreadcrumb} from './styled';
 import {Link} from 'modules/components/Carbon/Link';
 import {OverflowMenu, OverflowMenuItem, BreadcrumbItem} from '@carbon/react';
 import {useNavigate} from 'react-router-dom';
-import {CarbonPaths} from 'modules/carbonRoutes';
+import {Paths} from 'modules/Routes';
 
 type Props = {
   processInstance: ProcessInstanceEntity;
@@ -42,7 +42,7 @@ const Breadcrumb: React.FC<Props> = ({processInstance}) => {
         return (
           <BreadcrumbItem key={instanceId}>
             <Link
-              to={CarbonPaths.processInstance(instanceId)}
+              to={Paths.processInstance(instanceId)}
               title={`View Process ${processDefinitionName} - Instance ${instanceId}`}
               onClick={() => {
                 tracking.track({
@@ -68,7 +68,7 @@ const Breadcrumb: React.FC<Props> = ({processInstance}) => {
                     requireTitle
                     title={`View Process ${processDefinitionName} - Instance ${instanceId}`}
                     onClick={() => {
-                      navigate(CarbonPaths.processInstance(instanceId));
+                      navigate(Paths.processInstance(instanceId));
                     }}
                   />
                 ),
@@ -78,7 +78,7 @@ const Breadcrumb: React.FC<Props> = ({processInstance}) => {
           {lastBreadcrumb !== undefined && (
             <BreadcrumbItem key={lastBreadcrumb.instanceId}>
               <Link
-                to={CarbonPaths.processInstance(lastBreadcrumb.instanceId)}
+                to={Paths.processInstance(lastBreadcrumb.instanceId)}
                 title={`View Process ${lastBreadcrumb.processDefinitionName} - Instance ${lastBreadcrumb.instanceId}`}
                 onClick={() => {
                   tracking.track({

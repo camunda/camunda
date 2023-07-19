@@ -35,6 +35,7 @@ import {mockFetchProcessInstance} from 'modules/mocks/api/processInstances/fetch
 import {open} from 'modules/mocks/diagrams';
 import {mockNestedSubprocess} from 'modules/mocks/mockNestedSubprocess';
 import {IS_ADD_TOKEN_WITH_ANCESTOR_KEY_SUPPORTED} from 'modules/feature-flags';
+import {LegacyPaths} from 'modules/legacyRoutes';
 
 jest.mock('react-transition-group', () => {
   const FakeTransition = jest.fn(({children}) => children);
@@ -62,9 +63,9 @@ type Props = {
 const Wrapper: React.FC<Props> = ({children}) => {
   return (
     <ThemeProvider>
-      <MemoryRouter initialEntries={['/processes/1']}>
+      <MemoryRouter initialEntries={[LegacyPaths.processInstance('1')]}>
         <Routes>
-          <Route path="/processes/:processInstanceId" element={children} />
+          <Route path={LegacyPaths.processInstance()} element={children} />
         </Routes>
       </MemoryRouter>
     </ThemeProvider>

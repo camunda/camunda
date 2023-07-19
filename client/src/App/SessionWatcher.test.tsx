@@ -11,6 +11,7 @@ import {Link, MemoryRouter} from 'react-router-dom';
 import {SessionWatcher} from './SessionWatcher';
 import {useEffect} from 'react';
 import {act} from 'react-dom/test-utils';
+import {Paths} from 'modules/Routes';
 
 const mockRemoveNotification = jest.fn();
 const mockDisplayNotification = jest.fn(() => ({
@@ -24,7 +25,7 @@ jest.mock('modules/notifications', () => ({
   },
 }));
 
-function getWrapper(initialEntries = ['/']) {
+function getWrapper(initialEntries = [Paths.dashboard()]) {
   const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
     useEffect(() => {
       return authenticationStore.reset;

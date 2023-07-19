@@ -11,7 +11,7 @@ import {useLoadingProgress} from './useLoadingProgress';
 import {Container, Details, Title, Header, ProgressBar} from './styled';
 import {TrashCan, Error, Tools, RetryFailed, Edit} from '@carbon/react/icons';
 import {Link} from 'modules/components/Carbon/Link';
-import {CarbonPaths} from 'modules/carbonRoutes';
+import {Paths} from 'modules/Routes';
 import {panelStatesStore} from 'modules/stores/panelStates';
 
 type OperationLabelType = 'Edit' | 'Retry' | 'Cancel' | 'Modify' | 'Delete';
@@ -82,7 +82,7 @@ const OperationsEntry: React.FC<Props> = ({operation}) => {
         {label !== 'Delete' && (
           <Link
             to={{
-              pathname: CarbonPaths.processes(),
+              pathname: Paths.processes(),
               search: `?active=true&incidents=true&completed=true&canceled=true&operationId=${id}`,
             }}
             state={{hideOptionalFilters: true}}

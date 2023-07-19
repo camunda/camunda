@@ -9,6 +9,7 @@ import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {Route, MemoryRouter, Routes} from 'react-router-dom';
 import {LocationLog} from 'modules/utils/LocationLog';
 import {createIncident} from 'modules/testUtils';
+import {Paths} from 'modules/Routes';
 
 const mockIncidents = {
   count: 2,
@@ -77,10 +78,10 @@ const mockResolvedIncidents = {
 const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
   return (
     <ThemeProvider>
-      <MemoryRouter initialEntries={['/processes/1']}>
+      <MemoryRouter initialEntries={[Paths.processInstance('1')]}>
         <Routes>
           <Route
-            path="/processes/:processInstanceId"
+            path={Paths.processInstance()}
             element={
               <>
                 {children}

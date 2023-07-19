@@ -8,8 +8,8 @@
 const endpoint = `http://localhost:${process.env.PORT}`;
 
 const config = {
+  legacyEndpoint: `${endpoint}/legacy`,
   endpoint,
-  carbonEndpoint: `${endpoint}/carbon`,
   agentUser: {
     username: 'demo',
     password: 'demo',

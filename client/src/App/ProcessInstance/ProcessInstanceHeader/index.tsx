@@ -16,7 +16,7 @@ import * as Styled from './styled';
 import {variablesStore} from 'modules/stores/variables';
 import {useNotifications} from 'modules/notifications';
 import {Link} from 'modules/components/Link';
-import {Locations, Paths} from 'modules/routes';
+import {LegacyLocations, LegacyPaths} from 'modules/legacyRoutes';
 import {Restricted} from 'modules/components/Restricted';
 import {panelStatesStore} from 'modules/stores/panelStates';
 import {modificationsStore} from 'modules/stores/modifications';
@@ -73,7 +73,7 @@ const ProcessInstanceHeader: React.FC = observer(() => {
             <Styled.Td title={id}>{id}</Styled.Td>
             <Styled.Td>
               <Link
-                to={Locations.processes({
+                to={LegacyLocations.processes({
                   version: processVersion.toString(),
                   process: bpmnProcessId,
                   active: true,
@@ -107,7 +107,7 @@ const ProcessInstanceHeader: React.FC = observer(() => {
             <Styled.Td title={parentInstanceId ?? 'None'}>
               {parentInstanceId !== null ? (
                 <Link
-                  to={Paths.processInstance(parentInstanceId)}
+                  to={LegacyPaths.processInstance(parentInstanceId)}
                   title={`View parent instance ${parentInstanceId}`}
                   onClick={() => {
                     tracking.track({
@@ -125,7 +125,7 @@ const ProcessInstanceHeader: React.FC = observer(() => {
             <Styled.Td>
               {processInstanceDetailsDiagramStore.hasCalledProcessInstances ? (
                 <Link
-                  to={Locations.processes({
+                  to={LegacyLocations.processes({
                     parentInstanceId: id,
                     active: true,
                     incidents: true,

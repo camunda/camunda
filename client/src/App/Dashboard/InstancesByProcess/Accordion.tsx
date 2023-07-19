@@ -9,7 +9,7 @@ import {getAccordionTitle} from './utils/getAccordionTitle';
 import {getAccordionLabel} from './utils/getAccordionLabel';
 import InstancesBar from 'modules/components/InstancesBar';
 import {PanelListItem} from 'modules/components/PanelListItem';
-import {Locations} from 'modules/routes';
+import {LegacyLocations} from 'modules/legacyRoutes';
 import {panelStatesStore} from 'modules/stores/panelStates';
 import {tracking} from 'modules/tracking';
 import {ProcessInstanceByNameDto} from 'modules/api/incidents/fetchProcessInstancesByName';
@@ -28,7 +28,7 @@ const Accordion: React.FC<Props> = ({item, version}) => {
 
   return (
     <PanelListItem
-      to={Locations.processes({
+      to={LegacyLocations.processes({
         process: item.bpmnProcessId,
         version: version.toString(),
         active: true,

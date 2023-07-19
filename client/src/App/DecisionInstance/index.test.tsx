@@ -23,6 +23,7 @@ import {mockDmnXml} from 'modules/mocks/mockDmnXml';
 import {mockFetchDecisionXML} from 'modules/mocks/api/decisions/fetchDecisionXML';
 import {mockFetchDrdData} from 'modules/mocks/api/decisionInstances/fetchDrdData';
 import {mockFetchDecisionInstance} from 'modules/mocks/api/decisionInstances/fetchDecisionInstance';
+import {LegacyPaths} from 'modules/legacyRoutes';
 
 const DECISION_INSTANCE_ID = '4294980768';
 
@@ -37,9 +38,11 @@ const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
 
   return (
     <ThemeProvider>
-      <MemoryRouter initialEntries={[`/decisions/${DECISION_INSTANCE_ID}`]}>
+      <MemoryRouter
+        initialEntries={[LegacyPaths.decisionInstance(DECISION_INSTANCE_ID)]}
+      >
         <Routes>
-          <Route path="/decisions/:decisionInstanceId" element={children} />
+          <Route path={LegacyPaths.decisionInstance()} element={children} />
         </Routes>
       </MemoryRouter>
     </ThemeProvider>

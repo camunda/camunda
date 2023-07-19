@@ -32,10 +32,11 @@ import {mockFetchGroupedProcesses} from 'modules/mocks/api/processes/fetchGroupe
 import {mockFetchProcessInstancesStatistics} from 'modules/mocks/api/processInstances/fetchProcessInstancesStatistics';
 import {mockFetchProcessXML} from 'modules/mocks/api/processes/fetchProcessXML';
 import {useEffect} from 'react';
+import {LegacyPaths} from 'modules/legacyRoutes';
 
 jest.mock('modules/utils/bpmn');
 
-function getWrapper(initialPath: string = '/processes') {
+function getWrapper(initialPath: string = LegacyPaths.processes()) {
   const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
     useEffect(() => {
       return () => {
@@ -49,13 +50,17 @@ function getWrapper(initialPath: string = '/processes') {
       <ThemeProvider>
         <MemoryRouter initialEntries={[initialPath]}>
           <Routes>
-            <Route path="/processes" element={children} />
+            <Route path={LegacyPaths.processes()} element={children} />
           </Routes>
-          <Link to="/processes?active=true">go to active</Link>
-          <Link to="/processes?process=eventBasedGatewayProcess&version=1">
+          <Link to={`${LegacyPaths.processes()}?active=true`}>
+            go to active
+          </Link>
+          <Link
+            to={`${LegacyPaths.processes()}?process=eventBasedGatewayProcess&version=1`}
+          >
             go to event based
           </Link>
-          <Link to="/processes">go to no filters</Link>
+          <Link to={LegacyPaths.processes()}>go to no filters</Link>
           <LocationLog />
         </MemoryRouter>
       </ThemeProvider>
@@ -75,7 +80,9 @@ describe('Instances', () => {
 
   it('should render title and document title', () => {
     render(<Processes />, {
-      wrapper: getWrapper('/processes?incidents=true&active=true'),
+      wrapper: getWrapper(
+        `${LegacyPaths.processes()}?incidents=true&active=true`,
+      ),
     });
 
     expect(screen.getByText('Operate Process Instances')).toBeInTheDocument();
@@ -84,7 +91,9 @@ describe('Instances', () => {
 
   it('should render page components', async () => {
     render(<Processes />, {
-      wrapper: getWrapper('/processes?active=true&incidents=true'),
+      wrapper: getWrapper(
+        `${LegacyPaths.processes()}?active=true&incidents=true`,
+      ),
     });
 
     // diagram panel
@@ -112,7 +121,9 @@ describe('Instances', () => {
     mockFetchProcessInstances().withSuccess(mockProcessInstances);
 
     const {user} = render(<Processes />, {
-      wrapper: getWrapper('/processes?active=true&incidents=true'),
+      wrapper: getWrapper(
+        `${LegacyPaths.processes()}?active=true&incidents=true`,
+      ),
     });
 
     await waitForElementToBeRemoved(screen.getByTestId('table-skeleton'));
@@ -141,7 +152,9 @@ describe('Instances', () => {
 
   it('should not reset selected instances when table is sorted', async () => {
     const {user} = render(<Processes />, {
-      wrapper: getWrapper('/processes?active=true&incidents=true'),
+      wrapper: getWrapper(
+        `${LegacyPaths.processes()}?active=true&incidents=true`,
+      ),
     });
 
     await waitForElementToBeRemoved(screen.getByTestId('table-skeleton'));
@@ -182,7 +195,9 @@ describe('Instances', () => {
     );
 
     const {user} = render(<Processes />, {
-      wrapper: getWrapper('/processes?process=bigVarProcess&version=1'),
+      wrapper: getWrapper(
+        `${LegacyPaths.processes()}?process=bigVarProcess&version=1`,
+      ),
     });
 
     await waitFor(() =>
@@ -225,7 +240,9 @@ describe('Instances', () => {
         <Processes />
       </>,
       {
-        wrapper: getWrapper('/processes?active=true&incidents=true'),
+        wrapper: getWrapper(
+          `${LegacyPaths.processes()}?active=true&incidents=true`,
+        ),
       },
     );
 

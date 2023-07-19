@@ -10,7 +10,7 @@ import {formatDate} from 'modules/utils/date';
 import pluralSuffix from 'modules/utils/pluralSuffix';
 import {ProgressBar} from './ProgressBar';
 import {useNavigate} from 'react-router-dom';
-import {Locations} from 'modules/routes';
+import {LegacyLocations} from 'modules/legacyRoutes';
 import {panelStatesStore} from 'modules/stores/panelStates';
 import {useLoadingProgress} from './useLoadingProgress';
 import {
@@ -67,7 +67,7 @@ const OperationsEntry: React.FC<Props> = ({operation}) => {
     panelStatesStore.expandFiltersPanel();
 
     navigate(
-      Locations.processes({
+      LegacyLocations.processes({
         active: true,
         incidents: true,
         completed: true,

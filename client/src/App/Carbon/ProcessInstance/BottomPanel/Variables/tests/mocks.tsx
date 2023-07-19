@@ -16,6 +16,7 @@ import {variablesStore} from 'modules/stores/variables';
 import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
 import {processInstanceDetailsStatisticsStore} from 'modules/stores/processInstanceDetailsStatistics';
 import {modificationsStore} from 'modules/stores/modifications';
+import {Paths} from 'modules/Routes';
 
 type Props = {
   children?: React.ReactNode;
@@ -36,10 +37,10 @@ const Wrapper: React.FC<Props> = ({children}) => {
 
   return (
     <ThemeProvider>
-      <MemoryRouter initialEntries={[`/processes/1`]}>
+      <MemoryRouter initialEntries={[Paths.processInstance('1')]}>
         <Routes>
           <Route
-            path="/processes/:processInstanceId"
+            path={Paths.processInstance()}
             element={
               <Form onSubmit={() => {}} mutators={{...arrayMutators}}>
                 {({handleSubmit}) => {

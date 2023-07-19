@@ -6,7 +6,7 @@
  */
 
 import {Link} from 'modules/components/Link';
-import {Paths, Locations} from 'modules/routes';
+import {LegacyPaths, LegacyLocations} from 'modules/legacyRoutes';
 import {DecisionInstanceDto} from 'modules/api/decisionInstances/fetchDecisionInstance';
 import {tracking} from 'modules/tracking';
 import {formatDate} from 'modules/utils/date/formatDate';
@@ -59,7 +59,7 @@ const Details: React.FC<Props> = ({decisionInstance, ...props}) => {
             <TD title={decisionInstanceId}>{decisionInstanceId}</TD>
             <TD>
               <Link
-                to={Locations.decisions({
+                to={LegacyLocations.decisions({
                   version: decisionInstance.decisionVersion.toString(),
                   name: decisionInstance.decisionId,
                   evaluated: true,
@@ -82,7 +82,9 @@ const Details: React.FC<Props> = ({decisionInstance, ...props}) => {
             <TD title={decisionInstance.processInstanceId ?? 'None'}>
               {decisionInstance.processInstanceId ? (
                 <Link
-                  to={Paths.processInstance(decisionInstance.processInstanceId)}
+                  to={LegacyPaths.processInstance(
+                    decisionInstance.processInstanceId,
+                  )}
                   title={`View process instance ${decisionInstance.processInstanceId}`}
                   onClick={() => {
                     tracking.track({

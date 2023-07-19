@@ -6,7 +6,7 @@
  */
 
 import {useLocation, matchPath} from 'react-router-dom';
-import {Paths} from 'modules/routes';
+import {LegacyPaths} from 'modules/legacyRoutes';
 
 const useCurrentPage = () => {
   const location = useLocation();
@@ -19,23 +19,23 @@ const useCurrentPage = () => {
     | 'decision-details'
     | 'login'
     | undefined {
-    if (matchPath(Paths.dashboard(), location.pathname) !== null) {
+    if (matchPath(LegacyPaths.dashboard(), location.pathname) !== null) {
       return 'dashboard';
     }
 
-    if (matchPath(Paths.processes(), location.pathname) !== null) {
+    if (matchPath(LegacyPaths.processes(), location.pathname) !== null) {
       return 'processes';
     }
 
-    if (matchPath(Paths.decisions(), location.pathname) !== null) {
+    if (matchPath(LegacyPaths.decisions(), location.pathname) !== null) {
       return 'decisions';
     }
 
-    if (matchPath(Paths.processInstance(), location.pathname) !== null) {
+    if (matchPath(LegacyPaths.processInstance(), location.pathname) !== null) {
       return 'process-details';
     }
 
-    if (matchPath(Paths.decisionInstance(), location.pathname) !== null) {
+    if (matchPath(LegacyPaths.decisionInstance(), location.pathname) !== null) {
       return 'decision-details';
     }
 

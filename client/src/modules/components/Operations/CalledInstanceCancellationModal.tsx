@@ -7,7 +7,7 @@
 
 import Modal, {SIZES} from 'modules/components/Modal';
 import {Link} from 'modules/components/Link';
-import {Paths} from 'modules/routes';
+import {LegacyPaths} from 'modules/legacyRoutes';
 
 type Props = {
   onModalClose: () => void;
@@ -27,7 +27,7 @@ const CalledInstanceCancellationModal: React.FC<Props> = ({
         <Modal.BodyText>
           To cancel this instance, the root instance{' '}
           <Link
-            to={Paths.processInstance(rootInstanceId)}
+            to={LegacyPaths.processInstance(rootInstanceId)}
             title={`View root instance ${rootInstanceId}`}
           >
             {rootInstanceId}

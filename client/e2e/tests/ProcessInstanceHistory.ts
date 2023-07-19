@@ -13,7 +13,7 @@ import {wait} from './utils/wait';
 import {getFlowNodeInstances} from './api';
 
 fixture('Process Instance History')
-  .page(config.endpoint)
+  .page(config.legacyEndpoint)
   .before(async (ctx) => {
     ctx.initialData = await setup();
     await wait();
@@ -35,7 +35,7 @@ test('Scrolling behavior - root level', async (t) => {
     },
   } = t.fixtureCtx;
 
-  await t.navigateTo(`/processes/${processInstanceKey}`);
+  await t.navigateTo(`/legacy/processes/${processInstanceKey}`);
 
   await t
     .expect(screen.queryByTestId(`node-details-${processInstanceKey}`).exists)
@@ -108,7 +108,7 @@ test('Scrolling behaviour - tree level', async (t) => {
     },
   } = t.fixtureCtx;
 
-  await t.navigateTo(`/processes/${processInstanceKey}`);
+  await t.navigateTo(`/legacy/processes/${processInstanceKey}`);
 
   const withinFirstSubtree = within(
     screen.queryAllByTestId(/^tree-node-/).nth(4),

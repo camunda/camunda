@@ -9,7 +9,7 @@ import {useEffect, useState} from 'react';
 import {observer} from 'mobx-react-lite';
 import {useNotifications, Notification} from 'modules/notifications';
 import {useLocation} from 'react-router-dom';
-import {Paths} from 'modules/routes';
+import {Paths} from 'modules/Routes';
 import {authenticationStore} from 'modules/stores/authentication';
 
 const SessionWatcher: React.FC = observer(() => {

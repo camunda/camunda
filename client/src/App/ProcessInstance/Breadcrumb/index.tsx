@@ -6,7 +6,7 @@
  */
 
 import {Fragment} from 'react';
-import {Paths} from 'modules/routes';
+import {LegacyPaths} from 'modules/legacyRoutes';
 import {Container, Link, Separator, CurrentInstance} from './styled';
 import {tracking} from 'modules/tracking';
 
@@ -23,7 +23,7 @@ const Breadcrumb: React.FC<Props> = ({processInstance}) => {
         return (
           <Fragment key={instanceId}>
             <Link
-              to={Paths.processInstance(instanceId)}
+              to={LegacyPaths.processInstance(instanceId)}
               title={`View Process ${processDefinitionName} - Instance ${instanceId}`}
               onClick={() => {
                 tracking.track({

@@ -6,7 +6,7 @@
  */
 
 import {useLocation, matchPath} from 'react-router-dom';
-import {CarbonPaths} from 'modules/carbonRoutes';
+import {Paths} from 'modules/Routes';
 
 const useCurrentPage = () => {
   const location = useLocation();
@@ -19,23 +19,23 @@ const useCurrentPage = () => {
     | 'decision-details'
     | 'login'
     | undefined {
-    if (matchPath(CarbonPaths.dashboard(), location.pathname) !== null) {
+    if (matchPath(Paths.dashboard(), location.pathname) !== null) {
       return 'dashboard';
     }
 
-    if (matchPath(CarbonPaths.processes(), location.pathname) !== null) {
+    if (matchPath(Paths.processes(), location.pathname) !== null) {
       return 'processes';
     }
 
-    if (matchPath(CarbonPaths.decisions(), location.pathname) !== null) {
+    if (matchPath(Paths.decisions(), location.pathname) !== null) {
       return 'decisions';
     }
 
-    if (matchPath(CarbonPaths.processInstance(), location.pathname) !== null) {
+    if (matchPath(Paths.processInstance(), location.pathname) !== null) {
       return 'process-details';
     }
 
-    if (matchPath(CarbonPaths.decisionInstance(), location.pathname) !== null) {
+    if (matchPath(Paths.decisionInstance(), location.pathname) !== null) {
       return 'decision-details';
     }
 

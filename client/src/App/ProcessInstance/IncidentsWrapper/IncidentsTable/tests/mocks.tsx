@@ -13,6 +13,7 @@ import {authenticationStore} from 'modules/stores/authentication';
 import {incidentsStore} from 'modules/stores/incidents';
 import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
 import {processInstanceDetailsDiagramStore} from 'modules/stores/processInstanceDetailsDiagram';
+import {LegacyPaths} from 'modules/legacyRoutes';
 
 const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
   useEffect(() => {
@@ -25,9 +26,9 @@ const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
   });
   return (
     <ThemeProvider>
-      <MemoryRouter initialEntries={['/processes/1']}>
+      <MemoryRouter initialEntries={[LegacyPaths.processInstance('1')]}>
         <Routes>
-          <Route path="/processes/:processInstanceId" element={children} />
+          <Route path={LegacyPaths.processInstance()} element={children} />
         </Routes>
       </MemoryRouter>
     </ThemeProvider>

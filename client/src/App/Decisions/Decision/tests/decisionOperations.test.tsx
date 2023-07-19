@@ -13,6 +13,7 @@ import {mockFetchDecisionXML} from 'modules/mocks/api/decisions/fetchDecisionXML
 import {authenticationStore} from 'modules/stores/authentication';
 import {Decision} from '..';
 import {createWrapper} from './mocks';
+import {LegacyPaths} from 'modules/legacyRoutes';
 
 jest.mock('modules/feature-flags', () => ({
   IS_DECISION_DEFINITION_DELETION_ENABLED: true,
@@ -26,7 +27,9 @@ describe('<Decision /> - operations', () => {
 
   it('should show delete button when version is selected', async () => {
     render(<Decision />, {
-      wrapper: createWrapper('/decisions?name=invoiceClassification&version=1'),
+      wrapper: createWrapper(
+        `${LegacyPaths.decisions()}?name=invoiceClassification&version=1`,
+      ),
     });
 
     expect(
@@ -38,7 +41,7 @@ describe('<Decision /> - operations', () => {
 
   it('should not show delete button when no decision is selected', () => {
     render(<Decision />, {
-      wrapper: createWrapper('/decisions'),
+      wrapper: createWrapper(LegacyPaths.decisions()),
     });
 
     expect(
@@ -50,7 +53,9 @@ describe('<Decision /> - operations', () => {
 
   it('should not show delete button when no version is selected', () => {
     render(<Decision />, {
-      wrapper: createWrapper('/decisions?name=invoiceClassification'),
+      wrapper: createWrapper(
+        `${LegacyPaths.decisions()}?name=invoiceClassification`,
+      ),
     });
 
     expect(
@@ -72,7 +77,9 @@ describe('<Decision /> - operations', () => {
     });
 
     render(<Decision />, {
-      wrapper: createWrapper('/decisions?name=invoiceClassification&version=1'),
+      wrapper: createWrapper(
+        `${LegacyPaths.decisions()}?name=invoiceClassification&version=1`,
+      ),
     });
 
     expect(
@@ -99,7 +106,7 @@ describe('<Decision /> - operations', () => {
 
     render(<Decision />, {
       wrapper: createWrapper(
-        '/decisions?name=invoice-assign-approver&version=1',
+        `${LegacyPaths.decisions()}?name=invoice-assign-approver&version=1`,
       ),
     });
 

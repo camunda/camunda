@@ -17,7 +17,7 @@ import {authenticationStore} from 'modules/stores/authentication';
 
 import {useFilters} from 'modules/hooks/useFilters';
 import {useNotifications} from 'modules/notifications';
-import {Paths} from 'modules/routes';
+import {LegacyPaths} from 'modules/legacyRoutes';
 import {tracking} from 'modules/tracking';
 import {getProcessInstanceFilters} from 'modules/utils/filter';
 import {getProcessName} from 'modules/utils/instance';
@@ -198,7 +198,7 @@ const List: React.FC = observer(() => {
             {
               cellContent: (
                 <Link
-                  to={Paths.processInstance(instance.id)}
+                  to={LegacyPaths.processInstance(instance.id)}
                   title={`View instance ${instance.id}`}
                   onClick={() => {
                     tracking.track({
@@ -225,7 +225,7 @@ const List: React.FC = observer(() => {
               cellContent:
                 instance.parentInstanceId !== null ? (
                   <Link
-                    to={Paths.processInstance(instance.parentInstanceId)}
+                    to={LegacyPaths.processInstance(instance.parentInstanceId)}
                     title={`View parent instance ${instance.parentInstanceId}`}
                     onClick={() => {
                       tracking.track({

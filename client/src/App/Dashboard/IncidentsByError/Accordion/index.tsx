@@ -9,7 +9,7 @@ import {getAccordionTitle} from '../utils/getAccordionTitle';
 import {truncateErrorMessage} from '../utils/truncateErrorMessage';
 import {InstancesBar} from './styled';
 import {PanelListItem} from 'modules/components/PanelListItem';
-import {Locations} from 'modules/routes';
+import {LegacyLocations} from 'modules/legacyRoutes';
 import {panelStatesStore} from 'modules/stores/panelStates';
 import {tracking} from 'modules/tracking';
 
@@ -24,7 +24,7 @@ const Accordion: React.FC<Props> = ({
 }) => {
   return (
     <PanelListItem
-      to={Locations.processes({
+      to={LegacyLocations.processes({
         errorMessage: truncateErrorMessage(errorMessage),
         incidents: true,
       })}

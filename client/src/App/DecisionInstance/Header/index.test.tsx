@@ -16,14 +16,17 @@ import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {MemoryRouter, Route, Routes} from 'react-router-dom';
 import {Header} from './index';
 import {mockFetchDecisionInstance} from 'modules/mocks/api/decisionInstances/fetchDecisionInstance';
+import {LegacyPaths} from 'modules/legacyRoutes';
 
 const MOCK_DECISION_INSTANCE_ID = '123567';
 
 const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => (
   <ThemeProvider>
-    <MemoryRouter initialEntries={[`/decisions/${MOCK_DECISION_INSTANCE_ID}`]}>
+    <MemoryRouter
+      initialEntries={[LegacyPaths.decisionInstance(MOCK_DECISION_INSTANCE_ID)]}
+    >
       <Routes>
-        <Route path="/decisions/:decisionInstanceId" element={children} />
+        <Route path={LegacyPaths.decisionInstance()} element={children} />
       </Routes>
     </MemoryRouter>
   </ThemeProvider>

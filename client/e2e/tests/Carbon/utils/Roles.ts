@@ -10,7 +10,7 @@ import {config} from '../../../config';
 import {screen} from '@testing-library/testcafe';
 
 const demoUser = Role(
-  `${config.carbonEndpoint}`,
+  `${config.endpoint}`,
   async (t) => {
     await t
       .typeText(screen.queryByLabelText('Username'), 'demo')

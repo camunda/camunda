@@ -15,7 +15,7 @@ describe('Header', () => {
       wrapper: Wrapper,
     });
 
-    expect(screen.getByTestId('pathname')).toHaveTextContent(/^\/$/);
+    expect(screen.getByTestId('pathname')).toHaveTextContent(/^\/legacy\/$/);
     expect(screen.getByTestId('search')).toBeEmptyDOMElement();
 
     await user.click(
@@ -27,7 +27,9 @@ describe('Header', () => {
         name: /processes/i,
       }),
     );
-    expect(screen.getByTestId('pathname')).toHaveTextContent(/^\/processes$/);
+    expect(screen.getByTestId('pathname')).toHaveTextContent(
+      /^\/legacy\/processes$/,
+    );
     expect(screen.getByTestId('search')).toHaveTextContent(
       /^\?active=true&incidents=true$/,
     );
@@ -41,7 +43,7 @@ describe('Header', () => {
         name: /dashboard/i,
       }),
     );
-    expect(screen.getByTestId('pathname')).toHaveTextContent(/^\/$/);
+    expect(screen.getByTestId('pathname')).toHaveTextContent(/^\/legacy\/$/);
     expect(screen.getByTestId('search')).toBeEmptyDOMElement();
 
     await user.click(
@@ -53,7 +55,9 @@ describe('Header', () => {
         name: /decisions/i,
       }),
     );
-    expect(screen.getByTestId('pathname')).toHaveTextContent(/^\/decisions$/);
+    expect(screen.getByTestId('pathname')).toHaveTextContent(
+      /^\/legacy\/decisions$/,
+    );
     expect(screen.getByTestId('search')).toHaveTextContent(
       /^\?evaluated=true&failed=true$/,
     );

@@ -14,7 +14,7 @@ import {decisionsPage} from './PageModels/Decisions';
 import {clearComboBox} from './utils/clearComboBox';
 
 fixture('Decision Instances')
-  .page(config.endpoint)
+  .page(config.legacyEndpoint)
   .before(async (ctx) => {
     await setup();
     await wait();

@@ -11,7 +11,7 @@ import {StateIcon} from 'modules/components/Carbon/StateIcon';
 import {formatDate} from 'modules/utils/date';
 import {Container, ProcessName} from './styled';
 import {observer} from 'mobx-react';
-import {CarbonPaths} from 'modules/carbonRoutes';
+import {Paths} from 'modules/Routes';
 import {tracking} from 'modules/tracking';
 import {Link} from 'modules/components/Carbon/Link';
 import {useFilters} from 'modules/hooks/useFilters';
@@ -148,7 +148,7 @@ const InstancesTable: React.FC = observer(() => {
             ),
             processInstanceKey: (
               <Link
-                to={CarbonPaths.processInstance(instance.id)}
+                to={Paths.processInstance(instance.id)}
                 title={`View instance ${instance.id}`}
                 onClick={() => {
                   tracking.track({
@@ -167,7 +167,7 @@ const InstancesTable: React.FC = observer(() => {
               <>
                 {instance.parentInstanceId !== null ? (
                   <Link
-                    to={CarbonPaths.processInstance(instance.parentInstanceId)}
+                    to={Paths.processInstance(instance.parentInstanceId)}
                     title={`View parent instance ${instance.parentInstanceId}`}
                     onClick={() => {
                       tracking.track({

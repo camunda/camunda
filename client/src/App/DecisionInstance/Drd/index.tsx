@@ -9,7 +9,7 @@ import {useEffect, useRef} from 'react';
 import {autorun} from 'mobx';
 import {observer} from 'mobx-react';
 import {useNavigate} from 'react-router-dom';
-import {Paths} from 'modules/routes';
+import {LegacyPaths} from 'modules/legacyRoutes';
 import {DrdViewer} from 'modules/dmn-js/DrdViewer';
 import {decisionXmlStore} from 'modules/stores/decisionXml';
 import {drdStore} from 'modules/stores/drd';
@@ -42,7 +42,7 @@ const Drd: React.FC = observer(() => {
       decisionInstances[decisionInstances.length - 1]?.decisionInstanceId;
 
     if (decisionInstanceId !== undefined) {
-      navigate(Paths.decisionInstance(decisionInstanceId));
+      navigate(LegacyPaths.decisionInstance(decisionInstanceId));
     }
   };
 

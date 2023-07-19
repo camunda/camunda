@@ -26,6 +26,7 @@ import {mockFetchGroupedDecisions} from 'modules/mocks/api/decisions/fetchGroupe
 import {mockFetchDecisionInstances} from 'modules/mocks/api/decisionInstances/fetchDecisionInstances';
 import {useEffect} from 'react';
 import {mockFetchBatchOperations} from 'modules/mocks/api/fetchBatchOperations';
+import {Paths} from 'modules/Routes';
 
 const handleRefetchSpy = jest.spyOn(groupedDecisionsStore, 'handleRefetch');
 
@@ -35,7 +36,7 @@ jest.mock('modules/stores/carbonNotifications', () => ({
   },
 }));
 
-function createWrapper(initialPath: string = '/decisions') {
+function createWrapper(initialPath: string = Paths.decisions()) {
   const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
     useEffect(() => {
       return () => {

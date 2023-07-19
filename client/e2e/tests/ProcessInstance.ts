@@ -14,7 +14,7 @@ import {DATE_REGEX} from './constants';
 import {processInstancePage as ProcessInstancePage} from './PageModels/ProcessInstance';
 
 fixture('Process Instance')
-  .page(config.endpoint)
+  .page(config.legacyEndpoint)
   .before(async (ctx) => {
     ctx.initialData = await setup();
     await wait();
@@ -30,7 +30,7 @@ test('Resolve an incident', async (t) => {
 
   const instanceId = instanceWithIncidentToResolve.processInstanceKey;
 
-  await t.navigateTo(`/processes/${instanceId}`);
+  await t.navigateTo(`legacy/processes/${instanceId}`);
 
   // click and expand incident bar
   await t
@@ -161,7 +161,7 @@ test('Cancel an instance', async (t) => {
 
   const instanceId = instanceWithIncidentToCancel.processInstanceKey;
 
-  await t.navigateTo(`/processes/${instanceId}`);
+  await t.navigateTo(`/legacy/processes/${instanceId}`);
 
   await t
     .expect(

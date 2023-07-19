@@ -17,15 +17,19 @@ import {statistics} from 'modules/mocks/statistics';
 import {panelStatesStore} from 'modules/stores/panelStates';
 import {LocationLog} from 'modules/utils/LocationLog';
 import {mockFetchProcessCoreStatistics} from 'modules/mocks/api/processInstances/fetchProcessCoreStatistics';
+import {LegacyPaths} from 'modules/legacyRoutes';
 
-function createWrapper(initialPath: string = '/') {
+function createWrapper(initialPath: string = LegacyPaths.dashboard()) {
   const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
     return (
       <ThemeProvider>
         <MemoryRouter initialEntries={[initialPath]}>
           <Routes>
-            <Route path="/processes" element={<div>Processes</div>} />
-            <Route path="/" element={children} />
+            <Route
+              path={LegacyPaths.processes()}
+              element={<div>Processes</div>}
+            />
+            <Route path={LegacyPaths.dashboard()} element={children} />
           </Routes>
           <LocationLog />
         </MemoryRouter>
@@ -93,7 +97,9 @@ describe('<MetricPanel />', () => {
     expect(panelStatesStore.state.isFiltersCollapsed).toBe(true);
     await user.click(screen.getByText('Process Instances with Incident'));
 
-    expect(screen.getByTestId('pathname')).toHaveTextContent(/^\/processes$/);
+    expect(screen.getByTestId('pathname')).toHaveTextContent(
+      /^\/legacy\/processes$/,
+    );
     expect(screen.getByTestId('search')).toHaveTextContent(
       /^\?incidents=true$/,
     );
@@ -114,7 +120,9 @@ describe('<MetricPanel />', () => {
 
     await user.click(screen.getByText('Active Process Instances'));
 
-    expect(screen.getByTestId('pathname')).toHaveTextContent(/^\/processes$/);
+    expect(screen.getByTestId('pathname')).toHaveTextContent(
+      /^\/legacy\/processes$/,
+    );
     expect(screen.getByTestId('search')).toHaveTextContent(/^\?active=true$/);
 
     expect(panelStatesStore.state.isFiltersCollapsed).toBe(false);
@@ -131,7 +139,9 @@ describe('<MetricPanel />', () => {
       await screen.findByText('1087 Running Process Instances in total'),
     );
 
-    expect(screen.getByTestId('pathname')).toHaveTextContent(/^\/processes$/);
+    expect(screen.getByTestId('pathname')).toHaveTextContent(
+      /^\/legacy\/processes$/,
+    );
     expect(screen.getByTestId('search')).toHaveTextContent(
       /^\?incidents=true&active=true$/,
     );

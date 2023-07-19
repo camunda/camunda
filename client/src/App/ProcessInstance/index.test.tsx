@@ -52,6 +52,7 @@ import {mockFetchFlowNodeMetadata} from 'modules/mocks/api/processInstances/fetc
 import {mockModify} from 'modules/mocks/api/processInstances/modify';
 import {mockIncidents} from 'modules/mocks/incidents';
 import {singleInstanceMetadata} from 'modules/mocks/metadata';
+import {LegacyPaths} from 'modules/legacyRoutes';
 
 const handleRefetchSpy = jest.spyOn(
   processInstanceDetailsStore,
@@ -88,7 +89,7 @@ const clearPollingStates = () => {
 };
 
 function getWrapper(
-  initialPath: string = '/processes/4294980768',
+  initialPath: string = LegacyPaths.processInstance('4294980768'),
   contextPath?: string,
 ) {
   const Wrapper: React.FC<Props> = ({children}) => {
@@ -101,9 +102,15 @@ function getWrapper(
           basename={contextPath ?? ''}
         >
           <Routes>
-            <Route path="/processes/:processInstanceId" element={children} />
-            <Route path="/processes" element={<>instances page</>} />
-            <Route path="/" element={<>dashboard page</>} />
+            <Route path={LegacyPaths.processInstance()} element={children} />
+            <Route
+              path={LegacyPaths.processes()}
+              element={<>instances page</>}
+            />
+            <Route
+              path={LegacyPaths.dashboard()}
+              element={<>dashboard page</>}
+            />
           </Routes>
           <LocationLog />
         </HistoryRouter>
@@ -233,7 +240,9 @@ describe('Instance', () => {
 
     mockFetchProcessInstance().withServerError(404);
 
-    render(<ProcessInstance />, {wrapper: getWrapper('/processes/123')});
+    render(<ProcessInstance />, {
+      wrapper: getWrapper(LegacyPaths.processInstance('123')),
+    });
 
     expect(screen.getByTestId('instance-header-skeleton')).toBeInTheDocument();
     expect(screen.getByTestId('diagram-spinner')).toBeInTheDocument();
@@ -253,7 +262,9 @@ describe('Instance', () => {
     await waitFor(() => expect(handleRefetchSpy).toHaveBeenCalledTimes(3));
 
     await waitFor(() => {
-      expect(screen.getByTestId('pathname')).toHaveTextContent(/^\/processes$/);
+      expect(screen.getByTestId('pathname')).toHaveTextContent(
+        /^\/legacy\/processes$/,
+      );
       expect(screen.getByTestId('search')).toHaveTextContent(
         /^\?active=true&incidents=true$/,
       );
@@ -750,7 +761,10 @@ describe('Instance', () => {
     mockRequests(contextPath);
 
     const {user} = render(<ProcessInstance />, {
-      wrapper: getWrapper(`${contextPath}/processes/4294980768`, contextPath),
+      wrapper: getWrapper(
+        `${contextPath}${LegacyPaths.processInstance('4294980768')}`,
+        contextPath,
+      ),
     });
     await waitForElementToBeRemoved(
       screen.getByTestId('instance-header-skeleton'),
@@ -812,11 +826,14 @@ describe('Instance', () => {
 
     const {user} = render(
       <>
-        <Link to="/">go to dashboard</Link>
+        <Link to={LegacyPaths.dashboard()}>go to dashboard</Link>
         <ProcessInstance />
       </>,
       {
-        wrapper: getWrapper(`${contextPath}/processes/4294980768`, contextPath),
+        wrapper: getWrapper(
+          `${contextPath}/legacy/processes/4294980768`,
+          contextPath,
+        ),
       },
     );
     await waitForElementToBeRemoved(

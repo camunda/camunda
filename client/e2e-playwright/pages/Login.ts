@@ -43,6 +43,6 @@ export class Login {
   }
 
   async navigateToLogin() {
-    await this.page.goto('/carbon/login');
+    await this.page.goto('/login');
   }
 }

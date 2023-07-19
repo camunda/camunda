@@ -11,6 +11,7 @@ import {LocationLog} from 'modules/utils/LocationLog';
 import {useEffect} from 'react';
 import {processesStore} from 'modules/stores/processes';
 import {processDiagramStore} from 'modules/stores/processDiagram';
+import {Paths} from 'modules/Routes';
 
 const GROUPED_BIG_VARIABLE_PROCESS = {
   bpmnProcessId: 'bigVarProcess',
@@ -25,7 +26,7 @@ const GROUPED_BIG_VARIABLE_PROCESS = {
   ],
 };
 
-function getWrapper(initialPath: string = '/') {
+function getWrapper(initialPath: string = Paths.dashboard()) {
   const MockApp: React.FC<{children?: React.ReactNode}> = ({children}) => {
     useEffect(() => {
       return () => {
@@ -38,7 +39,7 @@ function getWrapper(initialPath: string = '/') {
       <ThemeProvider>
         <MemoryRouter initialEntries={[initialPath]}>
           <Routes>
-            <Route path="/" element={children} />
+            <Route path={Paths.dashboard()} element={children} />
           </Routes>
           <LocationLog />
         </MemoryRouter>

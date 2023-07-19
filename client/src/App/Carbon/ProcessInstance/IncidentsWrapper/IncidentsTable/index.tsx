@@ -16,7 +16,7 @@ import {FlexContainer, ErrorMessageCell} from './styled';
 import {processInstanceDetailsDiagramStore} from 'modules/stores/processInstanceDetailsDiagram';
 import {Incident, incidentsStore} from 'modules/stores/incidents';
 import {Link} from 'modules/components/Link';
-import {Paths} from 'modules/routes';
+import {LegacyPaths} from 'modules/legacyRoutes';
 import {useLocation} from 'react-router-dom';
 import {tracking} from 'modules/tracking';
 import {authenticationStore} from 'modules/stores/authentication';
@@ -187,7 +187,7 @@ const IncidentsTable: React.FC = observer(function IncidentsTable() {
                 ) : (
                   <Link
                     to={{
-                      pathname: Paths.processInstance(
+                      pathname: LegacyPaths.processInstance(
                         rootCauseInstance.instanceId,
                       ),
                     }}
