@@ -8,7 +8,7 @@
 import {shallow} from 'enzyme';
 
 import CarbonTabs from './CarbonTabs';
-import {Tab, TabPanels} from '@carbon/react';
+import {Tab, TabPanels, Tabs} from '@carbon/react';
 
 it('should display tabs properly', () => {
   const node = shallow(
@@ -65,4 +65,20 @@ it('should hide tab buttons if specified', () => {
   );
 
   expect(node.find('ButtonGroup')).not.toExist();
+});
+
+it('should use index values if no value prop is provided', () => {
+  const spy = jest.fn();
+  const node = shallow(
+    <CarbonTabs onChange={spy}>
+      <CarbonTabs.Tab title="tab1 title">Tab1 content</CarbonTabs.Tab>
+      <CarbonTabs.Tab title="tab2 title">Tab2 content</CarbonTabs.Tab>
+    </CarbonTabs>
+  );
+
+  const tabs = node.find(Tabs);
+
+  expect(tabs.prop('selectedIndex')).toBe(0);
+  node.simulate('change', {selectedIndex: 1});
+  expect(spy).toHaveBeenCalledWith(1);
 });

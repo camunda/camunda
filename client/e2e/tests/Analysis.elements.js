@@ -17,7 +17,7 @@ export const branchAnalysisLink = Selector('.NavItem').withText('Branch Analysis
 export const heatmapEl = Selector('svg .viewport image');
 export const tooltipDetailsButton = Selector('.Tooltip button').withText('View Details');
 export const chart = Selector('.DurationChart canvas');
-export const commonVariablesButton = Selector('.ButtonGroup .Button').withText(
+export const commonVariablesButton = Selector('.cds--tabs button').withText(
   'Common Significant Variables Table'
 );
 export const variablesTable = Selector('.VariablesTable .Table');

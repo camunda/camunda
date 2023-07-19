@@ -19,7 +19,7 @@ interface CarbonTabsProps<T extends string | number>
 
 interface CarbonTabProps<T extends string | number>
   extends Omit<ComponentPropsWithoutRef<'div'>, 'title'> {
-  value: T;
+  value?: T;
   title?: ReactNode;
   disabled?: boolean;
 }
@@ -31,7 +31,7 @@ export default function CarbonTabs<T extends string | number>({
   showButtons = true,
 }: CarbonTabsProps<T>) {
   const tabs = Children.toArray(children).filter(isReactElement<CarbonTabProps<T>>);
-  const values = tabs.map<T>(({props: {value}}) => value);
+  const values = tabs.map<T>(({props: {value}}, idx) => (value || idx) as T);
   const [selected, setSelected] = useState<T>(value);
 
   useEffect(() => {
@@ -49,8 +49,8 @@ export default function CarbonTabs<T extends string | number>({
     >
       {showButtons && (
         <TabList aria-label="tabs">
-          {tabs.map(({props: {value, title, disabled}}) => (
-            <Tab key={getIndex(values, value)} disabled={disabled}>
+          {tabs.map(({props: {value, title, disabled}}, idx) => (
+            <Tab key={getIndex(values, value || idx)} disabled={disabled}>
               {title}
             </Tab>
           ))}
