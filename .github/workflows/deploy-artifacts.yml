@@ -82,8 +82,9 @@ jobs:
     # inefficient as it looks, since docker retrieves the previously generated images from the build cache
     - name: Deploy to Docker Hub / Harbor
       run: |
+        # shellcheck disable=SC2086
         docker buildx build \
-          "${tag_arguments}" \
+          ${tag_arguments} \
           --build-arg VERSION="${VERSION}" \
           --build-arg DATE="${DATE}" \
           --build-arg REVISION="${REVISION}" \
