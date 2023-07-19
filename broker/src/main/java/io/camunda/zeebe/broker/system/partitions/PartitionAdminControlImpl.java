@@ -46,6 +46,16 @@ public class PartitionAdminControlImpl implements PartitionAdminControl {
   }
 
   @Override
+  public ZeebeDb getZeebeDb() {
+    return zeebeDbSupplier.get();
+  }
+
+  @Override
+  public LogStream getLogStream() {
+    return logStreamSupplier.get();
+  }
+
+  @Override
   public ExporterDirector getExporterDirector() {
     return exporterDirectorSupplier.get();
   }
@@ -83,14 +93,5 @@ public class PartitionAdminControlImpl implements PartitionAdminControl {
   @Override
   public boolean resumeExporting() throws IOException {
     return partitionProcessingStateSupplier.get().resumeExporting();
-  }
-
-  @Override
-  public ZeebeDb getZeebeDb() {
-    return zeebeDbSupplier.get();
-  }
-
-  public LogStream getLogStream() {
-    return logStreamSupplier.get();
   }
 }
