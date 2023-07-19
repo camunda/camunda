@@ -14,4 +14,12 @@ public interface ScheduledTaskState {
   MessageState getMessageState();
 
   TimerInstanceState getTimerState();
+
+  JobState getJobState();
+
+  DeploymentState getDeploymentState();
+
+  PendingMessageSubscriptionState getPendingMessageSubscriptionState();
+
+  PendingProcessMessageSubscriptionState getPendingProcessMessageSubscriptionState();
 }

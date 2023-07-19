@@ -56,6 +56,7 @@ public final class StreamProcessorContext implements ReadonlyStreamProcessorCont
   private volatile StreamProcessor.Phase phase = Phase.INITIAL;
   private KeyGeneratorControls keyGeneratorControls;
   private int maxCommandsInBatch = DEFAULT_MAX_COMMANDS_IN_BATCH;
+  private boolean enableAsyncScheduledTasks = true;
 
   public StreamProcessorContext actor(final ActorControl actor) {
     this.actor = actor;
@@ -205,5 +206,14 @@ public final class StreamProcessorContext implements ReadonlyStreamProcessorCont
 
   public int getMaxCommandsInBatch() {
     return maxCommandsInBatch;
+  }
+
+  public StreamProcessorContext setEnableAsyncScheduledTasks(final boolean enabled) {
+    this.enableAsyncScheduledTasks = enabled;
+    return this;
+  }
+
+  public boolean enableAsyncScheduledTasks() {
+    return enableAsyncScheduledTasks;
   }
 }

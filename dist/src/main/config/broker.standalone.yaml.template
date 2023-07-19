@@ -822,6 +822,20 @@
       # Lowering the command limit can reduce the frequency of rollback and retry.
       # This setting can also be overridden using the environment variable ZEEBE_BROKER_PROCESSING_MAXCOMMANDSINBATCH
       # maxCommandsInBatch = 100
+
+      # Allows scheduled processing tasks such as checking for timed-out jobs to run concurrently to
+      # regular processing. This is a performance optimization to ensure that processing is not interrupted by
+      # higher than usual workload for any of the scheduled tasks. This should only be disabled in case of bugs,
+      # for example if one of the scheduled tasks is not safe to run concurrently to regular processing.
+      #
+      # This replaces the deprecated experimental settings that enable async scheduling for specific tasks only, for
+      # example `enableMessageTTLCheckerAsync`. When `enableAsyncScheduledTasks` is enabled (which it is by default),
+      # the deprecated settings take no effect. When `enableAsyncScheduledTasks` is disabled, scheduled tasks are only run async
+      # if explicitly enabled by the deprecated setting.
+      #
+      # This setting can also be overridden using the environment variable ZEEBE_BROKER_PROCESSING_ENABLEASYNCSCHEDULEDTASKS
+      # enableAsyncScheduledTasks: true
+
     # experimental
       # Be aware that all configuration's which are part of the experimental section
       # are subject to change and can be dropped at any time.

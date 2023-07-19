@@ -18,14 +18,17 @@ public class ExtendedProcessingScheduleServiceImpl implements ProcessingSchedule
   private final SimpleProcessingScheduleService processorActorService;
   private final SimpleProcessingScheduleService asyncActorService;
   private final ConcurrencyControl concurrencyControl;
+  private final boolean alwaysAsync;
 
   public ExtendedProcessingScheduleServiceImpl(
       final SimpleProcessingScheduleService processorActorService,
       final SimpleProcessingScheduleService asyncActorService,
-      final ConcurrencyControl concurrencyControl) {
+      final ConcurrencyControl concurrencyControl,
+      final boolean alwaysAsync) {
     this.processorActorService = processorActorService;
     this.asyncActorService = asyncActorService;
     this.concurrencyControl = concurrencyControl;
+    this.alwaysAsync = alwaysAsync;
   }
 
   @Override
@@ -48,16 +51,32 @@ public class ExtendedProcessingScheduleServiceImpl implements ProcessingSchedule
 
   @Override
   public void runDelayed(final Duration delay, final Runnable task) {
-    processorActorService.runDelayed(delay, task);
+    if (alwaysAsync) {
+      concurrencyControl.run(
+          () -> {
+            // we must run in different actor in order to schedule task
+            asyncActorService.runDelayed(delay, task);
+          });
+    } else {
+      processorActorService.runDelayed(delay, task);
+    }
   }
 
   @Override
   public void runDelayed(final Duration delay, final Task task) {
-    processorActorService.runDelayed(delay, task);
+    if (alwaysAsync) {
+      runDelayedAsync(delay, task);
+    } else {
+      processorActorService.runDelayed(delay, task);
+    }
   }
 
   @Override
   public void runAtFixedRate(final Duration delay, final Task task) {
-    processorActorService.runAtFixedRate(delay, task);
+    if (alwaysAsync) {
+      runAtFixedRateAsync(delay, task);
+    } else {
+      processorActorService.runAtFixedRate(delay, task);
+    }
   }
 }

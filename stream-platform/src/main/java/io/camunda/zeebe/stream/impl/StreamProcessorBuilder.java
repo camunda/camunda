@@ -135,4 +135,9 @@ public final class StreamProcessorBuilder {
     streamProcessorContext.maxCommandsInBatch(maxCommandsInBatch);
     return this;
   }
+
+  public StreamProcessorBuilder setEnableAsyncScheduledTasks(final boolean enabled) {
+    streamProcessorContext.setEnableAsyncScheduledTasks(enabled);
+    return this;
+  }
 }

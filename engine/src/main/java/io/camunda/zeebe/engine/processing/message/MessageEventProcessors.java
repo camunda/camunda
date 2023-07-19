@@ -97,7 +97,7 @@ public final class MessageEventProcessors {
         .withListener(
             new MessageObserver(
                 scheduledTaskStateFactory,
-                processingState.getPendingMessageSubscriptionState(),
+                scheduledTaskStateFactory.get().getPendingMessageSubscriptionState(),
                 subscriptionCommandSender,
                 config.getMessagesTtlCheckerInterval(),
                 config.getMessagesTtlCheckerBatchLimit(),
