@@ -336,7 +336,7 @@ class PartitionTransitionImplTest {
 
     assertThatThrownBy(secondTransitionFuture::join)
         .isInstanceOf(CompletionException.class)
-        .getCause()
+        .getRootCause()
         .isSameAs(testException);
   }
 
