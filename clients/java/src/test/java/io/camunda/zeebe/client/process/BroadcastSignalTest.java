@@ -20,6 +20,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.entry;
 
+import io.camunda.zeebe.client.api.command.BroadcastSignalCommandStep1.BroadcastSignalCommandStep2;
 import io.camunda.zeebe.client.api.command.ClientException;
 import io.camunda.zeebe.client.api.response.BroadcastSignalResponse;
 import io.camunda.zeebe.client.util.ClientTest;
@@ -148,6 +149,21 @@ public final class BroadcastSignalTest extends ClientTest {
 
     // then
     rule.verifyRequestTimeout(requestTimeout);
+  }
+
+  @Test
+  public void shouldAllowSpecifyingTenantIdBy() {
+    // given
+    final BroadcastSignalCommandStep2 builder = client.newBroadcastSignalCommand().signalName("");
+
+    // when
+    final BroadcastSignalCommandStep2 builderWithTenant = builder.tenantId("custom tenant");
+
+    // then
+    // todo(#13558): verify that tenant id is set in the request
+    assertThat(builderWithTenant)
+        .describedAs("This method has no effect on the command builder while under development")
+        .isEqualTo(builder);
   }
 
   public static class Variables {
