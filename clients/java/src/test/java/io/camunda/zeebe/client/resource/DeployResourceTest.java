@@ -223,6 +223,7 @@ public final class DeployResourceTest extends ClientTest {
     assertThat(response.getKey()).isEqualTo(key);
     assertThat(response.getProcesses())
         .containsExactly(new ProcessImpl(423, BPMN_1_PROCESS_ID, 12, filename));
+    assertThat(response.getTenantId()).isEqualTo("");
   }
 
   @Test
