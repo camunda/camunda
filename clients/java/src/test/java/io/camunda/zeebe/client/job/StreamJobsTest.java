@@ -20,6 +20,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.zeebe.client.api.command.ClientException;
+import io.camunda.zeebe.client.api.command.StreamJobsCommandStep1.StreamJobsCommandStep3;
 import io.camunda.zeebe.client.api.response.StreamJobsResponse;
 import io.camunda.zeebe.client.util.ClientTest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivatedJob;
@@ -242,5 +243,55 @@ public final class StreamJobsTest extends ClientTest {
     // then
     Mockito.verify(rule.getGatewayStub(), Mockito.times(1))
         .withDeadlineAfter(requestTimeout.toNanos(), TimeUnit.NANOSECONDS);
+  }
+
+  @Test
+  public void shouldAllowSpecifyingTenantIdsAsList() {
+    // given
+    final StreamJobsCommandStep3 builder =
+        client.newStreamJobsCommand().jobType("foo").consumer(ignored -> {});
+
+    // when
+    final StreamJobsCommandStep3 builderWithTenants =
+        builder.tenantIds(Arrays.asList("tenant1", "tenant2"));
+
+    // then
+    // todo(#13560): verify that tenant ids are set in the request
+    assertThat(builderWithTenants)
+        .describedAs("This method has no effect on the command builder while under development")
+        .isEqualTo(builder);
+  }
+
+  @Test
+  public void shouldAllowSpecifyingTenantIdsAsVarArgs() {
+    // given
+    final StreamJobsCommandStep3 builder =
+        client.newStreamJobsCommand().jobType("foo").consumer(ignored -> {});
+
+    // when
+    final StreamJobsCommandStep3 builderWithTenants = builder.tenantIds("tenant1", "tenant2");
+
+    // then
+    // todo(#13560): verify that tenant ids are set in the request
+    assertThat(builderWithTenants)
+        .describedAs("This method has no effect on the command builder while under development")
+        .isEqualTo(builder);
+  }
+
+  @Test
+  public void shouldAllowSpecifyingTenantIds() {
+    // given
+    final StreamJobsCommandStep3 builder =
+        client.newStreamJobsCommand().jobType("foo").consumer(ignored -> {});
+
+    // when
+    final StreamJobsCommandStep3 builderWithTenants =
+        builder.tenantId("tenant1").tenantId("tenant2");
+
+    // then
+    // todo(#13560): verify that tenant ids are set in the request
+    assertThat(builderWithTenants)
+        .describedAs("This method has no effect on the command builder while under development")
+        .isEqualTo(builder);
   }
 }
