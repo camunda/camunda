@@ -395,7 +395,6 @@ public class ZeebePartitionTest {
 
     final var zeebePartitionHealth = captor.getValue();
     final HealthReport healthReport = zeebePartitionHealth.getHealthReport();
-    zeebePartitionHealth.setServicesInstalled(true);
 
     assertThat(healthReport.getStatus()).isEqualTo(HealthStatus.UNHEALTHY);
     assertThat(healthReport.getIssue().message()).contains("Services not installed");
