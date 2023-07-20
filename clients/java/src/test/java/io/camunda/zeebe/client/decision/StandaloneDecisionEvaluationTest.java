@@ -21,6 +21,7 @@ import static org.assertj.core.api.Assertions.entry;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 
 import io.camunda.zeebe.client.api.command.ClientException;
+import io.camunda.zeebe.client.api.command.EvaluateDecisionCommandStep1.EvaluateDecisionCommandStep2;
 import io.camunda.zeebe.client.api.response.EvaluateDecisionResponse;
 import io.camunda.zeebe.client.api.response.EvaluatedDecision;
 import io.camunda.zeebe.client.api.response.EvaluatedDecisionInput;
@@ -255,6 +256,37 @@ public class StandaloneDecisionEvaluationTest extends ClientTest {
 
     // then
     rule.verifyRequestTimeout(requestTimeout);
+  }
+
+  @Test
+  public void shouldAllowSpecifyingTenantIdByDecisionId() {
+    // given
+    final EvaluateDecisionCommandStep2 builder = client.newEvaluateDecisionCommand().decisionId("");
+
+    // when
+    final EvaluateDecisionCommandStep2 builderWithTenant = builder.tenantId("custom tenant");
+
+    // then
+    // todo(#13557): verify that tenant id is set in the request
+    assertThat(builderWithTenant)
+        .describedAs("This method has no effect on the command builder while under development")
+        .isEqualTo(builder);
+  }
+
+  @Test
+  public void shouldAllowSpecifyingTenantIdByDecisionKey() {
+    // given
+    final EvaluateDecisionCommandStep2 builder =
+        client.newEvaluateDecisionCommand().decisionKey(1L);
+
+    // when
+    final EvaluateDecisionCommandStep2 builderWithTenant = builder.tenantId("custom tenant");
+
+    // then
+    // todo(#13557): verify that tenant id is set in the request
+    assertThat(builderWithTenant)
+        .describedAs("This method has no effect on the command builder while under development")
+        .isEqualTo(builder);
   }
 
   private void assertResponse(final EvaluateDecisionResponse response) {

@@ -95,6 +95,12 @@ public class EvaluateDecisionCommandImpl extends CommandWithVariables<EvaluateDe
     return future;
   }
 
+  @Override
+  public EvaluateDecisionCommandStep2 tenantId(final String tenantId) {
+    // todo(#13557): replace dummy implementation
+    return this;
+  }
+
   private void send(
       final EvaluateDecisionRequest request,
       final StreamObserver<GatewayOuterClass.EvaluateDecisionResponse> streamObserver) {

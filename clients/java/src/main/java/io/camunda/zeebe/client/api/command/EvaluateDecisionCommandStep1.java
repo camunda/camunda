@@ -39,7 +39,9 @@ public interface EvaluateDecisionCommandStep1 {
    */
   EvaluateDecisionCommandStep2 decisionKey(long decisionKey);
 
-  interface EvaluateDecisionCommandStep2 extends FinalCommandStep<EvaluateDecisionResponse> {
+  interface EvaluateDecisionCommandStep2
+      extends CommandWithTenantStep<EvaluateDecisionCommandStep2>,
+          FinalCommandStep<EvaluateDecisionResponse> {
 
     /**
      * Set the variables for the decision evaluation.
