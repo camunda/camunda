@@ -112,4 +112,10 @@ public final class PublishMessageCommandImpl extends CommandWithVariables<Publis
         .withDeadlineAfter(requestTimeout.toMillis(), TimeUnit.MILLISECONDS)
         .publishMessage(request, streamObserver);
   }
+
+  @Override
+  public PublishMessageCommandStep3 tenantId(final String tenantId) {
+    // todo(#13559): replace dummy implementation
+    return this;
+  }
 }

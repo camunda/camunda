@@ -21,6 +21,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.entry;
 
 import io.camunda.zeebe.client.api.command.ClientException;
+import io.camunda.zeebe.client.api.command.PublishMessageCommandStep1.PublishMessageCommandStep3;
 import io.camunda.zeebe.client.api.response.PublishMessageResponse;
 import io.camunda.zeebe.client.util.ClientTest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.PublishMessageRequest;
@@ -203,6 +204,22 @@ public final class PublishMessageTest extends ClientTest {
 
     // then
     rule.verifyRequestTimeout(requestTimeout);
+  }
+
+  @Test
+  public void shouldAllowSpecifyingTenantId() {
+    // given
+    final PublishMessageCommandStep3 builder =
+        client.newPublishMessageCommand().messageName("").correlationKey("");
+
+    // when
+    final PublishMessageCommandStep3 builderWithTenant = builder.tenantId("custom tenant");
+
+    // then
+    // todo(#13559): verify that tenant id is set in the request
+    assertThat(builderWithTenant)
+        .describedAs("This method has no effect on the command builder while under development")
+        .isEqualTo(builder);
   }
 
   public static class Variables {
