@@ -9,7 +9,7 @@ import React, {useEffect, useState} from 'react';
 import {Responsive, WidthProvider} from 'react-grid-layout';
 import classnames from 'classnames';
 
-import {DashboardReport} from './DashboardReport';
+import {DashboardTile} from './DashboardTile';
 
 import './DashboardRenderer.scss';
 
@@ -20,21 +20,21 @@ const rowHeight = 94;
 const cellMargin = 10;
 
 export default function DashboardRenderer({
-  disableReportInteractions,
+  disableTileInteractions,
   disableNameLink,
-  customizeReportLink,
+  customizeTileLink,
   tiles,
   filter = [],
-  loadReport,
+  loadTile,
   addons,
   onLayoutChange,
-  onReportUpdate,
+  onTileUpdate,
 }) {
   const [isDragging, setIsDragging] = useState(false);
 
   const style = {};
 
-  if (disableReportInteractions) {
+  if (disableTileInteractions) {
     // in edit mode, we add the background grid
     const lowerEdge = Math.max(
       0,
@@ -61,8 +61,8 @@ export default function DashboardRenderer({
       onLayoutChange={onLayoutChange}
       className={classnames('DashboardRenderer', {isDragging})}
       style={style}
-      isDraggable={!!disableReportInteractions}
-      isResizable={!!disableReportInteractions}
+      isDraggable={!!disableTileInteractions}
+      isResizable={!!disableTileInteractions}
       onDragStart={() => setIsDragging(true)}
       onResizeStart={() => setIsDragging(true)}
     >
@@ -70,7 +70,7 @@ export default function DashboardRenderer({
         return (
           <div
             className="grid-entry"
-            key={getReportKey(tile, idx)}
+            key={getTileKey(tile, idx)}
             data-grid={{
               x: tile.position.x,
               y: tile.position.y,
@@ -80,14 +80,14 @@ export default function DashboardRenderer({
               minH: tile.type === 'text' ? 1 : 2,
             }}
           >
-            <DashboardReport
-              disableNameLink={disableReportInteractions || disableNameLink}
-              customizeReportLink={customizeReportLink}
-              loadReport={loadReport}
-              report={tile}
+            <DashboardTile
+              disableNameLink={disableTileInteractions || disableNameLink}
+              customizeTileLink={customizeTileLink}
+              loadTile={loadTile}
+              tile={tile}
               filter={filter.map((filter) => ({...filter, appliedTo: ['all']}))}
               addons={addons}
-              onReportUpdate={onReportUpdate}
+              onTileUpdate={onTileUpdate}
             />
           </div>
         );
@@ -117,7 +117,7 @@ function constructBackgroundGrid() {
   );
 }
 
-function getReportKey(tile, idx) {
+function getTileKey(tile, idx) {
   return (
     idx +
     '_' +

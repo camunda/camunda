@@ -26,7 +26,7 @@ import {getWebhooks} from 'config';
 
 import './AlertsDropdown.scss';
 
-export function AlertsDropdown({mightFail, dashboardReports, numberReport, location}) {
+export function AlertsDropdown({mightFail, dashboardTiles, numberReport, location}) {
   const [alerts, setAlerts] = useState([]);
   const [reports, setReports] = useState([]);
   const [openAlert, setOpenAlert] = useState();
@@ -93,7 +93,7 @@ export function AlertsDropdown({mightFail, dashboardReports, numberReport, locat
   };
 
   const reportsInScope = reports.filter((report) =>
-    (dashboardReports || [numberReport]).some(({id}) => report.id === id)
+    (dashboardTiles || [numberReport]).some(({id}) => report.id === id)
   );
   const alertsInScope = alerts.filter((alert) =>
     reportsInScope.some(({id}) => id === alert.reportId)

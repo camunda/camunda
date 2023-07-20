@@ -12,7 +12,7 @@ export const emptyStateComponent = Selector('.EmptyState');
 export const blankDashboardButton = Selector('.Button').withText('Blank Dashboard');
 export const homepageLink = Selector('.NavItem a').withText('Collections');
 export const noDataNotice = Selector('.NoDataNotice');
-export const dashboardReportLink = Selector('.OptimizeReport .EntityName a');
+export const dashboardReportLink = Selector('.OptimizeReportTile .EntityName a');
 export const breadcrumb = (text) => Selector('.cds--header__menu-bar a').withText(text);
 export const dashboardView = Selector('.DashboardView');
 export const searchButton = Selector('.SearchField .Button');

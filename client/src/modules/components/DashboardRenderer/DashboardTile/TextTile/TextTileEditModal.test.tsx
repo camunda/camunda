@@ -8,7 +8,7 @@
 import {shallow} from 'enzyme';
 import {SerializedEditorState, SerializedLexicalNode} from 'lexical';
 
-import TextReportEditModal from './TextReportEditModal';
+import TextTileEditModal from './TextTileEditModal';
 
 const editorValue: SerializedEditorState = {
   root: {
@@ -47,7 +47,7 @@ const props = {
 };
 
 it('should render the modal', () => {
-  const node = shallow(<TextReportEditModal {...props} />);
+  const node = shallow(<TextTileEditModal {...props} />);
 
   const editor = node.find('TextEditor');
 
@@ -57,7 +57,7 @@ it('should render the modal', () => {
 
 it('should disable the submit button if the text in editor is empty or too long', () => {
   const node = shallow(
-    <TextReportEditModal {...props} initialValue={{root: {...editorValue.root, children: []}}} />
+    <TextTileEditModal {...props} initialValue={{root: {...editorValue.root, children: []}}} />
   );
 
   expect(node.find('Button').at(1)).toBeDisabled();
@@ -102,9 +102,7 @@ it('should disable the submit button if the text in editor is empty or too long'
 
 it('should invoke onConfirm when the submit button is clicked', () => {
   const spy = jest.fn();
-  const node = shallow(
-    <TextReportEditModal {...props} initialValue={editorValue} onConfirm={spy} />
-  );
+  const node = shallow(<TextTileEditModal {...props} initialValue={editorValue} onConfirm={spy} />);
 
   const newEditorValue = {
     root: {

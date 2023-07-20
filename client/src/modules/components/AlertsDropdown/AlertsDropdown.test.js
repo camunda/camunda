@@ -85,7 +85,7 @@ beforeEach(() => {
 const props = {
   mightFail: jest.fn().mockImplementation((data, cb) => cb(data)),
   location: {},
-  dashboardReports: [],
+  dashboardTiles: [],
 };
 
 it('should load existing alerts, reports and webhooks', () => {
@@ -123,7 +123,7 @@ it('should create new alert', async () => {
 });
 
 it('should edit an alert', async () => {
-  const node = shallow(<AlertsDropdown {...props} dashboardReports={[{id: '4'}]} />);
+  const node = shallow(<AlertsDropdown {...props} dashboardTiles={[{id: '4'}]} />);
 
   runAllEffects();
 
@@ -137,7 +137,7 @@ it('should edit an alert', async () => {
 });
 
 it('should pass only reports in scope', async () => {
-  const node = shallow(<AlertsDropdown {...props} dashboardReports={[{id: '2'}]} />);
+  const node = shallow(<AlertsDropdown {...props} dashboardTiles={[{id: '2'}]} />);
 
   runAllEffects();
 
@@ -148,7 +148,7 @@ it('should pass only reports in scope', async () => {
 });
 
 it('should show only alerts in scope', async () => {
-  const node = shallow(<AlertsDropdown {...props} dashboardReports={[{id: '2'}]} />);
+  const node = shallow(<AlertsDropdown {...props} dashboardTiles={[{id: '2'}]} />);
 
   runAllEffects();
 
@@ -158,7 +158,7 @@ it('should show only alerts in scope', async () => {
 
 it('should pass number report id to alert modal', async () => {
   const node = shallow(
-    <AlertsDropdown {...props} dashboardReports={undefined} numberReport={{id: '2'}} />
+    <AlertsDropdown {...props} dashboardTiles={undefined} numberReport={{id: '2'}} />
   );
 
   runAllEffects();
@@ -169,7 +169,7 @@ it('should pass number report id to alert modal', async () => {
 });
 
 it('should delete an alert', async () => {
-  const node = shallow(<AlertsDropdown {...props} dashboardReports={[{id: '4'}]} />);
+  const node = shallow(<AlertsDropdown {...props} dashboardTiles={[{id: '4'}]} />);
 
   runAllEffects();
 

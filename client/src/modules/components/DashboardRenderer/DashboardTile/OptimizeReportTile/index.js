@@ -5,16 +5,4 @@
  * except in compliance with the proprietary license.
  */
 
-import React from 'react';
-
-import {Button, Icon} from 'components';
-
-import './EditButton.scss';
-
-export default function EditButton({tile, onClick}) {
-  return (
-    <Button className="EditButton" onClick={() => onClick(tile)}>
-      <Icon type="edit-small" />
-    </Button>
-  );
-}
+export {default as OptimizeReportTile} from './OptimizeReportTile';

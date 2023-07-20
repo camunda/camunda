@@ -343,7 +343,7 @@
   "report": {
     "label": "Report",
     "label-plural": "Reports",
-    "textReport": "Text Report",
+    "textTile": "Text Tile",
     "externalUrl": "External URL",
     "create": "Create Report",
     "createNew": "Create New Report",

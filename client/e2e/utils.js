@@ -160,9 +160,9 @@ export async function createNewDashboard(t) {
 export async function addReportToDashboard(t, name) {
   await t
     .click('.AddButton')
-    .click('.ReportModal .optionsButton')
-    .click(Selector('.ReportModal .DropdownOption').withText(name))
-    .click(Selector('.ReportModal button').withText('Add Tile'))
+    .click('.CreateTileModal .optionsButton')
+    .click(Selector('.CreateTileModal .DropdownOption').withText(name))
+    .click(Selector('.CreateTileModal button').withText('Add Tile'))
     .click('.DashboardRenderer');
 }
 

@@ -10,20 +10,20 @@ import {Button} from '@carbon/react';
 import {SerializedEditorState} from 'lexical';
 
 import {Modal, TextEditor} from 'components';
-import {isTextReportValid} from 'services';
+import {isTextTileValid} from 'services';
 import {t} from 'translation';
 
-interface TextReportEditModalProps {
+interface TextTileEditModalProps {
   initialValue: SerializedEditorState;
   onClose: () => void;
   onConfirm: (value: SerializedEditorState) => void;
 }
 
-export default function TextReportEditModal({
+export default function TextTileEditModal({
   initialValue,
   onClose,
   onConfirm,
-}: TextReportEditModalProps): JSX.Element {
+}: TextTileEditModalProps): JSX.Element {
   const [text, setText] = useState(initialValue);
 
   const textLength = TextEditor.getEditorStateLength(text);
@@ -35,7 +35,7 @@ export default function TextReportEditModal({
 
   return (
     <Modal open onClose={onClose}>
-      <Modal.Header>{t('common.editName', {name: t('report.textReport')})}</Modal.Header>
+      <Modal.Header>{t('common.editName', {name: t('report.textTile')})}</Modal.Header>
       <Modal.Content>
         <TextEditor initialValue={initialValue} onChange={setText} />
         <TextEditor.CharCount editorState={text} />
@@ -44,7 +44,7 @@ export default function TextReportEditModal({
         <Button kind="secondary" onClick={onClose}>
           {t('common.cancel')}
         </Button>
-        <Button onClick={onUpdate} disabled={!isTextReportValid(textLength)}>
+        <Button onClick={onUpdate} disabled={!isTextTileValid(textLength)}>
           {t('common.save')}
         </Button>
       </Modal.Footer>

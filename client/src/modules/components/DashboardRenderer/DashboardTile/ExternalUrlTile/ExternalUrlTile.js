@@ -7,37 +7,37 @@
 
 import React from 'react';
 
-import './ExternalReport.scss';
+import './ExternalUrlTile.scss';
 
-export default class ExternalReport extends React.Component {
+export default class ExternalUrlTile extends React.Component {
   state = {
     reloadState: 0,
   };
 
-  reloadReport = () => {
+  reloadTile = () => {
     this.setState({reloadState: this.state.reloadState + 1});
   };
 
   render() {
-    const {report, children = () => {}} = this.props;
+    const {tile, children = () => {}} = this.props;
 
-    if (report.configuration && report.configuration.external) {
+    if (tile.configuration && tile.configuration.external) {
       return (
-        <div className="ExternalReport DashboardReport__wrapper">
+        <div className="ExternalUrlTile DashboardTile__wrapper">
           <iframe
             key={this.state.reloadState}
-            title="External Report"
-            src={report.configuration.external}
+            title="External URL"
+            src={tile.configuration.external}
             frameBorder="0"
             style={{width: '100%', height: '100%'}}
           />
-          {children({loadReportData: this.reloadReport})}
+          {children({loadTileData: this.reloadTile})}
         </div>
       );
     }
   }
 }
 
-ExternalReport.isExternalReport = function (report) {
-  return !!report.configuration?.external;
+ExternalUrlTile.isExternalUrlTile = function (tile) {
+  return !!tile.configuration?.external;
 };

@@ -343,7 +343,7 @@
   "report": {
     "label": "Bericht",
     "label-plural": "Berichte",
-    "textReport": "Text Report",
+    "textTile": "Text Kachel",
     "externalUrl": "Externe URL",
     "create": "Bericht Erstellen",
     "createNew": "Neuen Bericht Erstellen",

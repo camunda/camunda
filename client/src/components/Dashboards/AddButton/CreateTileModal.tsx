@@ -21,22 +21,22 @@ import {
   Icon,
   TextEditor,
 } from 'components';
-import {getCollection, isTextReportValid, loadReports} from 'services';
+import {getCollection, isTextTileValid, loadReports} from 'services';
 import {t} from 'translation';
 import {DashboardTile, GenericReport} from 'types';
 
-interface ReportModalProps extends RouteComponentProps {
+interface CreateTileModalProps extends RouteComponentProps {
   close: () => void;
-  confirm: (reportConfig: Partial<DashboardTile>) => void;
+  confirm: (tileConfig: Partial<DashboardTile>) => void;
 }
 
-type TabOpen = 'report' | 'external' | 'text';
+type TabOpen = 'optimize_report' | 'external_url' | 'text';
 
-export function ReportModal({close, confirm, location}: ReportModalProps) {
+export function CreateTileModal({close, confirm, location}: CreateTileModalProps) {
   const [availableReports, setAvailableReports] = useState<GenericReport[] | null>(null);
   const [selectedReportId, setSelectedReportId] = useState<string>('');
   const [externalUrl, setExternalUrl] = useState<string>('');
-  const [tabOpen, setTabOpen] = useState<TabOpen>('report');
+  const [tabOpen, setTabOpen] = useState<TabOpen>('optimize_report');
   const [text, setText] = useState<SerializedEditorState>();
 
   useEffect(() => {
@@ -47,17 +47,17 @@ export function ReportModal({close, confirm, location}: ReportModalProps) {
     })();
   }, [location.pathname]);
 
-  const addReport = () => {
-    confirm(getReportConfig(tabOpen, externalUrl, text, selectedReportId));
+  const addTile = () => {
+    confirm(getTileConfig(tabOpen, externalUrl, text, selectedReportId));
   };
 
-  const getReportConfig = (
+  const getTileConfig = (
     tabOpen: TabOpen,
     externalUrl: string,
     text: SerializedEditorState | undefined,
     selectedReportId: string
   ): Partial<DashboardTile> => {
-    if (tabOpen === 'external') {
+    if (tabOpen === 'external_url') {
       return {id: '', configuration: {external: externalUrl}, type: 'external_url'};
     } else if (tabOpen === 'text') {
       return {id: '', configuration: {text}, type: 'text'};
@@ -73,10 +73,10 @@ export function ReportModal({close, confirm, location}: ReportModalProps) {
   const textLength = TextEditor.getEditorStateLength(text);
 
   const isCurrentTabInvalid = (tabOpen: TabOpen, externalUrl: string, selectedReportId: string) => {
-    const isInvalidMap = {
-      report: !selectedReportId,
-      external: !isExternalUrlValid(externalUrl),
-      text: !isTextReportValid(textLength),
+    const isInvalidMap: Record<TabOpen, boolean> = {
+      optimize_report: !selectedReportId,
+      external_url: !isExternalUrlValid(externalUrl),
+      text: !isTextTileValid(textLength),
     };
 
     return isInvalidMap[tabOpen];
@@ -89,12 +89,12 @@ export function ReportModal({close, confirm, location}: ReportModalProps) {
   };
 
   return (
-    <Modal className="ReportModal" open onClose={close} isOverflowVisible>
+    <Modal className="CreateTileModal" open onClose={close} isOverflowVisible>
       <Modal.Header>{t('dashboard.addButton.addTile')}</Modal.Header>
       <Modal.Content>
         <Form>
           <CarbonTabs<TabOpen> value={tabOpen} onChange={setTabOpen}>
-            <CarbonTabs.Tab value="report" title={t('dashboard.addButton.optimizeReport')}>
+            <CarbonTabs.Tab value="optimize_report" title={t('dashboard.addButton.optimizeReport')}>
               <Form.Group>
                 {!loading && (
                   <Labeled label={t('dashboard.addButton.addReportLabel')}>
@@ -123,7 +123,7 @@ export function ReportModal({close, confirm, location}: ReportModalProps) {
                 {loading && <LoadingIndicator />}
               </Form.Group>
             </CarbonTabs.Tab>
-            <CarbonTabs.Tab value="external" title={t('dashboard.addButton.externalWebsite')}>
+            <CarbonTabs.Tab value="external_url" title={t('dashboard.addButton.externalWebsite')}>
               <Form.Group>
                 <Labeled label={t('dashboard.addButton.externalWebsite')}>
                   <Input
@@ -150,7 +150,7 @@ export function ReportModal({close, confirm, location}: ReportModalProps) {
         <Button kind="secondary" onClick={close}>
           {t('common.cancel')}
         </Button>
-        <Button onClick={addReport} disabled={isInvalid}>
+        <Button onClick={addTile} disabled={isInvalid}>
           {t('dashboard.addButton.addTileLabel')}
         </Button>
       </Modal.Footer>
@@ -158,4 +158,4 @@ export function ReportModal({close, confirm, location}: ReportModalProps) {
   );
 }
 
-export default withRouter(ReportModal);
+export default withRouter(CreateTileModal);

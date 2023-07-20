@@ -17,11 +17,11 @@ interface ConfigParams {
 
 export const TEXT_REPORT_MAX_CHARACTERS = 3000;
 
-export function isTextReportValid(textLength: number): boolean {
-  return textLength > 0 && !isTextReportTooLong(textLength);
+export function isTextTileValid(textLength: number): boolean {
+  return textLength > 0 && !isTextTileTooLong(textLength);
 }
 
-export function isTextReportTooLong(
+export function isTextTileTooLong(
   textLength: number,
   limit: number = TEXT_REPORT_MAX_CHARACTERS
 ): boolean {

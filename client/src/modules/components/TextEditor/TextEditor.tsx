@@ -9,7 +9,7 @@ import classnames from 'classnames';
 import {SerializedEditorState, SerializedLexicalNode} from 'lexical';
 import {InitialConfigType, LexicalComposer} from '@lexical/react/LexicalComposer';
 
-import {isTextReportTooLong, TEXT_REPORT_MAX_CHARACTERS} from 'services';
+import {isTextTileTooLong, TEXT_REPORT_MAX_CHARACTERS} from 'services';
 
 import editorNodes from './nodes';
 import Editor from './Editor';
@@ -89,7 +89,7 @@ export default function TextEditor({onChange, simpleEditor, initialValue, limit}
         <textarea
           value={initialValue || undefined}
           className={classnames('SimpleEditor', {
-            error: isTextReportTooLong(initialValue?.length || 0, limit),
+            error: isTextTileTooLong(initialValue?.length || 0, limit),
           })}
           onChange={(evt) => onChange(evt.target.value)}
         />
@@ -97,7 +97,7 @@ export default function TextEditor({onChange, simpleEditor, initialValue, limit}
         <LexicalComposer initialConfig={initialConfig}>
           <Editor
             onChange={onChange}
-            error={isTextReportTooLong(TextEditor.getEditorStateLength(initialValue || emptyState))}
+            error={isTextTileTooLong(TextEditor.getEditorStateLength(initialValue || emptyState))}
           />
         </LexicalComposer>
       )}
@@ -151,7 +151,7 @@ TextEditor.CharCount = function ({
   return (
     <div
       className={classnames('TextEditor', 'CharCount', {
-        error: isTextReportTooLong(textLength, limit),
+        error: isTextTileTooLong(textLength, limit),
       })}
     >
       {textLength}/{limit}

@@ -132,12 +132,12 @@ export class DashboardEdit extends React.Component {
     this.setState({description});
   };
 
-  addReport = (newReport) => {
-    this.setState({tiles: update(this.state.tiles, {$push: [newReport]})}, () => {
+  addTile = (newTile) => {
+    this.setState({tiles: update(this.state.tiles, {$push: [newTile]})}, () => {
       const node = document.querySelector('.react-grid-layout').lastChild;
       const nodePos = node.getBoundingClientRect();
 
-      // dispatch a mouse event to automatically grab the new report for positioning
+      // dispatch a mouse event to automatically grab the new tile for positioning
       node.dispatchEvent(
         createEvent('mousedown', {
           x: nodePos.x + nodePos.width / 2,
@@ -161,28 +161,28 @@ export class DashboardEdit extends React.Component {
       });
     });
 
-    track(getEventName('create', newReport.type), {entityId: newReport.id});
+    track(getEventName('create', newTile.type), {entityId: newTile.id});
   };
 
-  updateReport = (report) => {
+  updateTile = (tile) => {
     this.setState(({tiles}) => {
-      const newReports = tiles.map((oldTile) => {
-        if (report.position.x === oldTile.position.x && report.position.y === oldTile.position.y) {
-          return report;
+      const newTiles = tiles.map((oldTile) => {
+        if (tile.position.x === oldTile.position.x && tile.position.y === oldTile.position.y) {
+          return tile;
         }
         return oldTile;
       });
 
-      track(getEventName('update', report.type), {entityId: report.id});
-      return {tiles: newReports};
+      track(getEventName('update', tile.type), {entityId: tile.id});
+      return {tiles: newTiles};
     });
   };
 
-  deleteReport = ({report: reportToRemove}) => {
+  deleteTile = ({tile: tileToRemove}) => {
     this.setState({
-      tiles: this.state.tiles.filter((tile) => tile !== reportToRemove),
+      tiles: this.state.tiles.filter((tile) => tile !== tileToRemove),
     });
-    track(getEventName('delete', reportToRemove.type), {entityId: reportToRemove.id});
+    track(getEventName('delete', tileToRemove.type), {entityId: tileToRemove.id});
   };
 
   componentDidUpdate(prevProps) {
@@ -201,7 +201,7 @@ export class DashboardEdit extends React.Component {
     }
 
     if (prevProps.initialTiles !== this.props.initialTiles) {
-      // initial reports might change because of a save without leaving the edit mode
+      // initial tiles might change because of a save without leaving the edit mode
       // This happens for example if the dashboard is saved for the variable filter
       this.setState({tiles: this.props.initialTiles}, () => {
         this.waitingForDashboardSave.forEach((resolve) => resolve());
@@ -248,7 +248,7 @@ export class DashboardEdit extends React.Component {
     });
   };
 
-  editReport = (report) => {
+  editTile = (tile) => {
     const {history, location} = this.props;
     if (isDirty()) {
       showPrompt(
@@ -262,15 +262,15 @@ export class DashboardEdit extends React.Component {
           // unsaved reports don't have ids yet. As their report object gets overwritten on save
           // we keep track of their position in the reports array instead to match the old
           // report object with the new one that has an id after the save
-          const reportIdx = this.state.tiles.indexOf(report);
+          const tileIdx = this.state.tiles.indexOf(tile);
           await this.save(true);
           const savedDashboardPath = this.props.location.pathname;
-          const reportId = this.state.tiles[reportIdx].id;
-          history.push('report/' + reportId + '/edit?returnTo=' + savedDashboardPath);
+          const tileId = this.state.tiles[tileIdx].id;
+          history.push('report/' + tileId + '/edit?returnTo=' + savedDashboardPath);
         }
       );
     } else {
-      history.push('report/' + report.id + '/edit?returnTo=' + location.pathname);
+      history.push('report/' + tile.id + '/edit?returnTo=' + location.pathname);
     }
   };
 
@@ -295,7 +295,7 @@ export class DashboardEdit extends React.Component {
             description={description}
             onDescriptionChange={this.updateDescription}
           >
-            <AddButton addReport={this.addReport} existingReport={tiles?.[0]} />
+            <AddButton addTile={this.addTile} existingTile={tiles?.[0]} />
             <AddFiltersButton
               reports={optimizeReports}
               persistReports={() => this.save(true)}
@@ -323,17 +323,17 @@ export class DashboardEdit extends React.Component {
         )}
         <div className="content" ref={this.contentContainer}>
           <DashboardRenderer
-            disableReportInteractions
+            disableTileInteractions
             tiles={tiles}
             filter={filter}
-            loadReport={evaluateReport}
+            loadTile={evaluateReport}
             addons={[
               <DragOverlay key="DragOverlay" />,
-              <DeleteButton key="DeleteButton" deleteReport={this.deleteReport} />,
-              <EditButton key="EditButton" onClick={this.editReport} />,
+              <DeleteButton key="DeleteButton" deleteTile={this.deleteTile} />,
+              <EditButton key="EditButton" onClick={this.editTile} />,
             ]}
             onLayoutChange={this.updateLayout}
-            onReportUpdate={this.updateReport}
+            onTileUpdate={this.updateTile}
           />
         </div>
       </div>

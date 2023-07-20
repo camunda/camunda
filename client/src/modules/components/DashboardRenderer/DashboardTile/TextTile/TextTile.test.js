@@ -8,7 +8,7 @@
 import React from 'react';
 import {shallow} from 'enzyme';
 
-import TextReport from './TextReport';
+import TextTile from './TextTile';
 
 jest.mock('notifications', () => ({addNotification: jest.fn()}));
 
@@ -43,7 +43,7 @@ const editorValue = {
 };
 
 it('should include an editor with rendered content', () => {
-  const node = shallow(<TextReport report={{configuration: {text: editorValue}}} />);
+  const node = shallow(<TextTile tile={{configuration: {text: editorValue}}} />);
 
   const editor = node.find('TextEditor');
 
@@ -51,69 +51,69 @@ it('should include an editor with rendered content', () => {
   expect(editor.prop('initialValue')).toEqual(editorValue);
 });
 
-it('should update the key to reload it when loadReportData function is called', async () => {
+it('should update the key to reload it when loadTileData function is called', async () => {
   const node = shallow(
-    <TextReport
-      report={{configuration: {text: editorValue}}}
+    <TextTile
+      tile={{configuration: {text: editorValue}}}
       children={(props) => <p {...props}>child</p>}
     />
   );
 
-  node.find('p').prop('loadReportData')();
+  node.find('p').prop('loadTileData')();
 
   expect(node.find('TextEditor').key()).toBe('1');
 });
 
 it('should return null when no text is provided', () => {
-  const node = shallow(<TextReport report={{configuration: {something: ''}}} />);
+  const node = shallow(<TextTile tile={{configuration: {something: ''}}} />);
 
-  expect(node.find('.TextReport')).not.toExist();
+  expect(node.find('.TextTile')).not.toExist();
 });
 
 it('should open edit modal and sent mixpanel event on edit', () => {
   const node = shallow(
-    <TextReport report={{configuration: {text: editorValue}}} children={() => <p>child</p>} />
+    <TextTile tile={{configuration: {text: editorValue}}} children={() => <p>child</p>} />
   );
 
-  node.find('.EditTextReport').simulate('click');
+  node.find('.EditTextTile').simulate('click');
 
-  expect(node.find('TextReportEditModal')).toExist();
+  expect(node.find('TextTileEditModal')).toExist();
 });
 
 it('should close modal when modal invokes onClose', () => {
   const node = shallow(
-    <TextReport report={{configuration: {text: editorValue}}} children={() => <p>child</p>} />
+    <TextTile tile={{configuration: {text: editorValue}}} children={() => <p>child</p>} />
   );
 
-  node.find('.EditTextReport').simulate('click');
-  node.find('TextReportEditModal').prop('onClose')();
+  node.find('.EditTextTile').simulate('click');
+  node.find('TextTileEditModal').prop('onClose')();
 
-  expect(node.find('TextReportEditModal')).not.toExist();
+  expect(node.find('TextTileEditModal')).not.toExist();
 });
 
-it('should invoke onReportUpdate when modal is saved', () => {
+it('should invoke onTileUpdate when modal is saved', () => {
   const spy = jest.fn();
   const node = shallow(
-    <TextReport
-      report={{configuration: {text: 'text'}}}
+    <TextTile
+      tile={{configuration: {text: 'text'}}}
       children={() => <p>child</p>}
-      onReportUpdate={spy}
+      onTileUpdate={spy}
     />
   );
 
-  node.find('.EditTextReport').simulate('click');
+  node.find('.EditTextTile').simulate('click');
 
-  node.find('TextReportEditModal').prop('onConfirm')('newText');
+  node.find('TextTileEditModal').prop('onConfirm')('newText');
 
   expect(spy).toHaveBeenCalledWith({configuration: {text: 'newText'}});
 });
 
-describe('TextReport.isTextReport', () => {
-  it('should return true if report is text', () => {
-    expect(TextReport.isTextReport({configuration: {text: 'text'}})).toBe(true);
+describe('TextTile.isTextTile', () => {
+  it('should return true if tile is text', () => {
+    expect(TextTile.isTextTile({configuration: {text: 'text'}})).toBe(true);
   });
 
-  it('should return false if report is not text', () => {
-    expect(TextReport.isTextReport({configuration: {external: 'externalUrl'}})).toBe(false);
+  it('should return false if tile is not text', () => {
+    expect(TextTile.isTextTile({configuration: {external: 'externalUrl'}})).toBe(false);
   });
 });

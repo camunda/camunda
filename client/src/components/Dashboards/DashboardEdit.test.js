@@ -42,7 +42,7 @@ it('should contain an AddButton', () => {
   expect(node.find('AddButton')).toExist();
 });
 
-it('should contain editing report addons', () => {
+it('should contain editing tile addons', () => {
   const node = shallow(<DashboardEdit />);
 
   expect(node.find('DashboardRenderer').prop('addons')).toMatchSnapshot();
@@ -57,7 +57,7 @@ it('should pass the isNew prop to the EntityNameForm', () => {
 it('should notify the saveGuard of changes', () => {
   const node = shallow(<DashboardEdit initialTiles={[]} />);
 
-  node.setState({tiles: ['someReport']});
+  node.setState({tiles: ['someTile']});
 
   expect(nowDirty).toHaveBeenCalled();
 });
@@ -180,7 +180,7 @@ it('should save basic dashboard info', async () => {
   );
 });
 
-it('should add report', () => {
+it('should add tile', () => {
   jest.spyOn(document, 'querySelector').mockReturnValue({
     lastChild: {
       getBoundingClientRect: () => ({}),
@@ -189,54 +189,54 @@ it('should add report', () => {
     },
   });
 
-  const newReport = {
+  const newTextTile = {
     position: {x: 0, y: 0},
     id: '',
     configuration: {text: 'text'},
-    type: 'optimize_report',
+    type: 'text',
   };
   const node = shallow(<DashboardEdit initialTiles={[]} />);
 
-  node.find('AddButton').prop('addReport')(newReport);
+  node.find('AddButton').prop('addTile')(newTextTile);
 
-  expect(node.state('tiles')[0]).toEqual(newReport);
-  expect(track).toHaveBeenCalledWith('createOptimizeReportTile', {entityId: ''});
+  expect(node.state('tiles')[0]).toEqual(newTextTile);
+  expect(track).toHaveBeenCalledWith('createTextTile', {entityId: ''});
 });
 
-it('should update report', () => {
-  const report = {
+it('should update tile', () => {
+  const textTile = {
     position: {x: 0, y: 0},
     id: '',
     configuration: {text: 'text'},
-    type: 'optimize_report',
+    type: 'text',
   };
-  const node = shallow(<DashboardEdit initialTiles={[report]} />);
+  const node = shallow(<DashboardEdit initialTiles={[textTile]} />);
 
-  const newReport = {
-    ...report,
+  const newTextTile = {
+    ...textTile,
     configuration: {text: 'newText'},
   };
-  node.find('DashboardRenderer').prop('onReportUpdate')(newReport);
+  node.find('DashboardRenderer').prop('onTileUpdate')(newTextTile);
 
-  expect(node.state('tiles')[0]).toEqual(newReport);
-  expect(track).toHaveBeenCalledWith('updateOptimizeReportTile', {entityId: ''});
+  expect(node.state('tiles')[0]).toEqual(newTextTile);
+  expect(track).toHaveBeenCalledWith('updateTextTile', {entityId: ''});
 });
 
-it('should delete report', () => {
-  const report = {
+it('should delete tile', () => {
+  const textTile = {
     position: {x: 0, y: 0},
     id: '',
     configuration: {text: 'text'},
-    type: 'optimize_report',
+    type: 'text',
   };
-  const node = shallow(<DashboardEdit initialTiles={[report]} />);
+  const node = shallow(<DashboardEdit initialTiles={[textTile]} />);
 
   const deleteButton = shallow(node.find('DashboardRenderer').prop('addons')[1]);
-  deleteButton.setProps({report});
-  deleteButton.simulate('click', report);
+  deleteButton.setProps({tile: textTile});
+  deleteButton.simulate('click', textTile);
 
   expect(node.state('tiles')).toEqual([]);
-  expect(track).toHaveBeenCalledWith('deleteOptimizeReportTile', {entityId: ''});
+  expect(track).toHaveBeenCalledWith('deleteTextTile', {entityId: ''});
 });
 
 it('should update description', () => {

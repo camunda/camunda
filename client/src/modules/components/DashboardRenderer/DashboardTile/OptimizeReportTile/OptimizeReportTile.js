@@ -19,9 +19,9 @@ import deepEqual from 'fast-deep-equal';
 
 import {themed} from 'theme';
 
-import './OptimizeReport.scss';
+import './OptimizeReportTile.scss';
 
-export class OptimizeReport extends React.Component {
+export class OptimizeReportTile extends React.Component {
   constructor(props) {
     super(props);
 
@@ -34,30 +34,30 @@ export class OptimizeReport extends React.Component {
   }
 
   async componentDidMount() {
-    await this.loadInitialReport();
+    await this.loadInitialTile();
   }
 
   componentDidUpdate(prevProps) {
     if (
-      !deepEqual(prevProps.report, this.props.report) ||
+      !deepEqual(prevProps.tile, this.props.tile) ||
       !deepEqual(prevProps.filter, this.props.filter)
     ) {
-      this.loadInitialReport();
+      this.loadInitialTile();
     }
   }
 
-  loadInitialReport = async () => {
+  loadInitialTile = async () => {
     this.setState({loading: true});
-    await this.loadReport({});
+    await this.loadTile({});
     this.setState({loading: false});
   };
 
-  loadReport = (params) => {
+  loadTile = (params) => {
     this.setState({lastParams: params});
     return new Promise((resolve) => {
       this.props.mightFail(
-        this.props.loadReport(
-          this.props.report.id ?? this.props.report.report,
+        this.props.loadTile(
+          this.props.tile.id ?? this.props.tile.report,
           this.props.filter,
           params
         ),
@@ -75,7 +75,7 @@ export class OptimizeReport extends React.Component {
     });
   };
 
-  refreshReport = () => this.loadReport(this.state.lastParams);
+  refreshTile = () => this.loadTile(this.state.lastParams);
 
   exitDarkmode = () => {
     if (this.props.theme === 'dark') {
@@ -92,17 +92,17 @@ export class OptimizeReport extends React.Component {
 
     const {
       disableNameLink,
-      customizeReportLink = (id) => `report/${id}/`,
+      customizeTileLink = (id) => `report/${id}/`,
       filter,
       children = () => {},
     } = this.props;
 
     return (
-      <div className="OptimizeReport DashboardReport__wrapper">
+      <div className="OptimizeReportTile DashboardTile__wrapper">
         {data && (
           <div className="titleBar" tabIndex="-1">
             <EntityName
-              linkTo={!disableNameLink && customizeReportLink(data.id)}
+              linkTo={!disableNameLink && customizeTileLink(data.id)}
               details={<ReportDetails report={data} />}
             >
               {data.name}
@@ -115,13 +115,13 @@ export class OptimizeReport extends React.Component {
             error={error}
             report={data}
             context="dashboard"
-            loadReport={this.loadReport}
+            loadReport={this.loadTile}
           />
         </div>
-        {children({loadReportData: this.refreshReport})}
+        {children({loadTileData: this.refreshTile})}
       </div>
     );
   }
 }
 
-export default themed(withErrorHandling(OptimizeReport));
+export default themed(withErrorHandling(OptimizeReportTile));

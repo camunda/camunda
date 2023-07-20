@@ -10,7 +10,7 @@ import {shallow} from 'enzyme';
 
 import {Button} from 'components';
 
-import ReportModal from './ReportModal';
+import CreateTileModal from './CreateTileModal';
 import AddButton from './AddButton';
 import ReportCreationModal from './ReportCreationModal';
 
@@ -19,15 +19,15 @@ it('should open a modal on click', () => {
 
   node.find(Button).simulate('click');
 
-  expect(node.find(ReportModal)).toExist();
+  expect(node.find(CreateTileModal)).toExist();
 });
 
-it('should call the callback when adding a report', () => {
+it('should call the callback when adding a tile', () => {
   const spy = jest.fn();
-  const node = shallow(<AddButton addReport={spy} />);
+  const node = shallow(<AddButton addTile={spy} />);
 
   node.find(Button).simulate('click');
-  node.find(ReportModal).prop('confirm')({id: 'testReport'});
+  node.find(CreateTileModal).prop('confirm')({id: 'testReport'});
 
   expect(spy).toHaveBeenCalledWith({
     configuration: null,
@@ -45,10 +45,10 @@ it('should call the callback when adding a report', () => {
 
 it('should call the callback when confirming the report creation modal', () => {
   const spy = jest.fn();
-  const node = shallow(<AddButton addReport={spy} />);
+  const node = shallow(<AddButton addTile={spy} />);
 
   node.find(Button).simulate('click');
-  node.find(ReportModal).prop('confirm')({id: 'newReport'});
+  node.find(CreateTileModal).prop('confirm')({id: 'newReport'});
 
   node.find(ReportCreationModal).prop('onConfirm')({id: '123'});
 

@@ -14,7 +14,7 @@ export default class AutoRefreshBehavior extends React.Component {
 
   componentDidMount() {
     if (this.props.interval) {
-      this.timer = setInterval(this.props.loadReportData, this.props.interval);
+      this.timer = setInterval(this.props.loadTileData, this.props.interval);
     }
   }
 
@@ -26,7 +26,7 @@ export default class AutoRefreshBehavior extends React.Component {
     if (prevProps.interval !== this.props.interval) {
       clearInterval(this.timer);
       if (this.props.interval) {
-        this.timer = setInterval(this.props.loadReportData, this.props.interval);
+        this.timer = setInterval(this.props.loadTileData, this.props.interval);
       }
     }
   }

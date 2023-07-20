@@ -22,8 +22,8 @@ export {numberParser} from './NumberParser';
 
 export {
   TEXT_REPORT_MAX_CHARACTERS,
-  isTextReportTooLong,
-  isTextReportValid,
+  isTextTileTooLong,
+  isTextTileValid,
   loadRawData,
 } from './reportService';
 export {default as getScreenBounds} from './getScreenBounds';

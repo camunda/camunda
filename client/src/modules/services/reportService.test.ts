@@ -5,27 +5,27 @@
  * except in compliance with the proprietary license.
  */
 
-import {isTextReportTooLong, isTextReportValid} from './reportService';
+import {isTextTileTooLong, isTextTileValid} from './reportService';
 
-describe('isTextReportValid', () => {
+describe('isTextTileValid', () => {
   it('should return true if report is valid', () => {
-    expect(isTextReportValid(100)).toBe(true);
+    expect(isTextTileValid(100)).toBe(true);
   });
 
   it('should return false if report is not valid', () => {
-    expect(isTextReportValid(0)).toBe(false);
-    expect(isTextReportValid(3001)).toBe(false);
+    expect(isTextTileValid(0)).toBe(false);
+    expect(isTextTileValid(3001)).toBe(false);
   });
 });
 
-describe('isTextReportTooLong', () => {
+describe('isTextTileTooLong', () => {
   it('should return true if report is too long', () => {
-    expect(isTextReportTooLong(3001)).toBe(true);
-    expect(isTextReportTooLong(3001, 100)).toBe(true);
+    expect(isTextTileTooLong(3001)).toBe(true);
+    expect(isTextTileTooLong(3001, 100)).toBe(true);
   });
 
   it('should return false if report is not too long', () => {
-    expect(isTextReportTooLong(100)).toBe(false);
-    expect(isTextReportTooLong(100, 200)).toBe(false);
+    expect(isTextTileTooLong(100)).toBe(false);
+    expect(isTextTileTooLong(100, 200)).toBe(false);
   });
 });

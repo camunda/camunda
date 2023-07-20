@@ -116,8 +116,4 @@ export function isCategorical({groupBy, distributedBy}) {
   );
 }
 
-export {
-  TEXT_REPORT_MAX_CHARACTERS,
-  isTextReportTooLong,
-  isTextReportValid,
-} from './reportService.ts';
+export {TEXT_REPORT_MAX_CHARACTERS, isTextTileTooLong, isTextTileValid} from './reportService.ts';

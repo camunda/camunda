@@ -1,4 +1,4 @@
-.TextReport {
+.TextTile {
   padding: 10px;
 
   .TextEditor {
@@ -13,7 +13,7 @@
     }
   }
 
-  .EditButton:not(.EditTextReport) {
+  .EditButton:not(.EditTextTile) {
     display: none;
   }
 
@@ -28,7 +28,7 @@
 
 .DashboardView,
 .Sharing {
-  .EditTextReport {
+  .EditTextTile {
     display: none;
   }
 }

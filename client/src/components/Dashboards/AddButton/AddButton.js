@@ -10,12 +10,12 @@ import React, {useState} from 'react';
 import {Button, Icon} from 'components';
 import {t} from 'translation';
 
-import ReportModal from './ReportModal';
+import CreateTileModal from './CreateTileModal';
 import ReportCreationModal from './ReportCreationModal';
 
 const size = {width: 6, height: 4};
 
-export default function AddButton({addReport, existingReport}) {
+export default function AddButton({addTile, existingTile}) {
   const [open, setOpen] = useState(false);
   const [creatingNewReport, setCreatingNewReport] = useState(false);
 
@@ -42,7 +42,7 @@ export default function AddButton({addReport, existingReport}) {
       ...props,
     };
 
-    addReport(payload);
+    addTile(payload);
   };
 
   return (
@@ -50,11 +50,11 @@ export default function AddButton({addReport, existingReport}) {
       <Button main className="AddButton tool-button" onClick={() => setOpen(true)}>
         <Icon type="plus" /> {t('dashboard.addButton.addTile')}
       </Button>
-      {open && <ReportModal close={closeModal} confirm={onConfirm} />}
+      {open && <CreateTileModal close={closeModal} confirm={onConfirm} />}
       {creatingNewReport && (
         <ReportCreationModal
           onClose={() => setCreatingNewReport(false)}
-          existingReport={existingReport}
+          existingReport={existingTile}
           onConfirm={onConfirm}
         />
       )}

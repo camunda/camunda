@@ -10,15 +10,15 @@ import update from 'immutability-helper';
 
 import {Button, Icon, TextEditor} from 'components';
 
-import TextReportEditModal from './TextReportEditModal';
+import TextTileEditModal from './TextTileEditModal';
 
-import './TextReport.scss';
+import './TextTile.scss';
 
-export default function TextReport({report, children = () => {}, onReportUpdate}) {
+export default function TextTile({tile, children = () => {}, onTileUpdate}) {
   const [reloadState, setReloadState] = useState(0);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  const reloadReport = () => {
+  const reloadTile = () => {
     setReloadState((prevReloadState) => prevReloadState + 1);
   };
 
@@ -27,27 +27,27 @@ export default function TextReport({report, children = () => {}, onReportUpdate}
   };
 
   const onConfirm = (text) => {
-    onReportUpdate(update(report, {configuration: {text: {$set: text}}}));
+    onTileUpdate(update(tile, {configuration: {text: {$set: text}}}));
   };
 
-  if (!report?.configuration?.text) {
+  if (!tile?.configuration?.text) {
     return null;
   }
 
   return (
     <>
-      <div className="TextReport DashboardReport__wrapper">
-        <TextEditor key={reloadState} initialValue={report.configuration.text} />
-        {children({loadReportData: reloadReport})}
+      <div className="TextTile DashboardTile__wrapper">
+        <TextEditor key={reloadState} initialValue={tile.configuration.text} />
+        {children({loadTileData: reloadTile})}
         {children && (
-          <Button className="EditButton EditTextReport" onClick={handleEdit}>
+          <Button className="EditButton EditTextTile" onClick={handleEdit}>
             <Icon type="edit-small" />
           </Button>
         )}
       </div>
       {isModalOpen && (
-        <TextReportEditModal
-          initialValue={report.configuration.text}
+        <TextTileEditModal
+          initialValue={tile.configuration.text}
           onClose={() => setIsModalOpen(false)}
           onConfirm={onConfirm}
         />
@@ -56,6 +56,6 @@ export default function TextReport({report, children = () => {}, onReportUpdate}
   );
 }
 
-TextReport.isTextReport = function (report) {
-  return !!report.configuration?.text;
+TextTile.isTextTile = function (tile) {
+  return !!tile.configuration?.text;
 };

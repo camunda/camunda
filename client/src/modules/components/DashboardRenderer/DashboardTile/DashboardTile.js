@@ -7,50 +7,50 @@
 
 import React from 'react';
 
-import ExternalReport from './ExternalReport';
-import OptimizeReport from './OptimizeReport';
-import TextReport from './TextReport';
+import {OptimizeReportTile} from './OptimizeReportTile';
+import {ExternalUrlTile} from './ExternalUrlTile';
+import {TextTile} from './TextTile';
 
-import './DashboardReport.scss';
+import './DashboardTile.scss';
 
-export default function DashboardReport({
-  report,
+export default function DashboardTile({
+  tile,
   filter = [],
   disableNameLink,
-  customizeReportLink,
+  customizeTileLink,
   addons,
   tileDimensions,
-  loadReport,
-  onReportUpdate,
+  loadTile,
+  onTileUpdate,
 }) {
-  let ReportComponent = OptimizeReport;
+  let TileComponent = OptimizeReportTile;
 
-  if (ExternalReport.isExternalReport(report)) {
-    ReportComponent = ExternalReport;
-  } else if (TextReport.isTextReport(report)) {
-    ReportComponent = TextReport;
+  if (ExternalUrlTile.isExternalUrlTile(tile)) {
+    TileComponent = ExternalUrlTile;
+  } else if (TextTile.isTextTile(tile)) {
+    TileComponent = TextTile;
   }
 
   return (
-    <ReportComponent
-      report={report}
+    <TileComponent
+      tile={tile}
       filter={filter}
       disableNameLink={disableNameLink}
-      customizeReportLink={customizeReportLink}
-      loadReport={loadReport}
-      onReportUpdate={onReportUpdate}
+      customizeTileLink={customizeTileLink}
+      loadTile={loadTile}
+      onTileUpdate={onTileUpdate}
     >
       {(props = {}) =>
         addons &&
         addons.map((addon) =>
           React.cloneElement(addon, {
-            report,
+            tile,
             filter,
             tileDimensions,
             ...props,
           })
         )
       }
-    </ReportComponent>
+    </TileComponent>
   );
 }

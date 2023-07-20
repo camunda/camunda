@@ -8,71 +8,71 @@
 import React from 'react';
 import {shallow} from 'enzyme';
 
-import {OptimizeReport} from './OptimizeReport';
+import {OptimizeReportTile} from './OptimizeReportTile';
 import {ReportRenderer} from 'components';
 
-const loadReport = jest.fn().mockReturnValue({id: 'a'});
+const loadTile = jest.fn().mockReturnValue({id: 'a'});
 
 const props = {
-  report: {
+  tile: {
     id: 'a',
   },
   filter: [{type: 'runningInstancesOnly', data: null}],
-  loadReport,
+  loadTile,
   mightFail: jest.fn().mockImplementation((data, cb) => cb(data)),
 };
 
 it('should load the report provided by id', () => {
-  shallow(<OptimizeReport {...props} />);
+  shallow(<OptimizeReportTile {...props} />);
 
-  expect(loadReport).toHaveBeenCalledWith(props.report.id, props.filter, {});
+  expect(loadTile).toHaveBeenCalledWith(props.tile.id, props.filter, {});
 });
 
 it('should render the ReportRenderer if data is loaded', async () => {
-  loadReport.mockReturnValue('data');
+  loadTile.mockReturnValue('data');
 
-  const node = shallow(<OptimizeReport {...props} />);
+  const node = shallow(<OptimizeReportTile {...props} />);
 
-  await node.instance().loadReport();
+  await node.instance().loadTile();
 
   expect(node.find(ReportRenderer)).toExist();
 });
 
 it('should contain the report name', async () => {
-  loadReport.mockReturnValue({name: 'Report Name'});
-  const node = shallow(<OptimizeReport {...props} />);
+  loadTile.mockReturnValue({name: 'Report Name'});
+  const node = shallow(<OptimizeReportTile {...props} />);
 
-  await node.instance().loadReport();
+  await node.instance().loadTile();
 
   expect(node.find('EntityName').children()).toIncludeText('Report Name');
 });
 
 it('should provide a link to the report', async () => {
-  loadReport.mockReturnValue({name: 'Report Name', id: 'a'});
-  const node = shallow(<OptimizeReport {...props} />);
+  loadTile.mockReturnValue({name: 'Report Name', id: 'a'});
+  const node = shallow(<OptimizeReportTile {...props} />);
 
-  await node.instance().loadReport();
+  await node.instance().loadTile();
   node.update();
 
   expect(node.find('EntityName').children()).toIncludeText('Report Name');
   expect(node.find('EntityName')).toHaveProp('linkTo', 'report/a/');
 });
 
-it('should use the customizeReportLink prop to get the link if specified', async () => {
-  loadReport.mockReturnValue({name: 'Report Name', id: 'a'});
-  const node = shallow(<OptimizeReport {...props} customizeReportLink={(id) => `test/${id}/`} />);
+it('should use the customizeTileLink prop to get the link if specified', async () => {
+  loadTile.mockReturnValue({name: 'Report Name', id: 'a'});
+  const node = shallow(<OptimizeReportTile {...props} customizeTileLink={(id) => `test/${id}/`} />);
 
-  await node.instance().loadReport();
+  await node.instance().loadTile();
   node.update();
 
   expect(node.find('EntityName')).toHaveProp('linkTo', 'test/a/');
 });
 
 it('should not provide a link to the report when link is disabled', async () => {
-  loadReport.mockReturnValue({name: 'Report Name'});
-  const node = shallow(<OptimizeReport {...props} disableNameLink />);
+  loadTile.mockReturnValue({name: 'Report Name'});
+  const node = shallow(<OptimizeReportTile {...props} disableNameLink />);
 
-  await node.instance().loadReport();
+  await node.instance().loadTile();
   node.update();
 
   expect(node.find('EntityName')).toHaveProp('linkTo', false);
@@ -80,14 +80,18 @@ it('should not provide a link to the report when link is disabled', async () => 
 });
 
 it('should display the name of a failing report', async () => {
-  loadReport.mockReturnValue({
+  loadTile.mockReturnValue({
     reportDefinition: {name: 'Failing Name'},
   });
   const node = shallow(
-    <OptimizeReport {...props} mightFail={(data, success, fail) => fail(data)} disableNameLink />
+    <OptimizeReportTile
+      {...props}
+      mightFail={(data, success, fail) => fail(data)}
+      disableNameLink
+    />
   );
 
-  await node.instance().loadReport();
+  await node.instance().loadTile();
 
   expect(node.find('EntityName').children()).toIncludeText('Failing Name');
 });
@@ -98,31 +102,35 @@ it('should pass an error message if there is an error and no report is returned'
     errorMessage: 'Is failing',
     reportDefinition: null,
   };
-  loadReport.mockReturnValueOnce(error);
+  loadTile.mockReturnValueOnce(error);
 
   const node = await shallow(
-    <OptimizeReport {...props} mightFail={(data, success, fail) => fail(data)} disableNameLink />
+    <OptimizeReportTile
+      {...props}
+      mightFail={(data, success, fail) => fail(data)}
+      disableNameLink
+    />
   );
   await flushPromises();
 
   expect(node.find(ReportRenderer).prop('error')).toEqual(error);
 
   node.setProps({mightFail: props.mightFail});
-  await node.instance().loadReport();
+  await node.instance().loadTile();
 
   expect(node.find(ReportRenderer).prop('error')).toEqual(null);
 });
 
 it('should reload the report if the filter changes', async () => {
-  const node = shallow(<OptimizeReport {...props} filter={[{type: 'runningInstancesOnly'}]} />);
+  const node = shallow(<OptimizeReportTile {...props} filter={[{type: 'runningInstancesOnly'}]} />);
 
-  await node.instance().loadReport();
+  await node.instance().loadTile();
 
-  loadReport.mockClear();
+  loadTile.mockClear();
   node.setProps({filter: [{type: 'suspendedInstancesOnly', data: null}]});
 
-  expect(loadReport).toHaveBeenCalledWith(
-    props.report.id,
+  expect(loadTile).toHaveBeenCalledWith(
+    props.tile.id,
     [{type: 'suspendedInstancesOnly', data: null}],
     {}
   );

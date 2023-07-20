@@ -5,4 +5,4 @@
  * except in compliance with the proprietary license.
  */
 
-export {default as DashboardReport} from './DashboardReport';
+export {default as DashboardTile} from './DashboardTile';

@@ -194,7 +194,7 @@ export function DashboardView(props) {
               )}
               {!fullScreenHandle.active &&
                 (optimizeProfile === 'cloud' || optimizeProfile === 'platform') && (
-                  <AlertsDropdown dashboardReports={tiles} />
+                  <AlertsDropdown dashboardTiles={tiles} />
                 )}
               <Button
                 main
@@ -233,11 +233,11 @@ export function DashboardView(props) {
         />
         <div className="content">
           <DashboardRenderer
-            loadReport={evaluateReport}
+            loadTile={evaluateReport}
             tiles={tiles}
             filter={filter}
             disableNameLink={disableNameLink}
-            customizeReportLink={customizeReportLink}
+            customizeTileLink={customizeReportLink}
             addons={[
               <AutoRefreshBehavior key="autorefresh" interval={autoRefreshInterval} />,
               <DiagramScrollLock key="diagramScrollLock" />,

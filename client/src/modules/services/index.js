@@ -39,8 +39,8 @@ export {
   isCategoricalBar,
   isCategorical,
   TEXT_REPORT_MAX_CHARACTERS,
-  isTextReportTooLong,
-  isTextReportValid,
+  isTextTileTooLong,
+  isTextTileValid,
 } from './reportService';
 
 export * as formatters from './formatters';

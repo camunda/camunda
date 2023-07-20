@@ -32,12 +32,12 @@ const tiles = [
   },
 ];
 
-it('should render a Dashboard Report for every Report in the props', () => {
+it('should render a DashboardTile for every tile in the props', () => {
   const node = shallow(<DashboardRenderer tiles={tiles} />);
 
-  expect(node.find('DashboardReport').at(0).prop('report')).toBe(tiles[0]);
-  expect(node.find('DashboardReport').at(1).prop('report')).toBe(tiles[1]);
-  expect(node.find('DashboardReport').at(2).prop('report')).toBe(tiles[2]);
+  expect(node.find('DashboardTile').at(0).prop('tile')).toBe(tiles[0]);
+  expect(node.find('DashboardTile').at(1).prop('tile')).toBe(tiles[1]);
+  expect(node.find('DashboardTile').at(2).prop('tile')).toBe(tiles[2]);
 });
 
 it('should set min width and height to 1 for text tiles', () => {});
