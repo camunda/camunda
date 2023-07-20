@@ -69,4 +69,15 @@ public interface PartitionTransition {
       super("Partition transition was cancelled");
     }
   }
+
+  /**
+   * Used to exceptionally complete transition futures when the prepare phase of the transition did
+   * not complete successfully. This is useful to distinguish between transitions that were prepared
+   * but later failed or were cancelled, and transitions that couldn't even be prepared properly.
+   */
+  final class FailedPartitionTransitionPreparation extends RuntimeException {
+    public FailedPartitionTransitionPreparation(final Throwable cause) {
+      super("Preparing for partition transition failed", cause);
+    }
+  }
 }
