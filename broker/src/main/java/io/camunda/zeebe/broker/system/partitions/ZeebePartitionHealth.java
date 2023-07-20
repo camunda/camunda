@@ -22,7 +22,7 @@ class ZeebePartitionHealth implements HealthMonitorable {
 
   private final String name;
   private final Set<FailureListener> failureListeners = new HashSet<>();
-  private HealthReport healthReport = HealthReport.unhealthy(this).withMessage("Initial state");
+  private HealthReport healthReport;
   private final PartitionTransition partitionTransition;
   /*
   Multiple factors determine ZeebePartition's health :
@@ -41,8 +41,8 @@ class ZeebePartitionHealth implements HealthMonitorable {
   }
 
   private void updateHealthStatus() {
-    final var previousStatus = healthReport;
-    if (previousStatus.getStatus() == HealthStatus.DEAD) {
+    final HealthReport previousStatus = healthReport;
+    if (healthReport != null && previousStatus.getStatus() == HealthStatus.DEAD) {
       return;
     }
 
