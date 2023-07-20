@@ -86,10 +86,8 @@ public final class PartitionTransitionImpl implements PartitionTransition {
               (v, error) -> {
                 // term and role should only bet se after the transition is completed, since on
                 // preparation we expect old term and role to make decision based on that
-                if (error == null) {
-                  context.setCurrentTerm(term);
-                  context.setCurrentRole(role);
-                }
+                context.setCurrentTerm(term);
+                context.setCurrentRole(role);
                 lastTransition = nextTransition;
               });
 
