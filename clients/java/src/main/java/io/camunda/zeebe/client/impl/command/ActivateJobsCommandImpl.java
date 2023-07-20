@@ -126,4 +126,21 @@ public final class ActivateJobsCommandImpl
         .withDeadlineAfter(requestTimeout.plus(DEADLINE_OFFSET).toMillis(), TimeUnit.MILLISECONDS)
         .activateJobs(request, future);
   }
+
+  @Override
+  public ActivateJobsCommandStep3 tenantId(final String tenantId) {
+    // todo(#13560): replace dummy implementation
+    return this;
+  }
+
+  @Override
+  public ActivateJobsCommandStep3 tenantIds(final List<String> tenantIds) {
+    // todo(#13560): replace dummy implementation
+    return this;
+  }
+
+  @Override
+  public ActivateJobsCommandStep3 tenantIds(final String... tenantIds) {
+    return tenantIds(Arrays.asList(tenantIds));
+  }
 }

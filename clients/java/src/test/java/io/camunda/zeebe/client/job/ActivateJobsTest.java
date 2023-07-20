@@ -19,6 +19,7 @@ import static io.camunda.zeebe.client.util.JsonUtil.fromJsonAsMap;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import io.camunda.zeebe.client.api.command.ActivateJobsCommandStep1.ActivateJobsCommandStep3;
 import io.camunda.zeebe.client.api.command.ClientException;
 import io.camunda.zeebe.client.api.response.ActivateJobsResponse;
 import io.camunda.zeebe.client.impl.ZeebeObjectMapper;
@@ -244,6 +245,56 @@ public final class ActivateJobsTest extends ClientTest {
 
     // then
     assertThat(variablesPojo.getA()).isEqualTo(1);
+  }
+
+  @Test
+  public void shouldAllowSpecifyingTenantIdsAsList() {
+    // given
+    final ActivateJobsCommandStep3 builder =
+        client.newActivateJobsCommand().jobType("foo").maxJobsToActivate(3);
+
+    // when
+    final ActivateJobsCommandStep3 builderWithTenants =
+        builder.tenantIds(Arrays.asList("tenant1", "tenant2"));
+
+    // then
+    // todo(#13560): verify that tenant ids are set in the request
+    assertThat(builderWithTenants)
+        .describedAs("This method has no effect on the command builder while under development")
+        .isEqualTo(builder);
+  }
+
+  @Test
+  public void shouldAllowSpecifyingTenantIdsAsVarArgs() {
+    // given
+    final ActivateJobsCommandStep3 builder =
+        client.newActivateJobsCommand().jobType("foo").maxJobsToActivate(3);
+
+    // when
+    final ActivateJobsCommandStep3 builderWithTenants = builder.tenantIds("tenant1", "tenant2");
+
+    // then
+    // todo(#13560): verify that tenant ids are set in the request
+    assertThat(builderWithTenants)
+        .describedAs("This method has no effect on the command builder while under development")
+        .isEqualTo(builder);
+  }
+
+  @Test
+  public void shouldAllowSpecifyingTenantIds() {
+    // given
+    final ActivateJobsCommandStep3 builder =
+        client.newActivateJobsCommand().jobType("foo").maxJobsToActivate(3);
+
+    // when
+    final ActivateJobsCommandStep3 builderWithTenants =
+        builder.tenantId("tenant1").tenantId("tenant2");
+
+    // then
+    // todo(#13560): verify that tenant ids are set in the request
+    assertThat(builderWithTenants)
+        .describedAs("This method has no effect on the command builder while under development")
+        .isEqualTo(builder);
   }
 
   static class VariablesPojo {

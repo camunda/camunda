@@ -41,7 +41,9 @@ public interface ActivateJobsCommandStep1 {
     ActivateJobsCommandStep3 maxJobsToActivate(int maxJobsToActivate);
   }
 
-  interface ActivateJobsCommandStep3 extends FinalCommandStep<ActivateJobsResponse> {
+  interface ActivateJobsCommandStep3
+      extends CommandWithOneOrMoreTenantsStep<ActivateJobsCommandStep3>,
+          FinalCommandStep<ActivateJobsResponse> {
 
     /**
      * Set the time for how long a job is exclusively assigned for this subscription.
