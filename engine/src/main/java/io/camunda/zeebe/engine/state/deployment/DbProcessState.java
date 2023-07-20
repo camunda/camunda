@@ -153,12 +153,19 @@ public final class DbProcessState implements MutableProcessState {
 
     processColumnFamily.deleteExisting(processDefinitionKey);
     processByIdAndVersionColumnFamily.deleteExisting(idAndVersionKey);
-    digestByIdColumnFamily.deleteExisting(fkProcessId);
 
     processesByProcessIdAndVersion.remove(processRecord.getBpmnProcessIdBuffer());
     processesByKey.remove(processRecord.getProcessDefinitionKey());
-    versionManager.deleteProcessVersion(
-        processRecord.getBpmnProcessId(), processRecord.getVersion());
+
+    final var currentProcessVersion =
+        versionManager.getCurrentProcessVersion(processRecord.getBpmnProcessId());
+    final boolean isLatestVersion = currentProcessVersion == processRecord.getVersion();
+
+    if (isLatestVersion) {
+      digestByIdColumnFamily.deleteExisting(fkProcessId);
+      versionManager.deleteProcessVersion(
+          processRecord.getBpmnProcessId(), processRecord.getVersion());
+    }
   }
 
   private void persistProcess(final long processDefinitionKey, final ProcessRecord processRecord) {
@@ -176,12 +183,8 @@ public final class DbProcessState implements MutableProcessState {
     processId.wrapBuffer(processRecord.getBpmnProcessIdBuffer());
     final var bpmnProcessId = processRecord.getBpmnProcessId();
 
-    final var currentVersion = versionManager.getCurrentProcessVersion(bpmnProcessId);
     final var nextVersion = processRecord.getVersion();
-
-    if (nextVersion > currentVersion) {
-      versionManager.setProcessVersion(bpmnProcessId, nextVersion);
-    }
+    versionManager.updateCurrentVersion(bpmnProcessId, nextVersion);
   }
 
   // is called on getters, if process is not in memory

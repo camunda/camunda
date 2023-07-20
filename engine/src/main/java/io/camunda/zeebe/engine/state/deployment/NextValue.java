@@ -12,17 +12,39 @@ import io.camunda.zeebe.msgpack.UnpackedObject;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 
 public final class NextValue extends UnpackedObject implements DbValue {
+
+  // The next value indicate what version the next deployed process with this id should get
   private final LongProperty nextValueProp = new LongProperty("nextValue", -1L);
 
+  // The latest value indicates the latest version of a deployed process we should start when no
+  // version is specified.
+  private final LongProperty latestValueProp = new LongProperty("latestValue", -1L);
+
   public NextValue() {
-    declareProperty(nextValueProp);
+    declareProperty(nextValueProp).declareProperty(latestValueProp);
   }
 
-  public void set(final long value) {
+  public NextValue set(final long value) {
     nextValueProp.setValue(value);
+    return this;
   }
 
   public long get() {
     return nextValueProp.getValue();
+  }
+
+  public long getLatestVersion() {
+    final long latestVersion = latestValueProp.getValue();
+    // If the latestVersion is not set this is an older process and no instances have been deleted
+    // for this process yet. As a result we should consider the next value to be the latest.
+    if (latestVersion == -1L) {
+      return get();
+    }
+    return latestVersion;
+  }
+
+  public NextValue setLatestVersion(final long value) {
+    latestValueProp.setValue(value);
+    return this;
   }
 }
