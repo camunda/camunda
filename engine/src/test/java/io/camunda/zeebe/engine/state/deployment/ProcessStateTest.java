@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.state.deployment;
 
+import static io.camunda.zeebe.util.buffer.BufferUtil.wrapArray;
 import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -24,6 +25,8 @@ import io.camunda.zeebe.protocol.impl.record.value.deployment.ProcessRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.test.util.Strings;
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.Collection;
 import org.assertj.core.api.Assertions;
 import org.junit.Before;
@@ -527,7 +530,7 @@ public final class ProcessStateTest {
   }
 
   @Test
-  public void shouldDeleteProcess() {
+  public void shouldDeleteLatestProcess() {
     // given
     final String processId = Strings.newRandomValidBpmnId();
     final var processRecord = creatingProcessRecord(processingState, processId, 1);
@@ -547,7 +550,80 @@ public final class ProcessStateTest {
     assertThat(processState.getProcessByProcessIdAndVersion(BufferUtil.wrapString(processId), 1))
         .isNull();
     assertThat(processState.getLatestVersionDigest(BufferUtil.wrapString(processId))).isNull();
-    assertThat(processState.getProcessVersion(processId)).isEqualTo(0);
+    assertThat(processState.getProcessVersion(processId)).isEqualTo(1);
+  }
+
+  @Test
+  public void shouldDeleteOldProcess() {
+    // given
+    final String processId = Strings.newRandomValidBpmnId();
+    final var oldProcess =
+        creatingProcessRecord(processingState, processId, 1).setChecksum(wrapString("oldChecksum"));
+    final var newProcess =
+        creatingProcessRecord(processingState, processId, 2).setChecksum(wrapString("newChecksum"));
+    final var oldDefinitionKey = oldProcess.getProcessDefinitionKey();
+    final var newDefinitionKey = newProcess.getProcessDefinitionKey();
+    processState.putProcess(oldDefinitionKey, oldProcess);
+    processState.putProcess(newDefinitionKey, newProcess);
+
+    // when
+    processState.deleteProcess(oldProcess);
+
+    // then
+    assertThat(processState.getProcessByKey(oldDefinitionKey)).isNull();
+    assertThat(processState.getProcesses())
+        .extracting(DeployedProcess::getKey)
+        .containsOnly(newDefinitionKey);
+    assertThat(processState.getProcessesByBpmnProcessId(BufferUtil.wrapString(processId)))
+        .extracting(DeployedProcess::getKey)
+        .containsOnly(newDefinitionKey);
+    assertThat(processState.getLatestProcessVersionByProcessId(BufferUtil.wrapString(processId)))
+        .extracting(DeployedProcess::getKey)
+        .isEqualTo(newDefinitionKey);
+    assertThat(processState.getProcessByProcessIdAndVersion(BufferUtil.wrapString(processId), 1))
+        .isNull();
+    assertThat(processState.getProcessByProcessIdAndVersion(BufferUtil.wrapString(processId), 2))
+        .isNotNull();
+    assertThat(processState.getLatestVersionDigest(BufferUtil.wrapString(processId)))
+        .isEqualTo(wrapString("newChecksum"));
+    assertThat(processState.getProcessVersion(processId)).isEqualTo(2);
+  }
+
+  @Test
+  public void shouldDeleteNewProcess() throws NoSuchAlgorithmException {
+    // given
+    final String processId = "processId";
+    final var oldProcess = creatingProcessRecord(processingState, processId, 1);
+    final var digestGenerator = MessageDigest.getInstance("MD5");
+    final var oldChecksum = wrapArray(digestGenerator.digest(oldProcess.getResource()));
+    oldProcess.setChecksum(oldChecksum);
+    final var newProcess =
+        creatingProcessRecord(processingState, processId, 2).setChecksum(wrapString("newChecksum"));
+    final var oldDefinitionKey = oldProcess.getProcessDefinitionKey();
+    final var newDefinitionKey = newProcess.getProcessDefinitionKey();
+    processState.putProcess(oldDefinitionKey, oldProcess);
+    processState.putProcess(newDefinitionKey, newProcess);
+
+    // when
+    processState.deleteProcess(newProcess);
+
+    // then
+    assertThat(processState.getProcessByKey(newDefinitionKey)).isNull();
+    assertThat(processState.getProcesses())
+        .extracting(DeployedProcess::getKey)
+        .containsOnly(oldDefinitionKey);
+    assertThat(processState.getProcessesByBpmnProcessId(BufferUtil.wrapString(processId)))
+        .extracting(DeployedProcess::getKey)
+        .containsOnly(oldDefinitionKey);
+    assertThat(processState.getLatestProcessVersionByProcessId(BufferUtil.wrapString(processId)))
+        .extracting(DeployedProcess::getKey)
+        .isEqualTo(oldDefinitionKey);
+    assertThat(processState.getProcessByProcessIdAndVersion(BufferUtil.wrapString(processId), 1))
+        .isNotNull();
+    assertThat(processState.getProcessByProcessIdAndVersion(BufferUtil.wrapString(processId), 2))
+        .isNull();
+    assertThat(processState.getLatestVersionDigest(BufferUtil.wrapString(processId))).isNull();
+    assertThat(processState.getProcessVersion(processId)).isEqualTo(2);
   }
 
   public static DeploymentRecord creatingDeploymentRecord(
@@ -615,9 +691,9 @@ public final class ProcessStateTest {
       final MutableProcessingState processingState, final String processId, final int version) {
     final BpmnModelInstance modelInstance =
         Bpmn.createExecutableProcess(processId)
-            .startEvent()
+            .startEvent("startEvent")
             .serviceTask("test", task -> task.zeebeJobType("type"))
-            .endEvent()
+            .endEvent("endEvent")
             .done();
 
     final ProcessRecord processRecord = new ProcessRecord();
