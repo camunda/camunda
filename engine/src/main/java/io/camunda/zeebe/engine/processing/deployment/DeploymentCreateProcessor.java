@@ -200,7 +200,8 @@ public final class DeploymentCreateProcessor
   /**
    * Create a copy of the provided deployment record without resource
    *
-   * @param deploymentEvent the record to clone and modify
+   * @param deploymentEvent the record to clone
+   * @return a copy of the {@link DeploymentRecord} provided without the resources
    */
   private DeploymentRecord createDeploymentWithoutResources(
       final DeploymentRecord deploymentEvent) {
