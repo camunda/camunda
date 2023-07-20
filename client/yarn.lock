@@ -1133,10 +1133,10 @@
   resolved "https://registry.yarnpkg.com/@camunda-cloud/common-ui/-/common-ui-0.0.18-rc13.tgz#2d80f9750a3b3c83a5d942cd998fb4259aebe8c9"
   integrity sha512-yonxwiRNxh36oSCkdoOo6OvTK8uccD53K0VXhfvHcyxn2+MnnkTeLxWD29cRqaMrMklnZe00W6sXO4o0Oh00Rg==
 
-"@camunda/camunda-composite-components@0.0.42-rc.0":
-  version "0.0.42-rc.0"
-  resolved "https://registry.yarnpkg.com/@camunda/camunda-composite-components/-/camunda-composite-components-0.0.42-rc.0.tgz#da18c07c6785fb315cb1e8389b7d506058ff41de"
-  integrity sha512-+YjUEmW0DTrqQsjM/kN5WW5L0O/jtiWgLWVFrvDyUBYsPI+JsoGDvjwUMbPmWiS+aJP9hn6ywUWaNufa/gKTrw==
+"@camunda/camunda-composite-components@0.0.42":
+  version "0.0.42"
+  resolved "https://registry.yarnpkg.com/@camunda/camunda-composite-components/-/camunda-composite-components-0.0.42.tgz#1ed05cc0c04ef3f854d85edd94f100241138e5f9"
+  integrity sha512-CGTknF5Mp6O+wvAlZO0TwDfpRREiYfbLr3AdoRMCj9Y8h4PbnttCFOxvGdMNc+p2JIEhCmuGnRzV+f9szBabCA==
 
 "@carbon/colors@^11.16.0":
   version "11.16.0"

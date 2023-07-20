@@ -6,7 +6,7 @@
     "@bpmn-io/element-template-icon-renderer": "0.5.1",
     "@camunda-cloud/common-ui": "0.0.18-rc13",
     "@camunda-cloud/common-ui-react": "0.0.18-rc13",
-    "@camunda/camunda-composite-components": "0.0.42-rc.0",
+    "@camunda/camunda-composite-components": "0.0.42",
     "@carbon/elements": "11.25.1",
     "@carbon/react": "1.31.0",
     "@devbookhq/splitter": "1.4.0",
