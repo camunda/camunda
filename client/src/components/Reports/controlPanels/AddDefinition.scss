@@ -6,13 +6,11 @@
 }
 
 .AddDefinitionModal {
-  .MessageBox {
-    font-size: 12px;
+  .cds--modal-container {
+    height: 100%;
   }
 
-  .Checklist {
-    .selectAllInView {
-      display: none;
-    }
+  .MessageBox {
+    font-size: 12px;
   }
 }

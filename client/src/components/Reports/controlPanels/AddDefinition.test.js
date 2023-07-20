@@ -46,7 +46,7 @@ it('should contain a checklist with all available definitions', () => {
   const node = shallow(<AddDefinition {...props} />);
   runLastEffect();
 
-  expect(node.find('Checklist').prop('allItems')).toEqual(loadDefinitions());
+  expect(node.find('CarbonChecklist').prop('allItems')).toEqual(loadDefinitions());
 });
 
 it('should disable already added definitions', () => {
@@ -55,7 +55,7 @@ it('should disable already added definitions', () => {
 
   expect(
     node
-      .find('Checklist')
+      .find('CarbonChecklist')
       .prop('formatter')()
       .find(({id}) => id === 'definitionB').disabled
   ).toBe(true);
@@ -65,7 +65,7 @@ it('should show the definition key if the name is not unique', () => {
   const node = shallow(<AddDefinition {...props} definitions={[{key: 'definitionB'}]} />);
   runLastEffect();
 
-  const formattedEntries = node.find('Checklist').prop('formatter')();
+  const formattedEntries = node.find('CarbonChecklist').prop('formatter')();
 
   expect(formattedEntries[0].label).toBe('Definition A (definitionA)');
   expect(formattedEntries[2].label).toBe('Definition A (definitionA2)');
@@ -81,7 +81,7 @@ it('should show the definition key if the name is null ', () => {
   );
   runLastEffect();
 
-  const formattedEntries = node.find('Checklist').prop('formatter')();
+  const formattedEntries = node.find('CarbonChecklist').prop('formatter')();
 
   expect(formattedEntries[0].label).toBe('name0');
   expect(formattedEntries[1].label).toBe('key1');
@@ -94,7 +94,9 @@ it('should call back with definitions to add', () => {
   );
   runLastEffect();
 
-  node.find('Checklist').simulate('change', [node.find('Checklist').prop('allItems')[0]]);
+  node
+    .find('CarbonChecklist')
+    .simulate('change', [node.find('CarbonChecklist').prop('allItems')[0]]);
 
   loadTenants.mockReturnValueOnce([
     {
@@ -122,7 +124,7 @@ it('should show a warning if limit of 10 definitions is reached', () => {
 
   expect(node.find('MessageBox')).not.toExist();
 
-  node.find('Checklist').simulate('change', [{}]);
+  node.find('CarbonChecklist').simulate('change', [{}]);
 
   expect(node.find('MessageBox')).toExist();
 });

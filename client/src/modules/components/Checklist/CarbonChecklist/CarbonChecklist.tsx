@@ -41,6 +41,7 @@ interface CarbonChecklistProps<T> {
   customHeader?: string | JSX.Element[];
   title?: string | JSX.Element[];
   columnLabel?: string | JSX.Element[];
+  hideSelectAllInView?: boolean;
 }
 
 export default function CarbonChecklist<
@@ -61,6 +62,7 @@ export default function CarbonChecklist<
   customHeader,
   title,
   columnLabel,
+  hideSelectAllInView,
 }: CarbonChecklistProps<T>) {
   const [query, setQuery] = useState('');
 
@@ -152,7 +154,7 @@ export default function CarbonChecklist<
     body.unshift(preItems);
   }
 
-  if (!loading && query && searchFilteredData.length > 1) {
+  if (!hideSelectAllInView && !loading && query && searchFilteredData.length > 1) {
     const onSelect = () =>
       !isAllSelectedInSearch ? selectAllItemsInSearch() : deselectAllItemsInSearch();
     body.unshift({

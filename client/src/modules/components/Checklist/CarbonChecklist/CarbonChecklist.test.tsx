@@ -99,7 +99,11 @@ it('should filter items based on search', () => {
 
   toolbar.find('TableToolbarSearch').simulate('change', {target: {value: 'item 1'}});
 
-  expect(node.find({label: 'item 2'})).not.toExist();
+  const dataTable = node.find('Table').dive().find('DataTable').dive();
+
+  expect(props.onSearch).toHaveBeenCalledWith('item 1');
+  expect(dataTable.find('TableRow').find({cell: {value: 'item 1'}})).toExist();
+  expect(dataTable.find('TableRow').find({cell: {value: 'item 2'}})).not.toExist();
 });
 
 it('should display the id if the label is null', () => {
@@ -154,4 +158,19 @@ it('should allow overwriting the selectAll button with a custom header', () => {
 
   expect(selectAll).not.toExist();
   expect(customHeader).toIncludeText('Custom Header Content');
+});
+
+it('should not show select all in view when hideSelectAllInView prop is passed', () => {
+  const node = shallow(<CarbonChecklist {...props} />);
+  const toolbar = shallow(node.find('Table').prop<ReactElement>('toolbar'));
+
+  toolbar.find('TableToolbarSearch').simulate('change', {target: {value: 'item'}});
+  let dataTable = node.find('Table').dive().find('DataTable').dive();
+
+  expect(dataTable.find('.selectAllInView')).toExist();
+
+  node.setProps({hideSelectAllInView: true});
+  dataTable = node.find('Table').dive().find('DataTable').dive();
+
+  expect(dataTable.find('.selectAllInView')).not.toExist();
 });
