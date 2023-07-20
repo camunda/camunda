@@ -24,7 +24,7 @@ it('should update filter selected values on Checklist change', () => {
   const spy = jest.fn();
   const node = shallow(<BooleanInput {...props} changeFilter={spy} />);
 
-  node.find('Checklist').prop('onChange')([null, true]);
+  node.find('CarbonChecklist').prop('onChange')([null, true]);
 
   expect(spy).toHaveBeenCalledWith({values: [null, true]});
 });

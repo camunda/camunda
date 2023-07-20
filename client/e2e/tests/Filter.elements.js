@@ -36,6 +36,7 @@ export const durationFilterInput = Selector('.DurationFilter input[type="text"]'
 export const modalCancel = Selector('.Modal .cancel');
 export const stringValues = Selector('.Modal .Checklist .itemsList');
 export const firstMultiSelectValue = Selector('.Modal .Checklist .itemsList .LabeledInput .label');
+export const carbonFirstMultiSelectValue = Selector('.Modal .CarbonChecklist tbody tr');
 export const multiSelectValue = (text) => firstMultiSelectValue.withText(text);
 export const customValueCheckbox = Selector('.Modal .customValueCheckbox');
 export const addValueButton = Selector('.Modal .customValueButton');

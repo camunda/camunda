@@ -32,7 +32,7 @@ test('variable filter modal dependent on variable type', async (t) => {
 
   await t.typeText(Filter.variableTypeahead, 'boolVar', {replace: true});
   await t.click(Common.typeaheadOption('boolVar'));
-  await t.click(Filter.firstMultiSelectValue);
+  await t.click(Filter.carbonFirstMultiSelectValue);
 
   await t.typeText(Filter.variableTypeahead, 'stringVar', {replace: true});
   await t.click(Common.typeaheadOption('stringVar'));
