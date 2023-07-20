@@ -32,7 +32,7 @@ _Not all items need to be done depending on the issue and the pull request._
 Code changes:
 * [ ] All acceptance criteria described in the issue are met
 * [ ] The changes are backwards compatibility with previous versions
-* [ ] If it fixes a bug then PRs are created to backport (TODO: link to GitHub backport action here) the fix to the last two minor versions. You can trigger a backport by assigning labels (e.g. `backport stable/8.1`) to the PR, in case that fails you need to create backports manually.
+* [ ] If it fixes a bug then PRs are created to backport (https://github.com/korthout/backport-action#how-it-works) the fix to the last two minor versions. You can trigger a backport by assigning labels (e.g. `backport stable/8.2`) to the PR, in case that fails you need to create backports manually.
 
 Testing:
 * [ ] There are unit/integration tests that verify all acceptance criterias of the issue
