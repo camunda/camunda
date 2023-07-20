@@ -182,14 +182,6 @@ public final class DbProcessState implements MutableProcessState {
     processByIdAndVersionColumnFamily.upsert(idAndVersionKey, persistedProcess);
   }
 
-  private void updateLatestVersion(final ProcessRecord processRecord) {
-    processId.wrapBuffer(processRecord.getBpmnProcessIdBuffer());
-    final var bpmnProcessId = processRecord.getBpmnProcessId();
-
-    final var nextVersion = processRecord.getVersion();
-    versionManager.updateCurrentVersion(bpmnProcessId, nextVersion);
-  }
-
   // is called on getters, if process is not in memory
   private DeployedProcess updateInMemoryState(final PersistedProcess persistedProcess) {
 
