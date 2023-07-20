@@ -42,10 +42,9 @@ public final class MessageBatchExpireProcessor implements TypedRecordProcessor<M
       } catch (final ExceededBatchRecordSizeException exceededBatchRecordSizeException) {
         LOG.warn(
             "Expected to expire messages in a batch, but exceeded the resulting batch size after expiring {} out of {} messages. "
-                + "Try using a lower Message TTL Checker's batch limit. (maxCommandsInBatch: {})",
+                + "Try using a lower Message TTL Checker's batch limit.",
             expiredMessagesCount,
-            totalMessagesCount,
-            exceededBatchRecordSizeException);
+            totalMessagesCount);
         break;
       }
     }
