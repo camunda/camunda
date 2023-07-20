@@ -111,13 +111,13 @@ public final class DeploymentCreateProcessor
     // Make sure the cache does not contain any leftovers from this run (by hard resetting)
     processState.clearCache();
 
-    if (error instanceof ResourceTransformationFailedException exception) {
+    if (error instanceof final ResourceTransformationFailedException exception) {
       rejectionWriter.appendRejection(
           command, RejectionType.INVALID_ARGUMENT, exception.getMessage());
       responseWriter.writeRejectionOnCommand(
           command, RejectionType.INVALID_ARGUMENT, exception.getMessage());
       return ProcessingError.EXPECTED_ERROR;
-    } else if (error instanceof TimerCreationFailedException exception) {
+    } else if (error instanceof final TimerCreationFailedException exception) {
       rejectionWriter.appendRejection(
           command, RejectionType.PROCESSING_ERROR, exception.getMessage());
       responseWriter.writeRejectionOnCommand(
@@ -145,8 +145,10 @@ public final class DeploymentCreateProcessor
     }
 
     final long key = keyGenerator.nextKey();
-    responseWriter.writeEventOnCommand(key, DeploymentIntent.CREATED, deploymentEvent, command);
-    stateWriter.appendFollowUpEvent(key, DeploymentIntent.CREATED, deploymentEvent);
+    final var recordWithoutResource = createDeploymentWithoutResources(deploymentEvent);
+    responseWriter.writeEventOnCommand(
+        key, DeploymentIntent.CREATED, recordWithoutResource, command);
+    stateWriter.appendFollowUpEvent(key, DeploymentIntent.CREATED, recordWithoutResource);
 
     distributionBehavior.distributeCommand(key, command);
   }
@@ -155,7 +157,9 @@ public final class DeploymentCreateProcessor
     final var deploymentEvent = command.getValue();
     createBpmnResources(deploymentEvent);
     createDmnResources(command, deploymentEvent);
-    stateWriter.appendFollowUpEvent(command.getKey(), DeploymentIntent.CREATED, deploymentEvent);
+    final var recordWithoutResource = createDeploymentWithoutResources(deploymentEvent);
+    stateWriter.appendFollowUpEvent(
+        command.getKey(), DeploymentIntent.CREATED, recordWithoutResource);
     distributionBehavior.acknowledgeCommand(command.getKey(), command);
   }
 
@@ -191,6 +195,20 @@ public final class DeploymentCreateProcessor
         .forEach(
             (record) ->
                 stateWriter.appendFollowUpEvent(command.getKey(), DecisionIntent.CREATED, record));
+  }
+
+  /**
+   * Create a copy of the provided deployment record without resource
+   *
+   * @param deploymentEvent the record to clone
+   * @return a copy of the {@link DeploymentRecord} provided without the resources
+   */
+  private DeploymentRecord createDeploymentWithoutResources(
+      final DeploymentRecord deploymentEvent) {
+    final var copyRecord = new DeploymentRecord();
+    copyRecord.wrap(BufferUtil.createCopy(deploymentEvent));
+    copyRecord.resetResources();
+    return copyRecord;
   }
 
   private void createTimerIfTimerStartEvent(final TypedRecord<DeploymentRecord> record) {

@@ -18,7 +18,6 @@ import io.camunda.zeebe.it.util.GrpcClientRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.test.util.BrokerClassRuleHelper;
-import io.camunda.zeebe.util.ByteValue;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
@@ -140,10 +139,7 @@ public final class CreateDeploymentTest {
     final var modelThatFitsJustWithinMaxMessageSize =
         Bpmn.createExecutableProcess("PROCESS")
             .startEvent()
-            .documentation(
-                "x"
-                    .repeat(
-                        (int) (ByteValue.ofMegabytes(MAX_MSG_SIZE_MB) - ByteValue.ofKilobytes(2))))
+            .documentation("x".repeat((1047100)))
             .done();
     final var command =
         CLIENT_RULE

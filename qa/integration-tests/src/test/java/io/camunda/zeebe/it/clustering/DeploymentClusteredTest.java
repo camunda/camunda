@@ -200,7 +200,6 @@ public final class DeploymentClusteredTest {
                 assertThat(
                         RecordingExporter.deploymentRecords(DeploymentIntent.CREATED)
                             .withPartitionId(2)
-                            .withResourceName("dmn/decision-table.dmn")
                             .limit(2))
                     .describedAs("expect that deployment is distributed twice")
                     .hasSize(2));
