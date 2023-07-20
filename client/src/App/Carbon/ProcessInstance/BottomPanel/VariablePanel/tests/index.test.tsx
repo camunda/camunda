@@ -40,14 +40,14 @@ import * as operationApi from 'modules/api/getOperation';
 import {useEffect} from 'react';
 import {act} from 'react-dom/test-utils';
 import {Paths} from 'modules/Routes';
+import {notificationsStore} from 'modules/stores/carbonNotifications';
 
 const getOperationSpy = jest.spyOn(operationApi, 'getOperation');
 
-const mockDisplayNotification = jest.fn();
-jest.mock('modules/notifications', () => ({
-  useNotifications: () => ({
-    displayNotification: mockDisplayNotification,
-  }),
+jest.mock('modules/stores/carbonNotifications', () => ({
+  notificationsStore: {
+    displayNotification: jest.fn(() => () => {}),
+  },
 }));
 
 const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
@@ -317,8 +317,11 @@ describe('VariablePanel', () => {
         name: /add variable/i,
       }),
     ).toBeInTheDocument();
-    expect(mockDisplayNotification).toHaveBeenCalledWith('success', {
-      headline: 'Variable added',
+
+    expect(notificationsStore.displayNotification).toHaveBeenCalledWith({
+      isDismissable: true,
+      kind: 'success',
+      title: 'Variable added',
     });
 
     expect(
@@ -490,8 +493,10 @@ describe('VariablePanel', () => {
       }),
     ).not.toBeInTheDocument();
 
-    expect(mockDisplayNotification).not.toHaveBeenCalledWith('error', {
-      headline: 'Variable could not be saved',
+    expect(notificationsStore.displayNotification).not.toHaveBeenCalledWith({
+      isDismissable: true,
+      kind: 'error',
+      title: 'Variable could not be saved',
     });
 
     expect(
@@ -584,8 +589,10 @@ describe('VariablePanel', () => {
       }),
     ).toBeInTheDocument();
 
-    expect(mockDisplayNotification).toHaveBeenCalledWith('error', {
-      headline: 'Variable could not be saved',
+    expect(notificationsStore.displayNotification).toHaveBeenCalledWith({
+      isDismissable: true,
+      kind: 'error',
+      title: 'Variable could not be saved',
     });
   });
 
@@ -651,9 +658,11 @@ describe('VariablePanel', () => {
       }),
     ).toBeInTheDocument();
 
-    expect(mockDisplayNotification).toHaveBeenCalledWith('error', {
-      headline: 'Variable could not be saved',
-      description: 'You do not have permission',
+    expect(notificationsStore.displayNotification).toHaveBeenCalledWith({
+      isDismissable: true,
+      kind: 'error',
+      title: 'Variable could not be saved',
+      subtitle: 'You do not have permission',
     });
   });
 
@@ -735,8 +744,10 @@ describe('VariablePanel', () => {
       }),
     ).toBeInTheDocument();
 
-    expect(mockDisplayNotification).toHaveBeenCalledWith('error', {
-      headline: 'Variable could not be saved',
+    expect(notificationsStore.displayNotification).toHaveBeenCalledWith({
+      isDismissable: true,
+      kind: 'error',
+      title: 'Variable could not be saved',
     });
 
     expect(getOperationSpy).toHaveBeenCalledWith('batch-operation-id');

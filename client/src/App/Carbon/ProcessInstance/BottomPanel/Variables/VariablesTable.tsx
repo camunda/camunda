@@ -16,7 +16,6 @@ import {useMemo, useRef} from 'react';
 import {Restricted} from 'modules/components/Restricted';
 import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
 import {Button, Loading} from '@carbon/react';
-import {useNotifications} from 'modules/notifications';
 import {useForm, useFormState} from 'react-final-form';
 import {Operations} from './Operations';
 import {useProcessInstancePageParams} from '../../useProcessInstancePageParams';
@@ -29,6 +28,7 @@ import {Value} from './NewVariableModification/Value';
 import {Operation} from './NewVariableModification/Operation';
 import {ViewFullVariableButton} from './ViewFullVariableButton';
 import {MAX_VARIABLES_STORED} from 'modules/constants/variables';
+import {notificationsStore} from 'modules/stores/carbonNotifications';
 
 type Props = {
   scopeId: string | null;
@@ -48,7 +48,6 @@ const VariablesTable: React.FC<Props> = observer(
     );
 
     const {processInstanceId = ''} = useProcessInstancePageParams();
-    const notifications = useNotifications();
     const {initialValues} = useFormState();
     const variableNameRef = useRef<HTMLDivElement>(null);
 
@@ -65,8 +64,10 @@ const VariablesTable: React.FC<Props> = observer(
         processInstanceId,
         variableId,
         onError: () => {
-          notifications.displayNotification('error', {
-            headline: 'Variable could not be fetched',
+          notificationsStore.displayNotification({
+            kind: 'error',
+            title: 'Variable could not be fetched',
+            isDismissable: true,
           });
         },
         enableLoading,
@@ -219,8 +220,10 @@ const VariablesTable: React.FC<Props> = observer(
                             );
                           },
                           onError: () => {
-                            notifications.displayNotification('error', {
-                              headline: 'Variable could not be fetched',
+                            notificationsStore.displayNotification({
+                              kind: 'error',
+                              title: 'Variable could not be fetched',
+                              isDismissable: true,
                             });
                           },
                         });

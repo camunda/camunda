@@ -21,12 +21,12 @@ import {modificationsStore} from 'modules/stores/modifications';
 import {mockFetchVariables} from 'modules/mocks/api/processInstances/fetchVariables';
 import {mockFetchVariable} from 'modules/mocks/api/fetchVariable';
 import {act} from 'react-dom/test-utils';
+import {notificationsStore} from 'modules/stores/carbonNotifications';
 
-const mockDisplayNotification = jest.fn();
-jest.mock('modules/notifications', () => ({
-  useNotifications: () => ({
-    displayNotification: mockDisplayNotification,
-  }),
+jest.mock('modules/stores/carbonNotifications', () => ({
+  notificationsStore: {
+    displayNotification: jest.fn(() => () => {}),
+  },
 }));
 
 const instanceMock = createInstance({id: '1'});
@@ -286,7 +286,8 @@ describe('Edit variable', () => {
         name: /edit variable/i,
       }),
     ).toBeEnabled();
-    expect(mockDisplayNotification).not.toHaveBeenCalled();
+
+    expect(notificationsStore.displayNotification).not.toHaveBeenCalled();
   });
 
   it('should display notification if error occurs when getting single variable details', async () => {
@@ -322,8 +323,10 @@ describe('Edit variable', () => {
 
     expect(screen.getByText('"value-preview"')).toBeInTheDocument();
 
-    expect(mockDisplayNotification).toHaveBeenCalledWith('error', {
-      headline: 'Variable could not be fetched',
+    expect(notificationsStore.displayNotification).toHaveBeenCalledWith({
+      isDismissable: true,
+      kind: 'error',
+      title: 'Variable could not be fetched',
     });
   });
 

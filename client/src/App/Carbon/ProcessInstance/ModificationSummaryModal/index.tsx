@@ -23,13 +23,13 @@ import {processInstanceDetailsStatisticsStore} from 'modules/stores/processInsta
 import {tracking} from 'modules/tracking';
 import {Button} from '@carbon/react';
 import {StateProps} from 'modules/components/Carbon/ModalStateManager';
-import {useNotifications} from 'modules/notifications';
 import {Warning} from './Messages/Warning';
 import {Error} from './Messages/Error';
 import {VariableModification} from './VariableModification';
 import {JSONEditor} from 'modules/components/Carbon/JSONEditor';
 import {DiffEditor} from 'modules/components/Carbon/DiffEditor';
 import {beautifyJSON} from 'modules/utils/editor/beautifyJSON';
+import {notificationsStore} from 'modules/stores/carbonNotifications';
 
 const OPERATION_DISPLAY_NAME = {
   ADD_TOKEN: 'Add',
@@ -41,8 +41,6 @@ const OPERATION_DISPLAY_NAME = {
 
 const ModificationSummaryModal: React.FC<StateProps> = observer(
   ({open, setOpen}) => {
-    const notifications = useNotifications();
-
     const flowNodeModificationsTableRef = useRef<HTMLDivElement>(null);
     const variableModificationsTableRef = useRef<HTMLDivElement>(null);
 
@@ -125,18 +123,24 @@ const ModificationSummaryModal: React.FC<StateProps> = observer(
             processInstanceId,
             onSuccess: () => {
               tracking.track({eventName: 'modification-successful'});
-              notifications.displayNotification('success', {
-                headline: 'Modifications applied',
+
+              notificationsStore.displayNotification({
+                kind: 'success',
+                title: 'Modifications applied',
+                isDismissable: true,
               });
             },
             onError: (statusCode: number) => {
               tracking.track({eventName: 'modification-failed'});
-              notifications.displayNotification('error', {
-                headline: 'Modification failed',
-                description:
+
+              notificationsStore.displayNotification({
+                kind: 'error',
+                title: 'Modification failed',
+                subtitle:
                   statusCode === 403
                     ? 'You do not have permission'
                     : 'Unable to apply modifications, please try again.',
+                isDismissable: true,
               });
             },
           });

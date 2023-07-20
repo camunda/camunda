@@ -9,7 +9,6 @@ import {variablesStore} from 'modules/stores/variables';
 import {observer} from 'mobx-react';
 import {useProcessInstancePageParams} from 'App/ProcessInstance/useProcessInstancePageParams';
 import {Form as ReactFinalForm} from 'react-final-form';
-import {useNotifications} from 'modules/notifications';
 import {VariableFormValues} from 'modules/types/variables';
 
 import {Content, EmptyMessageContainer} from './styled';
@@ -18,10 +17,10 @@ import {ErrorMessage} from 'modules/components/Carbon/ErrorMessage';
 import {EmptyMessage} from 'modules/components/Carbon/EmptyMessage';
 import {Loading} from '@carbon/react';
 import {VariablesForm} from './VariablesForm';
+import {notificationsStore} from 'modules/stores/carbonNotifications';
 
 const VariablesContent: React.FC = observer(() => {
   const {processInstanceId = ''} = useProcessInstancePageParams();
-  const notifications = useNotifications();
 
   const {displayStatus} = variablesStore;
 
@@ -74,17 +73,23 @@ const VariablesContent: React.FC = observer(() => {
             name,
             value,
             onSuccess: () => {
-              notifications.displayNotification('success', {
-                headline: 'Variable added',
+              notificationsStore.displayNotification({
+                kind: 'success',
+                title: 'Variable added',
+                isDismissable: true,
               });
+
               form.reset({});
             },
             onError: (statusCode: number) => {
-              notifications.displayNotification('error', {
-                headline: 'Variable could not be saved',
-                description:
+              notificationsStore.displayNotification({
+                kind: 'error',
+                title: 'Variable could not be saved',
+                subtitle:
                   statusCode === 403 ? 'You do not have permission' : undefined,
+                isDismissable: true,
               });
+
               form.reset({});
             },
           };

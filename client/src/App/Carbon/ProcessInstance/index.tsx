@@ -43,6 +43,7 @@ import {useCallbackPrompt} from 'modules/hooks/useCallbackPrompt';
 import {LastModification} from './LastModification';
 import {VariablePanel} from './BottomPanel/VariablePanel';
 import {Forbidden} from 'modules/components/Carbon/Forbidden';
+import {notificationsStore} from 'modules/stores/carbonNotifications';
 
 const ProcessInstance: React.FC = observer(() => {
   const {processInstanceId = ''} = useProcessInstancePageParams();
@@ -96,14 +97,20 @@ const ProcessInstance: React.FC = observer(() => {
               incidents: true,
             }),
           );
-          notifications?.displayNotification('error', {
-            headline: `Instance ${processInstanceId} could not be found`,
+
+          notificationsStore.displayNotification({
+            kind: 'error',
+            title: `Instance ${processInstanceId} could not be found`,
+            isDismissable: true,
           });
         },
         onPollingFailure: () => {
           navigate(Locations.processes());
-          notifications?.displayNotification('success', {
-            headline: 'Instance deleted',
+
+          notificationsStore.displayNotification({
+            kind: 'success',
+            title: 'Instance deleted',
+            isDismissable: true,
           });
         },
       });

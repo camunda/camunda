@@ -12,7 +12,6 @@ import {observer} from 'mobx-react';
 import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
 import {processInstanceDetailsDiagramStore} from 'modules/stores/processInstanceDetailsDiagram';
 import {variablesStore} from 'modules/stores/variables';
-import {useNotifications} from 'modules/notifications';
 import {Link} from 'modules/components/Carbon/Link';
 import {Locations, Paths} from 'modules/Routes';
 import {Restricted} from 'modules/components/Restricted';
@@ -21,6 +20,7 @@ import {modificationsStore} from 'modules/stores/modifications';
 import {tracking} from 'modules/tracking';
 import {InstanceHeader} from 'modules/components/Carbon/InstanceHeader';
 import {Skeleton} from 'modules/components/Carbon/InstanceHeader/Skeleton';
+import {notificationsStore} from 'modules/stores/carbonNotifications';
 
 const headerColumns = [
   {
@@ -55,7 +55,6 @@ const headerColumns = [
 
 const ProcessInstanceHeader: React.FC = observer(() => {
   const {processInstance} = processInstanceDetailsStore.state;
-  const notifications = useNotifications();
 
   if (
     processInstance === null ||
@@ -188,12 +187,14 @@ const ProcessInstanceHeader: React.FC = observer(() => {
               onError={({operationType, statusCode}) => {
                 processInstanceDetailsStore.deactivateOperation(operationType);
 
-                notifications.displayNotification('error', {
-                  headline: 'Operation could not be created',
-                  description:
+                notificationsStore.displayNotification({
+                  kind: 'error',
+                  title: 'Operation could not be created',
+                  subtitle:
                     statusCode === 403
                       ? 'You do not have permission'
                       : undefined,
+                  isDismissable: true,
                 });
               }}
               onSuccess={(operationType) => {

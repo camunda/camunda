@@ -46,18 +46,15 @@ import * as operationApi from 'modules/api/getOperation';
 import {useEffect} from 'react';
 import {act} from 'react-dom/test-utils';
 import {Paths} from 'modules/Routes';
+import {notificationsStore} from 'modules/stores/carbonNotifications';
+
+jest.mock('modules/stores/carbonNotifications', () => ({
+  notificationsStore: {
+    displayNotification: jest.fn(() => () => {}),
+  },
+}));
 
 const getOperationSpy = jest.spyOn(operationApi, 'getOperation');
-
-const mockDisplayNotification = jest.fn();
-
-jest.mock('modules/notifications', () => {
-  return {
-    useNotifications: () => {
-      return {displayNotification: mockDisplayNotification};
-    },
-  };
-});
 
 const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
   useEffect(() => {
@@ -357,8 +354,10 @@ describe('InstanceHeader', () => {
     await user.click(screen.getByRole('button', {name: /Apply/}));
 
     await waitFor(() =>
-      expect(mockDisplayNotification).toHaveBeenCalledWith('error', {
-        headline: 'Operation could not be created',
+      expect(notificationsStore.displayNotification).toHaveBeenCalledWith({
+        isDismissable: true,
+        kind: 'error',
+        title: 'Operation could not be created',
       }),
     );
   });
@@ -379,9 +378,11 @@ describe('InstanceHeader', () => {
     await user.click(screen.getByRole('button', {name: /Apply/}));
 
     await waitFor(() =>
-      expect(mockDisplayNotification).toHaveBeenCalledWith('error', {
-        headline: 'Operation could not be created',
-        description: 'You do not have permission',
+      expect(notificationsStore.displayNotification).toHaveBeenCalledWith({
+        isDismissable: true,
+        kind: 'error',
+        title: 'Operation could not be created',
+        subtitle: 'You do not have permission',
       }),
     );
   });

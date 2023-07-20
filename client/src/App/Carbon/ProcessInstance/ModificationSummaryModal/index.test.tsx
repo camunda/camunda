@@ -20,12 +20,12 @@ import {mockModify} from 'modules/mocks/api/processInstances/modify';
 import {open} from 'modules/mocks/diagrams';
 import {useEffect} from 'react';
 import {act} from 'react-dom/test-utils';
+import {notificationsStore} from 'modules/stores/carbonNotifications';
 
-const mockDisplayNotification = jest.fn();
-jest.mock('modules/notifications', () => ({
-  useNotifications: () => ({
-    displayNotification: mockDisplayNotification,
-  }),
+jest.mock('modules/stores/carbonNotifications', () => ({
+  notificationsStore: {
+    displayNotification: jest.fn(() => () => {}),
+  },
 }));
 
 const Wrapper = ({children}: {children?: React.ReactNode}) => {
@@ -534,8 +534,10 @@ describe('Modification Summary Modal', () => {
     await user.click(screen.getByRole('button', {name: 'Apply'}));
 
     await waitFor(() =>
-      expect(mockDisplayNotification).toHaveBeenCalledWith('success', {
-        headline: 'Modifications applied',
+      expect(notificationsStore.displayNotification).toHaveBeenCalledWith({
+        isDismissable: true,
+        kind: 'success',
+        title: 'Modifications applied',
       }),
     );
     expect(mockOnClose).toHaveBeenCalled();
@@ -570,9 +572,11 @@ describe('Modification Summary Modal', () => {
     await user.click(screen.getByRole('button', {name: 'Apply'}));
 
     await waitFor(() =>
-      expect(mockDisplayNotification).toHaveBeenCalledWith('error', {
-        headline: 'Modification failed',
-        description: 'Unable to apply modifications, please try again.',
+      expect(notificationsStore.displayNotification).toHaveBeenCalledWith({
+        isDismissable: true,
+        kind: 'error',
+        title: 'Modification failed',
+        subtitle: 'Unable to apply modifications, please try again.',
       }),
     );
     expect(mockOnClose).toHaveBeenCalled();
@@ -607,9 +611,11 @@ describe('Modification Summary Modal', () => {
     await user.click(screen.getByRole('button', {name: 'Apply'}));
 
     await waitFor(() =>
-      expect(mockDisplayNotification).toHaveBeenCalledWith('error', {
-        headline: 'Modification failed',
-        description: 'You do not have permission',
+      expect(notificationsStore.displayNotification).toHaveBeenCalledWith({
+        isDismissable: true,
+        kind: 'error',
+        title: 'Modification failed',
+        subtitle: 'You do not have permission',
       }),
     );
     expect(mockOnClose).toHaveBeenCalled();
