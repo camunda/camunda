@@ -59,7 +59,9 @@ describe('<Header />', () => {
     render(<Header />, {wrapper: Wrapper});
 
     expect(screen.getByTestId('EVALUATED-icon')).toBeInTheDocument();
-    expect(screen.getByRole('button', {name: /open drd/i})).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', {name: /open decision requirements diagram/i}),
+    ).toBeInTheDocument();
     expect(
       screen.getByRole('columnheader', {name: /^decision name$/i}),
     ).toBeInTheDocument();

@@ -120,6 +120,7 @@ const Header: React.FC = observer(() => {
             size="sm"
             kind="tertiary"
             title="Open Decision Requirements Diagram"
+            aria-label="Open Decision Requirements Diagram"
             onClick={() => {
               drdStore.setPanelState('minimized');
               tracking.track({

@@ -7,7 +7,7 @@
 
 import {observer} from 'mobx-react';
 import {DiagramShell} from 'modules/components/Carbon/DiagramShell';
-import {Section} from './styled';
+import {IncidentBanner, Section} from './styled';
 import {DecisionViewer} from 'modules/components/Carbon/DecisionViewer';
 import {decisionXmlStore} from 'modules/stores/decisionXml';
 import {decisionInstanceDetailsStore} from 'modules/stores/decisionInstanceDetails';
@@ -33,7 +33,12 @@ const DecisionPanel: React.FC = observer(() => {
   };
 
   return (
-    <Section>
+    <Section data-testid="decision-panel">
+      {decisionInstance?.state === 'FAILED' && (
+        <IncidentBanner data-testid="incident-banner">
+          {decisionInstance.errorMessage}
+        </IncidentBanner>
+      )}
       <DiagramShell status={getStatus()}>
         <DecisionViewer
           xml={decisionXmlStore.state.xml}
