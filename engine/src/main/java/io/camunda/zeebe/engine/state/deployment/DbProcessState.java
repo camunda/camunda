@@ -130,7 +130,10 @@ public final class DbProcessState implements MutableProcessState {
   @Override
   public void putProcess(final long key, final ProcessRecord processRecord) {
     persistProcess(key, processRecord);
-    updateLatestVersion(processRecord);
+    versionManager.updateCurrentVersion(
+        processRecord.getBpmnProcessId(), processRecord.getVersion());
+    versionManager.updateLatestVersion(
+        processRecord.getBpmnProcessId(), processRecord.getVersion());
     putLatestVersionDigest(
         processRecord.getBpmnProcessIdBuffer(), processRecord.getChecksumBuffer());
   }

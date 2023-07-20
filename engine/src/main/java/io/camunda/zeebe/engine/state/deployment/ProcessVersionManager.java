@@ -68,8 +68,10 @@ public final class ProcessVersionManager {
   public void updateLatestVersion(final String processId, final long version) {
     processIdKey.wrapString(processId);
 
-    final var versionInfo = nextValueColumnFamily.get(processIdKey);
+    final var versionInfo = getProcessVersionInfo();
     versionInfo.setLatestVersion(version);
+    nextValueColumnFamily.upsert(processIdKey, nextVersion);
+    versionCache.put(processId, versionInfo);
   }
 
   public long getCurrentProcessVersion(final String processId) {
