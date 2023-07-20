@@ -54,7 +54,7 @@ export interface Header<T extends object = object>
     UseSortByColumnProps<T>,
     UseSortByOptions<T>,
     UseResizeColumnsColumnProps<T> {
-  group: any;
+  group: unknown;
   title?: string;
 }
 
@@ -97,7 +97,7 @@ interface TableProps {
   disablePagination?: boolean;
   noHighlight?: boolean;
   noData?: JSX.Element;
-  error?: boolean;
+  error?: ReactNode;
   onScroll?: UIEventHandler<HTMLElement>;
   fetchData?: ({pageIndex, pageSize}: {pageIndex: number; pageSize: number}) => void;
   defaultPageSize?: number;
@@ -203,6 +203,12 @@ export default function Table<T extends object>({
 
   const isEmpty = !loading && (totalRows === 0 || head.length === 0);
   const isSortable = headerGroups.some(({headers}) => headers.some((header) => header.canSort));
+  const showPagination =
+    !disablePagination &&
+    !isEmpty &&
+    !loading &&
+    !error &&
+    (totalRows > defaultPageSize || totalEntries);
 
   if (isReactElement(toolbar) && toolbar.type !== TableToolbar) {
     throw new Error('Table `toolbar` should be a `TableToolbar` component');
@@ -230,56 +236,60 @@ export default function Table<T extends object>({
         render={({getTableContainerProps, getTableProps}) => (
           <TableContainer title={title} {...getTableContainerProps()}>
             {toolbar}
-            <CarbonTable {...getReactTableProps()} {...getTableProps()}>
-              <TableHead>
-                {headerGroups.map((headerGroup, i) => (
-                  <TableRow
-                    {...headerGroup.getHeaderGroupProps()}
-                    className={classnames({groupRow: i === 0 && headerGroups.length > 1})}
-                  >
-                    {headerGroup.headers.map((header: Header) => (
-                      <TableHeader
-                        key={header.id}
-                        header={header}
-                        isSortable={isSortable}
-                        allowLocalSorting={allowLocalSorting}
-                        resultType={resultType}
-                        sortByLabel={sortByLabel}
-                        sorting={sorting}
-                        updateSorting={updateSorting}
-                        firstColumnId={columns[0]?.id}
-                      />
-                    ))}
-                  </TableRow>
-                ))}
-              </TableHead>
-              {loading ? (
-                <DataTableSkeleton
-                  zebra={useZebraStyles}
-                  showToolbar={false}
-                  showHeader={false}
-                  columnCount={MAX_LOADING_COLUMN_COUNT}
-                  rowCount={LOADING_ROWS_COUNT}
-                />
-              ) : (
+            {!loading && (
+              <CarbonTable {...getReactTableProps()} {...getTableProps()}>
+                <TableHead>
+                  {headerGroups.map((headerGroup, i) => (
+                    <TableRow
+                      {...headerGroup.getHeaderGroupProps()}
+                      className={classnames({groupRow: i === 0 && headerGroups.length > 1})}
+                    >
+                      {headerGroup.headers.map((header: Header) => (
+                        <TableHeader
+                          key={header.id}
+                          header={header}
+                          isSortable={isSortable}
+                          allowLocalSorting={allowLocalSorting}
+                          resultType={resultType}
+                          sortByLabel={sortByLabel}
+                          sorting={sorting}
+                          updateSorting={updateSorting}
+                          firstColumnId={columns[0]?.id}
+                        />
+                      ))}
+                    </TableRow>
+                  ))}
+                </TableHead>
                 <TableBody {...getTableBodyProps()} onScroll={onScroll}>
-                  {!error &&
-                    page.map((row) => {
-                      prepareRow(row);
-                      return (
-                        <TableRow {...row.getRowProps((row.original as any).__props)}>
-                          {row.cells.map((cell) => (
-                            <TableCell key={cell.column.id} cell={cell} />
-                          ))}
-                        </TableRow>
-                      );
-                    })}
-                  {isEmpty && <div className="noData">{noData}</div>}
-                  {error && <div className="error">{error}</div>}
+                  {page.map((row) => {
+                    prepareRow(row);
+                    return (
+                      <TableRow {...row.getRowProps((row.original as any).__props)}>
+                        {row.cells.map((cell) => (
+                          <TableCell key={cell.column.id} cell={cell} />
+                        ))}
+                      </TableRow>
+                    );
+                  })}
                 </TableBody>
-              )}
-            </CarbonTable>
-            {!disablePagination && !isEmpty && (totalRows > defaultPageSize || totalEntries) && (
+              </CarbonTable>
+            )}
+            {loading && (
+              <DataTableSkeleton
+                zebra={useZebraStyles}
+                showToolbar={false}
+                showHeader={false}
+                headers={headers.map(getHeaderPlaceholder)}
+                columnCount={MAX_LOADING_COLUMN_COUNT}
+                rowCount={LOADING_ROWS_COUNT}
+                // TODO: Remove this when carbon fixes their type declarations
+                compact={undefined}
+                className={undefined}
+              />
+            )}
+            {isEmpty && <div className="noData">{noData}</div>}
+            {error && <div className="error">{error}</div>}
+            {showPagination && (
               <Pagination
                 aria-disabled={loading}
                 onChange={({page, pageSize}) => {
@@ -377,3 +387,8 @@ Table.formatData = (head: Head[], body: Body[]) => {
     return newRow;
   });
 };
+
+function getHeaderPlaceholder<T extends object>(header: ColumnInstance<T>): {header: string} {
+  const headerString = header.render('Header')!.toString();
+  return {header: headerString === '[object Object]' ? '' : headerString};
+}

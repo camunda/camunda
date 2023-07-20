@@ -321,22 +321,6 @@ declare module '@carbon/react' {
     useZebraStyles?: boolean | undefined;
   }
 
-  export interface DataTableSkeletonHeader {
-    header?: string | undefined;
-  }
-
-  export interface DataTableSkeletonProps extends TableHTMLAttributes<HTMLTableElement> {
-    compact?: boolean | undefined;
-    columnCount?: number | undefined;
-    headers?: readonly DataTableSkeletonHeader[] | undefined;
-    rowCount?: number | undefined;
-    showHeader?: boolean | undefined;
-    showToolbar?: boolean | undefined;
-    zebra?: boolean | undefined;
-  }
-
-  declare const DataTableSkeleton: FC<DataTableSkeletonProps>;
-
   export interface TableProps extends InheritedProps, TableCarbonProps {}
 
   declare const Table: FC<TableProps>;
