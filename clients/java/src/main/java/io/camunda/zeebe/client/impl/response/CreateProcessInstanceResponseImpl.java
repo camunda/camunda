@@ -54,6 +54,12 @@ public final class CreateProcessInstanceResponseImpl implements ProcessInstanceE
   }
 
   @Override
+  public String getTenantId() {
+    // todo(#13536): replace dummy implementation
+    return "";
+  }
+
+  @Override
   public String toString() {
     return "CreateProcessInstanceResponseImpl{"
         + "processDefinitionKey="
@@ -65,6 +71,9 @@ public final class CreateProcessInstanceResponseImpl implements ProcessInstanceE
         + version
         + ", processInstanceKey="
         + processInstanceKey
+        + ", tenantId='"
+        + getTenantId()
+        + '\''
         + '}';
   }
 }

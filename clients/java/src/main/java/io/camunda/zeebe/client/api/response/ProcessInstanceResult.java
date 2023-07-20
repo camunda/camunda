@@ -15,6 +15,7 @@
  */
 package io.camunda.zeebe.client.api.response;
 
+import io.camunda.zeebe.client.api.ExperimentalApi;
 import java.util.Map;
 
 public interface ProcessInstanceResult {
@@ -50,4 +51,8 @@ public interface ProcessInstanceResult {
    * @return de-serialized variables as the given type
    */
   <T> T getVariablesAsType(Class<T> variableType);
+
+  /** Tenant identifier that owns this process instance */
+  @ExperimentalApi("https://github.com/camunda/zeebe/issues/13321")
+  String getTenantId();
 }
