@@ -158,11 +158,11 @@ public final class DbProcessState implements MutableProcessState {
     processesByKey.remove(processRecord.getProcessDefinitionKey());
 
     final var currentProcessVersion =
-        versionManager.getCurrentProcessVersion(processRecord.getBpmnProcessId());
+        versionManager.getLatestProcessVersion(processRecord.getBpmnProcessId());
     final boolean isLatestVersion = currentProcessVersion == processRecord.getVersion();
 
     if (isLatestVersion) {
-      digestByIdColumnFamily.deleteExisting(fkProcessId);
+      digestByIdColumnFamily.deleteIfExists(fkProcessId);
       versionManager.deleteProcessVersion(
           processRecord.getBpmnProcessId(), processRecord.getVersion());
     }

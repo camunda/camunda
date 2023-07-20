@@ -82,6 +82,11 @@ public final class ProcessVersionManager {
     return getProcessVersionInfo().get();
   }
 
+  public long getLatestProcessVersion(final String processId) {
+    processIdKey.wrapString(processId);
+    return getProcessVersionInfo().getLatestVersion();
+  }
+
   private NextValue getProcessVersionInfo() {
     return versionCache.computeIfAbsent(
         processIdKey.toString(), (key) -> getProcessVersionFromDB());
@@ -97,11 +102,8 @@ public final class ProcessVersionManager {
 
   public void deleteProcessVersion(final String processId, final long version) {
     processIdKey.wrapString(processId);
-    if (version == 1) {
-      nextValueColumnFamily.deleteExisting(processIdKey);
-      versionCache.remove(processId);
-    } else {
-      updateCurrentVersion(processId, version - 1);
+    if (version >= 1) {
+      updateLatestVersion(processId, version - 1);
     }
   }
 
