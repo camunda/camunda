@@ -58,6 +58,30 @@ const templateState = {
         name: 'A Report Name',
         data: {view: {entity: 'processInstance', properties: ['frequency']}},
       },
+      type: 'optimize_report',
+    },
+    {
+      position: {
+        x: 2,
+        y: 0,
+      },
+      dimensions: {
+        width: 2,
+        height: 4,
+      },
+      type: 'text',
+      configuration: {
+        text: {
+          root: {
+            children: [],
+            indent: 0,
+            format: '',
+            type: 'root',
+            version: 1,
+            direction: 'ltr',
+          },
+        },
+      },
     },
   ],
 };
@@ -182,9 +206,10 @@ it('should initialize tiles based on location state', async () => {
 
   const tiles = node.find(DashboardView).prop('tiles');
 
-  expect(tiles.length).toBe(1);
+  expect(tiles.length).toBe(2);
   expect(tiles[0].report.name).toBe('A Report Name');
   expect(tiles[0].report.data.view.entity).toBe('processInstance');
+  expect(tiles[1].type).toBe('text');
 });
 
 it('should save unsaved tiles when saving dashboard', async () => {
@@ -206,6 +231,8 @@ it('should save unsaved tiles when saving dashboard', async () => {
     node.find(DashboardEdit).prop('initialTiles'),
     []
   );
+
+  expect(createEntity.mock.calls.length).toBe(1);
 
   const firstSave = createEntity.mock.calls[0];
   expect(firstSave[0]).toBe('report/process/single');

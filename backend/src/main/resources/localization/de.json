@@ -711,6 +711,7 @@
     },
     "templates": {
       "blank": "Leeres Dashboard",
+      "instantPreviewDashboard": "Instant Preview Dashboard",
       "processPerformance": "Prozessleistungsübersicht",
       "processPerformance_subTitle": "Prozess- und Zwischenfall-Performance",
       "humanPerformance": "Benutzeraufgabenübersicht",

@@ -711,6 +711,7 @@
     },
     "templates": {
       "blank": "Blank Dashboard",
+      "instantPreviewDashboard": "Instant Preview Dashboard",
       "processPerformance": "Process performance overview",
       "processPerformance_subTitle": "Process and incident performance",
       "humanPerformance": "Human task performance",

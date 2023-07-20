@@ -89,24 +89,28 @@ export class Dashboard extends React.Component {
       currentUserRole: 'editor',
       tiles:
         initialData?.data?.map((config) => {
-          return {
-            ...config,
-            report: {
-              ...newReport.new,
-              ...modifierData,
-              name: config.report.name,
-              data: {
-                ...newReport.new.data,
-                ...config.report.data,
-                definitions: initialData.definitions,
-                configuration: {
-                  ...newReport.new.data.configuration,
-                  ...(config.report.data?.configuration ?? {}),
-                  xml: initialData.xml,
+          if (config.type === 'optimize_report') {
+            return {
+              ...config,
+              report: {
+                ...newReport.new,
+                ...modifierData,
+                name: config.report.name,
+                data: {
+                  ...newReport.new.data,
+                  ...config.report.data,
+                  definitions: initialData.definitions,
+                  configuration: {
+                    ...newReport.new.data.configuration,
+                    ...(config.report.data?.configuration ?? {}),
+                    xml: initialData.xml,
+                  },
                 },
               },
-            },
-          };
+            };
+          } else {
+            return config;
+          }
         }) ?? [],
       availableFilters: [],
       isAuthorizedToShare: true,
