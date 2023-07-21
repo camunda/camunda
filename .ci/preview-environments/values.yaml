@@ -40,7 +40,7 @@ camunda-platform:
     - name: SPRING_PROFILES_ACTIVE
       value: "dev-data,preview"
     - name: CAMUNDA_TASKLIST_CLOUD_CLUSTERID
-      value: "preview-env"
+      value: "449ac2ad-d3c6-4c73-9c68-7752e39ae616"
     resources:
       limits:
         cpu: 1
