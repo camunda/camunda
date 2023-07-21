@@ -86,13 +86,19 @@ public final class PartitionTransitionImpl implements PartitionTransition {
               new PartitionTransitionProcess(steps, concurrencyControl, context, term, role);
           nextTransitionFuture.onComplete(
               (v, error) -> {
-                // term and role should only bet se after the transition is completed, since on
-                // preparation we expect old term and role to make decision based on that
-                if (error == null) {
+                lastTransition = nextTransition;
+
+                if (!(error instanceof FailedPartitionTransitionPreparation)) {
+                  // Prepare phase succeeded and the transition either completed successfully,
+                  // failed or was cancelled. Either way, we update term and role to ensure that the
+                  // next transition will go through the necessary prepare phase.
+                  // If a `FailedPartitionTransitionPreparation` is actually thrown, the next
+                  // transition must attempt the same preparation again which means we can't update
+                  // term and role yet.
+
                   context.setCurrentTerm(term);
                   context.setCurrentRole(role);
                 }
-                lastTransition = nextTransition;
               });
 
           enqueueNextTransition(term, role, nextTransitionFuture, nextTransition);
@@ -158,7 +164,8 @@ public final class PartitionTransitionImpl implements PartitionTransition {
             if (error != null) {
               LOG.error("Error during transition preparation: {}", error.getMessage(), error);
               LOG.info("Aborting transition to {} on term {} due to error.", role, term);
-              nextTransitionFuture.completeExceptionally(error);
+              nextTransitionFuture.completeExceptionally(
+                  new FailedPartitionTransitionPreparation(error));
             } else {
               nextTransition.start(nextTransitionFuture);
             }
