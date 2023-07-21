@@ -1,22 +1,19 @@
+@use '@carbon/styles/scss/themes';
 @use '@carbon/styles/scss/theme';
 @use '@carbon/styles/scss/spacing';
 @import 'shared-styles/shared-styles.scss';
 
 .Popover {
   display: block;
+  @include theme.theme(themes.$g10);
 
   > .cds--popover {
     > .popoverContent {
-      background-color: theme.$layer-02;
       padding: spacing.$spacing-05;
 
       &.scrollable {
         @include scrollable;
       }
-    }
-
-    > .cds--popover-caret {
-      background-color: theme.$layer-02;
     }
   }
 
