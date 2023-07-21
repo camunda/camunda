@@ -177,6 +177,7 @@ export default function CarbonChecklist<
 
   return (
     <Table
+      disablePagination
       useZebraStyles={false}
       className={classnames('CarbonChecklist', {
         headerHidden: formattedData.length <= 1 || headerHidden,

@@ -33,7 +33,7 @@ beforeEach(() => {
 it('should show a checklist', () => {
   const node = shallow(<StringInput {...props} />);
 
-  expect(node.find('Checklist')).toExist();
+  expect(node.find('CarbonChecklist')).toExist();
 });
 
 it('should load 10 values initially', () => {
@@ -47,7 +47,7 @@ it('should pass available values to the typeahead', () => {
   const node = shallow(<StringInput {...props} />);
   node.setState({availableValues});
 
-  expect(node.find('Checklist').props().allItems).toEqual(availableValues);
+  expect(node.find('CarbonChecklist').props().allItems).toEqual(availableValues);
 });
 
 it('should load 10 more values if the user wants more', () => {
@@ -89,12 +89,12 @@ it('should reset values when switching between operators types', () => {
 it('should render input fields depending on the selected operator', () => {
   const node = shallow(<StringInput {...props} />);
 
-  expect(node.find('Checklist')).toExist();
+  expect(node.find('CarbonChecklist')).toExist();
   expect(node.find('ValueListInput')).not.toExist();
 
   node.setProps({filter: {operator: 'contains', values: ['']}});
 
-  expect(node.find('Checklist')).not.toExist();
+  expect(node.find('CarbonChecklist')).not.toExist();
   expect(node.find('ValueListInput')).toExist();
 });
 
@@ -152,7 +152,7 @@ it('should add custom values to the list of available values', async () => {
 
   await flushPromises();
 
-  expect(node.find('Checklist').prop('allItems')).toContain('A');
+  expect(node.find('CarbonChecklist').prop('allItems')).toContain('A');
 });
 
 it('should not add custom values if they are hidden behind a load more button', async () => {
@@ -166,7 +166,7 @@ it('should not add custom values if they are hidden behind a load more button', 
 
   await flushPromises();
 
-  expect(node.find('Checklist').prop('allItems')).not.toContain('Z');
+  expect(node.find('CarbonChecklist').prop('allItems')).not.toContain('Z');
 });
 
 it('should allow adding custom values', async () => {
@@ -199,7 +199,7 @@ it('should not show previous contains value as custom value after switching oper
 
   await flushPromises();
 
-  expect(node.find('Checklist').prop('allItems')).not.toContain('A');
+  expect(node.find('CarbonChecklist').prop('allItems')).not.toContain('A');
 });
 
 it('should parse existing values correctly without creating duplicates', async () => {
@@ -213,7 +213,7 @@ it('should parse existing values correctly without creating duplicates', async (
 
   await flushPromises();
 
-  expect(node.find('Checklist').prop('allItems')).toEqual([null, 'A', 'B']);
+  expect(node.find('CarbonChecklist').prop('allItems')).toEqual([null, 'A', 'B']);
 });
 
 describe('StringInput.isValid', () => {

@@ -3,11 +3,11 @@
     width: 100%;
     position: relative;
 
-    .Checklist {
+    .CarbonChecklist {
       border-bottom: 1px solid var(--silver-darken-87);
 
-      .itemsList {
-        max-height: calc(100vh - 550px);
+      tbody {
+        max-height: calc(100vh - 600px);
       }
     }
   }
