@@ -120,8 +120,8 @@ function createAppProps(location) {
     name: t('appName'),
     ariaLabel: t('appFullName'),
     routeProps: {
-      element: Link,
-      className: 'appLink',
+      as: Link,
+      className: 'cds--header__name appLink',
       to: '/',
       replace: location.pathname === '/',
     },
@@ -161,7 +161,7 @@ function createNavBarProps(showEventBased, enterpriseMode) {
       key: 'dashboards',
       label: t('navigation.dashboards'),
       routeProps: {
-        element: NavItem,
+        as: NavItem,
         name: t('navigation.dashboards'),
         linksTo: '/processes',
         active: ['/processes/', '/processes/*'],
@@ -172,7 +172,7 @@ function createNavBarProps(showEventBased, enterpriseMode) {
       key: 'collections',
       label: t('navigation.collections'),
       routeProps: {
-        element: NavItem,
+        as: NavItem,
         name: t('navigation.collections'),
         linksTo: '/',
         active: ['/', '/report/*', '/dashboard/*', '/collection/*'],
@@ -183,7 +183,7 @@ function createNavBarProps(showEventBased, enterpriseMode) {
       key: 'analysis',
       label: t('navigation.analysis'),
       routeProps: {
-        element: NavItem,
+        as: NavItem,
         name: t('navigation.analysis'),
         linksTo: '/analysis',
         active: ['/analysis/', '/analysis/*'],
@@ -196,7 +196,7 @@ function createNavBarProps(showEventBased, enterpriseMode) {
       key: 'events',
       label: t('navigation.events'),
       routeProps: {
-        element: NavItem,
+        as: NavItem,
         name: t('navigation.events'),
         linksTo: '/events/processes/',
         active: ['/events/processes/', '/events/ingested/', '/events/processes/*'],
