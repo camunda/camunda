@@ -83,6 +83,11 @@ public final class ProcessInstanceClient {
       processInstanceCreationRecord.setBpmnProcessId(bpmnProcessId);
     }
 
+    public ProcessInstanceCreationClient withVersion(final int version) {
+      processInstanceCreationRecord.setVersion(version);
+      return this;
+    }
+
     public ProcessInstanceCreationClient withVariables(final Map<String, Object> variables) {
       processInstanceCreationRecord.setVariables(MsgPackUtil.asMsgPack(variables));
       return this;

@@ -17,14 +17,17 @@ import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.DecisionEvaluationIntent;
 import io.camunda.zeebe.protocol.record.intent.DecisionIntent;
 import io.camunda.zeebe.protocol.record.intent.DecisionRequirementsIntent;
+import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
 import io.camunda.zeebe.protocol.record.intent.ResourceDeletionIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.DecisionEvaluationRecordValue;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
 import io.camunda.zeebe.protocol.record.value.deployment.DecisionRecordValue;
 import io.camunda.zeebe.protocol.record.value.deployment.DecisionRequirementsMetadataValue;
+import io.camunda.zeebe.protocol.record.value.deployment.ProcessMetadataValue;
 import io.camunda.zeebe.test.util.BrokerClassRuleHelper;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import java.io.IOException;
@@ -185,6 +188,79 @@ public class ResourceDeletionTest {
         .containsOnly("jedi_or_sith", 2, drgKeyV2);
   }
 
+  @Test
+  public void shouldHaveCorrectLifecycleWhenDeletingProcessWithoutRunningInstances() {
+    // given
+    final var processId = helper.getBpmnProcessId();
+    final var processDefinitionKey = deployProcess(processId);
+
+    // when
+    engine.resourceDeletion().withResourceKey(processDefinitionKey).delete();
+
+    // then
+    assertThat(
+            RecordingExporter.records()
+                .onlyEvents()
+                .limit(r -> r.getIntent().equals(ResourceDeletionIntent.DELETED)))
+        .describedAs("Should write events in correct order")
+        .extracting(Record::getIntent)
+        .containsExactly(
+            ProcessIntent.CREATED,
+            DeploymentIntent.CREATED,
+            ResourceDeletionIntent.DELETING,
+            ProcessIntent.DELETING,
+            ProcessIntent.DELETED,
+            ResourceDeletionIntent.DELETED);
+  }
+
+  @Test
+  public void shouldWriteEventsForDeletedProcessWithoutRunningInstances() {
+    // given
+    final var processId = helper.getBpmnProcessId();
+    final var processDefinitionKey = deployProcess(processId);
+
+    // when
+    engine.resourceDeletion().withResourceKey(processDefinitionKey).delete();
+
+    // then
+    verifyProcessIsDeleted(processId, 1);
+    verifyResourceIsDeleted(processDefinitionKey);
+  }
+
+  @Test
+  public void shouldCreateInstanceOfVersionOneWhenVersionTwoIsDeleted() {
+    // given
+    final var processId = helper.getBpmnProcessId();
+    deployProcess(processId);
+    final var secondProcessDefinitionKey = deployProcess(processId);
+    engine.resourceDeletion().withResourceKey(secondProcessDefinitionKey).delete();
+
+    // when
+    final var processInstanceKey = engine.processInstance().ofBpmnProcessId(processId).create();
+
+    // then
+    verifyProcessIsDeleted(processId, 2);
+    verifyResourceIsDeleted(secondProcessDefinitionKey);
+    verifyProcessInstanceIsCompleted(processId, 1, processInstanceKey);
+  }
+
+  @Test
+  public void shouldCreateInstanceOfVersionTwoWhenVersionOneIsDeleted() {
+    // given
+    final var processId = helper.getBpmnProcessId();
+    final var firstProcessDefinitionKey = deployProcess(processId);
+    deployProcess(processId);
+    engine.resourceDeletion().withResourceKey(firstProcessDefinitionKey).delete();
+
+    // when
+    final var processInstanceKey = engine.processInstance().ofBpmnProcessId(processId).create();
+
+    // then
+    verifyProcessIsDeleted(processId, 1);
+    verifyResourceIsDeleted(firstProcessDefinitionKey);
+    verifyProcessInstanceIsCompleted(processId, 2, processInstanceKey);
+  }
+
   private long deployDrg(final String drgResource) {
     return engine
         .deployment()
@@ -306,5 +382,64 @@ public class ResourceDeletionTest {
                 .done())
         .deploy();
     return processId;
+  }
+
+  private long deployProcess(final String processId) {
+    return engine
+        .deployment()
+        .withXmlResource(Bpmn.createExecutableProcess(processId).startEvent().endEvent().done())
+        .deploy()
+        .getValue()
+        .getProcessesMetadata()
+        .get(0)
+        .getProcessDefinitionKey();
+  }
+
+  private void verifyProcessIsDeleted(final String processId, final int version) {
+    final var processCreatedRecord =
+        RecordingExporter.processRecords()
+            .withIntent(ProcessIntent.CREATED)
+            .withBpmnProcessId(processId)
+            .withVersion(version)
+            .getFirst()
+            .getValue();
+
+    assertThat(
+            RecordingExporter.processRecords()
+                .withIntents(ProcessIntent.DELETING, ProcessIntent.DELETED)
+                .withBpmnProcessId(processId)
+                .withVersion(version)
+                .limit(2))
+        .describedAs("Expect deleted process to match created process")
+        .map(Record::getValue)
+        .extracting(
+            ProcessMetadataValue::getBpmnProcessId,
+            ProcessMetadataValue::getResourceName,
+            ProcessMetadataValue::getVersion,
+            ProcessMetadataValue::getProcessDefinitionKey)
+        .containsOnly(
+            tuple(
+                processCreatedRecord.getBpmnProcessId(),
+                processCreatedRecord.getResourceName(),
+                processCreatedRecord.getVersion(),
+                processCreatedRecord.getProcessDefinitionKey()));
+  }
+
+  private void verifyProcessInstanceIsCompleted(
+      final String processId, final int version, final long processInstanceKey) {
+    assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .withBpmnProcessId(processId)
+                .withVersion(version)
+                .withElementType(BpmnElementType.PROCESS)
+                .onlyEvents()
+                .limitToProcessInstanceCompleted())
+        .extracting(r -> r.getValue().getBpmnElementType(), Record::getIntent)
+        .containsExactly(
+            tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_ACTIVATING),
+            tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_COMPLETING),
+            tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_COMPLETED));
   }
 }

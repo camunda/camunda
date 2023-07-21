@@ -14,6 +14,7 @@ import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.test.util.stream.StreamWrapper;
+import java.util.Arrays;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 
@@ -55,6 +56,11 @@ public abstract class ExporterRecordStream<
 
   public S withTimestamp(final long timestamp) {
     return filter(r -> r.getTimestamp() == timestamp);
+  }
+
+  public S withIntents(final Intent... intents) {
+    final var intentsList = Arrays.asList(intents);
+    return filter(m -> intentsList.contains(m.getIntent()));
   }
 
   public S withIntent(final Intent intent) {
