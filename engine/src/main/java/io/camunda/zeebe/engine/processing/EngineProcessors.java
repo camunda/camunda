@@ -314,7 +314,9 @@ public final class EngineProcessors {
             writers,
             processingState.getKeyGenerator(),
             processingState.getDecisionState(),
-            commandDistributionBehavior);
+            commandDistributionBehavior,
+            processingState.getProcessState(),
+            processingState.getElementInstanceState());
     typedRecordProcessors.onCommand(
         ValueType.RESOURCE_DELETION, ResourceDeletionIntent.DELETE, resourceDeletionProcessor);
   }

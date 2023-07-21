@@ -13,19 +13,25 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
+import io.camunda.zeebe.engine.state.deployment.DeployedProcess;
 import io.camunda.zeebe.engine.state.deployment.PersistedDecision;
 import io.camunda.zeebe.engine.state.deployment.PersistedDecisionRequirements;
 import io.camunda.zeebe.engine.state.immutable.DecisionState;
+import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
+import io.camunda.zeebe.engine.state.immutable.ProcessState;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DecisionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DecisionRequirementsRecord;
+import io.camunda.zeebe.protocol.impl.record.value.deployment.ProcessRecord;
 import io.camunda.zeebe.protocol.impl.record.value.resource.ResourceDeletionRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.DecisionIntent;
 import io.camunda.zeebe.protocol.record.intent.DecisionRequirementsIntent;
+import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
 import io.camunda.zeebe.protocol.record.intent.ResourceDeletionIntent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import java.util.Optional;
 
 public class ResourceDeletionProcessor
     implements DistributedTypedRecordProcessor<ResourceDeletionRecord> {
@@ -36,18 +42,24 @@ public class ResourceDeletionProcessor
   private final KeyGenerator keyGenerator;
   private final DecisionState decisionState;
   private final CommandDistributionBehavior commandDistributionBehavior;
+  private final ProcessState processState;
+  private final ElementInstanceState elementInstanceState;
 
   public ResourceDeletionProcessor(
       final Writers writers,
       final KeyGenerator keyGenerator,
       final DecisionState decisionState,
-      final CommandDistributionBehavior commandDistributionBehavior) {
+      final CommandDistributionBehavior commandDistributionBehavior,
+      final ProcessState processState,
+      final ElementInstanceState elementInstanceState) {
     stateWriter = writers.state();
     responseWriter = writers.response();
     rejectionWriter = writers.rejection();
     this.keyGenerator = keyGenerator;
     this.decisionState = decisionState;
     this.commandDistributionBehavior = commandDistributionBehavior;
+    this.processState = processState;
+    this.elementInstanceState = elementInstanceState;
   }
 
   @Override
@@ -77,7 +89,7 @@ public class ResourceDeletionProcessor
   @Override
   public ProcessingError tryHandleError(
       final TypedRecord<ResourceDeletionRecord> command, final Throwable error) {
-    if (error instanceof NoSuchResourceException exception) {
+    if (error instanceof final NoSuchResourceException exception) {
       rejectionWriter.appendRejection(command, RejectionType.NOT_FOUND, exception.getMessage());
       responseWriter.writeRejectionOnCommand(
           command, RejectionType.NOT_FOUND, exception.getMessage());
@@ -89,12 +101,21 @@ public class ResourceDeletionProcessor
 
   private void tryDeleteResources(final TypedRecord<ResourceDeletionRecord> command) {
     final var value = command.getValue();
+
+    final var processOptional =
+        Optional.ofNullable(processState.getProcessByKey(value.getResourceKey()));
+    if (processOptional.isPresent()) {
+      deleteProcess(processOptional.get());
+      return;
+    }
+
     final var drgOptional = decisionState.findDecisionRequirementsByKey(value.getResourceKey());
     if (drgOptional.isPresent()) {
       deleteDecisionRequirements(drgOptional.get());
-    } else {
-      throw new NoSuchResourceException(value.getResourceKey());
+      return;
     }
+
+    throw new NoSuchResourceException(value.getResourceKey());
   }
 
   private void deleteDecisionRequirements(final PersistedDecisionRequirements drg) {
@@ -128,6 +149,25 @@ public class ResourceDeletionProcessor
                 BufferUtil.bufferAsString(persistedDecision.getDecisionRequirementsId()))
             .setDecisionRequirementsKey(persistedDecision.getDecisionRequirementsKey());
     stateWriter.appendFollowUpEvent(keyGenerator.nextKey(), DecisionIntent.DELETED, decisionRecord);
+  }
+
+  private void deleteProcess(final DeployedProcess process) {
+    // We don't add the checksum or resource in this event. The checksum is not easily available
+    // and the resources are left out to prevent exceeding the maximum batch size.
+    final var processRecord =
+        new ProcessRecord()
+            .setBpmnProcessId(process.getBpmnProcessId())
+            .setVersion(process.getVersion())
+            .setKey(process.getKey())
+            .setResourceName(process.getResourceName());
+    stateWriter.appendFollowUpEvent(keyGenerator.nextKey(), ProcessIntent.DELETING, processRecord);
+
+    final var runningInstances =
+        elementInstanceState.getProcessInstanceKeysByDefinitionKey(process.getKey());
+
+    if (runningInstances.isEmpty()) {
+      stateWriter.appendFollowUpEvent(keyGenerator.nextKey(), ProcessIntent.DELETED, processRecord);
+    }
   }
 
   private static final class NoSuchResourceException extends IllegalStateException {
