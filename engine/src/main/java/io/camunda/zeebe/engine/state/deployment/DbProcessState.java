@@ -153,12 +153,21 @@ public final class DbProcessState implements MutableProcessState {
 
     processColumnFamily.deleteExisting(processDefinitionKey);
     processByIdAndVersionColumnFamily.deleteExisting(idAndVersionKey);
-    digestByIdColumnFamily.deleteExisting(fkProcessId);
 
     processesByProcessIdAndVersion.remove(processRecord.getBpmnProcessIdBuffer());
     processesByKey.remove(processRecord.getProcessDefinitionKey());
-    versionManager.deleteProcessVersion(
-        processRecord.getBpmnProcessId(), processRecord.getVersion());
+
+    final long latestVersion =
+        versionManager.getCurrentProcessVersion(processRecord.getBpmnProcessId());
+
+    if (latestVersion == processRecord.getVersion()) {
+      // As we don't set the digest to the digest of the previous there is a chance it does not
+      // exist. This happens when deleting the latest version two times in a row. To be safe we must
+      // use deleteIfExists.
+      digestByIdColumnFamily.deleteIfExists(fkProcessId);
+      versionManager.deleteProcessVersion(
+          processRecord.getBpmnProcessId(), processRecord.getVersion());
+    }
   }
 
   private void persistProcess(final long processDefinitionKey, final ProcessRecord processRecord) {
