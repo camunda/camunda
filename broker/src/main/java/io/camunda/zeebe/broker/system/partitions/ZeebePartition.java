@@ -80,7 +80,7 @@ public final class ZeebePartition extends Actor
     transitionContext.setComponentHealthMonitor(
         new CriticalComponentsHealthMonitor(
             "Partition-" + transitionContext.getPartitionId(), actor, LOG));
-    zeebePartitionHealth = new ZeebePartitionHealth(transitionContext.getPartitionId());
+    zeebePartitionHealth = new ZeebePartitionHealth(transitionContext.getPartitionId(), transition);
     healthMetrics = new HealthMetrics(transitionContext.getPartitionId());
     healthMetrics.setUnhealthy();
     failureListeners = new ArrayList<>();
