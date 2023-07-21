@@ -10,7 +10,7 @@ import {TableSelectRow} from '@carbon/react';
 import debounce from 'debounce';
 import classnames from 'classnames';
 
-import {Button, CarbonChecklist, DocsLink} from 'components';
+import {Button, Checklist, DocsLink} from 'components';
 import {t} from 'translation';
 import debouncePromise from 'debouncePromise';
 import {withErrorHandling} from 'HOC';
@@ -86,7 +86,7 @@ export function ExternalSource({
 
   return (
     <div className="ExternalSource">
-      <CarbonChecklist
+      <Checklist
         customHeader={t('events.sources.eventGroups')}
         preItems={
           !loading &&

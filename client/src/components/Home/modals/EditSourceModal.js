@@ -8,7 +8,7 @@
 import React from 'react';
 import {Button} from '@carbon/react';
 
-import {Modal, CarbonChecklist} from 'components';
+import {Modal, Checklist} from 'components';
 import {t} from 'translation';
 import {withErrorHandling} from 'HOC';
 
@@ -66,7 +66,7 @@ export default withErrorHandling(
         <Modal className="EditSourceModal" open onClose={onClose}>
           <Modal.Header>{modalTitle}</Modal.Header>
           <Modal.Content>
-            <CarbonChecklist
+            <Checklist
               columnLabel={t('common.tenant.label')}
               selectedItems={selectedTenants}
               allItems={definitionTenants ?? []}

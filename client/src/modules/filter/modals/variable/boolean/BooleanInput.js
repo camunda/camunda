@@ -8,7 +8,7 @@
 import React from 'react';
 
 import {t} from 'translation';
-import {CarbonChecklist} from 'components';
+import {Checklist} from 'components';
 
 export default function BooleanInput({changeFilter, filter}) {
   const formatValue = (value) =>
@@ -18,7 +18,7 @@ export default function BooleanInput({changeFilter, filter}) {
 
   return (
     <div className="BooleanInput">
-      <CarbonChecklist
+      <Checklist
         selectedItems={filter.values}
         allItems={[true, false, null]}
         onChange={(values) => {

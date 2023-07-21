@@ -5,10 +5,17 @@
  * except in compliance with the proprietary license.
  */
 
-import {ReactNode, useState} from 'react';
+import {useState} from 'react';
 import classnames from 'classnames';
+import {
+  TableSelectAll,
+  TableSelectRow,
+  TableToolbar,
+  TableToolbarContent,
+  TableToolbarSearch,
+} from '@carbon/react';
 
-import {LabeledInput, Tag, LoadingIndicator, SearchInput} from 'components';
+import {Table, TableBody, TableHead, NoDataNotice} from 'components';
 import {t} from 'translation';
 
 import './Checklist.scss';
@@ -22,7 +29,7 @@ interface ChecklistProps<T> {
     allItems: T[],
     selectedItems: T[]
   ) => {
-    label: string | JSX.Element[];
+    label: string | JSX.Element[] | null;
     id: string | number | boolean | null | undefined;
     checked?: boolean;
     disabled?: boolean;
@@ -30,8 +37,11 @@ interface ChecklistProps<T> {
   loading?: boolean;
   labels?: Record<string, string | JSX.Element[]>;
   headerHidden?: boolean;
-  preItems?: ReactNode;
-  customHeader?: ReactNode;
+  preItems?: TableBody;
+  customHeader?: string | JSX.Element[];
+  title?: string | JSX.Element[];
+  columnLabel?: string | JSX.Element[];
+  hideSelectAllInView?: boolean;
 }
 
 export default function Checklist<
@@ -50,21 +60,21 @@ export default function Checklist<
   headerHidden,
   preItems,
   customHeader,
+  title,
+  columnLabel,
+  hideSelectAllInView,
 }: ChecklistProps<T>) {
   const [query, setQuery] = useState('');
 
-  if (!allItems) {
-    return <LoadingIndicator />;
-  }
+  const formattedData = formatter(allItems, selectedItems);
+  const isAllSelected = formattedData.every(({checked}) => checked);
+  const isSomeSelected = !isAllSelected && formattedData.some(({checked}) => checked);
 
-  const data = formatter(allItems, selectedItems);
-  const allSelected = data.every(({checked}) => checked);
-  const allDeselected = selectedItems.length === 0;
-
-  const filteredData = data.filter(({label, id}) =>
+  const searchFilteredData = formattedData.filter(({label, id}) =>
     (label || id)?.toString().toLowerCase().includes(query.toLowerCase())
   );
-  const allSelectedInView = filteredData.every(({checked}) => checked);
+
+  const isAllSelectedInSearch = searchFilteredData.every(({checked}) => checked);
 
   const updateItems = (itemId: string | number | boolean | null | undefined, checked: boolean) => {
     if (checked) {
@@ -75,93 +85,132 @@ export default function Checklist<
     }
   };
 
-  const selectAll = () => onChange(allItems);
+  const selectAllItems = () => onChange(allItems);
 
-  const selectAllInView = () => {
-    const selectableIds = filteredData.filter(({checked}) => !checked).map(({id}) => id);
+  const selectAllItemsInSearch = () => {
+    const selectableIds = searchFilteredData.filter(({checked}) => !checked).map(({id}) => id);
     const itemsToSelect = allItems.filter((item) => selectableIds.includes(getIdentifier(item)));
     return onChange([...selectedItems, ...itemsToSelect]);
   };
 
-  const deselectAll = () => onChange([]);
+  const deselectAllItems = () => onChange([]);
 
-  const deselectAllInView = () => {
-    const selectedIds = filteredData.filter(({checked}) => checked).map(({id}) => id);
+  const deselectAllItemsInSearch = () => {
+    const selectedIds = searchFilteredData.filter(({checked}) => checked).map(({id}) => id);
     const itemsToRemove = selectedItems.filter(
       (item) => !selectedIds.includes(getIdentifier(item))
     );
     return onChange(itemsToRemove);
   };
 
-  return (
-    <div className="Checklist">
-      {!headerHidden && (
-        <div className="header">
-          {data.length > 1 && !customHeader && (
-            <LabeledInput
-              className="selectAll"
-              ref={(input) => {
-                if (input != null) {
-                  input.indeterminate = !allSelected && !allDeselected;
-                }
-              }}
-              checked={allSelected}
-              type="checkbox"
-              label={t('common.selectAll')}
-              onChange={({target: {checked}}) => (checked ? selectAll() : deselectAll())}
-            />
-          )}
-          {customHeader && <div className="customHeader">{customHeader}</div>}
-          <SearchInput
-            value={query}
-            className="searchInput"
-            placeholder={labels.search}
-            onChange={(evt) => {
-              setQuery(evt.target.value);
-              onSearch(evt.target.value);
-            }}
-            onClear={() => {
-              setQuery('');
-              onSearch('');
+  let head: TableHead[] = [
+    {
+      label:
+        formattedData.length > 1 && !customHeader && !headerHidden ? (
+          <TableSelectAll
+            id="checked"
+            key="checked"
+            name="checked"
+            ariaLabel="checked"
+            indeterminate={isSomeSelected}
+            checked={isAllSelected}
+            onSelect={({target}) => {
+              const {checked} = target as HTMLInputElement;
+              !checked ? deselectAllItems() : selectAllItems();
             }}
           />
-          {selectedItems.length > 0 && (
-            <Tag onRemove={deselectAll}>{selectedItems.length} Selected</Tag>
-          )}
-        </div>
-      )}
-      <div className="itemsList">
-        {loading && <LoadingIndicator />}
-        {!loading && (
-          <>
-            {filteredData.length === 0 && <p>{labels.empty}</p>}
-            {query && filteredData.length > 1 && (
-              <LabeledInput
-                className={classnames('selectAllInView', {highlight: allSelectedInView})}
-                type="checkbox"
-                checked={allSelectedInView}
-                label={t('common.multiSelect.selectAll')}
-                onChange={({target: {checked}}) =>
-                  checked ? selectAllInView() : deselectAllInView()
-                }
+        ) : (
+          'checked'
+        ),
+      id: 'checked',
+      sortable: false,
+      width: 30,
+    },
+    {label: customHeader || columnLabel || '', id: 'name', sortable: false},
+  ];
+
+  let body: TableBody[] = searchFilteredData.map(({id, label, checked, disabled}) => {
+    const onSelect = () => updateItems(id, !checked);
+    const rowLabel = (label || id || '').toString();
+    return {
+      content: [
+        <TableSelectRow
+          checked={!!checked}
+          id={`${id}`}
+          name={`${id}`}
+          ariaLabel={rowLabel}
+          disabled={disabled}
+          onSelect={onSelect}
+        />,
+        rowLabel,
+      ],
+      props: {
+        onClick: onSelect,
+      },
+    };
+  });
+
+  if (preItems) {
+    body.unshift(preItems);
+  }
+
+  if (!hideSelectAllInView && !loading && query && searchFilteredData.length > 1) {
+    const onSelect = () =>
+      !isAllSelectedInSearch ? selectAllItemsInSearch() : deselectAllItemsInSearch();
+    body.unshift({
+      content: [
+        <TableSelectRow
+          checked={isAllSelectedInSearch}
+          id="selectAllInView"
+          name="selectAllInView"
+          ariaLabel={t('common.multiSelect.selectAll').toString()}
+          onSelect={onSelect}
+        />,
+        t('common.multiSelect.selectAll'),
+      ],
+      props: {
+        onClick: onSelect,
+        className: 'selectAllInView',
+      },
+    });
+  }
+
+  return (
+    <Table
+      disablePagination
+      useZebraStyles={false}
+      className={classnames('Checklist', {
+        headerHidden: formattedData.length <= 1 || headerHidden,
+        customHeader,
+      })}
+      head={head}
+      body={body}
+      loading={loading}
+      title={title}
+      noData={<NoDataNotice title={labels.empty} />}
+      toolbar={
+        !headerHidden && (
+          <TableToolbar>
+            <TableToolbarContent>
+              <TableToolbarSearch
+                value={query}
+                placeholder={labels.search?.toString()}
+                onChange={({target: {value}}) => {
+                  setQuery(value);
+                  onSearch(value);
+                }}
+                onClear={() => {
+                  setQuery('');
+                  onSearch('');
+                }}
+                expanded
+                data-modal-primary-focus
               />
-            )}
-            {preItems}
-            {filteredData.map(({id, label, checked, disabled}) => (
-              <LabeledInput
-                className={classnames({highlight: checked && !disabled})}
-                disabled={disabled}
-                key={id?.toString()}
-                type="checkbox"
-                checked={checked}
-                label={label || id}
-                onChange={({target: {checked}}) => updateItems(id, checked)}
-              />
-            ))}
-          </>
-        )}
-      </div>
-    </div>
+            </TableToolbarContent>
+          </TableToolbar>
+        )
+      }
+    />
   );
 }
 

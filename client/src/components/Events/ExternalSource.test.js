@@ -48,7 +48,7 @@ it('should invoke onChange when selecting a group', () => {
   const spy = jest.fn();
   const node = shallow(<ExternalSource {...props} onChange={spy} />);
 
-  node.find('CarbonChecklist').prop('onChange')(['testGroup']);
+  node.find('Checklist').prop('onChange')(['testGroup']);
 
   expect(spy).toHaveBeenCalledWith([
     {type: 'external', configuration: {group: 'testGroup', includeAllGroups: false}},
@@ -59,7 +59,7 @@ it('should invoke onChange when selecting a group', () => {
   const spy = jest.fn();
   const node = shallow(<ExternalSource {...props} onChange={spy} />);
 
-  node.find('CarbonChecklist').prop('onChange')(['testGroup']);
+  node.find('Checklist').prop('onChange')(['testGroup']);
 
   expect(spy).toHaveBeenCalledWith([
     {type: 'external', configuration: {group: 'testGroup', includeAllGroups: false}},
@@ -70,7 +70,7 @@ it('should invoke onChange with one source to include all groups', () => {
   const spy = jest.fn();
   const node = shallow(<ExternalSource {...props} onChange={spy} />);
 
-  const preItems = node.find('CarbonChecklist').prop('preItems');
+  const preItems = node.find('Checklist').prop('preItems');
 
   preItems.content[0].props.onSelect({target: {checked: true}});
 
@@ -87,7 +87,7 @@ it('should select and disable all items if inlude all groups is selected', () =>
     />
   );
 
-  expect(node.find('CarbonChecklist').prop('formatter')(['testGroup'])).toEqual([
+  expect(node.find('Checklist').prop('formatter')(['testGroup'])).toEqual([
     {
       id: 'testGroup',
       label: 'testGroup',
@@ -106,7 +106,7 @@ it('should display empty state with link to docs', () => {
 it('should add search params to the load groups request', () => {
   const node = shallow(<ExternalSource {...props} />);
 
-  node.find('CarbonChecklist').prop('onSearch')('group 1');
+  node.find('Checklist').prop('onSearch')('group 1');
   runAllEffects();
   runLastEffect();
 
@@ -132,7 +132,7 @@ it('should disable deselection of existing groups', () => {
     <ExternalSource {...props} existingExternalSources={[{configuration: {group: 'group 1'}}]} />
   );
 
-  expect(node.find('CarbonChecklist').prop('formatter')(['group 1'], ['group 1'])).toEqual([
+  expect(node.find('Checklist').prop('formatter')(['group 1'], ['group 1'])).toEqual([
     {
       id: 'group 1',
       label: 'group 1',
@@ -149,10 +149,10 @@ it('should disable deselection of all events group if it exists', () => {
       existingExternalSources={[{configuration: {includeAllGroups: true}}]}
     />
   );
-  const preItems = node.find('CarbonChecklist').prop('preItems');
+  const preItems = node.find('Checklist').prop('preItems');
   expect(preItems.content[0].props.checked).toBe(true);
   expect(preItems.content[0].props.disabled).toBe(true);
-  expect(node.find('CarbonChecklist').prop('formatter')(['group 1'], ['group 1'])).toEqual([
+  expect(node.find('Checklist').prop('formatter')(['group 1'], ['group 1'])).toEqual([
     {
       id: 'group 1',
       label: 'group 1',

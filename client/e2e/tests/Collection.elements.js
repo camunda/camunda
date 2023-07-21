@@ -29,8 +29,7 @@ export const alertTab = Selector('.Collection .header .navigation a').withText('
 export const sourcesTab = Selector('.Collection .header .navigation a').withText('Data Sources');
 export const addButton = Selector('.Collection .content .header .Button.primary');
 export const typeaheadInput = Selector('.Typeahead input');
-export const checkbox = (text) => Selector('.Checklist .label').withText(text);
-export const carbonCheckbox = (text) => Selector('.CarbonChecklist tr').withText(text);
+export const checkbox = (text) => Selector('.Checklist tr').withText(text);
 export const managerName = Selector('.ListItem').withText('Manager').find('.name .entity');
 export const userItem = (text) => Selector('.ListItem').withText('User').withText(text);
 export const groupItem = Selector('.ListItem').withText('User Group');

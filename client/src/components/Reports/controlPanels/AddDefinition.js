@@ -9,7 +9,7 @@ import {useState, useEffect} from 'react';
 import {withRouter} from 'react-router-dom';
 import {Button} from '@carbon/react';
 
-import {Button as LegacyButton, Icon, Modal, MessageBox, CarbonChecklist} from 'components';
+import {Button as LegacyButton, Icon, Modal, MessageBox, Checklist} from 'components';
 import {withErrorHandling} from 'HOC';
 import {getCollection, getRandomId} from 'services';
 import {t} from 'translation';
@@ -74,7 +74,7 @@ export function AddDefinition({mightFail, location, definitions, type, onAdd}) {
           {isDefinitionLimitReached && (
             <MessageBox type="warning">{t('common.definitionSelection.limitReached')}</MessageBox>
           )}
-          <CarbonChecklist
+          <Checklist
             hideSelectAllInView
             allItems={availableDefinitions}
             selectedItems={selectedDefinitions}

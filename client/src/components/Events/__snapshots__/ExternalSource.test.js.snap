@@ -18,7 +18,7 @@ exports[`should match snapshot 1`] = `
 <div
   className="ExternalSource"
 >
-  <CarbonChecklist
+  <Checklist
     allItems={
       Array [
         null,

@@ -5,8 +5,9 @@
  * except in compliance with the proprietary license.
  */
 
-import {ChangeEvent} from 'react';
-import {shallow} from 'enzyme';
+import {ReactElement} from 'react';
+import {runLastEffect} from '__mocks__/react';
+import {mount, shallow} from 'enzyme';
 
 import Checklist from './Checklist';
 
@@ -19,14 +20,25 @@ const props = {
     {id: 'item2', checked: false, label: 'item 2'},
     {id: 'id3', label: 'unauthorized', disabled: true},
   ]),
+  onSearch: jest.fn().mockImplementation((value: string) =>
+    [
+      {id: 'item1', checked: true, label: 'item 1'},
+      {id: 'item2', checked: false, label: 'item 2'},
+      {id: 'id3', label: 'unauthorized', disabled: true},
+    ].find((item) => item.id === value)
+  ),
 };
 
 beforeEach(() => props.onChange.mockClear());
 
-it('should match snapshot', () => {
+it('should display checklist properly', () => {
   const node = shallow(<Checklist {...props} />);
+  const dataTable = node.find('Table').dive().find('DataTable').dive();
+  const selectAll = dataTable.find('TableHeader').at(0).dive().find('TableSelectAll');
+  const rows = dataTable.find('TableRow');
 
-  expect(node).toMatchSnapshot();
+  expect(selectAll).toExist();
+  expect(rows).toHaveLength(4);
 });
 
 it('should call the formatter with the list items data', () => {
@@ -35,30 +47,39 @@ it('should call the formatter with the list items data', () => {
   expect(props.formatter).toHaveBeenCalledWith(props.allItems, props.selectedItems);
 });
 
-it('should invoke onChange with the updated selected items', () => {
+it('should invoke onSelect with the updated selected items', () => {
   const node = shallow(<Checklist {...props} />);
 
-  node.find({label: 'item 1'}).prop('onChange')({target: {checked: false}});
+  const dataTable = node.find('Table').dive().find('DataTable').dive();
+  dataTable
+    .find('TableRow')
+    .find({cell: {value: 'item 1'}})
+    .parent()
+    .simulate('click');
 
   expect(props.onChange).toHaveBeenCalledWith([]);
 
-  node.find({label: 'item 2'}).prop('onChange')({target: {checked: true}});
-
+  dataTable
+    .find('TableRow')
+    .find({cell: {value: 'item 2'}})
+    .parent()
+    .simulate('click');
   expect(props.onChange).toHaveBeenCalledWith([{id: 'item1'}, {id: 'item2'}]);
 });
 
 it('should invoke onChange on selectAll/deselectAll', () => {
   const node = shallow(<Checklist {...props} />);
 
-  node.find('.selectAll').prop('onChange')?.({
-    target: {checked: true},
-  } as jest.MockedObject<ChangeEvent<HTMLInputElement>>);
+  const dataTable = node.find('Table').dive().find('DataTable').dive();
+  const selectAll = dataTable.find('TableHeader').at(0).dive().find('TableSelectAll');
+
+  selectAll.simulate('select', {target: {checked: true}});
 
   expect(props.onChange).toHaveBeenCalledWith(props.allItems);
 
-  node.find('.selectAll').prop('onChange')?.({target: {checked: false}} as jest.MockedObject<
-    ChangeEvent<HTMLInputElement>
-  >);
+  runLastEffect();
+
+  selectAll.simulate('select', {target: {checked: false}});
 
   expect(props.onChange).toHaveBeenCalledWith([]);
 });
@@ -66,26 +87,23 @@ it('should invoke onChange on selectAll/deselectAll', () => {
 it('should hide selectAll if there is only one item', () => {
   props.formatter.mockReturnValueOnce([{id: 'item1', checked: true, label: 'item 1'}]);
   const node = shallow(<Checklist {...props} />);
+  const dataTable = node.find('Table').dive().find('DataTable').dive();
+  const selectAll = dataTable.find('TableHeader').at(0).dive().find('TableSelectAll');
 
-  expect(node.find('.selectAll')).not.toExist();
-});
-
-it('should not highlight disabled items', () => {
-  props.formatter.mockReturnValueOnce([
-    {id: 'item1', checked: true, label: 'item 1', disabled: true},
-  ]);
-
-  const node = shallow(<Checklist {...props} />);
-
-  expect(node.find({label: 'item 1'}).hasClass('highlight')).toBe(false);
+  expect(selectAll).not.toExist();
 });
 
 it('should filter items based on search', () => {
   const node = shallow(<Checklist {...props} />);
+  const toolbar = shallow(node.find('Table').prop<ReactElement>('toolbar'));
 
-  node.find('.searchInput').simulate('change', {target: {value: 'item 1'}});
+  toolbar.find('TableToolbarSearch').simulate('change', {target: {value: 'item 1'}});
 
-  expect(node.find({label: 'item 2'})).not.toExist();
+  const dataTable = node.find('Table').dive().find('DataTable').dive();
+
+  expect(props.onSearch).toHaveBeenCalledWith('item 1');
+  expect(dataTable.find('TableRow').find({cell: {value: 'item 1'}})).toExist();
+  expect(dataTable.find('TableRow').find({cell: {value: 'item 2'}})).not.toExist();
 });
 
 it('should display the id if the label is null', () => {
@@ -95,37 +113,64 @@ it('should display the id if the label is null', () => {
 
   const node = shallow(<Checklist {...props} />);
 
-  expect(node.find({label: 'item1'})).toExist();
+  const dataTable = node.find('Table').dive().find('DataTable').dive();
+
+  expect(dataTable.find('TableRow').find({cell: {value: 'item1'}})).toExist();
 });
 
 it('should select all items in view', () => {
-  props.formatter.mockReturnValueOnce([]);
+  props.formatter.mockReturnValueOnce([{id: 'item1', checked: true, label: 'item 1'}]);
   const node = shallow(<Checklist {...props} />);
+  const toolbar = shallow(node.find('Table').prop<ReactElement>('toolbar'));
 
-  node.find('.searchInput').simulate('change', {target: {value: 'item'}});
+  toolbar.find('TableToolbarSearch').simulate('change', {target: {value: 'item'}});
+  const dataTable = node.find('Table').dive().find('DataTable').dive();
 
-  node.find({label: 'Select all in view'}).simulate('change', {target: {checked: true}});
+  dataTable
+    .find('TableRow')
+    .find({cell: {value: 'Select all in view'}})
+    .parent()
+    .simulate('click');
 
   expect(props.onChange).toHaveBeenCalledWith([{id: 'item1'}, {id: 'item2'}]);
 });
 
-it('should hide header if specified', () => {
+it('should hide toolbar if specified', () => {
   const node = shallow(<Checklist {...props} headerHidden />);
 
-  expect(node.find('.cds--header')).not.toExist();
+  expect(node.find('Table').prop<ReactElement>('toolbar')).toBe(false);
 });
 
 it('should prepend items to the checklist', () => {
-  const node = shallow(
-    <Checklist {...props} preItems={<input className="test" type="checkbox" />} />
+  const node = mount(
+    <Checklist {...props} preItems={[<input className="test" type="checkbox" />, 'label']} />
   );
+  const dataTable = node.find('Table').find('DataTable');
 
-  expect(node.find('.itemsList').childAt(0).prop('className')).toBe('test');
+  expect(dataTable.find('TableRow').find('.test')).toExist();
 });
 
 it('should allow overwriting the selectAll button with a custom header', () => {
   const node = shallow(<Checklist {...props} customHeader="Custom Header Content" />);
+  const dataTable = node.find('Table').dive().find('DataTable').dive();
+  const selectAll = dataTable.find('TableHeader').at(0).dive().find('TableSelectAll');
+  const customHeader = dataTable.find('TableHeader').at(1).dive().find('span');
 
-  expect(node.find('.selectAll')).not.toExist();
-  expect(node.find('.customHeader')).toIncludeText('Custom Header Content');
+  expect(selectAll).not.toExist();
+  expect(customHeader).toIncludeText('Custom Header Content');
+});
+
+it('should not show select all in view when hideSelectAllInView prop is passed', () => {
+  const node = shallow(<Checklist {...props} />);
+  const toolbar = shallow(node.find('Table').prop<ReactElement>('toolbar'));
+
+  toolbar.find('TableToolbarSearch').simulate('change', {target: {value: 'item'}});
+  let dataTable = node.find('Table').dive().find('DataTable').dive();
+
+  expect(dataTable.find('.selectAllInView')).toExist();
+
+  node.setProps({hideSelectAllInView: true});
+  dataTable = node.find('Table').dive().find('DataTable').dive();
+
+  expect(dataTable.find('.selectAllInView')).not.toExist();
 });

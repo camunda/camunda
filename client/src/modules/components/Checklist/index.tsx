@@ -6,4 +6,3 @@
  */
 
 export {default as Checklist} from './Checklist';
-export {CarbonChecklist} from './CarbonChecklist';

@@ -116,7 +116,7 @@ export const sectionToggle = (sectionName) =>
     .find('.sectionToggle');
 export const deselectAllButton = Selector('.Button').withText('Deselect All');
 export const addDefinitionButton = Selector('.AddDefinition');
-export const definitionEntry = (name) => Selector('.CarbonChecklist tr').withText(name);
+export const definitionEntry = (name) => Selector('.Checklist tr').withText(name);
 export const lineButton = Selector('.measureContainer .Button').withText('Line');
 export const tableScrollableContainer = reportTable.find('table');
 export const objectViewBtn = reportTable.find('.ObjectViewBtn').nth(0);

@@ -86,7 +86,7 @@ export async function selectVersion(t, selector, version) {
 export async function selectReportDefinition(t, name, version) {
   await t
     .click('.AddDefinition')
-    .click(Selector('.CarbonChecklist tr').withText(name))
+    .click(Selector('.Checklist tr').withText(name))
     .click(Common.modalConfirmButton);
 
   if (version) {

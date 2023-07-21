@@ -40,7 +40,7 @@ export {TargetValueBadge} from './TargetValueBadge';
 export {DatePicker} from './DatePicker';
 export {DateRangeInput} from './DateRangeInput';
 export {SearchInput} from './SearchInput';
-export {Checklist, CarbonChecklist} from './Checklist';
+export {Checklist} from './Checklist';
 export {DurationChart} from './DurationChart';
 export {ColorPicker} from './ColorPicker';
 export {Badge} from './Badge';

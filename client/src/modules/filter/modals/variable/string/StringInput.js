@@ -9,7 +9,7 @@ import React from 'react';
 import classnames from 'classnames';
 import deepEqual from 'fast-deep-equal';
 
-import {ButtonGroup, Button, Input, Icon, CarbonChecklist} from 'components';
+import {ButtonGroup, Button, Input, Icon, Checklist} from 'components';
 import {t} from 'translation';
 import debouncePromise from 'debouncePromise';
 
@@ -239,7 +239,7 @@ export default class StringInput extends React.Component {
           />
         ) : (
           <div className="valueSelection">
-            <CarbonChecklist
+            <Checklist
               customHeader={t('common.filter.variableModal.multiSelect.header')}
               selectedItems={values}
               allItems={availableValues}

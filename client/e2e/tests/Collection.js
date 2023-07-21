@@ -209,7 +209,7 @@ test('add, edit and delete sources', async (t) => {
   await t.expect(Common.contextMenu(e.processItem.nth(1)).visible).ok();
   await t.click(Common.contextMenu(e.processItem.nth(1)));
   await t.click(Common.edit(e.processItem.nth(1)));
-  await t.click(e.carbonCheckbox('engineering'));
+  await t.click(e.checkbox('engineering'));
   await t.click(Common.modalConfirmButton);
   await t.expect(e.processItem.nth(1).textContent).notContains('engineering');
 
