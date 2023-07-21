@@ -5,10 +5,9 @@
  * except in compliance with the proprietary license.
  */
 
-import React, {useState, useEffect, ComponentPropsWithoutRef, ReactNode} from 'react';
-import classnames from 'classnames';
+import {useState, useEffect, ComponentPropsWithoutRef, ReactNode, Children} from 'react';
+import {Tabs as CarbonTabs, TabList, Tab, TabPanels, TabPanel} from '@carbon/react';
 
-import {ButtonGroup, Button} from 'components';
 import {isReactElement} from 'services';
 
 interface TabsProps<T extends string | number>
@@ -18,58 +17,55 @@ interface TabsProps<T extends string | number>
   showButtons?: boolean;
 }
 
-interface TabProps extends Omit<ComponentPropsWithoutRef<'div'>, 'title'> {
-  value?: string | number;
+interface TabProps<T extends string | number>
+  extends Omit<ComponentPropsWithoutRef<'div'>, 'title'> {
+  value?: T;
   title?: ReactNode;
   disabled?: boolean;
 }
 
 export default function Tabs<T extends string | number>({
   value = 0 as T,
-  onChange = () => {},
+  onChange,
   children,
   showButtons = true,
-  className,
 }: TabsProps<T>) {
+  const tabs = Children.toArray(children).filter(isReactElement<TabProps<T>>);
+  const values = tabs.map<T>(({props: {value}}, idx) => (value || idx) as T);
   const [selected, setSelected] = useState<T>(value);
 
   useEffect(() => {
     setSelected(value);
   }, [value]);
 
-  const tabs = React.Children.toArray(children).filter(isReactElement<TabProps>);
-
   return (
-    <div className={classnames('Tabs', className)}>
+    <CarbonTabs
+      selectedIndex={getIndex(values, selected)}
+      onChange={({selectedIndex}) => {
+        const value = values[selectedIndex]!;
+        onChange?.(value);
+        setSelected(value);
+      }}
+    >
       {showButtons && (
-        <ButtonGroup>
-          {tabs.map(({props: {value, title, disabled}}, idx) => {
-            const valueOrIndex = getValueOrIndex(value, idx) as T;
-            return (
-              <Button
-                key={idx}
-                active={selected === valueOrIndex}
-                onClick={() => {
-                  onChange(valueOrIndex);
-                  setSelected(valueOrIndex);
-                }}
-                disabled={disabled}
-              >
-                {title}
-              </Button>
-            );
-          })}
-        </ButtonGroup>
+        <TabList aria-label="tabs">
+          {tabs.map(({props: {value, title, disabled}}, idx) => (
+            <Tab key={getIndex(values, value || idx)} disabled={disabled}>
+              {title}
+            </Tab>
+          ))}
+        </TabList>
       )}
-      {tabs.find((child, idx) => getValueOrIndex(child.props.value, idx) === selected)}
-    </div>
+      <TabPanels>{tabs}</TabPanels>
+    </CarbonTabs>
   );
 }
 
-Tabs.Tab = ({children, className}: TabProps): JSX.Element => {
-  return <div className={classnames('Tab', className)}>{children}</div>;
+Tabs.Tab = ({children}: TabProps<number | string>): JSX.Element => {
+  return <TabPanel>{children}</TabPanel>;
 };
 
-function getValueOrIndex(value: number | string | undefined, idx: number): string | number {
-  return typeof value !== 'undefined' ? value : idx;
+function getIndex<T extends string | number>(array: T[], value: T): number {
+  const idx = array.indexOf(value);
+  return idx !== -1 ? idx : 0;
 }

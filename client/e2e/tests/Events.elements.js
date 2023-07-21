@@ -24,7 +24,7 @@ export const optionsButton = (typeahead) => typeahead.find('.optionsButton');
 export const typeaheadInput = (typeahead) => typeahead.find('input');
 export const typeaheadOption = (typeahead, text) =>
   typeahead.find('.DropdownOption').withText(text);
-export const externalEvents = Selector('.Button').withText('External Events');
+export const externalEvents = Selector('.cds--tabs button').withText('External Events');
 export const startNode = Selector('g[data-element-id=StartEvent_1]');
 export const startAndEndEvents = Selector('input[type=radio]').nth(3);
 export const startEvent = Selector('.StartEvent_1 .cds--table-column-checkbox label');
