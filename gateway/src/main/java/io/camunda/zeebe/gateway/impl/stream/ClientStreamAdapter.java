@@ -19,6 +19,8 @@ import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.transport.stream.api.ClientStreamConsumer;
 import io.camunda.zeebe.transport.stream.api.ClientStreamId;
 import io.camunda.zeebe.transport.stream.api.ClientStreamer;
+import io.grpc.Status;
+import io.grpc.StatusRuntimeException;
 import io.grpc.stub.ServerCallStreamObserver;
 import java.util.concurrent.CompletableFuture;
 import org.agrona.DirectBuffer;
@@ -33,6 +35,22 @@ public class ClientStreamAdapter {
   public void handle(
       final StreamActivatedJobsRequest request,
       final ServerCallStreamObserver<ActivatedJob> responseObserver) {
+    if (request.getType().isBlank()) {
+      handleError(responseObserver, "type", "present", "blank");
+      return;
+    }
+    if (request.getTimeout() < 1) {
+      handleError(
+          responseObserver, "timeout", "greater than zero", Long.toString(request.getTimeout()));
+      return;
+    }
+
+    handleInternal(request, responseObserver);
+  }
+
+  private void handleInternal(
+      final StreamActivatedJobsRequest request,
+      final ServerCallStreamObserver<ActivatedJob> responseObserver) {
     final JobActivationProperties jobActivationProperties = toJobActivationProperties(request);
 
     final ActorFuture<ClientStreamId> clientStreamId =
@@ -44,6 +62,17 @@ public class ClientStreamAdapter {
     final var removeJobStream = new JobStreamRemover(clientStreamId, jobStreamer);
     responseObserver.setOnCloseHandler(removeJobStream);
     responseObserver.setOnCancelHandler(removeJobStream);
+  }
+
+  private void handleError(
+      final ServerCallStreamObserver<ActivatedJob> responseObserver,
+      final String field,
+      final String expectation,
+      final String actual) {
+    final var format = "Expected to stream activated jobs with %s to be %s, but it was %s";
+    final String errorMessage = format.formatted(field, expectation, actual);
+    responseObserver.onError(
+        new StatusRuntimeException(Status.INVALID_ARGUMENT.withDescription(errorMessage)));
   }
 
   static class ClientStreamConsumerImpl implements ClientStreamConsumer {
