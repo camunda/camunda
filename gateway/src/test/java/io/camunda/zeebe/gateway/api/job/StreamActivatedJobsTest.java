@@ -124,15 +124,89 @@ public class StreamActivatedJobsTest extends GatewayTest {
         .until(() -> !jobStreamer.containsStreamFor(jobType));
   }
 
+  @Test
+  public void shouldRejectWhenTypeIsEmpty() {
+    // given
+    final String jobType = "";
+    final Duration timeout = Duration.ofMinutes(1);
+    final List<String> fetchVariables = List.of("foo");
+
+    // when
+    final TestStreamObserver streamObserver =
+        getStreamActivatedJobsRequestUnblocking(jobType, WORKER, timeout, fetchVariables);
+
+    // then
+    Awaitility.await("until validation error propagated")
+        .until(() -> !streamObserver.getErrors().isEmpty());
+    assertThat(streamObserver.getErrors().get(0).getMessage())
+        .isEqualTo(
+            "INVALID_ARGUMENT: Expected to stream activated jobs with type to be present, but it was blank");
+  }
+
+  @Test
+  public void shouldRejectWhenTypeIsBlank() {
+    // given
+    final String jobType = "   "; // string with only whitespaces
+    final Duration timeout = Duration.ofMinutes(1);
+    final List<String> fetchVariables = List.of("foo");
+
+    // when
+    final TestStreamObserver streamObserver =
+        getStreamActivatedJobsRequestUnblocking(jobType, WORKER, timeout, fetchVariables);
+
+    // then
+    Awaitility.await("until validation error propagated")
+        .until(() -> !streamObserver.getErrors().isEmpty());
+    assertThat(streamObserver.getErrors().get(0).getMessage())
+        .isEqualTo(
+            "INVALID_ARGUMENT: Expected to stream activated jobs with type to be present, but it was blank");
+  }
+
+  @Test
+  public void shouldRejectWhenTimeoutIsLessThanOne() {
+    // given
+    final String jobType = "testJob";
+    final Duration timeout = Duration.ofMinutes(0);
+    final List<String> fetchVariables = List.of("foo");
+
+    // when
+    final TestStreamObserver streamObserver =
+        getStreamActivatedJobsRequestUnblocking(jobType, WORKER, timeout, fetchVariables);
+
+    // then
+    Awaitility.await("until validation error propagated")
+        .until(() -> !streamObserver.getErrors().isEmpty());
+    assertThat(streamObserver.getErrors().get(0).getMessage())
+        .isEqualTo(
+            "INVALID_ARGUMENT: Expected to stream activated jobs with timeout to be greater than zero, but it was 0");
+  }
+
   // TODO add test for onClose
   // How to test onClose? it seems the graceful way to close a stream from the client side is
   // simply to cancel it, as per the gRPC docs. So is onClose only for when we close it server side?
+
+  private TestStreamObserver getStreamActivatedJobsRequestUnblocking(
+      final String jobType,
+      final String worker,
+      final Duration timeout,
+      final List<String> fetchVariables) {
+    return getStreamActivatedJobsRequest(jobType, worker, timeout, fetchVariables, false);
+  }
 
   private TestStreamObserver getStreamActivatedJobsRequest(
       final String jobType,
       final String worker,
       final Duration timeout,
       final List<String> fetchVariables) {
+    return getStreamActivatedJobsRequest(jobType, worker, timeout, fetchVariables, true);
+  }
+
+  private TestStreamObserver getStreamActivatedJobsRequest(
+      final String jobType,
+      final String worker,
+      final Duration timeout,
+      final List<String> fetchVariables,
+      final boolean waitStreamToBeAvailable) {
     final StreamActivatedJobsRequest request =
         StreamActivatedJobsRequest.newBuilder()
             .setType(jobType)
@@ -144,7 +218,9 @@ public class StreamActivatedJobsTest extends GatewayTest {
     final List<ActivatedJob> streamedJobs = new ArrayList<>();
     final TestStreamObserver streamObserver = new TestStreamObserver(streamedJobs);
     asyncClient.streamActivatedJobs(request, streamObserver);
-    jobStreamer.waitStreamToBeAvailable(BufferUtil.wrapString(jobType));
+    if (waitStreamToBeAvailable) {
+      jobStreamer.waitStreamToBeAvailable(BufferUtil.wrapString(jobType));
+    }
 
     return streamObserver;
   }
@@ -153,9 +229,14 @@ public class StreamActivatedJobsTest extends GatewayTest {
       implements ClientResponseObserver<StreamActivatedJobsRequest, ActivatedJob> {
     private ClientCallStreamObserver<StreamActivatedJobsRequest> requestStream;
     private final List<ActivatedJob> streamedJobs;
+    private final List<Throwable> errors = new ArrayList<>();
 
     public TestStreamObserver(final List<ActivatedJob> streamedJobs) {
       this.streamedJobs = streamedJobs;
+    }
+
+    public List<Throwable> getErrors() {
+      return errors;
     }
 
     public List<ActivatedJob> getStreamedJobs() {
@@ -169,6 +250,7 @@ public class StreamActivatedJobsTest extends GatewayTest {
 
     @Override
     public void onError(final Throwable t) {
+      errors.add(t);
       requestStream.onError(t);
     }
 

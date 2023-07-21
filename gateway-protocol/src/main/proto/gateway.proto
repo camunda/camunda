@@ -605,6 +605,11 @@ service Gateway {
   /*
    Registers client to a job stream that will stream jobs back to the client as
    they become activatable.
+
+   Errors:
+     INVALID_ARGUMENT:
+      - type is blank (empty string, null)
+      - timeout less than 1
   */
   rpc StreamActivatedJobs (StreamActivatedJobsRequest) returns (stream ActivatedJob) {
   }
