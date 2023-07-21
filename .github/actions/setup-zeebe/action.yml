@@ -147,5 +147,8 @@ runs:
       uses: actions/setup-go@v3
       with:
         go-version-file: 'clients/go/go.mod'
+        # fixing the go version to avoid this error in 1.19.11 https://github.com/moby/moby/issues/45935
+        # remove this when 1.19.12+ is release
+        go-version: '1.19.10'
         cache: true
         cache-dependency-path: 'clients/go/go.sum'
