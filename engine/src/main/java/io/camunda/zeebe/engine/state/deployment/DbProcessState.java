@@ -37,6 +37,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
+import java.util.concurrent.atomic.AtomicLong;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.collections.Long2ObjectHashMap;
@@ -165,8 +166,19 @@ public final class DbProcessState implements MutableProcessState {
       // exist. This happens when deleting the latest version two times in a row. To be safe we must
       // use deleteIfExists.
       digestByIdColumnFamily.deleteIfExists(fkProcessId);
+
+      final var previousVersion = new AtomicLong(0);
+      processByIdAndVersionColumnFamily.whileEqualPrefix(
+          processId,
+          (key, value) -> {
+            final long version = key.second().getValue();
+            if (version > previousVersion.get()) {
+              previousVersion.set(version);
+            }
+          });
+
       versionManager.deleteProcessVersion(
-          processRecord.getBpmnProcessId(), processRecord.getVersion());
+          processRecord.getBpmnProcessId(), processRecord.getVersion(), previousVersion.get());
     }
   }
 
