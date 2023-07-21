@@ -130,9 +130,9 @@ public final class DbProcessState implements MutableProcessState {
   @Override
   public void putProcess(final long key, final ProcessRecord processRecord) {
     persistProcess(key, processRecord);
-    versionManager.updateCurrentVersion(
+    versionManager.increaseCurrentVersion(
         processRecord.getBpmnProcessId(), processRecord.getVersion());
-    versionManager.updateLatestVersion(
+    versionManager.increaseLatestVersion(
         processRecord.getBpmnProcessId(), processRecord.getVersion());
     putLatestVersionDigest(
         processRecord.getBpmnProcessIdBuffer(), processRecord.getChecksumBuffer());
@@ -241,7 +241,7 @@ public final class DbProcessState implements MutableProcessState {
         processesByProcessIdAndVersion.get(processIdBuffer);
 
     processId.wrapBuffer(processIdBuffer);
-    final long latestVersion = versionManager.getCurrentProcessVersion(processIdBuffer);
+    final long latestVersion = versionManager.getLatestProcessVersion(processIdBuffer);
 
     DeployedProcess deployedProcess;
     if (versionMap == null) {

@@ -45,7 +45,7 @@ public final class ProcessVersionManager {
    * @param processId id of the process
    * @param version the version number
    */
-  public void updateCurrentVersion(final String processId, final long version) {
+  public void increaseCurrentVersion(final String processId, final long version) {
     processIdKey.wrapString(processId);
     final var versionInfo = getProcessVersionInfo();
 
@@ -58,17 +58,48 @@ public final class ProcessVersionManager {
   }
 
   /**
-   * Updates the latest version of the process. The latest version is the version of a process we
+   * Increases the latest version of the process. The latest version is the version of a process we
    * will start when no version is specified. This is not necessarily the current version, as when
    * the latest version of a process gets deleted, this version gets decremented.
+   *
+   * <p>If the given version is lower than the known latest version the version remains the same.
    *
    * @param processId id of the process
    * @param version the version number
    */
-  public void updateLatestVersion(final String processId, final long version) {
+  public void increaseLatestVersion(final String processId, final long version) {
     processIdKey.wrapString(processId);
 
     final var versionInfo = getProcessVersionInfo();
+
+    if (versionInfo.getLatestVersion() > version) {
+      return;
+    }
+
+    versionInfo.setLatestVersion(version);
+    nextValueColumnFamily.upsert(processIdKey, nextVersion);
+    versionCache.put(processId, versionInfo);
+  }
+
+  /**
+   * Decreases the latest version of the process. The latest version is the version of a process we
+   * will start when no version is specified. This is not necessarily the current version, as when
+   * the latest version of a process gets deleted, this version gets decremented.
+   *
+   * <p>If the given version is higher than the known latest version the version remains the same.
+   *
+   * @param processId id of the process
+   * @param version the version number
+   */
+  public void decreaseLatestVersion(final String processId, final long version) {
+    processIdKey.wrapString(processId);
+
+    final var versionInfo = getProcessVersionInfo();
+
+    if (versionInfo.getLatestVersion() < version) {
+      return;
+    }
+
     versionInfo.setLatestVersion(version);
     nextValueColumnFamily.upsert(processIdKey, nextVersion);
     versionCache.put(processId, versionInfo);
@@ -89,6 +120,11 @@ public final class ProcessVersionManager {
     return getProcessVersionInfo().getLatestVersion();
   }
 
+  public long getLatestProcessVersion(final DirectBuffer processId) {
+    processIdKey.wrapBuffer(processId);
+    return getProcessVersionInfo().getLatestVersion();
+  }
+
   private NextValue getProcessVersionInfo() {
     return versionCache.computeIfAbsent(
         processIdKey.toString(), (key) -> getProcessVersionFromDB());
@@ -105,7 +141,7 @@ public final class ProcessVersionManager {
   public void deleteProcessVersion(final String processId, final long version) {
     processIdKey.wrapString(processId);
     if (version >= 1) {
-      updateLatestVersion(processId, version - 1);
+      decreaseLatestVersion(processId, version - 1);
     }
   }
 
