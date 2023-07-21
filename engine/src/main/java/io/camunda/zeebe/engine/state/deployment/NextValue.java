@@ -24,13 +24,13 @@ public final class NextValue extends UnpackedObject implements DbValue {
     declareProperty(nextValueProp).declareProperty(latestValueProp);
   }
 
-  public NextValue set(final long value) {
-    nextValueProp.setValue(value);
-    return this;
+  public long getMaximumVersion() {
+    return nextValueProp.getValue();
   }
 
-  public long get() {
-    return nextValueProp.getValue();
+  public NextValue setMaximumVersion(final long value) {
+    nextValueProp.setValue(value);
+    return this;
   }
 
   public long getLatestVersion() {
@@ -38,7 +38,7 @@ public final class NextValue extends UnpackedObject implements DbValue {
     // If the latestVersion is not set this is an older process and no instances have been deleted
     // for this process yet. As a result we should consider the next value to be the latest.
     if (latestVersion == -1L) {
-      return get();
+      return getMaximumVersion();
     }
     return latestVersion;
   }

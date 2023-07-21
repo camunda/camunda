@@ -38,19 +38,19 @@ public final class ProcessVersionManager {
   }
 
   /**
-   * Updates the current version of the process. The current version is the maximum version number
+   * Updates the maximum version of the process. The maximum version is the maximum version number
    * we know of this process. When we create a new process it will be this value + 1. This is not
    * necessarily the latest version, as the latest version could be deleted.
    *
    * @param processId id of the process
    * @param version the version number
    */
-  public void increaseCurrentVersion(final String processId, final long version) {
+  public void increaseMaximumVersion(final String processId, final long version) {
     processIdKey.wrapString(processId);
     final var versionInfo = getProcessVersionInfo();
 
-    if (versionInfo.get() < version) {
-      versionInfo.set(version);
+    if (versionInfo.getMaximumVersion() < version) {
+      versionInfo.setMaximumVersion(version);
     }
 
     nextValueColumnFamily.upsert(processIdKey, nextVersion);
@@ -105,14 +105,14 @@ public final class ProcessVersionManager {
     versionCache.put(processId, versionInfo);
   }
 
-  public long getCurrentProcessVersion(final String processId) {
+  public long getMaximumProcessVersion(final String processId) {
     processIdKey.wrapString(processId);
-    return getProcessVersionInfo().get();
+    return getProcessVersionInfo().getMaximumVersion();
   }
 
-  public long getCurrentProcessVersion(final DirectBuffer processId) {
+  public long getMaximumProcessVersion(final DirectBuffer processId) {
     processIdKey.wrapBuffer(processId);
-    return getProcessVersionInfo().get();
+    return getProcessVersionInfo().getMaximumVersion();
   }
 
   public long getLatestProcessVersion(final String processId) {
@@ -135,7 +135,7 @@ public final class ProcessVersionManager {
     if (readValue != null) {
       return readValue;
     }
-    return new NextValue().setLatestVersion(initialValue).set(initialValue);
+    return new NextValue().setLatestVersion(initialValue).setMaximumVersion(initialValue);
   }
 
   public void deleteProcessVersion(final String processId, final long version) {

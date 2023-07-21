@@ -130,7 +130,7 @@ public final class DbProcessState implements MutableProcessState {
   @Override
   public void putProcess(final long key, final ProcessRecord processRecord) {
     persistProcess(key, processRecord);
-    versionManager.increaseCurrentVersion(
+    versionManager.increaseMaximumVersion(
         processRecord.getBpmnProcessId(), processRecord.getVersion());
     versionManager.increaseLatestVersion(
         processRecord.getBpmnProcessId(), processRecord.getVersion());
@@ -308,7 +308,7 @@ public final class DbProcessState implements MutableProcessState {
 
   @Override
   public int getProcessVersion(final String bpmnProcessId) {
-    return (int) versionManager.getCurrentProcessVersion(bpmnProcessId);
+    return (int) versionManager.getMaximumProcessVersion(bpmnProcessId);
   }
 
   @Override
