@@ -145,7 +145,9 @@ public class PartitionStartupAndTransitionContextImpl
         () -> getPartitionContext().getStreamProcessor(),
         () -> getPartitionContext().getExporterDirector(),
         () -> snapshotDirector,
-        () -> partitionProcessingState);
+        () -> partitionProcessingState,
+        () -> zeebeDb,
+        () -> logStream);
   }
 
   @Override

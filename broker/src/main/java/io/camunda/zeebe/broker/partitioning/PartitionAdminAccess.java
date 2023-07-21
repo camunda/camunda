@@ -22,4 +22,6 @@ public interface PartitionAdminAccess {
   ActorFuture<Void> pauseProcessing();
 
   ActorFuture<Void> resumeProcessing();
+
+  ActorFuture<Void> banInstance(final long processInstanceKey);
 }

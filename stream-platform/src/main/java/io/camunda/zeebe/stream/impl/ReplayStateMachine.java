@@ -220,7 +220,9 @@ public final class ReplayStateMachine implements LogRecordAwaiter {
 
   private void replayEvent(final LoggedEvent currentEvent) {
     if (eventFilter.applies(currentEvent)
-        && currentEvent.getSourceEventPosition() > snapshotPosition) {
+        && (currentEvent.getSourceEventPosition() > snapshotPosition
+            || currentEvent.getSourceEventPosition()
+                < 0)) { // some events might not have a source pointer
       readMetadata(currentEvent);
       final var currentTypedEvent = readRecordValue(currentEvent);
 
@@ -240,7 +242,7 @@ public final class ReplayStateMachine implements LogRecordAwaiter {
    * the last processing positions.
    */
   private void onRecordsReplayed() {
-    // Each event is caused by an command, the event points to the source command via the
+    // Each event is caused by a command, the event points to the source command via the
     // source position (pointer). This means the last source position is equal to the last processed
     // position by the processing state machine, which we can backfill after replay.
     final var lastProcessedPosition = lastSourceEventPosition;

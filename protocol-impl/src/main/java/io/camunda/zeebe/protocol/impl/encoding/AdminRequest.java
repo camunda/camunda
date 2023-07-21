@@ -27,6 +27,8 @@ public class AdminRequest implements BufferReader, BufferWriter {
   private int partitionId = AdminRequestEncoder.partitionIdNullValue();
   private AdminRequestType type = AdminRequestType.NULL_VAL;
 
+  private long key = AdminRequestEncoder.keyNullValue();
+
   @Override
   public void wrap(final DirectBuffer buffer, final int offset, final int length) {
     bodyDecoder.wrapAndApplyHeader(buffer, offset, headerDecoder);
@@ -46,7 +48,8 @@ public class AdminRequest implements BufferReader, BufferWriter {
         .wrapAndApplyHeader(buffer, offset, headerEncoder)
         .brokerId(brokerId)
         .partitionId(partitionId)
-        .type(type);
+        .type(type)
+        .key(key);
   }
 
   public int getBrokerId() {
@@ -67,6 +70,14 @@ public class AdminRequest implements BufferReader, BufferWriter {
 
   public AdminRequestType getType() {
     return type;
+  }
+
+  public long getKey() {
+    return key;
+  }
+
+  public void setKey(final long key) {
+    this.key = key;
   }
 
   public void setType(final AdminRequestType type) {
