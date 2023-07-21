@@ -87,13 +87,15 @@ public class ResourceDeletionMultiPartitionTest {
       assertThat(
               RecordingExporter.records()
                   .withPartitionId(partitionId)
-                  .limit(r -> r.getIntent().equals(DecisionRequirementsIntent.DELETED))
+                  .limit(r -> r.getIntent().equals(ResourceDeletionIntent.DELETED))
                   .collect(Collectors.toList()))
           .extracting(Record::getIntent)
           .endsWith(
               ResourceDeletionIntent.DELETE,
+              ResourceDeletionIntent.DELETING,
               DecisionIntent.DELETED,
-              DecisionRequirementsIntent.DELETED);
+              DecisionRequirementsIntent.DELETED,
+              ResourceDeletionIntent.DELETED);
     }
   }
 

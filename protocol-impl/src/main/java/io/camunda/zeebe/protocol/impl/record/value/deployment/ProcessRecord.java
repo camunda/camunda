@@ -20,14 +20,15 @@ import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.value.deployment.Process;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import org.agrona.DirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
 
 public final class ProcessRecord extends UnifiedRecordValue implements Process {
   private final StringProperty bpmnProcessIdProp = new StringProperty(PROP_PROCESS_BPMN_PROCESS_ID);
   private final IntegerProperty versionProp = new IntegerProperty(PROP_PROCESS_VERSION);
   private final LongProperty keyProp = new LongProperty(PROP_PROCESS_KEY);
   private final StringProperty resourceNameProp = new StringProperty("resourceName");
-  private final BinaryProperty checksumProp = new BinaryProperty("checksum");
-  private final BinaryProperty resourceProp = new BinaryProperty("resource");
+  private final BinaryProperty checksumProp = new BinaryProperty("checksum", new UnsafeBuffer());
+  private final BinaryProperty resourceProp = new BinaryProperty("resource", new UnsafeBuffer());
 
   public ProcessRecord() {
     declareProperty(bpmnProcessIdProp)
