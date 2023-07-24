@@ -30,6 +30,8 @@ import software.amazon.awssdk.services.s3.model.CreateBucketRequest;
 final class LocalstackBackupStoreIT implements S3BackupStoreTests {
   private static final String BUCKET_NAME = RandomStringUtils.randomAlphabetic(10).toLowerCase();
 
+  private static final Logger LOG = LoggerFactory.getLogger(LocalstackBackupStoreIT.class);
+
   @Container
   private static final LocalStackContainer S3 =
       new LocalStackContainer(DockerImageName.parse("localstack/localstack"))
@@ -58,11 +60,12 @@ final class LocalstackBackupStoreIT implements S3BackupStoreTests {
   }
 
   @BeforeEach
-  void setup() {
+  void setup(final TestInfo testInfo) {
+    final String basePath = RandomStringUtils.randomAlphabetic(10).toLowerCase();
     config =
         new Builder()
             .withBucketName(BUCKET_NAME)
-            .withBasePath(RandomStringUtils.randomAlphabetic(10).toLowerCase())
+            .withBasePath(basePath)
             .withEndpoint(S3.getEndpointOverride(Service.S3).toString())
             .withRegion(S3.getRegion())
             .withCredentials(S3.getAccessKey(), S3.getSecretKey())
@@ -72,6 +75,8 @@ final class LocalstackBackupStoreIT implements S3BackupStoreTests {
             .build();
     client = S3BackupStore.buildClient(config);
     store = new S3BackupStore(config, client);
+
+    LOG.info("{} is running with base path {}", testInfo.getDisplayName(), basePath);
   }
 
   @AfterEach
