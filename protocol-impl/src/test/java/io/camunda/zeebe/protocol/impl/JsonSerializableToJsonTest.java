@@ -30,6 +30,7 @@ import io.camunda.zeebe.protocol.impl.record.value.incident.IncidentRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobBatchRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.impl.record.value.management.CheckpointRecord;
+import io.camunda.zeebe.protocol.impl.record.value.message.MessageBatchRecord;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageRecord;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageStartEventSubscriptionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageSubscriptionRecord;
@@ -63,6 +64,7 @@ import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Supplier;
@@ -546,6 +548,34 @@ final class JsonSerializableToJsonTest {
                   .setName(messageName);
             },
         "{'timeToLive':12,'correlationKey':'test-key','variables':{},'messageId':'','name':'test-message','deadline':-1}"
+      },
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      ///////////////////////////////// MessageBatchRecord
+      // /////////////////////////////////////////////
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      {
+        "MessageBatchRecord",
+        (Supplier<UnifiedRecordValue>)
+            () -> {
+              final List<Long> messageKeys = List.of(123L, 456L);
+
+              return new MessageBatchRecord()
+                  .addMessageKey(messageKeys.get(0))
+                  .addMessageKey(messageKeys.get(1));
+            },
+        "{'messageKeys':[123,456]}"
+      },
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      ///////////////////////////////// Empty MessageBatchRecord
+      // ///////////////////////////////////////
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      {
+        "Empty MessageBatchRecord",
+        (Supplier<UnifiedRecordValue>)
+            () -> {
+              return new MessageBatchRecord();
+            },
+        "{'messageKeys':[]}"
       },
 
       /////////////////////////////////////////////////////////////////////////////////////////////

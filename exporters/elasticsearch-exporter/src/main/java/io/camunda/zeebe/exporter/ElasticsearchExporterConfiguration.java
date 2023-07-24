@@ -74,6 +74,8 @@ public class ElasticsearchExporterConfiguration {
         return index.jobBatch;
       case MESSAGE:
         return index.message;
+      case MESSAGE_BATCH:
+        return index.messageBatch;
       case MESSAGE_SUBSCRIPTION:
         return index.messageSubscription;
       case VARIABLE:
@@ -156,6 +158,7 @@ public class ElasticsearchExporterConfiguration {
     public boolean job = true;
     public boolean jobBatch = false;
     public boolean message = true;
+    public boolean messageBatch = false;
     public boolean messageSubscription = true;
     public boolean process = true;
     public boolean processInstance = true;
@@ -229,6 +232,8 @@ public class ElasticsearchExporterConfiguration {
           + jobBatch
           + ", message="
           + message
+          + ", messageBatch="
+          + messageBatch
           + ", messageSubscription="
           + messageSubscription
           + ", process="

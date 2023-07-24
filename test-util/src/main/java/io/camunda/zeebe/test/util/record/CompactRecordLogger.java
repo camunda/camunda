@@ -28,6 +28,7 @@ import io.camunda.zeebe.protocol.record.value.ErrorRecordValue;
 import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
 import io.camunda.zeebe.protocol.record.value.JobBatchRecordValue;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
+import io.camunda.zeebe.protocol.record.value.MessageBatchRecordValue;
 import io.camunda.zeebe.protocol.record.value.MessageRecordValue;
 import io.camunda.zeebe.protocol.record.value.MessageStartEventSubscriptionRecordValue;
 import io.camunda.zeebe.protocol.record.value.MessageSubscriptionRecordValue;
@@ -119,6 +120,7 @@ public class CompactRecordLogger {
     valueLoggers.put(ValueType.JOB, this::summarizeJob);
     valueLoggers.put(ValueType.JOB_BATCH, this::summarizeJobBatch);
     valueLoggers.put(ValueType.MESSAGE, this::summarizeMessage);
+    valueLoggers.put(ValueType.MESSAGE_BATCH, this::summarizeMessageBatch);
     valueLoggers.put(
         ValueType.MESSAGE_START_EVENT_SUBSCRIPTION, this::summarizeMessageStartEventSubscription);
     valueLoggers.put(ValueType.MESSAGE_SUBSCRIPTION, this::summarizeMessageSubscription);
@@ -475,6 +477,20 @@ public class CompactRecordLogger {
     }
 
     result.append(summarizeVariables(value.getVariables()));
+
+    return result.toString();
+  }
+
+  private String summarizeMessageBatch(final Record<?> record) {
+    final var value = (MessageBatchRecordValue) record.getValue();
+
+    final var result =
+        new StringBuilder()
+            .append("\"")
+            .append("messageKeys:")
+            .append("\" ")
+            .append(value.getMessageKeys())
+            .append("\"");
 
     return result.toString();
   }

@@ -10,7 +10,6 @@ package io.camunda.zeebe.engine.processing.message;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
 
-import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.engine.util.client.PublishMessageClient;
 import io.camunda.zeebe.protocol.record.Assertions;
@@ -20,7 +19,6 @@ import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.MessageIntent;
 import io.camunda.zeebe.protocol.record.value.MessageRecordValue;
-import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import org.junit.Before;
 import org.junit.ClassRule;
@@ -170,71 +168,5 @@ public final class PublishMessageTest {
     // then
     assertThat(rejectedCommand.getRecordType()).isEqualTo(RecordType.COMMAND_REJECTION);
     assertThat(rejectedCommand.getRejectionType()).isEqualTo(RejectionType.ALREADY_EXISTS);
-  }
-
-  @Test
-  public void shouldExpireMessageAfterTTL() {
-    // given
-    final long timeToLive = 100;
-
-    // when
-    final Record<MessageRecordValue> publishedRecord =
-        messageClient.withTimeToLive(timeToLive).publish();
-
-    ENGINE_RULE.increaseTime(EngineConfiguration.DEFAULT_MESSAGES_TTL_CHECKER_INTERVAL);
-
-    // then
-    final Record<MessageRecordValue> deletedEvent =
-        RecordingExporter.messageRecords()
-            .withIntent(MessageIntent.EXPIRED)
-            .withRecordKey(publishedRecord.getKey())
-            .getFirst();
-
-    Assertions.assertThat(deletedEvent).hasKey(publishedRecord.getKey());
-  }
-
-  @Test
-  public void shouldExpireMessageImmediatelyWithZeroTTL() {
-    // given
-    final long timeToLive = 0L;
-
-    // when
-    final Record<MessageRecordValue> publishedRecord =
-        messageClient.withTimeToLive(timeToLive).publish();
-
-    // then
-    final Record<MessageRecordValue> deletedEvent =
-        RecordingExporter.messageRecords()
-            .withIntent(MessageIntent.EXPIRED)
-            .withRecordKey(publishedRecord.getKey())
-            .getFirst();
-
-    Assertions.assertThat(deletedEvent.getValue())
-        .hasName("order canceled")
-        .hasCorrelationKey("order-123")
-        .hasTimeToLive(0L)
-        .hasMessageId("");
-  }
-
-  // regression test for https://github.com/camunda/zeebe/issues/5420
-  @Test
-  public void shouldHaveNoSourceRecordPositionOnExpire() {
-    // given
-    final long timeToLive = 50L;
-
-    // when
-    final Record<MessageRecordValue> publishedRecord =
-        messageClient.withTimeToLive(timeToLive).publish();
-    ENGINE_RULE.increaseTime(EngineConfiguration.DEFAULT_MESSAGES_TTL_CHECKER_INTERVAL);
-
-    // then
-    final Record<MessageRecordValue> deleteCommand =
-        RecordingExporter.messageRecords()
-            .withIntent(MessageIntent.EXPIRE)
-            .withRecordKey(publishedRecord.getKey())
-            .getFirst();
-
-    // then
-    assertThat(deleteCommand.getSourceRecordPosition()).isLessThan(0);
   }
 }

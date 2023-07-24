@@ -9,8 +9,8 @@ package io.camunda.zeebe.engine.processing.message;
 
 import io.camunda.zeebe.engine.state.immutable.MessageState;
 import io.camunda.zeebe.engine.state.immutable.MessageState.Index;
-import io.camunda.zeebe.protocol.impl.record.value.message.MessageRecord;
-import io.camunda.zeebe.protocol.record.intent.MessageIntent;
+import io.camunda.zeebe.protocol.impl.record.value.message.MessageBatchRecord;
+import io.camunda.zeebe.protocol.record.intent.MessageBatchIntent;
 import io.camunda.zeebe.scheduler.clock.ActorClock;
 import io.camunda.zeebe.stream.api.scheduling.ProcessingScheduleService;
 import io.camunda.zeebe.stream.api.scheduling.Task;
@@ -32,9 +32,6 @@ import org.agrona.collections.MutableInteger;
  * find.
  */
 public final class MessageTimeToLiveChecker implements Task {
-
-  private final MessageRecord emptyDeleteMessageCommand =
-      new MessageRecord().setName("").setCorrelationKey("").setTimeToLive(-1L);
 
   /** This determines the duration that the TTL checker is idle after it completes an execution. */
   private final Duration executionInterval;
@@ -75,6 +72,7 @@ public final class MessageTimeToLiveChecker implements Task {
     }
 
     final var counter = new MutableInteger(0);
+    final MessageBatchRecord messageBatchRecord = new MessageBatchRecord();
     final boolean shouldContinueWhereLeftOff =
         messageState.visitMessagesWithDeadlineBeforeTimestamp(
             currentTimestamp,
@@ -89,11 +87,13 @@ public final class MessageTimeToLiveChecker implements Task {
                 return true;
               }
 
-              final boolean stillFitsInResult =
-                  taskResultBuilder.appendCommandRecord(
-                      expiredMessageKey, MessageIntent.EXPIRE, emptyDeleteMessageCommand);
-              return stillFitsInResult && counter.incrementAndGet() < batchLimit;
+              messageBatchRecord.addMessageKey(expiredMessageKey);
+              return counter.incrementAndGet() < batchLimit;
             });
+
+    if (!messageBatchRecord.isEmpty()) {
+      taskResultBuilder.appendCommandRecord(MessageBatchIntent.EXPIRE, messageBatchRecord);
+    }
 
     if (shouldContinueWhereLeftOff) {
       reschedule(Duration.ZERO);

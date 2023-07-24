@@ -27,6 +27,7 @@ import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.intent.JobBatchIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
+import io.camunda.zeebe.protocol.record.intent.MessageBatchIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageStartEventSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
@@ -54,6 +55,7 @@ import io.camunda.zeebe.protocol.record.value.EscalationRecordValue;
 import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
 import io.camunda.zeebe.protocol.record.value.JobBatchRecordValue;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
+import io.camunda.zeebe.protocol.record.value.MessageBatchRecordValue;
 import io.camunda.zeebe.protocol.record.value.MessageRecordValue;
 import io.camunda.zeebe.protocol.record.value.MessageStartEventSubscriptionRecordValue;
 import io.camunda.zeebe.protocol.record.value.MessageSubscriptionRecordValue;
@@ -147,6 +149,9 @@ public final class ValueTypeMapping {
     mapping.put(
         ValueType.JOB_BATCH, new Mapping<>(JobBatchRecordValue.class, JobBatchIntent.class));
     mapping.put(ValueType.MESSAGE, new Mapping<>(MessageRecordValue.class, MessageIntent.class));
+    mapping.put(
+        ValueType.MESSAGE_BATCH,
+        new Mapping<>(MessageBatchRecordValue.class, MessageBatchIntent.class));
     mapping.put(
         ValueType.MESSAGE_START_EVENT_SUBSCRIPTION,
         new Mapping<>(

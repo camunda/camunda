@@ -19,6 +19,7 @@ import io.camunda.zeebe.engine.state.mutable.MutableMessageState;
 import io.camunda.zeebe.engine.state.mutable.MutableMessageSubscriptionState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.intent.MessageBatchIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
@@ -63,6 +64,10 @@ public final class MessageEventProcessors {
                 processState,
                 bpmnBehaviors.eventTriggerBehavior(),
                 bpmnBehaviors.stateBehavior()))
+        .onCommand(
+            ValueType.MESSAGE_BATCH,
+            MessageBatchIntent.EXPIRE,
+            new MessageBatchExpireProcessor(writers.state()))
         .onCommand(
             ValueType.MESSAGE, MessageIntent.EXPIRE, new MessageExpireProcessor(writers.state()))
         .onCommand(
