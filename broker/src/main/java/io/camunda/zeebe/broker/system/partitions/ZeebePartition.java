@@ -281,7 +281,14 @@ public final class ZeebePartition extends Actor
 
   private ActorFuture<Void> transitionToInactive() {
     zeebePartitionHealth.setServicesInstalled(false);
-    return transition.toInactive(context.getCurrentTerm());
+    final var transitionFuture = transition.toInactive(context.getCurrentTerm());
+    transitionFuture.onComplete(
+        (success, error) -> {
+          if (error != null) {
+            onInstallFailure(error);
+          }
+        });
+    return transitionFuture;
   }
 
   private void registerListeners() {
