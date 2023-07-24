@@ -295,7 +295,7 @@ export class DashboardEdit extends React.Component {
             description={description}
             onDescriptionChange={this.updateDescription}
           >
-            <AddButton addTile={this.addTile} existingTile={tiles?.[0]} />
+            <AddButton addTile={this.addTile} existingReport={optimizeReports?.[0]} />
             <AddFiltersButton
               reports={optimizeReports}
               persistReports={() => this.save(true)}

@@ -15,7 +15,7 @@ import ReportCreationModal from './ReportCreationModal';
 
 const size = {width: 6, height: 4};
 
-export default function AddButton({addTile, existingTile}) {
+export default function AddButton({addTile, existingReport}) {
   const [open, setOpen] = useState(false);
   const [creatingNewReport, setCreatingNewReport] = useState(false);
 
@@ -54,7 +54,7 @@ export default function AddButton({addTile, existingTile}) {
       {creatingNewReport && (
         <ReportCreationModal
           onClose={() => setCreatingNewReport(false)}
-          existingReport={existingTile}
+          existingReport={existingReport}
           onConfirm={onConfirm}
         />
       )}

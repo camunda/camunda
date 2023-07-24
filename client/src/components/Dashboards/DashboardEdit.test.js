@@ -247,3 +247,22 @@ it('should update description', () => {
   expect(node.state('description')).toEqual('some description');
   expect(track).toHaveBeenCalledWith('editDescription', {entity: 'dashboard', entityId: 'id'});
 });
+
+it('should use first optimize report to fetch report definition when creating new report', () => {
+  const textTile = {
+    position: {x: 0, y: 0},
+    id: '',
+    configuration: {text: 'text'},
+    type: 'text',
+  };
+
+  const report = {
+    position: {x: 1, y: 1},
+    id: 'someId',
+    type: 'optimize_report',
+    report: {},
+  };
+  const node = shallow(<DashboardEdit initialTiles={[textTile, report]} />);
+
+  expect(node.find('AddButton').prop('existingReport')).toEqual(report);
+});
