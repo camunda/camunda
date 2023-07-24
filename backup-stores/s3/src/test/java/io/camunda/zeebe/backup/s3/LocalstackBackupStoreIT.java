@@ -8,10 +8,16 @@
 package io.camunda.zeebe.backup.s3;
 
 import io.camunda.zeebe.backup.s3.S3BackupConfig.Builder;
+import io.camunda.zeebe.test.util.testcontainers.ContainerLogsDumper;
+import java.util.Map;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.TestInfo;
+import org.junit.jupiter.api.extension.RegisterExtension;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.testcontainers.containers.localstack.LocalStackContainer;
 import org.testcontainers.containers.localstack.LocalStackContainer.Service;
 import org.testcontainers.junit.jupiter.Container;
@@ -27,7 +33,11 @@ final class LocalstackBackupStoreIT implements S3BackupStoreTests {
   @Container
   private static final LocalStackContainer S3 =
       new LocalStackContainer(DockerImageName.parse("localstack/localstack"))
-          .withServices(Service.S3);
+          .withServices(Service.S3)
+          .withEnv("LS_LOG", "trace");
+
+  @RegisterExtension
+  final ContainerLogsDumper logsWatcher = new ContainerLogsDumper(() -> Map.of("localstack", S3));
 
   private S3AsyncClient client;
   private S3BackupStore store;
