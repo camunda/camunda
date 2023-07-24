@@ -29,4 +29,11 @@ public interface MutableProcessState extends ProcessState {
    * @param state the new state
    */
   void updateProcessState(final long processDefinitionKey, final PersistedProcessState state);
+
+  /**
+   * Deletes a process fromm the state and cache
+   *
+   * @param processRecord the record of the process that is deleted
+   */
+  void deleteProcess(final ProcessRecord processRecord);
 }

@@ -37,6 +37,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
+import java.util.concurrent.atomic.AtomicLong;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.collections.Long2ObjectHashMap;
@@ -143,6 +144,42 @@ public final class DbProcessState implements MutableProcessState {
     process.setState(state);
     processColumnFamily.update(this.processDefinitionKey, process);
     updateInMemoryState(process);
+  }
+
+  @Override
+  public void deleteProcess(final ProcessRecord processRecord) {
+    processDefinitionKey.wrapLong(processRecord.getProcessDefinitionKey());
+    processId.wrapString(processRecord.getBpmnProcessId());
+    processVersion.wrapLong(processRecord.getVersion());
+
+    processColumnFamily.deleteExisting(processDefinitionKey);
+    processByIdAndVersionColumnFamily.deleteExisting(idAndVersionKey);
+
+    processesByProcessIdAndVersion.remove(processRecord.getBpmnProcessIdBuffer());
+    processesByKey.remove(processRecord.getProcessDefinitionKey());
+
+    final long latestVersion =
+        versionManager.getCurrentProcessVersion(processRecord.getBpmnProcessId());
+
+    if (latestVersion == processRecord.getVersion()) {
+      // As we don't set the digest to the digest of the previous there is a chance it does not
+      // exist. This happens when deleting the latest version two times in a row. To be safe we must
+      // use deleteIfExists.
+      digestByIdColumnFamily.deleteIfExists(fkProcessId);
+
+      final var previousVersion = new AtomicLong(0);
+      processByIdAndVersionColumnFamily.whileEqualPrefix(
+          processId,
+          (key, value) -> {
+            final long version = key.second().getValue();
+            if (version > previousVersion.get()) {
+              previousVersion.set(version);
+            }
+          });
+
+      versionManager.deleteProcessVersion(
+          processRecord.getBpmnProcessId(), processRecord.getVersion(), previousVersion.get());
+    }
   }
 
   private void persistProcess(final long processDefinitionKey, final ProcessRecord processRecord) {
