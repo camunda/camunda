@@ -10,6 +10,7 @@ package io.camunda.zeebe.broker.system.partitions;
 import io.camunda.zeebe.broker.system.partitions.impl.RecoverablePartitionTransitionException;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
+import io.camunda.zeebe.util.exception.UnrecoverableException;
 import io.camunda.zeebe.util.health.HealthIssue;
 
 public interface PartitionTransition {
@@ -75,7 +76,7 @@ public interface PartitionTransition {
    * not complete successfully. This is useful to distinguish between transitions that were prepared
    * but later failed or were cancelled, and transitions that couldn't even be prepared properly.
    */
-  final class FailedPartitionTransitionPreparation extends RuntimeException {
+  final class FailedPartitionTransitionPreparation extends UnrecoverableException {
     public FailedPartitionTransitionPreparation(final Throwable cause) {
       super("Preparing for partition transition failed", cause);
     }
