@@ -10,8 +10,8 @@ package io.camunda.zeebe.it.clustering;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.qa.util.actuator.PartitionsActuator;
-import io.camunda.zeebe.qa.util.testcontainers.ContainerLogsDumper;
 import io.camunda.zeebe.qa.util.testcontainers.ZeebeTestContainerDefaults;
+import io.camunda.zeebe.test.util.testcontainers.ContainerLogsDumper;
 import io.zeebe.containers.ZeebeBrokerNode;
 import io.zeebe.containers.cluster.ZeebeCluster;
 import java.util.List;
