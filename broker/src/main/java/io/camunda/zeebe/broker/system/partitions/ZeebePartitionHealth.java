@@ -10,7 +10,6 @@ package io.camunda.zeebe.broker.system.partitions;
 import io.camunda.zeebe.util.health.FailureListener;
 import io.camunda.zeebe.util.health.HealthMonitorable;
 import io.camunda.zeebe.util.health.HealthReport;
-import io.camunda.zeebe.util.health.HealthStatus;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -42,7 +41,7 @@ class ZeebePartitionHealth implements HealthMonitorable {
 
   private void updateHealthStatus() {
     final HealthReport previousStatus = healthReport;
-    if (healthReport != null && previousStatus.getStatus() == HealthStatus.DEAD) {
+    if (previousStatus != null && previousStatus.isDead()) {
       return;
     }
 
@@ -59,17 +58,10 @@ class ZeebePartitionHealth implements HealthMonitorable {
 
     if (previousStatus != healthReport) {
       switch (healthReport.getStatus()) {
-        case HEALTHY:
-          failureListeners.forEach(FailureListener::onRecovered);
-          break;
-        case UNHEALTHY:
-          failureListeners.forEach((l) -> l.onFailure(healthReport));
-          break;
-        case DEAD:
-          failureListeners.forEach((l) -> l.onUnrecoverableFailure(healthReport));
-          break;
-        default:
-          break;
+        case HEALTHY -> failureListeners.forEach(FailureListener::onRecovered);
+        case UNHEALTHY -> failureListeners.forEach((l) -> l.onFailure(healthReport));
+        case DEAD -> failureListeners.forEach((l) -> l.onUnrecoverableFailure(healthReport));
+        default -> {}
       }
     }
   }
