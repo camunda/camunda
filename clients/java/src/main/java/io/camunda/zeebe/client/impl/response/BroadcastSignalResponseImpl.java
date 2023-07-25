@@ -30,4 +30,10 @@ public final class BroadcastSignalResponseImpl implements BroadcastSignalRespons
   public long getKey() {
     return key;
   }
+
+  @Override
+  public String getTenantId() {
+    // todo(#13558): replace dummy implementation
+    return "";
+  }
 }

@@ -47,6 +47,7 @@ public final class BroadcastSignalTest extends ClientTest {
     final BroadcastSignalRequest request = gatewayService.getLastRequest();
     assertThat(request.getSignalName()).isEqualTo("name");
     assertThat(response.getKey()).isEqualTo(key);
+    assertThat(response.getTenantId()).isEqualTo("");
 
     rule.verifyDefaultRequestTimeout();
   }
