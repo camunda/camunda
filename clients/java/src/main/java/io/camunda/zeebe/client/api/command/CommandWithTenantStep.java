@@ -73,10 +73,10 @@ public interface CommandWithTenantStep<T> {
    * <p>When referring to shared entities in your command, the owning tenant may be inferred from
    * the client's access.
    *
-   * <p>For example, an instance of a process that is shared among all tenants can be created
-   * without specifying the {@code tenantId} explicitly, if the client only has access to one
-   * specific tenant. In that case, the tenant owning the created process instance can be inferred
-   * from the client's access.
+   * <p>For example, you can create an instance of a process, where all tenants share the process
+   * definition, without specifying the {@code tenantId} explicitly, if the client only has access
+   * to one specific tenant. In that case, the tenant owning the created process instance can be
+   * inferred from the client's access.
    *
    * @param tenantId the identifier of the tenant to specify for this command, e.g. {@code "ACME"}
    * @return the builder for this command with the tenant specified
