@@ -5,7 +5,7 @@
  * except in compliance with the proprietary license.
  */
 
-import {Labeled, MultiSelect} from 'components';
+import {FilterableMultiSelect} from '@carbon/react';
 import {t} from 'translation';
 import {Definition} from 'types';
 
@@ -17,77 +17,49 @@ export interface FilterDefinitionSelectionProps {
   setApplyTo: (definitions: Definition[]) => void;
 }
 
+type Item = {
+  id: string;
+  label: string;
+};
+
 export default function FilterDefinitionSelection({
   availableDefinitions,
   applyTo,
   setApplyTo,
 }: FilterDefinitionSelectionProps) {
-  function onAdd(definition: Definition) {
-    if (definition.identifier === 'all') {
-      setApplyTo([definition]);
-    } else {
-      setApplyTo([...applyTo, definition]);
-    }
-  }
-
-  function onClear() {
-    setApplyTo([]);
-  }
-
-  function onRemove(definition: Definition | undefined) {
-    setApplyTo(applyTo.filter((applied) => applied.identifier !== definition?.identifier));
-  }
-
   if (availableDefinitions.length <= 1) {
     return null;
   }
 
   const appliesToAll = applyTo.some(({identifier}) => identifier === 'all');
-  const options = [];
-  if (!appliesToAll) {
-    options.push(
-      <MultiSelect.Option
-        id="all"
-        key="all"
-        value={{
-          identifier: 'all',
-          displayName: t('common.filter.definitionSelection.allProcesses'),
-        }}
-      >
-        {t('common.filter.definitionSelection.allProcesses')}
-      </MultiSelect.Option>,
-      ...availableDefinitions
-        .filter((definition) =>
-          applyTo.every((alreadyAdded) => alreadyAdded.identifier !== definition.identifier)
-        )
-        .map((definition) => (
-          <MultiSelect.Option
-            key={definition.identifier}
-            id={definition.identifier}
-            value={definition}
-          >
-            {definition.displayName || definition.name || definition.key}
-          </MultiSelect.Option>
-        ))
-    );
-  }
+  const allItems = getItems(availableDefinitions);
+  const selectedItems = appliesToAll ? getItems(availableDefinitions) : getItems(applyTo);
+
+  const handleSelectionChange = (selectedItems: Item[]) => {
+    const selectedDefinitions = selectedItems
+      .map((item) => availableDefinitions.find((definition) => definition.identifier === item.id))
+      .filter((definition): definition is Definition => definition !== undefined);
+
+    setApplyTo(selectedDefinitions);
+  };
 
   return (
     <div className="FilterDefinitionSelection">
-      <Labeled label={t('common.definitionSelection.select.process')}>
-        <MultiSelect
-          onAdd={onAdd}
-          onClear={onClear}
-          onRemove={onRemove}
-          values={applyTo.map((definition) => ({
-            value: definition,
-            label: definition.displayName?.toString() || definition.name || definition.key || '',
-          }))}
-          persistMenu={false}
-        >
-          {options}
-        </MultiSelect>
-      </Labeled>
+      <FilterableMultiSelect
+        id="filterDefintionSelection"
+        initialSelectedItems={selectedItems}
+        items={allItems}
+        onChange={({selectedItems}) => handleSelectionChange(selectedItems)}
+        aria-label={t('common.definitionSelection.select.process')}
+        titleText={t('common.definitionSelection.select.process')}
+      />
     </div>
   );
+}
+
+function getItems(defintions: Definition[]): Item[] {
+  return defintions.map((definition) => ({
+    id: definition.identifier,
+    label: definition.displayName?.toString() || definition.name || definition.key || '',
+  }));
 }

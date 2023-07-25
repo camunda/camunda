@@ -6,8 +6,7 @@
  */
 
 import {shallow} from 'enzyme';
-
-import {MultiSelect} from 'components';
+import {FilterableMultiSelect} from '@carbon/react';
 
 import FilterDefinitionSelection from './FilterDefinitionSelection';
 
@@ -33,35 +32,25 @@ beforeEach(() => {
 it('should show available definitions', () => {
   const node = shallow(<FilterDefinitionSelection {...props} />);
 
-  expect(node.find(MultiSelect.Option)).toHaveLength(3);
-  expect(node.find(MultiSelect.Option).at(1)).toIncludeText('Definition 1');
-  expect(node.find(MultiSelect.Option).at(2)).toIncludeText('Definition 2');
+  const listItems = node.find(FilterableMultiSelect).prop('items');
+  expect(listItems).toEqual([
+    {id: 'def1', label: 'Definition 1'},
+    {id: 'def2', label: 'Definition 2'},
+  ]);
 });
 
-it('should allow selecting special all definition', () => {
+it('should invoke setApplyTo when selecting a definition', () => {
   const node = shallow(<FilterDefinitionSelection {...props} />);
 
-  const specialOption = node.find(MultiSelect.Option).first();
+  const listItems = node.find(FilterableMultiSelect).prop('items');
+  node.find(FilterableMultiSelect).simulate('change', {selectedItems: [listItems[1]]});
 
-  expect(specialOption).toIncludeText('All included processes');
-
-  node.find(MultiSelect).simulate('add', specialOption.prop('value'));
-
-  expect(props.setApplyTo).toHaveBeenCalledWith([specialOption.prop('value')]);
+  expect(props.setApplyTo).toHaveBeenCalledWith([
+    {displayName: 'Definition 2', identifier: 'def2'},
+  ]);
 });
 
-it('should allow selecting special all definition', () => {
-  const node = shallow(
-    <FilterDefinitionSelection {...props} applyTo={props.availableDefinitions} />
-  );
-
-  const specialOption = node.find(MultiSelect.Option).first();
-
-  node.find(MultiSelect).simulate('add', specialOption.prop('value'));
-  expect(props.setApplyTo).toHaveBeenCalledWith([specialOption.prop('value')]);
-});
-
-it('should not show any available definition when special all definition is selected', () => {
+it('should select all definitions when receiving the all identifier', () => {
   const node = shallow(
     <FilterDefinitionSelection
       {...props}
@@ -69,5 +58,6 @@ it('should not show any available definition when special all definition is sele
     />
   );
 
-  expect(node.find(MultiSelect.Option)).toHaveLength(0);
+  const listItems = node.find(FilterableMultiSelect).prop('initialSelectedItems');
+  expect(listItems).toHaveLength(2);
 });

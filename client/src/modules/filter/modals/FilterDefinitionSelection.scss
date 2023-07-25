@@ -1,27 +1,7 @@
+@use '@carbon/layout';
+
 .FilterDefinitionSelection {
-  padding-bottom: 20px;
+  padding-bottom: layout.$spacing-06;
   border-bottom: solid 1px var(--silver-darken-87);
-  margin-bottom: 20px;
-
-  .Labeled .label.before {
-    font-size: 14px;
-  }
-
-  .MultiSelect .Tag {
-    font-size: 12px;
-    background-color: var(--blue-base-65);
-    color: var(--white);
-
-    > .Button.close {
-      color: var(--white);
-    }
-
-    .tagText {
-      padding-top: 2px;
-    }
-
-    svg {
-      vertical-align: middle;
-    }
-  }
+  margin-bottom: layout.$spacing-06;
 }

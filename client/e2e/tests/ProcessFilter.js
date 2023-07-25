@@ -442,13 +442,13 @@ test('multi definition filters', async (t) => {
   await t.click(Report.sectionToggle('Filters'));
   await t.click(Report.filterButton);
   await t.click(Report.filterOption('Instance State'));
-
   await t.click(Report.modalOption('Running'));
-  await t.click(Filter.removeButtonFor('All included processes'));
-  await t.click(Filter.stateFilterMultiSelect);
-  await t.click(Filter.stateFilterMultiSelectOption('Hiring Demo 5 Tenants'));
-  await t.click(Filter.stateFilterMultiSelect);
-  await t.click(Filter.stateFilterMultiSelectOption('Book Request One Tenant'));
+
+  await t.click(Filter.multiSelectClearBtn());
+  await t.click(Filter.multiSelect);
+  await t.click(Filter.multiSelectOption('Hiring Demo 5 Tenants'));
+  await t.click(Filter.multiSelect);
+  await t.click(Filter.multiSelectOption('Book Request One Tenant'));
 
   await t.click(Common.modalConfirmButton);
 

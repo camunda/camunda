@@ -6,13 +6,13 @@
  */
 
 import {ComponentProps} from 'react';
-import DateFilter from './DateFilter';
 import {shallow} from 'enzyme';
 
 import {Filter} from 'types';
 
 import {FilterProps} from '../types';
 
+import DateFilter from './DateFilter';
 import {convertFilterToState, isValid} from './service';
 
 (isValid as jest.Mock).mockReturnValue(true);

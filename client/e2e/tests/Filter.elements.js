@@ -7,11 +7,11 @@
 
 import {Selector} from 'testcafe';
 
-export const multiSelect = Selector('.Modal .MultiSelect');
 export const typeaheadInput = Selector('.Modal .Typeahead .Input');
-export const stateFilterMultiSelect = Selector('.Modal .MultiSelect');
-export const stateFilterMultiSelectOption = (text) =>
-  stateFilterMultiSelect.find('.DropdownOption').withText(text);
+export const multiSelect = Selector('.Modal.is-visible .cds--multi-select');
+export const multiSelectClearBtn = multiSelect.find('.cds--tag__close-icon');
+export const multiSelectOption = (text) =>
+  multiSelect.find('.cds--list-box__menu-item').withText(text);
 export const multiSelectOptionNumber = (idx) => multiSelect.find('.DropdownOption').nth(idx);
 export const variableFilterOperatorButton = (text) =>
   Selector('.Modal .buttonRow .Button').withText(text);

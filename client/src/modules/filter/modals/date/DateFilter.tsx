@@ -5,7 +5,7 @@
  * except in compliance with the proprietary license.
  */
 
-import {Component} from 'react';
+import {useState} from 'react';
 import {Button} from '@carbon/react';
 
 import {t} from 'translation';
@@ -29,40 +29,46 @@ type DateFilterState = FilterState & {
   applyTo?: Definition[] | string[];
 };
 
-export default class DateFilter extends Component<DateFilterProps, DateFilterState> {
-  state: DateFilterState = {
-    valid: false,
-    type: '',
-    unit: '',
-    customNum: '2',
-    startDate: null,
-    endDate: null,
-    applyTo: [
-      {identifier: 'all', displayName: t('common.filter.definitionSelection.allProcesses')},
-    ],
-  };
+export default function DateFilter({
+  filterData,
+  filterType,
+  definitions,
+  addFilter,
+  close,
+}: DateFilterProps) {
+  const [filterState, setFilterState] = useState<DateFilterState>(() => {
+    let initialData = {};
+    const defaultState = {
+      valid: false,
+      type: '',
+      unit: '',
+      customNum: '2',
+      startDate: null,
+      endDate: null,
+      applyTo: [
+        {identifier: 'all', displayName: t('common.filter.definitionSelection.allProcesses')},
+      ],
+    };
 
-  componentDidMount() {
-    const {filterData, definitions} = this.props;
-    if (!filterData) {
-      return;
+    if (filterData) {
+      initialData = convertFilterToState(filterData.data);
+
+      if (filterData.appliedTo?.[0] !== 'all') {
+        initialData = {
+          ...initialData,
+          applyTo: filterData.appliedTo
+            .map((id) => definitions.find(({identifier}) => identifier === id))
+            .filter((definition): definition is Definition => !!definition),
+        };
+      }
     }
 
-    this.setState(convertFilterToState(filterData.data));
+    return {...defaultState, ...initialData};
+  });
 
-    if (filterData.appliedTo?.[0] !== 'all') {
-      this.setState({
-        applyTo: filterData.appliedTo
-          .map((id) => definitions.find(({identifier}) => identifier === id))
-          .filter((definition): definition is Definition => !!definition),
-      });
-    }
-  }
-
-  confirm = () => {
-    const {type, unit, customNum, startDate, endDate, applyTo} = this.state;
-    const {addFilter, filterType} = this.props;
-    if (isValid(this.state)) {
+  const confirm = () => {
+    const {type, unit, customNum, startDate, endDate, applyTo} = filterState;
+    if (isValid(filterState)) {
       return addFilter({
         type: filterType,
         data: convertStateToFilter({type, unit, customNum, startDate, endDate} as FilterState),
@@ -71,61 +77,58 @@ export default class DateFilter extends Component<DateFilterProps, DateFilterSta
     }
   };
 
-  render() {
-    const {type, unit, customNum, startDate, endDate, applyTo} = this.state;
-    const {close, filterData, filterType, definitions} = this.props;
+  const {type, unit, customNum, startDate, endDate, applyTo} = filterState;
 
-    return (
-      <Modal size="sm" open onClose={close} isOverflowVisible className="DateFilter">
-        <Modal.Header>
-          {t('common.filter.modalHeader', {
-            type: t(`common.filter.types.${filterType}`),
-          })}
-        </Modal.Header>
-        <Modal.Content>
-          <FilterDefinitionSelection
-            availableDefinitions={definitions}
-            applyTo={applyTo as Definition[]}
-            setApplyTo={(applyTo) => this.setState({applyTo})}
+  return (
+    <Modal size="sm" open onClose={close} isOverflowVisible className="DateFilter">
+      <Modal.Header>
+        {t('common.filter.modalHeader', {
+          type: t(`common.filter.types.${filterType}`),
+        })}
+      </Modal.Header>
+      <Modal.Content>
+        <FilterDefinitionSelection
+          availableDefinitions={definitions}
+          applyTo={applyTo as Definition[]}
+          setApplyTo={(applyTo) => setFilterState({...filterState, applyTo})}
+        />
+        {filterType === 'instanceEndDate' && (
+          <MessageBox type="warning">{t('common.filter.dateModal.endDateWarning')}</MessageBox>
+        )}
+        <Form>
+          <span className="tip">{t(`common.filter.dateModal.info.${filterType}`)}</span>
+          <DateRangeInput
+            type={type}
+            unit={unit}
+            startDate={startDate}
+            endDate={endDate}
+            customNum={customNum}
+            onChange={(change) => setFilterState({...filterState, ...change})}
           />
-          {filterType === 'instanceEndDate' && (
-            <MessageBox type="warning">{t('common.filter.dateModal.endDateWarning')}</MessageBox>
-          )}
-          <Form>
-            <span className="tip">{t(`common.filter.dateModal.info.${filterType}`)}</span>
-            <DateRangeInput
-              type={type}
-              unit={unit}
-              startDate={startDate}
-              endDate={endDate}
-              customNum={customNum}
-              onChange={(change) => this.setState({...this.state, ...change})}
-            />
-            <Form.Group className="previewContainer">
-              {isValid(this.state) && (
-                <DateFilterPreview
-                  filterType={filterType}
-                  filter={convertStateToFilter({
-                    type,
-                    unit,
-                    customNum,
-                    startDate,
-                    endDate,
-                  })}
-                />
-              )}
-            </Form.Group>
-          </Form>
-        </Modal.Content>
-        <Modal.Footer>
-          <Button kind="secondary" className="cancel" onClick={close}>
-            {t('common.cancel')}
-          </Button>
-          <Button className="confirm" disabled={!isValid(this.state)} onClick={this.confirm}>
-            {filterData ? t('common.filter.updateFilter') : t('common.filter.addFilter')}
-          </Button>
-        </Modal.Footer>
-      </Modal>
-    );
-  }
+          <Form.Group className="previewContainer">
+            {isValid(filterState) && (
+              <DateFilterPreview
+                filterType={filterType}
+                filter={convertStateToFilter({
+                  type,
+                  unit,
+                  customNum,
+                  startDate,
+                  endDate,
+                })}
+              />
+            )}
+          </Form.Group>
+        </Form>
+      </Modal.Content>
+      <Modal.Footer>
+        <Button kind="secondary" className="cancel" onClick={close}>
+          {t('common.cancel')}
+        </Button>
+        <Button className="confirm" disabled={!isValid(filterState)} onClick={confirm}>
+          {filterData ? t('common.filter.updateFilter') : t('common.filter.addFilter')}
+        </Button>
+      </Modal.Footer>
+    </Modal>
+  );
 }
