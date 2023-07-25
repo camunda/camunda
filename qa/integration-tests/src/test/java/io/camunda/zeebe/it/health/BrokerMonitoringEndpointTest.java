@@ -9,7 +9,6 @@ package io.camunda.zeebe.it.health;
 
 import static io.restassured.RestAssured.given;
 import static org.awaitility.Awaitility.await;
-import static org.hamcrest.CoreMatchers.containsString;
 
 import io.camunda.zeebe.qa.util.testcontainers.ZeebeTestContainerDefaults;
 import io.restassured.builder.RequestSpecBuilder;
@@ -52,22 +51,6 @@ public final class BrokerMonitoringEndpointTest {
   @AfterClass
   public static void tearDownClass() {
     sutBroker.stop();
-  }
-
-  @Test
-  public void shouldGetMetrics() {
-    given()
-        .spec(brokerServerSpec)
-        .when()
-        .get("metrics")
-        .then() //
-        .statusCode(200)
-        .body(
-            containsString("jvm_info"), // example JVM metric
-            containsString("zeebe_health"), // example zebe metric
-            containsString(
-                "zeebe_rocksdb_writes_actual_delayed_write_rate") // exanmple rocks db metric
-            );
   }
 
   @Test

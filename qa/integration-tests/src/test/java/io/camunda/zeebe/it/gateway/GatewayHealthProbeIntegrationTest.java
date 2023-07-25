@@ -28,7 +28,7 @@ import org.testcontainers.lifecycle.Startable;
 
 public class GatewayHealthProbeIntegrationTest {
 
-  public static final String PATH_LIVENESS_PROBE = "/live";
+  public static final String PATH_LIVENESS_PROBE = "/actuator/health/liveness";
   private static final String PATH_READINESS_PROBE = "/actuator/health/readiness";
 
   @Test
@@ -41,7 +41,6 @@ public class GatewayHealthProbeIntegrationTest {
     final ZeebeGatewayContainer gateway =
         new ZeebeGatewayContainer(ZeebeTestContainerDefaults.defaultTestImage())
             .withNetwork(broker.getNetwork())
-            .withEnv("ZEEBE_GATEWAY_MONITORING_ENABLED", "true")
             .withEnv("ZEEBE_GATEWAY_CLUSTER_CONTACTPOINT", broker.getInternalClusterAddress());
     gateway.addExposedPorts(ZeebePort.MONITORING.getPort());
 
@@ -91,7 +90,6 @@ public class GatewayHealthProbeIntegrationTest {
     // --- given ---------------------------------------
     final ZeebeGatewayContainer gateway =
         new ZeebeGatewayContainer(ZeebeTestContainerDefaults.defaultTestImage())
-            .withEnv("ZEEBE_GATEWAY_MONITORING_ENABLED", "true")
             .withoutTopologyCheck();
     gateway.addExposedPorts(ZeebePort.MONITORING.getPort());
     gateway.start();
@@ -120,7 +118,6 @@ public class GatewayHealthProbeIntegrationTest {
     // given
     final ZeebeGatewayContainer gateway =
         new ZeebeGatewayContainer(ZeebeTestContainerDefaults.defaultTestImage())
-            .withEnv("ZEEBE_GATEWAY_MONITORING_ENABLED", "true")
             .withExposedPorts(ZeebePort.MONITORING.getPort())
             .withoutTopologyCheck()
             .withStartupCheckStrategy(new IsRunningStartupCheckStrategy());
