@@ -23,7 +23,7 @@ public final class PublishMessageResponseImpl implements PublishMessageResponse 
   private final long key;
 
   public PublishMessageResponseImpl(final GatewayOuterClass.PublishMessageResponse response) {
-    this.key = response.getKey();
+    key = response.getKey();
   }
 
   @Override
