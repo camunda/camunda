@@ -42,6 +42,7 @@ const Decisions: React.FC = () => {
     <>
       <VisuallyHiddenH1>Operate Decision Instances</VisuallyHiddenH1>
       <InstancesList
+        type="decision"
         filters={<Filters />}
         diagram={<Decision />}
         instances={<InstancesTable />}

@@ -21,11 +21,11 @@ type Props = {
   topPanel: React.ReactNode;
   bottomPanel: React.ReactNode;
   rightPanel?: React.ReactNode;
-  id: 'process' | 'decision';
+  type: 'process' | 'decision';
 };
 const InstanceDetail: React.FC<Props> = observer(
   ({
-    id,
+    type,
     header,
     breadcrumb,
     frameHeader,
@@ -54,7 +54,7 @@ const InstanceDetail: React.FC<Props> = observer(
         {header}
         <div ref={containerRef}>
           <ResizablePanel
-            panelId={`${id}-detail-vertical-panel`}
+            panelId={`${type}-detail-vertical-panel`}
             direction={SplitDirection.Vertical}
             minHeights={[panelMinHeight, panelMinHeight]}
           >

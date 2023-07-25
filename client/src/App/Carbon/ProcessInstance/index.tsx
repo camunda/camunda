@@ -271,7 +271,7 @@ const ProcessInstance: React.FC = observer(() => {
             </ModificationFooter>
           ) : undefined
         }
-        id="process"
+        type="process"
       />
       {showPrompt && (
         <Modal

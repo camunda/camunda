@@ -18,9 +18,10 @@ type Props = {
   filters: React.ReactNode;
   diagram: React.ReactNode;
   instances: React.ReactNode;
+  type: 'process' | 'decision';
 };
 const InstancesList: React.FC<Props> = observer(
-  ({filters, diagram, instances}) => {
+  ({filters, diagram, instances, type}) => {
     const [clientHeight, setClientHeight] = useState(0);
     const containerRef = useRef<HTMLDivElement | null>(null);
 
@@ -35,7 +36,7 @@ const InstancesList: React.FC<Props> = observer(
         <section>{filters}</section>
         <div ref={containerRef}>
           <ResizablePanel
-            panelId="instances-vertical-panel"
+            panelId={`${type}-instances-vertical-panel`}
             direction={SplitDirection.Vertical}
             minHeights={[panelMinHeight, panelMinHeight]}
           >

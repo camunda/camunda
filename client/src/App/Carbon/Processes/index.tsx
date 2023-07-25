@@ -90,6 +90,7 @@ const Processes: React.FC = observer(() => {
     <>
       <VisuallyHiddenH1>Operate Process Instances</VisuallyHiddenH1>
       <InstancesList
+        type="process"
         filters={<Filters />}
         diagram={<DiagramPanel />}
         instances={<InstancesTable />}
