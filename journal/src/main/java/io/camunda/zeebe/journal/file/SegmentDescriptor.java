@@ -49,15 +49,29 @@ final class SegmentDescriptor {
   private static final Logger LOG = LoggerFactory.getLogger(SegmentDescriptor.class);
   private static final int VERSION_LENGTH = Byte.BYTES;
   // current descriptor version containing: header, metadata, header and descriptor. descriptor
-  // contains lastIndex and lastPosition. Version 2 does not contain lastIndex and lastPosition.
-  private static final byte CUR_VERSION = 3;
+  // contains lastIndex and lastPosition. Version 2 with sbeSchemaVersion 1 does not contain
+  // lastIndex and lastPosition.
+  private static final byte CUR_VERSION = 2;
   // previous descriptor version containing: header and descriptor
   private static final byte NO_META_VERSION = 1;
-  // the combined length for each version of the descriptor (starting at version 1)
-  // V1 - 29: version byte (1) + header (8) + descriptor (20)
-  private static final int[] VERSION_LENGTHS = {29, 45, getEncodingLength()};
 
+  private final DescriptorMetadataEncoder metadataEncoder = new DescriptorMetadataEncoder();
+  private final DescriptorMetadataDecoder metadataDecoder = new DescriptorMetadataDecoder();
+  private final SegmentDescriptorDecoder segmentDescriptorDecoder = new SegmentDescriptorDecoder();
+
+  private final MessageHeaderDecoder headerDecoder = new MessageHeaderDecoder();
+  private final MutableDirectBuffer directBuffer = new UnsafeBuffer();
+  private final SegmentDescriptorEncoder segmentDescriptorEncoder = new SegmentDescriptorEncoder();
+  private final MessageHeaderEncoder headerEncoder = new MessageHeaderEncoder();
+  private final ChecksumGenerator checksumGen = new ChecksumGenerator();
+  // version in the header. Increment this version if there is non-backward compatible changes in
+  // the serialization format.
   private byte version = CUR_VERSION;
+
+  // version of sbe schema. The version will be incremented if fields are added or removed from the
+  // sbe schema of descriptor. As long as these changes are backward compatible, there is no need to
+  // increment `CUR_VERSION`
+  private int actingSchemaVersion = segmentDescriptorDecoder.sbeSchemaVersion();
   private long id;
   private long index;
   private int maxSegmentSize;
@@ -67,28 +81,26 @@ final class SegmentDescriptor {
   private int lastPosition;
   private int encodedLength;
   private long checksum;
-  private final DescriptorMetadataEncoder metadataEncoder = new DescriptorMetadataEncoder();
-  private final DescriptorMetadataDecoder metadataDecoder = new DescriptorMetadataDecoder();
-  private final SegmentDescriptorDecoder segmentDescriptorDecoder = new SegmentDescriptorDecoder();
-  private final MessageHeaderDecoder headerDecoder = new MessageHeaderDecoder();
-  private final MutableDirectBuffer directBuffer = new UnsafeBuffer();
-  private final SegmentDescriptorEncoder segmentDescriptorEncoder = new SegmentDescriptorEncoder();
-  private final MessageHeaderEncoder headerEncoder = new MessageHeaderEncoder();
-  private final ChecksumGenerator checksumGen = new ChecksumGenerator();
 
   SegmentDescriptor(final ByteBuffer buffer) {
     directBuffer.wrap(buffer);
 
-    version = directBuffer.getByte(0);
-    if (version > NO_META_VERSION && version <= CUR_VERSION) {
-      readV2Descriptor(directBuffer);
-    } else if (version == NO_META_VERSION) {
-      readV1Descriptor(directBuffer);
-    } else {
-      throw new UnknownVersionException(
-          String.format(
-              "Expected version to be one [%d %d] but read %d instead.",
-              NO_META_VERSION, CUR_VERSION, version));
+    try {
+      version = directBuffer.getByte(0);
+      if (version > NO_META_VERSION && version <= CUR_VERSION) {
+        readV2Descriptor(directBuffer);
+      } else if (version == NO_META_VERSION) {
+        readV1Descriptor(directBuffer);
+      } else {
+        throw new UnknownVersionException(
+            String.format(
+                "Expected version to be one [%d %d] but read %d instead.",
+                NO_META_VERSION, CUR_VERSION, version));
+      }
+    } catch (final IndexOutOfBoundsException error) {
+      // Previously SegmentLoader checks if the file has sufficient size for the descriptor. But it
+      // is not checked anymore because the encoded length is not known before reading.
+      throw new CorruptedJournalException("Failed to read segment descriptor", error);
     }
   }
 
@@ -155,11 +167,12 @@ final class SegmentDescriptor {
    */
   private int readDescriptor(final MutableDirectBuffer buffer, final int offset) {
     headerDecoder.wrap(buffer, offset);
+    actingSchemaVersion = headerDecoder.version();
     segmentDescriptorDecoder.wrap(
         directBuffer,
         offset + headerDecoder.encodedLength(),
         headerDecoder.blockLength(),
-        headerDecoder.version());
+        actingSchemaVersion);
 
     id = segmentDescriptorDecoder.id();
     index = segmentDescriptorDecoder.index();
@@ -225,18 +238,6 @@ final class SegmentDescriptor {
         + MessageHeaderEncoder.ENCODED_LENGTH * 2
         + DescriptorMetadataEncoder.BLOCK_LENGTH
         + SegmentDescriptorEncoder.BLOCK_LENGTH;
-  }
-
-  /** The number of bytes required to read and write a descriptor of a given version. */
-  static int getEncodingLengthForVersion(final byte version) {
-    if (version <= 0 || version > VERSION_LENGTHS.length) {
-      throw new UnknownVersionException(
-          String.format(
-              "Expected version byte to be one [%d %d] but got %d instead.",
-              NO_META_VERSION, CUR_VERSION, version));
-    }
-
-    return VERSION_LENGTHS[version - 1];
   }
 
   /**
@@ -360,16 +361,19 @@ final class SegmentDescriptor {
   }
 
   void updateIfCurrentVersion(final ByteBuffer buffer) {
-    if (version >= CUR_VERSION) {
+    if (version >= CUR_VERSION
+        && actingSchemaVersion == segmentDescriptorEncoder.sbeSchemaVersion()) {
       copyTo(buffer);
     } else {
       // Do not overwrite the descriptor for older versions. The new version has a higher length and
       // will overwrite the first entry.
       LOG.trace(
-          "Segment descriptor version is {}, which is lower than current version {}."
+          "Segment descriptor version is {}, and sbe schema version is {}, which is different from current version {}, and current sbe schema version {}."
               + "Skipping update to the descriptor.",
           version,
-          CUR_VERSION);
+          actingSchemaVersion,
+          CUR_VERSION,
+          segmentDescriptorEncoder.sbeSchemaVersion());
     }
   }
 
