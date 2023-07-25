@@ -270,9 +270,9 @@ final class JobBatchCollectorTest {
 
     // then
     // the expected length is then the length of the initial record + the length of the activated
-    // job + the length of a key (long) and one byte for its list header
+    // job and an 8 KB buffer
     final var activatedJob = (JobRecord) record.getValue().getJobs().get(0);
-    final int expectedLength = initialLength + activatedJob.getLength() + 9;
+    final int expectedLength = initialLength + activatedJob.getLength() + (1024 * 8);
     assertThat(estimatedLength.ref).isEqualTo(expectedLength);
   }
 
