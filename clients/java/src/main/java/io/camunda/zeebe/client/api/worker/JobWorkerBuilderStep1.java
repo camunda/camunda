@@ -147,6 +147,10 @@ public interface JobWorkerBuilderStep1 {
      * <p>If no request timeout is set then the default is used from the {@link
      * ZeebeClientConfiguration}
      *
+     * <p>NOTE: the request time out defined here is only applied to the activate jobs command, i.e.
+     * to polling for jobs, and is not applied to the job stream; use {@link
+     * #streamTimeout(Duration)} for that.
+     *
      * @param requestTimeout the request timeout for activate jobs request
      * @return the builder for this worker
      */
@@ -190,6 +194,38 @@ public interface JobWorkerBuilderStep1 {
      * @return the builder for this worker
      */
     JobWorkerBuilderStep3 backoffSupplier(BackoffSupplier backoffSupplier);
+
+    /**
+     * Opt-in feature flag to enable job streaming. If called, the job worker will use a mix of
+     * streaming and polling to activate jobs. A long living stream will be opened onto which jobs
+     * will be eagerly pushed, and the polling mechanism will be used strictly to fetch jobs created
+     * <em>before</em> any streams were opened.
+     *
+     * <p>If the stream is closed, e.g. the server closed the connection, was restarted, etc., it
+     * will be immediately recreated as long as the worker is opened.
+     *
+     * <p>NOTE: Job streaming is still under active development, and should be disabled if you
+     * notice any issues.
+     *
+     * @return the builder for this worker
+     */
+    JobWorkerBuilderStep3 enableStreaming();
+
+    /**
+     * If streaming is enabled, sets a maximum lifetime for a given stream. Once this timeout is
+     * reached, the stream is closed, such that no more jobs are activated and received. If the
+     * worker is still open, then it will immediately open a new stream.
+     *
+     * <p>With no timeout, the stream will live as long as the client, or until the server closes
+     * the connection.
+     *
+     * <p>It's recommended to set a relatively long timeout, to allow for streams to load balance
+     * properly across your gateways.
+     *
+     * @param timeout a timeout, after which the stream is recreated
+     * @return the builder for this worker
+     */
+    JobWorkerBuilderStep3 streamTimeout(final Duration timeout);
 
     /**
      * Open the worker and start to work on available tasks.

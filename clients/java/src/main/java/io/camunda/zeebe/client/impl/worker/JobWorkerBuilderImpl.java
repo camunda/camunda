@@ -51,6 +51,8 @@ public final class JobWorkerBuilderImpl
   private Duration requestTimeout;
   private List<String> fetchVariables;
   private BackoffSupplier backoffSupplier;
+  private boolean enableStreaming;
+  private Duration streamingTimeout;
 
   public JobWorkerBuilderImpl(
       final ZeebeClientConfiguration configuration,
@@ -134,6 +136,18 @@ public final class JobWorkerBuilderImpl
   }
 
   @Override
+  public JobWorkerBuilderStep3 enableStreaming() {
+    enableStreaming = true;
+    return this;
+  }
+
+  @Override
+  public JobWorkerBuilderStep3 streamTimeout(final Duration timeout) {
+    streamingTimeout = timeout;
+    return this;
+  }
+
+  @Override
   public JobWorker open() {
     ensureNotNullNorEmpty("jobType", jobType);
     ensureNotNull("jobHandler", handler);
@@ -141,10 +155,31 @@ public final class JobWorkerBuilderImpl
     ensureNotNullNorEmpty("workerName", workerName);
     ensureGreaterThan("maxJobsActive", maxJobsActive, 0);
 
+    final JobStreamer jobStreamer;
     final JobRunnableFactory jobRunnableFactory = new JobRunnableFactory(jobClient, handler);
     final JobPoller jobPoller =
         new JobPoller(
             jobClient, requestTimeout, jobType, workerName, timeout, fetchVariables, maxJobsActive);
+
+    if (enableStreaming) {
+      if (streamingTimeout != null) {
+        ensurePositive("streamingTimeout", streamingTimeout);
+      }
+
+      jobStreamer =
+          new JobStreamerImpl(
+              jobClient,
+              jobType,
+              workerName,
+              timeout,
+              fetchVariables,
+              streamingTimeout,
+              backoffSupplier,
+              executorService);
+
+    } else {
+      jobStreamer = JobStreamer.noop();
+    }
 
     final JobWorkerImpl jobWorker =
         new JobWorkerImpl(
@@ -153,6 +188,7 @@ public final class JobWorkerBuilderImpl
             pollInterval,
             jobRunnableFactory,
             jobPoller,
+            jobStreamer,
             backoffSupplier);
     closeables.add(jobWorker);
     return jobWorker;

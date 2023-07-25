@@ -19,6 +19,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.client.api.worker.JobHandler;
+import io.camunda.zeebe.client.api.worker.JobWorker;
+import io.camunda.zeebe.client.api.worker.JobWorkerBuilderStep1.JobWorkerBuilderStep3;
 import io.camunda.zeebe.client.impl.ZeebeClientBuilderImpl;
 import io.camunda.zeebe.client.impl.ZeebeClientImpl;
 import io.camunda.zeebe.gateway.protocol.GatewayGrpc;
@@ -27,17 +29,21 @@ import io.camunda.zeebe.gateway.protocol.GatewayOuterClass;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivatedJob;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.StreamActivatedJobsRequest;
 import io.grpc.ManagedChannel;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
 import io.grpc.inprocess.InProcessChannelBuilder;
 import io.grpc.inprocess.InProcessServerBuilder;
+import io.grpc.stub.ServerCallStreamObserver;
 import io.grpc.stub.StreamObserver;
 import io.grpc.testing.GrpcCleanupRule;
 import java.io.IOException;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.awaitility.Awaitility;
@@ -47,6 +53,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
+@SuppressWarnings("resource")
 @RunWith(JUnit4.class)
 public final class JobWorkerImplTest {
 
@@ -117,6 +124,22 @@ public final class JobWorkerImplTest {
                 assertThat(gateway.getTimeBetweenLatestPolls()).isGreaterThan(SLOW_POLL_THRESHOLD));
   }
 
+  @Test
+  public void shouldOpenStreamIfOptedIn() {
+    // given
+    final JobWorkerBuilderStep3 builder =
+        client.newWorker().jobType("test").handler(NOOP_JOB_HANDLER).enableStreaming();
+
+    // when
+    try (final JobWorker ignored = builder.open()) {
+      // then
+      Awaitility.await("until a stream is open")
+          .pollInterval(Duration.ofMillis(100))
+          .atMost(Duration.ofSeconds(5))
+          .untilAsserted(() -> assertThat(gateway.openStreams).hasSize(1));
+    }
+  }
+
   /**
    * This mocked gateway is able to record metrics on polling for new jobs and easily switch how it
    * responds to polling.
@@ -129,6 +152,8 @@ public final class JobWorkerImplTest {
    */
   private static final class MockedGateway extends GatewayImplBase {
 
+    private final Map<StreamActivatedJobsRequest, StreamObserver<ActivatedJob>> openStreams =
+        new HashMap<>();
     private final Object responsesLock = new Object();
     private boolean isInErrorMode = false;
     private ActivateJobsResponse pollSuccessResponse = ActivateJobsResponse.newBuilder().build();
@@ -162,6 +187,17 @@ public final class JobWorkerImplTest {
           responseObserver.onCompleted();
         }
       }
+    }
+
+    @Override
+    public void streamActivatedJobs(
+        final StreamActivatedJobsRequest request,
+        final StreamObserver<ActivatedJob> responseObserver) {
+      final ServerCallStreamObserver<ActivatedJob> observer =
+          (ServerCallStreamObserver<ActivatedJob>) responseObserver;
+      openStreams.put(request, responseObserver);
+      observer.setOnCancelHandler(() -> openStreams.remove(request));
+      observer.setOnCloseHandler(() -> openStreams.remove(request));
     }
 
     public void respondWith(final List<ActivatedJob> jobs) {
