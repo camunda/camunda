@@ -17,7 +17,6 @@ import io.camunda.zeebe.broker.system.partitions.PartitionTransitionStep;
 import io.camunda.zeebe.util.health.HealthIssue;
 import io.camunda.zeebe.util.sched.ConcurrencyControl;
 import io.camunda.zeebe.util.sched.future.ActorFuture;
-import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import org.slf4j.Logger;
@@ -33,7 +32,6 @@ public final class PartitionTransitionImpl implements PartitionTransition {
   // transient state - to keep track of the current transitions
   private PartitionTransitionProcess currentTransition;
   private ActorFuture<Void> currentTransitionFuture;
-  private final Duration transitionStepTimeout = Duration.ofSeconds(60);
 
   public PartitionTransitionImpl(final List<PartitionTransitionStep> steps) {
     this.steps = new ArrayList<>(requireNonNull(steps));
