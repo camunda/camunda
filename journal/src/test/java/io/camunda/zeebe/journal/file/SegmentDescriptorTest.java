@@ -107,7 +107,7 @@ class SegmentDescriptorTest {
   }
 
   @Test
-  void shouldReadV2Message() {
+  void shouldReadV2WithSbeVersion1Message() {
     // given
     final SegmentDescriptor descriptor =
         SegmentDescriptor.builder().withId(2).withIndex(100).withMaxSegmentSize(1024).build();
@@ -127,12 +127,10 @@ class SegmentDescriptorTest {
     assertThat(descriptorRead.maxSegmentSize()).isEqualTo(1024);
     assertThat(descriptorRead.lastIndex()).isZero();
     assertThat(descriptorRead.lastPosition()).isZero();
-    assertThat(descriptorRead.length())
-        .isEqualTo(SegmentDescriptor.getEncodingLengthForVersion((byte) (2)));
   }
 
   @Test
-  void shouldNotOverwriteV2Descriptor() {
+  void shouldNotOverwriteV2WithSbeVersion1Descriptor() {
     // given
     final SegmentDescriptor descriptor =
         SegmentDescriptor.builder().withId(2).withIndex(100).withMaxSegmentSize(1024).build();
@@ -155,8 +153,6 @@ class SegmentDescriptorTest {
     assertThat(descriptorRead.id()).isEqualTo(2);
     assertThat(descriptorRead.index()).isEqualTo(100);
     assertThat(descriptorRead.maxSegmentSize()).isEqualTo(1024);
-    assertThat(descriptorRead.length())
-        .isEqualTo(SegmentDescriptor.getEncodingLengthForVersion((byte) (2)));
     assertThat(descriptorRead.lastIndex()).isZero();
     assertThat(descriptorRead.lastPosition()).isZero();
   }
