@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.broker.system.partitions;
 
+import io.camunda.zeebe.broker.system.partitions.impl.RecoverablePartitionTransitionException;
 import io.camunda.zeebe.util.health.HealthIssue;
 import io.camunda.zeebe.util.sched.ConcurrencyControl;
 import io.camunda.zeebe.util.sched.future.ActorFuture;
@@ -18,7 +19,8 @@ public interface PartitionTransition {
    * opening a follower partition.
    *
    * @param currentTerm the current term on which the transition happens
-   * @return an ActorFuture to be completed when the transition is complete
+   * @return an ActorFuture to be completed when the transition is complete. Completed exceptionally
+   *     with {@link CancelledPartitionTransition} if the partition was cancelled.
    */
   ActorFuture<Void> toFollower(final long currentTerm);
 
@@ -27,14 +29,16 @@ public interface PartitionTransition {
    * a leader partition.
    *
    * @param currentTerm the current term on which the transition happens
-   * @return an ActorFuture to be completed when the transition is complete
+   * @return an ActorFuture to be completed when the transition is complete. Completed exceptionally
+   *     * with {@link CancelledPartitionTransition} if the partition was cancelled.
    */
   ActorFuture<Void> toLeader(final long currentTerm);
 
   /**
    * Closes the current partition's components asynchronously.
    *
-   * @return an ActorFuture completed when the transition is complete
+   * @return an ActorFuture completed when the transition is complete. Completed exceptionally *
+   *     with {@link CancelledPartitionTransition} if the partition was cancelled.
    * @param term
    */
   ActorFuture<Void> toInactive(final long term);
@@ -55,4 +59,23 @@ public interface PartitionTransition {
 
   /** @return null if transition is healthy or a {@link HealthIssue} if not. */
   HealthIssue getHealthIssue();
+
+  /** Used to exceptionally complete transition futures when the transition was cancelled. */
+  final class CancelledPartitionTransition extends RecoverablePartitionTransitionException {
+
+    public CancelledPartitionTransition() {
+      super("Partition transition was cancelled");
+    }
+  }
+
+  /**
+   * Used to exceptionally complete transition futures when the prepare phase of the transition did
+   * not complete successfully. This is useful to distinguish between transitions that were prepared
+   * but later failed or were cancelled, and transitions that couldn't even be prepared properly.
+   */
+  final class FailedPartitionTransitionPreparation extends RuntimeException {
+    public FailedPartitionTransitionPreparation(final Throwable cause) {
+      super("Preparing for partition transition failed", cause);
+    }
+  }
 }

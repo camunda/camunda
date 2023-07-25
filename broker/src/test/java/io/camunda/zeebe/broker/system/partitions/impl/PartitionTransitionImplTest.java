@@ -24,6 +24,7 @@ import static org.mockito.Mockito.when;
 
 import io.atomix.raft.RaftServer;
 import io.atomix.raft.RaftServer.Role;
+import io.camunda.zeebe.broker.system.partitions.PartitionTransition.CancelledPartitionTransition;
 import io.camunda.zeebe.broker.system.partitions.PartitionTransitionContext;
 import io.camunda.zeebe.broker.system.partitions.PartitionTransitionStep;
 import io.camunda.zeebe.broker.system.partitions.impl.steps.StreamProcessorTransitionStep;
@@ -141,8 +142,12 @@ class PartitionTransitionImplTest {
 
     // then
 
-    // both transitions completed orderly
-    assertThat(firstTransitionFuture.isCompletedExceptionally()).isFalse();
+    // the first transition was cancelled
+    assertThat(firstTransitionFuture.isCompletedExceptionally()).isTrue();
+    assertThat(firstTransitionFuture.getException())
+        .isInstanceOf(CancelledPartitionTransition.class);
+
+    // the second transition completed successfully
     assertThat(secondTransitionFuture.isCompletedExceptionally()).isFalse();
 
     // the first transition was cancelled before the second step
@@ -331,7 +336,7 @@ class PartitionTransitionImplTest {
 
     assertThatThrownBy(secondTransitionFuture::join)
         .isInstanceOf(CompletionException.class)
-        .getCause()
+        .getRootCause()
         .isSameAs(testException);
   }
 

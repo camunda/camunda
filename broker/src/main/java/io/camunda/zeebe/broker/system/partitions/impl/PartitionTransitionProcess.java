@@ -11,6 +11,7 @@ import static java.util.Objects.requireNonNull;
 
 import io.atomix.raft.RaftServer.Role;
 import io.camunda.zeebe.broker.Loggers;
+import io.camunda.zeebe.broker.system.partitions.PartitionTransition.CancelledPartitionTransition;
 import io.camunda.zeebe.broker.system.partitions.PartitionTransitionContext;
 import io.camunda.zeebe.broker.system.partitions.PartitionTransitionStep;
 import io.camunda.zeebe.util.health.HealthIssue;
@@ -72,7 +73,7 @@ final class PartitionTransitionProcess {
   private void proceedWithTransition(final ActorFuture<Void> future) {
     if (cancelRequested) {
       LOG.info("Cancelling transition to {} on term {}", role, term);
-      future.complete(null);
+      future.completeExceptionally(new CancelledPartitionTransition());
       completed = true;
       return;
     }
