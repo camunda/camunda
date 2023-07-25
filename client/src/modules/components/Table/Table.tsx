@@ -214,8 +214,8 @@ export default function Table<T extends object>({
     throw new Error('Table `toolbar` should be a `TableToolbar` component');
   }
 
-  const MAX_LOADING_COLUMN_COUNT = Math.min(headers.length, 6);
-  const LOADING_ROWS_COUNT = Math.max(Math.min(body.length, 15), 3);
+  const MAX_LOADING_COLUMNS_COUNT = Math.max(Math.min(headers.length, 6), 3);
+  const MAX_LOADING_ROWS_COUNT = Math.max(Math.min(body.length, 15), 3);
 
   return (
     <div
@@ -280,8 +280,8 @@ export default function Table<T extends object>({
                 showToolbar={false}
                 showHeader={false}
                 headers={headers.map(getHeaderPlaceholder)}
-                columnCount={MAX_LOADING_COLUMN_COUNT}
-                rowCount={LOADING_ROWS_COUNT}
+                columnCount={MAX_LOADING_COLUMNS_COUNT}
+                rowCount={MAX_LOADING_ROWS_COUNT}
                 // TODO: Remove this when carbon fixes their type declarations
                 compact={undefined}
                 className={undefined}

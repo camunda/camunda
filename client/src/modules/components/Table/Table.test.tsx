@@ -212,3 +212,13 @@ it('should change sorting to desc when clicked on header', () => {
   expect(node.find(TableHeader).prop('sortDirection')).toBe('DESC');
   expect(node.find('td').at(0).childAt(0).prop('value')).toBe('20');
 });
+
+it('should default loading state columns and rows count', () => {
+  const node = mount(<Table head={[]} body={[]} loading />);
+
+  const skeleton = node.find('DataTableSkeleton');
+
+  expect(skeleton).toExist();
+  expect(skeleton.prop('columnCount')).toBe(3);
+  expect(skeleton.prop('rowCount')).toBe(3);
+});
