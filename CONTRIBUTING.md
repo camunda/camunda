@@ -7,6 +7,7 @@
   * [Creating a Pull Request](#creating-a-pull-request)
   * [Reviewing a Pull Request](#reviewing-a-pull-request)
   * [Review Emoji Code](#review-emoji-code)
+  * [Stale Pull Requests](#stale-pull-requests)
   * [Backporting changes](#backporting-changes)
   * [Commit Message Guidelines](#commit-message-guidelines)
 * [Contributor License Agreement](#contributor-license-agreement)
@@ -192,6 +193,11 @@ For example, to distinguish a required change from an optional suggestion.
 - 💭 or `:thought_balloon:`: I’m just thinking out loud here. Something doesn’t necessarily have to change, but I want to make sure to share my thoughts.
 
 _Inspired by [Microsofts emoji code](https://devblogs.microsoft.com/appcenter/how-the-visual-studio-mobile-center-team-does-code-review/#introducing-the-emoji-code)._
+
+### Stale pull requests
+
+If there has not been any activity in your PR after a month it is automatically marked as stale. If it remains inactive we may decide to close the PR.
+When this happens and you're still interested in contributing, please feel free to reopen it.
 
 ## Backporting changes
 
