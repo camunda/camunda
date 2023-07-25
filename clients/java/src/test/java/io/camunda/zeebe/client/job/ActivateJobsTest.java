@@ -102,6 +102,7 @@ public final class ActivateJobsTest extends ClientTest {
     assertThat(job.getRetries()).isEqualTo(activatedJob1.getRetries());
     assertThat(job.getDeadline()).isEqualTo(activatedJob1.getDeadline());
     assertThat(job.getVariables()).isEqualTo(activatedJob1.getVariables());
+    assertThat(job.getTenantId()).isEqualTo("");
 
     job = response.getJobs().get(1);
     assertThat(job.getKey()).isEqualTo(activatedJob2.getKey());

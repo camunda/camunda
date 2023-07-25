@@ -15,6 +15,7 @@
  */
 package io.camunda.zeebe.client.api.response;
 
+import io.camunda.zeebe.client.api.ExperimentalApi;
 import java.util.Map;
 
 public interface ActivatedJob {
@@ -100,4 +101,10 @@ public interface ActivatedJob {
    * @return the record encoded as JSON
    */
   String toJson();
+
+  /**
+   * @return the identifier of the tenant that owns the job
+   */
+  @ExperimentalApi("https://github.com/camunda/zeebe/issues/13560")
+  String getTenantId();
 }

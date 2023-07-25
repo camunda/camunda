@@ -144,6 +144,12 @@ public final class ActivatedJobImpl implements ActivatedJob {
   }
 
   @Override
+  public String getTenantId() {
+    // todo(#13560): replace dummy implementation
+    return "";
+  }
+
+  @Override
   public String toString() {
     return toJson();
   }
