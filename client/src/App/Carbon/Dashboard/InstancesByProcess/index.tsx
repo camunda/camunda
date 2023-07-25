@@ -74,8 +74,9 @@ const InstancesByProcess: React.FC = observer(() => {
 
   return (
     <PartiallyExpandableDataTable
+      dataTestId="instances-by-process"
       headers={[{key: 'instance', header: 'instance'}]}
-      rows={processInstances.map((item) => {
+      rows={processInstances.map((item, index) => {
         const {
           instancesWithActiveIncidentsCount,
           activeInstancesCount,

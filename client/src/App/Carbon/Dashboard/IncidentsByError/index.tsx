@@ -58,6 +58,7 @@ const IncidentsByError: React.FC = observer(() => {
 
   return (
     <PartiallyExpandableDataTable
+      dataTestId="incident-byError"
       headers={[{key: 'incident', header: 'incident'}]}
       rows={incidents.map(({errorMessage, instancesWithErrorCount}) => {
         return {

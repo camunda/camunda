@@ -22,12 +22,14 @@ type Props = {
   expandedContents?: {
     [key: string]: React.ReactElement<{tabIndex: number}>;
   };
+  dataTestId?: string;
 };
 
 const PartiallyExpandableDataTable: React.FC<Props> = ({
   headers,
   rows,
   expandedContents,
+  dataTestId,
 }) => {
   return (
     <DataTable
@@ -41,10 +43,10 @@ const PartiallyExpandableDataTable: React.FC<Props> = ({
         getTableProps,
         getRowProps,
       }) => (
-        <TableContainer {...getTableContainerProps()}>
+        <TableContainer {...getTableContainerProps()} data-testid={dataTestId}>
           <Table {...getTableProps()}>
             <TableBody>
-              {rows.map((row) => {
+              {rows.map((row, index) => {
                 const expandedContent = expandedContents?.[row.id];
 
                 if (
@@ -53,7 +55,10 @@ const PartiallyExpandableDataTable: React.FC<Props> = ({
                 ) {
                   return (
                     <React.Fragment key={row.id}>
-                      <TableExpandRow {...getRowProps({row})}>
+                      <TableExpandRow
+                        {...getRowProps({row})}
+                        data-testid={`${dataTestId}-${index}`}
+                      >
                         {row.cells.map((cell) => (
                           <ExpandableTableCell key={cell.id}>
                             {cell.value}
@@ -70,7 +75,10 @@ const PartiallyExpandableDataTable: React.FC<Props> = ({
                 }
 
                 return (
-                  <TableRow {...getRowProps({row})}>
+                  <TableRow
+                    {...getRowProps({row})}
+                    data-testid={`${dataTestId}-${index}`}
+                  >
                     {row.cells.map((cell) => (
                       <TableCell colSpan={headers.length + 1} key={cell.id}>
                         {cell.value}
