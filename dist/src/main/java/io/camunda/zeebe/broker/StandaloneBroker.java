@@ -14,11 +14,9 @@ import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.gateway.impl.broker.BrokerClient;
 import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.shared.Profile;
-import io.camunda.zeebe.shared.management.WebFluxForwarder;
 import io.camunda.zeebe.util.FileUtil;
 import io.camunda.zeebe.util.error.FatalErrorHandler;
 import java.io.IOException;
-import java.util.Map;
 import org.apache.logging.log4j.LogManager;
 import org.slf4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -28,9 +26,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.builder.SpringApplicationBuilder;
 import org.springframework.boot.context.properties.ConfigurationPropertiesScan;
 import org.springframework.context.ApplicationListener;
-import org.springframework.context.annotation.Bean;
 import org.springframework.context.event.ContextClosedEvent;
-import org.springframework.web.server.WebFilter;
 
 /**
  * Entry point for the standalone broker application. By default, it enables the {@link
@@ -104,12 +100,6 @@ public class StandaloneBroker
       cleanupWorkingDirectory();
       LogManager.shutdown();
     }
-  }
-
-  @Bean
-  public WebFilter forwardedRoutes() {
-    final var routes = Map.of("/metrics", "/actuator/prometheus");
-    return new WebFluxForwarder(routes);
   }
 
   private void cleanupWorkingDirectory() {
