@@ -71,8 +71,9 @@ const InstancesBar: React.FC<Props> = ({
       </Wrapper>
       {showIncidentsBar && (
         <BarContainer>
-          <ActiveInstancesBar $isPassive={!hasActiveInstances} />
+          <ActiveInstancesBar $isPassive={!hasActiveInstances} $size={size} />
           <IncidentsBar
+            $size={size}
             style={{
               width: `${incidentsBarRatio}%`,
             }}

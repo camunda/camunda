@@ -8,8 +8,10 @@
 import styled, {css} from 'styled-components';
 import {styles} from '@carbon/elements';
 
+type Size = 'small' | 'medium' | 'large';
+
 type WrapperProps = {
-  $size: 'small' | 'medium' | 'large';
+  $size: Size;
 };
 
 const getFontStyle = ({$size}: WrapperProps) => {
@@ -110,16 +112,30 @@ const BarContainer = styled.div`
 
 type ActiveBarProps = {
   $isPassive?: boolean;
+  $size: Size;
 };
 
-const barStyles = css`
-  height: var(--cds-spacing-02);
-`;
+const getBarStyles = ($size: Size) => {
+  return css`
+    ${$size === 'small' &&
+    css`
+      height: var(--cds-spacing-01);
+    `}
+    ${$size === 'medium' &&
+    css`
+      height: var(--cds-spacing-02);
+    `}
+    ${$size === 'large' &&
+    css`
+      height: var(--cds-spacing-03);
+    `}
+  `;
+};
 
 const ActiveInstancesBar = styled.div<ActiveBarProps>`
-  ${({$isPassive}) => {
+  ${({$isPassive, $size}) => {
     return css`
-      ${barStyles}
+      ${getBarStyles($size)};
       background: ${$isPassive
         ? 'var(--cds-border-subtle-01)'
         : 'var(--cds-support-success)'};
@@ -127,11 +143,19 @@ const ActiveInstancesBar = styled.div<ActiveBarProps>`
   }}
 `;
 
-const IncidentsBar = styled.div`
-  ${barStyles}
-  position: absolute;
-  top: 0;
-  background: var(--cds-support-error);
+type IncidentsBarProps = {
+  $size: Size;
+};
+
+const IncidentsBar = styled.div<IncidentsBarProps>`
+  ${({$size}) => {
+    return css`
+      ${getBarStyles($size)};
+      position: absolute;
+      top: 0;
+      background: var(--cds-support-error);
+    `;
+  }}
 `;
 
 export {

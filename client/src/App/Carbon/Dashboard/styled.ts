@@ -69,9 +69,9 @@ const ErrorMessage = styled(BaseErrorMessage)`
 `;
 
 const Li = styled.li`
-  border-bottom: 1px solid var(--cds-border-subtle);
-  &:last-child {
-    border-bottom: none;
+  // override the hover color on expandable row's children
+  &:hover {
+    background-color: var(--cds-layer-hover);
   }
 `;
 

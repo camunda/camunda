@@ -6,11 +6,10 @@
  */
 
 import React from 'react';
-import {DataTable, TableBody, TableContainer, TableRow} from '@carbon/react';
+import {DataTable, TableBody, TableContainer} from '@carbon/react';
 import {
   Table,
   TableExpandRow,
-  TableCell,
   ExpandableTableCell,
   TableExpandedRow,
 } from './styled';
@@ -33,7 +32,7 @@ const PartiallyExpandableDataTable: React.FC<Props> = ({
 }) => {
   return (
     <DataTable
-      size="md"
+      size="sm"
       headers={headers}
       rows={rows}
       render={({
@@ -49,42 +48,32 @@ const PartiallyExpandableDataTable: React.FC<Props> = ({
               {rows.map((row, index) => {
                 const expandedContent = expandedContents?.[row.id];
 
-                if (
+                const isExpandable =
                   expandedContent !== undefined &&
-                  React.isValidElement(expandedContent)
-                ) {
-                  return (
-                    <React.Fragment key={row.id}>
-                      <TableExpandRow
-                        {...getRowProps({row})}
-                        data-testid={`${dataTestId}-${index}`}
-                      >
-                        {row.cells.map((cell) => (
-                          <ExpandableTableCell key={cell.id}>
-                            {cell.value}
-                          </ExpandableTableCell>
-                        ))}
-                      </TableExpandRow>
+                  React.isValidElement(expandedContent);
+
+                return (
+                  <React.Fragment key={row.id}>
+                    <TableExpandRow
+                      {...getRowProps({row})}
+                      data-testid={`${dataTestId}-${index}`}
+                      $isExpandable={isExpandable}
+                    >
+                      {row.cells.map((cell) => (
+                        <ExpandableTableCell key={cell.id}>
+                          {cell.value}
+                        </ExpandableTableCell>
+                      ))}
+                    </TableExpandRow>
+
+                    {isExpandable && (
                       <TableExpandedRow colSpan={headers.length + 1}>
                         {React.cloneElement(expandedContent, {
                           tabIndex: row.isExpanded ? 0 : -1,
                         })}
                       </TableExpandedRow>
-                    </React.Fragment>
-                  );
-                }
-
-                return (
-                  <TableRow
-                    {...getRowProps({row})}
-                    data-testid={`${dataTestId}-${index}`}
-                  >
-                    {row.cells.map((cell) => (
-                      <TableCell colSpan={headers.length + 1} key={cell.id}>
-                        {cell.value}
-                      </TableCell>
-                    ))}
-                  </TableRow>
+                    )}
+                  </React.Fragment>
                 );
               })}
             </TableBody>
