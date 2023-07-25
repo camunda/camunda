@@ -222,6 +222,38 @@
       <plugin>
         <groupId>org.jacoco</groupId>
         <artifactId>jacoco-maven-plugin</artifactId>
+        <executions>
+          <execution>
+            <goals>
+              <goal>prepare-agent</goal>
+            </goals>
+          </execution>
+          <execution>
+            <id>report</id>
+            <phase>prepare-package</phase>
+            <goals>
+              <goal>report</goal>
+            </goals>
+          </execution>
+        </executions>
+        <configuration>
+          <excludes>
+            <exclude>io/camunda/tasklist/webapp/es/enums/*</exclude>
+            <exclude>io/camunda/tasklist/webapp/config/*</exclude>
+            <exclude>io/camunda/tasklist/Application.class</exclude>
+            <exclude>io/camunda/tasklist/webapp/ForwardErrorController.class</exclude>
+            <exclude>io/camunda/tasklist/webapp/StartupBean.class</exclude>
+            <exclude>io/camunda/tasklist/webapp/IndexController.class</exclude>
+            <exclude>io/camunda/tasklist/WebappModuleConfiguration.class</exclude>
+            <exclude>io/camunda/tasklist/webapp/graphql/*</exclude>
+            <exclude>io/camunda/tasklist/webapp/graphql/mutation/*</exclude>
+            <exclude>io/camunda/tasklist/webapp/graphql/query/*</exclude>
+            <exclude>io/camunda/tasklist/webapp/graphql/entity/*</exclude>
+            <exclude>io/camunda/tasklist/webapp/management/dto/*</exclude>
+            <exclude>io/camunda/tasklist/webapp/es/dao/*</exclude>
+            <exclude>io/camunda/tasklist/webapp/es/dao/response/*</exclude>
+          </excludes>
+        </configuration>
       </plugin>
 
       <plugin>
