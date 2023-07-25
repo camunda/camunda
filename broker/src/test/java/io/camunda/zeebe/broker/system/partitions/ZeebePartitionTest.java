@@ -35,6 +35,7 @@ import io.camunda.zeebe.util.health.HealthStatus;
 import io.camunda.zeebe.util.sched.future.ActorFuture;
 import io.camunda.zeebe.util.sched.future.CompletableActorFuture;
 import io.camunda.zeebe.util.sched.testing.ControlledActorSchedulerRule;
+import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
@@ -60,6 +61,7 @@ public class ZeebePartitionTest {
   public void setup() {
     ctx = mock(PartitionStartupAndTransitionContextImpl.class);
     transition = spy(new PartitionTransitionImpl(List.of(new NoopTransitionStep())));
+    transition.updateTransitionContext(ctx);
 
     raft = mock(RaftPartition.class);
     when(raft.id()).thenReturn(new PartitionId("", 0));
@@ -353,6 +355,33 @@ public class ZeebePartitionTest {
   }
 
   @Test
+  public void shouldReportUnhealthyIfTransitionStepIsStuck() {
+    // given
+    final var transition = new PartitionTransitionImpl(List.of(new BlockingTransitionStep()));
+    final var partition = new ZeebePartition(ctx, transition, List.of(new NoopStartupStep()));
+
+    final var captor = ArgumentCaptor.forClass(ZeebePartitionHealth.class);
+
+    when(ctx.getCurrentRole()).thenReturn(Role.LEADER);
+    schedulerRule.submitActor(partition);
+
+    // when
+    partition.onNewRole(Role.LEADER, 1);
+    schedulerRule.getClock().addTime(Duration.ofMinutes(2));
+    schedulerRule.workUntilDone();
+
+    // then
+    verify(healthMonitor).registerComponent(any(), captor.capture());
+    final var zeebePartitionHealth = captor.getValue();
+
+    // then
+    final HealthReport healthReport = zeebePartitionHealth.getHealthReport();
+    assertThat(healthReport.getStatus()).isEqualTo(HealthStatus.UNHEALTHY);
+    assertThat(healthReport.getIssue().message())
+        .contains("Transition from LEADER on term 0 appears blocked");
+  }
+
+  @Test
   public void shouldReportUnhealthyPerDefault() {
     // given
     final var captor = ArgumentCaptor.forClass(ZeebePartitionHealth.class);
@@ -366,8 +395,9 @@ public class ZeebePartitionTest {
 
     final var zeebePartitionHealth = captor.getValue();
     final HealthReport healthReport = zeebePartitionHealth.getHealthReport();
+
     assertThat(healthReport.getStatus()).isEqualTo(HealthStatus.UNHEALTHY);
-    assertThat(healthReport.getIssue().message()).contains("Initial state");
+    assertThat(healthReport.getIssue().message()).contains("Services not installed");
   }
 
   @Test
@@ -468,6 +498,26 @@ public class ZeebePartitionTest {
     @Override
     public String getName() {
       return "noop-transition-step";
+    }
+  }
+
+  private static class BlockingTransitionStep implements PartitionTransitionStep {
+
+    @Override
+    public ActorFuture<Void> prepareTransition(
+        final PartitionTransitionContext context, final long term, final Role targetRole) {
+      return CompletableActorFuture.completed(null);
+    }
+
+    @Override
+    public ActorFuture<Void> transitionTo(
+        final PartitionTransitionContext context, final long term, final Role targetRole) {
+      return new CompletableActorFuture<>();
+    }
+
+    @Override
+    public String getName() {
+      return "BlockingTransitionStep";
     }
   }
 }

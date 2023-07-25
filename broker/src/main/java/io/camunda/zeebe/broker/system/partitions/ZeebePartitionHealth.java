@@ -22,28 +22,35 @@ class ZeebePartitionHealth implements HealthMonitorable {
 
   private final String name;
   private final Set<FailureListener> failureListeners = new HashSet<>();
-  private HealthReport healthReport = HealthReport.unhealthy(this).withMessage("Initial state");
+  private HealthReport healthReport;
+  private final PartitionTransition partitionTransition;
   /*
   Multiple factors determine ZeebePartition's health :
   * - servicesInstalled: indicates if role transition was successful and all services are installed
   * - diskSpaceAvailable
+  * - if the partition is not blocked in a transition step
   */
   private boolean servicesInstalled;
   // We assume disk space is available until otherwise notified
   private boolean diskSpaceAvailable = true;
 
-  public ZeebePartitionHealth(final int partitionId) {
+  public ZeebePartitionHealth(
+      final int partitionId, final PartitionTransition partitionTransition) {
     name = "ZeebePartition-" + partitionId;
+    this.partitionTransition = partitionTransition;
   }
 
   private void updateHealthStatus() {
-    final var previousStatus = healthReport;
-    if (previousStatus.getStatus() == HealthStatus.DEAD) {
+    final HealthReport previousStatus = healthReport;
+    if (healthReport != null && previousStatus.getStatus() == HealthStatus.DEAD) {
       return;
     }
 
+    final var partitionTransitionHealthIssue = partitionTransition.getHealthIssue();
     if (!diskSpaceAvailable) {
       healthReport = HealthReport.unhealthy(this).withMessage("Not enough disk space available");
+    } else if (partitionTransitionHealthIssue != null) {
+      healthReport = HealthReport.unhealthy(this).withIssue(partitionTransitionHealthIssue);
     } else if (!servicesInstalled) {
       healthReport = HealthReport.unhealthy(this).withMessage("Services not installed");
     } else {
@@ -88,6 +95,7 @@ class ZeebePartitionHealth implements HealthMonitorable {
 
   @Override
   public HealthReport getHealthReport() {
+    updateHealthStatus();
     return healthReport;
   }
 

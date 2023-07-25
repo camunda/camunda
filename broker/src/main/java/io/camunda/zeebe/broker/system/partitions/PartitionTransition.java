@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.broker.system.partitions;
 
+import io.camunda.zeebe.util.health.HealthIssue;
 import io.camunda.zeebe.util.sched.ConcurrencyControl;
 import io.camunda.zeebe.util.sched.future.ActorFuture;
 
@@ -51,4 +52,7 @@ public interface PartitionTransition {
    * @param transitionContext the context to be used
    */
   void updateTransitionContext(PartitionTransitionContext transitionContext);
+
+  /** @return null if transition is healthy or a {@link HealthIssue} if not. */
+  HealthIssue getHealthIssue();
 }

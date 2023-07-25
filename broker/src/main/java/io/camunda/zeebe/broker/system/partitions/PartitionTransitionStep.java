@@ -38,7 +38,7 @@ public interface PartitionTransitionStep {
    * <p>Steps are expected to pause any active requests and assume a neutral stance after this
    * method is called. After all steps have been notified, the first steps' {@code
    * transitionTo(...)} will be called, and then subsequently all other steps. This means that
-   * during the time between the call to thie method and the call to {@code transitionTo(...)} some
+   * during the time between the call to the method and the call to {@code transitionTo(...)} some
    * preceding steps may have already transitioned, but others are still waiting for transition.
    *
    * <p>To summarize, after this method is called, the partition is in an undefined state. And as

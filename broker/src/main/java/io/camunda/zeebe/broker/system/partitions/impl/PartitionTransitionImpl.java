@@ -14,6 +14,7 @@ import io.camunda.zeebe.broker.Loggers;
 import io.camunda.zeebe.broker.system.partitions.PartitionTransition;
 import io.camunda.zeebe.broker.system.partitions.PartitionTransitionContext;
 import io.camunda.zeebe.broker.system.partitions.PartitionTransitionStep;
+import io.camunda.zeebe.util.health.HealthIssue;
 import io.camunda.zeebe.util.sched.ConcurrencyControl;
 import io.camunda.zeebe.util.sched.future.ActorFuture;
 import java.util.ArrayList;
@@ -59,6 +60,14 @@ public final class PartitionTransitionImpl implements PartitionTransition {
   @Override
   public void updateTransitionContext(final PartitionTransitionContext transitionContext) {
     context = transitionContext;
+  }
+
+  @Override
+  public HealthIssue getHealthIssue() {
+    if (currentTransition != null) {
+      return currentTransition.getHealthIssue();
+    }
+    return null;
   }
 
   public ActorFuture<Void> transitionTo(final long term, final Role role) {
