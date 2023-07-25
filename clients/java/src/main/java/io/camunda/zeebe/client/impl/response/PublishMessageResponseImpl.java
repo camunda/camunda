@@ -30,4 +30,10 @@ public final class PublishMessageResponseImpl implements PublishMessageResponse 
   public long getMessageKey() {
     return key;
   }
+
+  @Override
+  public String getTenantId() {
+    // todo(#13559): replace dummy implementation
+    return "";
+  }
 }
