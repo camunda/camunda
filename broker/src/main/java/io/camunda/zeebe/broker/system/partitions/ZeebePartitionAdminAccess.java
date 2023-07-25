@@ -11,9 +11,9 @@ import static java.util.Objects.requireNonNull;
 
 import io.camunda.zeebe.broker.Loggers;
 import io.camunda.zeebe.broker.partitioning.PartitionAdminAccess;
+import io.camunda.zeebe.engine.api.records.RecordBatchEntry;
 import io.camunda.zeebe.engine.state.processing.DbBannedInstanceState;
-import io.camunda.zeebe.logstreams.log.LogStreamWriter;
-import io.camunda.zeebe.logstreams.log.LogStreamWriter.WriteFailure;
+import io.camunda.zeebe.logstreams.log.LogStreamRecordWriter;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.impl.record.value.error.ErrorRecord;
 import io.camunda.zeebe.protocol.record.RecordType;
@@ -22,8 +22,6 @@ import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.ErrorIntent;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
-import io.camunda.zeebe.stream.impl.records.RecordBatchEntry;
-import io.camunda.zeebe.util.Either;
 import java.io.IOException;
 import java.util.Optional;
 import org.slf4j.Logger;
@@ -160,7 +158,7 @@ class ZeebePartitionAdminAccess implements PartitionAdminAccess {
           try {
             adminControl
                 .getLogStream()
-                .newLogStreamWriter()
+                .newLogStreamRecordWriter()
                 .onComplete(
                     (writer, error) -> {
                       if (error != null) {
@@ -182,24 +180,25 @@ class ZeebePartitionAdminAccess implements PartitionAdminAccess {
   }
 
   private void writeErrorEventAndBanInstance(
-      final long processInstanceKey, final LogStreamWriter writer, final ActorFuture<Void> future) {
-    tryWriteErrorEvent(writer, processInstanceKey)
-        .ifRightOrLeft(
-            (position) -> {
-              LOG.info("Wrote error record on position {}", position);
-              // we only want to make the state change after we wrote the event
-              banInstanceInState(processInstanceKey);
-              LOG.info("Successfully banned instance with key {}", processInstanceKey);
-              future.complete(null);
-            },
-            writeFailure -> {
-              final String errorMsg =
-                  String.format(
-                      "Failure %s on writing error record to ban instance %d",
-                      writeFailure, processInstanceKey);
-              future.completeExceptionally(new IllegalStateException(errorMsg));
-              LOG.error(errorMsg);
-            });
+      final long processInstanceKey,
+      final LogStreamRecordWriter writer,
+      final ActorFuture<Void> future) {
+
+    final long position = tryWriteErrorEvent(writer, processInstanceKey);
+
+    if (position >= 0) {
+      // successful write operation
+      LOG.info("Wrote error record on position {}", position);
+      // we only want to make the state change after we wrote the event
+      banInstanceInState(processInstanceKey);
+      LOG.info("Successfully banned instance with key {}", processInstanceKey);
+      future.complete(null);
+    } else {
+      final String errorMsg =
+          String.format("Failure on writing error record to ban instance %d", processInstanceKey);
+      future.completeExceptionally(new IllegalStateException(errorMsg));
+      LOG.error(errorMsg);
+    }
   }
 
   private void banInstanceInState(final long processInstanceKey) {
@@ -210,8 +209,8 @@ class ZeebePartitionAdminAccess implements PartitionAdminAccess {
     dbBannedInstanceState.banProcessInstance(processInstanceKey);
   }
 
-  private static Either<WriteFailure, Long> tryWriteErrorEvent(
-      final LogStreamWriter writer, final long processInstanceKey) {
+  private static long tryWriteErrorEvent(
+      final LogStreamRecordWriter writer, final long processInstanceKey) {
     final var errorRecord = new ErrorRecord();
     errorRecord.initErrorRecord(new Exception("Instance was banned from outside."), -1);
     errorRecord.setProcessInstanceKey(processInstanceKey);
@@ -221,11 +220,20 @@ class ZeebePartitionAdminAccess implements PartitionAdminAccess {
             .recordType(RecordType.EVENT)
             .valueType(ValueType.ERROR)
             .intent(ErrorIntent.CREATED)
-            .recordVersion(RecordMetadata.DEFAULT_RECORD_VERSION)
             .rejectionType(RejectionType.NULL_VAL)
             .rejectionReason("");
+
     final var entry =
-        RecordBatchEntry.createEntry(processInstanceKey, recordMetadata, -1, errorRecord);
-    return writer.tryWrite(entry);
+        RecordBatchEntry.createEntry(
+            processInstanceKey,
+            -1,
+            recordMetadata.getRecordType(),
+            recordMetadata.getIntent(),
+            recordMetadata.getRejectionType(),
+            recordMetadata.getRejectionReason(),
+            recordMetadata.getValueType(),
+            errorRecord);
+
+    return writer.metadataWriter(recordMetadata).valueWriter(entry.recordValue()).tryWrite();
   }
 }

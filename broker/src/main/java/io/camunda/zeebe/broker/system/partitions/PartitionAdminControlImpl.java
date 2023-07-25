@@ -12,7 +12,7 @@ import io.camunda.zeebe.broker.system.partitions.impl.AsyncSnapshotDirector;
 import io.camunda.zeebe.broker.system.partitions.impl.PartitionProcessingState;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.logstreams.log.LogStream;
-import io.camunda.zeebe.stream.impl.StreamProcessor;
+import io.camunda.zeebe.streamprocessor.StreamProcessor;
 import java.io.IOException;
 import java.util.function.Supplier;
 
