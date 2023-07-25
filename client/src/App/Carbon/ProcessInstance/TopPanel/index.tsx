@@ -31,12 +31,12 @@ import {DiagramShell} from 'modules/components/Carbon/DiagramShell';
 import {computed} from 'mobx';
 import {OverlayPosition} from 'bpmn-js/lib/NavigatedViewer';
 import {Diagram} from 'modules/components/Carbon/Diagram';
-import {StatisticsOverlay} from 'modules/components/StatisticsOverlay';
 import {MetadataPopover} from 'App/ProcessInstance/TopPanel/MetadataPopover';
 import {ModificationBadgeOverlay} from 'App/ProcessInstance/TopPanel/ModificationBadgeOverlay';
 import {processInstanceDetailsDiagramStore} from 'modules/stores/processInstanceDetailsDiagram';
 import {ModificationInfoBanner} from 'App/ProcessInstance/TopPanel/ModificationInfoBanner';
 import {ModificationDropdown} from './ModificationDropdown';
+import {StateOverlay} from 'modules/components/Carbon/StateOverlay';
 
 const OVERLAY_TYPE_STATE = 'flowNodeState';
 const OVERLAY_TYPE_MODIFICATIONS_BADGE = 'modificationsBadge';
@@ -239,9 +239,9 @@ const TopPanel: React.FC = observer(() => {
                 };
 
                 return (
-                  <StatisticsOverlay
+                  <StateOverlay
                     key={`${overlay.flowNodeId}-${payload.flowNodeState}`}
-                    flowNodeState={payload.flowNodeState}
+                    state={payload.flowNodeState}
                     count={payload.count}
                     container={overlay.container}
                     isFaded={modificationsStore.hasPendingCancelOrMoveModification(
