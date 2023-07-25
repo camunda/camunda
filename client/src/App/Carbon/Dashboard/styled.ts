@@ -61,10 +61,26 @@ const TileTitle = styled.h2`
 const LinkWrapper = styled(Link)`
   display: block;
   text-decoration: none !important;
+  padding: var(--cds-spacing-03) 0;
 `;
 
 const ErrorMessage = styled(BaseErrorMessage)`
   margin: auto;
 `;
 
-export {Grid, ScrollableContent, Tile, TileTitle, LinkWrapper, ErrorMessage};
+const Li = styled.li`
+  border-bottom: 1px solid var(--cds-border-subtle);
+  &:last-child {
+    border-bottom: none;
+  }
+`;
+
+export {
+  Grid,
+  ScrollableContent,
+  Tile,
+  TileTitle,
+  LinkWrapper,
+  ErrorMessage,
+  Li,
+};

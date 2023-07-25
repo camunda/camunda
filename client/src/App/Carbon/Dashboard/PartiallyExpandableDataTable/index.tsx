@@ -6,22 +6,21 @@
  */
 
 import React from 'react';
+import {DataTable, TableBody, TableContainer, TableRow} from '@carbon/react';
 import {
-  DataTable,
-  TableBody,
-  TableContainer,
+  Table,
+  TableExpandRow,
+  TableCell,
+  ExpandableTableCell,
   TableExpandedRow,
-  TableRow,
-  TableCell as BaseTableCell,
-} from '@carbon/react';
-import {Table, TableExpandRow, TableCell} from './styled';
+} from './styled';
 
 type Props = {
   headers: {key: string; header: string; width?: string}[];
   rows: React.ComponentProps<typeof DataTable>['rows'];
   className?: string;
   expandedContents?: {
-    [key: string]: React.ReactElement;
+    [key: string]: React.ReactElement<{tabIndex: number}>;
   };
 };
 
@@ -32,7 +31,7 @@ const PartiallyExpandableDataTable: React.FC<Props> = ({
 }) => {
   return (
     <DataTable
-      size="sm"
+      size="md"
       headers={headers}
       rows={rows}
       render={({
@@ -56,13 +55,15 @@ const PartiallyExpandableDataTable: React.FC<Props> = ({
                     <React.Fragment key={row.id}>
                       <TableExpandRow {...getRowProps({row})}>
                         {row.cells.map((cell) => (
-                          <BaseTableCell key={cell.id}>
+                          <ExpandableTableCell key={cell.id}>
                             {cell.value}
-                          </BaseTableCell>
+                          </ExpandableTableCell>
                         ))}
                       </TableExpandRow>
                       <TableExpandedRow colSpan={headers.length + 1}>
-                        {expandedContent}
+                        {React.cloneElement(expandedContent, {
+                          tabIndex: row.isExpanded ? 0 : -1,
+                        })}
                       </TableExpandedRow>
                     </React.Fragment>
                   );

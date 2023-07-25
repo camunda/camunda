@@ -5,12 +5,13 @@
  * except in compliance with the proprietary license.
  */
 
-import styled from 'styled-components';
+import styled, {css} from 'styled-components';
 import {
   TableCell as BaseTableCell,
   Table as BaseTable,
   TableExpandRow as BaseTableExpandRow,
   DataTableSkeleton as BaseDataTableSkeleton,
+  TableExpandedRow as BaseTableExpandedRow,
 } from '@carbon/react';
 import {ARROW_ICON_WIDTH} from 'modules/constants';
 
@@ -29,10 +30,20 @@ const TableExpandRow = styled(BaseTableExpandRow)`
   }
 `;
 
+const tableCellStyles = css`
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+`;
+
 const TableCell = styled(BaseTableCell)`
+  ${tableCellStyles}
   padding-left: calc(
     ${ARROW_ICON_WIDTH} + ${DEFAULT_TABLE_CELL_PADDING}
   ) !important;
+`;
+
+const ExpandableTableCell = styled(BaseTableCell)`
+  ${tableCellStyles}
 `;
 
 const DataTableSkeleton = styled(BaseDataTableSkeleton)`
@@ -45,4 +56,17 @@ const DataTableSkeleton = styled(BaseDataTableSkeleton)`
   }
 `;
 
-export {TableCell, Table, TableExpandRow, DataTableSkeleton};
+const TableExpandedRow = styled(BaseTableExpandedRow)`
+  td {
+    ${tableCellStyles}
+  }
+`;
+
+export {
+  TableCell,
+  ExpandableTableCell,
+  Table,
+  TableExpandRow,
+  DataTableSkeleton,
+  TableExpandedRow,
+};

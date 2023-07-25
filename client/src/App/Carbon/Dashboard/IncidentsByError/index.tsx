@@ -20,6 +20,7 @@ import {Skeleton} from '../PartiallyExpandableDataTable/Skeleton';
 import {LinkWrapper, ErrorMessage} from '../styled';
 import {EmptyState} from 'modules/components/Carbon/EmptyState';
 import {ReactComponent as EmptyStateProcessIncidents} from 'modules/components/Icon/empty-state-process-incidents.svg';
+import {Details} from './Details';
 
 const IncidentsByError: React.FC = observer(() => {
   const location = useLocation();
@@ -86,9 +87,11 @@ const IncidentsByError: React.FC = observer(() => {
         };
       })}
       expandedContents={incidents.reduce(
-        (accumulator, {errorMessage}) => ({
+        (accumulator, {errorMessage, processes}) => ({
           ...accumulator,
-          [errorMessage]: <div>{errorMessage}</div>,
+          [errorMessage]: (
+            <Details errorMessage={errorMessage} processes={processes} />
+          ),
         }),
         {},
       )}

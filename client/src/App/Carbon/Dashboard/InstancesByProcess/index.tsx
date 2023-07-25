@@ -20,6 +20,7 @@ import {Skeleton} from '../PartiallyExpandableDataTable/Skeleton';
 import {EmptyState} from 'modules/components/Carbon/EmptyState';
 import {ReactComponent as EmptyStateProcessInstancesByName} from 'modules/components/Icon/empty-state-process-instances-by-name.svg';
 import {authenticationStore} from 'modules/stores/authentication';
+import {Details} from './Details';
 
 const InstancesByProcess: React.FC = observer(() => {
   const {
@@ -83,7 +84,7 @@ const InstancesByProcess: React.FC = observer(() => {
           processes,
         } = item;
         const name = processName || bpmnProcessId;
-        const version = processes[0]!.version;
+        const version = processes.length === 1 ? processes[0]!.version : 'all';
         const totalInstancesCount =
           instancesWithActiveIncidentsCount + activeInstancesCount;
 
@@ -142,7 +143,12 @@ const InstancesByProcess: React.FC = observer(() => {
 
           return {
             ...accumulator,
-            [bpmnProcessId]: <div>{processName || bpmnProcessId}</div>,
+            [bpmnProcessId]: (
+              <Details
+                processName={processName || bpmnProcessId}
+                processes={processes}
+              />
+            ),
           };
         },
         {},
