@@ -105,4 +105,10 @@ public class EvaluateDecisionResponseImpl implements EvaluateDecisionResponse {
   public String getFailureMessage() {
     return failureMessage;
   }
+
+  @Override
+  public String getTenantId() {
+    // todo(#13557): replace dummy implementation
+    return "";
+  }
 }
