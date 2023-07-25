@@ -32,11 +32,11 @@ import {computed} from 'mobx';
 import {OverlayPosition} from 'bpmn-js/lib/NavigatedViewer';
 import {Diagram} from 'modules/components/Carbon/Diagram';
 import {StatisticsOverlay} from 'modules/components/StatisticsOverlay';
-import {ModificationDropdown} from 'App/ProcessInstance/TopPanel/ModificationDropdown';
 import {MetadataPopover} from 'App/ProcessInstance/TopPanel/MetadataPopover';
 import {ModificationBadgeOverlay} from 'App/ProcessInstance/TopPanel/ModificationBadgeOverlay';
 import {processInstanceDetailsDiagramStore} from 'modules/stores/processInstanceDetailsDiagram';
 import {ModificationInfoBanner} from 'App/ProcessInstance/TopPanel/ModificationInfoBanner';
+import {ModificationDropdown} from './ModificationDropdown';
 
 const OVERLAY_TYPE_STATE = 'flowNodeState';
 const OVERLAY_TYPE_MODIFICATIONS_BADGE = 'modificationsBadge';
