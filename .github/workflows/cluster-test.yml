@@ -35,6 +35,11 @@ jobs:
           java-version: 11
           distribution: zulu
 
+    - name: Install extra Dependencies
+      run: |
+        sudo apt update -qq
+        sudo apt install -y netcat
+
     - name: Authenticate to Google Cloud
       uses: google-github-actions/auth@v1
       with:
