@@ -313,6 +313,7 @@ public class ElasticsearchWriterUtil {
                                                          BulkRequest bulkRequest,
                                                          String itemName) {
     if (bulkRequest.numberOfActions() > 0) {
+      log.info("Executing bulk request on {} items of {}", bulkRequest.requests().size(), itemName);
       try {
         BulkResponse bulkResponse = esClient.bulk(bulkRequest);
         if (bulkResponse.hasFailures()) {

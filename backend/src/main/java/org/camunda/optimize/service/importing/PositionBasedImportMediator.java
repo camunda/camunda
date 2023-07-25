@@ -106,7 +106,12 @@ public abstract class PositionBasedImportMediator<T extends PositionBasedImportI
   protected boolean importNextPagePositionBased(final List<DTO> entitiesNextPage,
                                                 final Runnable importCompleteCallback) {
     importIndexHandler.updateLastImportExecutionTimestamp(LocalDateUtil.getCurrentDateTime());
-    logger.info("Records of type {} imported in page: {}", getRecordType(), entitiesNextPage.size());
+    logger.info(
+      "Records of type {} from partition {} imported in page: {}",
+      getRecordType(),
+      getPartitionId(),
+      entitiesNextPage.size()
+    );
     if (!entitiesNextPage.isEmpty()) {
       final DTO lastImportedEntity = entitiesNextPage.get(entitiesNextPage.size() - 1);
       final long currentPageLastEntityPosition = lastImportedEntity.getPosition();
