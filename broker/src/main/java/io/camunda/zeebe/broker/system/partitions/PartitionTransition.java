@@ -9,6 +9,7 @@ package io.camunda.zeebe.broker.system.partitions;
 
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
+import io.camunda.zeebe.util.health.HealthIssue;
 
 public interface PartitionTransition {
 
@@ -51,4 +52,9 @@ public interface PartitionTransition {
    * @param transitionContext the context to be used
    */
   void updateTransitionContext(PartitionTransitionContext transitionContext);
+
+  /**
+   * @return null if transition is healthy or a {@link HealthIssue} if not.
+   */
+  HealthIssue getHealthIssue();
 }
