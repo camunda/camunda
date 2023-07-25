@@ -14,6 +14,7 @@ const Container = styled.div`
 `;
 
 const DiagramPanel = styled.div`
+  display: flex;
   position: relative;
   flex-grow: 1;
 `;

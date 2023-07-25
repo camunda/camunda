@@ -18,9 +18,43 @@ import {tracking} from 'modules/tracking';
 import {modificationsStore} from 'modules/stores/modifications';
 import {Container, DiagramPanel} from './styled';
 import {IncidentsWrapper} from '../IncidentsWrapper';
+import {
+  CANCELED_BADGE,
+  MODIFICATIONS,
+  ACTIVE_BADGE,
+  INCIDENTS_BADGE,
+  COMPLETED_BADGE,
+} from 'modules/bpmn-js/badgePositions';
+import {processInstanceDetailsStatisticsStore} from 'modules/stores/processInstanceDetailsStatistics';
 import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
+import {DiagramShell} from 'modules/components/Carbon/DiagramShell';
+import {computed} from 'mobx';
+import {OverlayPosition} from 'bpmn-js/lib/NavigatedViewer';
+import {Diagram} from 'modules/components/Carbon/Diagram';
+import {StatisticsOverlay} from 'modules/components/StatisticsOverlay';
+import {ModificationDropdown} from 'App/ProcessInstance/TopPanel/ModificationDropdown';
+import {MetadataPopover} from 'App/ProcessInstance/TopPanel/MetadataPopover';
+import {ModificationBadgeOverlay} from 'App/ProcessInstance/TopPanel/ModificationBadgeOverlay';
+import {processInstanceDetailsDiagramStore} from 'modules/stores/processInstanceDetailsDiagram';
+import {ModificationInfoBanner} from 'App/ProcessInstance/TopPanel/ModificationInfoBanner';
+
+const OVERLAY_TYPE_STATE = 'flowNodeState';
+const OVERLAY_TYPE_MODIFICATIONS_BADGE = 'modificationsBadge';
+
+const overlayPositions = {
+  active: ACTIVE_BADGE,
+  incidents: INCIDENTS_BADGE,
+  canceled: CANCELED_BADGE,
+  completed: COMPLETED_BADGE,
+} as const;
+
+type ModificationBadgePayload = {
+  newTokenCount: number;
+  cancelledTokenCount: number;
+};
 
 const TopPanel: React.FC = observer(() => {
+  const {selectableFlowNodes} = processInstanceDetailsStatisticsStore;
   const {processInstanceId = ''} = useProcessInstancePageParams();
   const flowNodeSelection = flowNodeSelectionStore.state.selection;
   const [isInTransition, setIsInTransition] = useState(false);
@@ -36,7 +70,52 @@ const TopPanel: React.FC = observer(() => {
     };
   }, [processInstanceId]);
 
+  const flowNodeStateOverlays =
+    processInstanceDetailsStatisticsStore.flowNodeStatistics.map(
+      ({flowNodeState, count, flowNodeId}) => ({
+        payload: {flowNodeState, count},
+        type: OVERLAY_TYPE_STATE,
+        flowNodeId,
+        position: overlayPositions[flowNodeState],
+      }),
+    );
+
+  const modificationBadgesPerFlowNode = computed(() =>
+    Object.entries(modificationsStore.modificationsByFlowNode).reduce<
+      {
+        flowNodeId: string;
+        type: string;
+        payload: ModificationBadgePayload;
+        position: OverlayPosition;
+      }[]
+    >((badges, [flowNodeId, tokens]) => {
+      return [
+        ...badges,
+        {
+          flowNodeId,
+          type: OVERLAY_TYPE_MODIFICATIONS_BADGE,
+          position: MODIFICATIONS,
+          payload: {
+            newTokenCount: tokens.newTokens,
+            cancelledTokenCount: tokens.visibleCancelledTokens,
+          },
+        },
+      ];
+    }, []),
+  );
+
+  const {items: processedSequenceFlows} = sequenceFlowsStore.state;
   const {processInstance} = processInstanceDetailsStore.state;
+  const stateOverlays = diagramOverlaysStore.state.overlays.filter(
+    ({type}) => type === OVERLAY_TYPE_STATE,
+  );
+  const modificationBadgeOverlays = diagramOverlaysStore.state.overlays.filter(
+    ({type}) => type === OVERLAY_TYPE_MODIFICATIONS_BADGE,
+  );
+  const {
+    state: {status, xml},
+    modifiableFlowNodes,
+  } = processInstanceDetailsDiagramStore;
 
   const {
     setIncidentBarOpen,
@@ -60,6 +139,16 @@ const TopPanel: React.FC = observer(() => {
     }
   }, [flowNodeSelection?.flowNodeId, isModificationModeEnabled]);
 
+  const getStatus = () => {
+    if (['initial', 'first-fetch', 'fetching'].includes(status)) {
+      return 'loading';
+    }
+    if (status === 'error') {
+      return 'error';
+    }
+    return 'content';
+  };
+
   return (
     <Container>
       {incidentsCount > 0 && (
@@ -80,12 +169,105 @@ const TopPanel: React.FC = observer(() => {
           isOpen={incidentsStore.state.isIncidentBarOpen}
         />
       )}
-
+      {modificationsStore.state.status === 'moving-token' && (
+        <ModificationInfoBanner
+          text="Select the target flow node in the diagram"
+          button={{
+            onClick: () => modificationsStore.finishMovingToken(),
+            label: 'Discard',
+          }}
+        />
+      )}
+      {modificationsStore.isModificationModeEnabled &&
+        flowNodeSelectionStore.selectedRunningInstanceCount > 1 && (
+          <ModificationInfoBanner text="Flow node has multiple instances. To select one, use the instance history tree below." />
+        )}
+      {modificationsStore.state.status === 'adding-token' && (
+        <ModificationInfoBanner
+          text="Flow node has multiple parent scopes. Please select parent node from Instance History to Add."
+          button={{
+            onClick: () => modificationsStore.finishAddingToken(),
+            label: 'Discard',
+          }}
+        />
+      )}
       <DiagramPanel>
+        <DiagramShell status={getStatus()}>
+          {xml !== null && (
+            <Diagram
+              xml={xml}
+              selectableFlowNodes={
+                isModificationModeEnabled
+                  ? modifiableFlowNodes
+                  : selectableFlowNodes
+              }
+              selectedFlowNodeId={flowNodeSelection?.flowNodeId}
+              onFlowNodeSelection={(flowNodeId, isMultiInstance) => {
+                if (modificationsStore.state.status === 'moving-token') {
+                  flowNodeSelectionStore.clearSelection();
+                  modificationsStore.finishMovingToken(flowNodeId);
+                } else {
+                  if (modificationsStore.state.status !== 'adding-token') {
+                    flowNodeSelectionStore.selectFlowNode({
+                      flowNodeId,
+                      isMultiInstance,
+                    });
+                  }
+                }
+              }}
+              overlaysData={
+                isModificationModeEnabled
+                  ? [
+                      ...flowNodeStateOverlays,
+                      ...modificationBadgesPerFlowNode.get(),
+                    ]
+                  : flowNodeStateOverlays
+              }
+              selectedFlowNodeOverlay={
+                isModificationModeEnabled ? (
+                  <ModificationDropdown />
+                ) : (
+                  !isIncidentBarOpen && <MetadataPopover />
+                )
+              }
+              highlightedSequenceFlows={processedSequenceFlows}
+            >
+              {stateOverlays.map((overlay) => {
+                const payload = overlay.payload as {
+                  flowNodeState: FlowNodeState;
+                  count: number;
+                };
+
+                return (
+                  <StatisticsOverlay
+                    key={`${overlay.flowNodeId}-${payload.flowNodeState}`}
+                    flowNodeState={payload.flowNodeState}
+                    count={payload.count}
+                    container={overlay.container}
+                    isFaded={modificationsStore.hasPendingCancelOrMoveModification(
+                      overlay.flowNodeId,
+                    )}
+                  />
+                );
+              })}
+              {modificationBadgeOverlays?.map((overlay) => {
+                const payload = overlay.payload as ModificationBadgePayload;
+
+                return (
+                  <ModificationBadgeOverlay
+                    key={overlay.flowNodeId}
+                    container={overlay.container}
+                    newTokenCount={payload.newTokenCount}
+                    cancelledTokenCount={payload.cancelledTokenCount}
+                  />
+                );
+              })}
+            </Diagram>
+          )}
+        </DiagramShell>
         {processInstance?.state === 'INCIDENT' && (
           <IncidentsWrapper setIsInTransition={setIsInTransition} />
         )}
-        diagram
       </DiagramPanel>
     </Container>
   );
