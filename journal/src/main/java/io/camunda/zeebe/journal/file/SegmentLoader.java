@@ -11,7 +11,6 @@ import io.camunda.zeebe.journal.CorruptedJournalException;
 import io.camunda.zeebe.journal.JournalException;
 import io.camunda.zeebe.util.FileUtil;
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
@@ -20,6 +19,7 @@ import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
+import org.agrona.IoUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -151,27 +151,11 @@ final class SegmentLoader {
 
     try (final FileChannel channel = FileChannel.open(file, StandardOpenOption.READ)) {
       final var fileSize = Files.size(file);
-      final byte version = readVersion(channel, fileName);
-      final int length = SegmentDescriptor.getEncodingLengthForVersion(version);
-      if (fileSize < length) {
-        throw new CorruptedJournalException(
-            String.format(
-                "Expected segment '%s' with version %d to be at least %d bytes long but it only has %d.",
-                fileName, version, length, fileSize));
-      }
-
-      final ByteBuffer buffer = ByteBuffer.allocate(length);
-      final int readBytes = channel.read(buffer, 0);
-
-      if (readBytes != -1 && readBytes < length) {
-        throw new JournalException(
-            String.format(
-                "Expected to read %d bytes of segment '%s' with %d version but only read %d bytes.",
-                length, fileName, version, readBytes));
-      }
-
-      buffer.flip();
-      return new SegmentDescriptor(buffer);
+      // We don't know the length of segment descriptor, so we let
+      final var buffer = channel.map(MapMode.READ_ONLY, 0, fileSize);
+      final var descriptor = new SegmentDescriptor(buffer);
+      IoUtil.unmap(buffer);
+      return descriptor;
     } catch (final IndexOutOfBoundsException e) {
       throw new JournalException(
           String.format(
@@ -183,25 +167,6 @@ final class SegmentLoader {
     } catch (final IOException e) {
       throw new JournalException(e);
     }
-  }
-
-  private byte readVersion(final FileChannel channel, final String fileName) throws IOException {
-    final ByteBuffer buffer = ByteBuffer.allocate(1);
-    final int readBytes = channel.read(buffer);
-
-    if (readBytes == 0) {
-      throw new JournalException(
-          String.format(
-              "Expected to read the version byte from segment '%s' but nothing was read.",
-              fileName));
-    } else if (readBytes == -1) {
-      throw new CorruptedJournalException(
-          String.format(
-              "Expected to read the version byte from segment '%s' but got EOF instead.",
-              fileName));
-    }
-
-    return buffer.get(0);
   }
 
   private MappedByteBuffer mapNewSegment(final Path segmentPath, final SegmentDescriptor descriptor)
