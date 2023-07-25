@@ -32,7 +32,7 @@ import {computed} from 'mobx';
 import {OverlayPosition} from 'bpmn-js/lib/NavigatedViewer';
 import {Diagram} from 'modules/components/Carbon/Diagram';
 import {MetadataPopover} from 'App/ProcessInstance/TopPanel/MetadataPopover';
-import {ModificationBadgeOverlay} from 'App/ProcessInstance/TopPanel/ModificationBadgeOverlay';
+import {ModificationBadgeOverlay} from './ModificationBadgeOverlay';
 import {processInstanceDetailsDiagramStore} from 'modules/stores/processInstanceDetailsDiagram';
 import {ModificationInfoBanner} from 'App/ProcessInstance/TopPanel/ModificationInfoBanner';
 import {ModificationDropdown} from './ModificationDropdown';
