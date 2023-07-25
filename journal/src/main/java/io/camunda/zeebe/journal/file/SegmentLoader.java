@@ -9,6 +9,7 @@ package io.camunda.zeebe.journal.file;
 
 import io.camunda.zeebe.journal.CorruptedJournalException;
 import io.camunda.zeebe.journal.JournalException;
+import io.camunda.zeebe.journal.file.SegmentDescriptor.SegmentDescriptorReader;
 import io.camunda.zeebe.util.FileUtil;
 import java.io.IOException;
 import java.nio.ByteOrder;
@@ -153,7 +154,7 @@ final class SegmentLoader {
       final var fileSize = Files.size(file);
       // We don't know the length of segment descriptor, so we let
       final var buffer = channel.map(MapMode.READ_ONLY, 0, fileSize);
-      final var descriptor = new SegmentDescriptor(buffer);
+      final var descriptor = new SegmentDescriptorReader().readFrom(buffer);
       IoUtil.unmap(buffer);
       return descriptor;
     } catch (final IndexOutOfBoundsException e) {
