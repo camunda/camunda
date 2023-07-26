@@ -141,12 +141,6 @@ jobs:
       - trivy-check
     runs-on: ubuntu-latest
     steps:
-      - name: Download Test Results
-        uses: actions/download-artifact@v2
-        with:
-          name: trivy-test-results-*
-          path: test-results
-
       - uses: actions/checkout@v3
 
       - name: Post results on slack
