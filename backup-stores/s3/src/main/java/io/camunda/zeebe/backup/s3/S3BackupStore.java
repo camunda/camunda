@@ -31,7 +31,6 @@ import io.camunda.zeebe.backup.s3.util.AsyncAggregatingSubscriber;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Path;
-import java.time.Duration;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
@@ -402,13 +401,10 @@ public final class S3BackupStore implements BackupStore {
 
     builder.httpClient(
         NettyNioAsyncHttpClient.builder()
-            // Default is 50: `SdkHttpConfigurationOption.MAX_CONNECTIONS`.
-            .maxConcurrency(config.maxConcurrentConnections().orElse(50))
+            .maxConcurrency(config.maxConcurrentConnections())
             // We'd rather wait longer for a connection than have a failed backup. This helps in
             // smoothing out spikes when taking a backup.
-            // Default is 10s: `SdkHttpConfigurationOption.DEFAULT_CONNECTION_ACQUIRE_TIMEOUT`.
-            .connectionAcquisitionTimeout(
-                config.connectionAcquisitionTimeout().orElse(Duration.ofSeconds(10)))
+            .connectionAcquisitionTimeout(config.connectionAcquisitionTimeout())
             .build());
 
     builder.overrideConfiguration(cfg -> cfg.retryPolicy(RetryMode.ADAPTIVE));
