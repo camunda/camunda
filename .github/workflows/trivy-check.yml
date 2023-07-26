@@ -1,7 +1,6 @@
 name: Trivy check docker image
 
 on:
-  push:
   workflow_dispatch:
   schedule:
     - cron: "0 2 * * 1-5"
@@ -135,7 +134,7 @@ jobs:
 
   post-results-on-slack:
     name: Post results on slack
-    # if: failure()
+    if: failure()
     needs:
       - trivy-check
     runs-on: ubuntu-latest
