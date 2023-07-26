@@ -54,15 +54,10 @@ final class FileSetManager {
     // We guarantee that there's always available connections by restricting the number of
     // concurrent uploads to half (rounding up) of the number of available connections.
     // This prevents ConnectionAcquisitionTimeout.
-    uploadLimit =
-        new Semaphore(
-            (int)
-                Math.ceil(
-                    (double)
-                            (config
-                                .maxConcurrentConnections()
-                                .orElse(DEFAULT_PARALLEL_UPLOAD_TOKENS))
-                        / 2));
+    final var maxConnections =
+        config.maxConcurrentConnections().orElse(DEFAULT_PARALLEL_UPLOAD_TOKENS);
+
+    uploadLimit = new Semaphore(Math.max(1, maxConnections / 2));
   }
 
   CompletableFuture<FileSet> save(final String prefix, final NamedFileSet files) {
