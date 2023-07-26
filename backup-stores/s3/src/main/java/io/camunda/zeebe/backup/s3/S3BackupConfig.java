@@ -46,8 +46,8 @@ public record S3BackupConfig(
     boolean forcePathStyleAccess,
     Optional<String> compressionAlgorithm,
     Optional<String> basePath,
-    Optional<Integer> maxConcurrentConnections,
-    Optional<Duration> connectionAcquisitionTimeout) {
+    Integer maxConcurrentConnections,
+    Duration connectionAcquisitionTimeout) {
 
   public S3BackupConfig {
     if (bucketName == null || bucketName.isEmpty()) {
@@ -90,8 +90,10 @@ public record S3BackupConfig(
     private String compressionAlgorithm;
     private Credentials credentials;
     private String basePath;
-    private Integer parallelUploadsLimit;
-    private Duration connectionAcquisitionTimeout;
+    /** Default from `SdkHttpConfigurationOption.MAX_CONNECTIONS` */
+    private Integer maxConcurrentConnections = 50;
+    /** Default from `SdkHttpConfigurationOption.DEFAULT_CONNECTION_ACQUIRE_TIMEOUT` */
+    private Duration connectionAcquisitionTimeout = Duration.ofSeconds(10);
 
     public Builder withBucketName(final String bucketName) {
       this.bucketName = bucketName;
@@ -134,7 +136,7 @@ public record S3BackupConfig(
     }
 
     public Builder withParallelUploadsLimit(final Integer parallelUploadsLimit) {
-      this.parallelUploadsLimit = parallelUploadsLimit;
+      maxConcurrentConnections = parallelUploadsLimit;
       return this;
     }
 
@@ -153,8 +155,8 @@ public record S3BackupConfig(
           forcePathStyleAccess,
           Optional.ofNullable(compressionAlgorithm),
           Optional.ofNullable(basePath),
-          Optional.ofNullable(parallelUploadsLimit),
-          Optional.ofNullable(connectionAcquisitionTimeout));
+          maxConcurrentConnections,
+          connectionAcquisitionTimeout);
     }
   }
 
