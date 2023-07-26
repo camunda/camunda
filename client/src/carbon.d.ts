@@ -631,6 +631,9 @@ declare module '@carbon/react' {
     };
     onChange?: ({selectedItems}: {selectedItems: T[]}) => void;
     titleText?: ReactNode;
+    disabled?: boolean;
+    selectionFeedback?: 'top' | 'top-after-reopen' | 'fixed';
+    size?: 'sm' | 'md' | 'lg';
   }
 
   declare function FilterableMultiSelect<T>(

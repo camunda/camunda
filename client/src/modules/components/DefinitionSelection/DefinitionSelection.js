@@ -344,7 +344,6 @@ export class DefinitionSelection extends React.Component {
                 </Labeled>
               )}
               <div className="version entry">
-                <Labeled label={t('common.definitionSelection.version.label')} />
                 <VersionPopover
                   tooltip={versionTooltip}
                   disabled={!this.hasDefinition()}
@@ -353,15 +352,18 @@ export class DefinitionSelection extends React.Component {
                   selectedSpecificVersions={selectedSpecificVersions}
                   onChange={this.changeVersions}
                   loading={isLoadingVersions}
+                  label={t('common.definitionSelection.version.label')}
+                  useCarbonTrigger={selectedDefinitions}
                 />
               </div>
               <div className="tenant entry">
-                <Labeled label={t('common.tenant.label')} />
                 <TenantPopover
                   tenants={this.getAvailableTenants()}
                   selected={this.getSelectedTenants()}
                   onChange={this.changeTenants}
                   loading={isLoadingTenants}
+                  label={t('common.tenant.label')}
+                  useCarbonTrigger={selectedDefinitions}
                 />
               </div>
             </div>

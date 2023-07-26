@@ -7,7 +7,7 @@
 
 import {shallow} from 'enzyme';
 
-import {Button, Tooltip} from 'components';
+import {Button, Labeled, Tooltip} from 'components';
 
 import Popover from './Popover';
 
@@ -74,4 +74,28 @@ it('should pass tooltip props to the tooltip component', () => {
 
   expect(node.find(Tooltip).prop('content')).toBe('test');
   expect(node.find(Tooltip).prop('position')).toBe('bottom');
+});
+
+it('should display a label if specified', () => {
+  const node = shallow(
+    <Popover title="a" label="testLabel">
+      Child content
+    </Popover>
+  );
+
+  expect(node.find(Labeled).prop('label')).toBe('testLabel');
+});
+
+it('should use the carbon based trigger if specified', () => {
+  const node = shallow(
+    <Popover title="a" useCarbonTrigger>
+      Child content
+    </Popover>
+  );
+
+  expect(node.find('.popoverContent').exists()).toBe(false);
+
+  node.find('ListBox button').simulate('click');
+
+  expect(node.find('.popoverContent').exists()).toBe(true);
 });

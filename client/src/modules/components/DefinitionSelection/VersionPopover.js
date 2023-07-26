@@ -21,6 +21,8 @@ export default function VersionPopover({
   disabled,
   tooltip,
   loading,
+  useCarbonTrigger,
+  label,
 }) {
   const specific = usesSpecificVersions(selected);
 
@@ -40,6 +42,8 @@ export default function VersionPopover({
       title={title}
       disabled={disabled || !versions}
       align="bottom-right"
+      useCarbonTrigger={useCarbonTrigger}
+      label={label}
     >
       {loading && <LoadingIndicator />}
       <Form compact>

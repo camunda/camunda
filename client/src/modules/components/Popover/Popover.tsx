@@ -6,14 +6,16 @@
  */
 
 import {ReactNode, useCallback, useEffect, useLayoutEffect, useRef, useState} from 'react';
-import {Button, Icon, Tooltip, TooltipProps} from 'components';
-import {getScreenBounds} from 'services';
 import {
   Popover as CarbonPopover,
   PopoverAlignment,
   PopoverContent,
   PopoverProps as CarbonPopoverProps,
 } from '@carbon/react';
+import ListBox from '@carbon/react/lib/components/ListBox';
+
+import {Button as LegacyButton, Icon, Tooltip, TooltipProps, Labeled} from 'components';
+import {getRandomId, getScreenBounds} from 'services';
 
 import classNames from 'classnames';
 
@@ -37,17 +39,19 @@ const possibleAlignments: PopoverAlignment[] = [
 interface PopoverProps extends Omit<CarbonPopoverProps<'div'>, 'title' | 'open' | 'align'> {
   className?: string;
   children: ReactNode;
-  title?: ReactNode;
-  main?: boolean;
-  disabled?: boolean;
-  icon?: string;
   floating?: boolean;
   onOpen?: () => void;
   onClose?: () => void;
-  tooltip?: TooltipProps['content'];
   autoOpen?: boolean;
   align?: PopoverAlignment;
+  main?: boolean;
+  icon?: string;
+  title?: ReactNode;
+  label?: ReactNode;
+  disabled?: boolean;
+  tooltip?: TooltipProps['content'];
   tooltipPosition?: TooltipProps['position'];
+  useCarbonTrigger?: boolean;
 }
 
 export default function Popover({
@@ -64,6 +68,8 @@ export default function Popover({
   autoOpen = false,
   align,
   tooltipPosition,
+  useCarbonTrigger,
+  label,
   ...props
 }: PopoverProps): JSX.Element {
   const [open, setOpen] = useState(autoOpen);
@@ -220,6 +226,9 @@ export default function Popover({
     };
   }, [open]);
 
+  const popoverId = getRandomId();
+  const buttonId = getRandomId();
+
   return (
     <CarbonPopover
       className={classNames(className, 'Popover')}
@@ -229,22 +238,53 @@ export default function Popover({
     >
       <Tooltip content={tooltip} position={tooltipPosition}>
         <div className="buttonWrapper">
-          <Button
-            onClick={() => setOpen(!open)}
-            active={!disabled && open}
-            main={main}
-            disabled={disabled}
-            icon={!!icon && !title}
-            ref={buttonRef}
-          >
-            {icon ? <Icon type={icon} /> : ''}
-            {title}
-            <Icon type="down" className="downIcon" />
-          </Button>
+          {useCarbonTrigger ? (
+            <>
+              {label && (
+                <label htmlFor={buttonId} className="cds--label">
+                  {label}
+                </label>
+              )}
+              <ListBox isOpen={open} size="sm" disabled={disabled}>
+                <button
+                  id={buttonId}
+                  type="button"
+                  ref={buttonRef}
+                  className="cds--list-box__field"
+                  disabled={disabled}
+                  onClick={() => setOpen(!open)}
+                  aria-haspopup
+                  aria-expanded={open}
+                  aria-controls={open ? popoverId : undefined}
+                >
+                  <span className="cds--list-box__label"> {title}</span>
+                  <ListBox.MenuIcon isOpen={open} />
+                </button>
+              </ListBox>
+            </>
+          ) : (
+            <>
+              {label && <Labeled label={label} htmlFor={buttonId} />}
+              <LegacyButton
+                id={buttonId}
+                onClick={() => setOpen(!open)}
+                active={!disabled && open}
+                main={main}
+                disabled={disabled}
+                icon={!!icon && !title}
+                ref={buttonRef}
+              >
+                {icon ? <Icon type={icon} /> : ''}
+                {title}
+                <Icon type="down" className="downIcon" />
+              </LegacyButton>
+            </>
+          )}
         </div>
       </Tooltip>
       {open && (
         <PopoverContent
+          id={popoverId}
           className={classNames('popoverContent', {scrollable})}
           ref={dialogRef}
           style={popoverStyles}

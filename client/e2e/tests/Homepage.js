@@ -70,7 +70,7 @@ test('complex Homepage actions', async (t) => {
 
   await t.click(Common.submenuOption('Process Report'));
   await t.click(Common.templateModalProcessField);
-  await t.click(Common.firstTypeaheadOption);
+  await t.click(Common.firstOption);
   await t.click(Common.modalConfirmButton);
 
   await t.typeText(Common.nameEditField, 'Invoice Evaluation Count', {replace: true});
@@ -80,7 +80,7 @@ test('complex Homepage actions', async (t) => {
   await t.click(Common.createNewMenu).hover(Common.newReportOption);
   await t.click(Common.submenuOption('Process Report'));
   await t.click(Common.templateModalProcessField);
-  await t.click(Common.firstTypeaheadOption);
+  await t.click(Common.firstOption);
   await t.click(Common.modalConfirmButton);
 
   await t.typeText(Common.nameEditField, 'Monthly Sales From Marketing', {replace: true});
@@ -132,7 +132,7 @@ test('complex Homepage actions', async (t) => {
   await t.click(Common.createNewMenu).hover(Common.newReportOption);
   await t.click(Common.submenuOption('Process Report'));
   await t.click(Common.templateModalProcessField);
-  await t.click(Common.firstTypeaheadOption);
+  await t.click(Common.firstOption);
   await t.click(Common.modalConfirmButton);
 
   await t.typeText(Common.nameEditField, 'Incoming Leads', {replace: true});
@@ -142,7 +142,7 @@ test('complex Homepage actions', async (t) => {
   await t.click(Common.createNewMenu).hover(Common.newReportOption);
   await t.click(Common.submenuOption('Process Report'));
   await t.click(Common.templateModalProcessField);
-  await t.click(Common.firstTypeaheadOption);
+  await t.click(Common.firstOption);
   await t.click(Common.modalConfirmButton);
 
   await t.typeText(Common.nameEditField, 'Sales Goal this Quarter', {replace: true});
@@ -224,15 +224,13 @@ test('multi definition selection', async (t) => {
 
   const firstDefinition = 'Invoice Receipt with alternative correlation variable';
   await t
-    .click(e.definitionSelection)
     .typeText(Common.templateModalProcessField, firstDefinition, {replace: true})
-    .click(Common.option(firstDefinition));
+    .click(Common.carbonOption(firstDefinition));
 
   const secondDefinition = 'Embedded Subprocess';
   await t
-    .click(e.definitionSelection)
     .typeText(Common.templateModalProcessField, secondDefinition, {replace: true})
-    .click(Common.option(secondDefinition));
+    .click(Common.carbonOption(secondDefinition));
 
   await t.click(Common.modalConfirmButton);
 });

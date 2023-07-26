@@ -26,7 +26,7 @@ test('Create a report in the german version of optimize', async (t) => {
   await t.click(Common.submenuOption('Prozessbericht'));
 
   await t.click(Common.templateModalProcessField);
-  await t.click(Common.firstTypeaheadOption);
+  await t.click(Common.firstOption);
   await t.click(Common.modalConfirmButton);
 
   await save(t);

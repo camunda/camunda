@@ -22,6 +22,8 @@ export const descriptionModalInput = descriptionModal.find('textarea');
 export const modalNameInput = Selector('.Modal.is-visible input[type="text"]');
 export const option = (text) => Selector('.DropdownOption').withText(text);
 export const carbonOption = (text) => Selector('.cds--list-box__menu-item').withText(text);
+export const selectedOption = (text) =>
+  Selector('.cds--list-box__menu-item--active').withText(text);
 export const submenuOption = (text) => Selector('.Submenu .DropdownOption').withText(text);
 export const entityList = Selector('.EntityList');
 export const edit = (element) => element.find('.DropdownOption').withText('Edit');
@@ -43,8 +45,8 @@ export const collectionItem = listItem.filter(
 export const reportLabel = reportItem.find('.name .type');
 export const listItemCheckbox = (item) => item.find('input[type="checkbox"]');
 export const newReportOption = createNewMenu.find('.Submenu');
-export const templateModalProcessField = Selector('.Modal .MultiSelect');
-export const firstTypeaheadOption = Selector('.TemplateModal .DropdownOption');
+export const templateModalProcessField = Selector('.Modal .DefinitionSelection input');
+export const firstOption = Selector('.TemplateModal .cds--list-box__menu-item');
 export const modalContainer = Selector('div:not([aria-hidden="true"]) > .cds--modal-container');
 export const controlPanel = Selector('.ReportControlPanel');
 export const nameEditField = Selector('.EntityNameForm .name-input');

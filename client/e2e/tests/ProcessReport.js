@@ -22,7 +22,7 @@ test('create a report from a template', async (t) => {
   await t.click(Common.submenuOption('Process Report'));
 
   await t.click(Common.templateModalProcessField);
-  await t.click(Common.option('Invoice Receipt with alternative correlation variable'));
+  await t.click(Common.carbonOption('Invoice Receipt with alternative correlation variable'));
 
   await t.click(e.templateOption('Analyze shares as Pie Chart'));
 

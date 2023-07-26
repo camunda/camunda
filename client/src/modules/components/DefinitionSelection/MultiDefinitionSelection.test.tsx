@@ -5,13 +5,11 @@
  * except in compliance with the proprietary license.
  */
 
-import React from 'react';
+import {FilterableMultiSelect} from '@carbon/react';
 import {shallow} from 'enzyme';
 
-import {MultiSelect} from 'components';
-
 import {loadTenants} from './service';
-import {MultiDefinitionSelection} from './MultiDefinitionSelection';
+import MultiDefinitionSelection from './MultiDefinitionSelection';
 
 jest.mock('./service', () => ({
   loadTenants: jest.fn().mockReturnValue([
@@ -41,6 +39,18 @@ jest.mock('./service', () => ({
 jest.mock('services', () => ({
   ...jest.requireActual('services'),
   getRandomId: () => 'randomID',
+  getCollection: () => 'testCollection',
+}));
+
+jest.mock('react-router-dom', () => ({
+  ...jest.requireActual('react-router-dom'),
+  useLocation: jest.fn().mockReturnValue({pathname: 'testPath'}),
+}));
+
+jest.mock('hooks', () => ({
+  useErrorHandling: jest.fn(() => ({
+    mightFail: jest.fn((data, cb) => cb(data)),
+  })),
 }));
 
 const props = {
@@ -59,37 +69,49 @@ const props = {
   onChange: jest.fn(),
   resetSelection: jest.fn(),
   location: {pathname: null},
+  changeDefinition: jest.fn(),
 };
 
-it('should invoke changeDefinition when only one definition is selected', () => {
-  const spy = jest.fn();
-  const node = shallow(<MultiDefinitionSelection {...props} changeDefinition={spy} />);
-
-  node.find(MultiSelect).simulate('add', 'foo');
-
-  expect(spy).toHaveBeenCalledWith('foo');
+beforeEach(() => {
+  jest.clearAllMocks();
 });
 
-it('should invoke loadTenants and onChange when selecting more than one definition', () => {
-  const spy = jest.fn();
+it('should invoke changeDefinition when only one definition is selected', () => {
   const node = shallow(
     <MultiDefinitionSelection
       {...props}
-      selectedDefinitions={[props.availableDefinitions[0]]}
-      onChange={spy}
+      availableDefinitions={[
+        {
+          key: 'foo',
+          name: 'Foo',
+        },
+      ]}
     />
   );
 
-  node.find(MultiSelect).simulate('add', 'bar');
+  const selectedItems = [{id: 'foo', label: 'Foo'}];
+  node.find(FilterableMultiSelect).simulate('change', {selectedItems});
+
+  expect(props.changeDefinition).toHaveBeenCalledWith('foo');
+});
+
+it('should invoke loadTenants and onChange when selecting more than one definition', () => {
+  const node = shallow(<MultiDefinitionSelection {...props} />);
+  const selectedItems = [
+    {id: 'foo', label: 'Foo'},
+    {id: 'bar', label: 'Bar'},
+  ];
+  node.find(FilterableMultiSelect).simulate('change', {selectedItems});
+
   expect(loadTenants).toHaveBeenCalledWith(
     'process',
     [
       {key: 'foo', versions: ['all']},
       {key: 'bar', versions: ['all']},
     ],
-    props.location.pathname
+    'testCollection'
   );
-  expect(spy).toHaveBeenCalledWith([
+  expect(props.onChange).toHaveBeenCalledWith([
     {
       identifier: 'randomID',
       key: 'foo',
@@ -107,22 +129,19 @@ it('should invoke loadTenants and onChange when selecting more than one definiti
   ]);
 });
 
-it('should invoke onChange when removing definition', () => {
-  const spy = jest.fn();
+it('should display key of definition if name is null', () => {
   const node = shallow(
     <MultiDefinitionSelection
       {...props}
-      selectedDefinitions={[props.availableDefinitions[0]]}
-      onChange={spy}
+      availableDefinitions={[
+        {
+          key: 'foo',
+          name: null,
+        },
+      ]}
     />
   );
 
-  node.find(MultiSelect).simulate('remove', 'foo');
-  expect(spy).toHaveBeenCalledWith([]);
-});
-
-it('should display key of definition if name is null', () => {
-  const node = shallow(<MultiDefinitionSelection {...props} />);
-
-  expect(node.find({value: 'bar'}).text()).toBe('bar');
+  const option = node.find(FilterableMultiSelect).prop<{id: String; label: string}[]>('items')[0];
+  expect(option?.label).toBe('foo');
 });
