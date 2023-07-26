@@ -46,7 +46,7 @@ public record S3BackupConfig(
     boolean forcePathStyleAccess,
     Optional<String> compressionAlgorithm,
     Optional<String> basePath,
-    Optional<Integer> parallelUploadsLimit,
+    Optional<Integer> maxConcurrentConnections,
     Optional<Duration> connectionAcquisitionTimeout) {
 
   public S3BackupConfig {

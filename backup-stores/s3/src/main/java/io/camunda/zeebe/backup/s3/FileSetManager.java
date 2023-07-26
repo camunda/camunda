@@ -58,7 +58,10 @@ final class FileSetManager {
         new Semaphore(
             (int)
                 Math.ceil(
-                    (double) (config.parallelUploadsLimit().orElse(DEFAULT_PARALLEL_UPLOAD_TOKENS))
+                    (double)
+                            (config
+                                .maxConcurrentConnections()
+                                .orElse(DEFAULT_PARALLEL_UPLOAD_TOKENS))
                         / 2));
   }
 
