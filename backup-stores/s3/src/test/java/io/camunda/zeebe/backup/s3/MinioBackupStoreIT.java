@@ -104,4 +104,22 @@ final class MinioBackupStoreIT implements S3BackupStoreTests {
   public S3BackupStore getStore() {
     return store;
   }
+
+  @Override
+  public void setConfigParallelConnectionsAndTimeout(
+      final int parallelConnections, final Duration timeout) {
+    config =
+        new Builder()
+            .withBucketName(BUCKET_NAME)
+            .withBasePath(RandomStringUtils.randomAlphabetic(10).toLowerCase())
+            .withEndpoint("http://%s:%d".formatted(S3.getHost(), S3.getMappedPort(DEFAULT_PORT)))
+            .withRegion(Region.US_EAST_1.id())
+            .withCredentials(ACCESS_KEY, SECRET_KEY)
+            .forcePathStyleAccess(true)
+            .withConnectionAcquisitionTimeout(timeout)
+            .withParallelUploadsLimit(parallelConnections)
+            .build();
+    client = S3BackupStore.buildClient(config);
+    store = new S3BackupStore(config, client);
+  }
 }
