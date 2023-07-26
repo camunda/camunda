@@ -86,6 +86,12 @@ public final class BroadcastSignalCommandImpl
     return future;
   }
 
+  @Override
+  public BroadcastSignalCommandStep2 tenantId(final String tenantId) {
+    // todo(#13558): replace dummy implementation
+    return this;
+  }
+
   private void send(
       final BroadcastSignalRequest request,
       final StreamObserver<GatewayOuterClass.BroadcastSignalResponse> streamObserver) {

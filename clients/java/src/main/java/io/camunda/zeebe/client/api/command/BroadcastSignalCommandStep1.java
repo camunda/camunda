@@ -29,7 +29,9 @@ public interface BroadcastSignalCommandStep1 {
    */
   BroadcastSignalCommandStep2 signalName(String signalName);
 
-  interface BroadcastSignalCommandStep2 extends FinalCommandStep<BroadcastSignalResponse> {
+  interface BroadcastSignalCommandStep2
+      extends CommandWithTenantStep<BroadcastSignalCommandStep2>,
+          FinalCommandStep<BroadcastSignalResponse> {
     /**
      * Set the variables of the signal.
      *

@@ -124,6 +124,12 @@ public final class CreateProcessInstanceCommandImpl
     return future;
   }
 
+  @Override
+  public CreateProcessInstanceCommandStep3 tenantId(final String tenantId) {
+    // todo(#13536): replace dummy implementation
+    return this;
+  }
+
   private void send(
       final CreateProcessInstanceRequest request,
       final StreamObserver<GatewayOuterClass.CreateProcessInstanceResponse> future) {

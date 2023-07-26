@@ -43,7 +43,9 @@ public interface PublishMessageCommandStep1 {
     PublishMessageCommandStep3 correlationKey(String correlationKey);
   }
 
-  interface PublishMessageCommandStep3 extends FinalCommandStep<PublishMessageResponse> {
+  interface PublishMessageCommandStep3
+      extends CommandWithTenantStep<PublishMessageCommandStep3>,
+          FinalCommandStep<PublishMessageResponse> {
     /**
      * Set the id of the message. The message is rejected if another message is already published
      * with the same id, name and correlation-key.

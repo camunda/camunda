@@ -19,6 +19,7 @@ import static io.camunda.zeebe.client.util.JsonUtil.fromJsonAsMap;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
 
+import io.camunda.zeebe.client.api.command.CreateProcessInstanceCommandStep1.CreateProcessInstanceWithResultCommandStep1;
 import io.camunda.zeebe.client.api.response.ProcessInstanceResult;
 import io.camunda.zeebe.client.util.ClientTest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CreateProcessInstanceWithResultRequest;
@@ -132,6 +133,57 @@ public final class CreateProcessInstanceWithResultTest extends ClientTest {
     // then
     final CreateProcessInstanceWithResultRequest request = gatewayService.getLastRequest();
     assertThat(fromJsonAsMap(request.getRequest().getVariables())).containsOnly(entry(key, value));
+  }
+
+  @Test
+  public void shouldAllowSpecifyingTenantIdByLatestVersionOfProcessId() {
+    // given
+    final CreateProcessInstanceWithResultCommandStep1 builder =
+        client.newCreateInstanceCommand().bpmnProcessId("").latestVersion().withResult();
+
+    // when
+    final CreateProcessInstanceWithResultCommandStep1 builderWithTenantId =
+        builder.tenantId("custom tenant");
+
+    // then
+    // todo(#13536): verify that tenant id is set in the request
+    assertThat(builderWithTenantId)
+        .describedAs("This method has no effect on the command builder while under development")
+        .isEqualTo(builder);
+  }
+
+  @Test
+  public void shouldAllowSpecifyingTenantIdByProcessIdAndVersion() {
+    // given
+    final CreateProcessInstanceWithResultCommandStep1 builder =
+        client.newCreateInstanceCommand().bpmnProcessId("").version(3).withResult();
+
+    // when
+    final CreateProcessInstanceWithResultCommandStep1 builderWithTenantId =
+        builder.tenantId("custom tenant");
+
+    // then
+    // todo(#13536): verify that tenant id is set in the request
+    assertThat(builderWithTenantId)
+        .describedAs("This method has no effect on the command builder while under development")
+        .isEqualTo(builder);
+  }
+
+  @Test
+  public void shouldAllowSpecifyingTenantIdByProcessDefinitionKey() {
+    // given
+    final CreateProcessInstanceWithResultCommandStep1 builder =
+        client.newCreateInstanceCommand().processDefinitionKey(1L).withResult();
+
+    // when
+    final CreateProcessInstanceWithResultCommandStep1 builderWithTenantId =
+        builder.tenantId("custom tenant");
+
+    // then
+    // todo(#13536): verify that tenant id is set in the request
+    assertThat(builderWithTenantId)
+        .describedAs("This method has no effect on the command builder while under development")
+        .isEqualTo(builder);
   }
 
   private static class VariablesPojo {

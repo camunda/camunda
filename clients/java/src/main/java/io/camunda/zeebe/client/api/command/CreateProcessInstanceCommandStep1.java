@@ -64,7 +64,9 @@ public interface CreateProcessInstanceCommandStep1 {
     CreateProcessInstanceCommandStep3 latestVersion();
   }
 
-  interface CreateProcessInstanceCommandStep3 extends FinalCommandStep<ProcessInstanceEvent> {
+  interface CreateProcessInstanceCommandStep3
+      extends CommandWithTenantStep<CreateProcessInstanceCommandStep3>,
+          FinalCommandStep<ProcessInstanceEvent> {
     /**
      * Set the initial variables of the process instance.
      *
@@ -133,7 +135,8 @@ public interface CreateProcessInstanceCommandStep1 {
   }
 
   interface CreateProcessInstanceWithResultCommandStep1
-      extends FinalCommandStep<ProcessInstanceResult> {
+      extends CommandWithTenantStep<CreateProcessInstanceWithResultCommandStep1>,
+          FinalCommandStep<ProcessInstanceResult> {
 
     /**
      * Set a list of variables names which should be fetched in the response.
