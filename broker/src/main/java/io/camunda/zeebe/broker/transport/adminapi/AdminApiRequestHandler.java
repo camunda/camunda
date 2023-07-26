@@ -54,8 +54,35 @@ public class AdminApiRequestHandler
           stepDownIfNotPrimary(responseWriter, partitionId, errorWriter));
       case PAUSE_EXPORTING -> pauseExporting(responseWriter, partitionId, errorWriter);
       case RESUME_EXPORTING -> resumeExporting(responseWriter, partitionId, errorWriter);
+      case BAN_INSTANCE -> banInstance(requestReader, responseWriter, partitionId, errorWriter);
       default -> unknownRequest(errorWriter, requestReader.getMessageDecoder().type());
     };
+  }
+
+  private ActorFuture<Either<ErrorResponseWriter, ApiResponseWriter>> banInstance(
+      final ApiRequestReader requestReader,
+      final ApiResponseWriter responseWriter,
+      final int partitionId,
+      final ErrorResponseWriter errorWriter) {
+    final long key = requestReader.key();
+
+    final ActorFuture<Either<ErrorResponseWriter, ApiResponseWriter>> result = actor.createFuture();
+    adminAccess
+        .banInstance(requestReader.key())
+        .onComplete(
+            (r, t) -> {
+              if (t == null) {
+                result.complete(Either.right(responseWriter));
+              } else {
+                LOG.error("Failed to ban instance {} on partition {}", key, partitionId, t);
+                result.complete(
+                    Either.left(
+                        errorWriter.internalError(
+                            "Failed to ban instance %s, on partition %s", key, partitionId)));
+              }
+            });
+
+    return result;
   }
 
   private ActorFuture<Either<ErrorResponseWriter, ApiResponseWriter>> unknownRequest(
@@ -135,7 +162,7 @@ public class AdminApiRequestHandler
       final int partitionId,
       final ErrorResponseWriter errorWriter) {
     final var partition = partitionManager.getPartitionGroup().getPartition(partitionId);
-    if (partition instanceof RaftPartition raftPartition) {
+    if (partition instanceof final RaftPartition raftPartition) {
       if (raftPartition.getRole() == Role.LEADER) {
         raftPartition.stepDownIfNotPrimary();
       } else {
