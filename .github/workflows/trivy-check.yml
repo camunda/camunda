@@ -120,8 +120,8 @@ jobs:
           ignore-unfixed: true
           hide-progress: true
           severity: "CRITICAL,HIGH"
-          format: json
-          output: ${{ steps.pom-info.outputs.project_version }}-trivy-log.json
+          format: table
+          output: ${{ steps.pom-info.outputs.project_version }}-trivy-log.txt
 
       - name: Upload Test Results
         if: always()
@@ -129,13 +129,13 @@ jobs:
         with:
           name: trivy-test-results
           path: |
-            **/${{ steps.pom-info.outputs.project_version }}-trivy-log.json
+            **/${{ steps.pom-info.outputs.project_version }}-trivy-log.txt
           retention-days: 7
           if-no-files-found: ignore
 
   post-results-on-slack:
     name: Post results on slack
-    if: failure()
+    # if: failure()
     needs:
       - trivy-check
     runs-on: ubuntu-latest
