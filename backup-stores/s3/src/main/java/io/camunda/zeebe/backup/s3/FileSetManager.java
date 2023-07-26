@@ -41,8 +41,6 @@ final class FileSetManager {
   private static final String TMP_COMPRESSION_PREFIX = "zb-backup-compress-";
   private static final String TMP_DECOMPRESSION_PREFIX = "zb-backup-decompress-";
 
-  private static final Integer DEFAULT_PARALLEL_UPLOAD_TOKENS = 50;
-
   private final S3AsyncClient client;
   private final S3BackupConfig config;
   private final Semaphore uploadLimit;
@@ -51,13 +49,11 @@ final class FileSetManager {
     this.client = client;
     this.config = config;
 
-    // We guarantee that there's always available connections by restricting the number of
-    // concurrent uploads to half (rounding up) of the number of available connections.
-    // This prevents ConnectionAcquisitionTimeout.
-    final var maxConnections =
-        config.maxConcurrentConnections().orElse(DEFAULT_PARALLEL_UPLOAD_TOKENS);
-
-    uploadLimit = new Semaphore(Math.max(1, maxConnections / 2));
+    // We try not to exhaust the available connections by restricting the number of
+    // concurrent uploads to half of the number of available connections.
+    // This should prevent ConnectionAcquisitionTimeout for backups with many and/or large files
+    // where we would otherwise occupy all connections, preventing some uploads from starting.
+    uploadLimit = new Semaphore(Math.max(1, config.maxConcurrentConnections() / 2));
   }
 
   CompletableFuture<FileSet> save(final String prefix, final NamedFileSet files) {
