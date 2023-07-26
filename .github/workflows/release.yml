@@ -326,14 +326,14 @@ jobs:
       cancel-in-progress: false
     uses: ./.github/workflows/snyk.yml
     with:
-      # test instead of monitor during dry-runs
-      monitor: ${{ !inputs.dryRun }}
+      ref: ${{ env.RELEASE_BRANCH }}
       version: ${{ inputs.releaseVersion }}
       useMinorVersion: true
+      # test instead of monitor during dry-runs
+      monitor: ${{ !inputs.dryRun }}
       # the docker image will not be pushed during a dry-run, so we need to build it locally
       build: ${{ inputs.dryRun }}
-      ref: ${{ env.RELEASE_BRANCH }}
-      dockerImageName: camunda/zeebe:${{ inputs.releaseVersion }}
+      dockerImageName: ${{ inputs.dryRun && '' || format('camunda/zeebe:{0}', inputs.releaseVersion) }}
     secrets: inherit
 
 
