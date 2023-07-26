@@ -6,10 +6,18 @@ on:
   schedule:
     - cron: "0 2 * * 1-5"
 
+# Will limit the workflow to 1 concurrenct run per ref (branch / PR)
+# If a new commits occurs, the current run will be canceled
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+# set permissions to allow Dependabot to publish test results
 permissions:
-  contents: read # for git clone
-  id-token: write # for authenticating with GCP
-  issues: write
+  contents: read
+  id-token: write
+  issues: read
+  checks: write
   pull-requests: write
 
 env:
@@ -18,6 +26,7 @@ env:
 
 jobs:
   trivy-check:
+    name: Run trivy check
     strategy:
       fail-fast: false
       matrix:
@@ -125,12 +134,22 @@ jobs:
           retention-days: 7
           if-no-files-found: ignore
 
+  post-results-on-slack:
+    name: Post results on slack
+    if: failure()
+    needs:
+      - trivy-check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download Test Results
+        uses: actions/download-artifact@v2
+        with:
+          name: trivy-test-results-*
+          path: test-results
+
       - uses: actions/checkout@v3
-        if: always()
 
       - name: Post results on slack
-        if: failure()
         uses: ./.github/actions/notify-on-slack
         with:
           slack_webhook_url: ${{ steps.secrets.outputs.SLACK_BOT_URL}}
-          status: ${{ job.status }}
