@@ -60,7 +60,6 @@ jobs:
           secrets: |
             secret/data/products/optimize/ci/optimize NEXUS_USERNAME;
             secret/data/products/optimize/ci/optimize NEXUS_PASSWORD;
-            secret/data/products/optimize/ci/camunda-optimize SLACK_BOT_URL;
 
       - name: Setup Maven Action
         uses: s4u/setup-maven-action@v1.8.0
@@ -142,6 +141,17 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
+
+      - name: Import secrets
+        id: secrets
+        uses: hashicorp/vault-action@62aa8bb4c43190676348ad2b146075f0421136db
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secrets: |
+            secret/data/products/optimize/ci/camunda-optimize SLACK_BOT_URL;
 
       - name: Post results on slack
         uses: ./.github/actions/notify-on-slack
