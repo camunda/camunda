@@ -45,7 +45,7 @@ final class FileSetManager {
 
   private final S3AsyncClient client;
   private final S3BackupConfig config;
-  private final Semaphore semaphoreLimit;
+  private final Semaphore uploadLimit;
 
   public FileSetManager(final S3AsyncClient client, final S3BackupConfig config) {
     this.client = client;
@@ -54,7 +54,7 @@ final class FileSetManager {
     // We guarantee that there's always available connections by restricting the number of
     // concurrent uploads to half (rounding up) of the number of available connections.
     // This prevents ConnectionAcquisitionTimeout.
-    semaphoreLimit =
+    uploadLimit =
         new Semaphore(
             (int)
                 Math.ceil(
@@ -79,7 +79,7 @@ final class FileSetManager {
 
     if (shouldCompressFile(filePath)) {
       final var algorithm = config.compressionAlgorithm().orElseThrow();
-      return CompletableFuture.runAsync(() -> semaphoreLimit.acquireUninterruptibly())
+      return CompletableFuture.runAsync(uploadLimit::acquireUninterruptibly)
           .thenApply(
               (success) -> {
                 return compressFile(filePath, algorithm);
@@ -94,11 +94,11 @@ final class FileSetManager {
                         AsyncRequestBody.fromFile(compressedFile))
                     .thenRunAsync(() -> cleanupCompressedFile(compressedFile))
                     .thenApply(unused -> FileSet.FileMetadata.withCompression(algorithm))
-                    .whenComplete((success, error) -> semaphoreLimit.release());
+                    .whenComplete((success, error) -> uploadLimit.release());
               });
     }
 
-    return CompletableFuture.runAsync(() -> semaphoreLimit.acquireUninterruptibly())
+    return CompletableFuture.runAsync(uploadLimit::acquireUninterruptibly)
         .thenCompose(
             (nothing) -> {
               LOG.trace("Saving file {}({}) in prefix {}", fileName, filePath, prefix);
@@ -107,7 +107,7 @@ final class FileSetManager {
                       put -> put.bucket(config.bucketName()).key(prefix + fileName),
                       AsyncRequestBody.fromFile(filePath))
                   .thenApply(unused -> FileSet.FileMetadata.none())
-                  .whenComplete((success, error) -> semaphoreLimit.release());
+                  .whenComplete((success, error) -> uploadLimit.release());
             });
   }
 
