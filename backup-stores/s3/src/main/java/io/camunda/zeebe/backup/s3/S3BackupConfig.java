@@ -45,7 +45,9 @@ public record S3BackupConfig(
     Optional<Duration> apiCallTimeout,
     boolean forcePathStyleAccess,
     Optional<String> compressionAlgorithm,
-    Optional<String> basePath) {
+    Optional<String> basePath,
+    Optional<Integer> parallelUploadsLimit,
+    Optional<Duration> connectionAcquisitionTimeout) {
 
   public S3BackupConfig {
     if (bucketName == null || bucketName.isEmpty()) {
@@ -78,20 +80,6 @@ public record S3BackupConfig(
     }
   }
 
-  record Credentials(String accessKey, String secretKey) {
-    @Override
-    public String toString() {
-      return "Credentials{"
-          + "accessKey='"
-          + accessKey
-          + '\''
-          + ", secretKey='"
-          + "<redacted>"
-          + '\''
-          + '}';
-    }
-  }
-
   public static class Builder {
 
     private String bucketName;
@@ -102,6 +90,8 @@ public record S3BackupConfig(
     private String compressionAlgorithm;
     private Credentials credentials;
     private String basePath;
+    private Integer parallelUploadsLimit;
+    private Duration connectionAcquisitionTimeout;
 
     public Builder withBucketName(final String bucketName) {
       this.bucketName = bucketName;
@@ -119,7 +109,7 @@ public record S3BackupConfig(
     }
 
     public Builder withCredentials(final String accessKey, final String secretKey) {
-      this.credentials = new Credentials(accessKey, secretKey);
+      credentials = new Credentials(accessKey, secretKey);
       return this;
     }
 
@@ -143,6 +133,16 @@ public record S3BackupConfig(
       return this;
     }
 
+    public Builder withParallelUploadsLimit(final Integer parallelUploadsLimit) {
+      this.parallelUploadsLimit = parallelUploadsLimit;
+      return this;
+    }
+
+    public Builder withConnectionAcquisitionTimeout(final Duration connectionAcquisitionTimeout) {
+      this.connectionAcquisitionTimeout = connectionAcquisitionTimeout;
+      return this;
+    }
+
     public S3BackupConfig build() {
       return new S3BackupConfig(
           bucketName,
@@ -152,7 +152,23 @@ public record S3BackupConfig(
           Optional.ofNullable(apiCallTimeoutMs),
           forcePathStyleAccess,
           Optional.ofNullable(compressionAlgorithm),
-          Optional.ofNullable(basePath));
+          Optional.ofNullable(basePath),
+          Optional.ofNullable(parallelUploadsLimit),
+          Optional.ofNullable(connectionAcquisitionTimeout));
+    }
+  }
+
+  record Credentials(String accessKey, String secretKey) {
+    @Override
+    public String toString() {
+      return "Credentials{"
+          + "accessKey='"
+          + accessKey
+          + '\''
+          + ", secretKey='"
+          + "<redacted>"
+          + '\''
+          + '}';
     }
   }
 }
