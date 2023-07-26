@@ -10,6 +10,10 @@ package io.camunda.zeebe.backup.s3;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.backup.api.Backup;
+import io.camunda.zeebe.backup.common.BackupDescriptorImpl;
+import io.camunda.zeebe.backup.common.BackupIdentifierImpl;
+import io.camunda.zeebe.backup.common.BackupImpl;
+import io.camunda.zeebe.backup.common.NamedFileSetImpl;
 import io.camunda.zeebe.backup.s3.S3BackupStoreException.BackupInInvalidStateException;
 import io.camunda.zeebe.backup.s3.S3BackupStoreException.ManifestParseException;
 import io.camunda.zeebe.backup.s3.manifest.CompletedBackupManifest;
@@ -17,11 +21,19 @@ import io.camunda.zeebe.backup.s3.manifest.Manifest;
 import io.camunda.zeebe.backup.testkit.BackupStoreTestKit;
 import io.camunda.zeebe.backup.testkit.support.TestBackupProvider;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
 import java.util.stream.Stream;
+import org.apache.commons.lang3.RandomUtils;
 import org.assertj.core.api.Assertions;
 import org.awaitility.Awaitility;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
 import software.amazon.awssdk.core.async.AsyncRequestBody;
@@ -43,6 +55,9 @@ public interface S3BackupStoreTests extends BackupStoreTestKit {
   default Class<? extends Exception> getBackupInInvalidStateExceptionClass() {
     return BackupInInvalidStateException.class;
   }
+
+  void setConfigParallelConnectionsAndTimeout(
+      final int parallelConnections, final Duration timeout);
 
   @ParameterizedTest
   @ArgumentsSource(TestBackupProvider.class)
@@ -242,5 +257,68 @@ public interface S3BackupStoreTests extends BackupStoreTestKit {
         .failsWithin(Duration.ofSeconds(10))
         .withThrowableOfType(Throwable.class)
         .withRootCauseInstanceOf(BackupInInvalidStateException.class);
+  }
+
+  @Test
+  default void shouldSaveBackupWithManyFiles() throws IOException {
+    // given
+    final CompletableFuture<Void> saveFuture = getStore().save(largeNumberOfSegmentsBackup(5_000));
+
+    // then
+    Assertions.assertThat(saveFuture).succeedsWithin(Duration.ofSeconds(60));
+  }
+
+  @Test
+  default void shouldNotTimeoutForAcquisitionOfConnection() throws IOException {
+    // given
+    // Even with just one connection, and low timeout limit, the second upload should not start
+    // until a connection is available, and therefore should not throw AcquisitionConnectionTimeout
+    setConfigParallelConnectionsAndTimeout(1, Duration.ofMillis(50));
+    final CompletableFuture<Void> saveFuture = getStore().save(configurableLargeBackup(500_000));
+
+    // then
+    Assertions.assertThat(saveFuture).succeedsWithin(Duration.ofSeconds(60));
+  }
+
+  default Backup largeNumberOfSegmentsBackup(final int numberOfSegments) throws IOException {
+    final var tempDir = Files.createTempDirectory("backup");
+    Files.createDirectory(tempDir.resolve("segments/"));
+    Files.createDirectory(tempDir.resolve("snapshot/"));
+    final Map<String, Path> largeNumberOfSegments = new HashMap<>();
+    final var s1 = Files.createFile(tempDir.resolve("snapshot/snapshot-file-1"));
+    final var s2 = Files.createFile(tempDir.resolve("snapshot/snapshot-file-2"));
+
+    for (int i = 0; i < numberOfSegments; i++) {
+      largeNumberOfSegments.put(
+          "segment-file-%d".formatted(i),
+          Files.createFile(tempDir.resolve("segments/segment-file-%d".formatted(i))));
+    }
+
+    return new BackupImpl(
+        new BackupIdentifierImpl(1, 2, 3),
+        new BackupDescriptorImpl(Optional.of("test-snapshot-id"), 4, 5, "test"),
+        new NamedFileSetImpl(largeNumberOfSegments),
+        new NamedFileSetImpl(Map.of("snapshot-file-1", s1, "snapshot-file-2", s2)));
+  }
+
+  default Backup configurableLargeBackup(final int sizeOfFileInBytes) throws IOException {
+    final var tempDir = Files.createTempDirectory("backup");
+    Files.createDirectory(tempDir.resolve("segments/"));
+    final var seg1 = Files.createFile(tempDir.resolve("segments/segment-file-1"));
+    final var seg2 = Files.createFile(tempDir.resolve("segments/segment-file-2"));
+    Files.write(seg1, RandomUtils.nextBytes(sizeOfFileInBytes));
+    Files.write(seg2, RandomUtils.nextBytes(sizeOfFileInBytes));
+
+    Files.createDirectory(tempDir.resolve("snapshot/"));
+    final var s1 = Files.createFile(tempDir.resolve("snapshot/snapshot-file-1"));
+    final var s2 = Files.createFile(tempDir.resolve("snapshot/snapshot-file-2"));
+    Files.write(s1, RandomUtils.nextBytes(sizeOfFileInBytes));
+    Files.write(s2, RandomUtils.nextBytes(sizeOfFileInBytes));
+
+    return new BackupImpl(
+        new BackupIdentifierImpl(1, 2, 3),
+        new BackupDescriptorImpl(Optional.of("test-snapshot-id"), 4, 5, "test"),
+        new NamedFileSetImpl(Map.of("snapshot-file-1", s1, "snapshot-file-2", s2)),
+        new NamedFileSetImpl(Map.of("segment-file-1", seg1, "segment-file-2", seg2)));
   }
 }

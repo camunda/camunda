@@ -10,6 +10,7 @@ package io.camunda.zeebe.backup.s3;
 import io.camunda.zeebe.backup.s3.S3BackupConfig.Builder;
 import io.camunda.zeebe.test.util.testcontainers.ContainerLogsDumper;
 import java.util.Map;
+import java.time.Duration;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
@@ -97,5 +98,25 @@ final class LocalstackBackupStoreIT implements S3BackupStoreTests {
   @Override
   public S3BackupStore getStore() {
     return store;
+  }
+
+  @Override
+  public void setConfigParallelConnectionsAndTimeout(final int parallelConnections,
+      final Duration timeout){
+    config =
+        new Builder()
+            .withBucketName(BUCKET_NAME)
+            .withBasePath(RandomStringUtils.randomAlphabetic(10).toLowerCase())
+            .withEndpoint(S3.getEndpointOverride(Service.S3).toString())
+            .withRegion(S3.getRegion())
+            .withCredentials(S3.getAccessKey(), S3.getSecretKey())
+            .withApiCallTimeout(null)
+            .forcePathStyleAccess(false)
+            .withCompressionAlgorithm(null)
+            .withConnectionAcquisitionTimeout(timeout)
+            .withParallelUploadsLimit(parallelConnections)
+            .build();
+    client = S3BackupStore.buildClient(config);
+    store = new S3BackupStore(config, client);
   }
 }
