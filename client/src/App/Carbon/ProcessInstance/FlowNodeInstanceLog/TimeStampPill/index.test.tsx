@@ -13,12 +13,17 @@ import {flowNodeInstanceStore} from 'modules/stores/flowNodeInstance';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {mockFetchProcessXML} from 'modules/mocks/api/processes/fetchProcessXML';
 import {useEffect} from 'react';
-import {act} from 'react-dom/test-utils';
+import {mockFetchFlowNodeInstances} from 'modules/mocks/api/fetchFlowNodeInstances';
 
 jest.mock('modules/utils/bpmn');
 
 const Wrapper = ({children}: {children?: React.ReactNode}) => {
+  mockFetchFlowNodeInstances().withSuccess({});
+  mockFetchProcessXML().withSuccess('');
+
   useEffect(() => {
+    flowNodeInstanceStore.fetchInstanceExecutionHistory('1');
+    processInstanceDetailsDiagramStore.fetchProcessXml('1');
     return () => {
       flowNodeTimeStampStore.reset();
       processInstanceDetailsDiagramStore.reset();
@@ -38,21 +43,21 @@ describe('TimeStampPill', () => {
     const {user} = render(<TimeStampPill />, {wrapper: Wrapper});
 
     expect(screen.getByText('Show End Date')).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByRole('switch', {name: 'Show End Date'})).toBeEnabled();
+    });
 
-    await user.click(screen.getByText('Show End Date'));
+    await user.click(screen.getByRole('switch', {name: 'Show End Date'}));
 
-    expect(await screen.findByText('Hide End Date')).toBeInTheDocument();
+    expect(
+      await screen.findByRole('switch', {name: 'Hide End Date'}),
+    ).toBeInTheDocument();
   });
 
   it('should be disabled if diagram and instance execution history is not loaded', async () => {
     render(<TimeStampPill />, {wrapper: Wrapper});
 
     expect(screen.getByRole('switch')).toBeDisabled();
-
-    act(() => {
-      flowNodeInstanceStore.fetchInstanceExecutionHistory('1');
-      processInstanceDetailsDiagramStore.fetchProcessXml('1');
-    });
 
     await waitFor(() => expect(screen.getByRole('switch')).toBeEnabled());
   });
