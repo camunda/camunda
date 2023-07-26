@@ -125,6 +125,9 @@ jobs:
           retention-days: 7
           if-no-files-found: ignore
 
+      - uses: actions/checkout@v3
+        if: always()
+
       - name: Post results on slack
         if: failure()
         uses: ./.github/actions/notify-on-slack
