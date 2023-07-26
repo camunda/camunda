@@ -37,7 +37,6 @@ import software.amazon.awssdk.services.s3.S3AsyncClient;
 final class FileSetManager {
 
   private static final Logger LOG = LoggerFactory.getLogger(FileSetManager.class);
-  private static final String COMPRESSION_ALGORITHM = CompressorStreamFactory.getZstandard();
   private static final int COMPRESSION_SIZE_THRESHOLD = 8 * 1024 * 1024; // 8 MiB
   private static final String TMP_COMPRESSION_PREFIX = "zb-backup-compress-";
   private static final String TMP_DECOMPRESSION_PREFIX = "zb-backup-decompress-";
