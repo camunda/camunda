@@ -9,6 +9,7 @@ package io.camunda.zeebe.backup.s3;
 
 import io.camunda.zeebe.backup.s3.S3BackupConfig.Builder;
 import io.camunda.zeebe.test.util.testcontainers.ContainerLogsDumper;
+import java.time.Duration;
 import java.util.Map;
 import java.time.Duration;
 import org.apache.commons.lang3.RandomStringUtils;
@@ -101,8 +102,8 @@ final class LocalstackBackupStoreIT implements S3BackupStoreTests {
   }
 
   @Override
-  public void setConfigParallelConnectionsAndTimeout(final int parallelConnections,
-      final Duration timeout){
+  public void setConfigParallelConnectionsAndTimeout(
+      final int parallelConnections, final Duration timeout) {
     config =
         new Builder()
             .withBucketName(BUCKET_NAME)
