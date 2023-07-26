@@ -16,6 +16,9 @@
  */
 package io.atomix.primitive.partition;
 
+import java.util.Set;
+import java.util.concurrent.CompletableFuture;
+
 /** Partition service. */
 public interface PartitionService {
 
@@ -25,4 +28,6 @@ public interface PartitionService {
    * @return the partition group
    */
   ManagedPartitionGroup getPartitionGroup();
+
+  Set<CompletableFuture<Partition>> startPartitions();
 }

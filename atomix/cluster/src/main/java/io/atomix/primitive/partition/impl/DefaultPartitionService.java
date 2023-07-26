@@ -20,8 +20,10 @@ import io.atomix.cluster.ClusterMembershipService;
 import io.atomix.cluster.messaging.ClusterCommunicationService;
 import io.atomix.primitive.partition.ManagedPartitionGroup;
 import io.atomix.primitive.partition.ManagedPartitionService;
+import io.atomix.primitive.partition.Partition;
 import io.atomix.primitive.partition.PartitionManagementService;
 import io.atomix.primitive.partition.PartitionService;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.slf4j.Logger;
@@ -36,6 +38,7 @@ public class DefaultPartitionService implements ManagedPartitionService {
   private volatile PartitionManagementService partitionManagementService;
   private final ManagedPartitionGroup group;
   private final AtomicBoolean started = new AtomicBoolean();
+  private Set<CompletableFuture<Partition>> partitions;
 
   public DefaultPartitionService(
       final ClusterMembershipService membershipService,
@@ -52,23 +55,18 @@ public class DefaultPartitionService implements ManagedPartitionService {
   }
 
   @Override
+  public Set<CompletableFuture<Partition>> startPartitions() {
+    return partitions;
+  }
+
+  @Override
   public CompletableFuture<PartitionService> start() {
     if (started.compareAndSet(false, true)) {
 
       partitionManagementService =
           new DefaultPartitionManagementService(clusterMembershipService, communicationService);
-
-      final var startStepFuture =
-          group != null
-              ? group.join(partitionManagementService)
-              : CompletableFuture.completedFuture(null);
-
-      return startStepFuture.thenApply(
-          v -> {
-            LOGGER.debug("Started {}", getClass());
-            started.set(true);
-            return this;
-          });
+      partitions = group.join(partitionManagementService);
+      return CompletableFuture.completedFuture(this);
     }
     return CompletableFuture.completedFuture(null);
   }

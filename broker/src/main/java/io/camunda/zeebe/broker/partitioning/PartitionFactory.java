@@ -8,6 +8,7 @@
 package io.camunda.zeebe.broker.partitioning;
 
 import io.atomix.cluster.MemberId;
+import io.atomix.primitive.partition.Partition;
 import io.atomix.raft.partition.RaftPartition;
 import io.atomix.raft.partition.RaftPartitionGroup;
 import io.camunda.zeebe.broker.PartitionListener;
@@ -62,8 +63,9 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 final class PartitionFactory {
 
@@ -122,12 +124,12 @@ final class PartitionFactory {
     this.jobStreamer = jobStreamer;
   }
 
-  List<ZeebePartition> constructPartitions(
+  Map<Partition, ZeebePartition> constructPartitions(
       final RaftPartitionGroup partitionGroup,
       final List<PartitionListener> partitionListeners,
       final TopologyManager topologyManager,
       final FeatureFlags featureFlags) {
-    final var partitions = new ArrayList<ZeebePartition>();
+    final var partitions = new HashMap<Partition, ZeebePartition>();
     final var communicationService = clusterServices.getCommunicationService();
     final var membershipService = clusterServices.getMembershipService();
 
@@ -180,7 +182,7 @@ final class PartitionFactory {
 
       healthCheckService.registerMonitoredPartition(
           zeebePartition.getPartitionId(), zeebePartition);
-      partitions.add(zeebePartition);
+      partitions.put(owningPartition, zeebePartition);
     }
 
     return partitions;

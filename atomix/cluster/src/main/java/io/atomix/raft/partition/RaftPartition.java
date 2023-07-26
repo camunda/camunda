@@ -88,7 +88,7 @@ public final class RaftPartition implements Partition, HealthMonitorable {
         .members()
         .contains(managementService.getMembershipService().getLocalMember().id())) {
       initServer(managementService);
-      return server.start().thenApply(v -> null);
+      return server.start().thenApply(server -> this);
     }
     return CompletableFuture.completedFuture(this);
   }

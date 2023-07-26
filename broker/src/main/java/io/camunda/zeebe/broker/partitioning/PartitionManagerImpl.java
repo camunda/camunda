@@ -151,19 +151,22 @@ public final class PartitionManagerImpl implements PartitionManager, TopologyMan
                       gatewayBrokerTransport,
                       jobStreamer);
 
-              partitions.addAll(
+              final var startingPartitions = partitionService.startPartitions();
+              final var zeebePartitions =
                   partitionFactory.constructPartitions(
                       partitionGroup,
                       partitionListeners,
                       topologyManager,
-                      brokerCfg.getExperimental().getFeatures().toFeatureFlags()));
+                      brokerCfg.getExperimental().getFeatures().toFeatureFlags());
 
-              final var futures =
-                  partitions.stream()
-                      .map(partition -> CompletableFuture.runAsync(() -> startPartition(partition)))
-                      .toArray(CompletableFuture[]::new);
-
-              CompletableFuture.allOf(futures).join();
+              for (final var partition : startingPartitions) {
+                partition.thenApplyAsync(
+                    raftPartition -> {
+                      final var zeebePartition = zeebePartitions.get(raftPartition);
+                      CompletableFuture.runAsync(() -> startPartition(zeebePartition));
+                      return null;
+                    });
+              }
               return null;
             });
   }
@@ -174,6 +177,7 @@ public final class PartitionManagerImpl implements PartitionManager, TopologyMan
     zeebePartition.addFailureListener(
         new PartitionHealthBroadcaster(zeebePartition.getPartitionId(), this::onHealthChanged));
     diskSpaceUsageMonitor.addDiskUsageListener(zeebePartition);
+    partitions.add(zeebePartition);
   }
 
   public CompletableFuture<Void> stop() {
