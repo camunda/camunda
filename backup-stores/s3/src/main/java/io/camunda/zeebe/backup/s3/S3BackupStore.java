@@ -340,7 +340,7 @@ public final class S3BackupStore implements BackupStore {
               if (throwable.getCause() instanceof NoSuchKeyException) {
                 LOG.debug("Found no manifest for backup {}", id);
                 return new NoBackupManifest(BackupIdentifierImpl.from(id));
-              } else if (throwable.getCause() instanceof S3BackupStoreException e) {
+              } else if (throwable.getCause() instanceof final S3BackupStoreException e) {
                 // Exception was already wrapped, no need to re-wrap
                 throw e;
               } else {
@@ -403,7 +403,7 @@ public final class S3BackupStore implements BackupStore {
     builder.httpClient(
         NettyNioAsyncHttpClient.builder()
             // Default is 50: `SdkHttpConfigurationOption.MAX_CONNECTIONS`.
-            .maxConcurrency(config.parallelUploadsLimit().orElse(50))
+            .maxConcurrency(config.maxConcurrentConnections().orElse(50))
             // We'd rather wait longer for a connection than have a failed backup. This helps in
             // smoothing out spikes when taking a backup.
             // Default is 10s: `SdkHttpConfigurationOption.DEFAULT_CONNECTION_ACQUIRE_TIMEOUT`.
