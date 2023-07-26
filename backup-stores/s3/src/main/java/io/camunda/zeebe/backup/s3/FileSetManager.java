@@ -21,6 +21,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Map.Entry;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Semaphore;
 import org.apache.commons.compress.compressors.CompressorException;
 import org.apache.commons.compress.compressors.CompressorStreamFactory;
 import org.apache.commons.compress.utils.IOUtils;
@@ -40,12 +41,26 @@ final class FileSetManager {
   private static final int COMPRESSION_SIZE_THRESHOLD = 8 * 1024 * 1024; // 8 MiB
   private static final String TMP_COMPRESSION_PREFIX = "zb-backup-compress-";
   private static final String TMP_DECOMPRESSION_PREFIX = "zb-backup-decompress-";
+
+  private static final Integer DEFAULT_PARALLEL_UPLOAD_TOKENS = 50;
+
   private final S3AsyncClient client;
   private final S3BackupConfig config;
+  private final Semaphore semaphoreLimit;
 
   public FileSetManager(final S3AsyncClient client, final S3BackupConfig config) {
     this.client = client;
     this.config = config;
+
+    // We guarantee that there's always available connections by restricting the number of
+    // concurrent uploads to half (rounding up) of the number of available connections.
+    // This prevents ConnectionAcquisitionTimeout.
+    semaphoreLimit =
+        new Semaphore(
+            (int)
+                Math.ceil(
+                    (double) (config.parallelUploadsLimit().orElse(DEFAULT_PARALLEL_UPLOAD_TOKENS))
+                        / 2));
   }
 
   CompletableFuture<FileSet> save(final String prefix, final NamedFileSet files) {
@@ -59,24 +74,39 @@ final class FileSetManager {
 
   private CompletableFuture<FileSet.FileMetadata> saveFile(
       final String prefix, final String fileName, final Path filePath) {
+
     if (shouldCompressFile(filePath)) {
       final var algorithm = config.compressionAlgorithm().orElseThrow();
-      final var compressed = compressFile(filePath, algorithm);
-      LOG.trace("Saving compressed file {}({}) in prefix {}", fileName, compressed, prefix);
-      return client
-          .putObject(
-              put -> put.bucket(config.bucketName()).key(prefix + fileName),
-              AsyncRequestBody.fromFile(compressed))
-          .thenRunAsync(() -> cleanupCompressedFile(compressed))
-          .thenApply(unused -> FileSet.FileMetadata.withCompression(algorithm));
+      return CompletableFuture.runAsync(() -> semaphoreLimit.acquireUninterruptibly())
+          .thenApply(
+              (success) -> {
+                return compressFile(filePath, algorithm);
+              })
+          .thenCompose(
+              (compressedFile) -> {
+                LOG.trace(
+                    "Saving compressed file {}({}) in prefix {}", fileName, compressedFile, prefix);
+                return client
+                    .putObject(
+                        put -> put.bucket(config.bucketName()).key(prefix + fileName),
+                        AsyncRequestBody.fromFile(compressedFile))
+                    .thenRunAsync(() -> cleanupCompressedFile(compressedFile))
+                    .thenApply(unused -> FileSet.FileMetadata.withCompression(algorithm))
+                    .whenComplete((success, error) -> semaphoreLimit.release());
+              });
     }
 
-    LOG.trace("Saving file {}({}) in prefix {}", fileName, filePath, prefix);
-    return client
-        .putObject(
-            put -> put.bucket(config.bucketName()).key(prefix + fileName),
-            AsyncRequestBody.fromFile(filePath))
-        .thenApply(unused -> FileSet.FileMetadata.none());
+    return CompletableFuture.runAsync(() -> semaphoreLimit.acquireUninterruptibly())
+        .thenCompose(
+            (nothing) -> {
+              LOG.trace("Saving file {}({}) in prefix {}", fileName, filePath, prefix);
+              return client
+                  .putObject(
+                      put -> put.bucket(config.bucketName()).key(prefix + fileName),
+                      AsyncRequestBody.fromFile(filePath))
+                  .thenApply(unused -> FileSet.FileMetadata.none())
+                  .whenComplete((success, error) -> semaphoreLimit.release());
+            });
   }
 
   private void cleanupCompressedFile(final Path compressedFile) {

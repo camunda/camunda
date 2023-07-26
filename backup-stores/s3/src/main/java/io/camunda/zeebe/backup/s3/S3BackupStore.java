@@ -175,6 +175,7 @@ public final class S3BackupStore implements BackupStore {
             status -> {
               final var snapshot = saveSnapshotFiles(backup);
               final var segments = saveSegmentFiles(backup);
+
               return CompletableFuture.allOf(snapshot, segments)
                   .thenComposeAsync(
                       ignored ->
@@ -401,10 +402,13 @@ public final class S3BackupStore implements BackupStore {
 
     builder.httpClient(
         NettyNioAsyncHttpClient.builder()
+            // Default is 50: `SdkHttpConfigurationOption.MAX_CONNECTIONS`.
+            .maxConcurrency(config.parallelUploadsLimit().orElse(50))
             // We'd rather wait longer for a connection than have a failed backup. This helps in
             // smoothing out spikes when taking a backup.
             // Default is 10s: `SdkHttpConfigurationOption.DEFAULT_CONNECTION_ACQUIRE_TIMEOUT`.
-            .connectionAcquisitionTimeout(Duration.ofSeconds(45))
+            .connectionAcquisitionTimeout(
+                config.connectionAcquisitionTimeout().orElse(Duration.ofSeconds(10)))
             .build());
 
     builder.overrideConfiguration(cfg -> cfg.retryPolicy(RetryMode.ADAPTIVE));
