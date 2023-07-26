@@ -89,17 +89,25 @@ public final class DbTimerInstanceState implements MutableTimerInstanceState {
 
     dueDateColumnFamily.whileTrue(
         (key, nil) -> {
-          final DbLong dueDate = key.first();
+          final var dueDate = key.first().getValue();
+          final var elementAndTimerKey = key.second();
 
           boolean consumed = false;
-          if (dueDate.getValue() <= timestamp) {
-            final var elementAndTimerKey = key.second();
-            final TimerInstance timerInstance = timerInstanceColumnFamily.get(elementAndTimerKey);
+          if (dueDate <= timestamp) {
+            final var timerInstance = timerInstanceColumnFamily.get(elementAndTimerKey);
+            if (timerInstance == null) {
+              // Time for due date no longer exists. This can occur due to the following data race:
+              // 1. Scheduled task reads a due date for a timer
+              // 2. Processing removes timer and due date
+              // 3. Scheduled task fails to find timer
+              // Because timer and due date were already removed, we can ignore this here.
+              return true;
+            }
             consumed = consumer.visit(timerInstance);
           }
 
           if (!consumed) {
-            nextDueDate = dueDate.getValue();
+            nextDueDate = dueDate;
           }
           return consumed;
         });
