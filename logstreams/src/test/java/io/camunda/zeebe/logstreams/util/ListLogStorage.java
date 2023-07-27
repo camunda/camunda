@@ -20,6 +20,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentNavigableMap;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.LongConsumer;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -31,7 +32,7 @@ public class ListLogStorage implements LogStorage {
   private LongConsumer positionListener;
   private final Set<CommitListener> commitListeners = new HashSet<>();
   private final List<ListLogStorageReader> listLogStorageReaders;
-  private int currentIndex;
+  private final AtomicInteger currentIndex = new AtomicInteger(0);
 
   public ListLogStorage() {
     entries = new ConcurrentSkipListMap<Integer, Entry>();
@@ -69,7 +70,7 @@ public class ListLogStorage implements LogStorage {
       final AppendListener listener) {
     try {
       final var entry = new Entry(blockBuffer);
-      final var index = currentIndex++;
+      final var index = currentIndex.getAndIncrement();
       entries.put(index, entry);
       positionIndexMapping.put(lowestPosition, index);
       listener.onWrite(index);
