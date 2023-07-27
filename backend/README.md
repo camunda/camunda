@@ -1,3 +1,20 @@
+# Optimize CI Status
+
+[![Main Pipeline - master](https://github.com/camunda/camunda-optimize/actions/workflows/ci.yml/badge.svg)](https://github.com/camunda/camunda-optimize/actions/workflows/ci.yml)
+[![Main Pipeline - 3.10](https://github.com/camunda/camunda-optimize/actions/workflows/ci.yml/badge.svg?branch=maintenance%2F3.10)](https://github.com/camunda/camunda-optimize/actions/workflows/ci.yml)
+[![Main Pipeline - 3.9](https://github.com/camunda/camunda-optimize/actions/workflows/ci.yml/badge.svg?branch=maintenance%2F3.9)](https://github.com/camunda/camunda-optimize/actions/workflows/ci.yml)
+[![Main Pipeline - 3.8](https://github.com/camunda/camunda-optimize/actions/workflows/ci.yml/badge.svg?branch=maintenance%2F3.8)](https://github.com/camunda/camunda-optimize/actions/workflows/ci.yml)
+[![Main Pipeline - 3.7](https://github.com/camunda/camunda-optimize/actions/workflows/ci.yml/badge.svg?branch=maintenance%2F3.7)](https://github.com/camunda/camunda-optimize/actions/workflows/ci.yml)
+[![Connect to secured Elasticsearch](https://github.com/camunda/camunda-optimize/actions/workflows/connect-to-secured-es.yml/badge.svg)](https://github.com/camunda/camunda-optimize/actions/workflows/connect-to-secured-es.yml)
+[![Zeebe Compatibility](https://github.com/camunda/camunda-optimize/actions/workflows/zeebe-compatibility.yml/badge.svg)](https://github.com/camunda/camunda-optimize/actions/workflows/zeebe-compatibility.yml)
+[![Upgrade Data Performance Test](https://github.com/camunda/camunda-optimize/actions/workflows/upgrade-data-performance.yml/badge.svg)](https://github.com/camunda/camunda-optimize/actions/workflows/upgrade-data-performance.yml)
+[![Optimize Cluster Test](https://github.com/camunda/camunda-optimize/actions/workflows/cluster-test.yml/badge.svg)](https://github.com/camunda/camunda-optimize/actions/workflows/cluster-test.yml)
+[![Java Compatibility Job](https://github.com/camunda/camunda-optimize/actions/workflows/java-compatibility-mode.yml/badge.svg)](https://github.com/camunda/camunda-optimize/actions/workflows/java-compatibility-mode.yml)
+[![Import Static Dataset Performance Test](https://github.com/camunda/camunda-optimize/actions/workflows/import-static-data-performance.yml/badge.svg)](https://github.com/camunda/camunda-optimize/actions/workflows/import-static-data-performance.yml)
+[![Elasticsearch Compatibility Mode](https://github.com/camunda/camunda-optimize/actions/workflows/elasticsearch_compatibility.yml/badge.svg)](https://github.com/camunda/camunda-optimize/actions/workflows/elasticsearch_compatibility.yml)
+[![Trivy check docker image](https://github.com/camunda/camunda-optimize/actions/workflows/trivy-check.yml/badge.svg)](https://github.com/camunda/camunda-optimize/actions/workflows/trivy-check.yml)
+[![e2e tests](https://github.com/camunda/camunda-optimize/actions/workflows/e2e-tests.yml/badge.svg)](https://github.com/camunda/camunda-optimize/actions/workflows/e2e-tests.yml)
+
 # Camunda Optimize REST API
 
 The following REST API is providing backend service based on elasticsearch(ES) to perform aggregation of the 
