@@ -33,6 +33,7 @@ import io.camunda.zeebe.scheduler.health.CriticalComponentsHealthMonitor;
 import io.camunda.zeebe.scheduler.testing.ControlledActorSchedulerRule;
 import io.camunda.zeebe.util.exception.UnrecoverableException;
 import io.camunda.zeebe.util.health.FailureListener;
+import io.camunda.zeebe.util.health.HealthIssue;
 import io.camunda.zeebe.util.health.HealthReport;
 import io.camunda.zeebe.util.health.HealthStatus;
 import java.time.Duration;
@@ -398,6 +399,91 @@ public class ZeebePartitionTest {
 
     assertThat(healthReport.getStatus()).isEqualTo(HealthStatus.UNHEALTHY);
     assertThat(healthReport.getIssue().message()).contains("Services not installed");
+  }
+
+  @Test
+  public void shouldCallOnFailureOnceForSameHealthIssue() {
+    // given
+    schedulerRule.submitActor(partition);
+    schedulerRule.workUntilDone();
+
+    final FailureListener failureListener = mock(FailureListener.class);
+    doNothing().when(failureListener).onFailure(any());
+
+    final var captor = ArgumentCaptor.forClass(ZeebePartitionHealth.class);
+    verify(healthMonitor).registerComponent(any(), captor.capture());
+    final var zeebePartitionHealth = captor.getValue();
+    zeebePartitionHealth.addFailureListener(failureListener);
+
+    when(transition.getHealthIssue()).thenReturn(HealthIssue.of("it's over"));
+
+    // when
+    final HealthReport healthReport1 = zeebePartitionHealth.getHealthReport();
+    assertThat(healthReport1.getStatus()).isEqualTo(HealthStatus.UNHEALTHY);
+
+    final HealthReport healthReport2 = zeebePartitionHealth.getHealthReport();
+
+    // then
+    assertThat(healthReport1).isEqualTo(healthReport2);
+    verify(failureListener, times(1)).onFailure(any());
+  }
+
+  @Test
+  public void shouldCallOnFailureOnHealthIssueChange() {
+    // given
+    schedulerRule.submitActor(partition);
+    schedulerRule.workUntilDone();
+
+    final FailureListener failureListener = mock(FailureListener.class);
+    doNothing().when(failureListener).onFailure(any());
+
+    final var captor = ArgumentCaptor.forClass(ZeebePartitionHealth.class);
+    verify(healthMonitor).registerComponent(any(), captor.capture());
+    final var zeebePartitionHealth = captor.getValue();
+    zeebePartitionHealth.addFailureListener(failureListener);
+
+    when(transition.getHealthIssue()).thenReturn(HealthIssue.of("it's over"));
+
+    // when
+    final HealthReport healthReport1 = zeebePartitionHealth.getHealthReport();
+    assertThat(healthReport1.getStatus()).isEqualTo(HealthStatus.UNHEALTHY);
+
+    when(transition.getHealthIssue()).thenReturn(HealthIssue.of("it's something else"));
+    final HealthReport healthReport2 = zeebePartitionHealth.getHealthReport();
+    assertThat(healthReport2.getStatus()).isEqualTo(HealthStatus.UNHEALTHY);
+
+    // then
+    assertThat(healthReport1).isNotEqualTo(healthReport2);
+    verify(failureListener, times(2)).onFailure(any());
+  }
+
+  @Test
+  public void shouldCallOnRecoveredOnceWhenHealthy() {
+    // given
+    schedulerRule.submitActor(partition);
+    schedulerRule.workUntilDone();
+
+    final FailureListener failureListener = mock(FailureListener.class);
+    doNothing().when(failureListener).onFailure(any());
+    doNothing().when(failureListener).onRecovered();
+
+    final var captor = ArgumentCaptor.forClass(ZeebePartitionHealth.class);
+    verify(healthMonitor).registerComponent(any(), captor.capture());
+    final var zeebePartitionHealth = captor.getValue();
+    zeebePartitionHealth.addFailureListener(failureListener);
+
+    // when
+    partition.onNewRole(Role.LEADER, 1);
+    schedulerRule.workUntilDone();
+
+    final HealthReport healthReport1 = zeebePartitionHealth.getHealthReport();
+    assertThat(healthReport1.getStatus()).isEqualTo(HealthStatus.HEALTHY);
+
+    final HealthReport healthReport2 = zeebePartitionHealth.getHealthReport();
+    assertThat(healthReport2.getStatus()).isEqualTo(HealthStatus.HEALTHY);
+    // then
+    assertThat(healthReport1).isEqualTo(healthReport2);
+    verify(failureListener, times(1)).onRecovered();
   }
 
   @Test
