@@ -20,13 +20,6 @@ import {createInstance, createVariable} from 'modules/testUtils';
 import {mockFetchVariables} from 'modules/mocks/api/processInstances/fetchVariables';
 import {Wrapper} from './mocks';
 
-const mockDisplayNotification = jest.fn();
-jest.mock('modules/notifications', () => ({
-  useNotifications: () => ({
-    displayNotification: mockDisplayNotification,
-  }),
-}));
-
 const instanceMock = createInstance({id: '1'});
 
 describe('Variables', () => {

@@ -12,7 +12,6 @@ import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails
 import {observer} from 'mobx-react';
 import {useProcessInstancePageParams} from './useProcessInstancePageParams';
 import {useLocation, useNavigate} from 'react-router-dom';
-import {useNotifications} from 'modules/notifications';
 import {useEffect} from 'react';
 import {modificationsStore} from 'modules/stores/modifications';
 import {reaction, when} from 'mobx';
@@ -48,7 +47,6 @@ import {notificationsStore} from 'modules/stores/carbonNotifications';
 const ProcessInstance: React.FC = observer(() => {
   const {processInstanceId = ''} = useProcessInstancePageParams();
   const navigate = useNavigate();
-  const notifications = useNotifications();
   const location = useLocation();
 
   const {showPrompt, confirmNavigation, cancelNavigation} = useCallbackPrompt(
@@ -119,7 +117,7 @@ const ProcessInstance: React.FC = observer(() => {
       processInstanceDetailsDiagramStore.init();
       flowNodeSelectionStore.init();
     }
-  }, [processInstanceId, navigate, notifications, location]);
+  }, [processInstanceId, navigate, location]);
 
   useEffect(() => {
     return () => {

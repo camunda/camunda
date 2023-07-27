@@ -25,7 +25,7 @@ const DiagramShell: React.FC<DefaultProps | WithEmptyMessageProps> = ({
   status,
   ...props
 }) => (
-  <Container>
+  <Container data-testid="diagram-body">
     {(() => {
       if (status === 'content') {
         return children;
@@ -34,7 +34,7 @@ const DiagramShell: React.FC<DefaultProps | WithEmptyMessageProps> = ({
       if (status === 'loading') {
         return (
           <>
-            <Loading />
+            <Loading data-testid="diagram-spinner" />
             {children}
           </>
         );

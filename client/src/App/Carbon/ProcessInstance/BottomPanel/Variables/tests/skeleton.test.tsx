@@ -18,14 +18,6 @@ import {mockFetchVariables} from 'modules/mocks/api/processInstances/fetchVariab
 
 const EMPTY_PLACEHOLDER = 'The Flow Node has no Variables';
 
-const mockDisplayNotification = jest.fn();
-
-jest.mock('modules/notifications', () => ({
-  useNotifications: () => ({
-    displayNotification: mockDisplayNotification,
-  }),
-}));
-
 describe('Skeleton', () => {
   it('should display empty content if there are no variables', async () => {
     mockFetchVariables().withSuccess([]);

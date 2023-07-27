@@ -88,6 +88,7 @@ const ModificationDropdown: React.FC<Props> = observer(
                       <Button
                         kind="ghost"
                         title="Add single flow node instance"
+                        aria-label="Add single flow node instance"
                         size="sm"
                         renderIcon={Add}
                         onClick={() => {
@@ -137,6 +138,7 @@ const ModificationDropdown: React.FC<Props> = observer(
                         <Button
                           kind="ghost"
                           title="Cancel selected instance in this flow node"
+                          aria-label="Cancel selected instance in this flow node"
                           size="sm"
                           renderIcon={Error}
                           onClick={() => {
@@ -159,6 +161,7 @@ const ModificationDropdown: React.FC<Props> = observer(
                       <Button
                         kind="ghost"
                         title="Cancel all running flow node instances in this flow node"
+                        aria-label="Cancel all running flow node instances in this flow node"
                         size="sm"
                         renderIcon={Error}
                         onClick={() => {

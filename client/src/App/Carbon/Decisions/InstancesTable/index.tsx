@@ -142,6 +142,7 @@ const InstancesTable: React.FC = observer(() => {
                     });
                   }}
                   title={`View decision instance ${id}`}
+                  aria-label={`View decision instance ${id}`}
                 >
                   {id}
                 </Link>
@@ -154,6 +155,7 @@ const InstancesTable: React.FC = observer(() => {
                     <Link
                       to={Paths.processInstance(processInstanceId)}
                       title={`View process instance ${processInstanceId}`}
+                      aria-label={`View process instance ${processInstanceId}`}
                       onClick={() => {
                         tracking.track({
                           eventName: 'navigation',

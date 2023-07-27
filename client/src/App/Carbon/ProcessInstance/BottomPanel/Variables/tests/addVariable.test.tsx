@@ -20,13 +20,6 @@ import {createInstance} from 'modules/testUtils';
 import {mockFetchVariables} from 'modules/mocks/api/processInstances/fetchVariables';
 import {act} from 'react-dom/test-utils';
 
-const mockDisplayNotification = jest.fn();
-jest.mock('modules/notifications', () => ({
-  useNotifications: () => ({
-    displayNotification: mockDisplayNotification,
-  }),
-}));
-
 const instanceMock = createInstance({id: '1'});
 
 describe('Add variable', () => {
