@@ -27,6 +27,7 @@ const DiagramControls: React.FC<Props> = ({
   return (
     <ButtonContainer>
       <ZoomResetButton
+        size="sm"
         kind="tertiary"
         align="left"
         label="Reset diagram zoom"
@@ -35,6 +36,7 @@ const DiagramControls: React.FC<Props> = ({
         <CenterCircle />
       </ZoomResetButton>
       <ZoomInButton
+        size="sm"
         kind="tertiary"
         align="left"
         label="Zoom in diagram"
@@ -43,6 +45,7 @@ const DiagramControls: React.FC<Props> = ({
         <Add />
       </ZoomInButton>
       <ZoomOutButton
+        size="sm"
         kind="tertiary"
         align="left"
         label="Zoom out diagram"
