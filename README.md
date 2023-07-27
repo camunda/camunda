@@ -7,6 +7,23 @@ business processes.
 * [Issue Tracker](https://app.camunda.com/jira/secure/RapidBoard.jspa?rapidView=49)
 * [Documentation](https://docs.camunda.io/docs/components/optimize/what-is-optimize/)
 
+# Optimize CI Status
+
+[![Main Pipeline - master](https://github.com/camunda/camunda-optimize/actions/workflows/ci.yml/badge.svg)](https://github.com/camunda/camunda-optimize/actions/workflows/ci.yml)
+[![Main Pipeline - 3.10](https://github.com/camunda/camunda-optimize/actions/workflows/ci.yml/badge.svg?branch=maintenance%2F3.10)](https://github.com/camunda/camunda-optimize/actions/workflows/ci.yml)
+[![Main Pipeline - 3.9](https://github.com/camunda/camunda-optimize/actions/workflows/ci.yml/badge.svg?branch=maintenance%2F3.9)](https://github.com/camunda/camunda-optimize/actions/workflows/ci.yml)
+[![Main Pipeline - 3.8](https://github.com/camunda/camunda-optimize/actions/workflows/ci.yml/badge.svg?branch=maintenance%2F3.8)](https://github.com/camunda/camunda-optimize/actions/workflows/ci.yml)
+[![Main Pipeline - 3.7](https://github.com/camunda/camunda-optimize/actions/workflows/ci.yml/badge.svg?branch=maintenance%2F3.7)](https://github.com/camunda/camunda-optimize/actions/workflows/ci.yml)
+[![Connect to secured Elasticsearch](https://github.com/camunda/camunda-optimize/actions/workflows/connect-to-secured-es.yml/badge.svg)](https://github.com/camunda/camunda-optimize/actions/workflows/connect-to-secured-es.yml)
+[![Zeebe Compatibility](https://github.com/camunda/camunda-optimize/actions/workflows/zeebe-compatibility.yml/badge.svg)](https://github.com/camunda/camunda-optimize/actions/workflows/zeebe-compatibility.yml)
+[![Upgrade Data Performance Test](https://github.com/camunda/camunda-optimize/actions/workflows/upgrade-data-performance.yml/badge.svg)](https://github.com/camunda/camunda-optimize/actions/workflows/upgrade-data-performance.yml)
+[![Optimize Cluster Test](https://github.com/camunda/camunda-optimize/actions/workflows/cluster-test.yml/badge.svg)](https://github.com/camunda/camunda-optimize/actions/workflows/cluster-test.yml)
+[![Java Compatibility Job](https://github.com/camunda/camunda-optimize/actions/workflows/java-compatibility-mode.yml/badge.svg)](https://github.com/camunda/camunda-optimize/actions/workflows/java-compatibility-mode.yml)
+[![Import Static Dataset Performance Test](https://github.com/camunda/camunda-optimize/actions/workflows/import-static-data-performance.yml/badge.svg)](https://github.com/camunda/camunda-optimize/actions/workflows/import-static-data-performance.yml)
+[![Elasticsearch Compatibility Mode](https://github.com/camunda/camunda-optimize/actions/workflows/elasticsearch_compatibility.yml/badge.svg)](https://github.com/camunda/camunda-optimize/actions/workflows/elasticsearch_compatibility.yml)
+[![Trivy check docker image](https://github.com/camunda/camunda-optimize/actions/workflows/trivy-check.yml/badge.svg)](https://github.com/camunda/camunda-optimize/actions/workflows/trivy-check.yml)
+[![e2e tests](https://github.com/camunda/camunda-optimize/actions/workflows/e2e-tests.yml/badge.svg)](https://github.com/camunda/camunda-optimize/actions/workflows/e2e-tests.yml)
+
 ## Building Optimize
 
 Apache Maven 3 and Java JDK 8 are prerequisites for building Camunda
