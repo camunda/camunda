@@ -32,6 +32,10 @@ on:
         required: false
         type: boolean
         default: false
+      ref:
+        description: The reference to checkout
+        required: false
+        type: string
   workflow_call:
     secrets:
       SNYK_TOKEN:
@@ -64,6 +68,10 @@ on:
         required: false
         type: boolean
         default: false
+      ref:
+        description: The reference to checkout
+        required: false
+        type: string
 
 defaults:
   run:
@@ -82,6 +90,8 @@ jobs:
       - name: Install Snyk CLI
         uses: snyk/actions/setup@master
       - uses: actions/checkout@v3
+        with:
+          ref: ${{ inputs.ref }}
       - name: Setup Zeebe
         uses: ./.github/actions/setup-zeebe
         with:
