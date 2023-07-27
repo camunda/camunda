@@ -105,7 +105,7 @@ const Login: React.FC = () => {
           return errors;
         }}
       >
-        {({handleSubmit, submitError, submitting, form, dirtyFields}) => {
+        {({handleSubmit, submitError, submitting}) => {
           return (
             <Column
               as="form"
@@ -180,11 +180,7 @@ const Login: React.FC = () => {
                 </FieldContainer>
                 <Button
                   type="submit"
-                  disabled={
-                    !form
-                      .getRegisteredFields()
-                      .every((field) => dirtyFields[field]) || submitting
-                  }
+                  disabled={submitting}
                   renderIcon={submitting ? LoadingSpinner : undefined}
                 >
                   {submitting ? 'Logging in' : 'Login'}

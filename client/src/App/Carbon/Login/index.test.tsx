@@ -107,25 +107,58 @@ describe('<Login />', () => {
     );
   });
 
-  it('should disable the login button when any field is empty', async () => {
+  it('should not allow the form to be submitted with empty fields', async () => {
+    mockLogin().withSuccess(null);
     const {user} = render(<Login />, {
       wrapper: createWrapper(),
     });
 
-    expect(screen.getByRole('button', {name: 'Login'})).toBeDisabled();
+    await user.click(screen.getByRole('button', {name: /login/i}));
+
+    expect(screen.getByLabelText(/username/i)).toHaveAccessibleDescription(
+      /username is required/i,
+    );
+    expect(screen.getByLabelText(/username/i)).toBeInvalid();
+    expect(screen.getByLabelText(/password/i)).toHaveAccessibleDescription(
+      /password is required/i,
+    );
+    expect(screen.getByLabelText(/password/i)).toBeInvalid();
+    expect(screen.getByTestId('pathname')).toHaveTextContent('/login');
 
     await user.type(screen.getByLabelText(/username/i), 'demo');
+    await user.click(screen.getByRole('button', {name: /login/i}));
 
-    expect(screen.getByRole('button', {name: 'Login'})).toBeDisabled();
+    expect(screen.getByLabelText(/password/i)).not.toHaveAccessibleDescription(
+      /username is required/i,
+    );
+    expect(screen.getByLabelText(/username/i)).toBeValid();
+    expect(screen.getByLabelText(/password/i)).toHaveAccessibleDescription(
+      /password is required/i,
+    );
+    expect(screen.getByLabelText(/password/i)).toBeInvalid();
+    expect(screen.getByTestId('pathname')).toHaveTextContent('/login');
 
-    await user.type(screen.getByLabelText(/password/i), 'demo');
-
-    expect(screen.getByRole('button', {name: 'Login'})).toBeEnabled();
-
-    await user.clear(screen.getByLabelText(/password/i));
     await user.clear(screen.getByLabelText(/username/i));
+    await user.type(screen.getByLabelText(/password/i), 'demo');
+    await user.click(screen.getByRole('button', {name: /login/i}));
 
-    expect(screen.getByRole('button', {name: 'Login'})).toBeDisabled();
+    expect(screen.getByLabelText(/password/i)).not.toHaveAccessibleDescription(
+      /password is required/i,
+    );
+    expect(screen.getByLabelText(/password/i)).toBeValid();
+    expect(screen.getByLabelText(/username/i)).toHaveAccessibleDescription(
+      /username is required/i,
+    );
+    expect(screen.getByLabelText(/username/i)).toBeInvalid();
+    expect(screen.getByTestId('pathname')).toHaveTextContent('/login');
+
+    await user.type(screen.getByLabelText(/username/i), 'demo');
+    await user.click(screen.getByRole('button', {name: /login/i}));
+
+    expect(screen.getByTestId('pathname')).toHaveTextContent('/login');
+    await waitFor(() =>
+      expect(screen.getByTestId('pathname')).toHaveTextContent(/^\/$/i),
+    );
   });
 
   it('should handle wrong credentials', async () => {
