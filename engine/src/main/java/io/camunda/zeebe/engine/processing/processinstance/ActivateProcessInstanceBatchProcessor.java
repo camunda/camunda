@@ -8,6 +8,7 @@
 package io.camunda.zeebe.engine.processing.processinstance;
 
 import io.camunda.zeebe.engine.api.TypedRecord;
+import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableMultiInstanceBody;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
@@ -97,7 +98,9 @@ public final class ActivateProcessInstanceBatchProcessor
     // follow-up batch command. An excessive 8Kb is added to account for metadata. This is way
     // more than will be necessary.
     final var expectedCommandLength =
-        record.getLength() + childInstanceRecord.getLength() + (1024 * 8);
+        record.getLength()
+            + childInstanceRecord.getLength()
+            + EngineConfiguration.BATCH_SIZE_CALCULATION_BUFFER;
     return commandWriter.canWriteCommandOfLength(expectedCommandLength);
   }
 }
