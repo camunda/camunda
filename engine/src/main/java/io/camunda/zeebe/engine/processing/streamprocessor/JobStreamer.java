@@ -16,14 +16,12 @@ import org.agrona.DirectBuffer;
  * A {@link JobStreamer} allows the engine to push data back to a single gateway (any). It keeps
  * track of multiple {@link JobStream} instances, each with their own jobType.
  *
- * <p>NOTE: {@link JobStream#push(ActivatedJob, ErrorHandler)} is a side effect, and should be
- * treated as a post-commit task for consistency. TODO: see if the platform cannot already enforce
- * with its own implementation.
+ * <p>NOTE: {@link JobStream#push(ActivatedJob)} is a side effect, and should be treated as a
+ * post-commit task for consistency. TODO: see if the platform cannot already enforce with its own
+ * implementation.
  *
- * <p>NOTE: implementations of the {@link JobStream#push(ActivatedJob, ErrorHandler)} method are
- * likely asynchronous. As such, errors handled via the {@link ErrorHandler} may be executed after
- * the initial call. Callers should be careful with the state they close on in the implementations
- * of their {@link ErrorHandler}.
+ * <p>NOTE: implementations of the {@link JobStream#push(ActivatedJob)} method are likely
+ * asynchronous.
  */
 @FunctionalInterface
 public interface JobStreamer {
