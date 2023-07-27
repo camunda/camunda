@@ -10,6 +10,8 @@ import {Tabs as CarbonTabs, TabList, Tab, TabPanels, TabPanel} from '@carbon/rea
 
 import {isReactElement} from 'services';
 
+import './Tabs.scss';
+
 interface TabsProps<T extends string | number>
   extends Omit<ComponentPropsWithoutRef<'div'>, 'onChange'> {
   value?: T;
