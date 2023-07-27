@@ -16,6 +16,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
 import static org.awaitility.Awaitility.await;
 
+import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
@@ -390,7 +391,8 @@ public final class ActivateJobsTest {
 
     final long maxMessageSize = ByteValue.ofMegabytes(4);
     final long headerSize = ByteValue.ofKilobytes(2);
-    final long maxRecordSize = maxMessageSize - headerSize - (1024 * 8);
+    final long maxRecordSize =
+        maxMessageSize - headerSize - EngineConfiguration.BATCH_SIZE_CALCULATION_BUFFER;
 
     final int variablesSize = (int) maxRecordSize / expectedJobsInBatch;
     final String variables = "{'key': '" + "x".repeat(variablesSize) + "'}";
@@ -412,7 +414,8 @@ public final class ActivateJobsTest {
     // given
     final var maxMessageSize = ByteValue.ofMegabytes(4);
     final var headerSize = ByteValue.ofKilobytes(2);
-    final var maxRecordSize = maxMessageSize - headerSize - (1024 * 8);
+    final var maxRecordSize =
+        maxMessageSize - headerSize - EngineConfiguration.BATCH_SIZE_CALCULATION_BUFFER;
 
     ENGINE
         .deployment()
