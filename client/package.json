@@ -3,8 +3,8 @@
   "version": "8.3.0-SNAPSHOT",
   "private": true,
   "dependencies": {
-    "@bpmn-io/form-js-carbon-styles": "1.0.0",
-    "@bpmn-io/form-js-viewer": "1.0.0",
+    "@bpmn-io/form-js-carbon-styles": "1.1.0",
+    "@bpmn-io/form-js-viewer": "1.1.0",
     "@camunda/camunda-composite-components": "0.0.41",
     "@carbon/elements": "11.25.1",
     "@carbon/react": "1.33.2",
