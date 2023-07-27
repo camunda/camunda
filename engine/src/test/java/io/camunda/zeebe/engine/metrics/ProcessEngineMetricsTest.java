@@ -16,18 +16,21 @@ import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
+import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.Map;
 import org.junit.Before;
 import org.junit.ClassRule;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TestWatcher;
 
 public class ProcessEngineMetricsTest {
 
   @ClassRule public static final EngineRule ENGINE = EngineRule.singlePartition();
-
   private static final String DMN_RESOURCE = "/dmn/drg-force-user.dmn";
   private static final String PROCESS_ID = "process";
   private static final String TASK_ID = "task";
+  @Rule public final TestWatcher recordingExporterTestWatcher = new RecordingExporterTestWatcher();
 
   @Before
   public void resetMetrics() {
