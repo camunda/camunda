@@ -11,6 +11,7 @@ import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.transport.stream.api.RemoteStreamMetrics;
 import io.camunda.zeebe.transport.stream.impl.AggregatedRemoteStream.StreamConsumer;
 import io.camunda.zeebe.transport.stream.impl.AggregatedRemoteStream.StreamId;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -134,5 +135,10 @@ public class RemoteStreamRegistry<M> implements ImmutableStreamRegistry<M> {
   public void clear() {
     typeToConsumers.clear();
     idToConsumer.clear();
+    logicalIdToConsumers.clear();
+  }
+
+  Collection<AggregatedRemoteStream<M>> list() {
+    return logicalIdToConsumers.values();
   }
 }
