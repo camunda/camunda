@@ -9,7 +9,6 @@ package io.camunda.zeebe.journal.file;
 
 import io.camunda.zeebe.journal.CorruptedJournalException;
 import io.camunda.zeebe.journal.JournalException;
-import io.camunda.zeebe.journal.file.SegmentDescriptor.SegmentDescriptorReader;
 import io.camunda.zeebe.util.FileUtil;
 import java.io.IOException;
 import java.nio.ByteOrder;
