@@ -16,6 +16,10 @@ public final class EngineConfiguration {
 
   public static final int DEFAULT_MAX_ERROR_MESSAGE_SIZE = 10000;
 
+  // This size (in bytes) is used as a buffer when filling an event/command up to the maximum
+  // message size.
+  public static final int BATCH_SIZE_CALCULATION_BUFFER = 1024 * 8;
+
   private int messagesTtlCheckerBatchLimit = DEFAULT_MESSAGES_TTL_CHECKER_BATCH_LIMIT;
   private Duration messagesTtlCheckerInterval = DEFAULT_MESSAGES_TTL_CHECKER_INTERVAL;
 
