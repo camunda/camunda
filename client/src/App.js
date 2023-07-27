@@ -63,7 +63,7 @@ class App extends React.Component {
       'collection',
       'events/processes',
     ];
-    let Component, newProps;
+    let Component, newProps, selectedEntity;
     for (let entity of entities) {
       const splitResult = props.location.pathname.split('/' + entity)[1];
       if (splitResult) {
@@ -74,10 +74,13 @@ class App extends React.Component {
           entity,
         };
         Component = components[entity];
+        selectedEntity = entity;
         break;
       }
     }
-    return <Component {...newProps} />;
+    // we do this to get a fresh component whenever the entity type changes
+    // this is needed to be able to create new dashboard from instant preview dashboard page
+    return <Component key={selectedEntity} {...newProps} />;
   };
 
   render() {

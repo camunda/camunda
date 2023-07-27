@@ -288,7 +288,7 @@ it('should hide sharing for instant preview dashboard', async () => {
 
   await flushPromises();
 
-  expect(node.find(DashboardView).prop('sharingHidden')).toBe(true);
+  expect(node.find(DashboardView).prop('isInstantDashboard')).toBe(true);
 });
 
 it('should invoke isAuthorizedToShareDashboard on mount', async () => {

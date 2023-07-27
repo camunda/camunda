@@ -212,8 +212,8 @@ it('should reset filters when closing the filters section', () => {
   expect(node.find('FiltersView').prop('filter')).toEqual([]);
 });
 
-it('should hide the share button', () => {
-  const node = shallow(<DashboardView sharingHidden />);
+it('should hide the share button for instant preview dashboard', () => {
+  const node = shallow(<DashboardView isInstantDashboard />);
 
   expect(node.find('.share-button')).not.toExist();
 });
@@ -228,4 +228,15 @@ it('should hide the description', () => {
   const node = shallow(<DashboardView description={null} />);
 
   expect(node.find('EntityDescription')).not.toExist();
+});
+
+it('should render the create copy button and modal for instant preview dashboard', () => {
+  const node = shallow(<DashboardView isInstantDashboard />);
+
+  const createCopyButton = node.find('.create-copy');
+  expect(createCopyButton).toExist();
+
+  createCopyButton.simulate('click');
+
+  expect(node.find('DashboardTemplateModal')).toExist();
 });

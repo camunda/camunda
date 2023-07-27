@@ -22,6 +22,7 @@ import {
   DiagramScrollLock,
   AlertsDropdown,
   EntityDescription,
+  DashboardTemplateModal,
 } from 'components';
 import {evaluateReport} from 'services';
 import {themed} from 'theme';
@@ -37,6 +38,7 @@ import {
 import {FiltersView} from './filters';
 
 import {AutoRefreshBehavior, AutoRefreshSelect} from './AutoRefresh';
+import useReportDefinitions from './useReportDefinitions';
 
 import './DashboardView.scss';
 
@@ -47,7 +49,7 @@ export function DashboardView(props) {
     description,
     currentUserRole,
     isAuthorizedToShare,
-    sharingHidden,
+    isInstantDashboard,
     sharingEnabled,
     tiles,
     availableFilters,
@@ -69,6 +71,10 @@ export function DashboardView(props) {
   const [filter, setFilter] = useState(getDefaultFilter(availableFilters));
   const fullScreenHandle = useFullScreenHandle();
   const [optimizeProfile, setOptimizeProfile] = useState();
+  const [isTemplateModalOpen, setIsTemplateModalOpen] = useState(false);
+
+  const optimizeReports = tiles?.filter(({id, report}) => !!id || !!report);
+  const {definitions} = useReportDefinitions(optimizeReports?.[0]);
 
   const themeRef = useRef(theme);
 
@@ -129,6 +135,16 @@ export function DashboardView(props) {
             <div className="tools">
               {!fullScreenHandle.active && (
                 <React.Fragment>
+                  {isInstantDashboard && (
+                    <Button
+                      onClick={() => setIsTemplateModalOpen(true)}
+                      main
+                      primary
+                      className="tool-button create-copy"
+                    >
+                      {t('dashboard.copyInstantDashboard')}
+                    </Button>
+                  )}
                   {currentUserRole === 'editor' && (
                     <>
                       <Link className="tool-button edit-button" to="edit">
@@ -147,7 +163,7 @@ export function DashboardView(props) {
                       </Button>
                     </>
                   )}
-                  {!sharingHidden && (
+                  {!isInstantDashboard && (
                     <Popover
                       main
                       className="tool-button share-button"
@@ -245,6 +261,13 @@ export function DashboardView(props) {
           />
         </div>
       </div>
+      {isInstantDashboard && isTemplateModalOpen && (
+        <DashboardTemplateModal
+          initialDefinitions={definitions}
+          onClose={() => setIsTemplateModalOpen(false)}
+          useAbsolutePath
+        />
+      )}
     </FullScreen>
   );
 }

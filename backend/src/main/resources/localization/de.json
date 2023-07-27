@@ -822,7 +822,8 @@
           "quarters": "Quartal"
         }
       }
-    }
+    },
+    "copyInstantDashboard": "Kopie erstellen"
   },
   "alert": {
     "label": "Alarm",

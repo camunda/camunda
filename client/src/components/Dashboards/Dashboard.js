@@ -385,7 +385,7 @@ export class Dashboard extends React.Component {
         ) : (
           <DashboardView
             {...commonProps}
-            sharingHidden={instantPreviewDashboard}
+            isInstantDashboard={instantPreviewDashboard}
             sharingEnabled={sharingEnabled}
             isAuthorizedToShare={isAuthorizedToShare}
             loadDashboard={this.loadDashboard}

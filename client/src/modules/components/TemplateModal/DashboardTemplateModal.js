@@ -19,7 +19,7 @@ import portfolioPerformance from './images/portfolioPerformance.png';
 import operationsMonitoring from './images/operationsMonitoring.png';
 import instantPreviewDashboard from './images/instantPreviewDashboard.png';
 
-export default function DashboardTemplateModal({onClose}) {
+export default function DashboardTemplateModal({onClose, useAbsolutePath, initialDefinitions}) {
   const [optimizeProfile, setOptimizeProfile] = useState();
   const [optimizeProfileLoaded, setOptimizeProfileLoaded] = useState(false);
 
@@ -2262,6 +2262,8 @@ export default function DashboardTemplateModal({onClose}) {
 
   return (
     <TemplateModal
+      initialDefinitions={initialDefinitions}
+      useAbsolutePath={useAbsolutePath}
       onClose={onClose}
       templateGroups={templateGroups}
       entity="dashboard"

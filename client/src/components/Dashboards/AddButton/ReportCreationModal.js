@@ -5,35 +5,20 @@
  * except in compliance with the proprietary license.
  */
 
-import React, {useEffect, useState} from 'react';
+import React from 'react';
 import {withRouter} from 'react-router';
 
 import {t} from 'translation';
 import {LoadingIndicator, Modal, ReportTemplateModal} from 'components';
-import {withErrorHandling} from 'HOC';
+import {useErrorHandling} from 'hooks';
 import {addNotification, showError} from 'notifications';
-import {createEntity, getCollection, loadEntity} from 'services';
+import {createEntity, getCollection} from 'services';
 
-export function ReportCreationModal({onClose, existingReport, mightFail, onConfirm, location}) {
-  const [initialTemplateDefinitions, setInitialTemplateDefinitions] = useState();
+import useReportDefinitions from '../useReportDefinitions';
 
-  useEffect(() => {
-    const {id, data} = existingReport || {};
-
-    if (!id && !data) {
-      return setInitialTemplateDefinitions([]);
-    }
-
-    if (id) {
-      mightFail(
-        loadEntity('report', id),
-        (report) => setInitialTemplateDefinitions(report.data.definitions),
-        showError
-      );
-    } else if (data) {
-      setInitialTemplateDefinitions(data.definitions);
-    }
-  }, [existingReport, mightFail]);
+export function ReportCreationModal({onClose, existingReport, onConfirm, location}) {
+  const {definitions} = useReportDefinitions(existingReport, showError);
+  const {mightFail} = useErrorHandling();
 
   function createReport(report) {
     const collectionId = getCollection(location.pathname);
@@ -51,7 +36,7 @@ export function ReportCreationModal({onClose, existingReport, mightFail, onConfi
     );
   }
 
-  if (!initialTemplateDefinitions) {
+  if (!definitions) {
     return (
       <Modal open>
         <Modal.Footer>
@@ -65,9 +50,9 @@ export function ReportCreationModal({onClose, existingReport, mightFail, onConfi
     <ReportTemplateModal
       onClose={onClose}
       onConfirm={createReport}
-      initialDefinitions={initialTemplateDefinitions}
+      initialDefinitions={definitions}
     />
   );
 }
 
-export default withRouter(withErrorHandling(ReportCreationModal));
+export default withRouter(ReportCreationModal);

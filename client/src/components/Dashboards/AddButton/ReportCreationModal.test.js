@@ -8,21 +8,42 @@
 import React, {runLastEffect} from 'react';
 import {shallow} from 'enzyme';
 
-import {ReportCreationModal} from './ReportCreationModal';
-import {createEntity, loadEntity} from 'services';
+import {createEntity} from 'services';
+import {showError} from 'notifications';
 
-jest.mock('notifications', () => ({addNotification: jest.fn()}));
+import useReportDefinitions from '../useReportDefinitions';
+
+import {ReportCreationModal} from './ReportCreationModal';
+
+jest.mock('notifications', () => ({addNotification: jest.fn(), showError: jest.fn()}));
+
 jest.mock('services', () => {
   const rest = jest.requireActual('services');
   return {
     ...rest,
-    loadEntity: jest.fn().mockReturnValue({data: {definitions: [{key: 'DefKey'}]}}),
     createEntity: jest.fn().mockReturnValue('123'),
   };
 });
 
+jest.mock('hooks', () => ({
+  useErrorHandling: jest.fn().mockImplementation(() => ({
+    mightFail: jest.fn().mockImplementation((data, cb, err) => {
+      try {
+        return cb(data);
+      } catch (e) {
+        err?.(e);
+      }
+    }),
+  })),
+}));
+
+jest.mock('../useReportDefinitions', () =>
+  jest.fn().mockImplementation((existingReport) => ({
+    definitions: existingReport?.id ? [{key: 'DefKey'}] : [],
+  }))
+);
+
 const props = {
-  mightFail: jest.fn().mockImplementation((data, cb) => cb(data)),
   location: 'dashboard/1/edit',
 };
 
@@ -31,7 +52,7 @@ it('should load existing report and pass its initial definitions to template mod
 
   runLastEffect();
 
-  expect(loadEntity).toHaveBeenCalledWith('report', '123');
+  expect(useReportDefinitions).toHaveBeenCalledWith({id: '123'}, showError);
   expect(node.find('ReportTemplateModal').prop('initialDefinitions')).toEqual([{key: 'DefKey'}]);
 });
 

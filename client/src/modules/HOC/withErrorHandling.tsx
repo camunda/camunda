@@ -5,9 +5,9 @@
  * except in compliance with the proprietary license.
  */
 
-import {ComponentType, useCallback, useRef} from 'react';
-import {useState} from 'react';
-import {useEffect} from 'react';
+import {ComponentType} from 'react';
+
+import {useErrorHandling} from 'hooks';
 
 export interface WithErrorHandlingProps<T = any> {
   mightFail: (
@@ -24,43 +24,7 @@ export default function withErrorHandling<P extends object, T = any>(
   Component: ComponentType<P>
 ): ComponentType<Omit<P, keyof WithErrorHandlingProps<T>>> {
   const Wrapper = (props: Omit<P, keyof WithErrorHandlingProps<T>>) => {
-    const [error, setError] = useState<any>(undefined);
-    const mounted = useRef<boolean>();
-
-    const mightFail = useCallback(
-      async (
-        retriever: Promise<T>,
-        successHandler: ((response: any) => T) | undefined,
-        errorHandler?: ((error: any) => void) | undefined,
-        finallyHandler?: () => void
-      ) => {
-        try {
-          const response = await retriever;
-          if (mounted.current) {
-            return successHandler?.(response);
-          }
-        } catch (error) {
-          if (mounted.current) {
-            errorHandler?.(error);
-            setError(error);
-          }
-        } finally {
-          finallyHandler?.();
-        }
-      },
-      []
-    );
-
-    const resetError = useCallback(() => {
-      setError(undefined);
-    }, []);
-
-    useEffect(() => {
-      mounted.current = true;
-      return () => {
-        mounted.current = false;
-      };
-    }, []);
+    const {error, mightFail, resetError} = useErrorHandling<T>();
 
     return (
       <Component mightFail={mightFail} error={error} resetError={resetError} {...(props as P)} />

@@ -37,6 +37,7 @@ export function TemplateModal({
   templateToState = (data) => data,
   onConfirm,
   initialDefinitions = [],
+  useAbsolutePath,
 }) {
   const firstTemplate = templateGroups[1].templates[0];
   const [name, setName] = useState(t(entity + '.templates.' + firstTemplate.name));
@@ -257,9 +258,10 @@ export function TemplateModal({
         ) : (
           <Button
             as={Link}
+            className="confirm"
             disabled={!validSelection}
             to={{
-              pathname: entity + '/new/edit',
+              pathname: (useAbsolutePath ? '/' : '') + entity + '/new/edit',
               state: newEntityState,
             }}
             onClick={() => track(createEventName(entity), {templateName: name})}

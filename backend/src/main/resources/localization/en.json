@@ -822,7 +822,8 @@
           "quarters": "Quarter"
         }
       }
-    }
+    },
+    "copyInstantDashboard": "Create copy"
   },
   "alert": {
     "label": "Alert",
