@@ -7,8 +7,8 @@
  */
 package io.camunda.zeebe.engine.processing.job;
 
-import io.camunda.zeebe.engine.api.TypedRecord;
 import io.camunda.zeebe.engine.EngineConfiguration;
+import io.camunda.zeebe.engine.api.TypedRecord;
 import io.camunda.zeebe.engine.state.immutable.JobState;
 import io.camunda.zeebe.engine.state.immutable.VariableState;
 import io.camunda.zeebe.msgpack.value.DocumentValue;
