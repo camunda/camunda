@@ -13,6 +13,9 @@ import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.TestInfo;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.wait.strategy.HttpWaitStrategy;
 import org.testcontainers.junit.jupiter.Container;
@@ -27,6 +30,7 @@ final class MinioBackupStoreIT implements S3BackupStoreTests {
   public static final String ACCESS_KEY = "letmein";
   public static final String SECRET_KEY = "letmein1234";
   public static final int DEFAULT_PORT = 9000;
+  private static final Logger LOG = LoggerFactory.getLogger(MinioBackupStoreIT.class);
   private static final String BUCKET_NAME = RandomStringUtils.randomAlphabetic(10).toLowerCase();
 
   @SuppressWarnings("resource")
@@ -64,11 +68,12 @@ final class MinioBackupStoreIT implements S3BackupStoreTests {
   }
 
   @BeforeEach
-  void setup() {
+  void setup(final TestInfo testInfo) {
+    final String basePath = RandomStringUtils.randomAlphabetic(10).toLowerCase();
     config =
         new Builder()
             .withBucketName(BUCKET_NAME)
-            .withBasePath(RandomStringUtils.randomAlphabetic(10).toLowerCase())
+            .withBasePath(basePath)
             .withEndpoint("http://%s:%d".formatted(S3.getHost(), S3.getMappedPort(DEFAULT_PORT)))
             .withRegion(Region.US_EAST_1.id())
             .withCredentials(ACCESS_KEY, SECRET_KEY)
@@ -76,6 +81,8 @@ final class MinioBackupStoreIT implements S3BackupStoreTests {
             .build();
     client = S3BackupStore.buildClient(config);
     store = new S3BackupStore(config, client);
+
+    LOG.info("{} is running with base path {}", testInfo.getDisplayName(), basePath);
   }
 
   @AfterEach
