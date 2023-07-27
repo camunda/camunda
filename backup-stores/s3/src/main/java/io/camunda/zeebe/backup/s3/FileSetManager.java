@@ -86,6 +86,11 @@ final class FileSetManager {
                     .thenRunAsync(() -> cleanupCompressedFile(compressedFile))
                     .thenApply(unused -> FileSet.FileMetadata.withCompression(algorithm))
                     .whenComplete((success, error) -> uploadLimit.release());
+              })
+          .exceptionally(
+              e -> {
+                uploadLimit.release();
+                return null;
               });
     }
 

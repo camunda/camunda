@@ -29,6 +29,9 @@ import org.apache.commons.compress.compressors.CompressorStreamFactory;
  * @param compressionAlgorithm Algorithm to use (if any) for compressing backup contents.
  * @param basePath Prefix to use for all objects in this bucket. Must be non-empty and not start or
  *     end with '/'.
+ * @param maxConcurrentConnections Maximum number of connections allowed in a connection pool.
+ * @param connectionAcquisitionTimeout Timeout for acquiring an already-established connection from
+ *     a connection pool to a remote service.
  * @see <a
  *     href=https://docs.aws.amazon.com/sdk-for-java/latest/developer-guide/region-selection.html#automatically-determine-the-aws-region-from-the-environment>
  *     Automatically determine the Region from the environment</a>
@@ -77,6 +80,20 @@ public record S3BackupConfig(
         throw new IllegalArgumentException(
             "basePath must not start or end with '/' but was: %s".formatted(prefix));
       }
+    }
+  }
+
+  record Credentials(String accessKey, String secretKey) {
+    @Override
+    public String toString() {
+      return "Credentials{"
+          + "accessKey='"
+          + accessKey
+          + '\''
+          + ", secretKey='"
+          + "<redacted>"
+          + '\''
+          + '}';
     }
   }
 
@@ -159,20 +176,6 @@ public record S3BackupConfig(
           Optional.ofNullable(basePath),
           maxConcurrentConnections,
           connectionAcquisitionTimeout);
-    }
-  }
-
-  record Credentials(String accessKey, String secretKey) {
-    @Override
-    public String toString() {
-      return "Credentials{"
-          + "accessKey='"
-          + accessKey
-          + '\''
-          + ", secretKey='"
-          + "<redacted>"
-          + '\''
-          + '}';
     }
   }
 }
