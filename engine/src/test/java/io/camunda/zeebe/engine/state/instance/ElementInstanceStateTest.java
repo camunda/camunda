@@ -390,11 +390,14 @@ public final class ElementInstanceStateTest {
 
     // when
     elementInstanceState.removeInstance(processInstanceKey);
-    final List<Long> processInstanceKeys =
-        elementInstanceState.getProcessInstanceKeysByDefinitionKey(processDefinitionKey);
 
     // then
+    final List<Long> processInstanceKeys =
+        elementInstanceState.getProcessInstanceKeysByDefinitionKey(processDefinitionKey);
     Assertions.assertThat(processInstanceKeys).isEmpty();
+    final var hasRunningInstances =
+        elementInstanceState.hasRunningInstances(processInstanceRecord.getProcessDefinitionKey());
+    assertThat(hasRunningInstances).isFalse();
   }
 
   @Test
@@ -433,6 +436,37 @@ public final class ElementInstanceStateTest {
             .collect(Collectors.toList());
 
     assertThat(nonEmptyColumns).describedAs("Expected all columns to be empty").isEmpty();
+  }
+
+  @Test
+  public void shouldFindRunningInstancesForProcessDefinitionKey() {
+    // given
+    final var processInstanceRecord =
+        createProcessInstanceRecord().setBpmnElementType(BpmnElementType.PROCESS);
+    final var processInstanceKey = 100L;
+    elementInstanceState.newInstance(
+        processInstanceKey, processInstanceRecord, ProcessInstanceIntent.ELEMENT_ACTIVATED);
+
+    // when
+    final var hasRunningInstances =
+        elementInstanceState.hasRunningInstances(processInstanceRecord.getProcessDefinitionKey());
+
+    // then
+    Assertions.assertThat(hasRunningInstances).isTrue();
+  }
+
+  @Test
+  public void shouldNotFindRunningInstancesForProcessDefinitionKey() {
+    // given
+    final var processInstanceRecord =
+        createProcessInstanceRecord().setBpmnElementType(BpmnElementType.PROCESS);
+
+    // when
+    final var hasRunningInstances =
+        elementInstanceState.hasRunningInstances(processInstanceRecord.getProcessDefinitionKey());
+
+    // then
+    Assertions.assertThat(hasRunningInstances).isFalse();
   }
 
   @Test
