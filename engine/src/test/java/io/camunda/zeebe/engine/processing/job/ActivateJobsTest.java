@@ -391,7 +391,7 @@ public final class ActivateJobsTest {
 
     final long maxMessageSize = ByteValue.ofMegabytes(4);
     final long headerSize = ByteValue.ofKilobytes(2);
-    final long maxRecordSize = maxMessageSize - headerSize;
+    final long maxRecordSize = maxMessageSize - headerSize - (1024 * 8);
 
     final int variablesSize = (int) maxRecordSize / expectedJobsInBatch;
     final String variables = "{'key': '" + "x".repeat(variablesSize) + "'}";
@@ -413,7 +413,7 @@ public final class ActivateJobsTest {
     // given
     final var maxMessageSize = ByteValue.ofMegabytes(4);
     final var headerSize = ByteValue.ofKilobytes(2);
-    final var maxRecordSize = maxMessageSize - headerSize;
+    final var maxRecordSize = maxMessageSize - headerSize - (1024 * 8);
 
     ENGINE
         .deployment()
