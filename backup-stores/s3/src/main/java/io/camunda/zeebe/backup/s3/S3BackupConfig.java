@@ -90,8 +90,10 @@ public record S3BackupConfig(
     private String compressionAlgorithm;
     private Credentials credentials;
     private String basePath;
+
     /** Default from `SdkHttpConfigurationOption.MAX_CONNECTIONS` */
     private Integer maxConcurrentConnections = 50;
+
     /** Default from `SdkHttpConfigurationOption.DEFAULT_CONNECTION_ACQUIRE_TIMEOUT` */
     private Duration connectionAcquisitionTimeout = Duration.ofSeconds(10);
 
