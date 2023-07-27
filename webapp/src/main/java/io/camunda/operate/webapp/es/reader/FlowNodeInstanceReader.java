@@ -34,14 +34,7 @@ import static io.camunda.operate.util.ElasticsearchUtil.TERMS_AGG_SIZE;
 import static io.camunda.operate.util.ElasticsearchUtil.fromSearchHit;
 import static io.camunda.operate.util.ElasticsearchUtil.joinWithAnd;
 import static io.camunda.operate.webapp.rest.dto.incidents.IncidentDto.FALLBACK_PROCESS_DEFINITION_NAME;
-import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
-import static org.elasticsearch.index.query.QueryBuilders.constantScoreQuery;
-import static org.elasticsearch.index.query.QueryBuilders.existsQuery;
-import static org.elasticsearch.index.query.QueryBuilders.idsQuery;
-import static org.elasticsearch.index.query.QueryBuilders.matchQuery;
-import static org.elasticsearch.index.query.QueryBuilders.rangeQuery;
-import static org.elasticsearch.index.query.QueryBuilders.termQuery;
-import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
+import static org.elasticsearch.index.query.QueryBuilders.*;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.filter;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.terms;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.topHits;
@@ -86,9 +79,12 @@ import org.elasticsearch.index.query.*;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.SearchHits;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
+import org.elasticsearch.search.aggregations.AggregationBuilders;
 import org.elasticsearch.search.aggregations.Aggregations;
 import org.elasticsearch.search.aggregations.BucketOrder;
 import org.elasticsearch.search.aggregations.bucket.filter.Filter;
+import org.elasticsearch.search.aggregations.bucket.filter.Filters;
+import org.elasticsearch.search.aggregations.bucket.filter.FiltersAggregator;
 import org.elasticsearch.search.aggregations.bucket.terms.Terms;
 import org.elasticsearch.search.aggregations.bucket.terms.Terms.Bucket;
 import org.elasticsearch.search.aggregations.bucket.terms.TermsAggregationBuilder;
@@ -117,6 +113,7 @@ public class FlowNodeInstanceReader extends AbstractReader {
   public static final String COUNT_CANCELED = "countCanceled";
   public static final String COUNT_COMPLETED = "countCompleted";
   public static final String COUNT_ACTIVE = "countActive";
+  public static final String NUMBER_OF_INCIDENTS_FOR_TREE_PATH = "numberOfIncidentsForTreePath";
 
   @Autowired
   private FlowNodeInstanceTemplate flowNodeInstanceTemplate;
@@ -152,12 +149,10 @@ public class FlowNodeInstanceReader extends AbstractReader {
 
   private FlowNodeInstanceResponseDto getFlowNodeInstances(FlowNodeInstanceQueryDto request) {
     FlowNodeInstanceResponseDto response = queryFlowNodeInstances(request);
-
     //query one additional instance
     if (request.getSearchAfterOrEqual() != null || request.getSearchBeforeOrEqual() != null)  {
       adjustResponse(response, request);
     }
-
     return response;
   }
 
@@ -209,6 +204,7 @@ public class FlowNodeInstanceReader extends AbstractReader {
   private FlowNodeInstanceResponseDto queryFlowNodeInstances(
       final FlowNodeInstanceQueryDto flowNodeInstanceRequest, String flowNodeInstanceId) {
 
+    final String processInstanceId = flowNodeInstanceRequest.getProcessInstanceId();
     final String parentTreePath = flowNodeInstanceRequest.getTreePath();
     final int level = parentTreePath.split("/").length;
 
@@ -219,24 +215,21 @@ public class FlowNodeInstanceReader extends AbstractReader {
 
     final QueryBuilder query =
         constantScoreQuery(
-              termQuery(PROCESS_INSTANCE_KEY, flowNodeInstanceRequest.getProcessInstanceId()));
-
-    final AggregationBuilder incidentAgg = getIncidentsAgg();
+              termQuery(PROCESS_INSTANCE_KEY, processInstanceId));
 
     AggregationBuilder runningParentsAgg =
           filter(AGG_RUNNING_PARENT,
               joinWithAnd(boolQuery().mustNot(existsQuery(END_DATE)),
-                  termQuery(TREE_PATH, parentTreePath),
+                  prefixQuery(TREE_PATH, parentTreePath),
                   termQuery(LEVEL, level - 1)));
 
     final QueryBuilder postFilter =
         joinWithAnd(termQuery(LEVEL, level),
-            termQuery(TREE_PATH, parentTreePath),
+            prefixQuery(TREE_PATH, parentTreePath),
             idsQuery);
 
     SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
         .query(query)
-        .aggregation(incidentAgg)
         .aggregation(runningParentsAgg)
         .postFilter(postFilter);
     if (flowNodeInstanceRequest.getPageSize() != null) {
@@ -251,9 +244,9 @@ public class FlowNodeInstanceReader extends AbstractReader {
     try {
       FlowNodeInstanceResponseDto response;
       if (flowNodeInstanceRequest.getPageSize() != null) {
-        response = getOnePage(searchRequest);
+        response = getOnePage(searchRequest, processInstanceId);
       } else {
-        response = scrollAllSearchHits(searchRequest);
+        response = scrollAllSearchHits(searchRequest, processInstanceId);
       }
       //for process instance level, we don't return running flag
       if (level == 1) {
@@ -281,9 +274,8 @@ public class FlowNodeInstanceReader extends AbstractReader {
                 .size(TERMS_AGG_SIZE));
   }
 
-  private FlowNodeInstanceResponseDto scrollAllSearchHits(final SearchRequest searchRequest)
+  private FlowNodeInstanceResponseDto scrollAllSearchHits(final SearchRequest searchRequest, String processInstanceId)
       throws IOException {
-    Set<String> incidentPaths = new HashSet<>();
     final Boolean[] runningParent = new Boolean[]{false};
     final List<FlowNodeInstanceEntity> children =
         ElasticsearchUtil
@@ -291,9 +283,10 @@ public class FlowNodeInstanceReader extends AbstractReader {
                 FlowNodeInstanceEntity.class,
                 objectMapper,
                 esClient,
-                getSearchHitFunction(incidentPaths),
+                getSearchHitFunction(null),
                 null,
-                getAggsProcessor(incidentPaths, runningParent));
+                getAggsProcessor(null, runningParent));
+    markHasIncident(processInstanceId, children);
     return new FlowNodeInstanceResponseDto(runningParent[0],
         FlowNodeInstanceDto.createFrom(children, objectMapper));
   }
@@ -304,41 +297,91 @@ public class FlowNodeInstanceReader extends AbstractReader {
       FlowNodeInstanceEntity entity = fromSearchHit(sh.getSourceAsString(), objectMapper,
               FlowNodeInstanceEntity.class);
       entity.setSortValues(sh.getSortValues());
-      if (incidentPaths.contains(entity.getTreePath())) {
+      if (incidentPaths != null && incidentPaths.contains(entity.getTreePath())) {
         entity.setIncident(true);
       }
       return entity;
     };
   }
 
-  private FlowNodeInstanceResponseDto getOnePage(final SearchRequest searchRequest)
+  private FlowNodeInstanceResponseDto getOnePage(final SearchRequest searchRequest, final String processInstanceId)
       throws IOException {
     final SearchResponse searchResponse = esClient
         .search(searchRequest, RequestOptions.DEFAULT);
 
-    Set<String> incidentPaths = new HashSet<>();
     final Boolean[] runningParent = new Boolean[1];
-    processAggregation(searchResponse.getAggregations(), incidentPaths, runningParent);
+    processAggregation(searchResponse.getAggregations(), null, runningParent);
     final List<FlowNodeInstanceEntity> children =
         ElasticsearchUtil
         .mapSearchHits(searchResponse.getHits().getHits(),
-            getSearchHitFunction(incidentPaths));
+            getSearchHitFunction(null));
+    markHasIncident(processInstanceId, children);
     return new FlowNodeInstanceResponseDto(runningParent[0],
         FlowNodeInstanceDto.createFrom(children, objectMapper));
   }
 
-  private Consumer<Aggregations> getAggsProcessor(Set<String> incidentPaths,
-      Boolean[] runningParent) {
-    return (aggs) -> {
-      Filter filterAggs = aggs.get(AGG_INCIDENTS);
-      if (filterAggs != null) {
-        Terms termsAggs = filterAggs.getAggregations().get(AGG_INCIDENT_PATHS);
-        if (termsAggs != null) {
-          incidentPaths.addAll(termsAggs.getBuckets().stream().map((b) -> b.getKeyAsString())
-              .collect(Collectors.toSet()));
+  private boolean flowNodeInstanceIsRunningOrIsNotMarked(FlowNodeInstanceEntity flowNodeInstance){
+    return flowNodeInstance.getEndDate() == null || !flowNodeInstance.isIncident();
+  }
+
+  private QueryBuilder hasProcessInstanceAsTreePathPrefixAndIsIncident(String treePath){
+    return joinWithAnd(prefixQuery(TREE_PATH, treePath), termQuery(INCIDENT, true));
+  }
+
+  private FiltersAggregator.KeyedFilter newFilterForFlowNodeInstance(FlowNodeInstanceEntity flowNodeInstance){
+    return new FiltersAggregator.KeyedFilter(
+        flowNodeInstance.getId(),
+        hasProcessInstanceAsTreePathPrefixAndIsIncident(flowNodeInstance.getTreePath())
+    );
+  }
+
+  // Max size: page size of request - default: 50
+  private void markHasIncident(String processInstanceId, List<FlowNodeInstanceEntity> flowNodeInstances) {
+    if(flowNodeInstances == null || flowNodeInstances.isEmpty()) return;
+    final List<FiltersAggregator.KeyedFilter> filters = flowNodeInstances.stream()
+        .filter(this::flowNodeInstanceIsRunningOrIsNotMarked)
+        .map(this::newFilterForFlowNodeInstance)
+        .toList();
+
+    final SearchRequest request = ElasticsearchUtil.createSearchRequest(flowNodeInstanceTemplate)
+        .source(new SearchSourceBuilder()
+            .query(termQuery(PROCESS_INSTANCE_KEY, processInstanceId))
+            .size(0)
+            .aggregation(AggregationBuilders.
+                filters(NUMBER_OF_INCIDENTS_FOR_TREE_PATH, filters.toArray(new FiltersAggregator.KeyedFilter[0]))
+            )
+        );
+    try {
+      final Map<String,Long> flowNodeIdIncidents = new HashMap<>();
+      final SearchResponse response = esClient.search(request, RequestOptions.DEFAULT);
+      final Filters filterBuckets = response.getAggregations().get(NUMBER_OF_INCIDENTS_FOR_TREE_PATH);
+
+      filterBuckets.getBuckets().forEach(b -> flowNodeIdIncidents.put(b.getKeyAsString(), b.getDocCount()));
+      //logger.info("FlowNodeInstance -> incidents: {}", flowNodeIdIncidents);
+      for(var flowNodeInstance: flowNodeInstances){
+        Long count = flowNodeIdIncidents.getOrDefault(flowNodeInstance.getId(), 0L);
+        if( count > 0) {
+          flowNodeInstance.setIncident(true);
         }
       }
-      filterAggs = aggs.get(AGG_RUNNING_PARENT);
+    } catch (IOException e) {
+      logger.error("Could not retrieve flow node incidents", e);
+    }
+  }
+
+  private Consumer<Aggregations> getAggsProcessor(Set<String> incidentPaths, Boolean[] runningParent) {
+    return (aggs) -> {
+      if( incidentPaths != null ) {
+        Filter filterAggs = aggs.get(AGG_INCIDENTS);
+        if (filterAggs != null) {
+          Terms termsAggs = filterAggs.getAggregations().get(AGG_INCIDENT_PATHS);
+          if (termsAggs != null) {
+            incidentPaths.addAll(termsAggs.getBuckets().stream().map((b) -> b.getKeyAsString())
+                .collect(Collectors.toSet()));
+          }
+        }
+      }
+      Filter filterAggs = aggs.get(AGG_RUNNING_PARENT);
       if (filterAggs != null && filterAggs.getDocCount() > 0) {
         runningParent[0] = true;
       }
@@ -507,6 +550,7 @@ public class FlowNodeInstanceReader extends AbstractReader {
         .source(new SearchSourceBuilder()
             .query(joinWithAnd(
                 termQuery(ELEMENT_INSTANCE_KEY, flowNodeInstanceKey),
+                termQuery(DecisionInstanceTemplate.STATE, DecisionInstanceState.FAILED),
                 termQuery(DecisionInstanceTemplate.STATE, DecisionInstanceState.FAILED)
                 ))
             .sort(EVALUATION_DATE, SortOrder.DESC)
@@ -560,11 +604,16 @@ public class FlowNodeInstanceReader extends AbstractReader {
 
     final List<FlowNodeInstanceBreadcrumbEntryDto> result = new ArrayList<>();
 
+    //adjust to use prefixQuery
+    int lastSeparatorIndex = treePath.lastIndexOf("/");
+    final String prefixTreePath = lastSeparatorIndex > -1?treePath.substring(0, lastSeparatorIndex): treePath;
+
     final QueryBuilder query = joinWithAnd(
         termQuery(FLOW_NODE_ID, flowNodeId),
-        matchQuery(TREE_PATH, treePath),
+        prefixQuery(TREE_PATH, prefixTreePath),
         rangeQuery(LEVEL).lte(level)
-    );
+        );
+
     final SearchRequest request = ElasticsearchUtil
         .createSearchRequest(flowNodeInstanceTemplate)
         .source(new SearchSourceBuilder()
@@ -829,6 +878,7 @@ public class FlowNodeInstanceReader extends AbstractReader {
     return eventEntity;
   }
 
+  @Deprecated
   public Map<String, FlowNodeStateDto> getFlowNodeStates(String processInstanceId) {
     final String latestFlowNodeAggName = "latestFlowNode";
     final String activeFlowNodesAggName = "activeFlowNodes";

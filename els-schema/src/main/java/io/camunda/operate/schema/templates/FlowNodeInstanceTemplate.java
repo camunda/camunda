@@ -38,6 +38,6 @@ public class FlowNodeInstanceTemplate extends AbstractTemplateDescriptor impleme
 
   @Override
   public String getVersion() {
-    return "8.3.0";
+    return "8.3.1";
   }
 }

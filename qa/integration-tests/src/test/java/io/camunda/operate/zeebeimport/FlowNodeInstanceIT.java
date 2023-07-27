@@ -29,6 +29,7 @@ import io.camunda.operate.webapp.rest.dto.activity.FlowNodeInstanceRequestDto;
 import io.camunda.operate.webapp.rest.dto.activity.FlowNodeInstanceResponseDto;
 import io.camunda.operate.webapp.zeebe.operation.CancelProcessInstanceHandler;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.web.servlet.MvcResult;
@@ -495,6 +496,8 @@ public class FlowNodeInstanceIT extends OperateZeebeIntegrationTest {
     return mockMvcTestRule.fromResponse(mvcResult, new TypeReference<>() { });
   }
 
+  @Deprecated // this endpoint is not used anymore from frontend.
+  @Ignore
   @Test
   public void testFlowNodeStateDtosIncidentIsPropagated() throws Exception {
     // having

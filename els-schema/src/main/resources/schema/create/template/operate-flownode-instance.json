@@ -1,19 +1,4 @@
 {
-	"settings": {
-		"analysis": {
-			"analyzer": {
-				"flownode_path_tree": {
-					"tokenizer": "flownode_hierarchy"
-				}
-			},
-			"tokenizer": {
-				"flownode_hierarchy": {
-					"type": "path_hierarchy",
-					"delimiter": "/"
-				}
-			}
-		}
-	},
 	"mappings": {
     "dynamic": "strict",
 		"properties": {
@@ -62,9 +47,7 @@
 				"type": "date"
 			},
 			"treePath": {
-				"type": "text",
-				"analyzer": "flownode_path_tree",
-                "fielddata": true
+				"type": "keyword"
 			},
 			"level": {
 				"type": "long"
