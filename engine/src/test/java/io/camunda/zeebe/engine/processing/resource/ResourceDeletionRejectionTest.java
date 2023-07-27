@@ -41,6 +41,26 @@ public class ResourceDeletionRejectionTest {
   }
 
   @Test
+  public void shouldRejectCommandWhenResourceIsAlreadyDeleted() {
+    // given
+    final var processId = helper.getBpmnProcessId();
+    final var processDefinitionKey = deployProcess(processId);
+    engine.resourceDeletion().withResourceKey(processDefinitionKey).delete();
+
+    // when
+    final var rejection =
+        engine.resourceDeletion().withResourceKey(processDefinitionKey).expectRejection().delete();
+
+    // then
+    assertThat(rejection)
+        .describedAs("Expect resource is not found")
+        .hasRejectionType(RejectionType.NOT_FOUND)
+        .hasRejectionReason(
+            "Expected to delete resource but no resource found with key `%d`"
+                .formatted(processDefinitionKey));
+  }
+
+  @Test
   public void shouldRejectCreateInstanceCommandWhenOnlyProcessVersionIsDeleted() {
     // given
     final var processId = helper.getBpmnProcessId();
