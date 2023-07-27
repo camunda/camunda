@@ -82,7 +82,7 @@ public class StandaloneGateway
     System.setProperty("spring.banner.location", "classpath:/assets/zeebe_gateway_banner.txt");
     final var application =
         new SpringApplicationBuilder(StandaloneGateway.class)
-            .web(WebApplicationType.SERVLET)
+            .web(WebApplicationType.REACTIVE)
             .logStartupInfo(true)
             .profiles(Profile.GATEWAY.getId())
             .build(args);

@@ -74,7 +74,7 @@ public class StandaloneBroker
     System.setProperty("spring.banner.location", "classpath:/assets/zeebe_broker_banner.txt");
     final var application =
         new SpringApplicationBuilder(StandaloneBroker.class)
-            .web(WebApplicationType.SERVLET)
+            .web(WebApplicationType.REACTIVE)
             .logStartupInfo(true)
             .profiles(Profile.BROKER.getId())
             .build(args);

@@ -37,7 +37,6 @@ public final class RandomPortInitializer
             "random ports",
             Map.of(
                 "zeebe.gateway.network.port", gatewayPort,
-                "zeebe.gateway.monitoring.port", monitoringPort,
                 "zeebe.broker.gateway.network.port", gatewayPort,
                 "zeebe.broker.network.commandApi.port", commandPort,
                 "zeebe.broker.network.internalApi.port", internalPort)));

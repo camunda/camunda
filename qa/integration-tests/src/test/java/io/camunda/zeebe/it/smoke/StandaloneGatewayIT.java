@@ -30,10 +30,7 @@ import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 @ExtendWith(SpringExtension.class)
-@SpringBootTest(
-    webEnvironment = WebEnvironment.RANDOM_PORT,
-    classes = StandaloneGateway.class,
-    properties = "zeebe.gateway.monitoring.enabled=true")
+@SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT, classes = StandaloneGateway.class)
 @ContextConfiguration(
     initializers = {RandomPortInitializer.class, CollectorRegistryInitializer.class})
 @ActiveProfiles("test")
