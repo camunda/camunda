@@ -272,6 +272,32 @@ public class ResourceDeletionTest {
         .getDecisionRequirementsKey();
   }
 
+  private String deployProcessWithBusinessRuleTask(final String decisionId) {
+    final String processId = helper.getBpmnProcessId();
+    engine
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(processId)
+                .startEvent()
+                .businessRuleTask(
+                    "task",
+                    t -> t.zeebeCalledDecisionId(decisionId).zeebeResultVariable(RESULT_VARIABLE))
+                .done())
+        .deploy();
+    return processId;
+  }
+
+  private long deployProcess(final String processId) {
+    return engine
+        .deployment()
+        .withXmlResource(Bpmn.createExecutableProcess(processId).startEvent().endEvent().done())
+        .deploy()
+        .getValue()
+        .getProcessesMetadata()
+        .get(0)
+        .getProcessDefinitionKey();
+  }
+
   private byte[] readResource(final String resourceName) {
     final var resourceAsStream = getClass().getResourceAsStream(resourceName);
     assertThat(resourceAsStream).isNotNull();
@@ -367,32 +393,6 @@ public class ResourceDeletionTest {
             decisionCreatedRecord.getDecisionRequirementsId(),
             decisionCreatedRecord.getDecisionRequirementsKey(),
             decisionCreatedRecord.isDuplicate());
-  }
-
-  private String deployProcessWithBusinessRuleTask(final String decisionId) {
-    final String processId = helper.getBpmnProcessId();
-    engine
-        .deployment()
-        .withXmlResource(
-            Bpmn.createExecutableProcess(processId)
-                .startEvent()
-                .businessRuleTask(
-                    "task",
-                    t -> t.zeebeCalledDecisionId(decisionId).zeebeResultVariable(RESULT_VARIABLE))
-                .done())
-        .deploy();
-    return processId;
-  }
-
-  private long deployProcess(final String processId) {
-    return engine
-        .deployment()
-        .withXmlResource(Bpmn.createExecutableProcess(processId).startEvent().endEvent().done())
-        .deploy()
-        .getValue()
-        .getProcessesMetadata()
-        .get(0)
-        .getProcessDefinitionKey();
   }
 
   private void verifyProcessIsDeleted(final String processId, final int version) {
