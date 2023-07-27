@@ -69,6 +69,9 @@ public final class JobStreamServiceStep extends AbstractBrokerStartupStep {
                     clusterServices.getMembershipService().addListener(remoteStreamService);
                     brokerStartupContext.addPartitionListener(errorHandlerService);
                     brokerStartupContext.setJobStreamService(jobStreamService);
+                    brokerStartupContext
+                        .getSpringBrokerBridge()
+                        .registerJobStreamServiceSupplier(() -> jobStreamService);
                     startupFuture.complete(brokerStartupContext);
                   });
         });
@@ -100,6 +103,9 @@ public final class JobStreamServiceStep extends AbstractBrokerStartupStep {
                       .getMembershipService()
                       .removeListener(service.remoteStreamService());
                   brokerShutdownContext.setJobStreamService(null);
+                  brokerShutdownContext
+                      .getSpringBrokerBridge()
+                      .registerJobStreamServiceSupplier(() -> null);
                   shutdownFuture.complete(brokerShutdownContext);
                 }
               });

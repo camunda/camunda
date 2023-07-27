@@ -45,8 +45,10 @@ class EmbeddedGatewayServiceStep extends AbstractBrokerStartupStep {
           }
 
           brokerStartupContext.setEmbeddedGatewayService(embeddedGatewayService);
-          final var springBridge = brokerStartupContext.getSpringBrokerBridge();
-          springBridge.registerBrokerClient(gateway::getBrokerClient);
+          final var jobStreamClient = embeddedGatewayService.jobStreamClient();
+          brokerStartupContext
+              .getSpringBrokerBridge()
+              .registerJobStreamClientSupplier(() -> jobStreamClient);
           startupFuture.complete(brokerStartupContext);
         });
   }
@@ -75,6 +77,9 @@ class EmbeddedGatewayServiceStep extends AbstractBrokerStartupStep {
                         forwardExceptions(
                             () -> {
                               brokerShutdownContext.setEmbeddedGatewayService(null);
+                              brokerShutdownContext
+                                  .getSpringBrokerBridge()
+                                  .registerJobStreamClientSupplier(() -> null);
                               shutdownFuture.complete(brokerShutdownContext);
                             },
                             shutdownFuture));

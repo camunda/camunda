@@ -109,13 +109,13 @@ public class StandaloneGateway
     brokerClient.getTopologyManager().addTopologyListener(jobStreamClient);
 
     gateway = new Gateway(configuration, brokerClient, actorScheduler, jobStreamClient.streamer());
-    springGatewayBridge.registerBrokerClientSupplier(gateway::getBrokerClient);
     springGatewayBridge.registerGatewayStatusSupplier(gateway::getStatus);
     springGatewayBridge.registerClusterStateSupplier(
         () ->
             Optional.ofNullable(gateway.getBrokerClient())
                 .map(BrokerClient::getTopologyManager)
                 .map(BrokerTopologyManager::getTopology));
+    springGatewayBridge.registerJobStreamClient(() -> jobStreamClient);
 
     gateway.start().join(30, TimeUnit.SECONDS);
   }

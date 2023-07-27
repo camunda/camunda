@@ -13,8 +13,10 @@ import io.camunda.zeebe.protocol.impl.stream.job.JobActivationProperties;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.transport.TransportFactory;
+import io.camunda.zeebe.transport.stream.api.ClientStream;
 import io.camunda.zeebe.transport.stream.api.ClientStreamService;
 import io.camunda.zeebe.transport.stream.api.ClientStreamer;
+import java.util.Collection;
 
 /**
  * A thin adapter around a {@link ClientStreamService} instance specifically for streaming jobs.
@@ -72,6 +74,11 @@ public final class JobStreamClientImpl implements JobStreamClient {
     }
 
     return startedFuture;
+  }
+
+  @Override
+  public ActorFuture<Collection<ClientStream<JobActivationProperties>>> list() {
+    return streamService.streams();
   }
 
   @Override

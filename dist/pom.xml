@@ -296,6 +296,7 @@
 
   <build>
     <finalName>camunda-zeebe-${project.version}</finalName>
+
     <plugins>
       <plugin>
         <groupId>org.codehaus.mojo</groupId>
@@ -416,25 +417,22 @@
         <version>6.6.0</version>
         <executions>
           <execution>
+            <id>backups</id>
             <goals>
               <goal>generate</goal>
             </goals>
             <configuration>
-              <!-- https://github.com/OpenAPITools/openapi-generator/tree/master/modules/openapi-generator-maven-plugin -->
-              <!-- https://github.com/OpenAPITools/openapi-generator/blob/master/docs/generators/spring.md -->
               <inputSpec>${project.basedir}/src/main/resources/api/backup-management-api.yaml</inputSpec>
-              <generatorName>spring</generatorName>
-              <modelPackage>io.camunda.zeebe.shared.management.openapi.models</modelPackage>
-              <!-- Do no generate full server stub. Generate only classes for request and response types.  -->
-              <generateApis>false</generateApis>
-              <generateApiTests>false</generateApiTests>
-              <generateSupportingFiles>false</generateSupportingFiles>
-              <generateModels>true</generateModels>
-              <configOptions>
-                <sourceFolder>src/main</sourceFolder>
-                <additionalModelTypeAnnotations>@com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL)</additionalModelTypeAnnotations>
-                <useSpringBoot3>true</useSpringBoot3>
-              </configOptions>
+            </configuration>
+          </execution>
+          <execution>
+            <id>jobstreams</id>
+            <goals>
+              <goal>generate</goal>
+            </goals>
+            <configuration>
+              <inputSpec>${project.basedir}/src/main/resources/api/jobstreams-api.yaml</inputSpec>
+              <modelPackage>io.camunda.zeebe.shared.management.openapi.models.jobstreams</modelPackage>
             </configuration>
           </execution>
         </executions>

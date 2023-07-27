@@ -62,6 +62,10 @@ public final class EmbeddedGatewayService implements AutoCloseable {
     return gateway;
   }
 
+  public JobStreamClient jobStreamClient() {
+    return jobStreamClient;
+  }
+
   public ActorFuture<Gateway> start() {
     final var jobStreamClientStart = jobStreamClient.start();
     final var brokerClientStart = brokerClient.start();

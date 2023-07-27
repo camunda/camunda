@@ -7,9 +7,10 @@
  */
 package io.camunda.zeebe.broker;
 
+import io.camunda.zeebe.broker.jobstream.JobStreamService;
 import io.camunda.zeebe.broker.system.management.BrokerAdminService;
 import io.camunda.zeebe.broker.system.monitoring.BrokerHealthCheckService;
-import io.camunda.zeebe.gateway.impl.broker.BrokerClient;
+import io.camunda.zeebe.gateway.impl.stream.JobStreamClient;
 import java.util.Optional;
 import java.util.function.Supplier;
 import org.springframework.stereotype.Component;
@@ -23,7 +24,8 @@ public class SpringBrokerBridge {
 
   private Supplier<BrokerHealthCheckService> healthCheckServiceSupplier;
   private Supplier<BrokerAdminService> adminServiceSupplier;
-  private Supplier<BrokerClient> brokerClient;
+  private Supplier<JobStreamService> jobStreamServiceSupplier;
+  private Supplier<JobStreamClient> jobStreamClientSupplier;
 
   public void registerBrokerHealthCheckServiceSupplier(
       final Supplier<BrokerHealthCheckService> healthCheckServiceSupplier) {
@@ -43,11 +45,21 @@ public class SpringBrokerBridge {
     return Optional.ofNullable(adminServiceSupplier).map(Supplier::get);
   }
 
-  public void registerBrokerClient(final Supplier<BrokerClient> brokerClient) {
-    this.brokerClient = brokerClient;
+  public void registerJobStreamClientSupplier(
+      final Supplier<JobStreamClient> jobStreamClientSupplier) {
+    this.jobStreamClientSupplier = jobStreamClientSupplier;
   }
 
-  public Optional<BrokerClient> getBrokerClient() {
-    return Optional.ofNullable(brokerClient).map(Supplier::get);
+  public Optional<JobStreamClient> getJobStreamClient() {
+    return Optional.ofNullable(jobStreamClientSupplier).map(Supplier::get);
+  }
+
+  public void registerJobStreamServiceSupplier(
+      final Supplier<JobStreamService> jobStreamServiceSupplier) {
+    this.jobStreamServiceSupplier = jobStreamServiceSupplier;
+  }
+
+  public Optional<JobStreamService> getJobStreamService() {
+    return Optional.ofNullable(jobStreamServiceSupplier).map(Supplier::get);
   }
 }
