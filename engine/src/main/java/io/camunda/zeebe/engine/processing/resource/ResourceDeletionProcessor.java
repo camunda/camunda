@@ -31,6 +31,7 @@ import io.camunda.zeebe.protocol.record.intent.ResourceDeletionIntent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import java.util.List;
 import java.util.Optional;
 
 public class ResourceDeletionProcessor
@@ -93,6 +94,11 @@ public class ResourceDeletionProcessor
       rejectionWriter.appendRejection(command, RejectionType.NOT_FOUND, exception.getMessage());
       responseWriter.writeRejectionOnCommand(
           command, RejectionType.NOT_FOUND, exception.getMessage());
+      return ProcessingError.EXPECTED_ERROR;
+    } else if (error instanceof final RunningInstancesException exception) {
+      rejectionWriter.appendRejection(command, RejectionType.INVALID_STATE, exception.getMessage());
+      responseWriter.writeRejectionOnCommand(
+          command, RejectionType.INVALID_STATE, exception.getMessage());
       return ProcessingError.EXPECTED_ERROR;
     }
 
@@ -167,6 +173,8 @@ public class ResourceDeletionProcessor
 
     if (runningInstances.isEmpty()) {
       stateWriter.appendFollowUpEvent(keyGenerator.nextKey(), ProcessIntent.DELETED, processRecord);
+    } else {
+      throw new RunningInstancesException(runningInstances);
     }
   }
 
@@ -176,6 +184,15 @@ public class ResourceDeletionProcessor
 
     private NoSuchResourceException(final long resourceKey) {
       super(String.format(ERROR_MESSAGE_RESOURCE_NOT_FOUND, resourceKey));
+    }
+  }
+
+  private static final class RunningInstancesException extends IllegalStateException {
+    private static final String ERROR_MESSAGE_RUNNING_INSTANCES =
+        "Expected to delete resource but there are still running instances '%s'";
+
+    private RunningInstancesException(final List<Long> runningInstanceKeys) {
+      super(String.format(ERROR_MESSAGE_RUNNING_INSTANCES, runningInstanceKeys.toString()));
     }
   }
 }

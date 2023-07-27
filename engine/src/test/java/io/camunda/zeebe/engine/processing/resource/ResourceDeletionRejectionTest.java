@@ -107,10 +107,31 @@ public class ResourceDeletionRejectionTest {
                 processId, 1));
   }
 
+  @Test
+  public void shouldRejectDeletionWhenRunningInstances() {
+    // given
+    final var processId = helper.getBpmnProcessId();
+    final var processDefinitionKey = deployProcess(processId);
+    final var processInstanceKey = engine.processInstance().ofBpmnProcessId(processId).create();
+
+    // when
+    final var rejection =
+        engine.resourceDeletion().withResourceKey(processDefinitionKey).expectRejection().delete();
+
+    // then
+    assertThat(rejection)
+        .describedAs("Expect running instances")
+        .hasRejectionType(RejectionType.INVALID_STATE)
+        .hasRejectionReason(
+            "Expected to delete resource but there are still running instances '[%s]'"
+                .formatted(processInstanceKey));
+  }
+
   private long deployProcess(final String processId) {
     return engine
         .deployment()
-        .withXmlResource(Bpmn.createExecutableProcess(processId).startEvent().endEvent().done())
+        .withXmlResource(
+            Bpmn.createExecutableProcess(processId).startEvent().userTask().endEvent().done())
         .deploy()
         .getValue()
         .getProcessesMetadata()
