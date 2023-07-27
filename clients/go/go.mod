@@ -3,7 +3,7 @@ module github.com/camunda/zeebe/clients/go/v8
 go 1.19
 
 require (
-	github.com/docker/docker v24.0.5-0.20230719171838-52c92be4c5f9+incompatible
+	github.com/docker/docker v24.0.5+incompatible
 	github.com/docker/go-connections v0.4.0
 	github.com/go-ozzo/ozzo-validation/v4 v4.3.0
 	github.com/golang/mock v1.6.0
