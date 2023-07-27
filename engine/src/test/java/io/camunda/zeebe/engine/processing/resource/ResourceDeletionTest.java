@@ -411,6 +411,7 @@ public class ResourceDeletionTest {
                 .withVersion(version)
                 .limit(2))
         .describedAs("Expect deleted process to match created process")
+        .hasSize(2)
         .map(Record::getValue)
         .extracting(
             ProcessMetadataValue::getBpmnProcessId,
