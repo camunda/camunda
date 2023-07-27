@@ -31,9 +31,11 @@ import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotStoreFactory;
 import io.camunda.zeebe.transport.impl.AtomixServerTransport;
 import io.camunda.zeebe.util.health.HealthStatus;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
-import java.util.stream.Collectors;
+import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -50,7 +52,7 @@ public final class PartitionManagerImpl implements PartitionManager, TopologyMan
   private RaftPartitionGroup partitionGroup;
   private TopologyManagerImpl topologyManager;
 
-  private final List<ZeebePartition> partitions = new ArrayList<>();
+  private final Map<Integer, CompletableFuture<ZeebePartition>> partitions = new HashMap<>();
   private final DiskSpaceUsageMonitor diskSpaceUsageMonitor;
   private final BrokerCfg brokerCfg;
   private final BrokerInfo localBroker;
@@ -109,12 +111,7 @@ public final class PartitionManagerImpl implements PartitionManager, TopologyMan
   }
 
   public PartitionAdminAccess createAdminAccess(final ConcurrencyControl concurrencyControl) {
-    return new MultiPartitionAdminAccess(
-        concurrencyControl,
-        partitions.stream()
-            .collect(
-                Collectors.toMap(
-                    ZeebePartition::getPartitionId, ZeebePartition::createAdminAccess)));
+    return new MultiPartitionAdminAccess(concurrencyControl, partitions);
   }
 
   public CompletableFuture<Void> start() {
@@ -159,11 +156,15 @@ public final class PartitionManagerImpl implements PartitionManager, TopologyMan
                       topologyManager,
                       brokerCfg.getExperimental().getFeatures().toFeatureFlags());
 
+              for (final var partition : zeebePartitions.keySet()) {
+                partitions.put(partition.id().id(), new CompletableFuture<>());
+              }
               for (final var partition : startingPartitions) {
                 partition.thenApplyAsync(
                     raftPartition -> {
-                      final var zeebePartition = zeebePartitions.get(raftPartition);
-                      CompletableFuture.runAsync(() -> startPartition(zeebePartition));
+                      partitions
+                          .get(raftPartition.id().id())
+                          .completeAsync(() -> startPartition(zeebePartitions.get(raftPartition)));
                       return null;
                     });
               }
@@ -171,13 +172,13 @@ public final class PartitionManagerImpl implements PartitionManager, TopologyMan
             });
   }
 
-  private void startPartition(final ZeebePartition zeebePartition) {
+  private ZeebePartition startPartition(final ZeebePartition zeebePartition) {
 
     actorSchedulingService.submitActor(zeebePartition).join();
     zeebePartition.addFailureListener(
         new PartitionHealthBroadcaster(zeebePartition.getPartitionId(), this::onHealthChanged));
     diskSpaceUsageMonitor.addDiskUsageListener(zeebePartition);
-    partitions.add(zeebePartition);
+    return zeebePartition;
   }
 
   public CompletableFuture<Void> stop() {
@@ -210,8 +211,12 @@ public final class PartitionManagerImpl implements PartitionManager, TopologyMan
 
   private void stopPartitions() {
     final var futures =
-        partitions.stream()
-            .map(partition -> CompletableFuture.runAsync(() -> stopPartition(partition)))
+        partitions.values().stream()
+            .map(
+                partition ->
+                    CompletableFuture.runAsync(
+                        () ->
+                            stopPartition(partition.orTimeout(1000, TimeUnit.MILLISECONDS).join())))
             .toArray(CompletableFuture[]::new);
 
     CompletableFuture.allOf(futures).join();
@@ -249,7 +254,7 @@ public final class PartitionManagerImpl implements PartitionManager, TopologyMan
     topologyManager.addTopologyPartitionListener(listener);
   }
 
-  public List<ZeebePartition> getPartitions() {
+  public Map<Integer, CompletableFuture<ZeebePartition>> getPartitions() {
     return partitions;
   }
 }

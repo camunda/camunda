@@ -9,6 +9,7 @@ package io.camunda.zeebe.broker.partitioning;
 
 import static java.util.Objects.requireNonNull;
 
+import io.camunda.zeebe.broker.system.partitions.ZeebePartition;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
@@ -17,15 +18,17 @@ import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 
 final class MultiPartitionAdminAccess implements PartitionAdminAccess {
   private final ConcurrencyControl concurrencyControl;
-  private final Map<Integer, ? extends PartitionAdminAccess> partitions;
+  private final Map<Integer, CompletableFuture<? extends ZeebePartition>> partitions;
 
   MultiPartitionAdminAccess(
       final ConcurrencyControl concurrencyControl,
-      final Map<Integer, ? extends PartitionAdminAccess> partitions) {
+      final Map<Integer, CompletableFuture<ZeebePartition>> partitions) {
     this.concurrencyControl = requireNonNull(concurrencyControl);
     this.partitions = Collections.unmodifiableMap(requireNonNull(partitions));
   }
@@ -36,7 +39,12 @@ final class MultiPartitionAdminAccess implements PartitionAdminAccess {
    */
   @Override
   public Optional<PartitionAdminAccess> forPartition(final int partitionId) {
-    return Optional.ofNullable(partitions.get(partitionId));
+    return Optional.ofNullable(
+        partitions
+            .get(partitionId)
+            .thenApply(ZeebePartition::createAdminAccess)
+            .orTimeout(5000, TimeUnit.MILLISECONDS)
+            .join());
   }
 
   @Override
@@ -67,7 +75,12 @@ final class MultiPartitionAdminAccess implements PartitionAdminAccess {
   @Override
   public ActorFuture<Void> banInstance(final long processInstanceKey) {
     final var partitionId = Protocol.decodePartitionId(processInstanceKey);
-    final var partition = partitions.get(partitionId);
+    final var partition =
+        partitions
+            .get(partitionId)
+            .thenApply(ZeebePartition::createAdminAccess)
+            .orTimeout(1000, TimeUnit.MILLISECONDS)
+            .join();
     if (partition == null) {
       return CompletableActorFuture.completedExceptionally(
           new RuntimeException(
@@ -83,6 +96,11 @@ final class MultiPartitionAdminAccess implements PartitionAdminAccess {
     final ActorFuture<Void> response = concurrencyControl.createFuture();
     final var aggregatedResult =
         partitions.values().stream()
+            .map(
+                p ->
+                    p.thenApply(ZeebePartition::createAdminAccess)
+                        .orTimeout(1000, TimeUnit.MILLISECONDS)
+                        .join())
             .map(functionToCall)
             .collect(new ActorFutureCollector<>(concurrencyControl));
 

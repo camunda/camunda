@@ -20,7 +20,7 @@ import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.snapshots.PersistedSnapshot;
 import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotId;
 import io.camunda.zeebe.stream.impl.StreamProcessor;
-import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -41,7 +41,7 @@ public final class BrokerAdminServiceImpl extends Actor implements BrokerAdminSe
 
   private static final Logger LOG = Loggers.SYSTEM_LOGGER;
   private PartitionAdminAccess adminAccess = new NoOpPartitionAdminAccess();
-  private List<ZeebePartition> partitions = Collections.emptyList();
+  private Map<Integer, CompletableFuture<ZeebePartition>> partitions = new HashMap<>();
 
   public BrokerAdminServiceImpl() {}
 
@@ -50,7 +50,8 @@ public final class BrokerAdminServiceImpl extends Actor implements BrokerAdminSe
   }
 
   public void injectPartitionInfoSource(
-      @Deprecated /* TODO find smaller interface */ final List<ZeebePartition> partitions) {
+      @Deprecated /* TODO find smaller interface */
+          final Map<Integer, CompletableFuture<ZeebePartition>> partitions) {
     this.partitions = partitions;
   }
 
@@ -98,16 +99,18 @@ public final class BrokerAdminServiceImpl extends Actor implements BrokerAdminSe
             future.complete(partitionStatuses);
           } else {
             final var statusFutures =
-                partitions.stream()
+                partitions.values().stream()
                     .map(
-                        partition ->
-                            getPartitionStatus(partition)
-                                .whenComplete(
-                                    (ps, error) -> {
-                                      if (error == null) {
-                                        partitionStatuses.put(partition.getPartitionId(), ps);
-                                      }
-                                    }))
+                        partition -> {
+                          final var p = partition.orTimeout(1000, TimeUnit.MILLISECONDS).join();
+                          return getPartitionStatus(p)
+                              .whenComplete(
+                                  (ps, error) -> {
+                                    if (error == null) {
+                                      partitionStatuses.put(p.getPartitionId(), ps);
+                                    }
+                                  });
+                        })
                     .toList();
             CompletableFuture.allOf(statusFutures.toArray(CompletableFuture[]::new))
                 .thenAccept(r -> future.complete(partitionStatuses));

@@ -31,7 +31,7 @@ import io.camunda.zeebe.transport.ServerOutput;
 import io.camunda.zeebe.transport.impl.AtomixServerTransport;
 import io.camunda.zeebe.util.Either;
 import java.time.Duration;
-import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import org.agrona.ExpandableArrayBuffer;
@@ -106,7 +106,7 @@ final class AdminApiRequestHandlerTest {
         @Mock final AtomixServerTransport transport,
         @Mock final PartitionManagerImpl partitionManager) {
       when(partitionManager.getPartitionGroup()).thenReturn(mock(ManagedPartitionGroup.class));
-      when(partitionManager.getPartitions()).thenReturn(List.of());
+      when(partitionManager.getPartitions()).thenReturn(Map.of());
       handler = new AdminApiRequestHandler(transport, partitionManager);
     }
 
@@ -149,7 +149,7 @@ final class AdminApiRequestHandlerTest {
       final int partitionId = 1;
       when(adminAccess.forPartition(partitionId)).thenReturn(Optional.of(adminAccess));
       when(partitionManager.getPartitionGroup()).thenReturn(mock(ManagedPartitionGroup.class));
-      when(partitionManager.getPartitions()).thenReturn(List.of());
+      when(partitionManager.getPartitions()).thenReturn(Map.of());
       when(partitionManager.createAdminAccess(any())).thenReturn(adminAccess);
       handler = new AdminApiRequestHandler(transport, partitionManager);
 
@@ -226,7 +226,7 @@ final class AdminApiRequestHandlerTest {
       final int partitionId = 1;
       when(adminAccess.forPartition(partitionId)).thenReturn(Optional.of(adminAccess));
       when(partitionManager.getPartitionGroup()).thenReturn(mock(ManagedPartitionGroup.class));
-      when(partitionManager.getPartitions()).thenReturn(List.of());
+      when(partitionManager.getPartitions()).thenReturn(Map.of());
       when(partitionManager.createAdminAccess(any())).thenReturn(adminAccess);
       handler = new AdminApiRequestHandler(transport, partitionManager);
 
@@ -299,7 +299,7 @@ final class AdminApiRequestHandlerTest {
         @Mock final PartitionManagerImpl partitionManager) {
       this.partitionManager = partitionManager;
       when(partitionManager.getPartitionGroup()).thenReturn(mock(ManagedPartitionGroup.class));
-      when(partitionManager.getPartitions()).thenReturn(List.of());
+      when(partitionManager.getPartitions()).thenReturn(Map.of());
       handler = new AdminApiRequestHandler(transport, partitionManager);
     }
 

@@ -11,7 +11,6 @@ import io.atomix.raft.RaftServer.Role;
 import io.atomix.raft.partition.RaftPartition;
 import io.camunda.zeebe.broker.partitioning.PartitionAdminAccess;
 import io.camunda.zeebe.broker.partitioning.PartitionManagerImpl;
-import io.camunda.zeebe.broker.system.partitions.ZeebePartition;
 import io.camunda.zeebe.broker.transport.AsyncApiRequestHandler;
 import io.camunda.zeebe.broker.transport.ErrorResponseWriter;
 import io.camunda.zeebe.protocol.management.AdminRequestType;
@@ -37,8 +36,9 @@ public class AdminApiRequestHandler
 
   @Override
   protected void onActorStarting() {
-    partitionManager.getPartitions().stream()
-        .map(ZeebePartition::getPartitionId)
+    partitionManager
+        .getPartitions()
+        .keySet()
         .forEach(partitionId -> transport.subscribe(partitionId, RequestType.ADMIN, this));
   }
 
