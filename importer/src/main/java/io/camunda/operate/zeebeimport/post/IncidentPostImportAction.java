@@ -229,9 +229,8 @@ public class IncidentPostImportAction implements PostImportAction {
               (existing, replacement) -> replacement));
       pendingIncidentsBatch.setNewIncidentStates(incidents2Process);
       if (incidents2Process.size() > 0) {
-        pendingIncidentsBatch.setLastProcessedPosition(Long.valueOf(
-            (Integer) response.getHits().getAt(response.getHits().getHits().length - 1).getSourceAsMap()
-                .get(POSITION)));
+        pendingIncidentsBatch.setLastProcessedPosition(
+            response.getHits().getAt(response.getHits().getHits().length - 1).getSourceAsMap().get(POSITION));
       }
     } catch (IOException e) {
       final String message = String.format("Exception occurred, while processing pending incidents: %s",
@@ -587,8 +586,16 @@ class PendingIncidentsBatch {
     return lastProcessedPosition;
   }
 
-  public PendingIncidentsBatch setLastProcessedPosition(Long lastProcessedPosition) {
-    this.lastProcessedPosition = lastProcessedPosition;
+  public PendingIncidentsBatch setLastProcessedPosition(Object lastProcessedPosition) {
+    if (lastProcessedPosition == null) {
+      this.lastProcessedPosition = null;
+    } else if (lastProcessedPosition instanceof Integer) {
+      this.lastProcessedPosition = Long.valueOf((Integer) lastProcessedPosition);
+    } else if (lastProcessedPosition instanceof Long) {
+      this.lastProcessedPosition = (Long) lastProcessedPosition;
+    } else {
+      this.lastProcessedPosition = Long.valueOf(lastProcessedPosition.toString());
+    }
     return this;
   }
 }
