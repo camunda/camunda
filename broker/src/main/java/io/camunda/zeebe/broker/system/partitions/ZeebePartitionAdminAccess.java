@@ -233,7 +233,7 @@ class ZeebePartitionAdminAccess implements PartitionAdminAccess {
             recordMetadata.getRejectionReason(),
             recordMetadata.getValueType(),
             errorRecord);
-
+    writer.key(processInstanceKey);
     return writer.metadataWriter(recordMetadata).valueWriter(entry.recordValue()).tryWrite();
   }
 }
