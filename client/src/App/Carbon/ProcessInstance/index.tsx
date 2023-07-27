@@ -147,7 +147,7 @@ const ProcessInstance: React.FC = observer(() => {
 
   const {
     isModificationModeEnabled,
-    state: {modifications},
+    state: {modifications, status: modificationStatus},
   } = modificationsStore;
 
   const isBreadcrumbVisible =
@@ -169,6 +169,7 @@ const ProcessInstance: React.FC = observer(() => {
         }`}
       </VisuallyHiddenH1>
       <InstanceDetail
+        hasLoadingOverlay={modificationStatus === 'applying-modifications'}
         breadcrumb={
           isBreadcrumbVisible ? (
             <Breadcrumb

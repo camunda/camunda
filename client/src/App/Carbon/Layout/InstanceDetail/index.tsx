@@ -12,6 +12,7 @@ import {
 import {Container} from './styled';
 import {observer} from 'mobx-react';
 import {useEffect, useRef, useState} from 'react';
+import {Loading} from '@carbon/react';
 
 type Props = {
   header: React.ReactNode;
@@ -22,6 +23,7 @@ type Props = {
   bottomPanel: React.ReactNode;
   rightPanel?: React.ReactNode;
   type: 'process' | 'decision';
+  hasLoadingOverlay?: boolean;
 };
 const InstanceDetail: React.FC<Props> = observer(
   ({
@@ -33,6 +35,7 @@ const InstanceDetail: React.FC<Props> = observer(
     topPanel,
     bottomPanel,
     rightPanel,
+    hasLoadingOverlay,
   }) => {
     const [clientHeight, setClientHeight] = useState(0);
     const containerRef = useRef<HTMLDivElement | null>(null);
@@ -49,6 +52,7 @@ const InstanceDetail: React.FC<Props> = observer(
         $hasFrameHeader={frameHeader !== undefined}
         $hasFrameFooter={frameFooter !== undefined}
       >
+        {hasLoadingOverlay && <Loading data-testid="loading-overlay" />}
         {frameHeader}
         {breadcrumb}
         {header}

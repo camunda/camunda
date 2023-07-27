@@ -555,8 +555,7 @@ describe('Instance', () => {
     jest.useRealTimers();
   });
 
-  // unskip when https://github.com/camunda/operate/issues/4981 is implemented
-  it.skip('should display loading overlay when modifications are applied', async () => {
+  it('should display loading overlay when modifications are applied', async () => {
     mockFetchFlowNodeMetadata().withSuccess(singleInstanceMetadata);
     mockModify().withSuccess(
       createBatchOperation({type: 'MODIFY_PROCESS_INSTANCE'}),
@@ -601,10 +600,10 @@ describe('Instance', () => {
 
     await user.click(screen.getByTestId('apply-modifications-button'));
     await user.click(await screen.findByRole('button', {name: 'Apply'}));
-    expect(screen.getByText(/applying modifications.../i)).toBeInTheDocument();
+    expect(screen.getByTestId('loading-overlay')).toBeInTheDocument();
 
     await waitForElementToBeRemoved(() =>
-      screen.getByText(/applying modifications.../i),
+      screen.getByTestId('loading-overlay'),
     );
 
     expect(
