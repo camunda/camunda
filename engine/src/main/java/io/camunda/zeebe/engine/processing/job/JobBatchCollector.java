@@ -89,10 +89,7 @@ final class JobBatchCollector {
           // record we would add to the batch, the number of bytes taken by the additional job key,
           // as well as an 8 KB buffer.
           final var jobRecordLength = jobRecord.getLength();
-          final var expectedEventLength =
-              record.getLength()
-                  + jobRecordLength
-                  + (1024 * 8);
+          final var expectedEventLength = record.getLength() + jobRecordLength + (1024 * 8);
           if (activatedCount.value <= maxActivatedCount
               && canWriteEventOfLength.test(expectedEventLength)) {
             appendJobToBatch(jobIterator, jobKeyIterator, jobCopyBuffer, key, jobRecord);
