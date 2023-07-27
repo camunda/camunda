@@ -27,7 +27,6 @@ public class GatewayCfg {
   private SecurityCfg security = new SecurityCfg();
   private LongPollingCfg longPolling = new LongPollingCfg();
   private List<InterceptorCfg> interceptors = new ArrayList<>();
-  private boolean initialized = false;
 
   public void init() {
     init(ConfigurationDefaults.DEFAULT_HOST);
@@ -35,11 +34,6 @@ public class GatewayCfg {
 
   public void init(final String defaultHost) {
     network.init(defaultHost);
-    initialized = true;
-  }
-
-  public boolean isInitialized() {
-    return initialized;
   }
 
   public NetworkCfg getNetwork() {
