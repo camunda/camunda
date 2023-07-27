@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.processing.job;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.processing.job.JobBatchCollector.TooLargeJob;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.util.MockTypedRecord;
@@ -272,7 +273,10 @@ final class JobBatchCollectorTest {
     // the expected length is then the length of the initial record + the length of the activated
     // job and an 8 KB buffer
     final var activatedJob = (JobRecord) record.getValue().getJobs().get(0);
-    final int expectedLength = initialLength + activatedJob.getLength() + (1024 * 8);
+    final int expectedLength =
+        initialLength
+            + activatedJob.getLength()
+            + EngineConfiguration.BATCH_SIZE_CALCULATION_BUFFER;
     assertThat(estimatedLength.ref).isEqualTo(expectedLength);
   }
 
