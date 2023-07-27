@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.job;
 
+import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.state.immutable.JobState;
 import io.camunda.zeebe.engine.state.immutable.VariableState;
 import io.camunda.zeebe.msgpack.value.LongValue;
@@ -86,10 +87,12 @@ final class JobBatchCollector {
 
           // the expected length is based on the current record's length plus the length of the job
           // record we would add to the batch, the number of bytes taken by the additional job key,
-          // as well as one byte required per job key for its type header. if we ever add more, this
-          // should be updated accordingly.
+          // as well as an 8 KB buffer.
           final var jobRecordLength = jobRecord.getLength();
-          final var expectedEventLength = record.getLength() + jobRecordLength + Long.BYTES + 1;
+          final var expectedEventLength =
+              record.getLength()
+                  + jobRecordLength
+                  + EngineConfiguration.BATCH_SIZE_CALCULATION_BUFFER;
           if (activatedCount.value <= maxActivatedCount
               && canWriteEventOfLength.test(expectedEventLength)) {
             appendJobToBatch(jobIterator, jobKeyIterator, jobCopyBuffer, key, jobRecord);
