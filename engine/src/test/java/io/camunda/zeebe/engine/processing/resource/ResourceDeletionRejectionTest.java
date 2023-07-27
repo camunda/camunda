@@ -112,7 +112,7 @@ public class ResourceDeletionRejectionTest {
     // given
     final var processId = helper.getBpmnProcessId();
     final var processDefinitionKey = deployProcess(processId);
-    final var processInstanceKey = engine.processInstance().ofBpmnProcessId(processId).create();
+    engine.processInstance().ofBpmnProcessId(processId).create();
 
     // when
     final var rejection =
@@ -123,8 +123,8 @@ public class ResourceDeletionRejectionTest {
         .describedAs("Expect running instances")
         .hasRejectionType(RejectionType.INVALID_STATE)
         .hasRejectionReason(
-            "Expected to delete resource but there are still running instances '[%s]'"
-                .formatted(processInstanceKey));
+            "Expected to delete resource with key `%d` but there are still running instances"
+                .formatted(processDefinitionKey));
   }
 
   private long deployProcess(final String processId) {
