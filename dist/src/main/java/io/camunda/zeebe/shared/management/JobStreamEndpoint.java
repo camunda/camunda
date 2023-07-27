@@ -11,18 +11,14 @@ import io.atomix.cluster.AtomixCluster;
 import io.atomix.cluster.Member;
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.protocol.impl.stream.job.JobActivationProperties;
-import io.camunda.zeebe.shared.management.openapi.models.jobstreams.ClientJobStream;
-import io.camunda.zeebe.shared.management.openapi.models.jobstreams.Error;
-import io.camunda.zeebe.shared.management.openapi.models.jobstreams.JobStreams;
-import io.camunda.zeebe.shared.management.openapi.models.jobstreams.Metadata;
-import io.camunda.zeebe.shared.management.openapi.models.jobstreams.RemoteJobStream;
-import io.camunda.zeebe.shared.management.openapi.models.jobstreams.RemoteStreamId;
 import io.camunda.zeebe.transport.stream.api.ClientStream;
 import io.camunda.zeebe.transport.stream.api.RemoteStreamInfo;
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import java.time.Duration;
 import java.util.Collection;
-import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.actuate.endpoint.annotation.ReadOperation;
 import org.springframework.boot.actuate.endpoint.annotation.Selector;
@@ -45,11 +41,11 @@ import org.springframework.util.MimeTypeUtils;
 public final class JobStreamEndpoint {
   private static final Set<String> TYPES = Set.of("remote", "client");
 
-  private final JobStreamEndpointService service;
+  private final Service service;
   private final AtomixCluster cluster;
 
   @Autowired
-  public JobStreamEndpoint(final JobStreamEndpointService service, final AtomixCluster cluster) {
+  public JobStreamEndpoint(final Service service, final AtomixCluster cluster) {
     this.service = service;
     this.cluster = cluster;
   }
@@ -57,7 +53,7 @@ public final class JobStreamEndpoint {
   @ReadOperation
   public WebEndpointResponse<JobStreams> list() {
     return new WebEndpointResponse<>(
-        new JobStreams().client(getClientStreams()).remote(getRemoteStreams()),
+        new JobStreams(getRemoteStreams(), getClientStreams()),
         200,
         MimeTypeUtils.APPLICATION_JSON);
   }
@@ -66,8 +62,7 @@ public final class JobStreamEndpoint {
   public WebEndpointResponse<?> list(final @Selector String type) {
     if (!TYPES.contains(type)) {
       return new WebEndpointResponse<>(
-          new Error()
-              .message("No known stream type '%s'; should be one of %s".formatted(type, TYPES)),
+          Map.of("error", "No known stream type '%s'; should be one of %s".formatted(type, TYPES)),
           400,
           MimeTypeUtils.APPLICATION_JSON);
     }
@@ -76,20 +71,20 @@ public final class JobStreamEndpoint {
     return new WebEndpointResponse<>(streams, 200, MimeTypeUtils.APPLICATION_JSON);
   }
 
-  private List<RemoteJobStream> getRemoteStreams() {
+  private Collection<RemoteJobStream> getRemoteStreams() {
     return transformRemote(service.remoteJobStreams());
   }
 
-  private List<ClientJobStream> getClientStreams() {
+  private Collection<ClientJobStream> getClientStreams() {
     return transformClient(service.clientJobStreams());
   }
 
-  private List<RemoteJobStream> transformRemote(
+  private Collection<RemoteJobStream> transformRemote(
       final Collection<RemoteStreamInfo<JobActivationProperties>> streams) {
     return streams.stream().map(this::transformRemote).toList();
   }
 
-  private List<ClientJobStream> transformClient(
+  private Collection<ClientJobStream> transformClient(
       final Collection<ClientStream<JobActivationProperties>> streams) {
     return streams.stream().map(this::transformClient).toList();
   }
@@ -97,12 +92,10 @@ public final class JobStreamEndpoint {
   private RemoteJobStream transformRemote(final RemoteStreamInfo<JobActivationProperties> stream) {
     final var consumers =
         stream.consumers().stream()
-            .map(id -> new RemoteStreamId().id(id.streamId()).receiver(id.receiver().id()))
+            .map(id -> new RemoteStreamId(id.streamId(), id.receiver().id()))
             .toList();
-    return new RemoteJobStream()
-        .jobType(BufferUtil.bufferAsString(stream.streamType()))
-        .metadata(transform(stream.metadata()))
-        .consumers(consumers);
+    return new RemoteJobStream(
+        BufferUtil.bufferAsString(stream.streamType()), transform(stream.metadata()), consumers);
   }
 
   private ClientJobStream transformClient(final ClientStream<JobActivationProperties> stream) {
@@ -114,18 +107,47 @@ public final class JobStreamEndpoint {
             .map(Integer::valueOf)
             .toList();
 
-    return new ClientJobStream()
-        .jobType(BufferUtil.bufferAsString(stream.streamType()))
-        .metadata(transform(stream.metadata()))
-        .id(stream.streamId())
-        .connectedTo(brokers);
+    return new ClientJobStream(
+        BufferUtil.bufferAsString(stream.streamType()),
+        stream.streamId(),
+        transform(stream.metadata()),
+        brokers);
   }
 
   private Metadata transform(final JobActivationProperties properties) {
-    return new Metadata()
-        .worker(BufferUtil.bufferAsString(properties.worker()))
-        .timeout(properties.timeout())
-        .fetchVariables(
-            properties.fetchVariables().stream().map(BufferUtil::bufferAsString).toList());
+    return new Metadata(
+        BufferUtil.bufferAsString(properties.worker()),
+        Duration.ofMillis(properties.timeout()),
+        properties.fetchVariables().stream().map(BufferUtil::bufferAsString).toList());
+  }
+
+  /** View model for the combined list of all remote and client job streams. */
+  public record JobStreams(
+      Collection<RemoteJobStream> remote, Collection<ClientJobStream> client) {}
+
+  /** View model of a single remote job stream for JSON serialization */
+  public record RemoteJobStream(
+      String jobType, Metadata metadata, Collection<RemoteStreamId> consumers) {}
+
+  /**
+   * View model of a client job stream for JSON serialization. The {@link #connectedTo()} collection
+   * is the set of broker IDs this stream is registered on, from the gateway's point of view.
+   */
+  public record ClientJobStream(
+      String jobType, Object id, Metadata metadata, Collection<Integer> connectedTo) {}
+
+  /** View model for the {@link JobActivationProperties} of a job stream. */
+  public record Metadata(String worker, Duration timeout, Collection<String> fetchVariables) {}
+
+  /** View model for a remote job stream ID */
+  public record RemoteStreamId(UUID id, String receiver) {}
+
+  interface Service {
+
+    /** Returns the list of registered remote/broker job streams. */
+    Collection<RemoteStreamInfo<JobActivationProperties>> remoteJobStreams();
+
+    /** Returns the list of registered client/gateway job streams. */
+    Collection<ClientStream<JobActivationProperties>> clientJobStreams();
   }
 }

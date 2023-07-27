@@ -244,6 +244,11 @@
     </dependency>
 
     <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-protocol-impl</artifactId>
+    </dependency>
+
+    <dependency>
       <groupId>io.netty</groupId>
       <artifactId>netty-transport</artifactId>
     </dependency>
@@ -423,16 +428,6 @@
             </goals>
             <configuration>
               <inputSpec>${project.basedir}/src/main/resources/api/backup-management-api.yaml</inputSpec>
-            </configuration>
-          </execution>
-          <execution>
-            <id>jobstreams</id>
-            <goals>
-              <goal>generate</goal>
-            </goals>
-            <configuration>
-              <inputSpec>${project.basedir}/src/main/resources/api/jobstreams-api.yaml</inputSpec>
-              <modelPackage>io.camunda.zeebe.shared.management.openapi.models.jobstreams</modelPackage>
             </configuration>
           </execution>
         </executions>

@@ -16,9 +16,9 @@ import feign.Retryer;
 import feign.Target.HardCodedTarget;
 import feign.jackson.JacksonDecoder;
 import feign.jackson.JacksonEncoder;
-import io.camunda.zeebe.shared.management.openapi.models.jobstreams.ClientJobStream;
-import io.camunda.zeebe.shared.management.openapi.models.jobstreams.JobStreams;
-import io.camunda.zeebe.shared.management.openapi.models.jobstreams.RemoteJobStream;
+import io.camunda.zeebe.shared.management.JobStreamEndpoint.ClientJobStream;
+import io.camunda.zeebe.shared.management.JobStreamEndpoint.JobStreams;
+import io.camunda.zeebe.shared.management.JobStreamEndpoint.RemoteJobStream;
 import io.zeebe.containers.ZeebeNode;
 import java.util.List;
 

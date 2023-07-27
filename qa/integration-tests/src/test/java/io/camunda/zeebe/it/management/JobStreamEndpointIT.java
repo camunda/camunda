@@ -16,10 +16,9 @@ import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.it.smoke.CollectorRegistryInitializer;
 import io.camunda.zeebe.it.smoke.RandomPortInitializer;
-import io.camunda.zeebe.qa.util.actuator.JobStreamsActuator;
-import io.camunda.zeebe.shared.management.openapi.models.jobstreams.JobStreams;
-import io.camunda.zeebe.shared.management.openapi.models.jobstreams.RemoteJobStream;
-import io.camunda.zeebe.shared.management.openapi.models.jobstreams.RemoteStreamId;
+import io.camunda.zeebe.qa.util.actuator.JobStreamActuator;
+import io.camunda.zeebe.shared.management.JobStreamEndpoint.RemoteJobStream;
+import io.camunda.zeebe.shared.management.JobStreamEndpoint.RemoteStreamId;
 import java.time.Duration;
 import org.agrona.CloseHelper;
 import org.assertj.core.api.InstanceOfAssertFactories;
@@ -49,7 +48,7 @@ public class JobStreamEndpointIT {
   private int managementPort;
 
   private ZeebeClient client;
-  private JobStreamsActuator actuator;
+  private JobStreamActuator actuator;
 
   @BeforeEach
   void beforeEach() {
@@ -64,7 +63,7 @@ public class JobStreamEndpointIT {
                     + config.getGateway().getNetwork().getPort())
             .build();
     actuator =
-        JobStreamsActuator.of("http://localhost:%d/actuator/jobstreams".formatted(managementPort));
+        JobStreamActuator.of("http://localhost:%d/actuator/jobstreams".formatted(managementPort));
   }
 
   @AfterEach
@@ -75,9 +74,9 @@ public class JobStreamEndpointIT {
     Awaitility.await("until no streams are registered")
         .untilAsserted(
             () -> {
-              final JobStreams streams = actuator.list();
-              assertThat(streams.getRemote()).isEmpty();
-              assertThat(streams.getClient()).isEmpty();
+              final var streams = actuator.list();
+              assertThat(streams.remote()).isEmpty();
+              assertThat(streams.client()).isEmpty();
             });
   }
 
@@ -110,18 +109,18 @@ public class JobStreamEndpointIT {
     assertThat(streams)
         .anySatisfy(
             stream -> {
-              assertThat(stream.getJobType()).isEqualTo("foo");
-              assertThat(stream.getMetadata().getWorker()).isEqualTo("foo");
-              assertThat(stream.getMetadata().getTimeout()).isEqualTo(100L);
-              assertThat(stream.getMetadata().getFetchVariables())
+              assertThat(stream.jobType()).isEqualTo("foo");
+              assertThat(stream.metadata().worker()).isEqualTo("foo");
+              assertThat(stream.metadata().timeout()).isEqualTo(Duration.ofMillis(100L));
+              assertThat(stream.metadata().fetchVariables())
                   .containsExactlyInAnyOrder("foo", "fooz");
             })
         .anySatisfy(
             stream -> {
-              assertThat(stream.getJobType()).isEqualTo("bar");
-              assertThat(stream.getMetadata().getWorker()).isEqualTo("bar");
-              assertThat(stream.getMetadata().getTimeout()).isEqualTo(250L);
-              assertThat(stream.getMetadata().getFetchVariables())
+              assertThat(stream.jobType()).isEqualTo("bar");
+              assertThat(stream.metadata().worker()).isEqualTo("bar");
+              assertThat(stream.metadata().timeout()).isEqualTo(Duration.ofMillis(250));
+              assertThat(stream.metadata().fetchVariables())
                   .containsExactlyInAnyOrder("bar", "barz");
             });
   }
@@ -152,14 +151,14 @@ public class JobStreamEndpointIT {
             .atMost(Duration.ofSeconds(60))
             .until(
                 actuator::listRemote,
-                list -> list.size() == 1 && list.get(0).getConsumers().size() == 2);
+                list -> list.size() == 1 && list.get(0).consumers().size() == 2);
 
     // then
     assertThat(streams)
         .first(InstanceOfAssertFactories.type(RemoteJobStream.class))
-        .extracting(RemoteJobStream::getConsumers)
+        .extracting(RemoteJobStream::consumers)
         .asInstanceOf(InstanceOfAssertFactories.list(RemoteStreamId.class))
-        .extracting(RemoteStreamId::getReceiver)
+        .extracting(RemoteStreamId::receiver)
         .containsExactly("0", "0");
   }
 
@@ -192,21 +191,21 @@ public class JobStreamEndpointIT {
     assertThat(streams)
         .anySatisfy(
             stream -> {
-              assertThat(stream.getJobType()).isEqualTo("foo");
-              assertThat(stream.getMetadata().getWorker()).isEqualTo("foo");
-              assertThat(stream.getMetadata().getTimeout()).isEqualTo(100L);
-              assertThat(stream.getMetadata().getFetchVariables())
+              assertThat(stream.jobType()).isEqualTo("foo");
+              assertThat(stream.metadata().worker()).isEqualTo("foo");
+              assertThat(stream.metadata().timeout()).isEqualTo(Duration.ofMillis(100));
+              assertThat(stream.metadata().fetchVariables())
                   .containsExactlyInAnyOrder("foo", "fooz");
-              assertThat(stream.getId()).isNotNull();
+              assertThat(stream.id()).isNotNull();
             })
         .anySatisfy(
             stream -> {
-              assertThat(stream.getJobType()).isEqualTo("bar");
-              assertThat(stream.getMetadata().getWorker()).isEqualTo("bar");
-              assertThat(stream.getMetadata().getTimeout()).isEqualTo(250L);
-              assertThat(stream.getMetadata().getFetchVariables())
+              assertThat(stream.jobType()).isEqualTo("bar");
+              assertThat(stream.metadata().worker()).isEqualTo("bar");
+              assertThat(stream.metadata().timeout()).isEqualTo(Duration.ofMillis(250));
+              assertThat(stream.metadata().fetchVariables())
                   .containsExactlyInAnyOrder("bar", "barz");
-              assertThat(stream.getId()).isNotNull();
+              assertThat(stream.id()).isNotNull();
             });
   }
 
