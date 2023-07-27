@@ -53,7 +53,7 @@ public class ResourceDeletionTest {
     engine.resourceDeletion().withResourceKey(drgKey).delete();
 
     // then
-    verifyDecisionIsDeleted(drgKey, "jedi_or_sith", 1);
+    verifyDecisionIdWithVersionIsDeleted(drgKey, "jedi_or_sith", 1);
     verifyDecisionRequirementsIsDeleted(drgKey);
     verifyResourceIsDeleted(drgKey);
   }
@@ -67,8 +67,8 @@ public class ResourceDeletionTest {
     engine.resourceDeletion().withResourceKey(drgKey).delete();
 
     // then
-    verifyDecisionIsDeleted(drgKey, "jedi_or_sith", 1);
-    verifyDecisionIsDeleted(drgKey, "force_user", 1);
+    verifyDecisionIdWithVersionIsDeleted(drgKey, "jedi_or_sith", 1);
+    verifyDecisionIdWithVersionIsDeleted(drgKey, "force_user", 1);
     verifyDecisionRequirementsIsDeleted(drgKey);
     verifyResourceIsDeleted(drgKey);
   }
@@ -223,7 +223,7 @@ public class ResourceDeletionTest {
     engine.resourceDeletion().withResourceKey(processDefinitionKey).delete();
 
     // then
-    verifyProcessIsDeleted(processId, 1);
+    verifyProcessIdWithVersionIsDeleted(processId, 1);
     verifyResourceIsDeleted(processDefinitionKey);
   }
 
@@ -239,9 +239,9 @@ public class ResourceDeletionTest {
     final var processInstanceKey = engine.processInstance().ofBpmnProcessId(processId).create();
 
     // then
-    verifyProcessIsDeleted(processId, 2);
+    verifyProcessIdWithVersionIsDeleted(processId, 2);
     verifyResourceIsDeleted(secondProcessDefinitionKey);
-    verifyProcessInstanceIsCompleted(processId, 1, processInstanceKey);
+    verifyInstanceOfProcessWithIdAndVersionIsCompleted(processId, 1, processInstanceKey);
   }
 
   @Test
@@ -256,9 +256,9 @@ public class ResourceDeletionTest {
     final var processInstanceKey = engine.processInstance().ofBpmnProcessId(processId).create();
 
     // then
-    verifyProcessIsDeleted(processId, 1);
+    verifyProcessIdWithVersionIsDeleted(processId, 1);
     verifyResourceIsDeleted(firstProcessDefinitionKey);
-    verifyProcessInstanceIsCompleted(processId, 2, processInstanceKey);
+    verifyInstanceOfProcessWithIdAndVersionIsCompleted(processId, 2, processInstanceKey);
   }
 
   private long deployDrg(final String drgResource) {
@@ -355,7 +355,7 @@ public class ResourceDeletionTest {
             drgCreatedRecord.getChecksum());
   }
 
-  private void verifyDecisionIsDeleted(
+  private void verifyDecisionIdWithVersionIsDeleted(
       final long drgKey, final String decisionId, final int version) {
     final var decisionCreatedRecord =
         RecordingExporter.decisionRecords()
@@ -395,7 +395,7 @@ public class ResourceDeletionTest {
             decisionCreatedRecord.isDuplicate());
   }
 
-  private void verifyProcessIsDeleted(final String processId, final int version) {
+  private void verifyProcessIdWithVersionIsDeleted(final String processId, final int version) {
     final var processCreatedRecord =
         RecordingExporter.processRecords()
             .withIntent(ProcessIntent.CREATED)
@@ -426,7 +426,7 @@ public class ResourceDeletionTest {
                 processCreatedRecord.getProcessDefinitionKey()));
   }
 
-  private void verifyProcessInstanceIsCompleted(
+  private void verifyInstanceOfProcessWithIdAndVersionIsCompleted(
       final String processId, final int version, final long processInstanceKey) {
     assertThat(
             RecordingExporter.processInstanceRecords()
