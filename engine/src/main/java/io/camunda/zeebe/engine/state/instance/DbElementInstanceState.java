@@ -25,6 +25,7 @@ import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import org.agrona.DirectBuffer;
@@ -354,6 +355,21 @@ public final class DbElementInstanceState implements MutableElementInstanceState
           processInstanceKeys.add(processInstanceKey.getValue());
         });
     return processInstanceKeys;
+  }
+
+  @Override
+  public boolean hasRunningInstances(final long processDefinitionKey) {
+    this.processDefinitionKey.wrapLong(processDefinitionKey);
+    final AtomicBoolean hasRunningInstances = new AtomicBoolean(false);
+
+    processInstanceKeyByProcessDefinitionKeyColumnFamily.whileEqualPrefix(
+        this.processDefinitionKey,
+        (key, value) -> {
+          hasRunningInstances.set(true);
+          return false;
+        });
+
+    return hasRunningInstances.get();
   }
 
   private ElementInstance copyElementInstance(final ElementInstance elementInstance) {
