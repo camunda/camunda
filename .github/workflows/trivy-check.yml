@@ -1,23 +1,14 @@
 name: Trivy check docker image
 
 on:
+  push:
   workflow_dispatch:
   schedule:
     - cron: "0 2 * * 1-5"
 
-# Will limit the workflow to 1 concurrenct run per ref (branch / PR)
-# If a new commits occurs, the current run will be canceled
-concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
-
-# set permissions to allow Dependabot to publish test results
 permissions:
   contents: read
   id-token: write
-  issues: read
-  checks: write
-  pull-requests: write
 
 env:
   IMAGE_NAME: optimize/test
@@ -48,41 +39,15 @@ jobs:
         id: "pom-info"
         uses: YunaBraska/java-info-action@main
 
-      - name: Import secrets
-        id: secrets
-        uses: hashicorp/vault-action@62aa8bb4c43190676348ad2b146075f0421136db
+      - name: Setup Maven
+        uses: ./.github/actions/setup-maven
         with:
-          url: ${{ secrets.VAULT_ADDR }}
-          method: approle
-          roleId: ${{ secrets.VAULT_ROLE_ID }}
-          secretId: ${{ secrets.VAULT_SECRET_ID }}
-          secrets: |
-            secret/data/products/optimize/ci/optimize NEXUS_USERNAME;
-            secret/data/products/optimize/ci/optimize NEXUS_PASSWORD;
-
-      - name: Setup Maven Action
-        uses: s4u/setup-maven-action@v1.8.0
-        with:
-          java-version: ${{ steps.pom-info.outputs.x_java_version }}
-          java-distribution: "temurin"
-          maven-version: "3.8.6"
+          secrets: ${{ toJSON(secrets) }}
 
       - name: Checkout code 2 # we do it cause setup maven step does the checkout to current branch
         uses: actions/checkout@v3
         with:
           ref: ${{ matrix.branch}}
-
-      - name: "Create settings.xml"
-        uses: s4u/maven-settings-action@v2.8.0
-        with:
-          githubServer: false
-          servers: |
-            [{
-              "id": "camunda-nexus",
-              "username": "${{ steps.secrets.outputs.NEXUS_USERNAME }}",
-              "password": "${{ steps.secrets.outputs.NEXUS_PASSWORD }}"
-            }]
-          mirrors: '[{"url": "https://repository.nexus.camunda.cloud/content/groups/internal/", "id": "camunda-nexus", "mirrorOf": "*", "name": "camunda Nexus"}]'
 
       - name: Configure Google tools
         id: auth
@@ -122,6 +87,9 @@ jobs:
           format: table
           output: ${{ steps.pom-info.outputs.project_version }}-trivy-log.txt
 
+      - name: Print Test Results
+        run: cat ${{ steps.pom-info.outputs.project_version }}-trivy-log.txt
+
       - name: Upload Test Results
         if: always()
         uses: actions/upload-artifact@v3
@@ -134,7 +102,7 @@ jobs:
 
   post-results-on-slack:
     name: Post results on slack
-    if: failure()
+    # if: failure()
     needs:
       - trivy-check
     runs-on: ubuntu-latest
