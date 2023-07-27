@@ -56,7 +56,9 @@ jobs:
           account-alias: registry
 
       - name: Build a package
-        run: mvn -B clean package -DskipTests --file pom.xml
+        uses: ./.github/actions/run-maven
+        with:
+          parameters: clean install -DskipTests -Dskip.docker
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v2
@@ -88,6 +90,7 @@ jobs:
           output: ${{ steps.pom-info.outputs.project_version }}-trivy-log.txt
 
       - name: Print Test Results
+        if: always()
         run: cat ${{ steps.pom-info.outputs.project_version }}-trivy-log.txt
 
       - name: Upload Test Results
