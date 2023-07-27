@@ -1,0 +1,12 @@
+version: "3.9"
+services:
+  nginx:
+    extends:
+      service: nginx
+      file: ./docker-compose.nginx.yml
+    environment:
+      HTPASSWD: ${NGINX_HTPASSWD:-elastic:$$apr1$$rAPWdsDW$$/7taaK2oH4AwXgLTbYSpa0}
+    volumes:
+      - ./optimize.crt:/etc/nginx/certs/optimize.crt
+      - ./optimize.key:/etc/nginx/certs/optimize.key
+      - ./ssl-basic-auth.cfg:/opt/auth.conf
