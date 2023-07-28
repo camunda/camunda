@@ -11,6 +11,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
+import io.camunda.operate.ApplicationShutdownService;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.util.CollectionUtil;
 import io.camunda.operate.util.ThreadUtil;
@@ -39,13 +40,21 @@ public class PartitionHolder {
   @Autowired
   private ZeebeClient zeebeClient;
 
+  @Autowired(required = false)
+  private ApplicationShutdownService applicationShutdownService;
+
   /**
    * Retrieves PartitionIds with waiting time of {@value #WAIT_TIME_IN_MS} milliseconds and retries for {@value #MAX_RETRY} times.
    */
   public List<Integer> getPartitionIds() {
-    return getPartitionIdsWithWaitingTimeAndRetries(WAIT_TIME_IN_MS, MAX_RETRY);
+    List<Integer> ids = getPartitionIdsWithWaitingTimeAndRetries(WAIT_TIME_IN_MS, MAX_RETRY);
+    if (ids.isEmpty() && applicationShutdownService != null) {
+      logger.error("Operate needs an established connection to Zeebe in order to retrieve Zeebe Partitions. Shutting down...");
+      applicationShutdownService.shutdown();
+    }
+    return ids;
   }
-  
+
   private List<Integer> getPartitionIdsWithWaitingTimeAndRetries(long waitingTimeInMilliseconds, int maxRetries) {
     int retries = 0;
     while (partitionIds.isEmpty() && retries <= maxRetries) {
@@ -86,7 +95,7 @@ public class PartitionHolder {
     }
     return partitionIds;
   }
-  
+
   protected Optional<List<Integer>> getPartitionIdsFromZeebe(){
     logger.debug("Requesting partition ids from Zeebe client");
     try {
@@ -100,7 +109,7 @@ public class PartitionHolder {
     }
     return Optional.empty();
   }
-  
+
   protected void sleepFor(long milliseconds) {
     ThreadUtil.sleepFor(milliseconds);
   }
