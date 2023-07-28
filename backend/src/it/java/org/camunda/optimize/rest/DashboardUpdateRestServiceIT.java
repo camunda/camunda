@@ -72,7 +72,7 @@ public class DashboardUpdateRestServiceIT extends AbstractDashboardRestServiceIT
   @MethodSource("validDescription")
   public void updateDashboardWithValidDescription(final String description) {
     // given
-    String id = dashboardClient.createEmptyDashboard(null);
+    String id = createDashboardWithDescription("originalDescription");
     final DashboardDefinitionRestDto dashboardUpdate = new DashboardDefinitionRestDto();
     dashboardUpdate.setDescription(description);
 
@@ -91,7 +91,7 @@ public class DashboardUpdateRestServiceIT extends AbstractDashboardRestServiceIT
   @MethodSource("invalidDescription")
   public void updateDashboardWithInvalidDescription(final String description) {
     // given
-    String id = dashboardClient.createEmptyDashboard(null);
+    String id = createDashboardWithDescription("originalDescription");
     final DashboardDefinitionRestDto dashboardUpdate = new DashboardDefinitionRestDto();
     dashboardUpdate.setDescription(description);
 
@@ -419,6 +419,13 @@ public class DashboardUpdateRestServiceIT extends AbstractDashboardRestServiceIT
     // then
     final DashboardDefinitionRestDto dashboard = dashboardClient.getDashboard(id);
     assertThat(dashboard.getCollectionId()).isEqualTo(collectionId);
+  }
+
+  private String createDashboardWithDescription(final String description) {
+    final DashboardDefinitionRestDto dashboardDefinitionDto = new DashboardDefinitionRestDto();
+    dashboardDefinitionDto.setName("reportName");
+    dashboardDefinitionDto.setDescription(description);
+    return dashboardClient.createDashboard(dashboardDefinitionDto);
   }
 
 }

@@ -18,6 +18,7 @@ import java.util.List;
 @Data
 public class DashboardDefinitionUpdateDto {
   protected String name;
+  @JsonInclude
   protected String description;
   protected OffsetDateTime lastModified;
   protected String lastModifier;
