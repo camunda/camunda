@@ -172,7 +172,10 @@ class ZeebePartitionAdminAccess implements PartitionAdminAccess {
                       writeErrorEventAndBanInstance(processInstanceKey, writer, future);
                     });
           } catch (final Exception e) {
-            LOG.error("Could not resume processing", e);
+            LOG.error(
+                "Failure on writing error record to ban instance {} onto the LogStream.",
+                processInstanceKey,
+                e);
             future.completeExceptionally(e);
           }
         });
@@ -233,7 +236,11 @@ class ZeebePartitionAdminAccess implements PartitionAdminAccess {
             recordMetadata.getRejectionReason(),
             recordMetadata.getValueType(),
             errorRecord);
-    writer.key(processInstanceKey);
-    return writer.metadataWriter(recordMetadata).valueWriter(entry.recordValue()).tryWrite();
+
+    return writer
+        .metadataWriter(recordMetadata)
+        .valueWriter(entry.recordValue())
+        .key(processInstanceKey)
+        .tryWrite();
   }
 }
