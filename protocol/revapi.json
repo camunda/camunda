@@ -3,6 +3,15 @@
     "extension": "revapi.filter",
     "id": "filter",
     "configuration": {
+      "elements": {
+        "exclude": [
+          {
+            "justification": "The management protocol is not public and is allowed to break",
+            "matcher": "java-package",
+            "match": "io.camunda.zeebe.protocol.management"
+          }
+        ]
+      },
       "archives": {
         "justification": "Ignore everything not included in the module itself",
         "include": ["io\\.camunda:zeebe-protocol:.*"]

@@ -13,6 +13,4 @@ import io.camunda.zeebe.engine.api.TypedRecord;
 public interface BannedInstanceState extends StreamProcessorLifecycleAware {
 
   boolean isBanned(final TypedRecord record);
-
-  boolean isEmpty();
 }

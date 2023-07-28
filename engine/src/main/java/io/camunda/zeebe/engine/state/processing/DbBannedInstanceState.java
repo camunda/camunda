@@ -36,7 +36,6 @@ public final class DbBannedInstanceState implements MutableBannedInstanceState {
   private final ColumnFamily<DbLong, DbNil> bannedInstanceColumnFamily;
   private final DbLong processInstanceKey;
   private final BannedInstanceMetrics bannedInstanceMetrics;
-  private boolean empty = true;
 
   public DbBannedInstanceState(
       final ZeebeDb<ZbColumnFamilies> zeebeDb,
@@ -56,7 +55,6 @@ public final class DbBannedInstanceState implements MutableBannedInstanceState {
   public void onRecovered(final ReadonlyStreamProcessorContext context) {
     final var counter = new AtomicInteger(0);
     bannedInstanceColumnFamily.forEach(ignore -> counter.getAndIncrement());
-    empty = counter.get() == 0;
     bannedInstanceMetrics.setBannedInstanceCounter(counter.get());
   }
 
@@ -64,18 +62,13 @@ public final class DbBannedInstanceState implements MutableBannedInstanceState {
     if (key >= 0) {
       LOG.warn(BAN_INSTANCE_MESSAGE, key);
 
-      empty = false;
       processInstanceKey.wrapLong(key);
-      bannedInstanceColumnFamily.insert(processInstanceKey, DbNil.INSTANCE);
+      bannedInstanceColumnFamily.upsert(processInstanceKey, DbNil.INSTANCE);
       bannedInstanceMetrics.countBannedInstance();
     }
   }
 
   private boolean isBanned(final long key) {
-    if (empty) {
-      return false;
-    }
-
     processInstanceKey.wrapLong(key);
     return bannedInstanceColumnFamily.exists(processInstanceKey);
   }
@@ -90,11 +83,6 @@ public final class DbBannedInstanceState implements MutableBannedInstanceState {
       }
     }
     return false;
-  }
-
-  @Override
-  public boolean isEmpty() {
-    return empty;
   }
 
   @Override
