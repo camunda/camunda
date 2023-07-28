@@ -11,27 +11,27 @@ import io.camunda.zeebe.scheduler.clock.ActorClock;
 import io.camunda.zeebe.scheduler.clock.DefaultActorClock;
 import io.camunda.zeebe.util.Loggers;
 import io.camunda.zeebe.util.error.FatalErrorHandler;
+import java.lang.invoke.MethodHandles;
+import java.lang.invoke.VarHandle;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.LockSupport;
 import java.util.function.Consumer;
-import org.agrona.UnsafeAccess;
 import org.agrona.concurrent.BackoffIdleStrategy;
 import org.agrona.concurrent.ManyToManyConcurrentArrayQueue;
 import org.slf4j.Logger;
 import org.slf4j.MDC;
-import sun.misc.Unsafe;
 
 public class ActorThread extends Thread implements Consumer<Runnable> {
-  static final Unsafe UNSAFE = UnsafeAccess.UNSAFE;
-  private static final long STATE_OFFSET;
   private static final Logger LOG = Loggers.ACTOR_LOGGER;
   private static final FatalErrorHandler FATAL_ERROR_HANDLER = FatalErrorHandler.withLogger(LOG);
+  private static final VarHandle STATE_HANDLE;
 
   static {
     try {
-      STATE_OFFSET = UNSAFE.objectFieldOffset(ActorThread.class.getDeclaredField("state"));
-    } catch (final Exception e) {
+      STATE_HANDLE =
+          MethodHandles.lookup().findVarHandle(ActorThread.class, "state", ActorThreadState.class);
+    } catch (final NoSuchFieldException | IllegalAccessException e) {
       throw new RuntimeException(e);
     }
   }
@@ -188,8 +188,7 @@ public class ActorThread extends Thread implements Consumer<Runnable> {
 
   @Override
   public synchronized void start() {
-    if (UNSAFE.compareAndSwapObject(
-        this, STATE_OFFSET, ActorThreadState.NEW, ActorThreadState.RUNNING)) {
+    if (STATE_HANDLE.compareAndSet(this, ActorThreadState.NEW, ActorThreadState.RUNNING)) {
       super.start();
     } else {
       throw new IllegalStateException("Cannot start runner, not in state 'NEW'.");
@@ -214,8 +213,7 @@ public class ActorThread extends Thread implements Consumer<Runnable> {
   }
 
   public CompletableFuture<Void> close() {
-    if (UNSAFE.compareAndSwapObject(
-        this, STATE_OFFSET, ActorThreadState.RUNNING, ActorThreadState.TERMINATING)) {
+    if (STATE_HANDLE.compareAndSet(this, ActorThreadState.RUNNING, ActorThreadState.TERMINATING)) {
       return terminationFuture;
     } else {
       throw new IllegalStateException("Cannot stop runner, not in state 'RUNNING'.");
