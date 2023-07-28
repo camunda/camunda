@@ -17,6 +17,10 @@
 package io.camunda.zeebe.model.bpmn;
 
 import static io.camunda.zeebe.model.bpmn.impl.BpmnModelConstants.BPMN20_NS;
+import static io.camunda.zeebe.model.bpmn.impl.BpmnModelConstants.BPMN_EXECUTION_PLATFORM;
+import static io.camunda.zeebe.model.bpmn.impl.BpmnModelConstants.BPMN_EXPORTER;
+import static io.camunda.zeebe.model.bpmn.impl.BpmnModelConstants.MODELER_NS;
+import static io.camunda.zeebe.model.bpmn.impl.BpmnModelConstants.ZEEBE_VERSION;
 
 import io.camunda.zeebe.model.bpmn.builder.ProcessBuilder;
 import io.camunda.zeebe.model.bpmn.impl.BpmnImpl;
@@ -353,7 +357,7 @@ public class Bpmn {
   public static ProcessBuilder createProcess() {
     final BpmnModelInstance modelInstance = INSTANCE.doCreateEmptyModel();
     final Definitions definitions = modelInstance.newInstance(Definitions.class);
-    definitions.setTargetNamespace(BPMN20_NS);
+    setModelDefinition(definitions);
     modelInstance.setDefinitions(definitions);
     final Process process = modelInstance.newInstance(Process.class);
     definitions.addChildElement(process);
@@ -673,5 +677,15 @@ public class Bpmn {
 
   public ModelBuilder getBpmnModelBuilder() {
     return bpmnModelBuilder;
+  }
+
+  /** Set the default model definition */
+  private static void setModelDefinition(final Definitions definitions) {
+    definitions.setExporter(BPMN_EXPORTER);
+    definitions.setExporterVersion(ZEEBE_VERSION);
+    definitions.setTargetNamespace(BPMN20_NS);
+    definitions.setAttributeValueNs(
+        MODELER_NS, "modeler:executionPlatform", BPMN_EXECUTION_PLATFORM);
+    definitions.setAttributeValueNs(MODELER_NS, "modeler:executionPlatformVersion", ZEEBE_VERSION);
   }
 }
