@@ -11,6 +11,7 @@ import io.camunda.zeebe.journal.CorruptedJournalException;
 import io.camunda.zeebe.journal.JournalException;
 import io.camunda.zeebe.util.FileUtil;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
@@ -113,18 +114,24 @@ final class SegmentLoader {
 
   Segment loadExistingSegment(
       final Path segmentFile, final long lastWrittenAsqn, final JournalIndex journalIndex) {
-    final var descriptor = readDescriptor(segmentFile);
-    final MappedByteBuffer mappedSegment;
-
     try (final var channel =
         FileChannel.open(segmentFile, StandardOpenOption.READ, StandardOpenOption.WRITE)) {
-      mappedSegment = mapSegment(channel, descriptor.maxSegmentSize());
+      MappedByteBuffer mappedSegment;
+      final var initialMappedLength = Files.size(segmentFile);
+      mappedSegment = mapSegment(channel, initialMappedLength);
+      final var descriptor = readDescriptor(mappedSegment, segmentFile.getFileName().toString());
+
+      if (descriptor.maxSegmentSize() > initialMappedLength) {
+        // remap with actual size
+        IoUtil.unmap(mappedSegment);
+        mappedSegment = mapSegment(channel, descriptor.maxSegmentSize());
+      }
+
+      return loadSegment(segmentFile, mappedSegment, descriptor, lastWrittenAsqn, journalIndex);
     } catch (final IOException e) {
       throw new JournalException(
           String.format("Failed to load existing segment %s", segmentFile), e);
     }
-
-    return loadSegment(segmentFile, mappedSegment, descriptor, lastWrittenAsqn, journalIndex);
   }
 
   /* ---- Internal methods ------ */
@@ -146,16 +153,9 @@ final class SegmentLoader {
     return mappedSegment;
   }
 
-  private SegmentDescriptor readDescriptor(final Path file) {
-    final var fileName = file.getFileName().toString();
-
-    try (final FileChannel channel = FileChannel.open(file, StandardOpenOption.READ)) {
-      final var fileSize = Files.size(file);
-      // We don't know the length of segment descriptor, so we let
-      final var buffer = channel.map(MapMode.READ_ONLY, 0, fileSize);
-      final var descriptor = new SegmentDescriptorReader().readFrom(buffer);
-      IoUtil.unmap(buffer);
-      return descriptor;
+  private SegmentDescriptor readDescriptor(final ByteBuffer buffer, final String fileName) {
+    try {
+      return new SegmentDescriptorReader().readFrom(buffer);
     } catch (final IndexOutOfBoundsException e) {
       throw new JournalException(
           String.format(
@@ -164,8 +164,6 @@ final class SegmentLoader {
     } catch (final UnknownVersionException e) {
       throw new CorruptedJournalException(
           String.format("Couldn't read or recognize version of segment '%s'.", fileName), e);
-    } catch (final IOException e) {
-      throw new JournalException(e);
     }
   }
 
