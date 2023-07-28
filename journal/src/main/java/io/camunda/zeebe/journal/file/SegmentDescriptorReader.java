@@ -35,15 +35,13 @@ final class SegmentDescriptorReader {
     final byte version;
     try {
       version = directBuffer.getByte(0);
-      if (version > SegmentDescriptor.NO_META_VERSION && version <= SegmentDescriptor.CUR_VERSION) {
+      if (version >= SegmentDescriptor.META_VERSION && version <= SegmentDescriptor.CUR_VERSION) {
         readV2Descriptor(directBuffer);
-      } else if (version == SegmentDescriptor.NO_META_VERSION) {
-        readV1Descriptor(directBuffer);
       } else {
         throw new UnknownVersionException(
             String.format(
-                "Expected version to be one [%d %d] but read %d instead.",
-                SegmentDescriptor.NO_META_VERSION, SegmentDescriptor.CUR_VERSION, version));
+                "Expected version to be one (%d %d] but read %d instead.",
+                SegmentDescriptor.META_VERSION, SegmentDescriptor.CUR_VERSION, version));
       }
     } catch (final IndexOutOfBoundsException error) {
       // Previously SegmentLoader checks if the file has sufficient size for the descriptor. But
@@ -154,16 +152,5 @@ final class SegmentDescriptorReader {
               "Cannot read header. Read schema and template ids ('%d' and '%d') don't match expected '%d' and %d'.",
               headerDecoder.schemaId(), headerDecoder.templateId(), schemaId, templateId));
     }
-  }
-
-  /** Validates the header's schema and template ids before loading the descriptor's fields. */
-  private void readV1Descriptor(final DirectBuffer buffer) {
-    validateHeader(
-        buffer,
-        SegmentDescriptor.VERSION_LENGTH,
-        segmentDescriptorDecoder.sbeSchemaId(),
-        segmentDescriptorDecoder.sbeTemplateId());
-
-    readDescriptor(buffer, SegmentDescriptor.VERSION_LENGTH);
   }
 }

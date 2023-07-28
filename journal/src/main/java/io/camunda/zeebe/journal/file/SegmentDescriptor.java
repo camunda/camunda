@@ -49,8 +49,9 @@ final class SegmentDescriptor {
   // contains lastIndex and lastPosition. Version 2 with sbeSchemaVersion 1 does not contain
   // lastIndex and lastPosition.
   static final byte CUR_VERSION = 2;
-  // previous descriptor version containing: header and descriptor
-  static final byte NO_META_VERSION = 1;
+  // First version containing: header and descriptor. We remove support for VERSION 1 as this was
+  // introduced long ago.
+  static final byte META_VERSION = 2;
   static final int VERSION_LENGTH = Byte.BYTES;
   private static final Logger LOG = LoggerFactory.getLogger(SegmentDescriptor.class);
   private final DescriptorMetadataEncoder metadataEncoder = new DescriptorMetadataEncoder();

@@ -22,7 +22,6 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import io.camunda.zeebe.journal.CorruptedJournalException;
 import io.camunda.zeebe.journal.util.ChecksumGenerator;
 import java.nio.ByteBuffer;
-import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -62,30 +61,6 @@ class SegmentDescriptorTest {
 
     // when/then
     assertThatThrownBy(() -> readDescriptor(buffer)).isInstanceOf(UnknownVersionException.class);
-  }
-
-  @Test
-  void shouldReadV1Message() {
-    // given
-    final ByteBuffer buffer = ByteBuffer.allocate(SegmentDescriptor.getEncodingLength());
-    final MutableDirectBuffer directBuffer = new UnsafeBuffer(buffer);
-    final MessageHeaderEncoder headerEncoder = new MessageHeaderEncoder();
-    final SegmentDescriptorEncoder descriptorEncoder = new SegmentDescriptorEncoder();
-
-    directBuffer.putByte(0, (byte) 1);
-    descriptorEncoder
-        .wrapAndApplyHeader(directBuffer, 1, headerEncoder)
-        .id(123)
-        .index(456)
-        .maxSegmentSize(789);
-
-    // when
-    final SegmentDescriptor descriptor = readDescriptor(buffer);
-
-    // then
-    assertThat(descriptor.id()).isEqualTo(123);
-    assertThat(descriptor.index()).isEqualTo(456);
-    assertThat(descriptor.maxSegmentSize()).isEqualTo(789);
   }
 
   @Test
