@@ -94,10 +94,27 @@ class Incidents extends NetworkReconnectionHandler {
     });
   }
 
-  startPolling = async (id: string) => {
+  startPolling = async (
+    instanceId: ProcessInstanceEntity['id'],
+    options: {runImmediately?: boolean} = {runImmediately: false},
+  ) => {
+    if (
+      document.visibilityState === 'hidden' ||
+      !processInstanceDetailsStore.isRunning ||
+      processInstanceDetailsStore.state.processInstance?.state !== 'INCIDENT'
+    ) {
+      return;
+    }
+
+    if (options.runImmediately) {
+      if (!this.isPollRequestRunning) {
+        this.handlePolling(instanceId);
+      }
+    }
+
     this.intervalId = setInterval(() => {
       if (!this.isPollRequestRunning) {
-        this.handlePolling(id);
+        this.handlePolling(instanceId);
       }
     }, 5000);
   };

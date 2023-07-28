@@ -82,10 +82,7 @@ class ProcessInstanceDetails extends NetworkReconnectionHandler {
     this.onPollingFailure = onPollingFailure;
 
     this.disposer = autorun(() => {
-      if (
-        isInstanceRunning(this.state.processInstance) ||
-        this.state.processInstance?.hasActiveOperation
-      ) {
+      if (this.isRunning || this.state.processInstance?.hasActiveOperation) {
         if (this.intervalId === null) {
           this.startPolling(id);
         }
@@ -250,7 +247,21 @@ class ProcessInstanceDetails extends NetworkReconnectionHandler {
     this.isPollRequestRunning = false;
   };
 
-  startPolling = async (instanceId: any) => {
+  startPolling = async (
+    instanceId: ProcessInstanceEntity['id'],
+    options: {runImmediately?: boolean} = {runImmediately: false},
+  ) => {
+    if (
+      document.visibilityState === 'hidden' ||
+      (!this.isRunning && !this.state.processInstance?.hasActiveOperation)
+    ) {
+      return;
+    }
+
+    if (options.runImmediately) {
+      this.handlePolling(instanceId);
+    }
+
     this.intervalId = setInterval(() => {
       if (!this.isPollRequestRunning) {
         this.handlePolling(instanceId);

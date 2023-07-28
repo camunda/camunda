@@ -17,7 +17,6 @@ import {
 import {fetchSequenceFlows} from 'modules/api/processInstances/sequenceFlows';
 import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
 import {getProcessedSequenceFlows} from './mappers';
-import {isInstanceRunning} from './utils/isInstanceRunning';
 import {logger} from 'modules/logger';
 import {NetworkReconnectionHandler} from './networkReconnectionHandler';
 import isEqual from 'lodash/isEqual';
@@ -61,7 +60,7 @@ class SequenceFlows extends NetworkReconnectionHandler {
     this.disposer = autorun(() => {
       const {processInstance} = processInstanceDetailsStore.state;
 
-      if (isInstanceRunning(processInstance)) {
+      if (processInstanceDetailsStore.isRunning) {
         if (this.intervalId === null && processInstance?.id !== undefined) {
           this.startPolling(processInstance?.id);
         }
@@ -96,7 +95,21 @@ class SequenceFlows extends NetworkReconnectionHandler {
     this.isPollRequestRunning = false;
   };
 
-  startPolling = async (instanceId: ProcessInstanceEntity['id']) => {
+  startPolling = async (
+    instanceId: ProcessInstanceEntity['id'],
+    options: {runImmediately?: boolean} = {runImmediately: false},
+  ) => {
+    if (
+      document.visibilityState === 'hidden' ||
+      !processInstanceDetailsStore.isRunning
+    ) {
+      return;
+    }
+
+    if (options.runImmediately) {
+      this.handlePolling(instanceId);
+    }
+
     this.intervalId = setInterval(() => {
       if (!this.isPollRequestRunning) {
         this.handlePolling(instanceId);

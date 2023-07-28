@@ -29,7 +29,6 @@ import {
   MAX_VARIABLES_PER_REQUEST,
   MAX_VARIABLES_STORED,
 } from 'modules/constants/variables';
-import {isInstanceRunning} from '../utils/isInstanceRunning';
 import {logger} from 'modules/logger';
 import {flowNodeMetaDataStore} from '../flowNodeMetaData';
 import {NetworkReconnectionHandler} from '../networkReconnectionHandler';
@@ -126,10 +125,7 @@ class Variables extends NetworkReconnectionHandler {
     );
 
     this.disposer = autorun(() => {
-      if (
-        isInstanceRunning(processInstanceDetailsStore.state.processInstance) &&
-        this.scopeId !== null
-      ) {
+      if (processInstanceDetailsStore.isRunning && this.scopeId !== null) {
         if (
           this.intervalId === null &&
           !modificationsStore.isModificationModeEnabled
@@ -620,14 +616,27 @@ class Variables extends NetworkReconnectionHandler {
     this.state.pendingItem = null;
   };
 
-  startPolling = async (instanceId: string | null) => {
-    if (instanceId !== null) {
-      this.intervalId = setInterval(() => {
-        if (!this.isPollRequestRunning) {
-          this.handlePolling(instanceId);
-        }
-      }, 5000);
+  startPolling = async (
+    instanceId: string | null,
+    options: {runImmediately?: boolean} = {runImmediately: false},
+  ) => {
+    if (
+      document.visibilityState === 'hidden' ||
+      instanceId === null ||
+      !processInstanceDetailsStore.isRunning
+    ) {
+      return;
     }
+
+    if (options.runImmediately) {
+      this.handlePolling(instanceId);
+    }
+
+    this.intervalId = setInterval(() => {
+      if (!this.isPollRequestRunning) {
+        this.handlePolling(instanceId);
+      }
+    }, 5000);
   };
 
   stopPolling = () => {

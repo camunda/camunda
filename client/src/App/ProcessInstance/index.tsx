@@ -52,6 +52,30 @@ import {tracking} from 'modules/tracking';
 import {instanceHistoryModificationStore} from 'modules/stores/instanceHistoryModification';
 import {Forbidden} from 'modules/components/Forbidden';
 
+const startPolling = (processInstanceId: ProcessInstanceEntity['id']) => {
+  variablesStore.startPolling(processInstanceId, {runImmediately: true});
+  sequenceFlowsStore.startPolling(processInstanceId, {runImmediately: true});
+  processInstanceDetailsStore.startPolling(processInstanceId, {
+    runImmediately: true,
+  });
+  incidentsStore.startPolling(processInstanceId, {
+    runImmediately: true,
+  });
+  flowNodeInstanceStore.startPolling({runImmediately: true});
+  processInstanceDetailsStatisticsStore.startPolling(processInstanceId, {
+    runImmediately: true,
+  });
+};
+
+const stopPolling = () => {
+  variablesStore.stopPolling();
+  sequenceFlowsStore.stopPolling();
+  processInstanceDetailsStore.stopPolling();
+  incidentsStore.stopPolling();
+  flowNodeInstanceStore.stopPolling();
+  processInstanceDetailsStatisticsStore.stopPolling();
+};
+
 const ProcessInstance: React.FC = observer(() => {
   const {processInstanceId = ''} = useProcessInstancePageParams();
   const navigate = useNavigate();
@@ -85,25 +109,27 @@ const ProcessInstance: React.FC = observer(() => {
       () => modificationsStore.isModificationModeEnabled,
       (isModificationModeEnabled) => {
         if (isModificationModeEnabled) {
-          variablesStore.stopPolling();
-          sequenceFlowsStore.stopPolling();
-          processInstanceDetailsStore.stopPolling();
-          incidentsStore.stopPolling();
-          flowNodeInstanceStore.stopPolling();
-          processInstanceDetailsStatisticsStore.stopPolling();
+          stopPolling();
         } else {
           instanceHistoryModificationStore.reset();
-          variablesStore.startPolling(processInstanceId);
-          sequenceFlowsStore.startPolling(processInstanceId);
-          processInstanceDetailsStore.startPolling(processInstanceId);
-          flowNodeInstanceStore.startPolling();
-          processInstanceDetailsStatisticsStore.startPolling(processInstanceId);
+          startPolling(processInstanceId);
         }
       },
     );
 
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        startPolling(processInstanceId);
+      } else {
+        stopPolling();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
     return () => {
       disposer();
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
   }, [processInstanceId]);
 

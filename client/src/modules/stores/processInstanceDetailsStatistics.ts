@@ -117,7 +117,21 @@ class ProcessInstanceDetailsStatistics extends NetworkReconnectionHandler {
     this.state.status = 'error';
   };
 
-  startPolling = (processInstanceId: string) => {
+  startPolling = (
+    processInstanceId: string,
+    options: {runImmediately?: boolean} = {runImmediately: false},
+  ) => {
+    if (
+      document.visibilityState === 'hidden' ||
+      !processInstanceDetailsStore.isRunning
+    ) {
+      return;
+    }
+
+    if (options.runImmediately) {
+      this.handlePolling(processInstanceId);
+    }
+
     this.intervalId = setInterval(() => {
       if (!this.isPollRequestRunning) {
         this.handlePolling(processInstanceId);

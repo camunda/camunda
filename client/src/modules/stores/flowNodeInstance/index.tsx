@@ -380,14 +380,26 @@ class FlowNodeInstance extends NetworkReconnectionHandler {
     );
   };
 
-  startPolling = () => {
-    if (processInstanceDetailsStore.isRunning && this.intervalId === null) {
-      this.intervalId = setInterval(() => {
-        if (!this.isPollRequestRunning) {
-          this.pollInstances();
-        }
-      }, 5000);
+  startPolling = (
+    options: {runImmediately?: boolean} = {runImmediately: false},
+  ) => {
+    if (
+      document.visibilityState === 'hidden' ||
+      !processInstanceDetailsStore.isRunning ||
+      this.intervalId !== null
+    ) {
+      return;
     }
+
+    if (options.runImmediately) {
+      this.pollInstances();
+    }
+
+    this.intervalId = setInterval(() => {
+      if (!this.isPollRequestRunning) {
+        this.pollInstances();
+      }
+    }, 5000);
   };
 
   stopPolling = () => {

@@ -146,6 +146,15 @@ const mockRequests = (contextPath: string = '') => {
   });
 };
 
+const triggerVisibilityChange = (visibility: 'hidden' | 'visible') => {
+  Object.defineProperty(document, 'visibilityState', {
+    value: visibility,
+    configurable: true,
+  });
+
+  document.dispatchEvent(new Event('visibilitychange'));
+};
+
 describe('Instance', () => {
   beforeAll(() => {
     //@ts-ignore
@@ -311,6 +320,8 @@ describe('Instance', () => {
     expect(
       screen.getByTestId('apply-modifications-button'),
     ).toBeInTheDocument();
+
+    mockRequests();
 
     await user.click(screen.getByTestId('discard-all-button'));
     await user.click(await screen.findByTestId('discard-button'));
@@ -555,6 +566,8 @@ describe('Instance', () => {
       handlePollingProcessInstanceDetailStatisticsSpy,
     ).toHaveBeenCalledTimes(1);
 
+    mockRequests();
+
     await user.click(screen.getByTestId('discard-all-button'));
     await user.click(await screen.findByTestId('discard-button'));
 
@@ -564,13 +577,14 @@ describe('Instance', () => {
     jest.runOnlyPendingTimers();
 
     await waitFor(() => {
-      expect(handlePollingSequenceFlowsSpy).toHaveBeenCalledTimes(2);
-      expect(handlePollingInstanceDetailsSpy).toHaveBeenCalledTimes(2);
-      expect(handlePollingFlowNodeInstanceSpy).toHaveBeenCalledTimes(2);
-      expect(handlePollingVariablesSpy).toHaveBeenCalledTimes(2);
+      expect(handlePollingSequenceFlowsSpy).toHaveBeenCalledTimes(3);
+      expect(handlePollingIncidentsSpy).toHaveBeenCalledTimes(3);
+      expect(handlePollingInstanceDetailsSpy).toHaveBeenCalledTimes(3);
+      expect(handlePollingFlowNodeInstanceSpy).toHaveBeenCalledTimes(3);
+      expect(handlePollingVariablesSpy).toHaveBeenCalledTimes(3);
       expect(
         handlePollingProcessInstanceDetailStatisticsSpy,
-      ).toHaveBeenCalledTimes(2);
+      ).toHaveBeenCalledTimes(3);
     });
 
     jest.clearAllTimers();
@@ -621,6 +635,7 @@ describe('Instance', () => {
     expect(await screen.findByTestId('badge-plus-icon')).toBeInTheDocument();
 
     await user.click(screen.getByTestId('apply-modifications-button'));
+    mockRequests();
     await user.click(await screen.findByRole('button', {name: 'Apply'}));
     expect(screen.getByText(/applying modifications.../i)).toBeInTheDocument();
 
@@ -940,6 +955,286 @@ describe('Instance', () => {
       'href',
       'https://docs.camunda.io/docs/self-managed/operate-deployment/operate-authentication/#resource-based-permissions',
     );
+
+    jest.clearAllTimers();
+    jest.useRealTimers();
+  });
+
+  it('should stop polling if document is not visible', async () => {
+    jest.useFakeTimers();
+
+    const handlePollingVariablesSpy = jest.spyOn(
+      variablesStore,
+      'handlePolling',
+    );
+    const handlePollingSequenceFlowsSpy = jest.spyOn(
+      sequenceFlowsStore,
+      'handlePolling',
+    );
+
+    const handlePollingInstanceDetailsSpy = jest.spyOn(
+      processInstanceDetailsStore,
+      'handlePolling',
+    );
+
+    const handlePollingIncidentsSpy = jest.spyOn(
+      incidentsStore,
+      'handlePolling',
+    );
+
+    const handlePollingFlowNodeInstanceSpy = jest.spyOn(
+      flowNodeInstanceStore,
+      'pollInstances',
+    );
+
+    const handlePollingProcessInstanceDetailStatisticsSpy = jest.spyOn(
+      processInstanceDetailsStatisticsStore,
+      'handlePolling',
+    );
+
+    render(<ProcessInstance />, {wrapper: getWrapper()});
+    await waitForElementToBeRemoved(
+      screen.getByTestId('instance-header-skeleton'),
+    );
+
+    mockRequests();
+
+    expect(handlePollingSequenceFlowsSpy).toHaveBeenCalledTimes(0);
+    expect(handlePollingInstanceDetailsSpy).toHaveBeenCalledTimes(0);
+    expect(handlePollingIncidentsSpy).toHaveBeenCalledTimes(0);
+    expect(handlePollingFlowNodeInstanceSpy).toHaveBeenCalledTimes(0);
+    expect(handlePollingVariablesSpy).toHaveBeenCalledTimes(0);
+    expect(
+      handlePollingProcessInstanceDetailStatisticsSpy,
+    ).toHaveBeenCalledTimes(0);
+
+    clearPollingStates();
+    jest.runOnlyPendingTimers();
+    expect(handlePollingSequenceFlowsSpy).toHaveBeenCalledTimes(1);
+    expect(handlePollingInstanceDetailsSpy).toHaveBeenCalledTimes(1);
+    expect(handlePollingIncidentsSpy).toHaveBeenCalledTimes(1);
+    expect(handlePollingFlowNodeInstanceSpy).toHaveBeenCalledTimes(1);
+    expect(handlePollingVariablesSpy).toHaveBeenCalledTimes(1);
+    expect(
+      handlePollingProcessInstanceDetailStatisticsSpy,
+    ).toHaveBeenCalledTimes(1);
+
+    await waitFor(() => {
+      expect(variablesStore.state.status).toBe('fetched');
+      expect(processInstanceDetailsStore.state.status).toBe('fetched');
+      expect(flowNodeInstanceStore.state.status).toBe('fetched');
+    });
+
+    triggerVisibilityChange('hidden');
+
+    clearPollingStates();
+    mockRequests();
+
+    jest.runOnlyPendingTimers();
+
+    expect(handlePollingSequenceFlowsSpy).toHaveBeenCalledTimes(1);
+    expect(handlePollingInstanceDetailsSpy).toHaveBeenCalledTimes(1);
+    expect(handlePollingIncidentsSpy).toHaveBeenCalledTimes(1);
+    expect(handlePollingFlowNodeInstanceSpy).toHaveBeenCalledTimes(1);
+    expect(handlePollingVariablesSpy).toHaveBeenCalledTimes(1);
+    expect(
+      handlePollingProcessInstanceDetailStatisticsSpy,
+    ).toHaveBeenCalledTimes(1);
+
+    clearPollingStates();
+    mockRequests();
+
+    jest.runOnlyPendingTimers();
+
+    expect(handlePollingSequenceFlowsSpy).toHaveBeenCalledTimes(1);
+    expect(handlePollingInstanceDetailsSpy).toHaveBeenCalledTimes(1);
+    expect(handlePollingIncidentsSpy).toHaveBeenCalledTimes(1);
+    expect(handlePollingFlowNodeInstanceSpy).toHaveBeenCalledTimes(1);
+    expect(handlePollingVariablesSpy).toHaveBeenCalledTimes(1);
+    expect(
+      handlePollingProcessInstanceDetailStatisticsSpy,
+    ).toHaveBeenCalledTimes(1);
+
+    mockRequests();
+
+    triggerVisibilityChange('visible');
+
+    clearPollingStates();
+    mockRequests();
+
+    jest.runOnlyPendingTimers();
+
+    await waitFor(() => {
+      expect(handlePollingSequenceFlowsSpy).toHaveBeenCalledTimes(3);
+      expect(handlePollingIncidentsSpy).toHaveBeenCalledTimes(3);
+      expect(handlePollingInstanceDetailsSpy).toHaveBeenCalledTimes(3);
+      expect(handlePollingFlowNodeInstanceSpy).toHaveBeenCalledTimes(3);
+      expect(handlePollingVariablesSpy).toHaveBeenCalledTimes(3);
+      expect(
+        handlePollingProcessInstanceDetailStatisticsSpy,
+      ).toHaveBeenCalledTimes(3);
+    });
+
+    jest.clearAllTimers();
+    jest.useRealTimers();
+  });
+
+  it('should not start polling in first render if document is not visible', async () => {
+    jest.useFakeTimers();
+    triggerVisibilityChange('hidden');
+
+    const handlePollingVariablesSpy = jest.spyOn(
+      variablesStore,
+      'handlePolling',
+    );
+    const handlePollingSequenceFlowsSpy = jest.spyOn(
+      sequenceFlowsStore,
+      'handlePolling',
+    );
+
+    const handlePollingInstanceDetailsSpy = jest.spyOn(
+      processInstanceDetailsStore,
+      'handlePolling',
+    );
+
+    const handlePollingIncidentsSpy = jest.spyOn(
+      incidentsStore,
+      'handlePolling',
+    );
+
+    const handlePollingFlowNodeInstanceSpy = jest.spyOn(
+      flowNodeInstanceStore,
+      'pollInstances',
+    );
+
+    const handlePollingProcessInstanceDetailStatisticsSpy = jest.spyOn(
+      processInstanceDetailsStatisticsStore,
+      'handlePolling',
+    );
+
+    render(<ProcessInstance />, {wrapper: getWrapper()});
+    await waitForElementToBeRemoved(
+      screen.getByTestId('instance-header-skeleton'),
+    );
+
+    mockRequests();
+
+    expect(handlePollingSequenceFlowsSpy).toHaveBeenCalledTimes(0);
+    expect(handlePollingInstanceDetailsSpy).toHaveBeenCalledTimes(0);
+    expect(handlePollingIncidentsSpy).toHaveBeenCalledTimes(0);
+    expect(handlePollingFlowNodeInstanceSpy).toHaveBeenCalledTimes(0);
+    expect(handlePollingVariablesSpy).toHaveBeenCalledTimes(0);
+    expect(
+      handlePollingProcessInstanceDetailStatisticsSpy,
+    ).toHaveBeenCalledTimes(0);
+
+    clearPollingStates();
+    jest.runOnlyPendingTimers();
+
+    expect(handlePollingSequenceFlowsSpy).toHaveBeenCalledTimes(0);
+    expect(handlePollingInstanceDetailsSpy).toHaveBeenCalledTimes(0);
+    expect(handlePollingIncidentsSpy).toHaveBeenCalledTimes(0);
+    expect(handlePollingFlowNodeInstanceSpy).toHaveBeenCalledTimes(0);
+    expect(handlePollingVariablesSpy).toHaveBeenCalledTimes(0);
+    expect(
+      handlePollingProcessInstanceDetailStatisticsSpy,
+    ).toHaveBeenCalledTimes(0);
+
+    triggerVisibilityChange('visible');
+
+    clearPollingStates();
+    expect(handlePollingSequenceFlowsSpy).toHaveBeenCalledTimes(1);
+    expect(handlePollingInstanceDetailsSpy).toHaveBeenCalledTimes(1);
+    expect(handlePollingIncidentsSpy).toHaveBeenCalledTimes(1);
+    expect(handlePollingFlowNodeInstanceSpy).toHaveBeenCalledTimes(1);
+    expect(handlePollingVariablesSpy).toHaveBeenCalledTimes(1);
+    expect(
+      handlePollingProcessInstanceDetailStatisticsSpy,
+    ).toHaveBeenCalledTimes(1);
+
+    mockRequests();
+    jest.runOnlyPendingTimers();
+
+    expect(handlePollingSequenceFlowsSpy).toHaveBeenCalledTimes(2);
+    expect(handlePollingInstanceDetailsSpy).toHaveBeenCalledTimes(2);
+    expect(handlePollingIncidentsSpy).toHaveBeenCalledTimes(2);
+    expect(handlePollingFlowNodeInstanceSpy).toHaveBeenCalledTimes(2);
+    expect(handlePollingVariablesSpy).toHaveBeenCalledTimes(2);
+    expect(
+      handlePollingProcessInstanceDetailStatisticsSpy,
+    ).toHaveBeenCalledTimes(2);
+
+    jest.clearAllTimers();
+    jest.useRealTimers();
+  });
+
+  it('should not restart polling when document is visible for finished instances', async () => {
+    mockFetchProcessInstance().withSuccess(
+      testData.fetch.onPageLoad.completedProcessInstance,
+    );
+
+    jest.useFakeTimers();
+
+    const handlePollingVariablesSpy = jest.spyOn(
+      variablesStore,
+      'handlePolling',
+    );
+    const handlePollingSequenceFlowsSpy = jest.spyOn(
+      sequenceFlowsStore,
+      'handlePolling',
+    );
+
+    const handlePollingInstanceDetailsSpy = jest.spyOn(
+      processInstanceDetailsStore,
+      'handlePolling',
+    );
+
+    const handlePollingIncidentsSpy = jest.spyOn(
+      incidentsStore,
+      'handlePolling',
+    );
+
+    const handlePollingFlowNodeInstanceSpy = jest.spyOn(
+      flowNodeInstanceStore,
+      'pollInstances',
+    );
+
+    const handlePollingProcessInstanceDetailStatisticsSpy = jest.spyOn(
+      processInstanceDetailsStatisticsStore,
+      'handlePolling',
+    );
+
+    render(<ProcessInstance />, {wrapper: getWrapper()});
+    await waitForElementToBeRemoved(
+      screen.getByTestId('instance-header-skeleton'),
+    );
+
+    mockRequests();
+
+    expect(handlePollingSequenceFlowsSpy).toHaveBeenCalledTimes(0);
+    expect(handlePollingInstanceDetailsSpy).toHaveBeenCalledTimes(0);
+    expect(handlePollingIncidentsSpy).toHaveBeenCalledTimes(0);
+    expect(handlePollingFlowNodeInstanceSpy).toHaveBeenCalledTimes(0);
+    expect(handlePollingVariablesSpy).toHaveBeenCalledTimes(0);
+    expect(
+      handlePollingProcessInstanceDetailStatisticsSpy,
+    ).toHaveBeenCalledTimes(0);
+
+    triggerVisibilityChange('hidden');
+    triggerVisibilityChange('visible');
+
+    clearPollingStates();
+
+    jest.runOnlyPendingTimers();
+
+    expect(handlePollingSequenceFlowsSpy).toHaveBeenCalledTimes(0);
+    expect(handlePollingInstanceDetailsSpy).toHaveBeenCalledTimes(0);
+    expect(handlePollingIncidentsSpy).toHaveBeenCalledTimes(0);
+    expect(handlePollingFlowNodeInstanceSpy).toHaveBeenCalledTimes(0);
+    expect(handlePollingVariablesSpy).toHaveBeenCalledTimes(0);
+    expect(
+      handlePollingProcessInstanceDetailStatisticsSpy,
+    ).toHaveBeenCalledTimes(0);
 
     jest.clearAllTimers();
     jest.useRealTimers();

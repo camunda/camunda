@@ -75,6 +75,11 @@ const processInstanceWithIncident = createInstance({
   state: 'INCIDENT',
 });
 
+const completedProcessInstance = createInstance({
+  id: '4294980768',
+  state: 'COMPLETED',
+});
+
 export const testData = {
   fetch: {
     onPageLoad: {
@@ -84,6 +89,7 @@ export const testData = {
       diagramNodes: createDiagramNodes(),
       incidents: mockIncidents(),
       noIncidents,
+      completedProcessInstance,
     },
   },
 };
