@@ -16,8 +16,13 @@
 
 package io.camunda.zeebe.model.bpmn;
 
+import static io.camunda.zeebe.model.bpmn.impl.BpmnModelConstants.BPMN_EXECUTION_PLATFORM;
+import static io.camunda.zeebe.model.bpmn.impl.BpmnModelConstants.BPMN_EXPORTER;
+import static io.camunda.zeebe.model.bpmn.impl.BpmnModelConstants.MODELER_NS;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.zeebe.model.bpmn.instance.Definitions;
+import io.camunda.zeebe.model.bpmn.util.VersionUtil;
 import org.junit.Test;
 
 /**
@@ -28,5 +33,17 @@ public class BpmnTest {
   @Test
   public void testBpmn() {
     assertThat(Bpmn.INSTANCE).isNotNull();
+  }
+
+  @Test
+  public void testBpmnWithDefinitions() {
+    final BpmnModelInstance model = Bpmn.createProcess().startEvent().done();
+    final Definitions definitions = model.getDefinitions();
+    assertThat(definitions.getExporter()).isEqualTo(BPMN_EXPORTER);
+    assertThat(definitions.getExporterVersion()).isEqualTo(VersionUtil.getVersion());
+    assertThat(definitions.getAttributeValueNs(MODELER_NS, "executionPlatform"))
+        .isEqualTo(BPMN_EXECUTION_PLATFORM);
+    assertThat(definitions.getAttributeValueNs(MODELER_NS, "executionPlatformVersion"))
+        .isEqualTo(VersionUtil.getVersion());
   }
 }
