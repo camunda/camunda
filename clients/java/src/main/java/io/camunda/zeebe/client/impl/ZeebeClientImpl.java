@@ -349,12 +349,6 @@ public final class ZeebeClientImpl implements ZeebeClient {
         config.getDefaultRequestTimeout());
   }
 
-  @Override
-  public StreamJobsCommandStep1 newStreamJobsCommand() {
-    return new StreamJobsCommandImpl(
-        asyncStub, jsonMapper, credentialsProvider::shouldRetryRequest, config);
-  }
-
   private JobClient newJobClient() {
     return new JobClientImpl(
         asyncStub, config, jsonMapper, credentialsProvider::shouldRetryRequest);
@@ -393,5 +387,11 @@ public final class ZeebeClientImpl implements ZeebeClient {
   @Override
   public ActivateJobsCommandStep1 newActivateJobsCommand() {
     return jobClient.newActivateJobsCommand();
+  }
+
+  @Override
+  public StreamJobsCommandStep1 newStreamJobsCommand() {
+    return new StreamJobsCommandImpl(
+        asyncStub, jsonMapper, credentialsProvider::shouldRetryRequest, config);
   }
 }

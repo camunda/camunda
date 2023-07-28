@@ -15,12 +15,14 @@
  */
 package io.camunda.zeebe.client.api.command;
 
+import io.camunda.zeebe.client.api.ExperimentalApi;
 import io.camunda.zeebe.client.api.response.ActivatedJob;
 import io.camunda.zeebe.client.api.response.StreamJobsResponse;
 import java.time.Duration;
 import java.util.List;
 import java.util.function.Consumer;
 
+@ExperimentalApi("https://github.com/camunda/zeebe/issues/11231")
 public interface StreamJobsCommandStep1 {
   /**
    * Set the type of jobs to work on; only jobs of this type will be activated and consumed by this

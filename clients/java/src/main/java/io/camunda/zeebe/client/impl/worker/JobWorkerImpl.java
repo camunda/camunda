@@ -64,6 +64,7 @@ public final class JobWorkerImpl implements JobWorker, Closeable {
   private final ScheduledExecutorService executor;
   private final JobRunnableFactory jobHandlerFactory;
   private final long initialPollInterval;
+  private final JobStreamer jobStreamer;
   private final BackoffSupplier backoffSupplier;
 
   // state synchronization
@@ -79,6 +80,7 @@ public final class JobWorkerImpl implements JobWorker, Closeable {
       final Duration pollInterval,
       final JobRunnableFactory jobHandlerFactory,
       final JobPoller jobPoller,
+      final JobStreamer jobStreamer,
       final BackoffSupplier backoffSupplier) {
     this.maxJobsActive = maxJobsActive;
     activationThreshold = Math.round(maxJobsActive * 0.3f);
@@ -86,13 +88,19 @@ public final class JobWorkerImpl implements JobWorker, Closeable {
 
     this.executor = executor;
     this.jobHandlerFactory = jobHandlerFactory;
+    this.jobStreamer = jobStreamer;
     initialPollInterval = pollInterval.toMillis();
     this.backoffSupplier = backoffSupplier;
 
     claimableJobPoller = new AtomicReference<>(jobPoller);
     this.pollInterval = initialPollInterval;
 
+    openStream();
     schedulePoll();
+  }
+
+  private void openStream() {
+    jobStreamer.openStreamer(this::handleJob);
   }
 
   @Override
@@ -108,6 +116,7 @@ public final class JobWorkerImpl implements JobWorker, Closeable {
   @Override
   public void close() {
     acquiringJobs.set(false);
+    jobStreamer.close();
   }
 
   /**

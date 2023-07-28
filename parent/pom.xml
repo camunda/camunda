@@ -891,6 +891,12 @@
         <groupId>org.jmock</groupId>
         <artifactId>jmock</artifactId>
         <version>${version.jmock}</version>
+        <exclusions>
+          <exclusion>
+            <groupId>org.jmock</groupId>
+            <artifactId>jmock-testjar</artifactId>
+          </exclusion>
+        </exclusions>
       </dependency>
 
       <dependency>
