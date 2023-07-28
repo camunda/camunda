@@ -6,19 +6,19 @@
  */
 package io.camunda.operate.webapp.security.identity;
 
+import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.schema.indices.DecisionIndex;
 import io.camunda.operate.schema.templates.ListViewTemplate;
-import io.camunda.operate.webapp.security.OperateProfileService;
+import io.camunda.operate.webapp.security.sso.TokenAuthentication;
+import jakarta.annotation.PostConstruct;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Profile;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.stereotype.Component;
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -27,18 +27,24 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-@Profile(OperateProfileService.IDENTITY_AUTH_PROFILE)
-@Component
 public class PermissionsService {
 
   public static final String RESOURCE_KEY_ALL = "*";
   public static final String RESOURCE_TYPE_PROCESS_DEFINITION = "process-definition";
   public static final String RESOURCE_TYPE_DECISION_DEFINITION = "decision-definition";
 
-  private static final Logger log = LoggerFactory.getLogger(PermissionsService.class);
+  private static final Logger logger = LoggerFactory.getLogger(PermissionsService.class);
 
-  @Autowired
   private OperateProperties operateProperties;
+
+  public PermissionsService(OperateProperties operateProperties) {
+    this.operateProperties = operateProperties;
+  }
+
+  @PostConstruct
+  public void logCreated() {
+    logger.debug("PermissionsService bean created.");
+  }
 
   /**
    * getProcessDefinitionPermission
@@ -152,12 +158,27 @@ public class PermissionsService {
     final Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
     if (authentication instanceof IdentityAuthentication) {
       list = ((IdentityAuthentication) authentication).getAuthorizations();
+      logger.debug("Following authorizations found for IdentityAuthentication: " + list);
+    } else if (authentication instanceof TokenAuthentication) {
+      list = ((TokenAuthentication) authentication).getAuthorizations();
+      logger.debug("Following authorizations found for TokenAuthentication: " + list);
+    } else {
+      logger.error("Unable to read resource based permissions. Unknown token type: " + authentication.getClass()
+          .getSimpleName(), new OperateRuntimeException());
     }
     return (list == null) ? new ArrayList<>() : list;
   }
 
   private boolean permissionsEnabled() {
-    return operateProperties.getIdentity().isResourcePermissionsEnabled();
+    return operateProperties.getIdentity().isResourcePermissionsEnabled() && ! isJwtToken();
+  }
+
+  /**
+   * Resource based permissions are not yet supported for JwtAuthenticationToken.
+   * @return
+   */
+  private boolean isJwtToken() {
+    return SecurityContextHolder.getContext().getAuthentication() instanceof JwtAuthenticationToken;
   }
 
   /**

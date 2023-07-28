@@ -80,7 +80,6 @@ import org.springframework.web.client.RestTemplate;
         Auth0Service.class,
         C8ConsoleService.class,
         SSOController.class,
-        TokenAuthentication.class,
         SSOUserService.class,
         AuthenticationRestService.class,
         RolePermissionService.class,
@@ -277,7 +276,8 @@ public class AuthenticationIT implements AuthenticationTestable {
 
     get(SSO_CALLBACK_URI, cookies);
 
-    final TokenAuthentication authentication = beanFactory.getBean(TokenAuthentication.class);
+    final TokenAuthentication authentication = new TokenAuthentication(operateProperties.getAuth0(),
+        operateProperties.getCloud().getOrganizationId());
     assertThat(authentication.getPermissions().contains(Permission.WRITE)).isEqualTo(false);
 
     // successfully redirect to root even without write permission

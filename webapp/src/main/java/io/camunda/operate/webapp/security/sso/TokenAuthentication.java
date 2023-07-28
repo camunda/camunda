@@ -6,8 +6,6 @@
  */
 package io.camunda.operate.webapp.security.sso;
 
-import static org.springframework.beans.factory.config.BeanDefinition.SCOPE_PROTOTYPE;
-
 import com.auth0.client.auth.AuthAPI;
 import com.auth0.exception.Auth0Exception;
 import com.auth0.json.auth.TokenHolder;
@@ -15,57 +13,65 @@ import com.auth0.jwt.JWT;
 import com.auth0.jwt.exceptions.JWTDecodeException;
 import com.auth0.jwt.interfaces.Claim;
 import com.auth0.net.TokenRequest;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import io.camunda.identity.sdk.Identity;
+import io.camunda.identity.sdk.impl.rest.exception.RestException;
+import io.camunda.operate.property.Auth0Properties;
 import io.camunda.operate.property.OperateProperties;
-import io.camunda.operate.webapp.security.OperateProfileService;
+import io.camunda.operate.util.SpringContextHolder;
 import io.camunda.operate.webapp.security.Permission;
+
+import java.time.Duration;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+
+import io.camunda.operate.webapp.security.identity.IdentityAuthorization;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.annotation.Profile;
-import org.springframework.context.annotation.Scope;
+import org.springframework.beans.factory.NoSuchBeanDefinitionException;
 import org.springframework.security.authentication.AbstractAuthenticationToken;
 import org.springframework.security.authentication.InsufficientAuthenticationException;
-import org.springframework.stereotype.Component;
 
-@Profile(OperateProfileService.SSO_AUTH_PROFILE)
-@Component
-@Scope(SCOPE_PROTOTYPE)
+/**
+ * This class may be created in two ways: user freshly authenticated or stored session is deserialized.
+ * In the second case all the fields marked with JsonIgnore will be empty.
+ */
 public class TokenAuthentication extends AbstractAuthenticationToken {
 
   public static final String ORGANIZATION_ID = "id";
   public static final String ROLES_KEY = "roles";
   private static Logger logger = LoggerFactory.getLogger(TokenAuthentication.class);
 
-  @Value("${" + OperateProperties.PREFIX + ".auth0.claimName}")
   private String claimName;
-
-  @Value("${" + OperateProperties.PREFIX + ".cloud.organizationid"+"}")
   private String organization;
-
-  @Value("${" + OperateProperties.PREFIX + ".auth0.domain}")
   private String domain;
-
-  @Value("${" + OperateProperties.PREFIX + ".auth0.clientId}")
   private String clientId;
-
-  @Value("${" + OperateProperties.PREFIX + ".auth0.clientSecret}")
   private String clientSecret;
   private String idToken;
   private String refreshToken;
-
   private String accessToken;
-
   private String salesPlanType;
   private List<Permission> permissions = new ArrayList<>();
-
+  @JsonIgnore
+  private List<IdentityAuthorization> authorizations;
+  @JsonIgnore
+  private final Integer lock = 0;
+  private Instant lastResourceBasedPermissionsUpdated = Instant.now();
   public TokenAuthentication() {
     super(null);
+  }
+  public TokenAuthentication(Auth0Properties auth0Properties, String organizationId) {
+    this();
+    this.claimName = auth0Properties.getClaimName();
+    this.organization = organizationId;
+    this.domain = auth0Properties.getDomain();
+    this.clientId = auth0Properties.getClientId();
+    this.clientSecret = auth0Properties.getClientSecret();
   }
 
   private boolean isIdEqualsOrganization(final Map<String, String> orgs) {
@@ -93,6 +99,43 @@ public class TokenAuthentication extends AbstractAuthenticationToken {
 
   public void addPermission(Permission permission) {
     this.permissions.add(permission);
+  }
+
+  public TokenAuthentication setAuthorizations(List<IdentityAuthorization> authorizations) {
+    this.authorizations = authorizations;
+    return this;
+  }
+
+  public List<IdentityAuthorization> getAuthorizations() {
+    if (getIdentity() != null && (authorizations == null || needToUpdate() )) {
+      synchronized (lock) {
+        updateResourcePermissions();
+      }
+    }
+    return authorizations;
+  }
+
+  public boolean needToUpdate() {
+    Duration duration = Duration.between(lastResourceBasedPermissionsUpdated, Instant.now());
+    return !duration.minusSeconds(getOperateProperties().getIdentity().getResourcePermissionsUpdatePeriod())
+        .isNegative();
+  }
+
+  private void updateResourcePermissions() {
+    if (getOperateProperties().getIdentity().isResourcePermissionsEnabled() && getIdentity() != null) {
+      try {
+        List<IdentityAuthorization> identityAuthorizations = IdentityAuthorization.createFrom(
+            getIdentity().authorizations().forToken(accessToken, getOperateProperties().getCloud().getOrganizationId()));
+        logger.debug("Authorizations updated: " + identityAuthorizations);
+        authorizations = identityAuthorizations;
+        lastResourceBasedPermissionsUpdated = Instant.now();
+      } catch (RestException ex) {
+        logger.warn("Unable to retrieve resource base permissions from Identity. Error: " + ex.getMessage(), ex);
+        authorizations = new ArrayList<>();
+      }
+    } else {
+      authorizations = new ArrayList<>();
+    }
   }
 
   private void getNewTokenByRefreshToken() {
@@ -233,4 +276,17 @@ public class TokenAuthentication extends AbstractAuthenticationToken {
   public String getAccessToken() {
     return accessToken;
   }
+
+  private Identity getIdentity() {
+    try {
+      return SpringContextHolder.getBean(Identity.class);
+    } catch (NoSuchBeanDefinitionException ex) {
+      return null;
+    }
+  }
+
+  private OperateProperties getOperateProperties() {
+    return SpringContextHolder.getBean(OperateProperties.class);
+  }
+
 }

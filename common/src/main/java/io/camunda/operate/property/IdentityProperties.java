@@ -7,6 +7,9 @@
 package io.camunda.operate.property;
 
 public class IdentityProperties {
+
+  private static final int DEFAULT_RESOURCE_PERMISSIONS_UPDATE_PERIOD = 300;   //seconds
+
   private String baseUrl;
   private String issuerUrl;
   private String issuerBackendUrl;
@@ -15,6 +18,8 @@ public class IdentityProperties {
   private String clientSecret;
   private String audience;
   private boolean resourcePermissionsEnabled = false;
+
+  private long resourcePermissionsUpdatePeriod = DEFAULT_RESOURCE_PERMISSIONS_UPDATE_PERIOD;
 
   public String getBaseUrl() {
     return baseUrl;
@@ -80,4 +85,14 @@ public class IdentityProperties {
     this.resourcePermissionsEnabled = resourcePermissionsEnabled;
     return this;
   }
+
+  public long getResourcePermissionsUpdatePeriod() {
+    return resourcePermissionsUpdatePeriod;
+  }
+
+  public IdentityProperties setResourcePermissionsUpdatePeriod(long resourcePermissionsUpdatePeriod) {
+    this.resourcePermissionsUpdatePeriod = resourcePermissionsUpdatePeriod;
+    return this;
+  }
+
 }

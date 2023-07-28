@@ -80,4 +80,9 @@ public class IdentityAuthorization implements Serializable {
   public int hashCode() {
     return Objects.hash(resourceKey, resourceType, permissions);
   }
+
+  @Override
+  public String toString() {
+    return "IdentityAuthorization{" + "resourceKey='" + resourceKey + '\'' + ", resourceType='" + resourceType + '\'' + ", permissions=" + permissions + '}';
+  }
 }

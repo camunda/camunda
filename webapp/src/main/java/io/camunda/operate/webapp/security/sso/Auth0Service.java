@@ -6,32 +6,35 @@
  */
 package io.camunda.operate.webapp.security.sso;
 
-import static io.camunda.operate.webapp.security.OperateURIs.SSO_CALLBACK_URI;
-
 import com.auth0.AuthenticationController;
 import com.auth0.IdentityVerificationException;
 import com.auth0.Tokens;
+import io.camunda.identity.sdk.Identity;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.util.RetryOperation;
 import io.camunda.operate.webapp.security.OperateProfileService;
 import io.camunda.operate.webapp.security.Permission;
 import io.camunda.operate.webapp.security.sso.model.ClusterInfo;
-
-import java.util.List;
-import java.util.concurrent.TimeUnit;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-
 import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Profile;
-import org.springframework.http.*;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.InsufficientAuthenticationException;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
+
+import java.util.List;
+import java.util.concurrent.TimeUnit;
+
+import static io.camunda.operate.webapp.security.OperateURIs.SSO_CALLBACK_URI;
 
 @Component
 @Profile(OperateProfileService.SSO_AUTH_PROFILE)
@@ -62,6 +65,10 @@ public class Auth0Service {
   @Autowired
   private OperateProperties operateProperties;
 
+  @Autowired(required = false)
+  @Qualifier("saasIdentity")
+  private Identity identity;
+
   @Autowired
   @Qualifier("auth0_restTemplate")
   private RestTemplate restTemplate;
@@ -70,9 +77,11 @@ public class Auth0Service {
       throws Auth0ServiceException {
     try {
       final Tokens tokens = retrieveTokens(req, res);
-      final TokenAuthentication authentication = beanFactory.getBean(TokenAuthentication.class);
+      final TokenAuthentication authentication = new TokenAuthentication(operateProperties.getAuth0(),
+          operateProperties.getCloud().getOrganizationId());
       authentication.authenticate(tokens.getIdToken(), tokens.getRefreshToken(), tokens.getAccessToken());
       checkPermission(authentication, tokens.getAccessToken());
+      authentication.getAuthorizations();
       return authentication;
     } catch (Exception e) {
       throw new Auth0ServiceException(e);
