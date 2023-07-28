@@ -19,6 +19,7 @@ import io.camunda.tasklist.webapp.graphql.entity.ProcessDTO;
 import io.camunda.tasklist.webapp.rest.exception.NotFoundException;
 import io.camunda.tasklist.webapp.security.identity.IdentityAuthentication;
 import io.camunda.tasklist.webapp.security.identity.IdentityAuthorization;
+import io.camunda.tasklist.webapp.security.sso.TokenAuthentication;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -158,9 +159,8 @@ public class ProcessReader {
     final QueryBuilder qb;
     final List<String> processDefinitions;
 
-    processDefinitions = getProcessDefinitionsFromAuthorization();
-
-    if (tasklistProperties.isSelfManaged()) {
+    if (tasklistProperties.getIdentity().isResourcePermissionsEnabled()) {
+      processDefinitions = getProcessDefinitionsFromAuthorization();
 
       if (processDefinitions.size() == 0) {
         return new ArrayList<ProcessDTO>();
@@ -218,6 +218,15 @@ public class ProcessReader {
                     .authorizations()
                     .forToken(jwtAuthenticationToken.getToken().getTokenValue()))
             .getProcessesAllowedToStart();
+      } else if (authentication instanceof TokenAuthentication) {
+        final Identity identity = SpringContextHolder.getBean(Identity.class);
+        return new IdentityAuthorization(
+                identity
+                    .authorizations()
+                    .forToken(
+                        ((TokenAuthentication) authentication).getAccessToken(),
+                        ((TokenAuthentication) authentication).getOrganization()))
+            .getProcessesAllowedToStart();
       }
     }
     return new ArrayList<String>();
@@ -230,10 +239,10 @@ public class ProcessReader {
     }
 
     final QueryBuilder qb;
-    final List<String> processDefinitions = getProcessDefinitionsFromAuthorization();
     final String regexSearch = String.format(".*%s.*", search);
 
-    if (tasklistProperties.isSelfManaged()) {
+    if (tasklistProperties.getIdentity().isResourcePermissionsEnabled()) {
+      final List<String> processDefinitions = getProcessDefinitionsFromAuthorization();
 
       if (processDefinitions.size() == 0) {
         return new ArrayList<ProcessDTO>();

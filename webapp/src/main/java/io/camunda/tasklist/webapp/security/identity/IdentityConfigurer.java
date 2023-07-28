@@ -14,24 +14,41 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
+import org.springframework.core.env.Environment;
 
-@Profile(TasklistProfileService.IDENTITY_AUTH_PROFILE)
+@Profile(
+    TasklistProfileService.IDENTITY_AUTH_PROFILE + " || " + TasklistProfileService.SSO_AUTH_PROFILE)
 @Configuration
 public class IdentityConfigurer {
 
   @Autowired private TasklistProperties tasklistProperties;
 
+  @Autowired private Environment environment;
+
   @Bean
   public Identity getIdentity() {
-    final IdentityConfiguration ic =
-        new IdentityConfiguration(
-            tasklistProperties.getIdentity().getBaseUrl(),
-            tasklistProperties.getIdentity().getIssuerUrl(),
-            tasklistProperties.getIdentity().getIssuerBackendUrl(),
-            tasklistProperties.getIdentity().getClientId(),
-            tasklistProperties.getIdentity().getClientSecret(),
-            tasklistProperties.getIdentity().getAudience(),
-            IdentityConfiguration.Type.KEYCLOAK.toString());
+    final String activeProfile = environment.getActiveProfiles()[0];
+
+    final IdentityConfiguration ic;
+
+    if (activeProfile.equals(TasklistProfileService.IDENTITY_AUTH_PROFILE)) {
+      ic =
+          new IdentityConfiguration(
+              tasklistProperties.getIdentity().getBaseUrl(),
+              tasklistProperties.getIdentity().getIssuerUrl(),
+              tasklistProperties.getIdentity().getIssuerBackendUrl(),
+              tasklistProperties.getIdentity().getClientId(),
+              tasklistProperties.getIdentity().getClientSecret(),
+              tasklistProperties.getIdentity().getAudience(),
+              IdentityConfiguration.Type.KEYCLOAK.toString());
+    } else {
+      ic =
+          new IdentityConfiguration.Builder()
+              .withBaseUrl(tasklistProperties.getIdentity().getBaseUrl())
+              .withType(IdentityConfiguration.Type.AUTH0.toString())
+              .build();
+    }
+
     return new Identity(ic);
   }
 }

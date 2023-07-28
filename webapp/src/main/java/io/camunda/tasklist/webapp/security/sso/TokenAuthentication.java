@@ -224,6 +224,10 @@ public class TokenAuthentication extends AbstractAuthenticationToken implements 
     return accessToken;
   }
 
+  public String getOrganization() {
+    return organization;
+  }
+
   @Override
   public boolean equals(final Object o) {
     if (this == o) {
