@@ -16,6 +16,7 @@
 package io.camunda.zeebe.client.api.worker;
 
 import io.camunda.zeebe.client.ZeebeClientConfiguration;
+import io.camunda.zeebe.client.api.ExperimentalApi;
 import java.time.Duration;
 import java.util.List;
 
@@ -209,6 +210,7 @@ public interface JobWorkerBuilderStep1 {
      *
      * @return the builder for this worker
      */
+    @ExperimentalApi("https://github.com/camunda/zeebe/issues/11231")
     JobWorkerBuilderStep3 enableStreaming();
 
     /**
@@ -225,6 +227,7 @@ public interface JobWorkerBuilderStep1 {
      * @param timeout a timeout, after which the stream is recreated
      * @return the builder for this worker
      */
+    @ExperimentalApi("https://github.com/camunda/zeebe/issues/11231")
     JobWorkerBuilderStep3 streamTimeout(final Duration timeout);
 
     /**

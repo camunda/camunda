@@ -15,6 +15,7 @@
  */
 package io.camunda.zeebe.client.api.worker;
 
+import io.camunda.zeebe.client.api.ExperimentalApi;
 import io.camunda.zeebe.client.api.command.ActivateJobsCommandStep1;
 import io.camunda.zeebe.client.api.command.CompleteJobCommandStep1;
 import io.camunda.zeebe.client.api.command.FailJobCommandStep1;
@@ -240,5 +241,6 @@ public interface JobClient {
    *
    * @return a builder for the command
    */
+  @ExperimentalApi("https://github.com/camunda/zeebe/issues/11231")
   StreamJobsCommandStep1 newStreamJobsCommand();
 }

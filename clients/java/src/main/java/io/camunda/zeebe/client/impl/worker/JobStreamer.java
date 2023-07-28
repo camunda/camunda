@@ -20,7 +20,7 @@ import java.util.function.Consumer;
 import net.jcip.annotations.ThreadSafe;
 
 @ThreadSafe
-public interface JobStreamer extends AutoCloseable {
+interface JobStreamer extends AutoCloseable {
 
   @Override
   void close();

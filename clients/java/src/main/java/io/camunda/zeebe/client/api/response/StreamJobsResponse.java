@@ -15,4 +15,7 @@
  */
 package io.camunda.zeebe.client.api.response;
 
+import io.camunda.zeebe.client.api.ExperimentalApi;
+
+@ExperimentalApi("https://github.com/camunda/zeebe/issues/11231")
 public interface StreamJobsResponse {}
