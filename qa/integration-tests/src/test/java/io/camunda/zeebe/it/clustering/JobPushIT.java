@@ -42,9 +42,8 @@ final class JobPushIT {
   private final ZeebeCluster cluster =
       ZeebeCluster.builder()
           .withBrokersCount(1)
-          .withGatewaysCount(1)
           .withPartitionsCount(1)
-          .withEmbeddedGateway(false)
+          .withEmbeddedGateway(true)
           .withImage(ZeebeTestContainerDefaults.defaultTestImage())
           .build();
 
