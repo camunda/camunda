@@ -49,3 +49,4 @@ jobs:
             Backport of #${pull_number} to `${target_branch}`.
 
             relates to ${issue_refs}
+            original author: @${pull_author}
