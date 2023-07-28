@@ -105,7 +105,7 @@ public final class JobStreamServiceStep extends AbstractBrokerStartupStep {
                   brokerShutdownContext.setJobStreamService(null);
                   brokerShutdownContext
                       .getSpringBrokerBridge()
-                      .registerJobStreamServiceSupplier(() -> null);
+                      .registerJobStreamServiceSupplier(null);
                   shutdownFuture.complete(brokerShutdownContext);
                 }
               });

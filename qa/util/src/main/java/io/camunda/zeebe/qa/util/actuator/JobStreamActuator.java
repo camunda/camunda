@@ -29,30 +29,29 @@ import java.util.List;
  * <p>You can use one of {@link #of(String)} or {@link #of(ZeebeNode)} to create a new client to use
  * for yourself.
  */
-public interface JobStreamsActuator {
+public interface JobStreamActuator {
   /**
-   * Returns a {@link JobStreamsActuator} instance using the given node as upstream.
+   * Returns a {@link JobStreamActuator} instance using the given node as upstream.
    *
    * @param node the node to connect to
-   * @return a new instance of {@link JobStreamsActuator}
+   * @return a new instance of {@link JobStreamActuator}
    */
-  static JobStreamsActuator of(final ZeebeNode<?> node) {
+  static JobStreamActuator of(final ZeebeNode<?> node) {
     final var endpoint =
         String.format("http://%s/actuator/jobstreams", node.getExternalMonitoringAddress());
     return of(endpoint);
   }
 
   /**
-   * Returns a {@link JobStreamsActuator} instance using the given endpoint as upstream. The
-   * endpoint is expected to be a complete absolute URL, e.g.
-   * "http://localhost:9600/actuator/jobstreams".
+   * Returns a {@link JobStreamActuator} instance using the given endpoint as upstream. The endpoint
+   * is expected to be a complete absolute URL, e.g. "http://localhost:9600/actuator/jobstreams".
    *
    * @param endpoint the actuator URL to connect to
-   * @return a new instance of {@link JobStreamsActuator}
+   * @return a new instance of {@link JobStreamActuator}
    */
   @SuppressWarnings("JavadocLinkAsPlainText")
-  static JobStreamsActuator of(final String endpoint) {
-    final var target = new HardCodedTarget<>(JobStreamsActuator.class, endpoint);
+  static JobStreamActuator of(final String endpoint) {
+    final var target = new HardCodedTarget<>(JobStreamActuator.class, endpoint);
     final var decoder = new JacksonDecoder(List.of(new Jdk8Module(), new JavaTimeModule()));
 
     return Feign.builder()

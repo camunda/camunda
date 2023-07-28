@@ -8,15 +8,18 @@
 package io.camunda.zeebe.shared.management;
 
 import io.atomix.cluster.AtomixCluster;
+import io.atomix.cluster.ClusterMembershipService;
 import io.atomix.cluster.Member;
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.protocol.impl.stream.job.JobActivationProperties;
 import io.camunda.zeebe.transport.stream.api.ClientStream;
 import io.camunda.zeebe.transport.stream.api.RemoteStreamInfo;
+import io.camunda.zeebe.util.VisibleForTesting;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.time.Duration;
 import java.util.Collection;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -42,14 +45,27 @@ public final class JobStreamEndpoint {
   private static final Set<String> TYPES = Set.of("remote", "client");
 
   private final Service service;
-  private final AtomixCluster cluster;
+  private final ClusterMembershipService membershipService;
 
   @Autowired
   public JobStreamEndpoint(final Service service, final AtomixCluster cluster) {
-    this.service = service;
-    this.cluster = cluster;
+    this(service, cluster.getMembershipService());
   }
 
+  @VisibleForTesting
+  JobStreamEndpoint(final Service service, final ClusterMembershipService membershipService) {
+    this.service = Objects.requireNonNull(service, "must specify a job stream service");
+    this.membershipService =
+        Objects.requireNonNull(membershipService, "must specify a membership service");
+  }
+
+  /**
+   * Returns the complete list of remote and client job streams as an object with two keys: {@code
+   * remote} and {@code client}. Both are collections of the job streams of the appropriate type.
+   *
+   * <p>This view is mostly used for human debugging to quickly correlate the state of a stream on
+   * the gateway and brokers.
+   */
   @ReadOperation
   public WebEndpointResponse<JobStreams> list() {
     return new WebEndpointResponse<>(
@@ -58,6 +74,13 @@ public final class JobStreamEndpoint {
         MimeTypeUtils.APPLICATION_JSON);
   }
 
+  /**
+   * Returns either the list of {@code client} or {@code remote} job streams, based on the given
+   * {@code type}. If the type is unknown, returns a 400 with a singleton map containing an error
+   * field with an appropriate message.
+   *
+   * @param type the type of streams to return
+   */
   @ReadOperation
   public WebEndpointResponse<?> list(final @Selector String type) {
     if (!TYPES.contains(type)) {
@@ -99,8 +122,10 @@ public final class JobStreamEndpoint {
   }
 
   private ClientJobStream transformClient(final ClientStream<JobActivationProperties> stream) {
+    // it's safe to cast any filtered member ID to an integer, since a client stream can only be
+    // connected to a broker, and brokers always have integer node IDs
     final var brokers =
-        cluster.getMembershipService().getMembers().stream()
+        membershipService.getMembers().stream()
             .map(Member::id)
             .filter(stream::isConnected)
             .map(MemberId::id)
@@ -142,7 +167,7 @@ public final class JobStreamEndpoint {
   /** View model for a remote job stream ID */
   public record RemoteStreamId(UUID id, String receiver) {}
 
-  interface Service {
+  public interface Service {
 
     /** Returns the list of registered remote/broker job streams. */
     Collection<RemoteStreamInfo<JobActivationProperties>> remoteJobStreams();

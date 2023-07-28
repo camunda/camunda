@@ -24,5 +24,6 @@ public interface JobStreamClient extends BrokerTopologyListener, CloseableSilent
   /** Asynchronously starts the job stream client. */
   ActorFuture<Void> start();
 
+  /** Returns the list of registered job streams */
   ActorFuture<Collection<ClientStream<JobActivationProperties>>> list();
 }
