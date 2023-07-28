@@ -1,51 +1,116 @@
-# syntax=docker/dockerfile:1.4
-# Override this based on the architecture; this is currently pointing to amd64
-ARG BASE_DIGEST="sha256:7d957c8ecbc31cb204f748975f3717ffc1b8e001080fed97b6c1c412aa49267b"
+# This Dockerfile requires BuildKit to be enabled, by setting the environment variable
+# DOCKER_BUILDKIT=1
+# see https://docs.docker.com/build/buildkit/#getting-started
+ARG BASE_IMAGE="ubuntu:jammy-20230624"
+ARG BASE_DIGEST="sha256:b060fffe8e1561c9c3e6dea6db487b900100fc26830b9ea2ec966c151ab4c020"
+ARG JDK_IMAGE="eclipse-temurin:17-jdk-jammy"
+ARG JDK_DIGEST="sha256:a16cce6e84fd66cdbf753dd7bc65f6ba2e6d74b907052146709b3dd513dc54b6"
 
 # set to "build" to build zeebe from scratch instead of using a distball
 ARG DIST="distball"
 
-### Init image containing tini and the startup script ###
-FROM ubuntu:jammy as init
-WORKDIR /zeebe
-RUN --mount=type=cache,target=/var/apt/cache,rw \
+### Base image ##
+# All package installation, updates, etc., anything with APT should be done here in a single step
+# hadolint ignore=DL3006
+FROM ${BASE_IMAGE}@${BASE_DIGEST} as base
+
+WORKDIR /
+
+# Upgrade all outdated packages and install missing ones (e.g. locales, tini)
+# This breaks reproducibility of builds, but is acceptable to gain access to security patches faster
+# than the base image releases
+# FYI, installing packages via APT also updates the dpkg files, which are few MBs, but removing or
+# caching them could break stuff (like not knowing the package is present) or container scanners
+# hadolint ignore=DL3008
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
+    --mount=type=cache,target=/var/lib/apt,sharing=locked \
+    --mount=type=cache,target=/var/log/apt,sharing=locked \
     apt-get -qq update && \
-    apt-get install -y --no-install-recommends tini=0.19.0-1 && \
-    cp /usr/bin/tini .
-COPY --link --chown=1000:0 docker/utils/startup.sh .
+    apt-get install -yqq --no-install-recommends tini ca-certificates && \
+    apt-get upgrade -yqq --no-install-recommends
+
+
+### Build custom JRE using the base JDK image
+# hadolint ignore=DL3006
+FROM ${JDK_IMAGE}@${JDK_DIGEST} as jre-build
+
+# Build a custom JRE which will strip down and compress modules to end up with a smaller Java \
+# distribution than the official JRE. This will also include useful debugging tools like
+# jcmd, jmod, jps, etc., which take little to no space. Anecdotally, compressing modules add around
+# 10ms to the start up time, which is negligible considering our application takes ~10s to start up.
+# See https://adoptium.net/blog/2021/10/jlink-to-produce-own-runtime/
+# hadolint ignore=DL3018
+RUN jlink \
+     --add-modules ALL-MODULE-PATH \
+     --strip-debug \
+     --no-man-pages \
+     --no-header-files \
+     --compress=2 \
+     --output /jre && \
+   rm -rf /jre/lib/src.zip
+
+### Java base image
+FROM base AS java
+WORKDIR /
+
+# Inherit from previous build stage
+ARG JAVA_HOME=/opt/java/openjdk
+
+# Default to UTF-8 file encoding
+ENV LANG='C.UTF-8' LC_ALL='C.UTF-8'
+
+# Setup JAVA_HOME and binaries in the path
+ENV JAVA_HOME ${JAVA_HOME}
+ENV PATH $JAVA_HOME/bin:$PATH
+
+# Copy JRE from previous build stage
+COPY --from=jre-build /jre ${JAVA_HOME}
+
+# https://github.com/docker-library/openjdk/issues/212#issuecomment-420979840
+# https://openjdk.java.net/jeps/341
+# TL;DR generate some class data sharing for faster load time
+RUN java -Xshare:dump;
 
 ### Build zeebe from scratch ###
-FROM maven:3-eclipse-temurin-17 as build
+FROM java as build
 WORKDIR /zeebe
 ENV MAVEN_OPTS -XX:MaxRAMPercentage=80
 COPY --link . ./
-RUN --mount=type=cache,target=/root/.m2,rw mvn -B -am -pl dist package -T1C -D skipChecks -D skipTests
-RUN mv dist/target/camunda-zeebe .
+RUN --mount=type=cache,target=/root/.m2,rw \
+    ./mvnw -B -am -pl dist package -T1C -D skipChecks -D skipTests && \
+    mv dist/target/camunda-zeebe .
 
 ### Extract zeebe from distball ###
-FROM ubuntu:jammy as distball
+# hadolint ignore=DL3006
+FROM base as distball
 WORKDIR /zeebe
 ARG DISTBALL="dist/target/camunda-zeebe-*.tar.gz"
 COPY --link ${DISTBALL} zeebe.tar.gz
-RUN mkdir camunda-zeebe && tar xfvz zeebe.tar.gz --strip 1 -C camunda-zeebe
+
+# Remove zbctl from the distribution to reduce CVE related maintenance effort w.r.t to containers
+RUN mkdir camunda-zeebe && \
+    tar xfvz zeebe.tar.gz --strip 1 -C camunda-zeebe && \
+    find . -type f -name 'zbctl*' -delete
 
 ### Image containing the zeebe distribution ###
 # hadolint ignore=DL3006
 FROM ${DIST} as dist
 
-# Building application image
+### Application Image ###
+# TARGETARCH is provided by buildkit
+# https://docs.docker.com/engine/reference/builder/#automatic-platform-args-in-the-global-scope
 # hadolint ignore=DL3006
-FROM eclipse-temurin:17-jre-focal@${BASE_DIGEST} as app
-
+FROM java as app
 # leave unset to use the default value at the top of the file
 ARG BASE_DIGEST
+ARG BASE_IMAGE
 ARG VERSION=""
 ARG DATE=""
 ARG REVISION=""
 
 # OCI labels: https://github.com/opencontainers/image-spec/blob/main/annotations.md
 LABEL org.opencontainers.image.base.digest="${BASE_DIGEST}"
-LABEL org.opencontainers.image.base.name="docker.io/library/eclipse-temurin:17-jre-focal"
+LABEL org.opencontainers.image.base.name="docker.io/library/${BASE_IMAGE}"
 LABEL org.opencontainers.image.created="${DATE}"
 LABEL org.opencontainers.image.authors="zeebe@camunda.com"
 LABEL org.opencontainers.image.url="https://zeebe.io"
@@ -54,7 +119,7 @@ LABEL org.opencontainers.image.source="https://github.com/camunda/zeebe"
 LABEL org.opencontainers.image.version="${VERSION}"
 # According to https://github.com/opencontainers/image-spec/blob/main/annotations.md#pre-defined-annotation-keys
 # and given we set the base.name and base.digest, we reference the manifest of the base image here
-LABEL org.opencontainers.image.ref.name="eclipse-temurin:17-jre-focal"
+LABEL org.opencontainers.image.ref.name="${BASE_IMAGE}"
 LABEL org.opencontainers.image.revision="${REVISION}"
 LABEL org.opencontainers.image.vendor="Camunda Services GmbH"
 LABEL org.opencontainers.image.licenses="(Apache-2.0 AND LicenseRef-Zeebe-Community-1.1)"
@@ -93,8 +158,7 @@ RUN groupadd -g 1000 zeebe && \
     chown -R 1000:0 ${ZB_HOME} && \
     chmod -R 0775 ${ZB_HOME}
 
-COPY --from=init --chown=1000:0 /zeebe/tini ${ZB_HOME}/bin/
-COPY --from=init --chown=1000:0 /zeebe/startup.sh /usr/local/bin/startup.sh
+COPY --link --chown=1000:0 docker/utils/startup.sh /usr/local/bin/startup.sh
 COPY --from=dist --chown=1000:0 /zeebe/camunda-zeebe ${ZB_HOME}
 
 ENTRYPOINT ["tini", "--", "/usr/local/bin/startup.sh"]
