@@ -447,13 +447,14 @@ public class ProcessKpiRetrievalIT extends AbstractIT {
   public void multiProcessGroupByProcessReportDoesNotGetReturned() {
     // given
     engineIntegrationExtension.deployAndStartProcess(getSimpleBpmnDiagram(PROCESS_DEFINITION_KEY));
-    engineIntegrationExtension.deployAndStartProcess(getSimpleBpmnDiagram("secondDefinitionKey"));
+    final String secondDefinitionKey = "secondDefinitionKey";
+    engineIntegrationExtension.deployAndStartProcess(getSimpleBpmnDiagram(secondDefinitionKey));
     importAllEngineEntitiesFromScratch();
     ProcessReportDataDto multiProcessReport = TemplatedProcessReportDataBuilder.createReportData()
       .setReportDataType(ProcessReportDataType.PROC_INST_DUR_GROUP_BY_START_DATE)
       .definitions(List.of(
         new ReportDataDefinitionDto(PROCESS_DEFINITION_KEY),
-        new ReportDataDefinitionDto("secondDefinitionKey")
+        new ReportDataDefinitionDto(secondDefinitionKey)
       )).build();
     SingleProcessReportDefinitionRequestDto singleProcessReportDefinitionRequestDto =
       new SingleProcessReportDefinitionRequestDto();

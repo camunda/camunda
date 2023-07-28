@@ -96,17 +96,18 @@ public class KpiService {
     return kpiResponseDtos;
   }
 
-  public List<KpiResultDto> extractKpiResultsForProcessDefinition(final ProcessOverviewDto processOverviewDto,
-                                                                  final String locale) {
+  public List<KpiResultDto> extractMostRecentKpiResultsForCurrentKpiReportsForProcess(final ProcessOverviewDto processOverviewDto,
+                                                                                      final String locale) {
     final List<KpiResultDto> kpiResponseDtos = new ArrayList<>();
-    final List<SingleProcessReportDefinitionRequestDto> kpiReports = getKpiReportsForProcessDefinition(
+    final List<SingleProcessReportDefinitionRequestDto> currentKpiReports = getKpiReportsForProcessDefinition(
       processOverviewDto.getProcessDefinitionKey());
     final Map<String, String> lastKpiEvaluationResults =
       Optional.ofNullable(processOverviewDto.getLastKpiEvaluationResults()).orElse(Collections.emptyMap());
-    for (SingleProcessReportDefinitionRequestDto report : kpiReports) {
-      ReportRestMapper.localizeReportNames(report, locale, localizationService);
-      KpiResultDto kpiResponseDto = new KpiResultDto();
+    for (SingleProcessReportDefinitionRequestDto report : currentKpiReports) {
+      // If the most recent results don't include one of the current KPI reports, we exclude it from the results
       if (lastKpiEvaluationResults.containsKey(report.getId())) {
+        ReportRestMapper.localizeReportNames(report, locale, localizationService);
+        KpiResultDto kpiResponseDto = new KpiResultDto();
         kpiResponseDto.setValue(lastKpiEvaluationResults.get(report.getId()));
         getTargetAndUnit(report)
           .ifPresent(targetAndUnit -> {
@@ -210,6 +211,8 @@ public class KpiService {
       .map(SingleProcessReportDefinitionRequestDto.class::cast)
       .filter(processReport -> processReport.getData().getConfiguration().getTargetValue() != null
         && processReport.getData().getConfiguration().getTargetValue().getIsKpi() == Boolean.TRUE)
+      // KPI reports should only have a single data source
+      .filter(processReport -> processReport.getData().getDefinitions().size() == 1)
       .collect(toList());
   }
 

@@ -15,6 +15,8 @@ import org.camunda.optimize.dto.optimize.query.processoverview.ProcessDigestDto;
 import org.camunda.optimize.dto.optimize.query.processoverview.ProcessDigestRequestDto;
 import org.camunda.optimize.dto.optimize.query.processoverview.ProcessOverviewDto;
 import org.camunda.optimize.dto.optimize.query.report.single.ReportDataDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.single.configuration.target_value.TargetDto;
+import org.camunda.optimize.dto.optimize.query.report.single.configuration.target_value.TargetValueUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
 import org.camunda.optimize.service.util.ProcessReportDataType;
@@ -28,6 +30,7 @@ import org.junit.jupiter.api.Test;
 import javax.mail.Address;
 import javax.mail.internet.MimeMessage;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -180,8 +183,8 @@ public class ProcessDigestNotificationIT extends AbstractIT {
   public void correctEmailContent_kpiReportsExist() {
     // given
     engineIntegrationExtension.deployAndStartProcess(getSimpleBpmnDiagram(DEF_KEY));
-    createKpiReport("KPI Report 1");
-    createKpiReport("KPI Report 2", "0");
+    createKpiCountReport("KPI Report 1");
+    createKpiCountReport("KPI Report 2", "0");
     importAllEngineEntitiesFromScratch();
     runKpiSchedulerAndRefreshIndices();
     processOverviewClient.updateProcess(
@@ -208,7 +211,7 @@ public class ProcessDigestNotificationIT extends AbstractIT {
   public void correctEmailContent_noSuccessfulKpiReportsExist() {
     // given
     engineIntegrationExtension.deployAndStartProcess(getSimpleBpmnDiagram(DEF_KEY));
-    createKpiReport("KPI Report 1", "0");
+    createKpiCountReport("KPI Report 1", "0");
     importAllEngineEntitiesFromScratch();
     runKpiSchedulerAndRefreshIndices();
     processOverviewClient.updateProcess(
@@ -234,7 +237,7 @@ public class ProcessDigestNotificationIT extends AbstractIT {
   public void emailContainsCorrectLinks() {
     // given
     engineIntegrationExtension.deployAndStartProcess(getSimpleBpmnDiagram(DEF_KEY));
-    final String reportId = createKpiReport("KPI Report 1");
+    final String reportId = createKpiCountReport("KPI Report 1");
     importAllEngineEntitiesFromScratch();
     runKpiSchedulerAndRefreshIndices();
     processOverviewClient.updateProcess(
@@ -255,7 +258,7 @@ public class ProcessDigestNotificationIT extends AbstractIT {
       final String customContextPath = "/customContextPath";
       embeddedOptimizeExtension.getConfigurationService().setContextPath(customContextPath);
       engineIntegrationExtension.deployAndStartProcess(getSimpleBpmnDiagram(DEF_KEY));
-      final String reportId = createKpiReport("KPI Report 1");
+      final String reportId = createKpiCountReport("KPI Report 1");
       importAllEngineEntitiesFromScratch();
       runKpiSchedulerAndRefreshIndices();
       processOverviewClient.updateProcess(
@@ -273,12 +276,12 @@ public class ProcessDigestNotificationIT extends AbstractIT {
   }
 
   @Test
-  public void latestDigestKpiResultsAreUpdated() throws InterruptedException {
+  public void latestDigestKpiResultsAreUpdated() {
     // given
     engineIntegrationExtension.deployAndStartProcess(getSimpleBpmnDiagram(DEF_KEY));
     importAllEngineEntitiesFromScratch();
     processOverviewClient.updateProcess(DEF_KEY, DEFAULT_USERNAME, new ProcessDigestRequestDto());
-    final String reportId = createKpiReport("KPI Report 2");
+    final String reportId = createKpiCountReport("KPI Report 2");
     runKpiSchedulerAndRefreshIndices();
 
     // then
@@ -311,6 +314,60 @@ public class ProcessDigestNotificationIT extends AbstractIT {
   }
 
   @Test
+  public void latestDigestKpiResultsAreUpdatedEvenWithNullValuedReportResults() {
+    // given a report with a null value
+    engineIntegrationExtension.deployProcessAndGetId(getSimpleBpmnDiagram(DEF_KEY));
+    importAllEngineEntitiesFromScratch();
+    processOverviewClient.updateProcess(DEF_KEY, DEFAULT_USERNAME, new ProcessDigestRequestDto());
+    final String reportId = createKpiDurationReport("KPI Report 2");
+    runKpiSchedulerAndRefreshIndices();
+    Map<String, String> expectedResultMap = new HashMap<>();
+    expectedResultMap.put(reportId, null);
+
+    // when the digest is run
+    processOverviewClient.updateProcess(
+      DEF_KEY, DEFAULT_USERNAME, new ProcessDigestRequestDto(true));
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    assertThat(greenMail.waitForIncomingEmail(1000, 1)).isTrue();
+
+    // then the null valued report is correctly saved in the most recent KPI report results
+    assertThat(elasticSearchIntegrationTestExtension.getAllDocumentsOfIndexAs(
+      PROCESS_OVERVIEW_INDEX_NAME, ProcessOverviewDto.class))
+      .singleElement()
+      .satisfies(overview -> {
+        assertThat(overview)
+          .extracting(ProcessOverviewDto::getLastKpiEvaluationResults)
+          .isEqualTo(expectedResultMap);
+        // and the null valued report is correctly saved in the digest baseline results
+        assertThat(overview)
+          .extracting(ProcessOverviewDto::getDigest)
+          .extracting(ProcessDigestDto::getKpiReportResults)
+          .isEqualTo(expectedResultMap);
+      });
+
+    // when the digest is run again
+    processOverviewClient.updateProcess(
+      DEF_KEY, DEFAULT_USERNAME, new ProcessDigestRequestDto(true));
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    assertThat(greenMail.waitForIncomingEmail(1000, 1)).isTrue();
+
+    // then the digest and most recent results still reflect the state correctly
+    assertThat(elasticSearchIntegrationTestExtension.getAllDocumentsOfIndexAs(
+      PROCESS_OVERVIEW_INDEX_NAME, ProcessOverviewDto.class))
+      .singleElement()
+      .satisfies(overview -> {
+        assertThat(overview)
+          .extracting(ProcessOverviewDto::getLastKpiEvaluationResults)
+          .isEqualTo(expectedResultMap);
+        // and the null valued report is correctly saved in the digest baseline results
+        assertThat(overview)
+          .extracting(ProcessOverviewDto::getDigest)
+          .extracting(ProcessDigestDto::getKpiReportResults)
+          .isEqualTo(expectedResultMap);
+      });
+  }
+
+  @Test
   public void digestUpdateIsNullSafeForPreviousKpiResults() {
     // given
     engineIntegrationExtension.deployAndStartProcess(getSimpleBpmnDiagram(DEF_KEY));
@@ -329,11 +386,11 @@ public class ProcessDigestNotificationIT extends AbstractIT {
     assertThat(greenMail.waitForIncomingEmail(1000, 1)).isTrue();
   }
 
-  private String createKpiReport(final String reportName) {
-    return createKpiReport(reportName, "1");
+  private String createKpiCountReport(final String reportName) {
+    return createKpiCountReport(reportName, "1");
   }
 
-  private String createKpiReport(final String reportName, final String target) {
+  private String createKpiCountReport(final String reportName, final String target) {
     final ProcessReportDataDto reportDataDto = TemplatedProcessReportDataBuilder.createReportData()
       .setReportDataType(ProcessReportDataType.PROC_INST_FREQ_GROUP_BY_NONE)
       .definitions(List.of(new ReportDataDefinitionDto(DEF_KEY)))
@@ -341,6 +398,24 @@ public class ProcessDigestNotificationIT extends AbstractIT {
     reportDataDto.getConfiguration().getTargetValue().setIsKpi(true);
     reportDataDto.getConfiguration().getTargetValue().getCountProgress().setIsBelow(true);
     reportDataDto.getConfiguration().getTargetValue().getCountProgress().setTarget(target);
+    SingleProcessReportDefinitionRequestDto singleProcessReportDefinitionDto =
+      new SingleProcessReportDefinitionRequestDto();
+    singleProcessReportDefinitionDto.setName(reportName);
+    singleProcessReportDefinitionDto.setData(reportDataDto);
+    return reportClient.createSingleProcessReport(singleProcessReportDefinitionDto);
+  }
+
+  private String createKpiDurationReport(final String reportName) {
+    final ProcessReportDataDto reportDataDto = TemplatedProcessReportDataBuilder.createReportData()
+      .setReportDataType(ProcessReportDataType.PROC_INST_DUR_GROUP_BY_NONE)
+      .definitions(List.of(new ReportDataDefinitionDto(DEF_KEY)))
+      .build();
+    reportDataDto.getConfiguration().getTargetValue().setIsKpi(true);
+    TargetDto targetDto = new TargetDto();
+    targetDto.setValue("999");
+    targetDto.setIsBelow(true);
+    targetDto.setUnit(TargetValueUnit.HOURS);
+    reportDataDto.getConfiguration().getTargetValue().getDurationProgress().setTarget(targetDto);
     SingleProcessReportDefinitionRequestDto singleProcessReportDefinitionDto =
       new SingleProcessReportDefinitionRequestDto();
     singleProcessReportDefinitionDto.setName(reportName);

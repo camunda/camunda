@@ -51,7 +51,6 @@ import java.util.Optional;
 import java.util.concurrent.ScheduledFuture;
 
 import static java.util.stream.Collectors.toList;
-import static java.util.stream.Collectors.toMap;
 import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
 import static org.camunda.optimize.dto.optimize.query.processoverview.KpiType.QUALITY;
 import static org.camunda.optimize.dto.optimize.query.processoverview.KpiType.TIME;
@@ -167,17 +166,18 @@ public class DigestService implements ConfigurationReloadable {
   }
 
   private void sendDigestAndUpdateLatestKpiResults(final ProcessOverviewDto overviewDto) {
-    final List<KpiResultDto> currentKpiReportResults = kpiService.extractKpiResultsForProcessDefinition(
+    final List<KpiResultDto> mostRecentKpiReportResults = kpiService.extractMostRecentKpiResultsForCurrentKpiReportsForProcess(
       overviewDto,
       DEFAULT_LOCALE
     );
 
     try {
-      composeAndSendDigestEmail(overviewDto, currentKpiReportResults);
+      composeAndSendDigestEmail(overviewDto, mostRecentKpiReportResults);
     } catch (Exception e) {
       log.error("Failed to send digest email", e);
     } finally {
-      updateLastKpiReportResults(overviewDto.getProcessDefinitionKey(), currentKpiReportResults);
+      // The most recent results are then set as the baseline for the digest
+      updateBaselineKpiReportResults(overviewDto.getProcessDefinitionKey(), mostRecentKpiReportResults);
     }
   }
 
@@ -234,21 +234,14 @@ public class DigestService implements ConfigurationReloadable {
       : (int) (100.0 * successfulResultCount / resultCount);
   }
 
-  private void updateLastKpiReportResults(final String processDefinitionKey,
-                                          final List<KpiResultDto> currentKpiReportResults) {
-    updateLastProcessDigestKpiResults(
-      processDefinitionKey,
-      currentKpiReportResults
-        .stream()
-        .collect(toMap(KpiResultDto::getReportId, KpiResultDto::getValue))
-    );
-  }
-
-  private void updateLastProcessDigestKpiResults(final String processDefKey,
-                                                 final Map<String, String> previousKpiReportResults) {
+  private void updateBaselineKpiReportResults(final String processDefinitionKey,
+                                              final List<KpiResultDto> mostRecentKpiReportResults) {
+    // We must use a Map that allows null values, so explicitly create a HashMap here
+    Map<String, String> reportIdsToValues = new HashMap<>();
+    mostRecentKpiReportResults.forEach(result -> reportIdsToValues.put(result.getReportId(), result.getValue()));
     processOverviewWriter.updateProcessDigestResults(
-      processDefKey,
-      new ProcessDigestDto(previousKpiReportResults)
+      processDefinitionKey,
+      new ProcessDigestDto(reportIdsToValues)
     );
   }
 

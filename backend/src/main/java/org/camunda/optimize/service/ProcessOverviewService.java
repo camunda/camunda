@@ -89,7 +89,7 @@ public class ProcessOverviewService {
           overviewForKey.map(ProcessOverviewDto::getDigest)
             .orElse(new ProcessDigestDto(false, new HashMap<>())),
           overviewForKey.map(processOverviewDto ->
-                               kpiService.extractKpiResultsForProcessDefinition(processOverviewDto, locale))
+                               kpiService.extractMostRecentKpiResultsForCurrentKpiReportsForProcess(processOverviewDto, locale))
                             .orElse(Collections.emptyList())
         );
       }).collect(Collectors.toList());
