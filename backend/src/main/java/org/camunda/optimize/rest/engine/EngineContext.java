@@ -185,7 +185,7 @@ public class EngineContext {
       String message = String.format(
         "Could not fetch user with id [%s] from engine with alias [%s]",
         userId,
-        engineAlias
+        getEngineAlias()
       );
       log.error(message, e);
       throw new OptimizeRuntimeException(message, e);
@@ -211,16 +211,17 @@ public class EngineContext {
       final String message = String.format(
         "Wasn't able to retrieve decision definition with id [%s] from the engine. It's likely that the definition " +
           "has been deleted but the historic data for it is still available. Please make sure that there are no " +
-          "remnants of historic decision instances for that definition left! Response from the engine: \n%s",
-        decisionDefinitionId, response.readEntity(String.class)
+          "remnants of historic decision instances for that definition left! Response from the engine with alias %s: \n%s",
+        decisionDefinitionId, getEngineAlias(), response.readEntity(String.class)
       );
       throw new OptimizeDecisionDefinitionNotFoundException(message);
     } else {
       final String message = String.format(
         "Wasn't able to retrieve decision definition with id [%s] from the engine. Maybe the Optimize user utilized " +
           "for the import is not authorized or there are some issues with the internet connection? Response from the " +
-          "engine: \n%s",
+          "engine with alias %s: \n%s",
         decisionDefinitionId,
+        getEngineAlias(),
         response.readEntity(String.class)
       );
       throw new OptimizeDecisionDefinitionFetchException(message);
@@ -256,16 +257,17 @@ public class EngineContext {
       final String message = String.format(
         "Wasn't able to retrieve process definition with id [%s] from the engine. It's likely that the definition " +
           "has been deleted but the historic data for it is still available. Please make sure that there are no " +
-          "remnants of historic process instances for that definition left! Response from the engine: \n%s",
-        processDefinitionId, response.readEntity(String.class)
+          "remnants of historic process instances for that definition left! Response from the engine with alias %s: \n%s",
+        processDefinitionId, getEngineAlias(), response.readEntity(String.class)
       );
       throw new OptimizeProcessDefinitionNotFoundException(message);
     } else {
       final String message = String.format(
         "Wasn't able to retrieve process definition with id [%s] from the engine. Maybe the Optimize user utilized " +
           "for the import is not authorized or there are some issues with the internet connection? Response from the " +
-          "engine: \n%s",
+          "engine with alias %s: \n%s",
         processDefinitionId,
+        getEngineAlias(),
         response.readEntity(String.class)
       );
       throw new OptimizeProcessDefinitionFetchException(message);
@@ -348,7 +350,7 @@ public class EngineContext {
 
     } else {
       final String message = String.format(
-        "Failed querying users from engine with alias [%s], response status: [%s].", engineAlias, response.getStatus()
+        "Failed querying users from engine with alias [%s], response status: [%s].", getEngineAlias(), response.getStatus()
       );
       response.close();
       log.error(message);
@@ -385,7 +387,7 @@ public class EngineContext {
       String message = String.format(
         "Could not fetch group with id [%s] from engine with alias [%s]",
         groupId,
-        engineAlias
+        getEngineAlias()
       );
       log.error(message, e);
       throw new OptimizeRuntimeException(message, e);
@@ -414,7 +416,7 @@ public class EngineContext {
       String message = String.format(
         "Could not get user count for user group [%s] from engine with alias [%s]",
         userGroupId,
-        engineAlias
+        getEngineAlias()
       );
       log.error(message, e);
       throw new OptimizeRuntimeException(message, e);
@@ -464,7 +466,7 @@ public class EngineContext {
       // @formatter:on
     } else {
       final String message = String.format(
-        "Failed querying groups from engine with alias [%s], response status: [%s].", response.getStatus(), engineAlias
+        "Failed querying groups from engine with alias [%s], response status: [%s].", getEngineAlias(), response.getStatus()
       );
       response.close();
       log.error(message);
@@ -493,7 +495,7 @@ public class EngineContext {
       String message = String.format(
         "Could not fetch groups for user [%s] from engine with alias [%s]",
         userId,
-        engineAlias
+        getEngineAlias()
       );
       log.error(message, e);
       throw new OptimizeRuntimeException(message, e);
@@ -507,7 +509,7 @@ public class EngineContext {
     } catch (Exception e) {
       String message = String.format(
         "Could not fetch application authorizations from the Engine with alias [%s] to check the access permissions.",
-        engineAlias
+        getEngineAlias()
       );
       log.error(message, e);
       throw new OptimizeRuntimeException(message);
@@ -521,7 +523,7 @@ public class EngineContext {
       String message = String.format(
         "Could not fetch process definition authorizations from the Engine with alias [%s] to check the access " +
           "permissions.",
-        engineAlias
+        getEngineAlias()
       );
       log.error(message, e);
       throw new OptimizeRuntimeException(message, e);
@@ -535,7 +537,7 @@ public class EngineContext {
       String message = String.format(
         "Could not fetch decision definition authorizations from the Engine with alias [%s] to check the access " +
           "permissions.",
-        engineAlias
+        getEngineAlias()
       );
       log.error(message, e);
       throw new OptimizeRuntimeException(message, e);
@@ -549,7 +551,7 @@ public class EngineContext {
       String message = String.format(
         "Could not fetch tenant authorizations from the Engine with alias [%s] to check the access " +
           "permissions.",
-        engineAlias
+        getEngineAlias()
       );
       log.error(message, e);
       throw new OptimizeRuntimeException(message, e);
@@ -561,8 +563,8 @@ public class EngineContext {
       return getAuthorizationsForType(RESOURCE_TYPE_GROUP);
     } catch (Exception e) {
       log.error(
-        "Could not fetch group authorizations from the engine to check the access permissions.",
-        e
+        "Could not fetch group authorizations from the engine with alias {} to check the access permissions.",
+        getEngineAlias(), e
       );
     }
     return new ArrayList<>();
@@ -573,8 +575,8 @@ public class EngineContext {
       return getAuthorizationsForType(RESOURCE_TYPE_USER);
     } catch (Exception e) {
       log.error(
-        "Could not fetch user authorizations from the engine to check the access permissions.",
-        e
+        "Could not fetch user authorizations from the engine with alias {} to check the access permissions.",
+        getEngineAlias(), e
       );
     }
     return new ArrayList<>();
@@ -588,7 +590,7 @@ public class EngineContext {
         "Could not fetch application authorizations for user with ID [%s] from the Engine with alias [%s] to check " +
           "the access permissions.",
         userId,
-        engineAlias
+        getEngineAlias()
       );
       log.error(message, e);
       throw new OptimizeRuntimeException(message, e);
@@ -603,7 +605,7 @@ public class EngineContext {
         "Could not fetch process definition authorizations for user with ID [%s] from the Engine with alias [%s] to " +
           "check the access permissions.",
         userId,
-        engineAlias
+        getEngineAlias()
       );
       log.error(message, e);
       throw new OptimizeRuntimeException(message, e);
@@ -617,7 +619,7 @@ public class EngineContext {
       String message = String.format(
         "Could not fetch decision definition authorizations from the Engine with alias [%s] to check the access " +
           "permissions.",
-        engineAlias
+        getEngineAlias()
       );
       log.error(message, e);
       throw new OptimizeRuntimeException(message, e);
@@ -631,7 +633,7 @@ public class EngineContext {
       String message = String.format(
         "Could not fetch tenant authorizations from the Engine with alias [%s] to check the access " +
           "permissions.",
-        engineAlias
+        getEngineAlias()
       );
       log.error(message, e);
       throw new OptimizeRuntimeException(message, e);
@@ -643,8 +645,8 @@ public class EngineContext {
       return getAuthorizationsForTypeForUser(RESOURCE_TYPE_GROUP, userId);
     } catch (Exception e) {
       log.error(
-        "Could not fetch group authorizations from the engine to check the access permissions.",
-        e
+        "Could not fetch group authorizations from the engine with alias {} to check the access permissions.",
+        getEngineAlias(), e
       );
     }
     return new ArrayList<>();
@@ -655,8 +657,8 @@ public class EngineContext {
       return getAuthorizationsForTypeForUser(RESOURCE_TYPE_USER, userId);
     } catch (Exception e) {
       log.error(
-        "Could not fetch user authorizations from the engine to check the access permissions.",
-        e
+        "Could not fetch user authorizations from the engine with alias {} to check the access permissions.",
+        getEngineAlias(), e
       );
     }
     return new ArrayList<>();
@@ -698,7 +700,7 @@ public class EngineContext {
       } else {
         String message = String.format(
           "Could not fetch authorizations from engine with alias [%s]! Error from engine: %s",
-          engineAlias,
+          getEngineAlias(),
           response.readEntity(String.class)
         );
         log.debug(message);
@@ -734,7 +736,7 @@ public class EngineContext {
         String message = String.format(
           "Could not fetch authorizations from engine with alias [%s] for [%s]s with IDs [%s]! Error from " +
             "engine: %s",
-          engineAlias,
+          getEngineAlias(),
           identityType,
           identityIds,
           response.readEntity(String.class)
