@@ -38,9 +38,10 @@ WORKDIR /
 # FYI, installing packages via APT also updates the dpkg files, which are few MBs, but removing or
 # caching them could break stuff (like not knowing the package is present) or container scanners
 # hadolint ignore=DL3008
-RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
+# hadolint ignore=DL3008
+RUN --mount=type=cache,target=/var/cache,sharing=locked \
+    --mount=type=cache,target=/var/log,sharing=locked \
     --mount=type=cache,target=/var/lib/apt,sharing=locked \
-    --mount=type=cache,target=/var/log/apt,sharing=locked \
     apt-get -qq update && \
     apt-get install -yqq --no-install-recommends tini ca-certificates && \
     apt-get upgrade -yqq --no-install-recommends
@@ -122,6 +123,21 @@ RUN mkdir camunda-zeebe && \
 # hadolint ignore=DL3006
 FROM ${DIST} as dist
 
+### AppCDS generation stage ##
+# hadolint ignore=DL3006
+FROM java AS appCds
+WORKDIR /usr/local/zeebe
+
+RUN --mount=type=cache,target=/var/cache,sharing=locked \
+    --mount=type=cache,target=/var/log,sharing=locked \
+    --mount=type=cache,target=/var/lib/apt,sharing=locked \
+    apt-get update -yqq && apt-get -yqq install curl
+
+COPY --link --chown=1000:0 docker/utils/appCds.sh /appCds.sh
+COPY --from=dist --chown=1000:0 /zeebe/camunda-zeebe /usr/local/zeebe
+RUN --mount=type=tmpfs,target=/usr/local/zeebe/data \
+    /appCds.sh bin/broker bin/zeebe
+
 ### Application Image ###
 # TARGETARCH is provided by buildkit
 # https://docs.docker.com/engine/reference/builder/#automatic-platform-args-in-the-global-scope
@@ -185,7 +201,7 @@ RUN groupadd -g 1000 zeebe && \
     chmod -R 0775 ${ZB_HOME}
 
 COPY --link --chown=1000:0 docker/utils/startup.sh /usr/local/bin/startup.sh
-COPY --from=dist --chown=1000:0 /zeebe/camunda-zeebe ${ZB_HOME}
+COPY --from=appCds --chown=1000:0 ${ZB_HOME} ${ZB_HOME}
 
 USER zeebe:zeebe
 

@@ -305,8 +305,11 @@
           <configurationDirectory>config</configurationDirectory>
           <copyConfigurationDirectory>true</copyConfigurationDirectory>
           <extraJvmArguments>-XX:+ExitOnOutOfMemoryError
-            -Dfile.encoding=UTF-8 -Xshare:auto</extraJvmArguments>
-          <includeConfigurationDirectoryInClasspath>true</includeConfigurationDirectoryInClasspath>
+            -Dfile.encoding=UTF-8
+            -Xshare:auto
+            -XX:SharedArchiveFile=@BASEDIR@/bin/zeebe.jsa
+            -Dlog4j.configurationFile=@BASEDIR@/config/log4j2.xml</extraJvmArguments>
+          <includeConfigurationDirectoryInClasspath>false</includeConfigurationDirectoryInClasspath>
           <platforms>
             <platform>windows</platform>
             <platform>unix</platform>
