@@ -161,7 +161,12 @@ public final class EngineProcessors {
         bpmnBehaviors.jobActivationBehavior());
     addResourceDeletionProcessors(
         typedRecordProcessors, writers, processingState, commandDistributionBehavior);
-    addSignalBroadcastProcessors(typedRecordProcessors, bpmnBehaviors, writers, processingState);
+    addSignalBroadcastProcessors(
+        typedRecordProcessors,
+        bpmnBehaviors,
+        writers,
+        processingState,
+        commandDistributionBehavior);
     addCommandDistributionProcessors(
         typedRecordProcessors,
         writers,
@@ -323,7 +328,8 @@ public final class EngineProcessors {
       final TypedRecordProcessors typedRecordProcessors,
       final BpmnBehaviorsImpl bpmnBehaviors,
       final Writers writers,
-      final MutableProcessingState processingState) {
+      final MutableProcessingState processingState,
+      final CommandDistributionBehavior commandDistributionBehavior) {
     final var signalBroadcastProcessor =
         new SignalBroadcastProcessor(
             writers,
@@ -332,7 +338,8 @@ public final class EngineProcessors {
             processingState.getProcessState(),
             bpmnBehaviors.stateBehavior(),
             bpmnBehaviors.eventTriggerBehavior(),
-            processingState.getSignalSubscriptionState());
+            processingState.getSignalSubscriptionState(),
+            commandDistributionBehavior);
     typedRecordProcessors.onCommand(
         ValueType.SIGNAL, SignalIntent.BROADCAST, signalBroadcastProcessor);
   }

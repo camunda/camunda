@@ -8,9 +8,10 @@
 package io.camunda.zeebe.engine.processing.signal;
 
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateBehavior;
+import io.camunda.zeebe.engine.processing.common.CommandDistributionBehavior;
 import io.camunda.zeebe.engine.processing.common.EventHandle;
 import io.camunda.zeebe.engine.processing.common.EventTriggerBehavior;
-import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
+import io.camunda.zeebe.engine.processing.streamprocessor.DistributedTypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
@@ -22,13 +23,14 @@ import io.camunda.zeebe.protocol.record.intent.SignalIntent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 
-public class SignalBroadcastProcessor implements TypedRecordProcessor<SignalRecord> {
+public class SignalBroadcastProcessor implements DistributedTypedRecordProcessor<SignalRecord> {
 
   private final StateWriter stateWriter;
   private final KeyGenerator keyGenerator;
   private final EventHandle eventHandle;
   private final TypedResponseWriter responseWriter;
   private final SignalSubscriptionState signalSubscriptionState;
+  private final CommandDistributionBehavior commandDistributionBehavior;
 
   public SignalBroadcastProcessor(
       final Writers writers,
@@ -37,11 +39,13 @@ public class SignalBroadcastProcessor implements TypedRecordProcessor<SignalReco
       final ProcessState processState,
       final BpmnStateBehavior stateBehavior,
       final EventTriggerBehavior eventTriggerBehavior,
-      final SignalSubscriptionState signalSubscriptionState) {
+      final SignalSubscriptionState signalSubscriptionState,
+      final CommandDistributionBehavior commandDistributionBehavior) {
     stateWriter = writers.state();
     responseWriter = writers.response();
     this.signalSubscriptionState = signalSubscriptionState;
     this.keyGenerator = keyGenerator;
+    this.commandDistributionBehavior = commandDistributionBehavior;
     eventHandle =
         new EventHandle(
             keyGenerator,
@@ -53,17 +57,15 @@ public class SignalBroadcastProcessor implements TypedRecordProcessor<SignalReco
   }
 
   @Override
-  public void processRecord(final TypedRecord<SignalRecord> command) {
+  public void processNewCommand(final TypedRecord<SignalRecord> command) {
+    final long eventKey = keyGenerator.nextKey();
     final var signalRecord = command.getValue();
-    final var key = command.getKey();
-    final var signalName = signalRecord.getSignalNameBuffer();
-    final var eventKey = key > -1 ? key : keyGenerator.nextKey();
 
     stateWriter.appendFollowUpEvent(eventKey, SignalIntent.BROADCASTED, signalRecord);
     responseWriter.writeEventOnCommand(eventKey, SignalIntent.BROADCASTED, signalRecord, command);
 
     signalSubscriptionState.visitBySignalName(
-        signalName,
+        signalRecord.getSignalNameBuffer(),
         subscription -> {
           final var subscriptionRecord = subscription.getRecord();
           final var processDefinitionKey = subscriptionRecord.getProcessDefinitionKey();
@@ -76,5 +78,13 @@ public class SignalBroadcastProcessor implements TypedRecordProcessor<SignalReco
                 signalRecord.getVariablesBuffer());
           }
         });
+
+    commandDistributionBehavior.distributeCommand(eventKey, command);
+  }
+
+  @Override
+  public void processDistributedCommand(final TypedRecord<SignalRecord> command) {
+    stateWriter.appendFollowUpEvent(command.getKey(), SignalIntent.BROADCASTED, command.getValue());
+    commandDistributionBehavior.acknowledgeCommand(command.getKey(), command);
   }
 }
