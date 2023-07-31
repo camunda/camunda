@@ -158,7 +158,7 @@ public final class DbProcessState implements MutableProcessState {
     processesByKey.remove(processRecord.getProcessDefinitionKey());
 
     final long latestVersion =
-        versionManager.getCurrentProcessVersion(processRecord.getBpmnProcessId());
+        versionManager.getHighestProcessVersion(processRecord.getBpmnProcessId());
 
     if (latestVersion == processRecord.getVersion()) {
       // As we don't set the digest to the digest of the previous there is a chance it does not
@@ -185,7 +185,7 @@ public final class DbProcessState implements MutableProcessState {
     processId.wrapBuffer(processRecord.getBpmnProcessIdBuffer());
     final var bpmnProcessId = processRecord.getBpmnProcessId();
 
-    final var currentVersion = versionManager.getCurrentProcessVersion(bpmnProcessId);
+    final var currentVersion = versionManager.getHighestProcessVersion(bpmnProcessId);
     final var nextVersion = processRecord.getVersion();
 
     if (nextVersion > currentVersion) {
@@ -252,7 +252,7 @@ public final class DbProcessState implements MutableProcessState {
         processesByProcessIdAndVersion.get(processIdBuffer);
 
     processId.wrapBuffer(processIdBuffer);
-    final long latestVersion = versionManager.getCurrentProcessVersion(processIdBuffer);
+    final long latestVersion = versionManager.getHighestProcessVersion(processIdBuffer);
 
     DeployedProcess deployedProcess;
     if (versionMap == null) {
@@ -319,12 +319,12 @@ public final class DbProcessState implements MutableProcessState {
 
   @Override
   public int getLatestProcessVersion(final String bpmnProcessId) {
-    return (int) versionManager.getCurrentProcessVersion(bpmnProcessId);
+    return (int) versionManager.getHighestProcessVersion(bpmnProcessId);
   }
 
   @Override
   public int getNextProcessVersion(final String bpmnProcessId) {
-    return (int) versionManager.getCurrentProcessVersion(bpmnProcessId) + 1;
+    return (int) versionManager.getHighestProcessVersion(bpmnProcessId) + 1;
   }
 
   @Override

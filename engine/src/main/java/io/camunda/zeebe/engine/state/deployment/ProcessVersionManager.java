@@ -51,22 +51,36 @@ public final class ProcessVersionManager {
     versionCache.put(processId, versionInfo.getLatestVersion());
   }
 
-  public long getCurrentProcessVersion(final String processId) {
+  /**
+   * Returns the highest version ever deployed for a given process. This process could already be
+   * deleted from the state.
+   *
+   * @param processId the process id
+   * @return the highest version ever deployed for this process id.
+   */
+  public long getHighestProcessVersion(final String processId) {
     processIdKey.wrapString(processId);
-    return getCurrentProcessVersion();
+    return getHighestProcessVersion();
   }
 
-  public long getCurrentProcessVersion(final DirectBuffer processId) {
+  /**
+   * Returns the highest process id ever deployed for a given process. This process could already be
+   * deleted from the state.
+   *
+   * @param processId the process id
+   * @return the highest version ever deployed for this process id.
+   */
+  public long getHighestProcessVersion(final DirectBuffer processId) {
     processIdKey.wrapBuffer(processId);
-    return getCurrentProcessVersion();
+    return getHighestProcessVersion();
   }
 
-  private long getCurrentProcessVersion() {
+  private long getHighestProcessVersion() {
     return versionCache.computeIfAbsent(
-        processIdKey.toString(), (ToLongFunction<String>) (key) -> getProcessVersionFromDB());
+        processIdKey.toString(), (ToLongFunction<String>) (key) -> getHighestVersionFromDB());
   }
 
-  private long getProcessVersionFromDB() {
+  private long getHighestVersionFromDB() {
     final NextValue readValue = nextValueColumnFamily.get(processIdKey);
 
     long currentValue = initialValue;
