@@ -41,10 +41,11 @@ public final class NextValue extends UnpackedObject implements DbValue {
    *
    * @param version the version of the process
    */
-  public void setHighestVersion(final long version) {
+  public NextValue setHighestVersion(final long version) {
     if (version > nextValueProp.getValue()) {
       nextValueProp.setValue(version);
     }
+    return this;
   }
 
   public Long getLatestVersion() {
