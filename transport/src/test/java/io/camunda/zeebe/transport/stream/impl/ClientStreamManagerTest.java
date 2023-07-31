@@ -23,6 +23,7 @@ import io.camunda.zeebe.transport.stream.impl.messages.PushStreamRequest;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import io.camunda.zeebe.util.buffer.BufferWriter;
 import java.time.Duration;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
@@ -76,8 +77,9 @@ class ClientStreamManagerTest {
     clientStreamManager.onServerJoined(serverId);
 
     // then
-    final var client = registry.getClient(streamId).orElseThrow();
-    assertThat(client.isConnected(serverId)).isTrue();
+    assertThat(registry.getClient(streamId))
+        .map(ClientStreamImpl::liveConnections)
+        .hasValue(Set.of(serverId));
   }
 
   @Test

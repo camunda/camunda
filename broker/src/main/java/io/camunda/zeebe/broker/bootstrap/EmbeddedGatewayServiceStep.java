@@ -8,6 +8,7 @@
 package io.camunda.zeebe.broker.bootstrap;
 
 import io.camunda.zeebe.broker.system.EmbeddedGatewayService;
+import io.camunda.zeebe.gateway.impl.stream.JobStreamClientImpl;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import java.util.concurrent.CompletableFuture;
@@ -26,14 +27,17 @@ class EmbeddedGatewayServiceStep extends AbstractBrokerStartupStep {
       final ActorFuture<BrokerStartupContext> startupFuture) {
 
     final var clusterServices = brokerStartupContext.getClusterServices();
+    final var scheduler = brokerStartupContext.getActorSchedulingService();
+    final var jobStreamClient =
+        new JobStreamClientImpl(scheduler, clusterServices.getCommunicationService());
 
-    @SuppressWarnings("resource")
     final var embeddedGatewayService =
         new EmbeddedGatewayService(
             brokerStartupContext.getBrokerConfiguration(),
-            brokerStartupContext.getActorSchedulingService(),
+            scheduler,
             clusterServices,
-            concurrencyControl);
+            concurrencyControl,
+            jobStreamClient);
 
     final var embeddedGatewayServiceFuture = embeddedGatewayService.start();
     concurrencyControl.runOnCompletion(
@@ -45,8 +49,9 @@ class EmbeddedGatewayServiceStep extends AbstractBrokerStartupStep {
           }
 
           brokerStartupContext.setEmbeddedGatewayService(embeddedGatewayService);
-          final var springBridge = brokerStartupContext.getSpringBrokerBridge();
-          springBridge.registerBrokerClient(gateway::getBrokerClient);
+          brokerStartupContext
+              .getSpringBrokerBridge()
+              .registerJobStreamClientSupplier(() -> jobStreamClient);
           startupFuture.complete(brokerStartupContext);
         });
   }
@@ -75,6 +80,9 @@ class EmbeddedGatewayServiceStep extends AbstractBrokerStartupStep {
                         forwardExceptions(
                             () -> {
                               brokerShutdownContext.setEmbeddedGatewayService(null);
+                              brokerShutdownContext
+                                  .getSpringBrokerBridge()
+                                  .registerJobStreamClientSupplier(null);
                               shutdownFuture.complete(brokerShutdownContext);
                             },
                             shutdownFuture));

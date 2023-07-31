@@ -14,21 +14,28 @@ import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.ActorFutureCollector;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
+import io.camunda.zeebe.transport.stream.api.RemoteStreamInfo;
 import io.camunda.zeebe.transport.stream.api.RemoteStreamService;
 import io.camunda.zeebe.transport.stream.api.RemoteStreamer;
 import io.camunda.zeebe.util.buffer.BufferReader;
 import io.camunda.zeebe.util.buffer.BufferWriter;
+import java.util.Collection;
+import java.util.HashSet;
 import java.util.stream.Stream;
 
 public class RemoteStreamServiceImpl<M extends BufferReader, P extends BufferWriter>
     implements RemoteStreamService<M, P> {
   private final RemoteStreamerImpl<M, P> streamer;
   private final RemoteStreamEndpoint<M> apiServer;
+  private final RemoteStreamRegistry<M> registry;
 
   public RemoteStreamServiceImpl(
-      final RemoteStreamerImpl<M, P> streamer, final RemoteStreamEndpoint<M> apiServer) {
+      final RemoteStreamerImpl<M, P> streamer,
+      final RemoteStreamEndpoint<M> apiServer,
+      final RemoteStreamRegistry<M> registry) {
     this.streamer = streamer;
     this.apiServer = apiServer;
+    this.registry = registry;
   }
 
   @Override
@@ -68,6 +75,11 @@ public class RemoteStreamServiceImpl<M extends BufferReader, P extends BufferWri
           }
         });
     return closed;
+  }
+
+  @Override
+  public Collection<RemoteStreamInfo<M>> streams() {
+    return new HashSet<>(registry.list());
   }
 
   @Override

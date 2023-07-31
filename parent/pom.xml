@@ -1704,6 +1704,28 @@
           <artifactId>flaky-test-extractor-maven-plugin</artifactId>
           <version>${plugin.version.flaky-tests}</version>
         </plugin>
+
+        <plugin>
+          <groupId>org.openapitools</groupId>
+          <artifactId>openapi-generator-maven-plugin</artifactId>
+          <version>6.6.0</version>
+          <configuration>
+            <!-- https://github.com/OpenAPITools/openapi-generator/tree/master/modules/openapi-generator-maven-plugin -->
+            <!-- https://github.com/OpenAPITools/openapi-generator/blob/master/docs/generators/spring.md -->
+            <generatorName>spring</generatorName>
+            <modelPackage>io.camunda.zeebe.shared.management.openapi.models</modelPackage>
+            <!-- Do no generate full server stub. Generate only classes for request and response types.  -->
+            <generateApis>false</generateApis>
+            <generateApiTests>false</generateApiTests>
+            <generateSupportingFiles>false</generateSupportingFiles>
+            <generateModels>true</generateModels>
+            <configOptions>
+              <sourceFolder>src/main</sourceFolder>
+              <additionalModelTypeAnnotations>@com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL)</additionalModelTypeAnnotations>
+              <useSpringBoot3>true</useSpringBoot3>
+            </configOptions>
+          </configuration>
+        </plugin>
       </plugins>
     </pluginManagement>
 

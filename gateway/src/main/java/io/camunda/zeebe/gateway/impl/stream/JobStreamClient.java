@@ -10,8 +10,10 @@ package io.camunda.zeebe.gateway.impl.stream;
 import io.camunda.zeebe.gateway.impl.broker.cluster.BrokerTopologyListener;
 import io.camunda.zeebe.protocol.impl.stream.job.JobActivationProperties;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
+import io.camunda.zeebe.transport.stream.api.ClientStream;
 import io.camunda.zeebe.transport.stream.api.ClientStreamer;
 import io.camunda.zeebe.util.CloseableSilently;
+import java.util.Collection;
 
 /** The main entry point for the client side of job streaming in the gateway. */
 public interface JobStreamClient extends BrokerTopologyListener, CloseableSilently {
@@ -21,4 +23,7 @@ public interface JobStreamClient extends BrokerTopologyListener, CloseableSilent
 
   /** Asynchronously starts the job stream client. */
   ActorFuture<Void> start();
+
+  /** Returns the list of registered job streams */
+  ActorFuture<Collection<ClientStream<JobActivationProperties>>> list();
 }

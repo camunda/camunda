@@ -8,6 +8,7 @@
 package io.camunda.zeebe.transport.stream.api;
 
 import io.atomix.cluster.MemberId;
+import java.util.Set;
 import org.agrona.DirectBuffer;
 
 public interface ClientStream<M> {
@@ -17,5 +18,5 @@ public interface ClientStream<M> {
 
   M metadata();
 
-  boolean isConnected(final MemberId memberId);
+  Set<MemberId> liveConnections();
 }

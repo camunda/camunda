@@ -13,7 +13,6 @@ import io.camunda.zeebe.gateway.Gateway;
 import io.camunda.zeebe.gateway.Loggers;
 import io.camunda.zeebe.gateway.impl.broker.BrokerClientImpl;
 import io.camunda.zeebe.gateway.impl.stream.JobStreamClient;
-import io.camunda.zeebe.gateway.impl.stream.JobStreamClientImpl;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
@@ -31,7 +30,8 @@ public final class EmbeddedGatewayService implements AutoCloseable {
       final BrokerCfg configuration,
       final ActorSchedulingService actorScheduler,
       final ClusterServices clusterServices,
-      final ConcurrencyControl concurrencyControl) {
+      final ConcurrencyControl concurrencyControl,
+      final JobStreamClient jobStreamClient) {
     this.concurrencyControl = concurrencyControl;
     brokerClient =
         new BrokerClientImpl(
@@ -40,8 +40,7 @@ public final class EmbeddedGatewayService implements AutoCloseable {
             clusterServices.getMembershipService(),
             clusterServices.getEventService(),
             actorScheduler);
-    jobStreamClient =
-        new JobStreamClientImpl(actorScheduler, clusterServices.getCommunicationService());
+    this.jobStreamClient = jobStreamClient;
     gateway =
         new Gateway(
             configuration.getGateway(), brokerClient, actorScheduler, jobStreamClient.streamer());

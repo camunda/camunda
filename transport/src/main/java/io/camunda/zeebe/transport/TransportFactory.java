@@ -58,7 +58,8 @@ public final class TransportFactory {
     return new RemoteStreamServiceImpl<>(
         new RemoteStreamerImpl<>(clusterCommunicationService, registry, errorHandler, metrics),
         new RemoteStreamEndpoint<>(
-            clusterCommunicationService, new RemoteStreamApiHandler<>(registry, metadataFactory)));
+            clusterCommunicationService, new RemoteStreamApiHandler<>(registry, metadataFactory)),
+        registry);
   }
 
   public <M extends BufferWriter> ClientStreamService<M> createRemoteStreamClient(

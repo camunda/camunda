@@ -116,6 +116,10 @@ final class AggregatedClientStream<M extends BufferWriter> {
     return logicalId;
   }
 
+  Set<MemberId> liveConnections() {
+    return liveConnections;
+  }
+
   void push(
       final DirectBuffer buffer,
       final ActorFuture<Void> future,
