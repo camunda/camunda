@@ -19,6 +19,7 @@ import ColumnSwitch from './ColumnSwitch';
 import './ColumnSelection.scss';
 
 const labels = {
+  counts: 'count',
   inputVariables: 'input',
   outputVariables: 'output',
   variables: 'variable',
@@ -91,6 +92,9 @@ export default function ColumnSelection({report, onChange}) {
             case 'flowNodeDurations':
               sectionType = 'flowNodeDuration';
               break;
+            case 'counts':
+              sectionType = 'count';
+              break;
             default:
               break;
           }
@@ -107,13 +111,13 @@ export default function ColumnSelection({report, onChange}) {
               toggleSectionOpen={() => toggleSectionOpen(key)}
             >
               {Object.keys(value).map((key) => {
-                const label = value[key].name || getVariableLabel(key) || key;
-                const switchId = `${sectionKey}:${key}`;
+                const label = value[key]?.name || getVariableLabel(key) || key;
+                const columnId = `${sectionKey}:${key}`;
 
                 return (
                   <ColumnSwitch
-                    key={switchId}
-                    switchId={switchId}
+                    key={columnId}
+                    switchId={columnId}
                     excludedColumns={excludedColumns}
                     includedColumns={includedColumns}
                     label={label}

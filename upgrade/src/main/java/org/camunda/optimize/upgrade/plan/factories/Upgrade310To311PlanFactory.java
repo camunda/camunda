@@ -33,16 +33,71 @@ public class Upgrade310To311PlanFactory implements UpgradePlanFactory {
   }
 
   private List<UpgradeStep> addDescriptionFieldToReportIndices() {
-    final String script = addDescriptionScript();
     return List.of(
-      new UpdateIndexStep(new SingleProcessReportIndex(), script),
-      new UpdateIndexStep(new SingleDecisionReportIndex(), script),
-      new UpdateIndexStep(new CombinedReportIndex(), script)
+      new UpdateIndexStep(new SingleProcessReportIndex(), addDescriptionScript() + migrateProcessReportColumnsScript()),
+      new UpdateIndexStep(new SingleDecisionReportIndex(), addDescriptionScript()),
+      new UpdateIndexStep(new CombinedReportIndex(), addDescriptionScript())
     );
   }
 
   private static String addDescriptionScript() {
-    return "ctx._source.description = null;";
+    return "ctx._source.description = null;\n";
+  }
+
+  private static String migrateProcessReportColumnsScript() {
+    // @formatter:off
+    return
+    "  def reportData = ctx._source.data;\n" +
+      "if (reportData != null) {\n" +
+      "  def reportConfig = reportData.configuration;\n" +
+      "  if (reportConfig != null) {\n" +
+      "    def reportColumns = reportConfig.tableColumns;\n" +
+      "    if (reportColumns != null) {\n" +
+      "      def newIncludedColumns = new ArrayList();\n" +
+      "      reportColumns.includedColumns.forEach(includedColumn -> {\n" +
+      "        if (includedColumn == \"numberOfUserTasks\") {\n" +
+      "          newIncludedColumns.add(\"count:userTasks\");\n" +
+      "        } else if (includedColumn == \"numberOfIncidents\") {\n" +
+      "          newIncludedColumns.add(\"count:incidents\");\n" +
+      "        } else if (includedColumn == \"numberOfOpenIncidents\") {\n" +
+      "          newIncludedColumns.add(\"count:openIncidents\");\n" +
+      "        } else {\n" +
+      "          newIncludedColumns.add(includedColumn);\n" +
+      "        }\n" +
+      "      });\n" +
+      "      reportColumns.includedColumns = newIncludedColumns;\n" +
+
+      "      def newExcludedColumns = new ArrayList();\n" +
+      "      reportColumns.excludedColumns.forEach(excludedColumn -> {\n" +
+      "        if (excludedColumn == \"numberOfUserTasks\") {\n" +
+      "          newExcludedColumns.add(\"count:userTasks\");\n" +
+      "        } else if (excludedColumn == \"numberOfIncidents\") {\n" +
+      "          newExcludedColumns.add(\"count:incidents\");\n" +
+      "        } else if (excludedColumn == \"numberOfOpenIncidents\") {\n" +
+      "          newExcludedColumns.add(\"count:openIncidents\");\n" +
+      "        } else {\n" +
+      "          newExcludedColumns.add(excludedColumn);\n" +
+      "        }\n" +
+      "      });\n" +
+      "      reportColumns.excludedColumns = newExcludedColumns;\n" +
+
+      "      def newColumnOrder = new ArrayList();\n" +
+      "      reportColumns.columnOrder.forEach(column -> {\n" +
+      "        if (column == \"numberOfUserTasks\") {\n" +
+      "          newColumnOrder.add(\"count:userTasks\");\n" +
+      "        } else if (column == \"numberOfIncidents\") {\n" +
+      "          newColumnOrder.add(\"count:incidents\");\n" +
+      "        } else if (column == \"numberOfOpenIncidents\") {\n" +
+      "          newColumnOrder.add(\"count:openIncidents\");\n" +
+      "        } else {\n" +
+      "          newColumnOrder.add(column);\n" +
+      "        }\n" +
+      "      });\n" +
+      "      reportColumns.columnOrder = newColumnOrder;\n" +
+      "    }\n" +
+      "  }\n" +
+      "}\n";
+    // @formatter:on
   }
 
 }

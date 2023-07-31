@@ -41,8 +41,11 @@ import javax.ws.rs.core.Response;
 import java.time.ZoneId;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static org.camunda.optimize.rest.util.TimeZoneUtil.extractTimezone;
+import static org.camunda.optimize.service.export.CSVUtils.extractAllPrefixedCountKeys;
 import static org.camunda.optimize.service.export.CSVUtils.extractAllProcessInstanceDtoFieldKeys;
 
 @AllArgsConstructor
@@ -135,7 +138,7 @@ public class ExportRestService {
             .configuration(SingleReportConfigurationDto.builder()
                              .tableColumns(TableColumnDto.builder()
                                              .includeNewVariables(false)
-                                             .excludedColumns(getAllExcludedDtoFields(request))
+                                             .excludedColumns(getAllExcludedFields(request))
                                              .includedColumns(request.getIncludedColumns())
                                              .build())
                              .build())
@@ -158,10 +161,14 @@ public class ExportRestService {
     }
   }
 
-  private List<String> getAllExcludedDtoFields(final ProcessRawDataCsvExportRequestDto request) {
-    final List<String> dtoFields = extractAllProcessInstanceDtoFieldKeys();
-    dtoFields.removeAll(request.getIncludedColumns());
-    return dtoFields;
+  private List<String> getAllExcludedFields(final ProcessRawDataCsvExportRequestDto request) {
+    final List<String> excludedFields = Stream.concat(
+        extractAllProcessInstanceDtoFieldKeys().stream(),
+        extractAllPrefixedCountKeys().stream()
+      )
+      .collect(Collectors.toList());
+    excludedFields.removeAll(request.getIncludedColumns());
+    return excludedFields;
   }
 
   private Response createOctetStreamResponse(final String fileName,

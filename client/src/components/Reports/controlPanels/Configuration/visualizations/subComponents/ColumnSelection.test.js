@@ -42,6 +42,9 @@ it('should have a switch for every column', () => {
                 dur1: {name: 'dur1', value: null},
                 dur2: {name: 'dur2', value: 1000},
               },
+              counts: {
+                openIncidents: 0,
+              },
             },
           ],
         },
@@ -50,7 +53,7 @@ it('should have a switch for every column', () => {
     />
   );
 
-  expect(node.find('ColumnSwitch').length).toBe(7);
+  expect(node.find('ColumnSwitch').length).toBe(8);
 });
 
 it('should change the switches labels to space case instead of camelCase for non variables', () => {
@@ -203,4 +206,19 @@ it('should fallback the label of the flow node duration to key if name doesnt ex
   );
 
   expect(node.find('ColumnSwitch').prop('label')).toBe('dur1');
+});
+
+it('should create section for count columns', () => {
+  const node = shallow(
+    <ColumnSelection
+      report={{
+        result: {data: [{counts: {incidents: 1}}]},
+        data,
+      }}
+    />
+  );
+
+  expect(node.find('CollapsibleSection').prop('sectionKey')).toBe('counts');
+  expect(node.find('ColumnSwitch').length).toBe(1);
+  expect(node.find('ColumnSwitch').prop('label')).toBe('incidents');
 });

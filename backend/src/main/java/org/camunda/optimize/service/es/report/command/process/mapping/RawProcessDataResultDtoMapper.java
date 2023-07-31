@@ -12,6 +12,7 @@ import org.camunda.optimize.dto.optimize.FlowNodeTotalDurationDataDto;
 import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.datasource.DataSourceDto;
 import org.camunda.optimize.dto.optimize.persistence.incident.IncidentStatus;
+import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataCountDtoDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.query.variable.SimpleProcessVariableDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
@@ -46,11 +47,13 @@ public class RawProcessDataResultDtoMapper {
           processInstanceDto,
           variables,
           instanceIdsToUserTaskCount,
-          convertToFlowNodeDurationDataDto(processInstanceIdsToFlowNodeDurations.getOrDefault(
-            processInstanceDto.getProcessInstanceId(),
-            Collections.emptyMap()
-          ),
-          flowNodeIdsToFlowNodeNames)
+          convertToFlowNodeDurationDataDto(
+            processInstanceIdsToFlowNodeDurations.getOrDefault(
+              processInstanceDto.getProcessInstanceId(),
+              Collections.emptyMap()
+            ),
+            flowNodeIdsToFlowNodeNames
+          )
         );
         rawData.add(dataEntry);
       });
@@ -72,17 +75,20 @@ public class RawProcessDataResultDtoMapper {
                                                           final Map<String, Object> variables,
                                                           final Map<String, Long> instanceIdsToUserTaskCount,
                                                           final Map<String, FlowNodeTotalDurationDataDto> flowNodeIdsToDurations) {
+    final RawDataCountDtoDto rawDataCountDtoDto = new RawDataCountDtoDto();
+    rawDataCountDtoDto.setIncidents(processInstanceDto.getIncidents().size());
+    rawDataCountDtoDto.setOpenIncidents(
+      processInstanceDto.getIncidents()
+        .stream()
+        .filter(incidentDto -> incidentDto.getIncidentStatus() == IncidentStatus.OPEN)
+        .count());
+    rawDataCountDtoDto.setUserTasks(instanceIdsToUserTaskCount.getOrDefault(processInstanceDto.getProcessInstanceId(), 0L));
     return new RawDataProcessInstanceDto(
       processInstanceDto.getProcessDefinitionKey(),
       processInstanceDto.getProcessDefinitionId(),
       processInstanceDto.getProcessInstanceId(),
-      processInstanceDto.getIncidents().size(),
-      processInstanceDto.getIncidents()
-        .stream()
-        .filter(incidentDto -> incidentDto.getIncidentStatus() == IncidentStatus.OPEN)
-        .count(),
+      rawDataCountDtoDto,
       flowNodeIdsToDurations,
-      instanceIdsToUserTaskCount.getOrDefault(processInstanceDto.getProcessInstanceId(), 0L),
       processInstanceDto.getBusinessKey(),
       processInstanceDto.getStartDate(),
       processInstanceDto.getEndDate(),
@@ -129,7 +135,7 @@ public class RawProcessDataResultDtoMapper {
       .stream()
       .collect(Collectors.toMap(Map.Entry::getKey, flowNodeIdToDuration -> new FlowNodeTotalDurationDataDto(
         flowNodeIdsToFlowNodeNames.get(flowNodeIdToDuration.getKey()),
-        ((Number)flowNodeIdToDuration.getValue()).longValue()
+        ((Number) flowNodeIdToDuration.getValue()).longValue()
       )));
   }
 }

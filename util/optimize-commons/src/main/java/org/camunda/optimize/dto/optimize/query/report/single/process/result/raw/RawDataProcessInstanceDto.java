@@ -23,11 +23,10 @@ public class RawDataProcessInstanceDto implements RawDataInstanceDto {
   protected String processDefinitionKey;
   protected String processDefinitionId;
   protected String processInstanceId;
-  protected long numberOfIncidents;
-  protected long numberOfOpenIncidents;
+  @FieldNameConstants.Exclude
+  protected RawDataCountDtoDto counts;
   @FieldNameConstants.Exclude
   protected Map<String, FlowNodeTotalDurationDataDto> flowNodeDurations;
-  protected long numberOfUserTasks;
   protected String businessKey;
   protected OffsetDateTime startDate;
   protected OffsetDateTime endDate;

@@ -13,8 +13,10 @@ import lombok.experimental.FieldNameConstants;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
+import java.util.stream.Stream;
 
 import static java.util.stream.Collectors.toList;
 
@@ -28,6 +30,8 @@ public class TableColumnDto {
   public static final String VARIABLE_PREFIX = "variable:";
   public static final String INPUT_PREFIX = "input:";
   public static final String OUTPUT_PREFIX = "output:";
+  public static final String FLOWNODE_DURATION_PREFIX = "dur:";
+  public static final String COUNT_PREFIX = "count:";
 
   @Builder.Default
   private boolean includeNewVariables = true;
@@ -39,24 +43,35 @@ public class TableColumnDto {
   private List<String> columnOrder = new ArrayList<>();
 
   public void addNewAndRemoveUnexpectedVariableColumns(final List<String> allVariableColumns) {
-    addNewVariableColumns(allVariableColumns);
+    final List<String> newColumns = determineNewColumns(allVariableColumns);
+    if (includeNewVariables) {
+      includedColumns.addAll(newColumns);
+    } else {
+      excludedColumns.addAll(newColumns);
+    }
+    removeUnexpectedColumns(allVariableColumns, VARIABLE_PREFIX, INPUT_PREFIX, OUTPUT_PREFIX);
+  }
 
-    // remove all variable columns that are in excluded/included lists but not in allVariableColumns
-    final List<String> variableColumnsToRemove = new ArrayList<>();
-    variableColumnsToRemove.addAll(getAllVariablePrefixedColumns(excludedColumns));
-    variableColumnsToRemove.addAll(getAllVariablePrefixedColumns(includedColumns));
-    variableColumnsToRemove.removeAll(allVariableColumns);
-    removeColumns(variableColumnsToRemove);
+  public void addNewAndRemoveUnexpectedFlowNodeDurationColumns(final List<String> flowNodeDurationColumns) {
+    final List<String> newColumns = determineNewColumns(flowNodeDurationColumns);
+    // This is a known bug that needs addressing with https://jira.camunda.com/browse/OPT-7155
+    if (includeNewVariables) {
+      includedColumns.addAll(newColumns);
+    } else {
+      excludedColumns.addAll(newColumns);
+    }
+    removeUnexpectedColumns(flowNodeDurationColumns, FLOWNODE_DURATION_PREFIX);
+  }
+
+  public void addCountColumns(final List<String> countColumns) {
+    // Count columns are always included by default, unless explicitly excluded
+    final List<String> newColumnsToAdd = determineNewColumns(countColumns);
+    includedColumns.addAll(newColumnsToAdd);
   }
 
   public void addDtoColumns(final List<String> columns) {
     // Dto columns are always included by default, unless explicitly excluded
-    final List<String> newColumnsToAdd = columns
-      .stream()
-      .filter(col -> !excludedColumns.contains(col))
-      .filter(col -> !includedColumns.contains(col))
-      .distinct()
-      .collect(toList());
+    final List<String> newColumnsToAdd = determineNewColumns(columns);
     includedColumns.addAll(newColumnsToAdd);
   }
 
@@ -67,18 +82,13 @@ public class TableColumnDto {
     return includedColumns;
   }
 
-  private void addNewVariableColumns(final List<String> variableColumns) {
-    final List<String> newColumnsToAdd = variableColumns
+  private List<String> determineNewColumns(final List<String> allColumns) {
+    return allColumns
       .stream()
       .filter(col -> !excludedColumns.contains(col))
       .filter(col -> !includedColumns.contains(col))
       .distinct()
       .collect(toList());
-    if (includeNewVariables) {
-      includedColumns.addAll(newColumnsToAdd);
-    } else {
-      excludedColumns.addAll(newColumnsToAdd);
-    }
   }
 
   private void removeColumns(final List<String> columnsToRemove) {
@@ -98,13 +108,18 @@ public class TableColumnDto {
 
   private int getPrefixOrder(final String columnName) {
     // Order of columns should be:
-    // non-variable (ie dto fields) > process var > decision input var > decision output var
-    if (columnName.startsWith(VARIABLE_PREFIX)) {
+    // non-variable (ie dto fields) > count fields > flow node duration fields> process var > decision input var > decision
+    // output var
+    if (columnName.startsWith(COUNT_PREFIX)) {
       return 1;
-    } else if (columnName.startsWith(INPUT_PREFIX)) {
+    } else if (columnName.startsWith(FLOWNODE_DURATION_PREFIX)) {
       return 2;
-    } else if (columnName.startsWith(OUTPUT_PREFIX)) {
+    } else if (columnName.startsWith(VARIABLE_PREFIX)) {
       return 3;
+    } else if (columnName.startsWith(INPUT_PREFIX)) {
+      return 4;
+    } else if (columnName.startsWith(OUTPUT_PREFIX)) {
+      return 5;
     }
     return 0;
   }
@@ -118,6 +133,16 @@ public class TableColumnDto {
       .replace(INPUT_PREFIX, "")
       .replace(OUTPUT_PREFIX, "")
       .replaceAll("[0-9]", "");
+  }
+
+  private void removeUnexpectedColumns(final List<String> columns, final String... prefixesToFilerFor) {
+    // remove all columns that are in excluded/included lists but not in provided list
+    final List<String> prefixList = Arrays.asList(prefixesToFilerFor);
+    final List<String> columnsToRemove = Stream.concat(excludedColumns.stream(), includedColumns.stream())
+      .filter(includedOrExcludedColumn -> prefixList.stream().anyMatch(includedOrExcludedColumn::contains))
+      .filter(prefixedColumn -> !columns.contains(prefixedColumn))
+      .collect(toList());
+    removeColumns(columnsToRemove);
   }
 
   private double getNumbersInColumnName(String columnName) {
@@ -135,11 +160,4 @@ public class TableColumnDto {
     }
   }
 
-  private List<String> getAllVariablePrefixedColumns(List<String> columns) {
-    return columns.stream()
-      .filter(col -> col.contains(VARIABLE_PREFIX)
-        || col.contains(INPUT_PREFIX)
-        || col.contains(OUTPUT_PREFIX))
-      .collect(toList());
-  }
 }

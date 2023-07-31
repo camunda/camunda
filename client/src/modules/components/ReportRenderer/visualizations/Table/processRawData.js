@@ -27,9 +27,6 @@ const instanceColumns = {
     'processDefinitionKey',
     'processDefinitionId',
     'processInstanceId',
-    'numberOfIncidents',
-    'numberOfOpenIncidents',
-    'numberOfUserTasks',
     'businessKey',
     'startDate',
     'endDate',
@@ -66,14 +63,24 @@ export default function processRawData({
     isVisibleColumn(entry, tableColumns)
   );
 
-  const variableNames = getVisibleColumns(result[0]?.variables, tableColumns, 'variable');
+  const {
+    counts,
+    variables,
+    flowNodeDurations,
+    inputVariables: inputVars,
+    outputVariables: outputVars,
+  } = result[0] || {};
 
-  const inputVariables = getVisibleColumns(result[0]?.inputVariables, tableColumns, 'input');
+  const countNames = getVisibleColumns(counts, tableColumns, 'count');
 
-  const outputVariables = getVisibleColumns(result[0]?.outputVariables, tableColumns, 'output');
+  const variableNames = getVisibleColumns(variables, tableColumns, 'variable');
+
+  const inputVariables = getVisibleColumns(inputVars, tableColumns, 'input');
+
+  const outputVariables = getVisibleColumns(outputVars, tableColumns, 'output');
 
   const flowNodeDurationNames = getVisibleColumns(
-    result[0]?.flowNodeDurations || {},
+    flowNodeDurations || {},
     tableColumns,
     'flowNodeDuration'
   );
@@ -81,6 +88,7 @@ export default function processRawData({
   // If all columns are excluded return a message to enable one
   if (
     instanceProps.length +
+      countNames.length +
       variableNames.length +
       inputVariables.length +
       outputVariables.length +
@@ -119,6 +127,7 @@ export default function processRawData({
 
     return [
       ...row,
+      ...getVariableValues(countNames, instance.counts),
       ...getVariableValues(variableNames, instance.variables, onVariableClick),
       ...getVariableValues(inputVariables, instance.inputVariables),
       ...getVariableValues(outputVariables, instance.outputVariables),
@@ -132,6 +141,15 @@ export default function processRawData({
       return {id: key, label, title: label};
     })
     .concat(
+      countNames.map((name) => ({
+        type: 'counts',
+        // we dont give them any prefix to keep compatibility with included/excluded columns
+        id: name,
+        label: getLabelWithType(name, 'count'),
+        title: name,
+      }))
+    )
+    .concat(
       variableNames.map((name) => ({
         type: 'variables',
         id: 'variable:' + name,
@@ -141,7 +159,7 @@ export default function processRawData({
     )
     .concat(
       inputVariables.map((key) => {
-        const {name, id} = result[0].inputVariables[key];
+        const {name, id} = inputVars[key];
         const label = name || id;
         return {
           type: 'inputVariables',
@@ -153,7 +171,7 @@ export default function processRawData({
     )
     .concat(
       outputVariables.map((key) => {
-        const {name, id} = result[0].outputVariables[key];
+        const {name, id} = outputVars[key];
         const label = name || id;
         return {
           type: 'outputVariables',
@@ -165,7 +183,7 @@ export default function processRawData({
     )
     .concat(
       flowNodeDurationNames.map((key) => {
-        const {name} = result[0].flowNodeDurations[key];
+        const {name} = flowNodeDurations[key];
         const label = name || key;
         return {
           type: 'flowNodeDurations',
@@ -208,7 +226,7 @@ function getVariableValues(variableKeys, variableValues, onVariableClick) {
       return variableData.value.toString();
     }
 
-    if (variableData && typeof variableData !== 'object') {
+    if (variableData !== undefined && typeof variableData !== 'object') {
       return variableData.toString();
     }
 

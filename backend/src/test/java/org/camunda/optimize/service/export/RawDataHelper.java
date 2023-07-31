@@ -8,6 +8,7 @@ package org.camunda.optimize.service.export;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw.InputVariableEntry;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw.OutputVariableEntry;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw.RawDataDecisionInstanceDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataCountDtoDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 
@@ -31,11 +32,16 @@ public class RawDataHelper {
   public static List<RawDataProcessInstanceDto> getRawDataProcessInstanceDtos() {
     final List<RawDataProcessInstanceDto> toMap = new ArrayList<>();
 
+    final RawDataCountDtoDto rawDataCountDtoDto1 = new RawDataCountDtoDto();
+    rawDataCountDtoDto1.setUserTasks(1);
+    rawDataCountDtoDto1.setIncidents(1);
+    rawDataCountDtoDto1.setOpenIncidents(1);
     final RawDataProcessInstanceDto instance1 = new RawDataProcessInstanceDto();
     instance1.setProcessDefinitionId("test_id");
     instance1.setProcessDefinitionKey("test_key");
     instance1.setStartDate(OffsetDateTime.parse(FIXED_TIME));
     instance1.setEndDate(OffsetDateTime.parse(FIXED_TIME));
+    instance1.setCounts(rawDataCountDtoDto1);
     instance1.setDuration(0L);
     instance1.setBusinessKey("aBusinessKey");
     instance1.setEngineName("engine");
@@ -48,12 +54,14 @@ public class RawDataHelper {
     toMap.add(instance1);
 
     final RawDataProcessInstanceDto instance2 = new RawDataProcessInstanceDto();
+    instance2.setCounts(new RawDataCountDtoDto(0, 0, 0));
     final Map<String, Object> variables2 = new HashMap<>();
     variables2.put("2", OffsetDateTime.parse(FIXED_TIME_VARIABLE));
     instance2.setVariables(variables2);
     toMap.add(instance2);
 
     final RawDataProcessInstanceDto instance3 = new RawDataProcessInstanceDto();
+    instance3.setCounts(new RawDataCountDtoDto(0, 1, 0));
     toMap.add(instance3);
 
     return toMap;
@@ -72,6 +80,7 @@ public class RawDataHelper {
     instance.setBusinessKey("aBusinessKey");
     instance.setEngineName("engine");
     instance.setTenantId("tenant");
+    instance.setCounts(new RawDataCountDtoDto(0, 0, 0));
 
     instance.setVariables(variables);
     toMap.add(instance);

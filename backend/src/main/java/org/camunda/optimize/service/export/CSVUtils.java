@@ -16,6 +16,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.configuration.Table
 import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw.InputVariableEntry;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw.OutputVariableEntry;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw.RawDataDecisionInstanceDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataCountDtoDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.MapResultEntryDto;
 
@@ -34,6 +35,8 @@ import java.util.Set;
 
 import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toList;
+import static org.camunda.optimize.dto.optimize.query.report.single.configuration.TableColumnDto.COUNT_PREFIX;
+import static org.camunda.optimize.dto.optimize.query.report.single.configuration.TableColumnDto.FLOWNODE_DURATION_PREFIX;
 import static org.camunda.optimize.dto.optimize.query.report.single.configuration.TableColumnDto.INPUT_PREFIX;
 import static org.camunda.optimize.dto.optimize.query.report.single.configuration.TableColumnDto.OUTPUT_PREFIX;
 import static org.camunda.optimize.dto.optimize.query.report.single.configuration.TableColumnDto.VARIABLE_PREFIX;
@@ -43,7 +46,6 @@ import static org.camunda.optimize.util.SuppressionConstants.UNCHECKED_CAST;
 @Slf4j
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class CSVUtils {
-  public static final String FLOWNODE_DURATION_PREFIX = "dur:";
 
   public static byte[] mapCsvLinesToCsvBytes(final List<String[]> csvStrings, final char csvDelimiter) {
     final ByteArrayOutputStream arrayOutputStream = new ByteArrayOutputStream();
@@ -79,22 +81,18 @@ public class CSVUtils {
                                                             final Integer offset,
                                                             final TableColumnDto tableColumns) {
     final List<String[]> result = new ArrayList<>();
-    final List<String> allVariableKeys = extractAllPrefixedVariableKeys(rawData);
+    final List<String> allCountKeys = extractAllPrefixedCountKeys();
     final List<String> allFlowNodeDurationKeys = extractAllPrefixedFlowNodeKeys(rawData);
-    // append keys which need restructuring in one list
-    allVariableKeys.addAll(allFlowNodeDurationKeys);
-    // Ensure all dto fields are taken into account by tableColumns
+    final List<String> allVariableKeys = extractAllPrefixedVariableKeys(rawData);
+    // Ensure all fields are taken into account by tableColumns
     tableColumns.addDtoColumns(extractAllProcessInstanceDtoFieldKeys());
-
-    // Ensure all variables are taken into account by tableColumns
+    tableColumns.addCountColumns(allCountKeys);
+    tableColumns.addNewAndRemoveUnexpectedFlowNodeDurationColumns(allFlowNodeDurationKeys);
     tableColumns.addNewAndRemoveUnexpectedVariableColumns(allVariableKeys);
     final List<String> allIncludedKeysInOrder = tableColumns.getIncludedColumns();
 
     // header line
     result.add(allIncludedKeysInOrder.toArray(new String[0]));
-    // only leave variable fields in the list of columns which need adjustment
-    // so that we can check whether the current column is a variable
-    allVariableKeys.removeAll(allFlowNodeDurationKeys);
     int currentPosition = 0;
     for (RawDataProcessInstanceDto instanceDto : rawData) {
       boolean limitNotExceeded = isLimitNotExceeded(limit, result);
@@ -102,22 +100,23 @@ public class CSVUtils {
         final String[] dataLine = new String[allIncludedKeysInOrder.size()];
         for (int i = 0; i < dataLine.length; i++) {
           final String currentKey = allIncludedKeysInOrder.get(i);
-          final Optional<String> optionalValue;
+          final Optional<String> columnValue;
           if (allVariableKeys.contains(currentKey)) {
-            optionalValue = getVariableValue(instanceDto, currentKey);
+            columnValue = getVariableValue(instanceDto, currentKey);
             // if the current column is a flow node column
           } else if (allFlowNodeDurationKeys.contains(currentKey)) {
-            optionalValue = getFlowNodeDurationValue(instanceDto, currentKey);
+            columnValue = getFlowNodeDurationValue(instanceDto, currentKey);
+          } else if (allCountKeys.contains(currentKey)) {
+            columnValue = getCountValue(instanceDto, currentKey);
           } else {
-            optionalValue = getDtoFieldValue(instanceDto, RawDataProcessInstanceDto.class, currentKey);
+            columnValue = getDtoFieldValue(instanceDto, RawDataProcessInstanceDto.class, currentKey);
           }
-          dataLine[i] = optionalValue.orElse(null);
+          dataLine[i] = columnValue.orElse(null);
         }
         result.add(dataLine);
       }
       currentPosition = currentPosition + 1;
     }
-
     return result;
   }
 
@@ -246,6 +245,14 @@ public class CSVUtils {
     return flowNodeKeys;
   }
 
+  public static List<String> extractAllPrefixedCountKeys() {
+    return List.of(
+      addCountPrefix(RawDataCountDtoDto.Fields.incidents),
+      addCountPrefix(RawDataCountDtoDto.Fields.openIncidents),
+      addCountPrefix(RawDataCountDtoDto.Fields.userTasks)
+    );
+  }
+
   private static List<String> extractAllPrefixedDecisionInputKeys(List<RawDataDecisionInstanceDto> rawData) {
     Set<String> inputKeys = new HashSet<>();
     for (RawDataDecisionInstanceDto pi : rawData) {
@@ -306,6 +313,22 @@ public class CSVUtils {
     } else {
       return Optional.empty();
     }
+  }
+
+  private static Optional<String> getCountValue(final RawDataProcessInstanceDto instanceDto, String flowNodeKey) {
+    if (flowNodeKey.equals(addCountPrefix(RawDataCountDtoDto.Fields.userTasks))) {
+      return Optional.of(Long.toString(instanceDto.getCounts().getUserTasks()));
+    } else if (flowNodeKey.equals(addCountPrefix(RawDataCountDtoDto.Fields.incidents))) {
+      return Optional.of(Long.toString(instanceDto.getCounts().getIncidents()));
+    } else if (flowNodeKey.equals(addCountPrefix(RawDataCountDtoDto.Fields.openIncidents))) {
+      return Optional.of(Long.toString(instanceDto.getCounts().getOpenIncidents()));
+    } else {
+      return Optional.empty();
+    }
+  }
+
+  private static String addCountPrefix(final RawDataCountDtoDto.Fields openIncidents) {
+    return COUNT_PREFIX + openIncidents;
   }
 
   private static Optional<String> getOutputVariableValue(final RawDataDecisionInstanceDto instanceDto,

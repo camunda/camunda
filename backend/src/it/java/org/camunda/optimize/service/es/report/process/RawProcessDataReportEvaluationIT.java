@@ -19,6 +19,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.filter.Filt
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.VariableFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
+import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataCountDtoDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewEntity;
@@ -336,7 +337,8 @@ public class RawProcessDataReportEvaluationIT extends AbstractProcessDefinitionI
     // given
     ProcessInstanceEngineDto processInstance1 = deployAndStartSimpleUserTaskProcess();
     engineIntegrationExtension.finishAllRunningUserTasks();
-    ProcessInstanceEngineDto processInstance2 =  engineIntegrationExtension.deployAndStartProcess(BpmnModels.getSimpleStartEventOnlyDiagram());
+    ProcessInstanceEngineDto processInstance2 =
+      engineIntegrationExtension.deployAndStartProcess(BpmnModels.getSimpleStartEventOnlyDiagram());
     engineDatabaseExtension.changeFlowNodeTotalDuration(processInstance1.getId(), START_EVENT, 0);
     engineDatabaseExtension.changeFlowNodeTotalDuration(processInstance1.getId(), END_EVENT, 0);
     engineDatabaseExtension.changeFlowNodeTotalDuration(processInstance1.getId(), USER_TASK_1, 10);
@@ -427,10 +429,14 @@ public class RawProcessDataReportEvaluationIT extends AbstractProcessDefinitionI
       evaluateRawReportWithDefaultPagination(reportDataWithoutUserTask);
 
     // then
-    assertThat(evaluationResultWithUserTask.getResult()
-                 .getData()).extracting(RawDataProcessInstanceDto::getNumberOfUserTasks).containsExactlyInAnyOrder(1L, 1L);
-    assertThat(evaluationResultWithoutUserTask.getResult()
-                 .getData()).extracting(RawDataProcessInstanceDto::getNumberOfUserTasks).containsExactlyInAnyOrder(0L);
+    assertThat(evaluationResultWithUserTask.getResult().getData())
+      .extracting(RawDataProcessInstanceDto::getCounts)
+      .extracting(RawDataCountDtoDto::getUserTasks)
+      .containsExactlyInAnyOrder(1L, 1L);
+    assertThat(evaluationResultWithoutUserTask.getResult().getData())
+      .extracting(RawDataProcessInstanceDto::getCounts)
+      .extracting(RawDataCountDtoDto::getUserTasks)
+      .containsExactly(0L);
   }
 
   @Test
@@ -1195,7 +1201,7 @@ public class RawProcessDataReportEvaluationIT extends AbstractProcessDefinitionI
       )
       .containsExactly(definitionKey, List.of(definitionVersion));
     final ReportResultResponseDto<List<RawDataProcessInstanceDto>> result = evaluationResult.getResult();
-    assertThat(result.getData()).extracting(RawDataProcessInstanceDto::getNumberOfOpenIncidents)
+    assertThat(result.getData()).extracting(RawDataProcessInstanceDto::getCounts).extracting(RawDataCountDtoDto::getOpenIncidents)
       .containsExactlyInAnyOrder(0L, 1L);
   }
 
@@ -1717,8 +1723,8 @@ public class RawProcessDataReportEvaluationIT extends AbstractProcessDefinitionI
     assertThat(resultInstance.getEngineName()).isEqualTo(DEFAULT_ENGINE_ALIAS);
     assertThat(resultInstance.getBusinessKey()).isEqualTo(BUSINESS_KEY);
     assertThat(resultInstance.getVariables()).isNotNull().isEmpty();
-    assertThat(resultInstance.getNumberOfOpenIncidents()).isZero();
-    assertThat(resultInstance.getNumberOfUserTasks()).isZero();
+    assertThat(resultInstance.getCounts().getOpenIncidents()).isZero();
+    assertThat(resultInstance.getCounts().getUserTasks()).isZero();
   }
 
   private String createAndStoreDefaultReportDefinition(String processDefinitionKey, String processDefinitionVersion) {

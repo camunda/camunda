@@ -41,10 +41,10 @@ public class JsonReportResultExportService {
         ((SingleReportDataDto) unevaluatedReportData).getViewProperties().contains(ViewProperty.RAW_DATA);
       final ReportEvaluationInfo.ReportEvaluationInfoBuilder evaluationInfoBuilder =
         ReportEvaluationInfo.builder(reportId)
-        .timezone(timezone)
-        .isCsvExport(false)
-        .isJsonExport(true);
-      if(isRawDataReport) {
+          .timezone(timezone)
+          .isCsvExport(false)
+          .isJsonExport(true);
+      if (isRawDataReport) {
         // pagination info is only valid in the context of raw data reports
         evaluationInfoBuilder.pagination(paginationInfo);
       }
@@ -55,7 +55,7 @@ public class JsonReportResultExportService {
       // This can only possibly happen with non-raw-data Reports
       if (!isRawDataReport && paginationInfo.getLimit() < resultAsJson.getNumberOfRecordsInResponse()) {
         resultAsJson.setMessage("All records are delivered in this response regardless of the set limit, since " +
-          "result pagination is only supported for raw data reports.");
+                                  "result pagination is only supported for raw data reports.");
       }
       log.info("Report " + reportId + " exported successfully as JSON.");
       return resultAsJson;

@@ -552,8 +552,8 @@ public class ProcessCsvExportServiceIT extends AbstractProcessDefinitionIT {
       "${PD_ID_" + rowNum + "}",
       "\"" + processInstance.getDefinitionId() + "\""
     );
-    expectedString = expectedString.replace("${START_DATE_" + rowNum + "}", "\"" + String.valueOf(startDate) + "\"");
-    expectedString = expectedString.replace("${DURATION_" + rowNum + "}", "\"" + String.valueOf(duration) + "\"");
+    expectedString = expectedString.replace("${START_DATE_" + rowNum + "}", "\"" + startDate + "\"");
+    expectedString = expectedString.replace("${DURATION_" + rowNum + "}", "\"" + duration + "\"");
     expectedString = expectedString.replace(
       "${END_DATE_" + rowNum + "}",
       endDate == null ? "" : "\"" + endDate + "\""
