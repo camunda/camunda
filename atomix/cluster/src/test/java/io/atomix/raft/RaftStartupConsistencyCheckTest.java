@@ -32,7 +32,7 @@ public class RaftStartupConsistencyCheckTest {
     // lower the threshold so that the follower receives snapshot instead of log events
     leader.getContext().setPreferSnapshotReplicationThreshold(1);
     final long snapshotIndex = commitIndex - 1;
-    raftRule.doSnapshotOnMember(leader, snapshotIndex, 1);
+    raftRule.takeSnapshot(leader, snapshotIndex, 1);
 
     final TestSnapshotStore testSnapshotStore =
         (TestSnapshotStore) followerToRestart.getContext().getPersistedSnapshotStore();

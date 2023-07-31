@@ -44,6 +44,7 @@ import io.atomix.utils.serializer.Serializer;
 import io.camunda.zeebe.snapshots.PersistedSnapshotStore;
 import io.camunda.zeebe.snapshots.ReceivableSnapshotStore;
 import io.camunda.zeebe.util.FileUtil;
+import io.camunda.zeebe.util.VisibleForTesting;
 import io.camunda.zeebe.util.health.FailureListener;
 import io.camunda.zeebe.util.health.HealthMonitorable;
 import io.camunda.zeebe.util.health.HealthReport;
@@ -199,6 +200,7 @@ public class RaftPartitionServer implements Managed<RaftPartitionServer>, Health
     return server.flushLog();
   }
 
+  @VisibleForTesting
   public void setCompactableIndex(final long index) {
     // Don't compact everything, leave enough entries so that slow followers are not forced into
     // snapshot replication immediately.

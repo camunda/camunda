@@ -44,6 +44,11 @@ class NoopSnapshotStore implements ReceivableSnapshotStore {
   }
 
   @Override
+  public ActorFuture<Long> getCompactionBound() {
+    return null;
+  }
+
+  @Override
   public ActorFuture<Void> purgePendingSnapshots() {
     return null;
   }

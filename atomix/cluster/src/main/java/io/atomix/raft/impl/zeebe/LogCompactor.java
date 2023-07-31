@@ -9,14 +9,21 @@ package io.atomix.raft.impl.zeebe;
 
 import io.atomix.raft.impl.RaftContext;
 import io.atomix.raft.metrics.RaftServiceMetrics;
+import io.atomix.raft.storage.log.RaftLog;
 import io.atomix.utils.concurrent.ThreadContext;
 import io.atomix.utils.logging.ContextualLoggerFactory;
 import io.atomix.utils.logging.LoggerContext;
+import io.camunda.zeebe.snapshots.PersistedSnapshotStore;
 import java.util.concurrent.CompletableFuture;
 import org.slf4j.Logger;
 
 public final class LogCompactor {
-  private final RaftContext raft;
+  private final ThreadContext threadContext;
+  private final RaftLog log;
+
+  // Don't compact everything, leave enough entries so that slow followers are not forced into
+  // snapshot replication immediately.
+  private final int replicationThreshold;
 
   // hard coupled state
   private final Logger logger;
@@ -26,16 +33,31 @@ public final class LogCompactor {
   private volatile long compactableIndex;
 
   public LogCompactor(final RaftContext raft) {
-    this.raft = raft;
-
-    logger =
+    this(
+        raft.getThreadContext(),
+        raft.getLog(),
+        raft.getPreferSnapshotReplicationThreshold(),
+        new RaftServiceMetrics(raft.getName()),
         ContextualLoggerFactory.getLogger(
-            getClass(), LoggerContext.builder(getClass()).addValue(raft.getName()).build());
-    metrics = new RaftServiceMetrics(raft.getName());
+            LogCompactor.class,
+            LoggerContext.builder(LogCompactor.class).addValue(raft.getName()).build()));
+  }
+
+  public LogCompactor(
+      final ThreadContext threadContext,
+      final RaftLog log,
+      final int replicationThreshold,
+      final RaftServiceMetrics metrics,
+      final Logger logger) {
+    this.threadContext = threadContext;
+    this.log = log;
+    this.replicationThreshold = replicationThreshold;
+    this.logger = logger;
+    this.metrics = metrics;
   }
 
   public ThreadContext executor() {
-    return raft.getThreadContext();
+    return threadContext;
   }
 
   /**
@@ -45,12 +67,12 @@ public final class LogCompactor {
    * @return a future which is completed when the log has been compacted
    */
   public CompletableFuture<Void> compact() {
-    raft.checkThread();
+    threadContext.checkThread();
 
     final CompletableFuture<Void> result = new CompletableFuture<>();
     try {
       final var startTime = System.currentTimeMillis();
-      raft.getLog().deleteUntil(compactableIndex);
+      log.deleteUntil(compactableIndex);
       metrics.compactionTime(System.currentTimeMillis() - startTime);
       result.complete(null);
     } catch (final Exception e) {
@@ -61,12 +83,25 @@ public final class LogCompactor {
     return result;
   }
 
-  public void close() {
-    raft.checkThread();
-    logger.debug("Closing the log compactor {}", raft.getName());
-  }
-
   public void setCompactableIndex(final long index) {
     compactableIndex = index;
+  }
+
+  /** Compacts the log based on the snapshot store's lowest compaction bound. */
+  public void compactFromSnapshots(final PersistedSnapshotStore snapshotStore) {
+    snapshotStore.getCompactionBound().onComplete(this::onSnapshotCompactionBound, threadContext);
+  }
+
+  private void onSnapshotCompactionBound(final Long index, final Throwable error) {
+    if (error != null) {
+      logger.error(
+          "Expected to compact logs, but could not the compaction bound from the snapshot store",
+          error);
+      return;
+    }
+
+    logger.debug("Scheduling log compaction up to index {}", index);
+    setCompactableIndex(index);
+    compact();
   }
 }

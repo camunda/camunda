@@ -30,12 +30,14 @@ import java.nio.ByteBuffer;
 import java.nio.file.Path;
 import java.util.NavigableMap;
 import java.util.Objects;
+import java.util.Set;
 import java.util.TreeMap;
+import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.zip.CRC32C;
 import java.util.zip.Checksum;
 import org.agrona.concurrent.UnsafeBuffer;
 
-public class InMemorySnapshot implements PersistedSnapshot, ReceivedSnapshot {
+public final class InMemorySnapshot implements PersistedSnapshot, ReceivedSnapshot {
 
   private final TestSnapshotStore testSnapshotStore;
   private final long index;
@@ -43,6 +45,7 @@ public class InMemorySnapshot implements PersistedSnapshot, ReceivedSnapshot {
   private final String id;
   private final NavigableMap<String, String> chunks = new TreeMap<>();
   private final Checksum checksumCalculator = new CRC32C();
+  private final Set<SnapshotReservation> reservations = new CopyOnWriteArraySet<>();
 
   private long checksum;
 
@@ -152,7 +155,7 @@ public class InMemorySnapshot implements PersistedSnapshot, ReceivedSnapshot {
 
   @Override
   public long getChecksum() {
-    return 0;
+    return checksum;
   }
 
   @Override
@@ -162,7 +165,21 @@ public class InMemorySnapshot implements PersistedSnapshot, ReceivedSnapshot {
 
   @Override
   public ActorFuture<SnapshotReservation> reserve() {
-    return null;
+    final var reservation =
+        new SnapshotReservation() {
+          @Override
+          public ActorFuture<Void> release() {
+            reservations.remove(this);
+            return CompletableActorFuture.completed(null);
+          }
+        };
+
+    reservations.add(reservation);
+    return CompletableActorFuture.completed(reservation);
+  }
+
+  boolean isReserved() {
+    return !reservations.isEmpty();
   }
 
   @Override
