@@ -10,7 +10,6 @@ import {styles} from '@carbon/elements';
 import {Popover as BasePopover} from 'modules/components/Popover';
 
 const Popover = styled(BasePopover)`
-  z-index: 5;
   width: 354px;
   padding: 12px 11px 11px;
   text-align: left;
