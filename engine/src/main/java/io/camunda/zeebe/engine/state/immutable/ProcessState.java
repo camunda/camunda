@@ -26,7 +26,14 @@ public interface ProcessState {
 
   DirectBuffer getLatestVersionDigest(DirectBuffer processId);
 
-  int getProcessVersion(String bpmnProcessId);
+  /**
+   * Gets the latest process version. This is the latest version for which we have a process in the
+   * state. It is not necessarily the latest version we've ever known for this process id, as
+   * process could be deleted.
+   *
+   * @param bpmnProcessId the id of the process
+   */
+  int getLatestProcessVersion(String bpmnProcessId);
 
   /**
    * Gets the next version a process of a given id will get. This is used, for example, when a new

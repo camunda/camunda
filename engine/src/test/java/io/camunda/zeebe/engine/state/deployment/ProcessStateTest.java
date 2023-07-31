@@ -50,7 +50,7 @@ public final class ProcessStateTest {
     // given
 
     // when
-    final long nextProcessVersion = processState.getProcessVersion("foo");
+    final long nextProcessVersion = processState.getLatestProcessVersion("foo");
 
     // then
     assertThat(nextProcessVersion).isZero();
@@ -63,7 +63,7 @@ public final class ProcessStateTest {
     processState.putProcess(processRecord.getKey(), processRecord);
 
     // when
-    final long processVersion = processState.getProcessVersion("processId");
+    final long processVersion = processState.getLatestProcessVersion("processId");
 
     // then
     assertThat(processVersion).isEqualTo(1L);
@@ -82,7 +82,7 @@ public final class ProcessStateTest {
     processState.putProcess(processRecord2.getKey(), processRecord2);
 
     // then
-    final long processVersion = processState.getProcessVersion("processId");
+    final long processVersion = processState.getLatestProcessVersion("processId");
     assertThat(processVersion).isEqualTo(2L);
   }
 
@@ -97,9 +97,9 @@ public final class ProcessStateTest {
     processState.putProcess(processRecord2.getKey(), processRecord2);
 
     // then
-    final long processVersion = processState.getProcessVersion("processId");
+    final long processVersion = processState.getLatestProcessVersion("processId");
     assertThat(processVersion).isEqualTo(1L);
-    final long otherversion = processState.getProcessVersion("other");
+    final long otherversion = processState.getLatestProcessVersion("other");
     assertThat(otherversion).isEqualTo(1L);
   }
 
@@ -605,7 +605,7 @@ public final class ProcessStateTest {
     assertThat(processState.getProcessByProcessIdAndVersion(BufferUtil.wrapString(processId), 1))
         .isNull();
     assertThat(processState.getLatestVersionDigest(BufferUtil.wrapString(processId))).isNull();
-    assertThat(processState.getProcessVersion(processId)).isEqualTo(0);
+    assertThat(processState.getLatestProcessVersion(processId)).isEqualTo(0);
     assertThat(processState.getNextProcessVersion(processId)).isEqualTo(2);
   }
 
@@ -642,7 +642,7 @@ public final class ProcessStateTest {
         .isNotNull();
     assertThat(processState.getLatestVersionDigest(BufferUtil.wrapString(processId)))
         .isEqualTo(wrapString("newChecksum"));
-    assertThat(processState.getProcessVersion(processId)).isEqualTo(2);
+    assertThat(processState.getLatestProcessVersion(processId)).isEqualTo(2);
     assertThat(processState.getNextProcessVersion(processId)).isEqualTo(3);
   }
 
@@ -678,7 +678,7 @@ public final class ProcessStateTest {
     assertThat(processState.getProcessByProcessIdAndVersion(BufferUtil.wrapString(processId), 2))
         .isNull();
     assertThat(processState.getLatestVersionDigest(BufferUtil.wrapString(processId))).isNull();
-    assertThat(processState.getProcessVersion(processId)).isEqualTo(1);
+    assertThat(processState.getLatestProcessVersion(processId)).isEqualTo(1);
     assertThat(processState.getNextProcessVersion(processId)).isEqualTo(3);
   }
 
@@ -722,7 +722,7 @@ public final class ProcessStateTest {
     assertThat(processState.getProcessByProcessIdAndVersion(BufferUtil.wrapString(processId), 3))
         .isNull();
     assertThat(processState.getLatestVersionDigest(BufferUtil.wrapString(processId))).isNull();
-    assertThat(processState.getProcessVersion(processId)).isEqualTo(1);
+    assertThat(processState.getLatestProcessVersion(processId)).isEqualTo(1);
     assertThat(processState.getNextProcessVersion(processId)).isEqualTo(4);
   }
 
@@ -734,7 +734,7 @@ public final class ProcessStateTest {
   public static DeploymentRecord creatingDeploymentRecord(
       final MutableProcessingState processingState, final String processId) {
     final MutableProcessState processState = processingState.getProcessState();
-    final int version = processState.getProcessVersion(processId) + 1;
+    final int version = processState.getLatestProcessVersion(processId) + 1;
     return creatingDeploymentRecord(processingState, processId, version);
   }
 
@@ -783,7 +783,7 @@ public final class ProcessStateTest {
   public static ProcessRecord creatingProcessRecord(
       final MutableProcessingState processingState, final String processId) {
     final MutableProcessState processState = processingState.getProcessState();
-    final int version = processState.getProcessVersion(processId) + 1;
+    final int version = processState.getLatestProcessVersion(processId) + 1;
     return creatingProcessRecord(processingState, processId, version);
   }
 
