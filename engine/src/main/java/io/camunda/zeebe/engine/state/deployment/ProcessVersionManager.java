@@ -75,23 +75,13 @@ public final class ProcessVersionManager {
    *
    * @param processId the id of the process
    * @param version the version that needs to be deleted
-   * @param previousVersion the previous known version of the process
    */
-  public void deleteProcessVersion(
-      final String processId, final long version, final long previousVersion) {
-    if (getCurrentProcessVersion(processId) != version) {
-      // If the deleted version is not the latest version we don't have to do anything.
-      return;
-    }
-
+  public void deleteProcessVersion(final String processId, final long version) {
     processIdKey.wrapString(processId);
-    // If there is no previous version we can delete the process id from the state entirely.
-    if (previousVersion == 0) {
-      nextValueColumnFamily.deleteExisting(processIdKey);
-      versionCache.remove(processId);
-    } else {
-      setProcessVersion(processId, previousVersion);
-    }
+    final var versionInfo = nextValueColumnFamily.get(processIdKey);
+    versionInfo.removeKnownVersion(version);
+    nextValueColumnFamily.update(processIdKey, versionInfo);
+    versionCache.put(processId, versionInfo.getLatestVersion());
   }
 
   public void clear() {
