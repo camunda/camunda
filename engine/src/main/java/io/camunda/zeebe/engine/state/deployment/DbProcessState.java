@@ -335,6 +335,11 @@ public final class DbProcessState implements MutableProcessState {
   }
 
   @Override
+  public int getNextProcessVersion(final String bpmnProcessId) {
+    return (int) versionManager.getCurrentProcessVersion(bpmnProcessId) + 1;
+  }
+
+  @Override
   public <T extends ExecutableFlowElement> T getFlowElement(
       final long processDefinitionKey, final DirectBuffer elementId, final Class<T> elementType) {
 

@@ -169,7 +169,7 @@ public final class BpmnResourceTransformer implements DeploymentResourceTransfor
               .markAsDuplicate();
         } else {
           final var key = keyGenerator.nextKey();
-          processMetadata.setKey(key).setVersion(processState.getProcessVersion(bpmnProcessId) + 1);
+          processMetadata.setKey(key).setVersion(processState.getNextProcessVersion(bpmnProcessId));
 
           stateWriter.appendFollowUpEvent(
               key,

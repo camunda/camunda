@@ -28,6 +28,14 @@ public interface ProcessState {
 
   int getProcessVersion(String bpmnProcessId);
 
+  /**
+   * Gets the next version a process of a given id will get. This is used, for example, when a new
+   * deployment is done. Using this method we decide the version the newly deployed process gets.
+   *
+   * @param bpmnProcessId the id of the process
+   */
+  int getNextProcessVersion(String bpmnProcessId);
+
   <T extends ExecutableFlowElement> T getFlowElement(
       long processDefinitionKey, DirectBuffer elementId, Class<T> elementType);
 
