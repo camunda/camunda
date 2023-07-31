@@ -31,8 +31,10 @@ import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import io.camunda.zeebe.util.collection.Tuple;
 import java.io.ByteArrayInputStream;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import org.agrona.DirectBuffer;
+import org.agrona.collections.Long2ObjectHashMap;
 
 public class DecisionBehavior {
 
@@ -40,6 +42,8 @@ public class DecisionBehavior {
   private final DecisionEngine decisionEngine;
   private final DecisionState decisionState;
   private final ProcessEngineMetrics metrics;
+  private final Long2ObjectHashMap<ParsedDecisionRequirementsGraph> parsedDecisionGraphs =
+      new Long2ObjectHashMap<>();
 
   public DecisionBehavior(
       final DecisionEngine decisionEngine,
@@ -66,12 +70,24 @@ public class DecisionBehavior {
 
   public Either<Failure, ParsedDecisionRequirementsGraph> findAndParseDrgByDecision(
       final PersistedDecision persistedDecision) {
-    return findDrgByDecision(persistedDecision)
-        .flatMap(drg -> parseDrg(drg.getResource()))
-        .mapLeft(
-            failure ->
-                formatDecisionLookupFailure(
-                    failure, BufferUtil.bufferAsString(persistedDecision.getDecisionId())));
+    return Optional.ofNullable(
+            parsedDecisionGraphs.get(persistedDecision.getDecisionRequirementsKey()))
+        .map(Either::<Failure, ParsedDecisionRequirementsGraph>right)
+        .orElseGet(
+            () ->
+                findDrgByDecision(persistedDecision)
+                    .flatMap(drg -> parseDrg(drg.getResource()))
+                    .map(
+                        graph -> {
+                          parsedDecisionGraphs.put(
+                              persistedDecision.getDecisionRequirementsKey(), graph);
+                          return graph;
+                        })
+                    .mapLeft(
+                        failure ->
+                            formatDecisionLookupFailure(
+                                failure,
+                                BufferUtil.bufferAsString(persistedDecision.getDecisionId()))));
   }
 
   public Failure formatDecisionLookupFailure(final Failure failure, final long decisionKey) {
