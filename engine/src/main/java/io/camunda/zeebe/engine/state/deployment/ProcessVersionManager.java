@@ -52,6 +52,23 @@ public final class ProcessVersionManager {
   }
 
   /**
+   * Returns the latest known version of a process. A process with this version exists in the state.
+   *
+   * @param processId the process id
+   * @return the latest known version of this process
+   */
+  public long getLatestProcessVersion(final String processId) {
+    processIdKey.wrapString(processId);
+    final var versionInfo = nextValueColumnFamily.get(processIdKey);
+
+    if (versionInfo == null) {
+      return initialValue;
+    }
+
+    return versionInfo.getLatestVersion();
+  }
+
+  /**
    * Returns the highest version ever deployed for a given process. This process could already be
    * deleted from the state.
    *

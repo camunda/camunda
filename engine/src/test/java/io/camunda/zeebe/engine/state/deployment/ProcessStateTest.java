@@ -772,7 +772,7 @@ public final class ProcessStateTest {
   public static DeploymentRecord creatingDeploymentRecord(
       final MutableProcessingState processingState, final String processId) {
     final MutableProcessState processState = processingState.getProcessState();
-    final int version = processState.getLatestProcessVersion(processId) + 1;
+    final int version = processState.getNextProcessVersion(processId);
     return creatingDeploymentRecord(processingState, processId, version);
   }
 
@@ -821,7 +821,7 @@ public final class ProcessStateTest {
   public static ProcessRecord creatingProcessRecord(
       final MutableProcessingState processingState, final String processId) {
     final MutableProcessState processState = processingState.getProcessState();
-    final int version = processState.getLatestProcessVersion(processId) + 1;
+    final int version = processState.getNextProcessVersion(processId);
     return creatingProcessRecord(processingState, processId, version);
   }
 
