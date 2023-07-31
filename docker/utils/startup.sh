@@ -1,4 +1,4 @@
-#!/bin/bash -xeu
+#!/bin/sh -xeu
 
 HOST=$(hostname -i)
 
