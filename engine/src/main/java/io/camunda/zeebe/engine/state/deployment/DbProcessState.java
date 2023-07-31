@@ -165,9 +165,10 @@ public final class DbProcessState implements MutableProcessState {
       // exist. This happens when deleting the latest version two times in a row. To be safe we must
       // use deleteIfExists.
       digestByIdColumnFamily.deleteIfExists(fkProcessId);
-      versionManager.deleteProcessVersion(
-          processRecord.getBpmnProcessId(), processRecord.getVersion());
     }
+
+    versionManager.deleteProcessVersion(
+        processRecord.getBpmnProcessId(), processRecord.getVersion());
   }
 
   private void persistProcess(final long processDefinitionKey, final ProcessRecord processRecord) {
@@ -184,13 +185,8 @@ public final class DbProcessState implements MutableProcessState {
   private void updateLatestVersion(final ProcessRecord processRecord) {
     processId.wrapBuffer(processRecord.getBpmnProcessIdBuffer());
     final var bpmnProcessId = processRecord.getBpmnProcessId();
-
-    final var currentVersion = versionManager.getHighestProcessVersion(bpmnProcessId);
-    final var nextVersion = processRecord.getVersion();
-
-    if (nextVersion > currentVersion) {
-      versionManager.addProcessVersion(bpmnProcessId, nextVersion);
-    }
+    final var version = processRecord.getVersion();
+    versionManager.addProcessVersion(bpmnProcessId, version);
   }
 
   // is called on getters, if process is not in memory
