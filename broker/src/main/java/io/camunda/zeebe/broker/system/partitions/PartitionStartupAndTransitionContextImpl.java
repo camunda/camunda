@@ -18,7 +18,6 @@ import io.camunda.zeebe.broker.exporter.repo.ExporterDescriptor;
 import io.camunda.zeebe.broker.exporter.repo.ExporterRepository;
 import io.camunda.zeebe.broker.exporter.stream.ExporterDirector;
 import io.camunda.zeebe.broker.logstreams.AtomixLogStorage;
-import io.camunda.zeebe.broker.logstreams.LogDeletionService;
 import io.camunda.zeebe.broker.partitioning.topology.TopologyManager;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageMonitor;
@@ -78,7 +77,6 @@ public class PartitionStartupAndTransitionContextImpl
 
   private StreamProcessor streamProcessor;
   private LogStream logStream;
-  private LogDeletionService logDeletionService;
   private AsyncSnapshotDirector snapshotDirector;
   private HealthMonitor criticalComponentsHealthMonitor;
   private ZeebeDb zeebeDb;
@@ -421,16 +419,6 @@ public class PartitionStartupAndTransitionContextImpl
   @Override
   public void setActorControl(final ActorControl actorControl) {
     this.actorControl = actorControl;
-  }
-
-  @Override
-  public LogDeletionService getLogDeletionService() {
-    return logDeletionService;
-  }
-
-  @Override
-  public void setLogDeletionService(final LogDeletionService logDeletionService) {
-    this.logDeletionService = logDeletionService;
   }
 
   @Override
