@@ -24,7 +24,7 @@ public class JMHEnginePerformanceTest {
   private static final double MAX_DEVIATION = 0.15; // 15% of deviation is allowed
 
   @Test
-  public void runJmhBenchmark() throws RunnerException {
+  public void runLargeStateJmhBenchmark() throws RunnerException {
     // given
     final var opt =
         new OptionsBuilder().include(EngineLargeStatePerformanceTest.class.getSimpleName()).build();
@@ -37,6 +37,44 @@ public class JMHEnginePerformanceTest {
       // we are fine with around 10 percent deviation but not more
       assertDeviationWithin(runResult, REFERENCE_SCORE, MAX_DEVIATION);
     }
+  }
+
+  @Test
+  public void runSingleDmnTaskBenchmark() throws RunnerException {
+    // given
+    final var opt =
+        new OptionsBuilder()
+            .include(EngineSingleDmnTaskPerformanceTest.class.getSimpleName())
+            .build();
+
+    // when
+    // TODO setup assert
+    //    final var runResults =
+    new Runner(opt).run();
+
+    // then
+    //    for (final RunResult runResult : runResults) {
+    //      assertDeviationWithin(runResult, 3, 0.5);
+    //    }
+  }
+
+  @Test
+  public void runParallelDmnTaskBenchmark() throws RunnerException {
+    // given
+    final var opt =
+        new OptionsBuilder()
+            .include(EngineParallelDmnTaskPerformanceTest.class.getSimpleName())
+            .build();
+
+    // when
+    // TODO setup assert
+    //    final var runResults =
+    new Runner(opt).run();
+
+    // then
+    //    for (final RunResult runResult : runResults) {
+    //      assertDeviationWithin(runResult, 3, 0.5);
+    //    }
   }
 
   private static void assertDeviationWithin(
@@ -52,7 +90,7 @@ public class JMHEnginePerformanceTest {
 
               return String.format(
                   "Expected reference score is '%.2f' got '%.2f', deviation %s exceeds maximum allowed deviation %s",
-                  REFERENCE_SCORE, score, deviationString, maxDeviationString);
+                  referenceScore, score, deviationString, maxDeviationString);
             })
         .isLessThan(maxDeviation);
   }
