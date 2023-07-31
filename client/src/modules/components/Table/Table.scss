@@ -21,6 +21,7 @@
     overflow: hidden;
     flex-direction: column;
     flex: 1;
+    position: inherit;
   }
 
   .cds--data-table-content {
@@ -125,7 +126,6 @@
     overflow-y: auto;
     min-width: max-content;
     overflow-x: hidden;
-    position: relative;
     flex-grow: 1;
 
     tr {
@@ -138,6 +138,13 @@
           overflow: visible;
         }
       }
+    }
+  }
+
+  &.noData,
+  &.error {
+    .cds--data-table-container {
+      position: relative;
     }
   }
 
