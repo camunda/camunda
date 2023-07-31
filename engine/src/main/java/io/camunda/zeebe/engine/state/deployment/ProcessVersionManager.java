@@ -38,11 +38,17 @@ public final class ProcessVersionManager {
     versionCache = new Object2LongHashMap<>(initialValue);
   }
 
-  public void setProcessVersion(final String processId, final long value) {
+  public void addProcessVersion(final String processId, final long value) {
     processIdKey.wrapString(processId);
-    nextVersion.setHighestVersion(value);
-    nextValueColumnFamily.upsert(processIdKey, nextVersion);
-    versionCache.put(processId, value);
+
+    var versionInfo = nextValueColumnFamily.get(processIdKey);
+    if (versionInfo == null) {
+      versionInfo = new NextValue();
+    }
+
+    versionInfo.addKnownVersion(value);
+    nextValueColumnFamily.upsert(processIdKey, versionInfo);
+    versionCache.put(processId, versionInfo.getLatestVersion());
   }
 
   public long getCurrentProcessVersion(final String processId) {

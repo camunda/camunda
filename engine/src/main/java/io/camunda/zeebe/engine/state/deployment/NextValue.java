@@ -58,6 +58,7 @@ public final class NextValue extends UnpackedObject implements DbValue {
 
   public void addKnownVersion(final long version) {
     knownVersions.add().setValue(version);
+    setHighestVersion(version);
   }
 
   public void removeKnownVersion(final long version) {

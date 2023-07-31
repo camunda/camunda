@@ -189,7 +189,7 @@ public final class DbProcessState implements MutableProcessState {
     final var nextVersion = processRecord.getVersion();
 
     if (nextVersion > currentVersion) {
-      versionManager.setProcessVersion(bpmnProcessId, nextVersion);
+      versionManager.addProcessVersion(bpmnProcessId, nextVersion);
     }
   }
 
