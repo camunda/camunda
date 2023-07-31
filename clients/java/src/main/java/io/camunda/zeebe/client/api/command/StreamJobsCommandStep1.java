@@ -46,7 +46,9 @@ public interface StreamJobsCommandStep1 {
     StreamJobsCommandStep3 consumer(final Consumer<ActivatedJob> consumer);
   }
 
-  interface StreamJobsCommandStep3 extends FinalCommandStep<StreamJobsResponse> {
+  interface StreamJobsCommandStep3
+      extends CommandWithOneOrMoreTenantsStep<StreamJobsCommandStep3>,
+          FinalCommandStep<StreamJobsResponse> {
     /**
      * Set the time for how long a job is exclusively assigned for this subscription.
      *

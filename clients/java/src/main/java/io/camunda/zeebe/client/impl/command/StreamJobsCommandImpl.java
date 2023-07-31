@@ -131,6 +131,23 @@ public final class StreamJobsCommandImpl
     return fetchVariables(Arrays.asList(fetchVariables));
   }
 
+  @Override
+  public StreamJobsCommandStep3 tenantId(final String tenantId) {
+    // todo(#13560): replace dummy implementation
+    return this;
+  }
+
+  @Override
+  public StreamJobsCommandStep3 tenantIds(final List<String> tenantIds) {
+    // todo(#13560): replace dummy implementation
+    return this;
+  }
+
+  @Override
+  public StreamJobsCommandStep3 tenantIds(final String... tenantIds) {
+    return tenantIds(Arrays.asList(tenantIds));
+  }
+
   private void consumeJob(final GatewayOuterClass.ActivatedJob job) {
     final ActivatedJobImpl mappedJob = new ActivatedJobImpl(jsonMapper, job);
     consumer.accept(mappedJob);
