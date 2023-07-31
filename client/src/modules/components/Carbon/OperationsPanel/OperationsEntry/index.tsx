@@ -50,7 +50,7 @@ const OperationsEntry: React.FC<Props> = ({operation}) => {
   const label = TYPE_LABELS[type];
 
   return (
-    <Container isRunning={!isComplete} data-testid="operations-entry">
+    <Container data-testid="operations-entry">
       <Header>
         <Title>
           {label}

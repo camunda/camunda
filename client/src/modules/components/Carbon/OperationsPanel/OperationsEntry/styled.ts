@@ -5,7 +5,7 @@
  * except in compliance with the proprietary license.
  */
 
-import styled, {css} from 'styled-components';
+import styled from 'styled-components';
 import {styles} from '@carbon/elements';
 import {ProgressBar as BaseProgressBar} from '@carbon/react';
 
@@ -14,18 +14,9 @@ type Props = {
 };
 
 const Container = styled.li<Props>`
-  ${({isRunning}) => {
-    return css`
-      padding: var(--cds-spacing-05);
-      ${styles.bodyCompact01};
-      border-bottom: 1px solid var(--cds-border-subtle-01);
-
-      ${isRunning &&
-      css`
-        background-color: var(--cds-layer-hover-01);
-      `}
-    `;
-  }}
+  padding: var(--cds-spacing-05);
+  ${styles.bodyCompact01};
+  border-bottom: 1px solid var(--cds-border-subtle-01);
 `;
 
 const Header = styled.header`
