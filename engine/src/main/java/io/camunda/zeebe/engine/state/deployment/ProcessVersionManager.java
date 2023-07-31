@@ -40,7 +40,7 @@ public final class ProcessVersionManager {
 
   public void setProcessVersion(final String processId, final long value) {
     processIdKey.wrapString(processId);
-    nextVersion.set(value);
+    nextVersion.setHighestVersion(value);
     nextValueColumnFamily.upsert(processIdKey, nextVersion);
     versionCache.put(processId, value);
   }
@@ -65,7 +65,7 @@ public final class ProcessVersionManager {
 
     long currentValue = initialValue;
     if (readValue != null) {
-      currentValue = readValue.get();
+      currentValue = readValue.getHighestVersion();
     }
     return currentValue;
   }

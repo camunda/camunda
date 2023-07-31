@@ -9,20 +9,64 @@ package io.camunda.zeebe.engine.state.deployment;
 
 import io.camunda.zeebe.db.DbValue;
 import io.camunda.zeebe.msgpack.UnpackedObject;
+import io.camunda.zeebe.msgpack.property.ArrayProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
+import io.camunda.zeebe.msgpack.value.LongValue;
+import java.util.List;
+import java.util.stream.StreamSupport;
 
 public final class NextValue extends UnpackedObject implements DbValue {
   private final LongProperty nextValueProp = new LongProperty("nextValue", -1L);
+  private final ArrayProperty<LongValue> knownVersions =
+      new ArrayProperty<>("knownVersions", new LongValue());
 
   public NextValue() {
-    declareProperty(nextValueProp);
+    declareProperty(nextValueProp).declareProperty(knownVersions);
   }
 
-  public void set(final long value) {
-    nextValueProp.setValue(value);
-  }
-
-  public long get() {
+  /**
+   * Gets the highest version of a process. This is the highest version we've ever known. There is
+   * no guarantee that a process with this version still exists in the state. It could've been
+   * deleted. We need to track this version so we don't ever reuse version numbers after a process
+   * has been deleted.
+   *
+   * @return the highest version we've ever known for this process
+   */
+  public long getHighestVersion() {
     return nextValueProp.getValue();
+  }
+
+  /**
+   * Sets the highest version of a process. This is the highest version we've ever known.
+   *
+   * @param version the version of the process
+   */
+  public void setHighestVersion(final long version) {
+    if (version > nextValueProp.getValue()) {
+      nextValueProp.setValue(version);
+    }
+  }
+
+  public Long getLatestVersion() {
+    final List<Long> knownVersions =
+        StreamSupport.stream(this.knownVersions.spliterator(), false)
+            .map(LongValue::getValue)
+            .sorted()
+            .toList();
+    return knownVersions.get(knownVersions.size() - 1);
+  }
+
+  public void addKnownVersion(final long version) {
+    knownVersions.add().setValue(version);
+  }
+
+  public void removeKnownVersion(final long version) {
+    final var iterator = knownVersions.iterator();
+    while (iterator.hasNext()) {
+      if (iterator.next().getValue() == version) {
+        iterator.remove();
+        break;
+      }
+    }
   }
 }
