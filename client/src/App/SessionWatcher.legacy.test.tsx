@@ -11,20 +11,21 @@ import {Link, MemoryRouter} from 'react-router-dom';
 import {SessionWatcher} from './SessionWatcher';
 import {useEffect} from 'react';
 import {act} from 'react-dom/test-utils';
-import {Paths} from 'modules/Routes';
-import {notificationsStore} from 'modules/stores/carbonNotifications';
+import {LegacyPaths} from 'modules/legacyRoutes';
 
-jest.mock('modules/stores/carbonNotifications', () => {
-  const hideNotificationMock = jest.fn();
-  return {
-    notificationsStore: {
-      hideNotification: hideNotificationMock,
-      displayNotification: jest.fn(() => hideNotificationMock),
-    },
-  };
-});
+const mockRemoveNotification = jest.fn();
+const mockDisplayNotification = jest.fn(() => ({
+  remove: mockRemoveNotification,
+}));
+jest.mock('modules/notifications', () => ({
+  useNotifications: () => {
+    return {
+      displayNotification: mockDisplayNotification,
+    };
+  },
+}));
 
-function getWrapper(initialEntries = [Paths.dashboard()]) {
+function getWrapper(initialEntries = [LegacyPaths.dashboard()]) {
   const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
     useEffect(() => {
       return authenticationStore.reset;
@@ -32,7 +33,7 @@ function getWrapper(initialEntries = [Paths.dashboard()]) {
     return (
       <MemoryRouter initialEntries={initialEntries}>
         {children}
-        <Link to="/other-route">get out</Link>
+        <Link to="/legacy/other-route">get out</Link>
       </MemoryRouter>
     );
   };
@@ -41,9 +42,14 @@ function getWrapper(initialEntries = [Paths.dashboard()]) {
 }
 
 describe('<SessionWatcher />', () => {
+  afterEach(() => {
+    mockDisplayNotification.mockReset();
+    mockRemoveNotification.mockReset();
+  });
+
   it('should remove a notification', async () => {
     render(<SessionWatcher />, {
-      wrapper: getWrapper(['/foo']),
+      wrapper: getWrapper(['/legacy/foo']),
     });
 
     act(() => {
@@ -63,10 +69,8 @@ describe('<SessionWatcher />', () => {
     });
 
     await waitFor(() =>
-      expect(notificationsStore.displayNotification).toHaveBeenCalledWith({
-        isDismissable: true,
-        kind: 'info',
-        title: 'Session expired',
+      expect(mockDisplayNotification).toHaveBeenCalledWith('info', {
+        headline: 'Session expired',
       }),
     );
 
@@ -82,9 +86,7 @@ describe('<SessionWatcher />', () => {
       });
     });
 
-    await waitFor(() =>
-      expect(notificationsStore.hideNotification).toHaveBeenCalled(),
-    );
+    await waitFor(() => expect(mockRemoveNotification).toHaveBeenCalled());
   });
 
   it('should show a notification', async () => {
@@ -109,17 +111,15 @@ describe('<SessionWatcher />', () => {
     });
 
     await waitFor(() =>
-      expect(notificationsStore.displayNotification).toHaveBeenCalledWith({
-        isDismissable: true,
-        kind: 'info',
-        title: 'Session expired',
+      expect(mockDisplayNotification).toHaveBeenCalledWith('info', {
+        headline: 'Session expired',
       }),
     );
   });
 
   it('should not show a notification', async () => {
     const {user} = render(<SessionWatcher />, {
-      wrapper: getWrapper(['/login']),
+      wrapper: getWrapper(['/legacy/login']),
     });
 
     act(() => {
@@ -138,23 +138,16 @@ describe('<SessionWatcher />', () => {
       authenticationStore.expireSession();
     });
 
-    expect(notificationsStore.displayNotification).not.toHaveBeenCalledWith({
-      isDismissable: true,
-      kind: 'info',
-      title: 'Session expired',
+    expect(mockDisplayNotification).not.toHaveBeenCalledWith('info', {
+      headline: 'Session expired',
     });
 
     await user.click(screen.getByText(/get out/i));
 
     await waitFor(() =>
-      expect(notificationsStore.displayNotification).toHaveBeenNthCalledWith(
-        1,
-        {
-          isDismissable: true,
-          kind: 'info',
-          title: 'Session expired',
-        },
-      ),
+      expect(mockDisplayNotification).toHaveBeenNthCalledWith(1, 'info', {
+        headline: 'Session expired',
+      }),
     );
   });
 });

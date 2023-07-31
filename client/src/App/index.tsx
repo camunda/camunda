@@ -13,21 +13,22 @@ import {
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {NotificationProvider} from 'modules/notifications';
 import {Notifications} from 'modules/carbonNotifications';
-import {Login} from './Login';
-import {Dashboard} from './Dashboard';
-import {Processes} from './Processes';
-import {ProcessInstance} from './ProcessInstance';
-import {Decisions} from './Decisions';
-import {DecisionInstance} from './DecisionInstance';
+import {Login as CarbonLogin} from './Carbon/Login';
+import {Dashboard as CarbonDashboard} from './Carbon/Dashboard';
+import {Processes as CarbonProcesses} from './Carbon/Processes';
+import {ProcessInstance as CarbonProcessInstance} from './Carbon/ProcessInstance';
+import {Decisions as CarbonDecisions} from './Carbon/Decisions';
+import {DecisionInstance as CarbonDecisionInstance} from './Carbon/DecisionInstance';
 import GlobalStyles from './GlobalStyles';
 import {NetworkStatusWatcher} from './NetworkStatusWatcher';
+import {LegacyNetworkStatusWatcher} from './LegacyNetworkStatusWatcher';
 import {CommonUiContext} from 'modules/CommonUiContext';
 import {LegacyPaths} from 'modules/legacyRoutes';
 import {Paths} from 'modules/Routes';
 import {RedirectDeprecatedRoutes} from './RedirectDeprecatedRoutes';
 import {AuthenticationCheck} from './AuthenticationCheck';
 import {SessionWatcher} from './SessionWatcher';
-import {Layout} from './Layout';
+import {Layout as CarbonLayout} from './Carbon/Layout';
 import {TrackPagination} from 'modules/tracking/TrackPagination';
 import {useEffect} from 'react';
 import {tracking} from 'modules/tracking';
@@ -36,39 +37,33 @@ import {createBrowserHistory} from 'history';
 import {ThemeSwitcher} from 'modules/components/ThemeSwitcher';
 import loadable from '@loadable/component';
 
-const CarbonLogin = loadable(() => import('./Carbon/Login'), {
+const Login = loadable(() => import('./Login'), {
   resolveComponent: (components) => components.Login,
 });
 
-const CarbonLayout = loadable(() => import('./Carbon/Layout/index'), {
+const Layout = loadable(() => import('./Layout/index'), {
   resolveComponent: (components) => components.Layout,
 });
 
-const CarbonDashboard = loadable(() => import('./Carbon/Dashboard/index'), {
+const Dashboard = loadable(() => import('./Dashboard/index'), {
   resolveComponent: (components) => components.Dashboard,
 });
 
-const CarbonDecisions = loadable(() => import('./Carbon/Decisions/index'), {
+const Decisions = loadable(() => import('./Decisions/index'), {
   resolveComponent: (components) => components.Decisions,
 });
 
-const CarbonProcesses = loadable(() => import('./Carbon/Processes/index'), {
+const Processes = loadable(() => import('./Processes/index'), {
   resolveComponent: (components) => components.Processes,
 });
 
-const CarbonProcessInstance = loadable(
-  () => import('./Carbon/ProcessInstance/index'),
-  {
-    resolveComponent: (components) => components.ProcessInstance,
-  },
-);
+const ProcessInstance = loadable(() => import('./ProcessInstance/index'), {
+  resolveComponent: (components) => components.ProcessInstance,
+});
 
-const CarbonDecisionInstance = loadable(
-  () => import('./Carbon/DecisionInstance/index'),
-  {
-    resolveComponent: (components) => components.DecisionInstance,
-  },
-);
+const DecisionInstance = loadable(() => import('./DecisionInstance/index'), {
+  resolveComponent: (components) => components.DecisionInstance,
+});
 
 const App: React.FC = () => {
   useEffect(() => {
@@ -83,7 +78,11 @@ const App: React.FC = () => {
       <ThemeSwitcher />
       <Notifications />
       <NotificationProvider>
-        <NetworkStatusWatcher />
+        {window.location.pathname.includes('legacy') ? (
+          <LegacyNetworkStatusWatcher />
+        ) : (
+          <NetworkStatusWatcher />
+        )}
         <CommonUiContext />
         <HistoryRouter
           history={createBrowserHistory({window})}

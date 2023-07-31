@@ -5,24 +5,21 @@
  * except in compliance with the proprietary license.
  */
 
-import React, {useEffect, useRef, useState} from 'react';
+import React, {useEffect, useState} from 'react';
 import {Notification, useNotifications} from 'modules/notifications';
-import {notificationsStore} from 'modules/stores/carbonNotifications';
 
-const NetworkStatusWatcher: React.FC = () => {
+const LegacyNetworkStatusWatcher: React.FC = () => {
   const {displayNotification} = useNotifications();
-  const [notification] = useState<Notification | undefined>();
-  const notificationRef = useRef<{remove: () => void} | null>(null);
+  const [notification, setNotification] = useState<Notification | undefined>();
 
   useEffect(() => {
     async function handleDisconnection() {
-      notificationRef.current = {
-        remove: notificationsStore.displayNotification({
-          kind: 'info',
-          title: 'Internet connection lost',
+      setNotification(
+        await displayNotification('info', {
+          headline: 'Internet connection lost',
           isDismissable: false,
         }),
-      };
+      );
     }
 
     if (!window.navigator.onLine) {
@@ -38,7 +35,7 @@ const NetworkStatusWatcher: React.FC = () => {
 
   useEffect(() => {
     function handleReconnection() {
-      notificationRef.current?.remove();
+      notification?.remove();
     }
 
     window.addEventListener('online', handleReconnection);
@@ -51,4 +48,4 @@ const NetworkStatusWatcher: React.FC = () => {
   return null;
 };
 
-export {NetworkStatusWatcher};
+export {LegacyNetworkStatusWatcher};

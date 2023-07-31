@@ -54,7 +54,9 @@ class Notifications {
     if (this.notifications.length >= MAX_VISIBLE_NOTIFICATIONS) {
       this.#enqueueNotification(newNotification);
     } else {
-      this.#addAutoRemovalInterval(newNotification);
+      if (newNotification.isDismissable) {
+        this.#addAutoRemovalInterval(newNotification);
+      }
       this.notifications.unshift(newNotification);
     }
 
