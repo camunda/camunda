@@ -21,18 +21,27 @@ import io.camunda.zeebe.snapshots.PersistedSnapshot;
 import io.camunda.zeebe.snapshots.PersistedSnapshotListener;
 import io.camunda.zeebe.snapshots.ReceivableSnapshotStore;
 import io.camunda.zeebe.snapshots.ReceivedSnapshot;
+import io.camunda.zeebe.snapshots.SnapshotId;
 import java.nio.file.Path;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map.Entry;
+import java.util.NavigableMap;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicReference;
 
 public class TestSnapshotStore implements ReceivableSnapshotStore {
 
   final AtomicReference<InMemorySnapshot> currentPersistedSnapshot;
+  final NavigableMap<SnapshotId, InMemorySnapshot> persistedSnapshots =
+      new ConcurrentSkipListMap<>();
   final List<InMemorySnapshot> receivedSnapshots = new CopyOnWriteArrayList<>();
   final List<PersistedSnapshotListener> listeners = new CopyOnWriteArrayList<>();
+
   private Runnable interceptorOnNewSnapshot = () -> {};
 
   public TestSnapshotStore(final AtomicReference<InMemorySnapshot> persistedSnapshotRef) {
@@ -52,7 +61,16 @@ public class TestSnapshotStore implements ReceivableSnapshotStore {
 
   @Override
   public ActorFuture<Set<PersistedSnapshot>> getAvailableSnapshots() {
-    return null;
+    return CompletableActorFuture.completed(new HashSet<>(persistedSnapshots.values()));
+  }
+
+  @Override
+  public ActorFuture<Long> getCompactionBound() {
+    return CompletableActorFuture.completed(
+        Optional.ofNullable(persistedSnapshots.firstEntry())
+            .map(Entry::getValue)
+            .map(InMemorySnapshot::getCompactionBound)
+            .orElse(0L));
   }
 
   @Override
@@ -85,6 +103,7 @@ public class TestSnapshotStore implements ReceivableSnapshotStore {
   public ActorFuture<Void> delete() {
     currentPersistedSnapshot.set(null);
     receivedSnapshots.clear();
+    persistedSnapshots.clear();
     return null;
   }
 
@@ -112,6 +131,16 @@ public class TestSnapshotStore implements ReceivableSnapshotStore {
   public void newSnapshot(final InMemorySnapshot persistedSnapshot) {
     interceptorOnNewSnapshot.run();
     currentPersistedSnapshot.set(persistedSnapshot);
+
+    final var olderSnapshots =
+        new HashMap<>(persistedSnapshots.headMap(persistedSnapshot.snapshotId(), false));
+    for (final var snapshot : olderSnapshots.entrySet()) {
+      if (!snapshot.getValue().isReserved()) {
+        persistedSnapshots.remove(snapshot.getKey());
+      }
+    }
+
+    persistedSnapshots.put(persistedSnapshot.snapshotId(), persistedSnapshot);
     listeners.forEach(l -> l.onNewSnapshot(persistedSnapshot));
   }
 

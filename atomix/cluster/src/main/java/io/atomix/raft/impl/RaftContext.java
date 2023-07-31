@@ -201,7 +201,7 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
 
     // Open the snapshot store.
     persistedSnapshotStore = storage.getPersistedSnapshotStore();
-    persistedSnapshotStore.addSnapshotListener(this::setSnapshot);
+    persistedSnapshotStore.addSnapshotListener(this::onNewPersistedSnapshot);
     // Update the current snapshot because the listener only notifies when a new snapshot is
     // created.
     persistedSnapshotStore
@@ -249,8 +249,12 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
     return context;
   }
 
-  private void setSnapshot(final PersistedSnapshot persistedSnapshot) {
-    threadContext.execute(() -> currentSnapshot = persistedSnapshot);
+  private void onNewPersistedSnapshot(final PersistedSnapshot persistedSnapshot) {
+    threadContext.execute(
+        () -> {
+          currentSnapshot = persistedSnapshot;
+          logCompactor.compactFromSnapshots(persistedSnapshotStore, threadContext);
+        });
   }
 
   private void onUncaughtException(final Throwable error) {
