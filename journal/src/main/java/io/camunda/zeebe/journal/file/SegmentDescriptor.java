@@ -18,7 +18,6 @@ package io.camunda.zeebe.journal.file;
 
 import static com.google.common.base.Preconditions.checkArgument;
 
-import io.camunda.zeebe.journal.CorruptedJournalException;
 import io.camunda.zeebe.journal.util.ChecksumGenerator;
 import java.nio.ByteBuffer;
 import java.util.Objects;
@@ -46,163 +45,53 @@ import org.slf4j.LoggerFactory;
  * segment.
  */
 final class SegmentDescriptor {
-  private static final Logger LOG = LoggerFactory.getLogger(SegmentDescriptor.class);
-  private static final int VERSION_LENGTH = Byte.BYTES;
   // current descriptor version containing: header, metadata, header and descriptor. descriptor
-  // contains lastIndex and lastPosition. Version 2 does not contain lastIndex and lastPosition.
-  private static final byte CUR_VERSION = 3;
-  // previous descriptor version containing: header and descriptor
-  private static final byte NO_META_VERSION = 1;
-  // the combined length for each version of the descriptor (starting at version 1)
-  // V1 - 29: version byte (1) + header (8) + descriptor (20)
-  private static final int[] VERSION_LENGTHS = {29, 45, getEncodingLength()};
+  // contains lastIndex and lastPosition. Version 2 with sbeSchemaVersion 1 does not contain
+  // lastIndex and lastPosition.
+  static final byte CUR_VERSION = 2;
+  // First version containing: header and descriptor. We remove support for VERSION 1 as this was
+  // introduced long ago.
+  static final byte META_VERSION = 2;
+  static final int VERSION_LENGTH = Byte.BYTES;
+  private static final Logger LOG = LoggerFactory.getLogger(SegmentDescriptor.class);
+  private final DescriptorMetadataEncoder metadataEncoder = new DescriptorMetadataEncoder();
+  private final SegmentDescriptorEncoder segmentDescriptorEncoder = new SegmentDescriptorEncoder();
+  private final MessageHeaderEncoder headerEncoder = new MessageHeaderEncoder();
+  private final ChecksumGenerator checksumGen = new ChecksumGenerator();
+  // version in the header. Increment this version if there is non-backward compatible changes in
+  // the serialization format.
+  private final byte version;
 
-  private byte version = CUR_VERSION;
-  private long id;
-  private long index;
-  private int maxSegmentSize;
+  // version of sbe schema. The version will be incremented if fields are added or removed from the
+  // sbe schema of descriptor. As long as these changes are backward compatible, there is no need to
+  // increment `CUR_VERSION`
+  private final int actingSchemaVersion;
+  private final long id;
+  private final long index;
+  private final int maxSegmentSize;
+  private final int encodedLength;
   // index of the last entry in this segment. Can be 0 if not set, even if an entry exists.
   private long lastIndex;
   // position of the last entry in this segment. Can be 0 if not set, even if an entry exists.
   private int lastPosition;
-  private int encodedLength;
-  private long checksum;
-  private final DescriptorMetadataEncoder metadataEncoder = new DescriptorMetadataEncoder();
-  private final DescriptorMetadataDecoder metadataDecoder = new DescriptorMetadataDecoder();
-  private final SegmentDescriptorDecoder segmentDescriptorDecoder = new SegmentDescriptorDecoder();
-  private final MessageHeaderDecoder headerDecoder = new MessageHeaderDecoder();
-  private final MutableDirectBuffer directBuffer = new UnsafeBuffer();
-  private final SegmentDescriptorEncoder segmentDescriptorEncoder = new SegmentDescriptorEncoder();
-  private final MessageHeaderEncoder headerEncoder = new MessageHeaderEncoder();
-  private final ChecksumGenerator checksumGen = new ChecksumGenerator();
 
-  SegmentDescriptor(final ByteBuffer buffer) {
-    directBuffer.wrap(buffer);
-
-    version = directBuffer.getByte(0);
-    if (version > NO_META_VERSION && version <= CUR_VERSION) {
-      readV2Descriptor(directBuffer);
-    } else if (version == NO_META_VERSION) {
-      readV1Descriptor(directBuffer);
-    } else {
-      throw new UnknownVersionException(
-          String.format(
-              "Expected version to be one [%d %d] but read %d instead.",
-              NO_META_VERSION, CUR_VERSION, version));
-    }
-  }
-
-  private SegmentDescriptor(final long id, final long index, final int maxSegmentSize) {
+  SegmentDescriptor(
+      final byte version,
+      final int actingSchemaVersion,
+      final long id,
+      final long index,
+      final int maxSegmentSize,
+      final long lastIndex,
+      final int lastPosition,
+      final int encodedLength) {
+    this.version = version;
+    this.actingSchemaVersion = actingSchemaVersion;
     this.id = id;
     this.index = index;
     this.maxSegmentSize = maxSegmentSize;
-    lastIndex = 0;
-    lastPosition = 0;
-    encodedLength = getEncodingLength();
-  }
-
-  /** Validates the header's schema and template ids before loading the descriptor's fields. */
-  private void readV1Descriptor(final MutableDirectBuffer buffer) {
-    validateHeader(
-        buffer,
-        VERSION_LENGTH,
-        segmentDescriptorDecoder.sbeSchemaId(),
-        segmentDescriptorDecoder.sbeTemplateId());
-
-    readDescriptor(buffer, VERSION_LENGTH);
-  }
-
-  /**
-   * Validates the headers' schema and template ids, as well as the metadata's checksum, before
-   * loading the descriptor's fields.
-   */
-  private void readV2Descriptor(final MutableDirectBuffer buffer) {
-    // validate metadata header
-    validateHeader(
-        buffer, VERSION_LENGTH, metadataDecoder.sbeSchemaId(), metadataDecoder.sbeTemplateId());
-    final int descHeaderOffset = readChecksum(buffer, VERSION_LENGTH);
-
-    // validate descriptor header
-    validateHeader(
-        buffer,
-        descHeaderOffset,
-        segmentDescriptorDecoder.sbeSchemaId(),
-        segmentDescriptorDecoder.sbeTemplateId());
-    final int totalLength = readDescriptor(buffer, descHeaderOffset);
-
-    // length of the header + descriptor
-    final int descriptorLength = totalLength - descHeaderOffset;
-    validateChecksum(buffer, descHeaderOffset, descriptorLength);
-  }
-
-  private void validateChecksum(
-      final MutableDirectBuffer buffer, final int descHeaderOffset, final int descriptorLength) {
-    final ByteBuffer slice = ByteBuffer.allocate(descriptorLength);
-    buffer.getBytes(descHeaderOffset, slice, descriptorLength);
-    final long computedChecksum = checksumGen.compute(slice, 0, descriptorLength);
-
-    if (computedChecksum != checksum) {
-      throw new CorruptedJournalException(
-          "Descriptor doesn't match checksum (possibly due to corruption).");
-    }
-  }
-
-  /**
-   * Loads the descriptor's fields.
-   *
-   * @param offset offset where the descriptor's header starts
-   * @return offset after reading the descriptor
-   */
-  private int readDescriptor(final MutableDirectBuffer buffer, final int offset) {
-    headerDecoder.wrap(buffer, offset);
-    segmentDescriptorDecoder.wrap(
-        directBuffer,
-        offset + headerDecoder.encodedLength(),
-        headerDecoder.blockLength(),
-        headerDecoder.version());
-
-    id = segmentDescriptorDecoder.id();
-    index = segmentDescriptorDecoder.index();
-    maxSegmentSize = segmentDescriptorDecoder.maxSegmentSize();
-    lastIndex = Math.max(0, segmentDescriptorDecoder.lastIndex());
-    lastPosition = Math.max(0, (int) segmentDescriptorDecoder.lastPosition());
-    encodedLength =
-        offset + headerDecoder.encodedLength() + segmentDescriptorDecoder.encodedLength();
-
-    return encodedLength;
-  }
-
-  /**
-   * Loads the metadata's checksum field.
-   *
-   * @return offset after the metadata
-   */
-  private int readChecksum(final MutableDirectBuffer buffer, final int offset) {
-    headerDecoder.wrap(buffer, offset);
-    metadataDecoder.wrap(
-        buffer,
-        offset + headerDecoder.encodedLength(),
-        headerDecoder.blockLength(),
-        headerDecoder.version());
-
-    checksum = metadataDecoder.checksum();
-    return offset + headerDecoder.encodedLength() + metadataDecoder.encodedLength();
-  }
-
-  /** Validate that the header's schema and template ids match the expected ones. */
-  private void validateHeader(
-      final MutableDirectBuffer buffer,
-      final int offset,
-      final int schemaId,
-      final int templateId) {
-    headerDecoder.wrap(buffer, offset);
-
-    if (headerDecoder.schemaId() != schemaId || headerDecoder.templateId() != templateId) {
-      throw new CorruptedJournalException(
-          String.format(
-              "Cannot read header. Read schema and template ids ('%d' and '%d') don't match expected '%d' and %d'.",
-              headerDecoder.schemaId(), headerDecoder.templateId(), schemaId, templateId));
-    }
+    this.lastIndex = lastIndex;
+    this.lastPosition = lastPosition;
+    this.encodedLength = encodedLength;
   }
 
   /**
@@ -225,18 +114,6 @@ final class SegmentDescriptor {
         + MessageHeaderEncoder.ENCODED_LENGTH * 2
         + DescriptorMetadataEncoder.BLOCK_LENGTH
         + SegmentDescriptorEncoder.BLOCK_LENGTH;
-  }
-
-  /** The number of bytes required to read and write a descriptor of a given version. */
-  static int getEncodingLengthForVersion(final byte version) {
-    if (version <= 0 || version > VERSION_LENGTHS.length) {
-      throw new UnknownVersionException(
-          String.format(
-              "Expected version byte to be one [%d %d] but got %d instead.",
-              NO_META_VERSION, CUR_VERSION, version));
-    }
-
-    return VERSION_LENGTHS[version - 1];
   }
 
   /**
@@ -286,6 +163,7 @@ final class SegmentDescriptor {
    * SegmentDescriptor#getEncodingLength()}
    */
   SegmentDescriptor copyTo(final ByteBuffer buffer) {
+    final MutableDirectBuffer directBuffer = new UnsafeBuffer();
     directBuffer.wrap(buffer);
     directBuffer.putByte(0, CUR_VERSION);
 
@@ -360,16 +238,19 @@ final class SegmentDescriptor {
   }
 
   void updateIfCurrentVersion(final ByteBuffer buffer) {
-    if (version >= CUR_VERSION) {
+    if (version >= CUR_VERSION
+        && actingSchemaVersion == segmentDescriptorEncoder.sbeSchemaVersion()) {
       copyTo(buffer);
     } else {
       // Do not overwrite the descriptor for older versions. The new version has a higher length and
       // will overwrite the first entry.
       LOG.trace(
-          "Segment descriptor version is {}, which is lower than current version {}."
+          "Segment descriptor version is {}, and sbe schema version is {}, which is different from current version {}, and current sbe schema version {}."
               + "Skipping update to the descriptor.",
           version,
-          CUR_VERSION);
+          actingSchemaVersion,
+          CUR_VERSION,
+          segmentDescriptorEncoder.sbeSchemaVersion());
     }
   }
 
@@ -426,7 +307,15 @@ final class SegmentDescriptor {
      * @return The built segment descriptor.
      */
     SegmentDescriptor build() {
-      return new SegmentDescriptor(id, index, maxSegmentSize);
+      return new SegmentDescriptor(
+          CUR_VERSION,
+          SegmentDescriptorEncoder.SCHEMA_VERSION,
+          id,
+          index,
+          maxSegmentSize,
+          0,
+          0,
+          getEncodingLength());
     }
   }
 }

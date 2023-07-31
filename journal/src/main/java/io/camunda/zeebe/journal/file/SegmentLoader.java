@@ -20,6 +20,7 @@ import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
+import org.agrona.IoUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -113,18 +114,24 @@ final class SegmentLoader {
 
   Segment loadExistingSegment(
       final Path segmentFile, final long lastWrittenAsqn, final JournalIndex journalIndex) {
-    final var descriptor = readDescriptor(segmentFile);
-    final MappedByteBuffer mappedSegment;
-
     try (final var channel =
         FileChannel.open(segmentFile, StandardOpenOption.READ, StandardOpenOption.WRITE)) {
-      mappedSegment = mapSegment(channel, descriptor.maxSegmentSize());
+      MappedByteBuffer mappedSegment;
+      final var initialMappedLength = Files.size(segmentFile);
+      mappedSegment = mapSegment(channel, initialMappedLength);
+      final var descriptor = readDescriptor(mappedSegment, segmentFile.getFileName().toString());
+
+      if (descriptor.maxSegmentSize() > initialMappedLength) {
+        // remap with actual size
+        IoUtil.unmap(mappedSegment);
+        mappedSegment = mapSegment(channel, descriptor.maxSegmentSize());
+      }
+
+      return loadSegment(segmentFile, mappedSegment, descriptor, lastWrittenAsqn, journalIndex);
     } catch (final IOException e) {
       throw new JournalException(
           String.format("Failed to load existing segment %s", segmentFile), e);
     }
-
-    return loadSegment(segmentFile, mappedSegment, descriptor, lastWrittenAsqn, journalIndex);
   }
 
   /* ---- Internal methods ------ */
@@ -146,32 +153,9 @@ final class SegmentLoader {
     return mappedSegment;
   }
 
-  private SegmentDescriptor readDescriptor(final Path file) {
-    final var fileName = file.getFileName().toString();
-
-    try (final FileChannel channel = FileChannel.open(file, StandardOpenOption.READ)) {
-      final var fileSize = Files.size(file);
-      final byte version = readVersion(channel, fileName);
-      final int length = SegmentDescriptor.getEncodingLengthForVersion(version);
-      if (fileSize < length) {
-        throw new CorruptedJournalException(
-            String.format(
-                "Expected segment '%s' with version %d to be at least %d bytes long but it only has %d.",
-                fileName, version, length, fileSize));
-      }
-
-      final ByteBuffer buffer = ByteBuffer.allocate(length);
-      final int readBytes = channel.read(buffer, 0);
-
-      if (readBytes != -1 && readBytes < length) {
-        throw new JournalException(
-            String.format(
-                "Expected to read %d bytes of segment '%s' with %d version but only read %d bytes.",
-                length, fileName, version, readBytes));
-      }
-
-      buffer.flip();
-      return new SegmentDescriptor(buffer);
+  private SegmentDescriptor readDescriptor(final ByteBuffer buffer, final String fileName) {
+    try {
+      return new SegmentDescriptorReader().readFrom(buffer);
     } catch (final IndexOutOfBoundsException e) {
       throw new JournalException(
           String.format(
@@ -180,28 +164,7 @@ final class SegmentLoader {
     } catch (final UnknownVersionException e) {
       throw new CorruptedJournalException(
           String.format("Couldn't read or recognize version of segment '%s'.", fileName), e);
-    } catch (final IOException e) {
-      throw new JournalException(e);
     }
-  }
-
-  private byte readVersion(final FileChannel channel, final String fileName) throws IOException {
-    final ByteBuffer buffer = ByteBuffer.allocate(1);
-    final int readBytes = channel.read(buffer);
-
-    if (readBytes == 0) {
-      throw new JournalException(
-          String.format(
-              "Expected to read the version byte from segment '%s' but nothing was read.",
-              fileName));
-    } else if (readBytes == -1) {
-      throw new CorruptedJournalException(
-          String.format(
-              "Expected to read the version byte from segment '%s' but got EOF instead.",
-              fileName));
-    }
-
-    return buffer.get(0);
   }
 
   private MappedByteBuffer mapNewSegment(final Path segmentPath, final SegmentDescriptor descriptor)

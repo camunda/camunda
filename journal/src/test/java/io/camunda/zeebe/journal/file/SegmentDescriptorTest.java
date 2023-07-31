@@ -22,7 +22,6 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import io.camunda.zeebe.journal.CorruptedJournalException;
 import io.camunda.zeebe.journal.util.ChecksumGenerator;
 import java.nio.ByteBuffer;
-import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -41,7 +40,7 @@ class SegmentDescriptorTest {
     descriptor.copyTo(buffer);
 
     // when
-    final SegmentDescriptor descriptorRead = new SegmentDescriptor(buffer);
+    final SegmentDescriptor descriptorRead = readDescriptor(buffer);
 
     // then
     assertThat(descriptorRead).isEqualTo(descriptor);
@@ -61,32 +60,7 @@ class SegmentDescriptorTest {
     buffer.put(0, (byte) invalidVersion);
 
     // when/then
-    assertThatThrownBy(() -> new SegmentDescriptor(buffer))
-        .isInstanceOf(UnknownVersionException.class);
-  }
-
-  @Test
-  void shouldReadV1Message() {
-    // given
-    final ByteBuffer buffer = ByteBuffer.allocate(SegmentDescriptor.getEncodingLength());
-    final MutableDirectBuffer directBuffer = new UnsafeBuffer(buffer);
-    final MessageHeaderEncoder headerEncoder = new MessageHeaderEncoder();
-    final SegmentDescriptorEncoder descriptorEncoder = new SegmentDescriptorEncoder();
-
-    directBuffer.putByte(0, (byte) 1);
-    descriptorEncoder
-        .wrapAndApplyHeader(directBuffer, 1, headerEncoder)
-        .id(123)
-        .index(456)
-        .maxSegmentSize(789);
-
-    // when
-    final SegmentDescriptor descriptor = new SegmentDescriptor(buffer);
-
-    // then
-    assertThat(descriptor.id()).isEqualTo(123);
-    assertThat(descriptor.index()).isEqualTo(456);
-    assertThat(descriptor.maxSegmentSize()).isEqualTo(789);
+    assertThatThrownBy(() -> readDescriptor(buffer)).isInstanceOf(UnknownVersionException.class);
   }
 
   @Test
@@ -102,12 +76,11 @@ class SegmentDescriptorTest {
     buffer.put(buffer.capacity() - 1, corruptByte);
 
     // then
-    assertThatThrownBy(() -> new SegmentDescriptor(buffer))
-        .isInstanceOf(CorruptedJournalException.class);
+    assertThatThrownBy(() -> readDescriptor(buffer)).isInstanceOf(CorruptedJournalException.class);
   }
 
   @Test
-  void shouldReadV2Message() {
+  void shouldReadV2WithSbeVersion1Message() {
     // given
     final SegmentDescriptor descriptor =
         SegmentDescriptor.builder().withId(2).withIndex(100).withMaxSegmentSize(1024).build();
@@ -118,7 +91,7 @@ class SegmentDescriptorTest {
     writeDescriptorV2(descriptor, directBuffer, buffer);
 
     // when
-    final SegmentDescriptor descriptorRead = new SegmentDescriptor(buffer);
+    final SegmentDescriptor descriptorRead = readDescriptor(buffer);
 
     // then
     assertThat(descriptorRead).isEqualTo(descriptor);
@@ -127,12 +100,10 @@ class SegmentDescriptorTest {
     assertThat(descriptorRead.maxSegmentSize()).isEqualTo(1024);
     assertThat(descriptorRead.lastIndex()).isZero();
     assertThat(descriptorRead.lastPosition()).isZero();
-    assertThat(descriptorRead.length())
-        .isEqualTo(SegmentDescriptor.getEncodingLengthForVersion((byte) (2)));
   }
 
   @Test
-  void shouldNotOverwriteV2Descriptor() {
+  void shouldNotOverwriteV2WithSbeVersion1Descriptor() {
     // given
     final SegmentDescriptor descriptor =
         SegmentDescriptor.builder().withId(2).withIndex(100).withMaxSegmentSize(1024).build();
@@ -143,22 +114,24 @@ class SegmentDescriptorTest {
     writeDescriptorV2(descriptor, directBuffer, buffer);
 
     // when
-    final SegmentDescriptor descriptorToUpdate = new SegmentDescriptor(buffer);
+    final SegmentDescriptor descriptorToUpdate = readDescriptor(buffer);
     descriptorToUpdate.setLastIndex(100);
     descriptorToUpdate.setLastPosition(100);
     descriptorToUpdate.updateIfCurrentVersion(buffer);
 
-    final SegmentDescriptor descriptorRead = new SegmentDescriptor(buffer);
+    final SegmentDescriptor descriptorRead = readDescriptor(buffer);
 
     // then
     assertThat(descriptorRead).isEqualTo(descriptor);
     assertThat(descriptorRead.id()).isEqualTo(2);
     assertThat(descriptorRead.index()).isEqualTo(100);
     assertThat(descriptorRead.maxSegmentSize()).isEqualTo(1024);
-    assertThat(descriptorRead.length())
-        .isEqualTo(SegmentDescriptor.getEncodingLengthForVersion((byte) (2)));
     assertThat(descriptorRead.lastIndex()).isZero();
     assertThat(descriptorRead.lastPosition()).isZero();
+  }
+
+  private SegmentDescriptor readDescriptor(final ByteBuffer buffer) {
+    return new SegmentDescriptorReader().readFrom(buffer);
   }
 
   private void writeDescriptorV2(
