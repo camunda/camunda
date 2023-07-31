@@ -104,6 +104,64 @@ public final class ProcessStateTest {
   }
 
   @Test
+  public void shouldGetInitialNextProcessVersion() {
+    // given
+
+    // when
+    final long nextProcessVersion = processState.getNextProcessVersion("foo");
+
+    // then
+    assertThat(nextProcessVersion).isEqualTo(1L);
+  }
+
+  @Test
+  public void shouldGetNextProcessVersion() {
+    // given
+    final var processRecord = creatingProcessRecord(processingState);
+    processState.putProcess(processRecord.getKey(), processRecord);
+
+    // when
+    final long processVersion = processState.getNextProcessVersion("processId");
+
+    // then
+    assertThat(processVersion).isEqualTo(2L);
+  }
+
+  @Test
+  public void shouldIncrementNextProcessVersion() {
+    // given
+    final var processRecord = creatingProcessRecord(processingState);
+    processState.putProcess(processRecord.getKey(), processRecord);
+
+    final var processRecord2 = creatingProcessRecord(processingState);
+    processState.putProcess(processRecord2.getKey(), processRecord2);
+
+    // when
+    processState.putProcess(processRecord2.getKey(), processRecord2);
+
+    // then
+    final long processVersion = processState.getNextProcessVersion("processId");
+    assertThat(processVersion).isEqualTo(3L);
+  }
+
+  @Test
+  public void shouldNotIncrementNextProcessVersionForDifferentProcessId() {
+    // given
+    final var processRecord = creatingProcessRecord(processingState);
+    processState.putProcess(processRecord.getKey(), processRecord);
+    final var processRecord2 = creatingProcessRecord(processingState, "other");
+
+    // when
+    processState.putProcess(processRecord2.getKey(), processRecord2);
+
+    // then
+    final long processVersion = processState.getNextProcessVersion("processId");
+    assertThat(processVersion).isEqualTo(2L);
+    final long otherversion = processState.getNextProcessVersion("other");
+    assertThat(otherversion).isEqualTo(2L);
+  }
+
+  @Test
   public void shouldReturnNullOnGetLatest() {
     // given
 
@@ -548,6 +606,7 @@ public final class ProcessStateTest {
         .isNull();
     assertThat(processState.getLatestVersionDigest(BufferUtil.wrapString(processId))).isNull();
     assertThat(processState.getProcessVersion(processId)).isEqualTo(0);
+    assertThat(processState.getNextProcessVersion(processId)).isEqualTo(2);
   }
 
   @Test
@@ -584,6 +643,7 @@ public final class ProcessStateTest {
     assertThat(processState.getLatestVersionDigest(BufferUtil.wrapString(processId)))
         .isEqualTo(wrapString("newChecksum"));
     assertThat(processState.getProcessVersion(processId)).isEqualTo(2);
+    assertThat(processState.getNextProcessVersion(processId)).isEqualTo(3);
   }
 
   @Test
@@ -619,6 +679,7 @@ public final class ProcessStateTest {
         .isNull();
     assertThat(processState.getLatestVersionDigest(BufferUtil.wrapString(processId))).isNull();
     assertThat(processState.getProcessVersion(processId)).isEqualTo(1);
+    assertThat(processState.getNextProcessVersion(processId)).isEqualTo(3);
   }
 
   @Test
@@ -662,6 +723,7 @@ public final class ProcessStateTest {
         .isNull();
     assertThat(processState.getLatestVersionDigest(BufferUtil.wrapString(processId))).isNull();
     assertThat(processState.getProcessVersion(processId)).isEqualTo(1);
+    assertThat(processState.getNextProcessVersion(processId)).isEqualTo(4);
   }
 
   public static DeploymentRecord creatingDeploymentRecord(
