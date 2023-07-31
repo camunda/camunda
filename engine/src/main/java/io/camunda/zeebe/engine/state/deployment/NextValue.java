@@ -53,6 +53,11 @@ public final class NextValue extends UnpackedObject implements DbValue {
             .map(LongValue::getValue)
             .sorted()
             .toList();
+
+    if (knownVersions.isEmpty()) {
+      return 0L;
+    }
+
     return knownVersions.get(knownVersions.size() - 1);
   }
 
