@@ -19,7 +19,7 @@ import java.util.Collections;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-@Component
+@Component(value = "jobStreamService")
 final class GatewayJobStreamService implements JobStreamEndpoint.Service {
   private final SpringGatewayBridge bridge;
 

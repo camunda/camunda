@@ -13,6 +13,7 @@ import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.transport.stream.api.ClientStream;
 import io.camunda.zeebe.transport.stream.api.ClientStreamConsumer;
 import io.camunda.zeebe.util.buffer.BufferWriter;
+import java.util.Set;
 import org.agrona.DirectBuffer;
 
 /** Represents a registered client stream. * */
@@ -35,7 +36,7 @@ record ClientStreamImpl<M extends BufferWriter>(
   }
 
   @Override
-  public boolean isConnected(final MemberId memberId) {
-    return serverStream().isConnected(memberId);
+  public Set<MemberId> liveConnections() {
+    return serverStream().liveConnections();
   }
 }

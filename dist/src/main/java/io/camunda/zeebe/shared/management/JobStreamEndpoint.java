@@ -7,14 +7,10 @@
  */
 package io.camunda.zeebe.shared.management;
 
-import io.atomix.cluster.AtomixCluster;
-import io.atomix.cluster.ClusterMembershipService;
-import io.atomix.cluster.Member;
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.protocol.impl.stream.job.JobActivationProperties;
 import io.camunda.zeebe.transport.stream.api.ClientStream;
 import io.camunda.zeebe.transport.stream.api.RemoteStreamInfo;
-import io.camunda.zeebe.util.VisibleForTesting;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.time.Duration;
 import java.util.Collection;
@@ -45,18 +41,10 @@ public final class JobStreamEndpoint {
   private static final Set<String> TYPES = Set.of("remote", "client");
 
   private final Service service;
-  private final ClusterMembershipService membershipService;
 
   @Autowired
-  public JobStreamEndpoint(final Service service, final AtomixCluster cluster) {
-    this(service, cluster.getMembershipService());
-  }
-
-  @VisibleForTesting
-  JobStreamEndpoint(final Service service, final ClusterMembershipService membershipService) {
+  public JobStreamEndpoint(final Service service) {
     this.service = Objects.requireNonNull(service, "must specify a job stream service");
-    this.membershipService =
-        Objects.requireNonNull(membershipService, "must specify a membership service");
   }
 
   /**
@@ -125,12 +113,7 @@ public final class JobStreamEndpoint {
     // it's safe to cast any filtered member ID to an integer, since a client stream can only be
     // connected to a broker, and brokers always have integer node IDs
     final var brokers =
-        membershipService.getMembers().stream()
-            .map(Member::id)
-            .filter(stream::isConnected)
-            .map(MemberId::id)
-            .map(Integer::valueOf)
-            .toList();
+        stream.liveConnections().stream().map(MemberId::id).map(Integer::valueOf).toList();
 
     return new ClientJobStream(
         BufferUtil.bufferAsString(stream.streamType()),

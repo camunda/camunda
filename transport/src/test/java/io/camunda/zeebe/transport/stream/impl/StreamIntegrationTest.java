@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.transport.stream.impl;
 
-import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import io.atomix.cluster.AtomixCluster;
 import io.atomix.cluster.MemberId;
@@ -34,8 +34,10 @@ import io.camunda.zeebe.transport.stream.api.RemoteStreamer;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -153,37 +155,20 @@ final class StreamIntegrationTest {
     return Node.builder().withId(id).withPort(SocketUtil.getNextAddress().getPort()).build();
   }
 
-  private void awaitStreamRemoved(
-      final DirectBuffer streamType, final ClientStreamId streamId, final TestServer... servers) {
-    for (final var server : servers) {
-      awaitStreamOnServer(streamType, server, stream -> assertThat(stream).isEmpty());
-    }
-
-    awaitStreamOnClient(
-        streamId,
-        stream -> {
-          assertThat(stream).isPresent();
-          for (final var server : servers) {
-            //noinspection OptionalGetWithoutIsPresent
-            assertThat(stream.get().isConnected(server.memberId())).isFalse();
-          }
-        });
-  }
-
   private void awaitStreamAdded(
       final DirectBuffer streamType, final ClientStreamId streamId, final TestServer... servers) {
+    final Set<MemberId> addedIds = new HashSet<>();
     for (final var server : servers) {
       awaitStreamOnServer(streamType, server, stream -> assertThat(stream).isPresent());
+      addedIds.add(server.memberId());
     }
+
     awaitStreamOnClient(
         streamId,
-        stream -> {
-          assertThat(stream).isPresent();
-          for (final var server : servers) {
-            //noinspection OptionalGetWithoutIsPresent
-            assertThat(stream.get().isConnected(server.memberId())).isTrue();
-          }
-        });
+        stream ->
+            assertThat(stream)
+                .map(ClientStream::liveConnections)
+                .hasValueSatisfying(s -> assertThat(s).containsAll(addedIds)));
   }
 
   private void awaitStreamOnServer(
@@ -275,12 +260,10 @@ final class StreamIntegrationTest {
       // then
       awaitStreamOnClient(
           streamId,
-          stream -> {
-            assertThat(stream).isPresent();
-            //noinspection OptionalGetWithoutIsPresent
-            assertThat(stream.get().isConnected(server1.memberId())).isFalse();
-            assertThat(stream.get().isConnected(server2.memberId())).isTrue();
-          });
+          stream ->
+              assertThat(stream)
+                  .map(ClientStream::liveConnections)
+                  .hasValue(Set.of(server2.memberId())));
     }
 
     @Test
@@ -296,12 +279,10 @@ final class StreamIntegrationTest {
       awaitStreamOnServer(streamType, server2, stream -> assertThat(stream).isPresent());
       awaitStreamOnClient(
           streamId,
-          stream -> {
-            assertThat(stream).isPresent();
-            //noinspection OptionalGetWithoutIsPresent
-            assertThat(stream.get().isConnected(server1.memberId())).isFalse();
-            assertThat(stream.get().isConnected(server2.memberId())).isTrue();
-          });
+          stream ->
+              assertThat(stream)
+                  .map(ClientStream::liveConnections)
+                  .hasValue(Set.of(server2.memberId())));
 
       // when
       client.streamService.onServerJoined(server1.memberId());
@@ -353,11 +334,10 @@ final class StreamIntegrationTest {
       client.streamService.onServerRemoved(server1.memberId());
       awaitStreamOnClient(
           streamId,
-          maybeStream -> {
-            assertThat(maybeStream).isPresent();
-            //noinspection OptionalGetWithoutIsPresent
-            assertThat(maybeStream.get().isConnected(server1.memberId())).isFalse();
-          });
+          stream ->
+              assertThat(stream)
+                  .map(ClientStream::liveConnections)
+                  .hasValue(Set.of(server2.memberId())));
 
       // when - simulate restart by recreating the server entirely
       try (final var restartedServer =
