@@ -10,6 +10,8 @@ package io.atomix.raft.impl;
 import io.atomix.raft.metrics.RaftServiceMetrics;
 import io.atomix.raft.storage.log.RaftLog;
 import io.atomix.utils.concurrent.ThreadContext;
+import io.camunda.zeebe.snapshots.PersistedSnapshotStore;
+import java.util.concurrent.Executor;
 import org.agrona.LangUtil;
 import org.slf4j.Logger;
 
@@ -69,14 +71,28 @@ public final class LogCompactor {
     return compact(compactableIndex);
   }
 
+  /**
+   * Sets the compactable index to the given index; this will cause a call to {@link #compact()} or
+   * {@link #compactIgnoringReplicationThreshold()} to compact the log up to the given index here.
+   *
+   * <p>NOTE: this method is thread safe
+   */
+  public void setCompactableIndex(final long index) {
+    logger.trace("Updated compactable index to {}", index);
+    compactableIndex = index;
+  }
+
+  /** Compacts the log based on the snapshot store's lowest compaction bound. */
+  public void compactFromSnapshots(
+      final PersistedSnapshotStore snapshotStore, final Executor executor) {
+    snapshotStore.getCompactionBound().onComplete(this::onSnapshotCompactionBound, executor);
+  }
+
   private boolean compact(final long index) {
     threadContext.checkThread();
 
-    try {
-      final var startTime = System.currentTimeMillis();
+    try (final var ignored = metrics.compactionTime()) {
       final var compacted = log.deleteUntil(index);
-
-      metrics.compactionTime(System.currentTimeMillis() - startTime);
       logger.debug("Compacted log up to index {}", index);
       return compacted;
     } catch (final Exception e) {
@@ -86,7 +102,16 @@ public final class LogCompactor {
     }
   }
 
-  public void setCompactableIndex(final long index) {
-    compactableIndex = index;
+  private void onSnapshotCompactionBound(final Long index, final Throwable error) {
+    if (error != null) {
+      logger.error(
+          "Expected to compact logs, but could not the compaction bound from the snapshot store",
+          error);
+      return;
+    }
+
+    logger.debug("Scheduling log compaction up to index {}", index);
+    setCompactableIndex(index);
+    compact();
   }
 }

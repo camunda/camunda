@@ -17,8 +17,9 @@
 package io.atomix.raft.metrics;
 
 import io.prometheus.client.Histogram;
+import io.prometheus.client.Histogram.Timer;
 
-public class RaftServiceMetrics extends RaftMetrics {
+public final class RaftServiceMetrics extends RaftMetrics {
 
   private static final Histogram COMPACTION_TIME =
       Histogram.build()
@@ -36,7 +37,7 @@ public class RaftServiceMetrics extends RaftMetrics {
     compactionTime = COMPACTION_TIME.labels(partitionGroupName, partition);
   }
 
-  public void compactionTime(final long latencyms) {
-    compactionTime.observe(latencyms / 1000f);
+  public Timer compactionTime() {
+    return compactionTime.startTimer();
   }
 }
