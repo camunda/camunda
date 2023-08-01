@@ -14,7 +14,7 @@ import org.testcontainers.utility.DockerImageName;
 
 public final class GcsContainer extends GenericContainer<GcsContainer> {
   private static final DockerImageName IMAGE = DockerImageName.parse("fsouza/fake-gcs-server");
-  private static final int PORT = 4443;
+  private static final int PORT = 8000;
 
   /**
    * This uses a common testcontainers hack to start the server with an external url that is only
@@ -49,8 +49,8 @@ public final class GcsContainer extends GenericContainer<GcsContainer> {
     //noinspection OctalInteger
     copyFileToContainer(
         Transferable.of(
-            "/bin/fake-gcs-server -data /data -scheme http -external-url %s"
-                .formatted(externalEndpoint()),
+            "/bin/fake-gcs-server -data /data -scheme http -port %d -external-url %s"
+                .formatted(PORT, externalEndpoint()),
             0777),
         STARTER_SCRIPT);
   }
