@@ -20,6 +20,7 @@ import static io.atomix.utils.concurrent.Threads.namedThreads;
 
 import com.google.common.base.Throwables;
 import com.google.common.collect.Maps;
+import com.google.common.collect.Sets;
 import com.google.common.util.concurrent.MoreExecutors;
 import io.atomix.cluster.messaging.ManagedMessagingService;
 import io.atomix.cluster.messaging.MessagingConfig;
@@ -70,8 +71,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalInt;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.util.concurrent.RejectedExecutionException;
@@ -102,7 +103,7 @@ public final class NettyMessagingService implements ManagedMessagingService {
   private final Map<Channel, RemoteClientConnection> connections = Maps.newConcurrentMap();
   private final AtomicLong messageIdGenerator = new AtomicLong(0);
   private final ChannelPool channelPool;
-  private final List<CompletableFuture> openFutures;
+  private final Set<CompletableFuture<?>> openFutures = Sets.newConcurrentHashSet();
   private final MessagingConfig config;
 
   private EventLoopGroup serverGroup;
@@ -134,7 +135,6 @@ public final class NettyMessagingService implements ManagedMessagingService {
     this.config = config;
     channelPool = new ChannelPool(this::openChannel, config.getConnectionPoolSize());
 
-    openFutures = new CopyOnWriteArrayList<>();
     initAddresses(config);
   }
 
@@ -153,7 +153,6 @@ public final class NettyMessagingService implements ManagedMessagingService {
     this.config = config;
     channelPool = channelPoolFactor.apply(this::openChannel);
 
-    openFutures = new CopyOnWriteArrayList<>();
     initAddresses(config);
   }
 
@@ -417,7 +416,7 @@ public final class NettyMessagingService implements ManagedMessagingService {
                 connection.close();
               }
 
-              for (final CompletableFuture openFuture : openFutures) {
+              for (final var openFuture : openFutures) {
                 openFuture.completeExceptionally(
                     new IllegalStateException("MessagingService has been closed."));
               }
