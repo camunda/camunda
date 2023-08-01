@@ -70,6 +70,16 @@ const Toolbar: React.FC<Props> = ({selectedInstancesCount}) => {
           shouldShowBatchActions={selectedInstancesCount > 0}
           totalSelected={selectedInstancesCount}
           onCancel={processInstancesSelectionStore.reset}
+          translateWithId={(id) => {
+            switch (id) {
+              case 'carbon.table.batch.cancel':
+                return 'Discard';
+              case 'carbon.table.batch.items.selected':
+                return `${selectedInstancesCount} items selected`;
+              case 'carbon.table.batch.item.selected':
+                return `${selectedInstancesCount} item selected`;
+            }
+          }}
         >
           <TableBatchAction
             renderIcon={Error}
