@@ -22,6 +22,7 @@ import io.camunda.zeebe.broker.clustering.ClusterServicesImpl;
 import io.camunda.zeebe.broker.exporter.repo.ExporterRepository;
 import io.camunda.zeebe.broker.jobstream.JobStreamService;
 import io.camunda.zeebe.broker.partitioning.PartitionManagerImpl;
+import io.camunda.zeebe.broker.partitioning.topology.ClusterTopology;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.management.BrokerAdminServiceImpl;
 import io.camunda.zeebe.broker.system.monitoring.BrokerHealthCheckService;
@@ -91,6 +92,7 @@ class PartitionManagerStepTest {
       testBrokerStartupContext.setAdminApiService(mock(AdminApiRequestHandler.class));
       testBrokerStartupContext.setBrokerAdminService(mock(BrokerAdminServiceImpl.class));
       testBrokerStartupContext.setJobStreamService(mock(JobStreamService.class));
+      testBrokerStartupContext.setClusterTopology(ClusterTopology.NO_PARTITIONS);
 
       final var memberConfig = new MemberConfig();
       final var member = new Member(memberConfig);

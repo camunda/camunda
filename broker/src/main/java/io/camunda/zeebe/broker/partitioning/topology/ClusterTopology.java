@@ -14,4 +14,7 @@ import java.util.Set;
  * ClusterTopology describes how partitions are distributed across broker. It doesn't keep track of
  * the current leader or followers.
  */
-public record ClusterTopology(Set<PartitionMetadata> partitionDistribution) {}
+public record ClusterTopology(Set<PartitionMetadata> partitionDistribution) {
+
+  public static final ClusterTopology NO_PARTITIONS = new ClusterTopology(Set.of());
+}
