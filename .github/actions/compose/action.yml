@@ -3,10 +3,10 @@ description: |
   Compose Wrapper for elasticsearch / cambpm container
 inputs:
   compose_file:
-    description: 'Full path to the compose file'
+    description: "Full path to the compose file"
     required: true
   project_name:
-    description: 'Project name to allow running the same file multiple times'
+    description: "Project name to allow running the same file multiple times"
     required: true
 runs:
   using: composite

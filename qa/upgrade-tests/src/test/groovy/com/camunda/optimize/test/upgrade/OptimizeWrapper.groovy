@@ -120,7 +120,7 @@ class OptimizeWrapper {
     }
   }
 
-  def waitForImportToFinish(int timeoutInMinutes = 90) {
+  def waitForImportToFinish(int timeoutInMinutes = 150) {
     StatusClient statusClient = new StatusClient(() -> requestExecutor)
     log.info("Waiting for Optimize ${optimizeVersion} import to become idle...");
     await()

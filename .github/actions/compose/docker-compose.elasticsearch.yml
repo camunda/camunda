@@ -29,4 +29,4 @@ services:
       timeout: 5s
       retries: 3
     volumes:
-    - /var/tmp:/var/tmp
+      - /var/tmp:/var/tmp
