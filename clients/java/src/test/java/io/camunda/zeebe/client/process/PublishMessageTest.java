@@ -58,6 +58,7 @@ public final class PublishMessageTest extends ClientTest {
     assertThat(request.getMessageId()).isEqualTo("theId");
     assertThat(request.getTimeToLive()).isEqualTo(Duration.ofDays(1).toMillis());
     assertThat(response.getMessageKey()).isEqualTo(messageKey);
+    assertThat(response.getTenantId()).isEqualTo("");
 
     rule.verifyDefaultRequestTimeout();
   }

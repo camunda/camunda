@@ -15,6 +15,8 @@
  */
 package io.camunda.zeebe.client.api.response;
 
+import io.camunda.zeebe.client.api.ExperimentalApi;
+
 public interface ProcessInstanceEvent {
 
   /** Key of the process which this instance was created for */
@@ -28,4 +30,8 @@ public interface ProcessInstanceEvent {
 
   /** Unique key of the created process instance on the partition */
   long getProcessInstanceKey();
+
+  /** Tenant identifier that owns this process instance */
+  @ExperimentalApi("https://github.com/camunda/zeebe/issues/13321")
+  String getTenantId();
 }

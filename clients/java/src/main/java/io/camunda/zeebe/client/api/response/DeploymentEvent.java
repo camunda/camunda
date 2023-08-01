@@ -15,6 +15,7 @@
  */
 package io.camunda.zeebe.client.api.response;
 
+import io.camunda.zeebe.client.api.ExperimentalApi;
 import java.util.List;
 
 public interface DeploymentEvent {
@@ -37,4 +38,10 @@ public interface DeploymentEvent {
    * @return the decision requirements which are deployed
    */
   List<DecisionRequirements> getDecisionRequirements();
+
+  /**
+   * @return the tenant identifier that owns this deployment
+   */
+  @ExperimentalApi("https://github.com/camunda/zeebe/issues/13321")
+  String getTenantId();
 }

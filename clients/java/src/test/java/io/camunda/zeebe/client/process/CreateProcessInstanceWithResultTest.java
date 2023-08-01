@@ -53,6 +53,7 @@ public final class CreateProcessInstanceWithResultTest extends ClientTest {
     assertThat(response.getVariables()).isEqualTo(variables);
     final VariablesPojo result = response.getVariablesAsType(VariablesPojo.class);
     assertThat(result.getKey()).isEqualTo("val");
+    assertThat(response.getTenantId()).isEqualTo("");
 
     final CreateProcessInstanceWithResultRequest request = gatewayService.getLastRequest();
     assertThat(request.getRequest().getProcessDefinitionKey()).isEqualTo(123);

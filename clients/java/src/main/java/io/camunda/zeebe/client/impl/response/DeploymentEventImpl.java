@@ -88,6 +88,12 @@ public final class DeploymentEventImpl implements DeploymentEvent {
   }
 
   @Override
+  public String getTenantId() {
+    // todo(#13321): replace dummy implementation
+    return "";
+  }
+
+  @Override
   public String toString() {
     return "DeploymentEventImpl{"
         + "key="

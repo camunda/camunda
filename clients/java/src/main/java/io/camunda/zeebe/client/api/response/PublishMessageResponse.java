@@ -15,6 +15,8 @@
  */
 package io.camunda.zeebe.client.api.response;
 
+import io.camunda.zeebe.client.api.ExperimentalApi;
+
 public interface PublishMessageResponse {
 
   /**
@@ -23,4 +25,12 @@ public interface PublishMessageResponse {
    * @return record key of the message.
    */
   long getMessageKey();
+
+  /**
+   * Returns the tenant id of the message that was published.
+   *
+   * @return identifier of the tenant that owns the published message.
+   */
+  @ExperimentalApi("https://github.com/camunda/zeebe/issues/13559")
+  String getTenantId();
 }
