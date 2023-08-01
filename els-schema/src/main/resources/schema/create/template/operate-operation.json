@@ -37,6 +37,9 @@
 			"bpmnProcessId": {
 				"type": "keyword"
 			},
+			"decisionDefinitionKey": {
+				"type": "long"
+			},
 			"id": {
 				"type": "keyword"
 			},
