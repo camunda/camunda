@@ -34,6 +34,7 @@ test('Navigate to called and parent process instances', async (t) => {
     .expect(screen.queryByTestId('instance-header-skeleton').exists)
     .notOk();
 
+  await t.expect(screen.queryByTestId('instance-header').exists).ok();
   const withinInstanceHeader = within(screen.queryByTestId('instance-header'));
 
   await t
