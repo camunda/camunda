@@ -6,5 +6,4 @@
  */
 
 export const OPERATIONS_LABEL = 'Operations';
-export const EMPTY_MESSAGE =
-  'To create a new Operation, select some Instances from the list and click ”Apply Operation on…”';
+export const EMPTY_MESSAGE = 'No operations have been created yet.';
