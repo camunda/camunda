@@ -12,6 +12,7 @@ import io.atomix.raft.partition.RaftPartition;
 import io.camunda.zeebe.backup.api.BackupDescriptor;
 import io.camunda.zeebe.backup.api.BackupStore;
 import io.camunda.zeebe.broker.partitioning.RaftPartitionGroupFactory;
+import io.camunda.zeebe.broker.partitioning.topology.ClusterTopologyManager;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.util.FileUtil;
 import java.io.IOException;
@@ -99,8 +100,13 @@ public class RestoreManager {
   private Set<RaftPartition> collectPartitions() {
 
     final var factory = new RaftPartitionGroupFactory();
+    final var clusterTopology =
+        new ClusterTopologyManager()
+            .resolveTopology(
+                configuration.getExperimental().getPartitioning(), configuration.getCluster());
     // snapshot store factory can be null because we are not going start the partitions.
-    final var partitionsGroup = factory.buildRaftPartitionGroup(configuration, null);
+    final var partitionsGroup =
+        factory.buildRaftPartitionGroup(configuration, clusterTopology, null);
 
     final var localBrokerId = configuration.getCluster().getNodeId();
     final var localMember = MemberId.from(String.valueOf(localBrokerId));
