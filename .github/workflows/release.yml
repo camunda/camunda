@@ -344,7 +344,7 @@ jobs:
       monitor: ${{ !inputs.dryRun }}
       # the docker image will not be pushed during a dry-run, so we need to build it locally
       build: ${{ inputs.dryRun }}
-      dockerImageName: ${{ inputs.dryRun && '' || format('camunda/zeebe:{0}', inputs.releaseVersion) }}
+      dockerImage: ${{ inputs.dryRun && '' || format('camunda/zeebe:{0}', inputs.releaseVersion) }}
     secrets: inherit
 
 
