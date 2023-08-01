@@ -54,7 +54,7 @@ jobs:
 
       - name: Import secrets
         id: secrets
-        uses: hashicorp/vault-action@v2.6.0
+        uses: hashicorp/vault-action@v2.7.3
         with:
           url: ${{ secrets.VAULT_ADDR }}
           method: approle
