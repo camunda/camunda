@@ -19,8 +19,10 @@ package io.atomix.raft.partition;
 import com.esotericsoftware.kryo.serializers.FieldSerializer.Optional;
 import io.atomix.primitive.partition.PartitionGroup.Type;
 import io.atomix.primitive.partition.PartitionGroupConfig;
+import io.atomix.primitive.partition.PartitionMetadata;
 import io.atomix.raft.zeebe.EntryValidator;
 import io.atomix.raft.zeebe.EntryValidator.NoopEntryValidator;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -33,6 +35,8 @@ public class RaftPartitionGroupConfig extends PartitionGroupConfig<RaftPartition
   private int replicationFactor;
   private RaftStorageConfig storageConfig = new RaftStorageConfig();
   private RaftPartitionConfig partitionConfig = new RaftPartitionConfig();
+
+  private Collection<PartitionMetadata> partitionDistribution;
 
   @Optional("EntryValidator")
   private EntryValidator entryValidator = new NoopEntryValidator();
@@ -80,6 +84,14 @@ public class RaftPartitionGroupConfig extends PartitionGroupConfig<RaftPartition
   public RaftPartitionGroupConfig setReplicationFactor(final int replicationFactor) {
     this.replicationFactor = replicationFactor;
     return this;
+  }
+
+  public Collection<PartitionMetadata> getPartitionDistribution() {
+    return partitionDistribution;
+  }
+
+  public void setPartitionDistribution(final Collection<PartitionMetadata> partitionDistribution) {
+    this.partitionDistribution = partitionDistribution;
   }
 
   /**

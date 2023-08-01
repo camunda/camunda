@@ -23,7 +23,6 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import io.atomix.cluster.Member;
-import io.atomix.cluster.MemberId;
 import io.atomix.primitive.partition.ManagedPartitionGroup;
 import io.atomix.primitive.partition.Partition;
 import io.atomix.primitive.partition.PartitionGroup;
@@ -39,7 +38,6 @@ import io.atomix.utils.serializer.Namespaces;
 import io.camunda.zeebe.snapshots.ReceivableSnapshotStoreFactory;
 import java.io.File;
 import java.time.Duration;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -57,56 +55,41 @@ public final class RaftPartitionGroup implements ManagedPartitionGroup {
   private static final Logger LOGGER = LoggerFactory.getLogger(RaftPartitionGroup.class);
   private final String name;
   private final RaftPartitionGroupConfig config;
-  private final int replicationFactor;
   private final Map<PartitionId, RaftPartition> partitions = Maps.newConcurrentMap();
-  private final List<PartitionId> sortedPartitionIds = Lists.newCopyOnWriteArrayList();
+  private final List<PartitionId> partitionIds = Lists.newCopyOnWriteArrayList();
   private final Collection<PartitionMetadata> metadata;
 
   public RaftPartitionGroup(final RaftPartitionGroupConfig config) {
     this.config = config;
 
     name = config.getName();
-    replicationFactor = config.getReplicationFactor();
+    metadata = config.getPartitionDistribution();
 
-    buildPartitions(config)
+    buildPartitions(config, metadata)
         .forEach(
             p -> {
               partitions.put(p.id(), p);
-              sortedPartitionIds.add(p.id());
+              partitionIds.add(p.id());
             });
-    Collections.sort(sortedPartitionIds);
-
-    metadata = determinePartitionDistribution(config);
   }
 
-  private Collection<PartitionMetadata> determinePartitionDistribution(
-      final RaftPartitionGroupConfig config) {
-    final Collection<PartitionMetadata> metadataCollection;
-    final var members =
-        config.getMembers().stream().map(MemberId::from).collect(Collectors.toSet());
-    metadataCollection =
-        config
-            .getPartitionConfig()
-            .getPartitionDistributor()
-            .distributePartitions(members, sortedPartitionIds, replicationFactor);
-
-    metadataCollection.forEach(
-        partitionMetadata -> partitions.get(partitionMetadata.id()).setMetadata(partitionMetadata));
-    return metadataCollection;
-  }
-
-  private static Collection<RaftPartition> buildPartitions(final RaftPartitionGroupConfig config) {
+  private static Collection<RaftPartition> buildPartitions(
+      final RaftPartitionGroupConfig config, final Collection<PartitionMetadata> metadata) {
     final File partitionsDir =
         new File(config.getStorageConfig().getDirectory(config.getName()), "partitions");
-    final List<RaftPartition> partitions = new ArrayList<>(config.getPartitionCount());
-    for (int i = 0; i < config.getPartitionCount(); i++) {
-      partitions.add(
-          new RaftPartition(
-              PartitionId.from(config.getName(), i + 1),
-              config,
-              new File(partitionsDir, String.valueOf(i + 1))));
-    }
-    return partitions;
+
+    return metadata.stream()
+        .map(
+            partitionMetadata -> {
+              final var partition =
+                  new RaftPartition(
+                      partitionMetadata.id(),
+                      config,
+                      new File(partitionsDir, String.valueOf(partitionMetadata.id().id())));
+              partition.setMetadata(partitionMetadata);
+              return partition;
+            })
+        .toList();
   }
 
   /**
@@ -141,7 +124,7 @@ public final class RaftPartitionGroup implements ManagedPartitionGroup {
 
   @Override
   public List<PartitionId> getPartitionIds() {
-    return sortedPartitionIds;
+    return partitionIds;
   }
 
   @Override
@@ -157,12 +140,10 @@ public final class RaftPartitionGroup implements ManagedPartitionGroup {
         + '\''
         + ", config="
         + config
-        + ", replicationFactor="
-        + replicationFactor
         + ", partitions="
         + partitions
         + ", sortedPartitionIds="
-        + sortedPartitionIds
+        + partitionIds
         + ", metadata="
         + metadata
         + '}';
@@ -225,6 +206,12 @@ public final class RaftPartitionGroup implements ManagedPartitionGroup {
 
     protected Builder(final RaftPartitionGroupConfig config) {
       super(config);
+    }
+
+    public Builder withPartitionDistribution(
+        final Collection<PartitionMetadata> partitionDistribution) {
+      config.setPartitionDistribution(partitionDistribution);
+      return this;
     }
 
     /**
