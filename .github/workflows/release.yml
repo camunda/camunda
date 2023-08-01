@@ -40,6 +40,7 @@ jobs:
     timeout-minutes: 60
     outputs:
       releaseTagRevision: ${{ steps.maven-release.outputs.tagRevision }}
+      releaseBranch: ${{ env.RELEASE_BRANCH }}
     env:
       DEVELOPMENT_VERSION: ${{ inputs.nextDevelopmentVersion }}
       PUSH_CHANGES: ${{ inputs.dryRun == false }}
@@ -312,12 +313,13 @@ jobs:
       cancel-in-progress: false
     uses: ./.github/workflows/snyk.yml
     with:
-      ref: ${{ env.RELEASE_BRANCH }}
+      # Can't reference env.RELEASE_BRANCH directly due to https://github.com/actions/runner/issues/2372
+      ref: ${{ needs.release.outputs.releaseBranch }}
       version: ${{ inputs.releaseVersion }}
       useMinorVersion: true
       # test instead of monitor during dry-runs
       monitor: ${{ !inputs.dryRun }}
       # the docker image will not be pushed during a dry-run, so we need to build it locally
       build: ${{ inputs.dryRun }}
-      dockerImageName: ${{ inputs.dryRun && '' || format('camunda/zeebe:{0}', inputs.releaseVersion) }}
+      dockerImage: ${{ inputs.dryRun && '' || format('camunda/zeebe:{0}', inputs.releaseVersion) }}
     secrets: inherit
