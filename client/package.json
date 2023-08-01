@@ -1,6 +1,6 @@
 {
   "name": "camunda-operate",
-  "version": "8.2.0-SNAPSHOT",
+  "version": "8.3.0-SNAPSHOT",
   "private": true,
   "dependencies": {
     "@bpmn-io/element-template-icon-renderer": "0.5.1",
@@ -85,6 +85,7 @@
     "cross-env": "^7.0.3",
     "eslint-plugin-camunda-licensed": "0.4.6",
     "eslint-plugin-prettier": "5.0.0",
+    "event-source-polyfill": "1.0.31",
     "glob": "8.1.0",
     "http-proxy-middleware": "2.0.6",
     "husky": "8.0.3",
@@ -100,8 +101,7 @@
     "testcafe": "3.0.1",
     "ts-toolbelt": "9.6.0",
     "typescript": "5.1.6",
-    "zeebe-node": "8.2.5",
-    "event-source-polyfill": "1.0.31"
+    "zeebe-node": "8.2.5"
   },
   "lint-staged": {
     "*": [

@@ -11,14 +11,21 @@ import java.time.Duration;
 public class WebSecurityProperties {
 
   public static final String DEFAULT_SECURITY_POLICY =
-             "base-uri 'self';"
-          + " default-src 'self' 'unsafe-inline' 'unsafe-eval' cdn.jsdelivr.net;img-src * data:;"
-          + " block-all-mixed-content;"
-          + " form-action 'self';"
-          + " frame-ancestors 'none';"
-          + " object-src 'none';"
-          + " font-src 'self' fonts.camunda.io cdn.jsdelivr.net;"
-          + " sandbox allow-forms allow-scripts allow-same-origin allow-popups";
+             "default-src 'self';"          
+           + " base-uri 'self';"
+           + " script-src 'self';"
+           + " script-src-elem 'self' cdn.jsdelivr.net *.mixpanel.com *.osano.com *.appcues.com;"
+           + " connect-src 'self' *.appcues.net wss://api.appcues.net;"
+           + " style-src 'self' 'unsafe-inline' cdn.jsdelivr.net *.appcues.com;"
+           + " img-src * data:;"
+           + " block-all-mixed-content;"
+           + " form-action 'self';"
+           + " frame-ancestors 'none';"
+           + " frame-src 'self' https: *.osano.com;"
+           + " object-src 'none';"
+           + " font-src 'self' fonts.camunda.io cdn.jsdelivr.net;"
+           + " worker-src 'self' blob:;"
+           + " sandbox allow-forms allow-scripts allow-same-origin allow-popups";
 
   // What if a year has 366 days? :)
   // Use recommendation of https://hstspreload.org/
@@ -32,7 +39,7 @@ public class WebSecurityProperties {
   public String getContentSecurityPolicy() {
     return contentSecurityPolicy;
   }
-  
+
   public WebSecurityProperties setContentSecurityPolicy(final String contentSecurityPolicy){
     this.contentSecurityPolicy = contentSecurityPolicy;
     return this;
