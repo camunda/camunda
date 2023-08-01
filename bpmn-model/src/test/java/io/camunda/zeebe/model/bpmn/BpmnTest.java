@@ -22,7 +22,7 @@ import static io.camunda.zeebe.model.bpmn.impl.BpmnModelConstants.MODELER_NS;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.model.bpmn.instance.Definitions;
-import io.camunda.zeebe.model.bpmn.util.VersionUtil;
+import io.camunda.zeebe.util.VersionUtil;
 import org.junit.Test;
 
 /**

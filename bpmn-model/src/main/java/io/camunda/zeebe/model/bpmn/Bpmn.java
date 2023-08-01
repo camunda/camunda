@@ -356,8 +356,7 @@ public class Bpmn {
 
   public static ProcessBuilder createProcess() {
     final BpmnModelInstance modelInstance = INSTANCE.doCreateEmptyModel();
-    final Definitions definitions = modelInstance.newInstance(Definitions.class);
-    setModelDefinition(definitions);
+    final Definitions definitions = createModelDefinition(modelInstance);
     modelInstance.setDefinitions(definitions);
     final Process process = modelInstance.newInstance(Process.class);
     definitions.addChildElement(process);
@@ -679,13 +678,15 @@ public class Bpmn {
     return bpmnModelBuilder;
   }
 
-  /** Set the default model definition */
-  private static void setModelDefinition(final Definitions definitions) {
+  /** Create the default model definition */
+  private static Definitions createModelDefinition(final BpmnModelInstance modelInstance) {
+    final Definitions definitions = modelInstance.newInstance(Definitions.class);
     definitions.setExporter(BPMN_EXPORTER);
     definitions.setExporterVersion(ZEEBE_VERSION);
     definitions.setTargetNamespace(BPMN20_NS);
     definitions.setAttributeValueNs(
         MODELER_NS, "modeler:executionPlatform", BPMN_EXECUTION_PLATFORM);
     definitions.setAttributeValueNs(MODELER_NS, "modeler:executionPlatformVersion", ZEEBE_VERSION);
+    return definitions;
   }
 }
