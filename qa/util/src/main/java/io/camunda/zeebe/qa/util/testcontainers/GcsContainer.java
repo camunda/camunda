@@ -15,13 +15,14 @@ import org.testcontainers.utility.DockerImageName;
 public final class GcsContainer extends GenericContainer<GcsContainer> {
   private static final DockerImageName IMAGE = DockerImageName.parse("fsouza/fake-gcs-server");
   private static final String IMAGE_TAG = "1";
-  private static final int PORT = 4443;
+  private static final int PORT = 8000;
   private final String domain;
 
   public GcsContainer(final Network network, final String domain) {
     super(IMAGE.withTag(IMAGE_TAG));
     this.domain = domain;
-    setCommand("-scheme", "http", "-external-url", internalEndpoint());
+    setCommand(
+        "-scheme", "http", "-external-url", internalEndpoint(), "-port", String.valueOf(PORT));
     setExposedPorts(List.of(PORT));
     setNetworkAliases(List.of(domain));
     setNetwork(network);
