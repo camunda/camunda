@@ -27,7 +27,7 @@ import org.immutables.value.Value;
  */
 @Value.Immutable
 @ImmutableProtocol(builder = ImmutableResourceDeletionRecordValue.Builder.class)
-public interface ResourceDeletionRecordValue extends RecordValue {
+public interface ResourceDeletionRecordValue extends RecordValue, TenantOwned {
 
   /**
    * @return the key of the resource that will be deleted

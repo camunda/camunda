@@ -32,7 +32,7 @@ import org.immutables.value.Value;
  */
 @Value.Immutable
 @ImmutableProtocol(builder = ImmutableDeploymentRecordValue.Builder.class)
-public interface DeploymentRecordValue extends RecordValue {
+public interface DeploymentRecordValue extends RecordValue, TenantOwned {
   /**
    * @return the resources to deploy
    */

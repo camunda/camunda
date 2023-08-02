@@ -27,7 +27,7 @@ import org.immutables.value.Value;
  */
 @Value.Immutable
 @ImmutableProtocol(builder = ImmutableSignalRecordValue.Builder.class)
-public interface SignalRecordValue extends RecordValueWithVariables {
+public interface SignalRecordValue extends RecordValueWithVariables, TenantOwned {
   /**
    * @return the name of the signal
    */

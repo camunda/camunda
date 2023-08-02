@@ -27,7 +27,8 @@ import org.immutables.value.Value;
  */
 @Value.Immutable
 @ImmutableProtocol(builder = ImmutableProcessInstanceRecordValue.Builder.class)
-public interface ProcessInstanceRecordValue extends RecordValue, ProcessInstanceRelated {
+public interface ProcessInstanceRecordValue
+    extends RecordValue, ProcessInstanceRelated, TenantOwned {
   /**
    * @return the BPMN process id this process instance belongs to.
    */

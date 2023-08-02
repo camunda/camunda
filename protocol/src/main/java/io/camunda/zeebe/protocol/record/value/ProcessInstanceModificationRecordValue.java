@@ -25,7 +25,7 @@ import org.immutables.value.Value;
 @Value.Immutable
 @ImmutableProtocol(builder = ImmutableProcessInstanceModificationRecordValue.Builder.class)
 public interface ProcessInstanceModificationRecordValue
-    extends RecordValue, ProcessInstanceRelated {
+    extends RecordValue, ProcessInstanceRelated, TenantOwned {
 
   /** Returns a list of terminate instructions (if available), or an empty list. */
   List<ProcessInstanceModificationTerminateInstructionValue> getTerminateInstructions();

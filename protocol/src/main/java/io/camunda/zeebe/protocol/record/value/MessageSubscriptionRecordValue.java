@@ -28,7 +28,7 @@ import org.immutables.value.Value;
 @Value.Immutable
 @ImmutableProtocol(builder = ImmutableMessageSubscriptionRecordValue.Builder.class)
 public interface MessageSubscriptionRecordValue
-    extends RecordValueWithVariables, ProcessInstanceRelated {
+    extends RecordValueWithVariables, ProcessInstanceRelated, TenantOwned {
 
   /**
    * @return the process instance key tied to the subscription

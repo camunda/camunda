@@ -21,7 +21,7 @@ import org.immutables.value.Value;
 
 @Value.Immutable
 @ImmutableProtocol(builder = ImmutableVariableDocumentRecordValue.Builder.class)
-public interface VariableDocumentRecordValue extends RecordValueWithVariables {
+public interface VariableDocumentRecordValue extends RecordValueWithVariables, TenantOwned {
 
   /**
    * @return the scope key associated with the variable document

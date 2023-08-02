@@ -26,7 +26,8 @@ import org.immutables.value.Value;
  */
 @Value.Immutable
 @ImmutableProtocol(builder = ImmutableProcessInstanceBatchRecordValue.Builder.class)
-public interface ProcessInstanceBatchRecordValue extends RecordValue, ProcessInstanceRelated {
+public interface ProcessInstanceBatchRecordValue
+    extends RecordValue, ProcessInstanceRelated, TenantOwned {
 
   /**
    * @return the element instance for which a batch action is being performed. This should be a

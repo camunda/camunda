@@ -38,7 +38,8 @@ import org.immutables.value.Value;
  */
 @Value.Immutable
 @ImmutableProtocol(builder = ImmutableProcessEventRecordValue.Builder.class)
-public interface ProcessEventRecordValue extends RecordValueWithVariables, ProcessInstanceRelated {
+public interface ProcessEventRecordValue
+    extends RecordValueWithVariables, ProcessInstanceRelated, TenantOwned {
 
   /**
    * @return the key identifying the event's scope

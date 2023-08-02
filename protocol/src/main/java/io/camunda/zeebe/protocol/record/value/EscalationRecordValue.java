@@ -27,7 +27,7 @@ import org.immutables.value.Value;
  */
 @Value.Immutable
 @ImmutableProtocol(builder = ImmutableEscalationRecordValue.Builder.class)
-public interface EscalationRecordValue extends RecordValue {
+public interface EscalationRecordValue extends RecordValue, TenantOwned {
 
   /**
    * @return the key of the process instance
