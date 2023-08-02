@@ -34,7 +34,7 @@ import {Diagram} from 'modules/components/Carbon/Diagram';
 import {MetadataPopover} from './MetadataPopover';
 import {ModificationBadgeOverlay} from './ModificationBadgeOverlay';
 import {processInstanceDetailsDiagramStore} from 'modules/stores/processInstanceDetailsDiagram';
-import {ModificationInfoBanner} from 'App/ProcessInstance/TopPanel/ModificationInfoBanner';
+import {ModificationInfoBanner} from './ModificationInfoBanner';
 import {ModificationDropdown} from './ModificationDropdown';
 import {StateOverlay} from 'modules/components/Carbon/StateOverlay';
 
