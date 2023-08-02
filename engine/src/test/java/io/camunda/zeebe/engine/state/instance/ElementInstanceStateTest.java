@@ -396,7 +396,8 @@ public final class ElementInstanceStateTest {
         elementInstanceState.getProcessInstanceKeysByDefinitionKey(processDefinitionKey);
     Assertions.assertThat(processInstanceKeys).isEmpty();
     final var hasRunningInstances =
-        elementInstanceState.hasRunningInstances(processInstanceRecord.getProcessDefinitionKey());
+        elementInstanceState.hasActiveProcessInstances(
+            processInstanceRecord.getProcessDefinitionKey());
     assertThat(hasRunningInstances).isFalse();
   }
 
@@ -449,7 +450,8 @@ public final class ElementInstanceStateTest {
 
     // when
     final var hasRunningInstances =
-        elementInstanceState.hasRunningInstances(processInstanceRecord.getProcessDefinitionKey());
+        elementInstanceState.hasActiveProcessInstances(
+            processInstanceRecord.getProcessDefinitionKey());
 
     // then
     Assertions.assertThat(hasRunningInstances).isTrue();
@@ -463,7 +465,8 @@ public final class ElementInstanceStateTest {
 
     // when
     final var hasRunningInstances =
-        elementInstanceState.hasRunningInstances(processInstanceRecord.getProcessDefinitionKey());
+        elementInstanceState.hasActiveProcessInstances(
+            processInstanceRecord.getProcessDefinitionKey());
 
     // then
     Assertions.assertThat(hasRunningInstances).isFalse();

@@ -94,7 +94,7 @@ public class ResourceDeletionProcessor
       responseWriter.writeRejectionOnCommand(
           command, RejectionType.NOT_FOUND, exception.getMessage());
       return ProcessingError.EXPECTED_ERROR;
-    } else if (error instanceof final RunningInstancesException exception) {
+    } else if (error instanceof final ActiveProcessInstancesException exception) {
       rejectionWriter.appendRejection(command, RejectionType.INVALID_STATE, exception.getMessage());
       responseWriter.writeRejectionOnCommand(
           command, RejectionType.INVALID_STATE, exception.getMessage());
@@ -167,12 +167,13 @@ public class ResourceDeletionProcessor
             .setResourceName(process.getResourceName());
     stateWriter.appendFollowUpEvent(keyGenerator.nextKey(), ProcessIntent.DELETING, processRecord);
 
-    final var hasRunningInstances = elementInstanceState.hasRunningInstances(process.getKey());
+    final var hasRunningInstances =
+        elementInstanceState.hasActiveProcessInstances(process.getKey());
 
     if (!hasRunningInstances) {
       stateWriter.appendFollowUpEvent(keyGenerator.nextKey(), ProcessIntent.DELETED, processRecord);
     } else {
-      throw new RunningInstancesException(process.getKey());
+      throw new ActiveProcessInstancesException(process.getKey());
     }
   }
 
@@ -185,11 +186,11 @@ public class ResourceDeletionProcessor
     }
   }
 
-  private static final class RunningInstancesException extends IllegalStateException {
+  private static final class ActiveProcessInstancesException extends IllegalStateException {
     private static final String ERROR_MESSAGE_RUNNING_INSTANCES =
         "Expected to delete resource with key `%d` but there are still running instances";
 
-    private RunningInstancesException(final long processDefinitionKey) {
+    private ActiveProcessInstancesException(final long processDefinitionKey) {
       super(String.format(ERROR_MESSAGE_RUNNING_INSTANCES, processDefinitionKey));
     }
   }

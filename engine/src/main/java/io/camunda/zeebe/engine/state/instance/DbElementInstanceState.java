@@ -358,18 +358,18 @@ public final class DbElementInstanceState implements MutableElementInstanceState
   }
 
   @Override
-  public boolean hasRunningInstances(final long processDefinitionKey) {
+  public boolean hasActiveProcessInstances(final long processDefinitionKey) {
     this.processDefinitionKey.wrapLong(processDefinitionKey);
-    final AtomicBoolean hasRunningInstances = new AtomicBoolean(false);
+    final AtomicBoolean hasActiveInstances = new AtomicBoolean(false);
 
     processInstanceKeyByProcessDefinitionKeyColumnFamily.whileEqualPrefix(
         this.processDefinitionKey,
         (key, value) -> {
-          hasRunningInstances.set(true);
+          hasActiveInstances.set(true);
           return false;
         });
 
-    return hasRunningInstances.get();
+    return hasActiveInstances.get();
   }
 
   private ElementInstance copyElementInstance(final ElementInstance elementInstance) {

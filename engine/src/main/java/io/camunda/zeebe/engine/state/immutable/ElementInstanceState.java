@@ -60,10 +60,10 @@ public interface ElementInstanceState {
   List<Long> getProcessInstanceKeysByDefinitionKey(final long processDefinitionKey);
 
   /**
-   * Verifies if there are running instances for a given process definition
+   * Verifies if there are active process instances for a given process definition
    *
    * @param processDefinitionKey the key of the process definition
    * @return a boolean indicating if there are running instances
    */
-  boolean hasRunningInstances(long processDefinitionKey);
+  boolean hasActiveProcessInstances(long processDefinitionKey);
 }
