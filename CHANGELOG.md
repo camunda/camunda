@@ -1,3 +1,49 @@
+# v8.3.0-alpha4
+## 🚀 New Features
+* be-302-identity ([#3266](https://github.com/camunda/tasklist/issues/3266))
+* abstract Identity Setup for SSO Profile and OAuth + ProcessReader Adaptation ([#3256](https://github.com/camunda/tasklist/issues/3256))
+* readme - update Readme with env variables ([#3233](https://github.com/camunda/tasklist/issues/3233))
+* Implement start process with form API integration ([#3219](https://github.com/camunda/tasklist/issues/3219))
+* Change ProcessResponse fields ([#3184](https://github.com/camunda/tasklist/issues/3184))
+* Fetch and render start form ([#3168](https://github.com/camunda/tasklist/issues/3168))
+* update internal start process endpoint and tests  ([#3169](https://github.com/camunda/tasklist/issues/3169))
+
+## 💊 Bugfixes
+* Refine jacoco plugin ([#3251](https://github.com/camunda/tasklist/issues/3251))
+* fixing billing tab ([#3235](https://github.com/camunda/tasklist/issues/3235))
+* Fix makefile and docker for entity up ([#3232](https://github.com/camunda/tasklist/issues/3232))
+* **deps**: update dependency mobx-react-lite to v4 ([#3218](https://github.com/camunda/tasklist/issues/3218))
+* **deps**: update all non-major dependencies ([#3192](https://github.com/camunda/tasklist/issues/3192))
+* Be 2402 flakyfix index - make GraphQL Call "sync" (Integration Test) ([#3216](https://github.com/camunda/tasklist/issues/3216))
+* **deps**: update dependency @carbon/elements to v11.25.0 ([#3187](https://github.com/camunda/tasklist/issues/3187))
+* **deps**: update dependency @carbon/react to v1.33.0 ([#3188](https://github.com/camunda/tasklist/issues/3188))
+* **deps**: update all non-major dependencies ([#3177](https://github.com/camunda/tasklist/issues/3177))
+
+## 🧹 Chore
+* Bump form-js ([#3262](https://github.com/camunda/tasklist/issues/3262))
+* Processes Page Tests Added ([#3242](https://github.com/camunda/tasklist/issues/3242))
+* increase identity test coverage ([#3243](https://github.com/camunda/tasklist/issues/3243))
+* Test Coverage Increased for form-js task tests ([#3228](https://github.com/camunda/tasklist/issues/3228))
+* **deps**: update hashicorp/vault-action digest to cb841f2 ([#3223](https://github.com/camunda/tasklist/issues/3223))
+* **deps**: update dependency @types/react to v18.2.15 ([#3222](https://github.com/camunda/tasklist/issues/3222))
+* Revert Playwright update
+* **deps**: update dependency @playwright/test to v1.36.0 ([#3207](https://github.com/camunda/tasklist/issues/3207))
+* CI workflow improvements ([#3212](https://github.com/camunda/tasklist/issues/3212))
+* adding extra parameter to preview-env ([#3217](https://github.com/camunda/tasklist/issues/3217))
+* **deps**: update dependency monaco-editor to v0.40.0 ([#3191](https://github.com/camunda/tasklist/issues/3191))
+* **deps**: update actions/add-to-project digest to 36f5795 ([#3196](https://github.com/camunda/tasklist/issues/3196))
+* **deps**: update hashicorp/vault-action digest to 65d7a12 ([#3197](https://github.com/camunda/tasklist/issues/3197))
+* **deps**: update enricomi/publish-unit-test-result-action action to v2.8.0 ([#3198](https://github.com/camunda/tasklist/issues/3198))
+* **form-js-integration**: update snapshot ([#3194](https://github.com/camunda/tasklist/issues/3194))
+* migrate main Jenkins build pipeline to GHA for `master` ([#2816](https://github.com/camunda/tasklist/issues/2816))
+* Variables Test Refactored with POM ([#3183](https://github.com/camunda/tasklist/issues/3183))
+* **deps**: update dependency prettier to v3 ([#3171](https://github.com/camunda/tasklist/issues/3171))
+* **deps**: update hashicorp/vault-action digest to 65d7a12 ([#3181](https://github.com/camunda/tasklist/issues/3181))
+* update add_to_hto_project.yml ([#3185](https://github.com/camunda/tasklist/issues/3185))
+* Public Start Form Tests Refactored with POM ([#3178](https://github.com/camunda/tasklist/issues/3178))
+* Task Panel Tests refactored with POM ([#3170](https://github.com/camunda/tasklist/issues/3170))
+* Task Details Tests refactored with POM ([#3165](https://github.com/camunda/tasklist/issues/3165))
+* update CHANGELOG.md
 # v8.3.0-alpha3
 ## 🚀 New Features
 * **backend**: adding config for act and view users ([#3139](https://github.com/camunda/tasklist/issues/3139))
