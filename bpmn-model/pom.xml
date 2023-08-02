@@ -39,11 +39,6 @@
       <artifactId>slf4j-api</artifactId>
     </dependency>
 
-    <dependency>
-      <groupId>io.camunda</groupId>
-      <artifactId>zeebe-util</artifactId>
-    </dependency>
-
     <!-- Test dependencies -->
 
     <dependency>

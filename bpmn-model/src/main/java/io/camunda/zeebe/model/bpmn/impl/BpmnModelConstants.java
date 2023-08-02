@@ -16,7 +16,7 @@
 
 package io.camunda.zeebe.model.bpmn.impl;
 
-import io.camunda.zeebe.util.VersionUtil;
+import io.camunda.zeebe.model.bpmn.util.VersionUtil;
 
 /**
  * Constants used in the BPMN 2.0 Language (DI + Semantic)
