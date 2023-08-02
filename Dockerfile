@@ -74,4 +74,7 @@ COPY --from=prepare /tmp/operate /usr/local/operate
 
 RUN chmod +x /bin/tini
 
+RUN addgroup --gid 1004 operate && useradd -g operate -u 1004 -d /usr/local/operate operate
+USER operate:operate
+
 ENTRYPOINT ["/bin/tini", "--", "/usr/local/operate/bin/operate"]
