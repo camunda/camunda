@@ -107,9 +107,8 @@ public interface DeployResourceCommandStep1 {
      *
      * <h1>Deploy resource command specifics</h1>
      *
-     * <p>When no {@code tenantId} is specified explicitly, the deployed resources are owned by all
-     * tenants using the {@link #SHARED_TENANT_IDENTIFIER} as long as multi-tenancy is enabled in
-     * the Zeebe cluster.
+     * <p>When no {@code tenantId} is specified explicitly, the deployed resources are rejected as
+     * long as multi-tenancy is enabled in the Zeebe cluster.
      *
      * @since 8.3
      */
