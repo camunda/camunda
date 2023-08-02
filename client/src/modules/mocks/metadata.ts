@@ -9,6 +9,7 @@ import {MetaDataDto} from 'modules/api/processInstances/fetchFlowNodeMetaData';
 
 const FLOW_NODE_ID = 'StartEvent_1'; // this need to match the id from mockProcessXML
 const CALL_ACTIVITY_FLOW_NODE_ID = 'Activity_0zqism7'; // this need to match the id from mockCallActivityProcessXML
+const USER_TASK_FLOW_NODE_ID = 'UserTask';
 const FLOW_NODE_INSTANCE_ID = '2251799813699889';
 const PROCESS_INSTANCE_ID = '2251799813685591';
 
@@ -196,6 +197,15 @@ const calledFailedDecisionMetadata = {
   },
 };
 
+const userTaskFlowNodeMetaData = {
+  ...baseMetadata,
+  instanceMetadata: {
+    ...baseInstanceMetadata,
+    flowNodeId: USER_TASK_FLOW_NODE_ID,
+    flowNodeType: 'USER_TASK',
+  },
+};
+
 export {
   baseMetadata as singleInstanceMetadata,
   incidentFlowNodeMetaData,
@@ -208,7 +218,9 @@ export {
   multiInstanceMetadata,
   multiInstanceCallActivityMetadata,
   rootIncidentFlowNodeMetaData,
+  userTaskFlowNodeMetaData,
   PROCESS_INSTANCE_ID,
   CALL_ACTIVITY_FLOW_NODE_ID,
   FLOW_NODE_ID,
+  USER_TASK_FLOW_NODE_ID,
 };

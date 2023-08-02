@@ -32,6 +32,8 @@ import {
   CALL_ACTIVITY_FLOW_NODE_ID,
   PROCESS_INSTANCE_ID,
   FLOW_NODE_ID,
+  userTaskFlowNodeMetaData,
+  USER_TASK_FLOW_NODE_ID,
 } from 'modules/mocks/metadata';
 import {metadataDemoProcess} from 'modules/mocks/metadataDemoProcess';
 import {LocationLog} from 'modules/utils/LocationLog';
@@ -442,5 +444,28 @@ describe('MetadataPopover', () => {
     ).toBeInTheDocument();
     expect(screen.queryByText(/incident/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/root cause decision/i)).not.toBeInTheDocument();
+  });
+
+  it('should render link to tasklist', async () => {
+    const tasklistUrl = 'https://tasklist:8080';
+    window.clientConfig = {tasklistUrl};
+
+    mockFetchProcessXML().withSuccess(metadataDemoProcess);
+    mockFetchFlowNodeMetadata().withSuccess(userTaskFlowNodeMetaData);
+
+    processInstanceDetailsStore.setProcessInstance(
+      createInstance({
+        id: PROCESS_INSTANCE_ID,
+        state: 'ACTIVE',
+      }),
+    );
+
+    flowNodeSelectionStore.selectFlowNode({flowNodeId: USER_TASK_FLOW_NODE_ID});
+
+    renderPopover();
+
+    expect(
+      await screen.findByRole('link', {name: 'Open Tasklist'}),
+    ).toHaveAttribute('href', tasklistUrl);
   });
 });

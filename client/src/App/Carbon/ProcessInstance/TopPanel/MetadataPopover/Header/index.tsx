@@ -5,14 +5,13 @@
  * except in compliance with the proprietary license.
  */
 
-import {Button} from '@carbon/react';
-import {Link} from 'modules/components/Carbon/Link';
+import {Button, Link} from '@carbon/react';
 import {Header as BaseHeader, Title, Stack} from './styled';
 
 type Props = {
   variant?: 'default' | 'error';
   title: string;
-  link?: {to: string; label: string};
+  link?: {href: string; label: string};
   button?: {
     onClick: () => void;
     label: string;
@@ -31,8 +30,8 @@ const Header: React.FC<Props> = ({
       <Title $variant={variant}>{title}</Title>
       {(button !== undefined || link !== undefined) && (
         <Stack orientation="horizontal" gap={3}>
-          {link !== undefined && (
-            <Link to={link.to} target="_blank">
+          {link && (
+            <Link href={link.href} target="_blank">
               {link.label}
             </Link>
           )}

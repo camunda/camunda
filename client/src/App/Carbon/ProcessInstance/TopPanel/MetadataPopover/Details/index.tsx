@@ -60,7 +60,7 @@ const Details: React.FC<Props> = ({metaData, flowNodeId}) => {
           !isNil(window.clientConfig?.tasklistUrl) &&
           flowNodeType === 'USER_TASK'
             ? {
-                to: window.clientConfig!.tasklistUrl,
+                href: window.clientConfig!.tasklistUrl,
                 label: 'Open Tasklist',
               }
             : undefined
