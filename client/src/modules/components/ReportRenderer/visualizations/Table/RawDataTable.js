@@ -86,6 +86,7 @@ export default function RawDataTable({
     resultType: result.type,
     sorting: configuration?.sorting,
     updateSorting,
+    size: 'md',
   };
 
   return (

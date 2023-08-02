@@ -43,7 +43,7 @@ export default function DefaultTable(props) {
         rearrangeColumns(oldIdx, newIdx, tableProps, updateReport);
       }}
     >
-      <TableRenderer {...tableProps} />
+      <TableRenderer size="md" {...tableProps} />
     </ColumnRearrangement>
   );
 }
