@@ -351,4 +351,10 @@ public class DbMigrationState implements MutableMigrationState {
           }
         });
   }
+
+  @Override
+  public void markMigrationFinished(final String identifier) {
+    migrationIdentifier.wrapString(identifier);
+    migrationStateColumnFamily.upsert(migrationIdentifier, new MigrationState());
+  }
 }
