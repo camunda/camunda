@@ -318,10 +318,8 @@ public final class EngineProcessors {
         new ResourceDeletionProcessor(
             writers,
             processingState.getKeyGenerator(),
-            processingState.getDecisionState(),
-            commandDistributionBehavior,
-            processingState.getProcessState(),
-            processingState.getElementInstanceState());
+            processingState,
+            commandDistributionBehavior);
     typedRecordProcessors.onCommand(
         ValueType.RESOURCE_DELETION, ResourceDeletionIntent.DELETE, resourceDeletionProcessor);
   }

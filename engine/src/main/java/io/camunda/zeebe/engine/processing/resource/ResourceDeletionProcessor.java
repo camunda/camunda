@@ -19,6 +19,7 @@ import io.camunda.zeebe.engine.state.deployment.PersistedDecision;
 import io.camunda.zeebe.engine.state.immutable.DecisionState;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.immutable.ProcessState;
+import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DecisionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DecisionRequirementsRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.ProcessRecord;
@@ -48,18 +49,16 @@ public class ResourceDeletionProcessor
   public ResourceDeletionProcessor(
       final Writers writers,
       final KeyGenerator keyGenerator,
-      final DecisionState decisionState,
-      final CommandDistributionBehavior commandDistributionBehavior,
-      final ProcessState processState,
-      final ElementInstanceState elementInstanceState) {
+      final ProcessingState processingState,
+      final CommandDistributionBehavior commandDistributionBehavior) {
     stateWriter = writers.state();
     responseWriter = writers.response();
     rejectionWriter = writers.rejection();
     this.keyGenerator = keyGenerator;
-    this.decisionState = decisionState;
+    decisionState = processingState.getDecisionState();
     this.commandDistributionBehavior = commandDistributionBehavior;
-    this.processState = processState;
-    this.elementInstanceState = elementInstanceState;
+    processState = processingState.getProcessState();
+    elementInstanceState = processingState.getElementInstanceState();
   }
 
   @Override
