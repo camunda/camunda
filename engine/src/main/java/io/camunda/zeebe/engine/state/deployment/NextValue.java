@@ -49,17 +49,18 @@ public final class NextValue extends UnpackedObject implements DbValue {
   }
 
   public Long getLatestVersion() {
-    final List<Long> knownVersions =
-        StreamSupport.stream(this.knownVersions.spliterator(), false)
-            .map(LongValue::getValue)
-            .sorted()
-            .toList();
-
+    final List<Long> knownVersions = getKnownVersions();
     if (knownVersions.isEmpty()) {
       return 0L;
     }
-
     return knownVersions.get(knownVersions.size() - 1);
+  }
+
+  public List<Long> getKnownVersions() {
+    return StreamSupport.stream(knownVersions.spliterator(), false)
+        .map(LongValue::getValue)
+        .sorted()
+        .toList();
   }
 
   public void addKnownVersion(final long version) {

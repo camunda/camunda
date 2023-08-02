@@ -81,7 +81,7 @@ class ProcessInstanceByProcessDefinitionMigrationTest {
 
   @Nested
   @ExtendWith(ProcessingStateExtension.class)
-  class BlackboxTest {
+  class ProcessInstanceKeyByProcessDefinitionKeyTest {
     private ZeebeDb<ZbColumnFamilies> zeebeDb;
     private MutableProcessingState processingState;
     private TransactionContext transactionContext;
