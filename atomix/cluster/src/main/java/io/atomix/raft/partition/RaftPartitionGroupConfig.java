@@ -31,7 +31,7 @@ public class RaftPartitionGroupConfig extends PartitionGroupConfig<RaftPartition
 
   private static final int DEFAULT_PARTITIONS = 7;
 
-  private Set<String> members = new HashSet<>();
+  private final Set<String> members = new HashSet<>();
   private int replicationFactor;
   private RaftStorageConfig storageConfig = new RaftStorageConfig();
   private RaftPartitionConfig partitionConfig = new RaftPartitionConfig();
@@ -44,46 +44,6 @@ public class RaftPartitionGroupConfig extends PartitionGroupConfig<RaftPartition
   @Override
   protected int getDefaultPartitions() {
     return DEFAULT_PARTITIONS;
-  }
-
-  /**
-   * Returns the set of members in the partition group.
-   *
-   * @return the set of members in the partition group
-   */
-  public Set<String> getMembers() {
-    return members;
-  }
-
-  /**
-   * Sets the set of members in the partition group.
-   *
-   * @param members the set of members in the partition group
-   * @return the Raft partition group configuration
-   */
-  public RaftPartitionGroupConfig setMembers(final Set<String> members) {
-    this.members = members;
-    return this;
-  }
-
-  /**
-   * Returns the partition size.
-   *
-   * @return the partition size
-   */
-  public int getReplicationFactor() {
-    return replicationFactor;
-  }
-
-  /**
-   * Sets the partition size.
-   *
-   * @param replicationFactor the partition size
-   * @return the Raft partition group configuration
-   */
-  public RaftPartitionGroupConfig setReplicationFactor(final int replicationFactor) {
-    this.replicationFactor = replicationFactor;
-    return this;
   }
 
   /**
