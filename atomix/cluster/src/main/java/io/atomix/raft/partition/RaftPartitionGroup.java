@@ -29,7 +29,6 @@ import io.atomix.primitive.partition.PartitionMetadata;
 import io.atomix.raft.storage.log.RaftLog;
 import io.atomix.raft.storage.log.RaftLogFlusher;
 import io.atomix.raft.zeebe.EntryValidator;
-import io.atomix.utils.concurrent.ThreadContext;
 import io.atomix.utils.serializer.Namespace;
 import io.atomix.utils.serializer.Namespaces;
 import io.camunda.zeebe.snapshots.ReceivableSnapshotStoreFactory;
@@ -52,15 +51,13 @@ public final class RaftPartitionGroup implements ManagedPartitionGroup {
   private final RaftPartitionGroupConfig config;
   private final Map<PartitionId, RaftPartition> partitions = Maps.newConcurrentMap();
   private final List<PartitionId> partitionIds = Lists.newCopyOnWriteArrayList();
-  private final Collection<PartitionMetadata> metadata;
 
   public RaftPartitionGroup(final RaftPartitionGroupConfig config) {
     this.config = config;
 
     name = config.getName();
-    metadata = config.getPartitionDistribution();
 
-    buildPartitions(config, metadata)
+    buildPartitions(config, config.getPartitionDistribution())
         .forEach(
             p -> {
               partitions.put(p.id(), p);
@@ -139,8 +136,6 @@ public final class RaftPartitionGroup implements ManagedPartitionGroup {
         + partitions
         + ", sortedPartitionIds="
         + partitionIds
-        + ", metadata="
-        + metadata
         + '}';
   }
 
@@ -148,8 +143,8 @@ public final class RaftPartitionGroup implements ManagedPartitionGroup {
   public CompletableFuture<ManagedPartitionGroup> join(
       final PartitionManagementService managementService) {
     final var futures =
-        metadata.stream()
-            .map(meta -> partitions.get(meta.id()).open(managementService))
+        partitions.values().stream()
+            .map(p -> p.open(managementService))
             .toArray(CompletableFuture[]::new);
 
     return CompletableFuture.allOf(futures)
@@ -295,7 +290,7 @@ public final class RaftPartitionGroup implements ManagedPartitionGroup {
 
     /**
      * Sets the {@link RaftLogFlusher.Factory} to create a new flushing strategy for the {@link
-     * RaftLog} when {@link io.atomix.raft.storage.RaftStorage#openLog(ThreadContext)}} is called.
+     * RaftLog}.
      *
      * @param flusherFactory factory to create the flushing strategy for the {@link RaftLog}
      * @return the Raft partition group builder
