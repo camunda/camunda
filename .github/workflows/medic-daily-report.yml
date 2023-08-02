@@ -1,0 +1,51 @@
+name: Medic daily report
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 7 * * 1-5"
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  medic-daily-report:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Import secrets
+        id: secrets
+        uses: hashicorp/vault-action@v2.7.3
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secrets: |
+            secret/data/products/optimize/ci/camunda-optimize SLACK_API_KEY;
+            secret/data/products/optimize/ci/camunda-optimize ARGOCD_TOKEN;
+            secret/data/products/optimize/ci/camunda-optimize SNYK_TOKEN;
+
+      - name: Get medic daily report
+        id: get-report
+        run: |
+          cd ${{ github.workspace }}/.github/scripts/medicDailyReport
+          yarn
+          echo "medic_daily_report<<EOF" >> "$GITHUB_OUTPUT"
+          echo "$(npx ts-node getDailyStatusMessage.ts)" >> "$GITHUB_OUTPUT"
+          echo "EOF" >> "$GITHUB_OUTPUT"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ARGOCD_TOKEN: ${{ steps.secrets.outputs.ARGOCD_TOKEN }}
+          SNYK_TOKEN: ${{ steps.secrets.outputs.SNYK_TOKEN }}
+
+      - name: Send daily report to slack channel
+        uses: slackapi/slack-github-action@v1.24.0
+        with:
+          channel-id: "#optimize-daily-medic-update"
+          slack-message: ${{ steps.get-report.outputs.medic_daily_report }}
+        env:
+          SLACK_BOT_TOKEN: ${{ steps.secrets.outputs.SLACK_API_KEY }}

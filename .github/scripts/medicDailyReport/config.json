@@ -1,0 +1,14 @@
+{
+  "workflows": [
+    {
+      "name": "ci",
+      "checkBranches": true
+    },
+    "connect-to-secured-es",
+    "zeebe-compatibility",
+    "upgrade-data-performance",
+    "cluster-test",
+    "java-compatibility-mode",
+    "e2e-tests"
+  ]
+}
