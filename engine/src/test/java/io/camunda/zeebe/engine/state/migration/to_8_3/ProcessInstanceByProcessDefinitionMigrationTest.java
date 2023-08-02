@@ -8,6 +8,7 @@
 package io.camunda.zeebe.engine.state.migration.to_8_3;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -17,6 +18,7 @@ import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.db.impl.DbCompositeKey;
 import io.camunda.zeebe.db.impl.DbLong;
 import io.camunda.zeebe.db.impl.DbNil;
+import io.camunda.zeebe.engine.state.immutable.MigrationState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
@@ -62,12 +64,12 @@ class ProcessInstanceByProcessDefinitionMigrationTest {
   class MockBasedTests {
 
     @Test
-    void noMigrationNeededWhenElementInstanceColumnFamilyIsEmptyAndPIByDefinitionIsEmpty() {
+    void noMigrationNeededWhenMigrationAlreadyFinished() {
       // given
       final var mockProcessingState = mock(ProcessingState.class);
-      when(mockProcessingState.isEmpty(ZbColumnFamilies.ELEMENT_INSTANCE_KEY)).thenReturn(true);
-      when(mockProcessingState.isEmpty(ZbColumnFamilies.PROCESS_INSTANCE_KEY_BY_DEFINITION_KEY))
-          .thenReturn(true);
+      final var migrationState = mock(MigrationState.class);
+      when(mockProcessingState.getMigrationState()).thenReturn(migrationState);
+      when(migrationState.isMigrationFinished(anyString())).thenReturn(true);
 
       // when
       final var actual = sut.needsToRun(mockProcessingState);
@@ -77,42 +79,12 @@ class ProcessInstanceByProcessDefinitionMigrationTest {
     }
 
     @Test
-    void noMigrationNeededWhenElementInstanceColumnFamilyIsNotEmptyAndPIByDefinitionIsNotEmpty() {
+    void migrationNeededWhenMigrationNotFinished() {
       // given
       final var mockProcessingState = mock(ProcessingState.class);
-      when(mockProcessingState.isEmpty(ZbColumnFamilies.ELEMENT_INSTANCE_KEY)).thenReturn(false);
-      when(mockProcessingState.isEmpty(ZbColumnFamilies.PROCESS_INSTANCE_KEY_BY_DEFINITION_KEY))
-          .thenReturn(false);
-
-      // when
-      final var actual = sut.needsToRun(mockProcessingState);
-
-      // then
-      assertThat(actual).isFalse();
-    }
-
-    @Test
-    void noMigrationNeededWhenElementInstanceColumnFamilyIsEmptyAndPIByDefinitionIsNotEmpty() {
-      // given
-      final var mockProcessingState = mock(ProcessingState.class);
-      when(mockProcessingState.isEmpty(ZbColumnFamilies.ELEMENT_INSTANCE_KEY)).thenReturn(true);
-      when(mockProcessingState.isEmpty(ZbColumnFamilies.PROCESS_INSTANCE_KEY_BY_DEFINITION_KEY))
-          .thenReturn(false);
-
-      // when
-      final var actual = sut.needsToRun(mockProcessingState);
-
-      // then
-      assertThat(actual).isFalse();
-    }
-
-    @Test
-    void migrationNeededWhenElementInstanceColumnFamilyIsNotEmptyAndPIByDefinitionIsEmpty() {
-      // given
-      final var mockProcessingState = mock(ProcessingState.class);
-      when(mockProcessingState.isEmpty(ZbColumnFamilies.ELEMENT_INSTANCE_KEY)).thenReturn(false);
-      when(mockProcessingState.isEmpty(ZbColumnFamilies.PROCESS_INSTANCE_KEY_BY_DEFINITION_KEY))
-          .thenReturn(true);
+      final var migrationState = mock(MigrationState.class);
+      when(mockProcessingState.getMigrationState()).thenReturn(migrationState);
+      when(migrationState.isMigrationFinished(anyString())).thenReturn(false);
 
       // when
       final var actual = sut.needsToRun(mockProcessingState);
@@ -159,21 +131,6 @@ class ProcessInstanceByProcessDefinitionMigrationTest {
               transactionContext,
               processInstanceKeyByProcessDefinitionKey,
               DbNil.INSTANCE);
-    }
-
-    @Test
-    void afterMigrationNoFurtherMigrationIsNeeded() {
-      // given
-      final long processInstanceKey = 100L;
-      legacyState.insertElementInstance(
-          processInstanceKey, createElementInstance(processInstanceKey, BpmnElementType.PROCESS));
-
-      // when
-      sut.runMigration(processingState);
-      final var shouldRun = sut.needsToRun(processingState);
-
-      // then
-      assertThat(shouldRun).isFalse();
     }
 
     @Test
