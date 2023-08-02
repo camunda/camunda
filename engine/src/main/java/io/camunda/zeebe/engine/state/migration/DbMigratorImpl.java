@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.state.migration;
 
 import io.camunda.zeebe.engine.state.migration.to_8_2.DecisionMigration;
 import io.camunda.zeebe.engine.state.migration.to_8_2.DecisionRequirementsMigration;
+import io.camunda.zeebe.engine.state.migration.to_8_3.ProcessInstanceByProcessDefinitionMigration;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import java.util.ArrayList;
 import java.util.List;
@@ -29,7 +30,8 @@ public class DbMigratorImpl implements DbMigrator {
           new MessageSubscriptionSentTimeMigration(),
           new TemporaryVariableMigration(),
           new DecisionMigration(),
-          new DecisionRequirementsMigration());
+          new DecisionRequirementsMigration(),
+          new ProcessInstanceByProcessDefinitionMigration());
   // Be mindful of https://github.com/camunda/zeebe/issues/7248. In particular, that issue
   // should be solved first, before adding any migration that can take a long time
 

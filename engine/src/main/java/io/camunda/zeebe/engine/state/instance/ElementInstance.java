@@ -40,7 +40,7 @@ public final class ElementInstance extends UnpackedObject implements DbValue {
   private final IntegerProperty activeSequenceFlowsProp =
       new IntegerProperty("activeSequenceFlows", 0);
 
-  ElementInstance() {
+  public ElementInstance() {
     declareProperty(parentKeyProp)
         .declareProperty(childCountProp)
         .declareProperty(childActivatedCountProp)

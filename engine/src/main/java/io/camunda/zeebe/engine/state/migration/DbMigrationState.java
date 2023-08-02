@@ -20,6 +20,7 @@ import io.camunda.zeebe.engine.state.deployment.PersistedDecision;
 import io.camunda.zeebe.engine.state.deployment.PersistedDecisionRequirements;
 import io.camunda.zeebe.engine.state.immutable.PendingMessageSubscriptionState;
 import io.camunda.zeebe.engine.state.immutable.PendingProcessMessageSubscriptionState;
+import io.camunda.zeebe.engine.state.instance.ElementInstance;
 import io.camunda.zeebe.engine.state.mutable.MutableElementInstanceState;
 import io.camunda.zeebe.engine.state.mutable.MutableEventScopeInstanceState;
 import io.camunda.zeebe.engine.state.mutable.MutableMessageSubscriptionState;
@@ -79,6 +80,16 @@ public class DbMigrationState implements MutableMigrationState {
   private final DbCompositeKey<DbString, DbInt> decisionRequirementsIdAndVersion;
   private final ColumnFamily<DbCompositeKey<DbString, DbInt>, DbForeignKey<DbLong>>
       decisionRequirementsKeyByIdAndVersionColumnFamily;
+
+  private final DbLong elementInstanceKey;
+  private final ElementInstance elementInstance;
+  private final ColumnFamily<DbLong, ElementInstance> elementInstanceColumnFamily;
+  private final DbLong processDefinitionKey;
+  private final DbCompositeKey<DbLong, DbLong> processInstanceKeyByProcessDefinitionKey;
+
+  /** [process definition key | process instance key] => [Nil] */
+  private final ColumnFamily<DbCompositeKey<DbLong, DbLong>, DbNil>
+      processInstanceKeyByProcessDefinitionKeyColumnFamily;
 
   public DbMigrationState(
       final ZeebeDb<ZbColumnFamilies> zeebeDb, final TransactionContext transactionContext) {
@@ -162,6 +173,25 @@ public class DbMigrationState implements MutableMigrationState {
             transactionContext,
             decisionRequirementsIdAndVersion,
             fkDecisionRequirements);
+
+    // ColumnFamilies for process instance by process definition migration
+    elementInstanceKey = new DbLong();
+    elementInstance = new ElementInstance();
+    elementInstanceColumnFamily =
+        zeebeDb.createColumnFamily(
+            ZbColumnFamilies.ELEMENT_INSTANCE_KEY,
+            transactionContext,
+            elementInstanceKey,
+            elementInstance);
+    processDefinitionKey = new DbLong();
+    processInstanceKeyByProcessDefinitionKey =
+        new DbCompositeKey<>(processDefinitionKey, elementInstanceKey);
+    processInstanceKeyByProcessDefinitionKeyColumnFamily =
+        zeebeDb.createColumnFamily(
+            ZbColumnFamilies.PROCESS_INSTANCE_KEY_BY_DEFINITION_KEY,
+            transactionContext,
+            processInstanceKeyByProcessDefinitionKey,
+            DbNil.INSTANCE);
   }
 
   @Override
@@ -292,6 +322,20 @@ public class DbMigrationState implements MutableMigrationState {
           dbDecisionRequirementsVersion.wrapInt(value.getDecisionRequirementsVersion());
           decisionRequirementsKeyByIdAndVersionColumnFamily.insert(
               decisionRequirementsIdAndVersion, fkDecisionRequirements);
+        });
+  }
+
+  @Override
+  public void migrateElementInstancePopulateProcessInstanceByDefinitionKey() {
+    elementInstanceColumnFamily.forEach(
+        (key, record) -> {
+          final var recordValue = record.getValue();
+          if (recordValue.getBpmnElementType() == BpmnElementType.PROCESS) {
+            elementInstanceKey.wrapLong(key.getValue());
+            processDefinitionKey.wrapLong(recordValue.getProcessDefinitionKey());
+            processInstanceKeyByProcessDefinitionKeyColumnFamily.insert(
+                processInstanceKeyByProcessDefinitionKey, DbNil.INSTANCE);
+          }
         });
   }
 }
