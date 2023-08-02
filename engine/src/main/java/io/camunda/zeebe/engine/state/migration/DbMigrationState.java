@@ -219,4 +219,10 @@ public class DbMigrationState implements MutableMigrationState {
           temporaryVariableColumnFamily.deleteExisting(key);
         });
   }
+
+  @Override
+  public void markMigrationFinished(final String identifier) {
+    migrationIdentifier.wrapString(identifier);
+    migrationStateColumnFamily.upsert(migrationIdentifier, new MigrationState());
+  }
 }
