@@ -15,6 +15,7 @@ import io.camunda.zeebe.db.impl.DbLong;
 import io.camunda.zeebe.db.impl.DbNil;
 import io.camunda.zeebe.db.impl.DbString;
 import io.camunda.zeebe.engine.state.ZbColumnFamilies;
+import io.camunda.zeebe.engine.state.migration.MigrationState.State;
 import io.camunda.zeebe.engine.state.mutable.MutableElementInstanceState;
 import io.camunda.zeebe.engine.state.mutable.MutableEventScopeInstanceState;
 import io.camunda.zeebe.engine.state.mutable.MutableMessageSubscriptionState;
@@ -224,5 +225,12 @@ public class DbMigrationState implements MutableMigrationState {
   public void markMigrationFinished(final String identifier) {
     migrationIdentifier.wrapString(identifier);
     migrationStateColumnFamily.upsert(migrationIdentifier, new MigrationState());
+  }
+
+  @Override
+  public boolean isMigrationFinished(final String identifier) {
+    migrationIdentifier.wrapString(identifier);
+    final MigrationTaskState migrationState = migrationStateColumnFamily.get(migrationIdentifier);
+    return migrationState != null && migrationState.getState() == State.FINISHED;
   }
 }
