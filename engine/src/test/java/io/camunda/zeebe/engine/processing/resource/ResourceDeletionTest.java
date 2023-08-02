@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.resource;
 
+import static io.camunda.zeebe.engine.state.instance.TimerInstance.NO_ELEMENT_INSTANCE;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
 import static org.assertj.core.api.Assertions.tuple;
@@ -22,6 +23,7 @@ import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
 import io.camunda.zeebe.protocol.record.intent.ResourceDeletionIntent;
+import io.camunda.zeebe.protocol.record.intent.TimerIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.DecisionEvaluationRecordValue;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
@@ -31,6 +33,7 @@ import io.camunda.zeebe.protocol.record.value.deployment.ProcessMetadataValue;
 import io.camunda.zeebe.test.util.BrokerClassRuleHelper;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import java.io.IOException;
+import java.time.Duration;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -261,6 +264,69 @@ public class ResourceDeletionTest {
     verifyInstanceOfProcessWithIdAndVersionIsCompleted(processId, 2, processInstanceKey);
   }
 
+  @Test
+  public void shouldCancelTimerStartEventOnDeletion() {
+    // given
+    final var processId = helper.getBpmnProcessId();
+    final var processDefinitionKey = deployProcessWithTimerStartEvent(processId);
+
+    // when
+    engine.resourceDeletion().withResourceKey(processDefinitionKey).delete();
+
+    // then
+    verifyTimerIsCancelled(processDefinitionKey);
+    verifyProcessIdWithVersionIsDeleted(processId, 1);
+    verifyResourceIsDeleted(processDefinitionKey);
+  }
+
+  @Test
+  public void shouldCancelAllTimerStartEventsOnDeletion() {
+    // given
+    final var processId = helper.getBpmnProcessId();
+    final var processDefinitionKey =
+        engine
+            .deployment()
+            .withXmlResource(
+                Bpmn.createExecutableProcess(processId)
+                    .startEvent("startEvent1")
+                    .timerWithDuration(Duration.ofDays(1))
+                    .endEvent("endEvent")
+                    .moveToProcess(processId)
+                    .startEvent("startEvent2")
+                    .timerWithDuration(Duration.ofDays(1))
+                    .connectTo("endEvent")
+                    .done())
+            .deploy()
+            .getValue()
+            .getProcessesMetadata()
+            .get(0)
+            .getProcessDefinitionKey();
+
+    // when
+    engine.resourceDeletion().withResourceKey(processDefinitionKey).delete();
+
+    // then
+    verifyTimersAreCancelled(processDefinitionKey, 2);
+    verifyProcessIdWithVersionIsDeleted(processId, 1);
+    verifyResourceIsDeleted(processDefinitionKey);
+  }
+
+  @Test
+  public void shouldNotCancelTimersIfDeletedVersionIsNotLatest() {
+    // given
+    final var processId = helper.getBpmnProcessId();
+    final long firstProcessDefinitionKey = deployProcess(processId);
+    deployProcessWithTimerStartEvent(processId);
+
+    // when
+    engine.resourceDeletion().withResourceKey(firstProcessDefinitionKey).delete();
+
+    // then
+    verifyProcessIdWithVersionIsDeleted(processId, 1);
+    verifyResourceIsDeleted(firstProcessDefinitionKey);
+    verifyNoTimersAreCancelled();
+  }
+
   private long deployDrg(final String drgResource) {
     return engine
         .deployment()
@@ -291,6 +357,22 @@ public class ResourceDeletionTest {
     return engine
         .deployment()
         .withXmlResource(Bpmn.createExecutableProcess(processId).startEvent().endEvent().done())
+        .deploy()
+        .getValue()
+        .getProcessesMetadata()
+        .get(0)
+        .getProcessDefinitionKey();
+  }
+
+  private long deployProcessWithTimerStartEvent(final String processId) {
+    return engine
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(processId)
+                .startEvent()
+                .timerWithDuration(Duration.ofDays(1))
+                .endEvent()
+                .done())
         .deploy()
         .getValue()
         .getProcessesMetadata()
@@ -442,5 +524,32 @@ public class ResourceDeletionTest {
             tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_ACTIVATED),
             tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_COMPLETING),
             tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_COMPLETED));
+  }
+
+  private void verifyTimerIsCancelled(final long processDefinitionKey) {
+    verifyTimersAreCancelled(processDefinitionKey, 1);
+  }
+
+  private void verifyTimersAreCancelled(final long processDefinitionKey, final long times) {
+    assertThat(
+            RecordingExporter.timerRecords(TimerIntent.CANCELED)
+                .withProcessDefinitionKey(processDefinitionKey)
+                .limit(times))
+        .describedAs("Timer(s) should be cancelled")
+        .extracting(
+            t -> t.getValue().getProcessDefinitionKey(),
+            t -> t.getValue().getProcessInstanceKey(),
+            t -> t.getValue().getElementInstanceKey())
+        .containsOnly(tuple(processDefinitionKey, NO_ELEMENT_INSTANCE, NO_ELEMENT_INSTANCE));
+  }
+
+  private void verifyNoTimersAreCancelled() {
+    assertThat(
+            RecordingExporter.records()
+                .limit(r -> r.getIntent() == ResourceDeletionIntent.DELETED)
+                .timerRecords()
+                .withIntent(TimerIntent.CANCELED)
+                .exists())
+        .isFalse();
   }
 }
