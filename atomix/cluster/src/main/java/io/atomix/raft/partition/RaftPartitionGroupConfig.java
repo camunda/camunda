@@ -86,10 +86,18 @@ public class RaftPartitionGroupConfig extends PartitionGroupConfig<RaftPartition
     return this;
   }
 
+  /**
+   * @return the partition distribution
+   */
   public Collection<PartitionMetadata> getPartitionDistribution() {
     return partitionDistribution;
   }
 
+  /**
+   * Sets how partitions are distributed among the members
+   *
+   * @param partitionDistribution partition distribution info
+   */
   public void setPartitionDistribution(final Collection<PartitionMetadata> partitionDistribution) {
     this.partitionDistribution = partitionDistribution;
   }

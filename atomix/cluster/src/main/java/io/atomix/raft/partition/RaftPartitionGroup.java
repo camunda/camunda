@@ -198,6 +198,13 @@ public final class RaftPartitionGroup implements ManagedPartitionGroup {
       super(config);
     }
 
+    /**
+     * Configure how partitions are distributed among the members.
+     *
+     * @param partitionDistribution a collection of partition metadata that describes partition
+     *     distribution
+     * @return the Raft partition group builder
+     */
     public Builder withPartitionDistribution(
         final Collection<PartitionMetadata> partitionDistribution) {
       config.setPartitionDistribution(partitionDistribution);
