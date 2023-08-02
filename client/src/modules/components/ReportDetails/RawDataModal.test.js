@@ -5,77 +5,27 @@
  * except in compliance with the proprietary license.
  */
 
-import React, {runLastEffect} from 'react';
+import React from 'react';
 import {shallow} from 'enzyme';
 
-import {ReportRenderer, Modal} from 'components';
-import {evaluateReport} from 'services';
+import {Modal} from 'components';
 
-import {RawDataModal} from './RawDataModal';
+import RawDataModal from './RawDataModal';
 
 const props = {
-  name: 'processName',
   open: true,
-  report: {data: {configuration: {xml: 'xml data'}}},
   onClose: jest.fn(),
   mightFail: jest.fn().mockImplementation((data, cb) => cb(data)),
 };
 
-jest.mock('config', () => ({newReport: {new: {data: {configuration: {}}}}}));
+beforeEach(() => {
+  jest.clearAllMocks();
+});
 
-jest.mock('services', () => ({
-  ...jest.requireActual('services'),
-  evaluateReport: jest.fn().mockReturnValue({}),
-}));
-
-it('should contain ReportRenderer', () => {
+it('should invoke onClose when closing the modal', async () => {
   const node = shallow(<RawDataModal {...props} />);
-  runLastEffect();
-  expect(node.find(Modal)).toExist();
-  expect(node.find(ReportRenderer)).toExist();
-});
 
-it('evaluate the raw data of the report on mount', () => {
-  shallow(<RawDataModal {...props} />);
-  runLastEffect();
-  expect(evaluateReport).toHaveBeenCalledWith(
-    {
-      data: {
-        configuration: {
-          xml: 'xml data',
-          sorting: {by: 'startDate', order: 'desc'},
-        },
-        groupBy: {type: 'none', value: null},
-        view: {entity: null, properties: ['rawData']},
-        visualization: 'table',
-      },
-    },
-    [],
-    undefined
-  );
-});
+  node.find(Modal).simulate('close');
 
-it('should pass the error to reportRenderer if evaluation fails', async () => {
-  const testError = {message: 'testError', reportDefinition: {}, status: 400};
-  const mightFail = (promise, cb, err) => err(testError);
-
-  const node = shallow(<RawDataModal {...props} mightFail={mightFail} />);
-  runLastEffect();
-  await flushPromises();
-
-  expect(node.find(ReportRenderer).prop('error')).toEqual({status: 400, ...testError});
-});
-
-it('evaluate re-evaluate the report when called loadReport prop', () => {
-  const node = shallow(<RawDataModal {...props} />);
-  runLastEffect();
-
-  const sortParams = {limit: '20', offset: 0};
-  const report = {data: {configuration: {sorting: {by: 'startDate', order: 'asc'}}}};
-  node.find(ReportRenderer).prop('loadReport')(sortParams, report);
-
-  evaluateReport.mockClear();
-  runLastEffect();
-
-  expect(evaluateReport).toHaveBeenCalledWith(report, [], sortParams);
+  expect(props.onClose).toHaveBeenCalled();
 });

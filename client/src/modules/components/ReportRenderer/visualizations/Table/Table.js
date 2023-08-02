@@ -7,9 +7,9 @@
 
 import React, {useState, useEffect} from 'react';
 import update from 'immutability-helper';
+import {DataTableSkeleton} from '@carbon/react';
 
 import {loadVariables} from 'services';
-import {LoadingIndicator} from 'components';
 import {withErrorHandling} from 'HOC';
 import {showError} from 'notifications';
 
@@ -56,7 +56,7 @@ export function Table(props) {
 
   const isLoadingVariables = processVariableReport && !processVariables;
   if (isLoadingVariables) {
-    return <LoadingIndicator />;
+    return <DataTableSkeleton showToolbar={false} showHeader={false} />;
   }
 
   const Component = isRawDataReport ? RawDataTable : DefaultTable;
@@ -68,7 +68,7 @@ export function Table(props) {
         !isDisrtibutedByProcess && context !== 'shared' && context !== 'dashboard' && updateSorting
       }
       processVariables={processVariables}
-      isSorting={isSorting}
+      loading={props.loading || isSorting}
     />
   );
 }

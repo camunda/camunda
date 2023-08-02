@@ -14,7 +14,7 @@ import processDefaultData from './processDefaultData';
 import {rearrangeColumns} from './service';
 
 export default function DefaultTable(props) {
-  const {report, updateReport, processVariables, updateSorting, isSorting} = props;
+  const {report, updateReport, processVariables, updateSorting, loading} = props;
   const {
     combined,
     data: {groupBy, configuration},
@@ -27,7 +27,7 @@ export default function DefaultTable(props) {
   } else {
     tableProps = {
       ...processDefaultData(props, processVariables),
-      loading: isSorting,
+      loading,
       resultType: result.type,
       sorting: configuration?.sorting,
       sortByLabel: ['flowNodes', 'userTasks'].includes(groupBy.type),

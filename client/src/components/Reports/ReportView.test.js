@@ -5,7 +5,7 @@
  * except in compliance with the proprietary license.
  */
 
-import React from 'react';
+import React, {runLastEffect} from 'react';
 import {shallow} from 'enzyme';
 
 import {Deleter, ReportRenderer, InstanceCount, DownloadButton, AlertsDropdown} from 'components';
@@ -56,10 +56,7 @@ const report = {
 it('should display the key properties of a report', () => {
   const node = shallow(<ReportView report={report} />);
 
-  node.setState({
-    loaded: true,
-    report,
-  });
+  runLastEffect();
 
   expect(node.find('EntityName').prop('children')).toBe(report.name);
   expect(node.find(InstanceCount)).toExist();
@@ -120,6 +117,7 @@ it('should show alert dropdown for number reports', async () => {
     <ReportView report={{...report, data: {...report.data, visualization: 'number'}}} />
   );
 
+  runLastEffect();
   await node.update();
 
   expect(node.find(AlertsDropdown)).toExist();
@@ -196,4 +194,24 @@ it('should hide share, edit and delete buttons for instant preview report', () =
   expect(node.find('ShareEntity')).not.toExist();
   expect(node.find('.tool-button.edit-button')).not.toExist();
   expect(node.find('.tool-button.delete-button')).not.toExist();
+});
+
+it('should hide bottom raw data panel for number reports', async () => {
+  const node = await shallow(<ReportView report={report} />);
+
+  await node.update();
+
+  expect(node.find('.bottomPanel')).not.toExist();
+});
+
+it('should hide collapseButton & report renderer when expanding bottom panel', async () => {
+  const node = await shallow(
+    <ReportView report={{...report, data: {...report.data, visualization: 'number'}}} />
+  );
+
+  await node.update();
+
+  node.find('.expandButton').simulate('click');
+  expect(node.find('.collapseButton')).not.toExist();
+  expect(node.find(ReportRenderer)).not.toExist();
 });

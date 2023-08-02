@@ -90,7 +90,11 @@ export default React.memo(ReportRenderer, (prevProps, nextProps) => {
   const prevReport = {...prevProps.report, name: ''};
   const nextReport = {...nextProps.report, name: ''};
 
-  if (deepEqual(prevReport, nextReport) && deepEqual(prevProps.error, nextProps.error)) {
+  if (
+    deepEqual(prevReport, nextReport) &&
+    deepEqual(prevProps.error, nextProps.error) &&
+    deepEqual(prevProps.loading, nextProps.loading)
+  ) {
     return true;
   }
   return false;

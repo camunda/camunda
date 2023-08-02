@@ -23,7 +23,7 @@ export default function RawDataTable({
   loadReport,
   updateSorting,
   processVariables,
-  isSorting,
+  loading,
 }) {
   const {
     data: {configuration, definitions},
@@ -31,7 +31,7 @@ export default function RawDataTable({
   } = report;
 
   const [error, setError] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const [Pageloading, setPageLoading] = useState(false);
   const [objectVariable, setObjectVariable] = useState();
   const [camundaEndpoints, setCamundaEndpoints] = useState(null);
 
@@ -50,9 +50,9 @@ export default function RawDataTable({
       const maxExceeded = offset >= 10000;
       setError(maxExceeded);
       if (!maxExceeded) {
-        setLoading(true);
+        setPageLoading(true);
         await loadReport({offset, limit: pageSize});
-        setLoading(false);
+        setPageLoading(false);
       }
     },
     [loadReport]
@@ -76,7 +76,7 @@ export default function RawDataTable({
   const tableProps = {
     ...processRawData({report, camundaEndpoints, processVariables, onVariableView}),
     fetchData,
-    loading: loading || isSorting,
+    loading: Pageloading || loading,
     defaultPageSize: result.pagination.limit,
     defaultPage: result.pagination.offset / result.pagination.limit,
     totalEntries: result.instanceCount,
