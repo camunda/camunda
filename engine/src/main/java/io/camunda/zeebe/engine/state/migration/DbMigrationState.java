@@ -16,6 +16,7 @@ import io.camunda.zeebe.db.impl.DbInt;
 import io.camunda.zeebe.db.impl.DbLong;
 import io.camunda.zeebe.db.impl.DbNil;
 import io.camunda.zeebe.db.impl.DbString;
+import io.camunda.zeebe.engine.state.deployment.NextValue;
 import io.camunda.zeebe.engine.state.deployment.PersistedDecision;
 import io.camunda.zeebe.engine.state.deployment.PersistedDecisionRequirements;
 import io.camunda.zeebe.engine.state.immutable.PendingMessageSubscriptionState;
@@ -97,6 +98,9 @@ public class DbMigrationState implements MutableMigrationState {
   /** [process definition key | process instance key] => [Nil] */
   private final ColumnFamily<DbCompositeKey<DbLong, DbLong>, DbNil>
       processInstanceKeyByProcessDefinitionKeyColumnFamily;
+
+  private final DbString processIdKey;
+  private final ColumnFamily<DbString, NextValue> nextValueColumnFamily;
 
   public DbMigrationState(
       final ZeebeDb<ZbColumnFamilies> zeebeDb, final TransactionContext transactionContext) {
@@ -207,6 +211,11 @@ public class DbMigrationState implements MutableMigrationState {
             transactionContext,
             processInstanceKeyByProcessDefinitionKey,
             DbNil.INSTANCE);
+
+    processIdKey = new DbString();
+    nextValueColumnFamily =
+        zeebeDb.createColumnFamily(
+            ZbColumnFamilies.PROCESS_VERSION, transactionContext, processIdKey, new NextValue());
   }
 
   @Override
@@ -351,6 +360,20 @@ public class DbMigrationState implements MutableMigrationState {
             processInstanceKeyByProcessDefinitionKeyColumnFamily.upsert(
                 processInstanceKeyByProcessDefinitionKey, DbNil.INSTANCE);
           }
+        });
+  }
+
+  @Override
+  public void migrateProcessDefinitionVersions() {
+    nextValueColumnFamily.forEach(
+        (key, value) -> {
+          final long highestVersion = value.getHighestVersion();
+          for (long version = 1; version <= highestVersion; version++) {
+            if (!value.getKnownVersions().contains(version)) {
+              value.addKnownVersion(version);
+            }
+          }
+          nextValueColumnFamily.update(key, value);
         });
   }
 

@@ -31,6 +31,8 @@ public interface MutableMigrationState extends MigrationState {
 
   void migrateElementInstancePopulateProcessInstanceByDefinitionKey();
 
+  void migrateProcessDefinitionVersions();
+
   /**
    * Changes the state of a migration to FINISHED to indicate it has been executed.
    *
