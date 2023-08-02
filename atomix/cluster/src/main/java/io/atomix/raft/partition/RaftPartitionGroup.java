@@ -17,12 +17,9 @@
 package io.atomix.raft.partition;
 
 import static com.google.common.base.Preconditions.checkArgument;
-import static com.google.common.base.Preconditions.checkNotNull;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import com.google.common.collect.Sets;
-import io.atomix.cluster.Member;
 import io.atomix.primitive.partition.ManagedPartitionGroup;
 import io.atomix.primitive.partition.Partition;
 import io.atomix.primitive.partition.PartitionGroup;
@@ -43,8 +40,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -211,54 +206,6 @@ public final class RaftPartitionGroup implements ManagedPartitionGroup {
     public Builder withPartitionDistribution(
         final Collection<PartitionMetadata> partitionDistribution) {
       config.setPartitionDistribution(partitionDistribution);
-      return this;
-    }
-
-    /**
-     * Sets the Raft partition group members.
-     *
-     * @param members the Raft partition group members
-     * @return the Raft partition group builder
-     * @throws NullPointerException if the members are null
-     */
-    public Builder withMembers(final Collection<String> members) {
-      config.setMembers(Sets.newHashSet(checkNotNull(members, "members cannot be null")));
-      return this;
-    }
-
-    /**
-     * Sets the Raft partition group members.
-     *
-     * @param members the Raft partition group members
-     * @return the Raft partition group builder
-     * @throws NullPointerException if the members are null
-     */
-    public Builder withMembers(final Member... members) {
-      return withMembers(
-          Stream.of(members).map(node -> node.id().id()).collect(Collectors.toList()));
-    }
-
-    /**
-     * Sets the number of partitions.
-     *
-     * @param numPartitions the number of partitions
-     * @return the Raft partition group builder
-     * @throws IllegalArgumentException if the number of partitions is not positive
-     */
-    public Builder withNumPartitions(final int numPartitions) {
-      config.setPartitionCount(numPartitions);
-      return this;
-    }
-
-    /**
-     * Sets the partition size.
-     *
-     * @param partitionSize the partition size
-     * @return the Raft partition group builder
-     * @throws IllegalArgumentException if the partition size is not positive
-     */
-    public Builder withPartitionSize(final int partitionSize) {
-      config.setReplicationFactor(partitionSize);
       return this;
     }
 
@@ -439,18 +386,6 @@ public final class RaftPartitionGroup implements ManagedPartitionGroup {
      */
     public Builder withMaxQuorumResponseTimeout(final Duration maxQuorumResponseTimeout) {
       config.getPartitionConfig().setMaxQuorumResponseTimeout(maxQuorumResponseTimeout);
-      return this;
-    }
-
-    /**
-     * Sets the partition distributor to use. The partition distributor determines which members
-     * will own which partitions, and ensures they are correctly replicated.
-     *
-     * @param partitionDistributor the partition distributor to use
-     * @return this builder for chaining
-     */
-    public Builder withPartitionDistributor(final PartitionDistributor partitionDistributor) {
-      config.getPartitionConfig().setPartitionDistributor(partitionDistributor);
       return this;
     }
 
