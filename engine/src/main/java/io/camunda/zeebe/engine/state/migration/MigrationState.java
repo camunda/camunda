@@ -20,6 +20,10 @@ public final class MigrationState extends UnpackedObject implements DbValue {
     declareProperty(stateProp);
   }
 
+  public State getState() {
+    return stateProp.getValue();
+  }
+
   public enum State {
     FINISHED(0);
 
