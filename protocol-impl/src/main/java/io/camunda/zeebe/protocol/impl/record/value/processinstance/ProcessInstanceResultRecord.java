@@ -38,6 +38,7 @@ public final class ProcessInstanceResultRecord extends UnifiedRecordValue
         .declareProperty(variablesProperty);
   }
 
+  @Override
   public String getBpmnProcessId() {
     return BufferUtil.bufferAsString(bpmnProcessIdProperty.getValue());
   }
@@ -52,6 +53,7 @@ public final class ProcessInstanceResultRecord extends UnifiedRecordValue
     return this;
   }
 
+  @Override
   public int getVersion() {
     return versionProperty.getValue();
   }
@@ -61,6 +63,7 @@ public final class ProcessInstanceResultRecord extends UnifiedRecordValue
     return this;
   }
 
+  @Override
   public long getProcessDefinitionKey() {
     return processDefinitionKeyProperty.getValue();
   }

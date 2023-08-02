@@ -91,19 +91,9 @@ public final class MessageStartEventSubscriptionRecord extends UnifiedRecordValu
     return this;
   }
 
-  public MessageStartEventSubscriptionRecord setStartEventId(final DirectBuffer startEventId) {
-    startEventIdProp.setValue(startEventId);
-    return this;
-  }
-
-  public MessageStartEventSubscriptionRecord setBpmnProcessId(final DirectBuffer bpmnProcessId) {
-    bpmnProcessIdProp.setValue(bpmnProcessId);
-    return this;
-  }
-
-  @JsonIgnore
-  public DirectBuffer getBpmnProcessIdBuffer() {
-    return bpmnProcessIdProp.getValue();
+  @Override
+  public long getProcessInstanceKey() {
+    return processInstanceKeyProp.getValue();
   }
 
   @Override
@@ -126,19 +116,29 @@ public final class MessageStartEventSubscriptionRecord extends UnifiedRecordValu
     return this;
   }
 
-  @JsonIgnore
-  public DirectBuffer getCorrelationKeyBuffer() {
-    return correlationKeyProp.getValue();
-  }
-
-  @Override
-  public long getProcessInstanceKey() {
-    return processInstanceKeyProp.getValue();
-  }
-
   public MessageStartEventSubscriptionRecord setProcessInstanceKey(final long key) {
     processInstanceKeyProp.setValue(key);
     return this;
+  }
+
+  public MessageStartEventSubscriptionRecord setStartEventId(final DirectBuffer startEventId) {
+    startEventIdProp.setValue(startEventId);
+    return this;
+  }
+
+  public MessageStartEventSubscriptionRecord setBpmnProcessId(final DirectBuffer bpmnProcessId) {
+    bpmnProcessIdProp.setValue(bpmnProcessId);
+    return this;
+  }
+
+  @JsonIgnore
+  public DirectBuffer getBpmnProcessIdBuffer() {
+    return bpmnProcessIdProp.getValue();
+  }
+
+  @JsonIgnore
+  public DirectBuffer getCorrelationKeyBuffer() {
+    return correlationKeyProp.getValue();
   }
 
   @Override

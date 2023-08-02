@@ -43,6 +43,7 @@ public final class VariableDocumentRecord extends UnifiedRecordValue
     return this;
   }
 
+  @Override
   public long getScopeKey() {
     return scopeKeyProperty.getValue();
   }
@@ -52,6 +53,7 @@ public final class VariableDocumentRecord extends UnifiedRecordValue
     return this;
   }
 
+  @Override
   public VariableDocumentUpdateSemantic getUpdateSemantics() {
     return updateSemanticsProperty.getValue();
   }

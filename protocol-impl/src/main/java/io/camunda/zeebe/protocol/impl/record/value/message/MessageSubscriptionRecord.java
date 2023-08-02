@@ -55,13 +55,19 @@ public final class MessageSubscriptionRecord extends UnifiedRecordValue
     setVariables(record.getVariablesBuffer());
   }
 
-  public boolean isInterrupting() {
-    return interruptingProp.getValue();
-  }
-
   @JsonIgnore
   public DirectBuffer getCorrelationKeyBuffer() {
     return correlationKeyProp.getValue();
+  }
+
+  @JsonIgnore
+  public DirectBuffer getMessageNameBuffer() {
+    return messageNameProp.getValue();
+  }
+
+  @Override
+  public long getProcessInstanceKey() {
+    return processInstanceKeyProp.getValue();
   }
 
   @Override
@@ -99,6 +105,16 @@ public final class MessageSubscriptionRecord extends UnifiedRecordValue
     return messageKeyProp.getValue();
   }
 
+  @Override
+  public boolean isInterrupting() {
+    return interruptingProp.getValue();
+  }
+
+  public MessageSubscriptionRecord setInterrupting(final boolean interrupting) {
+    interruptingProp.setValue(interrupting);
+    return this;
+  }
+
   public MessageSubscriptionRecord setMessageKey(final long messageKey) {
     messageKeyProp.setValue(messageKey);
     return this;
@@ -114,23 +130,8 @@ public final class MessageSubscriptionRecord extends UnifiedRecordValue
     return this;
   }
 
-  @JsonIgnore
-  public DirectBuffer getMessageNameBuffer() {
-    return messageNameProp.getValue();
-  }
-
-  @Override
-  public long getProcessInstanceKey() {
-    return processInstanceKeyProp.getValue();
-  }
-
   public MessageSubscriptionRecord setProcessInstanceKey(final long key) {
     processInstanceKeyProp.setValue(key);
-    return this;
-  }
-
-  public MessageSubscriptionRecord setInterrupting(final boolean interrupting) {
-    interruptingProp.setValue(interrupting);
     return this;
   }
 

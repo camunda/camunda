@@ -39,15 +39,6 @@ public final class TimerRecord extends UnifiedRecordValue implements TimerRecord
     return targetElementId.getValue();
   }
 
-  public long getProcessInstanceKey() {
-    return processInstanceKeyProp.getValue();
-  }
-
-  public TimerRecord setProcessInstanceKey(final long processInstanceKey) {
-    processInstanceKeyProp.setValue(processInstanceKey);
-    return this;
-  }
-
   @Override
   public long getProcessDefinitionKey() {
     return processDefinitionKeyProp.getValue();
@@ -56,6 +47,16 @@ public final class TimerRecord extends UnifiedRecordValue implements TimerRecord
   @Override
   public long getElementInstanceKey() {
     return elementInstanceKeyProp.getValue();
+  }
+
+  @Override
+  public long getProcessInstanceKey() {
+    return processInstanceKeyProp.getValue();
+  }
+
+  public TimerRecord setProcessInstanceKey(final long processInstanceKey) {
+    processInstanceKeyProp.setValue(processInstanceKey);
+    return this;
   }
 
   @Override
