@@ -24,4 +24,11 @@ public interface MutableMigrationState {
   void migrateDecisionsPopulateDecisionVersionByDecisionIdAndDecisionKey();
 
   void migrateDrgPopulateDrgVersionByDrgIdAndKey();
+
+  /**
+   * Changes the state of a migration to FINISHED to indicate it has been executed.
+   *
+   * @param identifier the identifier of the migration
+   */
+  void markMigrationFinished(final String identifier);
 }
