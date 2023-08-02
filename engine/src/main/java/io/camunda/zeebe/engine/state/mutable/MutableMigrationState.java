@@ -20,4 +20,11 @@ public interface MutableMigrationState {
   void migrateTemporaryVariables(
       final MutableEventScopeInstanceState eventScopeInstanceState,
       final MutableElementInstanceState elementInstanceState);
+
+  /**
+   * Changes the state of a migration to FINISHED to indicate it has been executed.
+   *
+   * @param identifier the identifier of the migration
+   */
+  void markMigrationFinished(final String identifier);
 }

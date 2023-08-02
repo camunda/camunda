@@ -113,6 +113,7 @@ public class DbMigratorImpl implements DbMigrator {
       return true;
     } else {
       logMigrationSkipped(migrationTask, index, total);
+      markMigrationFinished(migrationTask.getIdentifier());
       return false;
     }
   }
@@ -136,8 +137,13 @@ public class DbMigratorImpl implements DbMigrator {
     migrationTask.runMigration(zeebeState);
     final var duration = System.currentTimeMillis() - startTime;
 
+    markMigrationFinished(migrationTask.getIdentifier());
     LOGGER.debug(migrationTask.getIdentifier() + " migration completed in " + duration + " ms.");
     LOGGER.info(
         "Finished " + migrationTask.getIdentifier() + " migration (" + index + "/" + total + ")");
+  }
+
+  private void markMigrationFinished(final String identifier) {
+    processingState.getMigrationState().markMigrationFinished(identifier);
   }
 }
