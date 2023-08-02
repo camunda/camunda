@@ -43,7 +43,8 @@ public final class ProcessExecutionCleanStateTest {
           ZbColumnFamilies.PROCESS_CACHE,
           ZbColumnFamilies.PROCESS_CACHE_BY_ID_AND_VERSION,
           ZbColumnFamilies.PROCESS_CACHE_DIGEST_BY_ID,
-          ZbColumnFamilies.MESSAGE_STATS);
+          ZbColumnFamilies.MESSAGE_STATS,
+          ZbColumnFamilies.MIGRATIONS_STATE);
 
   @Rule public EngineRule engineRule = EngineRule.singlePartition();
 
