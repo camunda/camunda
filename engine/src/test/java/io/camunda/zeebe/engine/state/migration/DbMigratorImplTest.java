@@ -133,4 +133,23 @@ public class DbMigratorImplTest {
     verify(mockMigration1).runMigration(mockProcessingState);
     verify(mockMigration2, never()).runMigration(mockProcessingState);
   }
+
+  @Test
+  void shouldMarkMigrationAsFinishedAfterRunning() {
+    // given
+    final var mockProcessingState = mock(MutableProcessingState.class);
+    final var mockMigrationState = mock(MutableMigrationState.class);
+    when(mockProcessingState.getMigrationState()).thenReturn(mockMigrationState);
+    final var mockMigration = mock(MigrationTask.class);
+    when(mockMigration.needsToRun(mockProcessingState)).thenReturn(true);
+
+    final var sut =
+        new DbMigratorImpl(mockProcessingState, () -> Collections.singletonList(mockMigration));
+
+    // when
+    sut.runMigrations();
+
+    // then
+    verify(mockMigrationState).markMigrationFinished(mockMigration.getIdentifier());
+  }
 }
