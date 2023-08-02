@@ -52,7 +52,7 @@
     <version.docker-java-api>3.3.2</version.docker-java-api>
     <version.elasticsearch>8.7.1</version.elasticsearch>
     <version.error-prone>2.20.0</version.error-prone>
-    <version.grpc>1.57.0</version.grpc>
+    <version.grpc>1.57.1</version.grpc>
     <version.gson>2.10.1</version.gson>
     <version.guava>32.1.2-jre</version.guava>
     <version.hamcrest>2.2</version.hamcrest>
@@ -119,7 +119,7 @@
     <version.jnr-posix>3.1.17</version.jnr-posix>
     <version.zpt>8.2.10</version.zpt>
     <version.feign>12.4</version.feign>
-    <version.google-sdk>26.20.0</version.google-sdk>
+    <version.google-sdk>26.21.0</version.google-sdk>
     <version.awssdk>2.20.116</version.awssdk>
     <version.toxiproxy>2.1.7</version.toxiproxy>
     <version.validation-api>3.0.2</version.validation-api>
