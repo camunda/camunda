@@ -16,6 +16,8 @@
 
 package io.camunda.zeebe.model.bpmn.impl;
 
+import io.camunda.zeebe.util.VersionUtil;
+
 /**
  * Constants used in the BPMN 2.0 Language (DI + Semantic)
  *
@@ -49,6 +51,18 @@ public final class BpmnModelConstants {
 
   /** Zeebe namespace */
   public static final String ZEEBE_NS = "http://camunda.org/schema/zeebe/1.0";
+
+  /** Zeebe namespace */
+  public static final String MODELER_NS = "http://camunda.org/schema/modeler/1.0";
+
+  /** Zeebe version */
+  public static final String ZEEBE_VERSION = VersionUtil.getVersion();
+
+  /** BPMN Exporter */
+  public static final String BPMN_EXPORTER = "Zeebe BPMN Model";
+
+  /** BPMN Execution Platform */
+  public static final String BPMN_EXECUTION_PLATFORM = "Camunda Cloud";
 
   // elements ////////////////////////////////////////
 
