@@ -107,4 +107,10 @@ public final class SignalSubscriptionRecord extends UnifiedRecordValue
   public DirectBuffer getBpmnProcessIdBuffer() {
     return bpmnProcessIdProp.getValue();
   }
+
+  @Override
+  public String getTenantId() {
+    // todo(#13336): replace dummy implementation
+    return "";
+  }
 }

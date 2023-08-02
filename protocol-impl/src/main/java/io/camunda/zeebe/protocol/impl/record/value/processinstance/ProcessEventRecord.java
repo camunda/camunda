@@ -106,4 +106,10 @@ public final class ProcessEventRecord extends UnifiedRecordValue
     processInstanceKeyProperty.setValue(processInstanceKey);
     return this;
   }
+
+  @Override
+  public String getTenantId() {
+    // todo(#13774): replace dummy implementation
+    return "";
+  }
 }

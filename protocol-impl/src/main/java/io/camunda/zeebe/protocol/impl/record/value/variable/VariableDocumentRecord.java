@@ -97,4 +97,10 @@ public final class VariableDocumentRecord extends UnifiedRecordValue
         && Objects.equals(updateSemanticsProperty, that.updateSemanticsProperty)
         && Objects.equals(variablesProperty, that.variablesProperty);
   }
+
+  @Override
+  public String getTenantId() {
+    // todo(#13388): replace dummy implementation
+    return "";
+  }
 }

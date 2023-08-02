@@ -114,4 +114,10 @@ public final class VariableRecord extends UnifiedRecordValue implements Variable
   public DirectBuffer getBpmnProcessIdBuffer() {
     return bpmnProcessIdProp.getValue();
   }
+
+  @Override
+  public String getTenantId() {
+    // todo(#13388): replace dummy implementation
+    return "";
+  }
 }

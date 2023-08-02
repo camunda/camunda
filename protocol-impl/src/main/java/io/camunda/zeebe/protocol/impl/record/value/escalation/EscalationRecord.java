@@ -74,4 +74,10 @@ public class EscalationRecord extends UnifiedRecordValue implements EscalationRe
     processInstanceKeyProp.setValue(processInstanceKey);
     return this;
   }
+
+  @Override
+  public String getTenantId() {
+    // todo(#13774): replace dummy implementation
+    return "";
+  }
 }

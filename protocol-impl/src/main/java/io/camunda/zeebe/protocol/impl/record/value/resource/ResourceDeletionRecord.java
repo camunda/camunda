@@ -33,4 +33,10 @@ public class ResourceDeletionRecord extends UnifiedRecordValue
     resourceKeyProp.setValue(resourceKey);
     return this;
   }
+
+  @Override
+  public String getTenantId() {
+    // todo(#13238): replace dummy implementation
+    return "";
+  }
 }

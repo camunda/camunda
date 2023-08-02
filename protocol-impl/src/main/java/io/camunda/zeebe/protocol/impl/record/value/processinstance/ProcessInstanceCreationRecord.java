@@ -158,4 +158,10 @@ public final class ProcessInstanceCreationRecord extends UnifiedRecordValue
   public DirectBuffer getVariablesBuffer() {
     return variablesProperty.getValue();
   }
+
+  @Override
+  public String getTenantId() {
+    // todo(#13774): replace dummy implementation
+    return "";
+  }
 }

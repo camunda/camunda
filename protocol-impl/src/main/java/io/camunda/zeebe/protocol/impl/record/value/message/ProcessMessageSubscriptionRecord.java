@@ -187,4 +187,10 @@ public final class ProcessMessageSubscriptionRecord extends UnifiedRecordValue
   public DirectBuffer getElementIdBuffer() {
     return elementIdProp.getValue();
   }
+
+  @Override
+  public String getTenantId() {
+    // todo(#13289): replace dummy implementation
+    return "";
+  }
 }

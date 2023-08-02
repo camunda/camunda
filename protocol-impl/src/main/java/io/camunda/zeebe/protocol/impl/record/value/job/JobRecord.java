@@ -348,4 +348,10 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
     workerProp.setValue(worker, offset, length);
     return this;
   }
+
+  @Override
+  public String getTenantId() {
+    // todo(#13345): replace dummy implementation
+    return "";
+  }
 }

@@ -171,4 +171,10 @@ public final class ProcessRecord extends UnifiedRecordValue implements Process {
   public DirectBuffer getResourceBuffer() {
     return resourceProp.getValue();
   }
+
+  @Override
+  public String getTenantId() {
+    // todo(#13320): replace dummy implementation
+    return "";
+  }
 }

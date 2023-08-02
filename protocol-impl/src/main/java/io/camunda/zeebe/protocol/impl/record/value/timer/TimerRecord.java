@@ -97,4 +97,10 @@ public final class TimerRecord extends UnifiedRecordValue implements TimerRecord
     processDefinitionKeyProp.setValue(processDefinitionKey);
     return this;
   }
+
+  @Override
+  public String getTenantId() {
+    // todo(#13337): replace dummy implementation
+    return "";
+  }
 }

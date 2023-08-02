@@ -99,4 +99,10 @@ public final class ProcessInstanceResultRecord extends UnifiedRecordValue
     variablesProperty.setValue(variables);
     return this;
   }
+
+  @Override
+  public String getTenantId() {
+    // todo(#13774): replace dummy implementation
+    return "";
+  }
 }

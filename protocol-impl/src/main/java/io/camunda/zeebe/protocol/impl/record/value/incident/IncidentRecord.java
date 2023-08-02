@@ -168,7 +168,11 @@ public final class IncidentRecord extends UnifiedRecordValue implements Incident
   public long getProcessInstanceKey() {
     return processInstanceKeyProp.getValue();
   }
-
+  @Override
+  public String getTenantId() {
+    // todo(#13426): replace dummy implementation
+    return "";
+  }
   public IncidentRecord setProcessInstanceKey(final long processInstanceKey) {
     processInstanceKeyProp.setValue(processInstanceKey);
     return this;

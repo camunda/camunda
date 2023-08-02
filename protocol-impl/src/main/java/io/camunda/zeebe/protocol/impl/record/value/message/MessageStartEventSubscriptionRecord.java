@@ -155,4 +155,10 @@ public final class MessageStartEventSubscriptionRecord extends UnifiedRecordValu
   public DirectBuffer getVariablesBuffer() {
     return variablesProp.getValue();
   }
+
+  @Override
+  public String getTenantId() {
+    // todo(#13289): replace dummy implementation
+    return "";
+  }
 }

@@ -145,4 +145,8 @@ public final class MessageRecord extends UnifiedRecordValue implements MessageRe
     deadlineProp.setValue(deadline);
     return this;
   }
+  public String getTenantId() {
+    // todo(#13289): replace dummy implementation
+    return "";
+  }
 }
