@@ -33,6 +33,11 @@ import org.agrona.DirectBuffer;
 
 public class DbMigrationState implements MutableMigrationState {
 
+  // Meta ColumnFamily to keep track if migration have run
+  private final DbString migrationIdentifier;
+  private final MigrationState migrationState;
+  private final ColumnFamily<DbString, MigrationState> migrationStateColumnFamily;
+
   // ZbColumnFamilies.MESSAGE_SUBSCRIPTION_BY_SENT_TIME
   // (sentTime, elementInstanceKey, messageName) => \0
   private final DbLong messageSubscriptionSentTime;
@@ -82,6 +87,14 @@ public class DbMigrationState implements MutableMigrationState {
 
   public DbMigrationState(
       final ZeebeDb<ZbColumnFamilies> zeebeDb, final TransactionContext transactionContext) {
+    migrationIdentifier = new DbString();
+    migrationState = new MigrationState();
+    migrationStateColumnFamily =
+        zeebeDb.createColumnFamily(
+            ZbColumnFamilies.MIGRATIONS_STATE,
+            transactionContext,
+            migrationIdentifier,
+            migrationState);
 
     messageSubscriptionElementInstanceKey = new DbLong();
     messageSubscriptionMessageName = new DbString();
