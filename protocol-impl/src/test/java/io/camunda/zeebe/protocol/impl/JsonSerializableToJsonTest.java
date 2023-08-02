@@ -202,7 +202,8 @@ final class JsonSerializableToJsonTest {
               }
             ],
             "decisionsMetadata": [],
-            "decisionRequirementsMetadata": []
+            "decisionRequirementsMetadata": [],
+            "tenantId": ""
           }
         }
         """
@@ -242,7 +243,8 @@ final class JsonSerializableToJsonTest {
               "resources": [],
               "decisionRequirementsMetadata": [],
               "processesMetadata": [],
-              "decisionsMetadata": []
+              "decisionsMetadata": [],
+              "tenantId": ""
           }
         }
         """
@@ -338,7 +340,8 @@ final class JsonSerializableToJsonTest {
               "checksum": "Y2hlY2tzdW0=",
               "duplicate": true
             }
-          ]
+          ],
+          "tenantId": ""
         }
         """
       },
@@ -370,7 +373,8 @@ final class JsonSerializableToJsonTest {
           "resources": [],
           "processesMetadata": [],
           "decisionsMetadata": [],
-          "decisionRequirementsMetadata": []
+          "decisionRequirementsMetadata": [],
+          "tenantId": ""
         }
         """
       },
@@ -410,7 +414,8 @@ final class JsonSerializableToJsonTest {
           "version": 12,
           "processDefinitionKey": 123,
           "resourceName": "resource",
-          "duplicate": false
+          "duplicate": false,
+          "tenantId": ""
         }
         """
       },
@@ -478,7 +483,8 @@ final class JsonSerializableToJsonTest {
           "elementId": "activity",
           "elementInstanceKey": 34,
           "jobKey": 123,
-          "variableScopeKey": 34
+          "variableScopeKey": 34,
+          "tenantId": ""
         }
         """
       },
@@ -498,7 +504,8 @@ final class JsonSerializableToJsonTest {
           "elementId": "",
           "elementInstanceKey": -1,
           "jobKey": -1,
-          "variableScopeKey": -1
+          "variableScopeKey": -1,
+          "tenantId": ""
         }
         """
       },
@@ -580,7 +587,8 @@ final class JsonSerializableToJsonTest {
               "errorMessage": "failed message",
               "errorCode": "error",
               "customHeaders": {},
-              "deadline": 1000
+              "deadline": 1000,
+              "tenantId": ""
             }
           ],
           "timeout": 2
@@ -673,7 +681,8 @@ final class JsonSerializableToJsonTest {
           "customHeaders": {
             "workerVersion": "42"
           },
-          "deadline": 13
+          "deadline": 13,
+          "tenantId": ""
         }
         """
       },
@@ -701,7 +710,8 @@ final class JsonSerializableToJsonTest {
           "errorMessage": "",
           "errorCode": "",
           "customHeaders": {},
-          "deadline": -1
+          "deadline": -1,
+          "tenantId": ""
         }
         """
       },
@@ -734,7 +744,8 @@ final class JsonSerializableToJsonTest {
           "recurringTime": -1,
           "errorCode": "",
           "processDefinitionVersion": -1,
-          "customHeaders": {}
+          "customHeaders": {},
+          "tenantId": ""
         }
         """
       },
@@ -767,7 +778,8 @@ final class JsonSerializableToJsonTest {
           },
           "messageId": "test-id",
           "name": "test-message",
-          "deadline": 22
+          "deadline": 22,
+          "tenantId": ""
         }
         """
       },
@@ -794,7 +806,8 @@ final class JsonSerializableToJsonTest {
           "variables": {},
           "messageId": "",
           "name": "test-message",
-          "deadline": -1
+          "deadline": -1,
+          "tenantId": ""
         }
         """
       },
@@ -871,7 +884,8 @@ final class JsonSerializableToJsonTest {
           "correlationKey": "test-key",
           "variables": {
             "foo": "bar"
-          }
+          },
+          "tenantId": ""
         }
         """
       },
@@ -897,7 +911,8 @@ final class JsonSerializableToJsonTest {
           "processInstanceKey": -1,
           "messageKey": -1,
           "correlationKey": "",
-          "variables": {}
+          "variables": {},
+          "tenantId": ""
         }
         """
       },
@@ -936,7 +951,8 @@ final class JsonSerializableToJsonTest {
           "variables": {
             "foo": "bar"
           },
-          "interrupting": true
+          "interrupting": true,
+          "tenantId": ""
         }
         """
       },
@@ -964,7 +980,8 @@ final class JsonSerializableToJsonTest {
           "bpmnProcessId": "",
           "messageKey": -1,
           "variables": {},
-          "interrupting": true
+          "interrupting": true,
+          "tenantId": ""
         }
         """
       },
@@ -1007,7 +1024,8 @@ final class JsonSerializableToJsonTest {
           "messageKey": 3,
           "correlationKey": "key",
           "elementId": "A",
-          "interrupting": true
+          "interrupting": true,
+          "tenantId": ""
         }
         """
       },
@@ -1036,7 +1054,8 @@ final class JsonSerializableToJsonTest {
           "messageKey": -1,
           "correlationKey": "",
           "elementId": "",
-          "interrupting": true
+          "interrupting": true,
+          "tenantId": ""
         }
         """
       },
@@ -1070,7 +1089,8 @@ final class JsonSerializableToJsonTest {
           "dueDate": 1234,
           "targetElementId": "node1",
           "repetitions": 3,
-          "processDefinitionKey": 13
+          "processDefinitionKey": 13,
+          "tenantId": ""
         }
         """
       },
@@ -1104,7 +1124,8 @@ final class JsonSerializableToJsonTest {
           "processDefinitionKey": 4,
           "bpmnProcessId": "process",
           "name": "x",
-          "value": "1"
+          "value": "1",
+          "tenantId": ""
         }
         """
       },
@@ -1130,7 +1151,8 @@ final class JsonSerializableToJsonTest {
           "variables": {
             "foo": 1
           },
-          "scopeKey": 3
+          "scopeKey": 3,
+          "tenantId": ""
         }
         """
       },
@@ -1150,7 +1172,8 @@ final class JsonSerializableToJsonTest {
         {
           "updateSemantics": "PROPAGATE",
           "variables": {},
-          "scopeKey": 3
+          "scopeKey": 3,
+          "tenantId": ""
         }
         """
       },
@@ -1192,7 +1215,8 @@ final class JsonSerializableToJsonTest {
             {
               "elementId": "element"
             }
-          ]
+          ],
+          "tenantId": ""
         }
         """
       },
@@ -1210,7 +1234,8 @@ final class JsonSerializableToJsonTest {
           "processDefinitionKey": -1,
           "version": -1,
           "processInstanceKey": -1,
-          "startInstructions": []
+          "startInstructions": [],
+          "tenantId": ""
         }
         """
       },
@@ -1260,7 +1285,8 @@ final class JsonSerializableToJsonTest {
             "elementId": "activity",
             "ancestorScopeKeys": [1,3]
           }],
-          "ancestorScopeKeys": [1,3]
+          "ancestorScopeKeys": [1,3],
+          "tenantId": ""
         }
         """
       },
@@ -1277,7 +1303,8 @@ final class JsonSerializableToJsonTest {
           "processInstanceKey": 1,
           "terminateInstructions": [],
           "activateInstructions": [],
-          "ancestorScopeKeys": []
+          "ancestorScopeKeys": [],
+          "tenantId": ""
         }
         """
       },
@@ -1320,7 +1347,8 @@ final class JsonSerializableToJsonTest {
           "bpmnElementType": "SERVICE_TASK",
           "parentProcessInstanceKey": 11,
           "parentElementInstanceKey": 22,
-          "bpmnEventType": "UNSPECIFIED"
+          "bpmnEventType": "UNSPECIFIED",
+          "tenantId": ""
         }
         """
       },
@@ -1342,7 +1370,8 @@ final class JsonSerializableToJsonTest {
           "bpmnElementType": "UNSPECIFIED",
           "parentProcessInstanceKey": -1,
           "parentElementInstanceKey": -1,
-          "bpmnEventType": "UNSPECIFIED"
+          "bpmnEventType": "UNSPECIFIED",
+          "tenantId": ""
         }
         """
       },
@@ -1369,7 +1398,8 @@ final class JsonSerializableToJsonTest {
           "decisionKey": 2,
           "decisionRequirementsKey": 3,
           "decisionRequirementsId": "decision-requirements-id",
-          "duplicate": false
+          "duplicate": false,
+          "tenantId": ""
         }
         """
       },
@@ -1400,7 +1430,8 @@ final class JsonSerializableToJsonTest {
           "resourceName": "resource-name",
           "resource": "cmVzb3VyY2U=",
           "checksum": "Y2hlY2tzdW0=",
-          "duplicate": false
+          "duplicate": false,
+          "tenantId": ""
         }
         """
       },
@@ -1507,7 +1538,8 @@ final class JsonSerializableToJsonTest {
             }
           ],
           "evaluationFailureMessage":"evaluation-failure-message",
-          "failedDecisionId":"failed-decision-id"
+          "failedDecisionId":"failed-decision-id",
+          "tenantId": ""
         }
         """
       },
@@ -1535,7 +1567,8 @@ final class JsonSerializableToJsonTest {
           "elementId":"",
           "evaluatedDecisions":[],
           "evaluationFailureMessage":"",
-          "failedDecisionId":""
+          "failedDecisionId":"",
+          "tenantId": ""
         }
         """
       },
@@ -1570,7 +1603,8 @@ final class JsonSerializableToJsonTest {
           "processInstanceKey":4,
           "escalationCode": "escalation",
           "throwElementId": "throw",
-          "catchElementId": "catch"
+          "catchElementId": "catch",
+          "tenantId": ""
         }
         """
       },
@@ -1586,7 +1620,8 @@ final class JsonSerializableToJsonTest {
           "processInstanceKey":-1,
           "escalationCode": "",
           "throwElementId": "",
-          "catchElementId": ""
+          "catchElementId": "",
+          "tenantId": ""
         }
         """
       },
@@ -1609,7 +1644,8 @@ final class JsonSerializableToJsonTest {
           "signalName":"test-signal",
           "variables": {
             "foo": "bar"
-          }
+          },
+          "tenantId": ""
         }
         """
       },
@@ -1628,7 +1664,8 @@ final class JsonSerializableToJsonTest {
         """
         {
           "signalName":"test-signal",
-          "variables": {}
+          "variables": {},
+          "tenantId": ""
         }
         """
       },
@@ -1658,7 +1695,8 @@ final class JsonSerializableToJsonTest {
           "signalName": "name",
           "catchEventId": "startEvent",
           "bpmnProcessId": "process",
-          "catchEventInstanceKey":3
+          "catchEventInstanceKey":3,
+          "tenantId": ""
         }
         """
       },
@@ -1680,7 +1718,8 @@ final class JsonSerializableToJsonTest {
           "signalName":"",
           "catchEventId":"",
           "bpmnProcessId":"",
-          "catchEventInstanceKey":-1
+          "catchEventInstanceKey":-1,
+          "tenantId": ""
         }
         """
       },
@@ -1697,7 +1736,8 @@ final class JsonSerializableToJsonTest {
             },
         """
         {
-          "resourceKey":1
+          "resourceKey":1,
+          "tenantId": ""
         }
         """
       },
@@ -1749,7 +1789,8 @@ final class JsonSerializableToJsonTest {
               "duplicate": false
             }],
             "decisionsMetadata": [],
-            "decisionRequirementsMetadata": []
+            "decisionRequirementsMetadata": [],
+            "tenantId": ""
           }
         }
         """
@@ -1786,7 +1827,8 @@ final class JsonSerializableToJsonTest {
         {
           "processInstanceKey": 123,
           "batchElementInstanceKey": 456,
-          "index": 10
+          "index": 10,
+          "tenantId": ""
         }
         """
       },
@@ -1805,7 +1847,8 @@ final class JsonSerializableToJsonTest {
         {
           "processInstanceKey": 123,
           "batchElementInstanceKey": 456,
-          "index": -1
+          "index": -1,
+          "tenantId": ""
         }
         """
       },
