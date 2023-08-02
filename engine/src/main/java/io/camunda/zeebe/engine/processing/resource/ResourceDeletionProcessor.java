@@ -7,6 +7,10 @@
  */
 package io.camunda.zeebe.engine.processing.resource;
 
+import static io.camunda.zeebe.engine.state.instance.TimerInstance.NO_ELEMENT_INSTANCE;
+
+import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
+import io.camunda.zeebe.engine.processing.common.CatchEventBehavior;
 import io.camunda.zeebe.engine.processing.common.CommandDistributionBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.DistributedTypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
@@ -20,6 +24,7 @@ import io.camunda.zeebe.engine.state.immutable.DecisionState;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.immutable.ProcessState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
+import io.camunda.zeebe.engine.state.immutable.TimerInstanceState;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DecisionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DecisionRequirementsRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.ProcessRecord;
@@ -45,12 +50,15 @@ public class ResourceDeletionProcessor
   private final CommandDistributionBehavior commandDistributionBehavior;
   private final ProcessState processState;
   private final ElementInstanceState elementInstanceState;
+  private final TimerInstanceState timerInstanceState;
+  private final CatchEventBehavior catchEventBehavior;
 
   public ResourceDeletionProcessor(
       final Writers writers,
       final KeyGenerator keyGenerator,
       final ProcessingState processingState,
-      final CommandDistributionBehavior commandDistributionBehavior) {
+      final CommandDistributionBehavior commandDistributionBehavior,
+      final BpmnBehaviors bpmnBehaviors) {
     stateWriter = writers.state();
     responseWriter = writers.response();
     rejectionWriter = writers.rejection();
@@ -59,6 +67,8 @@ public class ResourceDeletionProcessor
     this.commandDistributionBehavior = commandDistributionBehavior;
     processState = processingState.getProcessState();
     elementInstanceState = processingState.getElementInstanceState();
+    timerInstanceState = processingState.getTimerState();
+    catchEventBehavior = bpmnBehaviors.catchEventBehavior();
   }
 
   @Override
@@ -166,6 +176,12 @@ public class ResourceDeletionProcessor
             .setResourceName(process.getResourceName());
     stateWriter.appendFollowUpEvent(keyGenerator.nextKey(), ProcessIntent.DELETING, processRecord);
 
+    final var latestVersion =
+        processState.getLatestProcessVersion(processRecord.getBpmnProcessId());
+    if (latestVersion == process.getVersion()) {
+      unsubscribeStartEvents(process);
+    }
+
     final var hasRunningInstances =
         elementInstanceState.hasActiveProcessInstances(process.getKey());
 
@@ -173,6 +189,19 @@ public class ResourceDeletionProcessor
       stateWriter.appendFollowUpEvent(keyGenerator.nextKey(), ProcessIntent.DELETED, processRecord);
     } else {
       throw new ActiveProcessInstancesException(process.getKey());
+    }
+  }
+
+  private void unsubscribeStartEvents(final DeployedProcess deployedProcess) {
+    final var process = deployedProcess.getProcess();
+    if (process.hasTimerStartEvent()) {
+      timerInstanceState.forEachTimerForElementInstance(
+          NO_ELEMENT_INSTANCE,
+          timer -> {
+            if (timer.getProcessDefinitionKey() == deployedProcess.getKey()) {
+              catchEventBehavior.unsubscribeFromTimerEvent(timer);
+            }
+          });
     }
   }
 
