@@ -15,6 +15,7 @@ import io.camunda.zeebe.msgpack.spec.MsgPackWriter;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.camunda.zeebe.protocol.impl.record.value.resource.ResourceDeletionRecord;
+import io.camunda.zeebe.protocol.impl.record.value.signal.SignalRecord;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.value.CommandDistributionRecordValue;
@@ -33,6 +34,7 @@ public final class CommandDistributionRecord extends UnifiedRecordValue
   static {
     RECORDS_BY_TYPE.put(ValueType.DEPLOYMENT, DeploymentRecord::new);
     RECORDS_BY_TYPE.put(ValueType.RESOURCE_DELETION, ResourceDeletionRecord::new);
+    RECORDS_BY_TYPE.put(ValueType.SIGNAL, SignalRecord::new);
   }
 
   /*
