@@ -11,12 +11,12 @@ import io.camunda.zeebe.db.DbValue;
 import io.camunda.zeebe.msgpack.UnpackedObject;
 import io.camunda.zeebe.msgpack.property.EnumProperty;
 
-public final class MigrationState extends UnpackedObject implements DbValue {
+public final class MigrationTaskState extends UnpackedObject implements DbValue {
 
   private final EnumProperty<State> stateProp =
       new EnumProperty<>("state", State.class, State.FINISHED);
 
-  public MigrationState() {
+  public MigrationTaskState() {
     declareProperty(stateProp);
   }
 
