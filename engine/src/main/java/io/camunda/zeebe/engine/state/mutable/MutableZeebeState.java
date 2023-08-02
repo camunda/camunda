@@ -51,6 +51,7 @@ public interface MutableZeebeState extends ZeebeState {
   @Override
   MutableEventScopeInstanceState getEventScopeInstanceState();
 
+  @Override
   MutableMigrationState getMigrationState();
 
   MutablePendingMessageSubscriptionState getPendingMessageSubscriptionState();

@@ -40,6 +40,8 @@ public interface ZeebeState extends StreamProcessorLifecycleAware {
 
   DecisionState getDecisionState();
 
+  MigrationState getMigrationState();
+
   int getPartitionId();
 
   boolean isEmpty(final ZbColumnFamilies column);

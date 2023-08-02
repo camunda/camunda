@@ -7,7 +7,9 @@
  */
 package io.camunda.zeebe.engine.state.mutable;
 
-public interface MutableMigrationState {
+import io.camunda.zeebe.engine.state.immutable.MigrationState;
+
+public interface MutableMigrationState extends MigrationState {
 
   void migrateMessageSubscriptionSentTime(
       final MutableMessageSubscriptionState messageSubscriptionState,
