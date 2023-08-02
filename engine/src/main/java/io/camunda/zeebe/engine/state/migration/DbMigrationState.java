@@ -21,6 +21,7 @@ import io.camunda.zeebe.engine.state.deployment.PersistedDecisionRequirements;
 import io.camunda.zeebe.engine.state.immutable.PendingMessageSubscriptionState;
 import io.camunda.zeebe.engine.state.immutable.PendingProcessMessageSubscriptionState;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
+import io.camunda.zeebe.engine.state.migration.MigrationState.State;
 import io.camunda.zeebe.engine.state.mutable.MutableElementInstanceState;
 import io.camunda.zeebe.engine.state.mutable.MutableEventScopeInstanceState;
 import io.camunda.zeebe.engine.state.mutable.MutableMessageSubscriptionState;
@@ -356,5 +357,12 @@ public class DbMigrationState implements MutableMigrationState {
   public void markMigrationFinished(final String identifier) {
     migrationIdentifier.wrapString(identifier);
     migrationStateColumnFamily.upsert(migrationIdentifier, new MigrationState());
+  }
+
+  @Override
+  public boolean isMigrationFinished(final String identifier) {
+    migrationIdentifier.wrapString(identifier);
+    final MigrationTaskState migrationState = migrationStateColumnFamily.get(migrationIdentifier);
+    return migrationState != null && migrationState.getState() == State.FINISHED;
   }
 }
