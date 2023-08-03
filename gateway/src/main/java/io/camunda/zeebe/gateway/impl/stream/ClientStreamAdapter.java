@@ -23,13 +23,17 @@ import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
 import io.grpc.stub.ServerCallStreamObserver;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
 import org.agrona.DirectBuffer;
 
 public class ClientStreamAdapter {
   private final ClientStreamer<JobActivationProperties> jobStreamer;
+  private final Executor executor;
 
-  public ClientStreamAdapter(final ClientStreamer<JobActivationProperties> jobStreamer) {
+  public ClientStreamAdapter(
+      final ClientStreamer<JobActivationProperties> jobStreamer, final Executor executor) {
     this.jobStreamer = jobStreamer;
+    this.executor = executor;
   }
 
   public void handle(
@@ -53,15 +57,14 @@ public class ClientStreamAdapter {
       final ServerCallStreamObserver<ActivatedJob> responseObserver) {
     final JobActivationProperties jobActivationProperties = toJobActivationProperties(request);
 
-    final ActorFuture<ClientStreamId> clientStreamId =
+    final var futureId =
         jobStreamer.add(
             wrapString(request.getType()),
             jobActivationProperties,
-            new ClientStreamConsumerImpl(responseObserver));
-
-    final var removeJobStream = new JobStreamRemover(clientStreamId, jobStreamer);
-    responseObserver.setOnCloseHandler(removeJobStream);
-    responseObserver.setOnCancelHandler(removeJobStream);
+            new ClientStreamConsumerImpl(responseObserver, executor));
+    final var cleaner = new JobStreamRemover(futureId);
+    responseObserver.setOnCloseHandler(cleaner);
+    responseObserver.setOnCancelHandler(cleaner);
   }
 
   private void handleError(
@@ -75,40 +78,54 @@ public class ClientStreamAdapter {
         new StatusRuntimeException(Status.INVALID_ARGUMENT.withDescription(errorMessage)));
   }
 
-  static class ClientStreamConsumerImpl implements ClientStreamConsumer {
+  @SuppressWarnings("ClassCanBeRecord")
+  private static final class ClientStreamConsumerImpl implements ClientStreamConsumer {
     private final ServerCallStreamObserver<ActivatedJob> responseObserver;
+    private final Executor executor;
 
-    public ClientStreamConsumerImpl(final ServerCallStreamObserver<ActivatedJob> responseObserver) {
+    public ClientStreamConsumerImpl(
+        final ServerCallStreamObserver<ActivatedJob> responseObserver, final Executor executor) {
       this.responseObserver = responseObserver;
+      this.executor = executor;
     }
 
     @Override
     public CompletableFuture<Void> push(final DirectBuffer payload) {
-      // TODO use gRPCExecutor thread pool
-      return CompletableFuture.runAsync(
-          () -> {
-            final ActivatedJobImpl deserializedJob = new ActivatedJobImpl();
-            deserializedJob.wrap(payload);
-            final ActivatedJob activatedJob = ResponseMapper.toActivatedJob(deserializedJob);
+      return CompletableFuture.runAsync(() -> handlePushedJob(payload), executor);
+    }
 
-            try {
-              responseObserver.onNext(activatedJob);
-            } catch (final Exception e) {
-              responseObserver.onError(e);
-              CompletableFuture.failedFuture(e);
-            }
-          });
+    private void handlePushedJob(final DirectBuffer payload) {
+      final ActivatedJobImpl deserializedJob = new ActivatedJobImpl();
+      deserializedJob.wrap(payload);
+      final ActivatedJob activatedJob = ResponseMapper.toActivatedJob(deserializedJob);
+
+      try {
+        responseObserver.onNext(activatedJob);
+      } catch (final Exception e) {
+        responseObserver.onError(e);
+        CompletableFuture.failedFuture(e);
+      }
     }
   }
 
-  private record JobStreamRemover(
-      ActorFuture<ClientStreamId> clientStreamId,
-      ClientStreamer<JobActivationProperties> jobStreamer)
-      implements Runnable {
+  private final class JobStreamRemover implements Runnable {
+    private final ActorFuture<ClientStreamId> clientStreamId;
+
+    private JobStreamRemover(final ActorFuture<ClientStreamId> clientStreamId) {
+      this.clientStreamId = clientStreamId;
+    }
 
     @Override
     public void run() {
-      clientStreamId.onComplete((streamId, throwable) -> jobStreamer.remove(streamId));
+      clientStreamId.onComplete(this::onJobStreamerId, executor);
+    }
+
+    private void onJobStreamerId(final ClientStreamId id, final Throwable error) {
+      if (error != null) {
+        return;
+      }
+
+      jobStreamer.remove(id);
     }
   }
 }

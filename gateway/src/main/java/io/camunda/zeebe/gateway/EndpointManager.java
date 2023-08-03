@@ -77,9 +77,6 @@ public final class EndpointManager {
   private final RequestRetryHandler requestRetryHandler;
   private final ClientStreamAdapter clientStreamAdapter;
 
-  @SuppressWarnings({"FieldCanBeLocal", "unused"})
-  private final Executor executor;
-
   public EndpointManager(
       final BrokerClient brokerClient,
       final ActivateJobsHandler activateJobsHandler,
@@ -87,9 +84,8 @@ public final class EndpointManager {
       final Executor executor) {
     this.brokerClient = brokerClient;
     this.activateJobsHandler = activateJobsHandler;
-    this.executor = executor;
 
-    clientStreamAdapter = new ClientStreamAdapter(jobStreamer);
+    clientStreamAdapter = new ClientStreamAdapter(jobStreamer, executor);
     topologyManager = brokerClient.getTopologyManager();
     requestRetryHandler = new RequestRetryHandler(brokerClient, topologyManager);
   }
