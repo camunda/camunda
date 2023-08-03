@@ -17,6 +17,7 @@ import io.camunda.zeebe.dmn.EvaluatedOutput;
 import io.camunda.zeebe.dmn.MatchedRule;
 import io.camunda.zeebe.dmn.ParsedDecisionRequirementsGraph;
 import io.camunda.zeebe.dmn.impl.VariablesContext;
+import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.metrics.ProcessEngineMetrics;
 import io.camunda.zeebe.engine.state.deployment.PersistedDecision;
 import io.camunda.zeebe.engine.state.deployment.PersistedDecisionRequirements;
@@ -31,10 +32,9 @@ import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import io.camunda.zeebe.util.collection.Tuple;
 import java.io.ByteArrayInputStream;
-import java.util.Optional;
 import java.util.stream.Collectors;
 import org.agrona.DirectBuffer;
-import org.agrona.collections.Long2ObjectHashMap;
+import org.agrona.collections.LongLruCache;
 
 public class DecisionBehavior {
 
@@ -42,17 +42,24 @@ public class DecisionBehavior {
   private final DecisionEngine decisionEngine;
   private final DecisionState decisionState;
   private final ProcessEngineMetrics metrics;
-  private final Long2ObjectHashMap<ParsedDecisionRequirementsGraph> parsedDecisionGraphs =
-      new Long2ObjectHashMap<>();
+  private final LongLruCache<Either<Failure, ParsedDecisionRequirementsGraph>>
+      parsedDecisionGraphsCache;
 
   public DecisionBehavior(
+      final EngineConfiguration config,
       final DecisionEngine decisionEngine,
       final ProcessingState processingState,
       final ProcessEngineMetrics metrics) {
-
-    decisionState = processingState.getDecisionState();
     this.decisionEngine = decisionEngine;
+    decisionState = processingState.getDecisionState();
     this.metrics = metrics;
+
+    parsedDecisionGraphsCache =
+        new LongLruCache<>(
+            config.getDmnParsedDecisionGraphCacheCapacity(),
+            key ->
+                findDrgByDecisionRequirementsKey(key).flatMap(drg -> parseDrg(drg.getResource())),
+            parsedDecisionRequirementsGraph -> {});
   }
 
   public Either<Failure, PersistedDecision> findDecisionById(final String decisionId) {
@@ -70,24 +77,12 @@ public class DecisionBehavior {
 
   public Either<Failure, ParsedDecisionRequirementsGraph> findAndParseDrgByDecision(
       final PersistedDecision persistedDecision) {
-    return Optional.ofNullable(
-            parsedDecisionGraphs.get(persistedDecision.getDecisionRequirementsKey()))
-        .map(Either::<Failure, ParsedDecisionRequirementsGraph>right)
-        .orElseGet(
-            () ->
-                findDrgByDecision(persistedDecision)
-                    .flatMap(drg -> parseDrg(drg.getResource()))
-                    .map(
-                        graph -> {
-                          parsedDecisionGraphs.put(
-                              persistedDecision.getDecisionRequirementsKey(), graph);
-                          return graph;
-                        })
-                    .mapLeft(
-                        failure ->
-                            formatDecisionLookupFailure(
-                                failure,
-                                BufferUtil.bufferAsString(persistedDecision.getDecisionId()))));
+    return parsedDecisionGraphsCache
+        .lookup(persistedDecision.getDecisionRequirementsKey())
+        .mapLeft(
+            failure ->
+                formatDecisionLookupFailure(
+                    failure, BufferUtil.bufferAsString(persistedDecision.getDecisionId())));
   }
 
   public Failure formatDecisionLookupFailure(final Failure failure, final long decisionKey) {
@@ -168,12 +163,13 @@ public class DecisionBehavior {
     }
   }
 
-  private Either<Failure, PersistedDecisionRequirements> findDrgByDecision(
-      final PersistedDecision decision) {
-    final var key = decision.getDecisionRequirementsKey();
-    final var id = decision.getDecisionRequirementsId();
-    return Either.ofOptional(decisionState.findDecisionRequirementsByKey(key))
-        .orElse(new Failure("no drg found for id '%s'".formatted(bufferAsString(id))));
+  private Either<Failure, PersistedDecisionRequirements> findDrgByDecisionRequirementsKey(
+      final Long decisionRequirementsKey) {
+    return Either.ofOptional(decisionState.findDecisionRequirementsByKey(decisionRequirementsKey))
+        .orElse(
+            new Failure(
+                "no drg found for decisionRequirementsKey '%d'"
+                    .formatted(decisionRequirementsKey)));
   }
 
   private Either<Failure, ParsedDecisionRequirementsGraph> parseDrg(final DirectBuffer resource) {

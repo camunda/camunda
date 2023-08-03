@@ -14,6 +14,7 @@ import io.camunda.zeebe.engine.EngineConfiguration;
 public final class EngineCfg implements ConfigurationEntry {
 
   private MessagesCfg messages = new MessagesCfg();
+  private CachesCfg caches = new CachesCfg();
 
   @Override
   public void init(final BrokerCfg globalConfig, final String brokerBase) {
@@ -28,14 +29,23 @@ public final class EngineCfg implements ConfigurationEntry {
     this.messages = messages;
   }
 
+  public CachesCfg getCaches() {
+    return caches;
+  }
+
+  public void setCaches(final CachesCfg caches) {
+    this.caches = caches;
+  }
+
   @Override
   public String toString() {
-    return "EngineCfg{" + "messages=" + messages + '}';
+    return "EngineCfg{" + "messages=" + messages + ", caches=" + caches + '}';
   }
 
   public EngineConfiguration createEngineConfiguration() {
     return new EngineConfiguration()
         .setMessagesTtlCheckerBatchLimit(messages.getTtlCheckerBatchLimit())
-        .setMessagesTtlCheckerInterval(messages.getTtlCheckerInterval());
+        .setMessagesTtlCheckerInterval(messages.getTtlCheckerInterval())
+        .setDmnParsedDecisionGraphCacheCapacity(caches.getDmnParsedDecisionGraphCacheCapacity());
   }
 }

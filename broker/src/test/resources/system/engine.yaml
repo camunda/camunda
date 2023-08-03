@@ -5,3 +5,4 @@ zeebe:
         messages:
           ttlCheckerBatchLimit: 1000
           ttlCheckerInterval: 15s
+        dmnParsedDecisionGraphCacheCapacity: 10000

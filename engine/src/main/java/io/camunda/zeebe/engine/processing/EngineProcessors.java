@@ -65,7 +65,6 @@ public final class EngineProcessors {
       final InterPartitionCommandSender interPartitionCommandSender,
       final FeatureFlags featureFlags,
       final JobStreamer jobStreamer) {
-
     final var processingState = typedRecordProcessorContext.getProcessingState();
     final var scheduledTaskStateFactory =
         typedRecordProcessorContext.getScheduledTaskStateFactory();
@@ -91,7 +90,10 @@ public final class EngineProcessors {
 
     final var decisionBehavior =
         new DecisionBehavior(
-            DecisionEngineFactory.createDecisionEngine(), processingState, processEngineMetrics);
+            typedRecordProcessorContext.getConfig(),
+            DecisionEngineFactory.createDecisionEngine(),
+            processingState,
+            processEngineMetrics);
     final BpmnBehaviorsImpl bpmnBehaviors =
         createBehaviors(
             processingState,

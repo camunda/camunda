@@ -48,14 +48,12 @@ public class JMHEnginePerformanceTest {
             .build();
 
     // when
-    // TODO setup assert
-    //    final var runResults =
-    new Runner(opt).run();
+    final var runResults = new Runner(opt).run();
 
     // then
-    //    for (final RunResult runResult : runResults) {
-    //      assertDeviationWithin(runResult, 3, 0.5);
-    //    }
+    for (final RunResult runResult : runResults) {
+      assertDeviationWithin(runResult, 1, 0.25);
+    }
   }
 
   @Test
@@ -67,14 +65,12 @@ public class JMHEnginePerformanceTest {
             .build();
 
     // when
-    // TODO setup assert
-    //    final var runResults =
-    new Runner(opt).run();
+    final var runResults = new Runner(opt).run();
 
     // then
-    //    for (final RunResult runResult : runResults) {
-    //      assertDeviationWithin(runResult, 3, 0.5);
-    //    }
+    for (final RunResult runResult : runResults) {
+      assertDeviationWithin(runResult, 3.5, 0.25);
+    }
   }
 
   private static void assertDeviationWithin(

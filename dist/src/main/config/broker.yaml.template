@@ -952,6 +952,12 @@
         # enabled: false
 
       # engine:
+        # caches:
+          # Allows to configure the size of an LRU cache used to hold parsed dmn decision graphs.
+          # The cache significantly improves the processling latency of DMN tasks and should be tuned
+          # to be able to hold frequently processed DMN models.
+          # This setting can also be set using the environment variable ZEEBE_BROKER_EXPERIMENTAL_ENGINE_CACHES_DMNPARSEDDECISIONGRAPHCACHECAPACITY
+          # dmnParsedDecisionGraphCacheCapacity: 5000
         # messages:
           # Allows to configure the Message TTL Checker's batch limit. This is the number of buffered
           # messages that it can expire in a single batch. When it reaches this limit, it expires
