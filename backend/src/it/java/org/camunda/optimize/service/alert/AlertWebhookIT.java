@@ -154,7 +154,7 @@ public class AlertWebhookIT extends AbstractAlertIT {
 
     // then
     client.verifyZeroInteractions();
-    alertJobLogs.assertContains("Exception thrown while trying to send notification");
+    alertJobLogs.assertContains("Exception thrown while trying to send notification: webhook notification");
   }
 
   @Test
@@ -179,7 +179,7 @@ public class AlertWebhookIT extends AbstractAlertIT {
 
     // then
     client.verifyZeroInteractions();
-    alertJobLogs.assertContains("Exception thrown while trying to send notification");
+    alertJobLogs.assertContains("Exception thrown while trying to send notification: webhook notification");
   }
 
   @Test

@@ -89,11 +89,16 @@ public class WebhookNotificationService implements AlertNotificationService, Con
     }
 
     final WebhookConfiguration webhookConfiguration = webhookConfigurationMap.get(destination);
-    log.debug(
+    log.info(
       "Sending webhook notification for alert [id: {}, name: {}] to webhook: '{}'.",
       alert.getId(), alert.getName(), destination
     );
     sendWebhookRequest(notification, webhookConfiguration, destination);
+  }
+
+  @Override
+  public String getNotificationDescription() {
+    return "webhook notification";
   }
 
   private void sendWebhookRequest(final AlertNotificationDto notification, final WebhookConfiguration webhook,

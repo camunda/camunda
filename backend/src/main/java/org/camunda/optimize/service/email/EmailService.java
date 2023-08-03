@@ -77,7 +77,7 @@ public class EmailService {
       }
     } else if (StringUtils.isNotEmpty(recipient)) {
       log.warn(
-        "The email service is not enabled, so no email will be sent. Please check the Optimize documentation on how to enable" +
+        "The email service is not enabled, so no email will be sent. Please check the Optimize documentation on how to enable " +
           "email notifications!");
     }
   }

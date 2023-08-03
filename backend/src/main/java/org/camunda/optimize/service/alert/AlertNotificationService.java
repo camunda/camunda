@@ -9,4 +9,6 @@ import org.camunda.optimize.dto.optimize.alert.AlertNotificationDto;
 
 public interface AlertNotificationService {
   void notify(AlertNotificationDto notification);
+
+  String getNotificationDescription();
 }

@@ -7,7 +7,6 @@ package org.camunda.optimize.service.alert;
 
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.camunda.optimize.JettyConfig;
 import org.camunda.optimize.dto.optimize.alert.AlertNotificationDto;
 import org.camunda.optimize.dto.optimize.alert.AlertNotificationType;
 import org.camunda.optimize.dto.optimize.query.alert.AlertDefinitionDto;
@@ -34,7 +33,6 @@ import org.springframework.context.annotation.Scope;
 
 import java.util.List;
 import java.util.Optional;
-import java.util.concurrent.TimeUnit;
 
 import static org.camunda.optimize.dto.optimize.alert.AlertNotificationType.NEW;
 import static org.camunda.optimize.dto.optimize.alert.AlertNotificationType.REMINDER;
@@ -53,7 +51,6 @@ public class AlertJob implements Job {
   private final ReportReader reportReader;
   private final AlertWriter alertWriter;
   private final PlainReportEvaluationHandler reportEvaluator;
-  private final JettyConfig jettyConfig;
 
   @Override
   public void execute(final JobExecutionContext jobExecutionContext) {
@@ -153,7 +150,11 @@ public class AlertJob implements Job {
       try {
         notificationService.notify(notification);
       } catch (Exception e) {
-        log.error("Exception thrown while trying to send notification", e);
+        log.error(
+          "Exception thrown while trying to send notification: {}",
+          notificationService.getNotificationDescription(),
+          e
+        );
       }
     }
   }

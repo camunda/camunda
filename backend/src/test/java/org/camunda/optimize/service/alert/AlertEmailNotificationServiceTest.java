@@ -9,6 +9,9 @@ import com.icegreen.greenmail.util.DummySSLSocketFactory;
 import com.icegreen.greenmail.util.GreenMail;
 import com.icegreen.greenmail.util.GreenMailUtil;
 import com.icegreen.greenmail.util.ServerSetup;
+import org.camunda.optimize.dto.optimize.alert.AlertNotificationDto;
+import org.camunda.optimize.dto.optimize.alert.AlertNotificationType;
+import org.camunda.optimize.dto.optimize.query.alert.AlertDefinitionDto;
 import org.camunda.optimize.service.email.EmailService;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.ConfigurationServiceBuilder;
@@ -20,7 +23,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
-import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.servlet.view.freemarker.FreeMarkerConfigurer;
@@ -29,9 +31,9 @@ import javax.mail.Message;
 import javax.mail.MessagingException;
 import javax.mail.internet.MimeMessage;
 import java.security.Security;
+import java.util.List;
 import java.util.stream.Stream;
 
-import static com.google.common.collect.Lists.newArrayList;
 import static java.util.Collections.singletonList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.service.util.configuration.EmailSecurityProtocol.NONE;
@@ -44,7 +46,6 @@ public class AlertEmailNotificationServiceTest {
   private ConfigurationService configurationService;
 
   private AlertEmailNotificationService notificationService;
-  private EmailService emailService;
   @Autowired
   private FreeMarkerConfigurer freemarkerConfigurer;
 
@@ -59,7 +60,7 @@ public class AlertEmailNotificationServiceTest {
     configurationService.setNotificationEmailAddress("from@localhost.com");
     configurationService.setNotificationEmailHostname("127.0.0.1");
     configurationService.setNotificationEmailPort(4444);
-    this.emailService = new EmailService(configurationService, freemarkerConfigurer);
+    EmailService emailService = new EmailService(configurationService, freemarkerConfigurer);
     this.notificationService = new AlertEmailNotificationService(configurationService, emailService);
   }
 
@@ -84,7 +85,7 @@ public class AlertEmailNotificationServiceTest {
     initGreenMail(ServerSetup.PROTOCOL_SMTP);
 
     // when
-    notificationService.notify("some body text", singletonList("to@localhost.com"));
+    notificationService.notify(createEmailNotification("some body text", singletonList("to@localhost.com")));
 
     // then
     MimeMessage[] emails = greenMail.getReceivedMessages();
@@ -100,7 +101,7 @@ public class AlertEmailNotificationServiceTest {
     initGreenMail(ServerSetup.PROTOCOL_SMTPS);
 
     // when
-    notificationService.notify("some body text", singletonList("to@localhost.com"));
+    notificationService.notify(createEmailNotification("some body text", singletonList("to@localhost.com")));
 
     // then
     MimeMessage[] emails = greenMail.getReceivedMessages();
@@ -115,7 +116,7 @@ public class AlertEmailNotificationServiceTest {
     initGreenMail(ServerSetup.PROTOCOL_SMTP);
 
     // when
-    notificationService.notify("some body text", singletonList("to@localhost.com"));
+    notificationService.notify(createEmailNotification("some body text", singletonList("to@localhost.com")));
 
     // then
     MimeMessage[] emails = greenMail.getReceivedMessages();
@@ -131,7 +132,7 @@ public class AlertEmailNotificationServiceTest {
     initGreenMail(ServerSetup.PROTOCOL_SMTPS);
 
     // when
-    notificationService.notify("some body text", singletonList("to@localhost.com"));
+    notificationService.notify(createEmailNotification("some body text", singletonList("to@localhost.com")));
 
     // then
     MimeMessage[] emails = greenMail.getReceivedMessages();
@@ -145,7 +146,7 @@ public class AlertEmailNotificationServiceTest {
     initGreenMail(ServerSetup.PROTOCOL_SMTP);
 
     // when
-    notificationService.notify("some body text", newArrayList("to1@localhost.com", "to2@localhost.com"));
+    notificationService.notify(createEmailNotification("some body text", List.of("to1@localhost.com", "to2@localhost.com")));
 
     // then
     MimeMessage[] emails = greenMail.getReceivedMessages();
@@ -161,10 +162,10 @@ public class AlertEmailNotificationServiceTest {
     initGreenMail(ServerSetup.PROTOCOL_SMTP);
 
     // when
-    notificationService.notify(
+    notificationService.notify(createEmailNotification(
       "some body text",
-      newArrayList("invalidAddressThatThrowsError", "to2@localhost.com")
-    );
+      List.of("invalidAddressThatThrowsError", "to2@localhost.com")
+    ));
 
     // then
     MimeMessage[] emails = greenMail.getReceivedMessages();
@@ -179,10 +180,10 @@ public class AlertEmailNotificationServiceTest {
     initGreenMail(ServerSetup.PROTOCOL_SMTP);
 
     // when
-    notificationService.notify(
+    notificationService.notify(createEmailNotification(
       "some body text",
-      newArrayList("invalidAddressThatThrowsError")
-    );
+      List.of("invalidAddressThatThrowsError")
+    ));
 
     // then
     MimeMessage[] emails = greenMail.getReceivedMessages();
@@ -201,6 +202,14 @@ public class AlertEmailNotificationServiceTest {
     emailAuthenticationConfiguration.setUsername(username);
     emailAuthenticationConfiguration.setPassword(password);
     emailAuthenticationConfiguration.setSecurityProtocol(securityProtocol);
+  }
+
+  private AlertNotificationDto createEmailNotification(final String text, final List<String> recipients) {
+    AlertDefinitionDto alertDefinitionDto = new AlertDefinitionDto();
+    alertDefinitionDto.setEmails(recipients);
+    return new AlertNotificationDto(
+      alertDefinitionDto, 0., AlertNotificationType.NEW, text, "linkToReport"
+    );
   }
 
 }

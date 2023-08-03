@@ -41,4 +41,9 @@ public class MixpanelNotificationService implements AlertNotificationService {
     }
     mixpanelReportingService.sendEntityEvent(eventName, notification.getAlert().getId());
   }
+
+  @Override
+  public String getNotificationDescription() {
+    return "Mixpanel notification";
+  }
 }
