@@ -38,12 +38,11 @@ public interface PersistedSnapshotStore extends CloseableSilently {
    */
   Optional<PersistedSnapshot> getLatestSnapshot();
 
-  /**
-   * Returns a set of all available snapshots.
-   *
-   * @return
-   */
+  /** Returns a set of all available snapshots. */
   ActorFuture<Set<PersistedSnapshot>> getAvailableSnapshots();
+
+  /** Returns the lowest compaction bound of all available snapshots. */
+  ActorFuture<Long> getCompactionBound();
 
   /**
    * Purges all ongoing pending/transient/volatile snapshots.
@@ -57,7 +56,6 @@ public interface PersistedSnapshotStore extends CloseableSilently {
    * PersistedSnapshot} is persisted at this store.
    *
    * @param listener the listener which should be added and notified later
-   * @return
    */
   ActorFuture<Boolean> addSnapshotListener(PersistedSnapshotListener listener);
 
@@ -66,7 +64,6 @@ public interface PersistedSnapshotStore extends CloseableSilently {
    * longer called when a new {@link PersistedSnapshot} is persisted at this store.
    *
    * @param listener the listener which should be removed
-   * @return
    */
   ActorFuture<Boolean> removeSnapshotListener(PersistedSnapshotListener listener);
 
@@ -82,8 +79,6 @@ public interface PersistedSnapshotStore extends CloseableSilently {
    * <p>The snapshot store will be deleted by simply reading {@code snapshot} file names from disk
    * and deleting snapshot files directly. Deleting the snapshot store does not involve reading any
    * snapshot files into memory.
-   *
-   * @return
    */
   ActorFuture<Void> delete();
 
