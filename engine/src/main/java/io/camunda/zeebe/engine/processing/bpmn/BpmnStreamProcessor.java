@@ -7,11 +7,16 @@
  */
 package io.camunda.zeebe.engine.processing.bpmn;
 
+import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ACTIVATE_ELEMENT;
+import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.COMPLETE_ELEMENT;
+import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.TERMINATE_ELEMENT;
+
 import io.camunda.zeebe.engine.Loggers;
 import io.camunda.zeebe.engine.metrics.ProcessEngineMetrics;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnIncidentBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateTransitionBehavior;
+import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowElement;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
@@ -22,7 +27,10 @@ import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstan
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
+import io.camunda.zeebe.protocol.record.value.ErrorType;
+import io.camunda.zeebe.stream.api.records.ExceededBatchRecordSizeException;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
+import io.camunda.zeebe.util.buffer.BufferUtil;
 import org.slf4j.Logger;
 
 public final class BpmnStreamProcessor implements TypedRecordProcessor<ProcessInstanceRecord> {
@@ -86,6 +94,40 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<ProcessIn
             violation ->
                 rejectionWriter.appendRejection(
                     record, RejectionType.INVALID_STATE, violation.getMessage()));
+  }
+
+  @Override
+  public ProcessingError tryHandleError(
+      final TypedRecord<ProcessInstanceRecord> command, final Throwable error) {
+    if (error instanceof ExceededBatchRecordSizeException) {
+      context.init(
+          command.getKey(), command.getValue(), (ProcessInstanceIntent) command.getIntent());
+      if (context.getBpmnElementType() != BpmnElementType.PROCESS) {
+        // set element's state to what it was doing, this allows us to resolve the incident later
+        final BpmnElementContext transitionedContext;
+        transitionedContext =
+            switch ((ProcessInstanceIntent) command.getIntent()) {
+              case ACTIVATE_ELEMENT -> stateTransitionBehavior.transitionToActivating(context);
+              case COMPLETE_ELEMENT -> stateTransitionBehavior.transitionToCompleting(context);
+              case TERMINATE_ELEMENT -> stateTransitionBehavior.transitionToTerminating(context);
+                // even though we don't know how to resolve this incident, we can still
+                // raise it so the user can use modification to recover. The incident resolution
+                // logic is smart enough to deal with this case. It will log an error due to
+                // IllegalStateException.
+              default -> context;
+            };
+        incidentBehavior.createIncident(
+            new Failure(
+                """
+                Expected to process element '%s', but exceeded MAX_MESSAGE_SIZE limitation. \
+                If you have large or many variables consider reducing these."""
+                    .formatted(BufferUtil.bufferAsString(transitionedContext.getElementId())),
+                ErrorType.MESSAGE_SIZE_EXCEEDED),
+            transitionedContext);
+        return ProcessingError.EXPECTED_ERROR;
+      }
+    }
+    return ProcessingError.UNEXPECTED_ERROR;
   }
 
   private void processEvent(

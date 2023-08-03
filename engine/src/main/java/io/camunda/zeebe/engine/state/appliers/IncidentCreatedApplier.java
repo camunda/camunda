@@ -29,7 +29,7 @@ final class IncidentCreatedApplier implements TypedEventApplier<IncidentIntent, 
   public void applyState(final long incidentKey, final IncidentRecord value) {
     incidentState.createIncident(incidentKey, value);
 
-    if (ErrorType.MESSAGE_SIZE_EXCEEDED == value.getErrorType()) {
+    if (ErrorType.MESSAGE_SIZE_EXCEEDED == value.getErrorType() && value.getJobKey() != -1) {
       final var jobKey = value.getJobKey();
       final var jobRecord = jobState.getJob(jobKey);
       jobState.disable(jobKey, jobRecord);
