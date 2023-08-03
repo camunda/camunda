@@ -1,4 +1,4 @@
-name: Java Compatibility Job
+name: Java Compatibility
 
 on:
   schedule:
@@ -82,7 +82,7 @@ jobs:
           compose_file: ${{ github.workspace }}/.github/actions/compose/docker-compose.elasticsearch.yml
           project_name: elasticsearch
         env:
-          ELASTIC_VERSION: ${{ steps.java_info.outputs.x_elasticsearch8.test.version }}
+          ELASTIC_VERSION: ${{ steps.java_info.outputs.x_elasticsearch8_test_version }}
           ELASTIC_JVM_MEMORY: 12
       - name: Verify integration
         uses: ./.github/actions/run-maven
