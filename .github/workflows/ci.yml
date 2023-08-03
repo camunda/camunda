@@ -91,6 +91,7 @@ jobs:
           -D failsafe.rerunFailingTestsCount=3 -D flaky.test.reportDir=failsafe-reports
           -P parallel-tests,extract-flaky-tests
           -pl ${{ matrix.maven-modules }}
+          -Dit.test="io.camunda.zeebe.it.client.command.CallActivityTest"
           verify
           | tee "${BUILD_OUTPUT_FILE_PATH}"
       - name: Terminate TCC session
