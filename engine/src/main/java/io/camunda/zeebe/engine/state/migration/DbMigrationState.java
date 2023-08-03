@@ -347,7 +347,7 @@ public class DbMigrationState implements MutableMigrationState {
           if (recordValue.getBpmnElementType() == BpmnElementType.PROCESS) {
             elementInstanceKey.wrapLong(key.getValue());
             processDefinitionKey.wrapLong(recordValue.getProcessDefinitionKey());
-            processInstanceKeyByProcessDefinitionKeyColumnFamily.insert(
+            processInstanceKeyByProcessDefinitionKeyColumnFamily.upsert(
                 processInstanceKeyByProcessDefinitionKey, DbNil.INSTANCE);
           }
         });
