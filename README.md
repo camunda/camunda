@@ -27,7 +27,7 @@ business processes.
 
 [![Optimize Cluster Test](https://github.com/camunda/camunda-optimize/actions/workflows/cluster-test.yml/badge.svg)](https://github.com/camunda/camunda-optimize/actions/workflows/cluster-test.yml)
 
-[![Java Compatibility Job](https://github.com/camunda/camunda-optimize/actions/workflows/java-compatibility-mode.yml/badge.svg)](https://github.com/camunda/camunda-optimize/actions/workflows/java-compatibility-mode.yml)
+[![Java Compatibility](https://github.com/camunda/camunda-optimize/actions/workflows/java-compatibility.yml/badge.svg)](https://github.com/camunda/camunda-optimize/actions/workflows/java-compatibility-mode.yml)
 
 [![Import Static Dataset Performance Test](https://github.com/camunda/camunda-optimize/actions/workflows/import-static-data-performance.yml/badge.svg)](https://github.com/camunda/camunda-optimize/actions/workflows/import-static-data-performance.yml)
 

@@ -8,7 +8,7 @@
     "zeebe-compatibility",
     "upgrade-data-performance",
     "cluster-test",
-    "java-compatibility-mode",
+    "java-compatibility",
     "e2e-tests"
   ]
 }
