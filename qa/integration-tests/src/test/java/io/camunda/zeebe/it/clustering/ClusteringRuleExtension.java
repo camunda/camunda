@@ -17,16 +17,32 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.function.Consumer;
+import org.junit.jupiter.api.extension.AfterAllCallback;
 import org.junit.jupiter.api.extension.AfterEachCallback;
+import org.junit.jupiter.api.extension.BeforeAllCallback;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.api.extension.TestWatcher;
 
-/** This is a wrapper over {@link ClusteringRule}. */
+/**
+ * This is a wrapper over {@link ClusteringRule}. You can use it on both instance and static level
+ * fields. If you register a static field, then the instance level callbacks (e.g. {@link
+ * #beforeEach(ExtensionContext)}) no-ops.
+ */
 public class ClusteringRuleExtension extends ClusteringRule
-    implements BeforeEachCallback, AfterEachCallback, TestWatcher {
+    implements BeforeAllCallback,
+        BeforeEachCallback,
+        AfterAllCallback,
+        AfterEachCallback,
+        TestWatcher {
 
   private Path tempDir;
+  private boolean invokedStatically;
+
+  public ClusteringRuleExtension(
+      final int partitionCount, final int replicationFactor, final int clusterSize) {
+    this(partitionCount, replicationFactor, clusterSize, cfg -> {});
+  }
 
   public ClusteringRuleExtension(
       final int partitionCount,
@@ -46,13 +62,36 @@ public class ClusteringRuleExtension extends ClusteringRule
   }
 
   @Override
+  public void afterAll(final ExtensionContext extensionContext) throws Exception {
+    teardown();
+  }
+
+  @Override
+  public void beforeAll(final ExtensionContext extensionContext) throws Exception {
+    invokedStatically = true;
+    setup();
+  }
+
+  @Override
   public void afterEach(final ExtensionContext context) throws Exception {
-    super.after();
+    if (!invokedStatically) {
+      teardown();
+    }
+  }
+
+  private void teardown() throws IOException {
     FileUtil.deleteFolderIfExists(tempDir);
+    super.after();
   }
 
   @Override
   public void beforeEach(final ExtensionContext context) throws Exception {
+    if (!invokedStatically) {
+      setup();
+    }
+  }
+
+  private void setup() throws IOException {
     RecordingExporter.reset();
     tempDir = Files.createTempDirectory("clustered-tests");
     super.before();

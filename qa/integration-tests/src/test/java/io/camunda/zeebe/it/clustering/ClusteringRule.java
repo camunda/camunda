@@ -408,6 +408,10 @@ public class ClusteringRule extends ExternalResource {
     return base;
   }
 
+  public SpringBrokerBridge getBrokerBridge(final int nodeId) {
+    return springBrokerBridge.get(nodeId);
+  }
+
   private Gateway createGateway() {
     final List<String> initialContactPoints =
         brokerCfgs.values().stream()
