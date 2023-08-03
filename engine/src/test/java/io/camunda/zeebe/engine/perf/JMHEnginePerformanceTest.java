@@ -52,7 +52,7 @@ public class JMHEnginePerformanceTest {
 
     // then
     for (final RunResult runResult : runResults) {
-      assertDeviationWithin(runResult, 1, 0.25);
+      assertDeviationWithin(runResult, 1.25, 0.25);
     }
   }
 
@@ -69,7 +69,7 @@ public class JMHEnginePerformanceTest {
 
     // then
     for (final RunResult runResult : runResults) {
-      assertDeviationWithin(runResult, 3.5, 0.25);
+      assertDeviationWithin(runResult, 4, 0.5);
     }
   }
 

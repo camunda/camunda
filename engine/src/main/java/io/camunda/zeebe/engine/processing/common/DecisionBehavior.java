@@ -9,9 +9,8 @@ package io.camunda.zeebe.engine.processing.common;
 
 import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
 
-import com.google.common.cache.CacheBuilder;
-import com.google.common.cache.CacheLoader;
-import com.google.common.cache.LoadingCache;
+import com.github.benmanes.caffeine.cache.Caffeine;
+import com.github.benmanes.caffeine.cache.LoadingCache;
 import io.camunda.zeebe.dmn.DecisionEngine;
 import io.camunda.zeebe.dmn.DecisionEvaluationResult;
 import io.camunda.zeebe.dmn.EvaluatedDecision;
@@ -57,16 +56,12 @@ public class DecisionBehavior {
     this.metrics = metrics;
 
     parsedDecisionGraphsCache =
-        CacheBuilder.newBuilder()
+        Caffeine.newBuilder()
             .maximumSize(config.getDmnParsedDecisionGraphCacheCapacity())
             .build(
-                new CacheLoader<>() {
-                  @Override
-                  public Either<Failure, ParsedDecisionRequirementsGraph> load(final Long key) {
-                    return findDrgByDecisionRequirementsKey(key)
-                        .flatMap(drg -> parseDrg(drg.getResource()));
-                  }
-                });
+                key ->
+                    findDrgByDecisionRequirementsKey(key)
+                        .flatMap(drg -> parseDrg(drg.getResource())));
   }
 
   public Either<Failure, PersistedDecision> findDecisionById(final String decisionId) {
@@ -85,7 +80,7 @@ public class DecisionBehavior {
   public Either<Failure, ParsedDecisionRequirementsGraph> findAndParseDrgByDecision(
       final PersistedDecision persistedDecision) {
     return parsedDecisionGraphsCache
-        .getUnchecked(persistedDecision.getDecisionRequirementsKey())
+        .get(persistedDecision.getDecisionRequirementsKey())
         .mapLeft(
             failure ->
                 formatDecisionLookupFailure(
