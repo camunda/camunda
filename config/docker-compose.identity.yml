@@ -48,7 +48,7 @@ services:
       KEYCLOAK_ADMIN_USER: admin
       KEYCLOAK_ADMIN_PASSWORD: admin
     healthcheck:
-      test: [ "CMD", "curl", "-f", "http://localhost:8080/auth" ]
+      test: ["CMD", "curl", "-f", "http://localhost:8080/auth"]
       interval: 30s
       timeout: 15s
       retries: 5
@@ -57,7 +57,7 @@ services:
     depends_on:
       - keycloak
     container_name: identity
-    image: camunda/identity:8.3.0-alpha3
+    image: camunda/identity:8.3.0-alpha4
     ports:
       - "8080:8080"
     volumes:
@@ -76,14 +76,22 @@ services:
       KEYCLOAK_INIT_TASKLIST_ROOT_URL: http://localhost:8082/tasklist
     env_file: .env.test
     healthcheck:
-      test: [ "CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8082/actuator/health" ]
+      test:
+        [
+          "CMD",
+          "wget",
+          "--no-verbose",
+          "--tries=1",
+          "--spider",
+          "http://localhost:8082/actuator/health",
+        ]
       interval: 30s
       timeout: 15s
       retries: 5
       start_period: 30s
   zeebe:
     container_name: zeebe
-    image: camunda/zeebe:8.3.0-alpha3
+    image: camunda/zeebe:8.3.0-alpha4
     environment:
       - "JAVA_TOOL_OPTIONS=-Xms512m -Xmx512m"
       - ZEEBE_HOST=${ZEEBE_HOST:-}
@@ -97,7 +105,7 @@ services:
       - 8000:8000
     restart: always
   operate:
-    image: camunda/operate:8.3.0-alpha3
+    image: camunda/operate:8.3.0-alpha4
     container_name: operate
     environment:
       - SERVER_PORT=8081
@@ -124,7 +132,7 @@ services:
       - zeebe
       - identity
   tasklist:
-    image: camunda/tasklist:8.3.0-alpha3
+    image: camunda/tasklist:8.3.0-alpha4
     container_name: tasklist
     environment:
       - SERVER_PORT=8082

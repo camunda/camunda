@@ -6,18 +6,15 @@
 #   * Variable names should begin with a lowercase letter, and words should be separated with camelcase.
 #   * Every defined property in values.yaml should be documented. The documentation string should begin with the name of the property that it describes, and then give at least a one-sentence description
 
-
 ingress:
   # Defines the domain under which to expose the ingress
   domain: operate.camunda.cloud
-
 
 git:
   # Defines the branch name to use for annotating resources
   branch: master
   # Defines the repository URL to use for annotating resources
   repoUrl: https://github.com/camunda/operate
-
 
 # Configuration of the camunda-platform chart, in particular we disable some features that
 # we don't want to deploy. We also change the `fullNameOverride` and `zeebeClusterName`
@@ -31,12 +28,12 @@ camunda-platform:
       repository: registry.camunda.cloud/team-operate/camunda-operate
       tag: latest
     env:
-    - name: JAVA_OPTS
-      value: "-XX:MaxRAMFraction=1"
-    - name: SPRING_PROFILES_ACTIVE
-      value: dev-data
-    - name: CAMUNDA_OPERATE_TASKLIST_URL
-      value: https://stage.zeebe-tasklist.camunda.cloud/
+      - name: JAVA_OPTS
+        value: "-XX:MaxRAMFraction=1"
+      - name: SPRING_PROFILES_ACTIVE
+        value: dev-data
+      - name: CAMUNDA_OPERATE_TASKLIST_URL
+        value: https://stage.zeebe-tasklist.camunda.cloud/
     resources:
       limits:
         cpu: 1
@@ -70,7 +67,7 @@ camunda-platform:
     fullnameOverride: zeebe
     # Defines the version of Zeebe to use
     image:
-      tag: 8.3.0-alpha3
+      tag: 8.3.0-alpha4
     partitionCount: 1
     # Enable the creation of persistent volumes.
     persistenceType: disk
@@ -93,7 +90,7 @@ camunda-platform:
   zeebe-gateway:
     # Defines the version of Zeebe to use
     image:
-      tag: 8.3.0-alpha3
+      tag: 8.3.0-alpha4
     fullnameOverride: zeebe-gateway
     replicas: 1
     nodeSelector:
@@ -115,10 +112,10 @@ camunda-platform:
     maxUnavailable: ""
     minimumMasterNodes: 1
     extraEnvs:
-    - name: xpack.security.enabled
-      value: "false"
-    - name: processors
-      value: "1"
+      - name: xpack.security.enabled
+        value: "false"
+      - name: processors
+        value: "1"
     clusterHealthCheckParams: wait_for_status=yellow&timeout=1s
     esJavaOpts: "-Xms512m -Xmx512m"
     persistence:
@@ -135,12 +132,12 @@ camunda-platform:
         cpu: 0.5
         memory: 512Mi
     initResources:
-     limits:
-       cpu: "25m"
-       memory: "128Mi"
-     requests:
-       cpu: "25m"
-       memory: "128Mi"
+      limits:
+        cpu: "25m"
+        memory: "128Mi"
+      requests:
+        cpu: "25m"
+        memory: "128Mi"
     nodeSelector:
       cloud.google.com/gke-nodepool: previews
     tolerations:
