@@ -51,10 +51,6 @@ export async function getSources(collection) {
   return await response.json();
 }
 
-export async function addSources(collection, sources) {
-  return await put(`api/collection/${collection}/scope`, sources);
-}
-
 export async function editSource(collection, scopeId, tenants, force = false) {
   return await put(`api/collection/${collection}/scope/${scopeId}`, {tenants}, {query: {force}});
 }

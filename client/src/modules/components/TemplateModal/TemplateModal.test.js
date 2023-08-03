@@ -223,13 +223,3 @@ it('should invoke the onConfirm when when clicking the create button', async () 
   });
   expect(node.find('.confirm')).not.toBeDisabled();
 });
-
-it('should add / atthe beginning of the link pathname when useAbsolutePath is specified', () => {
-  const node = shallow(<TemplateModal {...props} />);
-
-  expect(node.find('.confirm').prop('to').pathname).toBe('report/new/edit');
-
-  node.setProps({useAbsolutePath: true});
-
-  expect(node.find('.confirm').prop('to').pathname).toBe('/report/new/edit');
-});

@@ -11,12 +11,33 @@ import {useFullScreenHandle} from 'react-full-screen';
 
 import {AlertsDropdown} from 'components';
 import {getOptimizeProfile} from 'config';
+import {createEntity, deleteEntity, addSources} from 'services';
 
 import {AutoRefreshSelect} from './AutoRefresh';
 import {DashboardView} from './DashboardView';
 
 jest.mock('config', () => ({
   getOptimizeProfile: jest.fn().mockReturnValue('platform'),
+}));
+
+jest.mock('services', () => ({
+  ...jest.requireActual('services'),
+  createEntity: jest.fn().mockReturnValue('collectionId'),
+  deleteEntity: jest.fn(),
+  addSources: jest.fn(),
+}));
+
+jest.mock('hooks', () => ({
+  useErrorHandling: jest.fn().mockImplementation(() => ({
+    mightFail: jest.fn().mockImplementation(async (data, cb, err) => {
+      try {
+        const awaitedData = await data;
+        return cb(awaitedData);
+      } catch (e) {
+        err?.(e);
+      }
+    }),
+  })),
 }));
 
 jest.mock('react-full-screen', () => {
@@ -239,4 +260,40 @@ it('should render the create copy button and modal for instant preview dashboard
   createCopyButton.simulate('click');
 
   expect(node.find('DashboardTemplateModal')).toExist();
+});
+
+it('should create a collection with the current data source when copying instant dashboard', async () => {
+  const node = shallow(<DashboardView isInstantDashboard />);
+
+  const createCopyButton = node.find('.create-copy');
+
+  createCopyButton.simulate('click');
+
+  node.find('DashboardTemplateModal').prop('onConfirm')({
+    definitions: [{key: 'someKey', tenantIds: []}],
+  });
+
+  await flushPromises();
+
+  expect(createEntity).toHaveBeenCalledWith('collection', {name: 'someKey'});
+  expect(addSources).toHaveBeenCalledWith('collectionId', [
+    {definitionKey: 'someKey', definitionType: 'process', tenants: []},
+  ]);
+});
+
+it('should delete collection in case of error during collection creation', async () => {
+  addSources.mockRejectedValue(new Error());
+  const node = shallow(<DashboardView isInstantDashboard />);
+
+  const createCopyButton = node.find('.create-copy');
+
+  createCopyButton.simulate('click');
+
+  node.find('DashboardTemplateModal').prop('onConfirm')({
+    definitions: [{key: 'someKey', tenantIds: []}],
+  });
+
+  await flushPromises();
+
+  expect(deleteEntity).toHaveBeenCalledWith('collection', 'collectionId');
 });

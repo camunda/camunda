@@ -13,8 +13,8 @@ import {LabeledInput, Modal, Form} from 'components';
 import {t} from 'translation';
 import {withErrorHandling} from 'HOC';
 import {showError} from 'notifications';
+import {addSources} from 'services';
 
-import {addSources} from '../service';
 import SourcesModal from './SourcesModal';
 
 import './CollectionModal.scss';
