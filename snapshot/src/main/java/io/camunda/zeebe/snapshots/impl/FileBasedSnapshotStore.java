@@ -272,6 +272,16 @@ public final class FileBasedSnapshotStore extends Actor
   }
 
   @Override
+  public ActorFuture<Long> getCompactionBound() {
+    return actor.call(
+        () ->
+            availableSnapshots.stream()
+                .map(PersistedSnapshot::getCompactionBound)
+                .min(Long::compareTo)
+                .orElse(0L));
+  }
+
+  @Override
   public ActorFuture<Void> purgePendingSnapshots() {
     final CompletableActorFuture<Void> abortFuture = new CompletableActorFuture<>();
     actor.run(
