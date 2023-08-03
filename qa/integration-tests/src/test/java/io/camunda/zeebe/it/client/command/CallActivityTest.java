@@ -95,6 +95,61 @@ public final class CallActivityTest {
   }
 
   @Test
+  public void shouldBeAbleToResolveIncidentAfterExceedingBatchSizeOnCallActivityActivation() {
+    final String child = Strings.newRandomValidBpmnId();
+    final String parent = Strings.newRandomValidBpmnId();
+
+    CLIENT_RULE.deployProcess(Bpmn.createExecutableProcess(child).startEvent("v1").done());
+    CLIENT_RULE.deployProcess(
+        Bpmn.createExecutableProcess(parent)
+            .startEvent("v2")
+            .scriptTask("script1", c -> c.zeebeExpression("x").zeebeResultVariable("a"))
+            .scriptTask("script2", c -> c.zeebeExpression("x").zeebeResultVariable("b"))
+            .scriptTask("script3", c -> c.zeebeExpression("x").zeebeResultVariable("c"))
+            .scriptTask("script4", c -> c.zeebeExpression("x").zeebeResultVariable("d"))
+            .callActivity("call-activity", c -> c.zeebeProcessId(child))
+            .endEvent("end2")
+            .done());
+
+    final ProcessInstanceEvent processInstance =
+        CLIENT_RULE
+            .getClient()
+            .newCreateInstanceCommand()
+            .bpmnProcessId(parent)
+            .latestVersion()
+            .variables(Map.of("x", "x".repeat((int) ByteValue.ofKilobytes(25))))
+            .send()
+            .join();
+
+    final var incident =
+        RecordingExporter.incidentRecords(IncidentIntent.CREATED)
+            .withProcessInstanceKey(processInstance.getProcessInstanceKey())
+            .getFirst();
+
+    // when
+    CLIENT_RULE
+        .getClient()
+        .newSetVariablesCommand(processInstance.getProcessInstanceKey())
+        .variables(Map.of("x", "", "a", "", "b", "", "c", "", "d", ""))
+        .send()
+        .join();
+    CLIENT_RULE.getClient().newResolveIncidentCommand(incident.getKey()).send().join();
+
+    // then
+    assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processInstance.getProcessInstanceKey())
+                .limitToProcessInstanceCompleted()
+                .withElementId("call-activity"))
+        .extracting(Record::getIntent)
+        .contains(
+            ProcessInstanceIntent.ELEMENT_ACTIVATING,
+            ProcessInstanceIntent.ELEMENT_ACTIVATED,
+            ProcessInstanceIntent.ELEMENT_COMPLETING,
+            ProcessInstanceIntent.ELEMENT_COMPLETED);
+  }
+
+  @Test
   public void shouldRaiseIncidentWhenExceedingBatchSizeOnCallActivityCompletion() {
     final String child = Strings.newRandomValidBpmnId();
     final String parent = Strings.newRandomValidBpmnId();
