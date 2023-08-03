@@ -52,10 +52,10 @@ public final class CallActivityTest {
     CLIENT_RULE.deployProcess(
         Bpmn.createExecutableProcess(parent)
             .startEvent("v2")
-            .scriptTask("script1", c -> c.zeebeExpression("x").zeebeResultVariable("a"))
-            .scriptTask("script2", c -> c.zeebeExpression("x").zeebeResultVariable("b"))
-            .scriptTask("script3", c -> c.zeebeExpression("x").zeebeResultVariable("c"))
-            .scriptTask("script4", c -> c.zeebeExpression("x").zeebeResultVariable("d"))
+            .intermediateThrowEvent("event1", e -> e.zeebeOutputExpression("x", "a"))
+            .intermediateThrowEvent("event2", e -> e.zeebeOutputExpression("x", "b"))
+            .intermediateThrowEvent("event3", e -> e.zeebeOutputExpression("x", "c"))
+            .intermediateThrowEvent("event4", e -> e.zeebeOutputExpression("x", "d"))
             .callActivity("call-activity", c -> c.zeebeProcessId(child))
             .endEvent("end2")
             .done());
@@ -103,10 +103,10 @@ public final class CallActivityTest {
     CLIENT_RULE.deployProcess(
         Bpmn.createExecutableProcess(parent)
             .startEvent("v2")
-            .scriptTask("script1", c -> c.zeebeExpression("x").zeebeResultVariable("a"))
-            .scriptTask("script2", c -> c.zeebeExpression("x").zeebeResultVariable("b"))
-            .scriptTask("script3", c -> c.zeebeExpression("x").zeebeResultVariable("c"))
-            .scriptTask("script4", c -> c.zeebeExpression("x").zeebeResultVariable("d"))
+            .intermediateThrowEvent("event1", e -> e.zeebeOutputExpression("x", "a"))
+            .intermediateThrowEvent("event2", e -> e.zeebeOutputExpression("x", "b"))
+            .intermediateThrowEvent("event3", e -> e.zeebeOutputExpression("x", "c"))
+            .intermediateThrowEvent("event4", e -> e.zeebeOutputExpression("x", "d"))
             .callActivity("call-activity", c -> c.zeebeProcessId(child))
             .endEvent("end2")
             .done());
@@ -157,10 +157,10 @@ public final class CallActivityTest {
     CLIENT_RULE.deployProcess(
         Bpmn.createExecutableProcess(child)
             .startEvent("child")
-            .scriptTask("script1", c -> c.zeebeExpression("x").zeebeResultVariable("a"))
-            .scriptTask("script2", c -> c.zeebeExpression("x").zeebeResultVariable("b"))
-            .scriptTask("script3", c -> c.zeebeExpression("x").zeebeResultVariable("c"))
-            .scriptTask("script4", c -> c.zeebeExpression("x").zeebeResultVariable("d"))
+            .intermediateThrowEvent("event1", e -> e.zeebeOutputExpression("x", "a"))
+            .intermediateThrowEvent("event2", e -> e.zeebeOutputExpression("x", "b"))
+            .intermediateThrowEvent("event3", e -> e.zeebeOutputExpression("x", "c"))
+            .intermediateThrowEvent("event4", e -> e.zeebeOutputExpression("x", "d"))
             .done());
     CLIENT_RULE.deployProcess(
         Bpmn.createExecutableProcess(parent)
