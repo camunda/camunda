@@ -9,6 +9,9 @@ package io.camunda.zeebe.engine.processing.common;
 
 import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
 
+import com.google.common.cache.CacheBuilder;
+import com.google.common.cache.CacheLoader;
+import com.google.common.cache.LoadingCache;
 import io.camunda.zeebe.dmn.DecisionEngine;
 import io.camunda.zeebe.dmn.DecisionEvaluationResult;
 import io.camunda.zeebe.dmn.EvaluatedDecision;
@@ -34,7 +37,6 @@ import io.camunda.zeebe.util.collection.Tuple;
 import java.io.ByteArrayInputStream;
 import java.util.stream.Collectors;
 import org.agrona.DirectBuffer;
-import org.agrona.collections.LongLruCache;
 
 public class DecisionBehavior {
 
@@ -42,7 +44,7 @@ public class DecisionBehavior {
   private final DecisionEngine decisionEngine;
   private final DecisionState decisionState;
   private final ProcessEngineMetrics metrics;
-  private final LongLruCache<Either<Failure, ParsedDecisionRequirementsGraph>>
+  private final LoadingCache<Long, Either<Failure, ParsedDecisionRequirementsGraph>>
       parsedDecisionGraphsCache;
 
   public DecisionBehavior(
@@ -55,11 +57,16 @@ public class DecisionBehavior {
     this.metrics = metrics;
 
     parsedDecisionGraphsCache =
-        new LongLruCache<>(
-            config.getDmnParsedDecisionGraphCacheCapacity(),
-            key ->
-                findDrgByDecisionRequirementsKey(key).flatMap(drg -> parseDrg(drg.getResource())),
-            parsedDecisionRequirementsGraph -> {});
+        CacheBuilder.newBuilder()
+            .maximumSize(config.getDmnParsedDecisionGraphCacheCapacity())
+            .build(
+                new CacheLoader<>() {
+                  @Override
+                  public Either<Failure, ParsedDecisionRequirementsGraph> load(final Long key) {
+                    return findDrgByDecisionRequirementsKey(key)
+                        .flatMap(drg -> parseDrg(drg.getResource()));
+                  }
+                });
   }
 
   public Either<Failure, PersistedDecision> findDecisionById(final String decisionId) {
@@ -78,7 +85,7 @@ public class DecisionBehavior {
   public Either<Failure, ParsedDecisionRequirementsGraph> findAndParseDrgByDecision(
       final PersistedDecision persistedDecision) {
     return parsedDecisionGraphsCache
-        .lookup(persistedDecision.getDecisionRequirementsKey())
+        .getUnchecked(persistedDecision.getDecisionRequirementsKey())
         .mapLeft(
             failure ->
                 formatDecisionLookupFailure(
