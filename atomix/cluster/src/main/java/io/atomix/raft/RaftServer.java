@@ -35,7 +35,6 @@ import io.atomix.raft.zeebe.EntryValidator.NoopEntryValidator;
 import io.camunda.zeebe.util.health.FailureListener;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
-import java.time.Duration;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -295,13 +294,6 @@ public interface RaftServer {
   CompletableFuture<RaftServer> promote();
 
   /**
-   * Compacts server logs.
-   *
-   * @return a future to be completed once the server's logs have been compacted
-   */
-  CompletableFuture<Void> compact();
-
-  /**
    * Ensures that all records written to the log are flushed to disk
    *
    * @return a future which will be completed after the log is flushed to disk
@@ -314,13 +306,6 @@ public interface RaftServer {
    * @return A completable future to be completed once the server has been shutdown.
    */
   CompletableFuture<Void> shutdown();
-
-  /**
-   * Transitions the server to INACTIVE without shutting down or leaving the cluster.
-   *
-   * @return A completable future to be completed once the server is inactive.
-   */
-  CompletableFuture<Void> goInactive();
 
   /**
    * Returns the current Raft context.
@@ -414,9 +399,6 @@ public interface RaftServer {
    * }</pre>
    */
   abstract class Builder implements io.atomix.utils.Builder<RaftServer> {
-
-    private static final Duration DEFAULT_ELECTION_TIMEOUT = Duration.ofMillis(750);
-    private static final Duration DEFAULT_HEARTBEAT_INTERVAL = Duration.ofMillis(250);
 
     protected String name;
     protected MemberId localMemberId;

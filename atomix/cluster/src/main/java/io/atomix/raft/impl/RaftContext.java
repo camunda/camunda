@@ -533,15 +533,6 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
   }
 
   /**
-   * Compacts the server logs.
-   *
-   * @return a future to be completed once the logs have been compacted
-   */
-  public CompletableFuture<Void> compact() {
-    return CompletableFuture.runAsync(logCompactor::compact, threadContext);
-  }
-
-  /**
    * Ensures everything written to the log until this point, is flushed to disk. If default raft
    * flush is enabled, then this will not flush because the logs are flushed when necessary to
    * achieve expected consistency guarantees.

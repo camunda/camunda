@@ -11,6 +11,7 @@ import io.atomix.raft.metrics.RaftServiceMetrics;
 import io.atomix.raft.storage.log.RaftLog;
 import io.atomix.utils.concurrent.ThreadContext;
 import io.camunda.zeebe.snapshots.PersistedSnapshotStore;
+import io.camunda.zeebe.util.VisibleForTesting;
 import java.util.concurrent.Executor;
 import org.agrona.LangUtil;
 import org.slf4j.Logger;
@@ -71,21 +72,22 @@ public final class LogCompactor {
     return compact(compactableIndex);
   }
 
+  /** Compacts the log based on the snapshot store's lowest compaction bound. */
+  public void compactFromSnapshots(
+      final PersistedSnapshotStore snapshotStore, final Executor executor) {
+    snapshotStore.getCompactionBound().onComplete(this::onSnapshotCompactionBound, executor);
+  }
+
   /**
    * Sets the compactable index to the given index; this will cause a call to {@link #compact()} or
    * {@link #compactIgnoringReplicationThreshold()} to compact the log up to the given index here.
    *
    * <p>NOTE: this method is thread safe
    */
-  public void setCompactableIndex(final long index) {
+  @VisibleForTesting
+  void setCompactableIndex(final long index) {
     logger.trace("Updated compactable index to {}", index);
     compactableIndex = index;
-  }
-
-  /** Compacts the log based on the snapshot store's lowest compaction bound. */
-  public void compactFromSnapshots(
-      final PersistedSnapshotStore snapshotStore, final Executor executor) {
-    snapshotStore.getCompactionBound().onComplete(this::onSnapshotCompactionBound, executor);
   }
 
   private boolean compact(final long index) {
