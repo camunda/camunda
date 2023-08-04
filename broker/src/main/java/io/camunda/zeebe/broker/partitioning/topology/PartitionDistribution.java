@@ -11,10 +11,10 @@ import io.atomix.primitive.partition.PartitionMetadata;
 import java.util.Set;
 
 /**
- * ClusterTopology describes how partitions are distributed across broker. It doesn't keep track of
- * the current leader or followers.
+ * PartitionDistribution describes how partitions are distributed across broker. It doesn't keep
+ * track of the current leader or followers.
  */
-public record ClusterTopology(Set<PartitionMetadata> partitionDistribution) {
+public record PartitionDistribution(Set<PartitionMetadata> partitions) {
 
-  public static final ClusterTopology NO_PARTITIONS = new ClusterTopology(Set.of());
+  public static final PartitionDistribution NO_PARTITIONS = new PartitionDistribution(Set.of());
 }

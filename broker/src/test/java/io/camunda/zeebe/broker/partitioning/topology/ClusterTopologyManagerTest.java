@@ -50,7 +50,7 @@ class ClusterTopologyManagerTest {
 
     // when
     final var topology = new ClusterTopologyManager().resolveTopology(partitioningCfg, clusterCfg);
-    final Set<PartitionMetadata> partitionDistribution = topology.partitionDistribution();
+    final Set<PartitionMetadata> partitionDistribution = topology.partitions();
 
     // then
     // RoundRobinPartitionDistributorTest verifies more cases.
@@ -112,7 +112,7 @@ fixed:
 
     // when
     final var topology = new ClusterTopologyManager().resolveTopology(partitioningCfg, clusterCfg);
-    final Set<PartitionMetadata> partitionDistribution = topology.partitionDistribution();
+    final Set<PartitionMetadata> partitionDistribution = topology.partitions();
 
     // then
     // FixedPartitionDistributorTest verifies more cases.

@@ -11,7 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 
 import io.atomix.raft.partition.RaftPartitionGroupConfig;
-import io.camunda.zeebe.broker.partitioning.topology.ClusterTopology;
+import io.camunda.zeebe.broker.partitioning.topology.PartitionDistribution;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.snapshots.ReceivableSnapshotStore;
 import io.camunda.zeebe.snapshots.ReceivableSnapshotStoreFactory;
@@ -184,7 +184,7 @@ final class RaftPartitionGroupFactoryTest {
   private RaftPartitionGroupConfig buildRaftPartitionGroup() {
     final var partitionGroup =
         factory.buildRaftPartitionGroup(
-            brokerCfg, ClusterTopology.NO_PARTITIONS, SNAPSHOT_STORE_FACTORY);
+            brokerCfg, PartitionDistribution.NO_PARTITIONS, SNAPSHOT_STORE_FACTORY);
     return (RaftPartitionGroupConfig) partitionGroup.config();
   }
 }

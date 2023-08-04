@@ -20,7 +20,7 @@ import io.atomix.utils.concurrent.Scheduled;
 import io.atomix.utils.concurrent.ThreadContext;
 import io.camunda.zeebe.broker.clustering.ClusterServices;
 import io.camunda.zeebe.broker.exporter.repo.ExporterRepository;
-import io.camunda.zeebe.broker.partitioning.topology.ClusterTopology;
+import io.camunda.zeebe.broker.partitioning.topology.PartitionDistribution;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.configuration.RaftCfg.FlushConfig;
 import io.camunda.zeebe.broker.system.monitoring.BrokerHealthCheckService;
@@ -74,7 +74,7 @@ final class PartitionManagerImplTest {
             mock(ExporterRepository.class),
             null,
             JobStreamer.noop(),
-            ClusterTopology.NO_PARTITIONS);
+            PartitionDistribution.NO_PARTITIONS);
 
     // then
     final var config = getPartitionGroupConfig(partitionManager);
@@ -104,7 +104,7 @@ final class PartitionManagerImplTest {
             mock(ExporterRepository.class),
             null,
             JobStreamer.noop(),
-            ClusterTopology.NO_PARTITIONS);
+            PartitionDistribution.NO_PARTITIONS);
 
     // then
     final var config = getPartitionGroupConfig(partitionManager);
@@ -132,7 +132,7 @@ final class PartitionManagerImplTest {
             mock(ExporterRepository.class),
             null,
             JobStreamer.noop(),
-            ClusterTopology.NO_PARTITIONS);
+            PartitionDistribution.NO_PARTITIONS);
 
     // then
     final var config = getPartitionGroupConfig(partitionManager);
@@ -161,7 +161,7 @@ final class PartitionManagerImplTest {
             mock(ExporterRepository.class),
             null,
             JobStreamer.noop(),
-            ClusterTopology.NO_PARTITIONS);
+            PartitionDistribution.NO_PARTITIONS);
 
     // then
     final var config = getPartitionGroupConfig(partitionManager);

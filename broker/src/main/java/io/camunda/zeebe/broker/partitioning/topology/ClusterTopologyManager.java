@@ -31,25 +31,26 @@ import java.util.stream.IntStream;
  */
 public class ClusterTopologyManager {
 
-  public ClusterTopology resolveTopology(
+  public PartitionDistribution resolveTopology(
       final PartitioningCfg partitionCfg, final ClusterCfg clusterCfg) {
     final var partitionDistributor = buildPartitionDistributor(partitionCfg);
     final var clusterMembers = getRaftGroupMembers(clusterCfg);
     final var partitionDistribution =
         partitionDistributor.distributePartitions(
             clusterMembers,
-            getSortedPartitionId(clusterCfg.getPartitionsCount()),
+            getSortedPartitionIds(clusterCfg.getPartitionsCount()),
             clusterCfg.getReplicationFactor());
-    return new ClusterTopology(partitionDistribution);
+    return new PartitionDistribution(partitionDistribution);
   }
 
-  private PartitionDistributor buildPartitionDistributor(final PartitioningCfg config) {
+  private static PartitionDistributor buildPartitionDistributor(final PartitioningCfg config) {
     return config.getScheme() == FIXED
         ? buildFixedPartitionDistributor(config)
         : new RoundRobinPartitionDistributor();
   }
 
-  private FixedPartitionDistributor buildFixedPartitionDistributor(final PartitioningCfg config) {
+  private static FixedPartitionDistributor buildFixedPartitionDistributor(
+      final PartitioningCfg config) {
     final var distributionBuilder =
         new FixedPartitionDistributorBuilder(PartitionManagerImpl.GROUP_NAME);
 
@@ -63,7 +64,7 @@ public class ClusterTopologyManager {
     return distributionBuilder.build();
   }
 
-  private Set<MemberId> getRaftGroupMembers(final ClusterCfg clusterCfg) {
+  private static Set<MemberId> getRaftGroupMembers(final ClusterCfg clusterCfg) {
     final int clusterSize = clusterCfg.getClusterSize();
     // node ids are always 0 to clusterSize - 1
     return IntStream.range(0, clusterSize)
@@ -71,7 +72,7 @@ public class ClusterTopologyManager {
         .collect(Collectors.toSet());
   }
 
-  private static List<PartitionId> getSortedPartitionId(final int partitionCount) {
+  private static List<PartitionId> getSortedPartitionIds(final int partitionCount) {
     // partition ids start from 1
     return IntStream.rangeClosed(1, partitionCount)
         .mapToObj(p -> PartitionId.from(PartitionManagerImpl.GROUP_NAME, p))

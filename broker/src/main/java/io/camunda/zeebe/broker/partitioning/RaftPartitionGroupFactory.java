@@ -12,7 +12,7 @@ import io.atomix.raft.partition.RaftPartitionGroup.Builder;
 import io.atomix.raft.storage.log.DelayedFlusher;
 import io.atomix.raft.storage.log.RaftLogFlusher;
 import io.camunda.zeebe.broker.Loggers;
-import io.camunda.zeebe.broker.partitioning.topology.ClusterTopology;
+import io.camunda.zeebe.broker.partitioning.topology.PartitionDistribution;
 import io.camunda.zeebe.broker.raft.ZeebeEntryValidator;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.configuration.ClusterCfg;
@@ -31,7 +31,7 @@ public final class RaftPartitionGroupFactory {
 
   public RaftPartitionGroup buildRaftPartitionGroup(
       final BrokerCfg configuration,
-      final ClusterTopology topology,
+      final PartitionDistribution topology,
       final ReceivableSnapshotStoreFactory snapshotStoreFactory) {
 
     final DataCfg dataConfiguration = configuration.getData();
@@ -60,7 +60,7 @@ public final class RaftPartitionGroupFactory {
 
     final Builder partitionGroupBuilder =
         RaftPartitionGroup.builder(PartitionManagerImpl.GROUP_NAME)
-            .withPartitionDistribution(topology.partitionDistribution())
+            .withPartitionDistribution(topology.partitions())
             .withDataDirectory(raftDataDirectory.toFile())
             .withSnapshotStoreFactory(snapshotStoreFactory)
             .withMaxAppendBatchSize((int) experimentalCfg.getMaxAppendBatchSizeInBytes())

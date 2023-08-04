@@ -14,7 +14,7 @@ import io.camunda.zeebe.broker.clustering.ClusterServicesImpl;
 import io.camunda.zeebe.broker.exporter.repo.ExporterRepository;
 import io.camunda.zeebe.broker.jobstream.JobStreamService;
 import io.camunda.zeebe.broker.partitioning.PartitionManagerImpl;
-import io.camunda.zeebe.broker.partitioning.topology.ClusterTopology;
+import io.camunda.zeebe.broker.partitioning.topology.PartitionDistribution;
 import io.camunda.zeebe.broker.system.EmbeddedGatewayService;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.management.BrokerAdminServiceImpl;
@@ -93,7 +93,7 @@ public interface BrokerStartupContext {
 
   void setJobStreamService(final JobStreamService jobStreamService);
 
-  ClusterTopology getClusterTopology();
+  PartitionDistribution getClusterTopology();
 
-  void setClusterTopology(ClusterTopology clusterTopology);
+  void setClusterTopology(PartitionDistribution partitionDistribution);
 }
