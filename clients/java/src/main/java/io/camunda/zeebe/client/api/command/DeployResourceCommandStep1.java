@@ -15,7 +15,6 @@
  */
 package io.camunda.zeebe.client.api.command;
 
-import io.camunda.zeebe.client.api.ExperimentalApi;
 import io.camunda.zeebe.client.api.response.DeploymentEvent;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import java.io.InputStream;
@@ -101,10 +100,5 @@ public interface DeployResourceCommandStep1 {
           CommandWithTenantStep<DeployResourceCommandStep2>,
           FinalCommandStep<DeploymentEvent> {
     // the place for new optional parameters
-
-    /** {@inheritDoc} */
-    @Override
-    @ExperimentalApi("https://github.com/camunda/zeebe/issues/13321")
-    DeployResourceCommandStep2 tenantId(String tenantId);
   }
 }
