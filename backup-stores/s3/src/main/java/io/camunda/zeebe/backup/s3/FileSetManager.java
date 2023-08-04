@@ -71,10 +71,7 @@ final class FileSetManager {
     if (shouldCompressFile(filePath)) {
       final var algorithm = config.compressionAlgorithm().orElseThrow();
       return CompletableFuture.runAsync(uploadLimit::acquireUninterruptibly)
-          .thenApply(
-              (success) -> {
-                return compressFile(filePath, algorithm);
-              })
+          .thenApply((success) -> compressFile(filePath, algorithm))
           .thenCompose(
               (compressedFile) -> {
                 LOG.trace(
@@ -84,14 +81,9 @@ final class FileSetManager {
                         put -> put.bucket(config.bucketName()).key(prefix + fileName),
                         AsyncRequestBody.fromFile(compressedFile))
                     .thenRunAsync(() -> cleanupCompressedFile(compressedFile))
-                    .thenApply(unused -> FileSet.FileMetadata.withCompression(algorithm))
-                    .whenComplete((success, error) -> uploadLimit.release());
+                    .thenApply(unused -> FileSet.FileMetadata.withCompression(algorithm));
               })
-          .exceptionally(
-              e -> {
-                uploadLimit.release();
-                return null;
-              });
+          .whenComplete((success, error) -> uploadLimit.release());
     }
 
     return CompletableFuture.runAsync(uploadLimit::acquireUninterruptibly)
@@ -102,9 +94,9 @@ final class FileSetManager {
                   .putObject(
                       put -> put.bucket(config.bucketName()).key(prefix + fileName),
                       AsyncRequestBody.fromFile(filePath))
-                  .thenApply(unused -> FileSet.FileMetadata.none())
-                  .whenComplete((success, error) -> uploadLimit.release());
-            });
+                  .thenApply(unused -> FileSet.FileMetadata.none());
+            })
+        .whenComplete((success, error) -> uploadLimit.release());
   }
 
   private void cleanupCompressedFile(final Path compressedFile) {
