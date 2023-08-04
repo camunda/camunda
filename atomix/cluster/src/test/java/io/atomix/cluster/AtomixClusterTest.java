@@ -22,14 +22,10 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import io.atomix.cluster.discovery.BootstrapDiscoveryProvider;
-import io.atomix.raft.partition.RaftPartitionGroupConfig;
-import io.atomix.raft.partition.RaftStorageConfig;
 import io.atomix.utils.net.Address;
-import java.io.File;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
-import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -49,28 +45,7 @@ public class AtomixClusterTest {
     // given
     final var atomix =
         atomixClusterRule
-            .startAtomix(
-                1,
-                Arrays.asList(1),
-                (builder) -> {
-                  final var groupConfig =
-                      new RaftPartitionGroupConfig()
-                          .setName("raft")
-                          .setReplicationFactor(3)
-                          .setPartitionCount(7)
-                          .setMembers(Set.of("1"))
-                          .setStorageConfig(
-                              new RaftStorageConfig()
-                                  .setDirectory(
-                                      new File(
-                                              atomixClusterRule.getDataDir(),
-                                              "start-stop-consensus")
-                                          .getPath())
-                                  .setPersistedSnapshotStoreFactory(
-                                      new NoopSnapshotStoreFactory()));
-
-                  return builder.build();
-                })
+            .startAtomix(1, Arrays.asList(1), AtomixClusterBuilder::build)
             .get(TIMEOUT_IN_S, TimeUnit.SECONDS);
 
     // when

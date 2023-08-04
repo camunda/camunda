@@ -19,8 +19,10 @@ package io.atomix.raft.partition;
 import com.esotericsoftware.kryo.serializers.FieldSerializer.Optional;
 import io.atomix.primitive.partition.PartitionGroup.Type;
 import io.atomix.primitive.partition.PartitionGroupConfig;
+import io.atomix.primitive.partition.PartitionMetadata;
 import io.atomix.raft.zeebe.EntryValidator;
 import io.atomix.raft.zeebe.EntryValidator.NoopEntryValidator;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -29,10 +31,12 @@ public class RaftPartitionGroupConfig extends PartitionGroupConfig<RaftPartition
 
   private static final int DEFAULT_PARTITIONS = 7;
 
-  private Set<String> members = new HashSet<>();
+  private final Set<String> members = new HashSet<>();
   private int replicationFactor;
   private RaftStorageConfig storageConfig = new RaftStorageConfig();
   private RaftPartitionConfig partitionConfig = new RaftPartitionConfig();
+
+  private Collection<PartitionMetadata> partitionDistribution;
 
   @Optional("EntryValidator")
   private EntryValidator entryValidator = new NoopEntryValidator();
@@ -43,43 +47,19 @@ public class RaftPartitionGroupConfig extends PartitionGroupConfig<RaftPartition
   }
 
   /**
-   * Returns the set of members in the partition group.
-   *
-   * @return the set of members in the partition group
+   * @return the partition distribution
    */
-  public Set<String> getMembers() {
-    return members;
+  public Collection<PartitionMetadata> getPartitionDistribution() {
+    return partitionDistribution;
   }
 
   /**
-   * Sets the set of members in the partition group.
+   * Sets how partitions are distributed among the members
    *
-   * @param members the set of members in the partition group
-   * @return the Raft partition group configuration
+   * @param partitionDistribution partition distribution info
    */
-  public RaftPartitionGroupConfig setMembers(final Set<String> members) {
-    this.members = members;
-    return this;
-  }
-
-  /**
-   * Returns the partition size.
-   *
-   * @return the partition size
-   */
-  public int getReplicationFactor() {
-    return replicationFactor;
-  }
-
-  /**
-   * Sets the partition size.
-   *
-   * @param replicationFactor the partition size
-   * @return the Raft partition group configuration
-   */
-  public RaftPartitionGroupConfig setReplicationFactor(final int replicationFactor) {
-    this.replicationFactor = replicationFactor;
-    return this;
+  public void setPartitionDistribution(final Collection<PartitionMetadata> partitionDistribution) {
+    this.partitionDistribution = partitionDistribution;
   }
 
   /**

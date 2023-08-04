@@ -14,6 +14,7 @@ import io.atomix.raft.partition.RaftPartitionGroup;
 import io.camunda.zeebe.broker.PartitionListener;
 import io.camunda.zeebe.broker.clustering.ClusterServices;
 import io.camunda.zeebe.broker.exporter.repo.ExporterRepository;
+import io.camunda.zeebe.broker.partitioning.topology.PartitionDistribution;
 import io.camunda.zeebe.broker.partitioning.topology.TopologyManager;
 import io.camunda.zeebe.broker.partitioning.topology.TopologyManagerImpl;
 import io.camunda.zeebe.broker.partitioning.topology.TopologyPartitionListener;
@@ -73,7 +74,8 @@ public final class PartitionManagerImpl implements PartitionManager, TopologyMan
       final CommandApiService commandApiService,
       final ExporterRepository exporterRepository,
       final AtomixServerTransport gatewayBrokerTransport,
-      final JobStreamer jobStreamer) {
+      final JobStreamer jobStreamer,
+      final PartitionDistribution partitionDistribution) {
     this.gatewayBrokerTransport = gatewayBrokerTransport;
 
     snapshotStoreFactory =
@@ -90,7 +92,8 @@ public final class PartitionManagerImpl implements PartitionManager, TopologyMan
     this.jobStreamer = jobStreamer;
 
     partitionGroup =
-        new RaftPartitionGroupFactory().buildRaftPartitionGroup(brokerCfg, snapshotStoreFactory);
+        new RaftPartitionGroupFactory()
+            .buildRaftPartitionGroup(brokerCfg, partitionDistribution, snapshotStoreFactory);
 
     final var membershipService = clusterServices.getMembershipService();
     final var communicationService = clusterServices.getCommunicationService();

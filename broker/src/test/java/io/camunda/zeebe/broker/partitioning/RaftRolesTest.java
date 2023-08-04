@@ -12,22 +12,27 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.atomix.cluster.AtomixCluster;
 import io.atomix.cluster.AtomixClusterBuilder;
 import io.atomix.cluster.AtomixClusterRule;
+import io.atomix.cluster.MemberId;
 import io.atomix.cluster.NoopSnapshotStoreFactory;
 import io.atomix.primitive.partition.Partition;
+import io.atomix.primitive.partition.PartitionId;
 import io.atomix.primitive.partition.impl.DefaultPartitionService;
 import io.atomix.raft.RaftServer.Role;
 import io.atomix.raft.partition.RaftPartition;
 import io.atomix.raft.partition.RaftPartitionGroup;
+import io.atomix.raft.partition.RoundRobinPartitionDistributor;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import org.agrona.LangUtil;
 import org.junit.Rule;
 import org.junit.Test;
@@ -131,15 +136,22 @@ public final class RaftRolesTest {
       final List<Integer> nodeIds,
       final Consumer<? super Partition> partitionConsumer) {
 
-    final List<String> memberIds =
-        nodeIds.stream().map(Object::toString).collect(Collectors.toList());
+    final Set<MemberId> memberIds =
+        nodeIds.stream().map(id -> MemberId.from(Integer.toString(id))).collect(Collectors.toSet());
+
+    final List<PartitionId> partitionIds =
+        IntStream.rangeClosed(1, partitionCount)
+            .mapToObj(id -> PartitionId.from("test", id))
+            .sorted()
+            .toList();
+    final var partitionDistribution =
+        new RoundRobinPartitionDistributor()
+            .distributePartitions(memberIds, partitionIds, memberIds.size());
 
     final RaftPartitionGroup partitionGroup =
         RaftPartitionGroup.builder("normal")
-            .withNumPartitions(partitionCount)
-            .withPartitionSize(memberIds.size())
+            .withPartitionDistribution(partitionDistribution)
             .withPriorityElection(false)
-            .withMembers(memberIds)
             .withDataDirectory(
                 new File(new File(atomixClusterRule.getDataDir(), "log"), "" + nodeId))
             .withSnapshotStoreFactory(new NoopSnapshotStoreFactory())

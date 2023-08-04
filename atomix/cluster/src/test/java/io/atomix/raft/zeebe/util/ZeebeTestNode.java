@@ -25,13 +25,16 @@ import io.atomix.cluster.discovery.NodeDiscoveryProvider;
 import io.atomix.cluster.messaging.ClusterCommunicationService;
 import io.atomix.primitive.partition.ManagedPartitionGroup;
 import io.atomix.primitive.partition.ManagedPartitionService;
+import io.atomix.primitive.partition.PartitionId;
 import io.atomix.primitive.partition.impl.DefaultPartitionService;
 import io.atomix.raft.partition.RaftPartition;
 import io.atomix.raft.partition.RaftPartitionGroup;
+import io.atomix.raft.partition.RoundRobinPartitionDistributor;
 import io.atomix.raft.partition.impl.RaftPartitionServer;
 import io.atomix.raft.snapshot.TestSnapshotStore;
 import java.io.File;
 import java.util.Collection;
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicReference;
@@ -110,15 +113,16 @@ public class ZeebeTestNode {
 
   private RaftPartitionGroup.Builder buildPartitionGroup(
       final RaftPartitionGroup.Builder builder, final Collection<ZeebeTestNode> nodes) {
-    final Set<Member> members =
-        nodes.stream().map(ZeebeTestNode::getMember).collect(Collectors.toSet());
-    members.add(member);
+    final Set<MemberId> members =
+        nodes.stream().map(ZeebeTestNode::getMember).map(Member::id).collect(Collectors.toSet());
+    members.add(member.id());
 
+    final var partitionDistribution =
+        new RoundRobinPartitionDistributor()
+            .distributePartitions(members, List.of(PartitionId.from("test", 1)), members.size());
     return builder
+        .withPartitionDistribution(partitionDistribution)
         .withDataDirectory(directory)
-        .withMembers(members.toArray(new Member[0]))
-        .withNumPartitions(1)
-        .withPartitionSize(members.size())
         .withSegmentSize(1024L)
         .withSnapshotStoreFactory(
             (path, partition) -> new TestSnapshotStore(new AtomicReference<>()));

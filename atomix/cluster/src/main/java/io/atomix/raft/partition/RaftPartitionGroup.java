@@ -17,13 +17,9 @@
 package io.atomix.raft.partition;
 
 import static com.google.common.base.Preconditions.checkArgument;
-import static com.google.common.base.Preconditions.checkNotNull;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import com.google.common.collect.Sets;
-import io.atomix.cluster.Member;
-import io.atomix.cluster.MemberId;
 import io.atomix.primitive.partition.ManagedPartitionGroup;
 import io.atomix.primitive.partition.Partition;
 import io.atomix.primitive.partition.PartitionGroup;
@@ -33,20 +29,16 @@ import io.atomix.primitive.partition.PartitionMetadata;
 import io.atomix.raft.storage.log.RaftLog;
 import io.atomix.raft.storage.log.RaftLogFlusher;
 import io.atomix.raft.zeebe.EntryValidator;
-import io.atomix.utils.concurrent.ThreadContext;
 import io.atomix.utils.serializer.Namespace;
 import io.atomix.utils.serializer.Namespaces;
 import io.camunda.zeebe.snapshots.ReceivableSnapshotStoreFactory;
 import java.io.File;
 import java.time.Duration;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -57,56 +49,39 @@ public final class RaftPartitionGroup implements ManagedPartitionGroup {
   private static final Logger LOGGER = LoggerFactory.getLogger(RaftPartitionGroup.class);
   private final String name;
   private final RaftPartitionGroupConfig config;
-  private final int replicationFactor;
   private final Map<PartitionId, RaftPartition> partitions = Maps.newConcurrentMap();
-  private final List<PartitionId> sortedPartitionIds = Lists.newCopyOnWriteArrayList();
-  private final Collection<PartitionMetadata> metadata;
+  private final List<PartitionId> partitionIds = Lists.newCopyOnWriteArrayList();
 
   public RaftPartitionGroup(final RaftPartitionGroupConfig config) {
     this.config = config;
 
     name = config.getName();
-    replicationFactor = config.getReplicationFactor();
 
-    buildPartitions(config)
+    buildPartitions(config, config.getPartitionDistribution())
         .forEach(
             p -> {
               partitions.put(p.id(), p);
-              sortedPartitionIds.add(p.id());
+              partitionIds.add(p.id());
             });
-    Collections.sort(sortedPartitionIds);
-
-    metadata = determinePartitionDistribution(config);
   }
 
-  private Collection<PartitionMetadata> determinePartitionDistribution(
-      final RaftPartitionGroupConfig config) {
-    final Collection<PartitionMetadata> metadataCollection;
-    final var members =
-        config.getMembers().stream().map(MemberId::from).collect(Collectors.toSet());
-    metadataCollection =
-        config
-            .getPartitionConfig()
-            .getPartitionDistributor()
-            .distributePartitions(members, sortedPartitionIds, replicationFactor);
-
-    metadataCollection.forEach(
-        partitionMetadata -> partitions.get(partitionMetadata.id()).setMetadata(partitionMetadata));
-    return metadataCollection;
-  }
-
-  private static Collection<RaftPartition> buildPartitions(final RaftPartitionGroupConfig config) {
+  private static Collection<RaftPartition> buildPartitions(
+      final RaftPartitionGroupConfig config, final Collection<PartitionMetadata> metadata) {
     final File partitionsDir =
         new File(config.getStorageConfig().getDirectory(config.getName()), "partitions");
-    final List<RaftPartition> partitions = new ArrayList<>(config.getPartitionCount());
-    for (int i = 0; i < config.getPartitionCount(); i++) {
-      partitions.add(
-          new RaftPartition(
-              PartitionId.from(config.getName(), i + 1),
-              config,
-              new File(partitionsDir, String.valueOf(i + 1))));
-    }
-    return partitions;
+
+    return metadata.stream()
+        .map(
+            partitionMetadata -> {
+              final var partition =
+                  new RaftPartition(
+                      partitionMetadata.id(),
+                      config,
+                      new File(partitionsDir, String.valueOf(partitionMetadata.id().id())));
+              partition.setMetadata(partitionMetadata);
+              return partition;
+            })
+        .toList();
   }
 
   /**
@@ -141,7 +116,7 @@ public final class RaftPartitionGroup implements ManagedPartitionGroup {
 
   @Override
   public List<PartitionId> getPartitionIds() {
-    return sortedPartitionIds;
+    return partitionIds;
   }
 
   @Override
@@ -157,14 +132,8 @@ public final class RaftPartitionGroup implements ManagedPartitionGroup {
         + '\''
         + ", config="
         + config
-        + ", replicationFactor="
-        + replicationFactor
         + ", partitions="
         + partitions
-        + ", sortedPartitionIds="
-        + sortedPartitionIds
-        + ", metadata="
-        + metadata
         + '}';
   }
 
@@ -172,8 +141,8 @@ public final class RaftPartitionGroup implements ManagedPartitionGroup {
   public CompletableFuture<ManagedPartitionGroup> join(
       final PartitionManagementService managementService) {
     final var futures =
-        metadata.stream()
-            .map(meta -> partitions.get(meta.id()).open(managementService))
+        partitions.values().stream()
+            .map(p -> p.open(managementService))
             .toArray(CompletableFuture[]::new);
 
     return CompletableFuture.allOf(futures)
@@ -228,50 +197,15 @@ public final class RaftPartitionGroup implements ManagedPartitionGroup {
     }
 
     /**
-     * Sets the Raft partition group members.
+     * Configure how partitions are distributed among the members.
      *
-     * @param members the Raft partition group members
+     * @param partitionDistribution a collection of partition metadata that describes partition
+     *     distribution
      * @return the Raft partition group builder
-     * @throws NullPointerException if the members are null
      */
-    public Builder withMembers(final Collection<String> members) {
-      config.setMembers(Sets.newHashSet(checkNotNull(members, "members cannot be null")));
-      return this;
-    }
-
-    /**
-     * Sets the Raft partition group members.
-     *
-     * @param members the Raft partition group members
-     * @return the Raft partition group builder
-     * @throws NullPointerException if the members are null
-     */
-    public Builder withMembers(final Member... members) {
-      return withMembers(
-          Stream.of(members).map(node -> node.id().id()).collect(Collectors.toList()));
-    }
-
-    /**
-     * Sets the number of partitions.
-     *
-     * @param numPartitions the number of partitions
-     * @return the Raft partition group builder
-     * @throws IllegalArgumentException if the number of partitions is not positive
-     */
-    public Builder withNumPartitions(final int numPartitions) {
-      config.setPartitionCount(numPartitions);
-      return this;
-    }
-
-    /**
-     * Sets the partition size.
-     *
-     * @param partitionSize the partition size
-     * @return the Raft partition group builder
-     * @throws IllegalArgumentException if the partition size is not positive
-     */
-    public Builder withPartitionSize(final int partitionSize) {
-      config.setReplicationFactor(partitionSize);
+    public Builder withPartitionDistribution(
+        final Collection<PartitionMetadata> partitionDistribution) {
+      config.setPartitionDistribution(partitionDistribution);
       return this;
     }
 
@@ -361,7 +295,7 @@ public final class RaftPartitionGroup implements ManagedPartitionGroup {
 
     /**
      * Sets the {@link RaftLogFlusher.Factory} to create a new flushing strategy for the {@link
-     * RaftLog} when {@link io.atomix.raft.storage.RaftStorage#openLog(ThreadContext)}} is called.
+     * RaftLog}.
      *
      * @param flusherFactory factory to create the flushing strategy for the {@link RaftLog}
      * @return the Raft partition group builder
@@ -452,18 +386,6 @@ public final class RaftPartitionGroup implements ManagedPartitionGroup {
      */
     public Builder withMaxQuorumResponseTimeout(final Duration maxQuorumResponseTimeout) {
       config.getPartitionConfig().setMaxQuorumResponseTimeout(maxQuorumResponseTimeout);
-      return this;
-    }
-
-    /**
-     * Sets the partition distributor to use. The partition distributor determines which members
-     * will own which partitions, and ensures they are correctly replicated.
-     *
-     * @param partitionDistributor the partition distributor to use
-     * @return this builder for chaining
-     */
-    public Builder withPartitionDistributor(final PartitionDistributor partitionDistributor) {
-      config.getPartitionConfig().setPartitionDistributor(partitionDistributor);
       return this;
     }
 
