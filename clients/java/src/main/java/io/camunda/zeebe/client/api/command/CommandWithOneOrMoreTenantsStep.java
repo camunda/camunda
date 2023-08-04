@@ -25,8 +25,7 @@ public interface CommandWithOneOrMoreTenantsStep<T> extends CommandWithTenantSte
    *
    * <h1>One or more tenants</h1>
    *
-   * <p>This method can be called multiple times to specify multiple tenants. If more than one
-   * tenant is provided, ownership of the resulting entities is inferred.
+   * <p>This method can be called multiple times to specify multiple tenants.
    *
    * <p>This can be useful when requesting jobs for multiple tenants at once. Each of the activated
    * jobs will be owned by the tenant that owns the corresponding process instance.
@@ -52,8 +51,6 @@ public interface CommandWithOneOrMoreTenantsStep<T> extends CommandWithTenantSte
    * etc.) resulting from this command.
    *
    * <h1>One or more tenants</h1>
-   *
-   * <p>If more than one tenant is provided, ownership of the resulting entities is inferred.
    *
    * <p>This can be useful when requesting jobs for multiple tenants at once. Each of the activated
    * jobs will be owned by the tenant that owns the corresponding process instance.

@@ -43,7 +43,8 @@ public interface CommandWithTenantStep<T> {
    * effect, and the interface and its description are subject to change.</strong>
    *
    * <p>Specifies the tenant that will own any entities (e.g. process definition, process instances,
-   * etc.) resulting from this command.
+   * etc.) resulting from this command, or that owns any entities (e.g. jobs) referred to from this
+   * command.
    *
    * <h1>Multi-tenancy</h1>
    *
