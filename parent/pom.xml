@@ -101,7 +101,7 @@
     <version.jetbrains-annotations>24.0.1</version.jetbrains-annotations>
     <version.jqwik>1.7.4</version.jqwik>
     <version.jmock>2.12.0</version.jmock>
-    <version.jmh>1.36</version.jmh>
+    <version.jmh>1.37</version.jmh>
     <version.json-smart>2.4.8</version.json-smart>
     <version.byte-buddy>1.14.5</version.byte-buddy>
     <version.revapi>0.28.1</version.revapi>
