@@ -7,12 +7,9 @@
  */
 package io.atomix.raft.impl.zeebe;
 
-import io.atomix.raft.impl.RaftContext;
 import io.atomix.raft.metrics.RaftServiceMetrics;
 import io.atomix.raft.storage.log.RaftLog;
 import io.atomix.utils.concurrent.ThreadContext;
-import io.atomix.utils.logging.ContextualLoggerFactory;
-import io.atomix.utils.logging.LoggerContext;
 import io.camunda.zeebe.snapshots.PersistedSnapshotStore;
 import java.util.concurrent.CompletableFuture;
 import org.slf4j.Logger;
@@ -31,17 +28,6 @@ public final class LogCompactor {
 
   // used when performing compaction; may be updated from a different thread
   private volatile long compactableIndex;
-
-  public LogCompactor(final RaftContext raft) {
-    this(
-        raft.getThreadContext(),
-        raft.getLog(),
-        raft.getPreferSnapshotReplicationThreshold(),
-        new RaftServiceMetrics(raft.getName()),
-        ContextualLoggerFactory.getLogger(
-            LogCompactor.class,
-            LoggerContext.builder(LogCompactor.class).addValue(raft.getName()).build()));
-  }
 
   public LogCompactor(
       final ThreadContext threadContext,

@@ -39,6 +39,7 @@ import io.atomix.raft.cluster.impl.RaftClusterContext;
 import io.atomix.raft.impl.zeebe.LogCompactor;
 import io.atomix.raft.metrics.RaftReplicationMetrics;
 import io.atomix.raft.metrics.RaftRoleMetrics;
+import io.atomix.raft.metrics.RaftServiceMetrics;
 import io.atomix.raft.partition.RaftElectionConfig;
 import io.atomix.raft.partition.RaftPartitionConfig;
 import io.atomix.raft.protocol.RaftResponse;
@@ -209,10 +210,15 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
         raftLog::reset,
         log);
 
-    logCompactor = new LogCompactor(this);
-
     this.partitionConfig = partitionConfig;
     cluster = new RaftClusterContext(localMemberId, this);
+    logCompactor =
+        new LogCompactor(
+            threadContext,
+            raftLog,
+            partitionConfig.getPreferSnapshotReplicationThreshold(),
+            new RaftServiceMetrics(name),
+            log);
 
     replicationMetrics = new RaftReplicationMetrics(name);
     replicationMetrics.setAppendIndex(raftLog.getLastIndex());
