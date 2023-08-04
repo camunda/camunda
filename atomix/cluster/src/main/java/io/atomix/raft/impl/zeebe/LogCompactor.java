@@ -69,14 +69,16 @@ public final class LogCompactor {
   public CompletableFuture<Void> compact() {
     threadContext.checkThread();
 
+    final var index = compactableIndex - replicationThreshold;
+    logger.debug("Compacting up to {} ({} - {})", index, compactableIndex, replicationThreshold);
     final CompletableFuture<Void> result = new CompletableFuture<>();
     try {
       final var startTime = System.currentTimeMillis();
-      log.deleteUntil(compactableIndex);
+      log.deleteUntil(index);
       metrics.compactionTime(System.currentTimeMillis() - startTime);
       result.complete(null);
     } catch (final Exception e) {
-      logger.error("Failed to compact up to index {}", compactableIndex, e);
+      logger.error("Failed to compact up to index {}", index, e);
       result.completeExceptionally(e);
     }
 
@@ -100,7 +102,6 @@ public final class LogCompactor {
       return;
     }
 
-    logger.debug("Scheduling log compaction up to index {}", index);
     setCompactableIndex(index);
     compact();
   }
