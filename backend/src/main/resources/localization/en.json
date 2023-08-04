@@ -36,7 +36,9 @@
     "username": "Username",
     "password": "Password",
     "btn": "Log in",
-    "error": "An error occurred. Could not log you in.",
+    "error": "Error",
+    "errorMessage": "An error occurred. Could not log you in.",
+    "closeError": "Close login error notification",
     "timeout": "Your session timed out. Please log in again to complete the action.",
     "telemetry": "By logging in, you accept our <a href=\"https://camunda.com/legal/terms/\" target=\"_blank\" rel=\"noopener noreferrer\">T&C</a> and <a href=\"https://camunda.com/legal/privacy/\" target=\"_blank\" rel=\"noopener noreferrer\">Privacy Policy</a>"
   },

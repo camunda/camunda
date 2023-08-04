@@ -1,3 +1,4 @@
+@use '@carbon/colors';
 @import 'shared-styles/shared-styles.scss';
 
 .PlatformLogin {
@@ -10,17 +11,18 @@
   background-color: var(--white);
   padding-top: 200px;
 
-  .label {
-    @include visually-hidden;
+  > * {
+    width: 360px;
+    margin-left: calc(50vw - 190px);
   }
 
-  > * {
-    width: 340px;
-    margin-left: calc(50vw - 170px);
+  button[type='submit'] {
+    width: 100%;
+    max-width: 100%;
   }
 
   h1 {
-    color: var(--grey-base-40);
+    color: colors.$gray-100;
     font-size: 1.75em;
     font-weight: normal;
     margin-bottom: 78px;
@@ -28,36 +30,13 @@
     text-align: center;
   }
 
-  .controls {
-    margin-bottom: 42px;
-
-    .row {
-      margin-bottom: 1.5em;
-    }
-
-    .Input {
-      font-size: 1em;
-      display: block;
-      width: 100%;
-      padding: 8px 6px;
-    }
-  }
-
-  .Button {
-    display: block;
-    font-size: 1em;
-    padding: 8px 14px 9px;
-  }
-
   .privacyNotice {
-    width: 340px;
-    text-align: center;
-    margin-top: 1.5em;
-    font-size: 13px;
-    font-weight: 500;
+    color: colors.$gray-60;
+    font-size: 12px;
 
     a {
-      color: inherit;
+      opacity: 0.9;
+      color: colors.$blue-60;
     }
   }
 }

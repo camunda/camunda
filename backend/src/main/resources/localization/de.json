@@ -36,7 +36,9 @@
     "username": "Nutzername",
     "password": "Passwort",
     "btn": "Einloggen",
-    "error": "Bei der Anmeldung ist ein Fehler aufgetreten.",
+    "error": "Fehler",
+    "errorMessage": "Bei der Anmeldung ist ein Fehler aufgetreten.",
+    "closeError": "Login-Fehlermeldung schließen",
     "timeout": "Ihre Sitzung ist abgelaufen. Bitte melden Sie sich erneut an, um die Aktion abzuschließen.",
     "telemetry": "Durch Anmelden akzeptieren Sie unsere <a href=\"https://camunda.com/legal/terms/\" target=\"_blank\" rel=\"noopener noreferrer\">AGB</a> und <a href=\"https://camunda.com/legal/privacy/\" target=\"_blank\" rel=\"noopener noreferrer\">Datenschutzerklärung</a>"
   },

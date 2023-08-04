@@ -7,7 +7,7 @@
 
 import React, {useState, useRef} from 'react';
 
-import {MessageBox, Button, Input, Labeled, PageTitle} from 'components';
+import {PageTitle} from 'components';
 import {withErrorHandling} from 'HOC';
 import {t} from 'translation';
 
@@ -15,6 +15,7 @@ import {login} from './service';
 import {ReactComponent as Logo} from './logo.svg';
 
 import './PlatformLogin.scss';
+import {Form, TextInput, PasswordInput, Button, Stack, InlineNotification} from '@carbon/react';
 
 export function PlatformLogin({onLogin, mightFail}) {
   const [username, setUsername] = useState('');
@@ -39,7 +40,7 @@ export function PlatformLogin({onLogin, mightFail}) {
           await onLogin(token);
         }
       },
-      ({message}) => setError(message || t('login.error'))
+      ({message}) => setError(message || t('login.errorMessage'))
     );
 
     setWaitingForServer(false);
@@ -51,42 +52,48 @@ export function PlatformLogin({onLogin, mightFail}) {
   }
 
   return (
-    <form className="PlatformLogin">
+    <Form className="PlatformLogin">
       <PageTitle pageName={t('login.label')} />
       <Logo />
       <h1>{t('login.appName')}</h1>
-      {error ? <MessageBox type="error">{error}</MessageBox> : ''}
-      <div className="controls">
-        <div className="row">
-          <Labeled label={usernameLabel}>
-            <Input
-              type="text"
-              placeholder={usernameLabel}
-              value={username}
-              onChange={(evt) => setUsername(evt.target.value)}
-              name="username"
-              autoFocus={true}
-            />
-          </Labeled>
-        </div>
-        <div className="row">
-          <Labeled label={passwordLabel}>
-            <Input
-              placeholder={passwordLabel}
-              value={password}
-              onChange={(evt) => setPassword(evt.target.value)}
-              type="password"
-              name="password"
-              ref={passwordField}
-            />
-          </Labeled>
-        </div>
-      </div>
-      <Button main primary type="submit" onClick={submit} disabled={waitingForServer}>
-        {t('login.btn')}
-      </Button>
-      <div className="privacyNotice">{t('login.telemetry')}</div>
-    </form>
+      <Stack gap={8}>
+        {error ? (
+          <InlineNotification
+            kind="error"
+            aria-label={t('login.closeError')}
+            statusIconDescription={t('login.error')}
+            onCloseButtonClick={() => setError(null)}
+            subtitle={error}
+          />
+        ) : (
+          ''
+        )}
+        <TextInput
+          type="text"
+          placeholder={usernameLabel}
+          labelText={usernameLabel}
+          value={username}
+          onChange={(evt) => setUsername(evt.target.value)}
+          name="username"
+          id="loginUserName"
+          autoFocus={true}
+        />
+        <PasswordInput
+          placeholder={passwordLabel}
+          labelText={passwordLabel}
+          value={password}
+          onChange={(evt) => setPassword(evt.target.value)}
+          type="password"
+          name="password"
+          id="loginPassword"
+          ref={passwordField}
+        />
+        <Button type="submit" onClick={submit} disabled={waitingForServer}>
+          {t('login.btn')}
+        </Button>
+        <div className="privacyNotice">{t('login.telemetry')}</div>
+      </Stack>
+    </Form>
   );
 }
 

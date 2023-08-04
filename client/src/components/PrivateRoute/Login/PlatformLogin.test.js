@@ -7,8 +7,7 @@
 
 import React from 'react';
 import {shallow} from 'enzyme';
-
-import {Button} from 'components';
+import {InlineNotification, Button} from '@carbon/react';
 
 import {PlatformLogin} from './PlatformLogin';
 
@@ -69,7 +68,7 @@ it('should display error message on failed login', async () => {
 
   await node.find(Button).simulate('click', {preventDefault: jest.fn()});
 
-  expect(node.find('MessageBox[type="error"]')).toExist();
+  expect(node.find(InlineNotification)).toExist();
 });
 
 it('should disable the login button when waiting for server response', () => {
