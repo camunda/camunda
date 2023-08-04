@@ -25,7 +25,6 @@ import java.util.concurrent.CompletableFuture;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.RandomUtils;
 import org.assertj.core.api.Assertions;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -50,12 +49,6 @@ final class BackupUploadIT {
   @RegisterExtension
   final ContainerLogsDumper logsWatcher = new ContainerLogsDumper(() -> Map.of("localstack", S3));
 
-  private S3BackupStore store;
-
-  public S3BackupStore getStore() {
-    return store;
-  }
-
   @BeforeAll
   static void setupBucket() {
     final var config =
@@ -70,13 +63,8 @@ final class BackupUploadIT {
     }
   }
 
-  @AfterEach
-  void tearDown() {
-    store.closeAsync();
-  }
-
-  public void setConfigParallelConnectionsAndTimeout(
-      final int parallelConnections, final Duration timeout) {
+  public S3BackupStore buildBackupStore(
+      final int parallelUploadsLimit, final Duration connectionAcquisitionTimeout) {
     final S3BackupConfig backupConfig =
         new Builder()
             .withBucketName(BUCKET_NAME)
@@ -87,20 +75,21 @@ final class BackupUploadIT {
             .withApiCallTimeout(null)
             .forcePathStyleAccess(false)
             .withCompressionAlgorithm(null)
-            .withConnectionAcquisitionTimeout(timeout)
-            .withParallelUploadsLimit(parallelConnections)
+            .withConnectionAcquisitionTimeout(connectionAcquisitionTimeout)
+            .withParallelUploadsLimit(parallelUploadsLimit)
             .build();
 
     final S3AsyncClient asyncClient = S3BackupStore.buildClient(backupConfig);
-    store = new S3BackupStore(backupConfig, asyncClient);
+    return new S3BackupStore(backupConfig, asyncClient);
   }
 
   @Test
   void shouldSaveBackupWithManyFiles() throws IOException {
     // given
     // Default values for the configuration
-    setConfigParallelConnectionsAndTimeout(50, Duration.ofSeconds(10));
-    final CompletableFuture<Void> saveFuture = getStore().save(backupWithManyFiles(4_000));
+
+    final CompletableFuture<Void> saveFuture =
+        buildBackupStore(50, Duration.ofSeconds(10)).save(backupWithManyFiles(4_000));
 
     // then
     Assertions.assertThat(saveFuture).succeedsWithin(Duration.ofSeconds(60));
@@ -111,8 +100,8 @@ final class BackupUploadIT {
     // given
     // Even with just one connection, and low timeout limit, the second upload should not start
     // until a connection is available, and therefore should not throw AcquisitionConnectionTimeout
-    setConfigParallelConnectionsAndTimeout(1, Duration.ofMillis(50));
-    final CompletableFuture<Void> saveFuture = getStore().save(backupWithLargeFiles(50_000_000));
+    final CompletableFuture<Void> saveFuture =
+        buildBackupStore(1, Duration.ofMillis(50)).save(backupWithLargeFiles(50_000_000));
 
     // then
     Assertions.assertThat(saveFuture).succeedsWithin(Duration.ofSeconds(60));
