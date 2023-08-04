@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.state.migration;
 
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -137,19 +138,59 @@ public class DbMigratorImplTest {
   @Test
   void shouldMarkMigrationAsFinishedAfterRunning() {
     // given
-    final var mockProcessingState = mock(MutableProcessingState.class);
+    final var mockZeebeState = mock(MutableZeebeState.class);
     final var mockMigrationState = mock(MutableMigrationState.class);
-    when(mockProcessingState.getMigrationState()).thenReturn(mockMigrationState);
+    when(mockZeebeState.getMigrationState()).thenReturn(mockMigrationState);
     final var mockMigration = mock(MigrationTask.class);
-    when(mockMigration.needsToRun(mockProcessingState)).thenReturn(true);
+    when(mockMigration.needsToRun(mockZeebeState)).thenReturn(true);
 
     final var sut =
-        new DbMigratorImpl(mockProcessingState, () -> Collections.singletonList(mockMigration));
+        new DbMigratorImpl(mockZeebeState, () -> Collections.singletonList(mockMigration));
 
     // when
     sut.runMigrations();
 
     // then
     verify(mockMigrationState).markMigrationFinished(mockMigration.getIdentifier());
+  }
+
+  @Test
+  void shouldMarkMigrationAsFinishedAfterSkipping() {
+    // given
+    final var mockZeebeState = mock(MutableZeebeState.class);
+    final var mockMigrationState = mock(MutableMigrationState.class);
+    when(mockZeebeState.getMigrationState()).thenReturn(mockMigrationState);
+    final var mockMigration = mock(MigrationTask.class);
+    when(mockMigration.needsToRun(mockZeebeState)).thenReturn(false);
+
+    final var sut =
+        new DbMigratorImpl(mockZeebeState, () -> Collections.singletonList(mockMigration));
+
+    // when
+    sut.runMigrations();
+
+    // then
+    verify(mockMigrationState).markMigrationFinished(mockMigration.getIdentifier());
+  }
+
+  @Test
+  void shouldNotDoAnythingWhenMigrationIsInStateFinished() {
+    // given
+    final var mockZeebeState = mock(MutableZeebeState.class);
+    final var mockMigrationState = mock(MutableMigrationState.class);
+    when(mockZeebeState.getMigrationState()).thenReturn(mockMigrationState);
+    when(mockMigrationState.isMigrationFinished(anyString())).thenReturn(true);
+    final var mockMigration = mock(MigrationTask.class);
+    when(mockMigration.getIdentifier()).thenReturn("identifier");
+
+    final var sut =
+        new DbMigratorImpl(mockZeebeState, () -> Collections.singletonList(mockMigration));
+
+    // when
+    sut.runMigrations();
+
+    // then
+    verify(mockMigration, never()).runMigration(mockZeebeState);
+    verify(mockMigrationState, never()).markMigrationFinished(mockMigration.getIdentifier());
   }
 }
