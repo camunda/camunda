@@ -19,7 +19,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assumptions.assumeThat;
 
 import io.atomix.raft.RaftCommitListener;
-import io.atomix.raft.partition.impl.RaftPartitionServer;
 import io.atomix.raft.storage.log.IndexedRaftLogEntry;
 import io.atomix.raft.zeebe.util.TestAppender;
 import io.atomix.raft.zeebe.util.ZeebeTestHelper;
@@ -114,58 +113,6 @@ public class ZeebeIT {
 
     // then
     helper.awaitAllContain(partitionId, appended);
-  }
-
-  @Test
-  public void shouldNotCompactAnything() {
-    // given
-    final int partitionId = 1;
-    final RaftPartitionServer server = helper.awaitLeaderServer(1);
-    final ZeebeLogAppender appender = helper.awaitLeaderAppender(partitionId);
-
-    // when
-    final IndexedRaftLogEntry firstAppended =
-        appenderWrapper.append(appender, 0L, 0L, getIntAsBytes(0));
-    for (int i = 1; i < ENTRIES_PER_SEGMENT; i++) {
-      helper.awaitAllContain(partitionId, appenderWrapper.append(appender, i, i, getIntAsBytes(i)));
-    }
-    server.compact().join();
-
-    // then
-    assertThat(helper.containsIndexed(server, firstAppended)).isTrue();
-  }
-
-  @Test
-  public void shouldCompactUpToCompactablePosition() {
-    // given
-    final int partitionId = 1;
-    final RaftPartitionServer server = helper.awaitLeaderServer(1);
-    final ZeebeLogAppender appender = helper.awaitLeaderAppender(partitionId);
-    final var preferSnapshotReplicationThreshold =
-        nodes.stream()
-            .findFirst()
-            .orElseThrow()
-            .getPartitionGroup()
-            .config()
-            .getPartitionConfig()
-            .getPreferSnapshotReplicationThreshold();
-    // when
-    IndexedRaftLogEntry appended = appenderWrapper.append(appender, 0L, 0L, getIntAsBytes(0));
-    final IndexedRaftLogEntry firstAppended = appended;
-
-    // write enough entries to fill a segment + the offset applied based on
-    // `preferSnapshotReplicationThreshold`
-    for (int i = 1; i < ENTRIES_PER_SEGMENT + preferSnapshotReplicationThreshold; i++) {
-      appended = appenderWrapper.append(appender, i, i, getIntAsBytes(i));
-      helper.awaitAllContain(partitionId, appended);
-    }
-
-    server.setCompactableIndex(appended.index());
-    server.compact().join();
-
-    // then
-    assertThat(helper.containsIndexed(server, firstAppended)).isFalse();
-    assertThat(helper.containsIndexed(server, appended)).isTrue();
   }
 
   @Test

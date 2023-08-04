@@ -185,21 +185,8 @@ public class RaftPartitionServer implements Managed<RaftPartitionServer>, Health
         .build();
   }
 
-  /**
-   * Compacts the log to the latest known compactable index. Compaction occurs asynchronously.
-   *
-   * @return a future to be completed once the log has been compacted
-   */
-  public CompletableFuture<Void> compact() {
-    return server.compact();
-  }
-
   public CompletableFuture<Void> flushLog() {
     return server.flushLog();
-  }
-
-  public void setCompactableIndex(final long index) {
-    server.getContext().getLogCompactor().setCompactableIndex(index);
   }
 
   public RaftLogReader openReader() {
