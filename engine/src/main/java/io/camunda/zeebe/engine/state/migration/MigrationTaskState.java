@@ -14,7 +14,7 @@ import io.camunda.zeebe.msgpack.property.EnumProperty;
 public final class MigrationTaskState extends UnpackedObject implements DbValue {
 
   private final EnumProperty<State> stateProp =
-      new EnumProperty<>("state", State.class, State.FINISHED);
+      new EnumProperty<>("state", State.class, State.NOT_STARTED);
 
   public MigrationTaskState() {
     declareProperty(stateProp);
@@ -24,8 +24,14 @@ public final class MigrationTaskState extends UnpackedObject implements DbValue 
     return stateProp.getValue();
   }
 
+  public MigrationTaskState setState(final State state) {
+    stateProp.setValue(state);
+    return this;
+  }
+
   public enum State {
-    FINISHED(0);
+    NOT_STARTED(0),
+    FINISHED(1);
 
     byte value;
 
