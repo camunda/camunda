@@ -112,7 +112,7 @@ public record S3BackupConfig(
     private Integer maxConcurrentConnections = 50;
 
     /** Default from `SdkHttpConfigurationOption.DEFAULT_CONNECTION_ACQUIRE_TIMEOUT` */
-    private Duration connectionAcquisitionTimeout = Duration.ofSeconds(10);
+    private Duration connectionAcquisitionTimeout = Duration.ofSeconds(45);
 
     public Builder withBucketName(final String bucketName) {
       this.bucketName = bucketName;
