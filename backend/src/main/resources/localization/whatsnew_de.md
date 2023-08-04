@@ -8,3 +8,6 @@ Eine Beschreibung, wie Daten verstanden werden sollen, sowie eine Beschreibung d
 Aktuell befinden wir uns in einer Migration der aktuellen Optimize Oberflächen auf das Carbon Design System. Ziel ist es die Optimize Oberflächen mit anderen Camunda Produkten zu vereinheitlichen. Mit dem Carbon Design System gehen wir einen großen Schritt in Richtung der Umsetzung eines Barrierefreien Zugangs, um unsere Anwendungen einem breiten Spektrum von Nutzern zugänglich zu machen.
 
 Die Migration erfolgt schrittweise mit kommenden Releases von Optimize. Aktuell wurden Modal-Dialoge, Tabellen und Pop-Overs erfolgreich migriert. Die bekannten Funktionen sind weiter in gewohnter Weise verfügbar, ab sofort jedoch im frischen Carbon Design.
+
+## Aktualisierte Berichtsvorlagen
+Beim Anzeigen eines Instant Preview-Dashboards können Sie jetzt direkt eine Kopie erstellen, die dann wie jedes andere Dashboard bearbeitet und geteilt werden kann. Dieses Dashboard steht nun auch als auswählbare Vorlage bei der Dashboard-Erstellung zur Verfügung.
