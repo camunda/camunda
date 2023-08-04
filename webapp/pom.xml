@@ -284,6 +284,7 @@
             </auth>
           </to>
           <container>
+            <user>tasklist:tasklist</user>
             <creationTime>USE_CURRENT_TIMESTAMP</creationTime>
             <jvmFlags>
               <jvmFlag>-XX:+ExitOnOutOfMemoryError</jvmFlag>
@@ -314,6 +315,14 @@
               <io.k8s.description>Tasklist is a ready-to-use application to rapidly implement business processes alongside user tasks in Zeebe</io.k8s.description>
             </labels>
           </container>
+          <extraDirectories>
+            <paths>
+              <path>
+                <from>src/main/resources/docker</from>
+                <into>/etc</into>
+              </path>
+            </paths>
+          </extraDirectories>
         </configuration>
       </plugin>
 
