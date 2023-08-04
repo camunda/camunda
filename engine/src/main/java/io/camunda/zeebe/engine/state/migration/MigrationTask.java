@@ -52,12 +52,17 @@ public interface MigrationTask {
   String getIdentifier();
 
   /**
-   * Returns whether the migration needs to run
+   * Returns whether the migration needs to run. By default this returns true. We keep track of
+   * whether migrations have already run, and we use this to determine if they need to run. There
+   * are migrations from before this mechanism was implemented. Because of this we need to make sure
+   * they still have the opportunity to decide if they need to run in the old way.
    *
    * @param zeebeState the immutable Zeebe state
    * @return whether the migration needs to run
    */
-  boolean needsToRun(final ZeebeState zeebeState);
+  default boolean needsToRun(final ZeebeState zeebeState) {
+    return true;
+  }
 
   /**
    * Implementations of this method perform the actual migration
