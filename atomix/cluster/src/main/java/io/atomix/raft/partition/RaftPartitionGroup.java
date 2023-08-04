@@ -134,8 +134,6 @@ public final class RaftPartitionGroup implements ManagedPartitionGroup {
         + config
         + ", partitions="
         + partitions
-        + ", sortedPartitionIds="
-        + partitionIds
         + '}';
   }
 
