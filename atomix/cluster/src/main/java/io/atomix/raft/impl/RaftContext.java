@@ -254,7 +254,7 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
     threadContext.execute(
         () -> {
           currentSnapshot = persistedSnapshot;
-          logCompactor.compactFromSnapshots(persistedSnapshotStore, threadContext);
+          logCompactor.compactFromSnapshots(persistedSnapshotStore);
         });
   }
 

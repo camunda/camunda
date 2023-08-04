@@ -12,7 +12,6 @@ import io.atomix.raft.storage.log.RaftLog;
 import io.atomix.utils.concurrent.ThreadContext;
 import io.camunda.zeebe.snapshots.PersistedSnapshotStore;
 import io.camunda.zeebe.util.VisibleForTesting;
-import java.util.concurrent.Executor;
 import org.agrona.LangUtil;
 import org.slf4j.Logger;
 
@@ -73,9 +72,8 @@ public final class LogCompactor {
   }
 
   /** Compacts the log based on the snapshot store's lowest compaction bound. */
-  public void compactFromSnapshots(
-      final PersistedSnapshotStore snapshotStore, final Executor executor) {
-    snapshotStore.getCompactionBound().onComplete(this::onSnapshotCompactionBound, executor);
+  public void compactFromSnapshots(final PersistedSnapshotStore snapshotStore) {
+    snapshotStore.getCompactionBound().onComplete(this::onSnapshotCompactionBound, threadContext);
   }
 
   /**
