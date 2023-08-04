@@ -178,6 +178,25 @@ public class UpdateTestCaseProvider implements ArgumentsProvider {
             .createInstance(Map.of("x", 10))
             .beforeUpgrade(this::activateJob)
             .afterUpgrade(this::completeJob)
+            .done(),
+        scenario()
+            .name("Uses correct process version after upgrade")
+            .deployProcess(Bpmn.createExecutableProcess(PROCESS_ID).startEvent().endEvent().done())
+            .createInstance() // We need to create an instance as the test runners expect this
+            .beforeUpgrade(
+                state ->
+                    state
+                        .client()
+                        .newDeployResourceCommand()
+                        .addProcessModel(
+                            Bpmn.createExecutableProcess(PROCESS_ID).startEvent().endEvent().done(),
+                            "process.bpmn")
+                        .send()
+                        .join()
+                        .getProcesses()
+                        .get(0)
+                        .getVersion())
+            .afterUpgrade(this::assertDeploymentWithIncrementedVersion)
             .done());
   }
 
@@ -355,6 +374,20 @@ public class UpdateTestCaseProvider implements ArgumentsProvider {
         .atMost(Duration.ofSeconds(5))
         .pollInterval(Duration.ofMillis(200))
         .until(() -> state.hasElementInState(elementId, elementState));
+  }
+
+  private void assertDeploymentWithIncrementedVersion(
+      final ContainerState state, final long unused, final long previousVersion) {
+    final var deploymentEvent =
+        state
+            .client()
+            .newDeployResourceCommand()
+            .addProcessModel(
+                Bpmn.createExecutableProcess(PROCESS_ID).startEvent().endEvent().done(),
+                "process.bpmn")
+            .send()
+            .join();
+    assertThat(deploymentEvent.getProcesses().get(0).getVersion()).isEqualTo(previousVersion + 1);
   }
 
   private TestCaseBuilder scenario() {
