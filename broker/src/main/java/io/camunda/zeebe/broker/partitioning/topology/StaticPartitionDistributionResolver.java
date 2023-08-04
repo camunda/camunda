@@ -26,10 +26,10 @@ import java.util.stream.IntStream;
 /**
  * Manage how partitions are distributed among the brokers.
  *
- * <p>Note: Do not confuse it with the {@link TopologyManager}. {@link ClusterTopologyManager}
- * doesn't keep track of the current leader and followers.
+ * <p>Note: Do not confuse it with the {@link TopologyManager}. {@link
+ * StaticPartitionDistributionResolver} doesn't keep track of the current leader and followers.
  */
-public class ClusterTopologyManager {
+public class StaticPartitionDistributionResolver {
 
   public PartitionDistribution resolveTopology(
       final PartitioningCfg partitionCfg, final ClusterCfg clusterCfg) {

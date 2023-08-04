@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.broker.bootstrap;
 
-import io.camunda.zeebe.broker.partitioning.topology.ClusterTopologyManager;
+import io.camunda.zeebe.broker.partitioning.topology.StaticPartitionDistributionResolver;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 
@@ -26,7 +26,7 @@ public class ClusterTopologyManagerStep
         brokerStartupContext.getConcurrencyControl().createFuture();
     try {
       brokerStartupContext.setClusterTopology(
-          new ClusterTopologyManager()
+          new StaticPartitionDistributionResolver()
               .resolveTopology(
                   brokerStartupContext.getBrokerConfiguration().getExperimental().getPartitioning(),
                   brokerStartupContext.getBrokerConfiguration().getCluster()));

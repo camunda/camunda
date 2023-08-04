@@ -21,7 +21,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import org.junit.jupiter.api.Test;
 
-class ClusterTopologyManagerTest {
+class StaticPartitionDistributionResolverTest {
 
   @Test
   void shouldGenerateRoundRobinDistribution() {
@@ -49,7 +49,8 @@ class ClusterTopologyManagerTest {
     clusterCfg.setReplicationFactor(3);
 
     // when
-    final var topology = new ClusterTopologyManager().resolveTopology(partitioningCfg, clusterCfg);
+    final var topology =
+        new StaticPartitionDistributionResolver().resolveTopology(partitioningCfg, clusterCfg);
     final Set<PartitionMetadata> partitionDistribution = topology.partitions();
 
     // then
@@ -111,7 +112,8 @@ fixed:
     clusterCfg.setReplicationFactor(3);
 
     // when
-    final var topology = new ClusterTopologyManager().resolveTopology(partitioningCfg, clusterCfg);
+    final var topology =
+        new StaticPartitionDistributionResolver().resolveTopology(partitioningCfg, clusterCfg);
     final Set<PartitionMetadata> partitionDistribution = topology.partitions();
 
     // then
