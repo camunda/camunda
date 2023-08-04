@@ -8,26 +8,22 @@
   right: 0;
   bottom: 0;
   z-index: var(--z-login);
-  background-color: var(--white);
   padding-top: 200px;
-
-  > * {
-    width: 360px;
-    margin-left: calc(50vw - 190px);
-  }
 
   button[type='submit'] {
     width: 100%;
     max-width: 100%;
   }
 
-  h1 {
-    color: colors.$gray-100;
-    font-size: 1.75em;
-    font-weight: normal;
-    margin-bottom: 78px;
-    margin-top: 8px;
+  .header {
+    margin-bottom: 50px;
     text-align: center;
+
+    h1 {
+      color: colors.$gray-100;
+      font-weight: normal;
+      font-size: 1.75em;
+    }
   }
 
   .privacyNotice {
@@ -35,7 +31,6 @@
     font-size: 12px;
 
     a {
-      opacity: 0.9;
       color: colors.$blue-60;
     }
   }

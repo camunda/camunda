@@ -6,6 +6,16 @@
  */
 
 import React, {useState, useRef} from 'react';
+import {
+  Form,
+  TextInput,
+  PasswordInput,
+  Button,
+  Stack,
+  InlineNotification,
+  Grid,
+  Column,
+} from '@carbon/react';
 
 import {PageTitle} from 'components';
 import {withErrorHandling} from 'HOC';
@@ -15,7 +25,6 @@ import {login} from './service';
 import {ReactComponent as Logo} from './logo.svg';
 
 import './PlatformLogin.scss';
-import {Form, TextInput, PasswordInput, Button, Stack, InlineNotification} from '@carbon/react';
 
 export function PlatformLogin({onLogin, mightFail}) {
   const [username, setUsername] = useState('');
@@ -54,45 +63,58 @@ export function PlatformLogin({onLogin, mightFail}) {
   return (
     <Form className="PlatformLogin">
       <PageTitle pageName={t('login.label')} />
-      <Logo />
-      <h1>{t('login.appName')}</h1>
-      <Stack gap={8}>
-        {error ? (
-          <InlineNotification
-            kind="error"
-            aria-label={t('login.closeError')}
-            statusIconDescription={t('login.error')}
-            onCloseButtonClick={() => setError(null)}
-            subtitle={error}
-          />
-        ) : (
-          ''
-        )}
-        <TextInput
-          type="text"
-          placeholder={usernameLabel}
-          labelText={usernameLabel}
-          value={username}
-          onChange={(evt) => setUsername(evt.target.value)}
-          name="username"
-          id="loginUserName"
-          autoFocus={true}
-        />
-        <PasswordInput
-          placeholder={passwordLabel}
-          labelText={passwordLabel}
-          value={password}
-          onChange={(evt) => setPassword(evt.target.value)}
-          type="password"
-          name="password"
-          id="loginPassword"
-          ref={passwordField}
-        />
-        <Button type="submit" onClick={submit} disabled={waitingForServer}>
-          {t('login.btn')}
-        </Button>
-        <div className="privacyNotice">{t('login.telemetry')}</div>
-      </Stack>
+      <Grid>
+        <Column
+          sm={4}
+          md={{
+            start: 3,
+            end: 7,
+          }}
+          lg={{
+            start: 7,
+            end: 11,
+          }}
+        >
+          <div className="header">
+            <Logo />
+            <h1>{t('login.appName')}</h1>
+          </div>
+          <Stack gap={8}>
+            {error && (
+              <InlineNotification
+                kind="error"
+                aria-label={t('login.closeError')}
+                statusIconDescription={t('common.error')}
+                onCloseButtonClick={() => setError(null)}
+                subtitle={error}
+              />
+            )}
+            <TextInput
+              type="text"
+              placeholder={usernameLabel}
+              labelText={usernameLabel}
+              value={username}
+              onChange={(evt) => setUsername(evt.target.value)}
+              name="username"
+              id="loginUserName"
+              autoFocus={true}
+            />
+            <PasswordInput
+              placeholder={passwordLabel}
+              labelText={passwordLabel}
+              value={password}
+              onChange={(evt) => setPassword(evt.target.value)}
+              name="password"
+              id="loginPassword"
+              ref={passwordField}
+            />
+            <Button type="submit" onClick={submit} disabled={waitingForServer}>
+              {t('login.btn')}
+            </Button>
+            <div className="privacyNotice">{t('login.telemetry')}</div>
+          </Stack>
+        </Column>
+      </Grid>
     </Form>
   );
 }

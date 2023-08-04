@@ -36,7 +36,6 @@
     "username": "Username",
     "password": "Password",
     "btn": "Log in",
-    "error": "Error",
     "errorMessage": "An error occurred. Could not log you in.",
     "closeError": "Close login error notification",
     "timeout": "Your session timed out. Please log in again to complete the action.",
@@ -1082,6 +1081,7 @@
     "less": "Less",
     "configure": "Configure",
     "new": "New",
+    "error": "Error",
     "process": {
       "label": "Process",
       "label-plural": "Processes"

@@ -36,7 +36,6 @@
     "username": "Nutzername",
     "password": "Passwort",
     "btn": "Einloggen",
-    "error": "Fehler",
     "errorMessage": "Bei der Anmeldung ist ein Fehler aufgetreten.",
     "closeError": "Login-Fehlermeldung schließen",
     "timeout": "Ihre Sitzung ist abgelaufen. Bitte melden Sie sich erneut an, um die Aktion abzuschließen.",
@@ -1082,6 +1081,7 @@
     "less": "Weniger",
     "configure": "Konfigurieren",
     "new": "Neuer",
+    "error": "Fehler",
     "process": {
       "label": "Prozess",
       "label-plural": "Prozesse"
