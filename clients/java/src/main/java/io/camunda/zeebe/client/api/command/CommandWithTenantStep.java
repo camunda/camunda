@@ -24,7 +24,7 @@ public interface CommandWithTenantStep<T> {
    * Zeebe cluster. After enabling multi-tenancy, these entities can still be interacted by using
    * this identifier explicitly.
    */
-  String DEFAULT_TENANT_IDENTIFIER = "[default]";
+  String DEFAULT_TENANT_IDENTIFIER = "<default>";
 
   /**
    * This identifier is used for entities that are shared among all tenants. For example, a deployed
