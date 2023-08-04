@@ -102,16 +102,7 @@ public interface DeployResourceCommandStep1 {
           FinalCommandStep<DeploymentEvent> {
     // the place for new optional parameters
 
-    /**
-     * {@inheritDoc}
-     *
-     * <h1>Deploy resource command specifics</h1>
-     *
-     * <p>When no {@code tenantId} is specified explicitly, the deployed resources are rejected as
-     * long as multi-tenancy is enabled in the Zeebe cluster.
-     *
-     * @since 8.3
-     */
+    /** {@inheritDoc} */
     @Override
     @ExperimentalApi("https://github.com/camunda/zeebe/issues/13321")
     DeployResourceCommandStep2 tenantId(String tenantId);
