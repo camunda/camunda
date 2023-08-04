@@ -35,7 +35,6 @@ import io.camunda.zeebe.broker.system.partitions.impl.steps.BackupServiceTransit
 import io.camunda.zeebe.broker.system.partitions.impl.steps.BackupStoreTransitionStep;
 import io.camunda.zeebe.broker.system.partitions.impl.steps.ExporterDirectorPartitionTransitionStep;
 import io.camunda.zeebe.broker.system.partitions.impl.steps.InterPartitionCommandServiceStep;
-import io.camunda.zeebe.broker.system.partitions.impl.steps.LogDeletionPartitionStartupStep;
 import io.camunda.zeebe.broker.system.partitions.impl.steps.LogStoragePartitionTransitionStep;
 import io.camunda.zeebe.broker.system.partitions.impl.steps.LogStreamPartitionTransitionStep;
 import io.camunda.zeebe.broker.system.partitions.impl.steps.QueryServicePartitionTransitionStep;
@@ -68,8 +67,7 @@ import java.util.List;
 final class PartitionFactory {
 
   private static final List<StartupStep<PartitionStartupContext>> STARTUP_STEPS =
-      List.of(
-          new LogDeletionPartitionStartupStep(), new RockDbMetricExporterPartitionStartupStep());
+      List.of(new RockDbMetricExporterPartitionStartupStep());
 
   private static final List<PartitionTransitionStep> TRANSITION_STEPS =
       List.of(

@@ -104,11 +104,6 @@ public class DefaultRaftServer implements RaftServer {
   }
 
   @Override
-  public CompletableFuture<Void> compact() {
-    return context.compact();
-  }
-
-  @Override
   public CompletableFuture<Void> flushLog() {
     return context.flushLog();
   }
@@ -136,12 +131,6 @@ public class DefaultRaftServer implements RaftServer {
           context.close();
         },
         context.getThreadContext());
-  }
-
-  @Override
-  public CompletableFuture<Void> goInactive() {
-    return CompletableFuture.runAsync(
-        () -> context.transition(Role.INACTIVE), context.getThreadContext());
   }
 
   @Override

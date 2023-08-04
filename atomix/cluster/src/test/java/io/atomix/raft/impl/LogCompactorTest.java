@@ -10,8 +10,11 @@ package io.atomix.raft.impl;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatCode;
 
 import io.atomix.raft.metrics.RaftServiceMetrics;
+import io.atomix.raft.snapshot.InMemorySnapshot;
+import io.atomix.raft.snapshot.TestSnapshotStore;
 import io.atomix.raft.storage.log.RaftLog;
 import io.atomix.utils.concurrent.ThreadContext;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
@@ -79,6 +82,25 @@ final class LogCompactorTest {
 
     // when
     assertThatCode(() -> compactMethod.accept(compactor)).isInstanceOf(IllegalStateException.class);
+  }
+
+  @Test
+  void shouldCompactBasedOnOldestSnapshot() {
+    // given
+    final var store = new TestSnapshotStore(new AtomicReference<>());
+    InMemorySnapshot.newPersistedSnapshot(10L, 1, 30, store).reserve();
+    InMemorySnapshot.newPersistedSnapshot(30L, 1, 30, store);
+
+    // when
+    compactor.compactFromSnapshots(store, Runnable::run);
+
+    // then
+    Mockito.verify(
+            raftLog,
+            Mockito.times(1)
+                .description(
+                    "should compact up to lowest snapshot index, minus replication threshold"))
+        .deleteUntil(Mockito.eq(5L));
   }
 
   private static Stream<Named<Consumer<LogCompactor>>> provideCompactors() {
