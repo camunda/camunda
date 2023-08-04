@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.engine.state.migration.to_8_3;
 
-import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.migration.MigrationTask;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 
@@ -21,11 +20,6 @@ public class ProcessInstanceByProcessDefinitionMigration implements MigrationTas
   @Override
   public String getIdentifier() {
     return getClass().getSimpleName();
-  }
-
-  @Override
-  public boolean needsToRun(final ProcessingState processingState) {
-    return !processingState.getMigrationState().isMigrationFinished(getIdentifier());
   }
 
   @Override
