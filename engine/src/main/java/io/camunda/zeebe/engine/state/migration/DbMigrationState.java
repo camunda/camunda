@@ -16,9 +16,9 @@ import io.camunda.zeebe.db.impl.DbInt;
 import io.camunda.zeebe.db.impl.DbLong;
 import io.camunda.zeebe.db.impl.DbNil;
 import io.camunda.zeebe.db.impl.DbString;
-import io.camunda.zeebe.engine.state.deployment.NextValue;
 import io.camunda.zeebe.engine.state.deployment.PersistedDecision;
 import io.camunda.zeebe.engine.state.deployment.PersistedDecisionRequirements;
+import io.camunda.zeebe.engine.state.deployment.ProcessVersionInfo;
 import io.camunda.zeebe.engine.state.immutable.PendingMessageSubscriptionState;
 import io.camunda.zeebe.engine.state.immutable.PendingProcessMessageSubscriptionState;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
@@ -100,7 +100,7 @@ public class DbMigrationState implements MutableMigrationState {
       processInstanceKeyByProcessDefinitionKeyColumnFamily;
 
   private final DbString processIdKey;
-  private final ColumnFamily<DbString, NextValue> nextValueColumnFamily;
+  private final ColumnFamily<DbString, ProcessVersionInfo> processVersionInfoColumnFamily;
 
   public DbMigrationState(
       final ZeebeDb<ZbColumnFamilies> zeebeDb, final TransactionContext transactionContext) {
@@ -213,9 +213,12 @@ public class DbMigrationState implements MutableMigrationState {
             DbNil.INSTANCE);
 
     processIdKey = new DbString();
-    nextValueColumnFamily =
+    processVersionInfoColumnFamily =
         zeebeDb.createColumnFamily(
-            ZbColumnFamilies.PROCESS_VERSION, transactionContext, processIdKey, new NextValue());
+            ZbColumnFamilies.PROCESS_VERSION,
+            transactionContext,
+            processIdKey,
+            new ProcessVersionInfo());
   }
 
   @Override
@@ -365,7 +368,7 @@ public class DbMigrationState implements MutableMigrationState {
 
   @Override
   public void migrateProcessDefinitionVersions() {
-    nextValueColumnFamily.forEach(
+    processVersionInfoColumnFamily.forEach(
         (key, value) -> {
           final long highestVersion = value.getHighestVersion();
           for (long version = 1; version <= highestVersion; version++) {
@@ -373,7 +376,7 @@ public class DbMigrationState implements MutableMigrationState {
               value.addKnownVersion(version);
             }
           }
-          nextValueColumnFamily.update(key, value);
+          processVersionInfoColumnFamily.update(key, value);
         });
   }
 

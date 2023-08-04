@@ -16,7 +16,7 @@ import io.camunda.zeebe.db.ColumnFamily;
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.db.impl.DbString;
-import io.camunda.zeebe.engine.state.deployment.NextValue;
+import io.camunda.zeebe.engine.state.deployment.ProcessVersionInfo;
 import io.camunda.zeebe.engine.state.immutable.MigrationState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
@@ -33,20 +33,23 @@ public class ProcessDefinitionVersionMigrationTest {
 
   private static final class LegacyProcessVersionState {
     private final DbString processIdKey;
-    private final ColumnFamily<DbString, NextValue> nextValueColumnFamily;
+    private final ColumnFamily<DbString, ProcessVersionInfo> processVersionInfoColumnFamily;
 
     public LegacyProcessVersionState(
         final ZeebeDb<ZbColumnFamilies> zeebeDb, final TransactionContext transactionContext) {
       processIdKey = new DbString();
-      nextValueColumnFamily =
+      processVersionInfoColumnFamily =
           zeebeDb.createColumnFamily(
-              ZbColumnFamilies.PROCESS_VERSION, transactionContext, processIdKey, new NextValue());
+              ZbColumnFamilies.PROCESS_VERSION,
+              transactionContext,
+              processIdKey,
+              new ProcessVersionInfo());
     }
 
     public void insertProcessVersion(final String processId, final int version) {
       processIdKey.wrapString(processId);
-      final var value = new NextValue().setHighestVersion(version);
-      nextValueColumnFamily.insert(processIdKey, value);
+      final var value = new ProcessVersionInfo().setHighestVersion(version);
+      processVersionInfoColumnFamily.insert(processIdKey, value);
     }
   }
 
@@ -78,7 +81,7 @@ public class ProcessDefinitionVersionMigrationTest {
     private TransactionContext transactionContext;
     private LegacyProcessVersionState legacyState;
     private DbString processIdKey;
-    private ColumnFamily<DbString, NextValue> nextValueColumnFamily;
+    private ColumnFamily<DbString, ProcessVersionInfo> nextValueColumnFamily;
 
     @BeforeEach
     void setup() {
@@ -86,7 +89,10 @@ public class ProcessDefinitionVersionMigrationTest {
       processIdKey = new DbString();
       nextValueColumnFamily =
           zeebeDb.createColumnFamily(
-              ZbColumnFamilies.PROCESS_VERSION, transactionContext, processIdKey, new NextValue());
+              ZbColumnFamilies.PROCESS_VERSION,
+              transactionContext,
+              processIdKey,
+              new ProcessVersionInfo());
     }
 
     @Test

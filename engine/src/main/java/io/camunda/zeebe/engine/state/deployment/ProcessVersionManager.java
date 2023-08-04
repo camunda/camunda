@@ -19,10 +19,10 @@ public final class ProcessVersionManager {
 
   private final long initialValue;
 
-  private final ColumnFamily<DbString, NextValue> nextValueColumnFamily;
+  private final ColumnFamily<DbString, ProcessVersionInfo> processVersionInfoColumnFamily;
   private final DbString processIdKey;
-  private final NextValue nextVersion = new NextValue();
-  private final Object2ObjectHashMap<String, NextValue> versionCache;
+  private final ProcessVersionInfo nextVersion = new ProcessVersionInfo();
+  private final Object2ObjectHashMap<String, ProcessVersionInfo> versionCache;
 
   public ProcessVersionManager(
       final long initialValue,
@@ -31,7 +31,7 @@ public final class ProcessVersionManager {
     this.initialValue = initialValue;
 
     processIdKey = new DbString();
-    nextValueColumnFamily =
+    processVersionInfoColumnFamily =
         zeebeDb.createColumnFamily(
             ZbColumnFamilies.PROCESS_VERSION, transactionContext, processIdKey, nextVersion);
     versionCache = new Object2ObjectHashMap<>();
@@ -41,7 +41,7 @@ public final class ProcessVersionManager {
     processIdKey.wrapString(processId);
     final var versionInfo = getVersionInfo();
     versionInfo.addKnownVersion(value);
-    nextValueColumnFamily.upsert(processIdKey, versionInfo);
+    processVersionInfoColumnFamily.upsert(processIdKey, versionInfo);
     versionCache.put(processId, versionInfo);
   }
 
@@ -95,13 +95,13 @@ public final class ProcessVersionManager {
     return getVersionInfo().getHighestVersion();
   }
 
-  private NextValue getVersionInfo() {
+  private ProcessVersionInfo getVersionInfo() {
     final var versionInfo =
         versionCache.computeIfAbsent(
-            processIdKey.toString(), (key) -> nextValueColumnFamily.get(processIdKey));
+            processIdKey.toString(), (key) -> processVersionInfoColumnFamily.get(processIdKey));
 
     if (versionInfo == null) {
-      return new NextValue().setHighestVersion(initialValue);
+      return new ProcessVersionInfo().setHighestVersion(initialValue);
     }
 
     return versionInfo;
@@ -117,7 +117,7 @@ public final class ProcessVersionManager {
     processIdKey.wrapString(processId);
     final var versionInfo = getVersionInfo();
     versionInfo.removeKnownVersion(version);
-    nextValueColumnFamily.update(processIdKey, versionInfo);
+    processVersionInfoColumnFamily.update(processIdKey, versionInfo);
     versionCache.put(processId, versionInfo);
   }
 

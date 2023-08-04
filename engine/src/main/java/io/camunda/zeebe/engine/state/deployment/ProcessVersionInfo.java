@@ -15,13 +15,16 @@ import io.camunda.zeebe.msgpack.value.LongValue;
 import java.util.List;
 import java.util.stream.StreamSupport;
 
-public final class NextValue extends UnpackedObject implements DbValue {
-  private final LongProperty nextValueProp = new LongProperty("nextValue", -1L);
+public final class ProcessVersionInfo extends UnpackedObject implements DbValue {
+  // The property key is named nextValue. This is not a great name and doesn't describe what it is.
+  // However, changing this is not backwards compatible. Changing the variable name is the best we
+  // can do to hide this name.
+  private final LongProperty highestVersionProp = new LongProperty("nextValue", -1L);
   private final ArrayProperty<LongValue> knownVersions =
       new ArrayProperty<>("knownVersions", new LongValue());
 
-  public NextValue() {
-    declareProperty(nextValueProp).declareProperty(knownVersions);
+  public ProcessVersionInfo() {
+    declareProperty(highestVersionProp).declareProperty(knownVersions);
   }
 
   /**
@@ -33,7 +36,7 @@ public final class NextValue extends UnpackedObject implements DbValue {
    * @return the highest version we've ever known for this process
    */
   public long getHighestVersion() {
-    return nextValueProp.getValue();
+    return highestVersionProp.getValue();
   }
 
   /**
@@ -41,9 +44,9 @@ public final class NextValue extends UnpackedObject implements DbValue {
    *
    * @param version the version of the process
    */
-  public NextValue setHighestVersion(final long version) {
-    if (version > nextValueProp.getValue()) {
-      nextValueProp.setValue(version);
+  public ProcessVersionInfo setHighestVersion(final long version) {
+    if (version > highestVersionProp.getValue()) {
+      highestVersionProp.setValue(version);
     }
     return this;
   }
