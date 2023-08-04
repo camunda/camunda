@@ -43,7 +43,8 @@ public interface CommandWithTenantStep<T> {
    * effect, and the interface and its description are subject to change.</strong>
    *
    * <p>Specifies the tenant that will own any entities (e.g. process definition, process instances,
-   * etc.) resulting from this command.
+   * etc.) resulting from this command, or that owns any entities (e.g. jobs) referred to from this
+   * command.
    *
    * <h1>Multi-tenancy</h1>
    *
@@ -53,17 +54,7 @@ public interface CommandWithTenantStep<T> {
    * <p>Any entities created before multi-tenancy has been enabled in the Zeebe cluster, are
    * assigned to the {@link #DEFAULT_TENANT_IDENTIFIER}.
    *
-   * <h2>Inferred ownership</h2>
-   *
-   * It's not always necessary to specify the {@code tenantId} explicitly. In many cases, the owning
-   * tenant can be inferred.
-   *
-   * <p>For example, an instance of a process that is owned by tenant {@code "ACME"} can be created
-   * without specifying the {@code tenantId} explicitly. The created process instance is then owned
-   * by {@code "ACME"} as well.
-   *
-   * <p>If no tenant is explicitly specified and the tenant could not be inferred, then the command
-   * is rejected.
+   * <p>If no tenant is explicitly specified, then the command is rejected.
    *
    * <h2>Shared entities</h2>
    *
