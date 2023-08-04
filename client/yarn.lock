@@ -5649,10 +5649,10 @@ dmn-js-shared@^14.1.5:
     selection-update "^0.1.2"
     table-js "^8.0.2"
 
-dmn-js@^14.1.5:
-  version "14.1.5"
-  resolved "https://registry.yarnpkg.com/dmn-js/-/dmn-js-14.1.5.tgz#1081c255a3a3b13c01625ef16ce003977b03f137"
-  integrity sha512-H7sj0fXg1ErC0E+WsxOAnSD+jKeKRm06ClgXfPf61YCncDY5lm5P1jCmwYQ2E3lYNLYFw90ZMLTW/y9sZHqK5A==
+dmn-js@^14.1.6:
+  version "14.1.6"
+  resolved "https://registry.yarnpkg.com/dmn-js/-/dmn-js-14.1.6.tgz#8007dafc3b7a1f605384c7d027852956d0d462f7"
+  integrity sha512-t3LgBjCBYApRVe/DSjWHe9BWPpPJDWjr44nmuERPo9Cpc7aS2TZHPyXd7FeaL/uovERmDYzS1hxJci5qXxRSMQ==
   dependencies:
     dmn-js-decision-table "^14.1.5"
     dmn-js-drd "^14.1.5"
