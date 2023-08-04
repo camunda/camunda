@@ -132,6 +132,8 @@ public final class Gateway implements CloseableSilently {
   }
 
   private void applyExecutorConfiguration(final NettyServerBuilder builder) {
+    final var config = gatewayCfg.getThreads();
+
     // the default boss and worker event loop groups defined by the library are good enough; they
     // will appropriately select epoll or nio based on availability, and the boss loop gets 1
     // thread, while the worker gets the number of cores
@@ -140,12 +142,12 @@ public final class Gateway implements CloseableSilently {
     // blocked on tasks, and here up to 2 threads per core.
     grpcExecutor =
         new ForkJoinPool(
-            Runtime.getRuntime().availableProcessors(),
+            config.getGrpcMinThreads(),
             new NamedForkJoinPoolThreadFactory(),
             FatalErrorHandler.uncaughtExceptionHandler(LOG),
             true,
             0,
-            2 * Runtime.getRuntime().availableProcessors(),
+            config.getGrpcMaxThreads(),
             1,
             pool -> false,
             1,
@@ -242,7 +244,7 @@ public final class Gateway implements CloseableSilently {
       try {
         //noinspection ResultOfMethodCallIgnored
         grpcExecutor.awaitTermination(10, TimeUnit.SECONDS);
-      } catch (InterruptedException e) {
+      } catch (final InterruptedException e) {
         Thread.currentThread().interrupt();
       } finally {
         grpcExecutor = null;
@@ -302,7 +304,7 @@ public final class Gateway implements CloseableSilently {
 
   private static final class NamedForkJoinPoolThreadFactory implements ForkJoinWorkerThreadFactory {
     @Override
-    public ForkJoinWorkerThread newThread(ForkJoinPool pool) {
+    public ForkJoinWorkerThread newThread(final ForkJoinPool pool) {
       final var worker = ForkJoinPool.defaultForkJoinWorkerThreadFactory.newThread(pool);
       worker.setName("grpc-executor-" + worker.getPoolIndex());
       return worker;
