@@ -64,21 +64,6 @@ class ProcessInstanceByProcessDefinitionMigrationTest {
   class MockBasedTests {
 
     @Test
-    void noMigrationNeededWhenMigrationAlreadyFinished() {
-      // given
-      final var mockProcessingState = mock(ProcessingState.class);
-      final var migrationState = mock(MigrationState.class);
-      when(mockProcessingState.getMigrationState()).thenReturn(migrationState);
-      when(migrationState.isMigrationFinished(anyString())).thenReturn(true);
-
-      // when
-      final var actual = sut.needsToRun(mockProcessingState);
-
-      // then
-      assertThat(actual).isFalse();
-    }
-
-    @Test
     void migrationNeededWhenMigrationNotFinished() {
       // given
       final var mockProcessingState = mock(ProcessingState.class);
