@@ -122,7 +122,7 @@ public class RaftFailOverIT {
     raftRule.appendEntries(228);
 
     // when
-    raftRule.takeCompactingSnapshot(200);
+    raftRule.takeSnapshot(200);
 
     // then
     assertThat(raftRule.allNodesHaveSnapshotWithIndex(200)).isTrue();
