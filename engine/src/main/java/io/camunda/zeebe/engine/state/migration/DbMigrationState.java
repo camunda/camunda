@@ -34,6 +34,7 @@ import org.agrona.DirectBuffer;
 
 public class DbMigrationState implements MutableMigrationState {
 
+  private static final State MIGRATION_TASK_FINISHED_STATE = State.FINISHED;
   // Meta ColumnFamily to keep track if migration have run
   private final DbString migrationIdentifier;
   private final MigrationTaskState migrationTaskState;
@@ -312,13 +313,13 @@ public class DbMigrationState implements MutableMigrationState {
   public void markMigrationFinished(final String identifier) {
     migrationIdentifier.wrapString(identifier);
     migrationStateColumnFamily.insert(
-        migrationIdentifier, new MigrationTaskState().setState(State.FINISHED));
+        migrationIdentifier, new MigrationTaskState().setState(MIGRATION_TASK_FINISHED_STATE));
   }
 
   @Override
   public boolean isMigrationFinished(final String identifier) {
     migrationIdentifier.wrapString(identifier);
     final MigrationTaskState migrationState = migrationStateColumnFamily.get(migrationIdentifier);
-    return migrationState != null && migrationState.getState() == State.FINISHED;
+    return migrationState != null && migrationState.getState() == MIGRATION_TASK_FINISHED_STATE;
   }
 }
