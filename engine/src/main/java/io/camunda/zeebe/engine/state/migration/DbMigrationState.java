@@ -21,6 +21,7 @@ import io.camunda.zeebe.engine.state.deployment.PersistedDecisionRequirements;
 import io.camunda.zeebe.engine.state.immutable.PendingMessageSubscriptionState;
 import io.camunda.zeebe.engine.state.immutable.PendingProcessMessageSubscriptionState;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
+import io.camunda.zeebe.engine.state.migration.MigrationTaskState.State;
 import io.camunda.zeebe.engine.state.mutable.MutableElementInstanceState;
 import io.camunda.zeebe.engine.state.mutable.MutableEventScopeInstanceState;
 import io.camunda.zeebe.engine.state.mutable.MutableMessageSubscriptionState;
@@ -33,6 +34,12 @@ import io.camunda.zeebe.util.buffer.BufferUtil;
 import org.agrona.DirectBuffer;
 
 public class DbMigrationState implements MutableMigrationState {
+
+  private static final State MIGRATION_TASK_FINISHED_STATE = State.FINISHED;
+  // Meta ColumnFamily to keep track if migration have run
+  private final DbString migrationIdentifier;
+  private final MigrationTaskState migrationTaskState;
+  private final ColumnFamily<DbString, MigrationTaskState> migrationStateColumnFamily;
 
   // ZbColumnFamilies.MESSAGE_SUBSCRIPTION_BY_SENT_TIME
   // (sentTime, elementInstanceKey, messageName) => \0
@@ -93,6 +100,14 @@ public class DbMigrationState implements MutableMigrationState {
 
   public DbMigrationState(
       final ZeebeDb<ZbColumnFamilies> zeebeDb, final TransactionContext transactionContext) {
+    migrationIdentifier = new DbString();
+    migrationTaskState = new MigrationTaskState();
+    migrationStateColumnFamily =
+        zeebeDb.createColumnFamily(
+            ZbColumnFamilies.MIGRATIONS_STATE,
+            transactionContext,
+            migrationIdentifier,
+            migrationTaskState);
 
     messageSubscriptionElementInstanceKey = new DbLong();
     messageSubscriptionMessageName = new DbString();
@@ -333,9 +348,23 @@ public class DbMigrationState implements MutableMigrationState {
           if (recordValue.getBpmnElementType() == BpmnElementType.PROCESS) {
             elementInstanceKey.wrapLong(key.getValue());
             processDefinitionKey.wrapLong(recordValue.getProcessDefinitionKey());
-            processInstanceKeyByProcessDefinitionKeyColumnFamily.insert(
+            processInstanceKeyByProcessDefinitionKeyColumnFamily.upsert(
                 processInstanceKeyByProcessDefinitionKey, DbNil.INSTANCE);
           }
         });
+  }
+
+  @Override
+  public void markMigrationFinished(final String identifier) {
+    migrationIdentifier.wrapString(identifier);
+    migrationStateColumnFamily.insert(
+        migrationIdentifier, new MigrationTaskState().setState(MIGRATION_TASK_FINISHED_STATE));
+  }
+
+  @Override
+  public boolean isMigrationFinished(final String identifier) {
+    migrationIdentifier.wrapString(identifier);
+    final MigrationTaskState migrationState = migrationStateColumnFamily.get(migrationIdentifier);
+    return migrationState != null && migrationState.getState() == MIGRATION_TASK_FINISHED_STATE;
   }
 }
