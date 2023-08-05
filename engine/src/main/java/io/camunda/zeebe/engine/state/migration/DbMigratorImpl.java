@@ -109,20 +109,20 @@ public class DbMigratorImpl implements DbMigrator {
       return false;
     }
 
-    if (migrationTask.needsToRun(zeebeState)) {
-      try {
-        currentMigration = migrationTask;
-        runMigration(migrationTask, index, total);
-        zeebeState.getMigrationState().markMigrationFinished(migrationTask.getIdentifier());
-      } finally {
-        currentMigration = null;
-      }
-      return true;
-    } else {
+    if (!migrationTask.needsToRun(zeebeState)) {
       logMigrationSkipped(migrationTask, index, total);
       zeebeState.getMigrationState().markMigrationFinished(migrationTask.getIdentifier());
       return false;
     }
+
+    try {
+      currentMigration = migrationTask;
+      runMigration(migrationTask, index, total);
+      zeebeState.getMigrationState().markMigrationFinished(migrationTask.getIdentifier());
+    } finally {
+      currentMigration = null;
+    }
+    return true;
   }
 
   private void logMigrationTaskAlreadyExecuted(
