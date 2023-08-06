@@ -231,6 +231,15 @@ public interface JobWorkerBuilderStep1 {
     JobWorkerBuilderStep3 streamTimeout(final Duration timeout);
 
     /**
+     * Sets the job worker metrics implementation to use. See {@link JobWorkerMetrics} for more.
+     * Defaults to {@link JobWorkerMetrics#noop()}, an implementation which simply does nothing.
+     *
+     * @param metrics the implementation to use
+     * @return the builder for this worker
+     */
+    JobWorkerBuilderStep3 metrics(final JobWorkerMetrics metrics);
+
+    /**
      * Open the worker and start to work on available tasks.
      *
      * @return the worker

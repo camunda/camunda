@@ -28,10 +28,12 @@ import io.camunda.zeebe.client.api.worker.JobWorker;
 import io.camunda.zeebe.client.api.worker.JobWorkerBuilderStep1;
 import io.camunda.zeebe.client.api.worker.JobWorkerBuilderStep1.JobWorkerBuilderStep2;
 import io.camunda.zeebe.client.api.worker.JobWorkerBuilderStep1.JobWorkerBuilderStep3;
+import io.camunda.zeebe.client.api.worker.JobWorkerMetrics;
 import java.io.Closeable;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.ScheduledExecutorService;
 
 public final class JobWorkerBuilderImpl
@@ -53,6 +55,7 @@ public final class JobWorkerBuilderImpl
   private BackoffSupplier backoffSupplier;
   private boolean enableStreaming;
   private Duration streamingTimeout;
+  private JobWorkerMetrics metrics = JobWorkerMetrics.noop();
 
   public JobWorkerBuilderImpl(
       final ZeebeClientConfiguration configuration,
@@ -148,6 +151,12 @@ public final class JobWorkerBuilderImpl
   }
 
   @Override
+  public JobWorkerBuilderStep3 metrics(final JobWorkerMetrics metrics) {
+    this.metrics = Optional.ofNullable(metrics).orElse(JobWorkerMetrics.noop());
+    return this;
+  }
+
+  @Override
   public JobWorker open() {
     ensureNotNullNorEmpty("jobType", jobType);
     ensureNotNull("jobHandler", handler);
@@ -176,7 +185,6 @@ public final class JobWorkerBuilderImpl
               streamingTimeout,
               backoffSupplier,
               executorService);
-
     } else {
       jobStreamer = JobStreamer.noop();
     }
@@ -189,7 +197,8 @@ public final class JobWorkerBuilderImpl
             jobRunnableFactory,
             jobPoller,
             jobStreamer,
-            backoffSupplier);
+            backoffSupplier,
+            metrics);
     closeables.add(jobWorker);
     return jobWorker;
   }
