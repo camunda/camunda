@@ -75,8 +75,8 @@ import org.camunda.optimize.test.util.client.dto.VariableValueDto;
 import org.elasticsearch.common.io.Streams;
 import org.springframework.http.converter.json.Jackson2ObjectMapperBuilder;
 
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.Response;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.URI;

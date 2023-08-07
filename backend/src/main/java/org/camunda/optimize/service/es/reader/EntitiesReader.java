@@ -7,6 +7,7 @@ package org.camunda.optimize.service.es.reader;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableMap;
+import jakarta.ws.rs.BadRequestException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.query.collection.BaseCollectionDefinitionDto;
@@ -41,7 +42,6 @@ import org.elasticsearch.search.aggregations.bucket.terms.TermsAggregationBuilde
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.springframework.stereotype.Component;
 
-import javax.ws.rs.BadRequestException;
 import java.io.IOException;
 import java.util.AbstractMap;
 import java.util.HashMap;
@@ -246,8 +246,10 @@ public class EntitiesReader {
     if (indexMapper.isCreateFromTemplate()) {
       throw new OptimizeRuntimeException("Cannot fetch the document count for indices created from template");
     }
-    return Optional.ofNullable(byIndexNameTerms.getBucketByKey(optimizeIndexNameService.getOptimizeIndexNameWithVersionWithoutSuffix(
-      indexMapper))).map(MultiBucketsAggregation.Bucket::getDocCount).orElse(0L);
+    return Optional.ofNullable(byIndexNameTerms.getBucketByKey(
+        optimizeIndexNameService.getOptimizeIndexNameWithVersionWithoutSuffix(indexMapper)))
+      .map(MultiBucketsAggregation.Bucket::getDocCount)
+      .orElse(0L);
   }
 
   private CollectionEntity readCollectionEntity(final GetResponse response, final String entityId) {

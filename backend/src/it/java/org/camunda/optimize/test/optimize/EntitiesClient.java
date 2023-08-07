@@ -13,7 +13,7 @@ import org.camunda.optimize.dto.optimize.query.entity.EntityNameResponseDto;
 import org.camunda.optimize.dto.optimize.query.entity.EntityResponseDto;
 import org.camunda.optimize.dto.optimize.rest.sorting.EntitySorter;
 
-import javax.ws.rs.core.Response;
+import jakarta.ws.rs.core.Response;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Supplier;

@@ -16,7 +16,7 @@ import org.apache.http.util.EntityUtils;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.test.it.extension.IntegrationTestConfigurationUtil;
 
-import javax.ws.rs.core.Response;
+import jakarta.ws.rs.core.Response;
 import java.io.IOException;
 
 @AllArgsConstructor

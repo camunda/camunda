@@ -35,7 +35,7 @@ import org.camunda.optimize.service.util.TemplatedProcessReportDataBuilder;
 import org.camunda.optimize.util.BpmnModels;
 import org.junit.jupiter.api.Tag;
 
-import javax.ws.rs.core.Response;
+import jakarta.ws.rs.core.Response;
 import java.sql.SQLException;
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;

@@ -25,8 +25,8 @@ import org.elasticsearch.action.admin.cluster.health.ClusterHealthResponse;
 import org.elasticsearch.cluster.health.ClusterHealthStatus;
 import org.springframework.stereotype.Component;
 
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.Response;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;

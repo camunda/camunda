@@ -5,6 +5,9 @@
  */
 package org.camunda.optimize.rest.security.platform;
 
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import jakarta.ws.rs.core.HttpHeaders;
 import lombok.AllArgsConstructor;
 import lombok.SneakyThrows;
 import org.camunda.optimize.rest.security.AuthenticationCookieFilter;
@@ -14,21 +17,18 @@ import org.camunda.optimize.rest.security.SingleSignOnRequestFilter;
 import org.camunda.optimize.service.security.AuthCookieService;
 import org.camunda.optimize.service.security.SessionService;
 import org.camunda.optimize.service.util.configuration.condition.CamundaPlatformCondition;
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.core.annotation.Order;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
-import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.AuthenticationException;
+import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.preauth.AbstractPreAuthenticatedProcessingFilter;
 import org.springframework.security.web.session.SessionManagementFilter;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import javax.ws.rs.core.HttpHeaders;
+import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 
 import static org.camunda.optimize.OptimizeJettyServerCustomizer.EXTERNAL_SUB_PATH;
 import static org.camunda.optimize.jetty.OptimizeResourceConstants.INDEX_PAGE;
@@ -48,8 +48,7 @@ import static org.springframework.http.HttpStatus.UNAUTHORIZED;
 @AllArgsConstructor
 @EnableWebSecurity
 @Conditional(CamundaPlatformCondition.class)
-@Order(2)
-public class PlatformWebSecurityConfigurerAdapter extends WebSecurityConfigurerAdapter {
+public class PlatformWebSecurityConfigurerAdapter {
 
   private static final String CSV_SUFFIX = ".csv";
   private static final String SUB_PATH_ANY = "/*";
@@ -61,20 +60,21 @@ public class PlatformWebSecurityConfigurerAdapter extends WebSecurityConfigurerA
   private final AuthenticationCookieRefreshFilter authenticationCookieRefreshFilter;
   private final SingleSignOnRequestFilter singleSignOnRequestFilter;
 
-  @Override
-  public void configure(AuthenticationManagerBuilder auth) throws Exception {
-    auth.authenticationProvider(preAuthenticatedAuthenticationProvider);
-  }
-
-  public AuthenticationCookieFilter authenticationCookieFilter() throws Exception {
-    return new AuthenticationCookieFilter(sessionService, authenticationManager());
+  @Bean
+  public AuthenticationCookieFilter authenticationCookieFilter(HttpSecurity http) throws Exception {
+    return new AuthenticationCookieFilter(
+      sessionService,
+      http.getSharedObject(AuthenticationManagerBuilder.class)
+        .authenticationProvider(preAuthenticatedAuthenticationProvider)
+        .build()
+    );
   }
 
   @SneakyThrows
-  @Override
-  protected void configure(HttpSecurity http) {
+  @Bean
+  protected SecurityFilterChain configure(HttpSecurity http) {
     //@formatter:off
-    http
+    return http
       // csrf is not used but the same-site property of the auth cookie, see AuthCookieService#createNewOptimizeAuthCookie
       .csrf().disable()
       .httpBasic().disable()
@@ -86,37 +86,46 @@ public class PlatformWebSecurityConfigurerAdapter extends WebSecurityConfigurerA
       .sessionManagement()
         .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
       .and()
-      .authorizeRequests()
-        // static resources
-        .antMatchers("/", "/index*", STATIC_RESOURCE_PATH + "/**", "/*.js", "/*.ico").permitAll()
-        // websocket
-        .antMatchers(STATUS_WEBSOCKET_PATH).permitAll()
-        // public resources
-        .antMatchers(EXTERNAL_SUB_PATH + "/",
-                     EXTERNAL_SUB_PATH + "/index*",
-                     EXTERNAL_SUB_PATH + STATIC_RESOURCE_PATH + "/**",
-                     EXTERNAL_SUB_PATH + "/*.js",
-                     EXTERNAL_SUB_PATH + "/*.ico")
-      .permitAll()
-        // public share related resources (API)
-        .antMatchers(createApiPath(EXTERNAL_SUB_PATH + DEEP_SUB_PATH_ANY)).permitAll()
-        // common public api resources
-        .antMatchers(
-          createApiPath(READYZ_PATH),
-          createApiPath(STATUS_PATH),
-          createApiPath(UI_CONFIGURATION_PATH),
-          createApiPath(LOCALIZATION_PATH),
-          createApiPath(LICENSE_PATH, SUB_PATH_ANY),
-          createApiPath(AUTHENTICATION_PATH)
-        ).permitAll()
-
-        // everything else requires authentication
-        .anyRequest().authenticated()
-      .and()
+      .authorizeHttpRequests((requests) ->
+        requests
+          // static resources
+          .requestMatchers(
+            new AntPathRequestMatcher("/"),
+            new AntPathRequestMatcher("/index*"),
+            new AntPathRequestMatcher(STATIC_RESOURCE_PATH + "/**"),
+            new AntPathRequestMatcher("/*.js"),
+            new AntPathRequestMatcher("/*.ico")).permitAll()
+          // websocket
+          .requestMatchers(new AntPathRequestMatcher(STATUS_WEBSOCKET_PATH)).permitAll()
+          // public resources
+          .requestMatchers(
+            new AntPathRequestMatcher(EXTERNAL_SUB_PATH + "/"),
+            new AntPathRequestMatcher(EXTERNAL_SUB_PATH + "/index*"),
+            new AntPathRequestMatcher(EXTERNAL_SUB_PATH + STATIC_RESOURCE_PATH + "/**"),
+            new AntPathRequestMatcher(EXTERNAL_SUB_PATH + "/*.js"),
+            new AntPathRequestMatcher(EXTERNAL_SUB_PATH + "/*.ico")
+          )
+          .permitAll()
+          // public share related resources (API)
+          .requestMatchers(
+            new AntPathRequestMatcher(createApiPath(EXTERNAL_SUB_PATH + DEEP_SUB_PATH_ANY))).permitAll()
+          // common public api resources
+          .requestMatchers(
+            new AntPathRequestMatcher(createApiPath(READYZ_PATH)),
+            new AntPathRequestMatcher(createApiPath(STATUS_PATH)),
+            new AntPathRequestMatcher(createApiPath(UI_CONFIGURATION_PATH)),
+            new AntPathRequestMatcher(createApiPath(LOCALIZATION_PATH)),
+            new AntPathRequestMatcher(createApiPath(LICENSE_PATH, SUB_PATH_ANY)),
+            new AntPathRequestMatcher(createApiPath(AUTHENTICATION_PATH))
+          ).permitAll()
+          // everything else requires authentication
+          .anyRequest().authenticated()
+      )
       .addFilterBefore(singleSignOnRequestFilter, AbstractPreAuthenticatedProcessingFilter.class)
-      .addFilterBefore(authenticationCookieFilter(), AbstractPreAuthenticatedProcessingFilter.class)
+      .addFilterBefore(authenticationCookieFilter(http), AbstractPreAuthenticatedProcessingFilter.class)
       .addFilterAfter(authenticationCookieRefreshFilter, SessionManagementFilter.class)
-      .exceptionHandling().authenticationEntryPoint(this::failureHandler);
+      .exceptionHandling().authenticationEntryPoint(this::failureHandler)
+      .and().build();
     //@formatter:on
   }
 

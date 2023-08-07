@@ -99,7 +99,7 @@ public class MappingMetadataUtil {
       .flatMap(aliasMetadataPerIndex -> aliasMetadataPerIndex.stream().map(AliasMetadata::alias))
       .filter(fullAliasName -> fullAliasName.contains(prefix))
       .map(fullIndexName -> fullIndexName.substring(fullIndexName.lastIndexOf(prefix) + prefix.length()))
-      .collect(toList());
+      .toList();
   }
 
   private static List<IndexMappingCreator> getAllNonDynamicMappings() {
@@ -139,7 +139,7 @@ public class MappingMetadataUtil {
     return retrieveAllDynamicIndexKeysForPrefix(esClient, DECISION_INSTANCE_INDEX_PREFIX)
       .stream()
       .map(DecisionInstanceIndex::new)
-      .collect(toList());
+      .toList();
   }
 
   private static List<CamundaActivityEventIndex> retrieveAllCamundaActivityEventIndices(
@@ -147,7 +147,7 @@ public class MappingMetadataUtil {
     return retrieveAllDynamicIndexKeysForPrefix(esClient, CAMUNDA_ACTIVITY_EVENT_INDEX_PREFIX)
       .stream()
       .map(CamundaActivityEventIndex::new)
-      .collect(toList());
+      .toList();
   }
 
   private static List<EventSequenceCountIndex> retrieveAllSequenceCountIndices(
@@ -155,7 +155,7 @@ public class MappingMetadataUtil {
     return retrieveAllDynamicIndexKeysForPrefix(esClient, EVENT_SEQUENCE_COUNT_INDEX_PREFIX)
       .stream()
       .map(EventSequenceCountIndex::new)
-      .collect(toList());
+      .toList();
   }
 
   private static List<EventTraceStateIndex> retrieveAllEventTraceIndices(
@@ -163,7 +163,7 @@ public class MappingMetadataUtil {
     return retrieveAllDynamicIndexKeysForPrefix(esClient, EVENT_TRACE_STATE_INDEX_PREFIX)
       .stream()
       .map(EventTraceStateIndex::new)
-      .collect(toList());
+      .toList();
   }
 
   private static List<ProcessInstanceIndex> retrieveAllProcessInstanceIndices(
@@ -171,7 +171,7 @@ public class MappingMetadataUtil {
     return retrieveProcessInstanceIndexIdentifiers(esClient, false)
       .stream()
       .map(ProcessInstanceIndex::new)
-      .collect(toList());
+      .toList();
   }
 
   private static List<String> retrieveAllDynamicIndexKeysForPrefix(final OptimizeElasticsearchClient esClient,
@@ -188,7 +188,7 @@ public class MappingMetadataUtil {
       .flatMap(aliasMetaDataPerIndex -> aliasMetaDataPerIndex.stream().map(AliasMetadata::alias))
       .map(fullAliasName ->
              fullAliasName.substring(fullAliasName.lastIndexOf(dynamicIndexPrefix) + dynamicIndexPrefix.length()))
-      .collect(toList());
+      .toList();
   }
 
   private static boolean filterProcessInstanceIndexAliases(final Set<AliasMetadata> aliasMetadataSet,

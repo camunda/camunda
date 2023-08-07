@@ -23,8 +23,8 @@ import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 import org.camunda.optimize.rest.optimize.dto.VariableDto;
 import org.camunda.optimize.service.util.importing.EngineConstants;
 
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.Response;
 import java.text.SimpleDateFormat;
 import java.util.Collections;
 import java.util.List;

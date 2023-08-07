@@ -68,7 +68,7 @@ public class RunningProcessInstanceWriter extends AbstractProcessInstanceWriter 
         .esClient(esClient)
         .request(createImportRequestForProcessInstance(instance, UPDATABLE_FIELDS))
         .build())
-      .collect(toList());
+      .toList();
   }
 
   @SuppressWarnings(UNCHECKED_CAST)
@@ -81,7 +81,7 @@ public class RunningProcessInstanceWriter extends AbstractProcessInstanceWriter 
 
     final List<ProcessInstanceDto> processInstanceDtoToUpdateList = processInstanceDtos.stream()
       .filter(procInst -> procInst.getProcessInstanceId() != null)
-      .collect(toList());
+      .toList();
     createInstanceIndicesIfMissing(processInstanceDtos, ProcessInstanceDto::getProcessDefinitionKey);
 
     ElasticsearchWriterUtil.doImportBulkRequestWithList(

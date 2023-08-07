@@ -76,7 +76,7 @@ public abstract class AbstractImportMediatorPermutationsIT {
         .stream()
         .filter(engineImportMediator -> mediatorOrder.contains(engineImportMediator.getClass()))
         .sorted(Comparator.comparingInt(o -> mediatorOrder.indexOf(o.getClass())))
-        .collect(toList());
+        .toList();
 
       for (ImportMediator sortedMediator : sortedMediators) {
         // run and wait for each mediator to finish the import run to force a certain execution order

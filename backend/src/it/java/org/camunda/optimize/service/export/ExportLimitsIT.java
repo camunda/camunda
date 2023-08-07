@@ -21,7 +21,7 @@ import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.xcontent.XContentType;
 import org.junit.jupiter.api.Test;
 
-import javax.ws.rs.core.Response;
+import jakarta.ws.rs.core.Response;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;

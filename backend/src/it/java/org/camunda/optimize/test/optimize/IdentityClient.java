@@ -11,7 +11,7 @@ import org.camunda.optimize.dto.optimize.IdentityWithMetadataResponseDto;
 import org.camunda.optimize.dto.optimize.query.IdentitySearchResultResponseDto;
 import org.camunda.optimize.dto.optimize.rest.UserResponseDto;
 
-import javax.ws.rs.core.Response;
+import jakarta.ws.rs.core.Response;
 import java.util.function.Supplier;
 
 import static org.camunda.optimize.rest.RestTestConstants.DEFAULT_PASSWORD;

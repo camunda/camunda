@@ -305,7 +305,7 @@ public class EventIndexRolloverIT extends AbstractIT {
   private void ingestExternalEvents() {
     final List<CloudEventRequestDto> eventDtos = IntStream.range(0, NUMBER_OF_EVENTS_IN_BATCH)
       .mapToObj(operand -> ingestionClient.createCloudEventDto())
-      .collect(toList());
+      .toList();
 
     ingestionClient.ingestEventBatch(eventDtos);
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
@@ -360,7 +360,7 @@ public class EventIndexRolloverIT extends AbstractIT {
     return aliasMap.keySet()
       .stream()
       .filter(index -> aliasMap.get(index).removeIf(AliasMetadata::writeIndex))
-      .collect(toList());
+      .toList();
   }
 
 }

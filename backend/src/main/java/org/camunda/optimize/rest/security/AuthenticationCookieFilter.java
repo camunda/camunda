@@ -11,7 +11,7 @@ import org.camunda.optimize.service.security.SessionService;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.web.authentication.preauth.AbstractPreAuthenticatedProcessingFilter;
 
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
 import java.util.Optional;
 
 @AllArgsConstructor

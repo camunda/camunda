@@ -28,10 +28,10 @@ public class ExternalVariableCleanupIT extends AbstractCleanupIT {
     getExternalVariableCleanupConfiguration().setEnabled(true);
     final List<ExternalProcessVariableRequestDto> variablesToKeep = IntStream.range(0, 10)
       .mapToObj(i -> ingestionClient.createPrimitiveExternalVariable().setId("id" + i))
-      .collect(toList());
+      .toList();
     final List<ExternalProcessVariableRequestDto> variablesToClean = IntStream.range(20, 30)
       .mapToObj(i -> ingestionClient.createPrimitiveExternalVariable().setId("id" + i))
-      .collect(toList());
+      .toList();
 
     // freeze time to manipulate ingestion timestamp
     final OffsetDateTime now = dateFreezer().freezeDateAndReturn();
@@ -59,7 +59,7 @@ public class ExternalVariableCleanupIT extends AbstractCleanupIT {
     getExternalVariableCleanupConfiguration().setEnabled(false);
     final List<ExternalProcessVariableRequestDto> variables = IntStream.range(0, 10)
       .mapToObj(i -> ingestionClient.createPrimitiveExternalVariable().setId("id" + i))
-      .collect(toList());
+      .toList();
 
     // freeze time to manipulate ingestion timestamp
     final OffsetDateTime now = dateFreezer().freezeDateAndReturn();

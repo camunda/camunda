@@ -17,7 +17,7 @@ import org.elasticsearch.search.SearchHit;
 import org.junit.jupiter.api.Tag;
 import org.mockserver.model.HttpResponse;
 
-import javax.ws.rs.core.Response;
+import jakarta.ws.rs.core.Response;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;

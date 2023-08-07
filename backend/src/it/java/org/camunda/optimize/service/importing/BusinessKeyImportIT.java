@@ -20,7 +20,7 @@ import org.mockserver.model.HttpRequest;
 import java.util.ArrayList;
 import java.util.List;
 
-import static javax.ws.rs.HttpMethod.POST;
+import static jakarta.ws.rs.HttpMethod.POST;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.BUSINESS_KEY_INDEX_NAME;
 import static org.mockserver.model.HttpRequest.request;

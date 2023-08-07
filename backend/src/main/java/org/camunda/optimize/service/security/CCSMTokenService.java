@@ -23,9 +23,9 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-import javax.servlet.http.Cookie;
-import javax.ws.rs.NotAuthorizedException;
-import javax.ws.rs.core.NewCookie;
+import jakarta.servlet.http.Cookie;
+import jakarta.ws.rs.NotAuthorizedException;
+import jakarta.ws.rs.core.NewCookie;
 import java.net.URI;
 import java.util.Collections;
 import java.util.List;

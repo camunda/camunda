@@ -23,7 +23,7 @@ import org.mockserver.integration.ClientAndServer;
 import org.mockserver.model.HttpError;
 import org.mockserver.verify.VerificationTimes;
 
-import javax.ws.rs.core.Response;
+import jakarta.ws.rs.core.Response;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;

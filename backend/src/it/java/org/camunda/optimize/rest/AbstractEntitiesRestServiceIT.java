@@ -17,7 +17,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProce
 import org.camunda.optimize.dto.optimize.query.sorting.SortOrder;
 import org.junit.jupiter.params.provider.Arguments;
 
-import javax.ws.rs.core.Response;
+import jakarta.ws.rs.core.Response;
 import java.util.Comparator;
 import java.util.stream.Stream;
 

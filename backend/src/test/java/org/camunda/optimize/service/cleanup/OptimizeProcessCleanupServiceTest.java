@@ -384,7 +384,7 @@ public class OptimizeProcessCleanupServiceTest {
   private List<String> generateRandomDefinitionsKeys(final Integer amount) {
     return IntStream.range(0, amount)
       .mapToObj(i -> UUID.randomUUID().toString())
-      .collect(toList());
+      .toList();
   }
 
   private ProcessDefinitionOptimizeDto createProcessDefinitionDto(String key) {

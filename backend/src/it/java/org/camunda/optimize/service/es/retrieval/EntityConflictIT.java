@@ -9,7 +9,7 @@ import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.dto.optimize.query.entity.EntitiesDeleteRequestDto;
 import org.junit.jupiter.api.Test;
 
-import javax.ws.rs.core.Response;
+import jakarta.ws.rs.core.Response;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;

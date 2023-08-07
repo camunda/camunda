@@ -65,7 +65,7 @@ public class CombinedReportResultIT extends AbstractProcessDefinitionIT {
     // when
     final List<String> reportIds = combinableReportsWithUnit.getValue().stream()
       .map(reportClient::createSingleProcessReport)
-      .collect(toList());
+      .toList();
     final List<ReportResultResponseDto<List<MapResultEntryDto>>> singleReportResults = reportIds
       .stream()
       .map(reportId -> reportClient.evaluateMapReportById(reportId).getResult())
@@ -141,7 +141,7 @@ public class CombinedReportResultIT extends AbstractProcessDefinitionIT {
 
     final List<String> reportIds = reportDefs.stream()
       .map(reportClient::createSingleProcessReport)
-      .collect(toList());
+      .toList();
     final List<ReportResultResponseDto<List<MapResultEntryDto>>> singleReportResults = reportIds
       .stream()
       .map(reportId -> reportClient.evaluateMapReportById(reportId).getResult())
@@ -238,7 +238,7 @@ public class CombinedReportResultIT extends AbstractProcessDefinitionIT {
     final List<String> reportIds = Arrays.asList(singleReport1, singleReport2, singleReport3)
       .stream()
       .map(reportClient::createSingleProcessReport)
-      .collect(toList());
+      .toList();
     final CombinedProcessReportResultDataDto<?> combinedResult =
       reportClient.saveAndEvaluateCombinedReport(reportIds);
 
@@ -275,7 +275,7 @@ public class CombinedReportResultIT extends AbstractProcessDefinitionIT {
     final List<String> reportIds = Arrays.asList(singleReport1, singleReport2)
       .stream()
       .map(reportClient::createSingleProcessReport)
-      .collect(toList());
+      .toList();
     final CombinedProcessReportResultDataDto<?> combinedResult =
       reportClient.saveAndEvaluateCombinedReport(reportIds);
 
@@ -311,7 +311,7 @@ public class CombinedReportResultIT extends AbstractProcessDefinitionIT {
     final List<String> reportIds = Arrays.asList(singleReport1, singleReport2)
       .stream()
       .map(reportClient::createSingleProcessReport)
-      .collect(toList());
+      .toList();
 
     final CombinedProcessReportResultDataDto<?> combinedResult =
       reportClient.saveAndEvaluateCombinedReport(reportIds);
@@ -345,7 +345,7 @@ public class CombinedReportResultIT extends AbstractProcessDefinitionIT {
     final List<String> reportIds = Arrays.asList(singleReport1, singleReport2)
       .stream()
       .map(reportClient::createSingleProcessReport)
-      .collect(toList());
+      .toList();
     final CombinedProcessReportResultDataDto<?> combinedResult =
       reportClient.saveAndEvaluateCombinedReport(reportIds);
 
@@ -358,10 +358,10 @@ public class CombinedReportResultIT extends AbstractProcessDefinitionIT {
       new ArrayList<>(result.getData().values());
     List<String> bucketKeys1 = ((List<MapResultEntryDto>) singleReportResults.get(0).getResult().getFirstMeasureData())
       .stream()
-      .map(MapResultEntryDto::getKey).collect(toList());
+      .map(MapResultEntryDto::getKey).toList();
     List<String> bucketKeys2 = ((List<MapResultEntryDto>) singleReportResults.get(1).getResult().getFirstMeasureData())
       .stream()
-      .map(MapResultEntryDto::getKey).collect(toList());
+      .map(MapResultEntryDto::getKey).toList();
     assertThat(bucketKeys1).isEqualTo(bucketKeys2);
   }
 

@@ -19,7 +19,7 @@ import org.camunda.optimize.service.util.configuration.engine.EngineConfiguratio
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 
-import javax.ws.rs.core.Response;
+import jakarta.ws.rs.core.Response;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;

@@ -5,9 +5,9 @@
  */
 package org.camunda.optimize.service.es.reader;
 
-import io.micrometer.core.instrument.util.StringUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.exceptions.OptimizeConfigurationException;
 import org.camunda.optimize.service.exceptions.OptimizeElasticsearchConnectionException;

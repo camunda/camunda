@@ -14,7 +14,7 @@ import org.camunda.optimize.dto.optimize.query.entity.EntityResponseDto;
 import org.camunda.optimize.service.es.writer.CollectionWriter;
 import org.junit.jupiter.api.Test;
 
-import javax.ws.rs.core.Response;
+import jakarta.ws.rs.core.Response;
 import java.time.OffsetDateTime;
 import java.util.Collections;
 import java.util.List;

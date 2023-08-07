@@ -11,8 +11,8 @@ import lombok.NoArgsConstructor;
 import lombok.experimental.FieldNameConstants;
 import org.camunda.optimize.dto.optimize.OptimizeDto;
 
-import javax.validation.Valid;
-import javax.validation.constraints.NotBlank;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
 import java.util.List;
 
 @Data

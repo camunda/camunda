@@ -14,7 +14,7 @@ import org.camunda.optimize.dto.optimize.query.dashboard.tile.DashboardTileType;
 import org.camunda.optimize.dto.optimize.query.sharing.DashboardShareRestDto;
 import org.camunda.optimize.dto.optimize.rest.AuthorizedDashboardDefinitionResponseDto;
 
-import javax.ws.rs.core.Response;
+import jakarta.ws.rs.core.Response;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;

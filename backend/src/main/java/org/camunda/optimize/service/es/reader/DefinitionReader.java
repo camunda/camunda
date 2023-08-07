@@ -55,7 +55,7 @@ import org.elasticsearch.search.sort.SortBuilders;
 import org.elasticsearch.search.sort.SortOrder;
 import org.springframework.stereotype.Component;
 
-import javax.ws.rs.NotFoundException;
+import jakarta.ws.rs.NotFoundException;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -319,7 +319,7 @@ public class DefinitionReader {
             enginesResult.getBuckets().stream().map(Terms.Bucket::getKeyAsString).collect(Collectors.toSet())
           );
         })
-        .collect(toList());
+        .toList();
       resultMap.put(tenantId, new TenantIdWithDefinitionsDto(tenantId, simpleDefinitionDtos));
     });
 
@@ -681,7 +681,7 @@ public class DefinitionReader {
           enginesResult.getBuckets().stream().map(Terms.Bucket::getKeyAsString).collect(Collectors.toSet())
         );
       })
-      .collect(toList());
+      .toList();
   }
 
   private void addTenantIdFilter(final Set<String> tenantIds, final BoolQueryBuilder query) {

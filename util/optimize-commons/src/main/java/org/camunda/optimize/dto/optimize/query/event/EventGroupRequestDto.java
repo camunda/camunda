@@ -10,8 +10,8 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
 
-import javax.validation.constraints.NotNull;
-import javax.ws.rs.QueryParam;
+import jakarta.validation.constraints.NotNull;
+import jakarta.ws.rs.QueryParam;
 
 @Data
 @AllArgsConstructor

@@ -5,6 +5,10 @@
  */
 package org.camunda.optimize.rest.security.cloud;
 
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.Response;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import org.apache.commons.lang3.StringUtils;
@@ -21,12 +25,10 @@ import org.camunda.optimize.service.util.configuration.security.CloudAuthConfigu
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
-import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.oauth2.client.OAuth2AuthorizedClientService;
@@ -40,16 +42,13 @@ import org.springframework.security.oauth2.core.oidc.user.DefaultOidcUser;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
+import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
 import org.springframework.security.web.authentication.HttpStatusEntryPoint;
 import org.springframework.security.web.authentication.LoginUrlAuthenticationEntryPoint;
 import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 import org.springframework.web.util.UriComponentsBuilder;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
@@ -73,8 +72,7 @@ import static org.camunda.optimize.rest.security.platform.PlatformWebSecurityCon
 @RequiredArgsConstructor
 @EnableWebSecurity
 @Conditional(CCSaaSCondition.class)
-@Order(2)
-public class CCSaaSWebSecurityConfigurerAdapter extends WebSecurityConfigurerAdapter {
+public class CCSaaSWebSecurityConfigurerAdapter {
 
   private final SessionService sessionService;
   private final AuthCookieService authCookieService;
@@ -84,16 +82,23 @@ public class CCSaaSWebSecurityConfigurerAdapter extends WebSecurityConfigurerAda
   private final ClientRegistrationRepository clientRegistrationRepository;
   private final OAuth2AuthorizedClientService oAuth2AuthorizedClientService;
 
-  @Override
-  public void configure(AuthenticationManagerBuilder auth) throws Exception {
-    auth.authenticationProvider(preAuthenticatedAuthenticationProvider);
+  @Bean
+  public AuthenticationCookieFilter authenticationCookieFilter(HttpSecurity http) throws Exception {
+    return new AuthenticationCookieFilter(
+      sessionService,
+      http.getSharedObject(AuthenticationManagerBuilder.class)
+        .authenticationProvider(preAuthenticatedAuthenticationProvider)
+        .build()
+    );
   }
 
   @SneakyThrows
-  @Override
-  protected void configure(HttpSecurity http) {
+  @Bean
+  protected SecurityFilterChain configure(HttpSecurity http) {
+    // Public API config is implemented as a separate bean in AbstractPublicAPIConfigurerAdapter
+    // Then we configure the web security
     //@formatter:off
-    http
+    return http
       // csrf is not used but the same-site property of the auth cookie, see AuthCookieService#createNewOptimizeAuthCookie
       .csrf().disable()
       .httpBasic().disable()
@@ -103,23 +108,27 @@ public class CCSaaSWebSecurityConfigurerAdapter extends WebSecurityConfigurerAda
       .and()
       // spring session management is not needed as we have stateless session handling using a JWT token stored as cookie
       .sessionManagement()
-        .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+      .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
       .and()
-      .authorizeRequests()
+      .authorizeHttpRequests()
         // ready endpoint is public for infra
-        .antMatchers(createApiPath(READYZ_PATH)).permitAll()
+        .requestMatchers(new AntPathRequestMatcher(createApiPath(READYZ_PATH))).permitAll()
         // public share resources
-        .antMatchers(EXTERNAL_SUB_PATH + "/", EXTERNAL_SUB_PATH + "/index*",
-                   EXTERNAL_SUB_PATH + STATIC_RESOURCE_PATH + "/**", EXTERNAL_SUB_PATH + "/*.js",
-                   EXTERNAL_SUB_PATH + "/*.ico").permitAll()
-        // public share related resources (API)
-        .antMatchers(createApiPath(EXTERNAL_SUB_PATH + DEEP_SUB_PATH_ANY)).permitAll()
-        // common public api resources
-        .antMatchers(
-          createApiPath(UI_CONFIGURATION_PATH),
-          createApiPath(LOCALIZATION_PATH)
+        .requestMatchers(
+          new AntPathRequestMatcher(EXTERNAL_SUB_PATH + "/"),
+          new AntPathRequestMatcher(EXTERNAL_SUB_PATH + "/index*"),
+          new AntPathRequestMatcher(EXTERNAL_SUB_PATH + STATIC_RESOURCE_PATH + "/**"),
+          new AntPathRequestMatcher(EXTERNAL_SUB_PATH + "/*.js"),
+          new AntPathRequestMatcher(EXTERNAL_SUB_PATH + "/*.ico")
         ).permitAll()
-        .antMatchers(ACTUATOR_ENDPOINT + "/**").permitAll()
+        // public share related resources (API)
+        .requestMatchers(new AntPathRequestMatcher(createApiPath(EXTERNAL_SUB_PATH + DEEP_SUB_PATH_ANY))).permitAll()
+        // common public api resources
+        .requestMatchers(
+          new AntPathRequestMatcher(createApiPath(UI_CONFIGURATION_PATH)),
+          new AntPathRequestMatcher(createApiPath(LOCALIZATION_PATH))
+        ).permitAll()
+        .requestMatchers(new AntPathRequestMatcher(ACTUATOR_ENDPOINT + "/**")).permitAll()
         // everything else requires authentication
         .anyRequest().authenticated()
       .and()
@@ -133,20 +142,17 @@ public class CCSaaSWebSecurityConfigurerAdapter extends WebSecurityConfigurerAda
         .redirectionEndpoint(redirectionEndpointConfig -> redirectionEndpointConfig.baseUri(OAUTH_REDIRECT_ENDPOINT))
         .successHandler(getAuthenticationSuccessHandler())
       .and()
-      .addFilterBefore(authenticationCookieFilter(), OAuth2AuthorizationRequestRedirectFilter.class)
+      .addFilterBefore(authenticationCookieFilter(http), OAuth2AuthorizationRequestRedirectFilter.class)
       .exceptionHandling()
-        .defaultAuthenticationEntryPointFor(new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED), new AntPathRequestMatcher(REST_API_PATH + "/**"))
-        .defaultAuthenticationEntryPointFor(new AddClusterIdSubPathToRedirectAuthenticationEntryPoint(OAUTH_AUTH_ENDPOINT + "/auth0"), new AntPathRequestMatcher("/**"))
+      .defaultAuthenticationEntryPointFor(new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED), new AntPathRequestMatcher(REST_API_PATH + "/**"))
+      .defaultAuthenticationEntryPointFor(new AddClusterIdSubPathToRedirectAuthenticationEntryPoint(OAUTH_AUTH_ENDPOINT + "/auth0"), new AntPathRequestMatcher("/**"))
       .and()
       .oauth2ResourceServer()
-      .jwt(jwtConfigurer -> jwtConfigurer.decoder(jwtDecoder()));
+      .jwt(jwtConfigurer -> jwtConfigurer.decoder(jwtDecoder()))
+      .and().build();
     //@formatter:on
   }
 
-  @Bean
-  public AuthenticationCookieFilter authenticationCookieFilter() throws Exception {
-    return new AuthenticationCookieFilter(sessionService, authenticationManager());
-  }
 
   @Bean
   public HttpCookieOAuth2AuthorizationRequestRepository cookieOAuth2AuthorizationRequestRepository() {
@@ -159,7 +165,10 @@ public class CCSaaSWebSecurityConfigurerAdapter extends WebSecurityConfigurerAda
     NimbusJwtDecoder jwtDecoder = NimbusJwtDecoder.withJwkSetUri(readJwtSetUriFromConfig()).build();
     OAuth2TokenValidator<Jwt> audienceValidator =
       new AudienceValidator(
-        configurationService.getAuthConfiguration().getCloudAuthConfiguration().getUserAccessTokenAudience().orElse(""));
+        configurationService.getAuthConfiguration()
+          .getCloudAuthConfiguration()
+          .getUserAccessTokenAudience()
+          .orElse(""));
     OAuth2TokenValidator<Jwt> clusterIdValidator = new ScopeValidator("profile");
     OAuth2TokenValidator<Jwt> audienceAndClusterIdValidation =
       new DelegatingOAuth2TokenValidator<>(audienceValidator, clusterIdValidator);
@@ -189,7 +198,11 @@ public class CCSaaSWebSecurityConfigurerAdapter extends WebSecurityConfigurerAda
             "Could not determine a cookie expiry date. This is likely a bug, please report."));
         authCookieService.createOptimizeServiceTokenCookies(serviceAccessToken, cookieExpiryDate, request.getScheme())
           .forEach(response::addCookie);
-        response.addCookie(authCookieService.createOptimizeAuthCookie(sessionToken, cookieExpiryDate, request.getScheme()));
+        response.addCookie(authCookieService.createOptimizeAuthCookie(
+          sessionToken,
+          cookieExpiryDate,
+          request.getScheme()
+        ));
 
         // we can't redirect to the previously accesses path or the root of the application as the Optimize Cookie
         // won't be sent by the browser in this case. This is because the chain of requests that lead to the
@@ -230,9 +243,11 @@ public class CCSaaSWebSecurityConfigurerAdapter extends WebSecurityConfigurerAda
     };
   }
 
-  private Optional<Instant> determineCookieExpiryDate(final String sessionToken, final OAuth2AccessToken serviceAccessToken) {
+  private Optional<Instant> determineCookieExpiryDate(final String sessionToken,
+                                                      final OAuth2AccessToken serviceAccessToken) {
     final Instant serviceTokenExpiry = serviceAccessToken.getExpiresAt();
-    final Instant sessionTokenExpiry = authCookieService.getOptimizeAuthCookieTokenExpiryDate(sessionToken).orElse(null);
+    final Instant sessionTokenExpiry = authCookieService.getOptimizeAuthCookieTokenExpiryDate(sessionToken)
+      .orElse(null);
     return Stream.of(serviceTokenExpiry, sessionTokenExpiry)
       .filter(Objects::nonNull)
       .min(Instant::compareTo);

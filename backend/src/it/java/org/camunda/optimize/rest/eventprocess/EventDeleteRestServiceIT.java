@@ -18,13 +18,13 @@ import org.mockserver.matchers.Times;
 import org.mockserver.model.HttpRequest;
 import org.mockserver.verify.VerificationTimes;
 
-import javax.ws.rs.core.Response;
+import jakarta.ws.rs.core.Response;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import static javax.ws.rs.HttpMethod.POST;
+import static jakarta.ws.rs.HttpMethod.POST;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.rest.RestTestConstants.DEFAULT_USERNAME;
 import static org.mockserver.model.HttpError.error;

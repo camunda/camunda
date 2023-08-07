@@ -37,7 +37,7 @@ import org.mockserver.verify.VerificationTimes;
 import org.quartz.JobKey;
 import org.quartz.SchedulerException;
 
-import javax.ws.rs.core.Response;
+import jakarta.ws.rs.core.Response;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.util.Date;

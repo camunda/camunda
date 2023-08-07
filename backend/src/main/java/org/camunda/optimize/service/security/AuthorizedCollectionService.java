@@ -17,8 +17,8 @@ import org.camunda.optimize.service.es.reader.CollectionReader;
 import org.camunda.optimize.service.identity.AbstractIdentityService;
 import org.springframework.stereotype.Component;
 
-import javax.ws.rs.ForbiddenException;
-import javax.ws.rs.NotFoundException;
+import jakarta.ws.rs.ForbiddenException;
+import jakarta.ws.rs.NotFoundException;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;

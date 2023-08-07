@@ -92,7 +92,7 @@ public class ProcessDefinitionOptimizeDto extends DefinitionOptimizeResponseDto 
       ? List.of()
       : flowNodeData.stream()
       .filter(flowNode -> FLOW_NODE_TYPE_USER_TASK.equalsIgnoreCase(flowNode.getType()))
-      .collect(toList());
+      .toList();
   }
 
   public Map<String, String> getUserTaskNames() {

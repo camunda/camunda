@@ -54,7 +54,7 @@ public class ProcessInstanceDto implements OptimizeDto {
   public List<FlowNodeInstanceDto> getUserTasks() {
     return flowNodeInstances.stream()
       .filter(flowNode -> FLOW_NODE_TYPE_USER_TASK.equalsIgnoreCase(flowNode.getFlowNodeType()))
-      .collect(toList());
+      .toList();
   }
 }
 

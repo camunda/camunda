@@ -40,9 +40,9 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 import org.springframework.scheduling.support.CronTrigger;
 import org.springframework.stereotype.Component;
 
-import javax.annotation.Nullable;
-import javax.annotation.PostConstruct;
-import javax.annotation.PreDestroy;
+import jakarta.annotation.Nullable;
+import jakarta.annotation.PostConstruct;
+import jakarta.annotation.PreDestroy;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -309,7 +309,7 @@ public class DigestService implements ConfigurationReloadable {
                  .get(kpiReportResultTuple.v2().getReportId())
              )
       )
-      .collect(toList());
+      .toList();
   }
 
   @Data

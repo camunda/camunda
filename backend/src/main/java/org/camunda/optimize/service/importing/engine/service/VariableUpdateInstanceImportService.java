@@ -99,7 +99,7 @@ public class VariableUpdateInstanceImportService implements ImportService<Histor
     }
     pluginVariableList.removeIf(variable -> !isValidVariable(variable));
     List<ProcessVariableUpdateDto> variableUpdateDtos =
-      pluginVariableList.stream().map(this::convertPluginVariableToImportVariable).collect(toList());
+      pluginVariableList.stream().map(this::convertPluginVariableToImportVariable).toList();
     return objectVariableService.convertToProcessVariableDtos(variableUpdateDtos);
   }
 

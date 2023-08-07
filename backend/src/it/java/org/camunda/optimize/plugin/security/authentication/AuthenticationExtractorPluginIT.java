@@ -14,8 +14,8 @@ import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import javax.ws.rs.core.NewCookie;
-import javax.ws.rs.core.Response;
+import jakarta.ws.rs.core.NewCookie;
+import jakarta.ws.rs.core.Response;
 import java.time.Duration;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;

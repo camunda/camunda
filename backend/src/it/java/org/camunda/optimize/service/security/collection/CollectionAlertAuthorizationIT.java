@@ -18,7 +18,7 @@ import org.camunda.optimize.test.engine.AuthorizationClient;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
-import javax.ws.rs.core.Response;
+import jakarta.ws.rs.core.Response;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Stream;
@@ -80,7 +80,7 @@ public class CollectionAlertAuthorizationIT extends AbstractAlertIT {
       )
       .stream()
       .map(AlertDefinitionDto::getId)
-      .collect(toList());
+      .toList();
 
     // then
     assertThat(allAlertIds).containsExactlyInAnyOrder(alertId1, alertId2, alertId3);
@@ -111,7 +111,7 @@ public class CollectionAlertAuthorizationIT extends AbstractAlertIT {
       )
       .stream()
       .map(AlertDefinitionDto::getId)
-      .collect(toList());
+      .toList();
 
     // then
     assertThat(allAlertIds).containsExactlyInAnyOrder(alertId1, alertId2);

@@ -21,7 +21,7 @@ import org.elasticsearch.action.index.IndexResponse;
 import org.elasticsearch.xcontent.XContentType;
 import org.springframework.stereotype.Component;
 
-import javax.ws.rs.NotFoundException;
+import jakarta.ws.rs.NotFoundException;
 import java.io.IOException;
 
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DASHBOARD_SHARE_INDEX_NAME;

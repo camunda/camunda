@@ -14,9 +14,9 @@ import org.camunda.optimize.service.util.configuration.condition.CCSaaSCondition
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-import javax.ws.rs.NotSupportedException;
-import javax.ws.rs.container.ContainerRequestContext;
-import javax.ws.rs.core.Response;
+import jakarta.ws.rs.NotSupportedException;
+import jakarta.ws.rs.container.ContainerRequestContext;
+import jakarta.ws.rs.core.Response;
 
 @Component
 @Conditional(CCSaaSCondition.class)

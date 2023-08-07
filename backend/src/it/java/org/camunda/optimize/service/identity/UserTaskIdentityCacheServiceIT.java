@@ -32,7 +32,7 @@ import org.mockserver.verify.VerificationTimes;
 
 import java.util.List;
 
-import static javax.ws.rs.HttpMethod.GET;
+import static jakarta.ws.rs.HttpMethod.GET;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.camunda.optimize.test.it.extension.EngineIntegrationExtension.DEFAULT_EMAIL_DOMAIN;

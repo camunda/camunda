@@ -18,7 +18,7 @@ import org.camunda.optimize.dto.optimize.rest.DefinitionVersionResponseDto;
 import org.camunda.optimize.dto.optimize.rest.definition.DefinitionWithTenantsResponseDto;
 import org.camunda.optimize.dto.optimize.rest.definition.MultiDefinitionTenantsRequestDto;
 
-import javax.ws.rs.core.Response;
+import jakarta.ws.rs.core.Response;
 import java.util.List;
 import java.util.function.Supplier;
 

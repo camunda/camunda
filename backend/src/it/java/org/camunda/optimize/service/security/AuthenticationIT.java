@@ -14,8 +14,8 @@ import org.junit.jupiter.api.Test;
 import org.mockserver.integration.ClientAndServer;
 import org.mockserver.model.HttpRequest;
 
-import javax.ws.rs.core.HttpHeaders;
-import javax.ws.rs.core.Response;
+import jakarta.ws.rs.core.HttpHeaders;
+import jakarta.ws.rs.core.Response;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;

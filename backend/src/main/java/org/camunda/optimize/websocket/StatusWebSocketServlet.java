@@ -6,13 +6,14 @@
 package org.camunda.optimize.websocket;
 
 import lombok.RequiredArgsConstructor;
-import org.eclipse.jetty.websocket.servlet.WebSocketServlet;
-import org.eclipse.jetty.websocket.servlet.WebSocketServletFactory;
+import org.eclipse.jetty.websocket.server.JettyWebSocketServlet;
+import org.eclipse.jetty.websocket.server.JettyWebSocketServletFactory;
 
 @RequiredArgsConstructor
-public class StatusWebSocketServlet extends WebSocketServlet {
+public class StatusWebSocketServlet extends JettyWebSocketServlet {
+
   @Override
-  public void configure(WebSocketServletFactory factory) {
+  protected void configure(final JettyWebSocketServletFactory factory) {
     factory.register(StatusWebSocket.class);
   }
 }

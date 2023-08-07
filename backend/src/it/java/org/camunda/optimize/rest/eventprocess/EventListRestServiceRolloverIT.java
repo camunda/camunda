@@ -12,7 +12,7 @@ import org.camunda.optimize.dto.optimize.rest.pagination.PaginationRequestDto;
 import org.camunda.optimize.dto.optimize.rest.sorting.SortRequestDto;
 import org.junit.jupiter.api.Test;
 
-import javax.ws.rs.core.Response;
+import jakarta.ws.rs.core.Response;
 import java.util.Comparator;
 
 import static java.util.Comparator.naturalOrder;

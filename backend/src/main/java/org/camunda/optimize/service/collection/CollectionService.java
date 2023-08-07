@@ -29,8 +29,8 @@ import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.service.util.IdGenerator;
 import org.springframework.stereotype.Component;
 
-import javax.ws.rs.ForbiddenException;
-import javax.ws.rs.NotFoundException;
+import jakarta.ws.rs.ForbiddenException;
+import jakarta.ws.rs.NotFoundException;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Optional;

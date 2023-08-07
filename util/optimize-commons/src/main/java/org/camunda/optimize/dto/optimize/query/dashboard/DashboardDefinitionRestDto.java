@@ -6,6 +6,7 @@
 package org.camunda.optimize.dto.optimize.query.dashboard;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -19,7 +20,6 @@ import org.camunda.optimize.dto.optimize.query.entity.EntityResponseDto;
 import org.camunda.optimize.dto.optimize.query.entity.EntityType;
 import org.camunda.optimize.service.util.IdGenerator;
 
-import javax.validation.Valid;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;

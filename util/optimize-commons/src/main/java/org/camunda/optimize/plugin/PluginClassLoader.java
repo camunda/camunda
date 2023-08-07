@@ -23,8 +23,8 @@ public class PluginClassLoader extends URLClassLoader {
   // and need to be maintained in case new third-party libraries are added to the interfaces
   private static final Set<String> EXCLUDED_PACKAGE_PREFIXES = Sets.newHashSet(
     "org.camunda.optimize.plugin",
-    "javax.servlet",
-    "javax.ws.rs"
+    "jakarta.servlet",
+    "jakarta.ws.rs"
   );
 
 

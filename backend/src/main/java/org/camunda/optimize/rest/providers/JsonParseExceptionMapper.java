@@ -6,13 +6,12 @@
 package org.camunda.optimize.rest.providers;
 
 import com.fasterxml.jackson.core.JsonParseException;
+import jakarta.annotation.Priority;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.ext.ExceptionMapper;
+import jakarta.ws.rs.ext.Provider;
 import lombok.extern.slf4j.Slf4j;
-
-import javax.annotation.Priority;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
-import javax.ws.rs.ext.ExceptionMapper;
-import javax.ws.rs.ext.Provider;
 
 @Provider
 // The priority is needed to make sure it takes precedence over the default Jackson mapper

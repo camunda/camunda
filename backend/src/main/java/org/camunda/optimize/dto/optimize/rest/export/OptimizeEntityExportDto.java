@@ -16,7 +16,7 @@ import org.camunda.optimize.dto.optimize.rest.export.report.CombinedProcessRepor
 import org.camunda.optimize.dto.optimize.rest.export.report.SingleDecisionReportDefinitionExportDto;
 import org.camunda.optimize.dto.optimize.rest.export.report.SingleProcessReportDefinitionExportDto;
 
-import javax.validation.constraints.NotNull;
+import jakarta.validation.constraints.NotNull;
 
 import static org.camunda.optimize.dto.optimize.rest.export.ExportConstants.COMBINED_REPORT;
 import static org.camunda.optimize.dto.optimize.rest.export.ExportConstants.DASHBOARD;

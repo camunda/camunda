@@ -12,8 +12,8 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
-import javax.ws.rs.client.WebTarget;
-import javax.ws.rs.core.Response;
+import jakarta.ws.rs.client.WebTarget;
+import jakarta.ws.rs.core.Response;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;

@@ -8,6 +8,7 @@ package org.camunda.optimize.service;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.github.benmanes.caffeine.cache.LoadingCache;
 import com.google.common.collect.Sets;
+import jakarta.ws.rs.ForbiddenException;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
@@ -33,7 +34,6 @@ import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Component;
 
-import javax.ws.rs.ForbiddenException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -51,7 +51,6 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static java.util.Comparator.naturalOrder;
-import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toMap;
 import static org.camunda.optimize.service.TenantService.TENANT_NOT_DEFINED;
 import static org.camunda.optimize.service.util.DefinitionVersionHandlingUtil.isDefinitionVersionSetToAllOrLatest;
@@ -143,7 +142,7 @@ public class DefinitionService implements ConfigurationReloadable {
     if (optionalDefinition.isPresent()) {
       final List<String> availableTenants = optionalDefinition.get().getTenants().stream()
         .map(TenantDto::getId)
-        .collect(toList());
+        .toList();
       final Set<String> tenantsToFilterFor =
         CollectionUtils.isEmpty(tenantIds)
           ? Sets.newHashSet(availableTenants)
@@ -208,7 +207,7 @@ public class DefinitionService implements ConfigurationReloadable {
     );
     return allProcessDefs.stream()
       .filter(def -> camundaEventImportedKeys.contains(def.getKey().toLowerCase()))
-      .collect(toList());
+      .toList();
   }
 
   public List<DefinitionResponseDto> getFullyImportedDefinitions(@NonNull final String userId) {
@@ -230,7 +229,7 @@ public class DefinitionService implements ConfigurationReloadable {
     return filterAndMapDefinitionsWithTenantIdsByAuthorizations(userId, fullyImportedDefinitions)
       // sort by name case insensitive
       .sorted(Comparator.comparing(a -> a.getName() == null ? a.getKey().toLowerCase() : a.getName().toLowerCase()))
-      .collect(toList());
+      .toList();
   }
 
   @SuppressWarnings(UNCHECKED_CAST)
@@ -286,12 +285,12 @@ public class DefinitionService implements ConfigurationReloadable {
           ))
           // sort by name case-insensitive
           .sorted(Comparator.comparing(a -> a.getName() == null ? a.getKey().toLowerCase() : a.getName().toLowerCase()))
-          .collect(toList());
+          .toList();
         return new TenantWithDefinitionsResponseDto(tenantDto.getId(), tenantDto.getName(), authorizedDefinitions);
       })
       .filter(tenantWithDefinitionsDto -> !tenantWithDefinitionsDto.getDefinitions().isEmpty())
       .sorted(Comparator.comparing(TenantWithDefinitionsResponseDto::getId, Comparator.nullsFirst(naturalOrder())))
-      .collect(toList());
+      .toList();
   }
 
   public <T extends DefinitionOptimizeResponseDto> Optional<T> getDefinitionWithXml(final DefinitionType type,
@@ -359,7 +358,7 @@ public class DefinitionService implements ConfigurationReloadable {
       .sorted(selectedTenantIds.size() == 1
                 ? Comparator.nullsLast(Comparator.naturalOrder())
                 : Comparator.nullsFirst(Comparator.naturalOrder()))
-      .collect(toList());
+      .toList();
   }
 
   public Map<String, String> extractFlowNodeIdAndNames(final List<ProcessDefinitionOptimizeDto> definitions) {
@@ -432,7 +431,7 @@ public class DefinitionService implements ConfigurationReloadable {
         .stream()
         .filter(e -> tenantIds.contains(e.getKey()) || e.getKey() == null)
         .sorted(Comparator.comparing(e -> Integer.parseInt(e.getValue().getVersion())))
-        .collect(toList());
+        .toList();
 
     // If only one or no definition with the latest version is present, return that
     if (sortedFilteredEntries.size() <= 1) {
@@ -473,7 +472,7 @@ public class DefinitionService implements ConfigurationReloadable {
   private List<String> filterAuthorizedTenants(final String userId, final List<String> tenantIds) {
     return tenantIds.stream()
       .filter(tenantId -> tenantService.isAuthorizedToSeeTenant(userId, tenantId))
-      .collect(toList());
+      .toList();
   }
 
   private void addSharedDefinitionsToAllAuthorizedTenantEntries(
@@ -549,6 +548,6 @@ public class DefinitionService implements ConfigurationReloadable {
                                                                    final Collection<T> secondCollection) {
     return Stream.concat(secondCollection.stream(), firstCollection.stream())
       .distinct()
-      .collect(toList());
+      .toList();
   }
 }

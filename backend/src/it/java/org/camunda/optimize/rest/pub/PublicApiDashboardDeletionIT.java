@@ -8,7 +8,7 @@ package org.camunda.optimize.rest.pub;
 import org.camunda.optimize.AbstractIT;
 import org.junit.jupiter.api.Test;
 
-import javax.ws.rs.core.Response;
+import jakarta.ws.rs.core.Response;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DASHBOARD_INDEX_NAME;

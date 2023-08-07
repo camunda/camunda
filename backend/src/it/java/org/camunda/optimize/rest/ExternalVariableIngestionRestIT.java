@@ -18,9 +18,9 @@ import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import javax.ws.rs.core.HttpHeaders;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
+import jakarta.ws.rs.core.HttpHeaders;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.Response;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -49,7 +49,7 @@ public class ExternalVariableIngestionRestIT extends AbstractIT {
     // given
     final List<ExternalProcessVariableRequestDto> variables = IntStream.range(0, 10)
       .mapToObj(i -> ingestionClient.createPrimitiveExternalVariable().setId("id" + i))
-      .collect(toList());
+      .toList();
 
     // when
     final Response response = ingestionClient.ingestVariablesAndReturnResponse(variables);
@@ -89,7 +89,7 @@ public class ExternalVariableIngestionRestIT extends AbstractIT {
     // given
     final List<ExternalProcessVariableRequestDto> variables = IntStream.range(0, 10)
       .mapToObj(i -> ingestionClient.createPrimitiveExternalVariable().setId("id" + i))
-      .collect(toList());
+      .toList();
     final OffsetDateTime ingestionTimestamp1 = LocalDateUtil.getCurrentDateTime();
     final OffsetDateTime ingestionTimestamp2 = LocalDateUtil.getCurrentDateTime().minusDays(1);
 
@@ -114,7 +114,7 @@ public class ExternalVariableIngestionRestIT extends AbstractIT {
     // given
     final List<ExternalProcessVariableRequestDto> variables = IntStream.range(0, 2)
       .mapToObj(i -> ingestionClient.createPrimitiveExternalVariable().setId("sameId").setValue("value" + i))
-      .collect(toList());
+      .toList();
     final OffsetDateTime ingestionTimestamp = LocalDateUtil.getCurrentDateTime();
 
     // when
@@ -133,10 +133,10 @@ public class ExternalVariableIngestionRestIT extends AbstractIT {
     // given
     final List<ExternalProcessVariableRequestDto> variables1 = IntStream.range(0, 10)
       .mapToObj(i -> ingestionClient.createPrimitiveExternalVariable().setId("id" + i))
-      .collect(toList());
+      .toList();
     final List<ExternalProcessVariableRequestDto> variables2 = IntStream.range(20, 30)
       .mapToObj(i -> ingestionClient.createPrimitiveExternalVariable().setId("id" + i))
-      .collect(toList());
+      .toList();
     final OffsetDateTime ingestionTimestamp1 = LocalDateUtil.getCurrentDateTime();
     final OffsetDateTime ingestionTimestamp2 = LocalDateUtil.getCurrentDateTime().minusDays(1);
 
@@ -318,7 +318,7 @@ public class ExternalVariableIngestionRestIT extends AbstractIT {
     embeddedOptimizeExtension.getConfigurationService().getVariableIngestionConfiguration().setMaxBatchRequestBytes(1L);
     final List<ExternalProcessVariableRequestDto> variables = IntStream.range(0, 10)
       .mapToObj(i -> ingestionClient.createPrimitiveExternalVariable().setId("id" + i))
-      .collect(toList());
+      .toList();
 
     // when
     final ErrorResponseDto response = embeddedOptimizeExtension.getRequestExecutor()

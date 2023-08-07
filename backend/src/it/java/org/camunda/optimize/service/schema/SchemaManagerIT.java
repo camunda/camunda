@@ -44,7 +44,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import static javax.ws.rs.HttpMethod.HEAD;
+import static jakarta.ws.rs.HttpMethod.HEAD;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;

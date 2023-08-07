@@ -24,7 +24,7 @@ import org.camunda.optimize.service.exceptions.evaluation.ReportEvaluationExcept
 import org.camunda.optimize.service.util.ProcessReportDataType;
 import org.camunda.optimize.service.util.TemplatedProcessReportDataBuilder;
 
-import javax.ws.rs.core.Response;
+import jakarta.ws.rs.core.Response;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;

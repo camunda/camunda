@@ -14,7 +14,7 @@ import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDef
 import org.camunda.optimize.dto.optimize.rest.export.ExportEntityType;
 import org.camunda.optimize.service.es.schema.index.report.CombinedReportIndex;
 
-import javax.validation.constraints.NotNull;
+import jakarta.validation.constraints.NotNull;
 
 import static org.camunda.optimize.dto.optimize.rest.export.ExportEntityType.COMBINED_REPORT;
 

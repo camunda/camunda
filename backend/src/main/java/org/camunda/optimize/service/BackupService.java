@@ -5,9 +5,10 @@
  */
 package org.camunda.optimize.service;
 
-import io.micrometer.core.instrument.util.StringUtils;
+import jakarta.ws.rs.NotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.camunda.optimize.dto.optimize.BackupState;
 import org.camunda.optimize.dto.optimize.rest.BackupInfoDto;
 import org.camunda.optimize.dto.optimize.rest.SnapshotInfoDto;
@@ -20,7 +21,6 @@ import org.elasticsearch.snapshots.SnapshotShardFailure;
 import org.elasticsearch.snapshots.SnapshotState;
 import org.springframework.stereotype.Component;
 
-import javax.ws.rs.NotFoundException;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
@@ -30,7 +30,6 @@ import java.util.Map;
 
 import static java.util.stream.Collectors.groupingBy;
 import static java.util.stream.Collectors.joining;
-import static java.util.stream.Collectors.toList;
 
 @RequiredArgsConstructor
 @Component
@@ -53,7 +52,7 @@ public class BackupService {
     validateRepositoryExists();
     return backupReader.getAllOptimizeSnapshotsByBackupId().entrySet().stream()
       .map(entry -> getSingleBackupInfo(entry.getKey(), entry.getValue().stream().collect(groupingBy(SnapshotInfo::state))))
-      .collect(toList());
+      .toList();
   }
 
   public BackupInfoDto getSingleBackupInfo(final Integer backupId) {
@@ -96,9 +95,9 @@ public class BackupService {
           snapshotInfo.snapshot().getSnapshotId().getName(),
           snapshotInfo.state(),
           OffsetDateTime.ofInstant(Instant.ofEpochMilli(snapshotInfo.startTime()), ZoneId.systemDefault()),
-          snapshotInfo.shardFailures().stream().map(SnapshotShardFailure::toString).collect(toList())
+          snapshotInfo.shardFailures().stream().map(SnapshotShardFailure::toString).toList()
         ))
-        .collect(toList())
+        .toList()
     );
   }
 

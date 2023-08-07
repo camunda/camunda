@@ -5,6 +5,8 @@
  */
 package org.camunda.optimize.service.identity;
 
+import jakarta.ws.rs.container.ContainerRequestContext;
+import jakarta.ws.rs.core.Cookie;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.GroupDto;
 import org.camunda.optimize.dto.optimize.IdentityDto;
@@ -16,8 +18,6 @@ import org.camunda.optimize.service.util.configuration.condition.CCSMCondition;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-import javax.ws.rs.container.ContainerRequestContext;
-import javax.ws.rs.core.Cookie;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;

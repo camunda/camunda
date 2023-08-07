@@ -16,7 +16,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
 
-import javax.ws.rs.client.Client;
+import jakarta.ws.rs.client.Client;
 
 @RequiredArgsConstructor
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)

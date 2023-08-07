@@ -7,6 +7,7 @@ package org.camunda.optimize.service.es.report.process;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import io.github.netmikey.logunit.api.LogCapturer;
+import jakarta.ws.rs.core.Response;
 import lombok.SneakyThrows;
 import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
@@ -52,7 +53,6 @@ import org.mockserver.model.HttpResponse;
 import org.mockserver.model.HttpStatusCode;
 import org.slf4j.event.Level;
 
-import javax.ws.rs.core.Response;
 import java.io.IOException;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
@@ -64,15 +64,15 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import static javax.ws.rs.HttpMethod.POST;
+import static jakarta.ws.rs.HttpMethod.POST;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.service.util.InstanceIndexUtil.getProcessInstanceIndexAliasName;
-import static org.camunda.optimize.test.it.extension.EngineIntegrationExtension.DEFAULT_FULLNAME;
 import static org.camunda.optimize.service.util.ProcessReportDataType.INCIDENT_DUR_GROUP_BY_NONE;
 import static org.camunda.optimize.service.util.ProcessReportDataType.INCIDENT_FREQ_GROUP_BY_NONE;
 import static org.camunda.optimize.service.util.ProcessReportDataType.PROC_INST_DUR_GROUP_BY_NONE;
 import static org.camunda.optimize.service.util.ProcessReportDataType.PROC_INST_DUR_GROUP_BY_NONE_WITH_PART;
 import static org.camunda.optimize.service.util.ProcessReportDataType.VARIABLE_AGGREGATION_GROUP_BY_NONE;
+import static org.camunda.optimize.test.it.extension.EngineIntegrationExtension.DEFAULT_FULLNAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.SINGLE_PROCESS_REPORT_INDEX_NAME;
 import static org.camunda.optimize.util.BpmnModels.getSingleServiceTaskProcess;
 import static org.mockserver.model.HttpRequest.request;
@@ -254,7 +254,8 @@ public class SingleProcessReportHandlingIT extends AbstractIT {
     assertThat(newReport.getData().getConfiguration().getTargetValue().getIsKpi()).isTrue();
     assertThat(newReport.getData().getConfiguration().getTargetValue().getCountProgress().getIsBelow()).isTrue();
     assertThat(newReport.getData().getConfiguration().getTargetValue().getCountProgress().getTarget()).isEqualTo("10");
-    assertThat(newReport.getData().getConfiguration().getTargetValue().getDurationProgress().getTarget().getValue()).isEqualTo("20");
+    assertThat(newReport.getData().getConfiguration().getTargetValue().getDurationProgress().getTarget().getValue()).isEqualTo(
+      "20");
     assertThat(newReport.getData().getConfiguration().getTargetValue().getDurationProgress().getTarget().getIsBelow()).isTrue();
     assertThat(newReport.getId()).isEqualTo(id);
     assertThat(newReport.getName()).isEqualTo("MyReport");

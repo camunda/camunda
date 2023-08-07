@@ -15,7 +15,7 @@ import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.rest.pagination.PaginationDto;
 import org.camunda.optimize.service.es.reader.ReportReader;
 
-import javax.ws.rs.NotFoundException;
+import jakarta.ws.rs.NotFoundException;
 import java.time.ZoneId;
 import java.util.Optional;
 

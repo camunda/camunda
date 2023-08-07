@@ -5,8 +5,9 @@
  */
 package org.camunda.optimize.service.backup;
 
-import io.micrometer.core.instrument.util.StringUtils;
+import jakarta.ws.rs.NotFoundException;
 import lombok.SneakyThrows;
+import org.apache.commons.lang3.StringUtils;
 import org.camunda.optimize.service.BackupService;
 import org.camunda.optimize.service.es.reader.BackupReader;
 import org.camunda.optimize.service.es.reader.BackupWriter;
@@ -25,7 +26,6 @@ import org.mockito.MockedStatic;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import javax.ws.rs.NotFoundException;
 import java.util.Collections;
 
 import static org.assertj.core.api.Assertions.assertThat;

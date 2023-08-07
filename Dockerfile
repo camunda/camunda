@@ -78,7 +78,7 @@ ENV CONTAINER_HOST=0.0.0.0
 
 EXPOSE 8090 8091
 
-RUN apk add --no-cache bash curl tini openjdk11-jre tzdata && \
+RUN apk add --no-cache bash curl tini openjdk17-jre tzdata && \
     curl "https://raw.githubusercontent.com/vishnubob/wait-for-it/master/wait-for-it.sh" --output /usr/local/bin/wait-for-it.sh && \
     chmod +x /usr/local/bin/wait-for-it.sh && \
     addgroup -S optimize && \

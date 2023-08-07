@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.service.es.report.process.single.usertask.frequency.groupby.assignee;
 
+import jakarta.ws.rs.core.Response;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import org.assertj.core.groups.Tuple;
@@ -39,7 +40,6 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
-import javax.ws.rs.core.Response;
 import java.time.OffsetDateTime;
 import java.util.Arrays;
 import java.util.Collections;
@@ -51,7 +51,6 @@ import java.util.Objects;
 import java.util.stream.Stream;
 
 import static com.google.common.collect.Lists.newArrayList;
-import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.operator.MembershipFilterOperator.IN;
@@ -290,7 +289,7 @@ public class UserTaskFrequencyByAssigneeReportEvaluationIT extends AbstractProce
     final List<MapResultEntryDto> resultData = result.getFirstMeasureData();
     assertThat(resultData).hasSize(2);
     assertThat(getExecutedFlowNodeCount(result)).isEqualTo(2L);
-    final List<String> resultKeys = resultData.stream().map(MapResultEntryDto::getKey).collect(toList());
+    final List<String> resultKeys = resultData.stream().map(MapResultEntryDto::getKey).toList();
     assertThat(resultKeys).isSortedAccordingTo(Comparator.reverseOrder());
   }
 
@@ -321,7 +320,7 @@ public class UserTaskFrequencyByAssigneeReportEvaluationIT extends AbstractProce
     assertThat(getExecutedFlowNodeCount(result)).isEqualTo(2L);
     final List<String> resultLabels = resultData.stream()
       .map(MapResultEntryDto::getLabel)
-      .collect(toList());
+      .toList();
     assertThat(resultLabels).isSortedAccordingTo(Comparator.reverseOrder());
   }
 
@@ -978,10 +977,10 @@ public class UserTaskFrequencyByAssigneeReportEvaluationIT extends AbstractProce
     List<MapResultEntryDto> resultData = result.getFirstMeasureData();
     final List<Double> bucketValues = resultData.stream()
       .map(MapResultEntryDto::getValue)
-      .collect(toList());
+      .toList();
     final List<Double> bucketValuesWithoutNullValue = bucketValues.stream()
       .filter(Objects::nonNull)
-      .collect(toList());
+      .toList();
     assertThat(bucketValuesWithoutNullValue).isSortedAccordingTo(Comparator.naturalOrder());
     for (int i = resultData.size() - 1; i > getExecutedFlowNodeCount(result) - 1; i--) {
       assertThat(bucketValues.get(i)).isNull();

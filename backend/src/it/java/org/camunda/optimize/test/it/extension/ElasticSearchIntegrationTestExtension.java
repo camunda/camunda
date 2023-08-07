@@ -85,7 +85,7 @@ import org.junit.jupiter.api.extension.ExtensionContext;
 import org.mockserver.integration.ClientAndServer;
 import org.springframework.http.converter.json.Jackson2ObjectMapperBuilder;
 
-import javax.ws.rs.NotFoundException;
+import jakarta.ws.rs.NotFoundException;
 import java.io.IOException;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;

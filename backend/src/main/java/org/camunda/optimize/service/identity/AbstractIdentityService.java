@@ -6,6 +6,7 @@
 package org.camunda.optimize.service.identity;
 
 import com.google.common.collect.ImmutableList;
+import jakarta.ws.rs.container.ContainerRequestContext;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.GroupDto;
 import org.camunda.optimize.dto.optimize.IdentityDto;
@@ -19,8 +20,7 @@ import org.camunda.optimize.service.util.configuration.users.AuthorizedUserType;
 import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Component;
 
-import javax.ws.rs.ForbiddenException;
-import javax.ws.rs.container.ContainerRequestContext;
+import jakarta.ws.rs.ForbiddenException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -124,7 +124,7 @@ public abstract class AbstractIdentityService implements ConfigurationReloadable
     return result.getResult()
       .stream()
       .filter(identity -> isUserAuthorizedToAccessIdentity(userId, identity))
-      .collect(toList());
+      .toList();
   }
 
   private boolean isInSuperUserGroup(final String userId) {

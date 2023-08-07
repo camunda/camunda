@@ -5,6 +5,8 @@
  */
 package org.camunda.optimize.rest.security.ccsm;
 
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import org.camunda.optimize.rest.security.CustomPreAuthenticatedAuthenticationProvider;
@@ -18,15 +20,13 @@ import org.springframework.http.HttpStatus;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
-import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.AuthenticationException;
+import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.HttpStatusEntryPoint;
 import org.springframework.security.web.authentication.preauth.AbstractPreAuthenticatedProcessingFilter;
 import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 
 import static org.camunda.optimize.OptimizeJettyServerCustomizer.EXTERNAL_SUB_PATH;
@@ -45,25 +45,27 @@ import static org.camunda.optimize.rest.security.platform.PlatformWebSecurityCon
 @EnableWebSecurity
 @Conditional(CCSMCondition.class)
 @Order(2)
-public class CCSMWebSecurityConfigurerAdapter extends WebSecurityConfigurerAdapter {
+public class CCSMWebSecurityConfigurerAdapter {
   private final CCSMTokenService ccsmTokenService;
   private final CustomPreAuthenticatedAuthenticationProvider preAuthenticatedAuthenticationProvider;
 
-  @Override
-  public void configure(AuthenticationManagerBuilder auth) throws Exception {
-    auth.authenticationProvider(preAuthenticatedAuthenticationProvider);
-  }
-
   @Bean
-  public CCSMAuthenticationCookieFilter ccsmAuthenticationCookieFilter() throws Exception {
-    return new CCSMAuthenticationCookieFilter(ccsmTokenService, authenticationManager());
+  public CCSMAuthenticationCookieFilter ccsmAuthenticationCookieFilter(HttpSecurity http) throws Exception {
+    return new CCSMAuthenticationCookieFilter(
+      ccsmTokenService,
+      http.getSharedObject(AuthenticationManagerBuilder.class)
+        .authenticationProvider(preAuthenticatedAuthenticationProvider)
+        .build()
+    );
   }
 
   @SneakyThrows
-  @Override
-  protected void configure(HttpSecurity http) {
+  @Bean
+  protected SecurityFilterChain configure(HttpSecurity http) {
+    // Public API config is implemented as a separate bean in AbstractPublicAPIConfigurerAdapter
+    // Then we configure the web security
     //@formatter:off
-    http
+    return http
       // csrf is not used but the same-site property of the auth cookie, see AuthCookieService#createNewOptimizeAuthCookie
       .csrf().disable()
       .httpBasic().disable()
@@ -76,27 +78,36 @@ public class CCSMWebSecurityConfigurerAdapter extends WebSecurityConfigurerAdapt
       .sessionManagement()
         .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
       .and()
-      .authorizeRequests()
-        // ready endpoint is public
-        .antMatchers(createApiPath(READYZ_PATH)).permitAll()
-        // Identity callback request handling is public
-        .antMatchers(createApiPath(AUTHENTICATION_PATH + CALLBACK)).permitAll()
-        // public share resources
-        .antMatchers(EXTERNAL_SUB_PATH + "/",
-                     EXTERNAL_SUB_PATH + "/index*",
-                     EXTERNAL_SUB_PATH + STATIC_RESOURCE_PATH + "/**",
-                     EXTERNAL_SUB_PATH + "/*.js", EXTERNAL_SUB_PATH + "/*.ico").permitAll()
-        // public share related resources (API)
-        .antMatchers(createApiPath(EXTERNAL_SUB_PATH + DEEP_SUB_PATH_ANY)).permitAll()
-        // common public api resources
-        .antMatchers(createApiPath(UI_CONFIGURATION_PATH), createApiPath(LOCALIZATION_PATH)).permitAll()
-        .antMatchers(ACTUATOR_ENDPOINT + "/**").permitAll()
-      .anyRequest().authenticated()
-      .and()
-      .addFilterBefore(ccsmAuthenticationCookieFilter(), AbstractPreAuthenticatedProcessingFilter.class)
+      .authorizeHttpRequests((requests) ->
+        requests
+          // ready endpoint is public
+          .requestMatchers(new AntPathRequestMatcher(createApiPath(READYZ_PATH))).permitAll()
+          // Identity callback request handling is public
+          .requestMatchers(
+            new AntPathRequestMatcher(createApiPath(AUTHENTICATION_PATH + CALLBACK))).permitAll()
+          // public share resources
+          .requestMatchers(
+            new AntPathRequestMatcher(EXTERNAL_SUB_PATH + "/"),
+            new AntPathRequestMatcher(EXTERNAL_SUB_PATH + "/index*"),
+            new AntPathRequestMatcher(EXTERNAL_SUB_PATH + STATIC_RESOURCE_PATH + "/**"),
+            new AntPathRequestMatcher(EXTERNAL_SUB_PATH + "/*.js"),
+            new AntPathRequestMatcher(EXTERNAL_SUB_PATH + "/*.ico"))
+          .permitAll()
+          // public share related resources (API)
+          .requestMatchers(new AntPathRequestMatcher(createApiPath(EXTERNAL_SUB_PATH + DEEP_SUB_PATH_ANY))).permitAll()
+          // common public api resources
+          .requestMatchers(
+            new AntPathRequestMatcher(createApiPath(UI_CONFIGURATION_PATH)),
+            new AntPathRequestMatcher(createApiPath(LOCALIZATION_PATH))
+          ).permitAll()
+          .requestMatchers(new AntPathRequestMatcher(ACTUATOR_ENDPOINT + "/**")).permitAll()
+          .anyRequest().authenticated()
+      )
+        .addFilterBefore(ccsmAuthenticationCookieFilter(http), AbstractPreAuthenticatedProcessingFilter.class)
       .exceptionHandling()
-        .defaultAuthenticationEntryPointFor(new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED), new AntPathRequestMatcher(REST_API_PATH + "/**"))
-        .defaultAuthenticationEntryPointFor(this::redirectToIdentity, new AntPathRequestMatcher("/**"));
+      .defaultAuthenticationEntryPointFor(new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED), new AntPathRequestMatcher(REST_API_PATH + "/**"))
+      .defaultAuthenticationEntryPointFor(this::redirectToIdentity, new AntPathRequestMatcher("/**"))
+      .and().build();
     //@formatter:on
   }
 

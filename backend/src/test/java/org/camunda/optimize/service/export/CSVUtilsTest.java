@@ -45,7 +45,7 @@ public class CSVUtilsTest {
     List<String> expectedVariableColumns = toMap.get(0).getVariables().keySet()
       .stream()
       .map(varName -> VARIABLE_PREFIX + varName)
-      .collect(toList());
+      .toList();
     List<String> expectedDtoFieldColumns = extractAllProcessInstanceDtoFieldKeys();
 
     // when
@@ -233,11 +233,11 @@ public class CSVUtilsTest {
     List<String> expectedInputVariableColumns = toMap.get(0).getInputVariables().keySet()
       .stream()
       .map(varName -> INPUT_PREFIX + varName)
-      .collect(toList());
+      .toList();
     List<String> expectedOutputVariableColumns = toMap.get(0).getOutputVariables().keySet()
       .stream()
       .map(varName -> OUTPUT_PREFIX + varName)
-      .collect(toList());
+      .toList();
     List<String> expectedDtoFieldColumns = extractAllDecisionInstanceDtoFieldKeys();
 
     // when

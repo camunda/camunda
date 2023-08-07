@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.dto.optimize.query.event.sequence;
 
+import jakarta.validation.constraints.Size;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -14,7 +15,6 @@ import lombok.NonNull;
 import org.camunda.optimize.dto.optimize.query.event.process.EventMappingDto;
 import org.camunda.optimize.dto.optimize.query.event.process.source.EventSourceEntryDto;
 
-import javax.validation.constraints.Size;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;

@@ -10,9 +10,9 @@ import org.camunda.optimize.dto.optimize.query.security.CredentialsRequestDto;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
-import javax.ws.rs.client.Entity;
-import javax.ws.rs.core.HttpHeaders;
-import javax.ws.rs.core.Response;
+import jakarta.ws.rs.client.Entity;
+import jakarta.ws.rs.core.HttpHeaders;
+import jakarta.ws.rs.core.Response;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.rest.RestTestConstants.DEFAULT_PASSWORD;

@@ -14,7 +14,7 @@ import org.camunda.optimize.service.es.reader.OnboardingStateReader;
 import org.camunda.optimize.service.es.writer.OnboardingStateWriter;
 import org.springframework.stereotype.Component;
 
-import javax.ws.rs.NotFoundException;
+import jakarta.ws.rs.NotFoundException;
 import java.util.Optional;
 import java.util.Set;
 

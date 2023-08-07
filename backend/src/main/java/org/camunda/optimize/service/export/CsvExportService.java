@@ -15,7 +15,7 @@ import org.camunda.optimize.service.es.report.ReportEvaluationInfo;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.springframework.stereotype.Component;
 
-import javax.ws.rs.NotFoundException;
+import jakarta.ws.rs.NotFoundException;
 import java.time.ZoneId;
 import java.util.Arrays;
 import java.util.List;

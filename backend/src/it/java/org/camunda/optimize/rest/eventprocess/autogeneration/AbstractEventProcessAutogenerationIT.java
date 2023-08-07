@@ -41,7 +41,7 @@ import org.camunda.optimize.service.util.EventDtoBuilderUtil;
 import org.camunda.optimize.service.util.IdGenerator;
 import org.camunda.optimize.test.optimize.EventProcessClient;
 
-import javax.ws.rs.core.Response;
+import jakarta.ws.rs.core.Response;
 import java.time.Instant;
 import java.util.Collection;
 import java.util.Collections;

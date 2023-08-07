@@ -6,11 +6,11 @@
 package org.camunda.optimize.dto.optimize.rest.sorting;
 
 import com.google.common.collect.ImmutableMap;
+import jakarta.ws.rs.BadRequestException;
 import lombok.NoArgsConstructor;
 import org.camunda.optimize.dto.optimize.query.event.sequence.EventCountResponseDto;
 import org.camunda.optimize.dto.optimize.query.sorting.SortOrder;
 
-import javax.ws.rs.BadRequestException;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;

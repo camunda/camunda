@@ -17,7 +17,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.mockserver.integration.ClientAndServer;
 import org.mockserver.model.HttpRequest;
 
-import javax.ws.rs.core.Response;
+import jakarta.ws.rs.core.Response;
 import java.util.ArrayList;
 import java.util.List;
 

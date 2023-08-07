@@ -5,16 +5,15 @@
  */
 package org.camunda.optimize.rest.providers;
 
+import jakarta.ws.rs.core.Context;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.ext.ExceptionMapper;
+import jakarta.ws.rs.ext.Provider;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.rest.ErrorResponseDto;
 import org.camunda.optimize.service.LocalizationService;
 import org.camunda.optimize.service.exceptions.OptimizeImportDescriptionNotValidException;
-
-import javax.ws.rs.core.Context;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
-import javax.ws.rs.ext.ExceptionMapper;
-import javax.ws.rs.ext.Provider;
 
 @Provider
 @Slf4j

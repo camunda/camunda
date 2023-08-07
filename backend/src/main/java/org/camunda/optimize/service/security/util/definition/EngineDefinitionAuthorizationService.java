@@ -313,7 +313,7 @@ public class EngineDefinitionAuthorizationService
         .filter(tenantDto -> tenantIds.contains(tenantDto.getId()))
         .map(tenantDto -> new TenantAndEnginePair(tenantDto.getId(), engineContext.getEngineAlias()))
       )
-      .collect(toList());
+      .toList();
   }
 
   @Value

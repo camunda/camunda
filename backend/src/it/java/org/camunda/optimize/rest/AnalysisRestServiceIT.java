@@ -15,7 +15,7 @@ import org.camunda.optimize.dto.optimize.query.event.process.FlowNodeInstanceDto
 import org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex;
 import org.junit.jupiter.api.Test;
 
-import javax.ws.rs.core.Response;
+import jakarta.ws.rs.core.Response;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;

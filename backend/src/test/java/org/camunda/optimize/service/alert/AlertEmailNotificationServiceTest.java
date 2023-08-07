@@ -27,9 +27,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.servlet.view.freemarker.FreeMarkerConfigurer;
 
-import javax.mail.Message;
-import javax.mail.MessagingException;
-import javax.mail.internet.MimeMessage;
+import jakarta.mail.Message;
+import jakarta.mail.MessagingException;
+import jakarta.mail.internet.MimeMessage;
 import java.security.Security;
 import java.util.List;
 import java.util.stream.Stream;

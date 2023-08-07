@@ -36,14 +36,14 @@ import org.mockserver.model.HttpRequest;
 import org.mockserver.verify.VerificationTimes;
 import org.slf4j.event.Level;
 
-import javax.ws.rs.core.Response;
+import jakarta.ws.rs.core.Response;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
 import static java.util.Arrays.asList;
-import static javax.ws.rs.HttpMethod.POST;
+import static jakarta.ws.rs.HttpMethod.POST;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.dto.optimize.DefinitionType.DECISION;
 import static org.camunda.optimize.dto.optimize.DefinitionType.PROCESS;

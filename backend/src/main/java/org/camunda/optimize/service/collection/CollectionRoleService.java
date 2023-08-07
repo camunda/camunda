@@ -25,8 +25,8 @@ import org.camunda.optimize.service.security.AuthorizedCollectionService;
 import org.camunda.optimize.service.security.util.definition.DataSourceDefinitionAuthorizationService;
 import org.springframework.stereotype.Component;
 
-import javax.ws.rs.NotAuthorizedException;
-import javax.ws.rs.NotFoundException;
+import jakarta.ws.rs.NotAuthorizedException;
+import jakarta.ws.rs.NotFoundException;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -173,7 +173,7 @@ public class CollectionRoleService {
           log.info("Identity with id {} is present in roles but does not exist anymore.", roleDto.getId());
           return CollectionRoleResponseDto.from(roleDto, new UserDto(roleDto.getIdentity().getId()));
         })
-      ).sorted().collect(toList());
+      ).sorted().toList();
   }
 
 }

@@ -20,7 +20,7 @@ import org.mockserver.client.MockServerClient;
 import org.mockserver.junit.jupiter.MockServerExtension;
 import org.mockserver.junit.jupiter.MockServerSettings;
 
-import javax.mail.internet.MimeMessage;
+import jakarta.mail.internet.MimeMessage;
 import java.util.HashMap;
 import java.util.Map;
 

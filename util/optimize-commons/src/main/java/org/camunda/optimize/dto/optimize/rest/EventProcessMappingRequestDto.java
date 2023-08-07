@@ -15,7 +15,7 @@ import lombok.experimental.FieldNameConstants;
 import org.camunda.optimize.dto.optimize.query.event.process.EventMappingDto;
 import org.camunda.optimize.dto.optimize.query.event.process.source.EventSourceEntryDto;
 
-import javax.validation.Valid;
+import jakarta.validation.Valid;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;

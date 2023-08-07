@@ -5,14 +5,14 @@
  */
 package org.camunda.optimize.dto.optimize.rest.pagination;
 
+import jakarta.ws.rs.DefaultValue;
+import jakarta.ws.rs.QueryParam;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import javax.validation.constraints.Max;
-import javax.validation.constraints.Min;
-import javax.ws.rs.DefaultValue;
-import javax.ws.rs.QueryParam;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.MAX_RESPONSE_SIZE_LIMIT;
 

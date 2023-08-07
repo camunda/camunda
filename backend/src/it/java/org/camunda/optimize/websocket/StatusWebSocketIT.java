@@ -14,10 +14,10 @@ import org.mockserver.integration.ClientAndServer;
 import org.mockserver.model.HttpRequest;
 import org.mockserver.verify.VerificationTimes;
 
-import javax.websocket.ContainerProvider;
-import javax.websocket.DeploymentException;
-import javax.websocket.Session;
-import javax.websocket.WebSocketContainer;
+import jakarta.websocket.ContainerProvider;
+import jakarta.websocket.DeploymentException;
+import jakarta.websocket.Session;
+import jakarta.websocket.WebSocketContainer;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;

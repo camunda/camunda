@@ -22,7 +22,7 @@ import org.mockserver.verify.VerificationTimes;
 import java.util.Map;
 import java.util.stream.Stream;
 
-import static javax.ws.rs.HttpMethod.GET;
+import static jakarta.ws.rs.HttpMethod.GET;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension.DEFAULT_ENGINE_ALIAS;
 import static org.mockserver.model.HttpRequest.request;

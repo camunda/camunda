@@ -12,6 +12,7 @@ import org.camunda.optimize.service.es.writer.ElasticsearchWriterUtil;
 import org.springframework.scheduling.Trigger;
 import org.springframework.scheduling.support.PeriodicTrigger;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
@@ -52,7 +53,7 @@ public abstract class AbstractIndexRolloverService extends AbstractScheduledServ
 
   @Override
   protected Trigger createScheduleTrigger() {
-    return new PeriodicTrigger(getScheduleIntervalInMinutes(), TimeUnit.MINUTES);
+    return new PeriodicTrigger(Duration.ofMinutes(getScheduleIntervalInMinutes()));
   }
 
   protected abstract Set<String> getAliasesToConsiderRolling();

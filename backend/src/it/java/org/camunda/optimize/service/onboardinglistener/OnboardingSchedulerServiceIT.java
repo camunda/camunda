@@ -27,8 +27,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import javax.mail.Message;
-import javax.mail.internet.MimeMessage;
+import jakarta.mail.Message;
+import jakarta.mail.internet.MimeMessage;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;

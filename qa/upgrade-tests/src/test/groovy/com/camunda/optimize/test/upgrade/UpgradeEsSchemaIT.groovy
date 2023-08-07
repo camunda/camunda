@@ -112,7 +112,7 @@ class UpgradeEsSchemaIT extends BaseUpgradeIT {
       }
       new File(getNewOptimizeOutputLogPath()).eachLine { line ->
         // ignore warns about incorrect serializationDataFormat in default processes from ObjectVariableFlatteningService
-        def matcherWarn = line =~ /WARN(?!.*ObjectVariableService - Object variable 'approverGroups'*)/
+        def matcherWarn = line =~ /-WARN(?!.*No appenders present in context)/
         def matcherError = line =~ /ERROR/
         assertThat(matcherWarn.find()).withFailMessage("Startup log contained warn log: %s", line)
           .isFalse()

@@ -103,6 +103,6 @@ public class BusinessKeyImportAdapterPluginIT extends AbstractIT {
     return elasticSearchIntegrationTestExtension.getAllProcessInstances()
       .stream()
       .map(ProcessInstanceDto::getBusinessKey)
-      .collect(toList());
+      .toList();
   }
 }

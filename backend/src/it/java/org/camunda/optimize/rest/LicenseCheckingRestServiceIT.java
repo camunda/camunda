@@ -16,8 +16,8 @@ import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
-import javax.ws.rs.core.GenericType;
-import javax.ws.rs.core.Response;
+import jakarta.ws.rs.core.GenericType;
+import jakarta.ws.rs.core.Response;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.function.Function;

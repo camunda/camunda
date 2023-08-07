@@ -19,7 +19,7 @@ import java.net.http.HttpResponse;
 import java.net.http.HttpResponse.BodyHandlers;
 import java.time.Instant;
 
-import static javax.ws.rs.HttpMethod.POST;
+import static jakarta.ws.rs.HttpMethod.POST;
 
 public class ClockActuatorClient {
   private final HttpClient httpClient = HttpClient.newBuilder().build();

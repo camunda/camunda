@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.rest.pub;
 
+import jakarta.ws.rs.core.Response;
 import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.OptimizeRequestExecutor;
 import org.junit.jupiter.api.BeforeEach;
@@ -14,7 +15,6 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
-import javax.ws.rs.core.Response;
 import java.util.Collections;
 import java.util.function.Supplier;
 import java.util.stream.Stream;

@@ -8,7 +8,7 @@ package org.camunda.optimize.test.optimize;
 import lombok.AllArgsConstructor;
 import org.camunda.optimize.OptimizeRequestExecutor;
 
-import javax.ws.rs.core.Response;
+import jakarta.ws.rs.core.Response;
 import java.util.function.Supplier;
 
 @AllArgsConstructor

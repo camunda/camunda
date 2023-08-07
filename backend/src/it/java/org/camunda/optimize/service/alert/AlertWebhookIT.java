@@ -27,7 +27,7 @@ import org.mockserver.junit.jupiter.MockServerSettings;
 import org.mockserver.matchers.MatchType;
 import org.mockserver.verify.VerificationTimes;
 
-import javax.ws.rs.HttpMethod;
+import jakarta.ws.rs.HttpMethod;
 import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;

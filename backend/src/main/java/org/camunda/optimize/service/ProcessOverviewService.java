@@ -5,6 +5,9 @@
  */
 package org.camunda.optimize.service;
 
+import jakarta.ws.rs.BadRequestException;
+import jakarta.ws.rs.ForbiddenException;
+import jakarta.ws.rs.NotFoundException;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.IdentityDto;
@@ -23,9 +26,6 @@ import org.camunda.optimize.service.identity.AbstractIdentityService;
 import org.camunda.optimize.service.security.util.definition.DataSourceDefinitionAuthorizationService;
 import org.springframework.stereotype.Component;
 
-import javax.ws.rs.BadRequestException;
-import javax.ws.rs.ForbiddenException;
-import javax.ws.rs.NotFoundException;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;

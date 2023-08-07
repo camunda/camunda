@@ -17,7 +17,7 @@ import org.camunda.optimize.test.util.decision.DecisionTypeRef;
 import org.camunda.optimize.test.util.decision.DmnModelGenerator;
 import org.junit.jupiter.api.Test;
 
-import javax.ws.rs.core.Response;
+import jakarta.ws.rs.core.Response;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;

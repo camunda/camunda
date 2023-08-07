@@ -18,8 +18,8 @@ import org.camunda.optimize.service.util.configuration.users.CloudUsersConfigura
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-import javax.annotation.PreDestroy;
-import javax.ws.rs.core.HttpHeaders;
+import jakarta.annotation.PreDestroy;
+import jakarta.ws.rs.core.HttpHeaders;
 import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 

@@ -18,7 +18,7 @@ import org.quartz.JobDetail;
 import org.quartz.Trigger;
 import org.quartz.TriggerKey;
 
-import javax.mail.internet.MimeMessage;
+import jakarta.mail.internet.MimeMessage;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.List;

@@ -33,7 +33,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
-import javax.ws.rs.core.Response;
+import jakarta.ws.rs.core.Response;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Stream;
@@ -377,7 +377,7 @@ public class CollectionScopeAuthorizationIT extends AbstractIT {
       .stream()
       .map(TenantDto::getId)
       .filter(t -> !authorizedTenant.equals(t))
-      .collect(toList());
+      .toList();
 
     // when update the result with masked tenants
     collectionClient.updateCollectionScopeAsKermit(collectionId, scopeEntry.getId(), oneTenantRemoved);
@@ -431,7 +431,7 @@ public class CollectionScopeAuthorizationIT extends AbstractIT {
       .stream()
       .map(TenantDto::getId)
       .filter(t -> !authorizedTenant.equals(t))
-      .collect(toList());
+      .toList();
     assertThat(collectionClient.getReportsForCollection(collectionId)).isNotEmpty();
 
 

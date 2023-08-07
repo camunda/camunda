@@ -5,14 +5,14 @@
  */
 package org.camunda.optimize.rest.security.cloud;
 
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.AllArgsConstructor;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.springframework.security.oauth2.client.web.AuthorizationRequestRepository;
 import org.springframework.security.oauth2.core.endpoint.OAuth2AuthorizationRequest;
 
-import javax.servlet.http.Cookie;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 import java.util.Optional;
 
 /**
@@ -60,12 +60,6 @@ public class HttpCookieOAuth2AuthorizationRequestRepository
     final OAuth2AuthorizationRequest authorizationRequest = loadAuthorizationRequest(request);
     deleteCookie(request, response);
     return authorizationRequest;
-  }
-
-  @Override
-  public OAuth2AuthorizationRequest removeAuthorizationRequest(final HttpServletRequest request) {
-    // we cannot actually remove the authorizationRequest here because we don't have access to the httpServletResponse
-    return this.loadAuthorizationRequest(request);
   }
 
   private static void addCookie(final HttpServletResponse response, final String value, final boolean secure) {

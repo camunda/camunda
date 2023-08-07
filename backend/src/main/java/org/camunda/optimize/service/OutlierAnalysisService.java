@@ -18,7 +18,7 @@ import org.camunda.optimize.service.es.reader.DurationOutliersReader;
 import org.camunda.optimize.service.security.util.definition.DataSourceDefinitionAuthorizationService;
 import org.springframework.stereotype.Component;
 
-import javax.ws.rs.ForbiddenException;
+import jakarta.ws.rs.ForbiddenException;
 import java.util.List;
 import java.util.Map;
 

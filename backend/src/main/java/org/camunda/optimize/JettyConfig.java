@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize;
 
+import jakarta.servlet.DispatcherType;
 import org.camunda.optimize.jetty.NotFoundErrorHandler;
 import org.camunda.optimize.service.exceptions.OptimizeConfigurationException;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
@@ -25,7 +26,7 @@ import org.eclipse.jetty.servlet.DefaultServlet;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
-import org.eclipse.jetty.websocket.servlet.WebSocketServlet;
+import org.eclipse.jetty.websocket.server.JettyWebSocketServlet;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.web.embedded.jetty.JettyServletWebServerFactory;
 import org.springframework.boot.web.servlet.ServletContextInitializer;
@@ -35,7 +36,6 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.env.Environment;
 
-import javax.servlet.DispatcherType;
 import java.net.InetAddress;
 import java.net.URL;
 import java.net.UnknownHostException;
@@ -44,6 +44,7 @@ import java.util.Optional;
 
 import static org.camunda.optimize.jetty.OptimizeResourceConstants.STATUS_WEBSOCKET_PATH;
 import static org.camunda.optimize.service.util.configuration.EnvironmentPropertiesConstants.CONTEXT_PATH;
+import static org.camunda.optimize.service.util.configuration.EnvironmentPropertiesConstants.INTEGRATION_TESTS;
 import static org.eclipse.jetty.servlet.ServletContextHandler.getServletContextHandler;
 
 @Configuration
@@ -90,7 +91,7 @@ public class JettyConfig {
   }
 
   @Bean
-  public ServletRegistrationBean<WebSocketServlet> socketServlet() {
+  public ServletRegistrationBean<JettyWebSocketServlet> socketServlet() {
     return new ServletRegistrationBean<>(new StatusWebSocketServlet(), STATUS_WEBSOCKET_PATH);
   }
 
@@ -106,11 +107,19 @@ public class JettyConfig {
   private ServerConnector initHttpsConnector(ConfigurationService configurationService, String host, Server server) {
     HttpConfiguration https = new HttpConfiguration();
     https.setSendServerVersion(false);
-    https.addCustomizer(new SecureRequestCustomizer(
+    final SecureRequestCustomizer customizer = new SecureRequestCustomizer(
       true,
       configurationService.getSecurityConfiguration().getResponseHeaders().getHttpStrictTransportSecurityMaxAge(),
       getResponseHeadersConfiguration(configurationService).getHttpStrictTransportSecurityIncludeSubdomains()
-    ));
+    );
+
+    // This is necessary otherwise the integration tests SecurityResponseHeadersIT and SecurityCookiesInResponseIT
+    // will fail
+    if (Boolean.parseBoolean(environment.getProperty(INTEGRATION_TESTS))) {
+      customizer.setSniHostCheck(false);
+    }
+
+    https.addCustomizer(customizer);
     https.setSecureScheme("https");
     https.setRequestHeaderSize(configurationService.getMaxRequestHeaderSizeInBytes());
     SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
@@ -171,12 +180,11 @@ public class JettyConfig {
 
   private void addGzipHandler(ServletContextHandler context) {
     GzipHandler gzipHandler = new GzipHandler();
-    gzipHandler.setCompressionLevel(9);
     gzipHandler.setMinGzipSize(23);
     gzipHandler.setIncludedMimeTypes(COMPRESSED_MIME_TYPES);
     gzipHandler.setDispatcherTypes(EnumSet.of(DispatcherType.REQUEST));
     gzipHandler.setIncludedPaths("/*");
-    context.setGzipHandler(gzipHandler);
+    context.insertHandler(gzipHandler);
   }
 
   public static ResponseHeadersConfiguration getResponseHeadersConfiguration(final ConfigurationService configurationService) {

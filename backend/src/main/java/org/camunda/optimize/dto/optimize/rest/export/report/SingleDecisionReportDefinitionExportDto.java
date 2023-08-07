@@ -14,7 +14,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDeci
 import org.camunda.optimize.dto.optimize.rest.export.ExportEntityType;
 import org.camunda.optimize.service.es.schema.index.report.SingleDecisionReportIndex;
 
-import javax.validation.constraints.NotNull;
+import jakarta.validation.constraints.NotNull;
 
 import static org.camunda.optimize.dto.optimize.rest.export.ExportEntityType.SINGLE_DECISION_REPORT;
 

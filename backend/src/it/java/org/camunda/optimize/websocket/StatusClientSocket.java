@@ -11,8 +11,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.query.status.EngineStatusDto;
 import org.camunda.optimize.dto.optimize.query.status.StatusResponseDto;
 
-import javax.websocket.ClientEndpoint;
-import javax.websocket.OnMessage;
+import jakarta.websocket.ClientEndpoint;
+import jakarta.websocket.OnMessage;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 

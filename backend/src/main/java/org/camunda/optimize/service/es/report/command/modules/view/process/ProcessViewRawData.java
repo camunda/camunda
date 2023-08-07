@@ -55,13 +55,11 @@ import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import static java.util.stream.Collectors.toList;
 import static org.camunda.optimize.dto.optimize.query.report.single.configuration.TableColumnDto.VARIABLE_PREFIX;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.FLOW_NODE_INSTANCES;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.VARIABLES;
 import static org.camunda.optimize.service.es.writer.ElasticsearchWriterUtil.createDefaultScript;
 import static org.camunda.optimize.service.es.writer.ElasticsearchWriterUtil.createDefaultScriptWithSpecificDtoParams;
-import static org.camunda.optimize.service.es.writer.ElasticsearchWriterUtil.createDefaultScript;
 import static org.camunda.optimize.service.export.CSVUtils.extractAllProcessInstanceDtoFieldKeys;
 import static org.camunda.optimize.service.util.ProcessVariableHelper.getNestedVariableNameField;
 import static org.camunda.optimize.service.util.ProcessVariableHelper.getNestedVariableValueField;
@@ -317,7 +315,7 @@ public class ProcessViewRawData extends ProcessViewPart {
       .stream()
       .flatMap(rawDataProcessInstanceDto -> rawDataProcessInstanceDto.getVariables().keySet().stream())
       .map(varKey -> VARIABLE_PREFIX + varKey)
-      .collect(toList());
+      .toList();
 
     TableColumnDto tableColumns = context.getReportConfiguration().getTableColumns();
     tableColumns.addNewAndRemoveUnexpectedVariableColumns(variableNames);

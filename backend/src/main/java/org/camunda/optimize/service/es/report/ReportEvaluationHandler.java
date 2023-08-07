@@ -40,7 +40,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
-import javax.ws.rs.ForbiddenException;
+import jakarta.ws.rs.ForbiddenException;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.EnumMap;

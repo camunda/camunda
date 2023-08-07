@@ -5,6 +5,10 @@
  */
 package org.camunda.optimize.rest.actuator;
 
+import jakarta.annotation.Nullable;
+import jakarta.ws.rs.BadRequestException;
+import jakarta.ws.rs.NotFoundException;
+import jakarta.xml.bind.ValidationException;
 import lombok.RequiredArgsConstructor;
 import org.camunda.optimize.dto.optimize.rest.BackupInfoDto;
 import org.camunda.optimize.dto.optimize.rest.BackupRequestDto;
@@ -32,11 +36,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.ResponseStatus;
 
-import javax.annotation.Nullable;
-import javax.validation.Valid;
-import javax.ws.rs.BadRequestException;
-import javax.ws.rs.NotFoundException;
-import javax.xml.bind.ValidationException;
+import jakarta.validation.Valid;
 import java.util.List;
 import java.util.Optional;
 

@@ -86,7 +86,7 @@ public abstract class AbstractProcessInstanceImportService implements ImportServ
       .filter(instance -> instance.getProcessDefinitionKey() != null)
       .map(this::mapEngineEntityToOptimizeEntity)
       .map(this::applyPlugins)
-      .collect(toList());
+      .toList();
   }
 
   private ProcessInstanceDto applyPlugins(final ProcessInstanceDto processInstanceDto) {

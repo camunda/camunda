@@ -67,7 +67,7 @@ import org.camunda.optimize.util.SuperUserType;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.params.provider.Arguments;
 
-import javax.ws.rs.core.Response;
+import jakarta.ws.rs.core.Response;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;

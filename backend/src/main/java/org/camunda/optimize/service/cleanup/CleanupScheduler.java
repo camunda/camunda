@@ -16,8 +16,8 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.scheduling.support.CronTrigger;
 import org.springframework.stereotype.Component;
 
-import javax.annotation.PostConstruct;
-import javax.annotation.PreDestroy;
+import jakarta.annotation.PostConstruct;
+import jakarta.annotation.PreDestroy;
 import java.time.OffsetDateTime;
 import java.util.List;
 

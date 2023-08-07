@@ -5,6 +5,8 @@
  */
 package org.camunda.optimize.service.onboardinglistener;
 
+import jakarta.annotation.PostConstruct;
+import jakarta.annotation.PreDestroy;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.RequiredArgsConstructor;
@@ -22,11 +24,9 @@ import org.springframework.scheduling.Trigger;
 import org.springframework.scheduling.support.PeriodicTrigger;
 import org.springframework.stereotype.Component;
 
-import javax.annotation.PostConstruct;
-import javax.annotation.PreDestroy;
+import java.time.Duration;
 import java.util.HashSet;
 import java.util.Set;
-import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 
 @EqualsAndHashCode(callSuper = true)
@@ -113,7 +113,7 @@ public class OnboardingSchedulerService extends AbstractScheduledService impleme
 
   @Override
   protected Trigger createScheduleTrigger() {
-    return new PeriodicTrigger(getIntervalToCheckForOnboardingDataInSeconds(), TimeUnit.SECONDS);
+    return new PeriodicTrigger(Duration.ofSeconds(getIntervalToCheckForOnboardingDataInSeconds()));
   }
 
   private boolean processHasCompletedInstance(final String processToBeEvaluated) {

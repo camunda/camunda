@@ -6,10 +6,9 @@
 package org.camunda.optimize.testplugin.security.authentication.util1;
 
 
+import jakarta.servlet.http.HttpServletRequest;
 import org.camunda.optimize.plugin.security.authentication.AuthenticationExtractor;
 import org.camunda.optimize.plugin.security.authentication.AuthenticationResult;
-
-import javax.servlet.http.HttpServletRequest;
 
 public class AutomaticallySignInAuthenticationExtractorPlugin implements AuthenticationExtractor {
 

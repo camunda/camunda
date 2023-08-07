@@ -5,6 +5,8 @@
  */
 package org.camunda.optimize.service.security;
 
+import jakarta.annotation.PostConstruct;
+import jakarta.annotation.PreDestroy;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.query.TerminatedUserSessionDto;
@@ -17,10 +19,8 @@ import org.springframework.scheduling.Trigger;
 import org.springframework.scheduling.support.PeriodicTrigger;
 import org.springframework.stereotype.Component;
 
-import javax.annotation.PostConstruct;
-import javax.annotation.PreDestroy;
+import java.time.Duration;
 import java.time.temporal.ChronoUnit;
-import java.util.concurrent.TimeUnit;
 
 @RequiredArgsConstructor
 @Component
@@ -44,7 +44,7 @@ public class TerminatedSessionService extends AbstractScheduledService {
 
   @Override
   protected Trigger createScheduleTrigger() {
-    return new PeriodicTrigger(CLEANUP_INTERVAL_HOURS, TimeUnit.HOURS);
+    return new PeriodicTrigger(Duration.ofHours(CLEANUP_INTERVAL_HOURS));
   }
 
   @Override

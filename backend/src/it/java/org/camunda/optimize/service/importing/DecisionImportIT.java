@@ -39,7 +39,7 @@ import org.mockserver.model.HttpResponse;
 import org.mockserver.verify.VerificationTimes;
 import org.slf4j.event.Level;
 
-import javax.ws.rs.core.Response;
+import jakarta.ws.rs.core.Response;
 import java.io.IOException;
 import java.time.OffsetDateTime;
 import java.util.Arrays;
@@ -49,8 +49,8 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static javax.ws.rs.HttpMethod.GET;
-import static javax.ws.rs.HttpMethod.POST;
+import static jakarta.ws.rs.HttpMethod.GET;
+import static jakarta.ws.rs.HttpMethod.POST;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.groups.Tuple.tuple;
 import static org.camunda.optimize.service.es.schema.index.index.TimestampBasedImportIndex.ES_TYPE_INDEX_REFERS_TO;

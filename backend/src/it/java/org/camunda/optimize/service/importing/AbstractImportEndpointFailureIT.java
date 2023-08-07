@@ -39,7 +39,7 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 
-import static javax.ws.rs.HttpMethod.GET;
+import static jakarta.ws.rs.HttpMethod.GET;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.dto.optimize.ProcessInstanceConstants.SUSPENDED_STATE;
 import static org.camunda.optimize.service.util.configuration.EnvironmentPropertiesConstants.INTEGRATION_TESTS;

@@ -6,13 +6,13 @@
 package org.camunda.optimize.dto.optimize.query.report.single;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import jakarta.validation.constraints.NotEmpty;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.FieldNameConstants;
 import org.camunda.optimize.dto.optimize.ReportConstants;
 
-import javax.validation.constraints.NotEmpty;
 import java.util.List;
 import java.util.UUID;
 

@@ -125,7 +125,7 @@ public class ModelElementFilterQueryUtil {
     final List<ProcessFilterDto<?>> viewLevelFiltersForInstanceMatch = filters.stream()
       .filter(filter -> FilterApplicationLevel.VIEW.equals(filter.getFilterLevel()))
       .filter(filter -> FLOW_NODE_VIEW_LEVEL_FILTERS.contains(filter.getClass()))
-      .collect(toList());
+      .toList();
     if (!viewLevelFiltersForInstanceMatch.isEmpty()) {
       BoolQueryBuilder viewFilterInstanceQuery = createFlowNodeTypeFilterQuery(filterContext.isUserTaskReport());
       viewLevelFiltersForInstanceMatch

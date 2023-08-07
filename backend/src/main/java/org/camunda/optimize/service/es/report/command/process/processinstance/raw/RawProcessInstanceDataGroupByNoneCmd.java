@@ -59,7 +59,7 @@ public class RawProcessInstanceDataGroupByNoneCmd extends ProcessCmd<List<RawDat
       .stream()
       .flatMap(rawDataProcessInstanceDto -> rawDataProcessInstanceDto.getVariables().keySet().stream())
       .map(varKey -> VARIABLE_PREFIX + varKey)
-      .collect(toList());
+      .toList();
 
     TableColumnDto tableColumns = reportEvaluationContext.getReportDefinition()
       .getData()

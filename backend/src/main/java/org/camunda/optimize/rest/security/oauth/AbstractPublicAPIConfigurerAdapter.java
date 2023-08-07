@@ -7,10 +7,12 @@ package org.camunda.optimize.rest.security.oauth;
 
 import lombok.Getter;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
+import org.springframework.context.annotation.Bean;
+import org.springframework.core.annotation.Order;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
-import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
+import org.springframework.security.web.SecurityFilterChain;
 
 import java.util.Optional;
 
@@ -18,7 +20,7 @@ import static org.camunda.optimize.jetty.OptimizeResourceConstants.REST_API_PATH
 import static org.camunda.optimize.rest.IngestionRestService.INGESTION_PATH;
 import static org.camunda.optimize.rest.IngestionRestService.VARIABLE_SUB_PATH;
 
-public abstract class AbstractPublicAPIConfigurerAdapter extends WebSecurityConfigurerAdapter {
+public abstract class AbstractPublicAPIConfigurerAdapter {
   protected static final String PUBLIC_API_PATH = createApiPath("/public/**");
   protected final ConfigurationService configurationService;
   @Getter
@@ -31,12 +33,12 @@ public abstract class AbstractPublicAPIConfigurerAdapter extends WebSecurityConf
 
   protected abstract JwtDecoder jwtDecoder();
 
-  @Override
-  public void configure(HttpSecurity http) throws Exception {
-    http
-      .requestMatchers()
+  @Bean
+  @Order(1)
+  public SecurityFilterChain configurePublicApi(HttpSecurity http) throws Exception {
+    return http.securityMatchers()
       // Public APIs allowed in all modes (SaaS, CCSM and Platform)
-      .antMatchers(PUBLIC_API_PATH, createApiPath(INGESTION_PATH, VARIABLE_SUB_PATH))
+      .requestMatchers(PUBLIC_API_PATH, createApiPath(INGESTION_PATH, VARIABLE_SUB_PATH))
       .and()
       // since these calls will not be used in a browser, we can disable csrf
       .csrf().disable()
@@ -45,12 +47,13 @@ public abstract class AbstractPublicAPIConfigurerAdapter extends WebSecurityConf
       .sessionManagement()
       .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
       .and()
-      .authorizeRequests()
+      .authorizeHttpRequests()
       // everything requires authentication
       .anyRequest().authenticated()
       .and()
       .oauth2ResourceServer()
-      .jwt(jwtConfigurer -> jwtConfigurer.decoder(jwtDecoder()));
+      .jwt(jwtConfigurer -> jwtConfigurer.decoder(jwtDecoder()))
+      .and().build();
   }
 
   private String readJwtSetUriFromConfig() {

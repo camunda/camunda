@@ -5,12 +5,11 @@
  */
 package org.camunda.optimize.dto.optimize.rest.sorting;
 
+import jakarta.ws.rs.BadRequestException;
 import lombok.NoArgsConstructor;
 import org.camunda.optimize.dto.optimize.query.processoverview.ProcessOverviewResponseDto;
 import org.camunda.optimize.dto.optimize.query.sorting.SortOrder;
-import org.springframework.stereotype.Component;
 
-import javax.ws.rs.BadRequestException;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
@@ -51,8 +50,8 @@ public class ProcessOverviewSorter extends Sorter<ProcessOverviewResponseDto> {
         processOverviewSorterComparator = sortComparators.get(sortBy.toLowerCase())
           .thenComparing(DEFAULT_PROCESS_OVERVIEW_COMPARATOR);
         if (sortOrderOpt.isPresent() && SortOrder.DESC.equals(sortOrderOpt.get())) {
-            processOverviewSorterComparator = processOverviewSorterComparator.reversed();
-          }
+          processOverviewSorterComparator = processOverviewSorterComparator.reversed();
+        }
       }
       processOverviewResponseDtos.sort(processOverviewSorterComparator);
       return processOverviewResponseDtos;

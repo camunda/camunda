@@ -8,8 +8,8 @@ package org.camunda.optimize.dto.optimize.rest.analysis;
 import lombok.NoArgsConstructor;
 import org.camunda.optimize.dto.optimize.query.analysis.ProcessDefinitionParametersDto;
 
-import javax.ws.rs.DefaultValue;
-import javax.ws.rs.QueryParam;
+import jakarta.ws.rs.DefaultValue;
+import jakarta.ws.rs.QueryParam;
 import java.util.List;
 
 @NoArgsConstructor

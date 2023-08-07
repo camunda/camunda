@@ -9,7 +9,7 @@ import lombok.AllArgsConstructor;
 import org.camunda.optimize.OptimizeRequestExecutor;
 import org.camunda.optimize.dto.optimize.query.status.StatusResponseDto;
 
-import javax.ws.rs.core.Response;
+import jakarta.ws.rs.core.Response;
 import java.util.function.Supplier;
 
 @AllArgsConstructor

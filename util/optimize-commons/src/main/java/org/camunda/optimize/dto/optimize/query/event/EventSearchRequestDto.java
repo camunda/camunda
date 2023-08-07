@@ -6,6 +6,9 @@
 package org.camunda.optimize.dto.optimize.query.event;
 
 import com.google.common.collect.ImmutableList;
+import jakarta.ws.rs.BadRequestException;
+import jakarta.ws.rs.BeanParam;
+import jakarta.ws.rs.QueryParam;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -15,11 +18,8 @@ import org.camunda.optimize.dto.optimize.query.sorting.SortOrder;
 import org.camunda.optimize.dto.optimize.rest.pagination.PaginationRequestDto;
 import org.camunda.optimize.dto.optimize.rest.sorting.SortRequestDto;
 
-import javax.validation.Valid;
-import javax.validation.constraints.NotNull;
-import javax.ws.rs.BadRequestException;
-import javax.ws.rs.BeanParam;
-import javax.ws.rs.QueryParam;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotNull;
 import java.util.List;
 import java.util.Optional;
 

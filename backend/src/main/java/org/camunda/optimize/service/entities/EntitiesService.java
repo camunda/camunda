@@ -5,6 +5,8 @@
  */
 package org.camunda.optimize.service.entities;
 
+import jakarta.ws.rs.NotAuthorizedException;
+import jakarta.ws.rs.NotFoundException;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionRestDto;
@@ -27,8 +29,6 @@ import org.camunda.optimize.service.security.AuthorizedCollectionService;
 import org.camunda.optimize.service.security.AuthorizedEntitiesService;
 import org.springframework.stereotype.Component;
 
-import javax.ws.rs.NotAuthorizedException;
-import javax.ws.rs.NotFoundException;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;

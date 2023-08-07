@@ -23,8 +23,6 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 
-import static java.util.stream.Collectors.toList;
-
 @Component
 public class TenantService implements ConfigurationReloadable {
   public static final TenantDto TENANT_NOT_DEFINED = new TenantDto(null, "Not defined", null);
@@ -62,7 +60,7 @@ public class TenantService implements ConfigurationReloadable {
   }
 
   public List<String> getTenantIdsForUser(final String userId) {
-    return getTenantsForUser(userId).stream().map(TenantDto::getId).collect(toList());
+    return getTenantsForUser(userId).stream().map(TenantDto::getId).toList();
   }
 
   public List<TenantDto> getTenantsForUser(final String userId) {
@@ -73,7 +71,7 @@ public class TenantService implements ConfigurationReloadable {
         tenantDto.getId(),
         tenantDto.getEngine()
       ))
-      .collect(toList());
+      .toList();
   }
 
   public List<TenantDto> getTenantsForUserByEngine(final String userId, final String engineAlias) {
@@ -84,13 +82,13 @@ public class TenantService implements ConfigurationReloadable {
         tenantDto.getId(),
         engineAlias
       ))
-      .collect(toList());
+      .toList();
   }
 
   public List<TenantDto> getTenantsByEngine(final String engineAlias) {
     return getTenants().stream()
       .filter(tenantDto -> tenantDto.equals(TENANT_NOT_DEFINED) || tenantDto.getEngine().equals(engineAlias))
-      .collect(toList());
+      .toList();
   }
 
   public List<TenantDto> getTenants() {

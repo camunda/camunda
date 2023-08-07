@@ -132,7 +132,7 @@ public class ExternalProcessVariableRolloverIT extends AbstractIT {
   private void ingestExternalVariables() {
     final List<ExternalProcessVariableRequestDto> variables = IntStream.range(0, NUMBER_OF_VARIABLES_IN_BATCH)
       .mapToObj(i -> ingestionClient.createPrimitiveExternalVariable().setId("id" + i))
-      .collect(toList());
+      .toList();
     ingestionClient.ingestVariables(variables);
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
   }
@@ -166,14 +166,14 @@ public class ExternalProcessVariableRolloverIT extends AbstractIT {
     return indexNameToAliasMap.keySet()
       .stream()
       .filter(index -> indexNameToAliasMap.get(index).stream().anyMatch(AliasMetadata::writeIndex))
-      .collect(toList());
+      .toList();
   }
 
   private List<String> extractIndicesWithReadOnlyAlias(final Map<String, Set<AliasMetadata>> indexNameToAliasMap) {
     return indexNameToAliasMap.keySet()
       .stream()
       .filter(index -> indexNameToAliasMap.get(index).stream().anyMatch(alias -> !alias.writeIndex()))
-      .collect(toList());
+      .toList();
   }
 
   private String getExpectedIndexNameBeforeRollover() {

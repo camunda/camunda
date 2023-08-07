@@ -56,7 +56,7 @@ import org.mockserver.matchers.Times;
 import org.mockserver.model.HttpRequest;
 import org.mockserver.verify.VerificationTimes;
 
-import javax.ws.rs.core.Response;
+import jakarta.ws.rs.core.Response;
 import java.io.IOException;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
@@ -69,8 +69,8 @@ import java.util.stream.Stream;
 
 import static java.util.Collections.singletonList;
 import static java.util.stream.Collectors.toSet;
-import static javax.ws.rs.HttpMethod.POST;
-import static javax.ws.rs.HttpMethod.PUT;
+import static jakarta.ws.rs.HttpMethod.POST;
+import static jakarta.ws.rs.HttpMethod.PUT;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.dto.optimize.DefinitionType.DECISION;
 import static org.camunda.optimize.dto.optimize.DefinitionType.PROCESS;
