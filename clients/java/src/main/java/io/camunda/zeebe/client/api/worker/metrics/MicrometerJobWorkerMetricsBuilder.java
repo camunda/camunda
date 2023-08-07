@@ -18,6 +18,7 @@ package io.camunda.zeebe.client.api.worker.metrics;
 import io.camunda.zeebe.client.api.worker.JobWorkerMetrics;
 import io.micrometer.common.docs.KeyName;
 import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Tag;
 
 /**
  * Builder interface for the {@link JobWorkerMetrics} backed by Micrometer. This is an optional
@@ -56,7 +57,7 @@ public interface MicrometerJobWorkerMetricsBuilder {
    * @param tags the tags to apply to all metrics
    * @return this builder for chaining
    */
-  MicrometerJobWorkerMetricsBuilder withTags(final String... tags);
+  MicrometerJobWorkerMetricsBuilder withTags(final Iterable<Tag> tags);
 
   JobWorkerMetrics build();
 

@@ -20,13 +20,13 @@ import io.camunda.zeebe.client.api.worker.metrics.MicrometerJobWorkerMetricsBuil
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Metrics;
+import io.micrometer.core.instrument.Tag;
+import io.micrometer.core.instrument.Tags;
 
 public final class MicrometerJobWorkerMetricsBuilderImpl
     implements MicrometerJobWorkerMetricsBuilder {
-  private static final String[] EMPTY_TAGS_ARRAY = new String[0];
-
   private MeterRegistry meterRegistry = Metrics.globalRegistry;
-  private String[] tags = EMPTY_TAGS_ARRAY;
+  private Iterable<Tag> tags = Tags.empty();
 
   @Override
   public MicrometerJobWorkerMetricsBuilder withMeterRegistry(final MeterRegistry meterRegistry) {
@@ -35,8 +35,8 @@ public final class MicrometerJobWorkerMetricsBuilderImpl
   }
 
   @Override
-  public MicrometerJobWorkerMetricsBuilder withTags(final String... tags) {
-    this.tags = tags == null ? EMPTY_TAGS_ARRAY : tags;
+  public MicrometerJobWorkerMetricsBuilder withTags(final Iterable<Tag> tags) {
+    this.tags = tags == null ? Tags.empty() : tags;
     return this;
   }
 
