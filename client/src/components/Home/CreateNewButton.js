@@ -6,8 +6,9 @@
  */
 
 import React, {useEffect, useState} from 'react';
+import {Link} from 'react-router-dom';
+import {MenuButton, MenuItem} from '@carbon/react';
 
-import {Dropdown} from 'components';
 import {t} from 'translation';
 import {getOptimizeProfile} from 'config';
 
@@ -17,8 +18,7 @@ export default function CreateNewButton({
   createDashboard,
   collection,
   importEntity,
-  user,
-  primary,
+  kind = 'tertiary',
 }) {
   const [optimizeProfile, setOptimizeProfile] = useState();
 
@@ -29,36 +29,30 @@ export default function CreateNewButton({
   }, []);
 
   return (
-    <Dropdown
-      main
-      primary={primary}
+    <MenuButton
+      size="md"
+      kind={kind}
       label={t('home.createBtn.default')}
       className="CreateNewButton"
     >
       {!collection && (
-        <Dropdown.Option onClick={createCollection}>
-          {t('home.createBtn.collection')}
-        </Dropdown.Option>
+        <MenuItem onClick={createCollection} label={t('home.createBtn.collection')} />
       )}
-      <Dropdown.Option onClick={createDashboard}>{t('home.createBtn.dashboard')}</Dropdown.Option>
+      <MenuItem onClick={createDashboard} label={t('home.createBtn.dashboard')} />
       {optimizeProfile === 'platform' ? (
-        <Dropdown.Submenu label={t('home.createBtn.report.default')} openToLeft>
-          <Dropdown.Option onClick={createProcessReport}>
-            {t('home.createBtn.report.process')}
-          </Dropdown.Option>
-          <Dropdown.Option link="report/new-combined/edit">
-            {t('home.createBtn.report.combined')}
-          </Dropdown.Option>
-          <Dropdown.Option link="report/new-decision/edit">
-            {t('home.createBtn.report.decision')}
-          </Dropdown.Option>
-        </Dropdown.Submenu>
+        <MenuItem label={t('home.createBtn.report.default')}>
+          <MenuItem onClick={createProcessReport} label={t('home.createBtn.report.process')} />
+          <Link to="report/new-combined/edit">
+            <MenuItem label={t('home.createBtn.report.combined')} />
+          </Link>
+          <Link to="report/new-decision/edit">
+            <MenuItem label={t('home.createBtn.report.decision')} />
+          </Link>
+        </MenuItem>
       ) : (
-        <Dropdown.Option onClick={createProcessReport}>
-          {t('home.createBtn.report.default')}
-        </Dropdown.Option>
+        <MenuItem onClick={createProcessReport} label={t('home.createBtn.report.default')} />
       )}
-      <Dropdown.Option onClick={importEntity}>{t('common.importReportDashboard')}</Dropdown.Option>
-    </Dropdown>
+      <MenuItem onClick={importEntity} label={t('common.importReportDashboard')} />
+    </MenuButton>
   );
 }

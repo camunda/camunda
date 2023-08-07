@@ -8,6 +8,7 @@
 import React, {useCallback, useEffect, useRef, useState} from 'react';
 import {Redirect} from 'react-router-dom';
 import {parseISO} from 'date-fns';
+import {Button} from '@carbon/react';
 
 import {format} from 'dates';
 import {withErrorHandling, withUser} from 'HOC';
@@ -20,7 +21,6 @@ import {
   ReportTemplateModal,
   DashboardTemplateModal,
   EmptyState,
-  Button,
   LoadingIndicator,
 } from 'components';
 import {formatters, createEntity, updateEntity, checkDeleteConflict, loadEntities} from 'services';
@@ -122,7 +122,7 @@ export function Home({mightFail, user}) {
             icon="dashboard-optimize-accent"
             actions={
               <>
-                <Button main primary onClick={() => setCreatingDashboard(true)}>
+                <Button size="md" onClick={() => setCreatingDashboard(true)}>
                   {t('dashboard.createNew')}
                 </Button>
                 <CreateNewButton
@@ -141,7 +141,7 @@ export function Home({mightFail, user}) {
             action={(bulkActive) =>
               isEditor && (
                 <CreateNewButton
-                  primary={!bulkActive}
+                  kind={bulkActive ? 'tertiary' : 'primary'}
                   createCollection={startCreatingCollection}
                   createProcessReport={() => setCreatingProcessReport(true)}
                   createDashboard={() => setCreatingDashboard(true)}

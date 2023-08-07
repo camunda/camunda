@@ -202,7 +202,7 @@ export class Collection extends React.Component {
               action={(bulkActive) =>
                 hasEditRights && (
                   <CreateNewButton
-                    primary={!bulkActive}
+                    kind={bulkActive ? 'tertiary' : 'primary'}
                     collection={collection.id}
                     createProcessReport={() => this.setState({creatingProcessReport: true})}
                     createDashboard={() => this.setState({creatingDashboard: true})}

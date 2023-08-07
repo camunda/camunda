@@ -7,8 +7,8 @@
 
 import React, {runLastEffect} from 'react';
 import {shallow} from 'enzyme';
+import {MenuItem} from '@carbon/react';
 
-import {Dropdown} from 'components';
 import {getOptimizeProfile} from 'config';
 
 import CreateNewButton from './CreateNewButton';
@@ -40,7 +40,7 @@ it('should call the createCollection prop', () => {
   const spy = jest.fn();
   const node = shallow(<CreateNewButton createCollection={spy} />);
 
-  node.find(Dropdown.Option).at(0).simulate('click');
+  node.find(MenuItem).at(0).simulate('click');
 
   expect(spy).toHaveBeenCalled();
 });
@@ -51,7 +51,7 @@ it('should call the createProcessReport prop', async () => {
 
   await runLastEffect();
 
-  node.find(Dropdown.Submenu).find(Dropdown.Option).first().simulate('click');
+  node.find({label: 'Report'}).childAt(0).simulate('click');
 
   expect(spy).toHaveBeenCalled();
 });
@@ -60,7 +60,7 @@ it('should call the createDashboard prop', () => {
   const spy = jest.fn();
   const node = shallow(<CreateNewButton createDashboard={spy} />);
 
-  node.find(Dropdown.Option).at(1).simulate('click');
+  node.find(MenuItem).at(1).simulate('click');
 
   expect(spy).toHaveBeenCalled();
 });
@@ -71,9 +71,9 @@ it('should include an Import option if the user has entity_editor authorization'
     <CreateNewButton importEntity={spy} user={{authorizations: ['entity_editor']}} />
   );
 
-  const importOption = node.find(Dropdown.Option).last();
+  const importOption = node.find(MenuItem).last();
 
-  expect(importOption).toIncludeText('Import');
+  expect(importOption.prop('label')).toMatch('Import');
 
   importOption.simulate('click');
   expect(spy).toHaveBeenCalled();
