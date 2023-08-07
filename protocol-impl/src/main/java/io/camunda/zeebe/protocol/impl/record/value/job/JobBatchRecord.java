@@ -92,6 +92,7 @@ public final class JobBatchRecord extends UnifiedRecordValue implements JobBatch
     return timeoutProp.getValue();
   }
 
+  @Override
   public int getMaxJobsToActivate() {
     return maxJobsToActivateProp.getValue();
   }
@@ -123,6 +124,12 @@ public final class JobBatchRecord extends UnifiedRecordValue implements JobBatch
   @Override
   public boolean isTruncated() {
     return truncatedProp.getValue();
+  }
+
+  @Override
+  public List<String> getTenantIds() {
+    // todo(#13318): replace dummy implementation
+    return List.of();
   }
 
   public JobBatchRecord setTruncated(final boolean truncated) {

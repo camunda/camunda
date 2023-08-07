@@ -65,4 +65,14 @@ public interface JobBatchRecordValue extends RecordValue {
    * @return the broker has more JobRecords that couldn't fit in this batch
    */
   boolean isTruncated();
+
+  /**
+   * Since a job batch contains many jobs, it is possible that the jobs belong to different tenants.
+   *
+   * <p>This can be useful when requesting jobs for multiple tenants at once. Each of the activated
+   * jobs will be owned by the tenant that owns the corresponding process instance.
+   *
+   * @return the identifiers of the tenants that this job batch may contain jobs for
+   */
+  List<String> getTenantIds();
 }
