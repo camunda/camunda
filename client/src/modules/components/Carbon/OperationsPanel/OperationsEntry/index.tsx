@@ -76,7 +76,7 @@ const OperationsEntry: React.FC<Props> = ({operation}) => {
           <Edit size={16} data-testid="operation-edit-icon" />
         )}
       </Header>
-      <div>{id}</div>
+      <div data-testid="operation-id">{id}</div>
       {!isComplete && <ProgressBar label="" value={fakeProgressPercentage} />}
       <Details>
         {label !== 'Delete' && (

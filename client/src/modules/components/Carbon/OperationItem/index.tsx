@@ -39,6 +39,7 @@ const OperationItem: React.FC<ItemProps> = ({
   size,
 }) => {
   const {icon, testId} = TYPE_DETAILS[type];
+
   return (
     <li>
       <Button
@@ -50,6 +51,7 @@ const OperationItem: React.FC<ItemProps> = ({
         disabled={disabled}
         data-testid={testId}
         title={title}
+        aria-label={title}
         hasIconOnly
         size={size}
       />

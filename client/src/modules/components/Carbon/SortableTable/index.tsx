@@ -156,7 +156,7 @@ const SortableTable: React.FC<Props> = ({
                   onVerticalScrollEndReach={onVerticalScrollEndReach}
                   scrollableContainerRef={scrollableContentRef}
                 >
-                  <tbody aria-live="polite">
+                  <tbody aria-live="polite" data-testid="data-list">
                     {rows.map((row) => {
                       const isSelected = checkIsRowSelected?.(row.id) ?? false;
 

@@ -70,6 +70,7 @@ const CollapsablePanel = forwardRef<HTMLDivElement, Props>(
             <IconButton
               kind="ghost"
               label={`Expand ${label}`}
+              aria-label={`Expand ${label}`}
               align={tooltipAlignment}
               size="sm"
             >
@@ -85,6 +86,7 @@ const CollapsablePanel = forwardRef<HTMLDivElement, Props>(
                 kind="ghost"
                 onClick={onToggle}
                 label={`Collapse ${label}`}
+                aria-label={`Collapse ${label}`}
                 align={tooltipAlignment}
                 size="sm"
               >

@@ -11,9 +11,8 @@ import {
   createSingleInstance,
 } from '../setup-utils';
 import {createOperation} from './api/operations';
-import {wait} from './utils/wait';
 
-async function setup() {
+async function createDemoInstances() {
   await deployProcess(['operationsProcessA.bpmn', 'operationsProcessB.bpmn']);
 
   const [singleOperationInstance, batchOperationInstances] = await Promise.all([
@@ -21,20 +20,18 @@ async function setup() {
     createInstances('operationsProcessB', 1, 10),
   ]);
 
-  await wait();
+  return {singleOperationInstance, batchOperationInstances};
+}
 
+async function createDemoOperations(processInstanceKey: string) {
   await Promise.all(
-    [...new Array(40)].map(() =>
+    [...new Array(50)].map(() =>
       createOperation({
-        id: singleOperationInstance.processInstanceKey,
+        id: processInstanceKey,
         operationType: 'RESOLVE_INCIDENT',
       }),
     ),
   );
-
-  await wait();
-
-  return {singleOperationInstance, batchOperationInstances};
 }
 
-export {setup};
+export {createDemoInstances, createDemoOperations};

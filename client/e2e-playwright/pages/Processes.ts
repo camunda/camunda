@@ -28,6 +28,9 @@ export class Processes {
   readonly processNameFilter: Locator;
   readonly processInstanceKeysFilter: Locator;
   readonly flowNodeFilter: Locator;
+  readonly operationSpinner: Locator;
+  readonly operationIdFilter: Locator;
+  readonly resetFiltersButton: Locator;
 
   constructor(page: Page) {
     this.page = page;
@@ -52,6 +55,14 @@ export class Processes {
 
     this.flowNodeFilter = page.getByRole('combobox', {
       name: /flow node/i,
+    });
+
+    this.operationSpinner = page.getByTestId('operation-spinner');
+    this.operationIdFilter = page.getByRole('textbox', {
+      name: /operation id/i,
+    });
+    this.resetFiltersButton = page.getByRole('button', {
+      name: /reset filters/i,
     });
   }
 

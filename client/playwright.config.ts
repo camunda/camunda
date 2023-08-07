@@ -17,7 +17,7 @@ const config: PlaywrightTestConfig = {
   testDir: './e2e-playwright',
   timeout: 30 * 1000,
   expect: {
-    timeout: 10000,
+    timeout: 15 * 1000,
   },
   forbidOnly: IS_CI,
   retries: 0,
@@ -39,6 +39,7 @@ const config: PlaywrightTestConfig = {
     actionTimeout: 0,
     baseURL: `http://localhost:${IS_E2E ? (IS_CI ? 8080 : 3001) : 8081}`,
     trace: 'on-first-retry',
+    screenshot: 'only-on-failure',
   },
 };
 

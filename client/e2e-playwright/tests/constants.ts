@@ -6,5 +6,6 @@
  */
 
 const SETUP_WAITING_TIME = 20000;
+const DATE_REGEX = /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/;
 
-export {SETUP_WAITING_TIME};
+export {SETUP_WAITING_TIME, DATE_REGEX};
