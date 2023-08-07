@@ -8,8 +8,7 @@
 package io.camunda.zeebe.broker.partitioning;
 
 import io.atomix.primitive.partition.ManagedPartitionGroup;
-import io.atomix.primitive.partition.ManagedPartitionService;
-import io.atomix.primitive.partition.impl.DefaultPartitionService;
+import io.atomix.primitive.partition.impl.DefaultPartitionManagementService;
 import io.atomix.raft.partition.RaftPartitionGroup;
 import io.camunda.zeebe.broker.PartitionListener;
 import io.camunda.zeebe.broker.clustering.ClusterServices;
@@ -47,7 +46,6 @@ public final class PartitionManagerImpl implements PartitionManager, TopologyMan
   private volatile CompletableFuture<Void> closeFuture;
   private final BrokerHealthCheckService healthCheckService;
   private final ActorSchedulingService actorSchedulingService;
-  private ManagedPartitionService partitionService;
   private RaftPartitionGroup partitionGroup;
   private TopologyManagerImpl topologyManager;
 
@@ -95,14 +93,8 @@ public final class PartitionManagerImpl implements PartitionManager, TopologyMan
         new RaftPartitionGroupFactory()
             .buildRaftPartitionGroup(brokerCfg, partitionDistribution, snapshotStoreFactory);
 
-    final var membershipService = clusterServices.getMembershipService();
-    final var communicationService = clusterServices.getCommunicationService();
-
-    partitionService =
-        new DefaultPartitionService(membershipService, communicationService, partitionGroup);
-
     this.partitionListeners = new ArrayList<>(partitionListeners);
-    topologyManager = new TopologyManagerImpl(membershipService, localBroker);
+    topologyManager = new TopologyManagerImpl(clusterServices.getMembershipService(), localBroker);
     this.partitionListeners.add(topologyManager);
   }
 
@@ -129,7 +121,10 @@ public final class PartitionManagerImpl implements PartitionManager, TopologyMan
     LOGGER.info("Starting partitions");
 
     actorSchedulingService.submitActor(topologyManager);
-    partitionService.start();
+
+    partitionGroup.join(
+        new DefaultPartitionManagementService(
+            clusterServices.getMembershipService(), clusterServices.getCommunicationService()));
 
     final var partitionFactory =
         new PartitionFactory(
@@ -181,16 +176,11 @@ public final class PartitionManagerImpl implements PartitionManager, TopologyMan
     if (closeFuture == null) {
       closeFuture =
           CompletableFuture.runAsync(this::stopPartitions)
-              .whenComplete(
-                  (ok, error) -> {
-                    logErrorIfApplicable(error);
-                    partitionService.stop().join();
-                  })
+              .thenCompose((ignored) -> partitionGroup.close())
               .whenComplete(
                   (ok, error) -> {
                     logErrorIfApplicable(error);
                     partitionGroup = null;
-                    partitionService = null;
                     topologyManager.close();
                     topologyManager = null;
                   });
@@ -223,8 +213,6 @@ public final class PartitionManagerImpl implements PartitionManager, TopologyMan
   @Override
   public String toString() {
     return "PartitionManagerImpl{"
-        + "partitionService="
-        + partitionService
         + ", partitionGroup="
         + partitionGroup
         + ", partitions="

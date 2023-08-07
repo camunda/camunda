@@ -16,17 +16,14 @@
 package io.atomix.raft.zeebe.util;
 
 import io.atomix.cluster.AtomixCluster;
-import io.atomix.cluster.ClusterMembershipService;
 import io.atomix.cluster.Member;
 import io.atomix.cluster.MemberId;
 import io.atomix.cluster.Node;
 import io.atomix.cluster.discovery.BootstrapDiscoveryProvider;
 import io.atomix.cluster.discovery.NodeDiscoveryProvider;
-import io.atomix.cluster.messaging.ClusterCommunicationService;
 import io.atomix.primitive.partition.ManagedPartitionGroup;
-import io.atomix.primitive.partition.ManagedPartitionService;
 import io.atomix.primitive.partition.PartitionId;
-import io.atomix.primitive.partition.impl.DefaultPartitionService;
+import io.atomix.primitive.partition.impl.DefaultPartitionManagementService;
 import io.atomix.raft.partition.RaftPartition;
 import io.atomix.raft.partition.RaftPartitionGroup;
 import io.atomix.raft.partition.RoundRobinPartitionDistributor;
@@ -51,7 +48,6 @@ public class ZeebeTestNode {
   private final File directory;
 
   private RaftPartitionGroup dataPartitionGroup;
-  private ManagedPartitionService partitionService;
   private AtomixCluster cluster;
 
   public ZeebeTestNode(final int id, final File directory) {
@@ -71,17 +67,22 @@ public class ZeebeTestNode {
   }
 
   private ManagedPartitionGroup getDataPartitionGroup() {
-    return partitionService.getPartitionGroup();
+    return dataPartitionGroup;
   }
 
   public CompletableFuture<Void> start(final Collection<ZeebeTestNode> nodes) {
     cluster = buildCluster(nodes);
     dataPartitionGroup =
         buildPartitionGroup(RaftPartitionGroup.builder(DATA_PARTITION_GROUP_NAME), nodes).build();
-    partitionService =
-        buildPartitionService(cluster.getMembershipService(), cluster.getCommunicationService());
 
-    return cluster.start().thenCompose(ignored -> partitionService.start()).thenApply(v -> null);
+    return cluster
+        .start()
+        .thenCompose(
+            ignored ->
+                dataPartitionGroup.join(
+                    new DefaultPartitionManagementService(
+                        cluster.getMembershipService(), cluster.getCommunicationService())))
+        .thenApply(v -> null);
   }
 
   private AtomixCluster buildCluster(final Collection<ZeebeTestNode> nodes) {
@@ -132,18 +133,8 @@ public class ZeebeTestNode {
     return member;
   }
 
-  private ManagedPartitionService buildPartitionService(
-      final ClusterMembershipService clusterMembershipService,
-      final ClusterCommunicationService messagingService) {
-    return new DefaultPartitionService(
-        clusterMembershipService, messagingService, dataPartitionGroup);
-  }
-
   public CompletableFuture<Void> stop() {
-    return partitionService
-        .stop()
-        .thenCompose(ignored -> dataPartitionGroup.close())
-        .thenCompose(ignored -> cluster.stop());
+    return dataPartitionGroup.close().thenCompose(ignored -> cluster.stop());
   }
 
   public AtomixCluster getCluster() {
