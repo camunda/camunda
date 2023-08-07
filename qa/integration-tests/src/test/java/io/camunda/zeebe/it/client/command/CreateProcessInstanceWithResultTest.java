@@ -397,6 +397,15 @@ public final class CreateProcessInstanceWithResultTest {
         .containsEntry("process instance", "modified");
   }
 
+  @Test
+  public void shouldCreateProcessInstanceAndGetSingleVariable() {
+    final Map<String, Object> variables = Maps.of(entry("foo", "bar"), entry("key", "value"));
+    final ProcessInstanceResult result = createProcessInstanceWithVariables(variables).join();
+
+    assertThat(result.getVariable("foo")).isEqualTo("bar");
+    assertThat(result.getVariable("key")).isEqualTo("value");
+  }
+
   private ZeebeFuture<ProcessInstanceResult> createProcessInstanceWithVariables(
       final Map<String, Object> variables) {
     return CLIENT_RULE
