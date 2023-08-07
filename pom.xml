@@ -48,6 +48,7 @@
     <version.yarn>v1.22.10</version.yarn>
     <version.snakeyaml>2.0</version.snakeyaml>
     <version.apache.http5>5.2.1</version.apache.http5>
+    <version.thymeleaf>3.1.2.RELEASE</version.thymeleaf>
 
     <zeebe-test-container.version>3.6.0</zeebe-test-container.version>
     <elasticsearch-test-container.version>1.18.3</elasticsearch-test-container.version>
@@ -174,6 +175,12 @@
         <groupId>org.springdoc</groupId>
         <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
         <version>${version.springdoc}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.thymeleaf</groupId>
+        <artifactId>thymeleaf</artifactId>
+        <version>${version.thymeleaf}</version>
       </dependency>
 
       <dependency>
